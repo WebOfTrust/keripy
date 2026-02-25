@@ -398,7 +398,7 @@ def test_nonindexed_witness_receipts():
         # Van process icp message from Cam
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(camIcpMsg), kvy=vanKvy, local=True)
         # event accepted in database with sigs but not into KEL
-        assert vanKvy.db.cntSigs(dgkey) == len(camHab.kever.verfers)
+        assert vanKvy.db.sigs.cnt(keys=dgkey) == len(camHab.kever.verfers)
         assert vanKvy.db.pwes.cntOnAll(keys=camHab.pre, on=camHab.kever.serder.sn) == 1  # now in partial witness escrow
         assert vanKvy.db.ures.cnt(keys=(camHab.pre, coring.Number(num=camHab.kever.serder.sn, code=coring.NumDex.Huge).qb64)) == len(rctMsgs)  # still in escrow
         assert vanKvy.db.wigs.cnt(keys=(camHab.pre, camHab.kever.serder.said)) == 0  # no wigs yet
@@ -457,7 +457,7 @@ def test_nonindexed_witness_receipts():
         # Van process ixn message from Cam
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(camIxnMsg), kvy=vanKvy, local=True)
         # event accepted in database with sigs but not into KEL
-        assert vanKvy.db.cntSigs(dgkey) == len(camHab.kever.verfers)
+        assert vanKvy.db.sigs.cnt(keys=dgkey) == len(camHab.kever.verfers)
         assert vanKvy.db.pwes.cntOnAll(keys=camHab.pre, on=camHab.kever.serder.sn) == 1  # now in partial witness escrow
         assert vanKvy.db.ures.cnt(keys=(camHab.pre, coring.Number(num=camHab.kever.serder.sn, code=coring.NumDex.Huge).qb64)) == len(rctMsgs)  # still in escrow
         assert vanKvy.db.wigs.cnt(keys=(camHab.pre, camHab.kever.serder.said)) == 0  # no wigs yet
@@ -544,7 +544,7 @@ def test_nonindexed_witness_receipts():
         # Van process rot message from Cam
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(camRotMsg), kvy=vanKvy, local=True)
         # event accepted in database with sigs but not into KEL
-        assert vanKvy.db.cntSigs(dgkey) == len(camHab.kever.verfers)
+        assert vanKvy.db.sigs.cnt(keys=dgkey) == len(camHab.kever.verfers)
         assert vanKvy.db.pwes.cntOnAll(keys=camHab.pre, on=camHab.kever.serder.sn) == 1  # now in partial witness escrow
         assert vanKvy.db.ures.cnt(keys=(camHab.pre, coring.Number(num=camHab.kever.serder.sn, code=coring.NumDex.Huge).qb64)) == len(rctMsgs)  # still in escrow
         assert vanKvy.db.wigs.cnt(keys=(camHab.pre, camHab.kever.serder.said)) == 0  # no wigs yet

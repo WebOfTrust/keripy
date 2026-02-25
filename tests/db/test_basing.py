@@ -50,7 +50,7 @@ def test_baser():
     assert os.path.exists(baser.path)
 
     assert isinstance(baser.evts, subing.SerderSuber)
-    assert isinstance(baser.sigs, lmdb._Database)
+    assert isinstance(baser.sigs, subing.CesrIoSetSuber)
     assert isinstance(baser.dtss, subing.CesrSuber)
     assert isinstance(baser.rcts, subing.CatCesrIoSetSuber)
     assert isinstance(baser.ures, subing.CatCesrIoSetSuber)
@@ -81,7 +81,7 @@ def test_baser():
     assert os.path.exists(baser.path)
 
     assert isinstance(baser.evts, subing.SerderSuber)
-    assert isinstance(baser.sigs, lmdb._Database)
+    assert isinstance(baser.sigs, subing.CesrIoSetSuber)
     assert isinstance(baser.dtss, subing.CesrSuber)
     assert isinstance(baser.rcts, subing.CatCesrIoSetSuber)
     assert isinstance(baser.ures, subing.CatCesrIoSetSuber)
@@ -108,7 +108,7 @@ def test_baser():
         assert os.path.exists(baser.path)
 
         assert isinstance(baser.evts, subing.SerderSuber)
-        assert isinstance(baser.sigs, lmdb._Database)
+        assert isinstance(baser.sigs, subing.CesrIoSetSuber)
         assert isinstance(baser.dtss, subing.CesrSuber)
         assert isinstance(baser.rcts, subing.CatCesrIoSetSuber)
         assert isinstance(baser.ures, subing.CatCesrIoSetSuber)
@@ -359,41 +359,50 @@ def test_baser():
         key = dgKey(preb, digb)
         assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
-        assert db.getSigs(key) == []
-        assert db.cntSigs(key) == 0
-        assert db.delSigs(key) == False
+        assert db.sigs.get(keys=key) == []
+        assert db.sigs.cnt(keys=key) == 0
+        assert db.sigs.rem(keys=key) == False
 
-        # dup vals are lexocographic
-        assert db.putSigs(key, vals=[b"z", b"m", b"x", b"a"]) == True
-        assert db.getSigs(key) == [b'a', b'm', b'x', b'z']
-        assert db.cntSigs(key) == 4
-        assert db.putSigs(key, vals=[b'a']) == True   # duplicate but True
-        assert db.getSigs(key) == [b'a', b'm', b'x', b'z']
-        assert db.addSig(key, b'a') == False   # duplicate
-        assert db.addSig(key, b'b') == True
-        assert db.getSigs(key) == [b'a', b'b', b'm', b'x', b'z']
-        assert [val for val in db.getSigsIter(key)] == [b'a', b'b', b'm', b'x', b'z']
-        assert db.delSigs(key) == True
-        assert db.getSigs(key) == []
-        vals = [b"z", b"m", b"x", b"a"]
-        assert db.putSigs(key, vals) == True
-        for val in vals:
-            assert db.delSigs(key, val) == True
-        assert db.getSigs(key) == []
-        assert db.putSigs(key, vals) == True
-        for val in db.getSigsIter(key):
-            assert db.delSigs(key, val) == True
-        assert db.getSigs(key) == []
+        # Create valid test signatures
+        signer0 = signing.Signer(transferable=False, seed=b'0123456789abcdef0123456789abcdef')
+        signer1 = signing.Signer(transferable=False, seed=b'fedcba9876543210fedcba9876543210')
 
-        assert db.putSigs(key, vals=[sig0b]) == True
-        assert db.getSigs(key) == [sig0b]
-        assert db.putSigs(key, vals=[sig1b]) == True
-        assert db.getSigs(key) == [sig1b,  sig0b]  # lex order
-        assert db.delSigs(key) == True
-        assert db.putSigs(key, vals=[sig1b, sig0b]) == True
-        assert db.getSigs(key) == [sig1b, sig0b]  # lex order
-        assert db.delSigs(key) == True
-        assert db.getSigs(key) == []
+        test_data = b"test witness signatures"
+        cigar0 = signer0.sign(ser=test_data)
+        cigar1 = signer1.sign(ser=test_data)
+
+        siger0 = indexing.Siger(raw=cigar0.raw, code=indexing.IdrDex.Ed25519_Sig, index=0)
+        siger1 = indexing.Siger(raw=cigar1.raw, code=indexing.IdrDex.Ed25519_Sig, index=1)
+
+        assert db.sigs.put(keys=key, vals=[siger0]) == True
+        assert [s.qb64b for s in db.sigs.get(keys=key)] == [siger0.qb64b]
+        assert db.sigs.cnt(keys=key) == 1
+        assert db.sigs.put(keys=key, vals=[siger0]) == False  # duplicate, idempotent
+        assert [s.qb64b for s in db.sigs.get(keys=key)] == [siger0.qb64b]
+        assert db.sigs.add(keys=key, val=siger1) == True
+        assert [s.qb64b for s in db.sigs.get(keys=key)] == [siger0.qb64b, siger1.qb64b]
+        assert [val.qb64b for val in db.sigs.getIter(keys=key)] == [siger0.qb64b, siger1.qb64b]
+        assert db.sigs.rem(keys=key) == True
+        assert db.sigs.get(keys=key) == []
+        assert db.sigs.put(keys=key, vals=[siger0, siger1]) == True
+        for val in [siger0, siger1]:
+            assert db.sigs.rem(keys=key, val=val) == True
+        assert db.sigs.get(keys=key) == []
+        assert db.sigs.put(keys=key, vals=[siger0, siger1]) == True
+        for val in db.sigs.getIter(keys=key):
+            assert db.sigs.rem(keys=key, val=val) == True
+        assert db.sigs.get(keys=key) == []
+        
+        assert db.sigs.put(keys=key, vals=[siger0]) == True
+        assert [s.qb64b for s in db.sigs.get(keys=key)] == [siger0.qb64b]
+        assert db.sigs.put(keys=key, vals=[siger1]) == True
+        assert [s.qb64b for s in db.sigs.get(keys=key)] == [siger0.qb64b, siger1.qb64b]
+        assert db.sigs.rem(keys=key) == True
+        assert db.sigs.put(keys=key, vals=[siger1, siger0]) == True
+        assert [s.qb64b for s in db.sigs.get(keys=key)] == [siger1.qb64b, siger0.qb64b]
+        assert db.sigs.rem(keys=key) == True
+        assert db.sigs.get(keys=key) == []
+        assert db.sigs.put(keys=key, vals=[siger0, siger1]) == True
 
         # test .wigs sub db methods (witness indexed sigs)
         key = dgKey(preb, digb)
