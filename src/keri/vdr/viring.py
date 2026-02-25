@@ -8,7 +8,6 @@ Provides public simple Verifiable Credential Issuance/Revocation Registry
 A special purpose Verifiable Data Registry (VDR)
 """
 import os
-
 from dataclasses import dataclass, field, asdict
 
 from ordered_set import OrderedSet as oset
@@ -170,6 +169,9 @@ def openReger(name="test", **kwa):
 
     """
     return dbing.openLMDB(cls=Reger, name=name, **kwa)
+
+# Env var for configuring LMDB size for the Keeper database
+KERIRegerMapSizeKey = "KERI_REGER_MAP_SIZE"
 
 
 class Reger(dbing.LMDBer):

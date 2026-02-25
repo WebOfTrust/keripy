@@ -11,6 +11,7 @@ import lmdb
 import pytest
 
 from keri import kering
+from keri.app.keeping import KERIKeeperMapSizeKey
 from keri.core import coring
 from keri.core.coring import Diger, versify, Kinds
 from keri.core.serdering import SerderACDC

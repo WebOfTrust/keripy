@@ -31,10 +31,9 @@ import pysodium
 from hio.base import doing
 
 from .. import kering
-from .. import core
+from .. import core, help
 from ..core import coring
 from ..db import dbing, subing, koming
-from .. import help
 from ..help import helping
 
 logger = help.ogler.getLogger()
@@ -132,6 +131,9 @@ def openKS(name="test", **kwa):
             Otherwise open in persistent directory, do not clear on close
     """
     return dbing.openLMDB(cls=Keeper, name=name, **kwa)
+
+# Env var for configuring LMDB size for the Keeper database
+KERIKeeperMapSizeKey = "KERI_KEEPER_MAP_SIZE"
 
 
 class Keeper(dbing.LMDBer):

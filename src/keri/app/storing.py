@@ -17,6 +17,9 @@ from ..db import dbing, subing
 
 logger = help.ogler.getLogger()
 
+# Env var for configuring LMDB size for the Mailbox database
+KERIMailboxerMapSizeKey = "KERI_MAILBOXER_MAP_SIZE"
+
 
 class Mailboxer(dbing.LMDBer):
     """
