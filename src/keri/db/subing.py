@@ -3162,13 +3162,6 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                                ion=ion,
                                                sep=self.sep.encode())]
 
-        #return [self._des(val) for val in
-                                    #self.db.getOnIoSetIter(db=self.sdb,
-                                                       #key=self._tokey(keys),
-                                                       #on=on,
-                                                       #ion=ion,
-                                                       #sep=self.sep.encode())]
-
 
     def getOnIter(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
         """Iterates over set vals at key made from keys and on in insertion order

@@ -1376,6 +1376,7 @@ class LMDBer(filing.Filer):
 
     def delIoSetVal(self, db, key, val, *, sep=b'.'):
         """Deletes set ioval val at key onkey consisting of key + sep + on if any
+        False if key empty
         Uses hidden ordinal key suffix for insertion ordering.
            The suffix is suffixed and unsuffixed transparently.
 
@@ -1395,7 +1396,7 @@ class LMDBer(filing.Filer):
 
         Returns:
             result (bool): True if val was deleted at key. False otherwise
-                if val not found at key
+                if val not found at key. False if key empty
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
@@ -1741,33 +1742,6 @@ class LMDBer(filing.Filer):
         return self.addIoSetVal(db=db, key=onKey(key, on, sep=sep), val=val, sep=sep)
 
 
-    def getOnIoSetIter(self, db, key, *, on=0, ion=0, sep=b'.'):
-        """Get iterator of all set vals at onkey = key + sep + on in db starting
-        at insertion order ion within set This provides ordinal ordering of
-        keys and inserion ordering of set vals.
-
-        Returns:
-            ioset (Iterator): iterator over insertion ordered set of values
-                             at same apparent effective key made from key + on.
-                             Uses hidden ordinal key suffix for insertion ordering.
-                             The suffix is appended and stripped transparently.
-
-        Raises StopIteration Error when empty.
-
-        Parameters:
-            db (lmdb._Database): instance of named sub db with dupsort==False
-            key (bytes): base key
-            on (int): ordinal number at which to add to key form effective key
-            ion (int): starting insertion ordinal value, default 0
-            sep (bytes): separator character for split
-
-        Uses hidden ordinal key suffix for insertion ordering which is
-        transparently suffixed and unsuffixed
-        Assumes DB opened with dupsort=False
-        """
-        return self.getIoSetIter(db=db, key=onKey(key, on, sep=sep), ion=ion, sep=sep)
-
-
     def getOnIoSetItemIter(self, db, key, *, on=0, ion=0, sep=b'.'):
         """Get iterator of all set vals at onkey = key + sep + on in db starting
         at insertion order ion within set This provides ordinal ordering of
@@ -1834,8 +1808,8 @@ class LMDBer(filing.Filer):
 
 
     def remOnIoSet(self, db, key, *, on=0, sep=b'.'):
-        """Deletes all set iovals at onkey = key + sep + on unless key is empty
-        or None.
+        """Deletes all set iovals at onkey = key + sep + on.
+        When key is empty or None or missing returns False.
 
         Assumes DB opened with dupsort=False
 
@@ -1845,7 +1819,7 @@ class LMDBer(filing.Filer):
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
-            key (bytes|None): base key
+            key (bytes|None): base key.When key is empty returns False
             on (int): ordinal number at which to add to key form effective key
                             None means to delete all on
             sep (bytes): separator character for split
@@ -1860,6 +1834,7 @@ class LMDBer(filing.Filer):
     def remOnIoSetVal(self, db, key, *, on=0, val=None, sep=b'.'):
         """Removes val at onkey = key + sep + on.
         When val is None then removes all set vals at onkey.
+        When key is empty or None or missing returns False.
         Uses hidden ordinal key suffix for insertion ordering.
         The suffix is suffixed and unsuffixed transparently.
 
@@ -1879,11 +1854,11 @@ class LMDBer(filing.Filer):
 
         Returns:
             result (bool): True if values were deleted at key. False otherwise
-                if no values at key
+                if no values at key or key is empty.
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
-            key (bytes): base key
+            key (bytes): base key. When key is empty returns False
             on (int): ordinal number at which to add to key form effective key
             val(int|None)
             sep (bytes): separator character for split
