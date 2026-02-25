@@ -265,7 +265,79 @@ def wit_querier_test_do(tymth=None, tock=0.0, **opts):
     assert res.headers['Content-Type'] == "application/json"
     assert "unkown query type" in res.text
 
+def test_wit_allowlist(seeder):
+    with habbing.openHby(name="wes", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
+            habbing.openHby(name="pal", salt=core.Salter(raw=b'0123456789abcdef').qb64) as palHby:
 
+        wesHab = wesHby.makeHab(name="wes", transferable=False)
+
+        # Allowed (allowlisted) participant hab
+        palAllowed = palHby.makeHab(name="palAllowed", wits=[wesHab.pre], transferable=True)
+        # Denied (not allowlisted) participant hab
+        palDenied = palHby.makeHab(name="palDenied", wits=[wesHab.pre], transferable=True)
+
+        aids = [palAllowed.pre]
+
+        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, aids=aids, tcpPort=5634, httpPort=5644)
+        witDoer = agenting.Receiptor(hby=palHby)
+
+        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[kering.Schemes.http])
+
+        opts = dict(
+            wesHab=wesHab,
+            palHby=palHby,
+            witDoer=witDoer,
+            palAllowed=palAllowed,
+            palDenied=palDenied,
+            aids=aids,
+        )
+        testDo = AllowlistTestDoer(**opts)
+        doers = wesDoers + [witDoer, testDo]
+
+        limit = 1.0
+        tock = 0.03125
+        doist = doing.Doist(tock=tock, limit=limit, doers=doers)
+        doist.enter()
+
+        while not testDo.done:
+            doist.recur()
+            time.sleep(doist.tock)
+
+        assert doist.limit == limit
+        doist.exit()
+
+class AllowlistTestDoer(doing.Doer):
+    def __init__(self, **opts):
+        self.options = opts
+        super(AllowlistTestDoer, self).__init__(**opts)
+
+    def recur(self, tyme=0.0, deeds=None, **kwa):
+        wesHab = self.options["wesHab"]
+        witDoer = self.options["witDoer"]
+        palAllowed = self.options["palAllowed"]
+        palDenied = self.options["palDenied"]
+
+        # Trigger witness receipting for both allowed and denied AIDs
+        if not any(msg.get('pre') == palAllowed.pre for msg in witDoer.msgs):
+            witDoer.msgs.append(dict(pre=palAllowed.pre))
+        if not any(msg.get('pre') == palDenied.pre for msg in witDoer.msgs):
+            witDoer.msgs.append(dict(pre=palDenied.pre))
+
+        # Wait until both have been processed (one cue each)
+        while len(witDoer.cues) < 2:
+            yield self.tock
+
+        # Allowed pre should have at least one event stored on witness
+        allowed_iter = wesHab.db.clonePreIter(pre=palAllowed.pre)
+        allowed_msg = next(allowed_iter)  # should NOT raise
+        assert isinstance(allowed_msg, (bytes, bytearray)) and len(allowed_msg) > 0
+
+        # Denied pre should have NO events (StopIteration immediately)
+        denied_iter = wesHab.db.clonePreIter(pre=palDenied.pre)
+        with pytest.raises(StopIteration):
+            next(denied_iter)
+
+        return True
 
 class MockServerTls:
     def __init__(self,  certify, keypath, certpath, cafilepath, port):
