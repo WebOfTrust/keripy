@@ -71,7 +71,7 @@ class CatchupDoer(doing.DoDoer):
 
         super(CatchupDoer, self).__init__(doers=doers)
 
-    def catchupDo(self, tymth, tock=0.0):
+    def catchupDo(self, tymth, tock=0.0, **kwa):
         """
         Parameters:
             tymth (function): injected function wrapper closure returned by .tymen() of

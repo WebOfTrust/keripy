@@ -102,7 +102,7 @@ class ConfirmDoer(doing.DoDoer):
         couple = seqner.qb64b + saider.qb64b
         self.hby.db.setAes(dgkey, couple)
 
-    def confirmDo(self, tymth, tock=0.0):
+    def confirmDo(self, tymth, tock=0.0, **kwa):
         """
         Parameters:
             tymth (function): injected function wrapper closure returned by .tymen() of

@@ -71,7 +71,7 @@ class ContactQueryDoer(doing.DoDoer):
         doers = [self.hbyDoer, self.mbd, doing.doify(self.queryDo)]
         super(ContactQueryDoer, self).__init__(doers=doers)
 
-    def queryDo(self, tymth, tock=0.0):
+    def queryDo(self, tymth, tock=0.0, **kwa):
         """ Query witnesses for contact key state
 
         Parameters:

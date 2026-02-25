@@ -92,7 +92,7 @@ class GroupMultisigInteract(doing.DoDoer):
 
         super(GroupMultisigInteract, self).__init__(doers=doers)
 
-    def interactDo(self, tymth, tock=0.0):
+    def interactDo(self, tymth, tock=0.0, **kwa):
         """ Create or participate in an interaction event for a distributed multisig identifier
 
         Parameters:
