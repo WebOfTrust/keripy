@@ -1054,7 +1054,7 @@ def test_unverified_receipt_escrow():
         psr.parse(ims=bytearray(rcticpmsg), kvy=kvy)
         # kvy.process(ims=bytearray(rcticpmsg))  # process local copy of msg
         assert pre not in kvy.kevers  # no events yet for pre
-        escrows = kvy.db.ures.get(keys=(pre, coring.Seqner(sn=0).qb64))  # so escrowed receipts
+        escrows = kvy.db.ures.get(keys=(pre, coring.Number(num=0, code=coring.NumDex.Huge).qb64))  # so escrowed receipts
         assert len(escrows) == 2
         diger, prefixer, cigar = escrows[0]
         assert diger.qb64 == srdr.said
@@ -1102,7 +1102,7 @@ def test_unverified_receipt_escrow():
         psr.parse(ims=bytearray(rctixnmsg), kvy=kvy)
         # kvy.process(ims=bytearray(rctixnmsg))  # process local copy of msg
         assert pre not in kvy.kevers  # no events yet for pre
-        escrows = kvy.db.ures.get(keys=(pre, coring.Seqner(sn=1).qb64))  # so escrowed receipts
+        escrows = kvy.db.ures.get(keys=(pre, coring.Number(num=1, code=coring.NumDex.Huge).qb64))  # so escrowed receipts
         assert len(escrows) == 2
         diger, prefixer, cigar = escrows[0]
         assert diger.qb64 == srdr.said
@@ -1164,7 +1164,7 @@ def test_unverified_receipt_escrow():
         # Process receipt by kvy
         psr.parse(ims=bytearray(rctrotmsg), kvy=kvy)
         assert pre not in kvy.kevers  # no events yet for pre
-        escrows = kvy.db.ures.get(keys=(pre, coring.Seqner(sn=2).qb64))  # so escrowed receipts
+        escrows = kvy.db.ures.get(keys=(pre, coring.Number(num=2, code=coring.NumDex.Huge).qb64))  # so escrowed receipts
         assert len(escrows) == 2
         diger, prefixer, cigar = escrows[0]
         assert diger.qb64 == srdr.said
@@ -1181,9 +1181,9 @@ def test_unverified_receipt_escrow():
         kvy.processEscrowUnverNonTrans()
         assert pre not in kvy.kevers  # key state not updated
         # check escrows removed
-        kvy.db.ures.get(keys=(pre, coring.Seqner(sn=0).qb64))
-        kvy.db.ures.get(keys=(pre, coring.Seqner(sn=1).qb64))
-        kvy.db.ures.get(keys=(pre, coring.Seqner(sn=2).qb64))
+        kvy.db.ures.get(keys=(pre, coring.Number(num=0, code=coring.NumDex.Huge).qb64))
+        kvy.db.ures.get(keys=(pre, coring.Number(num=1, code=coring.NumDex.Huge).qb64))
+        kvy.db.ures.get(keys=(pre, coring.Number(num=2, code=coring.NumDex.Huge).qb64))
 
         # Now reset timeout so not zero and resend receipts to reload escrow
         kvy.TimeoutURE = 3600
@@ -1197,9 +1197,9 @@ def test_unverified_receipt_escrow():
         # kvy.process(ims=bytearray(rctrotmsg))  # process local copy of msg
         assert pre not in kvy.kevers  # no events yet for pre
         # assert Ure escrows are back
-        kvy.db.ures.get(keys=(pre, coring.Seqner(sn=0).qb64))
-        kvy.db.ures.get(keys=(pre, coring.Seqner(sn=1).qb64))
-        kvy.db.ures.get(keys=(pre, coring.Seqner(sn=2).qb64))
+        kvy.db.ures.get(keys=(pre, coring.Number(num=0, code=coring.NumDex.Huge).qb64))
+        kvy.db.ures.get(keys=(pre, coring.Number(num=1, code=coring.NumDex.Huge).qb64))
+        kvy.db.ures.get(keys=(pre, coring.Number(num=2, code=coring.NumDex.Huge).qb64))
 
         # apply inception msg to Kevery to process
         psr.parse(ims=bytearray(icpmsg), kvy=kvy)
@@ -1222,17 +1222,17 @@ def test_unverified_receipt_escrow():
         assert kvr.sn == 2  # key state successfully updated
 
         # assert Ure escrows have not changed
-        assert len(kvy.db.ures.get(keys=(pre, coring.Seqner(sn=0).qb64))) == 2
-        assert len(kvy.db.ures.get(keys=(pre, coring.Seqner(sn=1).qb64))) == 2
-        assert len(kvy.db.ures.get(keys=(pre, coring.Seqner(sn=2).qb64))) == 2
+        assert len(kvy.db.ures.get(keys=(pre, coring.Number(num=0, code=coring.NumDex.Huge).qb64))) == 2
+        assert len(kvy.db.ures.get(keys=(pre, coring.Number(num=1, code=coring.NumDex.Huge).qb64))) == 2
+        assert len(kvy.db.ures.get(keys=(pre, coring.Number(num=2, code=coring.NumDex.Huge).qb64))) == 2
 
         # verify Kevery process unverified receipt escrow i
         # assuming not stale but nothing else has changed
         kvy.processEscrowUnverNonTrans()
         # check escrows removed
-        assert len(kvy.db.ures.get(keys=(pre, coring.Seqner(sn=0).qb64))) == 0
-        assert len(kvy.db.ures.get(keys=(pre, coring.Seqner(sn=1).qb64))) == 0
-        assert len(kvy.db.ures.get(keys=(pre, coring.Seqner(sn=2).qb64))) == 0
+        assert len(kvy.db.ures.get(keys=(pre, coring.Number(num=0, code=coring.NumDex.Huge).qb64))) == 0
+        assert len(kvy.db.ures.get(keys=(pre, coring.Number(num=1, code=coring.NumDex.Huge).qb64))) == 0
+        assert len(kvy.db.ures.get(keys=(pre, coring.Number(num=2, code=coring.NumDex.Huge).qb64))) == 0
 
         # verify receipts from db in insertion order
         receipts = kvy.db.rcts.get(keys=dbing.dgKey(pre, icpdig))

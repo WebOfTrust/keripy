@@ -5405,7 +5405,7 @@ class Kevery:
                 coring.Prefixer(qb64=cigar.verfer.qb64),
                 cigar
             )
-            self.db.ures.add(keys=(serder.pre, coring.Seqner(sn=serder.sn).qb64), val=trituple)
+            self.db.ures.add(keys=(serder.pre, coring.Number(num=serder.sn, code=coring.NumDex.Huge).qb64), val=trituple)
         # log escrowed
         logger.debug("Kevery process: escrowed unverified receipt of pre= %s "
                      " sn=%x dig=%s", serder.pre, serder.sn, said)
@@ -6318,7 +6318,7 @@ class Kevery:
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
                 triple = dig.encode("utf-8") + cigar.verfer.qb64b + cigar.qb64b
-                self.db.ures.add(keys=(serder.pre, coring.Seqner(sn=serder.sn).qb64), val=triple)  # should be snKey
+                self.db.ures.add(keys=(serder.pre, coring.Number(num=serder.sn, code=coring.NumDex.Huge).qb64), val=triple)  # should be snKey
             where:
                 dig is dig in receipt of receipted event
                 cigars is list of cigars instances for receipted event
@@ -6427,7 +6427,7 @@ class Kevery:
 
             except Exception as ex:  # log diagnostics errors etc
                 # error other than out of order so remove from OO escrow
-                self.db.ures.rem(keys=(pre, coring.Seqner(sn=sn).qb64), val=(rsaider, sprefixer, cigar))  # removes one escrow at key val
+                self.db.ures.rem(keys=(pre, coring.Number(num=sn, code=coring.NumDex.Huge).qb64), val=(rsaider, sprefixer, cigar))  # removes one escrow at key val
                 if logger.isEnabledFor(logging.DEBUG):  # adds exception data
                     logger.exception("Kevery URE unescrowed: %s", ex.args[0])
                 else:
@@ -6437,7 +6437,7 @@ class Kevery:
                 # We don't remove all escrows at pre,sn because some might be
                 # duplicitous so we process remaining escrows in spite of found
                 # valid event escrow.
-                self.db.ures.rem(keys=(pre, coring.Seqner(sn=sn).qb64), val=(rsaider, sprefixer, cigar))  # removes one escrow at key val
+                self.db.ures.rem(keys=(pre, coring.Number(num=sn, code=coring.NumDex.Huge).qb64), val=(rsaider, sprefixer, cigar))  # removes one escrow at key val
                 logger.info("Kevery URE unescrow succeeded for event pre=%s "
                             "sn=%s", pre, sn)
 
