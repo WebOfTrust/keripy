@@ -748,10 +748,10 @@ class Registrar(doing.DoDoer):
                 else:
                     continue
 
-            rseq = coring.Seqner(qb64=snq)
+            rnum = coring.Number(qb64=snq, code=coring.NumDex.Huge)
             self.rgy.reger.tpwe.rem(keys=(regk, snq))
 
-            self.rgy.reger.tede.add(keys=(regk, rseq.qb64), val=(prefixer, seqner, saider))
+            self.rgy.reger.tede.add(keys=(regk, rnum.qb64), val=(prefixer, seqner, saider))
 
     def processMultisigEscrow(self):
         """
@@ -767,7 +767,7 @@ class Registrar(doing.DoDoer):
                 self.rgy.reger.tmse.rem(keys=(regk, snq, regd))
                 continue
 
-            rseq = coring.Seqner(qb64=snq)
+            rnum = coring.Number(qb64=snq, code=coring.NumDex.Huge)
 
             # Anchor the message, registry or otherwise
             key = dgKey(regk, regd)
@@ -776,7 +776,7 @@ class Registrar(doing.DoDoer):
             self.rgy.reger.ancs.put(keys=key, val=(number, diger))
 
             self.rgy.reger.tmse.rem(keys=(regk, snq, regd))
-            self.rgy.reger.tede.add(keys=(regk, rseq.qb64), val=(prefixer, seqner, saider))
+            self.rgy.reger.tede.add(keys=(regk, rnum.qb64), val=(prefixer, number, saider))
 
     def processDisseminationEscrow(self):
         """
@@ -784,23 +784,23 @@ class Registrar(doing.DoDoer):
         disseminated to witnesses.  This is a fire and forget mechanism where the WitnessPublisher
         handles sending events to the witnesses and collecting receipts.
         """
-        for (regk, snq), (prefixer, seqner, saider) in self.rgy.reger.tede.getItemIter():  # group multisig escrow
-            rseq = coring.Seqner(qb64=snq)
-            dig = self.rgy.reger.tels.get(keys=snKey(pre=regk, sn=rseq.sn))
+        for (regk, snq), (prefixer, number, saider) in self.rgy.reger.tede.getItemIter():  # group multisig escrow
+            rnum = coring.Number(qb64=snq, code=coring.NumDex.Huge)
+            dig = self.rgy.reger.tels.get(keys=snKey(pre=regk, sn=rnum.sn))
             if dig is None:
                 continue
 
             self.rgy.reger.tede.rem(keys=(regk, snq))
 
             tevt = bytearray()
-            for msg in self.rgy.reger.clonePreIter(pre=regk, fn=rseq.sn):
+            for msg in self.rgy.reger.clonePreIter(pre=regk, fn=rnum.sn):
                 tevt.extend(msg)
 
             print(f"Sending TEL events to witnesses")
             # Fire and forget the TEL event to the witnesses.  Consumers will have to query
             # to determine when the Witnesses have received the TEL events.
             self.witPub.msgs.append(dict(pre=prefixer.qb64, said=regk, msg=tevt))
-            self.rgy.reger.ctel.put(keys=(regk, rseq.qb64), val=saider)  # idempotent
+            self.rgy.reger.ctel.put(keys=(regk, rnum.qb64), val=saider)  # idempotent
 
 
 class Credentialer(doing.DoDoer):

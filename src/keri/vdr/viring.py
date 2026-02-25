@@ -366,7 +366,7 @@ class Reger(dbing.LMDBer):
 
         # TEL event dissemination escrow
         self.tede = subing.CatCesrIoSetSuber(db=self, subkey='tede.',
-                                             klas=(coring.Prefixer, coring.Seqner, coring.Saider))
+                                             klas=(coring.Prefixer, coring.Number, coring.Saider))
 
         # Completed TEL event
         self.ctel = subing.CesrSuber(db=self, subkey='ctel.',
