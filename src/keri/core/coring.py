@@ -3220,8 +3220,8 @@ class Pather(Matter):
         """
         val = self.resolve(sad=serder.sad)
         if isinstance(val, str):
-            saider = Saider(qb64=val)
-            return saider.qb64b
+            diger = Diger(qb64=val)
+            return diger.qb64b
         elif isinstance(val, dict):
             return dumps(val, serder.kind)
         elif isinstance(val, list):

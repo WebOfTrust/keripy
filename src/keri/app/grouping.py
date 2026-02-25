@@ -137,11 +137,10 @@ class Counselor(doing.DoDoer):
                 ghab = self.hby.habs[pre]
                 kever = ghab.kever
                 keys = [verfer.qb64 for verfer in kever.verfers]
-                sigs = self.hby.db.getSigs(dbing.dgKey(pre, bytes(sdig)))
-                if not sigs:  # otherwise its a list of sigs
+                sigers = self.hby.db.sigs.get(keys=(pre, sdig))
+                if not sigers:  # otherwise its a list of sigs
                     continue
 
-                sigers = [indexing.Siger(qb64b=bytes(sig)) for sig in sigs]
                 windex = min([siger.index for siger in sigers])
 
                 # True if Elected to perform delegation and witnessing
@@ -198,9 +197,9 @@ class Counselor(doing.DoDoer):
                 if serder := self.hby.db.fetchLastSealingEventByEventSeal(kever.delpre,
                                                                           seal=anchor):
                     sner = coring.Number(num=serder.sn, code=coring.NumDex.Huge)
-                    asaider = coring.Saider(qb64b=serder.saidb)
+                    adiger = coring.Diger(qb64b=serder.saidb)
                     self.hby.db.aess.pin(keys=(pre, saider.qb64b),
-                                         val=(sner, asaider))  # authorizer event seal (delegator/issuer)
+                                         val=(sner, adiger))  # authorizer event seal (delegator/issuer)
                     self.hby.db.gdee.rem(keys=(pre,))
                     logger.info("AID %s...%s: Delegation approval for %s received.", pre[:4], pre[-4:], pre)
 
@@ -531,27 +530,22 @@ def getEscrowedEvent(db, pre, sn):
     if dig is None:
         dig = db.kels.getOnLast(keys=pre, on=sn)
     dig = dig.encode("utf-8")
-    key = dbing.dgKey(pre, dig)  # digest key
     serder = db.evts.get(keys=(pre, dig))
-
-    sigs = []
-    for sig in db.getSigsIter(key):
-        sigs.append(indexing.Siger(qb64b=bytes(sig)))
-
+    sigers = db.sigs.get(keys=(pre, dig))
     duple = db.aess.get(keys=(pre, dig))
 
     msg = bytearray()
     msg.extend(serder.raw)
     msg.extend(core.Counter(core.Codens.ControllerIdxSigs,
-                            count=len(sigs), version=kering.Vrsn_1_0).qb64b)  # attach cnt
-    for sig in sigs:
-        msg.extend(sig.qb64b)  # attach sig
+                            count=len(sigers), version=kering.Vrsn_1_0).qb64b)  # attach cnt
+    for siger in sigers:
+        msg.extend(siger.qb64b)  # attach siger
 
     if duple is not None:
-        seqner, saider = duple
+        seqner, diger = duple
         msg.extend(core.Counter(core.Codens.SealSourceCouples,
                                 count=1, version=kering.Vrsn_1_0).qb64b)
-        msg.extend(seqner.qb64b + saider.qb64b)
+        msg.extend(seqner.qb64b + diger.qb64b)
 
     return msg
 

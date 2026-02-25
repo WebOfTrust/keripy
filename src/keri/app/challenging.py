@@ -54,4 +54,4 @@ class ChallengeHandler:
         self.signaler.push(msg, topic="/challenge")
 
         # Log signer against event to track successful challenges with signed response
-        self.db.reps.add(keys=(signer,), val=coring.Saider(qb64=serder.said))
+        self.db.reps.add(keys=(signer,), val=coring.Diger(qb64=serder.said))

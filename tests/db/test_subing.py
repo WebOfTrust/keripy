@@ -3687,6 +3687,42 @@ def test_cesr_suber():
     assert not db.opened
     """Done Test"""
 
+
+def test_cesr_suber_strict_subclass_enforcement():
+    """
+    Test CesrSuber strict mode enforces subclass checks in _ser
+    """
+    with dbing.openLMDB() as db:
+        sdb = subing.CesrSuber(db=db, subkey='bags.', klas=coring.Diger, strict=True)
+        assert isinstance(sdb, subing.CesrSuber)
+        assert sdb.strict is True
+
+        diger = coring.Diger(ser=b"strict cesr")
+        keys = ("alpha", "dog")
+
+        assert sdb.put(keys=keys, val=diger)
+        actual = sdb.get(keys=keys)
+        assert isinstance(actual, coring.Diger)
+        assert actual.qb64 == diger.qb64
+
+        wrong = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        with pytest.raises(TypeError):
+            sdb.pin(keys=keys, val=wrong)
+
+        with pytest.raises(TypeError):
+            sdb.pin(keys=keys, val=diger.qb64b)
+
+        with pytest.raises(TypeError):
+            sdb.pin(keys=keys, val=diger.qb64)
+
+        actual = sdb.get(keys=keys)
+        assert isinstance(actual, coring.Diger)
+        assert actual.qb64 == diger.qb64
+
+    assert not os.path.exists(db.path)
+    assert not db.opened
+
+
 def test_cesr_on_suber():
     """
     Test CesrOnSuber LMDBer sub database class
@@ -3930,6 +3966,49 @@ def test_cat_cesr_suber():
     assert not os.path.exists(db.path)
     assert not db.opened
     """Done Test"""
+
+
+def test_cat_cesr_suber_strict_subclass_enforcement():
+    """
+    Test CatCesrSuber strict mode enforces ordered subclass checks in _ser
+    """
+    with dbing.openLMDB() as db:
+        klases = (coring.Seqner, coring.Saider)
+        sdb = subing.CatCesrSuber(db=db, subkey='bags.', klas=klases, strict=True)
+        assert isinstance(sdb, subing.CatCesrSuber)
+        assert sdb.strict is True
+
+        seqner = coring.Seqner(sn=1)
+        saider = coring.Saider(qb64b=b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E')
+        keys = ("alpha", "dog")
+
+        assert sdb.put(keys=keys, val=(seqner, saider))
+        actuals = sdb.get(keys=keys)
+        assert isinstance(actuals[0], coring.Seqner)
+        assert isinstance(actuals[1], coring.Saider)
+        assert actuals[0].qb64 == seqner.qb64
+        assert actuals[1].qb64 == saider.qb64
+
+        with pytest.raises(ValueError):
+            sdb.pin(keys=keys, val=(seqner, ))
+
+        actuals = sdb.get(keys=keys)
+        assert actuals[0].qb64 == seqner.qb64
+        assert actuals[1].qb64 == saider.qb64
+
+        wrong = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        with pytest.raises(TypeError):
+            sdb.pin(keys=keys, val=(wrong, saider))
+
+        with pytest.raises(TypeError):
+            sdb.pin(keys=keys, val=(seqner.qb64b, saider.qb64))
+
+        actuals = sdb.get(keys=keys)
+        assert actuals[0].qb64 == seqner.qb64
+        assert actuals[1].qb64 == saider.qb64
+
+    assert not os.path.exists(db.path)
+    assert not db.opened
 
 
 def test_cat_cesr_ioset_suber():
@@ -4472,6 +4551,37 @@ def test_cat_cesr_dup_suber():
 
 
 
+def test_cat_cesr_suber_strict_inherited_subers():
+    """
+    Test strict behavior inherited by CatCesrIoSetSuber and CatCesrDupSuber
+    """
+    with dbing.openLMDB() as db:
+        wrong = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+
+        isdb = subing.CatCesrIoSetSuber(db=db,
+                                        subkey='ibags.',
+                                        klas=(coring.Seqner, coring.Saider),
+                                        strict=True)
+        seqner = coring.Seqner(sn=1)
+        saider = coring.Saider(qb64b=b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E')
+        assert isdb.put(keys=("a", "1"), vals=[(seqner, saider)])
+        with pytest.raises(TypeError):
+            isdb.put(keys=("a", "2"), vals=[(wrong, saider)])
+
+        dsdb = subing.CatCesrDupSuber(db=db,
+                                      subkey='dbags.',
+                                      klas=(coring.Number, coring.Diger),
+                                      strict=True)
+        number = coring.Number(num=1)
+        diger = coring.Diger(ser=b"strict cat dup")
+        assert dsdb.put(keys=("b", "1"), vals=[(number, diger)])
+        with pytest.raises(TypeError):
+            dsdb.put(keys=("b", "2"), vals=[(wrong, diger)])
+
+    assert not os.path.exists(db.path)
+    assert not db.opened
+
+
 def test_signer_suber():
     """
     Test SignerSuber LMDBer sub database class
@@ -4811,12 +4921,15 @@ if __name__ == "__main__":
     test_on_ioset_suber()
     test_b64_onioset_suber()
     test_cat_cesr_suber()
+    test_cat_cesr_suber_strict_subclass_enforcement()
     test_cesr_suber()
+    test_cesr_suber_strict_subclass_enforcement()
     test_cesr_on_suber()
     test_cesr_ioset_suber()
     test_cat_cesr_ioset_suber()
     test_cesr_dup_suber()
     test_cat_cesr_dup_suber()
+    test_cat_cesr_suber_strict_inherited_subers()
     test_serder_suber()
     test_serder_ioset_suber()
     test_schemer_suber()

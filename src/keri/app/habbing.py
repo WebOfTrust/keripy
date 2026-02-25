@@ -1576,10 +1576,10 @@ class BaseHab:
         key = dbing.dgKey(pre, dig)  # digest key
         serder = self.db.evts.get(keys=(pre, dig))
         msg.extend(serder.raw)
-        msg.extend(Counter(Codens.ControllerIdxSigs, count=self.db.cntSigs(key),
+        msg.extend(Counter(Codens.ControllerIdxSigs, count=self.db.sigs.cnt(keys=(pre, dig)),
                            version=kering.Vrsn_1_0).qb64b)  # attach cnt
-        for sig in self.db.getSigsIter(key):
-            msg.extend(sig)  # attach sig
+        for siger in self.db.sigs.getIter(keys=(pre, dig)):
+            msg.extend(siger.qb64b)  # attach siger
         return msg
 
 
@@ -2036,16 +2036,11 @@ class BaseHab:
         if dig is None:
             raise kering.MissingEntryError("Missing event for pre={} at sn={}."
                                            "".format(self.pre, sn))
-        key = dbing.dgKey(self.pre, dig)  # digest key
         serder = self.db.evts.get(keys=(self.pre, dig))
-
-        sigs = []
-        for sig in self.db.getSigsIter(key):
-            sigs.append(indexing.Siger(qb64b=bytes(sig)))
-
+        sigers = self.db.sigs.get(keys=(self.pre, dig))
         duple = self.db.aess.get(keys=(self.pre, dig))
 
-        return serder, sigs, duple
+        return serder, sigers, duple
 
 
     def makeOwnEvent(self, sn, allowPartiallySigned=False):
@@ -2070,10 +2065,10 @@ class BaseHab:
             msg.extend(sig.qb64b)  # attach sig
 
         if duple is not None:
-            seqner, saider = duple
+            seqner, diger = duple
             msg.extend(Counter(Codens.SealSourceCouples, count=1,
                                version=kering.Vrsn_1_0).qb64b)
-            msg.extend(seqner.qb64b + saider.qb64b)
+            msg.extend(seqner.qb64b + diger.qb64b)
 
         return msg
 
@@ -2920,11 +2915,10 @@ class GroupHab(BaseHab):
         """
         kever = self.kever
         keys = [verfer.qb64 for verfer in kever.verfers]
-        sigs = self.db.getSigs(dbing.dgKey(self.pre, kever.serder.saidb))
-        if not sigs:  # otherwise its a list of sigs
+        sigers = self.db.sigs.get(keys=(self.pre, kever.serder.saidb))
+        if not sigers:  # otherwise its a list of sigs
             return False
 
-        sigers = [indexing.Siger(qb64b=bytes(sig)) for sig in sigs]
         windex = min([siger.index for siger in sigers])
 
         # True if Elected to perform delegation and witnessing

@@ -948,7 +948,11 @@ class CesrSuberBase(SuberBase):
 
     """
 
-    def __init__(self, *pa, klas: Type[coring.Matter] = coring.Matter, **kwa):
+    def __init__(self,
+                 *pa,
+                 klas: Type[coring.Matter] = coring.Matter,
+                 strict: bool = False,
+                 **kwa):
         """
         Inherited Parameters:
             db (dbing.LMDBer): base db
@@ -963,18 +967,31 @@ class CesrSuberBase(SuberBase):
         Parameters:
             klas (Type[coring.Matter]): Class reference to subclass of Matter or
                 Indexer or Counter or any ducktyped class of Matter
+            strict (bool): True means enforce val in ._ser matches .klas
+                           False means do not enforce. Default False
 
         """
         super(CesrSuberBase, self).__init__(*pa, **kwa)
         self.klas = klas
+        self.strict = bool(strict)
 
 
     def _ser(self, val: coring.Matter):
         """
         Serialize value to bytes to store in db
+        When strict is True, val must match .klas or TypeError is raised.
+
         Parameters:
             val (coring.Matter): instance Matter ducktype with .qb64b attribute
+
+        Returns:
+            bytes: serialized qb64b bytes suitable for db storage.
+
+        Raises:
+            TypeError: wrong instance class when strict.
         """
+        if self.strict and not isinstance(val, self.klas):
+            raise TypeError(f"Expected {self.klas}, got {type(val)}.")
         return val.qb64b
 
 
@@ -1061,7 +1078,11 @@ class CatCesrSuberBase(CesrSuberBase):
                 , each of to Type[coring.Matter etc]
     """
 
-    def __init__(self, *pa, klas: Iterable|Type[coring.Matter]|None = None, **kwa):
+    def __init__(self,
+                 *pa,
+                 klas: Iterable | Type[coring.Matter] | None = None,
+                 strict: bool = False,
+                 **kwa):
         """
         Inherited Parameters:
             db (dbing.LMDBer): base db
@@ -1078,30 +1099,49 @@ class CatCesrSuberBase(CesrSuberBase):
                     reference to subclass of Matter or Indexer or Counter or
                     any ducktyped class of Matter
                     None is replaced with default Matter
+            strict (bool): True means enforce val in ._ser matches .klas
+                           False means do not enforce. Default False
 
         """
         if klas is None:
             klas = (coring.Matter, )  # set default to tuple of single Matter
         if not isNonStringIterable(klas):  # not iterable
             klas = (klas, )  # make it so
-        super(CatCesrSuberBase, self).__init__(*pa, klas=klas, **kwa)
+        super(CatCesrSuberBase, self).__init__(*pa,
+                                               klas=klas,
+                                               strict=strict,
+                                               **kwa)
 
 
     def _ser(self, val: Union[Iterable, coring.Matter]):
         """
         Serialize val to bytes to store in db
         Concatenates .qb64b of each instance in val and returns val bytes
-
-        Returns:
-           cat (bytes): concatenation of .qb64b of each object instance in vals
+        When strict is True, val arity and ordered slot types must match .klas
+        or ValueError/TypeError is raised.
 
         Parameters:
            val (Union[Iterable, coring.Matter]): of subclass instances.
+               Non-iterables are wrapped as a one-item tuple.
+
+        Returns:
+           bytes: concatenation of serialized qb64b values in order.
+
+        Raises:
+           ValueError: when strict and tuple arity does not match .klas.
+           TypeError: wrong slot class when strict.
 
         """
         if not isNonStringIterable(val):  # not iterable
             val = (val, )  # make iterable
-        return (b''.join(obj.qb64b for obj in val))
+
+        vals = tuple(val) if self.strict else val
+        if self.strict:
+            for klas, item in zip(self.klas, vals, strict=self.strict):
+                if not isinstance(item, klas):
+                    raise TypeError(f"Expected {klas}, got {type(item)}.")
+
+        return b''.join(obj.qb64b for obj in vals)
 
     def _des(self, val: memoryview | bytes | bytearray):
         """
