@@ -82,18 +82,18 @@ class Anchorer(doing.DoDoer):
         self.witDoer.msgs.append(dict(pre=pre, sn=srdr.sn, auths=self.auths))
         self.hby.db.dpwe.pin(keys=(srdr.pre, srdr.said), val=srdr)
 
-    def complete(self, prefixer, seqner, diger=None):
+    def complete(self, prefixer, number, diger=None):
         """ Check for completed delegation for the specific delegation event
 
         Parameters:
             prefixer (Prefixer): qb64 identifier prefix of event to check
-            seqner (Seqner): sequence number of event to check
+            number (Number.huge): number of event to check
             diger (Diger): optional digest of event to verify
 
         Returns:
             bool: True if delegation protocol is complete, False otherwise
         """
-        cdiger = self.hby.db.cdel.get(keys=(prefixer.qb64, seqner.qb64))
+        cdiger = self.hby.db.cdel.get(keys=(prefixer.qb64, number.qb64))
         if not cdiger:
             return False
         else:
@@ -231,7 +231,7 @@ class Anchorer(doing.DoDoer):
             del self.publishers[pre]
 
             self.hby.db.dpub.rem(keys=(pre, said))
-            self.hby.db.cdel.put(keys=(pre, coring.Seqner(sn=serder.sn).qb64), val=coring.Diger(qb64=serder.said))
+            self.hby.db.cdel.put(keys=(pre, coring.Number(num=serder.sn, code=coring.NumDex.Huge).qb64), val=coring.Diger(qb64=serder.said))
 
     def publishDelegator(self, pre):
         """Publish the delegation event to my witnesses."""
