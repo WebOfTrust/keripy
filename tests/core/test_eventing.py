@@ -3314,7 +3314,7 @@ def test_receipt():
         #  coe process the escrow receipt from val
         parsing.Parser(version=Vrsn_1_0).parse(ims=res, kvy=coeKevery)
         #  check if in escrow database
-        result = coeKevery.db.ures.get(keys=(coeKever.prefixer.qb64, coring.Seqner(sn=2).qb64))
+        result = coeKevery.db.ures.get(keys=(coeKever.prefixer.qb64, coring.Number(num=2, code=coring.NumDex.Huge).qb64))
         rsaider, sprefixer, cigar = result[0]
 
         assert rsaider.qb64b == fake.encode("utf-8")
@@ -3519,7 +3519,7 @@ def test_process_attached_receipt_couples_firner_missing_fels():
         assert "Unverified receipt=" in str(exc_info.value)
         # Receipt must be escrowed (addUre via escrowUReceipt)
         sn = int(serder.sn, 16) if isinstance(serder.sn, str) else int(serder.sn)
-        ures = db.ures.get(keys=(serder.pre, coring.Seqner(sn=sn).qb64))
+        ures = db.ures.get(keys=(serder.pre, coring.Number(num=sn, code=coring.NumDex.Huge).qb64))
         assert len(ures) == 1
         diger, prefixer, cigar = ures[0]
         assert diger.qb64 == serder.said
