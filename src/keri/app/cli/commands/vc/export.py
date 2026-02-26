@@ -123,13 +123,13 @@ class ExportDoer(doing.DoDoer):
             for said in saids:
                 self.outputCred(said)
 
-        (prefixer, seqner, saider) = self.rgy.reger.cancs.get(keys=(creder.said,))
+        (prefixer, number, saider) = self.rgy.reger.cancs.get(keys=(creder.said,))
         if self.files:
             f = open(f"{creder.said}-acdc.cesr", 'w')
-            f.write(signing.serialize(creder, prefixer, seqner, saider))
+            f.write(signing.serialize(creder, prefixer, number, saider))
             f.close()
         else:
-            sys.stdout.write(signing.serialize(creder, prefixer, seqner, saider).decode("utf-8"))
+            sys.stdout.write(signing.serialize(creder, prefixer, number, saider).decode("utf-8"))
             sys.stdout.flush()
 
     def outputTEL(self, regk):

@@ -102,9 +102,9 @@ def migrate(db):
             dig = rgy.getTel(key=snkey)
 
             prefixer = coring.Prefixer(qb64=said)
-            seqner = coring.Seqner(sn=0)
+            number = coring.Number(sn=0, code=coring.NumDex.Huge)
             saider = coring.Saider(qb64b=bytes(dig))
-            rgy.cancs.pin(keys=said, val=[prefixer, seqner, saider])
+            rgy.cancs.pin(keys=said, val=[prefixer, number, saider])
 
         migrateKeys(db)
 
