@@ -1241,14 +1241,14 @@ def test_baser():
         assert db.udes.get(keys=key) == None
         assert db.udes.rem(keys=key) == False
         assert db.udes.put(keys=key, val=(num1, diger1)) == True
-        sner, saider = db.udes.get(keys=key)
-        assert sner.qb64b + saider.qb64b == val1
+        num, diger = db.udes.get(keys=key)
+        assert num.qb64b + diger.qb64b == val1
         assert db.udes.put(keys=key, val=(num2, diger2)) == False
-        sner, saider = db.udes.get(keys=key)
-        assert sner.qb64b + saider.qb64b == val1
+        num, diger = db.udes.get(keys=key)
+        assert num.qb64b + diger.qb64b == val1
         assert db.udes.pin(keys=key, val=(num2, diger2)) == True
-        sner, saider = db.udes.get(keys=key)
-        assert sner.qb64b + saider.qb64b == val2
+        num, diger = db.udes.get(keys=key)
+        assert num.qb64b + diger.qb64b == val2
         assert db.udes.rem(keys=key) == True
         assert db.udes.get(keys=key) == None
 
