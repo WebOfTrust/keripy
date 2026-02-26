@@ -22,7 +22,6 @@ def test_tpwe():
     with basing.openDB(temp=True) as db, keeping.openKS(temp=True) as kpr:
         hby, hab = buildHab(db, kpr)
         rgy = Regery(hby=hby, name="test", temp=True)
-        # counselor is only used in the GroupHab (multisig) path; never called here
         registrar = Registrar(hby=hby, rgy=rgy, counselor=None)
 
         prefixer = hab.kever.prefixer
@@ -178,10 +177,12 @@ def test_tmse():
         hby, hab = buildHab(db, kpr)
         rgy = Regery(hby=hby, name="test", temp=True)
 
-        class _AlwaysComplete:
-            def complete(self, *a, **kw): return True
-
-        registrar = Registrar(hby=hby, rgy=rgy, counselor=_AlwaysComplete())
+        registrar = Registrar(
+            hby=hby,
+            rgy=rgy,
+            counselor=type("C", (), {"complete": lambda self, *a, **kw: True})()
+        )
+        
         reg = rgy.makeRegistry(name="tmse_drain", prefix=hab.pre, noBackers=True)
         rseq = Seqner(sn=0)
         prefixer = hab.kever.prefixer
@@ -223,10 +224,11 @@ def test_tede():
         hby, hab = buildHab(db, kpr)
         rgy = Regery(hby=hby, name="test", temp=True)
 
-        class _AlwaysComplete:
-            def complete(self, *a, **kw): return True
-
-        registrar = Registrar(hby=hby, rgy=rgy, counselor=_AlwaysComplete())
+        registrar = Registrar(
+            hby=hby,
+            rgy=rgy,
+            counselor=type("C", (), {"complete": lambda self, *a, **kw: True})()
+        )
 
         prefixer = hab.kever.prefixer
         saider_hab = Saider(qb64=hab.kever.serder.said)
@@ -258,11 +260,7 @@ def test_tede():
 
         assert len(rgy.reger.tede.get(keys=(reg_ms.regk, rseq.qb64))) == 1
 
-        # switch counselor so processMultisigEscrow stops draining on subsequent calls
-        class _NeverComplete:
-            def complete(self, *a, **kw): return False
-
-        registrar.counselor = _NeverComplete()
+        registrar.counselor = type("C", (), {"complete": lambda self, *a, **kw: False})()
 
         # processDisseminationEscrow is a no-op when tels has no digest
         reg_noop = rgy.makeRegistry(name="diss_noop", prefix=hab.pre, noBackers=True)
@@ -353,4 +351,3 @@ if __name__ == "__main__":
     test_tmse()
     test_tede()
     test_escrow_suber_klas()
-    
