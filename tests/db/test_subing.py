@@ -399,6 +399,33 @@ def test_on_suber():
         assert onsuber.getOn(keys='d', on=0) == None
         assert onsuber.getOnItem(keys='d', on=0) == None
 
+        # test remOnAll
+        assert onsuber.putOn(keys='d', on=0, val='moon')
+        assert onsuber.putOn(keys='d', on=1, val='sun')
+        assert onsuber.putOn(keys='d', on=2, val='stars')
+        assert onsuber.putOn(keys='e', on=0, val='stars')
+        assert onsuber.putOn(keys='e', on=1, val='moon')
+        assert onsuber.putOn(keys='e', on=2, val='sun')
+
+        assert onsuber.cntOnAll(keys='d') == 3
+        assert onsuber.cntOnAll(keys='e') == 3
+        assert onsuber.cntOnAll() == 12
+
+        assert onsuber.remOnAll(keys='d', on=1)
+        assert onsuber.cntOnAll(keys='d') == 1
+        assert onsuber.cntOnAll(keys='e') == 3
+        assert onsuber.cntOnAll() == 10
+
+        assert onsuber.remOnAll(keys='d')
+        assert onsuber.cntOnAll(keys='d') == 0
+        assert onsuber.cntOnAll(keys='e') == 3
+        assert onsuber.cntOnAll() == 9
+
+        assert onsuber.remOnAll()
+        assert onsuber.cntOnAll(keys='d') == 0
+        assert onsuber.cntOnAll(keys='e') == 0
+        assert onsuber.cntOnAll() == 0
+
 
     assert not os.path.exists(db.path)
     assert not db.opened

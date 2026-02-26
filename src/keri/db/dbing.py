@@ -902,6 +902,48 @@ class LMDBer(filing.Filer):
                 raise KeyError(f"Invalid: {onkey=} for removal from db") from ex
 
 
+    def remOnAll(self, db, key=b"", on=0, *, sep=b'.'):
+        """Removes entry at each onkey for all on >= on where for each on,
+        onkey = key + sep + on
+        When on is 0, default, then deletes all on at key.
+        When key is empty then deletes whole db.
+
+        Returns:
+           result (bool): True if any entries deleted
+                          False otherwise
+
+        Parameters:
+            db (lmdb._Database): instance of named sub db with dupsort==False
+            key (bytes): base key
+            on (int): ordinal number at which to add to key form effective key
+                      0 means to delete all on at key
+            sep (bytes): separator character for split
+
+        Uses hidden ordinal key suffix for insertion ordering which is
+        transparently suffixed and unsuffixed
+        Assumes DB opened with dupsort=False
+        """
+        if not key:
+            return self.delTop(db=db, top=b'')
+
+        # del all on >= on for key
+        with self.env.begin(db=db, write=True, buffers=True) as txn:
+            result = False
+            onkey = onKey(key, on, sep=sep)
+            cursor = txn.cursor()
+            if cursor.set_range(onkey):  # move to entry at key >= onkey if any
+                conkey = cursor.key()
+                ckey, con = splitOnKey(conkey, sep=sep)
+                while ckey == key: # on >= on at key so delete
+                    # delete moves cursor to next item
+                    result = cursor.delete() or result  # moves cursor to next
+                    if not (conkey := cursor.key()):  # get next key if any
+                        break
+                    ckey, con = splitOnKey(conkey, sep=sep)
+
+            return result
+
+
     # used in OnSuberBase
     def cntOnAll(self, db, key=b'', on=0, *, sep=b'.'):
         """Counts all entries one for each onkey for all on >= on
@@ -1736,7 +1778,7 @@ class LMDBer(filing.Filer):
 
 
     def remOnAllIoSet(self, db, key=b"", on=0, *, sep=b'.'):
-        """Deletes all set members at key for all on >= on where for each on,
+        """Removes all set members at onkey for all on >= on where for each on,
         onkey = key + sep + on
         When on is 0, default, then deletes all on at key.
         When key is empty then deletes whole db.

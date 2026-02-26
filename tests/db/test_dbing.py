@@ -323,6 +323,9 @@ def test_lmdber():
 
         # test Ordinal Numbered ON keyed value methods
         """
+        putOn
+        pinOn
+        getOn
         getTopOnItemIter
 
         """
@@ -375,6 +378,30 @@ def test_lmdber():
         assert dber.remOn(db, preA, 0) == True
         assert dber.getOnVal(db, preA, 0) == None
         assert dber.getOnItem(db, preA, 0) == None
+
+        # test remOnAll
+        assert dber.putOnVal(db, preA, 0, val=digA)
+        assert dber.putOnVal(db, preA, 1, val=digC)
+        assert dber.putOnVal(db, preA, 2, val=digU)
+        assert dber.putOnVal(db, preA, 3, val=digV)
+        assert dber.putOnVal(db, preA, 4, val=digW)
+        assert dber.putOnVal(db, preB, 0, val=digX)
+        assert dber.putOnVal(db, preB, 1, val=digY)
+
+        assert dber.cntOnAll(db, preA) == 5
+        assert dber.cntOnAll(db, preB) == 2
+        assert dber.cntOnAll(db) == 7
+
+        assert dber.remOnAll(db, preA, on=3)  # removes on >= 3
+        assert dber.cntOnAll(db, preA) == 3
+        assert dber.cntOnAll(db, preB) == 2
+
+        assert dber.remOnAll(db, preA)  # removes all on
+        assert dber.cntOnAll(db, preA) == 0
+        assert dber.cntOnAll(db, preB) == 2
+
+        assert dber.remOnAll(db)  # removes whole db
+        assert dber.cntOnAll(db) == 0
 
         #  test appendOnValPre
         # empty database

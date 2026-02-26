@@ -617,6 +617,26 @@ class OnSuberBase(SuberBase):
                                      sep=self.sep.encode()))
 
 
+    def remOnAll(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
+        """Removes entry for each on >= on at key.
+        When on == 0, default, then removes each entry for  all on at key.
+        When key is empty then removes whole db.
+
+        Returns:
+            result (bool): True if onkey with dup val exists so rem successful.
+                           False otherwise
+
+        Parameters:
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
+                When key is empty then remove all entries in whole db
+            on (int): base key. None means all on for key
+        """
+        return self.db.remOnAll(db=self.sdb,
+                                      key=self._tokey(keys),
+                                      on=on,
+                                      sep=self.sep.encode())
+
+
     def cntOn(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Counts all entries with same key over all all on >= on.
         If key not in db then count is 0
