@@ -508,8 +508,8 @@ class Reger(dbing.LMDBer):
         creder = self.creds.get(keys=(said,))
         if creder is None:
             raise kering.MissingEntryError(f"no credential found with said {said}")
-        prefixer, seqner, saider = self.cancs.get(keys=(said,))
-        return creder, prefixer, seqner, saider
+        prefixer, number, saider = self.cancs.get(keys=(said,))
+        return creder, prefixer, number, saider
 
     def clonePreIter(self, pre, fn=0):
         """ Iterator of first seen event messages
