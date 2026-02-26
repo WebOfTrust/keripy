@@ -77,7 +77,7 @@ def test_broker_nontrans():
                                pre=saider.qb64,
                                aid=aid,
                                serder=serder,
-                               saider=saider,
+                               diger=saider,
                                dater=dater,
                                cigars=cigars
                                )
@@ -93,7 +93,7 @@ def test_broker_nontrans():
             assert kwargs["tsgs"] == []
             assert kwargs["aid"] == aid
             #tser = coring.Serder(ked=kwargs["serder"].ked["a"])
-            bork.updateReply(aid=aid, serder=serder, saider=kwargs["saider"], dater=dater)
+            bork.updateReply(aid=aid, serder=serder, diger=kwargs["saider"], dater=dater)
 
         bork.processEscrowState(typ=typ, processReply=process, extype=kering.OutOfOrderError)
 
@@ -145,7 +145,7 @@ def test_broker_trans():
                                pre=saider.qb64,
                                aid=aid,
                                serder=serder,
-                               saider=saider,
+                               diger=saider,
                                dater=dater,
                                tsgs=tsgs
                                )
@@ -164,7 +164,7 @@ def test_broker_trans():
             assert kwargs["cigars"] == []
             assert kwargs["aid"] == aid
             #tser = coring.Serder(ked=kwargs["serder"].ked["a"])
-            bork.updateReply(aid=aid, serder=serder, saider=kwargs["saider"], dater=dater)
+            bork.updateReply(aid=aid, serder=serder, diger=kwargs["saider"], dater=dater)
 
         bork.processEscrowState(typ=typ, processReply=process, extype=kering.OutOfOrderError)
 

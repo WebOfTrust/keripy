@@ -323,6 +323,9 @@ def test_lmdber():
 
         # test Ordinal Numbered ON keyed value methods
         """
+        putOn
+        pinOn
+        getOn
         getTopOnItemIter
 
         """
@@ -367,11 +370,38 @@ def test_lmdber():
 
         assert dber.putOnVal(db, preA, 0, val=digA) == True
         assert dber.getOnVal(db, preA, 0) == digA
+        assert dber.getOnItem(db, preA, 0) == (preA, 0, digA)
         assert dber.putOnVal(db, preA, 0, val=digA) == False
-        assert dber.setOnVal(db, preA, 0, val=digA) == True
+        assert dber.pinOnVal(db, preA, 0, val=digA) == True
         assert dber.getOnVal(db, preA, 0) == digA
-        assert dber.delOnVal(db, preA, 0) == True
+        assert dber.getOnItem(db, preA, 0) == (preA, 0, digA)
+        assert dber.remOn(db, preA, 0) == True
         assert dber.getOnVal(db, preA, 0) == None
+        assert dber.getOnItem(db, preA, 0) == None
+
+        # test remOnAll
+        assert dber.putOnVal(db, preA, 0, val=digA)
+        assert dber.putOnVal(db, preA, 1, val=digC)
+        assert dber.putOnVal(db, preA, 2, val=digU)
+        assert dber.putOnVal(db, preA, 3, val=digV)
+        assert dber.putOnVal(db, preA, 4, val=digW)
+        assert dber.putOnVal(db, preB, 0, val=digX)
+        assert dber.putOnVal(db, preB, 1, val=digY)
+
+        assert dber.cntOnAll(db, preA) == 5
+        assert dber.cntOnAll(db, preB) == 2
+        assert dber.cntOnAll(db) == 7
+
+        assert dber.remOnAll(db, preA, on=3)  # removes on >= 3
+        assert dber.cntOnAll(db, preA) == 3
+        assert dber.cntOnAll(db, preB) == 2
+
+        assert dber.remOnAll(db, preA)  # removes all on
+        assert dber.cntOnAll(db, preA) == 0
+        assert dber.cntOnAll(db, preB) == 2
+
+        assert dber.remOnAll(db)  # removes whole db
+        assert dber.cntOnAll(db) == 0
 
         #  test appendOnValPre
         # empty database
@@ -440,16 +470,16 @@ def test_lmdber():
 
         # iter replay
         # replay preB event items in database
-        items = [item for item in dber.getOnItemIterAll(db, preB)]
+        items = [item for item in dber.getOnAllItemIter(db, preB)]
         assert items == [(preB, 0, digU), (preB, 1, digV), (preB, 2, digW),
                          (preB, 3, digX), (preB, 4, digY)]
 
         # resume replay preB events at on = 3
-        items = [item for item in dber.getOnItemIterAll(db, preB, on=3)]
+        items = [item for item in dber.getOnAllItemIter(db, preB, on=3)]
         assert items == [(preB, 3, digX), (preB, 4, digY)]
 
         # resume replay preB events at on = 5
-        items = [item for item in dber.getOnItemIterAll(db, preB, on=5)]
+        items = [item for item in dber.getOnAllItemIter(db, preB, on=5)]
         assert items == []
 
         # replay all events in database with pre events before and after
@@ -475,8 +505,15 @@ def test_lmdber():
                          (preB, 4, digY),
                          (preC, 0, digC)]
 
-        items = [item  for item in dber.getOnAllItemIter(db, key=b'')]
-        assert items == []  # must have non empty key. use getTopItemIter if want whole db
+        items = [item  for item in dber.getOnAllItemIter(db, key=b'')]  # whole db
+        assert items == [(preA, 0, digA),
+                         (preD, 0, digY),
+                         (preB, 0, digU),
+                         (preB, 1, digV),
+                         (preB, 2, digW),
+                         (preB, 3, digX),
+                         (preB, 4, digY),
+                         (preC, 0, digC)]
 
 
         items = [item  for item in dber.getOnAllItemIter(db, key=preB)]
@@ -494,7 +531,7 @@ def test_lmdber():
                          (preB, 4, digY),
                         ]
 
-        items = [item  for item in dber.getOnItemIterAll(db, key=b'')]
+        items = [item  for item in dber.getOnAllItemIter(db, key=b'')]
         assert items == [(preA, 0, digA),
                          (preD, 0, digY),
                          (preB, 0, digU),
@@ -504,7 +541,7 @@ def test_lmdber():
                          (preB, 4, digY),
                          (preC, 0, digC)]
 
-        items = [item  for item in dber.getOnItemIterAll(db)]
+        items = [item  for item in dber.getOnAllItemIter(db)]
         assert items == [(preA, 0, digA),
                          (preD, 0, digY),
                          (preB, 0, digU),
@@ -516,67 +553,24 @@ def test_lmdber():
 
         # resume replay all starting at preB on=2
         top, on = splitOnKey(keyB2)
-        items = [item for item in dber.getOnItemIterAll(db, key=top, on=on)]
+        items = [item for item in dber.getOnAllItemIter(db, key=top, on=on)]
         assert items == [(top, 2, digW), (top, 3, digX), (top, 4, digY)]
 
         # resume replay all starting at preC on=1
-        items = [item for item in dber.getOnItemIterAll(db, key=preC, on=1)]
+        items = [item for item in dber.getOnAllItemIter(db, key=preC, on=1)]
         assert items == []
 
-        # val replay
-        # replay preB event vals in database
-        vals = [val for val in dber.getOnIterAll(db, preB)]
-        assert vals == [digU, digV, digW, digX, digY]
+        # test remOn
+        assert dber.remOn(db, key=preB)  # default on=0
+        assert not dber.remOn(db, key=preB, on=0)
+        assert dber.remOn(db, key=preB, on=1)
+        assert not dber.remOn(db, key=preB, on=1)
 
-        # resume replay preB events at on = 3
-        vals = [val for val in dber.getOnIterAll(db, preB, on=3)]
-        assert vals == [digX, digY]
-
-        # resume replay preB events at on = 5
-        vals = [val for val in dber.getOnIterAll(db, preB, on=5)]
-        assert vals == []
-
-        vals = [val  for val in dber.getOnIterAll(db, key=b'')]
-        assert vals == [digA,
-                        digY,
-                        digU,
-                        digV,
-                        digW,
-                        digX,
-                        digY,
-                        digC]
-
-        vals = [val  for val in dber.getOnIterAll(db)]
-        assert vals == [digA,
-                        digY,
-                        digU,
-                        digV,
-                        digW,
-                        digX,
-                        digY,
-                        digC]
-
-        # resume replay all starting at preB on=2
-        top, on = splitOnKey(keyB2)
-        vals = [val for val in dber.getOnIterAll(db, key=top, on=on)]
-        assert vals == [digW, digX, digY]
-
-        # resume replay all starting at preC on=1
-        vals = [val for val in dber.getOnIterAll(db, key=preC, on=1)]
-        assert vals == []
-
-
-        # test delOnVal
-        assert dber.delOnVal(db, key=preB)  # default on=0
-        assert not dber.delOnVal(db, key=preB, on=0)
-        assert dber.delOnVal(db, key=preB, on=1)
-        assert not dber.delOnVal(db, key=preB, on=1)
-
-        items = [item for item in dber.getOnItemIterAll(db, key=preB)]
+        items = [item for item in dber.getOnAllItemIter(db, key=preB)]
         assert items == [(top, 2, digW), (top, 3, digX), (top, 4, digY)]
 
-        with pytest.raises(KeyError):
-            assert dber.delOnVal(db, key=b'')  #  empty key
+
+        assert not dber.remOn(db, key=b'')  #  empty key
 
 
         # test Vals dup methods.  dup vals are lexocographic
@@ -1106,7 +1100,7 @@ def test_lmdber():
         appendIoSetVal
 
         getIoSet
-        getIoSetIter
+        getIoSetItemIter
         getIoSetLastItem
         getIoSetLast
 
@@ -1134,78 +1128,95 @@ def test_lmdber():
         db = dber.env.open_db(key=b'ioset.', dupsort=False)
 
         assert dber.addIoSetVal(db, key3, val=b"ok")
-        assert dber.getIoSet(db, key3) == [b"ok"]
+        assert list(dber.getIoSetItemIter(db, key3)) == [(b'JKL.QPO', b"ok")]
         assert not dber.putIoSetVals(db, key3, vals=None) # vals=None
-        assert dber.getIoSet(db, key3) == [b"ok"]  # no change
+        assert list(dber.getIoSetItemIter(db, key3)) == [(b'JKL.QPO', b"ok")]  # no change
         assert not dber.addIoSetVal(db, key3, val=None)  # val=None
-        assert dber.getIoSet(db, key3) == [b"ok"]  # no change
+        assert list(dber.getIoSetItemIter(db, key3)) == [(b'JKL.QPO', b"ok")]  # no change
         assert not dber.pinIoSetVals(db, key0, vals=None)  # vals=None
-        assert dber.getIoSet(db, key3) == [b"ok"]  # did not delete
+        assert list(dber.getIoSetItemIter(db, key3)) == [(b'JKL.QPO', b"ok")] # did not delete
         assert not dber.pinIoSetVals(db, key0, vals=[]) # vals=empty
-        assert dber.getIoSet(db, key3) == [b"ok"]  # did not delete
-        assert dber.delIoSet(db, key3)
-        assert dber.getIoSet(db, key3) == []  # nothing there
+        assert list(dber.getIoSetItemIter(db, key3)) == [(b'JKL.QPO', b"ok")]  # did not delete
+        assert dber.remIoSet(db, key3)
+        assert list(dber.getIoSetItemIter(db, key3)) == []  # nothing there
 
         assert dber.getIoSetLastItem(db, b"") == ()
-        assert dber.getIoSetLast(db, b"") == None
 
-        assert dber.getIoSet(db, key0) == []
+        assert list(dber.getIoSetItemIter(db, key0)) == []
         assert dber.getIoSetLastItem(db, key0) == ()
-        assert dber.getIoSetLast(db, key0) == None
         assert dber.cntIoSet(db, key0) == 0
-        assert dber.delIoSet(db, key0) == False
+        assert dber.remIoSet(db, key0) == False
 
         assert dber.putIoSetVals(db, key0, vals0) == True
-        assert dber.getIoSet(db, key0) == vals0  # preserved insertion order
+        # preserved insertion order
+        assert [bytes(val) for key, val in dber.getIoSetItemIter(db, key0)] == vals0
         assert dber.cntIoSet(db, key0) == len(vals0) == 4
         assert dber.cntAll(db) == 4
         assert dber.getIoSetLastItem(db, key0) == (key0, vals0[-1]) == (b'ABC.ZYX', b"a")
-        assert dber.getIoSetLast(db, key0) == vals0[-1] == b"a"
 
         assert dber.putIoSetVals(db, key0, vals=[b'a']) == False   # duplicate
-        assert dber.getIoSet(db, key0) == vals0  #  no change
+        assert [bytes(val) for key, val in dber.getIoSetItemIter(db, key0)] == vals0  #  no change
         assert dber.putIoSetVals(db, key0, vals=[b'f']) == True
-        assert dber.getIoSet(db, key0) == [b"z", b"m", b"x", b"a", b"f"]
-        assert bytes(dber.getIoSetLast(db, key0)) == b'f'
+        assert [bytes(val) for key, val in dber.getIoSetItemIter(db, key0)] ==\
+               [b"z", b"m", b"x", b"a", b"f"]
+        assert dber.getIoSetLastItem(db, key0) == (b'ABC.ZYX', b"f")
         assert dber.addIoSetVal(db, key0, val=b'b') == True
         assert dber.addIoSetVal(db, key0, val=b'a') == False
-        assert dber.getIoSet(db, key0) == [b"z", b"m", b"x", b"a", b"f", b"b"]
+        assert [bytes(val) for key, val in dber.getIoSetItemIter(db, key0)] ==\
+               [b"z", b"m", b"x", b"a", b"f", b"b"]
         lkey, lval = dber.getIoSetLastItem(db, key0)
         assert (lkey, bytes(lval))== (key0, b'b')
-        assert bytes(dber.getIoSetLast(db, key0)) == b'b'
 
-        assert [val for val in dber.getIoSetIter(db, key0)] == [b"z", b"m", b"x", b"a", b"f", b"b"]
-        assert dber.delIoSet(db, key0) == True
-        assert dber.getIoSet(db, key0) == []
+        assert [(key,bytes(val)) for key, val in dber.getIoSetItemIter(db, key0)] ==\
+        [
+            (b'ABC.ZYX', b'z'),
+            (b'ABC.ZYX', b'm'),
+            (b'ABC.ZYX', b'x'),
+            (b'ABC.ZYX', b'a'),
+            (b'ABC.ZYX', b'f'),
+            (b'ABC.ZYX', b'b')
+        ]
+        assert dber.remIoSet(db, key0) == True
+        assert list(dber.getIoSetItemIter(db, key0)) == []
 
         assert dber.putIoSetVals(db, key0, vals0) == True
         for val in vals0:
-            assert dber.delIoSetVal(db, key0, val)
-        assert dber.getIoSet(db, key0) == []
+            assert dber.remIoSetVal(db, key0, val)
+        assert list(dber.getIoSetItemIter(db, key0)) == []
         assert dber.putIoSetVals(db, key0, vals0) == True
         for val in sorted(vals0):  # test deletion out of order
-            assert dber.delIoSetVal(db, key0, val)
-        assert dber.getIoSet(db, key0) == []
+            assert dber.remIoSetVal(db, key0, val)
+        assert list(dber.getIoSetItemIter(db, key0)) == []
 
         #delete and add in odd order
         assert dber.putIoSetVals(db, key0, vals0) == True
-        assert dber.delIoSetVal(db, key0, vals0[2])
+        assert dber.remIoSetVal(db, key0, vals0[2])
         assert dber.addIoSetVal(db, key0, b'w')
-        assert dber.delIoSetVal(db, key0, vals0[0])
+        assert dber.remIoSetVal(db, key0, vals0[0])
         assert dber.addIoSetVal(db, key0, b'e')
-        assert dber.getIoSet(db, key0) == [b'm', b'a', b'w', b'e']
+        assert [bytes(val) for key, val in dber.getIoSetItemIter(db, key0)] == \
+            [b'm', b'a', b'w', b'e']
 
-        assert dber.delIoSet(db, key0) == True
-        assert dber.getIoSet(db, key0) == []
+        assert dber.remIoSet(db, key0) == True
+        assert [bytes(val) for key, val in dber.getIoSetItemIter(db, key0)] == \
+            []
+
+        # test remIoSetVal with val==None to remove all entries at key
+        assert dber.putIoSetVals(db, key0, vals0) == True
+        assert [bytes(val) for key, val in dber.getIoSetItemIter(db, key0)] == \
+                    [b'z', b'm', b'x', b'a']
+        assert dber.remIoSetVal(db, key0, val=None) == True
+        assert [bytes(val) for key, val in dber.getIoSetItemIter(db, key0)] == \
+            []
 
         # test with filled up db
         assert dber.putIoSetVals(db, key0, vals0) == True
         assert dber.putIoSetVals(db, key1, vals1) == True
         assert dber.putIoSetVals(db, key2, vals2) == True
 
-        assert dber.getIoSet(db, key0) == vals0
-        assert dber.getIoSet(db, key1) == vals1
-        assert dber.getIoSet(db, key2) == vals2
+        assert [bytes(val) for key, val in dber.getIoSetItemIter(db, key0)] == vals0
+        assert [bytes(val) for key, val in dber.getIoSetItemIter(db, key1)] == vals1
+        assert [bytes(val) for key, val in dber.getIoSetItemIter(db, key2)] == vals2
 
         assert dber.cntIoSet(db, key=b"") == 0
         assert dber.cntIoSet(db, key=key0) == 4
@@ -1215,60 +1226,66 @@ def test_lmdber():
 
         # all default ion=0
         # preserved insertion order
-        assert dber.getIoSet(db, key0) == vals0 == [b"z", b"m", b"x", b"a"]
-        assert [bytes(val) for val in dber.getIoSetIter(db, key0)] == vals0 ==\
-               [b"z", b"m", b"x", b"a"]
+        assert [(key,bytes(val)) for key, val in dber.getIoSetItemIter(db, key0)] ==\
+        [
+            (b'ABC.ZYX', b'z'),
+            (b'ABC.ZYX', b'm'),
+            (b'ABC.ZYX', b'x'),
+            (b'ABC.ZYX', b'a'),
+        ]
         assert dber.cntIoSet(db, key0) == len(vals0) == 4
         lkey, lval = dber.getIoSetLastItem(db, key0)
         assert (lkey, bytes(lval)) == (key0, vals0[-1]) == (b'ABC.ZYX', b"a")
-        assert dber.getIoSetLast(db, key0) == vals0[-1] == b"a"
 
         # 3 starting with ion=1
-        assert dber.getIoSet(db, key0, ion=1) == [b"m", b"x", b"a"]
-        assert [bytes(val) for val in dber.getIoSetIter(db, key0, ion=1)] ==\
-               [b"m", b"x", b"a"]
+        assert [(key,bytes(val)) for key, val in dber.getIoSetItemIter(db, key0, ion=1)] ==\
+        [
+            (b'ABC.ZYX', b'm'),
+            (b'ABC.ZYX', b'x'),
+            (b'ABC.ZYX', b'a'),
+        ]
         assert dber.cntIoSet(db, key0, ion=1) == 3
 
         # last 2 starting at ion=2
-        assert dber.getIoSet(db, key0, ion=2) == vals0[2:] == [b"x", b"a"]
-        assert [bytes(val) for val in dber.getIoSetIter(db, key0, ion=2)] ==\
-               [b"x", b"a"]
+        assert [(key,bytes(val)) for key, val in dber.getIoSetItemIter(db, key0, ion=2)] ==\
+        [
+            (b'ABC.ZYX', b'x'),
+            (b'ABC.ZYX', b'a'),
+        ]
         assert dber.cntIoSet(db, key0, ion=2) == 2
 
         # last 1 starting at ion=3
-        assert dber.getIoSet(db, key0, ion=3) == vals0[3:] == [b"a"]
-        assert [bytes(val) for val in dber.getIoSetIter(db, key0, ion=3)] == [b"a"]
+        assert [(key,bytes(val)) for key, val in dber.getIoSetItemIter(db, key0, ion=3)] ==\
+        [
+            (b'ABC.ZYX', b'a'),
+        ]
         assert dber.cntIoSet(db, key0, ion=3) == 1
 
         # ion past end of set starting at ion=4
-        assert dber.getIoSet(db, key0, ion=4) == []
-        assert [bytes(val) for val in dber.getIoSetIter(db, key0, ion=4)] == []
+        assert [(key,bytes(val)) for key, val in dber.getIoSetItemIter(db, key0, ion=4)] ==\
+        []
         assert dber.cntIoSet(db, key0, ion=4) == 0
 
         # key2 so last key in db
         # last 2 starting at ion=2
-        assert dber.getIoSet(db, key2, ion=2) == vals2[2:] == [b"h", b"f"]
-        assert [bytes(val) for val in dber.getIoSetIter(db, key2, ion=2)] ==\
-               [b"h", b"f"]
+        assert [(key,bytes(val)) for key, val in dber.getIoSetItemIter(db, key2, ion=2)] ==\
+        [(b'GHI.TSR', b'h'), (b'GHI.TSR', b'f')]
         assert dber.cntIoSet(db, key0, ion=2) == 2
 
         # ion past end of set starting at ion=4
-        assert dber.getIoSet(db, key2, ion=4) == []
-        assert [bytes(val) for val in dber.getIoSetIter(db, key2, ion=4)] == []
+        assert [(key,bytes(val)) for key, val in dber.getIoSetItemIter(db, key2, ion=4)] ==\
+        []
         assert dber.cntIoSet(db, key0, ion=4) == 0
 
 
         lkey, lval = dber.getIoSetLastItem(db, key0)
         assert (lkey, bytes(lval)) == (key0, b'a')
-        assert bytes(dber.getIoSetLast(db, key0)) == b'a'
 
         lkey, lval = dber.getIoSetLastItem(db, key1)
         assert (lkey, bytes(lval)) == (key1, b'd')
-        assert bytes(dber.getIoSetLast(db, key1)) == b'd'
 
         lkey, lval = dber.getIoSetLastItem(db, key2)
         assert (lkey, bytes(lval)) == (key2, b'f')
-        assert bytes(dber.getIoSetLast(db, key2)) == b'f'
 
         #  getTopIoSetItemIter
         # iterate whole db with top default b""
@@ -1340,99 +1357,107 @@ def test_lmdber():
 
         # test ion with gap
         # make gap
-        assert dber.delIoSetVal(db, key0, b"m")
+        assert dber.remIoSetVal(db, key0, b"m")
 
-        assert dber.getIoSet(db, key0) == [b"z", b"x", b"a"]
-        assert [bytes(val) for val in dber.getIoSetIter(db, key0)] ==\
-               [b"z", b"x", b"a"]
+        assert [(key,bytes(val)) for key, val in dber.getIoSetItemIter(db, key0)] ==\
+        [
+            (b'ABC.ZYX', b'z'),
+            (b'ABC.ZYX', b'x'),
+            (b'ABC.ZYX', b'a')
+        ]
         assert dber.cntIoSet(db, key0) == 3
         lkey, lval = dber.getIoSetLastItem(db, key0)
         assert (lkey, bytes(lval))  == (b'ABC.ZYX', b"a")
-        assert dber.getIoSetLast(db, key0) == b"a"
 
-        # 3 starting with ion=1
-        assert dber.getIoSet(db, key0, ion=1) == [b"x", b"a"]
-        assert [bytes(val) for val in dber.getIoSetIter(db, key0, ion=1)] ==\
-               [b"x", b"a"]
+        # 2 starting with ion=1
+        assert [(key,bytes(val)) for key, val in dber.getIoSetItemIter(db, key0, ion=1)] ==\
+        [
+            (b'ABC.ZYX', b'x'),
+            (b'ABC.ZYX', b'a')
+        ]
         assert dber.cntIoSet(db, key0, ion=1) == 2
         lkey, lval = dber.getIoSetLastItem(db, key0)
         assert (lkey, bytes(lval))  == (b'ABC.ZYX', b"a")
-        assert dber.getIoSetLast(db, key0) == b"a"
 
         # last 2 starting at ion=2
-        assert dber.getIoSet(db, key0, ion=2) == vals0[2:] == [b"x", b"a"]
-        assert [bytes(val) for val in dber.getIoSetIter(db, key0, ion=2)] ==\
-               [b"x", b"a"]
+        assert [(key,bytes(val)) for key, val in dber.getIoSetItemIter(db, key0, ion=2)] ==\
+        [
+            (b'ABC.ZYX', b'x'),
+            (b'ABC.ZYX', b'a')
+        ]
         assert dber.cntIoSet(db, key0, ion=2) == 2
         lkey, lval = dber.getIoSetLastItem(db, key0)
         assert (lkey, bytes(lval))  == (b'ABC.ZYX', b"a")
-        assert dber.getIoSetLast(db, key0) == b"a"
 
         # last 1 starting at ion=3
-        assert dber.getIoSet(db, key0, ion=3) == vals0[3:] == [b"a"]
-        assert [bytes(val) for val in dber.getIoSetIter(db, key0, ion=3)] == [b"a"]
+        assert [(key,bytes(val)) for key, val in dber.getIoSetItemIter(db, key0, ion=3)] ==\
+        [
+            (b'ABC.ZYX', b'a')
+        ]
         assert dber.cntIoSet(db, key0, ion=3) == 1
         lkey, lval = dber.getIoSetLastItem(db, key0)
         assert (lkey, bytes(lval))  == (b'ABC.ZYX', b"a")
-        assert dber.getIoSetLast(db, key0) == b"a"
 
         # ion past end of set starting at ion=4
-        assert dber.getIoSet(db, key0, ion=4) == []
-        assert [bytes(val) for val in dber.getIoSetIter(db, key0, ion=4)] == []
+        assert [(key,bytes(val)) for key, val in dber.getIoSetItemIter(db, key0, ion=4)] ==\
+        []
         assert dber.cntIoSet(db, key0, ion=4) == 0
         lkey, lval = dber.getIoSetLastItem(db, key0)
         assert (lkey, bytes(lval))  == (b'ABC.ZYX', b"a")
-        assert dber.getIoSetLast(db, key0) == b"a"
 
         # key2 so last key in db
         # make gap
-        assert dber.delIoSetVal(db, key2, b"p")
+        assert dber.remIoSetVal(db, key2, b"p")
 
         # last 3 starting at ion=0
-        assert dber.getIoSet(db, key2, ion=0) == [ b"o", b"h", b"f"]
-        assert [bytes(val) for val in dber.getIoSetIter(db, key2, ion=0)] ==\
-               [ b"o", b"h", b"f"]
+        assert [(key,bytes(val)) for key, val in dber.getIoSetItemIter(db, key2, ion=0)] ==\
+        [
+            (b'GHI.TSR', b'o'),
+            (b'GHI.TSR', b'h'),
+            (b'GHI.TSR', b'f')
+        ]
         assert dber.cntIoSet(db, key2, ion=0) == 3
         lkey, lval = dber.getIoSetLastItem(db, key2)
         assert (lkey, bytes(lval))  == (b'GHI.TSR', b"f")
-        assert dber.getIoSetLast(db, key2) == b"f"
 
         # last 3 starting at ion=1
-        assert dber.getIoSet(db, key2, ion=0) == [ b"o", b"h", b"f"]
-        assert [bytes(val) for val in dber.getIoSetIter(db, key2, ion=0)] ==\
-               [ b"o", b"h", b"f"]
+        assert [(key,bytes(val)) for key, val in dber.getIoSetItemIter(db, key2, ion=1)] ==\
+        [
+            (b'GHI.TSR', b'o'),
+            (b'GHI.TSR', b'h'),
+            (b'GHI.TSR', b'f')
+        ]
         assert dber.cntIoSet(db, key0, ion=0) == 3
         assert dber.cntIoSet(db, key0, ion=0) == 3
         lkey, lval = dber.getIoSetLastItem(db, key2)
         assert (lkey, bytes(lval))  == (b'GHI.TSR', b"f")
-        assert dber.getIoSetLast(db, key2) == b"f"
 
         # last 2 starting at ion=2
-        assert dber.getIoSet(db, key2, ion=2) == [b"h", b"f"]
-        assert [bytes(val) for val in dber.getIoSetIter(db, key2, ion=2)] ==\
-               [b"h", b"f"]
+        assert [(key,bytes(val)) for key, val in dber.getIoSetItemIter(db, key2, ion=2)] ==\
+        [
+            (b'GHI.TSR', b'h'),
+            (b'GHI.TSR', b'f')
+        ]
         assert dber.cntIoSet(db, key0, ion=2) == 2
         assert dber.cntIoSet(db, key0, ion=0) == 3
         lkey, lval = dber.getIoSetLastItem(db, key2)
         assert (lkey, bytes(lval))  == (b'GHI.TSR', b"f")
-        assert dber.getIoSetLast(db, key2) == b"f"
 
         # ion past end of set starting at ion=4
-        assert dber.getIoSet(db, key2, ion=4) == []
-        assert [bytes(val) for val in dber.getIoSetIter(db, key2, ion=4)] == []
+        assert [(key,bytes(val)) for key, val in dber.getIoSetItemIter(db, key2, ion=4)] ==\
+        []
         assert dber.cntIoSet(db, key0, ion=4) == 0
         assert dber.cntIoSet(db, key0, ion=0) == 3
         lkey, lval = dber.getIoSetLastItem(db, key2)
         assert (lkey, bytes(lval))  == (b'GHI.TSR', b"f")
-        assert dber.getIoSetLast(db, key2) == b"f"
-
 
         # test pin over
         vals3 = [b"q", b"e"]
         assert dber.pinIoSetVals(db, key2, vals3)
-        assert dber.getIoSet(db, key2) == vals3
+        assert [(bytes(val)) for key, val in dber.getIoSetItemIter(db, key2)] == vals3
         assert dber.cntIoSet(db, key2) == 2
-        assert bytes(dber.getIoSetLast(db, key2)) == b'e'
+        lkey, lval = dber.getIoSetLastItem(db, key2)
+        assert (lkey, bytes(lval))  == (b'GHI.TSR', b"e")
 
         # TEST OnIoSet methods
         """
@@ -1469,7 +1494,7 @@ def test_lmdber():
         # create dber database
         db = dber.env.open_db(key=b'onioset.', dupsort=False)
 
-        assert [val for val in dber.getOnIoSetIter(db, b"")] == []
+        assert [item for item in dber.getOnIoSetItemIter(db, b"")] == []
         assert dber.cntOnIoSet(db, b"") == 0
         assert dber.getOnIoSetLastItem(db, b"") == ()
         assert dber.getOnIoSetLastItem(db, key=b"Z.Z") == ()
@@ -1477,7 +1502,7 @@ def test_lmdber():
         assert dber.cntOnAll(db) == 0
         assert dber.cntAll(db) == 0
 
-        assert [val for val in dber.getOnIoSetIter(db, key0)] == []
+        assert [item for item in dber.getOnIoSetItemIter(db, key0)] == []
         assert dber.getOnIoSetLastItem(db, key0) == ()
         assert dber.cntOnIoSet(db, key0) == 0
         assert dber.remOnIoSetVal(db, key0) == False
@@ -1492,17 +1517,17 @@ def test_lmdber():
         assert dber.putOnIoSetVals(db, key2, on=1, vals=vals0) == True
 
         assert dber.addOnIoSetVal(db, key3, val=b"ok")
-        assert list( dber.getOnIoSetIter(db, key3)) == [b"ok"]
+        assert list( dber.getOnIoSetItemIter(db, key3)) == [(key3, 0, b"ok")]
         assert not dber.putOnIoSetVals(db, key3, vals=None) # vals=None
-        assert list(dber.getOnIoSetIter(db, key3)) == [b"ok"]  # no change
+        assert list( dber.getOnIoSetItemIter(db, key3)) == [(key3, 0, b"ok")] # no change
         assert not dber.addOnIoSetVal(db, key3, val=None)  # val=None
-        assert list(dber.getOnIoSetIter(db, key3)) == [b"ok"]  # no change
+        assert list( dber.getOnIoSetItemIter(db, key3)) == [(key3, 0, b"ok")] # no change
         assert not dber.pinOnIoSetVals(db, key0, vals=None)  # vals=None
-        assert list(dber.getOnIoSetIter(db, key3)) == [b"ok"]  # did not delete
+        assert list( dber.getOnIoSetItemIter(db, key3)) == [(key3, 0, b"ok")] # did not delete
         assert not dber.pinOnIoSetVals(db, key0, vals=[]) # vals=empty
-        assert list(dber.getOnIoSetIter(db, key3)) == [b"ok"]  # did not delete
+        assert list( dber.getOnIoSetItemIter(db, key3)) == [(key3, 0, b"ok")]  # did not delete
         assert dber.remOnIoSetVal(db, key3)
-        assert list(dber.getOnIoSetIter(db, key3)) == []  # nothing there
+        assert list(dber.getOnIoSetItemIter(db, key3)) == [] # nothing there
 
         assert dber.cntOnIoSet(db, key=b"") == 0  # on=0 default
         assert dber.cntOnIoSet(db, key=key0) == 4  # on=0 default
@@ -1515,78 +1540,110 @@ def test_lmdber():
         assert dber.cntAll(db) == 24
 
         # 3 default on=0 starting with ion=1
-        assert [bytes(val) for val in dber.getOnIoSetIter(db, key0, ion=1)] ==\
-               [b"m", b"x", b"a"]
+        assert [(key,on, bytes(val)) for key, on, val in
+                              dber.getOnIoSetItemIter(db, key0, ion=1)] ==\
+        [
+            (b'A.B', 0, b'm'),
+            (b'A.B', 0, b'x'),
+            (b'A.B', 0, b'a')
+        ]
         assert dber.cntOnIoSet(db, key0, ion=1) == 3
 
         # last 2 default on=0 starting at ion=2 default on=0
-        assert [bytes(val) for val in dber.getOnIoSetIter(db, key0, ion=2)] ==\
-               [b"x", b"a"]
+        assert [(key,on, bytes(val)) for key, on, val in
+                              dber.getOnIoSetItemIter(db, key0, ion=2)] ==\
+        [
+            (b'A.B', 0, b'x'),
+            (b'A.B', 0, b'a')
+        ]
         assert dber.cntOnIoSet(db, key0, ion=2) == 2
 
         # last 1 default on=0 starting at ion=3
-        assert [bytes(val) for val in dber.getOnIoSetIter(db, key0, ion=3)] == [b"a"]
+        assert [(key,on, bytes(val)) for key, on, val in
+                              dber.getOnIoSetItemIter(db, key0, ion=3)] ==\
+        [
+            (b'A.B', 0, b'a')
+        ]
         assert dber.cntOnIoSet(db, key0, ion=3) == 1
 
         #default on=0 ion past end of set starting at ion=4
-        assert [bytes(val) for val in dber.getOnIoSetIter(db, key0, ion=4)] == []
+        assert [(key,on, bytes(val)) for key, on, val in
+                              dber.getOnIoSetItemIter(db, key0, ion=4)] == []
         assert dber.cntOnIoSet(db, key0, ion=4) == 0
 
         # key2 so last key in db
         # last 2 default on=0 starting at ion=2
-        assert [bytes(val) for val in dber.getOnIoSetIter(db, key2, ion=2)] ==\
-               [b"h", b"f"]
+        assert [(key,on, bytes(val)) for key, on, val in
+                              dber.getOnIoSetItemIter(db, key2, ion=2)] == \
+        [(b'C.D', 0, b'h'), (b'C.D', 0, b'f')]
         assert dber.cntOnIoSet(db, key0, ion=2) == 2
 
         #default on=0 ion past end of set starting at ion=4
-        assert [bytes(val) for val in dber.getOnIoSetIter(db, key2, ion=4)] == []
+        assert [(key,on, bytes(val)) for key, on, val in
+                              dber.getOnIoSetItemIter(db, key0, ion=4)] == []
         assert dber.cntOnIoSet(db, key0, ion=4) == 0
 
         # 3 on=1 starting with ion=1
-        assert [bytes(val) for val in dber.getOnIoSetIter(db, key0, on=1, ion=1)] ==\
-               [b"n", b"y", b"d"]
+        assert [(key,on, bytes(val)) for key, on, val in
+                              dber.getOnIoSetItemIter(db, key0, on=1, ion=1)] == \
+        [(b'A.B', 1, b'n'), (b'A.B', 1, b'y'), (b'A.B', 1, b'd')]
         assert dber.cntOnIoSet(db, key0, on=1, ion=1) == 3
 
         # last 2 on=1 starting at ion=2 default on=0
-        assert [bytes(val) for val in dber.getOnIoSetIter(db, key0, on=1, ion=2)] ==\
-               [b"y", b"d"]
+        assert [(key,on, bytes(val)) for key, on, val in
+                              dber.getOnIoSetItemIter(db, key0, on=1, ion=2)] == \
+        [(b'A.B', 1, b'y'), (b'A.B', 1, b'd')]
         assert dber.cntOnIoSet(db, key0, on=1, ion=2) == 2
 
         # last 1 on=1 starting at ion=3
-        assert [bytes(val) for val in dber.getOnIoSetIter(db, key0, on=1, ion=3)] == [b"d"]
+        assert [(key,on, bytes(val)) for key, on, val in
+                              dber.getOnIoSetItemIter(db, key0, on=1, ion=3)] == \
+        [(b'A.B', 1, b'd')]
         assert dber.cntOnIoSet(db, key0, on=1, ion=3) == 1
 
-        #past on=1 starting at ion=4 so past ent
-        assert [bytes(val) for val in dber.getOnIoSetIter(db, key0, on=1, ion=4)] == []
+        #past on=1 starting at ion=4 so past end
+        assert [(key,on, bytes(val)) for key, on, val in
+                              dber.getOnIoSetItemIter(db, key0, on=1, ion=4)] == []
         assert dber.cntOnIoSet(db, key0, on=1, ion=4) == 0
 
         # key2 so last key in db
         # last 2 default on=0 starting at ion=2
-        assert [bytes(val) for val in dber.getOnIoSetIter(db, key2, ion=2)] ==\
-               [b"h", b"f"]
+        assert [(key,on, bytes(val)) for key, on, val in
+                              dber.getOnIoSetItemIter(db, key2, ion=2)] == \
+        [(b'C.D', 0, b'h'), (b'C.D', 0, b'f')]
         assert dber.cntOnIoSet(db, key0, ion=2) == 2
 
         #default on=0 ion past end of set starting at ion=4
-        assert [bytes(val) for val in dber.getOnIoSetIter(db, key2, ion=4)] == []
+        assert [(key,on, bytes(val)) for key, on, val in
+                              dber.getOnIoSetItemIter(db, key2, ion=4)] == []
         assert dber.cntOnIoSet(db, key0, ion=4) == 0
 
         # default on=0 ion=0
-        assert [bytes(val) for val in dber.getOnIoSetIter(db, key0)] == vals0
+        assert [(key,on, bytes(val)) for key, on, val in
+                              dber.getOnIoSetItemIter(db, key0)] == \
+        [(b'A.B', 0, b'z'), (b'A.B', 0, b'm'), (b'A.B', 0, b'x'), (b'A.B', 0, b'a')]
         assert dber.cntOnIoSet(db, key0) == len(vals0) == 4
         assert dber.getOnIoSetLastItem(db, key0) == (key0, 0, vals0[-1]) == (b'A.B', 0, b"a")
 
         # last 2 starting at ion=2
-        assert [bytes(val) for val in dber.getOnIoSetIter(db, key0, ion=2)] == [b"x", b"a"]
+        assert [(key,on, bytes(val)) for key, on, val in
+                              dber.getOnIoSetItemIter(db, key0, ion=2)] == \
+        [(b'A.B', 0, b'x'), (b'A.B', 0, b'a')]
 
         # explicit on=0
-        assert [bytes(val) for val in dber.getOnIoSetIter(db, key0, on=0, ion=2)] ==  [b"x", b"a"]
+        assert [(key,on, bytes(val)) for key, on, val in
+                              dber.getOnIoSetItemIter(db, key0, on=0, ion=2)] == \
+        [(b'A.B', 0, b'x'), (b'A.B', 0, b'a')]
 
         for val in vals3:
             assert dber.addOnIoSetVal(db, key3, on=0, val=val)
 
-        assert list(dber.getOnIoSetIter(db, key3, on=0)) == vals3
+        assert [(key,on, bytes(val)) for key, on, val in
+                                  dber.getOnIoSetItemIter(db, key3, on=0)] == \
+        [(b'D.E', 0, b'k'), (b'D.E', 0, b'j'), (b'D.E', 0, b'l')]
         assert dber.remOnIoSetVal(db, key3, on=0)
-        assert list(dber.getOnIoSetIter(db, key3, on=0)) == []
+        assert [(key,on, bytes(val)) for key, on, val in
+                                  dber.getOnIoSetItemIter(db, key3, on=0)] == []
 
         # test appendOnIoSet
         with pytest.raises(ValueError):
@@ -1597,21 +1654,34 @@ def test_lmdber():
             dber.appendOnIoSetVals(db, key3, vals=b"a")  # vals not NonStringIterable
 
         assert dber.appendOnIoSetVals(db, key3, vals=[b"a"]) == 0
-        assert list(dber.getOnIoSetIter(db, key3, on=0)) == [b"a"]
-        assert dber.appendOnIoSetVals(db, key3, vals=[b"b"]) == 1
-        assert list(dber.getOnIoSetIter(db, key3, on=1)) == [b"b"]
-        assert dber.appendOnIoSetVals(db, key3, vals=[b"c"]) == 2
-        assert list(dber.getOnIoSetIter(db, key3, on=2)) == [b"c"]
-        assert dber.appendOnIoSetVals(db, key4, vals=[b"a", b"z"]) == 0
-        assert list(dber.getOnIoSetIter(db, key4, on=0)) == [b"a", b"z"]
-        assert dber.appendOnIoSetVals(db, key5, vals=[b"a"]) == 0
-        assert list(dber.getOnIoSetIter(db, key5, on=0)) == [b"a"]
-        assert dber.appendOnIoSetVals(db, key3, vals=[b"d"]) == 3
-        assert list(dber.getOnIoSetIter(db, key3, on=3)) == [b"d"]
-        assert dber.appendOnIoSetVals(db, key4, vals=[b"b", b"y"]) == 1
-        assert list(dber.getOnIoSetIter(db, key4, on=1)) == [b"b", b"y"]
-        assert dber.appendOnIoSetVals(db, key5, vals=[b"b"]) == 1
+        assert [(key, on, bytes(val)) for key, on, val in dber.getOnIoSetItemIter(db, key3, on=0)] == \
+        [(b'D.E', 0, b'a')]
 
+        assert dber.appendOnIoSetVals(db, key3, vals=[b"b"]) == 1
+        assert [(key, on, bytes(val)) for key, on, val in dber.getOnIoSetItemIter(db, key3, on=1)] == \
+        [(b'D.E', 1, b'b')]
+
+        assert dber.appendOnIoSetVals(db, key3, vals=[b"c"]) == 2
+        assert [(key, on, bytes(val)) for key, on, val in dber.getOnIoSetItemIter(db, key3, on=2)] == \
+        [(b'D.E', 2, b'c')]
+
+        assert dber.appendOnIoSetVals(db, key4, vals=[b"a", b"z"]) == 0
+        assert [(key, on, bytes(val)) for key, on, val in dber.getOnIoSetItemIter(db, key4, on=0)] == \
+        [(b'Z.Z', 0, b'a'), (b'Z.Z', 0, b'z')]
+
+        assert dber.appendOnIoSetVals(db, key5, vals=[b"a"]) == 0
+        assert [(key, on, bytes(val)) for key, on, val in dber.getOnIoSetItemIter(db, key5, on=0)] == \
+        [(b'A.A', 0, b'a')]
+
+        assert dber.appendOnIoSetVals(db, key3, vals=[b"d"]) == 3
+        assert [(key, on, bytes(val)) for key, on, val in dber.getOnIoSetItemIter(db, key3, on=3)] == \
+        [(b'D.E', 3, b'd')]
+
+        assert dber.appendOnIoSetVals(db, key4, vals=[b"b", b"y"]) == 1
+        assert [(key, on, bytes(val)) for key, on, val in dber.getOnIoSetItemIter(db, key4, on=1)] == \
+        [(b'Z.Z', 1, b'b'), (b'Z.Z', 1, b'y')]
+
+        assert dber.appendOnIoSetVals(db, key5, vals=[b"b"]) == 1
         items = [(key, on, bytes(val)) for key, on, val in
                                           dber.getOnTopIoSetItemIter(db, key3)]
         assert items ==\
@@ -1621,6 +1691,8 @@ def test_lmdber():
             (b'D.E', 2, b'c'),
             (b'D.E', 3, b'd')
         ]
+
+
 
         # test getOnIoSetItemIterAll
         items = [(key, on, bytes(val)) for key, on, val in
@@ -1994,9 +2066,9 @@ def test_lmdber():
 
         # test remOnIoSet
         assert dber.remOnIoSetVal(db, key4, on=0)
-        assert list(dber.getOnIoSetIter(db, key4, on=0)) == []
+        assert list(dber.getOnIoSetItemIter(db, key4, on=0)) == []
         assert dber.remOnIoSetVal(db, key4, on=1)
-        assert list(dber.getOnIoSetIter(db, key4, on=1)) == []
+        assert list(dber.getOnIoSetItemIter(db, key4, on=1)) == []
 
         # test with delOnIoSetAll
         assert dber.remOnAllIoSet(db, key3, on=1)  # does not delete 0
@@ -2036,12 +2108,10 @@ def test_lmdber():
         dber.putIoSetVals(db, empty_key, [some_value])
         dber.addIoSetVal(db, empty_key, some_value)
         dber.pinIoSetVals(db, empty_key, [some_value])
-        dber.getIoSet(db, empty_key)
-        [_ for _ in dber.getIoSetIter(db, empty_key)]
-        dber.getIoSetLast(db, empty_key)
+        [ _ for _ in dber.getIoSetItemIter(db, empty_key)]
         dber.cntIoSet(db, empty_key)
-        dber.delIoSet(db, empty_key)
-        dber.delIoSetVal(db, empty_key, some_value)
+        dber.remIoSet(db, empty_key)
+        dber.remIoSetVal(db, empty_key, some_value)
         with pytest.raises(KeyError):
             dber.putVals(db, empty_key, [some_value])
         with pytest.raises(KeyError):

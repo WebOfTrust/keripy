@@ -494,12 +494,9 @@ class IoSetKomer(KomerBase):
             result (bool): True If successful, False otherwise.
 
         """
-        key = self._tokey(keys)
-        self.db.delIoSet(db=self.sdb, key=key)  # delete all values
-        vals = [self.serializer(val) for val in vals]
         return (self.db.pinIoSetVals(db=self.sdb,
-                                     key=key,
-                                     vals=vals,
+                                     key=self._tokey(keys),
+                                     vals=[self.serializer(val) for val in vals],
                                      sep=self.sep))
 
 
@@ -515,28 +512,32 @@ class IoSetKomer(KomerBase):
                           empty list if no entry at keys
 
         """
-        return [self.deserializer(val) for val in
-                    self.db.getIoSetIter(db=self.sdb,
+        return [self.deserializer(val) for key, val in
+                    self.db.getIoSetItemIter(db=self.sdb,
                                              key=self._tokey(keys),
                                              sep=self.sep)]
 
 
     def getLast(self, keys: Union[str, Iterable]):
-        """
-        Gets last effective dup val at effective dup key made from keys
+        """Gets last effective dup val at effective dup key made from keys
 
         Parameters:
             keys (tuple): of key strs to be combined to form effective key
 
         Returns:
             val (Type[dataclass]):  instance of type self.schema
-                          None if no entry at keys
+                                   None if no entry at keys
 
         """
-        val = self.db.getIoSetLast(db=self.sdb, key=self._tokey(keys))
-        if val is not None:
-            val = self.deserializer(val)
-        return val
+        if last := self.db.getIoSetLastItem(db=self.sdb, key=self._tokey(keys)):
+            key, val = last
+            return self.deserializer(val)
+        return None
+
+        #val = self.db.getIoSetLast(db=self.sdb, key=self._tokey(keys))
+        #if val is not None:
+            #val = self.deserializer(val)
+        #return val
 
 
     def getIter(self, keys: Union[str, Iterable]):
@@ -552,7 +553,7 @@ class IoSetKomer(KomerBase):
             vals (Iterator):  str values. Raises StopIteration when done
 
         """
-        for val in self.db.getIoSetIter(db=self.sdb,
+        for key, val in self.db.getIoSetItemIter(db=self.sdb,
                                             key=self._tokey(keys),
                                             sep=self.sep):
             yield self.deserializer(val)
@@ -575,7 +576,7 @@ class IoSetKomer(KomerBase):
                                      sep=self.sep))
 
 
-    def rem(self, keys: Union[str, Iterable], val=None):
+    def rem(self, keys: str|Iterable, val=None):
         """
         Removes entry at keys
 
@@ -588,16 +589,10 @@ class IoSetKomer(KomerBase):
            result (bool): True if key exists so delete successful. False otherwise
 
         """
-        if val is not None:
-            val = self.serializer(val)
-            return self.db.delIoSetVal(db=self.sdb,
-                                       key=self._tokey(keys),
-                                       val=val,
-                                       sep=self.sep)
-        else:
-            return self.db.delIoSet(db=self.sdb,
-                                       key=self._tokey(keys),
-                                       sep=self.sep)
+        return self.db.remIoSetVal(db=self.sdb,
+                                   key=self._tokey(keys),
+                                   val=self.serializer(val) if val is not None else val,
+                                   sep=self.sep)
 
 
     def getItemIter(self, keys: Union[str, Iterable]=b"", *, topive=False):
