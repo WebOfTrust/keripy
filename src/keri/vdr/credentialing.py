@@ -748,10 +748,10 @@ class Registrar(doing.DoDoer):
                 else:
                     continue
 
-            rnum = coring.Number(num=snq, code=coring.NumDex.Huge)
+            rnum = coring.Number(qb64=snq, code=coring.NumDex.Huge)
             self.rgy.reger.tpwe.rem(keys=(regk, snq))
 
-            self.rgy.reger.tede.add(keys=(regk, rnum.qb64), val=(prefixer, seqner, saider))
+            self.rgy.reger.tede.add(keys=(regk, rnum.qb64), val=(prefixer, number, saider))
 
     def processMultisigEscrow(self):
         """
