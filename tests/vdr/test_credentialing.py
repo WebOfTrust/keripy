@@ -8,9 +8,8 @@ from keri import kering
 from keri.app import keeping
 from keri.core import serdering
 from keri.core import eventing as keventing
-from keri.core.coring import Seqner, Saider
+from keri.core.coring import Number, Saider
 from keri.db import basing
-from keri.db.dbing import snKey, dgKey
 from keri.vdr.credentialing import Regery, Registrar
 
 from tests.vdr import buildHab
@@ -25,16 +24,15 @@ def test_tpwe():
         registrar = Registrar(hby=hby, rgy=rgy, counselor=None)
 
         prefixer = hab.kever.prefixer
-        rseq = Seqner(sn=0)
+        rnum = Number(num=0)
 
         # incept: inject into tpwe, verify present
         reg_inc = rgy.makeRegistry(name="tpwe_inc", prefix=hab.pre, noBackers=True)
-        seqner_inc = Seqner(sn=hab.kever.sner.num)
+        number_inc = Number(num=hab.kever.sner.num)
         saider_inc = Saider(qb64=hab.kever.serder.said)
-        rgy.reger.tpwe.add(keys=(reg_inc.regk, rseq.qb64),
-                           val=(prefixer, seqner_inc, saider_inc))
-        assert len(rgy.reger.tpwe.get(keys=(reg_inc.regk, rseq.qb64))) == 1, \
-            "tpwe should have an entry after incept"
+        rgy.reger.tpwe.add(keys=(reg_inc.regk, rnum.huge),
+                           val=(prefixer, number_inc, saider_inc))
+        assert len(rgy.reger.tpwe.get(keys=(reg_inc.regk, rnum.huge))) == 1
 
         # issue: anchor vcp so iss is valid, inject into tpwe
         reg_iss = rgy.makeRegistry(name="tpwe_iss", prefix=hab.pre, noBackers=True)
@@ -42,52 +40,49 @@ def test_tpwe():
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = serdering.SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=reg_iss.vcp,
-                             seqner=Seqner(sn=rotser.sn),
+                             seqner=Number(num=rotser.sn),
                              saider=Saider(qb64=rotser.said))
         iss = reg_iss.issue(said=vcdig)
-        rseq_iss = Seqner(snh=iss.ked["s"])
-        rgy.reger.tpwe.add(keys=(vcdig, rseq_iss.qb64),
-                           val=(prefixer, Seqner(sn=hab.kever.sner.num), Saider(qb64=hab.kever.serder.said)))
-        assert len(rgy.reger.tpwe.get(keys=(vcdig, rseq_iss.qb64))) == 1, \
-            "tpwe should have an entry after issue"
+        rnum_iss = Number(numh=iss.ked["s"])
+        rgy.reger.tpwe.add(keys=(vcdig, rnum_iss.huge),
+                           val=(prefixer, Number(num=hab.kever.sner.num), Saider(qb64=hab.kever.serder.said)))
+        assert len(rgy.reger.tpwe.get(keys=(vcdig, rnum_iss.huge))) == 1
 
-        # revoke: anchor vcp+iss, inject rev into tpwe, verify seqner value
+        # revoke: anchor vcp+iss, inject rev into tpwe, verify number value
         reg_rev = rgy.makeRegistry(name="tpwe_rev", prefix=hab.pre, noBackers=True)
         rseal = keventing.SealEvent(i=reg_rev.vcp.pre, s=reg_rev.vcp.ked["s"], d=reg_rev.vcp.said)
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = serdering.SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=reg_rev.vcp,
-                             seqner=Seqner(sn=rotser.sn),
+                             seqner=Number(num=rotser.sn),
                              saider=Saider(qb64=rotser.said))
         iss2 = reg_rev.issue(said=vcdig)
         rseal = keventing.SealEvent(iss2.ked["i"], iss2.ked["s"], iss2.said)
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = serdering.SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=iss2,
-                             seqner=Seqner(sn=rotser.sn),
+                             seqner=Number(num=rotser.sn),
                              saider=Saider(qb64=rotser.said))
         rev = reg_rev.revoke(said=vcdig)
-        rseq_rev = Seqner(snh=rev.ked["s"])
+        rnum_rev = Number(numh=rev.ked["s"])
         expected_kel_sn = hab.kever.sner.num
-        rgy.reger.tpwe.add(keys=(vcdig, rseq_rev.qb64),
-                           val=(prefixer, Seqner(sn=expected_kel_sn), Saider(qb64=hab.kever.serder.said)))
-        entries = rgy.reger.tpwe.get(keys=(vcdig, rseq_rev.qb64))
-        assert len(entries) == 1, "tpwe should have an entry after revoke"
-        _, seq_obj, _ = entries[0]
-        assert seq_obj.sn == expected_kel_sn
+        rgy.reger.tpwe.add(keys=(vcdig, rnum_rev.huge),
+                           val=(prefixer, Number(num=expected_kel_sn), Saider(qb64=hab.kever.serder.said)))
+        entries = rgy.reger.tpwe.get(keys=(vcdig, rnum_rev.huge))
+        assert len(entries) == 1
+        _, num_obj, _ = entries[0]
+        assert num_obj.num == expected_kel_sn
 
         # processWitnessEscrow drains tpwe and seeds tede
         reg_pwe = rgy.makeRegistry(name="pwe_drain", prefix=hab.pre, noBackers=True)
-        seqner_pwe = Seqner(sn=hab.kever.sner.num)
+        number_pwe = Number(num=hab.kever.sner.num)
         saider_pwe = Saider(qb64=hab.kever.serder.said)
-        rgy.reger.tpwe.add(keys=(reg_pwe.regk, rseq.qb64),
-                           val=(prefixer, seqner_pwe, saider_pwe))
+        rgy.reger.tpwe.add(keys=(reg_pwe.regk, rnum.huge),
+                           val=(prefixer, number_pwe, saider_pwe))
         registrar.processWitnessEscrow()
 
-        assert rgy.reger.tpwe.get(keys=(reg_pwe.regk, rseq.qb64)) == [], \
-            "tpwe entry should be removed after processWitnessEscrow"
-        assert len(rgy.reger.tede.get(keys=(reg_pwe.regk, rseq.qb64))) == 1, \
-            "tede should be seeded by processWitnessEscrow"
+        assert rgy.reger.tpwe.get(keys=(reg_pwe.regk, rnum.huge)) == []
+        assert len(rgy.reger.tede.get(keys=(reg_pwe.regk, rnum.huge))) == 1
 
         # processWitnessEscrow is a no-op when tpwe is empty
         registrar.processWitnessEscrow()  # must not raise
@@ -102,16 +97,15 @@ def test_tmse():
         rgy = Regery(hby=hby, name="test", temp=True)
 
         prefixer = hab.kever.prefixer
-        seqner = Seqner(sn=hab.kever.sner.num)
+        number = Number(num=hab.kever.sner.num)
         saider = Saider(qb64=hab.kever.serder.said)
-        rseq = Seqner(sn=0)
+        rnum = Number(num=0)
 
         # incept
         reg_inc = rgy.makeRegistry(name="tmse_inc", prefix=hab.pre, noBackers=True)
-        rgy.reger.tmse.add(keys=(reg_inc.regk, rseq.qb64, reg_inc.regd),
-                           val=(prefixer, seqner, saider))
-        assert len(rgy.reger.tmse.get(keys=(reg_inc.regk, rseq.qb64, reg_inc.regd))) == 1, \
-            "tmse should have an entry after multisig incept"
+        rgy.reger.tmse.add(keys=(reg_inc.regk, rnum.huge, reg_inc.regd),
+                           val=(prefixer, number, saider))
+        assert len(rgy.reger.tmse.get(keys=(reg_inc.regk, rnum.huge, reg_inc.regd))) == 1
 
         # issue
         reg_iss = rgy.makeRegistry(name="tmse_iss", prefix=hab.pre, noBackers=True)
@@ -119,14 +113,13 @@ def test_tmse():
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = serdering.SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=reg_iss.vcp,
-                             seqner=Seqner(sn=rotser.sn),
+                             seqner=Number(num=rotser.sn),
                              saider=Saider(qb64=rotser.said))
         iss = reg_iss.issue(said=vcdig)
-        rseq_iss = Seqner(snh=iss.ked["s"])
-        rgy.reger.tmse.add(keys=(vcdig, rseq_iss.qb64, iss.said),
-                           val=(prefixer, seqner, saider))
-        assert len(rgy.reger.tmse.get(keys=(vcdig, rseq_iss.qb64, iss.said))) == 1, \
-            "tmse should have an entry after multisig issue"
+        rnum_iss = Number(numh=iss.ked["s"])
+        rgy.reger.tmse.add(keys=(vcdig, rnum_iss.huge, iss.said),
+                           val=(prefixer, number, saider))
+        assert len(rgy.reger.tmse.get(keys=(vcdig, rnum_iss.huge, iss.said))) == 1
 
         # revoke
         reg_rev = rgy.makeRegistry(name="tmse_rev", prefix=hab.pre, noBackers=True)
@@ -134,21 +127,20 @@ def test_tmse():
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = serdering.SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=reg_rev.vcp,
-                             seqner=Seqner(sn=rotser.sn),
+                             seqner=Number(num=rotser.sn),
                              saider=Saider(qb64=rotser.said))
         iss2 = reg_rev.issue(said=vcdig)
         rseal = keventing.SealEvent(iss2.ked["i"], iss2.ked["s"], iss2.said)
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = serdering.SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=iss2,
-                             seqner=Seqner(sn=rotser.sn),
+                             seqner=Number(num=rotser.sn),
                              saider=Saider(qb64=rotser.said))
         rev = reg_rev.revoke(said=vcdig)
-        rseq_rev = Seqner(snh=rev.ked["s"])
-        rgy.reger.tmse.add(keys=(vcdig, rseq_rev.qb64, rev.said),
-                           val=(prefixer, seqner, saider))
-        assert len(rgy.reger.tmse.get(keys=(vcdig, rseq_rev.qb64, rev.said))) == 1, \
-            "tmse should have an entry after multisig revoke"
+        rnum_rev = Number(numh=rev.ked["s"])
+        rgy.reger.tmse.add(keys=(vcdig, rnum_rev.huge, rev.said),
+                           val=(prefixer, number, saider))
+        assert len(rgy.reger.tmse.get(keys=(vcdig, rnum_rev.huge, rev.said))) == 1
 
     # processMultisigEscrow is a no-op when counselor.complete is False
     with basing.openDB(temp=True) as db, keeping.openKS(temp=True) as kpr:
@@ -160,17 +152,16 @@ def test_tmse():
 
         registrar = Registrar(hby=hby, rgy=rgy, counselor=_NeverComplete())
         reg = rgy.makeRegistry(name="tmse_noop", prefix=hab.pre, noBackers=True)
-        rseq = Seqner(sn=0)
+        rnum = Number(num=0)
         prefixer = hab.kever.prefixer
-        seqner = Seqner(sn=1)
+        number = Number(num=1)
         saider = Saider(qb64=hab.kever.serder.said)
 
-        rgy.reger.tmse.add(keys=(reg.regk, rseq.qb64, reg.regd), val=(prefixer, seqner, saider))
+        rgy.reger.tmse.add(keys=(reg.regk, rnum.huge, reg.regd), val=(prefixer, number, saider))
         registrar.processMultisigEscrow()
 
-        assert rgy.reger.tmse.get(keys=(reg.regk, rseq.qb64, reg.regd)) != [], \
-            "tmse entry must remain when counselor.complete is False"
-        assert rgy.reger.tede.get(keys=(reg.regk, rseq.qb64)) == []
+        assert rgy.reger.tmse.get(keys=(reg.regk, rnum.huge, reg.regd)) != []
+        assert rgy.reger.tede.get(keys=(reg.regk, rnum.huge)) == []
 
     # processMultisigEscrow drains tmse and seeds tede when complete
     with basing.openDB(temp=True) as db, keeping.openKS(temp=True) as kpr:
@@ -184,18 +175,16 @@ def test_tmse():
         )
 
         reg = rgy.makeRegistry(name="tmse_drain", prefix=hab.pre, noBackers=True)
-        rseq = Seqner(sn=0)
+        rnum = Number(num=0)
         prefixer = hab.kever.prefixer
-        seqner = Seqner(sn=1)
+        number = Number(num=1)
         saider = Saider(qb64=hab.kever.serder.said)
 
-        rgy.reger.tmse.add(keys=(reg.regk, rseq.qb64, reg.regd), val=(prefixer, seqner, saider))
+        rgy.reger.tmse.add(keys=(reg.regk, rnum.huge, reg.regd), val=(prefixer, number, saider))
         registrar.processMultisigEscrow()
 
-        assert rgy.reger.tmse.get(keys=(reg.regk, rseq.qb64, reg.regd)) == [], \
-            "tmse entry should be removed when counselor.complete is True"
-        assert len(rgy.reger.tede.get(keys=(reg.regk, rseq.qb64))) == 1, \
-            "tede should be seeded after processMultisigEscrow"
+        assert rgy.reger.tmse.get(keys=(reg.regk, rnum.huge, reg.regd)) == []
+        assert len(rgy.reger.tede.get(keys=(reg.regk, rnum.huge))) == 1
 
     # processMultisigEscrow drops entry on ValidationError
     with basing.openDB(temp=True) as db, keeping.openKS(temp=True) as kpr:
@@ -207,16 +196,15 @@ def test_tmse():
 
         registrar = Registrar(hby=hby, rgy=rgy, counselor=_RaisesValidation())
         reg = rgy.makeRegistry(name="tmse_valerr", prefix=hab.pre, noBackers=True)
-        rseq = Seqner(sn=0)
+        rnum = Number(num=0)
         prefixer = hab.kever.prefixer
-        seqner = Seqner(sn=1)
+        number = Number(num=1)
         saider = Saider(qb64=hab.kever.serder.said)
 
-        rgy.reger.tmse.add(keys=(reg.regk, rseq.qb64, reg.regd), val=(prefixer, seqner, saider))
+        rgy.reger.tmse.add(keys=(reg.regk, rnum.huge, reg.regd), val=(prefixer, number, saider))
         registrar.processMultisigEscrow()
 
-        assert rgy.reger.tmse.get(keys=(reg.regk, rseq.qb64, reg.regd)) == [], \
-            "tmse entry should be dropped on ValidationError"
+        assert rgy.reger.tmse.get(keys=(reg.regk, rnum.huge, reg.regd)) == []
 
 
 def test_tede():
@@ -232,16 +220,16 @@ def test_tede():
 
         prefixer = hab.kever.prefixer
         saider_hab = Saider(qb64=hab.kever.serder.said)
-        rseq = Seqner(sn=0)
+        rnum = Number(num=0)
 
         # processWitnessEscrow seeds tede with correct values
         reg_pwe = rgy.makeRegistry(name="tede_pwe", prefix=hab.pre, noBackers=True)
-        seqner_pwe = Seqner(sn=hab.kever.sner.num)
+        number_pwe = Number(num=hab.kever.sner.num)
 
-        rgy.reger.tpwe.add(keys=(reg_pwe.regk, rseq.qb64), val=(prefixer, seqner_pwe, saider_hab))
+        rgy.reger.tpwe.add(keys=(reg_pwe.regk, rnum.huge), val=(prefixer, number_pwe, saider_hab))
         registrar.processWitnessEscrow()
 
-        assert len(rgy.reger.tede.get(keys=(reg_pwe.regk, rseq.qb64))) == 1
+        assert len(rgy.reger.tede.get(keys=(reg_pwe.regk, rnum.huge))) == 1
 
         # getItemIter is the read path used by processDisseminationEscrow
         found = False
@@ -252,24 +240,23 @@ def test_tede():
 
         # processMultisigEscrow seeds tede with correct values
         reg_ms = rgy.makeRegistry(name="tede_ms", prefix=hab.pre, noBackers=True)
-        seqner_ms = Seqner(sn=7)  # distinct value to tell apart from seqner_pwe
+        number_ms = Number(num=7)  # distinct value to tell apart from number_pwe
 
-        rgy.reger.tmse.add(keys=(reg_ms.regk, rseq.qb64, reg_ms.regd),
-                           val=(prefixer, seqner_ms, saider_hab))
+        rgy.reger.tmse.add(keys=(reg_ms.regk, rnum.huge, reg_ms.regd),
+                           val=(prefixer, number_ms, saider_hab))
         registrar.processMultisigEscrow()
 
-        assert len(rgy.reger.tede.get(keys=(reg_ms.regk, rseq.qb64))) == 1
+        assert len(rgy.reger.tede.get(keys=(reg_ms.regk, rnum.huge))) == 1
 
         registrar.counselor = type("C", (), {"complete": lambda self, *a, **kw: False})()
 
         # processDisseminationEscrow is a no-op when tels has no digest
         reg_noop = rgy.makeRegistry(name="diss_noop", prefix=hab.pre, noBackers=True)
-        rgy.reger.tede.add(keys=(reg_noop.regk, rseq.qb64), val=(prefixer, seqner_pwe, saider_hab))
+        rgy.reger.tede.add(keys=(reg_noop.regk, rnum.huge), val=(prefixer, number_pwe, saider_hab))
 
         registrar.processDisseminationEscrow()
 
-        assert rgy.reger.tede.get(keys=(reg_noop.regk, rseq.qb64)) != [], \
-            "tede entry must remain when tels has no digest for the sn"
+        assert rgy.reger.tede.get(keys=(reg_noop.regk, rnum.huge)) != []
 
         # processDisseminationEscrow drains tede, writes ctel, publishes
         # anchor reg_drain so tels has a digest at sn=0
@@ -278,19 +265,16 @@ def test_tede():
         rot = hab.rotate(data=[rseal._asdict()])
         rotser = serdering.SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=reg_drain.vcp,
-                             seqner=Seqner(sn=rotser.sn),
+                             seqner=Number(num=rotser.sn),
                              saider=Saider(qb64=rotser.said))
-        rgy.reger.tede.add(keys=(reg_drain.regk, rseq.qb64), val=(prefixer, seqner_pwe, saider_hab))
+        rgy.reger.tede.add(keys=(reg_drain.regk, rnum.huge), val=(prefixer, number_pwe, saider_hab))
 
         before = len(registrar.witPub.msgs)
         registrar.processDisseminationEscrow()
 
-        assert rgy.reger.tede.get(keys=(reg_drain.regk, rseq.qb64)) == [], \
-            "tede entry should be removed after dissemination"
-        assert rgy.reger.ctel.get(keys=(reg_drain.regk, rseq.qb64)) is not None, \
-            "ctel should have an entry after dissemination"
-        assert len(registrar.witPub.msgs) == before + 1, \
-            "witPub.msgs should receive one message after dissemination"
+        assert rgy.reger.tede.get(keys=(reg_drain.regk, rnum.huge)) == []
+        assert rgy.reger.ctel.get(keys=(reg_drain.regk, rnum.huge)) is not None
+        assert len(registrar.witPub.msgs) == before + 1
 
 
 def test_escrow_suber_klas():
@@ -301,15 +285,15 @@ def test_escrow_suber_klas():
         rgy = Regery(hby=hby, name="test", temp=True)
 
         prefixer = hab.kever.prefixer
-        seqner = Seqner(sn=SN)
+        number = Number(num=SN)
         saider = Saider(qb64=hab.kever.serder.said)
-        rseq = Seqner(sn=0)
+        rnum = Number(num=0)
 
         # tpwe
         reg_tpwe = rgy.makeRegistry(name="klas_tpwe", prefix=hab.pre, noBackers=True)
-        rgy.reger.tpwe.add(keys=(reg_tpwe.regk, rseq.qb64), val=(prefixer, seqner, saider))
+        rgy.reger.tpwe.add(keys=(reg_tpwe.regk, rnum.huge), val=(prefixer, number, saider))
 
-        items = rgy.reger.tpwe.get(keys=(reg_tpwe.regk, rseq.qb64))
+        items = rgy.reger.tpwe.get(keys=(reg_tpwe.regk, rnum.huge))
         assert items, "tpwe entry missing"
 
         found = False
@@ -320,10 +304,10 @@ def test_escrow_suber_klas():
 
         # tmse
         reg_tmse = rgy.makeRegistry(name="klas_tmse", prefix=hab.pre, noBackers=True)
-        rgy.reger.tmse.add(keys=(reg_tmse.regk, rseq.qb64, reg_tmse.regd),
-                           val=(prefixer, seqner, saider))
+        rgy.reger.tmse.add(keys=(reg_tmse.regk, rnum.huge, reg_tmse.regd),
+                           val=(prefixer, number, saider))
 
-        items = rgy.reger.tmse.get(keys=(reg_tmse.regk, rseq.qb64, reg_tmse.regd))
+        items = rgy.reger.tmse.get(keys=(reg_tmse.regk, rnum.huge, reg_tmse.regd))
         assert items, "tmse entry missing"
 
         found = False
@@ -334,9 +318,9 @@ def test_escrow_suber_klas():
 
         # tede
         reg_tede = rgy.makeRegistry(name="klas_tede", prefix=hab.pre, noBackers=True)
-        rgy.reger.tede.add(keys=(reg_tede.regk, rseq.qb64), val=(prefixer, seqner, saider))
+        rgy.reger.tede.add(keys=(reg_tede.regk, rnum.huge), val=(prefixer, number, saider))
 
-        items = rgy.reger.tede.get(keys=(reg_tede.regk, rseq.qb64))
+        items = rgy.reger.tede.get(keys=(reg_tede.regk, rnum.huge))
         assert items, "tede entry missing"
 
         found = False
