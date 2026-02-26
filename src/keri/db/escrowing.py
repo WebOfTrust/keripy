@@ -76,11 +76,11 @@ class Broker:
         # all key state escrows indices of partially signed ksn messages. Maps
         # route in reply to single (Saider,)  of escrowed ksn.
         # Routes such as /ksn/{aid} or /tsn/registry/{aid}
-        self.escrowdb = subing.CesrIoSetSuber(db=self.db, subkey=subkey + '-nes', klas=coring.Saider)
+        self.escrowdb = subing.CesrIoSetSuber(db=self.db, subkey=subkey + '-nes', klas=coring.Diger)
 
         # transaction state SAID database for successfully saved transaction state notices
         # maps key=(prefix, aid) to val=said of transaction state
-        self.saiderdb = subing.CesrSuber(db=self.db, subkey=subkey + '-nas.', klas=coring.Saider)
+        self.saiderdb = subing.CesrSuber(db=self.db, subkey=subkey + '-nas.', klas=coring.Diger)
 
     def current(self, keys):
         """
@@ -109,18 +109,18 @@ class Broker:
             extype (Type[Exception]): the expected exception type if the message should remain in escrow
 
         """
-        for (typ, pre, aid), saider in self.escrowdb.getItemIter(keys=(typ, '')):
+        for (typ, pre, aid), diger in self.escrowdb.getItemIter(keys=(typ, '')):
             try:
-                tsgs = eventing.fetchTsgs(db=self.tigerdb, saider=saider)
+                tsgs = eventing.fetchTsgs(db=self.tigerdb, saider=diger)
 
-                keys = (saider.qb64,)
+                keys = (diger.qb64,)
                 dater = self.daterdb.get(keys=keys)
                 serder = self.serderdb.get(keys=keys)
                 vcigars = self.cigardb.get(keys=keys)
 
                 try:
                     if not (dater and serder and (tsgs or vcigars)):
-                        msg = f"Missing escrow artifacts at said={saider.qb64} for pre={pre}."
+                        msg = f"Missing escrow artifacts at said={diger.qb64} for pre={pre}."
                         logger.info("Broker %s: unescrow error: %s", typ, msg)
                         raise ValueError(msg)
 
@@ -138,7 +138,7 @@ class Broker:
                         logger.trace("Broker %s: %s", typ, msg)
                         raise kering.ValidationError(msg)
 
-                    processReply(serder=serder, saider=saider, route=serder.ked["r"],
+                    processReply(serder=serder, saider=diger, route=serder.ked["r"],
                                  cigars=cigars, tsgs=tsgs, aid=aid)
 
                 except extype as ex:
@@ -148,27 +148,27 @@ class Broker:
                         logger.exception("Broker %s: unescrow attempt failed: %s", typ, ex.args[0])
 
                 except Exception as ex:  # other error so remove from reply escrow
-                    self.escrowdb.rem(keys=(typ, pre, aid), val=saider)   # remove escrow
+                    self.escrowdb.rem(keys=(typ, pre, aid), val=diger)   # remove escrow
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Broker %s: unescrowed due to error: %s", typ, ex.args[0])
                     else:
                         logger.error("Broker  %s: unescrowed due to error: %s", typ, ex.args[0])
 
                 else:  # unescrow succeded
-                    self.escrowdb.rem(keys=(typ, pre, aid), val=saider)  # remove escrow
+                    self.escrowdb.rem(keys=(typ, pre, aid), val=diger)  # remove escrow
                     logger.info("Broker %s: unescrow succeeded for txn state=%s",
                                 typ, serder.said)
                     logger.debug("TXN State Body=\n%s\n", serder.pretty())
 
             except Exception as ex:  # log diagnostics errors etc
-                self.escrowdb.rem(keys=(typ, pre, aid), val=saider)  # remove escrow
-                self.removeState(saider)
+                self.escrowdb.rem(keys=(typ, pre, aid), val=diger)  # remove escrow
+                self.removeState(diger)
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Broker %s: unescrowed due to error: %s", typ, ex.args[0])
                 else:
                     logger.error("Broker %s: unescrowed due to error: %s", typ, ex.args[0])
 
-    def escrowStateNotice(self, *, typ, pre, aid, serder, saider, dater, cigars=None, tsgs=None):
+    def escrowStateNotice(self, *, typ, pre, aid, serder, diger, dater, cigars=None, tsgs=None):
         """
         Escrow reply by route
 
@@ -177,7 +177,7 @@ class Broker:
             pre (str): identifier of key state
             aid (str): identifier of authorizer of key state
             serder (Serder): instance of reply msg (SAD)
-            saider (Saider): instance  from said in serder (SAD)
+            diger (Diger): instance  from said in serder (SAD)
             dater (Dater): instance from date-time in serder (SAD)
             cigars (list): of Cigar instances that contain nontrans signing couple
                           signature in .raw and public key in .verfer
@@ -191,19 +191,19 @@ class Broker:
         cigars = cigars if cigars is not None else []
         tsgs = tsgs if tsgs is not None else []
 
-        keys = (saider.qb64,)
+        keys = (diger.qb64,)
         self.daterdb.put(keys=keys, val=dater)  # first one idempotent
         self.serderdb.put(keys=keys, val=serder)  # first one idempotent
 
-        for prefixer, seqner, diger, sigers in tsgs:  # iterate over each tsg
-            quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", diger.qb64)
+        for prefixer, seqner, tsgdiger, sigers in tsgs:  # iterate over each tsg
+            quadkeys = (diger.qb64, prefixer.qb64, f"{seqner.sn:032x}", tsgdiger.qb64)
             self.tigerdb.put(keys=quadkeys, vals=sigers)
         for cigar in cigars:  # process each couple to verify sig and write to db
             self.cigardb.put(keys=keys, vals=[(cigar.verfer, cigar)])
 
-        return self.escrowdb.put(keys=(typ, pre, aid), vals=[saider])  # does not overwrite
+        return self.escrowdb.put(keys=(typ, pre, aid), vals=[diger])  # does not overwrite
 
-    def updateReply(self, aid, serder, saider, dater):
+    def updateReply(self, aid, serder, diger, dater):
         """
         Update Reply SAD in database given by by serder and associated databases
         for attached cig couple or sig quadruple.
@@ -212,23 +212,23 @@ class Broker:
         Parameters:
             aid (str): identifier of key state
             serder (Serder): instance of reply msg (SAD)
-            saider (Saider): instance  from said in serder (SAD)
+            diger (Diger): instance  from said in serder (SAD)
             dater (Dater): instance from date-time in serder (SAD)
         """
-        keys = (saider.qb64,)
+        keys = (diger.qb64,)
 
         # Add source of ksn to the key for DATEs too...  (source AID, ksn AID)
         self.daterdb.put(keys=keys, val=dater)  # first one idempotent
         self.serderdb.pin(keys=keys, val=serder)  # first one idempotent
         # Add source of ksn to the key...  (source AID, ksn AID)
-        self.saiderdb.pin(keys=(serder.sad["a"]["i"], aid), val=saider)  # overwrite
+        self.saiderdb.pin(keys=(serder.sad["a"]["i"], aid), val=diger)  # overwrite
 
-    def removeState(self, saider):
+    def removeState(self, diger):
         """Remove all state associated with the given event TSN identified by SAID."""
-        if saider:
-            keys = (saider.qb64,)
+        if diger:
+            keys = (diger.qb64,)
 
-            self.tigerdb.trim(keys=(saider.qb64, ""))  # remove whole branch
+            self.tigerdb.trim(keys=(diger.qb64, ""))  # remove whole branch
             self.cigardb.rem(keys=keys)
             self.serderdb.rem(keys=keys)
             self.daterdb.rem(keys=keys)
