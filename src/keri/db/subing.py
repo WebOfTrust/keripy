@@ -1401,31 +1401,27 @@ class IoSetSuber(SuberBase):
 
 
     def rem(self, keys: str|bytes|memoryview|Iterable,
-                   val: str|bytes|memoryview = b''):
+                   val: str|bytes|memoryview|None=None):
         """Removes entry at effective key made from keys and hidden ordinal suffix
-        that matches val if any. Otherwise deletes all values at effective key.
+        that matches val if any.
+        When val is None, default, then removes all entries at keys
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be combined in
                 order to form key
-            val (str|bytes|memoryview):  value at key to delete. Subclass ._ser
+            val (str|bytes|memoryview|None):  value at key to delete. Subclass ._ser
                 method may accept different value types
-                if val is empty then remove all values at key
+                if val is None then remove all values at key
 
         Returns:
            result (bool): True if effective key with val exists so rem successful.
                            False otherwise
 
         """
-        if val:
-            return self.db.remIoSetVal(db=self.sdb,
-                                       key=self._tokey(keys),
-                                       val=self._ser(val),
-                                       sep=self.sep)
-        else:
-            return self.db.remIoSet(db=self.sdb,
-                                       key=self._tokey(keys),
-                                       sep=self.sep)
+        return self.db.remIoSetVal(db=self.sdb,
+                                   key=self._tokey(keys),
+                                   val=self._ser(val) if val is not None else val,
+                                   sep=self.sep)
 
 
     def cnt(self, keys: str|bytes|memoryview|Iterable = "", *, ion=0):

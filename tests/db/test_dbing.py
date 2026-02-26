@@ -1174,6 +1174,14 @@ def test_lmdber():
         assert [bytes(val) for key, val in dber.getIoSetItemIter(db, key0)] == \
             []
 
+        # test remIoSetVal with val==None to remove all entries at key
+        assert dber.putIoSetVals(db, key0, vals0) == True
+        assert [bytes(val) for key, val in dber.getIoSetItemIter(db, key0)] == \
+                    [b'z', b'm', b'x', b'a']
+        assert dber.remIoSetVal(db, key0, val=None) == True
+        assert [bytes(val) for key, val in dber.getIoSetItemIter(db, key0)] == \
+            []
+
         # test with filled up db
         assert dber.putIoSetVals(db, key0, vals0) == True
         assert dber.putIoSetVals(db, key1, vals1) == True

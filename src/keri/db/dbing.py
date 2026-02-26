@@ -1220,8 +1220,8 @@ class LMDBer(filing.Filer):
 
 
     def remIoSet(self, db, key, *, sep=b'.'):
-        """Removes all set values at apparent effective key if key is not
-        empty or None
+        """Removes all set values at apparent effective key.
+        When key is empty or None or missing returns False.
 
         Uses hidden ordinal key suffix for insertion ordering.
             The suffix is suffixed and unsuffixed transparently.
@@ -1253,9 +1253,10 @@ class LMDBer(filing.Filer):
             return result
 
 
-    def remIoSetVal(self, db, key, val, *, sep=b'.'):
-        """Deletes set ioval val at key onkey consisting of key + sep + on if any
-        False if key empty
+    def remIoSetVal(self, db, key, val=None, *, sep=b'.'):
+        """Removes val if any as member of set at key if any.
+        When value is None then removes all set members at key
+        When key is empty or None or missing returns False.
         Uses hidden ordinal key suffix for insertion ordering.
            The suffix is suffixed and unsuffixed transparently.
 
@@ -1274,15 +1275,21 @@ class LMDBer(filing.Filer):
         and one needs to delete some of them in stride with their processing.
 
         Returns:
-            result (bool): True if val was deleted at key. False otherwise
-                if val not found at key. False if key empty
+            result (bool): True if val at key removed when val not None
+                           or all entries at key removed when val None.
+                           False otherwise if no values at key or key is empty
+                           or val not found.
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
-            key (bytes): Apparent effective key
-            val (bytes): value to delete
+            key (bytes): val(int|None): value to remove if any.
+                           None means remove all entries at onkey
+            val (bytes|None): value to delete
             sep (bytes): separator character for split
         """
+        if val is None:
+            return self.remIoSet(db=db, key=key, sep=sep)
+
         if not key:
             return False
 
@@ -1329,7 +1336,6 @@ class LMDBer(filing.Filer):
                         break  # done
                     count +=1  # increment
             return count
-        #return len(self.getIoSet(db=db, key=key, ion=ion, sep=sep))
 
 
     def getTopIoSetItemIter(self, db, top=b'', *, sep=b'.'):
@@ -1686,33 +1692,11 @@ class LMDBer(filing.Filer):
         return ()
 
 
-    def remOnIoSet(self, db, key, *, on=0, sep=b'.'):
-        """Removes all set entries at onkey = key + sep + on for all hidden
-        suffix ion.
-        When key is empty or None or missing returns False.
-
-        Returns:
-           result (bool): True if onkey present so all on at onkey deleted
-                          False if onkey not present or empty or None
-
-        Parameters:
-            db (lmdb._Database): instance of named sub db with dupsort==False
-            key (bytes|None): base key.When key is empty returns False
-            on (int): ordinal number at which to add to key form effective key
-                            None means to delete all on
-            sep (bytes): separator character for split
-
-        Uses hidden ordinal key suffix for insertion ordering which is
-        transparently suffixed and unsuffixed
-        Assumes DB opened with dupsort=False
-        """
-        return self.remIoSet(db=db, key=onKey(key, on, sep=sep), sep=sep)
-
-
     def remOnIoSetVal(self, db, key, *, on=0, val=None, sep=b'.'):
         """Removes val if any as member of set at onkey = key + sep + on.
         When val is None then removes all set members at onkey.
         When key is empty or None or missing returns False.
+
         Uses hidden ordinal key suffix for insertion ordering.
         The suffix is suffixed and unsuffixed transparently.
 
@@ -1731,25 +1715,23 @@ class LMDBer(filing.Filer):
         and one needs to delete some of them in stride with their processing.
 
         Returns:
-            result (bool): True if at onkey val removed when not None or all entries
-                           removed when val None.
-                           False otherwise if no values at key or key is empty
+            result (bool): True if val at onkey removed when val not None
+                           or all entries at onkey removed when val None.
+                           False otherwise if no values at onkey or key is empty
                            or val not found.
 
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort==False
             key (bytes): base key. When key is empty returns False
             on (int): ordinal number at which to add to key form effective key
-            val(int|None)
+            val(int|None): value to remove if any.
+                           None means remove all entries at onkey
             sep (bytes): separator character for split
 
         Uses hidden ordinal key suffix for insertion ordering which is
         transparently suffixed and unsuffixed
         Assumes DB opened with dupsort=False
         """
-        if val is None:
-            return self.remIoSet(db=db, key=onKey(key, on, sep=sep), sep=sep)
-
         return self.remIoSetVal(db, key=onKey(key, on, sep=sep), val=val, sep=sep)
 
 

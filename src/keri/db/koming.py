@@ -494,12 +494,9 @@ class IoSetKomer(KomerBase):
             result (bool): True If successful, False otherwise.
 
         """
-        key = self._tokey(keys)
-        self.db.remIoSet(db=self.sdb, key=key)  # delete all values
-        vals = [self.serializer(val) for val in vals]
         return (self.db.pinIoSetVals(db=self.sdb,
-                                     key=key,
-                                     vals=vals,
+                                     key=self._tokey(keys),
+                                     vals=[self.serializer(val) for val in vals],
                                      sep=self.sep))
 
 
@@ -579,7 +576,7 @@ class IoSetKomer(KomerBase):
                                      sep=self.sep))
 
 
-    def rem(self, keys: Union[str, Iterable], val=None):
+    def rem(self, keys: str|Iterable, val=None):
         """
         Removes entry at keys
 
@@ -592,16 +589,10 @@ class IoSetKomer(KomerBase):
            result (bool): True if key exists so delete successful. False otherwise
 
         """
-        if val is not None:
-            val = self.serializer(val)
-            return self.db.remIoSetVal(db=self.sdb,
-                                       key=self._tokey(keys),
-                                       val=val,
-                                       sep=self.sep)
-        else:
-            return self.db.remIoSet(db=self.sdb,
-                                       key=self._tokey(keys),
-                                       sep=self.sep)
+        return self.db.remIoSetVal(db=self.sdb,
+                                   key=self._tokey(keys),
+                                   val=self.serializer(val) if val is not None else val,
+                                   sep=self.sep)
 
 
     def getItemIter(self, keys: Union[str, Iterable]=b"", *, topive=False):
