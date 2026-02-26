@@ -8,7 +8,7 @@ import os
 from keri import help
 
 from keri import core
-from keri.core import eventing, parsing, serdering, indexing
+from keri.core import eventing, parsing, serdering, indexing, coring
 from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri.app import habbing
 
@@ -117,10 +117,8 @@ def test_indexed_witness_replay():
         # and send to witnesses so all witnesses have full set of receipts
         # from all other witnesses
         # reply one event or receipt one event with all witness attachments
-        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
-        wigs = camHab.db.getWigs(dgkey)
-        assert len(wigs) == 3
-        wigers = [indexing.Siger(qb64b=bytes(wig)) for wig in wigs]
+        wigers = camHab.db.wigs.get(keys=(camHab.pre, camHab.kever.serder.said))
+        assert len(wigers) == 3
         rserder = eventing.receipt(pre=camHab.pre,
                                    sn=camHab.kever.sn,
                                    said=camHab.kever.serder.said)
@@ -129,7 +127,7 @@ def test_indexed_witness_replay():
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
             parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(camIcpWitRctMsg), kvy=kvy, local=True)
-            assert len(kvy.db.getWigs(dgkey)) == 3  # fully witnessed
+            assert len(kvy.db.wigs.get(keys=(camHab.pre, camHab.kever.serder.said))) == 3  # fully witnessed
             assert len(kvy.cues) == 0  # no cues
 
         # send Cam icp and witness rcts to Van
@@ -167,10 +165,8 @@ def test_indexed_witness_replay():
         # and send to witnesses so all witnesses have full set of receipts
         # from all other witnesses
         # reply one event or receipt one event with all witness attachments
-        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
-        wigs = camHab.db.getWigs(dgkey)
-        assert len(wigs) == 3
-        wigers = [indexing.Siger(qb64b=bytes(wig)) for wig in wigs]
+        wigers = camHab.db.wigs.get(keys=(camHab.pre, camHab.kever.serder.said))
+        assert len(wigers) == 3
         rserder = eventing.receipt(pre=camHab.pre,
                                    sn=camHab.kever.sn,
                                    said=camHab.kever.serder.said)
@@ -179,7 +175,7 @@ def test_indexed_witness_replay():
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
             parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(camIxnWitRctMsg), kvy=kvy, local=True)
-            assert len(kvy.db.getWigs(dgkey)) == 3  # fully witnessed
+            assert len(kvy.db.wigs.get(keys=(camHab.pre, camHab.kever.serder.said))) == 3  # fully witnessed
             assert len(kvy.cues) == 0  # no cues
 
         # send Cam ixn's witness rcts to Van first then send Cam ixn
@@ -236,10 +232,8 @@ def test_indexed_witness_replay():
         # and send to witnesses so all witnesses have full set of receipts
         # from all other witnesses
         # reply one event or receipt one event with all witness attachments
-        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
-        wigs = camHab.db.getWigs(dgkey)
-        assert len(wigs) == 3
-        wigers = [indexing.Siger(qb64b=bytes(wig)) for wig in wigs]
+        wigers = camHab.db.wigs.get(keys=(camHab.pre, camHab.kever.serder.said))
+        assert len(wigers) == 3
         rserder = eventing.receipt(pre=camHab.pre,
                                    sn=camHab.kever.sn,
                                    said=camHab.kever.serder.said)
@@ -249,7 +243,7 @@ def test_indexed_witness_replay():
             kvy = camWitKvys[i]
             parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(camRotWitRctMsg), kvy=kvy, local=True)
             # kvy.process(ims=bytearray(camRotWitRctMsg))  # send copy of witness rcts
-            assert len(kvy.db.getWigs(dgkey)) == 3  # fully witnessed
+            assert len(kvy.db.wigs.get(keys=(camHab.pre, camHab.kever.serder.said))) == 3  # fully witnessed
             assert len(kvy.cues) == 0  # no cues
 
         # send Cam's rot and wit receipts to Van
@@ -383,37 +377,37 @@ def test_nonindexed_witness_receipts():
         # icp event from Cam so not accepted Cam's pre
         # compute keys for latest event in Cam's key state
         dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
-        snkey = dbing.snKey(pre=camHab.pre, sn=camHab.kever.serder.sn)
+        snkey = dbing.snKey(pre=camHab.pre, sn=camHab.kever.serder.sn)      # for cntPwes, cntWigs, etc.
         # Van process rct msgs from all witnesses for Cam's icp message
         for i, msg in enumerate(rctMsgs):
             parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vanKvy, local=True)
             # escrows to Ure
-            assert vanKvy.db.cntUres(snkey) == i + 1  # escrows
-        assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # all in escrow
-        assert vanKvy.db.cntWigs(dgkey) == 0  # no wigs yet
+            assert vanKvy.db.ures.cnt(keys=(camHab.pre, coring.Seqner(sn=camHab.kever.serder.sn).qb64)) == i + 1  # escrows
+        assert vanKvy.db.ures.cnt(keys=(camHab.pre, coring.Seqner(sn=camHab.kever.serder.sn).qb64)) == len(rctMsgs)  # all in escrow
+        assert vanKvy.db.wigs.cnt(keys=(camHab.pre, camHab.kever.serder.said)) == 0  # no wigs yet
         assert camHab.pre not in vanKvy.kevers  # not accepted
         for hab in camWitHabs:  # Van accepted icp events for Cam's witnesses
             assert hab.pre in vanKvy.kevers
 
         vanKvy.processEscrows()  # process escrows
-        assert vanKvy.db.cntPwes(snkey) == 0  # nothing in partial witness escrow
-        assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # still in escrow
-        assert vanKvy.db.cntWigs(dgkey) == 0  # no wigs yet
+        assert vanKvy.db.pwes.cntOnAll(keys=camHab.pre, on=camHab.kever.serder.sn) == 0  # nothing in partial witness escrow
+        assert vanKvy.db.ures.cnt(keys=(camHab.pre, coring.Seqner(sn=camHab.kever.serder.sn).qb64)) == len(rctMsgs)  # still in escrow
+        assert vanKvy.db.wigs.cnt(keys=(camHab.pre, camHab.kever.serder.said)) == 0  # no wigs yet
         assert camHab.pre not in vanKvy.kevers  # still not accepted
 
         # Van process icp message from Cam
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(camIcpMsg), kvy=vanKvy, local=True)
         # event accepted in database with sigs but not into KEL
-        assert vanKvy.db.cntSigs(dgkey) == len(camHab.kever.verfers)
-        assert vanKvy.db.cntPwes(snkey) == 1  # now in partial witness escrow
-        assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # still in escrow
-        assert vanKvy.db.cntWigs(dgkey) == 0  # no wigs yet
+        assert vanKvy.db.sigs.cnt(keys=dgkey) == len(camHab.kever.verfers)
+        assert vanKvy.db.pwes.cntOnAll(keys=camHab.pre, on=camHab.kever.serder.sn) == 1  # now in partial witness escrow
+        assert vanKvy.db.ures.cnt(keys=(camHab.pre, coring.Seqner(sn=camHab.kever.serder.sn).qb64)) == len(rctMsgs)  # still in escrow
+        assert vanKvy.db.wigs.cnt(keys=(camHab.pre, camHab.kever.serder.said)) == 0  # no wigs yet
         assert camHab.pre not in vanKvy.kevers  # not accepted
 
         vanKvy.processEscrows()  # process escrows
-        assert vanKvy.db.cntPwes(snkey) == 0  # unescrowed from first stage
-        assert vanKvy.db.cntUres(snkey) == 0  # out of first stage
-        assert vanKvy.db.cntWigs(dgkey) == len(rctMsgs)  # all wigs out now
+        assert vanKvy.db.pwes.cntOnAll(keys=camHab.pre, on=camHab.kever.serder.sn) == 0  # unescrowed from first stage
+        assert vanKvy.db.ures.cnt(keys=(camHab.pre, coring.Seqner(sn=camHab.kever.serder.sn).qb64)) == 0  # out of first stage
+        assert vanKvy.db.wigs.cnt(keys=(camHab.pre, camHab.kever.serder.said)) == len(rctMsgs)  # all wigs out now
         assert camHab.pre in vanKvy.kevers  # accepted
 
         vcKvr = vanKvy.kevers[camHab.pre]  # now Van has key state for Cam
@@ -443,36 +437,36 @@ def test_nonindexed_witness_receipts():
         # Van not yet recieved ixn event from Cam but has accept icp event
         # compute keys for latest event in Cam's key state
         dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
-        snkey = dbing.snKey(pre=camHab.pre, sn=camHab.kever.serder.sn)
+        snkey = dbing.snKey(pre=camHab.pre, sn=camHab.kever.serder.sn)      # for cntPwes, cntWigs, etc.
         # Van process rct msgs from all witnesses for Cam's ixn message
         for i, msg in enumerate(rctMsgs):
             parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vanKvy, local=True)
             # escrows to Ure
-            assert vanKvy.db.cntUres(snkey) == i + 1  # escrows
-        assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # all in escrow
-        assert vanKvy.db.cntWigs(dgkey) == 0  # no wigs yet
+            assert vanKvy.db.ures.cnt(keys=(camHab.pre, coring.Seqner(sn=camHab.kever.serder.sn).qb64)) == i + 1 # escrows
+        assert vanKvy.db.ures.cnt(keys=(camHab.pre, coring.Seqner(sn=camHab.kever.serder.sn).qb64)) == len(rctMsgs)  # all in escrow
+        assert vanKvy.db.wigs.cnt(keys=(camHab.pre, camHab.kever.serder.said)) == 0  # no wigs yet
         assert vcKvr.sn == 0  # not ixn yet
 
         vanKvy.processEscrows()  # process escrows
-        assert vanKvy.db.cntPwes(snkey) == 0  # nothing in partial witness escrow
-        assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # still in escrow
-        assert vanKvy.db.cntWigs(dgkey) == 0  # no wigs yet
+        assert vanKvy.db.pwes.cntOnAll(keys=camHab.pre, on=camHab.kever.serder.sn) == 0  # nothing in partial witness escrow
+        assert vanKvy.db.ures.cnt(keys=(camHab.pre, coring.Seqner(sn=camHab.kever.serder.sn).qb64)) == len(rctMsgs)  # still in escrow
+        assert vanKvy.db.wigs.cnt(keys=(camHab.pre, camHab.kever.serder.said)) == 0  # no wigs yet
         assert vcKvr.sn == 0  # not ixn yet
         assert vcKvr.wits == wits  # no change
 
         # Van process ixn message from Cam
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(camIxnMsg), kvy=vanKvy, local=True)
         # event accepted in database with sigs but not into KEL
-        assert vanKvy.db.cntSigs(dgkey) == len(camHab.kever.verfers)
-        assert vanKvy.db.cntPwes(snkey) == 1  # now in partial witness escrow
-        assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # still in escrow
-        assert vanKvy.db.cntWigs(dgkey) == 0  # no wigs yet
+        assert vanKvy.db.sigs.cnt(keys=dgkey) == len(camHab.kever.verfers)
+        assert vanKvy.db.pwes.cntOnAll(keys=camHab.pre, on=camHab.kever.serder.sn) == 1  # now in partial witness escrow
+        assert vanKvy.db.ures.cnt(keys=(camHab.pre, coring.Seqner(sn=camHab.kever.serder.sn).qb64)) == len(rctMsgs)  # still in escrow
+        assert vanKvy.db.wigs.cnt(keys=(camHab.pre, camHab.kever.serder.said)) == 0  # no wigs yet
         assert vcKvr.sn == 0  # not accepted yet
 
         vanKvy.processEscrows()  # process escrows
-        assert vanKvy.db.cntPwes(snkey) == 0  # unescrowed from first stage
-        assert vanKvy.db.cntUres(snkey) == 0  # out of first stage
-        assert vanKvy.db.cntWigs(dgkey) == len(rctMsgs)  # all wigs out now
+        assert vanKvy.db.pwes.cntOnAll(keys=camHab.pre, on=camHab.kever.serder.sn) == 0  # unescrowed from first stage
+        assert vanKvy.db.ures.cnt(keys=(camHab.pre, coring.Seqner(sn=camHab.kever.serder.sn).qb64)) == 0  # out of first stage
+        assert vanKvy.db.wigs.cnt(keys=(camHab.pre, camHab.kever.serder.said)) == len(rctMsgs)  # all wigs out now
         assert vcKvr.sn == 1  # ixn accepted
         assert vcKvr.wits == wits  # no change
 
@@ -525,41 +519,41 @@ def test_nonindexed_witness_receipts():
         # Van not yet recieved rot event from Cam but has accepted icp & ixn events
         # compute keys for latest event in Cam's key state
         dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
-        snkey = dbing.snKey(pre=camHab.pre, sn=camHab.kever.serder.sn)
+        snkey = dbing.snKey(pre=camHab.pre, sn=camHab.kever.serder.sn)      # for cntPwes, cntWigs, etc.
         # Van process rct msgs from all witnesses for Cam's ixn message
         for i, msg in enumerate(rctMsgs):
             parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vanKvy, local=True)
             # escrows to Ure
-            assert vanKvy.db.cntUres(snkey) == i + 1  # escrows
-        assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # all in escrow
-        assert vanKvy.db.cntWigs(dgkey) == 0  # no wigs yet
+            assert vanKvy.db.ures.cnt(keys=(camHab.pre, coring.Seqner(sn=camHab.kever.serder.sn).qb64)) == i + 1  # escrows
+        assert vanKvy.db.ures.cnt(keys=(camHab.pre, coring.Seqner(sn=camHab.kever.serder.sn).qb64)) == len(rctMsgs)  # all in escrow
+        assert vanKvy.db.wigs.cnt(keys=(camHab.pre, camHab.kever.serder.said)) == 0  # no wigs yet
         assert vcKvr.sn == 1  # not rot yet
 
         # send stale receipts from Wil to Van
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(wilRctMsg), kvy=vanKvy, local=True)
 
-        assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # no change
+        assert vanKvy.db.ures.cnt(keys=(camHab.pre, coring.Seqner(sn=camHab.kever.serder.sn).qb64)) == len(rctMsgs)  # no change
 
         vanKvy.processEscrows()  # process escrows
-        assert vanKvy.db.cntPwes(snkey) == 0  # nothing in partial witness escrow
-        assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # still in escrow
-        assert vanKvy.db.cntWigs(dgkey) == 0  # no wigs yet
+        assert vanKvy.db.pwes.cntOnAll(keys=camHab.pre, on=camHab.kever.serder.sn) == 0  # nothing in partial witness escrow
+        assert vanKvy.db.ures.cnt(keys=(camHab.pre, coring.Seqner(sn=camHab.kever.serder.sn).qb64)) == len(rctMsgs)  # still in escrow
+        assert vanKvy.db.wigs.cnt(keys=(camHab.pre, camHab.kever.serder.said)) == 0  # no wigs yet
         assert vcKvr.sn == 1  # not rot yet
         assert vcKvr.wits == oldwits  # no change
 
         # Van process rot message from Cam
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(camRotMsg), kvy=vanKvy, local=True)
         # event accepted in database with sigs but not into KEL
-        assert vanKvy.db.cntSigs(dgkey) == len(camHab.kever.verfers)
-        assert vanKvy.db.cntPwes(snkey) == 1  # now in partial witness escrow
-        assert vanKvy.db.cntUres(snkey) == len(rctMsgs)  # still in escrow
-        assert vanKvy.db.cntWigs(dgkey) == 0  # no wigs yet
+        assert vanKvy.db.sigs.cnt(keys=dgkey) == len(camHab.kever.verfers)
+        assert vanKvy.db.pwes.cntOnAll(keys=camHab.pre, on=camHab.kever.serder.sn) == 1  # now in partial witness escrow
+        assert vanKvy.db.ures.cnt(keys=(camHab.pre, coring.Seqner(sn=camHab.kever.serder.sn).qb64)) == len(rctMsgs)  # still in escrow
+        assert vanKvy.db.wigs.cnt(keys=(camHab.pre, camHab.kever.serder.said)) == 0  # no wigs yet
         assert vcKvr.sn == 1  # not accepted yet
 
         vanKvy.processEscrows()  # process escrows
-        assert vanKvy.db.cntPwes(snkey) == 0  # unescrowed from first stage
-        assert vanKvy.db.cntUres(snkey) == 0  # out of first stage
-        assert vanKvy.db.cntWigs(dgkey) == len(rctMsgs)  # all wigs out now
+        assert vanKvy.db.pwes.cntOnAll(keys=camHab.pre, on=camHab.kever.serder.sn) == 0  # unescrowed from first stage
+        assert vanKvy.db.ures.cnt(keys=(camHab.pre, coring.Seqner(sn=camHab.kever.serder.sn).qb64)) == 0  # out of first stage
+        assert vanKvy.db.wigs.cnt(keys=(camHab.pre, camHab.kever.serder.said)) == len(rctMsgs)  # all wigs out now
         assert vcKvr.sn == 2  # rot accepted
         assert vcKvr.wits == wits  # wits changed
 
@@ -618,8 +612,8 @@ def test_out_of_order_witnessed_events():
 
         # Ensure the rot ended up in out-of-order escrow
         assert bobHab.pre not in bamKvy.kevers
-        oodig = bamHby.db.getOoes(dbing.snKey(bobHab.pre.encode("utf-8"), 1))
-        assert bobRot.saidb == bytes(oodig[0])
+        oodig = bamHby.db.ooes.getOn(keys=bobHab.pre.encode("utf-8"), on=1)
+        assert bobRot.saidb == oodig[0].encode("utf-8")
 
         # Pass the icp to Bam, process escrows and see if the fully
         # receipted event lands in Bam's Kevery
@@ -631,7 +625,7 @@ def test_out_of_order_witnessed_events():
         assert bobHab.pre in bamKvy.kevers
         assert bamKvy.kevers[bobHab.pre].sn == 1
 
-        pwedig = bamHby.db.getPwes(dbing.snKey(bobHab.pre.encode("utf-8"), 1))
+        pwedig = bamHby.db.pwes.getOn(keys=bobHab.pre.encode("utf-8"), on=1)
         assert pwedig == []
 
 

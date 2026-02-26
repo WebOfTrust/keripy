@@ -167,7 +167,7 @@ def test_delegation():
         delK = delKvy.kevers[delPre]
         assert delK.delegated
         assert delK.serder.said == delSrdr.said
-        result = delKvy.db.aess.get(keys=dbing.dgKey(delPre, delSrdr.said))
+        result = delKvy.db.aess.get(keys=(delPre, delSrdr.said))
         assert result is not None
         rseqner, rsaider = result
         assert rseqner.qb64b == seqner.qb64b
@@ -180,7 +180,7 @@ def test_delegation():
         bobDelK = bobKvy.kevers[delPre]
         assert bobDelK.delegated
         assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
-        result = bobKvy.db.aess.get(keys=dbing.dgKey(delPre, delSrdr.said))
+        result = bobKvy.db.aess.get(keys=(delPre, delSrdr.said))
         assert result is not None
         rseqner, rsaider = result
         assert rseqner.qb64b == seqner.qb64b
@@ -264,7 +264,7 @@ def test_delegation():
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert bobDelK.delegated
         assert delK.serder.said == delSrdr.said
-        result = delKvy.db.aess.get(keys=dbing.dgKey(delPre, delSrdr.said))
+        result = delKvy.db.aess.get(keys=(delPre, delSrdr.said))
         assert result is not None
         rseqner, rsaider = result
         assert rseqner.qb64b == seqner.qb64b
@@ -275,7 +275,7 @@ def test_delegation():
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert bobDelK.delegated
         assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
-        result = delKvy.db.aess.get(keys=dbing.dgKey(delPre, delSrdr.said))
+        result = delKvy.db.aess.get(keys=(delPre, delSrdr.said))
         assert result is not None
         rseqner, rsaider = result
         assert rseqner.qb64b == seqner.qb64b
@@ -383,7 +383,7 @@ def test_delegation_supersede():
         serder = wopHab.kevers[topHab.pre].serder
         # generate witness receipt and process
         receipt = wopHab.witness(serder=serder)  # now has fully witnessd controller icp
-        count = wopHab.db.cntWigs(dbing.dgKey(topHab.pre, serder.said))
+        count = wopHab.db.wigs.cnt(keys=(topHab.pre, serder.said))
         assert count >= 1
 
         assert receipt == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EJcCaHg3AtW_gRzpaz6Pw03Y'
@@ -395,7 +395,7 @@ def test_delegation_supersede():
 
         # process receipt as local since own witness receipt.
         topHab.psr.parse(ims=receipt)  # now top has fully witnessed icp.
-        count = topHab.db.cntWigs(dbing.dgKey(topHab.pre, serder.said))
+        count = topHab.db.wigs.cnt(keys=(topHab.pre, serder.said))
         assert count >= 1
 
         # Create witness wid and delegated controller mid
@@ -428,14 +428,14 @@ def test_delegation_supersede():
         serder = widHab.kevers[midHab.pre].serder
         # generate witness receipt and process
         receipt = widHab.witness(serder=serder)  # now has fully witnessed controller icp
-        count = widHab.db.cntWigs(dbing.dgKey(midHab.pre, serder.said))
+        count = widHab.db.wigs.cnt(keys=(midHab.pre, serder.said))
         assert count >= 1
 
         # add test fail process as remote since own witness
 
         # top process wop receipt as local since own witness receipt.
         midHab.psr.parse(ims=receipt)  # now top has fully witnessed icp.
-        count = midHab.db.cntWigs(dbing.dgKey(midHab.pre, serder.said))
+        count = midHab.db.wigs.cnt(keys=(midHab.pre, serder.said))
         assert count >= 1
 
         # Create witness wot and controller bot
@@ -468,14 +468,14 @@ def test_delegation_supersede():
         serder = wotHab.kevers[botHab.pre].serder
         # generate witness receipt and process
         receipt = wotHab.witness(serder=serder)  # now has fully witnessed controller icp
-        count = wotHab.db.cntWigs(dbing.dgKey(botHab.pre, serder.said))
+        count = wotHab.db.wigs.cnt(keys=(botHab.pre, serder.said))
         assert count >= 1
 
         # add test fail process as remote since own witness
 
         # top process wop receipt as local since own witness receipt.
         botHab.psr.parse(ims=receipt)  # now top has fully witnessed icp.
-        count = botHab.db.cntWigs(dbing.dgKey(botHab.pre, serder.said))
+        count = botHab.db.wigs.cnt(keys=(botHab.pre, serder.said))
         assert count >= 1
 
     # This needs to be fixedup to actually test delegating superseding recovery
@@ -617,7 +617,7 @@ def test_delegation_supersede():
         delK = delKvy.kevers[delPre]
         assert delK.delegated
         assert delK.serder.said == delSrdr.said
-        result = delKvy.db.aess.get(keys=dbing.dgKey(delPre, delSrdr.said))
+        result = delKvy.db.aess.get(keys=(delPre, delSrdr.said))
         assert result is not None
         rseqner, rsaider = result
         assert rseqner.qb64b == seqner.qb64b
@@ -630,7 +630,7 @@ def test_delegation_supersede():
         bobDelK = bobKvy.kevers[delPre]
         assert bobDelK.delegated
         assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
-        result = bobKvy.db.aess.get(keys=dbing.dgKey(delPre, delSrdr.said))
+        result = bobKvy.db.aess.get(keys=(delPre, delSrdr.said))
         assert result is not None
         rseqner, rsaider = result
         assert rseqner.qb64b == seqner.qb64b
@@ -714,7 +714,7 @@ def test_delegation_supersede():
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert bobDelK.delegated
         assert delK.serder.said == delSrdr.said
-        result = delKvy.db.aess.get(keys=dbing.dgKey(delPre, delSrdr.said))
+        result = delKvy.db.aess.get(keys=(delPre, delSrdr.said))
         assert result is not None
         rseqner, rsaider = result
         assert rseqner.qb64b == seqner.qb64b
@@ -725,7 +725,7 @@ def test_delegation_supersede():
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert bobDelK.delegated
         assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
-        result = delKvy.db.aess.get(keys=dbing.dgKey(delPre, delSrdr.said))
+        result = delKvy.db.aess.get(keys=(delPre, delSrdr.said))
         assert result is not None
         rseqner, rsaider = result
         assert rseqner.qb64b == seqner.qb64b
@@ -785,8 +785,8 @@ def test_delegables_escrow():
         # Place the anchor seal in the database... this will be retrieved from the fully committed delegate event
         serder = torHab.kever.serder
         sner = coring.Number(num=serder.sn, code=coring.NumDex.Huge)
-        saider = coring.Saider(qb64b=serder.saidb)
-        torHab.db.aess.pin(keys=dbing.dgKey(gateHab.kever.prefixer.qb64b, gateHab.kever.serder.saidb),
+        saider = coring.Diger(qb64b=serder.saidb)
+        torHab.db.aess.pin(keys=(gateHab.kever.prefixer.qb64b, gateHab.kever.serder.saidb),
                            val=(sner, saider))  # authorizer event seal (delegator/issuer)
 
         # delegate still not kevers

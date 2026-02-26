@@ -1135,13 +1135,14 @@ class BaseHab:
         """
         Return serder of inception event
         """
-        if (dig := self.db.getKeLast(eventing.snKey(pre=self.pre, sn=0))) is None:
+        if (dig := self.db.kels.getOnLast(keys=self.pre, on=0)) is None:
             raise kering.ConfigurationError("Missing inception event in KEL for "
                                             "Habitat pre={}.".format(self.pre))
-        if (raw := self.db.getEvt(eventing.dgKey(pre=self.pre, dig=bytes(dig)))) is None:
+        dig = dig.encode("utf-8")
+        if (serder := self.db.evts.get(keys=(self.pre, bytes(dig)))) is None:
             raise kering.ConfigurationError("Missing inception event for "
                                             "Habitat pre={}.".format(self.pre))
-        return serdering.SerderKERI(raw=bytes(raw))
+        return serder
 
     @property
     def kevers(self):
@@ -1566,17 +1567,19 @@ class BaseHab:
             return None
 
         msg = bytearray()
-        dig = self.db.getKeLast(dbing.snKey(pre, sn))
+        dig = self.db.kels.getOnLast(keys=pre, on=sn)
         if dig is None:
             raise kering.MissingEntryError("Missing event for pre={} at sn={}."
                                            "".format(pre, sn))
+        dig = dig.encode("utf-8")
         dig = bytes(dig)
         key = dbing.dgKey(pre, dig)  # digest key
-        msg.extend(self.db.getEvt(key))
-        msg.extend(Counter(Codens.ControllerIdxSigs, count=self.db.cntSigs(key),
+        serder = self.db.evts.get(keys=(pre, dig))
+        msg.extend(serder.raw)
+        msg.extend(Counter(Codens.ControllerIdxSigs, count=self.db.sigs.cnt(keys=(pre, dig)),
                            version=kering.Vrsn_1_0).qb64b)  # attach cnt
-        for sig in self.db.getSigsIter(key):
-            msg.extend(sig)  # attach sig
+        for siger in self.db.sigs.getIter(keys=(pre, dig)):
+            msg.extend(siger.qb64b)  # attach siger
         return msg
 
 
@@ -2024,26 +2027,20 @@ class BaseHab:
             sn (int): is int sequence number of event
             allowPartiallySigned(bool): True means attempt to load from partial signed escrow
         """
-        key = dbing.snKey(self.pre, sn)
-        dig = self.db.getKeLast(key)
+        dig = self.db.kels.getOnLast(keys=self.pre, on=sn)
+        dig = dig.encode("utf-8") if dig else None
         if dig is None and allowPartiallySigned:
-            dig = self.db.getPseLast(key)
+            vals = self.db.pses.getOnLast(keys=self.pre, on=sn)
+            dig = vals.encode("utf-8") if vals else None
 
         if dig is None:
             raise kering.MissingEntryError("Missing event for pre={} at sn={}."
                                            "".format(self.pre, sn))
-        dig = bytes(dig)
-        key = dbing.dgKey(self.pre, dig)  # digest key
-        msg = self.db.getEvt(key)
-        serder = serdering.SerderKERI(raw=bytes(msg))
+        serder = self.db.evts.get(keys=(self.pre, dig))
+        sigers = self.db.sigs.get(keys=(self.pre, dig))
+        duple = self.db.aess.get(keys=(self.pre, dig))
 
-        sigs = []
-        for sig in self.db.getSigsIter(key):
-            sigs.append(indexing.Siger(qb64b=bytes(sig)))
-
-        duple = self.db.aess.get(keys=key)
-
-        return serder, sigs, duple
+        return serder, sigers, duple
 
 
     def makeOwnEvent(self, sn, allowPartiallySigned=False):
@@ -2068,10 +2065,10 @@ class BaseHab:
             msg.extend(sig.qb64b)  # attach sig
 
         if duple is not None:
-            seqner, saider = duple
+            seqner, diger = duple
             msg.extend(Counter(Codens.SealSourceCouples, count=1,
                                version=kering.Vrsn_1_0).qb64b)
-            msg.extend(seqner.qb64b + saider.qb64b)
+            msg.extend(seqner.qb64b + diger.qb64b)
 
         return msg
 
@@ -2123,12 +2120,12 @@ class BaseHab:
                     dgkey = dbing.dgKey(self.pre, self.iserder.said)
                     found = False
                     if cuedPrefixer.transferable:  # find if have rct from other pre for own icp
-                        for quadruple in self.db.getVrcsIter(dgkey):
-                            if bytes(quadruple).decode("utf-8").startswith(cuedKed["i"]):
-                                found = True  # yes so don't send own inception
+                        for sprefixer, snumber, sdiger, siger in self.db.vrcs.getIter(dgkey):
+                            if sprefixer.qb64 == cuedKed["i"]:
+                                found = True
                     else:  # find if already rcts of own icp
-                        for couple in self.db.getRctsIter(dgkey):
-                            if bytes(couple).decode("utf-8").startswith(cuedKed["i"]):
+                        for prefixer, cigar in self.db.rcts.getIter(dgkey):
+                            if prefixer.qb64.startswith(cuedKed["i"]):
                                 found = True  # yes so don't send own inception
 
                     if not found:  # no receipt from remote so send own inception
@@ -2918,11 +2915,10 @@ class GroupHab(BaseHab):
         """
         kever = self.kever
         keys = [verfer.qb64 for verfer in kever.verfers]
-        sigs = self.db.getSigs(dbing.dgKey(self.pre, kever.serder.saidb))
-        if not sigs:  # otherwise its a list of sigs
+        sigers = self.db.sigs.get(keys=(self.pre, kever.serder.saidb))
+        if not sigers:  # otherwise its a list of sigs
             return False
 
-        sigers = [indexing.Siger(qb64b=bytes(sig)) for sig in sigs]
         windex = min([siger.index for siger in sigers])
 
         # True if Elected to perform delegation and witnessing

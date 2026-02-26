@@ -335,7 +335,7 @@ class Revery:
                                 continue  # skip if not later
 
             # retrieve sdig of last event at sn of signer.
-            sdig = self.db.getKeLast(key=dbing.snKey(pre=spre, sn=seqner.sn))
+            sdig = self.db.kels.getOnLast(keys=spre, on=seqner.sn)
             if sdig is None:
                 # create cue here to request key state for sprefixer signer
                 # signer's est event not yet in signer's KEL
@@ -346,11 +346,10 @@ class Revery:
                                  ssaider=ssaider, sigers=sigers)
                 self.cues.append(dict(kin="query", q=dict(pre=spre)))
                 continue
-
+            sdig = sdig.encode("utf-8") 
             # retrieve last event itself of signer given sdig
-            sraw = self.db.getEvt(key=dbing.dgKey(pre=spre, dig=bytes(sdig)))
-            # assumes db ensures that sraw must not be none because sdig was in KE
-            sserder = serdering.SerderKERI(raw=bytes(sraw))
+            sserder = self.db.evts.get(keys=(spre, bytes(sdig)))
+            # assumes db ensures that sserder must not be none because sdig was in KE
             if sserder.said != ssaider.qb64:  # signer's dig not match est evt
                 raise kering.ValidationError(f"Bad trans indexed sig group at sn = "
                                              f"{seqner.sn} for reply = {serder.ked}.")

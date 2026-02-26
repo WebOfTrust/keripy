@@ -22,7 +22,7 @@ from keri.vdr import verifying, credentialing
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Join group multisig inception, rotation or interaction event.', 
+parser = argparse.ArgumentParser(description='Join group multisig inception, rotation or interaction event.',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: join(args))
 parser.add_argument('--group', '-g', help='human-readable name for the multisig group identifier prefix', required=False, default=None)
@@ -112,7 +112,7 @@ class JoinDoer(doing.DoDoer):
 
         print("Waiting for group multisig events...")
 
-        while self.notifier.noter.notes.cntAll() == 0:
+        while self.notifier.noter.notes.cnt() == 0:
             yield self.tock
 
         for keys, notice in self.notifier.noter.notes.getItemIter():
@@ -310,8 +310,8 @@ class JoinDoer(doing.DoDoer):
 
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=serder.sn)
-            saider = coring.Saider(qb64b=serder.saidb)
-            yield from self.startCounselor(ghab, prefixer, seqner, saider)
+            diger = coring.Diger(qb64b=serder.saidb)
+            yield from self.startCounselor(ghab, prefixer, seqner, diger)
 
             print()
             displaying.printIdentifier(self.hby, ghab.pre)
@@ -444,7 +444,7 @@ class JoinDoer(doing.DoDoer):
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=serder.sn)
 
-            yield from self.startCounselor(ghab, prefixer, seqner, coring.Saider(qb64=serder.said))
+            yield from self.startCounselor(ghab, prefixer, seqner, coring.Diger(qb64=serder.said))
 
             print()
             displaying.printIdentifier(self.hby, ghab.pre)

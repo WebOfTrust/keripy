@@ -114,12 +114,12 @@ class VerifyDoer(doing.DoDoer):
             sys.stdout.write(".")
             sys.stdout.flush()
 
-            saiders = self.hby.db.reps.get(keys=(sig,))
-            for saider in saiders:
-                exn = self.hby.db.exns.get(keys=(saider.qb64,))
+            digers = self.hby.db.reps.get(keys=(sig,))
+            for diger in digers:
+                exn = self.hby.db.exns.get(keys=(diger.qb64,))
                 if words == exn.ked['a']['words']:
                     found = True
-                    self.hby.db.chas.add(keys=(sig,), val=saider)
+                    self.hby.db.chas.add(keys=(sig,), val=diger)
                     break
 
             if found:

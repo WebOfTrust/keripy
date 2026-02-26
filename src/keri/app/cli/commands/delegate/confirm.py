@@ -108,11 +108,8 @@ class ConfirmDoer(doing.DoDoer):
         while True:
             esc = self.escrowed()
             for pre, sn, edig in esc:
-                dgkey = dbing.dgKey(pre, edig)
-                eraw = self.hby.db.getEvt(dgkey)
-                if eraw is None:
+                if (eserder := self.hby.db.evts.get(keys=(pre, edig))) is None:
                     continue
-                eserder = serdering.SerderKERI(raw=bytes(eraw))  # escrowed event
 
                 ilk = eserder.sad["t"]
                 if ilk in (coring.Ilks.dip,):
@@ -160,8 +157,8 @@ class ConfirmDoer(doing.DoDoer):
 
                         prefixer = coring.Prefixer(qb64=hab.pre)
                         sner = core.Number(num=serder.sn, code=core.NumDex.Huge)  # maybe serder.sner instead so not Huge
-                        saider = coring.Saider(qb64b=serder.saidb)
-                        self.counselor.start(ghab=hab, prefixer=prefixer, seqner=sner, saider=saider)
+                        diger = coring.Diger(qb64b=serder.saidb)
+                        self.counselor.start(ghab=hab, prefixer=prefixer, seqner=sner, saider=diger)
 
                         while True:
                             saider = self.hby.db.cgms.get(keys=(prefixer.qb64, sner.qb64))

@@ -610,32 +610,30 @@ class Baser(dbing.LMDBer):
         kevers (dict): Kever instances indexed by identifier prefix qb64
         prefixes (OrderedSet): local prefixes corresponding to habitats for this db
 
-        .evts is named sub DB whose values are serialized key events
+        .evts is named subDB instance of SerderSuber whose values are serialized
+            key events
             dgKey
             DB is keyed by identifier prefix plus digest of serialized event
             Only one value per DB key is allowed
 
-        .kels is named sub DB of key event logs as indices that map sequence numbers
-            to serialized key event digests.
+        .kels is a named subDB instance of OnIoDupSuber for key event logs as indices that map a composite
+            key of the form "<pre><sep><on>" to serialized key event digests.
             Actual serialized key events are stored in .evts by SAID digest
-            Uses sequence number or sn.
-            snKey
             Values are digests used to lookup event in .evts sub DB
             DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
 
-        .fels is named sub DB of first seen event logs (FEL) as indices that map
-            first seen ordinal number to digests.
+        .fels is named sub DB instance of OnSuber for first seen event logs (FEL)
+            as indices that map first seen ordinal number fn to event digests.
             Actual serialized key events are stored in .evts by SAID digest
             This indexes events in first 'seen' accepted order for replay and
             cloning of event log.
             Uses first seen order number or fn.
-            fnKey
             DB is keyed by identifier prefix plus monotonically increasing first
             seen order number fn.
-            Value is digest of serialized event used to lookup event in .evts sub DB
+            Value is qb64 str of serialized event used to lookup event in .evts sub DB.
             Only one value per DB key is allowed.
-            Provides append only ordering of accepted first seen events.
+            Provides append-only ordering of accepted first seen events.
 
         .fons is named subDB CesrSuber
             Uses digest
@@ -688,12 +686,13 @@ class Baser(dbing.LMDBer):
             through the misfit escrow and get promoted to local source.
 
 
-        .dtss is named sub DB of datetime stamp strings in ISO 8601 format of
-            the datetime when the event was first escrosed and then later first
-            seen by log. Used for escrows timeouts and extended validation.
+        .dtss is named sub DB instance of CesrSuber for datetime stamps
+            of the datetime when the event was first escrowed and then later
+            first seen by log. Used for escrow timeouts and extended validation.
+            subkey 'dtss.'
             dgKey
             DB is keyed by identifier prefix plus digest of serialized event
-            Value is ISO 8601 datetime stamp bytes
+            Value is Dater instance
 
         .aess is named sub DB instance of CatCesrSuber for authorizing event
             source seal couples that map digest of key event to seal source
@@ -701,7 +700,7 @@ class Baser(dbing.LMDBer):
             subkey "aess."
             dgKey
             DB is keyed by identifier prefix plus digest of key event
-            Value is (Number, Saider) tuple; first component serialized as
+            Value is (Number, Diger) tuple; first component serialized as
             Huge (fixed 24-char), used to lookup authorizer's source event
             in .kels sub DB.
             Only one value per DB key is allowed.
@@ -711,25 +710,25 @@ class Baser(dbing.LMDBer):
             DB is keyed by identifier prefix plus digest of serialized event
             More than one value per DB key is allowed
 
-        .wigs is named sub DB of indexed witness signatures of event that may
+        .wigs is a CesrIoSetSuber of indexed witness signatures of event that may
             come directly or derived from a witness receipt message.
             Witnesses always have nontransferable identifier prefixes.
             The index is the offset of the witness into the witness list
             of the most recent establishment event wrt the receipted event.
             dgKey
             DB is keyed by identifier prefix plus digest of serialized event
-            More than one value per DB key is allowed
+            Stores Siger objects using CesrIoSetSuber
+            More than one Siger value per DB key is allowed
 
-        .rcts is named sub DB of event receipt couplets from nontransferable
+        .rcts is CatCesrIoSetSuber for event receipt couplets from nontransferable
             signers.
             These are endorsements from nontrasferable signers who are not witnesses
             May be watchers or other
-            Each couple is concatenation of fully qualified items.
-            These are: non-transferale prefix plus non-indexed event signature
-            by that prefix.
-            dgKey
-            DB is keyed by identifier prefix plus digest of serialized event
-            More than one value per DB key is allowed
+            Each entry is a duple of CESR objects: Prefixer and Cigar
+            DB is keyed by dgKey: identifier prefix plus digest of serialized event
+            Multiple values per key are stored as an ordered set (duplicates ignored,
+            insertion order preserved)
+
 
         .ures is named sub DB of unverified event receipt escrowed triples from
             non-transferable signers. Each triple is concatenation of fully
@@ -743,42 +742,60 @@ class Baser(dbing.LMDBer):
             of serialized event
             More than one value per DB key is allowed
 
-        .vrcs is named sub DB of event validator receipt quadruples from transferable
-            signers. Each quadruple is concatenation of  four fully qualified items
-            of validator. These are: transferable prefix, plus latest establishment
-            event sequence number plus latest establishment event digest,
-            plus indexed event signature.
-            These are endorsements by transferable AIDs that are not the controller
-            may be watchers or others.
-            When latest establishment event is multisig then there will
-            be multiple quadruples one per signing key, each a dup at same db key.
-            dgKey
-            DB is keyed by identifier prefix plus digest of serialized event
-            More than one value per DB key is allowed
+        .vrcs is named subDB instance of CatCesrIoSetSuber that stores verified 
+            transferable‑validator receipt quadruples. 
+            Each stored value is a typed CESR tuple—(Prefixer, Number, Diger, Siger)—
+            representing a validator’s transferable receipt, including the validator’s 
+            AID, its latest establishment‑event sequence number, digest, and its indexed 
+            signature over the event. Values are preserved in insertion order 
+            and represent fully validated receipts that have been moved out of escrow.
+            
 
-        .vres is named sub DB of unverified event validator receipt escrowed
-            quadruples from transferable signers. Each quadruple is concatenation of
-            four fully qualified items  of validator. These are: transferable prefix,
-            plus latest establishment event sequence number plus latest
-            establishment event digest, plus indexed event signature.
-            When latest establishment event is multisig then there will
-            be multiple quadruples one per signing key, each a dup at same db key.
-            dgKey
-            DB is keyed by identifier prefix plus digest of serialized event
-            More than one value per DB key is allowed
+        .vres is a named subDB instance of CatCesrIoSetSuber that maps
+            an event’s (prefix, sequence number) snKey to a set of escrowed
+            transferable‑receipt quintuples. Each value is a typed CESR tuple
+            (Diger, Prefixer, Number, Diger, Siger) representing a validator’s
+            receipt escrow. Used by Kevery to hold
+            unverified transferable receipts until they can be validated and moved
+            into the verified‑receipt store. Values are stored in insertion order.
 
-        .pses is named sub DB of partially signed key event escrows
-            that each map pre + sequence number to serialized event digest.
-            snKey
-            Values are digests used to lookup event in .evts sub DB
-            DB is keyed by identifier prefix plus sequence number of key event
-            More than one value per DB key is allowed
 
-        .pwes is named sub DB of partially witnessed key event escrowes
-            that each map pre + sequence number to serialized event digest.
+        .pses is a named subDB instance of OnIoDupSuber stores partially‑signed
+            escrows under composite keys of the form "<pre><sep><on>", where pre
+            is the identifier prefix and on is the event’s sequence number.
+            Used by Kevery to track events that have at least one verified signature
+            but cannot yet be fully validated due to missing signatures or dependent
+            events. Values are stored in insertion order.
+        .vrcs is named subDB instance of CatCesrIoSetSuber that stores verified 
+            transferable‑validator receipt quadruples. 
+            Each stored value is a typed CESR tuple—(Prefixer, Number, Diger, Siger)—
+            representing a validator’s transferable receipt, including the validator’s 
+            AID, its latest establishment‑event sequence number, digest, and its indexed 
+            signature over the event. Values are preserved in insertion order 
+            and represent fully validated receipts that have been moved out of escrow.
+            
+
+        .vres is a named subDB instance of CatCesrIoSetSuber that maps
+            an event’s (prefix, sequence number) snKey to a set of escrowed
+            transferable‑receipt quintuples. Each value is a typed CESR tuple
+            (Diger, Prefixer, Number, Diger, Siger) representing a validator’s
+            receipt escrow. Used by Kevery to hold
+            unverified transferable receipts until they can be validated and moved
+            into the verified‑receipt store. Values are stored in insertion order.
+
+
+        .pses is a named subDB instance of OnIoDupSuber stores partially‑signed
+            escrows under composite keys of the form "<pre><sep><on>", where pre
+            is the identifier prefix and on is the event’s sequence number.
+            Used by Kevery to track events that have at least one verified signature
+            but cannot yet be fully validated due to missing signatures or dependent
+            events. Values are stored in insertion order.
+
+        .pwes is named subDB instance of OnIoDupSuber for partially witnessed 
+            key event escrows that each map under a composite 
+            keys of the form "<pre><sep><on>" to serialized event digest.
             these are for escrows of events with verified signatures but not
-            yet verified witness reciepts.
-            snKey
+            yet verified witness receipts.
             Values are digests used to lookup event in .evts sub DB
             DB is keyed by identifier prefix plus sequence number of key event
             More than one value per DB key is allowed
@@ -799,7 +816,7 @@ class Baser(dbing.LMDBer):
             of delegating source event in which seal of delegated event appears.
             dgKey
             Values are serialized instances of CatCesrSuber as couples
-            (Seqner.qb64b, Saider.qb64b) used to lookup source event in delegator's
+            (Seqner.qb64b, Diger.qb64b) used to lookup source event in delegator's
             KEL.
             DB is keyed by identifier prefix plus digest of key event
             Only one value per DB key is allowed
@@ -819,28 +836,29 @@ class Baser(dbing.LMDBer):
             of serialized event
             More than one value per DB key is allowed
 
-        .ooes is named sub DB of out of order escrowed event tables
-            that map a prefix and sequence number to a set of serialized event
-            digests.
-            Values are digests used to lookup event in .evts, .sigs and .dtss
-            sub DBs.
-            snKey
-            DB is keyed by identifier prefix plus sequence number of key event
-            More than one value per DB key is allowed
+        .ooes is a named subDB instance of OnIoDupSuber stores out‑of‑order
+            escrows under composite keys of the form "<pre><sep><on>", where
+            pre is the identifier prefix and on is the event’s sequence number.
+            Used by Kevery to track events whose prior event has not yet been
+            accepted into the KEL. Values are stored in insertion order.
 
-        .dels is named sub DB of duplicitous event log tables that map sequence numbers
-            to serialized event digests.
-            snKey
-            Values are digests used to lookup event in .evts sub DB
-            DB is keyed by identifier prefix plus sequence number of key event
-            More than one value per DB key is allowed
+        .dels is named sub DB instance of OnIoDupSuber for duplicitous event
+            log tables that map identifier prefix plus sequence number to
+            serialized event digests.
+            subkey "dels."
+            snKey (prefix + ordinal sequence number)
+            DB is keyed by identifier prefix, ordinal is sequence number
+            Values are qb64 digests used to lookup event in .evts sub DB
+            More than one value per DB key is allowed (insertion ordered).
 
-        .ldes is named sub DB of likely duplicitous escrowed event tables
-            that map sequence numbers to serialized event digests.
-            snKey
-            Values are digests used to lookup event in .evts sub DB
-            DB is keyed by identifier prefix plus sequence number of key event
-            More than one value per DB key is allowed
+        .ldes is named sub DB instance of OnIoDupSuber for likely duplicitous
+            escrowed event tables that map identifier prefix plus sequence
+            number to serialized event digests.
+            subkey "ldes."
+            snKey (prefix + ordinal sequence number)
+            DB is keyed by identifier prefix, ordinal is sequence number
+            Values are qb64 digests used to lookup event in .evts sub DB
+            More than one value per DB key is allowed (insertion ordered).
 
 
         .states (subkey stts.) is named subDB instance of SerderSuber that maps a prefix
@@ -1006,27 +1024,35 @@ class Baser(dbing.LMDBer):
         # Names end with "." as sub DB name must include a non Base64 character
         # to avoid namespace collisions with Base64 identifier prefixes.
 
-        self.evts = self.env.open_db(key=b'evts.')
-        self.fels = self.env.open_db(key=b'fels.')
-        self.kels = self.env.open_db(key=b'kels.', dupsort=True)
-        self.dtss = self.env.open_db(key=b'dtss.')
+        self.evts = subing.SerderSuber(db=self, subkey='evts.')
+        self.fels = subing.OnSuber(db=self, subkey='fels.')
+        self.kels = subing.OnIoDupSuber(db=self, subkey='kels.')
+        self.dtss = subing.CesrSuber(db=self, subkey='dtss.', klas=coring.Dater)
         self.aess = subing.CatCesrSuber(db=self, subkey='aess.',
-                                        klas=(coring.Number, coring.Saider))
-        self.sigs = self.env.open_db(key=b'sigs.', dupsort=True)
-        self.wigs = self.env.open_db(key=b'wigs.', dupsort=True)
-        self.rcts = self.env.open_db(key=b'rcts.', dupsort=True)
-        self.ures = self.env.open_db(key=b'ures.', dupsort=True)
-        self.vrcs = self.env.open_db(key=b'vrcs.', dupsort=True)
-        self.vres = self.env.open_db(key=b'vres.', dupsort=True)
-        self.pses = self.env.open_db(key=b'pses.', dupsort=True)
-        self.pwes = self.env.open_db(key=b'pwes.', dupsort=True)
+                                        klas=(coring.Number, coring.Diger))
+        self.sigs = subing.CesrIoSetSuber(db=self, subkey='sigs.',
+                                        klas=(indexing.Siger))
+        self.wigs = subing.CesrIoSetSuber(db=self, subkey='wigs.', klas=indexing.Siger)
+        self.rcts = subing.CatCesrIoSetSuber(db=self, subkey="rcts.",
+                                             klas=(coring.Prefixer, coring.Cigar))
+        self.ures = subing.CatCesrIoSetSuber(db=self, subkey='ures.',
+                                             klas=(coring.Diger,coring.Prefixer,coring.Cigar))
+        self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.', 
+                                            klas=(coring.Prefixer, core.Number, coring.Diger, indexing.Siger))
+        self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.', 
+                                            klas=(coring.Diger, coring.Prefixer, core.Number, coring.Diger, indexing.Siger))
+        self.pses = subing.OnIoDupSuber(db=self, subkey='pses.')
+        self.pwes = subing.OnIoDupSuber(db=self, subkey='pwes.')
         self.pdes = subing.OnIoDupSuber(db=self, subkey='pdes.')
         self.udes = subing.CatCesrSuber(db=self, subkey='udes.',
-                                        klas=(coring.Seqner, coring.Saider))
+                                        klas=(coring.Seqner, coring.Diger))
         self.uwes = subing.B64OnIoDupSuber(db=self, subkey='uwes.')
-        self.ooes = self.env.open_db(key=b'ooes.', dupsort=True)
+        self.ooes = subing.OnIoDupSuber(db=self, subkey='ooes.')
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
+        self.ooes = subing.OnIoDupSuber(db=self, subkey='ooes.')
+        self.dels = subing.OnIoDupSuber(db=self, subkey='dels.')
+        self.ldes = subing.OnIoDupSuber(db=self, subkey='ldes.')
         self.qnfs = subing.IoSetSuber(db=self, subkey="qnfs.", dupsort=True)
 
         # events as ordered by first seen ordinals
@@ -1169,11 +1195,11 @@ class Baser(dbing.LMDBer):
 
         # accepted signed 12-word challenge response exn messages keys by prefix of signer
         # TODO: clean
-        self.chas = subing.CesrIoSetSuber(db=self, subkey='chas.', klas=coring.Saider)
+        self.chas = subing.CesrIoSetSuber(db=self, subkey='chas.', klas=coring.Diger)
 
         # successfull signed 12-word challenge response exn messages keys by prefix of signer
         # TODO: clean
-        self.reps = subing.CesrIoSetSuber(db=self, subkey='reps.', klas=coring.Saider)
+        self.reps = subing.CesrIoSetSuber(db=self, subkey='reps.', klas=coring.Diger)
 
         # authorzied well known OOBIs
         # TODO: clean
@@ -1195,12 +1221,12 @@ class Baser(dbing.LMDBer):
         # key state SAID database for successfully saved key state notices
         # maps key=(prefix, aid) to val=said of key state
         # TODO: clean
-        self.knas = subing.CesrSuber(db=self, subkey='knas.', klas=coring.Saider)
+        self.knas = subing.CesrSuber(db=self, subkey='knas.', klas=coring.Diger)
 
         # Watcher watched SAID database for successfully saved watched AIDs for a watcher
         # maps key=(cid, aid, oid) to val=said of rpy message
         # TODO: clean
-        self.wwas = subing.CesrSuber(db=self, subkey='wwas.', klas=coring.Saider)
+        self.wwas = subing.CesrSuber(db=self, subkey='wwas.', klas=coring.Diger)
 
         # config loaded oobis to be processed asynchronously, keyed by oobi URL
         # TODO: clean
@@ -1313,11 +1339,11 @@ class Baser(dbing.LMDBer):
         # completed group delegated AIDs
         # TODO: clean
         self.cdel = subing.CesrSuber(db=self, subkey='cdel.',
-                                     klas=coring.Saider)
+                                     klas=coring.Diger)
 
         # multisig sig embed payload SAID mapped to containing exn messages across group multisig participants
         # TODO: clean
-        self.meids = subing.CesrIoSetSuber(db=self, subkey="meids.", klas=coring.Saider)
+        self.meids = subing.CesrIoSetSuber(db=self, subkey="meids.", klas=coring.Diger)
 
         # multisig sig embed payload SAID mapped to group multisig participants AIDs
         # TODO: clean
@@ -1404,26 +1430,28 @@ class Baser(dbing.LMDBer):
         """
         Clear all escrows
         """
-        for (k, _) in self.getUreItemIter():
-            self.delUres(key=k)
-        for (k, _) in self.getVreItemIter():
-            self.delVres(key=k)
-        for (k, _) in self.getPseItemIter():
-            self.delPses(key=k)
-        for (k, _) in self.getPweItemIter():
-            self.delPwes(key=k)
-        for (k, _) in self.getOoeItemIter():
-            self.delOoes(key=k)
-        for (k, _) in self.getLdeItemIter():
-            self.delLdes(key=k)
+        for (k, _) in self.ures.getItemIter():
+            self.ures.rem(keys=k)
+        for (k, _) in self.vres.getItemIter():
+            self.vres.rem(keys=k)
+        for (pre, on, dig) in self.pses.getOnItemIterAll():
+            self.pses.remOn(keys=pre, on=on, val=dig)
+        for (pre, sn, dig) in self.pwes.getOnItemIterAll():
+            pre = pre[0]
+            dig = dig.encode("utf-8")
+            self.pwes.remOn(keys=pre, on=sn, val=dig)
+        for (pre, on, dig) in self.ooes.getOnItemIterAll():
+            self.ooes.remOn(keys=pre, on=on, val=dig)
         for (pre, said), edig in self.qnfs.getItemIter():
             self.qnfs.rem(keys=(pre, said))
         for (pre, snh), rdigerWigerTuple in self.uwes.getItemIter():
             self.uwes.rem(keys=(pre, snh))
 
-        for escrow in [self.qnfs, self.misfits, self.delegables, self.pdes, self.udes, self.rpes, self.epsd, self.eoobi,
-                       self.dpub, self.gpwe, self.gdee, self.dpwe, self.gpse, self.epse, self.dune]:
-            count = escrow.cntAll()
+        for escrow in [self.qnfs, self.misfits, self.delegables, self.pdes,
+                       self.udes, self.rpes, self.ldes, self.epsd, self.eoobi,
+                       self.dpub, self.gpwe, self.gdee, self.dpwe, self.gpse,
+                       self.epse, self.dune]:
+            count = escrow.cnt()
             escrow.trim()
             logger.info(f"KEL: Cleared {count} escrows from ({escrow}")
 
@@ -1621,7 +1649,7 @@ class Baser(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for _, fn, dig in self.getFelItemPreIter(pre, fn=fn):
+        for keys, fn, dig in self.fels.getOnItemIterAll(keys=pre, on=fn):
             try:
                 msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig)
             except Exception:
@@ -1641,7 +1669,8 @@ class Baser(dbing.LMDBer):
            msgs (Iterator): over all items in db
 
         """
-        for pre, fn, dig in self.getFelItemAllPreIter():
+        for keys, fn, dig in self.fels.getOnItemIterAll(keys=b'', on=0):
+            pre = keys[0].encode() if isinstance(keys[0], str) else keys[0]
             try:
                 msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig)
             except Exception:
@@ -1664,55 +1693,59 @@ class Baser(dbing.LMDBer):
         msg = bytearray()  # message
         atc = bytearray()  # attachments
         dgkey = dbing.dgKey(pre, dig)  # get message
-        if not (raw := self.getEvt(key=dgkey)):
+        if not (serder := self.evts.get(keys=(pre, dig))):
             raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
-        msg.extend(raw)
+        msg.extend(serder.raw)
 
         # add indexed signatures to attachments
-        if not (sigs := self.getSigs(key=dgkey)):
+        if not (sigers := self.sigs.get(keys=dgkey)):
             raise kering.MissingEntryError("Missing sigs for dig={}.".format(dig))
         atc.extend(core.Counter(code=core.Codens.ControllerIdxSigs,
-                                count=len(sigs), version=kering.Vrsn_1_0).qb64b)
-        for sig in sigs:
-            atc.extend(sig)
+                                count=len(sigers), version=kering.Vrsn_1_0).qb64b)
+        for siger in sigers:
+            atc.extend(siger.qb64b)
 
         # add indexed witness signatures to attachments
-        if wigs := self.getWigs(key=dgkey):
+        if wigers := self.wigs.get(keys=dgkey):
             atc.extend(core.Counter(code=core.Codens.WitnessIdxSigs,
-                                    count=len(wigs), version=kering.Vrsn_1_0).qb64b)
-            for wig in wigs:
-                atc.extend(wig)
+                                    count=len(wigers), version=kering.Vrsn_1_0).qb64b)
+            for wiger in wigers:
+                atc.extend(wiger.qb64b)
 
         # add authorizer (delegator/issuer) source seal event couple to attachments
-        if (duple := self.aess.get(keys=dgkey)) is not None:
-            seqner, saider = duple
+        if (duple := self.aess.get(keys=(pre, dig))) is not None:
+            seqner, diger = duple
             atc.extend(core.Counter(code=core.Codens.SealSourceCouples,
                                     count=1, version=kering.Vrsn_1_0).qb64b)
-            atc.extend(seqner.qb64b + saider.qb64b)
+            atc.extend(seqner.qb64b + diger.qb64b)
 
         # add trans endorsement quadruples to attachments not controller
         # may have been originally key event attachments or receipted endorsements
-        if quads := self.getVrcs(key=dgkey):
+        if quads := self.vrcs.get(keys=dgkey):
             atc.extend(core.Counter(code=core.Codens.TransReceiptQuadruples,
                                     count=len(quads), version=kering.Vrsn_1_0).qb64b)
-            for quad in quads:
-                atc.extend(quad)
+            for pre, snu, diger, siger in quads:    # adapt to CESR 
+                atc.extend(pre.qb64b)
+                atc.extend(snu.qb64b)
+                atc.extend(diger.qb64b)
+                atc.extend(siger.qb64b)
 
         # add nontrans endorsement couples to attachments not witnesses
         # may have been originally key event attachments or receipted endorsements
-        if coups := self.getRcts(key=dgkey):
+        if coups := self.rcts.get(keys=dgkey):
             atc.extend(core.Counter(code=core.Codens.NonTransReceiptCouples,
                                     count=len(coups), version=kering.Vrsn_1_0).qb64b)
-            for coup in coups:
-                atc.extend(coup)
+            for prefixer, cigar in coups:
+                atc.extend(prefixer.qb64b)
+                atc.extend(cigar.qb64b)
 
         # add first seen replay couple to attachments
-        if not (dts := self.getDts(key=dgkey)):
+        if not (dater := self.dtss.get(keys=dgkey)):
             raise kering.MissingEntryError("Missing datetime for dig={}.".format(dig))
         atc.extend(core.Counter(code=core.Codens.FirstSeenReplayCouples,
                                 count=1, version=kering.Vrsn_1_0).qb64b)
         atc.extend(core.Number(num=fn, code=core.NumDex.Huge).qb64b)  # may not need to be Huge
-        atc.extend(coring.Dater(dts=bytes(dts)).qb64b)
+        atc.extend(dater.qb64b)
 
         # prepend pipelining counter to attachments
         if len(atc) % 4:
@@ -1761,8 +1794,7 @@ class Baser(dbing.LMDBer):
 
         seal = eventing.SealEvent(**seal)  #convert to namedtuple
 
-        for evt in self.getEvtPreIter(pre=pre, sn=sn):  # includes disputed & superseded
-            srdr = serdering.SerderKERI(raw=evt.tobytes())
+        for srdr in self.getEvtPreIter(pre=pre, sn=sn):  # includes disputed & superseded
             for eseal in srdr.seals or []:  # or [] for seals 'a' field missing
                 if tuple(eseal) == eventing.SealEvent._fields:
                     eseal = eventing.SealEvent(**eseal)  # convert to namedtuple
@@ -1799,8 +1831,7 @@ class Baser(dbing.LMDBer):
 
         seal = eventing.SealEvent(**seal)  #convert to namedtuple
 
-        for evt in self.getEvtLastPreIter(pre=pre, sn=sn):  # no disputed or superseded
-            srdr = serdering.SerderKERI(raw=evt.tobytes())
+        for srdr in self.getEvtLastPreIter(pre=pre, sn=sn):  # no disputed or superseded
             for eseal in srdr.seals or []:  # or [] for seals 'a' field missing
                 if tuple(eseal) == eventing.SealEvent._fields:
                     eseal = eventing.SealEvent(**eseal)  # convert to namedtuple
@@ -1829,8 +1860,7 @@ class Baser(dbing.LMDBer):
         # create generic Seal namedtuple class using keys from provided seal dict
         Seal = namedtuple('Seal', list(seal))  # matching type
 
-        for evt in self.getEvtLastPreIter(pre=pre, sn=sn):  # only last evt at sn
-            srdr = serdering.SerderKERI(raw=evt.tobytes())
+        for srdr in self.getEvtLastPreIter(pre=pre, sn=sn):  # only last evt at sn
             for eseal in srdr.seals or []:  # or [] for seals 'a' field missing
                 if tuple(eseal) == Seal._fields:  # same type of seal
                     eseal = Seal(**eseal)  #convert to namedtuple
@@ -1882,14 +1912,12 @@ class Baser(dbing.LMDBer):
         """
         # Verify fully receipted, because this witness may have persisted before all receipts
         # have been gathered if this ius a witness for serder.pre
-        dgkey = dbing.dgKey(serder.preb, serder.saidb)
-
         # get unique verified wigers and windices lists from wigers list
-        wigs = self.getWigs(key=dgkey)
+        wigers = self.wigs.get(keys=(serder.preb, serder.saidb))
         kever = self.kevers[serder.pre]
         toad = kever.toader.num
 
-        return not len(wigs) < toad
+        return not len(wigers) < toad
 
     def resolveVerifiers(self, pre=None, sn=0, dig=None):
         """
@@ -1907,16 +1935,15 @@ class Baser(dbing.LMDBer):
         if prefixer.transferable:
             # receipted event and receipter in database so get receipter est evt
             # retrieve dig of last event at sn of est evt of receipter.
-            sdig = self.getKeLast(key=dbing.snKey(pre=prefixer.qb64b,
-                                                  sn=sn))
+            sdig = self.kels.getOnLast(keys=prefixer.qb64b, on=sn)
             if sdig is None:
                 # receipter's est event not yet in receipters's KEL
                 raise kering.ValidationError("key event sn {} for pre {} is not yet in KEL"
                                              "".format(sn, pre))
+            sdig = sdig.encode("utf-8")
             # retrieve last event itself of receipter est evt from sdig
-            sraw = self.getEvt(key=dbing.dgKey(pre=prefixer.qb64b, dig=bytes(sdig)))
-            # assumes db ensures that sraw must not be none because sdig was in KE
-            sserder = serdering.SerderKERI(raw=bytes(sraw))
+            sserder = self.evts.get(keys=(prefixer.qb64b, bytes(sdig)))
+            # assumes db ensures that sserder must not be none because sdig was in KE
             if dig is not None and not sserder.compare(said=dig):  # endorser's dig not match event
                 raise kering.ValidationError("Bad proof sig group at sn = {}"
                                              " for ksn = {}."
@@ -1930,43 +1957,6 @@ class Baser(dbing.LMDBer):
             tholder = coring.Tholder(sith="1")
 
         return tholder, verfers
-
-    def putEvt(self, key, val):
-        """
-        Use dgKey()
-        Write serialized event bytes val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        return self.putVal(self.evts, key, val)
-
-    def setEvt(self, key, val):
-        """
-        Use dgKey()
-        Write serialized event bytes val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.evts, key, val)
-
-    def getEvt(self, key):
-        """
-        Use dgKey()
-        Return event at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.evts, key)
-
-
-    def delEvt(self, key):
-        """
-        Use dgKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.evts, key)
-
 
     def getEvtPreIter(self, pre, sn=0):
         """
@@ -1982,16 +1972,15 @@ class Baser(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for dig in self.getKelIter(pre, sn=sn):
+        for dig in self.kels.getOnIterAll(keys=pre, on=sn):
             try:
-                dgkey = dbing.dgKey(pre, dig)  # get message
-                if not (raw := self.getEvt(key=dgkey)):
+                if not (serder := self.evts.get(keys=(pre, dig))):
                     raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
 
             except Exception:
                 continue  # skip this event
 
-            yield raw  # event message
+            yield serder  # event as Serder
 
 
     def getEvtLastPreIter(self, pre, sn=0):
@@ -2008,1119 +1997,16 @@ class Baser(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for dig in self.getKelLastIter(pre, sn=sn):
+        for dig in self.kels.getOnLastIter(keys=pre, on=sn):
             try:
 
-                dgkey = dbing.dgKey(pre, dig)  # get message
-                if not (raw := self.getEvt(key=dgkey)):
+                if not (serder := self.evts.get(keys=(pre, dig) )):
                     raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
 
             except Exception:
                 continue  # skip this event
 
-            yield raw  # event message
-
-
-    def putFe(self, key, val):
-        """
-        Use fnKey()
-        Write event digest bytes val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Return False if key already exists
-        """
-        return self.putVal(self.fels, key, val)
-
-    def setFe(self, key, val):
-        """
-        Use fnKey()
-        Write event digest bytes val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.fels, key, val)
-
-    def getFe(self, key):
-        """
-        Use fnKey()
-        Return event digest at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.fels, key)
-
-    def delFe(self, key):
-        """
-        Use snKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.fels, key)
-
-    def appendFe(self, pre, val):
-        """
-        Return first seen order number int, fn, of appended entry.
-        Computes fn as next fn after last entry.
-        Uses fnKey(pre, fn) for entries.
-
-        Append val to end of db entries with same pre but with fn incremented by
-        1 relative to last preexisting entry at pre.
-
-        Parameters:
-            pre is bytes identifier prefix for event
-            val is event digest
-        """
-        return self.appendOnVal(db=self.fels, key=pre, val=val)
-
-    def getFelItemPreIter(self, pre, fn=0):
-        """
-        Returns iterator of all (pre, fn, dig) triples in first seen order for
-        all events with same prefix, pre, in database. Items are sorted by
-        fnKey(pre, fn) where fn is first seen order number int.
-        Returns a First Seen Event Log FEL.
-        Returned items are duples of (fn, dig): Where fn is first seen order
-        number int and dig is event digest for lookup in .evts sub db.
-
-        Raises StopIteration Error when empty.
-
-        Parameters:
-            pre is bytes of itdentifier prefix
-            fn is int fn to resume replay. Earliset is fn=0
-
-        Returns:
-           items (Iterator[(pre, fn, val)]): over all items starting at pre, on
-        """
-        return self.getOnItemIter(db=self.fels, key=pre, on=fn)
-
-
-    def getFelItemAllPreIter(self):
-        """
-        Returns iterator of all (pre, fn, dig) triples in first seen order for
-        all events for all prefixes in database. Items are sorted by
-        fnKey(pre, fn) where fn is first seen order number int.
-        Returns all First Seen Event Logs FELs.
-        Returned items are tripes of (pre, fn, dig): Where pre is identifier prefix,
-        fn is first seen order number int and dig is event digest for lookup
-        in .evts sub db.
-
-        Raises StopIteration Error when empty.
-
-        Parameters:
-            key is key location in db to resume replay, If empty then start at
-                first key in database
-        """
-        #return self.getAllOnItemAllPreIter(db=self.fels, key=key)
-        return self.getOnItemIter(db=self.fels, key=b'')
-
-    def putDts(self, key, val):
-        """
-        Use dgKey()
-        Write serialized event datetime stamp val to key
-        Does not overwrite existing val if any
-        Returns True If val successfully written Else False
-        Returns False if key already exists
-        """
-        return self.putVal(self.dtss, key, val)
-
-    def setDts(self, key, val):
-        """
-        Use dgKey()
-        Write serialized event datetime stamp val to key
-        Overwrites existing val if any
-        Returns True If val successfully written Else False
-        """
-        return self.setVal(self.dtss, key, val)
-
-    def getDts(self, key):
-        """
-        Use dgKey()
-        Return datetime stamp at key
-        Returns None if no entry at key
-        """
-        return self.getVal(self.dtss, key)
-
-    def delDts(self, key):
-        """
-        Use dgKey()
-        Deletes value at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delVal(self.dtss, key)
-
-    def getSigs(self, key):
-        """
-        Use dgKey()
-        Return list of signatures at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getVals(self.sigs, key)
-
-    def getSigsIter(self, key):
-        """
-        Use dgKey()
-        Return iterator of signatures at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getValsIter(self.sigs, key)
-
-    def putSigs(self, key, vals):
-        """
-        Use dgKey()
-        Write each entry from list of bytes signatures vals to key
-        Adds to existing signatures at key if any
-        Returns True If no error
-        Apparently always returns True (is this how .put works with dupsort=True)
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.putVals(self.sigs, key, vals)
-
-    def addSig(self, key, val):
-        """
-        Use dgKey()
-        Add signature val bytes as dup to key in db
-        Adds to existing values at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.addVal(self.sigs, key, val)
-
-    def cntSigs(self, key):
-        """
-        Use dgKey()
-        Return count of signatures at key
-        Returns zero if no entry at key
-        """
-        return self.cntVals(self.sigs, key)
-
-    def delSigs(self, key, val=b''):
-        """
-        Use dgKey()
-        Deletes all values at key if val = b'' else deletes dup val = val.
-        Returns True If key exists in database (or key, val if val not b'') Else False
-        """
-        return self.delVals(self.sigs, key, val)
-
-    def getWigs(self, key):
-        """
-        Use dgKey()
-        Return list of indexed witness signatures at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getVals(self.wigs, key)
-
-    def getWigsIter(self, key):
-        """
-        Use dgKey()
-        Return iterator of indexed witness signatures at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getValsIter(self.wigs, key)
-
-    def putWigs(self, key, vals):
-        """
-        Use dgKey()
-        Write each entry from list of bytes indexed witness signatures vals to key
-        Adds to existing signatures at key if any
-        Returns True If no error
-        Apparently always returns True (is this how .put works with dupsort=True)
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.putVals(self.wigs, key, vals)
-
-    def addWig(self, key, val):
-        """
-        Use dgKey()
-        Add indexed witness signature val bytes as dup to key in db
-        Adds to existing values at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.addVal(self.wigs, key, val)
-
-    def cntWigs(self, key):
-        """
-        Use dgKey()
-        Return count of indexed witness signatures at key
-        Returns zero if no entry at key
-        """
-        return self.cntVals(self.wigs, key)
-
-    def delWigs(self, key, val=b''):
-        """
-        Use dgKey()
-        Deletes all values at key if val = b'' else deletes dup val = val.
-        Returns True If key exists in database (or key, val if val not b'') Else False
-        """
-        return self.delVals(self.wigs, key, val)
-
-    def putRcts(self, key, vals):
-        """
-        Use dgKey()
-        Write each entry from list of bytes receipt couplets vals to key
-        Couple is pre+cig (non indexed signature)
-        Adds to existing receipts at key if any
-        Returns True If no error
-        Apparently always returns True (is this how .put works with dupsort=True)
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.putVals(self.rcts, key, vals)
-
-    def addRct(self, key, val):
-        """
-        Use dgKey()
-        Add receipt couple val bytes as dup to key in db
-        Couple is pre+cig (non indexed signature)
-        Adds to existing values at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.addVal(self.rcts, key, val)
-
-    def getRcts(self, key):
-        """
-        Use dgKey()
-        Return list of receipt couplets at key
-        Couple is pre+cig (non indexed signature)
-        Returns empty list if no entry at key
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getVals(self.rcts, key)
-
-    def getRctsIter(self, key):
-        """
-        Use dgKey()
-        Return iterator of receipt couplets at key
-        Couple is pre+cig (non indexed signature)
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getValsIter(self.rcts, key)
-
-    def cntRcts(self, key):
-        """
-        Use dgKey()
-        Return count of receipt couplets at key
-        Couple is pre+cig (non indexed signature)
-        Returns zero if no entry at key
-        """
-        return self.cntVals(self.rcts, key)
-
-    def delRcts(self, key, val=b''):
-        """
-        Use dgKey()
-        Deletes all values at key if val = b'' else deletes dup val = val.
-        Returns True If key exists in database (or key, val if val not b'') Else False
-        """
-        return self.delVals(self.rcts, key, val)
-
-    def putUres(self, key, vals):
-        """
-        Use snKey()
-        Write each entry from list of bytes receipt triples vals to key
-        Triple is dig+pre+cig
-        Adds to existing receipts at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.putIoDupVals(self.ures, key, vals)
-
-    def addUre(self, key, val):
-        """
-        Use snKey()
-        Add receipt triple val bytes as dup to key in db
-        Triple is dig+pre+cig
-        Adds to existing values at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.addIoDupVal(self.ures, key, val)
-
-    def getUres(self, key):
-        """
-        Use snKey()
-        Return list of receipt triplets at key
-        Triple is dig+pre+cig
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupVals(self.ures, key)
-
-    def getUresIter(self, key):
-        """
-        Use snKey()
-        Return iterator of receipt triplets at key
-        Triple is dig+pre+cig
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValsIter(self.ures, key)
-
-    def getUreLast(self, key):
-        """
-        Use snKey()
-        Return last inserted dup partial signed escrowed event triple val at key
-        Triple is dig+pre+cig
-        Returns None if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValLast(self.ures, key)
-
-
-    def getUreItemIter(self, key=b''):
-        """
-        Use snKey()
-        Return iterator of partial signed escrowed event triple items at next
-        key after key.
-        Items is (key, val) where proem has already been stripped from val
-        val is triple dig+pre+cig
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getTopIoDupItemIter(self.ures, key)
-        #return self.getIoDupItemsNextIter(self.ures, key, skip)
-
-    def cntUres(self, key):
-        """
-        Use snKey()
-        Return count of receipt triplets at key
-        Returns zero if no entry at key
-        """
-        return self.cntIoDupVals(self.ures, key)
-
-    def delUres(self, key):
-        """
-        Use snKey()
-        Deletes all values at key in db.
-        Returns True If key exists in database Else False
-        """
-        return self.delIoDupVals(self.ures, key)
-
-    def delUre(self, key, val):
-        """
-        Use snKey()
-        Deletes dup val at key in db.
-        Returns True If dup at  exists in db Else False
-
-        Parameters:
-            key is bytes of key within sub db's keyspace
-            val is dup val (does not include insertion ordering proem)
-        """
-        return self.delIoDupVal(self.ures, key, val)
-
-    def putVrcs(self, key, vals):
-        """
-        Use dgKey()
-        Write each entry from list of bytes receipt quadruples vals to key
-        quadruple is spre+ssnu+sdig+sig
-        Adds to existing receipts at key if any
-        Returns True If no error
-        Apparently always returns True (is this how .put works with dupsort=True)
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.putVals(self.vrcs, key, vals)
-
-    def addVrc(self, key, val):
-        """
-        Use dgKey()
-        Add receipt quadruple val bytes as dup to key in db
-        quadruple is spre+ssnu+sdig+sig
-        Adds to existing values at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in lexocographic order not insertion order.
-        """
-        return self.addVal(self.vrcs, key, val)
-
-    def getVrcs(self, key):
-        """
-        Use dgKey()
-        Return list of receipt quadruples at key
-        quadruple is spre+ssnu+sdig+sig
-        Returns empty list if no entry at key
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getVals(self.vrcs, key)
-
-    def getVrcsIter(self, key):
-        """
-        Use dgKey()
-        Return iterator of receipt quadruples at key
-        quadruple is spre+ssnu+sdig+sig
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in lexocographic order not insertion order.
-        """
-        return self.getValsIter(self.vrcs, key)
-
-    def cntVrcs(self, key):
-        """
-        Use dgKey()
-        Return count of receipt quadruples at key
-        Returns zero if no entry at key
-        """
-        return self.cntVals(self.vrcs, key)
-
-    def delVrcs(self, key, val=b''):
-        """
-        Use dgKey()
-        Deletes all values at key if val = b'' else deletes dup val = val.
-        Returns True If key exists in database (or key, val if val not b'') Else False
-        """
-        return self.delVals(self.vrcs, key, val)
-
-    def putVres(self, key, vals):
-        """
-        Use snKey()
-        Write each entry from list of bytes receipt quinlets vals to key
-        Quinlet is edig + spre + ssnu + sdig +sig
-        Adds to existing receipts at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.putIoDupVals(self.vres, key, vals)
-
-    def addVre(self, key, val):
-        """
-        Use snKey()
-        Add receipt quintuple val bytes as dup to key in db
-        Quinlet is edig + spre + ssnu + sdig +sig
-        Adds to existing values at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.addIoDupVal(self.vres, key, val)
-
-    def getVres(self, key):
-        """
-        Use snKey()
-        Return list of receipt quinlets at key
-        Quinlet is edig + spre + ssnu + sdig +sig
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupVals(self.vres, key)
-
-    def getVresIter(self, key):
-        """
-        Use snKey()
-        Return iterator of receipt quinlets at key
-        Quinlet is edig + spre + ssnu + sdig +sig
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValsIter(self.vres, key)
-
-    def getVreLast(self, key):
-        """
-        Use snKey()
-        Return last inserted dup partial signed escrowed event quintuple val at key
-        Quinlet is edig + spre + ssnu + sdig +sig
-        Returns None if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValLast(self.vres, key)
-
-    def getVreItemIter(self, key=b''):
-        """
-        Use sgKey()
-        Return iterator of partial signed escrowed event quintuple items at next
-        key after key.
-        Items is (key, val) where proem has already been stripped from val
-        val is Quinlet is edig + spre + ssnu + sdig +sig
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getTopIoDupItemIter(self.vres, key)
-        #return self.getIoDupItemsNextIter(self.vres, key, skip)
-
-    def cntVres(self, key):
-        """
-        Use snKey()
-        Return count of receipt quinlets at key
-        Returns zero if no entry at key
-        """
-        return self.cntIoDupVals(self.vres, key)
-
-    def delVres(self, key):
-        """
-         Use snKey()
-        Deletes all values at key in db.
-        Returns True If key exists in database Else False
-        """
-        return self.delIoDupVals(self.vres, key)
-
-    def delVre(self, key, val):
-        """
-        Use snKey()
-        Deletes dup val at key in db.
-        Returns True If dup at  exists in db Else False
-
-        Parameters:
-            key is bytes of key within sub db's keyspace
-            val is dup val (does not include insertion ordering proem)
-        """
-        return self.delIoDupVal(self.vres, key, val)
-
-    def putKes(self, key, vals):
-        """
-        Use snKey()
-        Write each key event dig entry from list of bytes vals to key
-        Adds to existing event indexes at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.putIoDupVals(self.kels, key, vals)
-
-    def addKe(self, key, val):
-        """
-        Use snKey()
-        Add key event val bytes as dup to key in db
-        Adds to existing event indexes at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in insertion order.
-        """
-        return self.addIoDupVal(self.kels, key, val)
-
-    def getKes(self, key):
-        """
-        Use snKey()
-        Return list of key event dig vals at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupVals(self.kels, key)
-
-    def getKeLast(self, key):
-        """
-        Use snKey()
-        Return last inserted dup key event dig vals at key
-        Returns None if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValLast(self.kels, key)
-
-    def cntKes(self, key):
-        """
-        Use snKey()
-        Return count of dup key event dig val at key
-        Returns zero if no entry at key
-        """
-        return self.cntIoDupVals(self.kels, key)
-
-    def delKes(self, key):
-        """
-        Use snKey()
-        Deletes all values at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delIoDupVals(self.kels, key)
-
-
-    def getKelIter(self, pre, sn=0):
-        """
-        Returns iterator of all dup vals in insertion order for all entries
-        with same prefix across all sequence numbers without gaps. Stops if
-        encounters gap.
-        Assumes that key is combination of prefix and sequence number given
-        by .snKey().
-
-        db .kels values are digests used to lookup event in .evts sub DB
-
-        Raises StopIteration Error when empty.
-        Duplicates are retrieved in insertion order.
-        db is opened as named sub db with dupsort=True
-
-        Parameters:
-            pre (bytes | str): of itdentifier prefix prepended to sn in key
-                within sub db's keyspace
-            sn (int): initial sequence number to begin at
-        """
-        if hasattr(pre, "encode"):
-            pre = pre.encode("utf-8")  # convert str to bytes
-
-        return (self.getOnIoDupValIter(self.kels, pre, on=sn))
-
-        #return self.getOnIoDupValsAllPreIter(self.kels, pre, on=sn)
-
-
-    def getKelBackIter(self, pre, sn=0):
-        """
-        Returns iterator of all dup vals in insertion order for all entries
-        with same prefix across all sequence numbers without gaps in decreasing
-        order starting with first sequence number sn. Stops if encounters gap.
-        Assumes that key is combination of prefix and sequence number given
-        by .snKey().
-
-        db .kels values are digests used to lookup event in .evts sub DB
-
-        Raises StopIteration Error when empty.
-        Duplicates are retrieved in insertion order.
-        db is opened as named sub db with dupsort=True
-
-        Parameters:
-            pre (bytes | str): of itdentifier prefix prepended to sn in key
-                within sub db's keyspace
-            sn (int):
-        """
-        if hasattr(pre, "encode"):
-            pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getOnIoDupValBackIter(self.kels, pre, sn)
-
-
-    def getKelLastIter(self, pre, sn=0):
-        """
-        Returns iterator of last one of dup vals at each key in insertion order
-        for all entries with same prefix across all sequence numbers without gaps.
-        Stops if encounters gap.
-        Assumes that key is combination of prefix and sequence number given
-        by .snKey().
-
-        db .kels values are digests used to lookup event in .evts sub DB
-
-        Raises StopIteration Error when empty.
-        Duplicates are retrieved in insertion order.
-        db is opened as named sub db with dupsort=True
-
-        Parameters:
-            pre (bytes | str): of itdentifier prefix prepended to sn in key
-                within sub db's keyspace
-            sn (int); sequence number to being iteration
-        """
-        if hasattr(pre, "encode"):
-            pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getOnIoDupLastValIter(self.kels, pre, on=sn)
-
-
-    def putPses(self, key, vals):
-        """
-        Use snKey()
-        Write each partial signed escrow event entry from list of bytes dig vals to key
-        Adds to existing event indexes at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.putIoDupVals(self.pses, key, vals)
-
-    def addPse(self, key, val):
-        """
-        Use snKey()
-        Add Partial signed escrow val bytes as dup to key in db
-        Adds to existing event indexes at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in insertion order.
-        """
-        return self.addIoDupVal(self.pses, key, val)
-
-    def getPses(self, key):
-        """
-        Use snKey()
-        Return list of partial signed escrowed event dig vals at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupVals(self.pses, key)
-
-    def getPsesIter(self, key):
-        """
-        Use sgKey()
-        Return iterator of partial signed escrowed event dig vals at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValsIter(self.pses, key)
-
-    def getPseLast(self, key):
-        """
-        Use snKey()
-        Return last inserted dup partial signed escrowed event dig val at key
-        Returns None if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValLast(self.pses, key)
-
-    def getPseItemIter(self, key=b''):
-        """
-        Use sgKey()
-        Return iterator of partial signed escrowed event dig items at next key after key.
-        Items is (key, val) where proem has already been stripped from val
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getTopIoDupItemIter(self.pses, key)
-        #return self.getIoDupItemsNextIter(self.pses, key, skip)
-
-    def cntPses(self, key):
-        """
-        Use snKey()
-        Return count of dup event dig vals at key
-        Returns zero if no entry at key
-        """
-        return self.cntIoDupVals(self.pses, key)
-
-    def delPses(self, key):
-        """
-        Use snKey()
-        Deletes all values at key in db.
-        Returns True If key  exists in db Else False
-        """
-        return self.delIoDupVals(self.pses, key)
-
-    def delPse(self, key, val):
-        """
-        Use snKey()
-        Deletes dup val at key in db.
-        Returns True If dup at  exists in db Else False
-
-        Parameters:
-            key is bytes of key within sub db's keyspace
-            val is dup val (does not include insertion ordering proem)
-        """
-        return self.delIoDupVal(self.pses, key, val)
-
-
-    def putPwes(self, key, vals):
-        """
-        Use snKey()
-        Write each partial witnessed escrow event entry from list of bytes dig vals to key
-        Adds to existing event indexes at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.putIoDupVals(self.pwes, key, vals)
-
-    def addPwe(self, key, val):
-        """
-        Use snKey()
-        Add Partial witnessed escrow dig val bytes as dup to key in db
-        Adds to existing event indexes at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in insertion order.
-        """
-        return self.addIoDupVal(self.pwes, key, val)
-
-    def getPwes(self, key):
-        """
-        Use snKey()
-        Return list of witnessed signed escrowed event dig vals at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupVals(self.pwes, key)
-
-    def getPwesIter(self, key):
-        """
-        Use sgKey()
-        Return iterator of partial witnessed escrowed event dig vals at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValsIter(self.pwes, key)
-
-    def getPweLast(self, key):
-        """
-        Use snKey()
-        Return last inserted dup partial witnessed escrowed event dig val at key
-        Returns None if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValLast(self.pwes, key)
-
-    def getPweItemIter(self, key=b''):
-        """
-        Use sgKey()
-        Return iterator of partial witnessed escrowed event dig items at next key after key.
-        Items is (key, val) where proem has already been stripped from val
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getTopIoDupItemIter(self.pwes, key)
-        #return self.getIoDupItemsNextIter(self.pwes, key, skip)
-
-    #def getPweIoDupItemIter(self, key=b''):
-        #"""
-        #Use sgKey()
-        #Return iterator of partial witnessed escrowed event dig items at next key after key.
-        #Items is (key, val) where proem has already been stripped from val
-        #If key is b'' empty then returns dup items at first key.
-        #If skip is False and key is not b'' empty then returns dup items at key
-        #Raises StopIteration Error when empty
-        #Duplicates are retrieved in insertion order.
-        #"""
-        #return self.getTopIoDupItemIter(self.pwes, key)
-
-    def cntPwes(self, key):
-        """
-        Use snKey()
-        Return count of dup event dig vals at key
-        Returns zero if no entry at key
-        """
-        return self.cntIoDupVals(self.pwes, key)
-
-    def delPwes(self, key):
-        """
-        Use snKey()
-        Deletes all values at key in db.
-        Returns True If key  exists in db Else False
-        """
-        return self.delIoDupVals(self.pwes, key)
-
-    def delPwe(self, key, val):
-        """
-        Use snKey()
-        Deletes dup val at key in db.
-        Returns True If dup at  exists in db Else False
-
-        Parameters:
-            key is bytes of key within sub db's keyspace
-            val is dup val (does not include insertion ordering proem)
-        """
-        return self.delIoDupVal(self.pwes, key, val)
-
-    def putOoes(self, key, vals):
-        """
-        Use snKey()
-        Write each out of order escrow event dig entry from list of bytes vals to key
-        Adds to existing event indexes at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.putIoDupVals(self.ooes, key, vals)
-
-    def addOoe(self, key, val):
-        """
-        Use snKey()
-        Add out of order escrow val bytes as dup to key in db
-        Adds to existing event indexes at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in insertion order.
-        """
-        return self.addIoDupVal(self.ooes, key, val)
-
-    def getOoes(self, key):
-        """
-        Use snKey()
-        Return list of out of order escrow event dig vals at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupVals(self.ooes, key)
-
-    def getOoeLast(self, key):
-        """
-        Use snKey()
-        Return last inserted dup val of out of order escrow event dig vals at key
-        Returns None if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValLast(self.ooes, key)
-
-    def getOoeItemIter(self, key=b''):
-        """
-        Use sgKey()
-        Return iterator of out of order escrowed event dig items at next key after key.
-        Items is (key, val) where proem has already been stripped from val
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getTopIoDupItemIter(self.ooes, key)
-        #return self.getIoDupItemsNextIter(self.ooes, key, skip)
-
-    def cntOoes(self, key):
-        """
-        Use snKey()
-        Return count of dup event dig at key
-        Returns zero if no entry at key
-        """
-        return self.cntIoDupVals(self.ooes, key)
-
-    def delOoes(self, key):
-        """
-        Use snKey()
-        Deletes all values at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delIoDupVals(self.ooes, key)
-
-    def delOoe(self, key, val):
-        """
-        Use snKey()
-        Deletes dup val at key in db.
-        Returns True If dup at  exists in db Else False
-
-        Parameters:
-            db is opened named sub db with dupsort=True
-            key is bytes of key within sub db's keyspace
-            val is dup val (does not include insertion ordering proem)
-        """
-        return self.delIoDupVal(self.ooes, key, val)
-
-
-    def putDes(self, key, vals):
-        """
-        Use snKey()
-        Write each duplicitous event entry dig from list of bytes vals to key
-        Adds to existing event indexes at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.putIoDupVals(self.dels, key, vals)
-
-    def addDe(self, key, val):
-        """
-        Use snKey()
-        Add duplicate event index val bytes as dup to key in db
-        Adds to existing event indexes at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in insertion order.
-        """
-        return self.addIoDupVal(self.dels, key, val)
-
-    def getDes(self, key):
-        """
-        Use snKey()
-        Return list of duplicitous event dig vals at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupVals(self.dels, key)
-
-    def getDeLast(self, key):
-        """
-        Use snKey()
-        Return last inserted dup value of duplicitous event dig vals at key
-        Returns None if no entry at key
-
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValLast(self.dels, key)
-
-    def cntDes(self, key):
-        """
-        Use snKey()
-        Return count of dup event dig vals at key
-        Returns zero if no entry at key
-        """
-        return self.cntIoDupVals(self.dels, key)
-
-    def delDes(self, key):
-        """
-        Use snKey()
-        Deletes all values at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delIoDupVals(self.dels, key)
-
-    def getDelItemIter(self, pre):
-        """
-        Returns iterator of all dup vals  in insertion order for any entries
-        with same prefix across all sequence numbers including gaps.
-        Assumes that key is combination of prefix and sequence number given
-        by .snKey().
-
-        Raises StopIteration Error when empty.
-        Duplicates are retrieved in insertion order.
-
-        Parameters:
-            db is opened named sub db with dupsort=True
-            pre is bytes of itdentifier prefix prepended to sn in key
-                within sub db's keyspace
-        """
-        if hasattr(pre, "encode"):
-            pre = pre.encode("utf-8")  # convert str to bytes
-        return self.getTopIoDupItemIter(self.dels, pre)
-        #return self.getOnIoDupValsAnyPreIter(self.dels, pre)
-
-    def putLdes(self, key, vals):
-        """
-        Use snKey()
-        Write each likely duplicitous event entry dig from list of bytes vals to key
-        Adds to existing event indexes at key if any
-        Returns True If at least one of vals is added as dup, False otherwise
-        Duplicates are inserted in insertion order.
-        """
-        return self.putIoDupVals(self.ldes, key, vals)
-
-    def addLde(self, key, val):
-        """
-        Use snKey()
-        Add likely duplicitous escrow val bytes as dup to key in db
-        Adds to existing event indexes at key if any
-        Returns True if written else False if dup val already exists
-        Duplicates are inserted in insertion order.
-        """
-        return self.addIoDupVal(self.ldes, key, val)
-
-    def getLdes(self, key):
-        """
-        Use snKey()
-        Return list of likely duplicitous event dig vals at key
-        Returns empty list if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupVals(self.ldes, key)
-
-    def getLdeLast(self, key):
-        """
-        Use snKey()
-        Return last inserted dup val of likely duplicitous event dig vals at key
-        Returns None if no entry at key
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getIoDupValLast(self.ldes, key)
-
-    def getLdeItemIter(self, key=b''):
-        """
-        Use sgKey()
-        Return iterator of likely duplicitous escrowed event dig items at next key after key.
-        Items is (key, val) where proem has already been stripped from val
-        If key is b'' empty then returns dup items at first key.
-        If skip is False and key is not b'' empty then returns dup items at key
-        Raises StopIteration Error when empty
-        Duplicates are retrieved in insertion order.
-        """
-        return self.getTopIoDupItemIter(self.ldes, key)
-        #return self.getIoDupItemsNextIter(self.ldes, key, skip)
-
-    def cntLdes(self, key):
-        """
-        Use snKey()
-        Return count of dup event dig at key
-        Returns zero if no entry at key
-        """
-        return self.cntIoDupVals(self.ldes, key)
-
-    def delLdes(self, key):
-        """
-        Use snKey()
-        Deletes all values at key.
-        Returns True If key exists in database Else False
-        """
-        return self.delIoDupVals(self.ldes, key)
-
-    def delLde(self, key, val):
-        """
-        Use snKey()
-        Deletes dup val at key in db.
-        Returns True If dup at  exists in db Else False
-
-        Parameters:
-            db is opened named sub db with dupsort=True
-            key is bytes of key within sub db's keyspace
-            val is dup val (does not include insertion ordering proem)
-        """
-        return self.delIoDupVal(self.ldes, key, val)
-
+            yield serder  # event as Serder
 
 class BaserDoer(doing.Doer):
     """

@@ -198,7 +198,7 @@ def test_kom_get_item_iter():
                         (('bc', '3'), {'a': 'Fat', 'b': 'Green'}),
                         (('bc', '4'), {'a': 'Eat', 'b': 'White'})]
 
-        assert mydb.cntAll() == 8
+        assert mydb.cnt() == 8
 
         assert mydb.trim(keys=("b", ""))
         items = [(keys, asdict(data)) for keys, data in mydb.getItemIter()]
@@ -826,12 +826,6 @@ def test_ioset_komer():
             assert end == ends[i]
             assert iokeys == iokeysall[i]
             i += 1
-
-        #for iokeys, val in endDB.getFullItemIter():
-            #assert endDB.remIokey(iokeys=iokeys)
-
-        #assert endDB.cnt(keys=keys0) == 0
-        #assert endDB.cnt(keys=keys1) == 0
 
     assert not os.path.exists(db.path)
     assert not db.opened

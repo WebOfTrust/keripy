@@ -88,25 +88,23 @@ def test_counselor():
         rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
-        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Saider(qb64=rserder.said))
+        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Diger(qb64=rserder.said))
 
         # partially signed group rotation
         val = hby1.db.gpse.get(keys=(ghab.pre,))
         (seqner, saider) = val[0]
         assert seqner.sn == 1
         assert saider.qb64b == b'EFWaDXMVIhIMpsXMOcnXhU0tkJfD_rPULkQzphoM_EVb'
-        key = dbing.dgKey(ghab.pre, saider.qb64b)  # digest key
-        evt = hby1.db.getEvt(key=key)
-        assert bytes(evt) == (b'{"v":"KERI10JSON0001be_","t":"rot","d":"EFWaDXMVIhIMpsXMOcnXhU0tkJfD_rPULkQz'
+        srdr = hby1.db.evts.get(keys=(ghab.pre, saider.qb64b))
+        assert srdr is not None and srdr.raw == (b'{"v":"KERI10JSON0001be_","t":"rot","d":"EFWaDXMVIhIMpsXMOcnXhU0tkJfD_rPULkQz'
                               b'phoM_EVb","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2vDS1EVAS","s":"1","p":"EN'
                               b'uUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2vDS1EVAS","kt":"2","k":["DEbwF934m5TjdQbC1'
                               b'8jSmk2CcPO7xzAemzePy4LKnA_U","DBL_WnUsuY-CbIFNkME8dYG0lMSNtT993IWcmsPoUuED"]'
                               b',"nt":"2","n":["EBOgQ1MOWQ2eWIqDuqjinhh3L3O5qHPEZ08zMICPhPTw","EGyO8jUZpLIlA'
                               b'CoeLmfUzvE3mnxmcU2m_nyKfSDfpxV4"],"bt":"0","br":[],"ba":[],"a":[]}')
 
-        serder = serdering.SerderKERI(raw=bytes(evt))
-        sigers = hab2.mgr.sign(serder.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1], ondices=[1])
-        msg = eventing.messagize(serder=serder, sigers=sigers)
+        sigers = hab2.mgr.sign(srdr.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1], ondices=[1])
+        msg = eventing.messagize(serder=srdr, sigers=sigers)
         assert msg == (b'{"v":"KERI10JSON0001be_","t":"rot","d":"EFWaDXMVIhIMpsXMOcnXhU0t'
                        b'kJfD_rPULkQzphoM_EVb","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2v'
                        b'DS1EVAS","s":"1","p":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2vDS1EV'
@@ -143,16 +141,15 @@ def test_counselor():
         rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
-        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Saider(qb64=rserder.said))
+        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Diger(qb64=rserder.said))
 
         # partially signed group rotation
         val = hby1.db.gpse.get(keys=(ghab.pre,))
         (seqner, saider) = val[0]
         assert seqner.sn == 2
         assert saider.qb64b == b'EAFmW50FmBfJXp4sPnYBp51L-aT9RESXYh8jylx2dEGc'
-        key = dbing.dgKey(ghab.pre, saider.qb64b)  # digest key
-        evt = hby1.db.getEvt(key=key)
-        assert bytes(evt) == (b'{"v":"KERI10JSON0001ed_","t":"rot","d":"EAFmW50FmBfJXp4sPnYBp51L-aT9RESXYh8j'
+        srdr = hby1.db.evts.get(keys=(ghab.pre, saider.qb64b))
+        assert srdr is not None and srdr.raw == (b'{"v":"KERI10JSON0001ed_","t":"rot","d":"EAFmW50FmBfJXp4sPnYBp51L-aT9RESXYh8j'
                               b'ylx2dEGc","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2vDS1EVAS","s":"2","p":"EF'
                               b'WaDXMVIhIMpsXMOcnXhU0tkJfD_rPULkQzphoM_EVb","kt":"2","k":["DK-j3FspSlqvjM0v9'
                               b'nRUbgog54vminulol46VO1dDSAP","DPkCnS9Z62sYgHuZSZH8whM0CiwZFdwLIAX-pfrbntdi"]'
@@ -160,9 +157,8 @@ def test_counselor():
                               b'4KrWvInrg8gW3KbcYKiGceWFtwDfxmV","EMUrvGYprwKm77Oju22TlcoAEhL9QnnYfOBFPO1IyJ'
                               b'Un"],"bt":"0","br":[],"ba":[],"a":[]}')
 
-        serder = serdering.SerderKERI(raw=bytes(evt))
-        sigers = hab2.mgr.sign(serder.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1])
-        msg = eventing.messagize(serder=serder, sigers=sigers)
+        sigers = hab2.mgr.sign(srdr.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1])
+        msg = eventing.messagize(serder=srdr, sigers=sigers)
         assert msg == (b'{"v":"KERI10JSON0001ed_","t":"rot","d":"EAFmW50FmBfJXp4sPnYBp51L'
                        b'-aT9RESXYh8jylx2dEGc","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2v'
                        b'DS1EVAS","s":"2","p":"EFWaDXMVIhIMpsXMOcnXhU0tkJfD_rPULkQzphoM_E'
@@ -199,23 +195,22 @@ def test_counselor():
         rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
-        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Saider(qb64=rserder.said))
+        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Diger(qb64=rserder.said))
 
         # partially signed group rotation
         val = hby1.db.gpse.get(keys=(ghab.pre,))
         (seqner, saider) = val[0]
         assert seqner.sn == 3
         assert saider.qb64b == b'EEQVk2x7-t_fnYNoOzeZppvIKkEbVRDDVf1oxGj_hnXw'
-        key = dbing.dgKey(ghab.pre, saider.qb64b)  # digest key
-        evt = hby1.db.getEvt(key=key)
-        assert bytes(evt) == (b'{"v":"KERI10JSON0001be_","t":"rot","d":"EEQVk2x7-t_fnYNoOzeZppvIKkEbVRDDVf1o'
+        evt = hby1.db.evts.get(keys=(ghab.pre, saider.qb64b))
+        assert evt is not None and evt.raw == (b'{"v":"KERI10JSON0001be_","t":"rot","d":"EEQVk2x7-t_fnYNoOzeZppvIKkEbVRDDVf1o'
                               b'xGj_hnXw","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2vDS1EVAS","s":"3","p":"EA'
                               b'FmW50FmBfJXp4sPnYBp51L-aT9RESXYh8jylx2dEGc","kt":"2","k":["DE_7Y-c-xZXLb7Tcl'
                               b'Inn6Q6hRbiYuaTTDqZGmBNjvVXA","DDnDI3TRcmH_qzFOS3waORkqRcoydAWOboZq0gvermHM"]'
                               b',"nt":"2","n":["ELyh1BXGM7C0jfx3x-k8f1GLx9mIRHzFq3tiZgc9N5Vm","EH0h1byPWpTfi'
                               b'MUcnk_nbeS4HEfnS_j0q2TAJAeIkFlu"],"bt":"0","br":[],"ba":[],"a":[]}')
 
-        serder = serdering.SerderKERI(raw=bytes(evt))
+        serder = evt
         sigers = hab3.mgr.sign(serder.raw, verfers=hab3.kever.verfers, indexed=True, indices=[1], ondices=[2])
         msg = eventing.messagize(serder=serder, sigers=sigers)
         assert msg == (b'{"v":"KERI10JSON0001be_","t":"rot","d":"EEQVk2x7-t_fnYNoOzeZppvI'
@@ -381,15 +376,14 @@ def test_the_seven():
                           toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
-        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Saider(qb64=rserder.said))
+        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Diger(qb64=rserder.said))
 
         # partially signed group rotation
         val = hby1.db.gpse.get(keys=(ghab.pre,))
         (seqner, saider) = val[0]
         assert seqner.sn == 1
         assert saider.qb64b == b'EIr_IqnpArv44v0lBmv-yzFRXtiKYzN1tH7wLb6KGdsb'
-        key = dbing.dgKey(ghab.pre, saider.qb64b)  # digest key
-        evt = hby1.db.getEvt(key=key)
+        srdr = hby1.db.evts.get(keys=(ghab.pre, saider.qb64b))
 
         raw = (b'{"v":"KERI10JSON000310_","t":"rot","d":"EIr_IqnpArv44v0lBmv-yzFRXtiKYzN1tH7w'
                b'Lb6KGdsb","i":"EL-f5D0esAFbZTzK9W3wtTgDmncye9IOnF0Z8gRdICIU","s":"1","p":"EL'
@@ -402,20 +396,19 @@ def test_the_seven():
                b'","EHsPjPxkY00PW0IG3n834sBYqaLGWat9KKh-7qNSvH5O","EF9BqvXiUmAMpLVtxCQ0m9BD3k'
                b'wlzM6hx-jrI1CAt96R","EOKRgzqsueblcnkIrJhInqlpOwq8BVZCfJ7jBJ88Rt2Q"],"bt":"0"'
                b',"br":[],"ba":[],"a":[]}')
-        assert bytes(evt) == raw
+        assert srdr is not None and srdr.raw == raw
 
         # Grab the group ROT event, sign with Hab2 and parse into Kev1
-        serder = serdering.SerderKERI(raw=bytes(evt))
-        sigers = hab2.mgr.sign(serder.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1])
-        msg = eventing.messagize(serder=serder, sigers=sigers)
-        assert msg[serder.size:] == (b'-AABABAzvHN7yC3581dp9DxFXrKuXGP_62r_pzNMXL20T6RaPQASXvnBn6sKJ78z'
+        sigers = hab2.mgr.sign(srdr.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1])
+        msg = eventing.messagize(serder=srdr, sigers=sigers)
+        assert msg[srdr.size:] == (b'-AABABAzvHN7yC3581dp9DxFXrKuXGP_62r_pzNMXL20T6RaPQASXvnBn6sKJ78z'
                                      b'KM9o499Zaz76j940nBoMT-yb9i8N')
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kev1, local=True)  # parse second signed group inception
 
         # Now sign the group ROT with Hab3 and parse into Kev1.  This should commit the event
-        sigers = hab3.mgr.sign(serder.raw, verfers=hab3.kever.verfers, indexed=True, indices=[2])
-        msg = eventing.messagize(serder=serder, sigers=sigers)
-        assert msg[serder.size:] == (b'-AABACB6z6LrzBAgpnrCopgiGxuki3sE-KAfY8t_rFq-2dIcQxRF4iCqCYNPKM9D'
+        sigers = hab3.mgr.sign(srdr.raw, verfers=hab3.kever.verfers, indexed=True, indices=[2])
+        msg = eventing.messagize(serder=srdr, sigers=sigers)
+        assert msg[srdr.size:] == (b'-AABACB6z6LrzBAgpnrCopgiGxuki3sE-KAfY8t_rFq-2dIcQxRF4iCqCYNPKM9D'
                                      b'NbZbA1WDaQ72enSsR2UWMftX2kYD')
 
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kev1, local=True)  # parse second signed group inception
@@ -445,15 +438,14 @@ def test_the_seven():
                           toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
-        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Saider(qb64=rserder.said))
+        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Diger(qb64=rserder.said))
 
         # partially signed group rotation
         val = hby1.db.gpse.get(keys=(ghab.pre,))
         (seqner, saider) = val[0]
         assert seqner.sn == 2
         assert saider.qb64b == b'EHV57zdXq3lB3PZ4mmlOWt4SOOubIKDpcG5sSZh5jayZ'
-        key = dbing.dgKey(ghab.pre, saider.qb64b)  # digest key
-        evt = hby1.db.getEvt(key=key)
+        srdr = hby1.db.evts.get(keys=(ghab.pre, saider.qb64b))
 
         raw = (b'{"v":"KERI10JSON000310_","t":"rot","d":"EHV57zdXq3lB3PZ4mmlOWt4SOOubIKDpcG5s'
                b'SZh5jayZ","i":"EL-f5D0esAFbZTzK9W3wtTgDmncye9IOnF0Z8gRdICIU","s":"2","p":"EI'
@@ -467,20 +459,19 @@ def test_the_seven():
                b'wlzM6hx-jrI1CAt96R","EOKRgzqsueblcnkIrJhInqlpOwq8BVZCfJ7jBJ88Rt2Q"],"bt":"0"'
                b',"br":[],"ba":[],"a":[]}')
 
-        assert bytes(evt) == raw
+        assert srdr is not None and srdr.raw == raw
 
         # Grab the group ROT event, sign with Hab2 and parse into Kev1
-        serder = serdering.SerderKERI(raw=bytes(evt))
-        sigers = hab2.mgr.sign(serder.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1])
-        msg = eventing.messagize(serder=serder, sigers=sigers)
-        assert msg[serder.size:] == (b'-AABABC4sYnDXCpO87BMXO21ofqHZKntPSdEXlBPlq1H8NOHD3KV-GHGWrXyrElK'
+        sigers = hab2.mgr.sign(srdr.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1])
+        msg = eventing.messagize(serder=srdr, sigers=sigers)
+        assert msg[srdr.size:] == (b'-AABABC4sYnDXCpO87BMXO21ofqHZKntPSdEXlBPlq1H8NOHD3KV-GHGWrXyrElK'
                                      b'BkQNBbNr9_yg-nSnBq7N9rAxEFcK')
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kev1, local=True)  # parse second signed group inception
 
         # Now sign the group ROT with Hab3 and parse into Kev1.  This should commit the event
-        sigers = hab3.mgr.sign(serder.raw, verfers=hab3.kever.verfers, indexed=True, indices=[2])
-        msg = eventing.messagize(serder=serder, sigers=sigers)
-        assert msg[serder.size:] == (b'-AABACAXyUueUfXC-ccUxBZTgnyHTXOy1wUYgQrhlk8FMJGQPiaOOdAzhaW71JeF'
+        sigers = hab3.mgr.sign(srdr.raw, verfers=hab3.kever.verfers, indexed=True, indices=[2])
+        msg = eventing.messagize(serder=srdr, sigers=sigers)
+        assert msg[srdr.size:] == (b'-AABACAXyUueUfXC-ccUxBZTgnyHTXOy1wUYgQrhlk8FMJGQPiaOOdAzhaW71JeF'
                                      b'0By8Se-tKKuPP1xG41DblgXIwNkE')
 
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kev1, local=True)  # parse second signed group inception
@@ -524,15 +515,14 @@ def test_the_seven():
                            toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
-        counselor4.start(ghab=ghab4, prefixer=prefixer, seqner=seqner, saider=coring.Saider(qb64=rserder.said))
+        counselor4.start(ghab=ghab4, prefixer=prefixer, seqner=seqner, saider=coring.Diger(qb64=rserder.said))
 
         # partially signed group rotation
         val = hby4.db.gpse.get(keys=(ghab4.pre,))
         (seqner, saider) = val[0]
         assert seqner.sn == 3
         assert saider.qb64b == b'EGt_CZZASnY_iyB14ZXGQ4MxMtcSVW5oMHAuLM8BnqxV'
-        key = dbing.dgKey(ghab4.pre, saider.qb64b)  # digest key
-        evt = hby4.db.getEvt(key=key)
+        srdr = hby4.db.evts.get(keys=(ghab4.pre, saider.qb64b))
 
         raw = (b'{"v":"KERI10JSON00023c_","t":"rot","d":"EGt_CZZASnY_iyB14ZXGQ4MxMtcSVW5oMHAu'
                b'LM8BnqxV","i":"EL-f5D0esAFbZTzK9W3wtTgDmncye9IOnF0Z8gRdICIU","s":"3","p":"EH'
@@ -542,20 +532,19 @@ def test_the_seven():
                b'"1/3","1/3"],"n":["EGX_K2uTEU6NOXfNo0VfhYLMrqADYHOoNk7WtT1SXOo2","EFl4us5uR0'
                b'hCiYcW7YyOaSAo-7zp8x1uBVU2E_tmhEwj","EMyxeTiM_cH5IHUI6nummgHMeW-_1oKw7rvqlDd'
                b'gha9v"],"bt":"0","br":[],"ba":[],"a":[]}')
-        assert bytes(evt) == raw
+        assert srdr is not None and srdr.raw == raw
 
         # Grab the group ROT event, sign with Hab5 and parse into Kev4
-        serder = serdering.SerderKERI(raw=bytes(evt))
-        sigers = hab5.mgr.sign(serder.raw, verfers=hab5.kever.verfers, indexed=True, indices=[1], ondices=[4])
-        msg = eventing.messagize(serder=serder, sigers=sigers)
-        assert msg[serder.size:] == (b'-AAB2AABAEDSs99oM-KOhJ8q3H8lqGqPE3EvZxCHvCjZFvWHLzhqm91YlcskGqvK'
+        sigers = hab5.mgr.sign(srdr.raw, verfers=hab5.kever.verfers, indexed=True, indices=[1], ondices=[4])
+        msg = eventing.messagize(serder=srdr, sigers=sigers)
+        assert msg[srdr.size:] == (b'-AAB2AABAEDSs99oM-KOhJ8q3H8lqGqPE3EvZxCHvCjZFvWHLzhqm91YlcskGqvK'
                                      b'8DwCg9dj8wRZP54ienzD52EIKvJWWh4J')
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kev4, local=True)  # parse second signed group inception
 
         # Now sign the group ROT with Hab6 and parse into Kev4.  This should commit the event
-        sigers = hab6.mgr.sign(serder.raw, verfers=hab6.kever.verfers, indexed=True, indices=[2], ondices=[5])
-        msg = eventing.messagize(serder=serder, sigers=sigers)
-        assert msg[serder.size:] == (b'-AAB2AACAFBNVTM0Gw4rSd-S5HQ_KpmBfDedi7XNvB24ijMjQaekIfKlcdguPS8p'
+        sigers = hab6.mgr.sign(srdr.raw, verfers=hab6.kever.verfers, indexed=True, indices=[2], ondices=[5])
+        msg = eventing.messagize(serder=srdr, sigers=sigers)
+        assert msg[srdr.size:] == (b'-AAB2AACAFBNVTM0Gw4rSd-S5HQ_KpmBfDedi7XNvB24ijMjQaekIfKlcdguPS8p'
                                      b'ax9ht7EE3SiTj9fSO_3f4SVUfJMPmHIK')
 
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kev4, local=True)  # parse second signed group inception
@@ -609,17 +598,16 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
         ghab3 = hby3.makeGroupHab(group=f"{prefix}_group3", mhab=hab3,
                                   smids=smids, rmids=rmids, **inits)
 
-        dgkey = dbing.dgKey(ghab1.pre.encode("utf-8"), ghab1.pre.encode("utf-8"))  # digest key
-        eraw = hab1.db.getEvt(dgkey)
-        sigs = bytearray()
-        sigs.extend(bytes(hab1.db.getSigs(dgkey)[0]))
-        sigs.extend(bytes(hab2.db.getSigs(dgkey)[0]))
-        sigs.extend(bytes(hab3.db.getSigs(dgkey)[0]))
+        eserder = hab1.db.evts.get(keys=(ghab1.pre.encode("utf-8"), ghab1.pre.encode("utf-8")))
+        sigers = bytearray()
+        for hab in [hab1, hab2, hab3]:
+            for siger in hab.db.sigs.get(keys=(ghab1.pre.encode("utf-8"), ghab1.pre.encode("utf-8"))):
+                sigers.extend(siger.qb64b)
 
-        evt = bytearray(eraw)
+        evt = bytearray(eserder.raw)
         evt.extend(core.Counter(core.Codens.ControllerIdxSigs,
                                 count=3, version=kering.Vrsn_1_0).qb64b)  # attach cnt
-        evt.extend(sigs)
+        evt.extend(sigers)
 
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev3, local=True)
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(evt), kvy=kev2, local=True)
