@@ -1418,12 +1418,12 @@ class IoSetSuber(SuberBase):
 
         """
         if val:
-            return self.db.delIoSetVal(db=self.sdb,
+            return self.db.remIoSetVal(db=self.sdb,
                                        key=self._tokey(keys),
                                        val=self._ser(val),
                                        sep=self.sep)
         else:
-            return self.db.delIoSet(db=self.sdb,
+            return self.db.remIoSet(db=self.sdb,
                                        key=self._tokey(keys),
                                        sep=self.sep)
 

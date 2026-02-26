@@ -1097,7 +1097,7 @@ class LMDBer(filing.Filer):
         if not key or not vals:  # empty key or empty vals or vals None
             return result  # do not delete
 
-        self.delIoSet(db=db, key=key, sep=sep)
+        self.remIoSet(db=db, key=key, sep=sep)
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             vals = oset(vals)  # make set
 
@@ -1219,29 +1219,8 @@ class LMDBer(filing.Filer):
             return last  # iokey past end of database
 
 
-    #def getIoSetLast(self, db, key, *, sep=b'.'):
-        #"""Gets last added ioset entry val at effective key if any else None.
-
-        #Uses hidden ordinal key suffix for insertion ordering.
-            #The suffix is suffixed and unsuffixed transparently.
-
-        #Returns:
-            #last (memoryview|None): last added entry at apparent effective key if any,
-                              #otherwise None if no entry at key or if key empty
-
-        #Parameters:
-            #db (lmdb._Database): instance of named sub db with dupsort==False
-            #key (bytes): Apparent effective key
-            #sep (bytes): separator character for split
-        #"""
-        #val = None
-        #if result := self.getIoSetLastItem(db=db, key=key, sep=sep):
-            #_, val = result
-        #return val
-
-
-    def delIoSet(self, db, key, *, sep=b'.'):
-        """Deletes all set values at apparent effective key if key is not
+    def remIoSet(self, db, key, *, sep=b'.'):
+        """Removes all set values at apparent effective key if key is not
         empty or None
 
         Uses hidden ordinal key suffix for insertion ordering.
@@ -1274,7 +1253,7 @@ class LMDBer(filing.Filer):
             return result
 
 
-    def delIoSetVal(self, db, key, val, *, sep=b'.'):
+    def remIoSetVal(self, db, key, val, *, sep=b'.'):
         """Deletes set ioval val at key onkey consisting of key + sep + on if any
         False if key empty
         Uses hidden ordinal key suffix for insertion ordering.
@@ -1727,7 +1706,7 @@ class LMDBer(filing.Filer):
         transparently suffixed and unsuffixed
         Assumes DB opened with dupsort=False
         """
-        return self.delIoSet(db=db, key=onKey(key, on, sep=sep), sep=sep)
+        return self.remIoSet(db=db, key=onKey(key, on, sep=sep), sep=sep)
 
 
     def remOnIoSetVal(self, db, key, *, on=0, val=None, sep=b'.'):
@@ -1769,9 +1748,9 @@ class LMDBer(filing.Filer):
         Assumes DB opened with dupsort=False
         """
         if val is None:
-            return self.delIoSet(db=db, key=onKey(key, on, sep=sep), sep=sep)
+            return self.remIoSet(db=db, key=onKey(key, on, sep=sep), sep=sep)
 
-        return self.delIoSetVal(db, key=onKey(key, on, sep=sep), val=val, sep=sep)
+        return self.remIoSetVal(db, key=onKey(key, on, sep=sep), val=val, sep=sep)
 
 
     def remOnAllIoSet(self, db, key=b"", on=0, *, sep=b'.'):

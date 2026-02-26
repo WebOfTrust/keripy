@@ -495,7 +495,7 @@ class IoSetKomer(KomerBase):
 
         """
         key = self._tokey(keys)
-        self.db.delIoSet(db=self.sdb, key=key)  # delete all values
+        self.db.remIoSet(db=self.sdb, key=key)  # delete all values
         vals = [self.serializer(val) for val in vals]
         return (self.db.pinIoSetVals(db=self.sdb,
                                      key=key,
@@ -594,12 +594,12 @@ class IoSetKomer(KomerBase):
         """
         if val is not None:
             val = self.serializer(val)
-            return self.db.delIoSetVal(db=self.sdb,
+            return self.db.remIoSetVal(db=self.sdb,
                                        key=self._tokey(keys),
                                        val=val,
                                        sep=self.sep)
         else:
-            return self.db.delIoSet(db=self.sdb,
+            return self.db.remIoSet(db=self.sdb,
                                        key=self._tokey(keys),
                                        sep=self.sep)
 

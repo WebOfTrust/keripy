@@ -1110,7 +1110,7 @@ def test_lmdber():
         assert list(dber.getIoSetItemIter(db, key3)) == [(b'JKL.QPO', b"ok")] # did not delete
         assert not dber.pinIoSetVals(db, key0, vals=[]) # vals=empty
         assert list(dber.getIoSetItemIter(db, key3)) == [(b'JKL.QPO', b"ok")]  # did not delete
-        assert dber.delIoSet(db, key3)
+        assert dber.remIoSet(db, key3)
         assert list(dber.getIoSetItemIter(db, key3)) == []  # nothing there
 
         assert dber.getIoSetLastItem(db, b"") == ()
@@ -1118,7 +1118,7 @@ def test_lmdber():
         assert list(dber.getIoSetItemIter(db, key0)) == []
         assert dber.getIoSetLastItem(db, key0) == ()
         assert dber.cntIoSet(db, key0) == 0
-        assert dber.delIoSet(db, key0) == False
+        assert dber.remIoSet(db, key0) == False
 
         assert dber.putIoSetVals(db, key0, vals0) == True
         # preserved insertion order
@@ -1149,28 +1149,28 @@ def test_lmdber():
             (b'ABC.ZYX', b'f'),
             (b'ABC.ZYX', b'b')
         ]
-        assert dber.delIoSet(db, key0) == True
+        assert dber.remIoSet(db, key0) == True
         assert list(dber.getIoSetItemIter(db, key0)) == []
 
         assert dber.putIoSetVals(db, key0, vals0) == True
         for val in vals0:
-            assert dber.delIoSetVal(db, key0, val)
+            assert dber.remIoSetVal(db, key0, val)
         assert list(dber.getIoSetItemIter(db, key0)) == []
         assert dber.putIoSetVals(db, key0, vals0) == True
         for val in sorted(vals0):  # test deletion out of order
-            assert dber.delIoSetVal(db, key0, val)
+            assert dber.remIoSetVal(db, key0, val)
         assert list(dber.getIoSetItemIter(db, key0)) == []
 
         #delete and add in odd order
         assert dber.putIoSetVals(db, key0, vals0) == True
-        assert dber.delIoSetVal(db, key0, vals0[2])
+        assert dber.remIoSetVal(db, key0, vals0[2])
         assert dber.addIoSetVal(db, key0, b'w')
-        assert dber.delIoSetVal(db, key0, vals0[0])
+        assert dber.remIoSetVal(db, key0, vals0[0])
         assert dber.addIoSetVal(db, key0, b'e')
         assert [bytes(val) for key, val in dber.getIoSetItemIter(db, key0)] == \
             [b'm', b'a', b'w', b'e']
 
-        assert dber.delIoSet(db, key0) == True
+        assert dber.remIoSet(db, key0) == True
         assert [bytes(val) for key, val in dber.getIoSetItemIter(db, key0)] == \
             []
 
@@ -1322,7 +1322,7 @@ def test_lmdber():
 
         # test ion with gap
         # make gap
-        assert dber.delIoSetVal(db, key0, b"m")
+        assert dber.remIoSetVal(db, key0, b"m")
 
         assert [(key,bytes(val)) for key, val in dber.getIoSetItemIter(db, key0)] ==\
         [
@@ -1372,7 +1372,7 @@ def test_lmdber():
 
         # key2 so last key in db
         # make gap
-        assert dber.delIoSetVal(db, key2, b"p")
+        assert dber.remIoSetVal(db, key2, b"p")
 
         # last 3 starting at ion=0
         assert [(key,bytes(val)) for key, val in dber.getIoSetItemIter(db, key2, ion=0)] ==\
@@ -2075,8 +2075,8 @@ def test_lmdber():
         dber.pinIoSetVals(db, empty_key, [some_value])
         [ _ for _ in dber.getIoSetItemIter(db, empty_key)]
         dber.cntIoSet(db, empty_key)
-        dber.delIoSet(db, empty_key)
-        dber.delIoSetVal(db, empty_key, some_value)
+        dber.remIoSet(db, empty_key)
+        dber.remIoSetVal(db, empty_key, some_value)
         with pytest.raises(KeyError):
             dber.putVals(db, empty_key, [some_value])
         with pytest.raises(KeyError):
