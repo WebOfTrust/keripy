@@ -6,7 +6,7 @@ tests.vdr.test_credentialing module
 from keri import kering
 
 from keri.app import keeping
-from keri.core import coring, serdering
+from keri.core import serdering
 from keri.core import eventing as keventing
 from keri.core.coring import Seqner, Saider
 from keri.db import basing
@@ -182,7 +182,7 @@ def test_tmse():
             rgy=rgy,
             counselor=type("C", (), {"complete": lambda self, *a, **kw: True})()
         )
-        
+
         reg = rgy.makeRegistry(name="tmse_drain", prefix=hab.pre, noBackers=True)
         rseq = Seqner(sn=0)
         prefixer = hab.kever.prefixer
