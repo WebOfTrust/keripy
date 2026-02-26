@@ -515,8 +515,8 @@ class IoSetKomer(KomerBase):
                           empty list if no entry at keys
 
         """
-        return [self.deserializer(val) for val in
-                    self.db.getIoSetIter(db=self.sdb,
+        return [self.deserializer(val) for key, val in
+                    self.db.getIoSetItemIter(db=self.sdb,
                                              key=self._tokey(keys),
                                              sep=self.sep)]
 
@@ -552,7 +552,7 @@ class IoSetKomer(KomerBase):
             vals (Iterator):  str values. Raises StopIteration when done
 
         """
-        for val in self.db.getIoSetIter(db=self.sdb,
+        for key, val in self.db.getIoSetItemIter(db=self.sdb,
                                             key=self._tokey(keys),
                                             sep=self.sep):
             yield self.deserializer(val)
