@@ -489,7 +489,7 @@ class Reger(dbing.LMDBer):
 
         """
         key = creder.said
-        self.cancs.pin(keys=key, val=[prefixer, number, saider], code=coring.NumDex.Huge)
+        self.cancs.pin(keys=key, val=[prefixer, number, saider])
         self.creds.put(keys=key, val=creder)
 
     def cloneCred(self, said):
