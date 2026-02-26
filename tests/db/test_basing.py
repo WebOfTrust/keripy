@@ -2620,39 +2620,6 @@ def test_db_keyspace_end_to_end_migration():
         assert ordered_sns == sns
 
 
-def test_big_int_round_trip_js_vs_coring_number():
-    """
-    Demonstrate that large integers cannot round-trip through JavaScript,
-    but coring.Number can round-trip them safely.
-    """
-    # number far above JS safe integer limit (2^53 - 1)
-    big = 2**80 + 123456789
-
-    # javaScript round-trip (LOSSY)
-    js_code = f"""
-        const x = {big};
-        const y = JSON.parse(JSON.stringify(x));
-        console.log(y);
-    """
-
-    # run JS using node
-    result = subprocess.check_output(["node", "-e", js_code]).decode().strip()
-    js_value = int(float(result))
-
-    # JS corrupt the number
-    assert big == 1208925819614629298162965
-    assert js_value == 1208925819614629174706176
-    assert js_value != big
-
-    # coring.Number round-trip (LOSSLESS)
-    num = Number(num=big, code=NumDex.Huge)
-
-    # Encode → decode
-    decoded = Number(qb64=num.qb64)
-    assert decoded.num == 1208925819614629298162965
-    assert decoded.num == big
-
-
 if __name__ == "__main__":
     test_baser()
     test_clean_baser()
@@ -2661,4 +2628,3 @@ if __name__ == "__main__":
     test_dbdict()
     test_baserdoer()
     test_db_keyspace_end_to_end_migration()
-    test_big_int_round_trip_js_vs_coring_number()

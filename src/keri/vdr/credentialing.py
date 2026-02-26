@@ -767,7 +767,7 @@ class Registrar(doing.DoDoer):
                 self.rgy.reger.tmse.rem(keys=(regk, snq, regd))
                 continue
 
-            rnum = coring.Number(num=snq, code=coring.NumDex.Huge)
+            rnum = coring.Number(qb64=snq, code=coring.NumDex.Huge)
 
             # Anchor the message, registry or otherwise
             key = dgKey(regk, regd)
