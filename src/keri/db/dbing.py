@@ -1219,25 +1219,25 @@ class LMDBer(filing.Filer):
             return last  # iokey past end of database
 
 
-    def getIoSetLast(self, db, key, *, sep=b'.'):
-        """Gets last added ioset entry val at effective key if any else None.
+    #def getIoSetLast(self, db, key, *, sep=b'.'):
+        #"""Gets last added ioset entry val at effective key if any else None.
 
-        Uses hidden ordinal key suffix for insertion ordering.
-            The suffix is suffixed and unsuffixed transparently.
+        #Uses hidden ordinal key suffix for insertion ordering.
+            #The suffix is suffixed and unsuffixed transparently.
 
-        Returns:
-            last (memoryview|None): last added entry at apparent effective key if any,
-                              otherwise None if no entry at key or if key empty
+        #Returns:
+            #last (memoryview|None): last added entry at apparent effective key if any,
+                              #otherwise None if no entry at key or if key empty
 
-        Parameters:
-            db (lmdb._Database): instance of named sub db with dupsort==False
-            key (bytes): Apparent effective key
-            sep (bytes): separator character for split
-        """
-        val = None
-        if result := self.getIoSetLastItem(db=db, key=key, sep=sep):
-            _, val = result
-        return val
+        #Parameters:
+            #db (lmdb._Database): instance of named sub db with dupsort==False
+            #key (bytes): Apparent effective key
+            #sep (bytes): separator character for split
+        #"""
+        #val = None
+        #if result := self.getIoSetLastItem(db=db, key=key, sep=sep):
+            #_, val = result
+        #return val
 
 
     def delIoSet(self, db, key, *, sep=b'.'):

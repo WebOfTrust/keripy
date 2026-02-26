@@ -522,21 +522,25 @@ class IoSetKomer(KomerBase):
 
 
     def getLast(self, keys: Union[str, Iterable]):
-        """
-        Gets last effective dup val at effective dup key made from keys
+        """Gets last effective dup val at effective dup key made from keys
 
         Parameters:
             keys (tuple): of key strs to be combined to form effective key
 
         Returns:
             val (Type[dataclass]):  instance of type self.schema
-                          None if no entry at keys
+                                   None if no entry at keys
 
         """
-        val = self.db.getIoSetLast(db=self.sdb, key=self._tokey(keys))
-        if val is not None:
-            val = self.deserializer(val)
-        return val
+        if last := self.db.getIoSetLastItem(db=self.sdb, key=self._tokey(keys)):
+            key, val = last
+            return self.deserializer(val)
+        return None
+
+        #val = self.db.getIoSetLast(db=self.sdb, key=self._tokey(keys))
+        #if val is not None:
+            #val = self.deserializer(val)
+        #return val
 
 
     def getIter(self, keys: Union[str, Iterable]):

@@ -1366,8 +1366,8 @@ class IoSetSuber(SuberBase):
                                                   in order to form key
 
         Returns:
-            last ((str, str)|None): (key, val) tuple or None if no entry at keys
-                              or keys is empty
+            last ((str, str)|None): (key, val) tuple or empty tuple if no entry
+                              at keys or keys is empty
 
         """
         if last := self.db.getIoSetLastItem(db=self.sdb, key=self._tokey(keys)):
@@ -1391,8 +1391,13 @@ class IoSetSuber(SuberBase):
             val (str):  value str, None if no entry at keys
 
         """
-        val = self.db.getIoSetLast(db=self.sdb, key=self._tokey(keys))
-        return (self._des(val) if val is not None else val)
+        if last := self.db.getIoSetLastItem(db=self.sdb, key=self._tokey(keys)):
+            key, val = last
+            return self._des(val)
+        return None
+
+        #val = self.db.getIoSetLast(db=self.sdb, key=self._tokey(keys))
+        #return (self._des(val) if val is not None else val)
 
 
     def rem(self, keys: str|bytes|memoryview|Iterable,
@@ -3237,7 +3242,6 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
             on (int): ordinal number used with onKey(pre,on) to form key.
         """
-
         if last := self.db.getOnIoSetLastItem(db=self.sdb,
                                    key=self._tokey(keys),
                                    on=on,
@@ -3260,7 +3264,6 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
             on (int): ordinal number used with onKey(pre,on) to form key.
         """
-
         if last := self.db.getOnIoSetLastItem(db=self.sdb,
                                               key=self._tokey(keys),
                                               on=on,
