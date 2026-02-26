@@ -485,8 +485,8 @@ class OnSuberBase(SuberBase):
         super(OnSuberBase, self).__init__(*pa, **kwa)
 
 
-    def putOn(self, keys: str | bytes | memoryview, on: int=0,
-                    val: str | bytes | memoryview=''):
+    def putOn(self, keys: str|bytes|memoryview|Iterable, on: int=0,
+                    val: str|bytes|memoryview|None=None):
         """
         Returns
             result (bool): True if onkey made from key+sep+serialized on is
@@ -495,47 +495,57 @@ class OnSuberBase(SuberBase):
                            False otherwise
 
         Parameters:
-            keys (str | bytes | memoryview | Iterable): keys as prefix to be
+            keys (str|bytes|memoryview|Iterable): keys as prefix to be
                 combined with serialized exposed on tail and sep to form onkey
             on (int): ordinal number used with onKey(key ,on) to form key.
-            val (str | bytes | memoryview): serialization
+            val (str|bytes|memoryview|None): serialized value to put
+                                            When  None returns False
         """
+        if val is None:
+            return False
         return (self.db.putOnVal(db=self.sdb,
                                  key=self._tokey(keys),
                                  on=on,
                                  val=self._ser(val),
                                  sep=self.sep.encode()))
 
-    def pinOn(self, keys: str | bytes | memoryview, on: int=0,
-                    val: str | bytes | memoryview=''):
+    def pinOn(self, keys: str|bytes|memoryview|Iterable, on: int=0,
+                    val: str|bytes|memoryview|None=None):
         """
         Returns
             result (bool): True if value is written or overwritten at onkey
                            False otherwise
 
         Parameters:
-            keys (str | bytes | memoryview | Iterable): keys as prefix to be
+            keys (str|bytes|memoryview|Iterable): keys as prefix to be
                 combined with serialized exposed on tail and sep to form onkey
             on (int): ordinal number used with onKey(key ,on) to form key.
-            val (str | bytes | memoryview): serialization
+            val (str|bytes|memoryview|None): serialized value to pin
+                                             when None returns False
         """
-        return (self.db.setOnVal(db=self.sdb,
+        if val is None:
+            return False
+        return (self.db.pinOnVal(db=self.sdb,
                                  key=self._tokey(keys),
                                  on=on,
                                  val=self._ser(val),
                                  sep=self.sep.encode()))
 
 
-    def appendOn(self, keys: str | bytes | memoryview,
-                       val: str | bytes | memoryview):
-        """
+    def appendOn(self, keys: str|bytes|memoryview|Iterable,
+                       val: str|bytes|memoryview):
+        """Appends val to next highest unused exposed ordinal tail and returns the
+        ordinal.
+
         Returns:
             on (int): ordinal number of newly appended val
 
         Parameters:
-            keys (str | bytes | memoryview | Iterable): top keys as prefix to be
+            keys (str|bytes|memoryview|Iterable): top keys as prefix to be
                 combined with serialized exposed on tail and sep to form key
-            val (str | bytes | memoryview): serialization
+                if key empty then raises ValueError
+            val (str|bytes|memoryview): serialized value to append
+                                        If None then raises ValueError
         """
         return (self.db.appendOnVal(db=self.sdb,
                                        key=self._tokey(keys),
@@ -543,14 +553,39 @@ class OnSuberBase(SuberBase):
                                        sep=self.sep.encode()))
 
 
-    def getOn(self, keys: str | bytes | memoryview, on: int=0):
+    def getOnItem(self, keys: str|bytes|memoryview|Iterable, on: int=0):
+        """Gets item (key, on, val) at onkey made from keys and on.
+        When onkey missing or key empty or None returns None
+
+        Returns
+            item (tuple[bytes, int, str|bytes|memoryview]|None): at onkey if any
+                       of form (key, on, val)
+                       None if no entry at onkey or key empty or None
+
+        Parameters:
+            keys (str|bytes|memoryview|Iterable): keys as prefix to be
+                combined with serialized exposed on tail and sep to form onkey
+            on (int): ordinal number used with onKey(key ,on) to form key.
         """
+        if (item := self.db.getOnItem(db=self.sdb,
+                                key=self._tokey(keys),
+                                on=on,
+                                sep=self.sep.encode())) is None:
+            return None
+
+        key, on, val = item
+        return (self._tokeys(key), on, self._des(val))
+
+
+    def getOn(self, keys: str|bytes|memoryview|Iterable, on: int=0):
+        """Gets val at onkey made from keys and on.
+
         Returns
             val (str): serialization at onkey if any
                        None if no entry at onkey
 
         Parameters:
-            keys (str | bytes | memoryview | Iterable): keys as prefix to be
+            keys (str|bytes|memoryview|Iterable): keys as prefix to be
                 combined with serialized exposed on tail and sep to form onkey
             on (int): ordinal number used with onKey(key ,on) to form key.
         """
@@ -563,22 +598,43 @@ class OnSuberBase(SuberBase):
 
 
     def remOn(self, keys: str|bytes|memoryview|Iterable, on: int=0):
-        """
+        """Removes entry at onkey = key + sep + on
+        When key is missing or empty or None returns False
+
         Returns
             result (bool): True if onkey made from key+sep+serialized on is
-                               found in database so value is removed
-                               Removes all duplicates if any at onkey.
-                           False otherwise
+                               found in database so entry at onkey is removed
+                           False otherwise if no entry at onkey or key is empty.
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): keys as prefix to be
                 combined with serialized exposed on tail and sep to form onkey
             on (int): ordinal number used with onKey(key ,on) to form key.
         """
-        return (self.db.delOnVal(db=self.sdb,
+        return (self.db.remOn(db=self.sdb,
                                      key=self._tokey(keys),
                                      on=on,
                                      sep=self.sep.encode()))
+
+
+    def remOnAll(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
+        """Removes entry for each on >= on at key.
+        When on == 0, default, then removes each entry for  all on at key.
+        When key is empty then removes whole db.
+
+        Returns:
+            result (bool): True if onkey with dup val exists so rem successful.
+                           False otherwise
+
+        Parameters:
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
+                When key is empty then remove all entries in whole db
+            on (int): base key. None means all on for key
+        """
+        return self.db.remOnAll(db=self.sdb,
+                                      key=self._tokey(keys),
+                                      on=on,
+                                      sep=self.sep.encode())
 
 
     def cntOn(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
@@ -606,6 +662,7 @@ class OnSuberBase(SuberBase):
                                      key=self._tokey(keys),
                                      on=on,
                                      sep=self.sep.encode()))
+
 
     def cntOnAll(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Counts all entries with same key over all all on >= on. When keys is
@@ -660,11 +717,11 @@ class OnSuberBase(SuberBase):
     getOnItemIter = getOnTopItemIter  # alias for shadow super class method
 
 
-    def getAllOnItemIter(self, keys: str|bytes|memoryview|Iterable, on: int=0):
-        """Iterates over all entries in db with key and all on >= on.
+    def getOnAllItemIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
+        """Iterates over all entries in db for all onkey made from keys and on
+        for all on >= on.
         When on==0 default then gets all on.
-
-        If keys empty then returns empty iterator.
+        When keys empty then iterates over whole db.
 
         Returns:
             items (Iterator[(key, on, val)]): triples of key, on, val with same
@@ -678,13 +735,16 @@ class OnSuberBase(SuberBase):
                            When on==0 then all on for key
             sep (bytes): separator character for split
         """
-        for keys, on, val in (self.db.getOnItemIterAll(db=self.sdb,
+        for keys, on, val in (self.db.getOnAllItemIter(db=self.sdb,
                                                        key=self._tokey(keys),
                                                        on=on,
                                                        sep=self.sep.encode())):
             yield (self._tokeys(keys), on, self._des(val))
 
-    def getAllOnIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
+    getOnItemIterAll = getOnAllItemIter  # migration alias for backwards compat
+
+
+    def getOnAllIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """
         Returns:
             items (Iterator[bytes]): of val with same key but increments of
@@ -699,51 +759,13 @@ class OnSuberBase(SuberBase):
                       which to initiate retrieval
             sep (bytes): separator character for split
         """
-        for keys, on, val in (self.db.getOnItemIterAll(db=self.sdb,
+        for keys, on, val in (self.db.getOnAllItemIter(db=self.sdb,
                                                        key=self._tokey(keys),
                                                        on=on,
                                                        sep=self.sep.encode())):
             yield (self._des(val))
 
-
-    def getOnItemIterAll(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
-        """
-        Returns:
-            items (Iterator[(key, on, val)]): triples of key, on, val with same
-                key but increments of on >= on i.e. all key.on beginning with on
-
-        Parameters:
-            keys (str | bytes | memoryview | iterator): keys as prefix to be
-                combined with serialized on exposed on tail and sep to form actual key
-                When keys is empty then retrieves whole database including
-                duplicates if any
-            on (int): ordinal number used with onKey(pre,on) to form key at at
-                      which to initiate retrieval
-            sep (bytes): separator character for split
-        """
-        for keys, on, val in (self.db.getOnItemIterAll(db=self.sdb,
-                        key=self._tokey(keys), on=on, sep=self.sep.encode())):
-            yield (self._tokeys(keys), on, self._des(val))
-
-
-    def getOnIterAll(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
-        """
-        Returns:
-            items (Iterator[bytes]): of val with same key but increments of
-                                on >= on i.e. all key.on beginning with on
-
-        Parameters:
-            keys (str | bytes | memoryview | iterator): keys as prefix to be
-                combined with serialized exposed on tail and sep to form actual key
-                When keys is empty then retrieves whole database including
-                duplicates if any
-            on (int): ordinal number used with onKey(pre,on) to form key at at
-                      which to initiate retrieval
-            sep (bytes): separator character for split
-        """
-        for val in (self.db.getOnIterAll(db=self.sdb,
-                        key=self._tokey(keys), on=on, sep=self.sep.encode())):
-            yield (self._des(val))
+    getOnIterAll = getOnAllIter  # migration alias for backwards compat
 
 
 class OnSuber(OnSuberBase, Suber):
@@ -1231,14 +1253,16 @@ class IoSetSuber(SuberBase):
 
 
     def put(self, keys: str|bytes|memoryview|Iterable,
-                  vals: str|bytes|memoryview|Iterable):
+                  vals: str|bytes|memoryview|Iterable|None):
         """Puts all vals at effective key made from keys and hidden ordinal suffix.
         that are not already in set of vals at key. Does not overwrite.
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): of key parts to be
-                    combined in order to form key
-            vals (str|bytes|memoryview|Iterable): of str serializations
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
+            vals (str|bytes|memoryview|NonStrIterable|None): serialized values to add
+                                        to set of vals at onkey if any.
+                                        When not NonStrIterable converts to iterable.
+                                        Empty iterable or None returns False
 
         Returns:
             result (bool): True If successful, False otherwise.
@@ -1259,8 +1283,11 @@ class IoSetSuber(SuberBase):
         and replaces them with vals
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): of key strs to be combined in order to form key
-            vals (str|bytes|memoryview|Iterable): str serializations
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
+            vals (str|bytes|memoryview|Iterable): serialized value to replace
+                                        Value at onkey.
+                                        None means empty iterable.
+                                        Empty iterable returns False
 
         Returns:
             result (bool): True If successful, False otherwise.
@@ -1275,16 +1302,17 @@ class IoSetSuber(SuberBase):
 
 
     def add(self, keys: str|bytes|memoryview|Iterable,
-            val: str|bytes|memoryview):
+            val: str|bytes|memoryview|None):
         """Add val idempotently to vals at effective key made from keys and hidden
         ordinal suffix. Idempotent means that added value is not already in set
         of vals at key. Does not overwrite or add same value at same key more
         than once.
+        When val None returns False
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key parts to be
                     combined in order to form key
-            val (str|bytes|memoryview): serialization
+            val (str|bytes|memoryview|None): serialization
 
         Returns:
             result (bool): True means unique value added among duplications,
@@ -1300,6 +1328,7 @@ class IoSetSuber(SuberBase):
     def get(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
         """Gets vals set list at effective key made from keys and hidden
         ordinal suffix ion starting at ion >= ion.
+        When key is empty then returns empty list
 
         All vals in set of vals that share same effecive key are retrieved in
         insertion order starting at ion.
@@ -1314,8 +1343,8 @@ class IoSetSuber(SuberBase):
                           empty list if no entry at keys
         """
         # use iter so can more efficiently ._des(val)
-        return [self._des(val) for val in
-                    self.db.getIoSetIter(db=self.sdb,
+        return [self._des(val) for key, val in
+                    self.db.getIoSetItemIter(db=self.sdb,
                                              key=self._tokey(keys),
                                              ion=ion,
                                              sep=self.sep)]
@@ -1337,7 +1366,7 @@ class IoSetSuber(SuberBase):
             vals (Iterator[str]):  str values. Raises StopIteration when done
 
         """
-        for val in self.db.getIoSetIter(db=self.sdb,
+        for key, val in self.db.getIoSetItemIter(db=self.sdb,
                                             key=self._tokey(keys),
                                             ion=ion,
                                             sep=self.sep):
@@ -1357,8 +1386,8 @@ class IoSetSuber(SuberBase):
                                                   in order to form key
 
         Returns:
-            last ((str, str)|None): (key, val) tuple or None if no entry at keys
-                              or keys is empty
+            last ((str, str)|None): (key, val) tuple or empty tuple if no entry
+                              at keys or keys is empty
 
         """
         if last := self.db.getIoSetLastItem(db=self.sdb, key=self._tokey(keys)):
@@ -1382,36 +1411,37 @@ class IoSetSuber(SuberBase):
             val (str):  value str, None if no entry at keys
 
         """
-        val = self.db.getIoSetLast(db=self.sdb, key=self._tokey(keys))
-        return (self._des(val) if val is not None else val)
+        if last := self.db.getIoSetLastItem(db=self.sdb, key=self._tokey(keys)):
+            key, val = last
+            return self._des(val)
+        return None
+
+        #val = self.db.getIoSetLast(db=self.sdb, key=self._tokey(keys))
+        #return (self._des(val) if val is not None else val)
 
 
     def rem(self, keys: str|bytes|memoryview|Iterable,
-                   val: str|bytes|memoryview = b''):
+                   val: str|bytes|memoryview|None=None):
         """Removes entry at effective key made from keys and hidden ordinal suffix
-        that matches val if any. Otherwise deletes all values at effective key.
+        that matches val if any.
+        When val is None, default, then removes all entries at keys
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be combined in
                 order to form key
-            val (str|bytes|memoryview):  value at key to delete. Subclass ._ser
+            val (str|bytes|memoryview|None):  value at key to delete. Subclass ._ser
                 method may accept different value types
-                if val is empty then remove all values at key
+                if val is None then remove all values at key
 
         Returns:
            result (bool): True if effective key with val exists so rem successful.
                            False otherwise
 
         """
-        if val:
-            return self.db.delIoSetVal(db=self.sdb,
-                                       key=self._tokey(keys),
-                                       val=self._ser(val),
-                                       sep=self.sep)
-        else:
-            return self.db.delIoSet(db=self.sdb,
-                                       key=self._tokey(keys),
-                                       sep=self.sep)
+        return self.db.remIoSetVal(db=self.sdb,
+                                   key=self._tokey(keys),
+                                   val=self._ser(val) if val is not None else val,
+                                   sep=self.sep)
 
 
     def cnt(self, keys: str|bytes|memoryview|Iterable = "", *, ion=0):
@@ -1436,7 +1466,7 @@ class IoSetSuber(SuberBase):
                                      sep=self.sep))
 
 
-    def getItemIter(self, keys: str|bytes|memoryview|Iterable = "",
+    def getTopItemIter(self, keys: str|bytes|memoryview|Iterable = "",
                     *, topive=False):
         """Iterates over all the items in top branch defined by keys where
         keys may be truncation of full branch.
@@ -1476,6 +1506,8 @@ class IoSetSuber(SuberBase):
         for key, val in self.db.getTopIoSetItemIter(db=self.sdb,
                 top=self._tokey(keys, topive=topive), sep=self.sep.encode()):
             yield (self._tokeys(key), self._des(val))
+
+    getItemIter = getTopItemIter  # migration alias for backwards compat
 
 
     def getLastIter(self, keys: str|bytes|memoryview|Iterable = ""):
@@ -3024,7 +3056,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
     def putOn(self, keys: str|bytes|memoryview|Iterable,
                     on: int=0,
-                    vals: str|bytes|memoryview|Iterable = None):
+                    vals: str|bytes|memoryview|Iterable|None=None):
         """Put all vals idempotently at key at key made from keys with exposed
         on tail in insertion order using hidden ordinal suffix. Idempotently
         means do not put any val in vals that is already in set vals at key.
@@ -3034,12 +3066,12 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             result (bool): True If successful, False otherwise.
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): of key strs to be combined
-                in order to form key
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
             on (int): ordinal number tail used with onKey(pre,on) to form onkey.
-            vals (NonStrIterable|None): serialized values to add to set of vals at
-                                        onkey if any. Empty iterable or
-                                        None returns False
+            vals (str|bytes|memoryview|NonStrIterable|None): serialized values
+                                to add to set of vals at onkey if any.
+                                When not NonStrIterable converts to iterable.
+                                Empty iterable or None returns False
 
         """
         if not isNonStringIterable(vals):  # not iterable
@@ -3053,7 +3085,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
     def pinOn(self, keys: str|bytes|memoryview|Iterable,
                     on: int=0,
-                    vals: str|bytes|memoryview|Iterable = None):
+                    vals: str|bytes|memoryview|Iterable|None=None):
         """Pins (sets) vals at key  made from keys with exposed
         on tail in insertion order using hidden ordinal suffix. Overwrites.
         Removes all pre-existing vals that share same onkey and replaces
@@ -3063,12 +3095,12 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             result (bool): True If successful, False otherwise.
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): of key strs to be combined
-                in order to form key
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
             on (int): ordinal number tail used with onKey(pre,on) to form onkey.
-            vals (NonStrIterable|None): serialized values to add to set of vals at
-                                        onkey if any. Empty iterable or
-                                        None returns False
+            vals (NonStrIterable|None): serialized values to replace set of vals at
+                                        onkey if any. None means empty iterable.
+                                        When not NonStrIterable converts to iterable.
+                                        Empty iterable returns False
         """
         if not isNonStringIterable(vals):  # not iterable
             vals = (vals, ) if vals else ()  # make iterable
@@ -3080,17 +3112,18 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
 
     def appendOn(self, keys: str|bytes|memoryview|Iterable,
-                       vals: str|bytes|memoryview|Iterable = ""):
-        """Appends val to next highest unused exposed ordinal tail and returns the
-        ordinal.
+                       vals: str|bytes|memoryview|Iterable|None=None):
+        """Appends vals to next highest unused exposed ordinal tail and returns the
+        ordinal. If vals None or empty raises ValueError.
 
         Returns:
             on (int): ordinal number tail of newly appended val
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): top keys as prefix to be
-                combined with serialized exposed on tail and sep to form key
-            val (str|bytes|memoryview): value to append
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
+            vals (NonStrIterable|None): values to append
+                                        None means empty iterable.
+                                        Empty iterable raises ValueError
         """
         if not isNonStringIterable(vals):  # not iterable
             vals = (vals, ) if vals else ()  # make iterable
@@ -3102,20 +3135,21 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
     def addOn(self, keys: str|bytes|memoryview|Iterable,
                     on: int=0,
-                    val: str|bytes|memoryview= ''):
+                    val: str|bytes|memoryview |None=None):
         """Add val idempotently at key made from keys with exposed on tail in
         insertion order using hidden ordinal suffix. Idempotently means do not
         add any val that is already in set vals at effective key. Does not overwrite.
+        When val None returns False
 
         Returns:
             result (bool): True means unique value added to set,
                             False means value already in set.
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): top keys as prefix to be
-                combined with serialized on tail and sep to form onkey
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
             on (int): ordinal number tail used with onKey(pre,on) to form onkey.
-            val (str|bytes|memoryview): value to add
+            val (str|bytes|memoryview|None): value to add.
+                                             when None returns False
         """
         return (self.db.addOnIoSetVal(db=self.sdb,
                                       key=self._tokey(keys),
@@ -3124,26 +3158,71 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                       sep=self.sep.encode()))
 
 
+    def getOnItem(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
+        """Gets list of items (key, on, val) from set of entries at onkey
+        made from keys and on starting at offset ion into set.
+        When onkey missing or key empty or None returns empty list.
+
+        Returns
+            item (tuple[bytes, int, str|bytes|memoryview]|None): at onkey if any
+                       of form (key, on, val)
+                       None if no entry at onkey or key empty or None
+
+        Parameters:
+            keys (str|bytes|memoryview|Iterable): keys as prefix to be
+                combined with serialized exposed on tail and sep to form onkey
+            on (int): ordinal number used with onKey(key ,on) to form key.
+        """
+        return [(self._tokeys(key), on, self._des(val)) for key, on, val in
+                    self.db.getOnIoSetItemIter(db=self.sdb,
+                                               key=self._tokey(keys),
+                                               on=on,
+                                               ion=ion,
+                                               sep=self.sep.encode())]
+
+
     def getOn(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
         """Gets set vals list at key made from keys and on in insertion order from
         from offset ion into set using hidden ordinal suffix.
+        When key is empty then returns empty list
 
         Returns:
             vals (list[str]):  values if any else empty tuuple
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): of key strs to be
-                combined in order to form key
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
+                When key is empty then returns empty iterator
             on (int): ordinal number tail used with onKey(pre,on) to form key.
             ion (int): starting insertion ordinal value, default 0
 
         """
-        return [self._des(val) for val in
-                                    self.db.getOnIoSetIter(db=self.sdb,
-                                                       key=self._tokey(keys),
-                                                       on=on,
-                                                       ion=ion,
-                                                       sep=self.sep.encode())]
+        return [self._des(val) for key, on, val in
+                    self.db.getOnIoSetItemIter(db=self.sdb,
+                                               key=self._tokey(keys),
+                                               on=on,
+                                               ion=ion,
+                                               sep=self.sep.encode())]
+
+
+    def getOnItemIter(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
+        """Iterates over set items (key, on, val) at key made from keys and on
+        in insertion order from from offset ion into set using hidden ordinal suffix.
+
+        Returns:
+            val (Iterator[str]):  deserialized val elements of set at onkey
+
+        Parameters:
+            keys (str|bytes|memoryview|Iterable): okey(s) made into base key
+            on (int): ordinal number tail used with onKey(pre,on) to form key.
+            ion (int): starting insertion ordinal value, default 0
+        """
+        for key, on, val in self.db.getOnIoSetItemIter(db=self.sdb,
+                                                  key=self._tokey(keys),
+                                                  on=on,
+                                                  ion=ion,
+                                                  sep=self.sep.encode()):
+
+            yield (self._tokeys(key), on, self._des(val))
 
 
     def getOnIter(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
@@ -3154,16 +3233,15 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             val (Iterator[str]):  deserialized val elements of set at onkey
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): of key strs to be
-                combined in order to form key
+            keys (str|bytes|memoryview|Iterable): okey(s) made into base key
             on (int): ordinal number tail used with onKey(pre,on) to form key.
             ion (int): starting insertion ordinal value, default 0
         """
-        for val in (self.db.getOnIoSetIter(db=self.sdb,
-                                           key=self._tokey(keys),
-                                           on=on,
-                                           ion=ion,
-                                           sep=self.sep.encode())):
+        for key, on, val in self.db.getOnIoSetItemIter(db=self.sdb,
+                                                  key=self._tokey(keys),
+                                                  on=on,
+                                                  ion=ion,
+                                                  sep=self.sep.encode()):
             yield (self._des(val))
 
 
@@ -3177,11 +3255,9 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                  Empty tuple () if onkey not in db or key empty.
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): of key strs to be combined
-                in order to form key
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
             on (int): ordinal number used with onKey(pre,on) to form key.
         """
-
         if last := self.db.getOnIoSetLastItem(db=self.sdb,
                                    key=self._tokey(keys),
                                    on=on,
@@ -3201,11 +3277,9 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                          keys and on
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): of key strs to be combined
-                in order to form key
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
             on (int): ordinal number used with onKey(pre,on) to form key.
         """
-
         if last := self.db.getOnIoSetLastItem(db=self.sdb,
                                               key=self._tokey(keys),
                                               on=on,
@@ -3230,8 +3304,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                            False otherwise
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): keys as prefix to be
-                combined with serialized on tail and sep to form onkey
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
 
             on (int): ordinal number used with onKey(pre,on) to form key.
             val (str|bytes|memoryview|None):  value at key to remove.
@@ -3256,10 +3329,8 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                            False otherwise
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): keys as prefix to be
-                combined with serialized on tail and sep to form onkey.
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
                 When key is empty then remove all entries in whole db
-
             on (int): base key. None means all on for key
         """
         return self.db.remOnAllIoSet(db=self.sdb,
@@ -3277,8 +3348,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                          ordering offset ion.
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): of key strs to be combined
-                in order to form key
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
             on (int): ordinal number used with onKey(pre,on) to form key.
         """
         return (self.db.cntOnIoSet(db=self.sdb,
@@ -3299,8 +3369,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                          then count of all on for all key for whole db.
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): of key strs to be combined
-                in order to form key
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
             on (int): ordinal number used with onKey(pre,on) to form key.
         """
         return (self.db.cntOnAllIoSet(db=self.sdb,
@@ -3337,8 +3406,6 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                                         sep=self.sep.encode())):
             yield (self._tokeys(keys), on, self._des(val))
 
-    getOnItemIter = getOnTopItemIter  # alias to shadow super class method
-
 
     def getOnAllItemIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Iterates over all items of each set for all on >= on for key.
@@ -3354,8 +3421,8 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                 with insertion ordering suffix removed from effective key.
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): creates onkey = key + sep + on
-                for all on >= on at key
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
+                from which to make onkey = key + sep + on
                 If keys is empty then gets all items in database.
             on (int): ordinal number used with onKey(pre,on) to form key.
                 When on is None then iterates all on at key,
@@ -3378,8 +3445,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             val (Iterator[str]):  deserialized val of each matching entry
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): keys as prefix to be
-                combined with serialized on tail and sep to form onkey
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
                 When keys is empty then retrieves whole database including all
                 set values at each effective key.
             on (int): ordinal number used with onKey(pre,on) to form key.
@@ -3405,8 +3471,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                 (keys, on, val) where onkey = key + sep + on
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): keys as prefix to be
-                combined with serialized on suffix and sep to form key
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
                 When keys is empty then retrieves whole database including all
                 set items
             on (int|None): ordinal number used with onKey(pre,on) to form key.
@@ -3430,8 +3495,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             last (Iterator[str]):  deserialized last set val of of each onkey
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): keys as prefix to be
-                combined with serialized on tail and sep to form key
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
                 When keys is empty then retrieves whole database including all
                 set values
             on (int): ordinal number used with onKey(pre,on) to form key.
@@ -3464,8 +3528,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                 in backwards order
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): keys as prefix to be
-                combined with serialized on suffix and sep to form onkey
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
                 keys empty means whole db
 
             on (int|None): ordinal number used with onKey(pre,on) to form key.
@@ -3495,8 +3558,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             val (Iterator[str]):  deserialized vals in backwards order
 
         Parameters:
-            keys (str | bytes | memoryview | Iterable): keys as prefix to be
-                combined with serialized on tail and sep to form onkey
+            keys (str | bytes | memoryview | Iterable): key(s) made into base key
             on (int|None): ordinal number used with onKey(pre,on) to form key.
             sep (bytes): separator character for split
         """
@@ -3526,10 +3588,8 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                 in backwards order
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): keys as prefix to be
-                combined with serialized on suffix and sep to form onkey
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
                 keys empty means whole db
-
             on (int|None): ordinal number used with onKey(pre,on) to form key.
                            None means iterate over all on for key
             sep (bytes): separator character for split
@@ -3557,8 +3617,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             lastval (Iterator[str]):  deserialized vals in backwards order
 
         Parameters:
-            keys (str | bytes | memoryview | Iterable): keys as prefix to be
-                combined with serialized on tail and sep to form onkey
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
             on (int|None): ordinal number used with onKey(pre,on) to form key.
             sep (bytes): separator character for split
         """
