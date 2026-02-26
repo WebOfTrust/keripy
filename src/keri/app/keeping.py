@@ -274,10 +274,10 @@ class Keeper(dbing.LMDBer):
                                      klas=core.Cipher)
         self.smids = subing.CatCesrIoSetSuber(db=self,
                                               subkey='smids.',
-                                              klas=(coring.Prefixer, coring.Number))
+                                              klas=(coring.Prefixer, coring.Seqner))
         self.rmids = subing.CatCesrIoSetSuber(db=self,
                                               subkey='rmids.',
-                                              klas=(coring.Prefixer, coring.Number))
+                                              klas=(coring.Prefixer, coring.Seqner))
         self.pres = subing.CesrSuber(db=self,
                                      subkey='pres.',
                                      klas=coring.Prefixer)
