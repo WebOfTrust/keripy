@@ -312,7 +312,7 @@ class Revery:
                 continue  # skip invalid signature is not from aid
 
             if osaider:  # check if later logic  sn > or sn == and dt >
-                if otsgs := eventing.fetchTsgs(db=self.db.ssgs, saider=osaider):
+                if otsgs := eventing.fetchTsgs(db=self.db.ssgs, diger=osaider):
                     _, osqr, _, _ = otsgs[0]  # zeroth should be authoritative
 
                     if seqner.sn < osqr.sn:  # sn earlier
@@ -373,7 +373,7 @@ class Revery:
                 self.removeReply(saider=osaider)  # remove obsoleted reply artifacts
                 # remove stale signatures .ssgs for this saider
                 # this ensures that zeroth tsg is authoritative
-                for prr, snr, dgr, _ in eventing.fetchTsgs(db=self.db.ssgs, saider=saider, snh=seqner.snh):
+                for prr, snr, dgr, _ in eventing.fetchTsgs(db=self.db.ssgs, diger=saider, snh=seqner.snh):
                     if ((snr.sn < seqner.sn) or
                             (snr.sn == seqner.sn and dgr.qb64 != ssaider.qb64)):
                         self.db.ssgs.trim(keys=(prr.qb64, f"{snr.sn:032h}", dgr.qb64, ""))
@@ -466,7 +466,7 @@ class Revery:
         """
         for (route,), diger in self.db.rpes.getItemIter():
             try:
-                tsgs = eventing.fetchTsgs(db=self.db.ssgs, saider=diger)
+                tsgs = eventing.fetchTsgs(db=self.db.ssgs, diger=diger)
 
                 keys = (diger.qb64,)
                 dater = self.db.sdts.get(keys=keys)
