@@ -816,7 +816,7 @@ class Baser(dbing.LMDBer):
             of delegating source event in which seal of delegated event appears.
             dgKey
             Values are serialized instances of CatCesrSuber as couples
-            (Seqner.qb64b, Diger.qb64b) used to lookup source event in delegator's
+            (Number(num=sn).qb64b, Diger.qb64b) used to lookup source event in delegator's
             KEL.
             DB is keyed by identifier prefix plus digest of key event
             Only one value per DB key is allowed
@@ -904,7 +904,7 @@ class Baser(dbing.LMDBer):
             maps routes of reply (versioned SAD) to single Saider of that
             reply msg.
             Routes such as '/end/role/' and '/loc/scheme'
-            key is route bytes,  vals = saider.qb64b of reply 'rpy' msg
+            key is route bytes,  vals = diger.qb64b of reply 'rpy' msg
 
         .eans is named subDB instance of CesrSuber with klas=Saider that maps
             cid.role.eid to said of reply SAD as auth:  authN by controller cid
@@ -1036,7 +1036,7 @@ class Baser(dbing.LMDBer):
         self.rcts = subing.CatCesrIoSetSuber(db=self, subkey="rcts.",
                                              klas=(coring.Prefixer, coring.Cigar))
         self.ures = subing.CatCesrIoSetSuber(db=self, subkey='ures.',
-                                             klas=(coring.Diger,coring.Prefixer,coring.Cigar))
+                                             klas=(coring.Diger, coring.Prefixer, coring.Cigar))
         self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.', 
                                             klas=(coring.Prefixer, core.Number, coring.Diger, indexing.Siger))
         self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.', 
@@ -1044,11 +1044,9 @@ class Baser(dbing.LMDBer):
         self.pses = subing.OnIoDupSuber(db=self, subkey='pses.')
         self.pwes = subing.OnIoDupSuber(db=self, subkey='pwes.')
         self.pdes = subing.OnIoDupSuber(db=self, subkey='pdes.')
-        self.udes = subing.CatCesrSuber(db=self, subkey='udes.',
-                                        klas=(coring.Seqner, coring.Diger))
+        self.udes = subing.CatCesrSuber(db=self, subkey='udes.', klas=(coring.Number, coring.Diger))
         self.uwes = subing.B64OnIoDupSuber(db=self, subkey='uwes.')
         self.ooes = subing.OnIoDupSuber(db=self, subkey='ooes.')
-        self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
         self.ooes = subing.OnIoDupSuber(db=self, subkey='ooes.')
         self.dels = subing.OnIoDupSuber(db=self, subkey='dels.')
         self.ldes = subing.OnIoDupSuber(db=self, subkey='ldes.')
@@ -1109,19 +1107,18 @@ class Baser(dbing.LMDBer):
         self.rpys = subing.SerderSuber(db=self, subkey='rpys.')
 
         # all reply escrows indices of partially signed reply messages. Maps
-        # route in reply to single (Saider,)  of escrowed reply.
+        # route in reply to single (Diger,)  of escrowed reply.
         # Routes such as /end/role  /loc/schema
         self.rpes = subing.CesrIoSetSuber(db=self, subkey='rpes.',
-                                          klas=coring.Saider)
+                                          klas=coring.Diger)
 
         # auth AuthN/AuthZ by controller at cid of endpoint provider at eid
-        # maps key=cid.role.eid to val=said of end reply
-        # TODO: clean
-        self.eans = subing.CesrSuber(db=self, subkey='eans.', klas=coring.Saider)
+        # maps key=cid.role.eid to val=diger of end reply
+        self.eans = subing.CesrSuber(db=self, subkey='eans.', klas=coring.Diger)
 
         # auth AuthN/AuthZ by endpoint provider at eid of location at scheme url
-        # maps key=cid.role.eid to val=said of end reply
-        self.lans = subing.CesrSuber(db=self, subkey='lans.', klas=coring.Saider)
+        # maps key=cid.role.eid to val=diger of end reply
+        self.lans = subing.CesrSuber(db=self, subkey='lans.', klas=coring.Diger)
 
         # service endpoint identifier (eid) auths keyed by controller cid.role.eid
         # data extracted from reply /end/role/add or /end/role/cut

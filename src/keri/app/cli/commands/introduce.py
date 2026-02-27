@@ -7,8 +7,8 @@ import argparse
 
 from hio.base import doing
 
-from keri.app.cli.common.parsing import Parsery
-from keri.core import serdering
+from ..common.parsing import Parsery
+from ....core import serdering
 from ..common import existing
 from ... import habbing, organizing, forwarding
 

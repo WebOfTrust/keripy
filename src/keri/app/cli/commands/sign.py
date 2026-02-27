@@ -8,10 +8,9 @@ import argparse
 
 from hio.base import doing
 
-from keri import kering
-from keri.app import habbing
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
+from .... import kering
+from ..common import existing
+from ..common.parsing import Parsery
 
 parser = argparse.ArgumentParser(description='Sign an arbitrary string', 
                                  parents=[Parsery.keystore()])

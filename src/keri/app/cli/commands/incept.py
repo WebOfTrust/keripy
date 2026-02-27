@@ -9,10 +9,10 @@ from dataclasses import dataclass
 from hio.base import doing
 
 from keri import help
-from keri.app import habbing, agenting, indirecting, configing, delegating, forwarding
-from keri.app.cli.common import existing, config
-from keri.app.cli.common.parsing import Parsery
-from keri.core import coring
+from ....app import habbing, agenting, indirecting, configing, delegating, forwarding
+from ..common import existing, config
+from ..common.parsing import Parsery
+from ....core import coring
 
 logger = help.ogler.getLogger()
 

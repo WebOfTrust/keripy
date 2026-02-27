@@ -8,13 +8,13 @@ import argparse
 
 from hio.base import doing
 
-from keri import kering, help
-from keri.app.cli.common import displaying, existing 
-from keri.app.cli.common.parsing import Parsery
-from keri.core import coring, serdering
-from keri.db import dbing, basing
-from keri.help import helping
-from keri.kering import ConfigurationError
+from .... import kering, help
+from ..common import displaying, existing 
+from ..common.parsing import Parsery
+from ....core import coring, serdering
+from ....db import dbing, basing
+from ....help import helping
+from ....kering import ConfigurationError
 
 logger = help.ogler.getLogger()
 
