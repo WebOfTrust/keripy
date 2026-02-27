@@ -3946,8 +3946,7 @@ class Kevery:
         return []
 
 
-    def processEvent(self, serder, sigers, *, wigers=None,
-                     delseqner=None, deldiger=None,
+    def processEvent(self, serder, sigers, *, wigers=None, delnum=None, deldiger=None,
                      firner=None, dater=None, eager=False, local=None, **kwa):
         """
         Process one event serder with attached indexd signatures sigers
@@ -3957,8 +3956,8 @@ class Kevery:
             sigers (list[Siger]): instances of attached controller indexed sigs
             wigers (list[Siger]|None): instances of attached witness indexed sigs
                 otherwise None
-            delseqner (Seqner|None): instance of delegating event sequence number.
-                If this event is not delegated then seqner is ignored
+            delnum (Number|None): instance of delegating event sequence number.
+                If this event is not delegated then ignored
             deldiger (Diger|None): instance of of delegating event SAID.
                 If this event is not delegated then saider is ignored
             firner (Seqner|None): instance of cloned first seen ordinal
@@ -3979,9 +3978,6 @@ class Kevery:
         """
         local = local if local is not None else self.local
         local = True if local else False  # force boolean
-
-        # Convert delegating seal to Number for internal escrow helpers
-        delnum = Number(num=delseqner.sn) if delseqner is not None else None
 
         # fetch ked ilk  pre, sn, dig to see how to process
         pre = serder.pre
@@ -4009,7 +4005,7 @@ class Kevery:
                               sigers=sigers,
                               wigers=wigers,
                               db=self.db,
-                              delseqner=delseqner,
+                              delseqner=delnum,
                               deldiger=deldiger,
                               firner=firner if self.cloned else None,
                               dater=dater if self.cloned else None,
@@ -4104,7 +4100,7 @@ class Kevery:
                     # raise exception if problem.
                     # Otherwise adds to KELs
                     kever.update(serder=serder, sigers=sigers, wigers=wigers,
-                                 delseqner=delseqner, deldiger=deldiger,
+                                 delseqner=delnum, deldiger=deldiger,
                                  firner=firner if self.cloned else None,
                                  dater=dater if self.cloned else None,
                                  eager=eager, local=local, check=self.check)
@@ -5781,7 +5777,7 @@ class Kevery:
                 # process event
                 sigers = self.db.sigs.get(keys=(pre, edig))
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
-                                  delseqner=delnum,
+                                  delnum=delnum,
                                   deldiger=deldiger,
                                   eager=True, local=esr.local)
 
@@ -5942,7 +5938,7 @@ class Kevery:
                     delnum, deldiger = couple
 
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
-                                  delseqner=delnum,
+                                  delnum=delnum,
                                   deldiger=deldiger,
                                   eager=True, local=esr.local)
 
@@ -6098,7 +6094,7 @@ class Kevery:
                         #self.db.udes.put(keys=dgkey, val=(delseqner, delsaider))
 
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
-                                  delseqner=delnum,
+                                  delnum=delnum,
                                   deldiger=deldiger,
                                   eager=True, local=esr.local)
 
@@ -6483,7 +6479,7 @@ class Kevery:
 
                     # process event
                     self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
-                                      delseqner=delnum,
+                                      delnum=delnum,
                                       deldiger=diger, local=esr.local)
                 else:
                     raise MissingDelegableApprovalError("No delegation seal found for event.")
