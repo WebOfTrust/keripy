@@ -8,7 +8,7 @@ import argparse
 import pysodium
 from hio.base import doing
 
-from keri.core import signing
+from ....core import signing
 
 parser = argparse.ArgumentParser(description='Print a new random nonce')
 parser.set_defaults(handler=lambda args: handler(args))
