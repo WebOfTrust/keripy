@@ -1,5 +1,13 @@
 # Change Log for keripy
 
+## 2.0.0-dev5
+### Backwards breaking interface changes
+Changes to call signatures that will break dependent libraries
+
+#### keri.app.delegating.py
+Changed `complete(self, prefixer, seqner, diger=None)` to `complete(self, prefixer, number, diger=None)`.
+Renamed `seqner` parameter to `number` to match the actual type (`Number`) being
+passed. All callers in `rotate.py`, `incept.py`, and `grouping.py` updated.
 
 ## 2.0.0-dev1
 ### Backwards breaking interface changes
