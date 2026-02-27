@@ -78,6 +78,12 @@ printf "\n************************************\n"
 isSuccess
 
 printf "\n************************************\n"
+printf "Running multisig-replace-member.sh"
+printf "\n************************************\n"
+"${script_dir}/basic/multisig-replace-member.sh"
+isSuccess
+
+printf "\n************************************\n"
 printf "Running rename.sh"
 printf "\n************************************\n"
 "${script_dir}/basic/rename-alias.sh"
