@@ -318,7 +318,7 @@ class Reger(dbing.LMDBer):
         # database of anchors to credentials.  prefix is either AID with direct credential
         # anchor or TEL event AID (same as credential SAID) when credential uses revocation registry
         self.cancs = subing.CatCesrSuber(db=self, subkey='cancs.',
-                                         klas=(coring.Prefixer, coring.Number, coring.Saider))
+                                         klas=(coring.Prefixer, coring.Number, coring.Diger))
 
         # all sad path ssgs (sad pathed indexed signature serializations) maps SAD quinkeys
         # given by quintuple (saider.qb64, path, prefixer.qb64, number.qb64, diger.qb64)
@@ -474,18 +474,18 @@ class Reger(dbing.LMDBer):
 
         return creds
 
-    def logCred(self, creder, prefixer, number, saider):
+    def logCred(self, creder, prefixer, number, diger):
         """ Save the base credential and seals (est evt+sigs quad) with no indices.
 
         Parameters:
             creder (Creder): that contains the credential to process
             prefixer (Prefixer): prefix (AID or TEL) of event anchoring credential
             number (Number): sequence number of event anchoring credential
-            saider (Saider): digest of anchoring event for credential
+            diger (Diger): digest of anchoring event for credential
 
         """
         key = creder.said
-        self.cancs.pin(keys=key, val=[prefixer, number, saider])
+        self.cancs.pin(keys=key, val=[prefixer, number, diger])
         self.creds.put(keys=key, val=creder)
 
     def cloneCred(self, said):
