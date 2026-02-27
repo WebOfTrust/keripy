@@ -816,7 +816,7 @@ class Baser(dbing.LMDBer):
             of delegating source event in which seal of delegated event appears.
             dgKey
             Values are serialized instances of CatCesrSuber as couples
-            (Seqner.qb64b, Diger.qb64b) used to lookup source event in delegator's
+            (Number(num=sn).qb64b, Diger.qb64b) used to lookup source event in delegator's
             KEL.
             DB is keyed by identifier prefix plus digest of key event
             Only one value per DB key is allowed
@@ -1036,7 +1036,7 @@ class Baser(dbing.LMDBer):
         self.rcts = subing.CatCesrIoSetSuber(db=self, subkey="rcts.",
                                              klas=(coring.Prefixer, coring.Cigar))
         self.ures = subing.CatCesrIoSetSuber(db=self, subkey='ures.',
-                                             klas=(coring.Diger,coring.Prefixer,coring.Cigar))
+                                             klas=(coring.Diger, coring.Prefixer, coring.Cigar))
         self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.', 
                                             klas=(coring.Prefixer, core.Number, coring.Diger, indexing.Siger))
         self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.', 
@@ -1044,11 +1044,9 @@ class Baser(dbing.LMDBer):
         self.pses = subing.OnIoDupSuber(db=self, subkey='pses.')
         self.pwes = subing.OnIoDupSuber(db=self, subkey='pwes.')
         self.pdes = subing.OnIoDupSuber(db=self, subkey='pdes.')
-        self.udes = subing.CatCesrSuber(db=self, subkey='udes.',
-                                        klas=(coring.Seqner, coring.Diger))
+        self.udes = subing.CatCesrSuber(db=self, subkey='udes.', klas=(coring.Number, coring.Diger))
         self.uwes = subing.B64OnIoDupSuber(db=self, subkey='uwes.')
         self.ooes = subing.OnIoDupSuber(db=self, subkey='ooes.')
-        self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
         self.ooes = subing.OnIoDupSuber(db=self, subkey='ooes.')
         self.dels = subing.OnIoDupSuber(db=self, subkey='dels.')
         self.ldes = subing.OnIoDupSuber(db=self, subkey='ldes.')
