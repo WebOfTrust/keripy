@@ -8,13 +8,12 @@ import getpass
 
 from hio.base import doing
 
-from keri import help
-import keri.app.oobiing
-from keri.app import habbing, configing, oobiing
-from keri.app.cli.common.parsing import Parsery
-from keri.app.keeping import Algos
-from keri.kering import ConfigurationError
-from keri.vdr import credentialing
+from .... import help
+from ... import habbing, configing, oobiing
+from ..common.parsing import Parsery
+from ...keeping import Algos
+from ....kering import ConfigurationError
+from ....vdr import credentialing
 
 logger = help.ogler.getLogger()
 
@@ -116,7 +115,7 @@ class InitDoer(doing.DoDoer):
         if oc:
             print(f"\nLoading {oc} OOBIs...")
 
-            obi = keri.app.oobiing.Oobiery(hby=hby)
+            obi = oobiing.Oobiery(hby=hby)
             self.extend(obi.doers)
 
             while oc > hby.db.roobi.cnt():

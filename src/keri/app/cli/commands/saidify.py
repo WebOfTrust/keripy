@@ -8,8 +8,8 @@ import json
 
 from hio.base import doing
 
-from keri import help
-from keri.core import coring
+from .... import help
+from ....core import coring
 
 logger = help.ogler.getLogger()
 
