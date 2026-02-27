@@ -9,7 +9,6 @@ import argparse
 from hio.base import doing
 
 from .... import kering
-from ....app import habbing
 from ..common import existing
 from ..common.parsing import Parsery
 

@@ -5,7 +5,6 @@ keri.kli.commands module
 
 """
 import argparse
-import sys
 
 from hio import help
 from hio.base import doing
@@ -14,7 +13,7 @@ from ....kering import Vrsn_1_0, Vrsn_2_0
 from ... import habbing
 from ..common import existing
 from ..common.parsing import Parsery
-from ....core import coring, serdering, parsing
+from ....core import parsing
 
 logger = help.ogler.getLogger()
 

@@ -5,7 +5,6 @@ keri.app.cli.commands module
 """
 import argparse
 
-import pysodium
 from hio.base import doing
 
 from ....core import signing

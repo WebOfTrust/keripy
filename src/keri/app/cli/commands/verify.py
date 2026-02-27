@@ -10,7 +10,7 @@ from hio.base import doing
 from .... import kering
 from ..common import existing
 from ..common.parsing import Parsery
-from ....core import coring, indexing
+from ....core import indexing
 
 parser = argparse.ArgumentParser(description='Verify signature(s) on arbitrary data', 
                                  parents=[Parsery.keystore()])
