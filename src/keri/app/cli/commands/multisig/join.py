@@ -25,8 +25,17 @@ logger = help.ogler.getLogger()
 parser = argparse.ArgumentParser(description='Join group multisig inception, rotation or interaction event.',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: join(args))
-parser.add_argument('--group', '-g', help='human-readable name for the multisig group identifier prefix', required=False, default=None)
-parser.add_argument("--auto", "-Y", help="auto approve any delegation request non-interactively", action="store_true")
+parser.add_argument('--group', '-g',
+                    help='human-readable name for the multisig group identifier prefix',
+                    required=False,
+                    default=None)
+parser.add_argument("--auto", "-Y",
+                    help="auto approve any delegation request non-interactively",
+                    action="store_true")
+parser.add_argument("--timeout",
+                    help="Max seconds to wait for first group multisig event; 0 = wait indefinitely",
+                    type=float,
+                    default=0.0)
 
 def join(args):
     """ Wait for and provide interactive confirmation of group multisig inception, rotation or interaction events
@@ -40,8 +49,9 @@ def join(args):
     bran = args.bran
     auto = args.auto
     group = args.group
+    timeout = getattr(args, "timeout", 0.0)
 
-    joinDoer = JoinDoer(name=name, base=base, bran=bran, group=group, auto=auto)
+    joinDoer = JoinDoer(name=name, base=base, bran=bran, group=group, auto=auto, timeout=timeout)
 
     doers = [joinDoer]
     return doers
@@ -52,7 +62,7 @@ class JoinDoer(doing.DoDoer):
 
     """
 
-    def __init__(self, name, base, bran, group, auto=False):
+    def __init__(self, name, base, bran, group, auto=False, timeout: float = 0.0):
         """ Create doer for polling for group multisig events and either approve automatically or prompt user
 
         Parameters:
@@ -62,6 +72,8 @@ class JoinDoer(doing.DoDoer):
             group (str): human-readable name for the multisig identifier prefix
             auto (bool): non-interactively auto approve any inception, rotation, interaction, or other event
                          while using the default group of "default-group"
+            timeout (float): max seconds to wait for the first group multisig event
+                             before exiting with an error. 0.0 means wait indefinitely.
         """
         self.group = group
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
@@ -90,10 +102,11 @@ class JoinDoer(doing.DoDoer):
                                                                                    '/delegate'])
         self.postman = forwarding.Poster(hby=self.hby)
 
-        doers = [self.hbyDoer, self.witq,  self.mbx, self.counselor, self.registrar, self.credentialer, self.postman]
+        doers = [self.hbyDoer, self.witq, self.mbx, self.counselor, self.registrar, self.credentialer, self.postman]
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.joinDo)])
         self.auto = auto
+        self.timeout = float(timeout) if timeout is not None else 0.0
         super(JoinDoer, self).__init__(doers=doers)
 
     def joinDo(self, tymth, tock=0.0, **kwa):
@@ -112,7 +125,18 @@ class JoinDoer(doing.DoDoer):
 
         print("Waiting for group multisig events...")
 
+        start = None
+        if self.timeout > 0.0:
+            # use injected tymist time so timeout respects Doist's notion of time
+            start = self._tymth()
+
         while self.notifier.noter.notes.cnt() == 0:
+            if self.timeout > 0.0 and start is not None:
+                now = self._tymth()
+                if now - start >= self.timeout:
+                    # No multisig notice arrived within timeout window; exit with error
+                    self.remove(self.toRemove)
+                    raise kering.TimeoutError(f"timeout waiting for group multisig events after {self.timeout} seconds")
             yield self.tock
 
         for keys, notice in self.notifier.noter.notes.getItemIter():
