@@ -10,7 +10,7 @@ import json
 from hio.base import doing
 from hio.help import decking
 
-from ... import help
+from .... import help
 from ....app import indirecting, habbing, querying
 from ..common import displaying
 from ..common import existing
