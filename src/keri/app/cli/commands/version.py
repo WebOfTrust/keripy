@@ -8,8 +8,8 @@ import argparse
 from hio.base import doing
 
 import keri
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
+from ..common import existing
+from ..common.parsing import Parsery
 
 parser = argparse.ArgumentParser(description='Print version of KLI', parents=[Parsery.keystore(required=False)])
 parser.set_defaults(handler=lambda args: handler(args))

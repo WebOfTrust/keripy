@@ -306,7 +306,7 @@ class Exchanger:
             return True
 
         keys = [verfer.qb64 for verfer in hab.kever.verfers]
-        tsgs = eventing.fetchTsgs(self.hby.db.esigs, coring.Saider(qb64=said))
+        tsgs = eventing.fetchTsgs(self.hby.db.esigs, coring.Diger(qb64=said))
         if not tsgs:  # otherwise it contains a list of sigs
             return False
 

@@ -109,7 +109,7 @@ class Router:
 
         Parameters:
             serder (Serder): reply event message
-            saider (Saider): SAIDer of the sender
+            saider (Diger): instance from said of reply serder
             route (str): route ('r') of the event message
             cigars (Optional(list)): list of non-transferable signature tuples
             tsgs (Optional(list)): list of transferable signature tuples
@@ -187,15 +187,11 @@ class Revery:
             #if k not in serder.ked:
                 #raise kering.ValidationError(f"Missing element={k} from {coring.Ilks.rpy}"
                                              #f" msg={serder.ked}.")
-        # fetch from serder to process
-        ked = serder.ked
+        # verify said of reply via Serder (handles protocol/ilk-specific multi-SAID logic)
+        if not serder.verify():
+            raise kering.ValidationError(f"Invalid said for reply msg={serder.ked}.")
 
-        # verify said of reply
-        saider = coring.Saider(qb64=ked["d"])
-        if not saider.verify(sad=ked, prefixed=True):
-            raise kering.ValidationError(f"Invalid said = {saider.qb64} for reply "
-                                         f"msg={ked}.")
-
+        saider = coring.Diger(qb64=serder.said)
         self.rtr.dispatch(serder=serder, saider=saider, cigars=cigars, tsgs=tsgs)
 
     def acceptReply(self, serder, saider, route, aid, osaider=None,
@@ -207,8 +203,8 @@ class Revery:
 
         Parameters:
             serder (Serder): instance of reply msg (SAD)
-            saider (Saider): instance  from said in serder (SAD)
-            osaider (Saider): instance of saider for previous reply if any
+            saider (Diger): instance from said in serder (SAD)
+            osaider (Diger): instance of diger for previous reply if any
             route (str): reply route
             aid (str): identifier prefix qb64 of authorizing attributable ID
             cigars (list): of Cigar instances that contain nontrans signing couple
@@ -401,7 +397,7 @@ class Revery:
 
         Parameters:
             serder (Serder): instance of reply msg (SAD)
-            saider (Saider): instance  from said in serder (SAD)
+            saider (Diger): instance from said in serder (SAD)
             dater (Dater): instance from date-time in serder (SAD)
             cigar (Cigar): instance that contain nontrans signing couple
                           signature in .raw and public key in .verfer
@@ -424,7 +420,7 @@ class Revery:
         """ Remove Reply SAD artifacts given by saider.
 
         Parameters:
-            saider (Saider): instance from said in serder (SAD)
+            saider (Diger): instance from said in serder (SAD)
 
         """
         if saider:
@@ -441,7 +437,7 @@ class Revery:
 
         Parameters:
             serder (Serder): instance of reply msg (SAD)
-            saider (Saider): instance  from said in serder (SAD)
+            saider (Diger): instance from said in serder (SAD)
             dater (Dater): instance from date-time in serder (SAD)
             route (str): reply route
             prefixer (Prefixer): is pre of trans endorser
@@ -468,16 +464,16 @@ class Revery:
         quadruple (prefixer, seqner, diger, siger)
 
         """
-        for (route,), saider in self.db.rpes.getItemIter():
+        for (route,), diger in self.db.rpes.getItemIter():
             try:
-                tsgs = eventing.fetchTsgs(db=self.db.ssgs, saider=saider)
+                tsgs = eventing.fetchTsgs(db=self.db.ssgs, saider=diger)
 
-                keys = (saider.qb64,)
+                keys = (diger.qb64,)
                 dater = self.db.sdts.get(keys=keys)
                 serder = self.db.rpys.get(keys=keys)
                 try:
                     if not (dater and serder and tsgs):
-                        raise ValueError(f"Missing escrow artifacts at said={saider.qb64}"
+                        raise ValueError(f"Missing escrow artifacts at said={diger.qb64}"
                                          f"for route={route}.")
 
                     # do date math for stale escrow
@@ -497,21 +493,21 @@ class Revery:
                         logger.trace("Revery unescrow attempt failed: %s\n", ex.args[0])
 
                 except Exception as ex:  # other error so remove from reply escrow
-                    self.db.rpes.rem(keys=(route, ), val=saider)  # remove escrow only
-                    self.removeReply(saider)  # remove escrow reply artifacts
+                    self.db.rpes.rem(keys=(route, ), val=diger)  # remove escrow only
+                    self.removeReply(diger)  # remove escrow reply artifacts
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Revery unescrowed due to error: %s", ex.args[0])
                     else:
                         logger.error("Revery unescrowed due to error: %s", ex.args[0])
 
                 else:  # unescrow succeded
-                    self.db.rpes.rem(keys=(route, ), val=saider)  # remove escrow only
+                    self.db.rpes.rem(keys=(route, ), val=diger)  # remove escrow only
                     logger.info("Revery unescrow succeeded for reply said=%s", serder.said)
                     logger.debug("event=\n%s\n", serder.pretty())
 
             except Exception as ex:  # log diagnostics errors etc
-                self.db.rpes.rem(keys=(route,), val=saider)  # remove escrow only
-                self.removeReply(saider)  # remove escrow reply artifacts
+                self.db.rpes.rem(keys=(route,), val=diger)  # remove escrow only
+                self.removeReply(diger)  # remove escrow reply artifacts
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Revery unescrowed due to error: %s", ex.args[0])
                 else:
