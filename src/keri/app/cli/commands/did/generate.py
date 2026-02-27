@@ -11,8 +11,8 @@ from urllib.parse import urlparse
 import sys
 from hio.base import doing
 
-from keri import help, kering
-from keri.app.cli.common import existing
+from ..... import help, kering
+from ...common import existing
 
 logger = help.ogler.getLogger()
 

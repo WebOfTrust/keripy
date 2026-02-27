@@ -14,11 +14,11 @@ from typing import List
 
 from hio.base import doing
 
-from keri.app import habbing, forwarding, organizing
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery, parseDataItems
-from keri.app.habbing import GroupHab
-from keri.peer import exchanging
+from .... import habbing, forwarding, organizing
+from ...common import existing
+from ...common.parsing import Parsery, parseDataItems
+from ....habbing import GroupHab
+from .....peer import exchanging
 
 parser = argparse.ArgumentParser(
     description="Send a generic EXN message with user-supplied route/topic/data",
