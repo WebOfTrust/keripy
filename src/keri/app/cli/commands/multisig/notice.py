@@ -8,12 +8,12 @@ from ordered_set import OrderedSet as oset
 
 from hio.base import doing
 
-from keri import help
-from keri.app import habbing, forwarding, grouping
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.core.coring import Ilks
-from keri.core import serdering
+from ..... import help
+from .... import habbing, forwarding, grouping
+from ...common import existing
+from ...common.parsing import Parsery
+from .....core.coring import Ilks
+from .....core import serdering
 
 logger = help.ogler.getLogger()
 

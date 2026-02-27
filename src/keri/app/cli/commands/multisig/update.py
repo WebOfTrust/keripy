@@ -8,12 +8,12 @@ import time
 
 from hio.base import doing
 from hio.help import decking
-from keri import help, kering
-from keri.app import agenting, indirecting, habbing
-from keri.app.cli.common import displaying
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.app.habbing import GroupHab
+from ..... import help, kering
+from .... import agenting, indirecting, habbing
+from ...common import displaying
+from ...common import existing
+from ...common.parsing import Parsery
+from ....habbing import GroupHab
 
 logger = help.ogler.getLogger()
 

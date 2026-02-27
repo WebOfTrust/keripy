@@ -9,13 +9,13 @@ from ordered_set import OrderedSet as oset
 
 from hio.base import doing
 
-from keri import help, kering
-from keri.app import grouping, indirecting, habbing, forwarding
-from keri.app.cli.common import existing, displaying, config
-from keri.app.cli.common.parsing import Parsery
-from keri.app.notifying import Notifier
-from keri.core import coring, serdering
-from keri.peer import exchanging
+from ..... import help, kering
+from .... import grouping, indirecting, habbing, forwarding
+from ...common import existing, displaying, config
+from ...common.parsing import Parsery
+from ....notifying import Notifier
+from .....core import coring, serdering
+from .....peer import exchanging
 
 logger = help.ogler.getLogger()
 

@@ -8,11 +8,11 @@ import argparse
 
 from hio.base import doing
 
-from keri import help, kering
-from keri.app import agenting, habbing, httping
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.app.habbing import GroupHab
+from ..... import help, kering
+from .... import agenting, habbing, httping
+from ...common import existing
+from ...common.parsing import Parsery
+from ....habbing import GroupHab
 
 logger = help.ogler.getLogger()
 

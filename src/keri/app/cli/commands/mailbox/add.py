@@ -9,11 +9,11 @@ import argparse
 from hio.base import doing
 from hio.help import Hict
 
-from keri import help, kering
-from keri.app import organizing, habbing
-from keri.app.agenting import httpClient, WitnessPublisher
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
+from ..... import help, kering
+from .... import organizing, habbing
+from ....agenting import httpClient, WitnessPublisher
+from ...common import existing
+from ...common.parsing import Parsery
 
 logger = help.ogler.getLogger()
 

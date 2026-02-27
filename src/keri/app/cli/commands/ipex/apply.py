@@ -7,7 +7,7 @@ import argparse
 
 from hio.base import doing
 
-from keri.core import signing
+from .....core import signing
 
 parser = argparse.ArgumentParser(description='Request a credential from another party by initiating an IPEX exchange')
 parser.set_defaults(handler=lambda args: handler(args))

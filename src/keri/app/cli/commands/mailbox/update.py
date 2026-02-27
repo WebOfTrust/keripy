@@ -7,11 +7,11 @@ import argparse
 
 from hio.base import doing
 
-from keri import help
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.db import basing
-from keri.kering import ConfigurationError
+from ..... import help
+from ...common import existing
+from ...common.parsing import Parsery
+from .....db import basing
+from .....kering import ConfigurationError
 
 logger = help.ogler.getLogger()
 
