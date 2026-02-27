@@ -11,10 +11,8 @@ from hio.base import doing
 from .. import kering, core
 from ..kering import Vrsn_1_0, Vrsn_2_0
 from .. import help
-from ..app import delegating, agenting
-from ..core import coring, routing, eventing, parsing, serdering, indexing
-from ..db import dbing
-from ..db.dbing import snKey
+from . import delegating, agenting
+from ..core import coring, routing, eventing, parsing, serdering
 from ..peer import exchanging
 
 logger = help.ogler.getLogger()

@@ -16,8 +16,7 @@ from hio.help import decking
 
 from keri.core import coring
 from . import httping
-from .. import help
-from .. import kering
+from .. import help, kering
 from ..kering import Vrsn_1_0, Vrsn_2_0
 from ..app import organizing
 from ..core import routing, eventing, parsing, scheming, serdering

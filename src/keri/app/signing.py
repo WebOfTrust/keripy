@@ -5,7 +5,7 @@ keri.app.signing module
 
 """
 from ..kering import Vrsn_1_0, Vrsn_2_0
-from ..app.habbing import GroupHab
+from .habbing import GroupHab
 from .. import core
 from ..core import coring, eventing, counting
 
@@ -179,8 +179,3 @@ def transSeal(hab):
             #sadcigars.append((self.pather, cigar))
 
         #return eventing.proofize(sadsigers=sadsigers, sadcigars=sadcigars, sadtsgs=sadtsgs)
-
-
-
-
-

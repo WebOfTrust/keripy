@@ -11,7 +11,7 @@ from dataclasses import dataclass
 from hio.base import doing
 from hio.help import decking
 
-from keri import help
+from .. import help
 
 logger = help.ogler.getLogger()
 

@@ -10,8 +10,8 @@ import falcon
 from hio.base import doing
 from hio.help import decking
 
-from keri.core import coring
-from keri.help import helping
+from ..core import coring
+from ..help import helping
 
 
 def signal(attrs, topic, ckey=None, dt=None):

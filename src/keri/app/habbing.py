@@ -11,7 +11,7 @@ from urllib.parse import urlsplit
 from hio.base import doing
 from hio.help import hicting
 
-from keri.peer import exchanging
+from ..peer import exchanging
 from . import keeping, configing
 from .. import help
 from .. import kering
