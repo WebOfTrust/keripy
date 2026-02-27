@@ -8,12 +8,12 @@ import getpass
 
 from hio.base import doing
 
-from keri import core, help
-from keri.app.cli.common.parsing import Parsery
-from keri.core import coring
-from keri.kering import ConfigurationError
+from ..... import core, help
+from ...common.parsing import Parsery
+from .....core import coring
+from .....kering import ConfigurationError
 
-from keri.app.cli.common import existing
+from ...common import existing
 
 
 logger = help.ogler.getLogger()

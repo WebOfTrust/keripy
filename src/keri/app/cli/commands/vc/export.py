@@ -9,12 +9,12 @@ import sys
 
 from hio.base import doing
 
-from keri import help
-from keri.app import signing
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.core import serdering
-from keri.vdr import credentialing
+from ..... import help
+from .....app import signing
+from ...common import existing
+from ...common.parsing import Parsery
+from .....core import serdering
+from .....vdr import credentialing
 
 logger = help.ogler.getLogger()
 

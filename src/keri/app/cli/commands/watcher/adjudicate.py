@@ -11,12 +11,12 @@ import sys
 
 from hio.base import doing
 
-from keri import help
-from keri.app import organizing, indirecting, querying, watching
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.help import helping
-from keri.kering import ConfigurationError
+from ..... import help
+from .... import organizing, indirecting, querying, watching
+from ...common import existing
+from ...common.parsing import Parsery
+from .....help import helping
+from .....kering import ConfigurationError
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Perform key event adjudication on any new key state from watchers.', 
