@@ -558,12 +558,12 @@ class Registrar(doing.DoDoer):
 
             prefixer = coring.Prefixer(qb64=hab.pre)
             number = coring.Number(sn=sn)
-            saider = coring.Saider(qb64=said)
+            diger = coring.Diger(qb64=said)
 
-            self.counselor.start(prefixer=prefixer, seqner=number, saider=saider, ghab=hab)
+            self.counselor.start(prefixer=prefixer, seqner=number, saider=diger, ghab=hab)
 
             print("Waiting for TEL registry vcp event multisig anchoring event")
-            self.rgy.reger.tmse.add(keys=(registry.regk, rnum.qb64, registry.regd), val=(prefixer, number, saider))
+            self.rgy.reger.tmse.add(keys=(registry.regk, rnum.qb64, registry.regd), val=(prefixer, number, diger))
 
     def issue(self, creder, iserder, anc):
         """
@@ -598,12 +598,12 @@ class Registrar(doing.DoDoer):
 
             prefixer = coring.Prefixer(qb64=hab.pre)
             number = coring.Number(sn=sn)
-            saider = coring.Saider(qb64=said)
+            diger = coring.Diger(qb64=said)
 
-            self.counselor.start(prefixer=prefixer, seqner=number, saider=saider, ghab=hab)
+            self.counselor.start(prefixer=prefixer, seqner=number, saider=diger, ghab=hab)
 
             print(f"Waiting for TEL iss event multisig anchoring event {number.sn}")
-            self.rgy.reger.tmse.add(keys=(vcid, rnum.qb64, iserder.said), val=(prefixer, number, saider))
+            self.rgy.reger.tmse.add(keys=(vcid, rnum.qb64, iserder.said), val=(prefixer, number, diger))
 
     def revoke(self, creder, rserder, anc):
         """
@@ -641,12 +641,12 @@ class Registrar(doing.DoDoer):
 
             prefixer = coring.Prefixer(qb64=hab.pre)
             number = coring.Number(sn=sn)
-            saider = coring.Saider(qb64=said)
+            diger = coring.Diger(qb64=said)
 
-            self.counselor.start(prefixer=prefixer, seqner=number, saider=saider, ghab=hab)
+            self.counselor.start(prefixer=prefixer, seqner=number, saider=diger, ghab=hab)
 
             print(f"Waiting for TEL rev event multisig anchoring event {number.sn}")
-            self.rgy.reger.tmse.add(keys=(vcid, rnum.qb64, rserder.said), val=(prefixer, number, saider))
+            self.rgy.reger.tmse.add(keys=(vcid, rnum.qb64, rserder.said), val=(prefixer, number, diger))
             return vcid, rnum.sn
 
     @staticmethod
@@ -759,9 +759,9 @@ class Registrar(doing.DoDoer):
         from witnesses yet.  When receipting is complete, remove from escrow and cue up a message
         that the event is complete.
         """
-        for (regk, snq, regd), (prefixer, seqner, saider) in self.rgy.reger.tmse.getItemIter():  # multisig escrow
+        for (regk, snq, regd), (prefixer, seqner, diger) in self.rgy.reger.tmse.getItemIter():  # multisig escrow
             try:
-                if not self.counselor.complete(prefixer, seqner, saider):
+                if not self.counselor.complete(prefixer, seqner, diger):
                     continue
             except kering.ValidationError:
                 self.rgy.reger.tmse.rem(keys=(regk, snq, regd))
@@ -772,11 +772,10 @@ class Registrar(doing.DoDoer):
             # Anchor the message, registry or otherwise
             key = dgKey(regk, regd)
             number = coring.Number(num=seqner.sn)
-            diger = coring.Diger(qb64=saider.qb64)
             self.rgy.reger.ancs.put(keys=key, val=(number, diger))
 
             self.rgy.reger.tmse.rem(keys=(regk, snq, regd))
-            self.rgy.reger.tede.add(keys=(regk, rnum.qb64), val=(prefixer, number, saider))
+            self.rgy.reger.tede.add(keys=(regk, rnum.qb64), val=(prefixer, number, diger))
 
     def processDisseminationEscrow(self):
         """

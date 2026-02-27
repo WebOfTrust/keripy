@@ -361,7 +361,7 @@ class Reger(dbing.LMDBer):
                                              klas=(coring.Prefixer, coring.Number, coring.Saider))
         # TEL multisig anchor escrow
         self.tmse = subing.CatCesrIoSetSuber(db=self, subkey='tmse.',
-                                             klas=(coring.Prefixer, coring.Number, coring.Saider))
+                                             klas=(coring.Prefixer, coring.Number, coring.Diger))
         # TEL event dissemination escrow
         self.tede = subing.CatCesrIoSetSuber(db=self, subkey='tede.',
                                              klas=(coring.Prefixer, coring.Number, coring.Saider))
