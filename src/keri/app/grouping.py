@@ -129,8 +129,8 @@ class Counselor(doing.DoDoer):
         then this escrow waits for signatures from all other participants
 
         """
-        for (pre,), (seqner, saider) in self.hby.db.gpse.getItemIter():  # group partially signed escrow
-            sdig = self.hby.db.kels.getOnLast(keys=pre, on=seqner.sn)
+        for (pre,), (number, diger) in self.hby.db.gpse.getItemIter():  # group partially signed escrow
+            sdig = self.hby.db.kels.getOnLast(keys=pre, on=number.sn)
             if sdig:
                 sdig = sdig.encode("utf-8")
                 self.hby.db.gpse.rem(keys=(pre,))
@@ -150,27 +150,27 @@ class Counselor(doing.DoDoer):
                     # We are a delegated identifier, must wait for delegator approval for dip and drt
                     if witered:  # We are elected to perform delegation and witnessing messaging
                         logger.info("AID %s...%s: We are the witnesser, sending %s to delegator", pre[:4], pre[-4:], pre)
-                        self.swain.delegation(pre=pre, sn=seqner.sn)
+                        self.swain.delegation(pre=pre, sn=number.sn)
                     else:
-                        anchor = dict(i=pre, s=seqner.snh, d=saider.qb64)
+                        anchor = dict(i=pre, s=number.snh, d=diger.qb64)
                         if self.proxy:
                             self.witq.query(hab=self.proxy, pre=kever.delpre, anchor=anchor)
                         else:
                             self.witq.query(src=ghab.mhab.pre, pre=kever.delpre, anchor=anchor)
 
                     logger.info("AID %s...%s: Waiting for delegation approval...", pre[:4], pre[-4:])
-                    self.hby.db.gdee.add(keys=(pre,), val=(seqner, saider))
+                    self.hby.db.gdee.add(keys=(pre,), val=(number, diger))
                 else:  # Non-delegation, move on to witnessing
                     if witered:  # We are elected witnesser, send off event to witnesses
                         logger.info(
                             "AID %s...%s: We are the fully signed witnesser %s, sending to witnesses",
-                            pre[:4], pre[-4:], seqner.sn)
-                        self.witDoer.msgs.append(dict(pre=pre, sn=seqner.sn))
+                            pre[:4], pre[-4:], number.sn)
+                        self.witDoer.msgs.append(dict(pre=pre, sn=number.sn))
 
                     # Move to escrow waiting for witness receipts
                     logger.info("AID %s...%s: Waiting for fully signed witness receipts for %s",
-                                pre[:4], pre[-4:], seqner.sn)
-                    self.hby.db.gpwe.add(keys=(pre,), val=(seqner, saider))
+                                pre[:4], pre[-4:], number.sn)
+                    self.hby.db.gpwe.add(keys=(pre,), val=(number, diger))
 
     def processDelegateEscrow(self):
         """

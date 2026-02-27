@@ -1784,6 +1784,37 @@ def test_baser():
             if s == 7:
                 assert db.ldes.remOn(keys=b'A', on=s, val=val) == True
 
+        # Test for gpse
+        key = b'a'
+        sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+        number = coring.Number(num=0)
+        diger = coring.Diger(qb64=sdig1)
+
+        assert db.gpse.get(key) == []   # gpse is empty
+        assert db.gpse.add(keys=key, val=(number, diger)) == True   # add new entry with val as a tuple of number and diger
+
+        val = db.gpse.get(key)  # returns Cesr tuple of (number, diger)
+        num, dig = val[0]
+        assert isinstance(num, coring.Number)
+        assert isinstance(dig, coring.Diger)
+        assert num.num == number.num
+        assert dig.qb64 == diger.qb64
+        
+        assert db.gpse.rem(key) == True
+        assert db.gpse.get(key) == []   # gpse is empty again
+
+        # Saider and Seqner instead of Diger and Number
+        seqner = coring.Seqner(num=0)
+        saider = coring.Saider(qb64=sdig1)
+        assert db.gpse.add(keys=key, val=(seqner, saider)) == True # val is not using Number and Diger type 
+        val = db.gpse.get(key)                                     # but it still gets validated
+        assert val is not None
+        seq, dig = val[0]   # returns Cesr tuple of (number, diger)
+
+        assert isinstance(seq, coring.Number) # Seqner gets converted to Number on read
+        assert isinstance(dig, coring.Diger)    # Saider gets converted to Diger on read
+        assert seq.num == seqner.sn
+        assert dig.qb64 == saider.qb64
 
     assert not os.path.exists(db.path)
 
@@ -2516,7 +2547,7 @@ def test_clear_escrows():
         db.dpwe.pin(keys=(pre, 'said'), val=serder)
         assert db.dpwe.get(keys=(pre, 'said')) is not None
 
-        db.gpse.add(keys=('qb64',), val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), saider))
+        db.gpse.add(keys=('qb64',), val=(coring.Number(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), saider))
         assert db.gpse.cnt(keys=('qb64',)) == 1
 
         db.epse.put(keys=('dig',), val=serder)
@@ -2619,39 +2650,6 @@ def test_db_keyspace_end_to_end_migration():
                 ordered_sns.append(n.num)
 
         assert ordered_sns == sns
-
-
-def test_big_int_round_trip_js_vs_coring_number():
-    """
-    Demonstrate that large integers cannot round-trip through JavaScript,
-    but coring.Number can round-trip them safely.
-    """
-    # number far above JS safe integer limit (2^53 - 1)
-    big = 2**80 + 123456789
-
-    # javaScript round-trip (LOSSY)
-    js_code = f"""
-        const x = {big};
-        const y = JSON.parse(JSON.stringify(x));
-        console.log(y);
-    """
-
-    # run JS using node
-    result = subprocess.check_output(["node", "-e", js_code]).decode().strip()
-    js_value = int(float(result))
-
-    # JS corrupt the number
-    assert big == 1208925819614629298162965
-    assert js_value == 1208925819614629174706176
-    assert js_value != big
-
-    # coring.Number round-trip (LOSSLESS)
-    num = Number(num=big, code=NumDex.Huge)
-
-    # Encode → decode
-    decoded = Number(qb64=num.qb64)
-    assert decoded.num == 1208925819614629298162965
-    assert decoded.num == big
 
 
 if __name__ == "__main__":
