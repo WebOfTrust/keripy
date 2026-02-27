@@ -10,30 +10,28 @@ import pysodium
 import pytest
 
 from keri import kering
-from keri.kering import Vrsn_1_0
+from keri.kering import (Vrsn_1_0, ValidationError, Ilks,
+                         TraitDex, Kinds, versify, UnverifiedReceiptError)
 from keri.app import habbing
 from keri.app.keeping import openKS, Manager
 from keri import core
-from keri.core import Signer, Counter, Codens
-from keri.core import coring, eventing, parsing
-from keri.core.coring import (Diger, MtrDex, Matter,
-                              Cigar,
-                              Seqner, Verfer, Prefixer, DigDex)
-from keri.core.indexing import (IdrDex, IdxSigDex, Siger)
-from keri.core.eventing import Kever, Kevery, UnverifiedReceiptError
-from keri.core import (SealDigest, SealRoot, SealBack, SealEvent, SealLast)
-from keri.core.structing import (StateEvent, StateEstEvent)
-from keri.core.eventing import (TraitDex, LastEstLoc, Kinds, versify, simple, ample)
-from keri.core.eventing import (deWitnessCouple, deReceiptCouple, deSourceCouple,
-                                deReceiptTriple,
-                                deTransReceiptQuadruple, deTransReceiptQuintuple)
-from keri.core.eventing import (incept, rotate, interact, receipt, query,
-                                delcept, deltate, state, messagize)
-from keri.core import serdering
+from keri.core import (Signer, Counter, Codens,
+                       Diger, MtrDex, Matter, Cigar,
+                       Seqner, Verfer, Prefixer, DigDex,
+                       IdrDex, IdxSigDex, Siger,
+                       Kever, Kevery,
+                       SealDigest, SealRoot, SealBack, SealEvent, SealLast,
+                       StateEvent, StateEstEvent,
+                       LastEstLoc, simple, ample,
+                       deWitnessCouple, deReceiptCouple, deSourceCouple,
+                       deReceiptTriple,
+                       deTransReceiptQuadruple, deTransReceiptQuintuple,
+                       incept, rotate, interact, receipt, query,
+                       delcept, deltate, state, messagize)
+from keri.core import coring, eventing, parsing, serdering
 
 from keri.db.basing import openDB
 from keri.db.dbing import dgKey, snKey
-from keri.kering import (ValidationError, Ilks)
 
 from keri import help
 

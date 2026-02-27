@@ -12,7 +12,7 @@ from .coring import (Matter, MtrDex, Number, NumDex, Dater, DecDex, Decimer,
                      Texter, Bexter, Pather, Verfer, Cigar, Diger, DigDex,
                      Prefixer, PreDex, Seqner, Verser, Tholder,
                      Labeler, LabelDex, Decimer, DecDex, Noncer, NonceDex)
-from .indexing import Indexer, Siger, IdrDex, IdxSigDex
+from .indexing import Indexer, Siger, IdrDex, IdxSigDex, IdxCrtSigDex, IdxBthSigDex
 from .signing import (Tiers, Signer, Salter, Cipher, CiXDex,
                       Encrypter, Decrypter, Streamer)
 from .counting import Counter, Codens, GenDex, CtrDex_1_0, CtrDex_2_0, ProGen
@@ -21,6 +21,12 @@ from .serdering import Serdery, Serder, SerderKERI, SerderACDC
 from .structing import (Structor, Sealer, Blinder, Mediar,
                         CodenToClans, ClanToCodens,
                         SealDigest, SealRoot, SealBack, SealLast, SealSource,
-                        SealEvent, SealKind, BlindState, BoundState, TypeMedia)
+                        SealEvent, SealKind, BlindState, BoundState, TypeMedia,
+                        StateEvent, StateEstEvent)
 from .eventing import (incept, interact, rotate, delcept, deltate, receipt,
-                       query, reply, prod, bare, exchept, exchange)
+                       query, reply, prod, bare, exchept, exchange,
+                       Kever, Kevery, LastEstLoc,
+                       simple, ample, messagize, state,
+                       deWitnessCouple, deReceiptCouple, deSourceCouple,
+                       deReceiptTriple, deTransReceiptQuadruple,
+                       deTransReceiptQuintuple)
