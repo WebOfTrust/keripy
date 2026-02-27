@@ -1821,7 +1821,7 @@ class BaseHab:
             said = self.db.eans.get(keys=(cid, role, eid))
             serder = self.db.rpys.get(keys=(said.qb64,))
             cigars = self.db.scgs.get(keys=(said.qb64,))
-            tsgs = eventing.fetchTsgs(db=self.db.ssgs, saider=said)
+            tsgs = eventing.fetchTsgs(db=self.db.ssgs, diger=said)
 
             if len(cigars) == 1:
                 (verfer, cigar) = cigars[0]
@@ -1900,7 +1900,7 @@ class BaseHab:
         for (pre, _), said in self.db.lans.getItemIter(keys=keys):
             serder = self.db.rpys.get(keys=(said.qb64,))
             cigars = self.db.scgs.get(keys=(said.qb64,))
-            tsgs = eventing.fetchTsgs(db=self.db.ssgs, saider=said)
+            tsgs = eventing.fetchTsgs(db=self.db.ssgs, diger=said)
 
             if len(cigars) == 1:
                 (verfer, cigar) = cigars[0]
