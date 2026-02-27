@@ -464,16 +464,16 @@ class Revery:
         quadruple (prefixer, seqner, diger, siger)
 
         """
-        for (route,), saider in self.db.rpes.getItemIter():
+        for (route,), diger in self.db.rpes.getItemIter():
             try:
-                tsgs = eventing.fetchTsgs(db=self.db.ssgs, saider=saider)
+                tsgs = eventing.fetchTsgs(db=self.db.ssgs, saider=diger)
 
-                keys = (saider.qb64,)
+                keys = (diger.qb64,)
                 dater = self.db.sdts.get(keys=keys)
                 serder = self.db.rpys.get(keys=keys)
                 try:
                     if not (dater and serder and tsgs):
-                        raise ValueError(f"Missing escrow artifacts at said={saider.qb64}"
+                        raise ValueError(f"Missing escrow artifacts at said={diger.qb64}"
                                          f"for route={route}.")
 
                     # do date math for stale escrow
@@ -493,21 +493,21 @@ class Revery:
                         logger.trace("Revery unescrow attempt failed: %s\n", ex.args[0])
 
                 except Exception as ex:  # other error so remove from reply escrow
-                    self.db.rpes.rem(keys=(route, ), val=saider)  # remove escrow only
-                    self.removeReply(saider)  # remove escrow reply artifacts
+                    self.db.rpes.rem(keys=(route, ), val=diger)  # remove escrow only
+                    self.removeReply(diger)  # remove escrow reply artifacts
                     if logger.isEnabledFor(logging.DEBUG):
                         logger.exception("Revery unescrowed due to error: %s", ex.args[0])
                     else:
                         logger.error("Revery unescrowed due to error: %s", ex.args[0])
 
                 else:  # unescrow succeded
-                    self.db.rpes.rem(keys=(route, ), val=saider)  # remove escrow only
+                    self.db.rpes.rem(keys=(route, ), val=diger)  # remove escrow only
                     logger.info("Revery unescrow succeeded for reply said=%s", serder.said)
                     logger.debug("event=\n%s\n", serder.pretty())
 
             except Exception as ex:  # log diagnostics errors etc
-                self.db.rpes.rem(keys=(route,), val=saider)  # remove escrow only
-                self.removeReply(saider)  # remove escrow reply artifacts
+                self.db.rpes.rem(keys=(route,), val=diger)  # remove escrow only
+                self.removeReply(diger)  # remove escrow reply artifacts
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Revery unescrowed due to error: %s", ex.args[0])
                 else:
