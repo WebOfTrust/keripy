@@ -358,7 +358,7 @@ class Reger(dbing.LMDBer):
 
         # TEL partial witness escrow
         self.tpwe = subing.CatCesrIoSetSuber(db=self, subkey='tpwe.',
-                                             klas=(coring.Prefixer, coring.Number, coring.Saider))
+                                             klas=(coring.Prefixer, coring.Number, coring.Diger))
         # TEL multisig anchor escrow
         self.tmse = subing.CatCesrIoSetSuber(db=self, subkey='tmse.',
                                              klas=(coring.Prefixer, coring.Number, coring.Saider))

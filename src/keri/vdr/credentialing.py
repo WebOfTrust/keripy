@@ -541,16 +541,16 @@ class Registrar(doing.DoDoer):
 
         if not isinstance(hab, GroupHab):  # not a multisig group
             number = coring.Number(sn=hab.kever.sner.num)
-            saider = coring.Saider(qb64=hab.kever.serder.said)
+            diger = coring.Diger(qb64=hab.kever.serder.said)
             registry.anchorMsg(pre=iserder.pre,
                                regd=iserder.said,
                                seqner=number,
-                               saider=saider)
+                               saider=diger)
 
             print("Waiting for TEL event witness receipts")
             self.receiptor.msgs.append(dict(pre=anc.pre, sn=number.sn))
 
-            self.rgy.reger.tpwe.add(keys=(registry.regk, rnum.qb64), val=(hab.kever.prefixer, number, saider))
+            self.rgy.reger.tpwe.add(keys=(registry.regk, rnum.qb64), val=(hab.kever.prefixer, number, diger))
 
         else:
             sn = anc.sn
@@ -584,13 +584,13 @@ class Registrar(doing.DoDoer):
 
         if not isinstance(hab, GroupHab):  # not a multisig group
             number = coring.Number(sn=hab.kever.sner.num)
-            saider = coring.Saider(qb64=hab.kever.serder.said)
-            registry.anchorMsg(pre=vcid, regd=iserder.said, seqner=number, saider=saider)
+            diger = coring.Diger(qb64=hab.kever.serder.said)
+            registry.anchorMsg(pre=vcid, regd=iserder.said, seqner=number, saider=diger)
 
             print("Waiting for TEL event witness receipts")
             self.receiptor.msgs.append(dict(pre=hab.pre, sn=number.sn))
 
-            self.rgy.reger.tpwe.add(keys=(vcid, rnum.qb64), val=(hab.kever.prefixer, number, saider))
+            self.rgy.reger.tpwe.add(keys=(vcid, rnum.qb64), val=(hab.kever.prefixer, number, diger))
 
         else:  # multisig group hab
             sn = anc.sn
@@ -627,13 +627,13 @@ class Registrar(doing.DoDoer):
 
         if not isinstance(hab, GroupHab):  # not a multisig group
             number = coring.Number(sn=hab.kever.sner.num)
-            saider = coring.Saider(qb64=hab.kever.serder.said)
-            registry.anchorMsg(pre=vcid, regd=rserder.said, seqner=number, saider=saider)
+            diger = coring.Diger(qb64=hab.kever.serder.said)
+            registry.anchorMsg(pre=vcid, regd=rserder.said, seqner=number, saider=diger)
 
             print("Waiting for TEL event witness receipts")
             self.receiptor.msgs.append(dict(pre=hab.pre, sn=number.sn))
 
-            self.rgy.reger.tpwe.add(keys=(vcid, rnum.qb64), val=(hab.kever.prefixer, number, saider))
+            self.rgy.reger.tpwe.add(keys=(vcid, rnum.qb64), val=(hab.kever.prefixer, number, diger))
             return vcid, rnum.sn
         else:
             sn = anc.sn
@@ -730,11 +730,11 @@ class Registrar(doing.DoDoer):
         from witnesses yet.  When receipting is complete, remove from escrow and cue up a message
         that the event is complete.
         """
-        for (regk, snq), (prefixer, number, saider) in self.rgy.reger.tpwe.getItemIter():  # partial witness escrow
+        for (regk, snq), (prefixer, number, diger) in self.rgy.reger.tpwe.getItemIter():  # partial witness escrow
             kever = self.hby.kevers[prefixer.qb64]
 
             # Load all the witness receipts we have so far
-            wigers = self.hby.db.wigs.get(keys=(prefixer.qb64b, saider.qb64))
+            wigers = self.hby.db.wigs.get(keys=(prefixer.qb64b, diger.qb64))
             if kever.wits:
                 if len(wigers) == len(kever.wits):  # We have all of them, this event is finished
                     hab = self.hby.habs[prefixer.qb64]
@@ -751,7 +751,7 @@ class Registrar(doing.DoDoer):
             rnum = coring.Number(qb64=snq, code=coring.NumDex.Huge)
             self.rgy.reger.tpwe.rem(keys=(regk, snq))
 
-            self.rgy.reger.tede.add(keys=(regk, rnum.qb64), val=(prefixer, number, saider))
+            self.rgy.reger.tede.add(keys=(regk, rnum.qb64), val=(prefixer, number, diger))
 
     def processMultisigEscrow(self):
         """
