@@ -8,6 +8,7 @@ import os
 import platform
 import tempfile
 from dataclasses import dataclass, asdict
+import subprocess
 
 import pytest
 
@@ -16,7 +17,7 @@ from hio.base import doing
 from keri import core
 from keri.app import habbing
 from keri.core import coring, eventing, serdering, signing, indexing
-from keri.core.coring import Kinds, versify, Seqner
+from keri.core.coring import Kinds, versify, Seqner, Diger, Number, NumDex
 from keri.core.eventing import incept, rotate, interact, Kever
 from keri.core.serdering import Serder
 from keri.core.signing import Signer
@@ -2549,6 +2550,110 @@ def test_clear_escrows():
         assert db.epsd.cntAll() == 0
         assert db.dpub.cntAll() == 0
 
+def test_db_keyspace_end_to_end_migration():
+    """
+    End-to-end test for DB keyspace migration from Seqner.qb64 to Number with Huge code.
+
+    Asserts:
+    - Correct DB writes using Number (Huge)
+    - Correct DB reads using Number (Huge)
+    - Backward compatibility with old Seqner.qb64 keys
+    - Round-trip correctness for Number (Huge)
+    - Lexicographic ordering == numeric ordering (for NEW keys)
+    - Mixed encodings do not break iteration
+    """
+
+    sns = [0, 1, 2, 10, 100, 999999, 2**40, 2**80]
+
+    with openDB() as db:
+        # Build a valid Cigar + Prefixer once, reuse in all values
+        signer = Signer()                     # ephemeral keypair
+        cigar = signer.sign(b"test")          # Cigar
+        pre = cigar.verfer.qb64               # non-transferable prefix
+
+        # old encoding (Seqner.qb64) – backward compatibility
+        for sn in sns:
+            old_key = Seqner(sn=sn).qb64
+            dig = Diger(raw=b"\x00" * 32)     # valid 32-byte raw
+            val = (dig, coring.Prefixer(qb64=pre), cigar)
+            db.ures.add(keys=("OLD", old_key), val=val)
+
+        # new encoding (Number with Huge code)
+        for sn in sns:
+            new_key = Number(num=sn, code=coring.NumDex.Huge).qb64
+            dig = Diger(raw=b"\x01" * 32)     # distinguishable but valid
+            val = (dig, coring.Prefixer(qb64=pre), cigar)
+            db.ures.add(keys=("NEW", new_key), val=val)
+
+        # round-trip correctness for Number with Huge code
+        for sn in sns:
+            enc = Number(num=sn, code=coring.NumDex.Huge).qb64
+            parsed = Number(qb64=enc)
+            assert parsed.num == sn
+
+        # read back old and new keys (existence + type)
+        for sn in sns:
+            old_key = Seqner(sn=sn).qb64
+            new_key = Number(num=sn, code=coring.NumDex.Huge).qb64
+
+            old_vals = db.ures.get(keys=("OLD", old_key))
+            new_vals = db.ures.get(keys=("NEW", new_key))
+
+            assert len(old_vals) == 1
+            assert len(new_vals) == 1
+
+            odig, opre, ocig = old_vals[0]
+            ndig, npre, ncig = new_vals[0]
+
+            assert isinstance(odig, Diger)
+            assert isinstance(opre, coring.Prefixer)
+            assert isinstance(ncig, type(cigar))
+            assert isinstance(ndig, Diger)
+            assert isinstance(npre, coring.Prefixer)
+
+        # lexicographic ordering must match numeric ordering for NEW keys
+        ordered_sns = []
+        for (pre_key, key), vals in db.ures.getItemIter():
+            if pre_key == "NEW":
+                n = Number(qb64=key)
+                ordered_sns.append(n.num)
+
+        assert ordered_sns == sns
+
+
+def test_big_int_round_trip_js_vs_coring_number():
+    """
+    Demonstrate that large integers cannot round-trip through JavaScript,
+    but coring.Number can round-trip them safely.
+    """
+    # number far above JS safe integer limit (2^53 - 1)
+    big = 2**80 + 123456789
+
+    # javaScript round-trip (LOSSY)
+    js_code = f"""
+        const x = {big};
+        const y = JSON.parse(JSON.stringify(x));
+        console.log(y);
+    """
+
+    # run JS using node
+    result = subprocess.check_output(["node", "-e", js_code]).decode().strip()
+    js_value = int(float(result))
+
+    # JS corrupt the number
+    assert big == 1208925819614629298162965
+    assert js_value == 1208925819614629174706176
+    assert js_value != big
+
+    # coring.Number round-trip (LOSSLESS)
+    num = Number(num=big, code=NumDex.Huge)
+
+    # Encode → decode
+    decoded = Number(qb64=num.qb64)
+    assert decoded.num == 1208925819614629298162965
+    assert decoded.num == big
+
+
 if __name__ == "__main__":
     test_baser()
     test_clean_baser()
@@ -2556,3 +2661,5 @@ if __name__ == "__main__":
     test_usebaser()
     test_dbdict()
     test_baserdoer()
+    test_db_keyspace_end_to_end_migration()
+    test_big_int_round_trip_js_vs_coring_number()
