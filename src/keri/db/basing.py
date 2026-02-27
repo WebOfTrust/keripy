@@ -1048,7 +1048,6 @@ class Baser(dbing.LMDBer):
                                         klas=(coring.Seqner, coring.Diger))
         self.uwes = subing.B64OnIoDupSuber(db=self, subkey='uwes.')
         self.ooes = subing.OnIoDupSuber(db=self, subkey='ooes.')
-        self.dels = self.env.open_db(key=b'dels.', dupsort=True)
         self.ldes = self.env.open_db(key=b'ldes.', dupsort=True)
         self.ooes = subing.OnIoDupSuber(db=self, subkey='ooes.')
         self.dels = subing.OnIoDupSuber(db=self, subkey='dels.')
