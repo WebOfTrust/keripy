@@ -24,6 +24,10 @@ pid=$!
 PID_LIST+=" $pid"
 
 wait $PID_LIST
+if [ $? -ne 0 ]; then
+  echo "Multisig group inception/join failed"
+  exit 1
+fi
 
 kli status --name multisigj1 --alias multisig
 
@@ -43,6 +47,10 @@ pid=$!
 PID_LIST+=" $pid"
 
 wait $PID_LIST
+if [ $? -ne 0 ]; then
+  echo "Multisig group rotation/join failed"
+  exit 1
+fi
 
 kli status --name multisigj1 --alias multisig
 
