@@ -1164,7 +1164,7 @@ class Parser:
                 try:
                     exts['firner'] = firner
                     exts['dater'] = dater
-                    exts['delseqner'] = delseqner
+                    exts['delnum'] = Number(num=delseqner.sn) if delseqner is not None else None
                     exts['deldiger'] = deldiger
 
                     kvy.processEvent(**exts)

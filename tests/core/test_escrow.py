@@ -7,6 +7,8 @@ import os
 import time
 import datetime
 
+import pytest
+
 from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri import help
 from keri.help import helping
@@ -673,11 +675,386 @@ def test_misfit_escrow():
     Test misfit escrow
 
     """
-    salt = core.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
+    salt = core.Salter(raw=b'0123456789abcdef').qb64
+    psr = parsing.Parser(version=Vrsn_1_0)
 
-    # stub for now
+    # init event DB and keep DB
+    with basing.openDB(name="misfit", temp=True) as db, keeping.openKS(name="misfit") as ks:
+        # Init key pair manager
+        mgr = keeping.Manager(ks=ks, salt=salt)
+
+        # Init Kevery with event DB
+        kvy = eventing.Kevery(db=db)
+
+        # Create inception event for a locally owned AID
+        verfers, digers = mgr.incept(stem='mis', temp=True)
+        srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+                               ndigs=[diger.qb64 for diger in digers],
+                               code=coring.MtrDex.Blake3_256)
+
+        pre = srdr.pre
+        mgr.move(old=verfers[0].qb64, new=pre)  # move key pair label to prefix
+
+        # Mark prefix as locally owned so Kever.locallyOwned() is True
+        db.prefixes.add(pre)
+        assert pre in db.prefixes
+
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+        msg = bytearray(srdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs,
+                               count=len(sigers), version=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+
+        # Apply inception as local so event is accepted and Kever exists
+        psr.parse(ims=bytearray(msg), kvy=kvy, local=True)
+        assert pre in kvy.kevers
+        kever = kvy.kevers[pre]
+
+        # Build a valid interaction event for the same AID
+        srdr2 = eventing.interact(pre=kever.prefixer.qb64,
+                                  dig=kever.serder.said,
+                                  sn=kever.sn + 1,
+                                  data=[])
+
+        sigers2 = mgr.sign(ser=srdr2.raw, verfers=kever.verfers)
+        msg2 = bytearray(srdr2.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs,
+                               count=len(sigers2), version=kering.Vrsn_1_0)
+        msg2.extend(counter.qb64b)
+        for siger in sigers2:
+            msg2.extend(siger.qb64b)
+
+        # Parse the second event as non-local; this should trigger misfit escrow.
+        # Parser swallows ValidationError subclasses (including MisfitEventSourceError),
+        # so we assert via escrow side effects instead of expecting the exception.
+        psr.parse(ims=bytearray(msg2), kvy=kvy, local=False)
+
+        dgkey = dbing.dgKey(srdr2.preb, srdr2.saidb)
+
+        # Misfit index contains the event SAID
+        assert db.misfits.cnt(keys=(srdr2.pre, srdr2.snh)) == 1
+        misfit_vals = db.misfits.get(keys=(srdr2.pre, srdr2.snh))
+        assert misfit_vals == [srdr2.said]
+
+        # Event and signatures are stored in common escrow DBs
+        stored = db.evts.get(keys=(srdr2.preb, srdr2.saidb))
+        assert stored is not None
+        assert stored.saidb == srdr2.saidb
+
+        sigs = db.sigs.get(keys=(srdr2.preb, srdr2.saidb))
+        assert sigs is not None
+        assert [siger.qb64b for siger in sigs] == [siger.qb64b for siger in sigers2]
+
+        # Datetime stamp and event source record are stored
+        dater = db.dtss.get(keys=dgkey)
+        assert dater is not None
+
+        esr = db.esrs.get(keys=dgkey)
+        assert esr is not None
+        assert not esr.local
+
+
+def test_misfit_escrow_delegated():
+    """
+    Test misfit escrow for a delegated event with attached source seal.
+
+    Remote (local=False) delegated inception for a delegate whose delegator
+    is local should be escrowed as a misfit and recorded in .udes.
+    """
+    salt = core.Salter(raw=b'fedcba9876543210').qb64
+    psr = parsing.Parser(version=Vrsn_1_0)
+
+    with basing.openDB(name="misfit-del", temp=True) as db, keeping.openKS(name="misfit-del") as ks:
+        mgr = keeping.Manager(ks=ks, salt=salt)
+        kvy = eventing.Kevery(db=db)
+
+        # Create a local delegator AID and mark it as local
+        delg_verfers, delg_digers = mgr.incept(stem='delg', temp=True)
+        delg_srdr = eventing.incept(keys=[verfer.qb64 for verfer in delg_verfers],
+                                    ndigs=[diger.qb64 for diger in delg_digers],
+                                    code=coring.MtrDex.Blake3_256)
+        delg_pre = delg_srdr.pre
+        mgr.move(old=delg_verfers[0].qb64, new=delg_pre)
+        db.prefixes.add(delg_pre)
+        assert delg_pre in db.prefixes
+
+        # Create delegated inception event (dip) for a new delegatee AID
+        del_verfers, del_digers = mgr.incept(stem='del', temp=True)
+        dip_srdr = eventing.delcept(keys=[verfer.qb64 for verfer in del_verfers],
+                                    delpre=delg_pre,
+                                    ndigs=[diger.qb64 for diger in del_digers])
+        del_pre = dip_srdr.pre
+        mgr.move(old=del_verfers[0].qb64, new=del_pre)
+
+        # Build message: delegated inception with controller sigs and a source seal
+        sigers = mgr.sign(ser=dip_srdr.raw, verfers=del_verfers)
+        msg = bytearray(dip_srdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs,
+                               count=len(sigers), version=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+
+        # Attach a SealSourceCouples group for the delegator event
+        seqner = coring.Seqner(sn=0)
+        saider = coring.Saider(qb64=delg_srdr.said)
+        counter = core.Counter(core.Codens.SealSourceCouples,
+                               count=1, version=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        msg.extend(seqner.qb64b)
+        msg.extend(saider.qb64b)
+
+        # Parse as non-local; this should trigger delegated misfit escrow.
+        # Parser swallows ValidationError subclasses (including MisfitEventSourceError),
+        # so we assert via escrow side effects instead of expecting the exception.
+        psr.parse(ims=bytearray(msg), kvy=kvy, local=False)
+
+        dgkey = dbing.dgKey(dip_srdr.preb, dip_srdr.saidb)
+
+        # Misfit index entry for delegated event
+        assert db.misfits.cnt(keys=(dip_srdr.pre, dip_srdr.snh)) == 1
+
+        # Event and signatures stored
+        stored = db.evts.get(keys=(dip_srdr.preb, dip_srdr.saidb))
+        assert stored is not None
+        assert stored.saidb == dip_srdr.saidb
+
+        sigs = db.sigs.get(keys=(dip_srdr.preb, dip_srdr.saidb))
+        assert sigs is not None
+        assert [siger.qb64b for siger in sigs] == [siger.qb64b for siger in sigers]
+
+        # .udes contains (Number, Saider) tuple for the delegated misfit
+        uval = db.udes.get(keys=dgkey)
+        assert uval is not None
+        num, src = uval
+        assert isinstance(num, coring.Number)
+        assert num.num == seqner.sn
+        assert src.qb64 == delg_srdr.said
 
     """End Test"""
+
+
+def test_misfit_escrow_valSigsWigsDel():
+    """
+    Unit-style test that calls Kever.valSigsWigsDel with local=False for a
+    locally owned AID to trigger misfit escrow.
+    """
+    salt = core.Salter(raw=b'1234567890abcdef').qb64
+
+    with basing.openDB(name="misfit-unit", temp=True) as db, keeping.openKS(name="misfit-unit") as ks:
+        mgr = keeping.Manager(ks=ks, salt=salt)
+        kvy = eventing.Kevery(db=db)
+
+        # Create and accept a local inception event
+        verfers, digers = mgr.incept(stem='unit', temp=True)
+        srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+                               ndigs=[diger.qb64 for diger in digers],
+                               code=coring.MtrDex.Blake3_256)
+        pre = srdr.pre
+        mgr.move(old=verfers[0].qb64, new=pre)
+        db.prefixes.add(pre)
+        assert pre in db.prefixes
+
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+        msg = bytearray(srdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs,
+                               count=len(sigers), version=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+
+        psr = parsing.Parser(version=Vrsn_1_0)
+        psr.parse(ims=bytearray(msg), kvy=kvy, local=True)
+        assert pre in kvy.kevers
+        kever = kvy.kevers[pre]
+
+        # Build a valid interaction event and its signatures
+        ixn = eventing.interact(pre=kever.prefixer.qb64,
+                                dig=kever.serder.said,
+                                sn=kever.sn + 1,
+                                data=[])
+        ixn_sigers = mgr.sign(ser=ixn.raw, verfers=kever.verfers)
+
+        tholder = kever.tholder
+        toader = kever.toader
+        wits = kever.wits
+        wigers = []
+
+        # Call valSigsWigsDel directly with local=False to force misfit escrow
+        with pytest.raises(kering.MisfitEventSourceError):
+            kever.valSigsWigsDel(serder=ixn,
+                                 sigers=ixn_sigers,
+                                 verfers=kever.verfers,
+                                 tholder=tholder,
+                                 wigers=wigers,
+                                 toader=toader,
+                                 wits=wits,
+                                 delnum=None,
+                                 deldiger=None,
+                                 eager=False,
+                                 local=False)
+
+        dgkey = dbing.dgKey(ixn.preb, ixn.saidb)
+
+        # Misfit and common escrow DBs should have been updated
+        assert db.misfits.cnt(keys=(ixn.pre, ixn.snh)) == 1
+        assert db.evts.get(keys=(ixn.preb, ixn.saidb)) is not None
+        assert db.sigs.get(keys=(ixn.preb, ixn.saidb)) is not None
+        assert db.dtss.get(keys=dgkey) is not None
+        esr = db.esrs.get(keys=dgkey)
+        assert esr is not None
+        assert not esr.local
+
+
+def test_misfit_escrow_kevery():
+    """
+    Kevery-level test that calls Kevery.escrowMFEvent directly and asserts that
+    misfit escrow side effects are written to the DB (misfits, evts, sigs, dtss,
+    esrs, and .udes for delegated-like metadata).
+    """
+    salt = core.Salter(raw=b'abcdef0123456789').qb64
+
+    with basing.openDB(name="misfit-kvy", temp=True) as db, keeping.openKS(name="misfit-kvy") as ks:
+        mgr = keeping.Manager(ks=ks, salt=salt)
+        kvy = eventing.Kevery(db=db)
+
+        # Create a simple inception event and its signatures
+        verfers, digers = mgr.incept(stem='kvy', temp=True)
+        srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+                               ndigs=[diger.qb64 for diger in digers],
+                               code=coring.MtrDex.Blake3_256)
+
+        sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
+
+        # Delegation-like seal metadata for .udes: use sn=0 and the event's own SAID
+        delnum = coring.Number(num=0)
+        saider = coring.Saider(qb64=srdr.said)
+
+        # Call Kevery.escrowMFEvent directly with local=False to simulate a misfit
+        kvy.escrowMFEvent(serder=srdr,
+                          sigers=sigers,
+                          wigers=None,
+                          delnum=delnum,
+                          saider=saider,
+                          local=False)
+
+        dgkey = dbing.dgKey(srdr.preb, srdr.saidb)
+
+        # Misfit index is populated
+        assert db.misfits.cnt(keys=(srdr.pre, srdr.snh)) == 1
+        misfit_vals = db.misfits.get(keys=(srdr.pre, srdr.snh))
+        assert misfit_vals == [srdr.said]
+
+        # Core escrow tables populated
+        stored = db.evts.get(keys=(srdr.preb, srdr.saidb))
+        assert stored is not None
+        assert stored.saidb == srdr.saidb
+
+        sigs = db.sigs.get(keys=dgkey)
+        assert sigs is not None
+        assert [siger.qb64b for siger in sigs] == [siger.qb64b for siger in sigers]
+
+        dater = db.dtss.get(keys=dgkey)
+        assert dater is not None
+
+        esr = db.esrs.get(keys=dgkey)
+        assert esr is not None
+        assert not esr.local
+
+        # .udes contains the (Number, Saider) tuple written by Kevery.escrowMFEvent
+        uval = db.udes.get(keys=dgkey)
+        assert uval is not None
+        num, src = uval
+        assert isinstance(num, coring.Number)
+        assert num.num == delnum.num
+        assert src.qb64 == saider.qb64
+
+
+def test_delegated_partial_signed_escrow_udes():
+    """
+    Test delegated partial-signature escrow writes (Number, Saider) into .udes.
+
+    We create a delegated inception (dip) with a SealSourceCouples attachment
+    referencing a local delegator event but deliberately under-sign it so that
+    it is escrowed via Kever.escrowPSEvent (PSE escrow), not accepted.
+    """
+    salt = core.Salter(raw=b'567890abcdef1234').qb64
+    psr = parsing.Parser(version=Vrsn_1_0)
+
+    with basing.openDB(name="pse-del", temp=True) as db, keeping.openKS(name="pse-del") as ks:
+        mgr = keeping.Manager(ks=ks, salt=salt)
+        kvy = eventing.Kevery(db=db)
+
+        # Create a local delegator AID and mark it as local
+        delg_verfers, delg_digers = mgr.incept(stem='pse-delg', temp=True)
+        delg_srdr = eventing.incept(keys=[verfer.qb64 for verfer in delg_verfers],
+                                    ndigs=[diger.qb64 for diger in delg_digers],
+                                    code=coring.MtrDex.Blake3_256)
+        delg_pre = delg_srdr.pre
+        mgr.move(old=delg_verfers[0].qb64, new=delg_pre)
+        db.prefixes.add(delg_pre)
+        assert delg_pre in db.prefixes
+
+        # Accept delegator inception locally so its KEL exists
+        sigers_delg = mgr.sign(ser=delg_srdr.raw, verfers=delg_verfers)
+        msg = bytearray(delg_srdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs,
+                               count=len(sigers_delg), version=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        for siger in sigers_delg:
+            msg.extend(siger.qb64b)
+        psr.parse(ims=bytearray(msg), kvy=kvy, local=True)
+        assert delg_pre in kvy.kevers
+        delg_kever = kvy.kevers[delg_pre]
+
+        # Create delegated inception event (dip) for a new delegatee AID, with multi-sig threshold
+        del_verfers, del_digers = mgr.incept(icount=2, ncount=2, stem='pse-del', temp=True)
+        dip_srdr = eventing.delcept(keys=[verfer.qb64 for verfer in del_verfers],
+                                    delpre=delg_pre,
+                                    isith='2',
+                                    nsith='2',
+                                    ndigs=[diger.qb64 for diger in del_digers])
+        del_pre = dip_srdr.pre
+        mgr.move(old=del_verfers[0].qb64, new=del_pre)
+
+        # Build message: delegated inception with only one controller sig (under-signed)
+        sigers = mgr.sign(ser=dip_srdr.raw, verfers=del_verfers)
+        assert len(sigers) >= 2
+        msg = bytearray(dip_srdr.raw)
+        counter = core.Counter(core.Codens.ControllerIdxSigs,
+                               count=1, version=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        msg.extend(sigers[0].qb64b)
+
+        # Attach a SealSourceCouples group for the delegator event
+        seqner = coring.Seqner(sn=delg_kever.sn)
+        saider = coring.Saider(qb64=delg_srdr.said)
+        counter = core.Counter(core.Codens.SealSourceCouples,
+                               count=1, version=kering.Vrsn_1_0)
+        msg.extend(counter.qb64b)
+        msg.extend(seqner.qb64b)
+        msg.extend(saider.qb64b)
+
+        # Parse as local; this should not be a misfit but a partial-signature escrow.
+        # Parser swallows MissingSignatureError, so assert via escrow side effects.
+        psr.parse(ims=bytearray(msg), kvy=kvy, local=True)
+
+        dgkey = dbing.dgKey(dip_srdr.preb, dip_srdr.saidb)
+
+        # PSE index contains the event SAID
+        escrows = db.pses.getOn(keys=dip_srdr.pre, on=dip_srdr.sn)
+        assert len(escrows) == 1
+        assert escrows[0].encode("utf-8") == dip_srdr.saidb
+
+        # .udes contains (Number, Saider) tuple for the delegated PSE escrow
+        uval = db.udes.get(keys=dgkey)
+        assert uval is not None
+        num, src = uval
+        assert isinstance(num, coring.Number)
+        assert num.num == seqner.sn
+        assert src.qb64 == delg_srdr.said
 
 
 def test_out_of_order_escrow():
