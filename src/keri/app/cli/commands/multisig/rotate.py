@@ -133,7 +133,7 @@ class GroupMultisigRotate(doing.DoDoer):
             self.cuts = set(ewits) - set(self.wits)
             self.adds = set(self.wits) - set(ewits)
 
-        def build_merfers_migers():
+        def build_rotation_muple():
             smids = []
             merfers = []
             for smid in self.smids:
@@ -200,7 +200,7 @@ class GroupMultisigRotate(doing.DoDoer):
         start = self._tymth()
 
         while True:
-            smids, merfers, rmids, migers = build_merfers_migers()
+            smids, merfers, rmids, migers = build_rotation_muple()
 
             if ghab.mhab.pre not in smids:
                 raise kering.ConfigurationError(f"{ghab.mhab.pre} not in signing members {smids} for this event")
@@ -223,6 +223,7 @@ class GroupMultisigRotate(doing.DoDoer):
                 # Allow time for additional events (e.g. witness-applied rotations)
                 # to arrive and update local kevers before retrying.
                 time.sleep(1)
+                logger.info(f"{ex}: retrying rotation")
                 yield self.tock
 
         prefixer = coring.Prefixer(qb64=ghab.pre)

@@ -49,7 +49,7 @@ def join(args):
     bran = args.bran
     auto = args.auto
     group = args.group
-    timeout = getattr(args, "timeout", 0.0)
+    timeout = args.timeout
 
     joinDoer = JoinDoer(name=name, base=base, bran=bran, group=group, auto=auto, timeout=timeout)
 
@@ -125,13 +125,11 @@ class JoinDoer(doing.DoDoer):
 
         print("Waiting for group multisig events...")
 
-        start = None
-        if self.timeout > 0.0:
-            # use injected tymist time so timeout respects Doist's notion of time
-            start = self._tymth()
+        # use injected tymist time so timeout (if set) respects Doist's notion of time
+        start = self._tymth()
 
         while self.notifier.noter.notes.cnt() == 0:
-            if self.timeout > 0.0 and start is not None:
+            if self.timeout > 0.0:
                 now = self._tymth()
                 if now - start >= self.timeout:
                     # No multisig notice arrived within timeout window; exit with error
