@@ -5,6 +5,8 @@ keri.kli.commands.multisig module
 """
 
 import argparse
+import time
+
 from ordered_set import OrderedSet as oset
 
 from hio.base import doing
@@ -194,7 +196,7 @@ class GroupMultisigRotate(doing.DoDoer):
 
         # Build member key material and retry rotation a few times if the
         # prior-next threshold check fails due to slightly stale member state.
-        retry_timeout = 2.0  # seconds
+        retry_timeout = 3.0  # seconds
         start = self._tymth()
 
         while True:
@@ -220,6 +222,7 @@ class GroupMultisigRotate(doing.DoDoer):
 
                 # Allow time for additional events (e.g. witness-applied rotations)
                 # to arrive and update local kevers before retrying.
+                time.sleep(1)
                 yield self.tock
 
         prefixer = coring.Prefixer(qb64=ghab.pre)
