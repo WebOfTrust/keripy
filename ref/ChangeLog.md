@@ -3,7 +3,7 @@
 
 ## 2.0.0-dev5
 ### Backwards breaking interface changes
-Changes to call signatures  that will break dependent libraries
+Changes to call signatures that will break dependent libraries
 
 #### keri.core.eventing.Kevery.processEvent
 Changed keyword parameter `delseqner` (Seqner) to `delnum` (Number) in the function
@@ -13,7 +13,7 @@ signature and all internal call sites. External callers that previously passed
 
 ## 2.0.0-dev1
 ### Backwards breaking interface changes
-Changes to call signatures  that will break dependent libraries
+Changes to call signatures that will break dependent libraries
 
 #### keri.help.helping.py
 Changed nonStringIterable() to isNonStringIterable()
