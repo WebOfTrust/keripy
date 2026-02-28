@@ -1,6 +1,16 @@
 # Change Log for keripy
 
 
+## 2.0.0-dev5
+### Backwards breaking interface changes
+Changes to call signatures  that will break dependent libraries
+
+#### keri.core.eventing.Kevery.processEvent
+Changed keyword parameter `delseqner` (Seqner) to `delnum` (Number) in the function
+signature and all internal call sites. External callers that previously passed
+`delseqner` must now pass `delnum` with a `Number` instance.
+
+
 ## 2.0.0-dev1
 ### Backwards breaking interface changes
 Changes to call signatures  that will break dependent libraries

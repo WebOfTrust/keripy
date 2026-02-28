@@ -2484,8 +2484,8 @@ class Kever:
                 derive werfers for wigers
             delnum (Number | None): instance of delegating event sequence number.
                 If this event is not delegated then ignored
-            deldiger (Diger | None): instance of of delegating event said.
-                If this event is not delegated then saider is ignored
+            deldiger (Diger | None): instance of delegating event digest.
+                If this event is not delegated then diger is ignored
             eager (bool): True means try harder to find validate events by
                             walking KELs. Enables only being eager
                             in escrow processing not initial parsing.
@@ -2548,7 +2548,7 @@ class Kever:
                             self.locallyWitnessed(wits=wits) or
                             self.locallyDelegated(pre=delpre))):
             self.escrowMFEvent(serder=serder, sigers=sigers, wigers=wigers,
-                               delnum=delnum, saider=deldiger, local=local)
+                               delnum=delnum, diger=deldiger, local=local)
             raise MisfitEventSourceError(f"Nonlocal source for locally owned or"
                                          f"locally witnessed or locally delegated"
                                          f"event={serder.ked}, local aids="
@@ -2564,7 +2564,7 @@ class Kever:
         pre = self.prefixer.qb64
         if not tholder.satisfy(indices):  # at least one but not enough
             self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers,
-                               delnum=delnum, saider=deldiger, local=local)
+                               delnum=delnum, diger=deldiger, local=local)
             msg = (f"AID {pre[:4]}...{pre[-4:]}: Failure satisfying sith = {tholder.sith} "
                    f"on sigs {[siger.qb64 for siger in sigers]} "
                    f"for evt = {serder.said}")
@@ -2579,7 +2579,7 @@ class Kever:
             ondices = self.exposeds(sigers)
             if not self.ntholder.satisfy(indices=ondices):
                 self.escrowPSEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                   delnum=delnum, saider=deldiger,local=local)
+                                   delnum=delnum, diger=deldiger,local=local)
                 msg = (
                     f"AID {pre[:4]}...{pre[-4:]}: Failure satisfying prior nsith = {self.ntholder.sith} "
                     f"with exposed sigs {[siger.qb64 for siger in sigers]} "
@@ -2610,7 +2610,7 @@ class Kever:
 
                 if len(windices) < toader.num:  # not fully witnessed yet
                     if self.escrowPWEvent(serder=serder, wigers=wigers, sigers=sigers,
-                                          delnum=delnum, saider=deldiger,
+                                          delnum=delnum, diger=deldiger,
                                           local=local):
                         # cue to query for witness receipts
                         self.cues.push(dict(kin="query", q=dict(pre=serder.pre, sn=serder.snh)))
@@ -2742,7 +2742,7 @@ class Kever:
             delpre (str): qb64 prefix of delegator
             delnum (Number | None): instance of delegating event sequence number.
                 If this event is not delegated then ignored
-            deldiger (Diger | None): instance of of delegating event digest.
+            deldiger (Diger | None): instance of delegating event digest.
                 If this event is not delegated ignored
                 local (bool): event source for validation logic
                 True means event source is local (protected).
@@ -2998,7 +2998,7 @@ class Kever:
             # The processPDEvent should also cue a trigger to get KEL
             # of delegator if still missing when processing escrow later.
             self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                               delnum=delnum, saider=deldiger, local=local)
+                               delnum=delnum, diger=deldiger, local=local)
             msg = f"Missing KEL of delegator {delpre} of evt {serder.sn} {serder.ilk} {serder.said}"
             logger.info(msg)
             logger.debug("Event Body=\n%s\n", serder.pretty())
@@ -3025,7 +3025,7 @@ class Kever:
 
             if not dserder: # just escrow and try later
                 self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                   delnum=delnum, saider=deldiger, local=local)
+                                   delnum=delnum, diger=deldiger, local=local)
                 msg = (f"No delegation seal for delegator {delpre} on evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
                 logger.info(msg)
@@ -3053,7 +3053,7 @@ class Kever:
                 # must check for locallyOwned(delpre) first and escrowDelegable.
                 # otherwise escrowPDEvent
                 self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                   delnum=delnum, saider=deldiger, local=local)
+                                   delnum=delnum, diger=deldiger, local=local)
                 msg = (f"No delegating event from {delpre} at {deldiger.qb64} for evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
                 logger.info(msg)
@@ -3087,7 +3087,7 @@ class Kever:
                 # attempt to repair by escrowing and eager search later
                 delnum = deldiger = None  # nullify
                 self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                           delnum=delnum, saider=deldiger, local=local)
+                                   delnum=delnum, diger=deldiger, local=local)
                 msg = (f"No delegation seal for delegator {delpre} of evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
                 logger.info(msg)
@@ -3133,7 +3133,7 @@ class Kever:
         if not (bosso := self.fetchDelegatingEvent(delpre, serfo, original=True,
                                                    eager=eager)):
             self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                delnum=delnum, saider=deldiger, local=local)
+                                delnum=delnum, diger=deldiger, local=local)
             msg = (f"No delegating event from {delpre} at {deldiger.qb64} for evt "
                    f"{serder.sn} {serder.ilk} {serder.said}")
             logger.info(msg)
@@ -3184,7 +3184,7 @@ class Kever:
                                                        original=False,
                                                        eager=eager)):
                 self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                delnum=delnum, saider=deldiger, local=local)
+                                   delnum=delnum, diger=deldiger, local=local)
                 msg = (f"No delegating event from {delpre} at {deldiger.qb64} for evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
                 logger.info(msg)
@@ -3195,7 +3195,7 @@ class Kever:
                                                        original=True,
                                                        eager=eager)):
                 self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
-                                delnum=delnum, saider=deldiger, local=local)
+                                   delnum=delnum, diger=deldiger, local=local)
                 msg = (f"No delegating event from {delpre} at {deldiger.qb64} for evt "
                        f"{serder.sn} {serder.ilk} {serder.said}")
                 logger.info(msg)
@@ -3420,7 +3420,7 @@ class Kever:
 
 
     def escrowMFEvent(self, serder, sigers, wigers=None,
-                      delnum=None, saider=None, local=True):
+                      delnum=None, diger=None, local=True):
         """
         Update associated logs for escrow of MisFit event
 
@@ -3429,7 +3429,7 @@ class Kever:
             sigers (list): of Siger instance for  event
             wigers (list): of witness signatures
             delnum (Number): instance of sn of event delegatint/issuing event if any
-            saider (Saider): instance of dig of event delegatint/issuing event if any
+            diger (Diger): instance of digest of delegating/issuing event if any
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -3451,8 +3451,8 @@ class Kever:
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
             self.db.wigs.put(keys=dgkey, vals=wigers)
-        if delnum and saider:
-            self.db.udes.put(keys=dgkey, val=(delnum, saider))
+        if delnum and diger:
+            self.db.udes.put(keys=dgkey, val=(delnum, diger))
 
         self.db.misfits.add(keys=(serder.pre, serder.snh), val=serder.saidb)
         # log escrowed
@@ -3495,7 +3495,7 @@ class Kever:
 
 
     def escrowPSEvent(self, serder, *, sigers=None, wigers=None,
-                      delnum=None, saider=None, local=True):
+                      delnum=None, diger=None, local=True):
         """
         Update associated logs for escrow of partially signed event
         or fully signed delegated event but not yet verified delegation.
@@ -3505,7 +3505,7 @@ class Kever:
             sigers is list of Siger instances of indexed controller sigs
             wigers is optional list of Siger instance of indexed witness sigs
             delnum is Number instance of sn of seal source event of delegator/issuer
-            saider is Diger instance of digest of delegator/issuer
+            diger is Diger instance of digest of delegator/issuer
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -3518,8 +3518,8 @@ class Kever:
             self.db.sigs.put(keys=dgkey, vals=sigers)
         if wigers:
             self.db.wigs.put(keys=dgkey, vals=wigers)
-        if delnum and saider:
-            self.db.udes.put(keys=dgkey, val=(delnum, saider))  # idempotent
+        if delnum and diger:
+            self.db.udes.put(keys=dgkey, val=(delnum, diger))  # idempotent
 
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         # update event source
@@ -3538,7 +3538,7 @@ class Kever:
 
 
     def escrowPWEvent(self, serder, *, sigers=None, wigers=None,
-                      delnum=None, saider=None, local=True):
+                      delnum=None, diger=None, local=True):
         """
         Update associated logs for escrow of partially witnessed event
 
@@ -3547,7 +3547,7 @@ class Kever:
             sigers is optional list of Siger instances of indexed controller sigs
             wigers is list of Siger instance of indexed witness sigs
             delnum is Number instance of sn of seal source event of delegator/issuer
-            saider is Diger instance of digest of delegator/issuer
+            diger is Diger instance of digest of delegator/issuer
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -3562,8 +3562,8 @@ class Kever:
             self.db.sigs.put(keys=dgkey, vals=sigers)
         if wigers:
             self.db.wigs.put(keys=dgkey, vals=wigers)
-        if delnum and saider:
-            self.db.udes.put(keys=dgkey, val=(delnum, saider))  # idempotent
+        if delnum and diger:
+            self.db.udes.put(keys=dgkey, val=(delnum, diger))  # idempotent
 
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         # update event source
@@ -3582,7 +3582,7 @@ class Kever:
 
 
     def escrowPDEvent(self, serder, *, sigers=None, wigers=None,
-                      delnum=None, saider=None, local=True):
+                      delnum=None, diger=None, local=True):
         """
         Update associated logs for escrow of partially delegated or otherwise
         authorized issued event.
@@ -3603,7 +3603,7 @@ class Kever:
             sigers is optional list of Siger instances of indexed controller sigs
             wigers is list of Siger instance of indexed witness sigs
             delnum is Number instance of sn of seal source event of delegator/issuer
-            saider is Diger instance of digest of delegator/issuer
+            diger is Diger instance of digest of delegator/issuer
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -3618,10 +3618,10 @@ class Kever:
             self.db.sigs.put(keys=dgkey, vals=sigers)
         if wigers:  # idempotent
             self.db.wigs.put(keys=dgkey, vals=wigers)
-        if delnum and saider:  # non-idempotent pin to repair replace
-            self.db.udes.pin(keys=dgkey, val=(delnum, saider))  # non-idempotent
+        if delnum and diger:  # non-idempotent pin to repair replace
+            self.db.udes.pin(keys=dgkey, val=(delnum, diger))  # non-idempotent
             logger.debug(f"Kever state: Replaced escrow source couple sn="
-                         f"{delnum.num}, said={saider.qb64} for partially "
+                         f"{delnum.num}, said={diger.qb64} for partially "
                          f"delegated/authorized event said={serder.said}.")
         else:
             self.db.udes.rem(keys=dgkey)  # nullify non-idempotent
@@ -4040,7 +4040,7 @@ class Kevery:
 
             else:  # not inception so can't verify sigs etc, add to out-of-order escrow
                 self.escrowOOEvent(serder=serder, sigers=sigers,
-                                   delnum=delnum, saider=deldiger, wigers=wigers, local=local)
+                                   delnum=delnum, diger=deldiger, wigers=wigers, local=local)
                 raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
         else:  # already accepted inception event for pre so already first seen
@@ -4084,7 +4084,7 @@ class Kevery:
                 if sn > sno:  # sn later than sno so out of order escrow
                     # escrow out-of-order event
                     self.escrowOOEvent(serder=serder, sigers=sigers,
-                                       delnum=delnum, saider=deldiger, wigers=wigers, local=local)
+                                       delnum=delnum, diger=deldiger, wigers=wigers, local=local)
                     msg = f"Out-of-order event sn={serder.sn} type={serder.ilk} SAID={serder.said}"
                     logger.debug(msg)
                     logger.debug("Out-of-order event body=\n%s\n", serder.pretty())
@@ -5193,7 +5193,7 @@ class Kevery:
 
 
     def escrowMFEvent(self, serder, sigers, wigers=None,
-                      delnum=None, saider=None, local=True):
+                      delnum=None, diger=None, local=True):
         """
         Update associated logs for escrow of MisFit event
 
@@ -5201,7 +5201,7 @@ class Kevery:
             serder (SerderKERI): instance of  event
             sigers (list): of Siger instance for  event
             delnum (Number): instance of sn of event delegatint/issuing event if any
-            saider (Saider): instance of dig of event delegatint/issuing event if any
+            diger (Diger): instance of dig of event delegatint/issuing event if any
             wigers (list): of witness signatures
             local (bool): event source for validation logic
                 True means event source is local (protected).
@@ -5224,14 +5224,14 @@ class Kevery:
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
             self.db.wigs.put(keys=dgkey, vals=wigers)
-        if delnum and saider:
-            self.db.udes.put(keys=dgkey, val=(delnum, saider))  # idempotent
+        if delnum and diger:
+            self.db.udes.put(keys=dgkey, val=(delnum, diger))  # idempotent
         self.db.misfits.add(keys=(serder.pre, serder.snh), val=serder.saidb)
         # log escrowed
         logger.debug("Kevery process: escrowed misfit event=\n%s", serder.pretty())
 
 
-    def escrowOOEvent(self, serder, sigers, delnum=None, saider=None, wigers=None, local=True):
+    def escrowOOEvent(self, serder, sigers, delnum=None, diger=None, wigers=None, local=True):
         """
         Update associated logs for escrow of Out-of-Order event
 
@@ -5239,7 +5239,7 @@ class Kevery:
             serder (SerderKERI): instance of  event
             sigers (list): of Siger instance for  event
             delnum (Number): instance of sn of event delegatint/issuing event if any
-            saider (Saider): instance of dig of event delegatint/issuing event if any
+            diger (Diger): instance of dig of event delegatint/issuing event if any
             wigers (list): of witness signatures
             local (bool): event source for validation logic
                 True means event source is local (protected).
@@ -5262,8 +5262,8 @@ class Kevery:
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
             self.db.wigs.put(keys=dgkey, vals=wigers)
-        if delnum and saider:
-            self.db.udes.put(keys=dgkey, val=(delnum, saider))  # idempotent
+        if delnum and diger:
+            self.db.udes.put(keys=dgkey, val=(delnum, diger))  # idempotent
         self.db.ooes.addOn(keys=serder.preb, on=serder.sn, val=serder.saidb)
         # log escrowed
         logger.debug("Kevery process: escrowed out of order event=\n%s", serder.pretty())
