@@ -8,10 +8,10 @@ import argparse
 
 from hio.base import doing
 
-from keri import help, kering
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.core import eventing
+from ..... import help, kering
+from ...common import existing
+from ...common.parsing import Parsery
+from .....core import eventing
 
 logger = help.ogler.getLogger()
 

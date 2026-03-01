@@ -8,13 +8,12 @@ import argparse
 import datetime
 import json
 
-from keri import help
+from ..... import help
 from hio.base import doing
-from hio.help import decking
 
-from keri.app import organizing as connecting, habbing, indirecting, querying
-from keri.app.cli.common import existing, displaying
-from keri.help import helping
+from .... import organizing as connecting, habbing, indirecting, querying
+from ...common import existing, displaying
+from .....help import helping
 
 logger = help.ogler.getLogger()
 
