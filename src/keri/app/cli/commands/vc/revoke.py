@@ -7,15 +7,15 @@ import argparse
 
 from hio.base import doing
 
-from keri import kering
-from keri.app import indirecting, habbing, grouping, forwarding, organizing, notifying
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.app.habbing import GroupHab
-from keri.core import coring, serdering
-from keri.core.eventing import SealEvent
-from keri.peer import exchanging
-from keri.vdr import credentialing, verifying
+from ..... import kering
+from .... import indirecting, habbing, grouping, forwarding, organizing, notifying
+from ...common import existing
+from ...common.parsing import Parsery
+from ....habbing import GroupHab
+from .....core import coring, serdering
+from .....core.eventing import SealEvent
+from .....peer import exchanging
+from .....vdr import credentialing, verifying
 
 parser = argparse.ArgumentParser(description='Revoke a verifiable credential', 
                                  parents=[Parsery.keystore()])

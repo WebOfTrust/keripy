@@ -1,3 +1,10 @@
+# -*- encoding: utf-8 -*-
+"""
+keri.app.cli.common.rotating module
+
+"""
+
+
 def addRotationArgs(parser):
     parser.add_argument('--isith', '-i', help='signing threshold for the rotation event', default=None,
                         required=False)

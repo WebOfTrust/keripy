@@ -1,13 +1,13 @@
 # -*- encoding: utf-8 -*-
 """
-keri.kli.common.displaying module
+keri.app.cli.common.displaying module
 
 """
 import sys
 
-from keri.app.cli.common import terming
-from keri.app.habbing import GroupHab
-from keri.db import dbing
+from ..common import terming
+from ...habbing import GroupHab
+from ....db import dbing
 
 
 def printIdentifier(hby, pre, label="Identifier"):

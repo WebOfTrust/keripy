@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-keri.kli.common.terming module
+keri.app.cli.common.terming module
 
 """
 

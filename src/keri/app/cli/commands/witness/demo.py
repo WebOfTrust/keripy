@@ -12,11 +12,9 @@ import os
 
 from hio.base import doing
 
-from keri import help
-
-from keri.app import habbing, indirecting, configing
-
-from keri.core import Salter
+from ..... import help
+from .... import habbing, indirecting, configing
+from .....core import Salter
 
 
 parser = argparse.ArgumentParser(description="Run a demo collection of witnesses")

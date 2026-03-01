@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-keri.kli.common.config
+keri.app.cli.common.config module
 
 """
 import json
@@ -8,7 +8,7 @@ from dataclasses import dataclass, asdict
 from json import JSONDecodeError
 from typing import Optional, List
 
-from keri import kering
+from .... import kering
 
 
 @dataclass

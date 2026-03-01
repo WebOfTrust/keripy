@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-keri.app..cli.common.habbing module
+keri.app.cli.common.parsing module
 
 """
 
