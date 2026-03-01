@@ -187,7 +187,7 @@ class Counselor(doing.DoDoer):
             witer = ghab.mhab.kever.verfers[0].qb64 == keys[0]  # We are elected to perform delegation and witnessing
 
             if witer:  # We are elected witnesser, We've already done out part in Boatswain, we are done.
-                if self.swain.complete(prefixer=kever.prefixer, seqner=coring.Seqner(sn=kever.sn)):
+                if self.swain.complete(prefixer=kever.prefixer, number=coring.Number(num=kever.sn, code=coring.NumDex.Huge)):
                     self.hby.db.gdee.rem(keys=(pre,))
                     logger.info("AID %s...%s: Delegation approval for %s received.", pre[:4], pre[-4:], pre)
 

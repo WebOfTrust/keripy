@@ -187,7 +187,7 @@ class InceptDoer(doing.DoDoer):
         if hab.kever.delpre:
             self.swain.delegation(pre=hab.pre, sn=0)
             print("Waiting for delegation approval...")
-            while not self.swain.complete(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn)):
+            while not self.swain.complete(hab.kever.prefixer, coring.Number(num=hab.kever.sn, code=coring.NumDex.Huge)):
                 yield self.tock
 
         elif hab.kever.wits:
