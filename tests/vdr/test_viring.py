@@ -12,7 +12,7 @@ import tempfile
 import lmdb
 
 from keri.core import indexing
-from keri.core.coring import Diger, Number, Saider, Seqner, versify, Kinds
+from keri.core.coring import Diger, Number, Prefixer, Saider, Seqner, versify, Kinds
 from keri.db import subing
 from keri.db.dbing import openLMDB, dgKey, snKey
 from keri.vdr.viring import Reger
@@ -159,7 +159,6 @@ def test_issuer():
         assert issuer.twes.remOn(keys=regk, on=sn) is True
         assert issuer.twes.getOn(keys=regk, on=sn) == []
 
-        ooKey = snKey(regk, sn)
         assert issuer.oots.getOn(keys=regk, on=sn) == []
         assert issuer.oots.remOn(keys=regk, on=sn) is False
         assert issuer.oots.putOn(keys=regk, on=sn, vals=vdig.qb64b)
@@ -185,6 +184,21 @@ def test_issuer():
         assert rnum.qb64b + rdig.qb64b == anc_couple
         assert issuer.ancs.rem(keys=key) is True
         assert issuer.ancs.get(keys=key) is None
+
+        prefixer = Prefixer(qb64b=rarb)
+        saider = Saider(qb64=vdig.qb64)
+        trituple = (prefixer.qb64b, number.qb64b, saider.qb64b)
+        assert issuer.cancs.get(keys=key) is None
+        assert issuer.cancs.rem(keys=key) is False
+        assert issuer.cancs.put(keys=key, val=(prefixer, number, saider)) is True
+        rpfx, rnum, rsaid = issuer.cancs.get(keys=key)
+        assert (rpfx.qb64b, rnum.qb64b, rsaid.qb64b) == trituple
+        assert issuer.cancs.put(keys=key, val=(prefixer, number, saider)) is False
+        assert issuer.cancs.pin(keys=key, val=(prefixer, number, saider)) is True
+        rpfx, rnum, rsaid = issuer.cancs.get(keys=key)
+        assert (rpfx.qb64b, rnum.qb64b, rsaid.qb64b) == trituple
+        assert issuer.cancs.rem(keys=key) is True
+        assert issuer.cancs.get(keys=key) is None
 
         #  test with verifiable credential issuance (iss) event
         vcdig = b'EAvR3p8V95W8J7Ui4-mEzZ79S-A1esAnJo1Kmzq80Jkc'

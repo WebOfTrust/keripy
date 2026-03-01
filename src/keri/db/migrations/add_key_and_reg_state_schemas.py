@@ -1,8 +1,7 @@
 from keri import help
-from keri.core import coring, serdering
+from keri.core import coring
 from keri.db import koming, subing, dbing
 from keri.db.basing import StateEERecord, KeyStateRecord
-from keri.db.dbing import dgKey, splitKey
 from keri.kering import ConfigurationError, Version
 from keri.vdr import viring
 
@@ -102,9 +101,9 @@ def migrate(db):
             dig = rgy.tels.get(keys=snkey)
 
             prefixer = coring.Prefixer(qb64=said)
-            seqner = coring.Seqner(sn=0)
-            saider = coring.Saider(qb64b=bytes(dig))
-            rgy.cancs.pin(keys=said, val=[prefixer, seqner, saider])
+            number = coring.Number(sn=0)
+            diger = coring.Diger(qb64b=bytes(dig))
+            rgy.cancs.pin(keys=said, val=[prefixer, number, diger])
 
         migrateKeys(db)
 
