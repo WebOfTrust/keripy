@@ -5,6 +5,8 @@ keri.kli.commands.multisig module
 """
 
 import argparse
+import time
+
 from ordered_set import OrderedSet as oset
 
 from hio.base import doing
@@ -131,72 +133,101 @@ class GroupMultisigRotate(doing.DoDoer):
             self.cuts = set(ewits) - set(self.wits)
             self.adds = set(self.wits) - set(ewits)
 
-        smids = []
-        merfers = []
-        for smid in self.smids:
-            match smid.split(':'):
-                case [mid]:  # Only prefix provided, assume latest event
-                    if mid not in self.hby.kevers:
-                        raise kering.ConfigurationError(f"unknown signing member {mid}")
+        def build_rotation_muple():
+            smids = []
+            merfers = []
+            for smid in self.smids:
+                match smid.split(':'):
+                    case [mid]:  # Only prefix provided, assume latest event
+                        if mid not in self.hby.kevers:
+                            raise kering.ConfigurationError(f"unknown signing member {mid}")
 
-                    mkever = self.hby.kevers[mid]  # get key state for given member
-                    merfers.append(mkever.verfers[0])
-                    smids.append(mid)
+                        mkever = self.hby.kevers[mid]  # get key state for given member
+                        merfers.append(mkever.verfers[0])
+                        smids.append(mid)
 
-                case [mid, sn]:
-                    if mid not in self.hby.kevers:
-                        raise kering.ConfigurationError(f"unknown signing member {mid}")
+                    case [mid, sn]:
+                        if mid not in self.hby.kevers:
+                            raise kering.ConfigurationError(f"unknown signing member {mid}")
 
-                    dig = self.hby.db.kels.getOnLast(keys=mid, on=int(sn))
-                    if dig is None:
-                        raise kering.ConfigurationError(f"non-existant event {sn} for signing member {mid}")
-                    dig = dig.encode("utf-8")  # convert it from str to bytes because we're calling bytes(dig)
-                    if (serder := self.hby.db.evts.get(keys=(mid, bytes(dig)))) is None or not serder.estive:
-                        raise kering.ConfigurationError(f"invalid event {sn} for signing member {mid}")
+                        dig = self.hby.db.kels.getOnLast(keys=mid, on=int(sn))
+                        if dig is None:
+                            raise kering.ConfigurationError(f"non-existant event {sn} for signing member {mid}")
+                        dig = dig.encode("utf-8")  # convert it from str to bytes because we're calling bytes(dig)
+                        if (serder := self.hby.db.evts.get(keys=(mid, bytes(dig)))) is None or not serder.estive:
+                            raise kering.ConfigurationError(f"invalid event {sn} for signing member {mid}")
 
-                    merfers.append(serder.verfers[0])
-                    smids.append(mid)
+                        merfers.append(serder.verfers[0])
+                        smids.append(mid)
 
-                case _:
-                    raise kering.ConfigurationError(f"invalid smid representation {smid}")
+                    case _:
+                        raise kering.ConfigurationError(f"invalid smid representation {smid}")
 
-        migers = []
-        rmids = []
-        for rmid in self.rmids:
-            match rmid.split(':'):
-                case [mid]:  # Only prefix provided, assume latest event
-                    if mid not in self.hby.kevers:
-                        raise kering.ConfigurationError(f"unknown rotation member {mid}")
+            migers = []
+            rmids = []
+            for rmid in self.rmids:
+                match rmid.split(':'):
+                    case [mid]:  # Only prefix provided, assume latest event
+                        if mid not in self.hby.kevers:
+                            raise kering.ConfigurationError(f"unknown rotation member {mid}")
 
-                    mkever = self.hby.kevers[mid]  # get key state for given member
-                    migers.append(mkever.ndigers[0])
-                    rmids.append(mid)
+                        mkever = self.hby.kevers[mid]  # get key state for given member
+                        migers.append(mkever.ndigers[0])
+                        rmids.append(mid)
 
-                case [mid, sn]:
-                    if mid not in self.hby.kevers:
-                        raise kering.ConfigurationError(f"unknown rotation member {mid}")
+                    case [mid, sn]:
+                        if mid not in self.hby.kevers:
+                            raise kering.ConfigurationError(f"unknown rotation member {mid}")
 
-                    dig = self.hby.db.kels.getOnLast(keys=mid, on=int(sn))
-                    if dig is None:
-                        raise kering.ConfigurationError(f"non-existant event {sn} for rotation member {mid}")
-                    dig = dig.encode("utf-8")
-                    if (serder := self.hby.db.evts.get(keys=dbing.dgKey(mid, bytes(dig)))) is None or not serder.estive:
-                        raise kering.ConfigurationError(f"invalid event {sn} for rotation member {mid}")
+                        dig = self.hby.db.kels.getOnLast(keys=mid, on=int(sn))
+                        if dig is None:
+                            raise kering.ConfigurationError(f"non-existant event {sn} for rotation member {mid}")
+                        dig = dig.encode("utf-8")
+                        if (serder := self.hby.db.evts.get(keys=dbing.dgKey(mid, bytes(dig)))) is None or not serder.estive:
+                            raise kering.ConfigurationError(f"invalid event {sn} for rotation member {mid}")
 
-                    migers.append(serder.ndigers[0])
-                    rmids.append(mid)
+                        migers.append(serder.ndigers[0])
+                        rmids.append(mid)
 
-                case _:
-                    raise kering.ConfigurationError(f"invalid rmid representation {rmid}")
+                    case _:
+                        raise kering.ConfigurationError(f"invalid rmid representation {rmid}")
 
-        if ghab.mhab.pre not in smids:
-            raise kering.ConfigurationError(f"{ghab.mhab.pre} not in signing members {smids} for this event")
+            return smids, merfers, rmids, migers
+
+        # Build member key material and retry rotation a few times if the
+        # prior-next threshold check fails due to slightly stale member state.
+        retry_timeout = 3.0  # seconds
+        start = self._tymth()
+
+        while True:
+            smids, merfers, rmids, migers = build_rotation_muple()
+
+            if ghab.mhab.pre not in smids:
+                raise kering.ConfigurationError(f"{ghab.mhab.pre} not in signing members {smids} for this event")
+
+            try:
+                rot = ghab.rotate(isith=self.isith,
+                                  nsith=self.nsith,
+                                  toad=self.toad,
+                                  cuts=list(self.cuts),
+                                  adds=list(self.adds),
+                                  data=self.data,
+                                  verfers=merfers,
+                                  digers=migers)
+                break
+            except kering.ValidationError as ex:
+                now = self._tymth()
+                if now - start >= retry_timeout:
+                    raise ex
+
+                # Allow time for additional events (e.g. witness-applied rotations)
+                # to arrive and update local kevers before retrying.
+                time.sleep(1)
+                logger.info(f"{ex}: retrying rotation")
+                yield self.tock
 
         prefixer = coring.Prefixer(qb64=ghab.pre)
         seqner = coring.Seqner(sn=ghab.kever.sn+1)
-        rot = ghab.rotate(isith=self.isith, nsith=self.nsith,
-                          toad=self.toad, cuts=list(self.cuts), adds=list(self.adds), data=self.data,
-                          verfers=merfers, digers=migers)
 
         rserder = serdering.SerderKERI(raw=rot)
         # Create a notification EXN message to send to the other agents

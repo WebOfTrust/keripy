@@ -19,18 +19,22 @@ kli multisig incept --name multisigj1 --alias multisigj1 --group multisig --file
 pid=$!
 PID_LIST+=" $pid"
 
-kli multisig join --name multisigj2 --auto &
+kli multisig join --name multisigj2 --auto --timeout 10 &
 pid=$!
 PID_LIST+=" $pid"
 
 wait $PID_LIST
+if [ $? -ne 0 ]; then
+  echo "Multisig group inception/join failed"
+  exit 1
+fi
 
 kli status --name multisigj1 --alias multisig
 
 kli rotate --name multisigj1 --alias multisigj1
-kli query --name multisigj2 --alias multisigj2 --prefix EFY7MixHb0so4WFFHw6btOPc5qeeWfPm7v5MJWcdcbyG
+sleep 1 && kli query --name multisigj2 --alias multisigj2 --prefix EFY7MixHb0so4WFFHw6btOPc5qeeWfPm7v5MJWcdcbyG
 kli rotate --name multisigj2 --alias multisigj2
-kli query --name multisigj1 --alias multisigj1 --prefix EKJ6tNVUGbdaiwx2nWDCFXG-_PY_AzESOcoKlm0kRNP3
+sleep 1 && kli query --name multisigj1 --alias multisigj1 --prefix EKJ6tNVUGbdaiwx2nWDCFXG-_PY_AzESOcoKlm0kRNP3
 
 PID_LIST=""
 
@@ -38,11 +42,15 @@ kli multisig rotate --name multisigj1 --alias multisig --smids EKJ6tNVUGbdaiwx2n
 pid=$!
 PID_LIST+=" $pid"
 
-kli multisig join --name multisigj2 --auto &
+kli multisig join --name multisigj2 --auto --timeout 10 &
 pid=$!
 PID_LIST+=" $pid"
 
 wait $PID_LIST
+if [ $? -ne 0 ]; then
+  echo "Multisig group rotation/join failed"
+  exit 1
+fi
 
 kli status --name multisigj1 --alias multisig
 
@@ -52,7 +60,7 @@ kli multisig interact --name multisigj1 --alias multisig --data '{"d": "potato"}
 pid=$!
 PID_LIST+=" $pid"
 
-kli multisig join --name multisigj2 --auto &
+kli multisig join --name multisigj2 --auto --timeout 10 &
 pid=$!
 PID_LIST+=" $pid"
 

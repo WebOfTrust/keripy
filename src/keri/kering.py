@@ -412,6 +412,15 @@ class KeriError(Exception):
     """
 
 
+class TimeoutError(KeriError):
+    """
+    Timeout waiting for completion of a KERI operation
+
+    Usage:
+        raise TimeoutError("error message")
+    """
+
+
 class ClosedError(KeriError):
     """
     Error attempting to use closed (unopened) resource such as file, database etc that is
