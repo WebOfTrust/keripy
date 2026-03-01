@@ -8,7 +8,7 @@ from keri import kering
 from keri.app import keeping
 from keri.core import serdering
 from keri.core import eventing as keventing
-from keri.core.coring import Number, Saider
+from keri.core.coring import Number, Saider, Diger
 from keri.db import basing
 from keri.vdr.credentialing import Regery, Registrar
 
@@ -29,9 +29,9 @@ def test_tpwe():
         # incept: inject into tpwe, verify present
         reg_inc = rgy.makeRegistry(name="tpwe_inc", prefix=hab.pre, noBackers=True)
         number_inc = Number(num=hab.kever.sner.num)
-        saider_inc = Saider(qb64=hab.kever.serder.said)
+        diger_inc = Diger(qb64=hab.kever.serder.said)
         rgy.reger.tpwe.add(keys=(reg_inc.regk, rnum.huge),
-                           val=(prefixer, number_inc, saider_inc))
+                           val=(prefixer, number_inc, diger_inc))
         assert len(rgy.reger.tpwe.get(keys=(reg_inc.regk, rnum.huge))) == 1
 
         # issue: anchor vcp so iss is valid, inject into tpwe
@@ -45,7 +45,7 @@ def test_tpwe():
         iss = reg_iss.issue(said=vcdig)
         rnum_iss = Number(numh=iss.ked["s"])
         rgy.reger.tpwe.add(keys=(vcdig, rnum_iss.huge),
-                           val=(prefixer, Number(num=hab.kever.sner.num), Saider(qb64=hab.kever.serder.said)))
+                           val=(prefixer, Number(num=hab.kever.sner.num), Diger(qb64=hab.kever.serder.said)))
         assert len(rgy.reger.tpwe.get(keys=(vcdig, rnum_iss.huge))) == 1
 
         # revoke: anchor vcp+iss, inject rev into tpwe, verify number value
@@ -67,7 +67,7 @@ def test_tpwe():
         rnum_rev = Number(numh=rev.ked["s"])
         expected_kel_sn = hab.kever.sner.num
         rgy.reger.tpwe.add(keys=(vcdig, rnum_rev.huge),
-                           val=(prefixer, Number(num=expected_kel_sn), Saider(qb64=hab.kever.serder.said)))
+                           val=(prefixer, Number(num=expected_kel_sn), Diger(qb64=hab.kever.serder.said)))
         entries = rgy.reger.tpwe.get(keys=(vcdig, rnum_rev.huge))
         assert len(entries) == 1
         _, num_obj, _ = entries[0]
@@ -76,9 +76,9 @@ def test_tpwe():
         # processWitnessEscrow drains tpwe and seeds tede
         reg_pwe = rgy.makeRegistry(name="pwe_drain", prefix=hab.pre, noBackers=True)
         number_pwe = Number(num=hab.kever.sner.num)
-        saider_pwe = Saider(qb64=hab.kever.serder.said)
+        diger_pwe = Diger(qb64=hab.kever.serder.said)
         rgy.reger.tpwe.add(keys=(reg_pwe.regk, rnum.huge),
-                           val=(prefixer, number_pwe, saider_pwe))
+                           val=(prefixer, number_pwe, diger_pwe))
         registrar.processWitnessEscrow()
 
         assert rgy.reger.tpwe.get(keys=(reg_pwe.regk, rnum.huge)) == []
