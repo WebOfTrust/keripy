@@ -18,15 +18,15 @@ from hio.core import http, tcp
 from hio.core.tcp import serving
 from hio.help import decking
 
-from keri.kering import Vrsn_1_0, Vrsn_2_0
-import keri.app.oobiing
+from ..kering import Vrsn_1_0, Vrsn_2_0
 from . import directing, storing, httping, forwarding, agenting, oobiing
 from .habbing import GroupHab
 from .. import help, kering
 from ..core import (eventing, parsing, routing, coring, serdering,
                     Counter, Codens)
 from ..core.coring import Ilks
-from ..db import basing, dbing
+from ..app import oobiing
+from ..db import basing
 from ..end import ending
 from ..help import helping
 from ..peer import exchanging
@@ -60,7 +60,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     forwarder = forwarding.ForwardHandler(hby=hby, mbx=mbx)
     exchanger = exchanging.Exchanger(hby=hby, handlers=[forwarder])
     clienter = httping.Clienter()
-    oobiery = keri.app.oobiing.Oobiery(hby=hby, clienter=clienter)
+    oobiery = oobiing.Oobiery(hby=hby, clienter=clienter)
 
     app = falcon.App(cors_enable=True)
     ending.loadEnds(app=app, hby=hby, default=hab.pre)

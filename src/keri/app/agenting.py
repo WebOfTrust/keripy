@@ -20,7 +20,6 @@ from .. import kering
 from ..kering import Roles, Vrsn_1_0, Vrsn_2_0
 from .. import core
 from ..core import eventing, parsing, coring, serdering, indexing
-from ..db import dbing
 
 
 logger = help.ogler.getLogger()

@@ -12,13 +12,13 @@ from ordered_set import OrderedSet as oset
 from hio.base import doing
 from hio.help import decking, ogler
 
-from keri import kering
-from keri.app import agenting
-from keri.core import coring, eventing, serdering, MtrDex, Counter, Codens
-from keri.db import dbing
-from keri.kering import Roles
-from keri.peer import exchanging
-from keri.spac import payloading
+from .. import kering
+from . import agenting
+from ..core import coring, eventing, serdering, MtrDex, Counter, Codens
+from ..db import dbing
+from ..kering import Roles
+from ..peer import exchanging
+from ..spac import payloading
 
 logger = ogler.getLogger()
 

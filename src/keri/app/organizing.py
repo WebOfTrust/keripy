@@ -8,7 +8,7 @@ import json
 
 from ordered_set import OrderedSet as oset
 
-from keri import kering
+from .. import kering
 
 
 class BaseOrganizer:
