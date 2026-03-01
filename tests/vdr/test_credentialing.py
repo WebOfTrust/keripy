@@ -98,13 +98,13 @@ def test_tmse():
 
         prefixer = hab.kever.prefixer
         number = Number(num=hab.kever.sner.num)
-        saider = Saider(qb64=hab.kever.serder.said)
+        diger = Diger(qb64=hab.kever.serder.said)
         rnum = Number(num=0)
 
         # incept
         reg_inc = rgy.makeRegistry(name="tmse_inc", prefix=hab.pre, noBackers=True)
         rgy.reger.tmse.add(keys=(reg_inc.regk, rnum.huge, reg_inc.regd),
-                           val=(prefixer, number, saider))
+                           val=(prefixer, number, diger))
         assert len(rgy.reger.tmse.get(keys=(reg_inc.regk, rnum.huge, reg_inc.regd))) == 1
 
         # issue
@@ -118,7 +118,7 @@ def test_tmse():
         iss = reg_iss.issue(said=vcdig)
         rnum_iss = Number(numh=iss.ked["s"])
         rgy.reger.tmse.add(keys=(vcdig, rnum_iss.huge, iss.said),
-                           val=(prefixer, number, saider))
+                           val=(prefixer, number, diger))
         assert len(rgy.reger.tmse.get(keys=(vcdig, rnum_iss.huge, iss.said))) == 1
 
         # revoke
@@ -139,7 +139,7 @@ def test_tmse():
         rev = reg_rev.revoke(said=vcdig)
         rnum_rev = Number(numh=rev.ked["s"])
         rgy.reger.tmse.add(keys=(vcdig, rnum_rev.huge, rev.said),
-                           val=(prefixer, number, saider))
+                           val=(prefixer, number, diger))
         assert len(rgy.reger.tmse.get(keys=(vcdig, rnum_rev.huge, rev.said))) == 1
 
     # processMultisigEscrow is a no-op when counselor.complete is False
@@ -155,9 +155,9 @@ def test_tmse():
         rnum = Number(num=0)
         prefixer = hab.kever.prefixer
         number = Number(num=1)
-        saider = Saider(qb64=hab.kever.serder.said)
+        diger = Diger(qb64=hab.kever.serder.said)
 
-        rgy.reger.tmse.add(keys=(reg.regk, rnum.huge, reg.regd), val=(prefixer, number, saider))
+        rgy.reger.tmse.add(keys=(reg.regk, rnum.huge, reg.regd), val=(prefixer, number, diger))
         registrar.processMultisigEscrow()
 
         assert rgy.reger.tmse.get(keys=(reg.regk, rnum.huge, reg.regd)) != []
@@ -178,9 +178,9 @@ def test_tmse():
         rnum = Number(num=0)
         prefixer = hab.kever.prefixer
         number = Number(num=1)
-        saider = Saider(qb64=hab.kever.serder.said)
+        diger = Diger(qb64=hab.kever.serder.said)
 
-        rgy.reger.tmse.add(keys=(reg.regk, rnum.huge, reg.regd), val=(prefixer, number, saider))
+        rgy.reger.tmse.add(keys=(reg.regk, rnum.huge, reg.regd), val=(prefixer, number, diger))
         registrar.processMultisigEscrow()
 
         assert rgy.reger.tmse.get(keys=(reg.regk, rnum.huge, reg.regd)) == []
@@ -199,9 +199,9 @@ def test_tmse():
         rnum = Number(num=0)
         prefixer = hab.kever.prefixer
         number = Number(num=1)
-        saider = Saider(qb64=hab.kever.serder.said)
+        diger = Diger(qb64=hab.kever.serder.said)
 
-        rgy.reger.tmse.add(keys=(reg.regk, rnum.huge, reg.regd), val=(prefixer, number, saider))
+        rgy.reger.tmse.add(keys=(reg.regk, rnum.huge, reg.regd), val=(prefixer, number, diger))
         registrar.processMultisigEscrow()
 
         assert rgy.reger.tmse.get(keys=(reg.regk, rnum.huge, reg.regd)) == []
@@ -219,14 +219,14 @@ def test_tede():
         )
 
         prefixer = hab.kever.prefixer
-        saider_hab = Saider(qb64=hab.kever.serder.said)
+        diger_hab = Diger(qb64=hab.kever.serder.said)
         rnum = Number(num=0)
 
         # processWitnessEscrow seeds tede with correct values
         reg_pwe = rgy.makeRegistry(name="tede_pwe", prefix=hab.pre, noBackers=True)
         number_pwe = Number(num=hab.kever.sner.num)
 
-        rgy.reger.tpwe.add(keys=(reg_pwe.regk, rnum.huge), val=(prefixer, number_pwe, saider_hab))
+        rgy.reger.tpwe.add(keys=(reg_pwe.regk, rnum.huge), val=(prefixer, number_pwe, diger_hab))
         registrar.processWitnessEscrow()
 
         assert len(rgy.reger.tede.get(keys=(reg_pwe.regk, rnum.huge))) == 1
@@ -243,7 +243,7 @@ def test_tede():
         number_ms = Number(num=7)  # distinct value to tell apart from number_pwe
 
         rgy.reger.tmse.add(keys=(reg_ms.regk, rnum.huge, reg_ms.regd),
-                           val=(prefixer, number_ms, saider_hab))
+                           val=(prefixer, number_ms, diger_hab))
         registrar.processMultisigEscrow()
 
         assert len(rgy.reger.tede.get(keys=(reg_ms.regk, rnum.huge))) == 1
@@ -252,7 +252,7 @@ def test_tede():
 
         # processDisseminationEscrow is a no-op when tels has no digest
         reg_noop = rgy.makeRegistry(name="diss_noop", prefix=hab.pre, noBackers=True)
-        rgy.reger.tede.add(keys=(reg_noop.regk, rnum.huge), val=(prefixer, number_pwe, saider_hab))
+        rgy.reger.tede.add(keys=(reg_noop.regk, rnum.huge), val=(prefixer, number_pwe, diger_hab))
 
         registrar.processDisseminationEscrow()
 
@@ -267,7 +267,7 @@ def test_tede():
         rgy.tvy.processEvent(serder=reg_drain.vcp,
                              seqner=Number(num=rotser.sn),
                              saider=Saider(qb64=rotser.said))
-        rgy.reger.tede.add(keys=(reg_drain.regk, rnum.huge), val=(prefixer, number_pwe, saider_hab))
+        rgy.reger.tede.add(keys=(reg_drain.regk, rnum.huge), val=(prefixer, number_pwe, diger_hab))
 
         before = len(registrar.witPub.msgs)
         registrar.processDisseminationEscrow()
@@ -286,12 +286,12 @@ def test_escrow_suber_klas():
 
         prefixer = hab.kever.prefixer
         number = Number(num=SN)
-        saider = Saider(qb64=hab.kever.serder.said)
+        diger = Diger(qb64=hab.kever.serder.said)
         rnum = Number(num=0)
 
         # tpwe
         reg_tpwe = rgy.makeRegistry(name="klas_tpwe", prefix=hab.pre, noBackers=True)
-        rgy.reger.tpwe.add(keys=(reg_tpwe.regk, rnum.huge), val=(prefixer, number, saider))
+        rgy.reger.tpwe.add(keys=(reg_tpwe.regk, rnum.huge), val=(prefixer, number, diger))
 
         items = rgy.reger.tpwe.get(keys=(reg_tpwe.regk, rnum.huge))
         assert items, "tpwe entry missing"
@@ -305,7 +305,7 @@ def test_escrow_suber_klas():
         # tmse
         reg_tmse = rgy.makeRegistry(name="klas_tmse", prefix=hab.pre, noBackers=True)
         rgy.reger.tmse.add(keys=(reg_tmse.regk, rnum.huge, reg_tmse.regd),
-                           val=(prefixer, number, saider))
+                           val=(prefixer, number, diger))
 
         items = rgy.reger.tmse.get(keys=(reg_tmse.regk, rnum.huge, reg_tmse.regd))
         assert items, "tmse entry missing"
@@ -318,7 +318,7 @@ def test_escrow_suber_klas():
 
         # tede
         reg_tede = rgy.makeRegistry(name="klas_tede", prefix=hab.pre, noBackers=True)
-        rgy.reger.tede.add(keys=(reg_tede.regk, rnum.huge), val=(prefixer, number, saider))
+        rgy.reger.tede.add(keys=(reg_tede.regk, rnum.huge), val=(prefixer, number, diger))
 
         items = rgy.reger.tede.get(keys=(reg_tede.regk, rnum.huge))
         assert items, "tede entry missing"
