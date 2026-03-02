@@ -9,8 +9,8 @@ import copy
 from dataclasses import dataclass, astuple, asdict
 from collections import namedtuple
 
-from ..help.helping import (sceil, intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64, Reb64,
-                            nabSextets)
+from ..help import (sceil, intToB64, b64ToInt, codeB64ToB2, codeB2ToB64, Reb64,
+                    nabSextets)
 
 from ..kering import (Colds, Versionage, Vrsn_1_0, Vrsn_2_0, InvalidVersionError,
                       InvalidCodeError, InvalidCodeSizeError, InvalidVarIndexError,

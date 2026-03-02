@@ -4,20 +4,8 @@ tests.core.test_annotating module
 
 """
 from binascii import unhexlify
-
-import pytest
-
-
-from keri import kering
-
-from keri.help import helping
-
-from keri.core import (Matter,)
-from keri.core.coring import dumps
-
-
-from keri.core.annotating import (annot, denot)
-
+from keri import Kinds
+from keri.core import dumps, annot, denot
 
 
 def test_annot():
@@ -149,7 +137,7 @@ def test_annot():
             "kid" : "FdFYFzERwC2uCBB46pZQi4GG85LujR8obt-KWRBICVQ"
           }
 
-    jwk = dumps(djwk, kering.Kinds.json)
+    jwk = dumps(djwk, Kinds.json)
     assert jwk == (b'{"kty":"OKP","crv":"Ed25519","x":"11qYAYKxCrfVS_7TyWQHOg7hcvPapiMlrwIaaPcHUR'
                    b'o","d":"nWGxne_9WmC6hEr0kuwsxERJxWl7MmkZcDusAxyuf2A","use":"sig","kid":"FdFY'
                    b'FzERwC2uCBB46pZQi4GG85LujR8obt-KWRBICVQ"}')

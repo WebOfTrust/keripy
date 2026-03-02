@@ -8,15 +8,8 @@ routes:
 """
 from keri import kering
 
-from keri import help
-
-from keri import core
-from keri.core import eventing
-
-from keri.core.coring import MtrDex, Diger
-
-from keri.core.eventing import (SealEvent, messagize)
-
+from keri import help, core
+from keri.core import MtrDex, Diger, SealEvent, messagize, bare
 
 
 logger = help.ogler.getLogger()
@@ -96,10 +89,10 @@ def test_bare():
                )
 
     stamp = "2023-06-26T22:22:13.416766+00:00"
-    serderE = eventing.bare(route="/to/the/moon",
-                             data=data,
-                             stamp=stamp,
-                            )
+    serderE = bare(route="/to/the/moon",
+                   data=data,
+                   stamp=stamp,
+                   )
 
     assert serderE.raw == (b'{"v":"KERI10JSON000121_","t":"bar","d":"EGPY61eN5zhw7nnlra3bQL8xapaMhP4I_0yi'
                         b'hFOLXNgH","dt":"2023-06-26T22:22:13.416766+00:00","r":"/to/the/moon","a":{"c'
