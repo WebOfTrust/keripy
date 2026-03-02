@@ -8,13 +8,13 @@ import argparse
 
 from hio.base import doing
 
-from ..... import help
+from .....help import ogler
 from .... import organizing
 from ...common import existing
 from ...common.parsing import Parsery
 from .....kering import ConfigurationError, Roles
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='List current mailboxes', 
                                  parents=[Parsery.keystore()])

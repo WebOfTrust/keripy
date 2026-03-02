@@ -10,14 +10,14 @@ import time
 
 from hio.base import doing
 from hio.help import decking
-from ..... import help
+from .....help import ogler
 from .... import agenting, indirecting, habbing, forwarding
 from ...common import existing, terming
 from ...common.parsing import Parsery
 from ....habbing import GroupHab
 from ....watching import States, diffState
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Perform a one time watch of all current local AIDs', 
                                  parents=[Parsery.keystore()])

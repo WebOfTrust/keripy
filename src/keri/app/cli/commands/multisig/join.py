@@ -11,7 +11,8 @@ from ordered_set import OrderedSet as oset
 from hio.base import doing
 from prettytable import PrettyTable
 
-from ..... import help, kering
+from .....help import ogler
+from .....kering import TraitCodex, ConfigurationError, MissingAnchorError
 from .....kering import Vrsn_1_0, Vrsn_2_0
 from .... import habbing, indirecting, agenting, notifying, grouping, organizing, forwarding
 from ...common import existing, displaying
@@ -20,7 +21,7 @@ from .....core import coring, eventing, scheming, parsing, routing, serdering
 from .....peer import exchanging
 from .....vdr import verifying, credentialing
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Join group multisig inception, rotation or interaction event.',
                                  parents=[Parsery.keystore()])
@@ -180,8 +181,8 @@ class JoinDoer(doing.DoDoer):
         inits["isith"] = oicp.ked["kt"]
         inits["nsith"] = oicp.ked["nt"]
 
-        inits["estOnly"] = kering.TraitCodex.EstOnly in oicp.ked["c"]
-        inits["DnD"] = kering.TraitCodex.DoNotDelegate in oicp.ked["c"]
+        inits["estOnly"] = TraitCodex.EstOnly in oicp.ked["c"]
+        inits["DnD"] = TraitCodex.DoNotDelegate in oicp.ked["c"]
 
         inits["toad"] = oicp.ked["bt"]
         inits["wits"] = oicp.ked["b"]
@@ -643,7 +644,7 @@ class JoinDoer(doing.DoDoer):
             vserder = serdering.SerderKERI(sad=vcp)
             try:
                 self.rgy.tvy.processEvent(serder=vserder)
-            except kering.MissingAnchorError:
+            except MissingAnchorError:
                 pass
 
             self.rgy.makeRegistry(name=registryName, prefix=hab.pre, vcp=vserder)
@@ -692,7 +693,7 @@ class JoinDoer(doing.DoDoer):
         schema = acdc['s']
         scraw = self.verifier.resolver.resolve(schema)
         if not scraw:
-            raise kering.ConfigurationError("Credential schema {} not found".format(schema))
+            raise ConfigurationError("Credential schema {} not found".format(schema))
 
         schemer = scheming.Schemer(raw=scraw)
 
@@ -741,7 +742,7 @@ class JoinDoer(doing.DoDoer):
             iserder = serdering.SerderKERI(sad=iss)
             try:
                 self.rgy.tvy.processEvent(serder=iserder)
-            except kering.MissingAnchorError:
+            except MissingAnchorError:
                 pass
 
             acdc = embeds["acdc"]
@@ -800,7 +801,7 @@ class JoinDoer(doing.DoDoer):
         embeds = exn.ked['e']
         scraw = self.verifier.resolver.resolve(creder.schema)
         if not scraw:
-            raise kering.ConfigurationError("Credential schema {} not found".format(creder.schema))
+            raise ConfigurationError("Credential schema {} not found".format(creder.schema))
 
         schemer = scheming.Schemer(raw=scraw)
 
@@ -843,7 +844,7 @@ class JoinDoer(doing.DoDoer):
             rserder = serdering.SerderKERI(sad=rev)
             try:
                 self.rgy.tvy.processEvent(serder=rserder)
-            except kering.MissingAnchorError:
+            except MissingAnchorError:
                 pass
 
             self.registrar.revoke(creder, rserder, aserder)

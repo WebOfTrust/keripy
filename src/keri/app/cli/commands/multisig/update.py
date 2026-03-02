@@ -8,14 +8,15 @@ import time
 
 from hio.base import doing
 from hio.help import decking
-from ..... import help, kering
+from .....kering import ConfigurationError
+from .....help import ogler
 from .... import agenting, indirecting, habbing
 from ...common import displaying
 from ...common import existing
 from ...common.parsing import Parsery
 from ....habbing import GroupHab
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Request KEL for local multisig AID from witness', 
                                  parents=[Parsery.keystore()])
@@ -47,7 +48,7 @@ class UpdateDoer(doing.DoDoer):
         hab = self.hby.habByName(alias)
 
         if not isinstance(hab, GroupHab):
-            raise kering.ConfigurationError("only group habs can be updated from witnesses.")
+            raise ConfigurationError("only group habs can be updated from witnesses.")
 
         self.hab = hab
 

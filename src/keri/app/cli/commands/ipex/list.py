@@ -13,18 +13,18 @@ import sys
 
 from hio.base import doing
 
-from ..... import help, kering
 from .... import indirecting, notifying, organizing
 from ...common import existing, terming
 from ...common.parsing import Parsery
+from .....kering import ConfigurationError
 from .....core import scheming
-from .....help import helping
+from .....help import helping, ogler
 from .....peer import exchanging
 from .....vc import protocoling
 from .....vc.protocoling import Ipex
 from .....vdr import credentialing, verifying
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='List notifications related to IPEX protocol messages', 
                                  parents=[Parsery.keystore()])
@@ -172,7 +172,7 @@ class ListDoer(doing.DoDoer):
         schema = sad['s']
         scraw = self.mbx.verifier.resolver.resolve(schema)
         if not scraw:
-            raise kering.ConfigurationError("Credential schema {} not found".format(schema))
+            raise ConfigurationError("Credential schema {} not found".format(schema))
 
         schemer = scheming.Schemer(raw=scraw)
         response = self.hby.db.erpy.get(keys=(exn.said,))
@@ -227,7 +227,7 @@ class ListDoer(doing.DoDoer):
             schema = sad['s']
             scraw = self.mbx.verifier.resolver.resolve(schema)
             if not scraw:
-                raise kering.ConfigurationError("Credential schema {} not found".format(schema))
+                raise ConfigurationError("Credential schema {} not found".format(schema))
 
             schemer = scheming.Schemer(raw=scraw)
             print(f"Spurned Credential {sad['d']}:")
@@ -243,7 +243,7 @@ class ListDoer(doing.DoDoer):
         schema = sad['s']
         scraw = self.mbx.verifier.resolver.resolve(schema)
         if not scraw:
-            raise kering.ConfigurationError("Credential schema {} not found".format(schema))
+            raise ConfigurationError("Credential schema {} not found".format(schema))
 
         schemer = scheming.Schemer(raw=scraw)
 

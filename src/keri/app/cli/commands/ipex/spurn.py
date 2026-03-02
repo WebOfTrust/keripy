@@ -13,7 +13,7 @@ from .... import forwarding, organizing, habbing, grouping, indirecting
 from ...common import existing
 from ...common.parsing import Parsery
 from ....notifying import Notifier
-from .....core import parsing, coring, eventing
+from .....core import parsing, eventing
 from .....peer import exchanging
 from .....vc import protocoling
 from .....vc.protocoling import Ipex

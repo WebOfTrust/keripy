@@ -13,7 +13,8 @@ from ordered_set import OrderedSet as oset
 import sys
 from hio.base import doing
 
-from ..... import help, kering
+from .....help import ogler
+from .....kering import ConfigurationError
 from .... import indirecting, grouping, habbing, forwarding
 from ...common import existing, displaying
 from ...common.parsing import Parsery
@@ -21,7 +22,7 @@ from ....notifying import Notifier
 from .....core import coring
 from .....peer import exchanging
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Initialize a group identifier prefix', 
                                  parents=[Parsery.keystore()])
@@ -118,8 +119,8 @@ class GroupMultisigIncept(doing.DoDoer):
 
         hab = self.hby.habByName(name=self.alias)
         if hab is None:
-            raise kering.ConfigurationError(f"invalid alias {self.alias} "
-                                            f"specified for database {self.name}")
+            raise ConfigurationError(f"invalid alias {self.alias} "
+                                     f"specified for database {self.name}")
 
         ghab = self.hby.habByName(name=self.group)
         if ghab is None:

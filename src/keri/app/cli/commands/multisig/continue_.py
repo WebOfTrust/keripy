@@ -8,13 +8,13 @@ import argparse
 
 from hio.base import doing
 
-from ..... import help
+from .....help import ogler
 from .... import indirecting, grouping, agenting
 from ...common import existing, displaying
 from ...common.parsing import Parsery
 from ....habbing import GroupHab
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Process any incoming events that will progress local pending multisig '
                                              'events.',

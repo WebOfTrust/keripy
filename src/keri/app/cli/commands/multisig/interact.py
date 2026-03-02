@@ -9,7 +9,8 @@ from ordered_set import OrderedSet as oset
 
 from hio.base import doing
 
-from ..... import help, kering
+from .....help import ogler
+from .....kering import ConfigurationError
 from .... import grouping, indirecting, habbing, forwarding
 from ...common import existing, displaying, config
 from ...common.parsing import Parsery
@@ -17,7 +18,7 @@ from ....notifying import Notifier
 from .....core import coring, serdering
 from .....peer import exchanging
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Begin or join a rotation of a group identifier', 
                                  parents=[Parsery.keystore()])
@@ -103,7 +104,7 @@ class GroupMultisigInteract(doing.DoDoer):
 
         ghab = self.hby.habByName(name=self.alias)
         if ghab is None:
-            raise kering.ConfigurationError(f"invalid alias {self.alias} specified for database {self.hby.name}")
+            raise ConfigurationError(f"invalid alias {self.alias} specified for database {self.hby.name}")
 
         aids = self.aids if self.aids is not None else ghab.smids
 

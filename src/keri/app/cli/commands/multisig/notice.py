@@ -8,14 +8,14 @@ from ordered_set import OrderedSet as oset
 
 from hio.base import doing
 
-from ..... import help
+from .....help import ogler
 from .... import habbing, forwarding, grouping
 from ...common import existing
 from ...common.parsing import Parsery
 from .....core.coring import Ilks
 from .....core import serdering
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Notify other participants of the last event in a group multisig AID', 
                                  parents=[Parsery.keystore()])

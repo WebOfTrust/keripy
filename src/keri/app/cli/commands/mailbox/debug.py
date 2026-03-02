@@ -8,13 +8,14 @@ import argparse
 
 from hio.base import doing
 
-from ..... import help, kering
+from .....help import ogler
+from .....kering import MissingEntryError
 from .... import agenting, habbing, httping
 from ...common import existing
 from ...common.parsing import Parsery
 from ....habbing import GroupHab
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Display mailbox status for an identifier and witness', 
                                  parents=[Parsery.keystore()])
@@ -81,7 +82,7 @@ class ReadDoer(doing.DoDoer):
                   "/oobi": 0, "/reply": 0}
         try:
             client, clientDoer = agenting.httpClient(hab, self.witness)
-        except kering.MissingEntryError as e:
+        except MissingEntryError as e:
             raise ValueError(f"error connecting to witness {self.witness}: {e}")
 
         self.extend([clientDoer])

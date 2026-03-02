@@ -9,13 +9,14 @@ import argparse
 from hio.base import doing
 from hio.help import Hict
 
-from ..... import help, kering
+from .....help import ogler
+from .....kering import Roles
 from .... import organizing, habbing
 from ....agenting import httpClient, WitnessPublisher
 from ...common import existing
 from ...common.parsing import Parsery
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Add mailbox role', 
                                  parents=[Parsery.keystore()])
@@ -87,7 +88,7 @@ class AddDoer(doing.DoDoer):
 
         kel = self.hab.replay()
         data = dict(cid=self.hab.pre,
-                    role=kering.Roles.mailbox,
+                    role=Roles.mailbox,
                     eid=self.mailbox)
 
         route = "/end/role/add"
@@ -115,7 +116,7 @@ class AddDoer(doing.DoDoer):
 
         rep = client.respond()
         if rep.status == 200:
-            msg = self.hab.replyEndRole(cid=self.hab.pre, role=kering.Roles.mailbox)
+            msg = self.hab.replyEndRole(cid=self.hab.pre, role=Roles.mailbox)
             self.witpub.msgs.append(dict(pre=self.hab.pre, msg=bytes(msg)))
 
             while not self.witpub.cues:
