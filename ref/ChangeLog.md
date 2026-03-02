@@ -19,6 +19,16 @@ signature and all internal call sites. External callers that previously passed
 `delseqner` must now pass `delnum` with a `Number` instance.
 
 
+## 2.0.0-dev5
+### Backwards breaking interface changes
+Changes to call signatures that will break dependent libraries
+
+#### keri.core.eventing.py
+Changed `fetchTsgs(db, saider, snh)` to `fetchTsgs(db, diger, snh)`.
+Renamed `saider` parameter to `diger` to match the actual type (`Diger`) being
+passed. All callers in `routing.py`, `habbing.py`, and `escrowing.py` updated.
+
+
 ## 2.0.0-dev1
 ### Backwards breaking interface changes
 Changes to call signatures that will break dependent libraries
