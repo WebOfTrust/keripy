@@ -9,28 +9,28 @@ import blake3
 import pysodium
 import pytest
 
-from ...src.keri.kering import (ValidationError, UnverifiedReceiptError,
+from keri.kering import (ValidationError, UnverifiedReceiptError,
                          Ilks, TraitDex, Vrsn_1_0, Ilks)
-from ...src.keri.app import habbing
-from ...src.keri.app.keeping import openKS, Manager
-from ...src.keri.core import (Signer, Counter, Codens, eventing, parsing,
+from keri.app import habbing
+from keri.app.keeping import openKS, Manager
+from keri.core import (Signer, Counter, Codens, eventing, parsing,
                        serdering, Salter)
-from ...src.keri.core.coring import (Diger, Matter, Cigar, Seqner, Verfer, Prefixer,
+from keri.core.coring import (Diger, Matter, Cigar, Seqner, Verfer, Prefixer,
                               Number, Saider, Seqner,
                               DigDex, MtrDex, PreDex, NumDex, Kinds, versify)
-from ...src.keri.core.indexing import (IdrDex, IdxSigDex, Siger)
-from ...src.keri.core.structing import (SealDigest, SealRoot, SealBack,
+from keri.core.indexing import (IdrDex, IdxSigDex, Siger)
+from keri.core.structing import (SealDigest, SealRoot, SealBack,
                                 SealEvent, SealLast, StateEvent, StateEstEvent)
-from ...src.keri.core.eventing import (Kever, Kevery, LastEstLoc, simple, ample,
+from keri.core.eventing import (Kever, Kevery, LastEstLoc, simple, ample,
                                 deWitnessCouple, deReceiptCouple, deSourceCouple,
                                 deReceiptTriple, deTransReceiptQuadruple,
                                 deTransReceiptQuintuple, incept, rotate,
                                 interact, receipt, query, delcept, deltate,
                                 state, messagize)
 
-from ...src.keri.db.basing import openDB
-from ...src.keri.db.dbing import dgKey, snKey
-from ...src.keri.help import helping, ogler
+from keri.db.basing import openDB
+from keri.db.dbing import dgKey, snKey
+from keri.help import helping, ogler
 
 logger = ogler.getLogger()
 
