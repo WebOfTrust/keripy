@@ -18,22 +18,21 @@ from hio.core import http, tcp
 from hio.core.tcp import serving
 from hio.help import decking
 
-from ..kering import Vrsn_1_0, Vrsn_2_0
+from ..kering import Vrsn_1_0, Vrsn_2_0, Roles, MissingEntryError
 from . import directing, storing, httping, forwarding, agenting, oobiing
 from .habbing import GroupHab
-from .. import help, kering
 from ..core import (eventing, parsing, routing, coring, serdering,
                     Counter, Codens)
 from ..core.coring import Ilks
 from ..app import oobiing
 from ..db import basing
 from ..end import ending
-from ..help import helping
+from ..help import helping, ogler
 from ..peer import exchanging
 from ..vdr import verifying, viring
 from ..vdr.eventing import Tevery
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPort=5632,
@@ -624,7 +623,7 @@ class MailboxDirector(doing.DoDoer):
             hab (Hab): the Hab of the prefix
 
         """
-        for (_, erole, eid), end in hab.db.ends.getItemIter(keys=(hab.pre, kering.Roles.mailbox)):
+        for (_, erole, eid), end in hab.db.ends.getItemIter(keys=(hab.pre, Roles.mailbox)):
             if end.allowed:
                 poller = Poller(hab=hab, topics=self.topics, witness=eid)
                 self.pollers.append(poller)
@@ -779,7 +778,7 @@ class Poller(doing.DoDoer):
         while self.retry > 0:
             try:
                 client, clientDoer = agenting.httpClient(self.hab, self.witness)
-            except kering.MissingEntryError as e:
+            except MissingEntryError as e:
                 traceback.print_exception(e, file=sys.stderr)  # logging
                 yield self.tock
                 continue
@@ -1145,7 +1144,7 @@ class ReceiptEnd(doing.DoDoer):
         rct = bytearray(rserder.raw)
         if wigers := self.hab.db.wigs.get(keys=(preb, said)):
             rct.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
-                               version=kering.Vrsn_1_0).qb64b)
+                               version=Vrsn_1_0).qb64b)
             for wiger in wigers:
                 rct.extend(wiger.qb64b)
 

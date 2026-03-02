@@ -6,14 +6,13 @@ keri.app.signing module
 """
 from ..kering import Vrsn_1_0, Vrsn_2_0
 from .habbing import GroupHab
-from .. import core
-from ..core import coring, eventing, counting
+from ..core import coring, Counter, Codens
 
 
 
 def serialize(creder, prefixer, seqner, saider):
     craw = bytearray(creder.raw)
-    craw.extend(core.Counter(core.Codens.SealSourceTriples, count=1,
+    craw.extend(Counter(Codens.SealSourceTriples, count=1,
                              version=Vrsn_1_0).qb64b)
     craw.extend(prefixer.qb64b)
     craw.extend(seqner.qb64b)

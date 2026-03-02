@@ -11,9 +11,9 @@ from dataclasses import dataclass
 from hio.base import doing
 from hio.help import decking
 
-from .. import help
+from ..help import ogler
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 Stateage = namedtuple("Stateage", 'even ahead behind duplicitous')
 

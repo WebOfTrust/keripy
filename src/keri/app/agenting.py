@@ -15,14 +15,13 @@ from hio.help import decking, Hict
 from socket import gaierror
 
 from . import httping, forwarding
-from .. import help
-from .. import kering
-from ..kering import Roles, Vrsn_1_0, Vrsn_2_0
-from .. import core
-from ..core import eventing, parsing, coring, serdering, indexing
+from ..help import ogler
+from ..kering import (Schemes, Roles, Vrsn_1_0, Vrsn_2_0,
+                      MissingEntryError, ConfigurationError, MissingEntryError)
+from ..core import Counter, eventing, parsing, coring, serdering, Codens
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 class Receiptor(doing.DoDoer):
@@ -70,7 +69,7 @@ class Receiptor(doing.DoDoer):
         """
         auths = auths if auths is not None else dict()
         if pre not in self.hby.prefixes:
-            raise kering.MissingEntryError(f"{pre} not a valid AID")
+            raise MissingEntryError(f"{pre} not a valid AID")
 
         hab = self.hby.habs[pre]
         sn = sn if sn is not None else hab.kever.sner.num
@@ -96,7 +95,7 @@ class Receiptor(doing.DoDoer):
                 clients[wit] = client
                 doers.append(clientDoer)
                 self.extend([clientDoer])
-            except (kering.MissingEntryError, gaierror) as e:
+            except (MissingEntryError, gaierror) as e:
                 logger.error(f"unable to create http client for witness {wit}: {e}")
 
         # send to each witness and gather receipts
@@ -118,7 +117,7 @@ class Receiptor(doing.DoDoer):
                 del rct[:rserder.size]
 
                 # pull off the count code
-                core.Counter(qb64b=rct, strip=True, version=kering.Vrsn_1_0)
+                Counter(qb64b=rct, strip=True, version=Vrsn_1_0)
                 rcts[wit] = rct
             else:
                 print(f"invalid response {rep.status} from witnesses {wit}")
@@ -139,8 +138,8 @@ class Receiptor(doing.DoDoer):
                                        sn=sn,
                                        said=ser.said)
             msg.extend(rserder.raw)
-            msg.extend(core.Counter(core.Codens.NonTransReceiptCouples,
-                                    count=len(wigers), version=kering.Vrsn_1_0).qb64b)
+            msg.extend(Counter(Codens.NonTransReceiptCouples,
+                                    count=len(wigers), version=Vrsn_1_0).qb64b)
             for wiger in wigers:
                 msg.extend(wiger)
 
@@ -166,7 +165,7 @@ class Receiptor(doing.DoDoer):
             sn: (Optiona[int]): sequence number of event to gather receipts for, latest is used if not provided
         """
         if pre not in self.hby.prefixes:
-            raise kering.MissingEntryError(f"{pre} not a valid AID")
+            raise MissingEntryError(f"{pre} not a valid AID")
 
         hab = self.hby.habs[pre]
         sn = sn if sn is not None else hab.kever.sner.num
@@ -176,11 +175,11 @@ class Receiptor(doing.DoDoer):
             return
 
         wit = random.choice(hab.kever.wits)
-        urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
+        urls = hab.fetchUrls(eid=wit, scheme=Schemes.http) or hab.fetchUrls(eid=wit, scheme=Schemes.https)
         if not urls:
-            raise kering.MissingEntryError(f"unable to query witness {wit}, no http endpoint")
+            raise MissingEntryError(f"unable to query witness {wit}, no http endpoint")
 
-        base = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
+        base = urls[Schemes.http] if Schemes.http in urls else urls[Schemes.https]
         url = urljoin(base, f"/receipts?pre={pre}&sn={sn}")
 
         client = self.clienter.request("GET", url)
@@ -208,7 +207,7 @@ class Receiptor(doing.DoDoer):
             wit (str): qualified base64 AID of the witness to send the KEL to
         """
         if pre not in self.hby.prefixes:
-            raise kering.MissingEntryError(f"{pre} not a valid AID")
+            raise MissingEntryError(f"{pre} not a valid AID")
 
         hab = self.hby.habs[pre]
 
@@ -722,7 +721,7 @@ class TCPMessenger(doing.DoDoer):
         _ = (yield self.tock)
 
         up = urlparse(self.url)
-        if up.scheme != kering.Schemes.tcp:
+        if up.scheme != Schemes.tcp:
             raise ValueError(f"invalid scheme {up.scheme} for TcpWitnesser")
 
         client = clienting.Client(host=up.hostname, port=up.port)
@@ -796,7 +795,7 @@ class TCPStreamMessenger(doing.DoDoer):
         _ = (yield self.tock)
 
         up = urlparse(self.url)
-        if up.scheme != kering.Schemes.tcp:
+        if up.scheme != Schemes.tcp:
             raise ValueError(f"invalid scheme {up.scheme} for TcpWitnesser")
 
         client = clienting.Client(host=up.hostname, port=up.port)
@@ -857,7 +856,7 @@ class HTTPMessenger(doing.DoDoer):
         doers.extend([doing.doify(self.msgDo), doing.doify(self.responseDo)])
 
         up = urlparse(url)
-        if up.scheme != kering.Schemes.http and up.scheme != kering.Schemes.https:
+        if up.scheme != Schemes.http and up.scheme != Schemes.https:
             raise ValueError(f"invalid scheme {up.scheme} for HTTPMessenger")
 
         self.client = http.clienting.Client(scheme=up.scheme, hostname=up.hostname, port=up.port)
@@ -925,7 +924,7 @@ class HTTPStreamMessenger(doing.DoDoer):
         headers = headers if headers is not None else {}
 
         up = urlparse(url)
-        if up.scheme != kering.Schemes.http and up.scheme != kering.Schemes.https:
+        if up.scheme != Schemes.http and up.scheme != Schemes.https:
             raise ValueError(f"invalid scheme {up.scheme} for HTTPMessenger")
 
         self.client = http.clienting.Client(scheme=up.scheme, hostname=up.hostname, port=up.port)
@@ -969,7 +968,7 @@ def mailbox(hab, cid):
         hab (Hab): Hab to use to look up witness URLs
         cid (str): qb64 identifier prefix of controller to find mailbox for
     """
-    for (_, erole, eid), end in hab.db.ends.getItemIter(keys=(cid, kering.Roles.mailbox)):
+    for (_, erole, eid), end in hab.db.ends.getItemIter(keys=(cid, Roles.mailbox)):
         if end.allowed:
             return eid
 
@@ -1011,14 +1010,14 @@ def messengerFrom(hab, pre, urls, auth=None):
     Returns:
         Optional(TcpWitnesser, HTTPMessenger): witnesser for ensuring full reciepts
     """
-    if kering.Schemes.http in urls or kering.Schemes.https in urls:
-        url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
+    if Schemes.http in urls or Schemes.https in urls:
+        url = urls[Schemes.http] if Schemes.http in urls else urls[Schemes.https]
         witer = HTTPMessenger(hab=hab, wit=pre, url=url, auth=auth)
-    elif kering.Schemes.tcp in urls:
-        url = urls[kering.Schemes.tcp]
+    elif Schemes.tcp in urls:
+        url = urls[Schemes.tcp]
         witer = TCPMessenger(hab=hab, wit=pre, url=url)
     else:
-        raise kering.ConfigurationError(f"unable to find a valid endpoint for witness {pre}")
+        raise ConfigurationError(f"unable to find a valid endpoint for witness {pre}")
 
     return witer
 
@@ -1036,14 +1035,14 @@ def streamMessengerFrom(hab, pre, urls, msg, headers=None):
     Returns:
         Optional(TcpWitnesser, HTTPMessenger): witnesser for ensuring full reciepts
     """
-    if kering.Schemes.http in urls or kering.Schemes.https in urls:
-        url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
+    if Schemes.http in urls or Schemes.https in urls:
+        url = urls[Schemes.http] if Schemes.http in urls else urls[Schemes.https]
         witer = HTTPStreamMessenger(hab=hab, wit=pre, url=url, msg=msg, headers=headers)
-    elif kering.Schemes.tcp in urls:
-        url = urls[kering.Schemes.tcp]
+    elif Schemes.tcp in urls:
+        url = urls[Schemes.tcp]
         witer = TCPStreamMessenger(hab=hab, wit=pre, url=url)
     else:
-        raise kering.ConfigurationError(f"unable to find a valid endpoint for witness {pre}")
+        raise ConfigurationError(f"unable to find a valid endpoint for witness {pre}")
 
     return witer
 
@@ -1060,11 +1059,11 @@ def httpClient(hab, wit):
         ClientDoer: Doer for client
 
     """
-    urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
+    urls = hab.fetchUrls(eid=wit, scheme=Schemes.http) or hab.fetchUrls(eid=wit, scheme=Schemes.https)
     if not urls:
-        raise kering.MissingEntryError(f"unable to query witness {wit}, no http endpoint")
+        raise MissingEntryError(f"unable to query witness {wit}, no http endpoint")
 
-    url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
+    url = urls[Schemes.http] if Schemes.http in urls else urls[Schemes.https]
     up = urlparse(url)
     client = http.clienting.Client(scheme=up.scheme, hostname=up.hostname, port=up.port, path=up.path)
     clientDoer = http.clienting.ClientDoer(client=client)
@@ -1086,7 +1085,7 @@ def schemes(db, eids):
     """
     msgs = bytearray()
     for eid in eids:
-        for scheme in kering.Schemes:
+        for scheme in Schemes:
             keys = (eid, scheme)
             said = db.lans.get(keys=keys)
             if said is not None:

@@ -16,8 +16,8 @@ from hio.help import decking
 
 from keri.core import coring
 from . import httping
-from .. import help, kering
-from ..kering import Vrsn_1_0, Vrsn_2_0
+from ..help import ogler, nowIso8601
+from ..kering import Vrsn_1_0, Vrsn_2_0, Roles, Schemes, ValidationError
 from ..app import organizing
 from ..core import routing, eventing, parsing, scheming, serdering
 from ..db import basing
@@ -27,7 +27,7 @@ from ..help import helping
 from ..kering import Ilks, ValidationError, UnverifiedReplyError, ConfigurationError
 from ..peer import exchanging
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 Resultage = namedtuple("Resultage", 'resolved failed')  # stream cold start status
 Result = Resultage(resolved='resolved', failed='failed')
@@ -112,28 +112,28 @@ class OobiResource:
         role = req.params["role"]
 
         res = dict(role=role)
-        if role in (kering.Roles.witness,):  # Fetch URL OOBIs for all witnesses
+        if role in (Roles.witness,):  # Fetch URL OOBIs for all witnesses
             oobis = []
             for wit in hab.kever.wits:
-                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) \
-                       or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
+                urls = hab.fetchUrls(eid=wit, scheme=Schemes.http) \
+                       or hab.fetchUrls(eid=wit, scheme=Schemes.https)
                 if not urls:
                     rep.status = falcon.HTTP_404
                     rep.text = f"unable to query witness {wit}, no http endpoint"
                     return
 
-                url = urls[kering.Schemes.https] if kering.Schemes.https in urls else urls[kering.Schemes.http]
+                url = urls[Schemes.https] if Schemes.https in urls else urls[Schemes.http]
                 oobis.append(f"{url.rstrip("/")}/oobi/{hab.pre}/witness/{wit}")
             res["oobis"] = oobis
-        elif role in (kering.Roles.controller,):  # Fetch any controller URL OOBIs
+        elif role in (Roles.controller,):  # Fetch any controller URL OOBIs
             oobis = []
-            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http) or hab.fetchUrls(eid=hab.pre,
-                                                                                           scheme=kering.Schemes.https)
+            urls = hab.fetchUrls(eid=hab.pre, scheme=Schemes.http) or hab.fetchUrls(eid=hab.pre,
+                                                                                           scheme=Schemes.https)
             if not urls:
                 rep.status = falcon.HTTP_404
                 rep.text = f"unable to query controller {hab.pre}, no http endpoint"
                 return
-            url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
+            url = urls[Schemes.http] if Schemes.http in urls else urls[Schemes.https]
             oobis.append(f"{url.rstrip("/")}/oobi/{hab.pre}/controller")
             res["oobis"] = oobis
         else:
@@ -518,7 +518,7 @@ class Oobiery:
                         else:
                             result = Result.failed
 
-                    except (kering.ValidationError, ValueError):
+                    except (ValidationError, ValueError):
                         result = Result.failed
 
                     obr.state = result
@@ -540,7 +540,7 @@ class Oobiery:
                         self.hby.db.roobi.put(keys=(url,), val=obr)
                         continue
 
-                    except (kering.ValidationError, ValueError):
+                    except (ValidationError, ValueError):
                         pass
 
                     try:
@@ -657,7 +657,7 @@ class Authenticator:
         self.hby.db.mfa.pin(keys=(wurl,), val=obr)
 
     def addAuthToAid(self, cid, url):
-        now = help.nowIso8601()
+        now = nowIso8601()
         wkan = basing.WellKnownAuthN(url=url, dt=now)
         self.hby.db.wkas.add(keys=(cid,), val=wkan)
 

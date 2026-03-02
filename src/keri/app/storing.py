@@ -10,8 +10,8 @@ from ordered_set import OrderedSet as oset
 
 from . import forwarding
 from .. import help
-from ..core import coring, serdering
-from ..core.coring import MtrDex
+from ..core.serdering import SerderKERI
+from ..core.coring import MtrDex, Diger, Prefixer
 from ..db import dbing, subing
 
 logger = help.ogler.getLogger()
@@ -126,7 +126,7 @@ class Mailboxer(dbing.LMDBer):
         if hasattr(msg, "encode"):
             msg = msg.encode("utf-8")
 
-        digb = coring.Diger(ser=msg, code=MtrDex.Blake3_256).qb64b
+        digb = Diger(ser=msg, code=MtrDex.Blake3_256).qb64b
         on = self.tpcs.appendOn(keys=topic, val=digb)
         return self.msgs.pin(keys=digb, val=msg)
 
@@ -254,7 +254,7 @@ class Respondant(doing.DoDoer):
             if cueKin in ("receipt",):  # cue to receipt a received event from other pre
                 serder = cue["serder"]  # Serder of received event for other pre
                 cuedKed = serder.ked
-                cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
+                cuedPrefixer = Prefixer(qb64=cuedKed["i"])
 
                 # If respondant configured with list of acceptable AIDs to witness for, check them here
                 if self.aids is not None and cuedPrefixer.qb64 not in self.aids:
@@ -270,7 +270,7 @@ class Respondant(doing.DoDoer):
                             continue
 
                         raw = hab.receipt(serder)
-                        rserder = serdering.SerderKERI(raw=raw)
+                        rserder = SerderKERI(raw=raw)
                         del raw[:rserder.size]
                         self.postman.send(serder.pre, topic="receipt", serder=rserder, hab=hab, attachment=raw)
 
@@ -288,7 +288,7 @@ class Respondant(doing.DoDoer):
 
                 for msg in msgs:
                     raw = bytearray(msg)
-                    serder = serdering.SerderKERI(raw=raw)
+                    serder = SerderKERI(raw=raw)
                     del raw[:serder.size]
                     self.postman.send(dest, topic="replay", serder=serder, hab=hab, attachment=raw)
 

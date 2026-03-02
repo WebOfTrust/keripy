@@ -9,12 +9,12 @@ import itertools
 from hio.base import doing
 
 from ..kering import Vrsn_1_0, Vrsn_2_0
-from .. import help
+from ..help import ogler
 from ..core import eventing, routing
 from ..core import parsing
 from ..vdr.eventing import Tevery
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 class Director(doing.Doer):
