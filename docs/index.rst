@@ -26,16 +26,32 @@ Python Reference Implementation of the KERI Core Libraries
 
    readme
 
+Reference Documentation
+=======================
+
+.. toctree::
+    :maxdepth: 1
+
+    ref/getting_started
+    ref/naming
+    ref/PythonStyleGuide
+    ref/CypherSuites
+    ref/MultiHab
+    ref/MultisigIssuance
+    ref/Peer2PeerCredentials
+    ref/tel
+    ref/ChangeLog
+
 API Reference
 =============
 
 .. toctree::
     :maxdepth: 1
 
-    naming
     keri_app
     keri_core
     keri_db
+    keri_demo
     keri_end
     keri_help
     keri_peer
