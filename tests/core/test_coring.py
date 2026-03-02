@@ -44,19 +44,14 @@ from keri.core import coring
 from keri.core.coring import (Saids, Sadder, Tholder, Seqner, NumDex, Number,
                               Decimer, DecDex, Dater, Bexter, Texter,
                               TagDex, Tagger, Ilker, Traitor, Labeler, LabelDex,
-                              Verser, Versage, )
-from keri.core.coring import Kindage, Kinds
-from keri.core.coring import (Sizage, MtrDex, Matter)
-from keri.core.coring import (Verfer, Cigar, Saider, DigDex,
-                              Diger, Prefixer, PreDex, Noncer, NonceDex)
-from keri.core.coring import versify, deversify, Rever, MAXVERFULLSPAN
+                              Verser, Versage, Kinds, Sizage, MtrDex, Matter,
+                              Verfer, Cigar, Saider, DigDex,
+                              Diger, Prefixer, PreDex, Noncer, NonceDex,
+                              versify, deversify, Rever, MAXVERFULLSPAN,
+                              MapDom, IceMapDom)
 
 from keri.core.indexing import (Siger, Xizage, IdrDex, IdxSigDex,
                                 IdxCrtSigDex, IdxBthSigDex, Indexer)
-
-
-from keri.core.coring import MapDom, IceMapDom
-
 
 
 def test_icemapdom():

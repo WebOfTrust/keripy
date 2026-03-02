@@ -9,38 +9,31 @@ import blake3
 import pysodium
 import pytest
 
-from keri import kering
-from keri.kering import Vrsn_1_0, Vrsn_2_0
-from keri.app import habbing, keeping
+from keri.kering import Vrsn_1_0, Vrsn_2_0, Ilks
+from keri.app import habbing
 from keri.app.keeping import openKS, Manager
-from keri import core
-from keri.core import Signer, Counter, Codens
-from keri.core import coring, eventing, parsing, serdering
-from keri.core.coring import (Diger, MtrDex, Matter,
-                              Cigar,
-                              Seqner, Verfer, Prefixer, DigDex)
-from keri.core.indexing import (IdrDex, IdxSigDex, Indexer, Siger)
-from keri.core.eventing import Kever, Kevery, UnverifiedReceiptError
-from keri.core.eventing import (SealDigest, SealRoot, SealBack,
+from keri.core import (Signer, Counter, Codens, eventing, parsing,
+                       serdering, Salter)
+from keri.core.coring import (Diger, Matter, Cigar, Seqner, Verfer, Prefixer,
+                              Number, Saider, Seqner,
+                              DigDex, MtrDex, PreDex, NumDex, Kinds, versify)
+from keri.core.indexing import (IdrDex, IdxSigDex, Siger)
+from keri.core.structing import (SealDigest, SealRoot, SealBack,
                                 SealEvent, SealLast, StateEvent, StateEstEvent)
-from keri.core.eventing import (TraitDex, LastEstLoc, Kinds, versify,
-                                simple, ample)
-from keri.core.eventing import (deWitnessCouple, deReceiptCouple, deSourceCouple,
-                                deReceiptTriple,
-                                deTransReceiptQuadruple, deTransReceiptQuintuple)
-from keri.core.eventing import (incept, rotate, interact, receipt, query,
-                                delcept, deltate, state, messagize)
-from keri.core import serdering
+from keri.core.eventing import (Kever, Kevery, LastEstLoc, simple, ample,
+                                deWitnessCouple, deReceiptCouple, deSourceCouple,
+                                deReceiptTriple, deTransReceiptQuadruple,
+                                deTransReceiptQuintuple, incept, rotate,
+                                interact, receipt, query, delcept, deltate,
+                                state, messagize)
 
-from keri.db import dbing, basing
 from keri.db.basing import openDB
 from keri.db.dbing import dgKey, snKey
-from keri.kering import (ValidationError, DerivationError, Ilks)
+from keri.kering import (ValidationError, UnverifiedReceiptError,
+                         Ilks, TraitDex)
+from keri.help import helping, ogler
 
-from keri import help
-from keri.help import helping
-
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 def test_simple():
@@ -701,8 +694,6 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                         b'eq9W8_As","i":"BFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"0","kt":"1'
                         b'","k":["BFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"0","n":[],"bt":'
                         b'"0","b":[],"c":[],"a":[]}')
-    #saider = coring.Saider(sad=serder.ked, code=MtrDex.Blake3_256)
-    #assert saider.verify(serder.ked) is True
 
     with pytest.raises(ValidationError):
         # non-empty ndigs with non-transferable code
@@ -729,9 +720,6 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                     b'","k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"0","n":[],"bt":'
                     b'"0","b":[],"c":[],"a":[]}')
 
-    #saider = coring.Saider(sad=serder.ked, code=MtrDex.Blake3_256)
-    #assert saider.verify(serder.ked) is True
-
     # Inception: Transferable not abandoned i.e. next not empty,Self-Addressing
     # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
@@ -741,7 +729,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer1.verfer.code == MtrDex.Ed25519
     keys1 = [signer1.verfer.qb64]
     # compute nxt digest
-    nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
     serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256)  # intive false
     pre = serder0.ked["i"]
@@ -767,7 +755,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer1.verfer.code == MtrDex.Ed25519
     keys1 = [signer1.verfer.qb64]
     # compute nxt digest
-    nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
     serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True)  # intive true
     pre = serder0.ked["i"]
@@ -793,7 +781,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer1.verfer.code == MtrDex.Ed25519
     keys1 = [signer1.verfer.qb64]
     # compute nxt digest
-    nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
     serder0 = incept(keys=keys0, ndigs=nxt1, intive=True)  # intive true
     pre = serder0.ked["i"]
@@ -818,7 +806,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer1.verfer.code == MtrDex.Ed25519
     keys1 = [signer1.verfer.qb64]
     # compute nxt digest
-    nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
     serder0 = incept(keys=keys0, ndigs=nxt1)
     pre = serder0.ked["i"]
@@ -834,9 +822,6 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                         b'","k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"1","n":["EIf-EN'
                         b'w7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":"0","b":[],"c":[],"a":[]}')
 
-    #saider = coring.Saider(sad=serder0.ked, code=MtrDex.Blake3_256)
-    #assert saider.qb64 == serder0.said
-
     # Rotation: Transferable not abandoned i.e. next not empty
     # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     seed2 = (b'\xbe\x96\x02\xa9\x88\xce\xf9O\x1e\x0fo\xc0\xff\x98\xb6\xfa\x1e\xa2y\xf2'
@@ -844,7 +829,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     signer2 = Signer(raw=seed2)  # next signing keypair transferable is default
     assert signer2.code == MtrDex.Ed25519_Seed
     assert signer2.verfer.code == MtrDex.Ed25519
-    keys2 = [coring.Diger(ser=signer2.verfer.qb64b).qb64]
+    keys2 = [Diger(ser=signer2.verfer.qb64b).qb64]
     # compute nxt digest
     serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1)
     assert serder1.ked["t"] == Ilks.rot
@@ -861,11 +846,6 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                         b'MQp8ayDRin0NG0Ymn_RXQP_v-PQ"],"nt":"1","n":["EIsKL3B6Zz5ICGxCQp-SoLXjwOrdlSb'
                         b'LJrEn21c2zVaU"],"bt":"0","br":[],"ba":[],"a":[]}')
 
-    #saider = coring.Saider(sad=serder1.ked, code=MtrDex.Blake3_256)
-    #assert serder1.said == saider.qb64
-
-
-
     # Rotation: Transferable not abandoned i.e. next not empty  Intive
     # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     seed2 = (b'\xbe\x96\x02\xa9\x88\xce\xf9O\x1e\x0fo\xc0\xff\x98\xb6\xfa\x1e\xa2y\xf2'
@@ -873,7 +853,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     signer2 = Signer(raw=seed2)  # next signing keypair transferable is default
     assert signer2.code == MtrDex.Ed25519_Seed
     assert signer2.verfer.code == MtrDex.Ed25519
-    keys2 = [coring.Diger(ser=signer2.verfer.qb64b).qb64]
+    keys2 = [Diger(ser=signer2.verfer.qb64b).qb64]
     # compute nxt digest
     serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1, intive=True)  # intive
     assert serder1.ked["t"] == Ilks.rot
@@ -889,9 +869,6 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                         b'QUyxnzIAtmZPoq9f4fExeGN0qfJmaFnUEKTwIiTBPj","kt":1,"k":["DB4GWvru73jWZKpNgMQ'
                         b'p8ayDRin0NG0Ymn_RXQP_v-PQ"],"nt":1,"n":["EIsKL3B6Zz5ICGxCQp-SoLXjwOrdlSbLJrE'
                         b'n21c2zVaU"],"bt":0,"br":[],"ba":[],"a":[]}')
-
-    #saider = coring.Saider(sad=serder1.ked, code=MtrDex.Blake3_256)
-    #assert serder1.said == saider.qb64
 
     # Interaction:
     serder2 = interact(pre=pre, dig=serder1.said, sn=2)
@@ -1015,8 +992,6 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert serder.raw == (b'{"v":"KERI10JSON000105_","t":"icp","d":"ELIz2CFNp4vCTJkCKYzqkv1tJeqaPiwhHkNuWA0tKfxo",'
                           b'"i":"1AAIA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ","s":"0","kt":"1",'
                           b'"k":["1AAIA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}')
-    #saider = coring.Saider(sad=serder.ked, code=MtrDex.Blake3_256)
-    #assert saider.verify(serder.ked) is True
 
     with pytest.raises(ValidationError):
         # non-empty nxt with non-transferable code
@@ -1043,9 +1018,6 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                           b'"k":["1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ"],"nt":"0","n":[],'
                           b'"bt":"0","b":[],"c":[],"a":[]}')
 
-    #saider = coring.Saider(sad=serder.ked, code=MtrDex.Blake3_256)
-    #assert saider.verify(serder.ked) is True
-
     # Inception: Transferable not abandoned i.e. next not empty,Self-Addressing
     # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
@@ -1055,7 +1027,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer1.verfer.code == MtrDex.ECDSA_256r1
     keys1 = [signer1.verfer.qb64]
     # compute nxt digest
-    nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
     serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256)  # intive false
     pre = serder0.ked["i"]
@@ -1082,7 +1054,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer1.verfer.code == MtrDex.ECDSA_256r1
     keys1 = [signer1.verfer.qb64]
     # compute nxt digest
-    nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
     serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True)  # intive true
     pre = serder0.ked["i"]
@@ -1108,7 +1080,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer1.verfer.code == MtrDex.ECDSA_256r1
     keys1 = [signer1.verfer.qb64]
     # compute nxt digest
-    nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
     serder0 = incept(keys=keys0, ndigs=nxt1, intive=True)  # intive true
     pre = serder0.ked["i"]
@@ -1134,7 +1106,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer1.verfer.code == MtrDex.ECDSA_256r1
     keys1 = [signer1.verfer.qb64]
     # compute nxt digest
-    nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
     serder0 = incept(keys=keys0, ndigs=nxt1)
     pre = serder0.ked["i"]
@@ -1151,10 +1123,6 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                            b'"nt":"1","n":["EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4"],'
                            b'"bt":"0","b":[],"c":[],"a":[]}')
 
-    #saider = coring.Saider(sad=serder0.ked, code=MtrDex.Blake3_256)
-    #assert saider.qb64 == serder0.said
-
-
     # Rotation: Transferable not abandoned i.e. next not empty
     # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     seed2 = (b'\xbe\x96\x02\xa9\x88\xce\xf9O\x1e\x0fo\xc0\xff\x98\xb6\xfa\x1e\xa2y\xf2'
@@ -1162,7 +1130,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     signer2 = Signer(raw=seed2, code=MtrDex.ECDSA_256r1_Seed)  # next signing keypair transferable is default
     assert signer2.code == MtrDex.ECDSA_256r1_Seed
     assert signer2.verfer.code == MtrDex.ECDSA_256r1
-    keys2 = [coring.Diger(ser=signer2.verfer.qb64b).qb64]
+    keys2 = [Diger(ser=signer2.verfer.qb64b).qb64]
     # compute nxt digest
     serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1)
     # print(f'evnt {serder1.raw}')
@@ -1180,10 +1148,6 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                            b'"nt":"1","n":["EIkmr0Ne3wbNvTKRU-A9NLmCL-RYgu2SZuzIb3n-9xFH"],'
                            b'"bt":"0","br":[],"ba":[],"a":[]}')
 
-    #saider = coring.Saider(sad=serder1.ked, code=MtrDex.Blake3_256)
-    #assert serder1.said == saider.qb64
-
-
     #  Secp256k1 Inception: Non-transferable (ephemeral) case
     signer0 = Signer(raw=seed, transferable=False, code=MtrDex.ECDSA_256k1_Seed)  # original signing keypair non transferable
     assert signer0.code == MtrDex.ECDSA_256k1_Seed
@@ -1195,8 +1159,6 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert serder.raw == (b'{"v":"KERI10JSON000105_","t":"icp","d":"EGEP0h6tTUUOeIK4ApGlnLl2lwD0lbaQGBfL9'
                          b'pM2v0J0","i":"1AAAAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"0","kt":"1"'
                          b',"k":["1AAAAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}')
-    #saider = coring.Saider(sad=serder.ked, code=MtrDex.Blake3_256)
-    #assert saider.verify(serder.ked) is True
 
     # Inception: Transferable Case but abandoned in incept so equivalent
     signer0 = Signer(raw=seed, code=MtrDex.ECDSA_256k1_Seed)  # original signing keypair transferable default
@@ -1211,9 +1173,6 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                           b'"k":["1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk"],"nt":"0","n":[],'
                           b'"bt":"0","b":[],"c":[],"a":[]}')
 
-    #saider = coring.Saider(sad=serder.ked, code=MtrDex.Blake3_256)
-    #assert saider.verify(serder.ked) is True
-
     # Inception: Transferable not abandoned i.e. next not empty,Self-Addressing
     # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
@@ -1223,7 +1182,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer1.verfer.code == MtrDex.ECDSA_256k1
     keys1 = [signer1.verfer.qb64]
     # compute nxt digest
-    nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
     serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256)  # intive false
     pre = serder0.ked["i"]
@@ -1249,7 +1208,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer1.verfer.code == MtrDex.ECDSA_256k1
     keys1 = [signer1.verfer.qb64]
     # compute nxt digest
-    nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
     serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True)  # intive true
     pre = serder0.ked["i"]
@@ -1275,7 +1234,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer1.verfer.code == MtrDex.ECDSA_256k1
     keys1 = [signer1.verfer.qb64]
     # compute nxt digest
-    nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
     serder0 = incept(keys=keys0, ndigs=nxt1, intive=True)  # intive true
     pre = serder0.ked["i"]
@@ -1302,7 +1261,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer1.verfer.code == MtrDex.ECDSA_256k1
     keys1 = [signer1.verfer.qb64]
     # compute nxt digest
-    nxt1 = [coring.Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
     serder0 = incept(keys=keys0, ndigs=nxt1)
     pre = serder0.ked["i"]
@@ -1319,9 +1278,6 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                            b'"nt":"1","n":["EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO"],'
                            b'"bt":"0","b":[],"c":[],"a":[]}')
 
-    #saider = coring.Saider(sad=serder0.ked, code=MtrDex.Blake3_256)
-    #assert saider.qb64 == serder0.said
-
     # Rotation: Transferable not abandoned i.e. next not empty
     # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     seed2 = (b'\xbe\x96\x02\xa9\x88\xce\xf9O\x1e\x0fo\xc0\xff\x98\xb6\xfa\x1e\xa2y\xf2'
@@ -1329,7 +1285,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     signer2 = Signer(raw=seed2, code=MtrDex.ECDSA_256k1_Seed)  # next signing keypair transferable is default
     assert signer2.code == MtrDex.ECDSA_256k1_Seed
     assert signer2.verfer.code == MtrDex.ECDSA_256k1
-    keys2 = [coring.Diger(ser=signer2.verfer.qb64b).qb64]
+    keys2 = [Diger(ser=signer2.verfer.qb64b).qb64]
     # compute nxt digest
     serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1)
     assert serder1.ked["t"] == Ilks.rot
@@ -1346,10 +1302,6 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                            b'"nt":"1","n":["EDn6z-KqmwcDVCql1CkMkvSNbNghhMF2TwsdllyP4a07"],'
                            b'"bt":"0","br":[],"ba":[],"a":[]}')
 
-    #saider = coring.Saider(sad=serder1.ked, code=MtrDex.Blake3_256)
-    #assert serder1.said == saider.qb64
-
-
     # Rotation: Transferable not abandoned i.e. next not empty  Intive
     # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     seed2 = (b'\xbe\x96\x02\xa9\x88\xce\xf9O\x1e\x0fo\xc0\xff\x98\xb6\xfa\x1e\xa2y\xf2'
@@ -1357,7 +1309,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     signer2 = Signer(raw=seed2, code=MtrDex.ECDSA_256k1_Seed)  # next signing keypair transferable is default
     assert signer2.code == MtrDex.ECDSA_256k1_Seed
     assert signer2.verfer.code == MtrDex.ECDSA_256k1
-    keys2 = [coring.Diger(ser=signer2.verfer.qb64b).qb64]
+    keys2 = [Diger(ser=signer2.verfer.qb64b).qb64]
     # compute nxt digest
     serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1, intive=True)  # intive
     assert serder1.ked["t"] == Ilks.rot
@@ -1373,9 +1325,6 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                            b'"kt":1,"k":["1AABA7KZA_wxPCXJ5BgZ9jjdrMIy3OQKgHfa6eKyLcZpEn26"],'
                            b'"nt":1,"n":["EDn6z-KqmwcDVCql1CkMkvSNbNghhMF2TwsdllyP4a07"],'
                            b'"bt":0,"br":[],"ba":[],"a":[]}')
-
-    #saider = coring.Saider(sad=serder1.ked, code=MtrDex.Blake3_256)
-    #assert serder1.said == saider.qb64
 
     # Interaction:
     serder2 = interact(pre=pre, dig=serder1.said, sn=2)
@@ -1523,7 +1472,7 @@ def test_state(mockHelpingNowUTC):
     # use same salter for all but different path
     # raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    salter = core.Salter(raw=raw)
+    salter = Salter(raw=raw)
 
     # State NonDelegated (key state notification)
     # create transferable key pair for controller of KEL
@@ -1804,7 +1753,7 @@ def test_messagize():
     """
     Test messagize utility function
     """
-    salter = core.Salter(raw=b'0123456789abcdef')
+    salter = Salter(raw=b'0123456789abcdef')
     with openDB(name="edy") as db, openKS(name="edy") as ks:
         # Init key pair manager
         mgr = Manager(ks=ks, salt=salter.qb64)
@@ -2019,7 +1968,7 @@ def test_messagize():
         ked = serder.ked
         qserder = query(route="log",
                         query=dict(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
-                        stamp=help.helping.DTS_BASE_0)
+                        stamp=helping.DTS_BASE_0)
 
         # create SealEvent for endorsers est evt whose keys use to sign
         seal = SealLast(i=ked["i"])
@@ -2065,7 +2014,7 @@ def test_kever(mockHelpingNowUTC):
     with openDB() as db:  # Transferable case
         # Setup inception key event dict
         raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-        salter = core.Salter(raw=raw)
+        salter = Salter(raw=raw)
         # create current key
         sith = 1  # one signer
         #  original signing keypair transferable default
@@ -2092,8 +2041,8 @@ def test_kever(mockHelpingNowUTC):
 
         # make with defaults with non-digestive prefix
         serder = serdering.SerderKERI(makify=True,
-                                      ilk=kering.Ilks.icp,
-                                      saids = {'i': coring.PreDex.Ed25519},
+                                      ilk=Ilks.icp,
+                                      saids = {'i': PreDex.Ed25519},
                                       verify=False)
 
         sad = serder.sad
@@ -2148,7 +2097,7 @@ def test_kever(mockHelpingNowUTC):
         # test exposeds
         raw = b"raw salt to test"
         #  create signers with verfers
-        signers = core.Salter(raw=raw).signers(count=3, path="next", temp=True)
+        signers = Salter(raw=raw).signers(count=3, path="next", temp=True)
 
         # create something to sign
         ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
@@ -2236,8 +2185,8 @@ def test_kever(mockHelpingNowUTC):
 
         # make with defaults with non-transferable prefix
         serder = serdering.SerderKERI(makify=True,
-                                      ilk=kering.Ilks.icp,
-                                      saids = {'i': coring.PreDex.Ed25519N},
+                                      ilk=Ilks.icp,
+                                      saids = {'i': PreDex.Ed25519N},
                                       verify=False)
 
         sad = serder.sad
@@ -2274,8 +2223,8 @@ def test_kever(mockHelpingNowUTC):
 
         # make with defaults with non-transferable prefix
         serder = serdering.SerderKERI(makify=True,
-                                      ilk=kering.Ilks.icp,
-                                      saids = {'i': coring.PreDex.Ed25519N},
+                                      ilk=Ilks.icp,
+                                      saids = {'i': PreDex.Ed25519N},
                                       verify=False)
 
         sad = serder.sad
@@ -2332,8 +2281,8 @@ def test_kever(mockHelpingNowUTC):
 
         # make with defaults with non-transferable prefix
         serder = serdering.SerderKERI(makify=True,
-                                      ilk=kering.Ilks.icp,
-                                      saids = {'i': coring.PreDex.Ed25519N},
+                                      ilk=Ilks.icp,
+                                      saids = {'i': PreDex.Ed25519N},
                                       verify=False)
 
         sad = serder.sad
@@ -2454,7 +2403,7 @@ def test_keyeventsequence_0():
     """
     #  create signers
     salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    signers = core.Salter(raw=salt).signers(count=8)
+    signers = Salter(raw=salt).signers(count=8)
 
     pubkeys = [signer.verfer.qb64 for signer in signers]
     assert pubkeys == ['DErocgXD2RGSyvn3MObcx59jeOsEQhv2TqHirVkzrp0Q',
@@ -2473,7 +2422,7 @@ def test_keyeventsequence_0():
         keys0 = [signers[0].verfer.qb64]
         # compute nxt digest from keys1
         keys1 = [signers[1].verfer.qb64]
-        ndiger1 = coring.Diger(ser=signers[1].verfer.qb64b)
+        ndiger1 = Diger(ser=signers[1].verfer.qb64b)
         nxt1 = [ndiger1.qb64]  # transferable so nxt is not empty
         assert nxt1 == ['EIQsSW4KMrLzY1HQI9H_XxY6MyzhaFFXhG6fdBb5Wxta']
         serder0 = incept(keys=keys0, ndigs=nxt1)
@@ -2507,7 +2456,7 @@ def test_keyeventsequence_0():
         # Event 1 Rotation Transferable
         # compute nxt digest from keys2
         keys2 = [signers[2].verfer.qb64]
-        ndiger2 = coring.Diger(ser=signers[2].verfer.qb64b)
+        ndiger2 = Diger(ser=signers[2].verfer.qb64b)
         nxt2 = [ndiger2.qb64]  # transferable so nxt is not empty
         assert nxt2 == ['EHuvLs1hmwxo4ImDoCpaAermYVQhiPsPDNaZsz4bcgko']
         serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=nxt2, sn=1)
@@ -2539,7 +2488,7 @@ def test_keyeventsequence_0():
         # Event 2 Rotation Transferable
         # compute nxt digest from keys3
         keys3 = [signers[3].verfer.qb64]
-        ndiger3 = coring.Diger(ser=signers[3].verfer.qb64b)
+        ndiger3 = Diger(ser=signers[3].verfer.qb64b)
         nxt3 = [ndiger3.qb64]  # transferable so nxt is not empty
         serder2 = rotate(pre=pre, keys=keys2, dig=serder1.said, ndigs=nxt3, sn=2)
         event_digs.append(serder2.said)
@@ -2614,7 +2563,7 @@ def test_keyeventsequence_0():
         # Event 5 Rotation Transferable
         # compute nxt digest from keys4
         keys4 = [signers[4].verfer.qb64]
-        ndiger4 = coring.Diger(ser=signers[4].verfer.qb64b)
+        ndiger4 = Diger(ser=signers[4].verfer.qb64b)
         nxt4 = [ndiger4.qb64]  # transferable so nxt is not empty
         serder5 = rotate(pre=pre, keys=keys3, dig=serder4.said, ndigs=nxt4, sn=5)
         event_digs.append(serder5.said)
@@ -2696,7 +2645,7 @@ def test_keyeventsequence_0():
 
         # Event 8 Rotation
         keys5 = [signers[5].verfer.qb64]
-        nexter5 = coring.Diger(ser=signers[5].verfer.qb64b)
+        nexter5 = Diger(ser=signers[5].verfer.qb64b)
         nxt5 = [ndiger4.qb64]  # transferable so nxt is not empty
         serder8 = rotate(pre=pre, keys=keys5, dig=serder7.said, ndigs=nxt5, sn=8)
         assert serder8.ked["i"] == pre
@@ -2724,7 +2673,7 @@ def test_keyeventsequence_1():
 
     #  create signers
     salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    signers = core.Salter(raw=salt).signers(count=8)
+    signers = Salter(raw=salt).signers(count=8)
 
     pubkeys = [signer.verfer.qb64 for signer in signers]
     assert pubkeys == ['DErocgXD2RGSyvn3MObcx59jeOsEQhv2TqHirVkzrp0Q',
@@ -2744,7 +2693,7 @@ def test_keyeventsequence_1():
         keys0 = [signers[0].verfer.qb64]
         # compute nxt digest from keys1
         keys1 = [signers[1].verfer.qb64]
-        ndiger1 = coring.Diger(ser=signers[1].verfer.qb64b)
+        ndiger1 = Diger(ser=signers[1].verfer.qb64b)
         nxt1 = [ndiger1.qb64]  # transferable so nxt is not empty
         cnfg = [TraitDex.EstOnly]  # EstOnly
         serder0 = incept(keys=keys0, ndigs=nxt1, cnfg=cnfg)
@@ -2785,7 +2734,7 @@ def test_keyeventsequence_1():
 
         # Event 1 Rotation Transferable
         # compute nxt digest from keys2  but from event0
-        ndiger2 = coring.Diger(ser=signers[2].verfer.qb64b)
+        ndiger2 = Diger(ser=signers[2].verfer.qb64b)
         nxt2 = [ndiger2.qb64]  # transferable so nxt is not empty
         serder2 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=nxt2, sn=1)
         event_digs.append(serder2.said)
@@ -2821,7 +2770,7 @@ def test_multisig_digprefix():
 
     #  create signers
     salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    signers = core.Salter(raw=salt).signers(count=8)
+    signers = Salter(raw=salt).signers(count=8)
 
     pubkeys = [signer.verfer.qb64 for signer in signers]
     assert pubkeys == ['DErocgXD2RGSyvn3MObcx59jeOsEQhv2TqHirVkzrp0Q',
@@ -2848,7 +2797,7 @@ def test_multisig_digprefix():
         serder = incept(keys=keys,
                         code=code,
                         isith=sith,
-                        ndigs=[coring.Diger(ser=sig).qb64 for sig in nxtkeys])
+                        ndigs=[Diger(ser=sig).qb64 for sig in nxtkeys])
 
         # create sig counter
         count = len(keys)
@@ -2884,7 +2833,7 @@ def test_multisig_digprefix():
                         keys=keys,
                         isith=sith,
                         dig=kever.serder.said,
-                        ndigs=[coring.Diger(ser=sig).qb64 for sig in nxtkeys],
+                        ndigs=[Diger(ser=sig).qb64 for sig in nxtkeys],
                         sn=1)
         # create sig counter
         count = len(keys)
@@ -2975,7 +2924,7 @@ def test_recovery():
     """
     #  create signers
     salt = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    signers = core.Salter(raw=salt).signers(count=8)
+    signers = Salter(raw=salt).signers(count=8)
 
     with openDB(name="controller") as conlgr, openDB(name="validator") as vallgr:
         event_digs = []  # list of event digs in sequence to verify against database
@@ -2986,7 +2935,7 @@ def test_recovery():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers[esn].verfer.qb64],
-                        ndigs=[coring.Diger(ser=signers[esn + 1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=signers[esn + 1].verfer.qb64b).qb64])
 
         assert sn == int(serder.ked["s"], 16) == 0
 
@@ -3009,7 +2958,7 @@ def test_recovery():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[esn].verfer.qb64],
                         dig=kever.serder.said,
-                        ndigs=[coring.Diger(ser=signers[esn + 1].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[esn + 1].verfer.qb64b).qb64],
                         sn=sn)
 
         event_digs.append(serder.said)
@@ -3051,7 +3000,7 @@ def test_recovery():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[esn].verfer.qb64],
                         dig=kever.serder.said,
-                        ndigs=[coring.Diger(ser=signers[esn + 1].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[esn + 1].verfer.qb64b).qb64],
                         sn=sn)
         event_digs.append(serder.said)
         # create sig counter
@@ -3131,7 +3080,7 @@ def test_recovery():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[esn].verfer.qb64],
                         dig=event_digs[sn - 1],
-                        ndigs=[coring.Diger(ser=signers[esn + 1].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[esn + 1].verfer.qb64b).qb64],
                         sn=sn)
         event_digs.append(serder.said)
         # create sig counter
@@ -3206,7 +3155,7 @@ def test_receipt():
     """
 
     raw = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    salter = core.Salter(raw=raw)
+    salter = Salter(raw=raw)
 
     #  create coe's signers
     coeSigners = salter.signers(count=8, path='coe', temp=True)
@@ -3237,7 +3186,7 @@ def test_receipt():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[coeSigners[esn].verfer.qb64],
-                        ndigs=[coring.Diger(ser=coeSigners[esn + 1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=coeSigners[esn + 1].verfer.qb64b).qb64])
 
         assert sn == int(serder.ked["s"], 16) == 0
         coepre = serder.ked["i"]
@@ -3314,7 +3263,7 @@ def test_receipt():
         #  coe process the escrow receipt from val
         parsing.Parser(version=Vrsn_1_0).parse(ims=res, kvy=coeKevery)
         #  check if in escrow database
-        result = coeKevery.db.ures.get(keys=(coeKever.prefixer.qb64, coring.Number(num=2, code=coring.NumDex.Huge).qb64))
+        result = coeKevery.db.ures.get(keys=(coeKever.prefixer.qb64, Number(num=2, code=NumDex.Huge).qb64))
         rsaider, sprefixer, cigar = result[0]
 
         assert rsaider.qb64b == fake.encode("utf-8")
@@ -3323,7 +3272,7 @@ def test_receipt():
 
         # create invalid receipt stale use valid sn so in database but invalid dig
         # so bad receipt
-        fake = coring.Diger(qb64="EAdapdcC6XR1KWmWDsNl4J_OxcGxNZw1Xd95JH5a34fI").qb64
+        fake = Diger(qb64="EAdapdcC6XR1KWmWDsNl4J_OxcGxNZw1Xd95JH5a34fI").qb64
         reserder = receipt(pre=coeKever.prefixer.qb64,
                            sn=coeKever.sn,
                            said=fake)
@@ -3352,7 +3301,7 @@ def test_receipt():
         serder = rotate(pre=coeKever.prefixer.qb64,
                         keys=[coeSigners[esn].verfer.qb64],
                         dig=coeKever.serder.said,
-                        ndigs=[coring.Diger(ser=coeSigners[esn + 1].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=coeSigners[esn + 1].verfer.qb64b).qb64],
                         sn=sn)
 
         event_digs.append(serder.said)
@@ -3399,7 +3348,7 @@ def test_receipt():
         serder = rotate(pre=coeKever.prefixer.qb64,
                         keys=[coeSigners[esn].verfer.qb64],
                         dig=coeKever.serder.said,
-                        ndigs=[coring.Diger(ser=coeSigners[esn + 1].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=coeSigners[esn + 1].verfer.qb64b).qb64],
                         sn=sn)
         event_digs.append(serder.said)
         # create sig counter
@@ -3503,11 +3452,11 @@ def test_process_attached_receipt_couples_firner_missing_fels():
     UnverifiedReceiptError. This explicitly tests the fels.getOn(keys=pre, on=firner.sn)
     path in receipt processing.
     """
-    salter = core.Salter(raw=b'firner_missing_fels_test_seed_0123456789')
+    salter = Salter(raw=b'firner_missing_fels_test_seed_0123456789')
     signer = salter.signers(count=1, path="ctl", temp=True)[0]
     valSigner = salter.signers(count=1, path="val", transferable=False, temp=True)[0]
 
-    serder = incept(keys=[signer.verfer.qb64], ndigs=[coring.Diger(ser=signer.verfer.qb64b).qb64])
+    serder = incept(keys=[signer.verfer.qb64], ndigs=[Diger(ser=signer.verfer.qb64b).qb64])
     valCigar = valSigner.sign(ser=serder.raw)
 
     with openDB(name="firner_test") as db:
@@ -3519,7 +3468,7 @@ def test_process_attached_receipt_couples_firner_missing_fels():
         assert "Unverified receipt=" in str(exc_info.value)
         # Receipt must be escrowed (addUre via escrowUReceipt)
         sn = int(serder.sn, 16) if isinstance(serder.sn, str) else int(serder.sn)
-        ures = db.ures.get(keys=(serder.pre, coring.Number(num=sn, code=coring.NumDex.Huge).qb64))
+        ures = db.ures.get(keys=(serder.pre, Number(num=sn, code=NumDex.Huge).qb64))
         assert len(ures) == 1
         diger, prefixer, cigar = ures[0]
         assert diger.qb64 == serder.said
@@ -3538,7 +3487,7 @@ def test_direct_mode():
     #  but goes both ways once initiated.
 
     raw = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    salter = core.Salter(raw=raw)
+    salter = Salter(raw=raw)
 
     #  create coe's signers
     coeSigners = salter.signers(count=8, path='coe', temp=True)
@@ -3563,7 +3512,7 @@ def test_direct_mode():
 
         # Coe Event 0  Inception Transferable (nxt digest not empty)
         coeSerder = incept(keys=[coeSigners[cesn].verfer.qb64],
-                           ndigs=[coring.Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
+                           ndigs=[Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
                            code=MtrDex.Blake3_256)
 
         assert csn == int(coeSerder.ked["s"], 16) == 0
@@ -3596,7 +3545,7 @@ def test_direct_mode():
 
         # Val Event 0  Inception Transferable (nxt digest not empty)
         valSerder = incept(keys=[valSigners[vesn].verfer.qb64],
-                           ndigs=[coring.Diger(ser=valSigners[vesn + 1].verfer.qb64b).qb64],
+                           ndigs=[Diger(ser=valSigners[vesn + 1].verfer.qb64b).qb64],
                            code=MtrDex.Blake3_256)
 
         assert vsn == int(valSerder.ked["s"], 16) == 0
@@ -3788,7 +3737,7 @@ def test_direct_mode():
         coeSerder = rotate(pre=coeKever.prefixer.qb64,
                            keys=[coeSigners[cesn].verfer.qb64],
                            dig=coeKever.serder.said,
-                           ndigs=[coring.Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
+                           ndigs=[Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
                            sn=csn)
         coe_event_digs.append(coeSerder.said)
         # create sig counter
@@ -4012,7 +3961,7 @@ def test_direct_mode_cbor_mgpk():
     #  but goes both ways once initiated.
 
     raw = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    salter = core.Salter(raw=raw)
+    salter = Salter(raw=raw)
 
     #  create coe's signers
     coeSigners = salter.signers(count=8, path='coe', temp=True)
@@ -4037,7 +3986,7 @@ def test_direct_mode_cbor_mgpk():
 
         # Coe Event 0  Inception Transferable (nxt digest not empty)
         coeSerder = incept(keys=[coeSigners[cesn].verfer.qb64],
-                           ndigs=[coring.Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
+                           ndigs=[Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
                            code=MtrDex.Blake3_256,
                            kind=Kinds.cbor)
 
@@ -4069,7 +4018,7 @@ def test_direct_mode_cbor_mgpk():
 
         # Val Event 0  Inception Transferable (nxt digest not empty)
         valSerder = incept(keys=[valSigners[vesn].verfer.qb64],
-                           ndigs=[coring.Diger(ser=valSigners[vesn + 1].verfer.qb64b).qb64],
+                           ndigs=[Diger(ser=valSigners[vesn + 1].verfer.qb64b).qb64],
                            code=MtrDex.Blake3_256,
                            kind=Kinds.mgpk)
 
@@ -4258,7 +4207,7 @@ def test_direct_mode_cbor_mgpk():
         coeSerder = rotate(pre=coeKever.prefixer.qb64,
                            keys=[coeSigners[cesn].verfer.qb64],
                            dig=coeKever.serder.said,
-                           ndigs=[coring.Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
+                           ndigs=[Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
                            sn=csn,
                            kind=Kinds.cbor)
         coe_event_digs.append(coeSerder.said)
@@ -4508,7 +4457,7 @@ def test_process_nontransferable():
                 c=[],  # list of config ordered mappings may be empty
                 a=[],
                 )
-    _, ked0 = coring.Saider.saidify(sad=ked0)
+    _, ked0 = Saider.saidify(sad=ked0)
 
 
     # Serialize ked0
@@ -4600,7 +4549,7 @@ def test_process_transferable():
     assert aid0.qb64 == skp0.verfer.qb64
     # update ked with pre
     ked0["i"] = aid0.qb64
-    _, ked0 = coring.Saider.saidify(sad=ked0)
+    _, ked0 = Saider.saidify(sad=ked0)
 
     # Serialize ked0
     tser0 = serdering.SerderKERI(sad=ked0)
@@ -4715,7 +4664,7 @@ def test_process_manual():
                 c=[],  # list of config traits may be empty
                 a=[],  # list of seals ordered mappings may be empty
                 )
-    _, ked0 = coring.Saider.saidify(sad=ked0)
+    _, ked0 = Saider.saidify(sad=ked0)
 
     txsrdr = serdering.SerderKERI(sad=ked0, kind=Kinds.json)
     assert txsrdr.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EKYHED-wvkYDZv4tNUF9qiC1kgnnGLS9YUU8'
@@ -4725,8 +4674,7 @@ def test_process_manual():
 
     assert txsrdr.size == 299
 
-    txdig = blake3.blake3(txsrdr.raw).digest()
-    txdigmat = coring.Saider(sad=ked0, code=MtrDex.Blake3_256)
+    txdigmat = Saider(sad=ked0, code=MtrDex.Blake3_256)
     assert txdigmat.qb64 == 'EKYHED-wvkYDZv4tNUF9qiC1kgnnGLS9YUU8PCWig_n4'
 
     assert txsrdr.said == txdigmat.qb64
@@ -4775,7 +4723,7 @@ def test_reload_kever(mockHelpingNowUTC):
     Test reload Kever from keystate state message
     """
 
-    with habbing.openHby(name="nat", base="test", salt=core.Salter(raw=b'0123456789abcdef').qb64) as natHby:
+    with habbing.openHby(name="nat", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as natHby:
         # setup Nat's habitat using default salt multisig already incepts
         natHab = natHby.makeHab(name="nat", isith='2', icount=3)
         assert natHab.name == 'nat'
@@ -4845,10 +4793,10 @@ def test_reload_kever(mockHelpingNowUTC):
 
 
 def test_load_event(mockHelpingNowUTC):
-    with habbing.openHby(name="tor", base="test", salt=core.Salter(raw=b'0123456789abcdef').qb64) as torHby, \
-         habbing.openHby(name="wil", base="test", salt=core.Salter(raw=b'0123456789abcdef').qb64) as wilHby, \
-         habbing.openHby(name="wan", base="test", salt=core.Salter(raw=b'0123456789abcdef').qb64) as wanHby, \
-         habbing.openHby(name="tee", base="test", salt=core.Salter(raw=b'0123456789abcdef').qb64) as teeHby:
+    with habbing.openHby(name="tor", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as torHby, \
+         habbing.openHby(name="wil", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as wilHby, \
+         habbing.openHby(name="wan", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as wanHby, \
+         habbing.openHby(name="tee", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as teeHby:
 
         wanKvy = Kevery(db=wanHby.db, lax=False, local=False)
         torKvy = Kevery(db=torHby.db, lax=False, local=False)
@@ -4938,7 +4886,7 @@ def test_load_event(mockHelpingNowUTC):
         counter = Counter(Codens.SealSourceCouples,
                                  count=1, version=Vrsn_1_0)
         teeIcp.extend(counter.qb64b)
-        seqner = coring.Seqner(sn=torHab.kever.sn)
+        seqner = Seqner(sn=torHab.kever.sn)
         teeIcp.extend(seqner.qb64b)
         teeIcp.extend(torHab.kever.serder.saidb)
 
