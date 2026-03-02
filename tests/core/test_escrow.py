@@ -12,7 +12,7 @@ import pytest
 from keri import Vrsn_1_0, help, MisfitEventSourceError
 
 from keri.core import (Seqner, Counter, Salter, coring, eventing, parsing,
-                       Vrsn_1_0, MtrDex, Codens)
+                       MtrDex, Codens)
 
 from keri.db import dbing, basing
 from keri.app import keeping
