@@ -2524,8 +2524,8 @@ def test_clear_escrows():
                                    coring.Diger(qb64b=b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E')))
         assert db.udes.get(keys=udesKey) is not None
 
-        saider = coring.Saider(qb64b='EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
-        db.rpes.put(keys=('route',), vals=[saider])
+        diger = coring.Diger(qb64b='EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+        db.rpes.put(keys=('route',), vals=[diger])
         assert db.rpes.cnt(keys=('route',)) == 1
 
         db.epsd.put(keys=('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc',), val=coring.Dater())
@@ -2538,16 +2538,16 @@ def test_clear_escrows():
         db.dpub.put(keys=(pre, 'said'), val=serder)
         assert db.dpub.get(keys=(pre, 'said')) is not None
 
-        db.gpwe.add(keys=(pre,), val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), saider))
+        db.gpwe.add(keys=(pre,), val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), diger))
         assert db.gpwe.cnt(keys=(pre,)) == 1
 
-        db.gdee.add(keys=(pre,), val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), saider))
+        db.gdee.add(keys=(pre,), val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), diger))
         assert db.gdee.cnt(keys=(pre,)) == 1
 
         db.dpwe.pin(keys=(pre, 'said'), val=serder)
         assert db.dpwe.get(keys=(pre, 'said')) is not None
 
-        db.gpse.add(keys=('qb64',), val=(coring.Number(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), saider))
+        db.gpse.add(keys=('qb64',), val=(coring.Number(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), diger))
         assert db.gpse.cnt(keys=('qb64',)) == 1
 
         db.epse.put(keys=('dig',), val=serder)
