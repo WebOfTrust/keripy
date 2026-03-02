@@ -928,16 +928,16 @@ def test_misfit_escrow_kevery():
 
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
-        # Delegation-like seal metadata for .udes: use sn=0 and the event's own SAID
+        # Delegation-like seal metadata for .udes: use sn=0 and the event's own digest
         delnum = coring.Number(num=0)
-        saider = coring.Saider(qb64=srdr.said)
+        diger = coring.Diger(qb64=srdr.said)
 
         # Call Kevery.escrowMFEvent directly with local=False to simulate a misfit
         kvy.escrowMFEvent(serder=srdr,
                           sigers=sigers,
                           wigers=None,
                           delnum=delnum,
-                          saider=saider,
+                          diger=diger,
                           local=False)
 
         dgkey = dbing.dgKey(srdr.preb, srdr.saidb)
@@ -963,18 +963,18 @@ def test_misfit_escrow_kevery():
         assert esr is not None
         assert not esr.local
 
-        # .udes contains the (Number, Saider) tuple written by Kevery.escrowMFEvent
+        # .udes contains the (Number, Diger) tuple written by Kevery.escrowMFEvent
         uval = db.udes.get(keys=dgkey)
         assert uval is not None
         num, src = uval
         assert isinstance(num, coring.Number)
         assert num.num == delnum.num
-        assert src.qb64 == saider.qb64
+        assert src.qb64 == diger.qb64
 
 
 def test_delegated_partial_signed_escrow_udes():
     """
-    Test delegated partial-signature escrow writes (Number, Saider) into .udes.
+    Test delegated partial-signature escrow writes (Number, Diger) into .udes.
 
     We create a delegated inception (dip) with a SealSourceCouples attachment
     referencing a local delegator event but deliberately under-sign it so that

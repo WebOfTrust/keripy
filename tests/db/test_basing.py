@@ -2660,4 +2660,3 @@ if __name__ == "__main__":
     test_dbdict()
     test_baserdoer()
     test_db_keyspace_end_to_end_migration()
-    test_big_int_round_trip_js_vs_coring_number()

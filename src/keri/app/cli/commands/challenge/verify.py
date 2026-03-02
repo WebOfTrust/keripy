@@ -10,13 +10,13 @@ import sys
 
 from hio.base import doing
 
-from keri import help
-from keri.app import indirecting, challenging, organizing, signaling
-from keri.app.cli.commands.challenge.generate import generateWords
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.help import helping
-from keri.peer import exchanging
+from ..... import help
+from .... import indirecting, challenging, organizing, signaling
+from .generate import generateWords
+from ...common import existing
+from ...common.parsing import Parsery
+from .....help import helping
+from .....peer import exchanging
 
 logger = help.ogler.getLogger()
 

@@ -9,7 +9,7 @@ import json
 from hio.base import doing
 from mnemonic import mnemonic
 
-from keri import help
+from ..... import help
 logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Generate a cryptographically random challenge phrase')

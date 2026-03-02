@@ -10,11 +10,11 @@ import sys
 
 from hio.base import doing
 
-from keri import help, kering
-from keri.app import organizing
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.kering import ConfigurationError
+from ..... import help, kering
+from .... import organizing
+from ...common import existing
+from ...common.parsing import Parsery
+from .....kering import ConfigurationError
 
 logger = help.ogler.getLogger()
 

@@ -2,16 +2,16 @@ import argparse
 
 from hio.base import doing
 
-from keri import help
-from keri.app import indirecting, habbing, grouping, forwarding
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.app.habbing import GroupHab
-from keri.app.notifying import Notifier
-from keri.core import serdering
-from keri.core.eventing import SealEvent
-from keri.peer import exchanging
-from keri.vdr import credentialing
+from ...... import help
+from ..... import indirecting, habbing, grouping, forwarding
+from ....common import existing
+from ....common.parsing import Parsery
+from .....habbing import GroupHab
+from .....notifying import Notifier
+from ......core import serdering
+from ......core.eventing import SealEvent
+from ......peer import exchanging
+from ......vdr import credentialing
 
 logger = help.ogler.getLogger()
 
