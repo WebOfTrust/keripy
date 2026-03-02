@@ -8,9 +8,9 @@ import json
 
 from hio.base import doing
 
-from keri import kering
-from keri.app.cli.common.parsing import Parsery
-from keri.help import helping
+from .... import kering
+from ..common.parsing import Parsery
+from ....help import helping
 from ..common import existing
 from ... import habbing, agenting, indirecting
 

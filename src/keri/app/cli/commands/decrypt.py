@@ -7,10 +7,10 @@ import argparse
 
 from hio.base import doing
 
-from keri import kering
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.core import indexing, coring, MtrDex
+from .... import kering
+from ..common import existing
+from ..common.parsing import Parsery
+from ....core import indexing, coring, MtrDex
 
 parser = argparse.ArgumentParser(description='Decrypt arbitrary data for AIDs with Ed25519 public keys only', 
                                  parents=[Parsery.keystore()])

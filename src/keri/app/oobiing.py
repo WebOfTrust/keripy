@@ -324,7 +324,7 @@ class Oobiery:
 
         Parameters:
             serder (SerderKERI): instance of reply msg (SAD)
-            saider (Saider): instance  from said in serder (SAD)
+            saider (Diger): instance from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
                           signature in .raw and public key in .verfer

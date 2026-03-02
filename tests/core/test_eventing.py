@@ -9,7 +9,7 @@ import blake3
 import pysodium
 import pytest
 
-from keri.kering import Vrsn_1_0, Vrsn_2_0, Ilks
+from keri.kering import Vrsn_1_0, Ilks
 from keri.app import habbing
 from keri.app.keeping import openKS, Manager
 from keri.core import (Signer, Counter, Codens, eventing, parsing,
