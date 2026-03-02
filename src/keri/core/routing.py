@@ -9,12 +9,12 @@ import re
 
 from hio.help import decking
 
-from . import eventing, coring, serdering
-from .. import help, kering
-from ..db import dbing
-from ..help import helping
+from .eventing import fetchTsgs, validateSigs
+from .coring import Ilks, Saider, Dater
+from ..kering import ValidationError, ConfigurationError, UnverifiedReplyError
+from ..help import helping, ogler
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 class Router:
@@ -69,7 +69,7 @@ class Router:
         r = ked["r"]
         route, match = self._find(route=r)
         if route is None:
-            raise kering.ValidationError(f"No resource is registered to handle route {r}")
+            raise ValidationError(f"No resource is registered to handle route {r}")
 
         fname = self.defaultResourceFunc
         if route.suffix is not None:
@@ -78,7 +78,7 @@ class Router:
         kwargs = match.groupdict()
         for name in route.fields:
             if name not in kwargs:
-                raise kering.ValidationError(f"parameter {name} not found in route {r}")
+                raise ValidationError(f"parameter {name} not found in route {r}")
 
         fn = getattr(route.resource, fname, self.processRouteNotFound)
         fn(serder=serder, saider=saider, route=r, cigars=cigars, tsgs=tsgs, **kwargs)
@@ -117,7 +117,7 @@ class Router:
 
         """
 
-        raise kering.ConfigurationError(f"Resource registered for route {route} in {coring.Ilks.rpy}"
+        raise ConfigurationError(f"Resource registered for route {route} in {Ilks.rpy}"
                                         f"does not contain the correct processReply method")
 
 
@@ -183,17 +183,12 @@ class Revery:
          Escrow process logic is route dependent and is dispatched by route,
          i.e. route is address of buffer with route specific handler of escrow.
         """
-        #for k in eventing.RPY_LABELS:
-            #if k not in serder.ked:
-                #raise kering.ValidationError(f"Missing element={k} from {coring.Ilks.rpy}"
-                                             #f" msg={serder.ked}.")
-        # fetch from serder to process
         ked = serder.ked
 
         # verify said of reply
-        saider = coring.Saider(qb64=ked["d"])
+        saider = Saider(qb64=ked["d"])
         if not saider.verify(sad=ked, prefixed=True):
-            raise kering.ValidationError(f"Invalid said = {saider.qb64} for reply "
+            raise ValidationError(f"Invalid said = {saider.qb64} for reply "
                                          f"msg={ked}.")
 
         self.rtr.dispatch(serder=serder, saider=saider, cigars=cigars, tsgs=tsgs)
@@ -254,7 +249,7 @@ class Revery:
 
         # Is new later than old if old?
         # get date-time raises error if empty or invalid format
-        dater = coring.Dater(dts=serder.ked["dt"])
+        dater = Dater(dts=serder.ked["dt"])
         odater = None
         if osaider:
             odater = self.db.sdts.get(keys=osaider.qb64b)
@@ -316,7 +311,7 @@ class Revery:
                 continue  # skip invalid signature is not from aid
 
             if osaider:  # check if later logic  sn > or sn == and dt >
-                if otsgs := eventing.fetchTsgs(db=self.db.ssgs, saider=osaider):
+                if otsgs := fetchTsgs(db=self.db.ssgs, saider=osaider):
                     _, osqr, _, _ = otsgs[0]  # zeroth should be authoritative
 
                     if seqner.sn < osqr.sn:  # sn earlier
@@ -351,11 +346,11 @@ class Revery:
             sserder = self.db.evts.get(keys=(spre, bytes(sdig)))
             # assumes db ensures that sserder must not be none because sdig was in KE
             if sserder.said != ssaider.qb64:  # signer's dig not match est evt
-                raise kering.ValidationError(f"Bad trans indexed sig group at sn = "
+                raise ValidationError(f"Bad trans indexed sig group at sn = "
                                              f"{seqner.sn} for reply = {serder.ked}.")
             # verify sigs
             if not (sverfers := sserder.verfers):
-                raise kering.ValidationError(f"Invalid reply from signer={spre}, no "
+                raise ValidationError(f"Invalid reply from signer={spre}, no "
                                              f"keys at signer's est. event sn={seqner.sn}.")
 
             # fetch any escrowed sigs, extract just the siger from each quad
@@ -363,7 +358,7 @@ class Revery:
             quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", ssaider.qb64)
             esigers = self.db.ssgs.get(keys=quadkeys)
             sigers.extend(esigers)
-            sigers, valid = eventing.validateSigs(serder=serder,
+            sigers, valid = validateSigs(serder=serder,
                                                   sigers=sigers,
                                                   verfers=sverfers,
                                                   tholder=sserder.tholder)
@@ -377,7 +372,7 @@ class Revery:
                 self.removeReply(saider=osaider)  # remove obsoleted reply artifacts
                 # remove stale signatures .ssgs for this saider
                 # this ensures that zeroth tsg is authoritative
-                for prr, snr, dgr, _ in eventing.fetchTsgs(db=self.db.ssgs, saider=saider, snh=seqner.snh):
+                for prr, snr, dgr, _ in fetchTsgs(db=self.db.ssgs, saider=saider, snh=seqner.snh):
                     if ((snr.sn < seqner.sn) or
                             (snr.sn == seqner.sn and dgr.qb64 != ssaider.qb64)):
                         self.db.ssgs.trim(keys=(prr.qb64, f"{snr.sn:032h}", dgr.qb64, ""))
@@ -470,7 +465,7 @@ class Revery:
         """
         for (route,), saider in self.db.rpes.getItemIter():
             try:
-                tsgs = eventing.fetchTsgs(db=self.db.ssgs, saider=saider)
+                tsgs = fetchTsgs(db=self.db.ssgs, saider=saider)
 
                 keys = (saider.qb64,)
                 dater = self.db.sdts.get(keys=keys)
@@ -487,11 +482,11 @@ class Revery:
                         logger.info("Revery unescrow error: Stale reply escrow "
                                     " at route = %s", route)
 
-                        raise kering.ValidationError(f"Stale reply escrow at route = {route}.")
+                        raise ValidationError(f"Stale reply escrow at route = {route}.")
 
                     self.processReply(serder=serder, tsgs=tsgs)
 
-                except kering.UnverifiedReplyError as ex:
+                except UnverifiedReplyError as ex:
                     # still waiting on missing prior event to validate
                     if logger.isEnabledFor(logging.TRACE):
                         logger.trace("Revery unescrow attempt failed: %s\n", ex.args[0])

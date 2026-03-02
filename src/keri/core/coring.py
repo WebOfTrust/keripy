@@ -3,10 +3,8 @@
 keri.core.coring module
 
 """
-import re
 import json
-from typing import Union
-from collections import namedtuple, deque
+from collections import namedtuple
 from collections.abc import Sequence, Mapping
 from dataclasses import dataclass, astuple, asdict
 from base64 import urlsafe_b64encode as encodeB64
@@ -21,37 +19,25 @@ import hashlib
 
 from cryptography import exceptions
 from cryptography.hazmat.primitives import hashes
-from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 
 from ..kering import MaxON
 
 from ..kering import (EmptyMaterialError, RawMaterialError, SoftMaterialError,
-                      InvalidCodeError, InvalidSoftError,
-                      InvalidSizeError,
-                      InvalidCodeSizeError, InvalidVarIndexError,
-                      InvalidVarSizeError, InvalidVarRawSizeError,
-                      ConversionError, InvalidValueError, InvalidTypeError,
-                      ValidationError, VersionError, DerivationError,
-                      EmptyListError,
-                      ShortageError, UnexpectedCodeError, DeserializeError,
-                      UnexpectedCountCodeError, UnexpectedOpCodeError)
-from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0,
+                      InvalidCodeError, InvalidSoftError, InvalidCodeSizeError,
+                      InvalidVarRawSizeError, ConversionError, InvalidValueError,
+                      ValidationError, VersionError, ShortageError,
+                      UnexpectedCodeError, DeserializeError,
+                      UnexpectedCountCodeError, UnexpectedOpCodeError,
+                      Versionage, Version, Vrsn_1_0, Vrsn_2_0,
                       VERRAWSIZE1, VERFMT1, MAXVERFULLSPAN,
-                      versify, deversify, Rever, smell)
-from ..kering import (Kinds, Kindage, Protocols, Protocolage, Ilkage, Ilks,
-                      TraitDex, )
+                      versify, deversify, Rever, smell,
+                      Kinds, Protocols,Ilks, TraitDex)
 
-from ..help import helping
 from ..help.helping import (sceil, isNonStringIterable, isNonStringSequence,
-                            NonStringIterable, NonStringSequence)
-from ..help.helping import (intToB64, intToB64b, b64ToInt, B64_CHARS,
-                            codeB64ToB2, codeB2ToB64, Reb64, nabSextets, Reatt,
-                            Repath)
-
-
-
-
+                            intToB64, b64ToInt, codeB64ToB2, nabSextets,
+                            codeB2ToB64, Reb64, Reatt, Repath,
+                            nowIso8601, fromIso8601)
 
 DSS_SIG_MODE = "fips-186-3"
 ECDSA_256r1_SEEDBYTES = 32
@@ -119,8 +105,6 @@ def sizeify(ked, kind=None, version=Version):
     ked["v"] = vs  # update ked
 
     return raw, proto, kind, ked, vrsn
-
-
 
 
 def dumps(ked, kind=Kinds.json):
@@ -251,9 +235,6 @@ class IceMapDom:
             raise IndexError(ex.args) from ex
 
 
-
-
-
 @dataclass(frozen=True)
 class MatterCodex:
     """
@@ -379,8 +360,6 @@ class MatterCodex:
 MtrDex = MatterCodex()  # Make instance
 
 
-
-
 @dataclass(frozen=True)
 class SmallVarRawSizeCodex:
     """
@@ -421,7 +400,6 @@ class LargeVarRawSizeCodex:
 LargeVrzDex = LargeVarRawSizeCodex()  # Make instance
 
 
-
 @dataclass(frozen=True)
 class BextCodex:
     """
@@ -440,7 +418,6 @@ class BextCodex:
         return iter(astuple(self))
 
 BexDex = BextCodex()  # Make instance
-
 
 
 @dataclass(frozen=True)
@@ -507,7 +484,6 @@ class DigCodex:
         return iter(astuple(self))
 
 DigDex = DigCodex()  # Make instance
-
 
 
 @dataclass(frozen=True)
@@ -1707,7 +1683,6 @@ class Seqner(Matter):
         return f"{self.sn:x}"  # "{:x}".format(self.sn)
 
 
-
 class Number(Matter):
     """
     Number is subclass of Matter, cryptographic material, for ordinal counting
@@ -2105,9 +2080,6 @@ class Decimer(Matter):
             return float(dns)
 
 
-
-
-
 class Dater(Matter):
     """
     Dater is subclass of Matter, cryptographic material, for RFC-3339 profile of
@@ -2199,7 +2171,7 @@ class Dater(Matter):
         """
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
             if dts is None:  # defaults to now
-                dts = helping.nowIso8601()
+                dts = nowIso8601()
 
             if hasattr(dts, "decode"):
                 dts = dts.decode("utf-8")
@@ -2233,7 +2205,7 @@ class Dater(Matter):
         Property datetime:
         Returns datetime.datetime instance converted from .dts
         """
-        return helping.fromIso8601(self.dts)
+        return fromIso8601(self.dts)
 
 
 class Tagger(Matter):
@@ -2567,8 +2539,6 @@ class Traitor(Tagger):
 
         """
         return self.tag
-
-
 
 
 # Versage namedtuple
@@ -3437,7 +3407,6 @@ class Labeler(Matter):
         return self.raw.decode()  # everything else is just raw as str
 
 
-
 class Verfer(Matter):
     """Verfer is Matter subclass with method to verify signature of serialization
     using the .raw as verifier key and .code for signature cipher suite.
@@ -3613,7 +3582,6 @@ class Cigar(Matter):
         self._verfer = verfer
 
 
-
 class Diger(Matter):
     """
     Diger is Matter subclass with method to verify digest of serialization
@@ -3753,7 +3721,6 @@ class Diger(Matter):
         return (False)
 
 
-
 class Prefixer(Matter):
     """
     Prefixer is Matter subclass for autonomic identifier AID prefix
@@ -3779,7 +3746,6 @@ class Prefixer(Matter):
         super(Prefixer, self).__init__(**kwa)
         if self.code not in PreDex:
             raise InvalidCodeError(f"Invalid prefixer code = {self.code}.")
-
 
 
 class Noncer(Diger):
@@ -4977,4 +4943,3 @@ class Dicter:
         preseed = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
         seedqb64 = Matter(raw=preseed, code=MtrDex.Salt_128).qb64
         return seedqb64
-

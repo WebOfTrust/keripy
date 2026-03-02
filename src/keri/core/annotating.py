@@ -4,27 +4,13 @@ keri.core.annotating module
 
 Provides support for Annotater
 """
-
-
-from typing import NamedTuple
 from collections import namedtuple
 
-from .. import kering
-from ..kering import sniff, Colds, Ilks
-
-from ..help.helping import intToB64
-
-
-
-from .. import help
-
-from . import coring
-from .coring import (Matter, Verser, Ilker, Diger, Prefixer, Number, Tholder,
+from ..kering import (sniff, Colds, Ilks, IlkError,
+                      ExtractionError, ColdStartError)
+from .coring import (Verser, Ilker, Diger, Prefixer, Number, Tholder,
                      Verfer, Traitor)
-
-from . import counting
 from .counting import Counter
-
 from .structing import Sealer
 from .serdering import Serder
 
@@ -250,7 +236,7 @@ def annot(ims):
 
 
             else:
-                raise kering.IlkError(f"Unexpected message type={ilk}")
+                raise IlkError(f"Unexpected message type={ilk}")
 
             if ilk in (Ilks.icp, Ilks.ixn, Ilks.rot, Ilks.dip, Ilks.drt):
                 # Seal (anchor) List
@@ -286,13 +272,13 @@ def annot(ims):
                            f"{val.name} \n".encode())
 
             if ims:
-                raise kering.ExtractionError(f"Unexpected remaining bytes in stream.")
+                raise ExtractionError(f"Unexpected remaining bytes in stream.")
 
         elif cold in Colds.bny:
             pass
 
         else:
-            raise kering.ColdStartError("Expecting stream tritet={}"
+            raise ColdStartError("Expecting stream tritet={}"
                                         "".format(cold))
 
     return oms.decode()  # return unicode string
@@ -316,6 +302,3 @@ def denot(ams):
             dms.extend(front.encode())
 
     return bytes(dms)
-
-
-
