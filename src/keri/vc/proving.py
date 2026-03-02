@@ -9,7 +9,7 @@ from typing import Optional, Union
 from .. import core
 from .. import help
 from ..core import coring, serdering
-from ..core.coring import (Kinds, versify)
+from ..core.coring import (Kinds, versify, Saider, Saids, Protocols)
 from ..help import helping
 from ..kering import Version
 
@@ -51,7 +51,7 @@ def credential(schema:str,
         serdering.SerderACDC: credential instance
 
     """
-    vs = versify(proto=coring.Protocols.acdc, pvrsn=version, kind=kind, size=0)
+    vs = versify(proto=Protocols.acdc, pvrsn=version, kind=kind, size=0)
 
     vc = dict(
         v=vs,
@@ -91,12 +91,7 @@ def credential(schema:str,
     if rules is not None:
         vc["r"] = rules
 
-    _, sad = coring.Saider.saidify(sad=subject, kind=kind, label=coring.Saids.d)
+    _, sad = Saider.saidify(sad=subject, kind=kind, label=Saids.d)
     vc["a"] = sad
 
-    #_, vc = coring.Saider.saidify(sad=vc)
-
     return serdering.SerderACDC(sad=vc, makify=True)
-
-
-

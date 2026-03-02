@@ -5,20 +5,13 @@ keri.demo.demoing module
 
 Utilities for demos
 """
-import os
 import argparse
 import logging
 
-from keri import __version__
+from .. import __version__, help, core
 
-from keri import help
-
-from keri import core
-
-from keri.app import directing
-from keri.demo import demoing
-
-
+from ..app import directing
+from ..demo import demoing
 
 
 def runDemo(name="bob", remote=5621, local=5620, expire=0.0):

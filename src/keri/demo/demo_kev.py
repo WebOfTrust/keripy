@@ -10,7 +10,7 @@ import logging
 
 from hio.base import doing
 
-from keri import help
+from .. import help
 from ..app import apping
 
 logger = help.ogler.getLogger()

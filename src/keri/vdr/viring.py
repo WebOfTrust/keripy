@@ -18,8 +18,6 @@ from ..app import signing
 from ..core import coring, serdering, indexing, counting
 from ..db import dbing, basing
 from ..db.dbing import snKey
-from ..help import helping
-from ..vc import proving
 from ..vdr import eventing
 
 
