@@ -2,6 +2,31 @@
 
 __version__ = '2.0.0-dev5'  # also change in setup.py
 
-
-from .kering import (Vrsn_1_0, Vrsn_2_0, Kinds, Protocols, Colds, Ilks, sniff,
-                     TraitDex)
+from .kering import (Vrsn_1_0, Vrsn_2_0, Kinds, Protocols, Colds, Ilks, TraitDex,
+                     Roles, TraitDex, sniff, rematch, versify, deversify, smell,
+                     KeriError, ClosedError, ConfigurationError, AuthError, AuthNError,
+                     AuthZError, DecryptError, DatabaseError, MissingEntryError,
+                     MaterialError, RawMaterialError, SoftMaterialError,
+                     EmptyMaterialError, InvalidVersionError, InvalidCodeError,
+                     InvalidSoftError, InvalidTypeError, InvalidValueError,
+                     InvalidSizeError, InvalidCodeSizeError, InvalidVarIndexError,
+                     InvalidVarRawSizeError, InvalidVarSizeError, SerializeError,
+                     ValidationError, MissingFieldError, ExtraFieldError,
+                     AlternateFieldError, MissingSignatureError, MissingDestinationError,
+                     MissingWitnessSignatureError, MissingDelegationError, OutOfOrderError,
+                     LikelyDuplicitousError, UnverifiedWitnessReceiptError,
+                     UnverifiedReceiptError, UnverifiedTransferableReceiptError,
+                     DerivationError, UnverifiedReplyError, EmptyListError,
+                     MissingAnchorError, MissingRegistryError, MissingIssuerError,
+                     InvalidCredentialStateError, UnverifiedProofError,
+                     OutOfOrderKeyStateError, OutOfOrderTxnStateError,
+                     MisfitEventSourceError, MissingDelegableApprovalError,
+                     ExtractionError, ShortageError, ColdStartError, ElementError,
+                     SizedGroupError, TopLevelStreamError, VersionError,
+                     ProtocolError, KindError, IlkError, ConversionError,
+                     DeserializeError, FieldError, QueryNotFoundError,
+                     DerivationCodeError, UnexpectedCodeError, UnexpectedCountCodeError,
+                     UnexpectedOpCodeError, ExchangeError, InvalidEventTypeError,
+                     MissingAidError, InvalidGroupError, GroupFormationError,
+                     MissingChainError, RevokedChainError, MissingSchemaError,
+                     FailedSchemaValidationError, UntrustedKeyStateSource)
