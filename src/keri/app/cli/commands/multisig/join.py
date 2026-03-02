@@ -241,8 +241,8 @@ class JoinDoer(doing.DoDoer):
 
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=0)
-            saider = coring.Saider(qb64=prefixer.qb64)
-            yield from self.startCounselor(ghab, prefixer, seqner, saider)
+            diger = coring.Diger(qb64=prefixer.qb64)
+            yield from self.startCounselor(ghab, prefixer, seqner, diger)
 
             print()
             displaying.printIdentifier(self.hby, ghab.pre)
@@ -318,12 +318,12 @@ class JoinDoer(doing.DoDoer):
 
             return True
 
-    def startCounselor(self, hab, prefixer, seqner, saider):
-        self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
+    def startCounselor(self, hab, prefixer, seqner, diger):
+        self.counselor.start(prefixer=prefixer, seqner=seqner, diger=diger, ghab=hab)
 
         while True:
-            saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
-            if saider is not None:
+            diger = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
+            if diger is not None:
                 break
 
             yield self.tock

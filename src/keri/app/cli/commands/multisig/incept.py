@@ -156,8 +156,8 @@ class GroupMultisigIncept(doing.DoDoer):
             logger.info(f"Group identifier inception initialized for {ghab.pre}")
             prefixer = coring.Prefixer(qb64=ghab.pre)
             seqner = coring.Seqner(sn=0)
-            saider = coring.Saider(qb64=prefixer.qb64)
-            self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
+            diger = coring.Diger(qb64=prefixer.qb64)
+            self.counselor.start(prefixer=prefixer, seqner=seqner, diger=diger,
                                  ghab=ghab)
 
         else:
@@ -165,8 +165,8 @@ class GroupMultisigIncept(doing.DoDoer):
             seqner = coring.Seqner(sn=0)
 
         while True:
-            saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
-            if saider is not None:
+            diger = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
+            if diger is not None:
                 break
 
             yield self.tock

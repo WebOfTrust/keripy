@@ -52,7 +52,7 @@ class Counselor(doing.DoDoer):
 
         super(Counselor, self).__init__(doers=doers, **kwa)
 
-    def start(self, ghab, prefixer, seqner, saider):
+    def start(self, ghab, prefixer, seqner, diger):
         """ Begin processing of escrowed group multisig identifier
 
         Escrow identifier for multisigs, witness receipts and delegation anchor
@@ -62,31 +62,31 @@ class Counselor(doing.DoDoer):
             ghab (Hab): group Habitat
             prefixer (Prefixer): prefixer of group identifier
             seqner (Seqner): seqner of event of group identifier
-            saider (Saider): saider of event of group identifier
+            diger (Diger): diger of event of group identifier
 
         """
         evt = ghab.makeOwnEvent(sn=seqner.sn, allowPartiallySigned=True)  # used just for the log message
         serder = serdering.SerderKERI(raw=evt)                            # used just for the log message
         logger.info("Waiting for other signatures on %s for %s:%s...", serder.ilk, prefixer.qb64, seqner.sn)
-        return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, saider))
+        return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, diger))
 
-    def complete(self, prefixer, seqner, saider=None):
+    def complete(self, prefixer, seqner, diger=None):
         """ Check for completed multsig protocol for the specific event
 
         Parameters:
             prefixer (Prefixer): qb64 identifier prefix of event to check
             seqner (Seqner): sequence number of event to check
-            saider (Saider): optional digest of event to verify
+            diger (Diger): optional digest of event to verify
 
         Returns:
 
         """
-        csaider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
-        if not csaider:
+        cdiger = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
+        if not cdiger:
             return False
         else:
-            if saider and (csaider.qb64 != saider.qb64):
-                raise kering.ValidationError(f"invalid multisig protocol escrowed event {csaider.qb64}-{saider.qb64}")
+            if diger and (cdiger.qb64 != diger.qb64):
+                raise kering.ValidationError(f"invalid multisig protocol escrowed event {cdiger.qb64}-{diger.qb64}")
 
         return True
 
@@ -129,7 +129,7 @@ class Counselor(doing.DoDoer):
         then this escrow waits for signatures from all other participants
 
         """
-        for (pre,), (seqner, saider) in self.hby.db.gpse.getItemIter():  # group partially signed escrow
+        for (pre,), (seqner, diger) in self.hby.db.gpse.getItemIter():  # group partially signed escrow
             sdig = self.hby.db.kels.getOnLast(keys=pre, on=seqner.sn)
             if sdig:
                 sdig = sdig.encode("utf-8")
@@ -152,14 +152,14 @@ class Counselor(doing.DoDoer):
                         logger.info("AID %s...%s: We are the witnesser, sending %s to delegator", pre[:4], pre[-4:], pre)
                         self.swain.delegation(pre=pre, sn=seqner.sn)
                     else:
-                        anchor = dict(i=pre, s=seqner.snh, d=saider.qb64)
+                        anchor = dict(i=pre, s=seqner.snh, d=diger.qb64)
                         if self.proxy:
                             self.witq.query(hab=self.proxy, pre=kever.delpre, anchor=anchor)
                         else:
                             self.witq.query(src=ghab.mhab.pre, pre=kever.delpre, anchor=anchor)
 
                     logger.info("AID %s...%s: Waiting for delegation approval...", pre[:4], pre[-4:])
-                    self.hby.db.gdee.add(keys=(pre,), val=(seqner, saider))
+                    self.hby.db.gdee.add(keys=(pre,), val=(seqner, diger))
                 else:  # Non-delegation, move on to witnessing
                     if witered:  # We are elected witnesser, send off event to witnesses
                         logger.info(
@@ -170,7 +170,7 @@ class Counselor(doing.DoDoer):
                     # Move to escrow waiting for witness receipts
                     logger.info("AID %s...%s: Waiting for fully signed witness receipts for %s",
                                 pre[:4], pre[-4:], seqner.sn)
-                    self.hby.db.gpwe.add(keys=(pre,), val=(seqner, saider))
+                    self.hby.db.gpwe.add(keys=(pre,), val=(seqner, diger))
 
     def processDelegateEscrow(self):
         """
@@ -178,8 +178,8 @@ class Counselor(doing.DoDoer):
         waiting for delegator approval of a recent establishment event.
 
         """
-        for (pre,), (seqner, saider) in self.hby.db.gdee.getItemIter():  # group delegatee escrow
-            anchor = dict(i=pre, s=seqner.snh, d=saider.qb64)
+        for (pre,), (seqner, diger) in self.hby.db.gdee.getItemIter():  # group delegatee escrow
+            anchor = dict(i=pre, s=seqner.snh, d=diger.qb64)
             ghab = self.hby.habs[pre]
             kever = ghab.kevers[pre]
 
@@ -191,14 +191,14 @@ class Counselor(doing.DoDoer):
                     self.hby.db.gdee.rem(keys=(pre,))
                     logger.info("AID %s...%s: Delegation approval for %s received.", pre[:4], pre[-4:], pre)
 
-                    self.hby.db.cgms.put(keys=(pre, seqner.qb64), val=saider)
+                    self.hby.db.cgms.put(keys=(pre, seqner.qb64), val=diger)
 
             else:  # Not witnesser, we need to look for the anchor and then wait for receipts
                 if serder := self.hby.db.fetchLastSealingEventByEventSeal(kever.delpre,
                                                                           seal=anchor):
                     sner = coring.Number(num=serder.sn, code=coring.NumDex.Huge)
                     adiger = coring.Diger(qb64b=serder.saidb)
-                    self.hby.db.aess.pin(keys=(pre, saider.qb64b),
+                    self.hby.db.aess.pin(keys=(pre, diger.qb64b),
                                          val=(sner, adiger))  # authorizer event seal (delegator/issuer)
                     self.hby.db.gdee.rem(keys=(pre,))
                     logger.info("AID %s...%s: Delegation approval for %s received.", pre[:4], pre[-4:], pre)
@@ -206,7 +206,7 @@ class Counselor(doing.DoDoer):
                     # Move to escrow waiting for witness receipts
                     logger.info("AID %s...%s: Waiting for witness receipts for %s", pre[:4], pre[-4:], pre)
                     self.hby.db.gdee.rem(keys=(pre,))
-                    self.hby.db.gpwe.add(keys=(pre,), val=(seqner, saider))
+                    self.hby.db.gpwe.add(keys=(pre,), val=(seqner, diger))
 
     def processPartialWitnessEscrow(self):
         """
@@ -215,11 +215,11 @@ class Counselor(doing.DoDoer):
         that the event is complete.
 
         """
-        for (pre,), (seqner, saider) in self.hby.db.gpwe.getItemIter():  # group partial witness escrow
+        for (pre,), (seqner, diger) in self.hby.db.gpwe.getItemIter():  # group partial witness escrow
             kever = self.hby.kevers[pre]
 
             # Load all the witness receipts we have so far
-            wigers = self.hby.db.wigs.get(keys=(pre, saider.qb64))
+            wigers = self.hby.db.wigs.get(keys=(pre, diger.qb64))
             ghab = self.hby.habs[pre]
             keys = [verfer.qb64 for verfer in kever.verfers]
             witer = ghab.mhab.kever.verfers[0].qb64 == keys[0]
@@ -233,7 +233,7 @@ class Counselor(doing.DoDoer):
                         continue
                 logger.info("AID %s...%s: Witness receipts complete, %s confirmed.", pre[:4], pre[-4:], pre)
                 self.hby.db.gpwe.rem(keys=(pre,))
-                self.hby.db.cgms.put(keys=(pre, seqner.qb64), val=saider)
+                self.hby.db.cgms.put(keys=(pre, seqner.qb64), val=diger)
             elif not witer:
                 self.witDoer.gets.append(dict(pre=pre, sn=seqner.sn))
 
@@ -656,7 +656,7 @@ class Multiplexor:
 
                 self.notifier.add(attrs=data)
 
-        self.hby.db.meids.add(keys=(esaid,), val=coring.Saider(qb64=serder.said))
+        self.hby.db.meids.add(keys=(esaid,), val=coring.Diger(qb64=serder.said))
         self.hby.db.maids.add(keys=(esaid,), val=coring.Prefixer(qb64=serder.pre))
 
         submitters = self.hby.db.maids.get(keys=(esaid,))
@@ -696,11 +696,11 @@ class Multiplexor:
                 self.notifier.add(attrs=data)
 
     def get(self, esaid):
-        saiders = self.hby.db.meids.get(keys=(esaid,))
+        digers = self.hby.db.meids.get(keys=(esaid,))
 
         exns = []
-        for saider in saiders:
-            exn, paths = exchanging.cloneMessage(hby=self.hby, said=saider.qb64)
+        for diger in digers:
+            exn, paths = exchanging.cloneMessage(hby=self.hby, said=diger.qb64)
             exns.append(dict(
                 exn=exn.ked,
                 paths={k: path.decode("utf-8") for k, path in paths.items()},
