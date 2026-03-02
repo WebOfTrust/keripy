@@ -179,7 +179,7 @@ class Counselor(doing.DoDoer):
 
         """
         for (pre,), (number, diger) in self.hby.db.gdee.getItemIter():  # group delegatee escrow
-            anchor = dict(i=pre, s=number.sn, d=diger.qb64)
+            anchor = dict(i=pre, s=number.numh, d=diger.qb64)
             ghab = self.hby.habs[pre]
             kever = ghab.kevers[pre]
 
