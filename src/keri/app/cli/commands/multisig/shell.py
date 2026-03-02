@@ -5,10 +5,10 @@ import json
 import os
 
 from hio.base import doing
-from keri.app import organizing, apping
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.core import coring
+from .....app import organizing
+from ...common import existing
+from ...common.parsing import Parsery
+from .....core import coring
 
 parser = argparse.ArgumentParser(description='Initialize a prefix', 
                                  parents=[Parsery.keystore()])

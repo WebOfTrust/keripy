@@ -10,12 +10,12 @@ import time
 
 from hio.base import doing
 from hio.help import decking
-from keri import help
-from keri.app import agenting, indirecting, habbing, forwarding
-from keri.app.cli.common import existing, terming
-from keri.app.cli.common.parsing import Parsery
-from keri.app.habbing import GroupHab
-from keri.app.watching import States, diffState
+from ..... import help
+from .... import agenting, indirecting, habbing, forwarding
+from ...common import existing, terming
+from ...common.parsing import Parsery
+from ....habbing import GroupHab
+from ....watching import States, diffState
 
 logger = help.ogler.getLogger()
 

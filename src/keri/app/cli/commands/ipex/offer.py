@@ -7,7 +7,7 @@ import argparse
 
 from hio.base import doing
 
-from keri.core import signing
+from .....core import signing
 
 parser = argparse.ArgumentParser(description='Reply to IPEX apply message or initiate an IPEX exchange with an offer'
                                              ' for a credential with certain characteristics')

@@ -7,15 +7,15 @@ import argparse
 
 from hio.base import doing
 
-from keri.kering import Vrsn_1_0, Vrsn_2_0
-from keri.app import forwarding, organizing, habbing, grouping, indirecting, signing
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.app.notifying import Notifier
-from keri.core import coring, parsing, serdering
-from keri.peer import exchanging
-from keri.vc import protocoling
-from keri.vdr import credentialing
+from .....kering import Vrsn_1_0, Vrsn_2_0
+from .... import forwarding, organizing, habbing, grouping, indirecting, signing
+from ...common import existing
+from ...common.parsing import Parsery
+from ....notifying import Notifier
+from .....core import coring, parsing, serdering
+from .....peer import exchanging
+from .....vc import protocoling
+from .....vdr import credentialing
 
 parser = argparse.ArgumentParser(description='Reply to IPEX agree message or initiate an IPEX exchange with a '
                                              'credential issuance or presentation',

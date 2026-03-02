@@ -11,14 +11,14 @@ from ordered_set import OrderedSet as oset
 from hio.base import doing
 from prettytable import PrettyTable
 
-from keri import help, kering
-from keri.kering import Vrsn_1_0, Vrsn_2_0
-from keri.app import habbing, indirecting, agenting, notifying, grouping, organizing, forwarding
-from keri.app.cli.common import existing, displaying
-from keri.app.cli.common.parsing import Parsery
-from keri.core import coring, eventing, scheming, parsing, routing, serdering
-from keri.peer import exchanging
-from keri.vdr import verifying, credentialing
+from ..... import help, kering
+from .....kering import Vrsn_1_0, Vrsn_2_0
+from .... import habbing, indirecting, agenting, notifying, grouping, organizing, forwarding
+from ...common import existing, displaying
+from ...common.parsing import Parsery
+from .....core import coring, eventing, scheming, parsing, routing, serdering
+from .....peer import exchanging
+from .....vdr import verifying, credentialing
 
 logger = help.ogler.getLogger()
 

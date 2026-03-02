@@ -13,16 +13,16 @@ import sys
 
 from hio.base import doing
 
-from keri import help, kering
-from keri.app import indirecting, notifying, organizing
-from keri.app.cli.common import existing, terming
-from keri.app.cli.common.parsing import Parsery
-from keri.core import scheming
-from keri.help import helping
-from keri.peer import exchanging
-from keri.vc import protocoling
-from keri.vc.protocoling import Ipex
-from keri.vdr import credentialing, verifying
+from ..... import help, kering
+from .... import indirecting, notifying, organizing
+from ...common import existing, terming
+from ...common.parsing import Parsery
+from .....core import scheming
+from .....help import helping
+from .....peer import exchanging
+from .....vc import protocoling
+from .....vc.protocoling import Ipex
+from .....vdr import credentialing, verifying
 
 logger = help.ogler.getLogger()
 
