@@ -11,5 +11,6 @@ from .credentialing import (Regery, RegeryDoer, BaseRegistry,
                             Credentialer, sendCredential, sendArtifacts,
                             sendRegistry)
 from .eventing import Tever, Tevery
-from .verifying import (Reger, rbdict, openReger,
+from .verifying import Verifier
+from .viring import (Reger, rbdict, openReger,
                         buildProof, messagize)
