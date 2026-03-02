@@ -799,7 +799,112 @@ def test_delegables_escrow():
         assert gateHab.pre in torKvy.kevers
 
 
+def test_fetch_delegating_event():
+    """
+    Test Kever.fetchDelegatingEvent: fetch delegating event from .aess or via eager KEL walk.
+    """
+    bobSalt = core.Salter(raw=b'0123456789abcdef').qb64
+    delSalt = core.Salter(raw=b'abcdef0123456789').qb64
+
+    with (basing.openDB(name="bob") as bobDB,
+          keeping.openKS(name="bob") as bobKS,
+          basing.openDB(name="del") as delDB,
+          keeping.openKS(name="del") as delKS):
+
+        bobMgr = keeping.Manager(ks=bobKS, salt=bobSalt)
+        delMgr = keeping.Manager(ks=delKS, salt=delSalt)
+
+        bobKvy = eventing.Kevery(db=bobDB)
+        delKvy = eventing.Kevery(db=delDB)
+
+        # Bob inception
+        verfers, digers = bobMgr.incept(stem='bob', temp=True)
+        bobSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+                                  ndigs=[diger.qb64 for diger in digers],
+                                  code=coring.MtrDex.Blake3_256)
+        bob = bobSrdr.ked["i"]
+        bobMgr.move(old=verfers[0].qb64, new=bob)
+        sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=verfers)
+        msg = bytearray(bobSrdr.raw)
+        msg.extend(core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                                version=kering.Vrsn_1_0).qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=delKvy)
+        bobK = bobKvy.kevers[bob]
+
+        # Del delegated inception: first create delegating ixn on Bob
+        verfers, digers = delMgr.incept(stem='del', temp=True)
+        delSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
+                                   delpre=bobK.prefixer.qb64,
+                                   ndigs=[diger.qb64 for diger in digers])
+        delPre = delSrdr.ked["i"]
+        delMgr.move(old=verfers[0].qb64, new=delPre)
+
+        seal = eventing.SealEvent(i=delPre, s=delSrdr.ked["s"], d=delSrdr.said)
+        bobIxnSrdr = eventing.interact(pre=bobK.prefixer.qb64,
+                                      dig=bobK.serder.said,
+                                      sn=bobK.sn + 1,
+                                      data=[seal._asdict()])
+        sigers = bobMgr.sign(ser=bobIxnSrdr.raw, verfers=bobK.verfers)
+        msg = bytearray(bobIxnSrdr.raw)
+        msg.extend(core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                                version=kering.Vrsn_1_0).qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=delKvy)
+
+        # Del's dip with seal source couple
+        sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
+        msg = bytearray(delSrdr.raw)
+        msg.extend(core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                                version=kering.Vrsn_1_0).qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+        msg.extend(core.Counter(core.Codens.SealSourceCouples, count=1,
+                                version=kering.Vrsn_1_0).qb64b)
+        seqner = coring.Seqner(sn=bobK.sn)
+        msg.extend(seqner.qb64b)
+        msg.extend(bobIxnSrdr.saidb)
+
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=delKvy)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
+
+        assert delPre in delKvy.kevers
+        delK = delKvy.kevers[delPre]
+        assert delKvy.db.aess.get(keys=(delPre, delSrdr.said)) is not None
+
+        # 1) Fetch via .aess (eager=False): should return delegating event
+        dserder = delK.fetchDelegatingEvent(bob, delSrdr, original=True, eager=False)
+        assert dserder is not None
+        assert dserder.said == bobIxnSrdr.said
+        assert dserder.ked["t"] == "ixn"
+
+        # 2) Eager path with repair: remove .aess, then fetch with eager=True
+        delKvy.db.aess.rem(keys=(delPre, delSrdr.said))
+        assert delKvy.db.aess.get(keys=(delPre, delSrdr.said)) is None
+
+        dserder2 = delK.fetchDelegatingEvent(bob, delSrdr, original=True, eager=True)
+        assert dserder2 is not None
+        assert dserder2.said == bobIxnSrdr.said
+        # Repair should have repopulated .aess
+        couple = delKvy.db.aess.get(keys=(delPre, delSrdr.said))
+        assert couple is not None
+        sner, diger = couple
+        assert diger.qb64 == bobIxnSrdr.said
+
+        # 3) Not found when missing and non-eager: returns None
+        delKvy.db.aess.rem(keys=(delPre, delSrdr.said))
+        dserder3 = delK.fetchDelegatingEvent(bob, delSrdr, original=True, eager=False)
+        assert dserder3 is None
+
+    """End Test"""
+
+
 if __name__ == "__main__":
     test_delegation()
+    test_fetch_delegating_event()
     test_delegation_supersede()
 

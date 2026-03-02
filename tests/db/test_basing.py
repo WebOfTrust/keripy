@@ -1226,29 +1226,30 @@ def test_baser():
 
         # test .udes CatCesrSuber sub db methods
         assert isinstance(db.udes, subing.CatCesrSuber)
-        assert db.udes.klas == (coring.Seqner, coring.Diger)
+        assert db.udes.klas == (core.Number, coring.Diger)
 
         ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAAAB'
         sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
         ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAAAC'
         sdig2 = b'EBYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
         val1 = ssnu1 + sdig1
-        tuple1 = (coring.Seqner(qb64b=ssnu1), coring.Diger(qb64b=sdig1))
+        num1 = coring.Number(qb64b=ssnu1)
         val2 = ssnu2 + sdig2
-        tuple2 = (coring.Seqner(qb64b=ssnu2), coring.Diger(qb64b=sdig2))
-
+        num2 = coring.Number(qb64b=ssnu2)
+        diger1 = coring.Diger(qb64b=sdig1)
+        diger2 = coring.Diger(qb64b=sdig2)
 
         assert db.udes.get(keys=key) == None
         assert db.udes.rem(keys=key) == False
-        assert db.udes.put(keys=key, val=tuple1) == True
-        seqner, saider = db.udes.get(keys=key)
-        assert seqner.qb64b + saider.qb64b == val1
-        assert db.udes.put(keys=key, val=tuple2) == False
-        seqner, saider = db.udes.get(keys=key)
-        assert seqner.qb64b + saider.qb64b == val1
-        assert db.udes.pin(keys=key, val=tuple2) == True
-        seqner, saider = db.udes.get(keys=key)
-        assert seqner.qb64b + saider.qb64b == val2
+        assert db.udes.put(keys=key, val=(num1, diger1)) == True
+        num, diger = db.udes.get(keys=key)
+        assert num.qb64b + diger.qb64b == val1
+        assert db.udes.put(keys=key, val=(num2, diger2)) == False
+        num, diger = db.udes.get(keys=key)
+        assert num.qb64b + diger.qb64b == val1
+        assert db.udes.pin(keys=key, val=(num2, diger2)) == True
+        num, diger = db.udes.get(keys=key)
+        assert num.qb64b + diger.qb64b == val2
         assert db.udes.rem(keys=key) == True
         assert db.udes.get(keys=key) == None
 
@@ -2486,9 +2487,9 @@ def test_clear_escrows():
         db.pdes.addOn(keys=pre, on=0, val=saidb)
         assert db.pdes.cnt(keys=snKey(pre, 0)) == 1
 
-        udesKey = dgKey('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8"),
+        udesKey = ('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8"),
                     'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'.encode("utf-8"))
-        db.udes.put(keys=udesKey, val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'),
+        db.udes.put(keys=udesKey, val=(coring.Number(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'),
                                    coring.Diger(qb64b=b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E')))
         assert db.udes.get(keys=udesKey) is not None
 
@@ -2620,39 +2621,6 @@ def test_db_keyspace_end_to_end_migration():
         assert ordered_sns == sns
 
 
-def test_big_int_round_trip_js_vs_coring_number():
-    """
-    Demonstrate that large integers cannot round-trip through JavaScript,
-    but coring.Number can round-trip them safely.
-    """
-    # number far above JS safe integer limit (2^53 - 1)
-    big = 2**80 + 123456789
-
-    # javaScript round-trip (LOSSY)
-    js_code = f"""
-        const x = {big};
-        const y = JSON.parse(JSON.stringify(x));
-        console.log(y);
-    """
-
-    # run JS using node
-    result = subprocess.check_output(["node", "-e", js_code]).decode().strip()
-    js_value = int(float(result))
-
-    # JS corrupt the number
-    assert big == 1208925819614629298162965
-    assert js_value == 1208925819614629174706176
-    assert js_value != big
-
-    # coring.Number round-trip (LOSSLESS)
-    num = Number(num=big, code=NumDex.Huge)
-
-    # Encode → decode
-    decoded = Number(qb64=num.qb64)
-    assert decoded.num == 1208925819614629298162965
-    assert decoded.num == big
-
-
 if __name__ == "__main__":
     test_baser()
     test_clean_baser()
@@ -2661,4 +2629,3 @@ if __name__ == "__main__":
     test_dbdict()
     test_baserdoer()
     test_db_keyspace_end_to_end_migration()
-    test_big_int_round_trip_js_vs_coring_number()

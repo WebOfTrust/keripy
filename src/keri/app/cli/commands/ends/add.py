@@ -8,15 +8,15 @@ import argparse
 
 from hio.base import doing
 
-from keri import help, kering
-from keri.kering import Vrsn_1_0, Vrsn_2_0
-from keri.app import habbing, grouping, indirecting, forwarding
-from keri.app.agenting import WitnessPublisher
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.app.notifying import Notifier
-from keri.core import parsing
-from keri.peer import exchanging
+from ..... import help, kering
+from .....kering import Vrsn_1_0, Vrsn_2_0
+from .... import habbing, grouping, indirecting, forwarding
+from ....agenting import WitnessPublisher
+from ...common import existing
+from ...common.parsing import Parsery
+from ....notifying import Notifier
+from .....core import parsing
+from .....peer import exchanging
 
 logger = help.ogler.getLogger()
 

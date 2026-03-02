@@ -9,9 +9,9 @@ import json
 
 from hio.base import doing
 
-from keri import help, kering
-from keri.app.cli.common import existing
-from keri.core import scheming
+from ...... import help, kering
+from ....common import existing
+from ......core import scheming
 
 logger = help.ogler.getLogger()
 

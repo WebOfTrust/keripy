@@ -7,14 +7,14 @@ keri.kli.commands.contacts.add module
 import argparse
 import json
 
-from keri import help
+from ..... import help
 from hio.base import doing
 
-import keri.app.oobiing
-from keri.app import organizing as connecting, habbing, oobiing
-from keri.app.cli.common import existing
-from keri.db import basing
-from keri.help import helping
+from .... import oobiing
+from .... import organizing as connecting, habbing, oobiing
+from ...common import existing
+from .....db import basing
+from .....help import helping
 
 logger = help.ogler.getLogger()
 
@@ -83,7 +83,7 @@ class ContactAddDoer(doing.DoDoer):
 
         self.hby.db.oobis.put(keys=(self.oobi,), val=obr)
 
-        obi = keri.app.oobiing.Oobiery(hby=self.hby)
+        obi = oobiing.Oobiery(hby=self.hby)
         authn = oobiing.Authenticator(hby=self.hby)
         self.extend(obi.doers)
         self.extend(authn.doers)
