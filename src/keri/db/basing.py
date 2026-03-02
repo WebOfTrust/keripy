@@ -1152,7 +1152,7 @@ class Baser(dbing.LMDBer):
 
         # group partial witness escrow
         self.gpwe = subing.CatCesrIoSetSuber(db=self, subkey='gdwe.',
-                                             klas=(core.Number, coring.Saider))
+                                             klas=(core.Number, coring.Diger))
 
         # completed group multisig
         # TODO: clean
