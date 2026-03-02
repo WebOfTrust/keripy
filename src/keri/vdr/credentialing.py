@@ -759,9 +759,9 @@ class Registrar(doing.DoDoer):
         from witnesses yet.  When receipting is complete, remove from escrow and cue up a message
         that the event is complete.
         """
-        for (regk, snq, regd), (prefixer, seqner, diger) in self.rgy.reger.tmse.getItemIter():  # multisig escrow
+        for (regk, snq, regd), (prefixer, number, diger) in self.rgy.reger.tmse.getItemIter():  # multisig escrow
             try:
-                if not self.counselor.complete(prefixer, seqner, diger):
+                if not self.counselor.complete(prefixer, number, diger):
                     continue
             except kering.ValidationError:
                 self.rgy.reger.tmse.rem(keys=(regk, snq, regd))
@@ -771,7 +771,7 @@ class Registrar(doing.DoDoer):
 
             # Anchor the message, registry or otherwise
             key = dgKey(regk, regd)
-            number = coring.Number(num=seqner.sn)
+            number = coring.Number(num=number.sn)
             self.rgy.reger.ancs.put(keys=key, val=(number, diger))
 
             self.rgy.reger.tmse.rem(keys=(regk, snq, regd))
