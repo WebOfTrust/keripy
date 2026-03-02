@@ -13,7 +13,7 @@ from keri import help
 from keri.help import helping
 
 from keri.core import coring, eventing, indexing
-from keri.db import subing
+from . import subing
 
 
 logger = help.ogler.getLogger()

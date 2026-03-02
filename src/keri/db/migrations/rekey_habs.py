@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field, asdict
 
-from keri.db import koming, basing
+from .. import koming, basing
 
 
 @dataclass
