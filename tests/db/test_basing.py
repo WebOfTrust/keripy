@@ -1812,7 +1812,7 @@ def test_baser():
         seq, dig = val[0]   # returns Cesr tuple of (number, diger)
 
         assert isinstance(seq, coring.Number) # Seqner gets converted to Number on read
-        assert isinstance(dig, coring.Diger)    # Saider gets converted to Diger on read
+        assert isinstance(dig, coring.Diger)   # Saider gets converted to Diger on read
         assert seq.num == seqner.sn
         assert dig.qb64 == saider.qb64
 
