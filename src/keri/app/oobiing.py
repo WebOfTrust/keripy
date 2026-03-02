@@ -3,6 +3,7 @@
 keri.kli.common.oobiing module
 
 """
+
 import datetime
 import json
 import logging
@@ -15,23 +16,28 @@ from hio.base import doing
 from hio.help import decking
 
 from keri.core import coring
-from . import httping
-from .. import help
-from .. import kering
-from ..kering import Vrsn_1_0, Vrsn_2_0
+
+from .. import help, kering
 from ..app import organizing
-from ..core import routing, eventing, parsing, scheming, serdering
+from ..core import eventing, parsing, routing, scheming, serdering
 from ..db import basing
 from ..end import ending
-from ..end.ending import OOBI_RE, DOOBI_RE
+from ..end.ending import DOOBI_RE, OOBI_RE
 from ..help import helping
-from ..kering import Ilks, ValidationError, UnverifiedReplyError, ConfigurationError
+from ..kering import (
+    ConfigurationError,
+    Ilks,
+    UnverifiedReplyError,
+    ValidationError,
+    Vrsn_1_0,
+)
 from ..peer import exchanging
+from . import httping
 
 logger = help.ogler.getLogger()
 
-Resultage = namedtuple("Resultage", 'resolved failed')  # stream cold start status
-Result = Resultage(resolved='resolved', failed='failed')
+Resultage = namedtuple("Resultage", "resolved failed")  # stream cold start status
+Result = Resultage(resolved="resolved", failed="failed")
 
 
 def loadEnds(app, *, hby, prefix=""):
@@ -41,7 +47,7 @@ def loadEnds(app, *, hby, prefix=""):
 
 
 def loadHandlers(hby, exc, notifier):
-    """ Load handlers for the peer-to-peer delegation protocols
+    """Load handlers for the peer-to-peer delegation protocols
 
     Parameters:
         hby (Habery): Database and keystore for environment
@@ -60,7 +66,7 @@ class OobiResource:
     """
 
     def __init__(self, hby):
-        """ Create Endpoints for discovery and resolution of OOBIs
+        """Create Endpoints for discovery and resolution of OOBIs
 
         Parameters:
             hby (Habery): identifier database environment
@@ -69,7 +75,7 @@ class OobiResource:
         self.hby = hby
 
     def on_get_alias(self, req, rep, alias=None):
-        """ OOBI GET endpoint
+        """OOBI GET endpoint
 
         Parameters:
             req: falcon.Request HTTP request
@@ -116,26 +122,36 @@ class OobiResource:
         if role in (kering.Roles.witness,):  # Fetch URL OOBIs for all witnesses
             oobis = []
             for wit in hab.kever.wits:
-                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) \
-                       or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
+                urls = hab.fetchUrls(
+                    eid=wit, scheme=kering.Schemes.http
+                ) or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
                 if not urls:
                     rep.status = falcon.HTTP_404
                     rep.text = f"unable to query witness {wit}, no http endpoint"
                     return
 
-                url = urls[kering.Schemes.https] if kering.Schemes.https in urls else urls[kering.Schemes.http]
-                oobis.append(f"{url.rstrip("/")}/oobi/{hab.pre}/witness/{wit}")
+                url = (
+                    urls[kering.Schemes.https]
+                    if kering.Schemes.https in urls
+                    else urls[kering.Schemes.http]
+                )
+                oobis.append(f"{url.rstrip('/')}/oobi/{hab.pre}/witness/{wit}")
             res["oobis"] = oobis
         elif role in (kering.Roles.controller,):  # Fetch any controller URL OOBIs
             oobis = []
-            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http) or hab.fetchUrls(eid=hab.pre,
-                                                                                           scheme=kering.Schemes.https)
+            urls = hab.fetchUrls(
+                eid=hab.pre, scheme=kering.Schemes.http
+            ) or hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.https)
             if not urls:
                 rep.status = falcon.HTTP_404
                 rep.text = f"unable to query controller {hab.pre}, no http endpoint"
                 return
-            url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
-            oobis.append(f"{url.rstrip("/")}/oobi/{hab.pre}/controller")
+            url = (
+                urls[kering.Schemes.http]
+                if kering.Schemes.http in urls
+                else urls[kering.Schemes.https]
+            )
+            oobis.append(f"{url.rstrip('/')}/oobi/{hab.pre}/controller")
             res["oobis"] = oobis
         else:
             rep.status = falcon.HTTP_404
@@ -146,7 +162,7 @@ class OobiResource:
         rep.data = json.dumps(res).encode("utf-8")
 
     def on_post(self, req, rep):
-        """ Resolve OOBI endpoint.
+        """Resolve OOBI endpoint.
 
         Parameters:
             req: falcon.Request HTTP request
@@ -209,6 +225,7 @@ class OobiRequestHandler:
     Handler for oobi notification EXN messages
 
     """
+
     resource = "/oobis"
 
     def __init__(self, hby, notifier):
@@ -223,7 +240,7 @@ class OobiRequestHandler:
         self.notifier = notifier
 
     def handle(self, serder, attachments=None):
-        """  Do route specific processsing of OOBI request messages
+        """Do route specific processsing of OOBI request messages
 
         Parameters:
             serder (Serder): Serder of the exn OOBI request message
@@ -231,7 +248,7 @@ class OobiRequestHandler:
 
         """
         src = serder.pre
-        pay = serder.ked['a']
+        pay = serder.ked["a"]
         if "oobi" not in pay:
             print(f"invalid oobi message, missing oobi.  evt={serder.ked}")
             return
@@ -240,11 +257,7 @@ class OobiRequestHandler:
         obr = basing.OobiRecord(date=helping.nowIso8601())
         self.hby.db.oobis.pin(keys=(oobi,), val=obr)
 
-        data = dict(
-            r="/oobi",
-            src=src,
-            oobi=oobi
-        )
+        data = dict(r="/oobi", src=src, oobi=oobi)
 
         purl = parse.urlparse(oobi)
         params = parse.parse_qs(purl.query)
@@ -255,29 +268,28 @@ class OobiRequestHandler:
 
 
 def oobiRequestExn(hab, dest, oobi):
-    data = dict(
-        dest=dest,
-        oobi=oobi
-    )
+    data = dict(dest=dest, oobi=oobi)
 
     # Create `exn` peer to peer message to notify other participants UI
-    exn, _ = exchanging.exchange(route=OobiRequestHandler.resource, modifiers=dict(),
-                                 payload=data, sender=hab.pre)
+    exn, _ = exchanging.exchange(
+        route=OobiRequestHandler.resource,
+        modifiers=dict(),
+        payload=data,
+        sender=hab.pre,
+    )
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
-    del ims[:exn.size]
+    del ims[: exn.size]
 
     return exn, ims
 
 
 class Oobiery:
-    """ Resolver for OOBIs
-
-    """
+    """Resolver for OOBIs"""
 
     RetryDelay = 30
 
     def __init__(self, hby, rvy=None, clienter=None, cues=None):
-        """  DoDoer to handle the request and parsing of OOBIs
+        """DoDoer to handle the request and parsing of OOBIs
 
         Parameters:
             hby (Habery): database environment
@@ -305,7 +317,7 @@ class Oobiery:
         self.doers = [self.clienter, doing.doify(self.scoobiDo)]
 
     def registerReplyRoutes(self, router):
-        """ Register the routes for processing messages embedded in `rpy` event messages
+        """Register the routes for processing messages embedded in `rpy` event messages
 
         The Oobiery handles rpy messages with the /introduce route by processing the contained oobi
 
@@ -315,7 +327,7 @@ class Oobiery:
         """
         router.addRoute("/introduce", self)
 
-    def processReply(self, *, serder, saider, route, cigars=None, tsgs=None, **kwargs):
+    def processReply(self, *, serder, diger, route, cigars=None, tsgs=None, **kwargs):
         """
         Process one reply message for route = /introduce
         with either attached nontrans receipt couples in cigars or attached trans
@@ -324,7 +336,7 @@ class Oobiery:
 
         Parameters:
             serder (SerderKERI): instance of reply msg (SAD)
-            saider (Diger): instance from said in serder (SAD)
+            diger (Diger): instance from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
                           signature in .raw and public key in .verfer
@@ -354,16 +366,19 @@ class Oobiery:
 
         """
         if route != "/introduce":
-            raise ValidationError(f"Usupported route={route} in {Ilks.rpy} "
-                                  f"msg={serder.ked}.")
+            raise ValidationError(
+                f"Usupported route={route} in {Ilks.rpy} msg={serder.ked}."
+            )
 
-        data = serder.ked['a']
+        data = serder.ked["a"]
         dt = serder.ked["dt"]
 
         for k in ("cid", "oobi"):
             if k not in data:
-                raise ValidationError(f"Missing element={k} from attributes in"
-                                      f" {Ilks.rpy} msg={serder.ked}.")
+                raise ValidationError(
+                    f"Missing element={k} from attributes in"
+                    f" {Ilks.rpy} msg={serder.ked}."
+                )
 
         cider = coring.Prefixer(qb64=data["cid"])  # raises error if unsupported code
         cid = cider.qb64  # controller authorizing eid at role
@@ -372,15 +387,25 @@ class Oobiery:
         oobi = data["oobi"]
         url = urlparse(oobi)
         if url.scheme not in ("http", "https"):
-            raise ValidationError(f"Invalid url scheme for introduced OOBI scheme={url.scheme}")
+            raise ValidationError(
+                f"Invalid url scheme for introduced OOBI scheme={url.scheme}"
+            )
 
         if self.rvy is None:
-            raise ConfigurationError("this oobiery is not configured to handle rpy introductions")
+            raise ConfigurationError(
+                "this oobiery is not configured to handle rpy introductions"
+            )
 
         # Process BADA RUN but with no previous reply message, always process introductions
-        accepted = self.rvy.acceptReply(serder=serder, saider=saider, route=route,
-                                        aid=aid, osaider=None, cigars=cigars,
-                                        tsgs=tsgs)
+        accepted = self.rvy.acceptReply(
+            serder=serder,
+            saider=diger,
+            route=route,
+            aid=aid,
+            osaider=None,
+            cigars=cigars,
+            tsgs=tsgs,
+        )
         if not accepted:
             raise UnverifiedReplyError(f"Unverified introduction reply. {serder.ked}")
 
@@ -400,7 +425,7 @@ class Oobiery:
         Usage:
             add result of doify on this method to doers list
         """
-        _ = (yield tock)
+        _ = yield tock
 
         while True:
             self.processFlows()
@@ -417,7 +442,7 @@ class Oobiery:
         self.processMOOBIs()
 
     def processOobis(self):
-        """ Process OOBI records loaded for discovery
+        """Process OOBI records loaded for discovery
 
         There should be only one OOBIERY that minds the OOBI table, this should read from the table like an escrow
 
@@ -425,8 +450,10 @@ class Oobiery:
         for (url,), obr in self.hby.db.oobis.getItemIter():
             try:
                 # Don't process OOBIs we've already resolved or are in escrow being retried
-                if ((fnd := self.hby.db.roobi.get(keys=(url,))) is not None and fnd.state == Result.resolved) and \
-                        self.hby.db.eoobi.get(keys=(url,)) is not None:
+                if (
+                    (fnd := self.hby.db.roobi.get(keys=(url,))) is not None
+                    and fnd.state == Result.resolved
+                ) and self.hby.db.eoobi.get(keys=(url,)) is not None:
                     logging.info(f"OOBI {url} already resolved, skipping")
                     self.hby.db.oobis.rem(keys=(url,))
                     continue
@@ -442,7 +469,9 @@ class Oobiery:
 
                     self.request(url, obr)
 
-                elif (match := OOBI_RE.match(purl.path)) is not None:  # Full CID and optional EID
+                elif (
+                    match := OOBI_RE.match(purl.path)
+                ) is not None:  # Full CID and optional EID
                     obr.cid = match.group("cid")
                     obr.eid = match.group("eid")
                     obr.role = match.group("role")
@@ -454,11 +483,15 @@ class Oobiery:
 
                     self.request(url, obr)
 
-                elif (match := DOOBI_RE.match(purl.path)) is not None:  # Full CID and optional EID
+                elif (
+                    match := DOOBI_RE.match(purl.path)
+                ) is not None:  # Full CID and optional EID
                     obr.said = match.group("said")
                     self.request(url, obr)
 
-                elif (match := ending.WOOBI_RE.match(purl.path)) is not None:  # Well Known
+                elif (
+                    match := ending.WOOBI_RE.match(purl.path)
+                ) is not None:  # Well Known
                     obr.cid = match.group("cid")
                     params = parse.parse_qs(purl.query)
 
@@ -472,9 +505,7 @@ class Oobiery:
                 print(f"error requesting invalid OOBI URL {ex}", url)
 
     def processClients(self):
-        """ Process Client responses by parsing the messages and removing the client/doer
-
-        """
+        """Process Client responses by parsing the messages and removing the client/doer"""
         for (url,), obr in self.hby.db.coobi.getItemIter():
             if url not in self.clients:
                 self.request(url, obr)
@@ -493,24 +524,34 @@ class Oobiery:
                     continue
 
                 elif not response["status"] == 200:
-                    print("invalid status for oobi response: {}".format(response["status"]))
+                    print(
+                        "invalid status for oobi response: {}".format(
+                            response["status"]
+                        )
+                    )
                     self.hby.db.coobi.rem(keys=(url,))
                     obr.state = Result.failed
                     self.hby.db.roobi.put(keys=(url,), val=obr)
 
-                elif response["headers"]["Content-Type"] == "application/json+cesr":  # CESR Stream response to OOBI
+                elif (
+                    response["headers"]["Content-Type"] == "application/json+cesr"
+                ):  # CESR Stream response to OOBI
                     self.parser.parse(ims=bytearray(response["body"]))
                     if ending.OOBI_AID_HEADER in response["headers"]:
                         obr.cid = response["headers"][ending.OOBI_AID_HEADER]
 
                     if obr.oobialias is not None and obr.cid:
-                        self.org.update(pre=obr.cid, data=dict(alias=obr.oobialias, oobi=url))
+                        self.org.update(
+                            pre=obr.cid, data=dict(alias=obr.oobialias, oobi=url)
+                        )
 
                     self.hby.db.coobi.rem(keys=(url,))
                     obr.state = Result.resolved
                     self.hby.db.roobi.put(keys=(url,), val=obr)
 
-                elif response["headers"]["Content-Type"] == "application/schema+json":  # Schema response to data OOBI
+                elif (
+                    response["headers"]["Content-Type"] == "application/schema+json"
+                ):  # Schema response to data OOBI
                     try:
                         schemer = scheming.Schemer(raw=bytearray(response["body"]))
                         if schemer.said == obr.said:
@@ -519,15 +560,16 @@ class Oobiery:
                         else:
                             result = Result.failed
 
-                    except (kering.ValidationError, ValueError):
+                    except kering.ValidationError, ValueError:
                         result = Result.failed
 
                     obr.state = result
                     self.hby.db.coobi.rem(keys=(url,))
                     self.hby.db.roobi.put(keys=(url,), val=obr)
 
-                elif response["headers"]["Content-Type"].startswith("application/json"):  # Unsigned rpy OOBI or Schema
-
+                elif response["headers"]["Content-Type"].startswith(
+                    "application/json"
+                ):  # Unsigned rpy OOBI or Schema
                     try:
                         schemer = scheming.Schemer(raw=bytearray(response["body"]))
                         if schemer.said == obr.said:
@@ -541,7 +583,7 @@ class Oobiery:
                         self.hby.db.roobi.put(keys=(url,), val=obr)
                         continue
 
-                    except (kering.ValidationError, ValueError):
+                    except kering.ValidationError, ValueError:
                         pass
 
                     try:
@@ -551,12 +593,12 @@ class Oobiery:
                         self.hby.db.coobi.rem(keys=(url,))
                         self.hby.db.roobi.put(keys=(url,), val=obr)
                         continue
-                    if not serder.ked['t'] == coring.Ilks.rpy:
+                    if not serder.ked["t"] == coring.Ilks.rpy:
                         obr.state = Result.failed
                         self.hby.db.coobi.rem(keys=(url,))
                         self.hby.db.roobi.put(keys=(url,), val=obr)
 
-                    elif serder.ked['r'] in ('/oobi/witness', '/oobi/controller'):
+                    elif serder.ked["r"] in ("/oobi/witness", "/oobi/controller"):
                         self.processMultiOobiRpy(url, serder, obr)
 
                     else:
@@ -568,15 +610,16 @@ class Oobiery:
                     self.hby.db.coobi.rem(keys=(url,))
                     obr.state = Result.failed
                     self.hby.db.roobi.put(keys=(url,), val=obr)
-                    logger.error("invalid content type for oobi response: {}"
-                                 .format(response["headers"]["Content-Type"]))
+                    logger.error(
+                        "invalid content type for oobi response: {}".format(
+                            response["headers"]["Content-Type"]
+                        )
+                    )
 
                 self.cues.append(dict(kin=obr.state, oobi=url))
 
     def processMOOBIs(self):
-        """ Process Client responses by parsing the messages and removing the client/doer
-
-        """
+        """Process Client responses by parsing the messages and removing the client/doer"""
         for (url,), obr in self.hby.db.moobi.getItemIter():
             result = Result.resolved
             complete = True
@@ -594,9 +637,7 @@ class Oobiery:
                 self.hby.db.roobi.put(keys=(url,), val=obr)
 
     def processRetries(self):
-        """ Process Client responses by parsing the messages and removing the client/doer
-
-        """
+        """Process Client responses by parsing the messages and removing the client/doer"""
         for (url,), obr in self.hby.db.eoobi.getItemIter():
             last = helping.fromIso8601(obr.date)
             now = helping.nowUTC()
@@ -637,7 +678,6 @@ class Oobiery:
 
 
 class Authenticator:
-
     def __init__(self, hby, clienter=None):
         """
 
@@ -675,20 +715,20 @@ class Authenticator:
         Usage:
             add result of doify on this method to doers list
         """
-        _ = (yield tock)
+        _ = yield tock
 
         while True:
             self.processFlows()
             yield tock
 
     def processFlows(self):
-        """ Process well-known authentication URLs """
+        """Process well-known authentication URLs"""
 
         self.processWoobis()
         self.processMultiFactorAuth()
 
     def processWoobis(self):
-        """ Process well-known OOBIs saved as multi-factor auth records
+        """Process well-known OOBIs saved as multi-factor auth records
 
         Process wOOBI URLs by requesting from the endpoint and confirming the results
 
@@ -703,13 +743,13 @@ class Authenticator:
                     obr.cid = match.group("cid")
                     self.request(wurl, obr)
             else:
-                logging.error(f"wurl {wurl} is not a valid well known OOBI for multi-factor auth")
+                logging.error(
+                    f"wurl {wurl} is not a valid well known OOBI for multi-factor auth"
+                )
                 self.hby.db.woobi.rem(keys=(wurl,))
 
     def processMultiFactorAuth(self):
-        """ Process Client responses by parsing the messages and removing the client
-
-        """
+        """Process Client responses by parsing the messages and removing the client"""
         for (wurl,), obr in self.hby.db.mfa.getItemIter():
             if wurl not in self.clients:
                 self.request(wurl, obr)

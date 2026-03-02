@@ -18,6 +18,46 @@ Changed keyword parameter `delseqner` (Seqner) to `delnum` (Number) in the funct
 signature and all internal call sites. External callers that previously passed
 `delseqner` must now pass `delnum` with a `Number` instance.
 
+## 2.0.0-dev5
+### Backwards breaking interface changes
+Changes to call signatures that will break dependent libraries
+
+#### keri.core.routing.Router.dispatch
+Renamed keyword parameter `saider` to `diger` to reflect the actual type (`Diger`)
+being passed. All registered route handler functions that receive this parameter via
+the dispatch callback interface must update their signatures accordingly.
+
+#### keri.core.routing.Revery.processReply
+Renamed local variable `saider` to `diger` and updated the `dispatch(saider=)` call
+site to `dispatch(diger=)`.
+
+#### keri.core.routing.processRouteNotFound
+Renamed keyword parameter `saider` to `diger`.
+
+#### keri.core.eventing.Kevery.processReplyEndRole
+Renamed keyword parameter `saider` to `diger`.
+
+#### keri.core.eventing.Kevery.processReplyLocScheme
+Renamed keyword parameter `saider` to `diger`.
+
+#### keri.core.eventing.Kevery.processReplyKeyStateNotice
+Renamed keyword parameter `saider` to `diger`. Renamed internal local variable
+`diger` (derived from `ksr.d`) to `ksr_diger` to avoid shadowing the parameter.
+
+#### keri.core.eventing.Kevery.processReplyAddWatched
+Renamed keyword parameter `saider` to `diger`.
+
+#### keri.app.oobiing.Oobiery.processReply
+Renamed keyword parameter `saider` to `diger`.
+
+#### keri.vdr.eventing.Tevery.processReplyRegistryTxnState
+Renamed keyword parameter `saider` to `diger`. Removed the now-redundant
+`diger = saider` alias line from the function body.
+
+#### keri.vdr.eventing.Tevery.processReplyCredentialTxnState
+Renamed keyword parameter `saider` to `diger`. Removed the now-redundant
+`diger = saider` alias line from the function body.
+
 
 ## 2.0.0-dev1
 ### Backwards breaking interface changes
@@ -67,7 +107,3 @@ from keri.core import Streamer still works.
 moved Tierage and Tiers defintions from keri.core.coring to keri.core.signing
 where they more naturally belong (not used in coring)
 from keri.core import Tiers still works
-
-
-
-
