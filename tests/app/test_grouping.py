@@ -900,3 +900,69 @@ def test_multisig_interact_handler(mockHelpingNowUTC):
         prefixers = hby1.db.maids.get(keys=(esaid,))
         assert len(prefixers) == 1
         assert prefixers[0].qb64 == ghab2.mhab.pre
+
+def test_multisig_join(mockHelpingNowUTC):
+    with openMultiSig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (hby3, ghab3)):
+        with habbing.openHab(name="test_4", salt=b'0123456789abcdef', transferable=True, temp=True) as (hby4, hab4):
+            hab1, hab2, hab3 = ghab1.mhab, ghab2.mhab, ghab3.mhab
+
+            # Share fourth member's inception with existing group
+            icp4 = hab4.makeOwnEvent(sn=0)
+            parsing.Parser(version=kering.Vrsn_1_0).parse(ims=bytearray(icp4), kvy=hby1.kvy, local=True)
+            parsing.Parser(version=kering.Vrsn_1_0).parse(ims=bytearray(icp4), kvy=hby2.kvy, local=True)
+            parsing.Parser(version=kering.Vrsn_1_0).parse(ims=bytearray(icp4), kvy=hby3.kvy, local=True)
+
+            # Rotate the group to add the fourth member (3 current, 4 next)
+            counselor = grouping.Counselor(hby=hby1)
+            hab1.rotate()
+            hab2.rotate()
+            hab3.rotate()
+            merfers = [hab1.kever.verfers[0], hab2.kever.verfers[0], hab3.kever.verfers[0]]
+            migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0], hab3.kever.ndigers[0], hab4.kever.ndigers[0]]
+            prefixer = coring.Prefixer(qb64=ghab1.pre)
+            seqner = coring.Seqner(sn=ghab1.kever.sn + 1)
+            rot = ghab1.rotate(isith="3", nsith="4", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
+            rserder = serdering.SerderKERI(raw=rot)
+            counselor.start(ghab=ghab1, prefixer=prefixer, seqner=seqner, saider=coring.Saider(qb64=rserder.said))
+
+            val = hby1.db.gpse.get(keys=(ghab1.pre,))
+            (seqner, saider) = val[0]
+            serder = hby1.db.evts.get(keys=(ghab1.pre, saider.qb64b))
+            assert serder is not None
+            sigers = hab2.mgr.sign(serder.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1])
+            msg = eventing.messagize(serder=serder, sigers=sigers)
+            parsing.Parser(version=kering.Vrsn_1_0).parse(ims=bytearray(msg), kvy=hby1.kvy, local=True)
+
+            sigers = hab3.mgr.sign(serder.raw, verfers=hab3.kever.verfers, indexed=True, indices=[2])
+            msg = eventing.messagize(serder=serder, sigers=sigers)
+            parsing.Parser(version=kering.Vrsn_1_0).parse(ims=bytearray(msg), kvy=hby1.kvy, local=True)
+            hby1.kvy.processEscrows()
+            counselor.processEscrows()
+            assert counselor.complete(prefixer=prefixer, seqner=seqner, saider=coring.Saider(qb64=rserder.said))
+
+            # Load member and group KELs into hby4
+            for msgs in [hab1.replay(), hab2.replay(), hab3.replay()]:
+                parsing.Parser(version=kering.Vrsn_1_0).parse(ims=bytearray(msgs), kvy=hby4.kvy, local=True)
+            parsing.Parser(version=kering.Vrsn_1_0).parse(ims=bytearray(ghab1.replay()), kvy=hby4.kvy, local=True)
+
+            smids = [hab1.pre, hab2.pre, hab3.pre, hab4.pre]
+            hby4.joinGroupHab(ghab1.pre, group="test_group_4", mhab=hab4, smids=smids, rmids=None)
+
+            ghab4 = hby4.habByName("test_group_4")
+
+            assert ghab4.pre == ghab1.pre
+            assert ghab4.mhab.pre == hab4.pre
+            assert ghab4.smids == smids
+            assert ghab4.kever.sn == 1
+            assert ghab4.inited is True
+            assert len(ghab4.kever.verfers) == 3
+            assert len(ghab4.kever.ndigers) == 4
+            assert ghab4.pre in hby4.habs
+
+            # Verify that the group is consistent after a reload
+            hby4.loadHabs()
+            ghab4 = hby4.habByName("test_group_4")
+            assert ghab4.pre == ghab1.pre
+            assert ghab4.mhab.pre == hab4.pre
+            assert ghab4.name == "test_group_4"
+
