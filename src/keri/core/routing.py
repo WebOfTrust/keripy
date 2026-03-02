@@ -10,7 +10,7 @@ import re
 from hio.help import decking
 
 from .eventing import fetchTsgs, validateSigs
-from .coring import Ilks, Saider, Dater, Diger
+from .coring import Ilks, Dater, Diger
 from ..kering import ValidationError, ConfigurationError, UnverifiedReplyError
 from ..help import helping, ogler
 

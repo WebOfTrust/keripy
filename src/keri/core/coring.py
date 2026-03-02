@@ -29,8 +29,7 @@ from ..kering import (EmptyMaterialError, RawMaterialError, SoftMaterialError,
                       ValidationError, VersionError, ShortageError,
                       UnexpectedCodeError, DeserializeError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError,
-                      Versionage, Version, Vrsn_1_0, Vrsn_2_0,
-                      VERRAWSIZE1, VERFMT1, MAXVERFULLSPAN,
+                      Versionage, Version, Vrsn_2_0, MAXVERFULLSPAN,
                       versify, deversify, Rever, smell,
                       Kinds, Protocols,Ilks, TraitDex)
 

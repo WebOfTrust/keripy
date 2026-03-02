@@ -16,12 +16,12 @@ import msgpack
 
 from ordered_set import OrderedSet as oset
 
-from ..kering import (Colds, sniff, Kinds, EmptyMaterialError, InvalidValueError,
+from ..kering import (Colds, Kinds, EmptyMaterialError, InvalidValueError,
                       DeserializeError, SerializeError)
 
-from ..help import isNonStringIterable, Reatt
+from ..help import isNonStringIterable
 
-from .counting import  Codens, CtrDex_2_0, UniDex_2_0, Counter
+from .counting import  Codens, Counter
 from .coring import (MtrDex, Matter, Labeler, LabelDex, DecDex, Decimer,
                      DigDex, Diger)
 

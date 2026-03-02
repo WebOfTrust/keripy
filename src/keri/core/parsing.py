@@ -8,10 +8,9 @@ import copy
 import logging
 from dataclasses import asdict
 from collections import deque
-from base64 import urlsafe_b64decode as decodeB64
 from base64 import urlsafe_b64encode as encodeB64
 
-from ..kering import (Colds, sniff, Vrsn_1_0, Vrsn_2_0, Version,
+from ..kering import (Colds, sniff, Vrsn_2_0, Version,
                       UnexpectedCountCodeError, ValidationError,
                       QueryNotFoundError, ExtractionError, ShortageError,
                       ColdStartError, InvalidVersionError,
