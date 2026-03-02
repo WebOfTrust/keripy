@@ -12,8 +12,12 @@ from .coring import (sizeify, dumps, loads, MtrDex, SmallVrzDex, LargeVrzDex,
                      Diger, Prefixer, Noncer, Saider, Sadder, Tholder, Dicter)
 from .counting import (GenDex, ProGen, CtrDex_1_0, CtrDex_2_0,
                        Codens, Counter, Codens)
-from .eventing import (incept, interact, rotate, delcept, deltate, receipt,
-                       query, reply, prod, bare, exchept, exchange)
+from .eventing import (simple, ample, deWitnessCouple, deReceiptCouple,
+                       deSourceCouple, deReceiptTriple, deTransReceiptQuadruple,
+                       deTransReceiptQuintuple, verifySigs, validateSigs,
+                       fetchTsgs, state, incept, delcept, rotate, deltate,
+                       interact, receipt, query, reply, prod, bare,
+                       exchept, exchange, messagize, Kever, Kevery, loadEvent)
 from .indexing import Indexer, Siger, IdrDex, IdxSigDex
 from .mapping import Mapper, EscapeDex, Compactor, Aggor
 from .parsing import Parser
