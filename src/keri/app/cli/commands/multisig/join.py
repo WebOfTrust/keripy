@@ -319,7 +319,7 @@ class JoinDoer(doing.DoDoer):
             return True
 
     def startCounselor(self, hab, prefixer, seqner, saider):
-        self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
+        self.counselor.start(prefixer=prefixer, number=seqner, diger=saider, ghab=hab)
 
         while True:
             saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
