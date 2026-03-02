@@ -518,7 +518,7 @@ class Habery:
 
         hab.pre = pre
         habord = basing.HabitatRecord(hid=hab.pre,
-                                      name=self.name,
+                                      name=hab.name,
                                       domain=ns,
                                       mid=mhab.pre,
                                       smids=smids,
