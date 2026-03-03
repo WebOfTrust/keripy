@@ -215,11 +215,11 @@ class Counselor(doing.DoDoer):
         that the event is complete.
 
         """
-        for (pre,), (seqner, saider) in self.hby.db.gpwe.getItemIter():  # group partial witness escrow
+        for (pre,), (number, diger) in self.hby.db.gpwe.getItemIter():  # group partial witness escrow
             kever = self.hby.kevers[pre]
 
             # Load all the witness receipts we have so far
-            wigers = self.hby.db.wigs.get(keys=(pre, saider.qb64))
+            wigers = self.hby.db.wigs.get(keys=(pre, diger.qb64))
             ghab = self.hby.habs[pre]
             keys = [verfer.qb64 for verfer in kever.verfers]
             witer = ghab.mhab.kever.verfers[0].qb64 == keys[0]
@@ -227,15 +227,15 @@ class Counselor(doing.DoDoer):
                 if witer and len(kever.wits) > 0:
                     witnessed = False
                     for cue in self.witDoer.cues:
-                        if cue["pre"] == ghab.pre and cue["sn"] == seqner.sn:
+                        if cue["pre"] == ghab.pre and cue["sn"] == number.sn:
                             witnessed = True
                     if not witnessed:
                         continue
                 logger.info("AID %s...%s: Witness receipts complete, %s confirmed.", pre[:4], pre[-4:], pre)
                 self.hby.db.gpwe.rem(keys=(pre,))
-                self.hby.db.cgms.put(keys=(pre, seqner.qb64), val=saider)
+                self.hby.db.cgms.put(keys=(pre, number.qb64), val=diger)
             elif not witer:
-                self.witDoer.gets.append(dict(pre=pre, sn=seqner.sn))
+                self.witDoer.gets.append(dict(pre=pre, sn=number.sn))
 
 
 class MultisigNotificationHandler:
