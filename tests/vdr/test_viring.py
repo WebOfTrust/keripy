@@ -10,9 +10,9 @@ import platform
 import tempfile
 
 import lmdb
+from keri import versify, Kinds
 
-from keri.core import indexing
-from keri.core.coring import Diger, Number, Prefixer, Saider, Seqner, versify, Kinds
+from keri.core import indexing, Diger, Number, Prefixer, Saider, Seqner
 from keri.db import subing
 from keri.db.dbing import openLMDB, dgKey, snKey
 from keri.vdr.viring import Reger

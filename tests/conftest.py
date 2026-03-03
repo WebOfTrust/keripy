@@ -13,12 +13,11 @@ import pytest
 
 from hio.base import doing
 
-from keri import kering
-from keri.kering import Vrsn_1_0, Vrsn_2_0
+from keri import help, Schemes, Roles
+from keri.kering import Vrsn_1_0
 from keri.core import scheming, coring, routing, eventing, parsing, signing
 from keri.db import basing
 from keri.help import helping
-from keri import help
 
 from keri.app.cli import commands
 
@@ -105,14 +104,14 @@ class DbSeed:
         psr = parsing.Parser(framed=True, kvy=kvy, rvy=rvy, version=Vrsn_1_0)
 
         if protocols is None:
-            protocols = [kering.Schemes.tcp, kering.Schemes.http]
+            protocols = [Schemes.tcp, Schemes.http]
 
         for scheme in protocols:
             msgs = bytearray()
             for hab in witHabs:
                 url = WitnessUrls[f"{hab.name}:{scheme}"]
                 msgs.extend(hab.makeEndRole(eid=hab.pre,
-                                            role=kering.Roles.controller,
+                                            role=Roles.controller,
                                             stamp=help.nowIso8601()))
 
                 msgs.extend(hab.makeLocScheme(url=url,
@@ -131,21 +130,21 @@ class DbSeed:
 
         """
         if protocols is None:
-            protocols = [kering.Schemes.tcp, kering.Schemes.http]
+            protocols = [Schemes.tcp, Schemes.http]
 
         watEndKeys = ('BGYNONqsgWKDQuKyCNanZ-7DyT0oeb6ectMZ1WGyT7o8', "controller",
                       'BGYNONqsgWKDQuKyCNanZ-7DyT0oeb6ectMZ1WGyT7o8')
         ender = basing.EndpointRecord(allowed=True)  # create new record
         db.ends.pin(keys=watEndKeys, val=ender)  # overwrite
 
-        if kering.Schemes.tcp in protocols:
+        if Schemes.tcp in protocols:
             locer = basing.LocationRecord(url="tcp://127.0.0.1:5634/")  # create new record
-            watLocKeys = ('BGYNONqsgWKDQuKyCNanZ-7DyT0oeb6ectMZ1WGyT7o8', kering.Schemes.tcp)
+            watLocKeys = ('BGYNONqsgWKDQuKyCNanZ-7DyT0oeb6ectMZ1WGyT7o8', Schemes.tcp)
             db.locs.pin(keys=watLocKeys, val=locer)  # overwrite
 
-        if kering.Schemes.http in protocols:
+        if Schemes.http in protocols:
             httplocer = basing.LocationRecord(url="http://127.0.0.1:5644/")  # create new record
-            watHttpLocKeys = ('BGYNONqsgWKDQuKyCNanZ-7DyT0oeb6ectMZ1WGyT7o8', kering.Schemes.http)
+            watHttpLocKeys = ('BGYNONqsgWKDQuKyCNanZ-7DyT0oeb6ectMZ1WGyT7o8', Schemes.http)
             db.locs.pin(keys=watHttpLocKeys, val=httplocer)  # overwrite
 
     @staticmethod

@@ -6,12 +6,10 @@ tests.vdr.verifying module
 
 import pytest
 
-from keri import kering
-from keri.kering import Vrsn_1_0, Vrsn_2_0
-from keri.app import habbing, signing
-from keri.core import eventing as ceventing, scheming
-from keri.core import parsing, coring, indexing
-from keri.core.eventing import SealEvent
+from keri import (MissingRegistryError, MissingEntryError, 
+                  MissingChainError, RevokedChainError, Vrsn_1_0)
+from keri.app import habbing
+from keri.core import Saider, Kevery, Seqner, Diger, parsing, MtrDex, Saids, SealEvent
 from keri.help import helping
 from keri.vc import proving
 from keri.vdr import verifying, credentialing, eventing
@@ -46,8 +44,8 @@ def test_verifier(seeder):
         issuer = regery.makeRegistry(prefix=hab.pre, name="test")
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         hab.interact(data=[rseal])
-        seqner = coring.Seqner(sn=hab.kever.sn)
-        diger = coring.Diger(qb64=hab.kever.serder.said)
+        seqner = Seqner(sn=hab.kever.sn)
+        diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
                          seqner=seqner,
@@ -62,7 +60,7 @@ def test_verifier(seeder):
             dt=helping.nowIso8601(),
             LEI="254900OPPU84GM83MG36",
         )
-        _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
+        _, d = Saider.saidify(sad=credSubject, code=MtrDex.Blake3_256, label=Saids.d)
 
         creder = proving.credential(issuer=hab.pre,
                                     schema="EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC",
@@ -72,8 +70,8 @@ def test_verifier(seeder):
         try:
             # Specify an anchor directly in the KEL
             verifier.processCredential(creder, prefixer=hab.kever.prefixer, seqner=seqner,
-                                       saider=coring.Diger(qb64=hab.kever.serder.said))
-        except kering.MissingRegistryError:
+                                       saider=Diger(qb64=hab.kever.serder.said))
+        except MissingRegistryError:
             missing = True
 
         assert missing is True
@@ -85,8 +83,8 @@ def test_verifier(seeder):
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
         hab.interact(data=[rseal])
-        seqner = coring.Seqner(sn=hab.kever.sn)
-        diger = coring.Diger(qb64=hab.kever.serder.said)
+        seqner = Seqner(sn=hab.kever.sn)
+        diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=iss.pre,
                          regd=iss.said,
                          seqner=seqner,
@@ -119,7 +117,7 @@ def test_verifier(seeder):
             assert dcre.sad == cred["sad"]
             assert cred['rev'] is None
 
-        with pytest.raises(kering.MissingEntryError):
+        with pytest.raises(MissingEntryError):
             regery.reger.cloneCred(said="nonexistantsaid")
 
     """End Test"""
@@ -151,8 +149,8 @@ def test_verifier_chained_credential(seeder):
         roniss = ronreg.makeRegistry(prefix=ron.pre, name="test")
         rseal = SealEvent(roniss.regk, "0", roniss.regd)._asdict()
         ron.interact(data=[rseal])
-        seqner = coring.Seqner(sn=ron.kever.sn)
-        diger = coring.Diger(qb64=ron.kever.serder.said)
+        seqner = Seqner(sn=ron.kever.sn)
+        diger = Diger(qb64=ron.kever.serder.said)
         roniss.anchorMsg(pre=roniss.regk,
                          regd=roniss.regd,
                          seqner=seqner,
@@ -167,7 +165,7 @@ def test_verifier_chained_credential(seeder):
             dt=helping.nowIso8601(),
             LEI="5493001KJTIIGC8Y1R12",
         )
-        _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
+        _, d = Saider.saidify(sad=credSubject, code=MtrDex.Blake3_256, label=Saids.d)
 
         creder = proving.credential(issuer=ron.pre,
                                     schema=qviSchema,
@@ -177,8 +175,8 @@ def test_verifier_chained_credential(seeder):
         missing = False
         try:
             ronverfer.processCredential(creder, prefixer=ron.kever.prefixer, seqner=seqner,
-                                        saider=coring.Diger(qb64=ron.kever.serder.said))
-        except kering.MissingRegistryError:
+                                        saider=Diger(qb64=ron.kever.serder.said))
+        except MissingRegistryError:
             missing = True
 
         assert missing is True
@@ -191,8 +189,8 @@ def test_verifier_chained_credential(seeder):
         iss = roniss.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
         ron.interact(data=[rseal])
-        seqner = coring.Seqner(sn=ron.kever.sn)
-        diger = coring.Diger(qb64=ron.kever.serder.said)
+        seqner = Seqner(sn=ron.kever.sn)
+        diger = Diger(qb64=ron.kever.serder.said)
         roniss.anchorMsg(pre=iss.pre,
                          regd=iss.said,
                          seqner=seqner,
@@ -220,8 +218,8 @@ def test_verifier_chained_credential(seeder):
         ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian")
         rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
         ian.interact(data=[rseal])
-        seqner = coring.Seqner(sn=ian.kever.sn)
-        diger = coring.Diger(qb64=ian.kever.serder.said)
+        seqner = Seqner(sn=ian.kever.sn)
+        diger = Diger(qb64=ian.kever.serder.said)
         ianiss.anchorMsg(pre=ianiss.regk,
                          regd=ianiss.regd,
                          seqner=seqner,
@@ -236,7 +234,7 @@ def test_verifier_chained_credential(seeder):
             dt=helping.nowIso8601(),
             LEI="254900OPPU84GM83MG36",
         )
-        _, d = scheming.Saider.saidify(sad=leiCredSubject, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
+        _, d = Saider.saidify(sad=leiCredSubject, code=MtrDex.Blake3_256, label=Saids.d)
 
         chain = dict(
             d=creder.said,
@@ -257,8 +255,8 @@ def test_verifier_chained_credential(seeder):
         missing = False
         try:
             ianverfer.processCredential(vLeiCreder, prefixer=ian.kever.prefixer, seqner=seqner,
-                                        saider=coring.Diger(qb64=ian.kever.serder.said))
-        except kering.MissingRegistryError:
+                                        saider=Diger(qb64=ian.kever.serder.said))
+        except MissingRegistryError:
             missing = True
 
         assert missing is True
@@ -271,8 +269,8 @@ def test_verifier_chained_credential(seeder):
         iss = ianiss.issue(said=vLeiCreder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
         ian.interact(data=[rseal])
-        seqner = coring.Seqner(sn=ian.kever.sn)
-        diger = coring.Diger(qb64=ian.kever.serder.said)
+        seqner = Seqner(sn=ian.kever.sn)
+        diger = Diger(qb64=ian.kever.serder.said)
         ianiss.anchorMsg(pre=iss.pre,
                          regd=iss.said,
                          seqner=seqner,
@@ -293,7 +291,7 @@ def test_verifier_chained_credential(seeder):
         assert cue["kin"] == "proof"
 
         # Now lets get Ron's credential into Ian's Tevers and Database
-        iankvy = ceventing.Kevery(db=ian.db, lax=False, local=False)
+        iankvy = Kevery(db=ian.db, lax=False, local=False)
         iantvy = eventing.Tevery(reger=ianreg.reger, db=ian.db, local=False)
         ianverfer = verifying.Verifier(hby=ianHby, reger=ianreg.reger)
 
@@ -306,7 +304,7 @@ def test_verifier_chained_credential(seeder):
             parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
 
         ianverfer.processCredential(creder, prefixer=ron.kever.prefixer, seqner=seqner,
-                                    saider=coring.Diger(qb64=ron.kever.serder.said))
+                                    saider=Diger(qb64=ron.kever.serder.said))
 
         # Process the escrows to get Ian's credential out of missing chain escrow
         ianverfer.processEscrows()
@@ -326,7 +324,7 @@ def test_verifier_chained_credential(seeder):
             dt=helping.nowIso8601(),
             claim="An outrageous claim.",
         )
-        _, d = scheming.Saider.saidify(sad=untargetedSubject, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
+        _, d = Saider.saidify(sad=untargetedSubject, code=MtrDex.Blake3_256, label=Saids.d)
 
         chainSad = dict(
             d='',
@@ -334,7 +332,7 @@ def test_verifier_chained_credential(seeder):
                 n=vLeiCreder.said,
             ),
         )
-        _, chain = scheming.Saider.saidify(sad=chainSad, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
+        _, chain = Saider.saidify(sad=chainSad, code=MtrDex.Blake3_256, label=Saids.d)
 
         untargetedCreder = proving.credential(issuer=ian.pre,
                                               schema=optionalIssueeSchema,
@@ -346,8 +344,8 @@ def test_verifier_chained_credential(seeder):
         missing = False
         try:
             ianverfer.processCredential(untargetedCreder, prefixer=ian.kever.prefixer, seqner=seqner,
-                                        saider=coring.Diger(qb64=ian.kever.serder.said))
-        except kering.MissingRegistryError:
+                                        saider=Diger(qb64=ian.kever.serder.said))
+        except MissingRegistryError:
             missing = True
 
         assert missing is True
@@ -359,8 +357,8 @@ def test_verifier_chained_credential(seeder):
         iss = ianiss.issue(said=untargetedCreder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
         ian.interact(data=[rseal])
-        seqner = coring.Seqner(sn=ian.kever.sn)
-        diger = coring.Diger(qb64=ian.kever.serder.said)
+        seqner = Seqner(sn=ian.kever.sn)
+        diger = Diger(qb64=ian.kever.serder.said)
         ianiss.anchorMsg(pre=iss.pre,
                          regd=iss.said,
                          seqner=seqner,
@@ -375,7 +373,7 @@ def test_verifier_chained_credential(seeder):
             dt=helping.nowIso8601(),
             claim="An outrageous claim.",
         )
-        _, d = scheming.Saider.saidify(sad=chainedSubject, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
+        _, d = Saider.saidify(sad=chainedSubject, code=MtrDex.Blake3_256, label=Saids.d)
 
         chainSad = dict(
             d='',
@@ -384,7 +382,7 @@ def test_verifier_chained_credential(seeder):
                 o="I2I"
             ),
         )
-        _, chain = scheming.Saider.saidify(sad=chainSad, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
+        _, chain = Saider.saidify(sad=chainSad, code=MtrDex.Blake3_256, label=Saids.d)
 
         chainedCreder = proving.credential(issuer=ian.pre,
                                            schema=optionalIssueeSchema,
@@ -396,8 +394,8 @@ def test_verifier_chained_credential(seeder):
         missing = False
         try:
             ianverfer.processCredential(chainedCreder, prefixer=ian.kever.prefixer, seqner=seqner,
-                                        saider=coring.Diger(qb64=ian.kever.serder.said))
-        except kering.MissingRegistryError:
+                                        saider=Diger(qb64=ian.kever.serder.said))
+        except MissingRegistryError:
             missing = True
 
         assert missing is True
@@ -409,8 +407,8 @@ def test_verifier_chained_credential(seeder):
         iss = ianiss.issue(said=chainedCreder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
         ian.interact(data=[rseal])
-        seqner = coring.Seqner(sn=ian.kever.sn)
-        diger = coring.Diger(qb64=ian.kever.serder.said)
+        seqner = Seqner(sn=ian.kever.sn)
+        diger = Diger(qb64=ian.kever.serder.said)
         ianiss.anchorMsg(pre=iss.pre,
                          regd=iss.said,
                          seqner=seqner,
@@ -420,12 +418,12 @@ def test_verifier_chained_credential(seeder):
         # Ensure that when specifying I2I it is enforced
         try:
             ianverfer.processCredential(chainedCreder, prefixer=ian.kever.prefixer, seqner=seqner,
-                                        saider=coring.Diger(qb64=ian.kever.serder.said))
-        except kering.MissingChainError:
+                                        saider=Diger(qb64=ian.kever.serder.said))
+        except MissingChainError:
             pass
 
         # Now lets get Ron's credential into Vic's Tevers and Database
-        vickvy = ceventing.Kevery(db=vic.db, lax=False, local=False)
+        vickvy = Kevery(db=vic.db, lax=False, local=False)
         victvy = eventing.Tevery(reger=vicreg.reger, db=vic.db, local=False)
         vicverfer = verifying.Verifier(hby=vicHby, reger=vicreg.reger)
 
@@ -437,7 +435,7 @@ def test_verifier_chained_credential(seeder):
             parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
         vicverfer.processCredential(creder, prefixer=ian.kever.prefixer, seqner=seqner,
-                                    saider=coring.Diger(qb64=ian.kever.serder.said))
+                                    saider=Diger(qb64=ian.kever.serder.said))
         assert len(vicverfer.cues) == 1
         cue = vicverfer.cues.popleft()
         assert cue["kin"] == "saved"
@@ -454,7 +452,7 @@ def test_verifier_chained_credential(seeder):
 
         # And now verify the credential:
         vicverfer.processCredential(vLeiCreder, prefixer=ian.kever.prefixer, seqner=seqner,
-                                    saider=coring.Diger(qb64=ian.kever.serder.said))
+                                    saider=Diger(qb64=ian.kever.serder.said))
 
         assert len(vicverfer.cues) == 1
         cue = vicverfer.cues.popleft()
@@ -464,11 +462,11 @@ def test_verifier_chained_credential(seeder):
         # Revoke Ian's issuer credential and vic should no longer be able to verify
         # Han's credential that's linked to it
         rev = roniss.revoke(said=creder.said)
-        rseq = coring.Seqner(sn=rev.sn)
+        rseq = Seqner(sn=rev.sn)
         rseal = SealEvent(rev.pre, rseq.snh, rev.said)._asdict()
         ron.interact(data=[rseal])
-        seqner = coring.Seqner(sn=ron.kever.sn)
-        diger = coring.Diger(qb64=ron.kever.serder.said)
+        seqner = Seqner(sn=ron.kever.sn)
+        diger = Diger(qb64=ron.kever.serder.said)
         roniss.anchorMsg(pre=rev.pre,
                          regd=rev.said,
                          seqner=seqner,
@@ -482,11 +480,11 @@ def test_verifier_chained_credential(seeder):
         for msg in ronverfer.reger.clonePreIter(pre=creder.said):
             parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
-        with pytest.raises(kering.RevokedChainError):
+        with pytest.raises(RevokedChainError):
             vicverfer.processCredential(vLeiCreder, prefixer=ian.kever.prefixer, seqner=seqner,
-                                        saider=coring.Diger(qb64=ian.kever.serder.said))
+                                        saider=Diger(qb64=ian.kever.serder.said))
 
-        creds = ronreg.reger.cloneCreds(saids=[coring.Diger(qb64=creder.said)], db=ronHby.db)
+        creds = ronreg.reger.cloneCreds(saids=[Diger(qb64=creder.said)], db=ronHby.db)
         for cred in creds:
             assert cred['status']['et'] == 'rev'
             assert cred['rev'] is not None

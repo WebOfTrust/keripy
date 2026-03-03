@@ -3,10 +3,9 @@
 tests.vc.walleting module
 
 """
-from keri import core, kering
-from keri.core import coring, parsing
-from keri.core.eventing import SealEvent
-from keri.kering import Vrsn_1_0, Vrsn_2_0
+from keri.core import (Salter, Counter, coring,
+                       parsing, SealEvent, Codens)
+from keri.kering import Vrsn_1_0
 from keri.app import habbing
 
 from keri.vc.proving import credential
@@ -14,7 +13,7 @@ from keri.vdr import verifying, credentialing
 
 
 def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
-    sidSalt = core.Salter(raw=b'0123456789abcdef').qb64
+    sidSalt = Salter(raw=b'0123456789abcdef').qb64
 
     with habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby:
         sidHab = sidHby.makeHab(name="test")
@@ -56,8 +55,8 @@ def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
         sidReg.processEscrows()
 
         msg = bytearray(creder.raw)
-        msg.extend(core.Counter(core.Codens.SealSourceTriples, count=1,
-                                version=kering.Vrsn_1_0).qb64b)
+        msg.extend(Counter(Codens.SealSourceTriples, count=1,
+                                version=Vrsn_1_0).qb64b)
         msg.extend(coring.Prefixer(qb64=iss.pre).qb64b)
         msg.extend(coring.Seqner(sn=0).qb64b)
         msg.extend(iss.saidb)

@@ -4,17 +4,14 @@ tests.peer.test_exchanging module
 
 """
 import json
-import time
 
 import pysodium
-import pytest
 
-from keri import kering
-from keri.kering import Vrsn_1_0, Vrsn_2_0
-from keri import core
-from keri.core import coring, serdering, MtrDex, parsing
+from keri import kering, Vrsn_1_0
+from keri.core import (Salter, Counter, coring, serdering,
+                       MtrDex, parsing, Codens)
 
-from keri.app import habbing, forwarding, storing, signing
+from keri.app import habbing
 
 from keri.peer import exchanging
 from keri.vdr.eventing import incept
@@ -71,7 +68,7 @@ def test_essrs():
         essr, _ = exchanging.exchange(route='/essr/req', sender=hab.pre, diger=diger,
                                       modifiers=dict(src=hab.pre, dest=recHab.pre))
         ims = hab.endorse(serder=essr, pipelined=False)
-        ims.extend(core.Counter(core.Codens.ESSRPayloadGroup, count=1,
+        ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
                                 version=kering.Vrsn_1_0).qb64b)
         ims.extend(texter.qb64b)
 
@@ -95,7 +92,7 @@ def test_essrs():
         essr, _ = exchanging.exchange(route='/essr/req', sender=hab.pre, diger=diger,
                                       modifiers=dict(src=hab.pre, dest=recHab.pre))
         ims = hab.endorse(serder=essr, pipelined=False)
-        ims.extend(core.Counter(core.Codens.ESSRPayloadGroup, count=1,
+        ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
                                 version=kering.Vrsn_1_0).qb64b)
         ims.extend(texter[0].qb64b)
 
@@ -105,7 +102,7 @@ def test_essrs():
 
 
 def test_hab_exchange(mockHelpingNowUTC):
-    with habbing.openHby(salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby:
+    with habbing.openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
         hab = hby.makeHab(name="test")
         assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
 
