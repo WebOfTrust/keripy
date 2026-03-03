@@ -178,8 +178,8 @@ class Counselor(doing.DoDoer):
         waiting for delegator approval of a recent establishment event.
 
         """
-        for (pre,), (seqner, saider) in self.hby.db.gdee.getItemIter():  # group delegatee escrow
-            anchor = dict(i=pre, s=seqner.snh, d=saider.qb64)
+        for (pre,), (number, diger) in self.hby.db.gdee.getItemIter():  # group delegatee escrow
+            anchor = dict(i=pre, s=number.numh, d=diger.qb64)
             ghab = self.hby.habs[pre]
             kever = ghab.kevers[pre]
 
@@ -191,14 +191,14 @@ class Counselor(doing.DoDoer):
                     self.hby.db.gdee.rem(keys=(pre,))
                     logger.info("AID %s...%s: Delegation approval for %s received.", pre[:4], pre[-4:], pre)
 
-                    self.hby.db.cgms.put(keys=(pre, seqner.qb64), val=saider)
+                    self.hby.db.cgms.put(keys=(pre, number.qb64), val=diger)
 
             else:  # Not witnesser, we need to look for the anchor and then wait for receipts
                 if serder := self.hby.db.fetchLastSealingEventByEventSeal(kever.delpre,
                                                                           seal=anchor):
                     sner = coring.Number(num=serder.sn, code=coring.NumDex.Huge)
                     adiger = coring.Diger(qb64b=serder.saidb)
-                    self.hby.db.aess.pin(keys=(pre, saider.qb64b),
+                    self.hby.db.aess.pin(keys=(pre, diger.qb64b),
                                          val=(sner, adiger))  # authorizer event seal (delegator/issuer)
                     self.hby.db.gdee.rem(keys=(pre,))
                     logger.info("AID %s...%s: Delegation approval for %s received.", pre[:4], pre[-4:], pre)
@@ -206,7 +206,7 @@ class Counselor(doing.DoDoer):
                     # Move to escrow waiting for witness receipts
                     logger.info("AID %s...%s: Waiting for witness receipts for %s", pre[:4], pre[-4:], pre)
                     self.hby.db.gdee.rem(keys=(pre,))
-                    self.hby.db.gpwe.add(keys=(pre,), val=(seqner, saider))
+                    self.hby.db.gpwe.add(keys=(pre,), val=(number, diger))
 
     def processPartialWitnessEscrow(self):
         """
