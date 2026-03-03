@@ -8,11 +8,10 @@ import argparse
 
 from hio.base import doing
 
-from keri import help, kering
-from keri.app import agenting, habbing, httping
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.app.habbing import GroupHab
+from ..... import MissingEntryError, help
+from .... import agenting, habbing, httping
+from ...common import Parsery, existing
+from ....habbing import GroupHab
 
 logger = help.ogler.getLogger()
 
@@ -81,7 +80,7 @@ class ReadDoer(doing.DoDoer):
                   "/oobi": 0, "/reply": 0}
         try:
             client, clientDoer = agenting.httpClient(hab, self.witness)
-        except kering.MissingEntryError as e:
+        except MissingEntryError as e:
             raise ValueError(f"error connecting to witness {self.witness}: {e}")
 
         self.extend([clientDoer])

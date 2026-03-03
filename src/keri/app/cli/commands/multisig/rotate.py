@@ -9,14 +9,12 @@ from ordered_set import OrderedSet as oset
 
 from hio.base import doing
 
-from keri import help, kering
-from keri.app import grouping, indirecting, habbing, forwarding
-from keri.app.cli.common import rotating, existing, displaying, config
-from keri.app.cli.common.parsing import Parsery
-from keri.app.notifying import Notifier
-from keri.core import coring, serdering
-from keri.db import dbing
-from keri.peer import exchanging
+from ..... import ConfigurationError, help
+from .... import Notifier, grouping, indirecting, habbing, forwarding
+from ...common import Parsery, rotating, existing, displaying, config
+from .....core import coring, serdering
+from .....db import dbing
+from .....peer import exchanging
 
 logger = help.ogler.getLogger()
 
@@ -114,7 +112,7 @@ class GroupMultisigRotate(doing.DoDoer):
 
         ghab = self.hby.habByName(name=self.alias)
         if ghab is None:
-            raise kering.ConfigurationError(f"Alias {self.alias} is invalid")
+            raise ConfigurationError(f"Alias {self.alias} is invalid")
 
         if self.smids is None:
             self.smids = ghab.smids
@@ -124,7 +122,7 @@ class GroupMultisigRotate(doing.DoDoer):
 
         if self.wits:
             if self.adds or self.cuts:
-                raise kering.ConfigurationError("you can only specify witnesses or cuts and add")
+                raise ConfigurationError("you can only specify witnesses or cuts and add")
             ewits = ghab.kever.wits
 
             # wits= [a,b,c]  wits=[b, z]
@@ -137,7 +135,7 @@ class GroupMultisigRotate(doing.DoDoer):
             match smid.split(':'):
                 case [mid]:  # Only prefix provided, assume latest event
                     if mid not in self.hby.kevers:
-                        raise kering.ConfigurationError(f"unknown signing member {mid}")
+                        raise ConfigurationError(f"unknown signing member {mid}")
 
                     mkever = self.hby.kevers[mid]  # get key state for given member
                     merfers.append(mkever.verfers[0])
@@ -145,20 +143,20 @@ class GroupMultisigRotate(doing.DoDoer):
 
                 case [mid, sn]:
                     if mid not in self.hby.kevers:
-                        raise kering.ConfigurationError(f"unknown signing member {mid}")
+                        raise ConfigurationError(f"unknown signing member {mid}")
 
                     dig = self.hby.db.kels.getOnLast(keys=mid, on=int(sn))
                     if dig is None:
-                        raise kering.ConfigurationError(f"non-existant event {sn} for signing member {mid}")
+                        raise ConfigurationError(f"non-existant event {sn} for signing member {mid}")
                     dig = dig.encode("utf-8")  # convert it from str to bytes because we're calling bytes(dig)
                     if (serder := self.hby.db.evts.get(keys=(mid, bytes(dig)))) is None or not serder.estive:
-                        raise kering.ConfigurationError(f"invalid event {sn} for signing member {mid}")
+                        raise ConfigurationError(f"invalid event {sn} for signing member {mid}")
 
                     merfers.append(serder.verfers[0])
                     smids.append(mid)
 
                 case _:
-                    raise kering.ConfigurationError(f"invalid smid representation {smid}")
+                    raise ConfigurationError(f"invalid smid representation {smid}")
 
         migers = []
         rmids = []
@@ -166,7 +164,7 @@ class GroupMultisigRotate(doing.DoDoer):
             match rmid.split(':'):
                 case [mid]:  # Only prefix provided, assume latest event
                     if mid not in self.hby.kevers:
-                        raise kering.ConfigurationError(f"unknown rotation member {mid}")
+                        raise ConfigurationError(f"unknown rotation member {mid}")
 
                     mkever = self.hby.kevers[mid]  # get key state for given member
                     migers.append(mkever.ndigers[0])
@@ -174,23 +172,23 @@ class GroupMultisigRotate(doing.DoDoer):
 
                 case [mid, sn]:
                     if mid not in self.hby.kevers:
-                        raise kering.ConfigurationError(f"unknown rotation member {mid}")
+                        raise ConfigurationError(f"unknown rotation member {mid}")
 
                     dig = self.hby.db.kels.getOnLast(keys=mid, on=int(sn))
                     if dig is None:
-                        raise kering.ConfigurationError(f"non-existant event {sn} for rotation member {mid}")
+                        raise ConfigurationError(f"non-existant event {sn} for rotation member {mid}")
                     dig = dig.encode("utf-8")
                     if (serder := self.hby.db.evts.get(keys=dbing.dgKey(mid, bytes(dig)))) is None or not serder.estive:
-                        raise kering.ConfigurationError(f"invalid event {sn} for rotation member {mid}")
+                        raise ConfigurationError(f"invalid event {sn} for rotation member {mid}")
 
                     migers.append(serder.ndigers[0])
                     rmids.append(mid)
 
                 case _:
-                    raise kering.ConfigurationError(f"invalid rmid representation {rmid}")
+                    raise ConfigurationError(f"invalid rmid representation {rmid}")
 
         if ghab.mhab.pre not in smids:
-            raise kering.ConfigurationError(f"{ghab.mhab.pre} not in signing members {smids} for this event")
+            raise ConfigurationError(f"{ghab.mhab.pre} not in signing members {smids} for this event")
 
         prefixer = coring.Prefixer(qb64=ghab.pre)
         number = coring.Number(sn=ghab.kever.sn+1)

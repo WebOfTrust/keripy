@@ -9,11 +9,10 @@ import argparse
 from hio.base import doing
 from hio.help import Hict
 
-from keri import help, kering
-from keri.app import organizing, habbing
-from keri.app.agenting import httpClient, WitnessPublisher
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
+from ..... import Roles, help
+from .... import organizing, habbing
+from ....agenting import httpClient, WitnessPublisher
+from ...common import Parsery, existing
 
 logger = help.ogler.getLogger()
 
@@ -87,7 +86,7 @@ class AddDoer(doing.DoDoer):
 
         kel = self.hab.replay()
         data = dict(cid=self.hab.pre,
-                    role=kering.Roles.mailbox,
+                    role=Roles.mailbox,
                     eid=self.mailbox)
 
         route = "/end/role/add"
@@ -115,7 +114,7 @@ class AddDoer(doing.DoDoer):
 
         rep = client.respond()
         if rep.status == 200:
-            msg = self.hab.replyEndRole(cid=self.hab.pre, role=kering.Roles.mailbox)
+            msg = self.hab.replyEndRole(cid=self.hab.pre, role=Roles.mailbox)
             self.witpub.msgs.append(dict(pre=self.hab.pre, msg=bytes(msg)))
 
             while not self.witpub.cues:
