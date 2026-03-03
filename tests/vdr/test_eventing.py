@@ -7,11 +7,10 @@ import pytest
 
 from keri.app import keeping
 from keri.core import (Signer, coring, serdering, SealEvent,
-                       Prefixer, Seqner, Diger,
-                       TraitDex, MtrDex,)
+                       Prefixer, Seqner, Diger, MtrDex)
 from keri.db import basing
 from keri.db.dbing import snKey, dgKey
-from keri import (Ilks, MissingAnchorError, ValidationError,
+from keri import (Ilks, TraitDex, MissingAnchorError, ValidationError,
                   MissingWitnessSignatureError, LikelyDuplicitousError)
 from keri.vdr import (openReger, incept, rotate,
                       issue, revoke, backerIssue,
