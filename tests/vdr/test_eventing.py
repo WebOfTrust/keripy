@@ -6,12 +6,12 @@ tests.vdr.eventing module
 import pytest
 
 from keri.app import keeping
-from keri.core import (Signer, coring, serdering, TraitDex,
-                       SealEvent, Ilks, MtrDex, Prefixer,
-                       Seqner, Diger)
+from keri.core import (Signer, coring, serdering, SealEvent,
+                       Prefixer, Seqner, Diger,
+                       TraitDex, MtrDex,)
 from keri.db import basing
 from keri.db.dbing import snKey, dgKey
-from keri import (MissingAnchorError, ValidationError,
+from keri import (Ilks, MissingAnchorError, ValidationError,
                   MissingWitnessSignatureError, LikelyDuplicitousError)
 from keri.vdr import (openReger, incept, rotate,
                       issue, revoke, backerIssue,
