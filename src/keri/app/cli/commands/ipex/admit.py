@@ -106,7 +106,7 @@ class AdmitDoer(doing.DoDoer):
         # Lets get the latest KEL and Registry if needed
         self.witq.query(src=self.hab.pre, pre=issr)
         if "ri" in acdc:
-            self.witq.telquery(src=self.hab.pre, wits=self.hab.kevers[issr].wits, ri=acdc["ri"], i=acdc["d"])
+            self.witq.telquery(src=self.hab.pre, pre=issr, wits=self.hab.kevers[issr].wits, ri=acdc["ri"], i=acdc["d"])
 
         for label in ("anc", "iss", "acdc"):
             ked = embeds[label]
