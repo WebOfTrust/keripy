@@ -13,18 +13,16 @@ import sys
 
 from hio.base import doing
 
-from keri import help, kering
-from keri.app import indirecting, notifying, organizing
-from keri.app.cli.common import existing, terming
-from keri.app.cli.common.parsing import Parsery
-from keri.core import scheming
-from keri.help import helping
-from keri.peer import exchanging
-from keri.vc import protocoling
-from keri.vc.protocoling import Ipex
-from keri.vdr import credentialing, verifying
+from .... import indirecting, notifying, organizing
+from ...common import Parsery, existing, terming
+from ..... import ConfigurationError
+from .....core import scheming
+from .....help import helping, ogler
+from .....peer import exchanging
+from .....vc import protocoling, Ipex
+from .....vdr import credentialing, verifying
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='List notifications related to IPEX protocol messages', 
                                  parents=[Parsery.keystore()])
@@ -172,7 +170,7 @@ class ListDoer(doing.DoDoer):
         schema = sad['s']
         scraw = self.mbx.verifier.resolver.resolve(schema)
         if not scraw:
-            raise kering.ConfigurationError("Credential schema {} not found".format(schema))
+            raise ConfigurationError("Credential schema {} not found".format(schema))
 
         schemer = scheming.Schemer(raw=scraw)
         response = self.hby.db.erpy.get(keys=(exn.said,))
@@ -227,7 +225,7 @@ class ListDoer(doing.DoDoer):
             schema = sad['s']
             scraw = self.mbx.verifier.resolver.resolve(schema)
             if not scraw:
-                raise kering.ConfigurationError("Credential schema {} not found".format(schema))
+                raise ConfigurationError("Credential schema {} not found".format(schema))
 
             schemer = scheming.Schemer(raw=scraw)
             print(f"Spurned Credential {sad['d']}:")
@@ -243,7 +241,7 @@ class ListDoer(doing.DoDoer):
         schema = sad['s']
         scraw = self.mbx.verifier.resolver.resolve(schema)
         if not scraw:
-            raise kering.ConfigurationError("Credential schema {} not found".format(schema))
+            raise ConfigurationError("Credential schema {} not found".format(schema))
 
         schemer = scheming.Schemer(raw=scraw)
 

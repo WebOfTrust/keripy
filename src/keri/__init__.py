@@ -11,4 +11,6 @@ from .kering import (Vrsn_1_0, Vrsn_2_0, Kinds, Protocols, Colds, Ilks, sniff,
                      MissingEntryError, ConfigurationError, MissingEntryError,
                      KeriError, ClosedError, AuthError, ExtractionError,
                      ColdStartError, DecryptError, UnverifiedReplyError,
+                     ConfigurationError, MissingEntryError, MissingAnchorError,
+                     TraitCodex,
                      Roles, Schemes, VER1FULLSPAN)

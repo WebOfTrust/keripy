@@ -3,3 +3,4 @@
 KERI
 keri.vc Package
 """
+from .protocoling import Ipex
