@@ -7,3 +7,4 @@ keri.app package
 """
 
 from .organizing import Organizer, IdentifierOrganizer
+from .habbing import GroupHab
