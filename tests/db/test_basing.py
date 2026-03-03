@@ -1784,6 +1784,37 @@ def test_baser():
             if s == 7:
                 assert db.ldes.remOn(keys=b'A', on=s, val=val) == True
 
+        # Test for gpse
+        key = b'a'
+        sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+        number = coring.Number(num=0)
+        diger = coring.Diger(qb64=sdig1)
+
+        assert db.gpse.get(key) == []   # gpse is empty
+        assert db.gpse.add(keys=key, val=(number, diger)) == True   # add new entry with val as a tuple of number and diger
+
+        val = db.gpse.get(key)  # returns Cesr tuple of (number, diger)
+        num, dig = val[0]
+        assert isinstance(num, coring.Number)
+        assert isinstance(dig, coring.Diger)
+        assert num.num == number.num
+        assert dig.qb64 == diger.qb64
+        
+        assert db.gpse.rem(key) == True
+        assert db.gpse.get(key) == []   # gpse is empty again
+
+        # Saider and Seqner instead of Diger and Number
+        seqner = coring.Seqner(num=0)
+        saider = coring.Saider(qb64=sdig1)
+        assert db.gpse.add(keys=key, val=(seqner, saider)) == True # val is not using Number and Diger type 
+        val = db.gpse.get(key)                                     # but it still gets validated
+        assert val is not None
+        seq, dig = val[0]   # returns Cesr tuple of (number, diger)
+
+        assert isinstance(seq, coring.Number) # Seqner gets converted to Number on read
+        assert isinstance(dig, coring.Diger)   # Saider gets converted to Diger on read
+        assert seq.num == seqner.sn
+        assert dig.qb64 == saider.qb64
 
     assert not os.path.exists(db.path)
 
@@ -2493,8 +2524,8 @@ def test_clear_escrows():
                                    coring.Diger(qb64b=b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E')))
         assert db.udes.get(keys=udesKey) is not None
 
-        saider = coring.Saider(qb64b='EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
-        db.rpes.put(keys=('route',), vals=[saider])
+        diger = coring.Diger(qb64b='EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+        db.rpes.put(keys=('route',), vals=[diger])
         assert db.rpes.cnt(keys=('route',)) == 1
 
         db.epsd.put(keys=('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc',), val=coring.Dater())
@@ -2507,16 +2538,16 @@ def test_clear_escrows():
         db.dpub.put(keys=(pre, 'said'), val=serder)
         assert db.dpub.get(keys=(pre, 'said')) is not None
 
-        db.gpwe.add(keys=(pre,), val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), saider))
+        db.gpwe.add(keys=(pre,), val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), diger))
         assert db.gpwe.cnt(keys=(pre,)) == 1
 
-        db.gdee.add(keys=(pre,), val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), saider))
+        db.gdee.add(keys=(pre,), val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), diger))
         assert db.gdee.cnt(keys=(pre,)) == 1
 
         db.dpwe.pin(keys=(pre, 'said'), val=serder)
         assert db.dpwe.get(keys=(pre, 'said')) is not None
 
-        db.gpse.add(keys=('qb64',), val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), saider))
+        db.gpse.add(keys=('qb64',), val=(coring.Number(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), diger))
         assert db.gpse.cnt(keys=('qb64',)) == 1
 
         db.epse.put(keys=('dig',), val=serder)

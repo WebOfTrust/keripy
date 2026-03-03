@@ -1,4 +1,4 @@
-
+# Multi-Hab
 
 MultiHab can consist of the following:
  - 1 or more local AIDs, 1 or more remote AIDs: GroupHab
@@ -31,4 +31,3 @@ updateHabRecord()...
 Allow for creation of the event by the lead that is either local or Signify client or other multisig AID
 
 Start with SkelHab for just parse and sign event.
-

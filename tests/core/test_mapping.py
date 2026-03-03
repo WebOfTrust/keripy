@@ -3,19 +3,16 @@
 tests.core.test_mapping module
 
 """
-import copy
 import json
 import cbor2 as cbor
-import msgpack
 
 import pytest
 
-from dataclasses import dataclass, astuple, asdict
+from dataclasses import asdict
 
-from keri.kering import (Colds, Kinds,
-                         SerializeError, DeserializeError, InvalidValueError)
+from keri import (Colds, Kinds, SerializeError, DeserializeError, InvalidValueError)
 from keri.core import (EscapeDex, Labeler, Mapper, Compactor, Aggor,
-                       DigDex, Diger, DecDex, Decimer, Noncer)
+                       DigDex, Diger, Decimer, Noncer)
 
 
 def test_escape_dex():

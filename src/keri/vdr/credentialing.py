@@ -563,7 +563,7 @@ class Registrar(doing.DoDoer):
             number = Number(sn=sn)
             diger = Diger(qb64=said)
 
-            self.counselor.start(prefixer=prefixer, seqner=number, saider=diger, ghab=hab)
+            self.counselor.start(prefixer=prefixer, number=number, diger=diger, ghab=hab)
 
             print("Waiting for TEL registry vcp event multisig anchoring event")
             self.rgy.reger.tmse.add(keys=(registry.regk, rnum.qb64, registry.regd), val=(prefixer, number, diger))
@@ -603,7 +603,7 @@ class Registrar(doing.DoDoer):
             number = Number(sn=sn)
             diger = Diger(qb64=said)
 
-            self.counselor.start(prefixer=prefixer, seqner=number, saider=diger, ghab=hab)
+            self.counselor.start(prefixer=prefixer, number=number, diger=diger, ghab=hab)
 
             print(f"Waiting for TEL iss event multisig anchoring event {number.sn}")
             self.rgy.reger.tmse.add(keys=(vcid, rnum.qb64, iserder.said), val=(prefixer, number, diger))
@@ -646,7 +646,7 @@ class Registrar(doing.DoDoer):
             number = Number(sn=sn)
             diger = Diger(qb64=said)
 
-            self.counselor.start(prefixer=prefixer, seqner=number, saider=diger, ghab=hab)
+            self.counselor.start(prefixer=prefixer, number=number, diger=diger, ghab=hab)
 
             print(f"Waiting for TEL rev event multisig anchoring event {number.sn}")
             self.rgy.reger.tmse.add(keys=(vcid, rnum.qb64, rserder.said), val=(prefixer, number, diger))
@@ -762,9 +762,9 @@ class Registrar(doing.DoDoer):
         from witnesses yet.  When receipting is complete, remove from escrow and cue up a message
         that the event is complete.
         """
-        for (regk, snq, regd), (prefixer, seqner, diger) in self.rgy.reger.tmse.getItemIter():  # multisig escrow
+        for (regk, snq, regd), (prefixer, number, diger) in self.rgy.reger.tmse.getItemIter():  # multisig escrow 
             try:
-                if not self.counselor.complete(prefixer, seqner, diger):
+                if not self.counselor.complete(prefixer, number, diger):
                     continue
             except ValidationError:
                 self.rgy.reger.tmse.rem(keys=(regk, snq, regd))
@@ -774,7 +774,7 @@ class Registrar(doing.DoDoer):
 
             # Anchor the message, registry or otherwise
             key = dgKey(regk, regd)
-            number = Number(num=seqner.sn)
+            number = coring.Number(num=number.sn)
             self.rgy.reger.ancs.put(keys=key, val=(number, diger))
 
             self.rgy.reger.tmse.rem(keys=(regk, snq, regd))

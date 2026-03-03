@@ -9,15 +9,15 @@ import copy
 from dataclasses import dataclass, astuple, asdict
 from collections import namedtuple
 
-from ..help import helping
-from ..help.helping import sceil
-from ..help.helping import (intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64, Reb64,
-                            nabSextets)
+from ..help import (sceil, intToB64, b64ToInt, codeB64ToB2, codeB2ToB64, Reb64,
+                    nabSextets)
 
-from .. import kering
-from ..kering import (Colds, Versionage, Vrsn_1_0, Vrsn_2_0)
+from ..kering import (Colds, Versionage, Vrsn_1_0, Vrsn_2_0, InvalidVersionError,
+                      InvalidCodeError, InvalidCodeSizeError, InvalidVarIndexError,
+                      EmptyMaterialError, ShortageError, UnexpectedOpCodeError,
+                      UnexpectedCodeError)
 
-from ..core.coring import IceMapDom
+from .coring import IceMapDom
 
 
 @dataclass(frozen=True)
@@ -698,12 +698,12 @@ class Counter:
 
         """
         if version.major not in self.Sizes:
-            raise kering.InvalidVersionError(f"Unsupported major version="
+            raise InvalidVersionError(f"Unsupported major version="
                                              f"{version.major}.")
 
         latest = list(self.Sizes[version.major])[-1]  # get latest supported minor version
         if version.minor > latest:
-            raise kering.InvalidVersionError(f"Minor version={version.minor} "
+            raise InvalidVersionError(f"Minor version={version.minor} "
                                              f" exceeds latest supported minor"
                                              f" version={latest}.")
 
@@ -718,14 +718,14 @@ class Counter:
                 try:
                     code = self._codes[code]  # code is code name so look up code
                     if code not in self._sizes or len(code) < 2:
-                        raise kering.InvalidCodeError(f"Unsupported {code=}.")
+                        raise InvalidCodeError(f"Unsupported {code=}.")
                 except Exception as ex:
-                    raise kering.InvalidCodeError(f"Unsupported {code=}.") from ex
+                    raise InvalidCodeError(f"Unsupported {code=}.") from ex
 
             hs, ss, fs = self._sizes[code]  # get sizes for code
             cs = hs + ss  # both hard + soft code size
             if hs < 2 or fs != cs or cs % 4:  # fs must be bs and multiple of 4 for count codes
-                raise kering.InvalidCodeSizeError(f"Whole code size not full "
+                raise InvalidCodeSizeError(f"Whole code size not full "
                                                   f"size or not multiple of 4. "
                                                   f"{cs=} {fs=}.")
 
@@ -734,7 +734,7 @@ class Counter:
 
             if code[1] not in ("0123456789_"):  # small or opcode [A-Z,a-z] or large [-]
                 if ss not in (2, 5):  # not valid dynamic soft sizes
-                    raise kering.InvalidVarIndexError(f"Invalid {ss=} "
+                    raise InvalidVarIndexError(f"Invalid {ss=} "
                                                       f"for {code=}.")
                 # dynamically promote code based on count
                 if code[1] != '-' and count > (64 ** 2 - 1):  # small code but large count
@@ -743,7 +743,7 @@ class Counter:
                     ss = 5
 
             if count < 0 or count > (64 ** ss - 1):
-                raise kering.InvalidVarIndexError(f"Invalid {count=} for "
+                raise InvalidVarIndexError(f"Invalid {count=} for "
                                                   f"{code=} with {ss=}.")
 
             self._code = code
@@ -763,7 +763,7 @@ class Counter:
                 del qb2[:self._sizes[self.code].fs * 3 // 4]
 
         else:
-            raise kering.EmptyMaterialError("Improper initialization need either "
+            raise EmptyMaterialError("Improper initialization need either "
                                      "(code and count) or qb64b or "
                                      "qb64 or qb2.")
 
@@ -1096,14 +1096,14 @@ class Counter:
         # hs >= 2, ss > 0 fs == hs + ss, not (fs % 4)
 
         if count < 0 or count > (64 ** ss - 1):
-            raise kering.InvalidVarIndexError("Invalid count={} for code={}.".format(count, code))
+            raise InvalidVarIndexError("Invalid count={} for code={}.".format(count, code))
 
         # both is hard code + converted count
         both = "{}{}".format(code, intToB64(count, l=ss))
 
         # check valid pad size for whole code size
         if len(both) % 4:  # no pad
-            raise kering.InvalidCodeSizeError("Invalid size = {} of {} not a multiple of 4."
+            raise InvalidCodeSizeError("Invalid size = {} of {} not a multiple of 4."
                                        .format(len(both), both))
         # prepending full derivation code with index and strip off trailing pad characters
         return (both.encode("utf-8"))
@@ -1123,12 +1123,12 @@ class Counter:
         # hs >= 2, ss>0 fs ==  hs + ss, not (fs % 4)
 
         if count < 0 or count > (64 ** ss - 1):
-            raise kering.InvalidVarIndexError("Invalid count={} for code={}.".format(count, code))
+            raise InvalidVarIndexError("Invalid count={} for code={}.".format(count, code))
 
         # both is hard code + converted count
         both = "{}{}".format(code, intToB64(count, l=ss))
         if len(both) != fs:
-            raise kering.InvalidCodeSizeError("Mismatch code size = {} with table = {}."
+            raise InvalidCodeSizeError("Mismatch code size = {} with table = {}."
                                        .format(fs, len(both)))
 
         return (codeB64ToB2(both))  # convert to b2 left shift if any
@@ -1138,7 +1138,7 @@ class Counter:
         """Extracts self.code and self.count from qualified base64 bytes qb64b
         """
         if not qb64b or len(qb64b) < 2:  # need more bytes
-            raise kering.ShortageError("Empty material, Need more characters.")
+            raise ShortageError("Empty material, Need more characters.")
 
 
         first = qb64b[:2]  # extract first two char code selector
@@ -1146,20 +1146,20 @@ class Counter:
             first = first.decode("utf-8")
         if first not in self.Hards:
             if first[0] == '_':
-                raise kering.UnexpectedOpCodeError("Unexpected op code start"
+                raise UnexpectedOpCodeError("Unexpected op code start"
                                             "while extracing Counter.")
             else:
-                raise kering.UnexpectedCodeError("Unsupported code start ={}.".format(first))
+                raise UnexpectedCodeError("Unsupported code start ={}.".format(first))
 
         hs = self.Hards[first]  # get hard code size
         if len(qb64b) < hs:  # need more bytes
-            raise kering.ShortageError("Need {} more characters.".format(hs - len(qb64b)))
+            raise ShortageError("Need {} more characters.".format(hs - len(qb64b)))
 
         hard = qb64b[:hs]  # get hard code
         if hasattr(hard, "decode"):
             hard = hard.decode("utf-8")  # decode converts bytearray/bytes to str
         if hard not in self._sizes:  # Sizes needs str not bytes
-            raise kering.UnexpectedCodeError("Unsupported code ={}.".format(hard))
+            raise UnexpectedCodeError("Unsupported code ={}.".format(hard))
 
         hs, ss, fs = self._sizes[hard]  # assumes hs consistent in both tables
         # assumes fs = hs + ss  # both hard + soft code size
@@ -1168,7 +1168,7 @@ class Counter:
         # hs consistent and hs >= 2 and ss > 0 and fs = hs + ss and not fs % 4
 
         if len(qb64b) < fs:  # need more bytes
-            raise kering.ShortageError("Need {} more characters.".format(fs - len(qb64b)))
+            raise ShortageError("Need {} more characters.".format(fs - len(qb64b)))
 
         count = qb64b[hs:fs]  # extract count chars
         if hasattr(count, "decode"):
@@ -1183,24 +1183,24 @@ class Counter:
         """Extracts self.code and self.count from qualified base2 bytes qb2
         """
         if not qb2 or len(qb2) < 2:  # need more bytes
-            raise kering.ShortageError("Empty material, Need more bytes.")
+            raise ShortageError("Empty material, Need more bytes.")
 
         first = nabSextets(qb2, 2)  # extract first two sextets as code selector
         if first not in self.Bards:
             if first[0] == b'\xfc':  # b64ToB2('_')
-                raise kering.UnexpectedOpCodeError("Unexpected  op code start"
+                raise UnexpectedOpCodeError("Unexpected  op code start"
                                             "while extracing Matter.")
             else:
-                raise kering.UnexpectedCodeError("Unsupported code start sextet={}.".format(first))
+                raise UnexpectedCodeError("Unsupported code start sextet={}.".format(first))
 
         hs = self.Bards[first]  # get code hard size equvalent sextets
         bhs = sceil(hs * 3 / 4)  # bhs is min bytes to hold hs sextets
         if len(qb2) < bhs:  # need more bytes
-            raise kering.ShortageError("Need {} more bytes.".format(bhs - len(qb2)))
+            raise ShortageError("Need {} more bytes.".format(bhs - len(qb2)))
 
         hard = codeB2ToB64(qb2, hs)  # extract and convert hard part of code
         if hard not in self._sizes:
-            raise kering.UnexpectedCodeError("Unsupported code ={}.".format(hard))
+            raise UnexpectedCodeError("Unsupported code ={}.".format(hard))
 
         hs, ss, fs = self._sizes[hard]
         # assumes fs = hs + ss  # both hs and ss
@@ -1210,11 +1210,10 @@ class Counter:
 
         bcs = sceil(fs * 3 / 4)  # bcs is min bytes to hold fs sextets
         if len(qb2) < bcs:  # need more bytes
-            raise kering.ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
+            raise ShortageError("Need {} more bytes.".format(bcs - len(qb2)))
 
         both = codeB2ToB64(qb2, fs)  # extract and convert both hard and soft part of code
         count = b64ToInt(both[hs:fs])  # get count
 
         self._code = hard
         self._count = count
-
