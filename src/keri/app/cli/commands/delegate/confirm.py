@@ -14,8 +14,9 @@ from keri.app import habbing, indirecting, agenting, grouping, forwarding, deleg
 from keri.app.cli.common import existing
 from keri.app.habbing import GroupHab
 from keri import core
-from keri.core import coring, serdering
+from keri.core import coring, serdering, Siger
 from keri.db import dbing
+from keri.db.dbing import dgKey
 from keri.help import helping
 from keri.peer import exchanging
 
@@ -93,6 +94,26 @@ class ConfirmDoer(doing.DoDoer):
         self.interact = interact
         self.auto = auto
         super(ConfirmDoer, self).__init__(doers=doers)
+
+    def _addAuthorizerSeal(self, pre, edig, anchorSn, anchorSaid):
+        """Save the authorizer (delegator) event seal of the anchoring IXN event for an approved delegation."""
+        dgkey = dbing.dgKey(pre, edig)
+        seqner = coring.Seqner(sn=anchorSn)
+        saider = coring.Saider(qb64=anchorSaid)
+        couple = seqner.qb64b + saider.qb64b
+        self.hby.db.setAes(dgkey, couple)
+
+    def _processEvent(self, pre, edig, eserder, anchorSn, anchorSaid):
+        """Process the DIP or DRT event so it appears in the delegator's hby.kevers."""
+        dgkey = dbing.dgKey(pre.encode("utf-8"), edig.encode("utf-8"))
+        sigs = self.hby.db.getSigs(dgkey)  # list of sigs
+        sigers = [Siger(qb64b=bytes(sig)) for sig in sigs]
+        wigs = self.hby.db.getWigs(dgkey)  # list of wigs
+        wigers = [Siger(qb64b=bytes(wig)) for wig in wigs]
+        sner = core.Number(num=anchorSn, code=core.NumDex.Huge)
+        saider = coring.Saider(qb64=anchorSaid)
+        self.hby.kvy.processEvent(serder=eserder, sigers=sigers, wigers=wigers, delseqner=sner,
+                                      delsaider=saider, local=True)
 
     def confirmDo(self, tymth, tock=0.0, **kwa):
         """
@@ -175,7 +196,11 @@ class ConfirmDoer(doing.DoDoer):
 
                         print(f"Delegate {eserder.pre} {typ} event committed.")
 
+                        # TODO: once both delegables and misfit escrows are automated then refactor
+                        #   the following direct removal to instead rely on normal escrow processing.
                         self.hby.db.delegables.rem(keys=(pre, sn), val=edig)
+                        self._addAuthorizerSeal(pre, edig, anchorSn=serder.sn, anchorSaid=serder.said)
+                        self._processEvent(pre=pre, edig=edig, eserder=eserder, anchorSn=serder.sn, anchorSaid=serder.said)
                         self.remove(self.toRemove)
                         return True
 
@@ -232,7 +257,11 @@ class ConfirmDoer(doing.DoDoer):
 
                             print(f"Delegate {eserder.pre} {typ} event committed.")
 
+                        # TODO: once both delegables and misfit escrows are automated then refactor
+                        #   the following direct removal to instead rely on normal escrow processing.
                         self.hby.db.delegables.rem(keys=(pre, sn), val=edig)
+                        self._addAuthorizerSeal(pre, edig, anchorSn=hab.kever.sn, anchorSaid=hab.kever.serder.said)
+                        self._processEvent(pre=pre, edig=edig, eserder=eserder, anchorSn=eserder.sn, anchorSaid=eserder.said)
                         self.remove(self.toRemove)
                         return True
 
