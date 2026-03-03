@@ -10,8 +10,9 @@ keri.core Package
 # Matter class and its subclasses
 from .coring import (Matter, MtrDex, Number, NumDex, Dater, DecDex, Decimer,
                      Texter, Bexter, Pather, Verfer, Cigar, Diger, DigDex,
-                     Prefixer, PreDex, Seqner, Verser, Tholder,
-                     Labeler, LabelDex, Decimer, DecDex, Noncer, NonceDex)
+                     Prefixer, PreDex, Seqner, Verser, Tholder, Saider,
+                     Labeler, LabelDex, Decimer, DecDex, Noncer, NonceDex,
+                     TraitDex, Saids)
 from .indexing import Indexer, Siger, IdrDex, IdxSigDex
 from .signing import (Tiers, Signer, Salter, Cipher, CiXDex,
                       Encrypter, Decrypter, Streamer)
@@ -23,4 +24,4 @@ from .structing import (Structor, Sealer, Blinder, Mediar,
                         SealDigest, SealRoot, SealBack, SealLast, SealSource,
                         SealEvent, SealKind, BlindState, BoundState, TypeMedia)
 from .eventing import (incept, interact, rotate, delcept, deltate, receipt,
-                       query, reply, prod, bare, exchept, exchange)
+                       query, reply, prod, bare, exchept, exchange, Kevery)
