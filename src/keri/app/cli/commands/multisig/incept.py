@@ -13,13 +13,12 @@ from ordered_set import OrderedSet as oset
 import sys
 from hio.base import doing
 
-from keri import help, kering
-from keri.app import indirecting, grouping, habbing, forwarding
-from keri.app.cli.common import existing, displaying
-from keri.app.cli.common.parsing import Parsery
-from keri.app.notifying import Notifier
-from keri.core import coring, serdering
-from keri.peer import exchanging
+from ..... import ConfigurationError, help
+from .... import (Notifier, indirecting, grouping,
+                  habbing, forwarding)
+from ...common import Parsery, existing, displaying
+from .....core import coring
+from .....peer import exchanging
 
 logger = help.ogler.getLogger()
 
@@ -118,8 +117,8 @@ class GroupMultisigIncept(doing.DoDoer):
 
         hab = self.hby.habByName(name=self.alias)
         if hab is None:
-            raise kering.ConfigurationError(f"invalid alias {self.alias} "
-                                            f"specified for database {self.name}")
+            raise ConfigurationError(f"invalid alias {self.alias} "
+                                     f"specified for database {self.name}")
 
         ghab = self.hby.habByName(name=self.group)
         if ghab is None:

@@ -8,17 +8,13 @@ import os
 
 from hio.base import doing
 
-from keri.kering import Vrsn_1_0, Vrsn_2_0
-from keri.app import forwarding, organizing, habbing, grouping, indirecting
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.app.notifying import Notifier
-from keri.core import parsing, coring, eventing
-from keri.peer import exchanging
-from keri.vc import protocoling
-from keri.vc.protocoling import Ipex
-from keri.vdr import credentialing, verifying
-from keri.vdr import eventing as teventing
+from ..... import Vrsn_1_0
+from .... import Notifier, forwarding, organizing, habbing, grouping, indirecting
+from ...common import Parsery, existing
+from .....core import parsing, eventing
+from .....peer import exchanging
+from .....vc import protocoling, Ipex
+from .....vdr import credentialing, verifying, Tevery
 
 
 parser = argparse.ArgumentParser(description='Reject an IPEX apply, offer, agree or grant message', 
@@ -53,7 +49,7 @@ class SpurnDoer(doing.DoDoer):
         self.org = organizing.Organizer(hby=self.hby)
 
         kvy = eventing.Kevery(db=self.hby.db)
-        tvy = teventing.Tevery(db=self.hby.db, reger=self.rgy.reger)
+        tvy = Tevery(db=self.hby.db, reger=self.rgy.reger)
         vry = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
 
         self.psr = parsing.Parser(kvy=kvy, tvy=tvy, vry=vry, version=Vrsn_1_0)

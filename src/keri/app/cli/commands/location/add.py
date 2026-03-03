@@ -10,15 +10,13 @@ from urllib.parse import urlparse
 
 from hio.base import doing
 
-from keri import help, kering
-from keri.kering import Vrsn_1_0, Vrsn_2_0
-from keri.app import habbing, grouping, indirecting, forwarding
-from keri.app.agenting import WitnessPublisher
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.app.notifying import Notifier
-from keri.core import parsing
-from keri.peer import exchanging
+from ..... import help, ConfigurationError, Vrsn_1_0
+from .... import habbing, grouping, indirecting, forwarding
+from ....agenting import WitnessPublisher
+from ...common import Parsery, existing
+from ....notifying import Notifier
+from .....core import parsing
+from .....peer import exchanging
 
 logger = help.ogler.getLogger()
 
@@ -66,7 +64,7 @@ class LocationDoer(doing.DoDoer):
         mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc)
 
         if self.hab is None:
-            raise kering.ConfigurationError(f"unknown alias={alias}")
+            raise ConfigurationError(f"unknown alias={alias}")
 
         self.toRemove = [self.witpub, self.postman, mbx]
 

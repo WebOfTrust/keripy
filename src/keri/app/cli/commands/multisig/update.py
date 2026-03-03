@@ -8,12 +8,9 @@ import time
 
 from hio.base import doing
 from hio.help import decking
-from keri import help, kering
-from keri.app import agenting, indirecting, habbing
-from keri.app.cli.common import displaying
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.app.habbing import GroupHab
+from ..... import ConfigurationError, help
+from .... import GroupHab, agenting, indirecting, habbing
+from ...common import Parsery, displaying, existing
 
 logger = help.ogler.getLogger()
 
@@ -47,7 +44,7 @@ class UpdateDoer(doing.DoDoer):
         hab = self.hby.habByName(alias)
 
         if not isinstance(hab, GroupHab):
-            raise kering.ConfigurationError("only group habs can be updated from witnesses.")
+            raise ConfigurationError("only group habs can be updated from witnesses.")
 
         self.hab = hab
 

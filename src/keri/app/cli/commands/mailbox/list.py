@@ -8,11 +8,9 @@ import argparse
 
 from hio.base import doing
 
-from keri import help
-from keri.app import organizing
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.kering import ConfigurationError, Roles
+from ..... import ConfigurationError, Roles, help
+from .... import organizing
+from ...common import Parsery, existing
 
 logger = help.ogler.getLogger()
 
