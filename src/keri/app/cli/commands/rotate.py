@@ -8,11 +8,11 @@ from dataclasses import dataclass
 
 from hio.base import doing
 
-from keri import kering
-from keri.app.cli.common import rotating, existing, config
-from keri.app.cli.common.parsing import Parsery
-from keri.core import coring
-from keri.help import helping
+from .... import kering
+from ..common import rotating, existing, config
+from ..common.parsing import Parsery
+from ....core import coring
+from ....help import helping
 from ... import habbing, agenting, indirecting, delegating, forwarding
 
 parser = argparse.ArgumentParser(description='Rotate keys', 
@@ -213,7 +213,7 @@ class RotateDoer(doing.DoDoer):
         if hab.kever.delpre:
             self.swain.delegation(pre=hab.pre, sn=hab.kever.sn, auths=auths, proxy=self.proxy)
             print("Waiting for delegation approval...")
-            while not self.swain.complete(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn)):
+            while not self.swain.complete(hab.kever.prefixer, coring.Number(num=hab.kever.sn, code=coring.NumDex.Huge)):
                 yield self.tock
 
         elif hab.kever.wits:

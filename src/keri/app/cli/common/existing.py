@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-keri.kli.common.existing module
+keri.app.cli.common.existing module
 
 """
 
@@ -8,8 +8,8 @@ import getpass
 import sys
 from contextlib import contextmanager
 
-from keri import kering
-from keri.app import habbing, keeping
+from .... import kering
+from ... import habbing, keeping
 
 
 def setupHby(name, base="", bran=None, cf=None, temp=False):

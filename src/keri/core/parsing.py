@@ -8,23 +8,22 @@ import copy
 import logging
 from dataclasses import asdict
 from collections import deque
-from base64 import urlsafe_b64decode as decodeB64
 from base64 import urlsafe_b64encode as encodeB64
 
-from .. import kering
-from ..kering import (Colds, sniff, Vrsn_1_0, Vrsn_2_0,
-                      ShortageError, ColdStartError)
+from ..kering import (Colds, sniff, Vrsn_2_0, Version,
+                      UnexpectedCountCodeError, ValidationError,
+                      QueryNotFoundError, ExtractionError, ShortageError,
+                      ColdStartError, InvalidVersionError,
+                      SizedGroupError, TopLevelStreamError)
 from .coring import (Ilks, Seqner, Cigar, Diger, Noncer, Labeler, Number, Verser,
                      Dater, Verfer, Prefixer, Saider, Texter)
-from .counting import (Counter, Codens, CtrDex_1_0, CtrDex_2_0, GenDex,
-                       UniDex_1_0, UniDex_2_0)
-from .indexing import (Siger, )
-from . import serdering
-from .. import help
+from .counting import Counter, Codens, CtrDex_1_0, CtrDex_2_0, GenDex
+from .indexing import Siger
+from .serdering import Serdery, SerderKERI, SerderACDC
+from ..help import ogler
 
 
-
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 class Parser:
@@ -204,12 +203,12 @@ class Parser:
         """
         if version is not None:
             if version.major not in self.Methods:
-                raise kering.InvalidVersionError(f"Unsupported major version="
+                raise InvalidVersionError(f"Unsupported major version="
                                                  f"{version.major}.")
 
             latest = list(self.Methods[version.major])[-1]  # get latest supported minor version
             if version.minor > latest:
-                raise kering.InvalidVersionError(f"Minor version={version.minor} "
+                raise InvalidVersionError(f"Minor version={version.minor} "
                                                  f" exceeds latest supported minor"
                                                  f" version={latest}.")
             self._version = version
@@ -466,21 +465,21 @@ class Parser:
                                                    version=version)
 
 
-            except kering.SizedGroupError as ex:  # error inside sized group
+            except SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Parser sized group error: %s", ex.args[0])
                 else:
                     logger.error("Parser sized group error: %s", ex.args[0])
 
-            except (kering.ColdStartError, kering.ExtractionError) as ex:  # some extraction error
+            except (ColdStartError, ExtractionError) as ex:  # some extraction error
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Parser msg extraction error: %s", ex.args[0])
                 else:
                     logger.error("Parser msg extraction error: %s", ex.args[0])
                 del ims[:]  # delete rest of stream to force cold restart
 
-            except (kering.ValidationError, Exception) as ex:  # non Extraction Error
+            except (ValidationError, Exception) as ex:  # non Extraction Error
                 # Non extraction errors happen after successfully extracted from stream
                 # so we don't flush rest of stream just resume
                 if logger.isEnabledFor(logging.TRACE):
@@ -551,21 +550,21 @@ class Parser:
                                                    local=local,
                                                    version=version)
 
-            except kering.SizedGroupError as ex:  # error inside sized group
+            except SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery sized group error: %s", ex.args[0])
                 else:
                     logger.error("Kevery sized group error: %s", ex.args[0])
 
-            except (kering.ColdStartError, kering.ExtractionError) as ex:  # some extraction error
+            except (ColdStartError, ExtractionError) as ex:  # some extraction error
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery msg extraction error: %s", ex.args[0])
                 else:
                     logger.error("Kevery msg extraction error: %s", ex.args[0])
                 del ims[:]  # delete rest of stream to force cold restart
 
-            except (kering.ValidationError, Exception) as ex:  # non Extraction Error
+            except (ValidationError, Exception) as ex:  # non Extraction Error
                 # Non extraction errors happen after successfully extracted from stream
                 # so we don't flush rest of stream just resume
                 if logger.isEnabledFor(logging.TRACE):
@@ -651,21 +650,21 @@ class Parser:
                                                    #local=local,
                                                    #version=version)
 
-            except kering.SizedGroupError as ex:  # error inside sized group
+            except SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Parser sized group error: %s", ex.args[0])
                 else:
                     logger.error("Parser sized group error: %s", ex.args[0])
 
-            except (kering.ColdStartError, kering.ExtractionError) as ex:  # some extraction error
+            except (ColdStartError, ExtractionError) as ex:  # some extraction error
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Parser msg extraction error: %s", ex.args[0])
                 else:
                     logger.error("Parser msg extraction error: %s", ex.args[0])
                 del ims[:]  # delete rest of stream to force cold restart
 
-            except (kering.ValidationError, Exception) as ex:  # non Extraction Error
+            except (ValidationError, Exception) as ex:  # non Extraction Error
                 # Non extraction errors happen after successfully extracted from stream
                 # so we don't flush rest of stream just resume
                 if logger.isEnabledFor(logging.TRACE):
@@ -784,19 +783,19 @@ class Parser:
                                                        vry=vry,
                                                        local=local,
                                                        version=self.version)
-                except kering.TopLevelStreamError as ex:  # encountered GenericGroup
+                except TopLevelStreamError as ex:  # encountered GenericGroup
                     continue  # so returns control here to parse that group
 
-                except (kering.ValidationError, Exception) as ex:  # non Extraction Error
+                except (ValidationError, Exception) as ex:  # non Extraction Error
                     # Non extraction errors happen after a message has been
                     # successfully extracted from stream
                     # so we don't flush rest of stream just resume
                     continue
 
 
-        except kering.ExtractionError as ex:  # maybe this needs to be more granular
+        except ExtractionError as ex:  # maybe this needs to be more granular
             if eggs is not None:  # extracted enclosed message group is preflushed
-                raise kering.SizedGroupError(f"Error processing generic group"
+                raise SizedGroupError(f"Error processing generic group"
                                                  f" of size={eggs}")
             raise  # no enclosing message group so can't preflush, must flush stream
 
@@ -887,7 +886,7 @@ class Parser:
                     tsgs=[], ssgs=[], frcs=[], sscs=[], ssts=[], tdcs=[],
                     ptds=[], essrs=[], bsqs=[], bsss=[], tmqs=[], local=local)
 
-        serdery = serdering.Serdery(version=kering.Version)
+        serdery = Serdery(version=Version)
 
 
         try:
@@ -1022,10 +1021,10 @@ class Parser:
                 elif (ctr.code in (self.sucodes.GenericGroup,
                                    self.sucodes.BigGenericGroup)):
                     # return control to groupParsator
-                    raise kering.TopLevelStreamError(f"Got GenericGroup so revisit.")
+                    raise TopLevelStreamError(f"Got GenericGroup so revisit.")
 
                 else:  # shouldn't be a counter of any other type here
-                    raise kering.ColdStartError(f"Expected message counter code,"
+                    raise ColdStartError(f"Expected message counter code,"
                                                 f" got code={ctr.code}")
 
             else:   # Otherwise its JSON, CBOR, or MGPK message at top level
@@ -1034,7 +1033,7 @@ class Parser:
                         serder = serdery.reap(ims=ims,
                                               genus=self.genus,
                                               svrsn=self.version)
-                    except kering.ShortageError as ex:  # need more bytes
+                    except ShortageError as ex:  # need more bytes
                         if framed:  # pre-extracted
                             raise  # incomplete frame or group so abort by raising error
                         yield
@@ -1042,9 +1041,9 @@ class Parser:
                         exts['serder'] = serder
                         break  # break out of while loop
 
-        except kering.ExtractionError as ex:
+        except ExtractionError as ex:
             if emgs is not None:  # extracted enclosed message group is preflushed
-                raise kering.SizedGroupError(f"Error processing enclosing "
+                raise SizedGroupError(f"Error processing enclosing "
                                              f"message group of size={emgs}")
             raise  # no enclosing group so can't preflush, must flush stream
 
@@ -1112,7 +1111,7 @@ class Parser:
                         yield from getattr(self, self.methods[ctr.name])(exts=exts,
                             ims=ims, ctr=ctr, cold=cold, abort=(framed or enclosed))
                     except AttributeError as ex:
-                        raise kering.UnexpectedCountCodeError(f"Unsupported count"
+                        raise UnexpectedCountCodeError(f"Unsupported count"
                                                 f" code={ctr.code}") from ex
                     except Exception as ex:
                         raise  # easier debug with breakpoint here
@@ -1139,9 +1138,9 @@ class Parser:
                 # so just proceed to process current message
 
 
-        except kering.ExtractionError as ex:
+        except ExtractionError as ex:
             if enclosed:  # extracted enclosed attachment group is preflushed
-                raise kering.SizedGroupError(f"Error processing attachment group"
+                raise SizedGroupError(f"Error processing attachment group"
                                              " of size={eags}")
             raise  # no enclosing attachment group so can't preflush, must flush stream
 
@@ -1149,7 +1148,7 @@ class Parser:
             while verstack:  # restore version to what it was
                 self.version = verstack.pop()
 
-        if isinstance(serder, serdering.SerderKERI):
+        if isinstance(serder, SerderKERI):
             ilk = serder.ilk  # dispatch abased on ilk
 
             if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
@@ -1160,11 +1159,11 @@ class Parser:
                     msg = f"Missing attached signature(s) for evt = {serder.ked['d']}"
                     logger.info(msg)
                     logger.debug("Event Body = \n%s\n", serder.pretty())
-                    raise kering.ValidationError(msg)
+                    raise ValidationError(msg)
                 try:
                     exts['firner'] = firner
                     exts['dater'] = dater
-                    exts['delseqner'] = delseqner
+                    exts['delnum'] = Number(num=delseqner.sn) if delseqner is not None else None
                     exts['deldiger'] = deldiger
 
                     kvy.processEvent(**exts)
@@ -1179,34 +1178,34 @@ class Parser:
                     msg = f"No kevery to process so dropped msg={serder.said}"
                     logger.info(msg)
                     logger.debug("Event Body = \n%s\n", serder.pretty())
-                    raise kering.ValidationError(msg) from ex
+                    raise ValidationError(msg) from ex
 
             elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
                 if not (exts['cigars'] or exts['wigers'] or exts['tsgs']):  # (cigars or wigers or tsgs)
                     msg = f"Missing attached signatures on receipt msg sn={serder.sn} SAID={serder.said}"
                     logger.info(msg)
                     logger.debug("Receipt body=\n%s\n", serder.pretty())
-                    raise kering.ValidationError(msg)
+                    raise ValidationError(msg)
 
                 try:
 
                     kvy.processReceipt(**exts)
 
                 except AttributeError as ex:
-                    raise kering.ValidationError(f"No kevery to process so dropped msg"
+                    raise ValidationError(f"No kevery to process so dropped msg"
                                                  f"= {serder.pretty()}.") from ex
 
 
             elif ilk in (Ilks.rpy,):  # reply message
                 if not (exts['cigars'] or exts['tsgs']):  # (cigars or tsgs)
-                    raise kering.ValidationError(f"Missing attached endorser signature(s) "
+                    raise ValidationError(f"Missing attached endorser signature(s) "
                                                  f"to reply msg = {serder.pretty()}.")
 
                 try:
                     rvy.processReply(**exts)
 
                 except AttributeError as ex:
-                    raise kering.ValidationError(f"No revery to process so dropped msg"
+                    raise ValidationError(f"No revery to process so dropped msg"
                                                  f"= {serder.pretty()}.") from ex
 
             elif ilk in (Ilks.qry,):  # query message
@@ -1220,7 +1219,7 @@ class Parser:
                     exts['sigers'] = []  # just in case sigers provided not by ssgs
 
                 if not (exts['source'] or exts['cigars']):  # need one or the other
-                    raise kering.ValidationError(f"Missing attached requester "
+                    raise ValidationError(f"Missing attached requester "
                                                  f"source for query"
                                                  f" msg = {serder.pretty()}.")
 
@@ -1229,9 +1228,9 @@ class Parser:
                     try:
                         kvy.processQuery(**exts)
                     except AttributeError as ex:
-                        raise kering.ValidationError(f"No kevery to process so "
+                        raise ValidationError(f"No kevery to process so "
                                     f" dropped msg={serder.pretty()}") from ex
-                    except kering.QueryNotFoundError as ex:  # catch escrow error and log it
+                    except QueryNotFoundError as ex:  # catch escrow error and log it
                         if logger.isEnabledFor(logging.TRACE):
                             logger.exception("Error processing query = %s", ex)
                             logger.trace("Query Body=\n%s\n", serder.pretty())
@@ -1242,23 +1241,23 @@ class Parser:
                     try:
                         tvy.processQuery(**exts)
                     except AttributeError as ex:
-                        raise kering.ValidationError(f"No tevery to process so dropped msg"
+                        raise ValidationError(f"No tevery to process so dropped msg"
                                                      f"={serder.pretty()}") from ex
 
                 else:
-                    raise kering.ValidationError(f"Invalid resource type {route}"
+                    raise ValidationError(f"Invalid resource type {route}"
                                                  f"so dropped msg={serder.pretty()}.")
 
             elif ilk in (Ilks.exn,):
                 if not (exts['cigars'] or exts['tsgs']):
-                    raise kering.ValidationError(f"Missing attached exchanger "
+                    raise ValidationError(f"Missing attached exchanger "
                                         f"signatures for msg={serder.pretty()}")
 
                 try:
                     exc.processEvent(**exts)
 
                 except AttributeError as ex:
-                    raise kering.ValidationError(f"No Exchange to process so "
+                    raise ValidationError(f"No Exchange to process so "
                                     f"dropped msg={serder.pretty()}.") from ex
 
             elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
@@ -1272,13 +1271,13 @@ class Parser:
                     tvy.processEvent(**exts)
 
                 except AttributeError as ex:
-                    raise kering.ValidationError(f"No tevery to process so dropped msg"
+                    raise ValidationError(f"No tevery to process so dropped msg"
                                                  f"={serder.pretty()}.") from ex
             else:
-                raise kering.ValidationError(f"Unexpected message {ilk=} for evt="
+                raise ValidationError(f"Unexpected message {ilk=} for evt="
                                              f"{serder.pretty()}")
 
-        elif isinstance(serder, serdering.SerderACDC):
+        elif isinstance(serder, SerderACDC):
             ilk = serder.ilk  # dispatch based on ilk
 
             if ilk is None:  # default for ACDC
@@ -1291,14 +1290,14 @@ class Parser:
                     vry.processACDC(**exts)
                     #vry.processACDC(serder=serder, prefixer=prefixer, seqner=seqner, saider=saider)
                 except AttributeError as ex:
-                    raise kering.ValidationError(f"No verifier to process so "
+                    raise ValidationError(f"No verifier to process so "
                                         f"dropped ACDC={serder.pretty()}") from ex
             else:
-                raise kering.ValidationError(f"Unexpected message ilk = {ilk} "
+                raise ValidationError(f"Unexpected message ilk = {ilk} "
                                              f"for evt={serder.pretty()}")
 
         else:
-            raise kering.ValidationError(f"Unexpected protocol type={serder.proto}"
+            raise ValidationError(f"Unexpected protocol type={serder.proto}"
                                          f" for event message={serder.pretty()}.")
 
         return True  # done state
@@ -1661,7 +1660,7 @@ class Parser:
                                               cold=cold,
                                               abort=abort)
             if ictr.code != CtrDex_1_0.ControllerIdxSigs:
-                raise kering.UnexpectedCountCodeError(f"Expected count code="
+                raise UnexpectedCountCodeError(f"Expected count code="
                             f"{CtrDex_1_0.ControllerIdxSigs}, got code={ictr.code}")
             isigers = []
             for i in range(ictr.count):  # extract each signature in idx cnt
@@ -1713,7 +1712,7 @@ class Parser:
             saider = self.extract(ims=gims, klas=Saider, cold=cold)
             ictr = self.extract(ims=gims, klas=Counter, cold=cold)
             if ictr.code != CtrDex_2_0.ControllerIdxSigs:
-                raise kering.UnexpectedCountCodeError(f"Expected count code="
+                raise UnexpectedCountCodeError(f"Expected count code="
                             f"{CtrDex_2_0.ControllerIdxSigs}, got code={ictr.code}")
             igs = ictr.byteCount(cold=cold)
             # already extracted enclosing group bytes so igs must be < len(gims)
@@ -1763,7 +1762,7 @@ class Parser:
                                               cold=cold,
                                               abort=abort)
             if ictr.code != CtrDex_1_0.ControllerIdxSigs:
-                raise kering.UnexpectedCountCodeError(f"Expected count code="
+                raise UnexpectedCountCodeError(f"Expected count code="
                             f"{CtrDex_1_0.ControllerIdxSigs}, got code={ictr.code}")
             isigers = []
             for i in range(ictr.count):  # extract each signature in idx cnt
@@ -1813,7 +1812,7 @@ class Parser:
             prefixer = self.extract(ims=gims, klas=Prefixer, cold=cold)
             ictr = self.extract(ims=gims, klas=Counter, cold=cold)
             if ictr.code != CtrDex_2_0.ControllerIdxSigs:
-                raise kering.UnexpectedCountCodeError(f"Expected count code="
+                raise UnexpectedCountCodeError(f"Expected count code="
                             f"{CtrDex_2_0.ControllerIdxSigs}, got code={ictr.code}")
             igs = ictr.byteCount(cold=cold)
             # already extracted enclosing group bytes so igs must be < len(gims)

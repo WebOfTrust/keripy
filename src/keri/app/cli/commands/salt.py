@@ -8,7 +8,7 @@ import argparse
 import pysodium
 from hio.base import doing
 
-from keri import core
+from .... import core
 
 parser = argparse.ArgumentParser(description='Print a new random passcode')
 parser.set_defaults(handler=lambda args: handler(args))

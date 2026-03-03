@@ -7,10 +7,9 @@ import json
 
 import pytest
 
-from keri.core.coring import MtrDex, dumps, Saider, Saids
-from keri.core.scheming import Schemer, JSONSchema, CacheResolver
+from keri import ValidationError
+from keri.core import Saider, Schemer, JSONSchema, CacheResolver, MtrDex, Saids, dumps
 from keri.db import basing
-from keri.kering import ValidationError
 
 
 def test_json_schema():

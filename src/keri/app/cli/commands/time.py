@@ -7,7 +7,7 @@ import argparse
 
 from hio.base import doing
 
-from keri.help import helping
+from ....help import helping
 
 parser = argparse.ArgumentParser(description='Print a new time')
 parser.set_defaults(handler=lambda args: handler(args))

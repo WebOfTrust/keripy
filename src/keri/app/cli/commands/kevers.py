@@ -10,12 +10,12 @@ import datetime
 import sys
 from hio.base import doing
 
-from keri import help
-from keri.app import indirecting
-from keri.app.cli.common import displaying, existing
-from keri.app.cli.common.parsing import Parsery
-from keri.core import serdering
-from keri.help import helping
+from .... import help
+from ... import indirecting
+from ..common import displaying, existing
+from ..common.parsing import Parsery
+from ....core import serdering
+from ....help import helping
 
 logger = help.ogler.getLogger()
 

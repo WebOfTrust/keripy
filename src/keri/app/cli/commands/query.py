@@ -10,12 +10,12 @@ import json
 from hio.base import doing
 from hio.help import decking
 
-from keri import help
-from keri.app import indirecting, habbing, querying
-from keri.app.cli.common import displaying
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.help import helping
+from .... import help
+from ....app import indirecting, habbing, querying
+from ..common import displaying
+from ..common import existing
+from ..common.parsing import Parsery
+from ....help import helping
 
 logger = help.ogler.getLogger()
 

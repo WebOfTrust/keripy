@@ -4,14 +4,14 @@ from typing import Optional
 
 from hio.base import doing
 
-from keri import core, help, kering
-from keri.app import indirecting, habbing, grouping, organizing, forwarding, signing, notifying
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.core import coring, eventing, serdering
-from keri.help import helping
-from keri.peer import exchanging
-from keri.vdr import credentialing, verifying
+from ..... import core, help, kering
+from .... import indirecting, habbing, grouping, organizing, forwarding, signing, notifying
+from ...common import existing
+from ...common.parsing import Parsery
+from .....core import coring, eventing, serdering
+from .....help import helping
+from .....peer import exchanging
+from .....vdr import credentialing, verifying
 
 logger = help.ogler.getLogger()
 

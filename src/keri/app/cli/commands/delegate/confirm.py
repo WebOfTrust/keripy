@@ -9,16 +9,14 @@ from ordered_set import OrderedSet as oset
 
 from hio.base import doing
 
-from keri import help
-from keri.app import habbing, indirecting, agenting, grouping, forwarding, delegating, notifying
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.app.habbing import GroupHab
-from keri import core
-from keri.core import coring, serdering
-from keri.db import dbing
-from keri.help import helping
-from keri.peer import exchanging
+from ..... import help, core
+from .....app import habbing, indirecting, agenting, grouping, forwarding, delegating, notifying
+from ...common import existing
+from ...common.parsing import Parsery
+from ....habbing import GroupHab
+from .....core import coring, serdering
+from .....help import helping
+from .....peer import exchanging
 
 logger = help.ogler.getLogger()
 
@@ -158,7 +156,7 @@ class ConfirmDoer(doing.DoDoer):
                         prefixer = coring.Prefixer(qb64=hab.pre)
                         sner = core.Number(num=serder.sn, code=core.NumDex.Huge)  # maybe serder.sner instead so not Huge
                         diger = coring.Diger(qb64b=serder.saidb)
-                        self.counselor.start(ghab=hab, prefixer=prefixer, seqner=sner, saider=diger)
+                        self.counselor.start(ghab=hab, prefixer=prefixer, number=sner, diger=diger)
 
                         while True:
                             saider = self.hby.db.cgms.get(keys=(prefixer.qb64, sner.qb64))

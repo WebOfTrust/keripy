@@ -5,15 +5,12 @@ tests delegation primaily from keri.core.eventing
 """
 import os
 
-from keri import help
-
-from keri import kering, core
-from keri.kering import Vrsn_1_0, Vrsn_2_0
-from keri.core import coring, eventing, parsing
+from keri import core, Vrsn_1_0, help
+from keri.core import (Number, Seqner, Diger, Kevery, SealEvent, parsing,
+                       NumDex, MtrDex, incept, delcept, interact, deltate)
 
 from keri.app import keeping, habbing
-
-from keri.db import dbing, basing
+from keri.db import basing
 from keri.db.dbing import snKey
 
 logger = help.ogler.getLogger()
@@ -39,14 +36,14 @@ def test_delegation():
         delMgr = keeping.Manager(ks=delKS, salt=delSalt)
 
         # Init Keverys
-        bobKvy = eventing.Kevery(db=bobDB)
-        delKvy = eventing.Kevery(db=delDB)
+        bobKvy = Kevery(db=bobDB)
+        delKvy = Kevery(db=delDB)
 
         # Setup Bob by creating inception event
         verfers, digers = bobMgr.incept(stem='bob', temp=True)  # algo default salty and rooted
-        bobSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+        bobSrdr = incept(keys=[verfer.qb64 for verfer in verfers],
                                   ndigs=[diger.qb64 for diger in digers],
-                                  code=coring.MtrDex.Blake3_256)
+                                  code=MtrDex.Blake3_256)
 
         bob = bobSrdr.ked["i"]
         assert bob == 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH'
@@ -57,7 +54,7 @@ def test_delegation():
 
         msg = bytearray(bobSrdr.raw)
         counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                               version=kering.Vrsn_1_0)
+                               version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -86,7 +83,7 @@ def test_delegation():
         # Setup Del's inception event assuming that Bob's next event will be an ixn delegating event
         verfers, digers = delMgr.incept(stem='del', temp=True)  # algo default salty and rooted
 
-        delSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
+        delSrdr = delcept(keys=[verfer.qb64 for verfer in verfers],
                                    delpre=bobK.prefixer.qb64,
                                    ndigs=[diger.qb64 for diger in digers])
 
@@ -97,10 +94,10 @@ def test_delegation():
         assert delSrdr.said == 'EHng2fV42DdKb5TLMIs6bbjFkPNmIdQ5mSFn6BTnySJj'
 
         # Now create delegating event
-        seal = eventing.SealEvent(i=delPre,
+        seal = SealEvent(i=delPre,
                                   s=delSrdr.ked["s"],
                                   d=delSrdr.said)
-        bobSrdr = eventing.interact(pre=bobK.prefixer.qb64,
+        bobSrdr = interact(pre=bobK.prefixer.qb64,
                                     dig=bobK.serder.said,
                                     sn=bobK.sn + 1,
                                     data=[seal._asdict()])
@@ -110,7 +107,7 @@ def test_delegation():
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
         msg = bytearray(bobSrdr.raw)
         counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                               version=kering.Vrsn_1_0)
+                               version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -138,14 +135,14 @@ def test_delegation():
 
         msg = bytearray(delSrdr.raw)
         counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                               version=kering.Vrsn_1_0)
+                               version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
         counter = core.Counter(core.Codens.SealSourceCouples, count=1,
-                               version=kering.Vrsn_1_0)
+                               version=Vrsn_1_0)
         msg.extend(counter.qb64b)
-        seqner = coring.Seqner(sn=bobK.sn)
+        seqner = Seqner(sn=bobK.sn)
         msg.extend(seqner.qb64b)
         msg.extend(bobSrdr.saidb)
 
@@ -189,7 +186,7 @@ def test_delegation():
         # Setup Del rotation event assuming that Bob's next event will be an ixn delegating event
         verfers, digers = delMgr.rotate(pre=delPre, temp=True)
 
-        delSrdr = eventing.deltate(pre=bobDelK.prefixer.qb64,
+        delSrdr = deltate(pre=bobDelK.prefixer.qb64,
                                    keys=[verfer.qb64 for verfer in verfers],
                                    dig=bobDelK.serder.said,
                                    sn=bobDelK.sn + 1,
@@ -198,10 +195,10 @@ def test_delegation():
         assert delSrdr.said == 'EM5fj7YtOQYH3iLyWJr6HZVVxrY5t46LRL2vkNpdnPi0'
 
         # Now create delegating interaction event
-        seal = eventing.SealEvent(i=bobDelK.prefixer.qb64,
+        seal = SealEvent(i=bobDelK.prefixer.qb64,
                                   s=delSrdr.ked["s"],
                                   d=delSrdr.said)
-        bobSrdr = eventing.interact(pre=bobK.prefixer.qb64,
+        bobSrdr = interact(pre=bobK.prefixer.qb64,
                                     dig=bobK.serder.said,
                                     sn=bobK.sn + 1,
                                     data=[seal._asdict()])
@@ -210,7 +207,7 @@ def test_delegation():
 
         msg = bytearray(bobSrdr.raw)
         counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                               version=kering.Vrsn_1_0)
+                               version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -238,14 +235,14 @@ def test_delegation():
 
         msg = bytearray(delSrdr.raw)
         counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                               version=kering.Vrsn_1_0)
+                               version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
         counter = core.Counter(core.Codens.SealSourceCouples, count=1,
-                               version=kering.Vrsn_1_0)
+                               version=Vrsn_1_0)
         msg.extend(counter.qb64b)
-        seqner = coring.Seqner(sn=bobK.sn)
+        seqner = Seqner(sn=bobK.sn)
         msg.extend(seqner.qb64b)
         msg.extend(bobSrdr.saidb)
 
@@ -353,7 +350,7 @@ def test_delegation_supersede():
         # makehab also enters inception event into its own kel.
         # Otherwise failed make raises exception ConfigurationError
         assert wopHab.pre == 'BIDO3FhB5smF6WsTJkRRAao_wEttcbsBnDCmfQ4_f1b_'
-        wopRemKvy = eventing.Kevery(db=wopHby.db, lax=False, local=False)  # for remote events
+        wopRemKvy = Kevery(db=wopHby.db, lax=False, local=False)  # for remote events
 
         topHab = topHby.makeHab(name="top", icount=1, isith='1',  # single sig
                                 ncount=1, nsith='1', # single next
@@ -361,7 +358,7 @@ def test_delegation_supersede():
         # makehab also enters inception event into its own kel
         # Otherwise failed make raises exception ConfigurationError
         assert topHab.pre == 'EJcCaHg3AtW_gRzpaz6Pw03Yv49is2IJDRwYE7ey91KE'
-        topRemKvy = eventing.Kevery(db=topHby.db, lax=False, local=False)  # for remote events
+        topRemKvy = Kevery(db=topHby.db, lax=False, local=False)  # for remote events
 
         # be witness to controller's inception
         # first make inception
@@ -403,7 +400,7 @@ def test_delegation_supersede():
         # makehab also enters inception event into its own kel.
         # Otherwise failed make raises exception ConfigurationError
         assert widHab.pre == 'BCI95exU-RepxQ0HmGcp7USLMCPxrXKzMc1DXqfRnikP'
-        widRemKvy = eventing.Kevery(db=widHby.db, lax=False, local=False)  # for remote events
+        widRemKvy = Kevery(db=widHby.db, lax=False, local=False)  # for remote events
 
         midHab = midHby.makeHab(name="mid", icount=1, isith='1',  # single sig
                                 ncount=1, nsith='1', # single next
@@ -413,7 +410,7 @@ def test_delegation_supersede():
         # Otherwise failed make raises exception ConfigurationError
         assert midHab.pre == 'EEaTQhI7QGM-usOJtpKM9L0yQjGiBYJC3tq905aC8am4'
         assert midHab.delpre == topHab.pre
-        midRemKvy = eventing.Kevery(db=midHby.db, lax=False, local=False)  # for remote events
+        midRemKvy = Kevery(db=midHby.db, lax=False, local=False)  # for remote events
 
         # be witness to controller's inception.
         # first  make inception
@@ -443,7 +440,7 @@ def test_delegation_supersede():
         # makehab also enters inception event into its own kel.
         # Otherwise failed make raises exception ConfigurationError
         assert wotHab.pre == 'BDChA_O6twrlHcXKf7xu1xYee__nZxDbBa0W_XznpLQH'
-        wotRemKvy = eventing.Kevery(db=wotHby.db, lax=False, local=False)  # for remote events
+        wotRemKvy = Kevery(db=wotHby.db, lax=False, local=False)  # for remote events
 
         botHab = botHby.makeHab(name="bot", icount=1, isith='1',  # single sig
                                 ncount=1, nsith='1', # single next
@@ -453,7 +450,7 @@ def test_delegation_supersede():
         # Otherwise failed make raises exception ConfigurationError
         assert botHab.pre == 'EPtHqQJwlEj2sM0e2WslvwSsAsxAflmn7JIabs-LBqJC'
         assert botHab.delpre == midHab.pre
-        botRemKvy = eventing.Kevery(db=botHby.db, lax=False, local=False)  # for remote events
+        botRemKvy = Kevery(db=botHby.db, lax=False, local=False)  # for remote events
 
         # be witness to controller's inception.
         # first  make inception
@@ -489,14 +486,14 @@ def test_delegation_supersede():
         delMgr = keeping.Manager(ks=delKS, salt=midSalt)
 
         # Init Keverys
-        bobKvy = eventing.Kevery(db=bobDB)
-        delKvy = eventing.Kevery(db=delDB)
+        bobKvy = Kevery(db=bobDB)
+        delKvy = Kevery(db=delDB)
 
         # Setup Bob by creating inception event
         verfers, digers = bobMgr.incept(stem='bob', temp=True)  # algo default salty and rooted
-        bobSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+        bobSrdr = incept(keys=[verfer.qb64 for verfer in verfers],
                                   ndigs=[diger.qb64 for diger in digers],
-                                  code=coring.MtrDex.Blake3_256)
+                                  code=MtrDex.Blake3_256)
 
         bob = bobSrdr.ked["i"]
         assert bob == 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH'
@@ -507,7 +504,7 @@ def test_delegation_supersede():
 
         msg = bytearray(bobSrdr.raw)
         counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                               version=kering.Vrsn_1_0)
+                               version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -536,7 +533,7 @@ def test_delegation_supersede():
         # Setup Del's inception event assuming that Bob's next event will be an ixn delegating event
         verfers, digers = delMgr.incept(stem='del', temp=True)  # algo default salty and rooted
 
-        delSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
+        delSrdr = delcept(keys=[verfer.qb64 for verfer in verfers],
                                    delpre=bobK.prefixer.qb64,
                                    ndigs=[diger.qb64 for diger in digers])
 
@@ -547,10 +544,10 @@ def test_delegation_supersede():
         assert delSrdr.said == 'EHng2fV42DdKb5TLMIs6bbjFkPNmIdQ5mSFn6BTnySJj'
 
         # Now create delegating event
-        seal = eventing.SealEvent(i=delPre,
+        seal = SealEvent(i=delPre,
                                   s=delSrdr.ked["s"],
                                   d=delSrdr.said)
-        bobSrdr = eventing.interact(pre=bobK.prefixer.qb64,
+        bobSrdr = interact(pre=bobK.prefixer.qb64,
                                     dig=bobK.serder.said,
                                     sn=bobK.sn + 1,
                                     data=[seal._asdict()])
@@ -560,7 +557,7 @@ def test_delegation_supersede():
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
         msg = bytearray(bobSrdr.raw)
         counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                               version=kering.Vrsn_1_0)
+                               version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -588,14 +585,14 @@ def test_delegation_supersede():
 
         msg = bytearray(delSrdr.raw)
         counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                               version=kering.Vrsn_1_0)
+                               version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
         counter = core.Counter(core.Codens.SealSourceCouples, count=1,
-                               version=kering.Vrsn_1_0)
+                               version=Vrsn_1_0)
         msg.extend(counter.qb64b)
-        seqner = coring.Seqner(sn=bobK.sn)
+        seqner = Seqner(sn=bobK.sn)
         msg.extend(seqner.qb64b)
         msg.extend(bobSrdr.saidb)
 
@@ -639,7 +636,7 @@ def test_delegation_supersede():
         # Setup Del rotation event assuming that Bob's next event will be an ixn delegating event
         verfers, digers = delMgr.rotate(pre=delPre, temp=True)
 
-        delSrdr = eventing.deltate(pre=bobDelK.prefixer.qb64,
+        delSrdr = deltate(pre=bobDelK.prefixer.qb64,
                                    keys=[verfer.qb64 for verfer in verfers],
                                    dig=bobDelK.serder.said,
                                    sn=bobDelK.sn + 1,
@@ -648,10 +645,10 @@ def test_delegation_supersede():
         assert delSrdr.said == 'EM5fj7YtOQYH3iLyWJr6HZVVxrY5t46LRL2vkNpdnPi0'
 
         # Now create delegating interaction event
-        seal = eventing.SealEvent(i=bobDelK.prefixer.qb64,
+        seal = SealEvent(i=bobDelK.prefixer.qb64,
                                   s=delSrdr.ked["s"],
                                   d=delSrdr.said)
-        bobSrdr = eventing.interact(pre=bobK.prefixer.qb64,
+        bobSrdr = interact(pre=bobK.prefixer.qb64,
                                     dig=bobK.serder.said,
                                     sn=bobK.sn + 1,
                                     data=[seal._asdict()])
@@ -660,7 +657,7 @@ def test_delegation_supersede():
 
         msg = bytearray(bobSrdr.raw)
         counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                               version=kering.Vrsn_1_0)
+                               version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -688,14 +685,14 @@ def test_delegation_supersede():
 
         msg = bytearray(delSrdr.raw)
         counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                               version=kering.Vrsn_1_0)
+                               version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
         counter = core.Counter(core.Codens.SealSourceCouples, count=1,
-                               version=kering.Vrsn_1_0)
+                               version=Vrsn_1_0)
         msg.extend(counter.qb64b)
-        seqner = coring.Seqner(sn=bobK.sn)
+        seqner = Seqner(sn=bobK.sn)
         msg.extend(seqner.qb64b)
         msg.extend(bobSrdr.saidb)
 
@@ -759,7 +756,7 @@ def test_delegables_escrow():
         assert gateHab.pre == "EFqw1EgGdd2B6MgNLJaNO13_JoQpxAtasIjySDzGm9pd"
 
         gateIcp = gateHab.makeOwnEvent(sn=0)
-        torKvy = eventing.Kevery(db=torHab.db, lax=False, local=False)
+        torKvy = Kevery(db=torHab.db, lax=False, local=False)
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(gateIcp), kvy=torKvy, local=True)
         assert gateHab.pre not in torKvy.kevers
         assert len(torHab.db.delegables.get(keys=snKey(gateHab.kever.serder.preb, gateHab.kever.serder.sn))) == 1
@@ -767,7 +764,7 @@ def test_delegables_escrow():
         torKvy.processEscrowDelegables()
 
         # Now create delegating interaction event
-        seal = eventing.SealEvent(i=gateHab.pre,
+        seal = SealEvent(i=gateHab.pre,
                                   s="0",
                                   d=gateHab.pre)
         ixn = torHab.interact(data=[seal._asdict()])
@@ -784,8 +781,8 @@ def test_delegables_escrow():
 
         # Place the anchor seal in the database... this will be retrieved from the fully committed delegate event
         serder = torHab.kever.serder
-        sner = coring.Number(num=serder.sn, code=coring.NumDex.Huge)
-        saider = coring.Diger(qb64b=serder.saidb)
+        sner = Number(num=serder.sn, code=NumDex.Huge)
+        saider = Diger(qb64b=serder.saidb)
         torHab.db.aess.pin(keys=(gateHab.kever.prefixer.qb64b, gateHab.kever.serder.saidb),
                            val=(sner, saider))  # authorizer event seal (delegator/issuer)
 
@@ -799,7 +796,112 @@ def test_delegables_escrow():
         assert gateHab.pre in torKvy.kevers
 
 
+def test_fetch_delegating_event():
+    """
+    Test Kever.fetchDelegatingEvent: fetch delegating event from .aess or via eager KEL walk.
+    """
+    bobSalt = core.Salter(raw=b'0123456789abcdef').qb64
+    delSalt = core.Salter(raw=b'abcdef0123456789').qb64
+
+    with (basing.openDB(name="bob") as bobDB,
+          keeping.openKS(name="bob") as bobKS,
+          basing.openDB(name="del") as delDB,
+          keeping.openKS(name="del") as delKS):
+
+        bobMgr = keeping.Manager(ks=bobKS, salt=bobSalt)
+        delMgr = keeping.Manager(ks=delKS, salt=delSalt)
+
+        bobKvy = Kevery(db=bobDB)
+        delKvy = Kevery(db=delDB)
+
+        # Bob inception
+        verfers, digers = bobMgr.incept(stem='bob', temp=True)
+        bobSrdr = incept(keys=[verfer.qb64 for verfer in verfers],
+                                  ndigs=[diger.qb64 for diger in digers],
+                                  code=MtrDex.Blake3_256)
+        bob = bobSrdr.ked["i"]
+        bobMgr.move(old=verfers[0].qb64, new=bob)
+        sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=verfers)
+        msg = bytearray(bobSrdr.raw)
+        msg.extend(core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                                version=Vrsn_1_0).qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=delKvy)
+        bobK = bobKvy.kevers[bob]
+
+        # Del delegated inception: first create delegating ixn on Bob
+        verfers, digers = delMgr.incept(stem='del', temp=True)
+        delSrdr = delcept(keys=[verfer.qb64 for verfer in verfers],
+                                   delpre=bobK.prefixer.qb64,
+                                   ndigs=[diger.qb64 for diger in digers])
+        delPre = delSrdr.ked["i"]
+        delMgr.move(old=verfers[0].qb64, new=delPre)
+
+        seal = SealEvent(i=delPre, s=delSrdr.ked["s"], d=delSrdr.said)
+        bobIxnSrdr = interact(pre=bobK.prefixer.qb64,
+                                      dig=bobK.serder.said,
+                                      sn=bobK.sn + 1,
+                                      data=[seal._asdict()])
+        sigers = bobMgr.sign(ser=bobIxnSrdr.raw, verfers=bobK.verfers)
+        msg = bytearray(bobIxnSrdr.raw)
+        msg.extend(core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                                version=Vrsn_1_0).qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=delKvy)
+
+        # Del's dip with seal source couple
+        sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
+        msg = bytearray(delSrdr.raw)
+        msg.extend(core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+                                version=Vrsn_1_0).qb64b)
+        for siger in sigers:
+            msg.extend(siger.qb64b)
+        msg.extend(core.Counter(core.Codens.SealSourceCouples, count=1,
+                                version=Vrsn_1_0).qb64b)
+        seqner = Seqner(sn=bobK.sn)
+        msg.extend(seqner.qb64b)
+        msg.extend(bobIxnSrdr.saidb)
+
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=delKvy)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
+
+        assert delPre in delKvy.kevers
+        delK = delKvy.kevers[delPre]
+        assert delKvy.db.aess.get(keys=(delPre, delSrdr.said)) is not None
+
+        # 1) Fetch via .aess (eager=False): should return delegating event
+        dserder = delK.fetchDelegatingEvent(bob, delSrdr, original=True, eager=False)
+        assert dserder is not None
+        assert dserder.said == bobIxnSrdr.said
+        assert dserder.ked["t"] == "ixn"
+
+        # 2) Eager path with repair: remove .aess, then fetch with eager=True
+        delKvy.db.aess.rem(keys=(delPre, delSrdr.said))
+        assert delKvy.db.aess.get(keys=(delPre, delSrdr.said)) is None
+
+        dserder2 = delK.fetchDelegatingEvent(bob, delSrdr, original=True, eager=True)
+        assert dserder2 is not None
+        assert dserder2.said == bobIxnSrdr.said
+        # Repair should have repopulated .aess
+        couple = delKvy.db.aess.get(keys=(delPre, delSrdr.said))
+        assert couple is not None
+        sner, diger = couple
+        assert diger.qb64 == bobIxnSrdr.said
+
+        # 3) Not found when missing and non-eager: returns None
+        delKvy.db.aess.rem(keys=(delPre, delSrdr.said))
+        dserder3 = delK.fetchDelegatingEvent(bob, delSrdr, original=True, eager=False)
+        assert dserder3 is None
+
+    """End Test"""
+
+
 if __name__ == "__main__":
     test_delegation()
+    test_fetch_delegating_event()
     test_delegation_supersede()
 

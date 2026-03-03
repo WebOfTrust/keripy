@@ -7,12 +7,12 @@ keri.kli.commands.contacts.find module
 import argparse
 import json
 
-from keri import help
+from ..... import help
 from hio.base import doing
 
-from keri.app import organizing as connecting
-from keri.app.cli.common import existing
-from keri.kering import ConfigurationError
+from .... import organizing as connecting
+from ...common import existing
+from .....kering import ConfigurationError
 
 logger = help.ogler.getLogger()
 

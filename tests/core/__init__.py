@@ -1,0 +1,3 @@
+"""
+tests.core tests package
+"""

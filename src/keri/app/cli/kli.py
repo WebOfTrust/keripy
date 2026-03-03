@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-keri.kli.commands module
+keri.cli module
 
 """
 import multicommand

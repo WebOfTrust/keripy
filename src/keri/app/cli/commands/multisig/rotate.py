@@ -193,7 +193,7 @@ class GroupMultisigRotate(doing.DoDoer):
             raise kering.ConfigurationError(f"{ghab.mhab.pre} not in signing members {smids} for this event")
 
         prefixer = coring.Prefixer(qb64=ghab.pre)
-        seqner = coring.Seqner(sn=ghab.kever.sn+1)
+        number = coring.Number(sn=ghab.kever.sn+1)
         rot = ghab.rotate(isith=self.isith, nsith=self.nsith,
                           toad=self.toad, cuts=list(self.cuts), adds=list(self.adds), data=self.data,
                           verfers=merfers, digers=migers)
@@ -215,10 +215,10 @@ class GroupMultisigRotate(doing.DoDoer):
                               serder=exn,
                               attachment=bytearray(ims))
 
-        self.counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Diger(qb64=rserder.said))
+        self.counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=coring.Diger(qb64=rserder.said))
 
         while True:
-            saider = self.hby.db.cgms.get(keys=(ghab.pre, seqner.qb64))
+            saider = self.hby.db.cgms.get(keys=(ghab.pre, number.qb64))
             if saider is not None:
                 break
 
