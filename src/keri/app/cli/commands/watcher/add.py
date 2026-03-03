@@ -8,12 +8,12 @@ import argparse
 
 from hio.base import doing
 
-from keri import help
+from ..... import help
 from keri.app import organizing, habbing, forwarding
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.core import serdering
-from keri.kering import Roles
+from ...common import existing
+from ...common.parsing import Parsery
+from .....core import serdering
+from .....kering import Roles
 
 logger = help.ogler.getLogger()
 

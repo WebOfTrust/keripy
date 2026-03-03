@@ -6,11 +6,10 @@ tests delegation primaily from keri.core.eventing
 import datetime
 import os
 
-from keri import help
+from keri import help, Vrsn_1_0, Ilks
 from keri.help import helping
-from keri.kering import Vrsn_1_0, Vrsn_2_0
-from keri import core, kering
-from keri.core import coring, eventing, parsing, serdering, indexing, counting
+from keri.core import (Salter, Counter, coring, eventing, parsing,
+                       serdering, indexing, counting)
 
 from keri.app import habbing
 
@@ -28,8 +27,8 @@ def test_replay():
     Deb replays Deb's events with both Cam's and  Bev's receipts to Cam
     Compare replay of Deb's events with receipts by both Deb and Cam to confirm identical
     """
-    artSalt = core.Salter(raw=b'abcdef0123456789').qb64
-    default_salt = core.Salter(raw=b'0123456789abcdef').qb64
+    artSalt = Salter(raw=b'abcdef0123456789').qb64
+    default_salt = Salter(raw=b'0123456789abcdef').qb64
 
     with (habbing.openHby(name="deb", base="test", salt=default_salt) as debHby,
          habbing.openHby(name="cam", base="test", salt=default_salt) as camHby,
@@ -138,7 +137,7 @@ def test_replay():
         assert debHab.kever.sn == 6
         msgs = next(debHab.db.clonePreIter(debHab.pre, fn=4))
         serder = serdering.SerderKERI(raw=msgs)
-        assert serder.ilk == kering.Ilks.ixn
+        assert serder.ilk == Ilks.ixn
         assert serder.sn == 4
 
         # Play debMsgs to Cam
@@ -348,13 +347,13 @@ def test_replay():
         del msg[:len(serder.raw)]
         assert len(msg) == 1076
 
-        counter = core.Counter(qb64b=msg, version=kering.Vrsn_1_0)  # attachment length quadlets counter
+        counter = Counter(qb64b=msg, version=Vrsn_1_0)  # attachment length quadlets counter
         assert counter.code == counting.CtrDex_1_0.AttachmentGroup
         assert counter.count == (len(msg) - len(counter.qb64b)) // 4 == 268
         del msg[:len(counter.qb64b)]
         assert len(msg) == 1072 == 268 * 4
 
-        counter = core.Counter(qb64b=msg, version=kering.Vrsn_1_0)  # indexed signatures counter
+        counter = Counter(qb64b=msg, version=Vrsn_1_0)  # indexed signatures counter
         assert counter.code == counting.CtrDex_1_0.ControllerIdxSigs
         assert counter.count == 3  # multisig deb
         del msg[:len(counter.qb64b)]
@@ -365,7 +364,7 @@ def test_replay():
             del msg[:len(siger.qb64b)]
         assert len(msg) == 1068 - 3 * len(siger.qb64b) == 804
 
-        counter = core.Counter(qb64b=msg, version=kering.Vrsn_1_0)  # trans receipt (vrc) counter
+        counter = Counter(qb64b=msg, version=Vrsn_1_0)  # trans receipt (vrc) counter
         assert counter.code == counting.CtrDex_1_0.TransReceiptQuadruples
         assert counter.count == 3  # multisig cam
         del msg[:len(counter.qb64b)]
@@ -376,7 +375,7 @@ def test_replay():
         assert len(msg) == 800 - 3 * (len(prefixer.qb64b) + len(seqner.qb64b) +
                                       len(diger.qb64b) + len(siger.qb64b)) == 200
 
-        counter = core.Counter(qb64b=msg, version=kering.Vrsn_1_0)  # nontrans receipt (rct) counter
+        counter = Counter(qb64b=msg, version=Vrsn_1_0)  # nontrans receipt (rct) counter
         assert counter.code == counting.CtrDex_1_0.NonTransReceiptCouples
         assert counter.count == 1  # single sig bev
         del msg[:len(counter.qb64b)]
@@ -386,7 +385,7 @@ def test_replay():
             prefixer, cigar = eventing.deReceiptCouple(msg, strip=True)
         assert len(msg) == 196 - 1 * (len(prefixer.qb64b) + len(cigar.qb64b)) == 64
 
-        counter = core.Counter(qb64b=msg, version=kering.Vrsn_1_0)  # first seen replay couple counter
+        counter = Counter(qb64b=msg, version=Vrsn_1_0)  # first seen replay couple counter
         assert counter.code == counting.CtrDex_1_0.FirstSeenReplayCouples
         assert counter.count == 1
         del msg[:len(counter.qb64b)]
@@ -508,8 +507,8 @@ def test_replay_all():
     Replay all the events in database.
 
     """
-    artSalt = core.Salter(raw=b'abcdef0123456789').qb64
-    default_salt = core.Salter(raw=b'0123456789abcdef').qb64
+    artSalt = Salter(raw=b'abcdef0123456789').qb64
+    default_salt = Salter(raw=b'0123456789abcdef').qb64
 
     with (habbing.openHby(name="deb", base="test", salt=default_salt) as debHby,
          habbing.openHby(name="cam", base="test", salt=default_salt) as camHby,

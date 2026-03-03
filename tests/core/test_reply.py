@@ -10,19 +10,13 @@ import os
 
 import pytest
 
-from hio.help.hicting import Mict
 
-from keri import kering
-from keri.kering import Vrsn_1_0, Vrsn_2_0
-from keri import help
+from keri import help, Vrsn_1_0, Roles, Schemes
 
-from keri import core
-from keri.core import eventing, parsing, routing
-from keri.core.coring import MtrDex
+from keri.core import Salter, eventing, parsing, routing, MtrDex
 
 from keri.db import basing
-from keri.app import habbing, keeping
-from keri.kering import Roles
+from keri.app import habbing
 
 logger = help.ogler.getLogger()
 
@@ -41,7 +35,7 @@ def test_reply(mockHelpingNowUTC):
       "a" :
       {
          "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-         "role": "watcher",  # one of kering.Roles
+         "role": "watcher",  # one of Roles
          "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
       }
     }
@@ -65,7 +59,7 @@ def test_reply(mockHelpingNowUTC):
     # use same salter for all but different path
     # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    salt =  core.Salter(raw=raw).qb64
+    salt =  Salter(raw=raw).qb64
     assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
     # makHab uses stem=name to make different names have differnt AID pre
     with (habbing.openHby(name="wes", base="test", salt=salt) as wesHby,
@@ -172,7 +166,7 @@ def test_reply(mockHelpingNowUTC):
         route = "/end/role/add"
 
         # watcher role
-        role = kering.Roles.watcher
+        role = Roles.watcher
 
         # with trans cid for nel and eid for wat
         data = dict(cid=nelHab.pre,
@@ -388,7 +382,7 @@ def test_reply(mockHelpingNowUTC):
         route = "/end/role/add"
 
         # watcher role
-        role = kering.Roles.watcher
+        role = Roles.watcher
 
         # with trans cid and eid
         data = dict(cid=nelHab.pre,
@@ -497,9 +491,9 @@ def test_reply(mockHelpingNowUTC):
         route = "/loc/scheme"
 
         # watcher role
-        role = kering.Roles.watcher
+        role = Roles.watcher
 
-        scheme = kering.Schemes.http
+        scheme = Schemes.http
         url = "http://localhost:8080/watcher/wat"
 
         # with trans cid for nel and eid for wat
@@ -577,7 +571,7 @@ def test_reply(mockHelpingNowUTC):
         route = "/end/role/add"
 
         # witness role
-        role = kering.Roles.witness
+        role = Roles.witness
 
         # with trans cid for tam and eid for wes
         data = dict(cid=tamHab.pre,
@@ -635,7 +629,7 @@ def test_reply(mockHelpingNowUTC):
         # add endpoint with reply route add
         route = "/loc/scheme"
 
-        scheme = kering.Schemes.http
+        scheme = Schemes.http
         url = "http://localhost:8080/controller/tam"
 
         # with trans cid for nel and eid for wat
@@ -757,7 +751,7 @@ def test_reply(mockHelpingNowUTC):
 
         # do wok as witness for tam
         # with trans cid for tam and eid for wok
-        role = kering.Roles.witness  # witness role
+        role = Roles.witness  # witness role
         route = "/end/role/add"  # add authZ
         data = dict(cid=tamHab.pre,
                     role=role,
@@ -798,7 +792,7 @@ def test_reply(mockHelpingNowUTC):
         # Provide wok location
         # add endpoint with reply route add
         route = "/loc/scheme"
-        scheme = kering.Schemes.http
+        scheme = Schemes.http
         url = "http://localhost:8080/witness/wok"
         # with trans cid for nel and eid for wat
         data = dict(
@@ -854,9 +848,9 @@ def test_reply(mockHelpingNowUTC):
         route = "/loc/scheme"
 
         # controller role
-        role = kering.Roles.controller
+        role = Roles.controller
 
-        scheme = kering.Schemes.http
+        scheme = Schemes.http
         url = "http://localhost:8088/controller/tam"
 
         # with trans cid for nel and eid for wat
@@ -919,7 +913,7 @@ def test_reply(mockHelpingNowUTC):
         # assert locer.cids == []
 
         # Tam as trans authZ its own controller role for Nel
-        role = kering.Roles.controller  # controller role
+        role = Roles.controller  # controller role
         route = "/end/role/add"  # add endpoint with reply route add
         # with trans cid for tam and eid for wes
         data = dict(cid=tamHab.pre,
@@ -1126,9 +1120,9 @@ def test_reply(mockHelpingNowUTC):
         assert rurls["witness"][wokHab.pre]['http'] == 'http://localhost:8080/witness/wok'
 
         msgs = bytearray()
-        msgs.extend(tamHab.makeEndRole(eid=wesHab.pre, role=kering.Roles.witness))
-        msgs.extend(tamHab.makeEndRole(eid=wokHab.pre, role=kering.Roles.witness))
-        msgs.extend(tamHab.makeEndRole(eid=wamHab.pre, role=kering.Roles.witness))
+        msgs.extend(tamHab.makeEndRole(eid=wesHab.pre, role=Roles.witness))
+        msgs.extend(tamHab.makeEndRole(eid=wokHab.pre, role=Roles.witness))
+        msgs.extend(tamHab.makeEndRole(eid=wamHab.pre, role=Roles.witness))
         msgs.extend(wesHab.makeLocScheme(url='http://localhost:8080/witness/wes'))
         msgs.extend(wokHab.makeLocScheme(url='http://localhost:8080/witness/wok'))
         msgs.extend(wamHab.makeLocScheme(url='http://localhost:8080/witness/wam'))
@@ -1143,9 +1137,9 @@ def test_reply(mockHelpingNowUTC):
         welHab.psr.parse(bytearray(msgs))
 
         msgs = bytearray()
-        msgs.extend(nelHab.makeEndRole(eid=nelHab.pre, role=kering.Roles.controller))
-        msgs.extend(nelHab.makeEndRole(eid=watHab.pre, role=kering.Roles.watcher))
-        msgs.extend(nelHab.makeEndRole(eid=welHab.pre, role=kering.Roles.watcher))
+        msgs.extend(nelHab.makeEndRole(eid=nelHab.pre, role=Roles.controller))
+        msgs.extend(nelHab.makeEndRole(eid=watHab.pre, role=Roles.watcher))
+        msgs.extend(nelHab.makeEndRole(eid=welHab.pre, role=Roles.watcher))
         msgs.extend(nelHab.makeLocScheme(url='http://localhost:8080/controller/nel'))
         msgs.extend(watHab.makeLocScheme(url='http://localhost:8080/watcher/wat'))
         msgs.extend(welHab.makeLocScheme(url='http://localhost:8080/watcher/wel'))
@@ -1283,7 +1277,7 @@ def test_reply(mockHelpingNowUTC):
 
 
 def test_watcher_add_cut():
-    salt = core.Salter(raw=b'abcdef0123456789').qb64
+    salt = Salter(raw=b'abcdef0123456789').qb64
 
     with habbing.openHby(name="cont", base="test", salt=salt) as conHby, \
             habbing.openHby(name="wat0", base="test", salt=salt) as wat0hby, \

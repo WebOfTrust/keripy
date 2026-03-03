@@ -9,10 +9,10 @@ import argparse
 from hio import help
 from hio.base import doing
 
-from keri.app import habbing
-from keri.app.cli.common import existing
-from keri.core import parsing
-from keri.vdr import eventing as teventing, verifying, credentialing
+from .... import habbing
+from ...common import existing
+from .....core import parsing
+from .....vdr import eventing as teventing, verifying, credentialing
 
 logger = help.ogler.getLogger()
 

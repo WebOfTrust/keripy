@@ -1,9 +1,37 @@
 # Change Log for keripy
 
+## 2.0.0-dev5
+### Backwards breaking interface changes
+Changes to call signatures that will break dependent libraries
+
+#### keri.app.delegating.py
+Changed `start(self, ghab, prefixer, seqner, saider)` to `start(self, ghab, prefixer, number, diger)`.
+Changed `startCounselor(self, hab, prefixer, seqner, saider)` to `startCounselor(self, hab, prefixer, number, diger)`.
+Renamed `seqner` and `saider` parameter to `number` and `diger` to match the actual type (`Number`, `Diger`) being
+passed. All callers for both functions in `test_grouping.py`, `confirm.py`, `incept.py`, `join.py`, `rotate.py` `credentialing.py` and `interact.py` updated.
+
+## 2.0.0-dev5
+### Backwards breaking interface changes
+Changes to call signatures that will break dependent libraries
+
+#### keri.app.delegating.py
+Changed `complete(self, prefixer, seqner, diger=None)` to `complete(self, prefixer, number, diger=None)`.
+Renamed `seqner` parameter to `number` to match the actual type (`Number`) being
+passed. All callers in `rotate.py`, `incept.py`, and `grouping.py` updated.
+
+## 2.0.0-dev5
+### Backwards breaking interface changes
+Changes to call signatures that will break dependent libraries
+
+#### keri.core.eventing.Kevery.processEvent
+Changed keyword parameter `delseqner` (Seqner) to `delnum` (Number) in the function
+signature and all internal call sites. External callers that previously passed
+`delseqner` must now pass `delnum` with a `Number` instance.
+
 
 ## 2.0.0-dev1
 ### Backwards breaking interface changes
-Changes to call signatures  that will break dependent libraries
+Changes to call signatures that will break dependent libraries
 
 #### keri.help.helping.py
 Changed nonStringIterable() to isNonStringIterable()

@@ -3,8 +3,7 @@
 tests.core.test_indexing module
 
 """
-from dataclasses import dataclass, astuple, asdict
-from collections import namedtuple
+from dataclasses import asdict
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
@@ -13,19 +12,11 @@ import pysodium
 import pytest
 
 from keri.kering import (EmptyMaterialError, RawMaterialError, ShortageError,
-                         InvalidVarIndexError, )
+                         InvalidVarIndexError)
+from keri.help import intToB64, codeB64ToB2
+from keri.core import (IdrDex, IdxSigDex, IdxCrtSigDex, IdxBthSigDex,
+                       Xizage, Indexer, Siger, Verfer)
 
-
-from keri.help import helping
-from keri.help.helping import (sceil, intToB64, b64ToInt,
-                            codeB64ToB2, codeB2ToB64, nabSextets)
-
-from keri.core import indexing
-from keri.core.indexing import (IdrDex, IdxSigDex, IdxCrtSigDex, IdxBthSigDex,
-                                Xizage, Indexer, Siger)
-
-
-from keri.core.coring import (Verfer,)
 
 def test_indexer_class():
     """

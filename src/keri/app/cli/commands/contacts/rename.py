@@ -6,12 +6,12 @@ keri.kli.commands.contacts.rename module
 """
 import argparse
 
-from keri import help
 from hio.base import doing
 
-from keri.app import organizing as connecting
-from keri.app.cli.common import existing
-from keri.kering import ConfigurationError
+from ..... import help
+from .... import organizing as connecting
+from ...common import existing
+from .....kering import ConfigurationError
 
 logger = help.ogler.getLogger()
 

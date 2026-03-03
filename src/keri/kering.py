@@ -2,13 +2,11 @@
 """
 Generic Constants and Classes
 """
-import sys
 import re
-from collections import namedtuple, deque
+from collections import namedtuple
 from dataclasses import dataclass, astuple
 
-from .help.helping import sceil
-from .help.helping import intToB64, intToB64b, b64ToInt
+from .help.helping import intToB64, b64ToInt
 
 
 MaxON = int("f"*32, 16)  # 256 ** 16 - 1 maximum ordinal number, sequence or first seen etc
@@ -161,7 +159,7 @@ def versify(proto=Protocols.keri, pvrsn=Version, kind=Kinds.json, size=0, gvrsn=
         if gvrsn is not None:
             raise VersionError(f"Invalid (not None) CESR genus version="
                                f"{gvrsn.major}.{gvrsn.minor} for pvrsn="
-                               f"{pvrsn.major}.{pvrson.minor} ")
+                               f"{pvrsn.major}.{pvrsn.minor} ")
         if kind == Kinds.cesr:
             raise KindError(f"Invalid serialization {kind=} for message protocol"
                             f"  major version={pvrsn.major}")

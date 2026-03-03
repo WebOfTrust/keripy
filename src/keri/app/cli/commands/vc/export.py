@@ -9,12 +9,12 @@ import sys
 
 from hio.base import doing
 
-from keri import help
-from keri.app import signing
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.core import serdering
-from keri.vdr import credentialing
+from ..... import help
+from .....app import signing
+from ...common import existing
+from ...common.parsing import Parsery
+from .....core import serdering
+from .....vdr import credentialing
 
 logger = help.ogler.getLogger()
 
@@ -123,13 +123,13 @@ class ExportDoer(doing.DoDoer):
             for said in saids:
                 self.outputCred(said)
 
-        (prefixer, seqner, saider) = self.rgy.reger.cancs.get(keys=(creder.said,))
+        (prefixer, number, diger) = self.rgy.reger.cancs.get(keys=(creder.said,))
         if self.files:
-            f = open(f"{creder.said}-acdc.cesr", 'w')
-            f.write(signing.serialize(creder, prefixer, seqner, saider))
+            f = open(f"{creder.diger}-acdc.cesr", 'w')
+            f.write(signing.serialize(creder, prefixer, number, diger))
             f.close()
         else:
-            sys.stdout.write(signing.serialize(creder, prefixer, seqner, saider).decode("utf-8"))
+            sys.stdout.write(signing.serialize(creder, prefixer, number, diger).decode("utf-8"))
             sys.stdout.flush()
 
     def outputTEL(self, regk):

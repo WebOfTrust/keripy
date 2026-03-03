@@ -9,10 +9,10 @@ from dataclasses import dataclass
 from hio.base import doing
 
 from keri import help
-from keri.app import habbing, agenting, indirecting, configing, delegating, forwarding
-from keri.app.cli.common import existing, config
-from keri.app.cli.common.parsing import Parsery
-from keri.core import coring
+from ....app import habbing, agenting, indirecting, configing, delegating, forwarding
+from ..common import existing, config
+from ..common.parsing import Parsery
+from ....core import coring
 
 logger = help.ogler.getLogger()
 
@@ -187,7 +187,7 @@ class InceptDoer(doing.DoDoer):
         if hab.kever.delpre:
             self.swain.delegation(pre=hab.pre, sn=0)
             print("Waiting for delegation approval...")
-            while not self.swain.complete(hab.kever.prefixer, coring.Seqner(sn=hab.kever.sn)):
+            while not self.swain.complete(hab.kever.prefixer, coring.Number(num=hab.kever.sn, code=coring.NumDex.Huge)):
                 yield self.tock
 
         elif hab.kever.wits:

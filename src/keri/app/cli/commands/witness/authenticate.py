@@ -11,13 +11,13 @@ import qrcode
 from hio.base import doing
 from hio.help import Hict
 
-from keri import help
-from keri.app import httping, organizing
-from keri.app.agenting import httpClient
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.app.httping import CESR_DESTINATION_HEADER
-from keri.core import coring
+from ..... import help
+from .... import httping, organizing
+from ....agenting import httpClient
+from ...common import existing
+from ...common.parsing import Parsery
+from ....httping import CESR_DESTINATION_HEADER
+from .....core import coring
 
 logger = help.ogler.getLogger()
 

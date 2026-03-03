@@ -8,11 +8,11 @@ import argparse
 
 from hio.base import doing
 
-from keri import help
-from keri.app.cli.common import existing 
+from .... import help
+from ..common import existing 
 
-from keri.app.cli.common.parsing import Parsery
-from keri.kering import ConfigurationError
+from ..common.parsing import Parsery
+from ....kering import ConfigurationError
 
 logger = help.ogler.getLogger()
 

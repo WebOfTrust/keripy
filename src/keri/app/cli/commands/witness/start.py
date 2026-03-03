@@ -8,11 +8,10 @@ Witness command line interface
 import argparse
 import logging
 
-from keri import __version__
-from keri import help
-from keri.app import directing, indirecting, habbing, keeping, configing
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
+from ..... import __version__, help
+from .... import directing, indirecting, habbing, keeping, configing
+from ...common import existing
+from ...common.parsing import Parsery
 
 d = "Runs KERI witness controller.\n"
 d += "Example:\nwitness -H 5631 -t 5632\n"

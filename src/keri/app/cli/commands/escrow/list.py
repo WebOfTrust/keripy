@@ -10,13 +10,12 @@ import json
 
 from hio.base import doing
 
-from keri import help
-from keri.app.cli.common import existing
-from keri.app.cli.common.parsing import Parsery
-from keri.core import eventing
-from keri.db import dbing
-from keri.kering import ConfigurationError
-from keri.vdr import viring
+from ..... import help
+from ...common import existing
+from ...common.parsing import Parsery
+from .....core import eventing
+from .....kering import ConfigurationError
+from .....vdr import viring
 
 logger = help.ogler.getLogger()
 
@@ -144,7 +143,7 @@ def escrows(tymth, tock=0.0, **opts):
             print(json.dumps(escrows, indent=2))
 
             if not (escrow) or escrow == "tel-partial-witness-escrow":
-                for (regk, snq), (prefixer, seqner, saider) in reger.tpwe.getItemIter():
+                for (regk, snq), (prefixer, number, diger) in reger.tpwe.getItemIter():
                     pass
 
     except ConfigurationError:

@@ -7,13 +7,12 @@ import argparse
 
 from hio.base import doing
 
-from keri import help
-from keri.app.cli.common.parsing import Parsery
-import keri.app.oobiing
-from keri.app import habbing, oobiing
-from keri.app.cli.common import existing
-from keri.db import basing
-from keri.help import helping
+from ..... import help
+from ...common.parsing import Parsery
+from .... import habbing, oobiing
+from ...common import existing
+from .....db import basing
+from .....help import helping
 
 logger = help.ogler.getLogger()
 
@@ -64,7 +63,7 @@ class OobiDoer(doing.DoDoer):
 
         self.hby.db.oobis.put(keys=(oobi,), val=obr)
 
-        self.obi = keri.app.oobiing.Oobiery(hby=self.hby)
+        self.obi = oobiing.Oobiery(hby=self.hby)
         self.authn = oobiing.Authenticator(hby=self.hby)
         doers = [self.hbyDoer, doing.doify(self.waitDo)]
 

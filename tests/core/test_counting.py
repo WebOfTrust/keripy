@@ -3,29 +3,22 @@
 tests.core.test_counting module
 
 """
-from dataclasses import dataclass, astuple, asdict
-from  ordered_set import OrderedSet as oset
-from base64 import urlsafe_b64encode as encodeB64
+from dataclasses import asdict
 from base64 import urlsafe_b64decode as decodeB64
 
 import pytest
 
-
 from keri import kering
-from keri.kering import Colds, Protocols
+from keri.kering import Colds, Protocols, Versionage, Vrsn_1_0, Vrsn_2_0
 
-from keri.help import helping
-from keri.help.helping import sceil
-from keri.help.helping import (intToB64,  b64ToInt, codeB64ToB2, codeB2ToB64,
-                            nabSextets)
+from keri.help.helping import intToB64,  b64ToInt, codeB64ToB2
 
-
-
-from keri.core import counting, Texter
-from keri.core.counting import (GenDex, Cizage, Counter, Codens,
-                                 CtrDex_1_0, CtrDex_2_0, ProGen,
-                                Versionage, Vrsn_1_0, Vrsn_2_0)
-
+from keri.core import Texter
+from keri.core import (GenDex, Cizage, Counter, Codens, SUDex_1_0, CtrDex_1_0,
+                       CtrDex_2_0, ProGen,GenDex, ProGen, CtrDex_1_0,
+                       CtrDex_2_0, QTDex_1_0, SUDex_1_0, MUDex_1_0, CtrDex_2_0,
+                       UniDex_2_0, SUDex_2_0, MUDex_2_0, CodeNames, Codens,
+                       SealDex_2_0, Codenage, Cizage, Counter)
 
 
 def test_genus_codex_pro_gen():
@@ -79,7 +72,7 @@ def test_codexes_tags():
     """
 
 
-    assert  asdict(counting.CtrDex_1_0) == \
+    assert  asdict(CtrDex_1_0) == \
     {
         'ControllerIdxSigs': '-A',
         'WitnessIdxSigs': '-B',
@@ -105,7 +98,7 @@ def test_codexes_tags():
         'KERIACDCGenusVersion': '-_AAA'
     }
 
-    assert  asdict(counting.QTDex_1_0) == \
+    assert  asdict(QTDex_1_0) == \
     {
         'PathedMaterialCouples': '-L',
         'BigPathedMaterialCouples': '--L',
@@ -121,7 +114,7 @@ def test_codexes_tags():
         'BigESSRPayloadGroup': '--Z',
     }
 
-    assert  asdict(counting.SUDex_1_0) == \
+    assert  asdict(SUDex_1_0) == \
     {
         'GenericGroup': '-T',
         'BigGenericGroup': '--T',
@@ -131,14 +124,14 @@ def test_codexes_tags():
         'BigAttachmentGroup': '--V',
     }
 
-    assert  asdict(counting.MUDex_1_0) == \
+    assert  asdict(MUDex_1_0) == \
     {
         'NonNativeBodyGroup': '-W',
         'BigNonNativeBodyGroup': '--W',
     }
 
 
-    assert asdict(counting.CtrDex_2_0) == \
+    assert asdict(CtrDex_2_0) == \
     {
         'GenericGroup': '-A',
         'BigGenericGroup': '--A',
@@ -202,7 +195,7 @@ def test_codexes_tags():
     }
 
 
-    assert asdict(counting.UniDex_2_0) == \
+    assert asdict(UniDex_2_0) == \
     {
         'GenericGroup': '-A',
         'BigGenericGroup': '--A',
@@ -227,7 +220,7 @@ def test_codexes_tags():
         'KERIACDCGenusVersion': '-_AAA'
     }
 
-    assert asdict(counting.SUDex_2_0) == \
+    assert asdict(SUDex_2_0) == \
     {
         'GenericGroup': '-A',
         'BigGenericGroup': '--A',
@@ -237,7 +230,7 @@ def test_codexes_tags():
         'BigAttachmentGroup': '--C',
     }
 
-    assert asdict(counting.MUDex_2_0) == \
+    assert asdict(MUDex_2_0) == \
     {
         'DatagramSegmentGroup': '-D',
         'BigDatagramSegmentGroup': '--D',
@@ -252,7 +245,7 @@ def test_codexes_tags():
     }
 
 
-    assert counting.CodeNames == \
+    assert CodeNames == \
     (
         'GenericGroup',
         'BigGenericGroup',
@@ -315,9 +308,9 @@ def test_codexes_tags():
         'KERIACDCGenusVersion',
     )
 
-    assert 'ControllerIdxSigs' in counting.CodeNames
+    assert 'ControllerIdxSigs' in CodeNames
 
-    assert counting.Codens == counting.Codenage(
+    assert Codens == Codenage(
         GenericGroup='GenericGroup',
         BigGenericGroup='BigGenericGroup',
         BodyWithAttachmentGroup='BodyWithAttachmentGroup',
@@ -376,11 +369,11 @@ def test_codexes_tags():
     )
 
 
-    assert counting.Codens.ControllerIdxSigs == 'ControllerIdxSigs'
+    assert Codens.ControllerIdxSigs == 'ControllerIdxSigs'
 
 
 
-    assert asdict(counting.SealDex_2_0) == \
+    assert asdict(SealDex_2_0) == \
     {
         'DigestSealSingles': '-Q',
         'BigDigestSealSingles': '--Q',
@@ -411,11 +404,11 @@ def test_counter_class():
     {
         Vrsn_1_0.major: \
         {
-            Vrsn_1_0.minor: counting.CtrDex_1_0,
+            Vrsn_1_0.minor: CtrDex_1_0,
         },
         Vrsn_2_0.major: \
         {
-            Vrsn_2_0.minor: counting.CtrDex_2_0,
+            Vrsn_2_0.minor: CtrDex_2_0,
         },
     }
 
@@ -423,11 +416,11 @@ def test_counter_class():
     {
         Vrsn_1_0.major: \
         {
-            Vrsn_1_0.minor: counting.SUDex_1_0,
+            Vrsn_1_0.minor: SUDex_1_0,
         },
         Vrsn_2_0.major: \
         {
-            Vrsn_2_0.minor: counting.SUDex_2_0,
+            Vrsn_2_0.minor: SUDex_2_0,
         },
     }
 
@@ -435,11 +428,11 @@ def test_counter_class():
     {
         Vrsn_1_0.major: \
         {
-            Vrsn_1_0.minor: counting.MUDex_1_0,
+            Vrsn_1_0.minor: MUDex_1_0,
         },
         Vrsn_2_0.major: \
         {
-            Vrsn_2_0.minor: counting.MUDex_2_0,
+            Vrsn_2_0.minor: MUDex_2_0,
         },
     }
 
@@ -706,8 +699,8 @@ def test_counter_class():
     assert Counter.verToB64(text='12.2345') == 'Mkp'
     assert Counter.verToB64(text=Counter.b64ToVer('Mkp', texted=True)) == 'Mkp'
 
-    assert Counter.verToB64(counting.Vrsn_1_0) == "BAA"
-    assert Counter.verToB64(counting.Vrsn_2_0) == "CAA"
+    assert Counter.verToB64(Vrsn_1_0) == "BAA"
+    assert Counter.verToB64(Vrsn_2_0) == "CAA"
 
     assert Counter.verToB64(text="1.2") == "BAC"
 
@@ -907,7 +900,7 @@ def test_counter_v1():
     assert counter.byteSize(cold=Colds.bny) == (counter.fullSize // 4) * 3 == 3
     assert counter.soft =='AB'
     assert counter.both == qsc == counter.hard + counter.soft == counter.qb64
-    assert counter.codes == counting.CtrDex_1_0
+    assert counter.codes == CtrDex_1_0
     assert counter.sizes == Counter.Sizes[1][0]
 
     counter = Counter(Codens.ControllerIdxSigs, count=count, version=Vrsn_1_0)
@@ -1274,7 +1267,7 @@ def test_counter_v1():
     assert counter.qb64 == qsc
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_1_0
-    assert counter.codes == counting.CtrDex_1_0
+    assert counter.codes == CtrDex_1_0
     assert counter.sizes == Counter.Sizes[1][0]
 
 
@@ -1338,8 +1331,8 @@ def test_counter_v2():
     assert counter.byteSize(cold=Colds.bny) == (counter.fullSize // 4) * 3 == 3
     assert counter.soft =='AB'
     assert counter.both == qsc == counter.hard + counter.soft == counter.qb64
-    assert counter.codes == counting.CtrDex_2_0
-    #assert counter.tags == counting.Tags_2_0
+    assert counter.codes == CtrDex_2_0
+    #assert counter.tags == Tags_2_0
     assert counter.sizes == Counter.Sizes[2][0]
 
 
@@ -1761,7 +1754,7 @@ def test_counter_v2():
     assert counter.qb2 == qscb2
     assert counter.version == Vrsn_2_0
     assert counter.fullSize == 8
-    assert counter.codes == counting.CtrDex_2_0
+    assert counter.codes == CtrDex_2_0
     assert counter.sizes == Counter.Sizes[2][0]
 
     counter = Counter(code=CtrDex.KERIACDCGenusVersion,

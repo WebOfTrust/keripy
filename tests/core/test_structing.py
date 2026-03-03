@@ -3,33 +3,21 @@
 tests.core.test_structing module
 
 """
-from dataclasses import dataclass, astuple, asdict
-from typing import NamedTuple
-from collections import namedtuple
-from collections.abc import Mapping
-
+from dataclasses import asdict
 import json
-
 import pytest
 
 
-from keri import kering
-from keri.kering import ValidationError, InvalidValueError, EmptyMaterialError, Colds
-
-from keri.help import helping
-
-from keri.core import (Matter, Diger, DigDex, Prefixer, Number, Verser, Labeler,
-                       Noncer, NonceDex, Salter, Texter)
-
-from keri.core import (Structor, Sealer, Blinder, Mediar,
-                       SealDigest, SealRoot, SealBack, SealEvent,
-                                 SealLast, SealSource, SealKind,
-                                 BlindState, BoundState, TypeMedia)
-from keri.core.structing import (Castage, CodenToClans, ClanToCodens,
-                                 EClanDom, ECastDom, EmptyClanDom, EmptyCastDom,
-                                 AClanDom, ACastDom,
-                                 SClanDom, SCastDom, SealClanDom, SealCastDom,
-                                 BSClanDom, BSCastDom, TMClanDom, TMCastDom)
+from keri.kering import (ValidationError, InvalidValueError, EmptyMaterialError,
+                         InvalidValueError, Colds)
+from keri.core import (Diger, DigDex, Prefixer, Number, Verser, Labeler,
+                       Noncer, NonceDex, Salter, Texter, Structor, Sealer,
+                       Blinder, Mediar, SealDigest, SealRoot, SealBack, SealEvent,
+                       SealLast, SealSource, SealKind, BlindState, BoundState,
+                       TypeMedia, Castage, CodenToClans, ClanToCodens,
+                       EClanDom, ECastDom, EmptyClanDom, EmptyCastDom,
+                       AClanDom, ACastDom, SClanDom, SCastDom, SealClanDom,
+                       SealCastDom, BSClanDom, BSCastDom, TMClanDom, TMCastDom)
 
 
 def test_structor_doms():
@@ -176,7 +164,7 @@ def test_structor_class():
 def test_structor():
     """test Structor instance"""
 
-    with pytest.raises(kering.InvalidValueError):
+    with pytest.raises(InvalidValueError):
         structor = Structor()  # test default
 
 
@@ -795,10 +783,10 @@ def test_structor():
     assert not buf  # stripped
 
     # Test no clan and cast or crew as dict
-    with pytest.raises(kering.EmptyMaterialError):
+    with pytest.raises(EmptyMaterialError):
         structor = Structor(cast=dcast)  # missing both crew and data need one or the other
 
-    #with pytest.raises(kering.InvalidValueError):
+    #with pytest.raises(InvalidValueError):
         #structor = Structor(crew=dcrew)  # gets cast from mark from crew
 
     # creaes custom clan because pick cast and crew as dict that does not match
@@ -835,10 +823,10 @@ def test_structor():
 
 
     # Test no clan and cast or crew as dict
-    with pytest.raises(kering.EmptyMaterialError):
+    with pytest.raises(EmptyMaterialError):
         structor = Structor(cast=dcast)  # missing crew or data need one or the other
 
-    with pytest.raises(kering.InvalidValueError):
+    with pytest.raises(InvalidValueError):
         structor = Structor(crew=dcrew)  # missing cast for custom clan from crew
 
 
@@ -969,7 +957,7 @@ def test_sealer_class():
 def test_sealer():
     """test sealer instance"""
 
-    with pytest.raises(kering.InvalidValueError):
+    with pytest.raises(InvalidValueError):
         sealer = Sealer()  # test default
 
 
@@ -1502,7 +1490,7 @@ def test_blinder_class():
 def test_blinder():
     """test blinder instance"""
 
-    with pytest.raises(kering.InvalidValueError):
+    with pytest.raises(InvalidValueError):
         blinder = Blinder()  # test default
 
     nonceq = 'aJte0a_x8dBbGQrBkdYRgkzvFlQss3ovVOkUz1L1YGPd'
@@ -2424,7 +2412,7 @@ def test_mediar():
         '0ABtZWRpYXJyYXdub25jZV8z'
     ]
 
-    with pytest.raises(kering.InvalidValueError):
+    with pytest.raises(InvalidValueError):
         mediar = Mediar()  # test default
 
     code = DigDex.Blake3_256
