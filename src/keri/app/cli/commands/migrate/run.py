@@ -6,9 +6,7 @@ keri.kli.commands.migrate.run module
 import argparse
 
 from hio.base import doing
-from keri import kering
-
-from ..... import help
+from ..... import DatabaseError, help
 from ...common import Parsery
 from .....db import basing
 
@@ -46,7 +44,7 @@ class MigrateDoer(doing.Doer):
 
         try:
             db.reopen()
-        except kering.DatabaseError:
+        except DatabaseError:
             pass
 
         print(f"Migrating {self.args.name}...")
