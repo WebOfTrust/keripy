@@ -14,17 +14,17 @@ import falcon
 from hio.base import doing
 from hio.help import decking
 
-from keri.core import coring
 from . import httping
+from .. import (Vrsn_1_0, Roles, Schemes, Ilks,
+                ValidationError, UnverifiedReplyError,
+                ConfigurationError)
 from ..help import ogler, nowIso8601
-from ..kering import Vrsn_1_0, Vrsn_2_0, Roles, Schemes, ValidationError
 from ..app import organizing
-from ..core import routing, eventing, parsing, scheming, serdering
+from ..core import (Prefixer, routing, eventing,
+                    parsing, scheming, serdering)
 from ..db import basing
-from ..end import ending
-from ..end.ending import OOBI_RE, DOOBI_RE
+from ..end import ending, OOBI_RE, DOOBI_RE
 from ..help import helping
-from ..kering import Ilks, ValidationError, UnverifiedReplyError, ConfigurationError
 from ..peer import exchanging
 
 logger = ogler.getLogger()
@@ -364,7 +364,7 @@ class Oobiery:
                 raise ValidationError(f"Missing element={k} from attributes in"
                                       f" {Ilks.rpy} msg={serder.ked}.")
 
-        cider = coring.Prefixer(qb64=data["cid"])  # raises error if unsupported code
+        cider = Prefixer(qb64=data["cid"])  # raises error if unsupported code
         cid = cider.qb64  # controller authorizing eid at role
         aid = cid  # authorizing attribution id
 
@@ -550,7 +550,7 @@ class Oobiery:
                         self.hby.db.coobi.rem(keys=(url,))
                         self.hby.db.roobi.put(keys=(url,), val=obr)
                         continue
-                    if not serder.ked['t'] == coring.Ilks.rpy:
+                    if not serder.ked['t'] == Ilks.rpy:
                         obr.state = Result.failed
                         self.hby.db.coobi.rem(keys=(url,))
                         self.hby.db.roobi.put(keys=(url,), val=obr)

@@ -15,9 +15,9 @@ from ..peer import exchanging
 from . import keeping, configing
 from ..db import dbing, basing
 from ..help import ogler, fromIso8601, toIso8601
-from ..kering import (Vrsn_1_0, Vrsn_2_0, ClosedError, AuthError,
-                      ConfigurationError, ValidationError, MissingEntryError,
-                      KeriError, MissingSignatureError, Roles, Schemes)
+from .. import (Vrsn_1_0, ClosedError, AuthError,
+                ConfigurationError, ValidationError, MissingEntryError,
+                KeriError, MissingSignatureError, Roles, Schemes)
 from ..core import (coring, eventing, parsing, routing,
                     Counter, Salter, Codens)
 

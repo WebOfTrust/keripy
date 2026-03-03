@@ -18,19 +18,17 @@ from hio.core import http, tcp
 from hio.core.tcp import serving
 from hio.help import decking
 
-from ..kering import Vrsn_1_0, Vrsn_2_0, Roles, MissingEntryError
-from . import directing, storing, httping, forwarding, agenting, oobiing
-from .habbing import GroupHab
+from .. import Vrsn_1_0, Roles, Ilks, MissingEntryError
+from . import (GroupHab, directing, storing,
+               httping, forwarding, agenting, oobiing)
 from ..core import (eventing, parsing, routing, coring, serdering,
                     Counter, Codens)
-from ..core.coring import Ilks
 from ..app import oobiing
 from ..db import basing
 from ..end import ending
 from ..help import helping, ogler
 from ..peer import exchanging
-from ..vdr import verifying, viring
-from ..vdr.eventing import Tevery
+from ..vdr import Tevery, verifying, viring
 
 logger = ogler.getLogger()
 

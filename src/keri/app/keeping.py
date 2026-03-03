@@ -29,7 +29,7 @@ from dataclasses import dataclass, asdict, field
 import pysodium
 from hio.base import doing
 
-from ..kering import ClosedError, AuthError, DecryptError
+from .. import ClosedError, AuthError, DecryptError
 from ..core import (coring, Cipher, Signer, Salter,
                     Encrypter, Decrypter, Tiers, MtrDex)
 from ..db import dbing, subing, koming

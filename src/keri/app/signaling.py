@@ -10,7 +10,7 @@ import falcon
 from hio.base import doing
 from hio.help import decking
 
-from ..core import coring
+from ..core import Dicter
 from ..help import helping
 
 
@@ -41,7 +41,7 @@ def signal(attrs, topic, ckey=None, dt=None):
     return Signal(pad=pad, ckey=ckey)
 
 
-class Signal(coring.Dicter):
+class Signal(Dicter):
     def __init__(self, pad, ckey=None):
         """ New Signal
 

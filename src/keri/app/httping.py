@@ -13,7 +13,7 @@ from hio.base import doing
 from hio.core import http
 from hio.help import Hict
 
-from ..kering import ShortageError, ExtractionError, ColdStartError, sniff
+from .. import ShortageError, ExtractionError, ColdStartError, sniff
 from ..core import coring, parsing, serdering
 from ..end import ending
 from ..help import helping, ogler

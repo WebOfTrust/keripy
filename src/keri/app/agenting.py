@@ -16,8 +16,8 @@ from socket import gaierror
 
 from . import httping, forwarding
 from ..help import ogler
-from ..kering import (Schemes, Roles, Vrsn_1_0, Vrsn_2_0,
-                      MissingEntryError, ConfigurationError, MissingEntryError)
+from .. import (Schemes, Roles, Vrsn_1_0,
+                MissingEntryError, ConfigurationError, MissingEntryError)
 from ..core import Counter, eventing, parsing, coring, serdering, Codens
 
 

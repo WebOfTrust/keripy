@@ -8,13 +8,12 @@ module for enveloping and forwarding KERI message
 
 from hio.base import doing
 
-from ..kering import ValidationError, Vrsn_1_0, Vrsn_2_0
-from ..help import ogler
+from .. import ValidationError, Vrsn_1_0, help
 from . import delegating, agenting
 from ..core import Counter, coring, routing, eventing, parsing, serdering, Codens
 from ..peer import exchanging
 
-logger = ogler.getLogger()
+logger = help.ogler.getLogger()
 
 
 class Counselor(doing.DoDoer):
