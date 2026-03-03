@@ -12,7 +12,7 @@ import pytest
 from keri import Vrsn_1_0, help, MisfitEventSourceError
 
 from keri.core import (Seqner, Counter, Salter, coring, eventing, parsing,
-                       MtrDex, Codens, Number)
+                       MtrDex, Codens, Number, Diger)
 
 from keri.db import dbing, basing
 from keri.app import keeping
@@ -519,6 +519,8 @@ def test_missing_delegator_escrow():
         result = bobKvy.db.aess.get(keys=(delPre, delSrdr.said))
         assert result is not None
         rnumber, rdiger = result
+        assert isinstance(rnumber, Number)
+        assert isinstance(rdiger, Diger)
         assert rnumber.qb64b == seqner.qb64b
         assert rdiger.qb64b == bobSrdr.saidb
 
