@@ -1157,7 +1157,7 @@ class Baser(dbing.LMDBer):
         # completed group multisig
         # TODO: clean
         self.cgms = subing.CesrSuber(db=self, subkey='cgms.',
-                                     klas=coring.Saider)
+                                     klas=coring.Diger)
 
         # exchange message partial signature escrow
         self.epse = subing.SerderSuber(db=self, subkey="epse.")

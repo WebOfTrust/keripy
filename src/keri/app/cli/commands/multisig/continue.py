@@ -58,13 +58,13 @@ class ContinueDoer(doing.DoDoer):
         if not esc:
             raise ValueError(f"no escrowed events for {self.alias} ({hab.pre})")
 
-        (seqner, saider) = esc[0]
+        (number, diger) = esc[0]
         src = hab.mhab.pre if isinstance(hab, GroupHab) else hab.pre
-        anchor = dict(i=hab.pre, s=seqner.snh, d=saider.qb64)
+        anchor = dict(i=hab.pre, s=number.numh, d=diger.qb64)
         self.witq.query(src=src, pre=hab.kever.delpre, anchor=anchor)
 
         print(f"Checking mailboxes for any events to process")
-        while self.hby.db.cgms.get(keys=(hab.pre, seqner.qb64)) is None:
+        while self.hby.db.cgms.get(keys=(hab.pre, number.qb64)) is None:
             yield 1.0
 
         print()
