@@ -1710,10 +1710,10 @@ class Baser(dbing.LMDBer):
 
         # add authorizer (delegator/issuer) source seal event couple to attachments
         if (duple := self.aess.get(keys=(pre, dig))) is not None:
-            seqner, diger = duple
+            number, diger = duple
             atc.extend(core.Counter(code=core.Codens.SealSourceCouples,
                                     count=1, version=kering.Vrsn_1_0).qb64b)
-            atc.extend(seqner.qb64b + diger.qb64b)
+            atc.extend(number.qb64b + diger.qb64b)
 
         # add trans endorsement quadruples to attachments not controller
         # may have been originally key event attachments or receipted endorsements

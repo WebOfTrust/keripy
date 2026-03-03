@@ -7048,8 +7048,8 @@ def loadEvent(db, preb, dig):
 
     # add authorizer (delegator/issuer) source seal event couple to attachments
     if (duple := db.aess.get(keys=(preb, dig))) is not None:
-        seqner, diger = duple
-        event["source_seal"] = dict(sequence=seqner.sn, said=diger.qb64)
+        number, diger = duple
+        event["source_seal"] = dict(sequence=number.sn, said=diger.qb64)
 
     receipts = dict()
     # add trans receipts quadruples
