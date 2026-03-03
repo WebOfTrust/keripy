@@ -8,14 +8,12 @@ import argparse
 
 from hio.base import doing
 
-from .....help import ogler
-from .....kering import MissingEntryError
+from ..... import MissingEntryError, help
 from .... import agenting, habbing, httping
-from ...common import existing
-from ...common.parsing import Parsery
+from ...common import Parsery, existing
 from ....habbing import GroupHab
 
-logger = ogler.getLogger()
+logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Display mailbox status for an identifier and witness', 
                                  parents=[Parsery.keystore()])

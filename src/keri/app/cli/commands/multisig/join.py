@@ -11,17 +11,14 @@ from ordered_set import OrderedSet as oset
 from hio.base import doing
 from prettytable import PrettyTable
 
-from .....help import ogler
-from .....kering import TraitCodex, ConfigurationError, MissingAnchorError
-from .....kering import Vrsn_1_0, Vrsn_2_0
+from ..... import TraitCodex, ConfigurationError, MissingAnchorError, Vrsn_1_0, help
 from .... import habbing, indirecting, agenting, notifying, grouping, organizing, forwarding
-from ...common import existing, displaying
-from ...common.parsing import Parsery
+from ...common import Parsery, existing, displaying
 from .....core import coring, eventing, scheming, parsing, routing, serdering
 from .....peer import exchanging
 from .....vdr import verifying, credentialing
 
-logger = ogler.getLogger()
+logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Join group multisig inception, rotation or interaction event.',
                                  parents=[Parsery.keystore()])

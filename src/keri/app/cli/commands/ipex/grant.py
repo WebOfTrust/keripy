@@ -7,11 +7,9 @@ import argparse
 
 from hio.base import doing
 
-from .....kering import Vrsn_1_0, Vrsn_2_0
-from .... import forwarding, organizing, habbing, grouping, indirecting, signing
-from ...common import existing
-from ...common.parsing import Parsery
-from ....notifying import Notifier
+from ..... import Vrsn_1_0
+from .... import Notifier, forwarding, organizing, habbing, grouping, indirecting, signing
+from ...common import Parsery, existing
 from .....core import coring, parsing, serdering
 from .....peer import exchanging
 from .....vc import protocoling

@@ -5,4 +5,4 @@ keri.app.cli.commands.local Package
 
 """
 
-from .watch import WatchDoer
+from .watch import watch, WatchDoer

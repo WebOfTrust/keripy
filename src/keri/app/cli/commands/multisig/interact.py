@@ -9,16 +9,13 @@ from ordered_set import OrderedSet as oset
 
 from hio.base import doing
 
-from .....help import ogler
-from .....kering import ConfigurationError
-from .... import grouping, indirecting, habbing, forwarding
-from ...common import existing, displaying, config
-from ...common.parsing import Parsery
-from ....notifying import Notifier
+from ..... import ConfigurationError, help
+from .... import Notifier, grouping, indirecting, habbing, forwarding
+from ...common import Parsery, existing, displaying, config
 from .....core import coring, serdering
 from .....peer import exchanging
 
-logger = ogler.getLogger()
+logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Begin or join a rotation of a group identifier', 
                                  parents=[Parsery.keystore()])

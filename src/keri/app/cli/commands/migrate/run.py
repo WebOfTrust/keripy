@@ -8,11 +8,11 @@ import argparse
 from hio.base import doing
 from keri import kering
 
-from .....help import ogler
-from ...common.parsing import Parsery
+from ..... import help
+from ...common import Parsery
 from .....db import basing
 
-logger = ogler.getLogger()
+logger = help.ogler.getLogger()
 
 
 def handler(args):

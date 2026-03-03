@@ -13,16 +13,14 @@ from ordered_set import OrderedSet as oset
 import sys
 from hio.base import doing
 
-from .....help import ogler
-from .....kering import ConfigurationError
-from .... import indirecting, grouping, habbing, forwarding
-from ...common import existing, displaying
-from ...common.parsing import Parsery
-from ....notifying import Notifier
+from ..... import ConfigurationError, help
+from .... import (Notifier, indirecting, grouping,
+                  habbing, forwarding)
+from ...common import Parsery, existing, displaying
 from .....core import coring
 from .....peer import exchanging
 
-logger = ogler.getLogger()
+logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Initialize a group identifier prefix', 
                                  parents=[Parsery.keystore()])

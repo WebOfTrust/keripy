@@ -10,12 +10,10 @@ from urllib.parse import urlparse
 
 from hio.base import doing
 
-from ..... import help, kering
-from .....kering import Vrsn_1_0, Vrsn_2_0
+from ..... import help, ConfigurationError, Vrsn_1_0
 from .... import habbing, grouping, indirecting, forwarding
 from ....agenting import WitnessPublisher
-from ...common import existing
-from ...common.parsing import Parsery
+from ...common import Parsery, existing
 from ....notifying import Notifier
 from .....core import parsing
 from .....peer import exchanging
@@ -66,7 +64,7 @@ class LocationDoer(doing.DoDoer):
         mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc)
 
         if self.hab is None:
-            raise kering.ConfigurationError(f"unknown alias={alias}")
+            raise ConfigurationError(f"unknown alias={alias}")
 
         self.toRemove = [self.witpub, self.postman, mbx]
 

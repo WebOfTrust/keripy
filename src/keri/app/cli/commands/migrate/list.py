@@ -8,11 +8,10 @@ import argparse
 from hio.base import doing
 from prettytable import PrettyTable
 
-from .....help import ogler
-from ...common import existing
-from ...common.parsing import Parsery
+from ..... import help
+from ...common import Parsery, existing
 
-logger = ogler.getLogger()
+logger = help.ogler.getLogger()
 
 
 def handler(args):

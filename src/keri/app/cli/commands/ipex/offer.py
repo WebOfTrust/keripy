@@ -7,7 +7,7 @@ import argparse
 
 from hio.base import doing
 
-from .....core.signing import Salter
+from .....core import Salter
 
 parser = argparse.ArgumentParser(description='Reply to IPEX apply message or initiate an IPEX exchange with an offer'
                                              ' for a credential with certain characteristics')

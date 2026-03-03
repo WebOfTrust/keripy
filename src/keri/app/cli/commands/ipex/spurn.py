@@ -8,17 +8,13 @@ import os
 
 from hio.base import doing
 
-from .....kering import Vrsn_1_0, Vrsn_2_0
-from .... import forwarding, organizing, habbing, grouping, indirecting
-from ...common import existing
-from ...common.parsing import Parsery
-from ....notifying import Notifier
+from ..... import Vrsn_1_0
+from .... import Notifier, forwarding, organizing, habbing, grouping, indirecting
+from ...common import Parsery, existing
 from .....core import parsing, eventing
 from .....peer import exchanging
-from .....vc import protocoling
-from .....vc.protocoling import Ipex
-from .....vdr import credentialing, verifying
-from .....vdr import eventing as teventing
+from .....vc import protocoling, Ipex
+from .....vdr import credentialing, verifying, Tevery
 
 
 parser = argparse.ArgumentParser(description='Reject an IPEX apply, offer, agree or grant message', 
@@ -53,7 +49,7 @@ class SpurnDoer(doing.DoDoer):
         self.org = organizing.Organizer(hby=self.hby)
 
         kvy = eventing.Kevery(db=self.hby.db)
-        tvy = teventing.Tevery(db=self.hby.db, reger=self.rgy.reger)
+        tvy = Tevery(db=self.hby.db, reger=self.rgy.reger)
         vry = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
 
         self.psr = parsing.Parser(kvy=kvy, tvy=tvy, vry=vry, version=Vrsn_1_0)

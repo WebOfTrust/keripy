@@ -6,8 +6,7 @@ keri.app.cli.commands module
 import argparse
 
 from hio.base import doing
-
-from .....core.signing import Salter
+from .....core import Salter
 
 parser = argparse.ArgumentParser(description='Request a credential from another party by initiating an IPEX exchange')
 parser.set_defaults(handler=lambda args: handler(args))

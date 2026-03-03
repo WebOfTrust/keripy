@@ -5,4 +5,4 @@ keri.app.cli.commands.location Package
 
 """
 
-from .add import LocationDoer
+from .add import add_loc, LocationDoer

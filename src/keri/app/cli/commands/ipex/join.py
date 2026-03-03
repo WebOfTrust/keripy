@@ -9,8 +9,7 @@ import argparse
 
 from hio.base import doing
 
-from ..... import help
-from .....kering import Vrsn_1_0, Vrsn_2_0
+from ..... import help, Vrsn_1_0
 from .... import habbing, indirecting, agenting, notifying, grouping, organizing, forwarding
 from ...common import existing
 from .....core import parsing, routing, serdering, coring

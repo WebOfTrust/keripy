@@ -14,14 +14,12 @@ import sys
 from hio.base import doing
 
 from .... import indirecting, notifying, organizing
-from ...common import existing, terming
-from ...common.parsing import Parsery
-from .....kering import ConfigurationError
+from ...common import Parsery, existing, terming
+from ..... import ConfigurationError
 from .....core import scheming
 from .....help import helping, ogler
 from .....peer import exchanging
-from .....vc import protocoling
-from .....vc.protocoling import Ipex
+from .....vc import protocoling, Ipex
 from .....vdr import credentialing, verifying
 
 logger = ogler.getLogger()

@@ -7,13 +7,11 @@ import argparse
 
 from hio.base import doing
 
-from .....help import ogler
-from ...common import existing
-from ...common.parsing import Parsery
+from ..... import ConfigurationError, help
+from ...common import Parsery, existing
 from .....db import basing
-from .....kering import ConfigurationError
 
-logger = ogler.getLogger()
+logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Update the index for a given topic for a witness', 
                                  parents=[Parsery.keystore()])

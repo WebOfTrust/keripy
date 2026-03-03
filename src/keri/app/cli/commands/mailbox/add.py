@@ -9,14 +9,12 @@ import argparse
 from hio.base import doing
 from hio.help import Hict
 
-from .....help import ogler
-from .....kering import Roles
+from ..... import Roles, help
 from .... import organizing, habbing
 from ....agenting import httpClient, WitnessPublisher
-from ...common import existing
-from ...common.parsing import Parsery
+from ...common import Parsery, existing
 
-logger = ogler.getLogger()
+logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Add mailbox role', 
                                  parents=[Parsery.keystore()])

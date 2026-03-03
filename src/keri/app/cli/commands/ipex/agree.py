@@ -6,8 +6,7 @@ keri.app.cli.commands module
 import argparse
 
 from hio.base import doing
-
-from .....core.signing import Salter
+from .....core import Salter
 
 parser = argparse.ArgumentParser(description='Reply to IPEX offer message acknowledged willingness to accept offered '
                                              'credential')

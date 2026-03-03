@@ -8,15 +8,11 @@ import time
 
 from hio.base import doing
 from hio.help import decking
-from .....kering import ConfigurationError
-from .....help import ogler
-from .... import agenting, indirecting, habbing
-from ...common import displaying
-from ...common import existing
-from ...common.parsing import Parsery
-from ....habbing import GroupHab
+from ..... import ConfigurationError, help
+from .... import GroupHab, agenting, indirecting, habbing
+from ...common import Parsery, displaying, existing
 
-logger = ogler.getLogger()
+logger = help.ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Request KEL for local multisig AID from witness', 
                                  parents=[Parsery.keystore()])
