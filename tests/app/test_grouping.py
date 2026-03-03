@@ -361,7 +361,7 @@ def test_the_seven():
         counselor.processEscrows()
         val = hby1.db.gpse.getLast(keys=(ghab.pre,))  # thold met, partial sig escrow should be empty
         assert val is None
-        assert counselor.complete(prefixer=prefixer, seqner=seqner, saider=saider)
+        assert counselor.complete(prefixer=prefixer, seqner=number, saider=diger)
 
         # First Partial Rotation
         hab1.rotate()
