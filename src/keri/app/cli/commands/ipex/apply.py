@@ -6,8 +6,7 @@ keri.app.cli.commands module
 import argparse
 
 from hio.base import doing
-
-from keri.core import signing
+from .....core import Salter
 
 parser = argparse.ArgumentParser(description='Request a credential from another party by initiating an IPEX exchange')
 parser.set_defaults(handler=lambda args: handler(args))
@@ -22,4 +21,4 @@ def nonce(tymth, tock=0.0, **kwa):
     """
     _ = (yield tock)
 
-    print(signing.Salter().qb64)
+    print(Salter().qb64)
