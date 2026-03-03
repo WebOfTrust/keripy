@@ -13,14 +13,11 @@ from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 
-
 from ..kering import (EmptyMaterialError, InvalidCodeError, InvalidSizeError,
-                      InvalidValueError)
+                      InvalidValueError, InvalidTypeError)
 
-from ..help import helping
-from .coring import (SmallVrzDex, LargeVrzDex, Matter, MtrDex, Verfer, Cigar)
-from .indexing import IdrDex, Indexer, Siger
-
+from .coring import Matter, MtrDex, Verfer, Cigar
+from .indexing import IdrDex, Siger
 
 
 DSS_SIG_MODE = "fips-186-3"
@@ -329,7 +326,6 @@ class Signer(Matter):
             return Siger(raw=sig, code=code, index=index, ondex=ondex, verfer=verfer,)
 
 
-
 class Salter(Matter):
     """Salter is Matter subclass to maintain random salt for secrets (private keys)
     Its .raw is random salt, .code as cipher suite for salt
@@ -484,8 +480,6 @@ class Salter(Matter):
         return [self.signer(path=f"{path}{i + start:x}", **kwa) for i in range(count)]
 
 
-
-
 # Codes for for ciphers of variable sized sniffable QB2 or QB64 plain text
 @dataclass(frozen=True)
 class CipherX25519VarStrmCodex:
@@ -506,7 +500,6 @@ class CipherX25519VarStrmCodex:
         return iter(astuple(self))
 
 CiXVarStrmDex = CipherX25519VarStrmCodex()  # Make instance
-
 
 # Codes for for ciphers of variable sized QB64 plain text
 @dataclass(frozen=True)
@@ -569,8 +562,6 @@ class CipherX25519AllQB64Codex:
 
 CiXAllQB64Dex = CipherX25519AllQB64Codex()  # Make instance
 
-
-
 # Codes for for ciphers of variable sized QB2 plain text
 @dataclass(frozen=True)
 class CipherX25519QB2VarCodex:
@@ -625,7 +616,6 @@ class CipherX25519AllVarCodex:
 
 CiXVarDex = CipherX25519AllVarCodex()  # Make instance
 
-
 # Codes for for ciphers of all sizes and all types of plain text
 @dataclass(frozen=True)
 class CipherX25519AllCodex:
@@ -660,8 +650,6 @@ class CipherX25519AllCodex:
         return iter(astuple(self))
 
 CiXDex = CipherX25519AllCodex()  # Make instance
-
-
 
 
 class Cipher(Matter):
@@ -1059,7 +1047,6 @@ class Decrypter(Matter):
                 raise InvalidCodeError(f"Unsupported cipher code = {cipher.code}.")
 
 
-
 class Streamer:
     """
     Streamer is CESR sniffable stream class
@@ -1096,7 +1083,7 @@ class Streamer:
         if hasattr(stream, "encode"):
             stream = bytearray(stream.encode())  # convert str to bytearray
         if not isinstance(stream, (bytes, bytearray, memoryview)):
-            raise kering.InvalidTypeError(f"Invalid stream type, not byteable.")
+            raise InvalidTypeError(f"Invalid stream type, not byteable.")
 
         self._stream = stream
 
@@ -1177,6 +1164,3 @@ class Streamer:
 
         """
         return self._stream
-
-
-

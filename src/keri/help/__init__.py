@@ -28,7 +28,9 @@ logging.Logger.trace = trace
 #  want help.ogler always defined by default
 ogler = ogling.initOgler(prefix='keri', syslogged=False)  # inits once only on first import
 
-from .helping import (nowIso8601, toIso8601, fromIso8601,
+from .helping import (nowIso8601, toIso8601, fromIso8601, sceil,
                       NonStringSequence, NonStringIterable,
                       isNonStringSequence, isNonStringIterable,
-                      Reb64, Reatt, Repath)
+                      Reb64, Reatt, Repath, intToB64, codeB64ToB2,
+                      DTS_BASE_0, DTS_BASE_1, codeB2ToB64, b64ToInt,
+                      nabSextets)

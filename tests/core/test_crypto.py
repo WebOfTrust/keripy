@@ -8,14 +8,9 @@ import pysodium
 import blake3
 import hashlib
 
-
-from base64 import urlsafe_b64encode as encodeB64
-from base64 import urlsafe_b64decode as decodeB64
-
 from cryptography.hazmat.primitives.serialization import Encoding, PublicFormat
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 from cryptography.hazmat.primitives import hashes
-from cryptography import utils as cryptographyUtils
 from cryptography import exceptions
 
 

@@ -4,19 +4,17 @@ keri.core.scheming module
 
 self-addressing and schema support
 """
-
 import json
 
 import cbor2 as cbor
 import jsonschema
 import msgpack
 
-from . import coring
-from .coring import MtrDex, Kinds, Saider, Saids
-from .. import help, kering
+from .coring import MtrDex, Kinds, Saider, Saids, dumps
+from ..help import ogler
 from ..kering import ValidationError, DeserializeError
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 class CacheResolver:
@@ -169,7 +167,7 @@ class JSONSchema:
             bytes: Serialized schema
 
         """
-        raw = coring.dumps(sed, kind)
+        raw = dumps(sed, kind)
         return raw
 
     @staticmethod
@@ -229,13 +227,13 @@ class JSONSchema:
                 kwargs["resolver"] = self.resolver.resolver(scer=raw)
             jsonschema.validate(instance=d, schema=schema, **kwargs)
         except jsonschema.exceptions.ValidationError as ex:
-            raise kering.ValidationError(f'Credential validation exception: {ex}')
+            raise ValidationError(f'Credential validation exception: {ex}')
         except jsonschema.exceptions.SchemaError as ex:
-            raise kering.ValidationError(f'Schema exception: {ex}')
+            raise ValidationError(f'Schema exception: {ex}')
         except json.decoder.JSONDecodeError as ex:
-            raise kering.ValidationError(f"Credential JSON exception: {ex}")
+            raise ValidationError(f"Credential JSON exception: {ex}")
         except Exception as ex:
-            raise kering.ValidationError(f"Credential Exception: {ex}")
+            raise ValidationError(f"Credential Exception: {ex}")
 
         return True
 

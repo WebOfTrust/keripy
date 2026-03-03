@@ -4,23 +4,18 @@ keri.core.structing module
 
 Creates fixed field data structures
 """
-
-
 from typing import NamedTuple
 from collections import namedtuple
 from collections.abc import Mapping
-from dataclasses import dataclass, astuple, asdict
+from dataclasses import dataclass, astuple
 
 from ..kering import (Colds, ValidationError, InvalidValueError,
-                      EmptyMaterialError, DeserializeError, SerializeError)
-
-from .. import help
+                      EmptyMaterialError)
 from ..help import isNonStringSequence
 
-
-from .coring import (IceMapDom, Matter, Diger, DigDex, Prefixer, Number, Verser,
+from .coring import (IceMapDom, Diger, DigDex, Prefixer, Number, Verser,
                      Labeler, Noncer, NonceDex, Texter)
-from .counting import CtrDex_2_0, Codens, Counter
+from .counting import Codens, Counter
 from .signing import Tiers, Salter
 
 #  for the following Seal namedtuples use the ._asdict() method to convert to dict
@@ -584,7 +579,7 @@ class Structor:
             elif cold == Colds.bny:
                 buf.extend(structor.qb2)
             else:
-                raise InvalidValueError(f"Invalid {cold=}, not {Cold.txt} or {Colds.bny}")
+                raise InvalidValueError(f"Invalid {cold=}, not {Colds.txt} or {Colds.bny}")
 
         if clan is None:  # empty structors
             clan = list(cls.ClanCodens.keys())[0]  # use default as zeroth clan
@@ -600,7 +595,7 @@ class Structor:
         elif cold == Colds.bny:
             return Counter.enclose(qb2=buf, code=coden)
         else:
-            raise InvalidValueError(f"Invalid {cold=}, not {Cold.txt} or {Colds.bny}")
+            raise InvalidValueError(f"Invalid {cold=}, not {Colds.txt} or {Colds.bny}")
 
 
     @classmethod

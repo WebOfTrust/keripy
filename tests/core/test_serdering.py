@@ -3,39 +3,26 @@
 tests.core.test_serdering module
 
 """
-import dataclasses
-import json
-from collections import namedtuple
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
-
-import cbor2 as cbor
-import msgpack
 
 import pytest
 from  ordered_set import OrderedSet as oset
 
-from keri import kering
-from keri.kering import (Colds, Protocols, Versionage, Version, Vrsn_1_0, Vrsn_2_0,
-                      VERRAWSIZE1, VERFMT1,
-                      MAXVERFULLSPAN, VER1FULLSPAN,  VER2FULLSPAN,)
+from keri.kering import (Protocols, Vrsn_1_0, Vrsn_2_0, Kinds, Ilks,
+                         VER1FULLSPAN, VER2FULLSPAN,
+                         InvalidValueError, ValidationError,
+                         SerializeError, VersionError)
 
-from keri.help import helping
+from keri.help import b64ToInt
 
-from keri import core
-
-from keri.core import Sealer, SealEvent, SealSource
-
-from keri.core.serdering import (FieldDom, FieldDom, Serdery, Serder,
-                                 SerderKERI, SerderACDC, )
-
-from keri.core.eventing import (incept, interact, rotate, delcept, deltate,
-                                receipt, query, reply, prod, bare,
-                                exchept, exchange)
+from keri.core import (Salter, Diger, Number, FieldDom,
+                       FieldDom, Serdery, Serder, SerderKERI,
+                       SerderACDC, incept, interact, rotate, delcept,
+                       deltate, receipt, query, reply, prod, bare,
+                       exchept, exchange, GenDex, PreDex, MtrDex)
 
 from keri.peer import exchanging
-
-from keri.core import GenDex, Counter, Codens
 
 from keri.app import habbing
 
@@ -66,8 +53,8 @@ def test_spans():
     assert Serder.Spans
     assert isinstance(Serder.Spans, dict)
 
-    assert Serder.Spans[kering.Vrsn_1_0] == kering.VER1FULLSPAN == 17
-    assert Serder.Spans[kering.Vrsn_2_0] == kering.VER2FULLSPAN == 19
+    assert Serder.Spans[Vrsn_1_0] == VER1FULLSPAN == 17
+    assert Serder.Spans[Vrsn_2_0] == VER2FULLSPAN == 19
 
     """End Test"""
 
@@ -112,30 +99,30 @@ def test_serder_class():
                 assert oset(vf.alts) <= oset(vf.opts)
                 assert oset(vf.saids) <= oset(vf.alls)
 
-    assert Serder.Fields[Protocols.keri][kering.Vrsn_1_0]["icp"].saids == {'d': 'E', 'i': 'E'}
-    assert (Serder.Fields[Protocols.keri][kering.Vrsn_1_0]["icp"].alls ==
+    assert Serder.Fields[Protocols.keri][Vrsn_1_0]["icp"].saids == {'d': 'E', 'i': 'E'}
+    assert (Serder.Fields[Protocols.keri][Vrsn_1_0]["icp"].alls ==
         {'v': '','t': '','d': '','i': '','s': '0','kt': '0','k': [],'nt': '0','n': [],'bt': '0','b': [],'c': [],'a': []})
-    assert (Serder.Fields[Protocols.keri][kering.Vrsn_1_0]["icp"].opts == {})
-    assert (Serder.Fields[Protocols.keri][kering.Vrsn_1_0]["icp"].alts == {})
-    assert Serder.Fields[Protocols.keri][kering.Vrsn_1_0]["icp"].strict
+    assert (Serder.Fields[Protocols.keri][Vrsn_1_0]["icp"].opts == {})
+    assert (Serder.Fields[Protocols.keri][Vrsn_1_0]["icp"].alts == {})
+    assert Serder.Fields[Protocols.keri][Vrsn_1_0]["icp"].strict
 
     # said field labels must be subset of all field labels
-    assert (set(Serder.Fields[Protocols.keri][kering.Vrsn_1_0]["icp"].saids) <=
-            set(Serder.Fields[Protocols.keri][kering.Vrsn_1_0]["icp"].alls))
+    assert (set(Serder.Fields[Protocols.keri][Vrsn_1_0]["icp"].saids) <=
+            set(Serder.Fields[Protocols.keri][Vrsn_1_0]["icp"].alls))
 
 
-    assert Serder.Fields[Protocols.acdc][kering.Vrsn_1_0][None].saids == {'d': 'E'}
-    assert (Serder.Fields[Protocols.acdc][kering.Vrsn_1_0][None].alls ==
+    assert Serder.Fields[Protocols.acdc][Vrsn_1_0][None].saids == {'d': 'E'}
+    assert (Serder.Fields[Protocols.acdc][Vrsn_1_0][None].alls ==
             {'v': '', 'd': '', 'u': '', 'i': '', 'ri': '', 's': '', 'a': '', 'A': '', 'e': '', 'r': ''})
-    assert (Serder.Fields[Protocols.acdc][kering.Vrsn_1_0][None].opts ==
+    assert (Serder.Fields[Protocols.acdc][Vrsn_1_0][None].opts ==
             {'u': '', 'ri': '', 'a': '', 'A': '', 'e': '', 'r': ''})
-    assert (Serder.Fields[Protocols.acdc][kering.Vrsn_1_0][None].alts ==
+    assert (Serder.Fields[Protocols.acdc][Vrsn_1_0][None].alts ==
             {'a': 'A', 'A': 'a'})
-    assert Serder.Fields[Protocols.acdc][kering.Vrsn_1_0][None].strict
+    assert Serder.Fields[Protocols.acdc][Vrsn_1_0][None].strict
 
     # said field labels must be subset of all field labels
-    assert (set(Serder.Fields[Protocols.acdc][kering.Vrsn_1_0][None].saids) <=
-            set(Serder.Fields[Protocols.acdc][kering.Vrsn_1_0][None].alls))
+    assert (set(Serder.Fields[Protocols.acdc][Vrsn_1_0][None].saids) <=
+            set(Serder.Fields[Protocols.acdc][Vrsn_1_0][None].alls))
 
 
     for proto, vrsns in Serder.Fields.items():
@@ -150,7 +137,7 @@ def test_serder_class():
 def test_serder():
     """Test Serder instances"""
     # test default
-    with pytest.raises(kering.InvalidValueError):
+    with pytest.raises(InvalidValueError):
         serder = Serder()
 
     #Test Serder bare makify bootstrap for ACDC JSON
@@ -173,9 +160,9 @@ def test_serder():
     assert serder.sad == sad
     assert serder.verstr == 'ACDC10JSON00005a_'
     assert serder.proto == Protocols.acdc
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
@@ -196,9 +183,9 @@ def test_serder():
     assert serder.sad == sad
     assert serder.verstr == 'ACDC10JSON00005a_'
     assert serder.proto == Protocols.acdc
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
@@ -211,9 +198,9 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
@@ -224,9 +211,9 @@ def test_serder():
     assert serder.sad == sad
     assert serder.verstr == 'ACDC10JSON00005a_'
     assert serder.proto == Protocols.acdc
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
@@ -238,9 +225,9 @@ def test_serder():
     assert serder.sad == sad
     assert serder.verstr == 'ACDC10JSON00005a_'
     assert serder.proto == Protocols.acdc
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
@@ -264,9 +251,9 @@ def test_serder():
     assert stream == extra
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == None
     assert serder.stamp == None
@@ -275,12 +262,12 @@ def test_serder():
     badraw = (b'{"v":"ACDC10JSON00005a_",'
               b'"d":"EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pE",'
               b'"i":"","s":""}')
-    with pytest.raises(kering.ValidationError):
+    with pytest.raises(ValidationError):
         serder = Serder(raw=badraw, verify=True)
 
 
     #Test makify bootstrap for ACDC with CBOR
-    serder = Serder(makify=True, proto=Protocols.acdc, kind=kering.Kinds.cbor)
+    serder = Serder(makify=True, proto=Protocols.acdc, kind=Kinds.cbor)
     assert serder.sad == {'v': 'ACDC10CBOR00004b_',
                             'd': 'EGahYhEMb_Sz0L1UwhrUvbyxyzoi_G85-pD9jRjhnqgU',
                             'i': '',
@@ -298,9 +285,9 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.cbor
+    assert serder.kind == Kinds.cbor
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
@@ -319,9 +306,9 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.cbor
+    assert serder.kind == Kinds.cbor
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
@@ -333,9 +320,9 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.cbor
+    assert serder.kind == Kinds.cbor
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
@@ -343,7 +330,7 @@ def test_serder():
 
 
     #Test makify bootstrap for ACDC with MGPK
-    serder = Serder(makify=True, proto=Protocols.acdc, kind=kering.Kinds.mgpk)
+    serder = Serder(makify=True, proto=Protocols.acdc, kind=Kinds.mgpk)
     assert serder.sad == {'v': 'ACDC10MGPK00004b_',
                         'd': 'EGV5wdF1nRbSXatBgZDpAxlGL6BuATjpUYBuk0AQW7GC',
                         'i': '',
@@ -361,9 +348,9 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.mgpk
+    assert serder.kind == Kinds.mgpk
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
@@ -383,9 +370,9 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.mgpk
+    assert serder.kind == Kinds.mgpk
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
@@ -398,9 +385,9 @@ def test_serder():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.mgpk
+    assert serder.kind == Kinds.mgpk
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
@@ -436,26 +423,26 @@ def test_serder():
     serder = Serder(sad=sad)
     assert serder.raw == raw
     assert serder.sad == sad
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
-    assert serder.ilk == ilk == kering.Ilks.icp
+    assert serder.ilk == ilk == Ilks.icp
     assert serder.stamp == None
 
     serder = Serder(raw=raw)
     assert serder.raw == raw
     assert serder.sad == sad
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
-    assert serder.ilk == ilk == kering.Ilks.icp
+    assert serder.ilk == ilk == Ilks.icp
     assert serder.stamp == None
 
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk icp
-    serder = Serder(makify=True, ilk=kering.Ilks.icp)  # make with defaults
+    serder = Serder(makify=True, ilk=Ilks.icp)  # make with defaults
     assert serder.sad =={'v': 'KERI10JSON0000cf_',
                         't': 'icp',
                         'd': 'EF6LmlLkfoNVY25RcGTsqKLW5uHq36FbnNEdjON07Rwv',
@@ -476,7 +463,7 @@ def test_serder():
 
 
     assert serder.verify()
-    assert serder.ilk == kering.Ilks.icp
+    assert serder.ilk == Ilks.icp
     assert serder.sad['i'] == serder.said  # default prefix is saidive
 
     sad = serder.sad
@@ -489,9 +476,9 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == None
@@ -500,9 +487,9 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == None
@@ -510,8 +497,8 @@ def test_serder():
 
     # Test with non-digestive code for 'i' saidive field no sad
     serder = Serder(makify=True,
-                    ilk=kering.Ilks.icp,
-                    saids = {'i': core.PreDex.Ed25519},
+                    ilk=Ilks.icp,
+                    saids = {'i': PreDex.Ed25519},
                     verify=False)
 
     assert serder.sad == {'v': 'KERI10JSON0000a3_',
@@ -533,7 +520,7 @@ def test_serder():
                             b':[],"a":[]}')
 
     assert not serder.verify()  # because of empty 'i' field saidive
-    assert serder.ilk == kering.Ilks.icp
+    assert serder.ilk == Ilks.icp
     assert serder.sad['i'] == '' != serder.said  # prefix is not saidive
 
     sad = serder.sad
@@ -562,7 +549,7 @@ def test_serder():
                         b'","k":[],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}')
 
     assert serder.verify()
-    assert serder.ilk == kering.Ilks.icp
+    assert serder.ilk == Ilks.icp
     assert serder.sad['i'] == pre != said  # prefix is not saidive
 
     sad = serder.sad
@@ -575,9 +562,9 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == None
@@ -586,15 +573,15 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == None
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk rot
-    serder = Serder(makify=True, ilk=kering.Ilks.rot)  # make with defaults
+    serder = Serder(makify=True, ilk=Ilks.rot)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON0000ac_',
                             't': 'rot',
                             'd': 'EMgauZPVfh6807jO9QO8A4Iauq1xhYTZnKX2doVd_UDl',
@@ -616,7 +603,7 @@ def test_serder():
 
 
     assert serder.verify()
-    assert serder.ilk == kering.Ilks.rot
+    assert serder.ilk == Ilks.rot
     assert serder.sad['i'] == '' != serder.said  # prefix is not saidive
 
     sad = serder.sad
@@ -629,9 +616,9 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == None
@@ -640,9 +627,9 @@ def test_serder():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == None
@@ -687,7 +674,7 @@ def test_serder():
     # extra field with strict
     sad = {}
     sad["x"] = ""
-    with pytest.raises(kering.SerializeError):
+    with pytest.raises(SerializeError):
         serder = Serder(makify=True, sad=sad, proto=Protocols.acdc)
 
 
@@ -718,12 +705,12 @@ def test_serder():
     sad['e'] = ""
     sad['r'] = ""
 
-    with pytest.raises(kering.SerializeError):
+    with pytest.raises(SerializeError):
         serder = Serder(makify=True, sad=sad)  # make using sad
 
 
     # test opts  using acdc extra type for test purposes
-    serder = Serder(makify=True, proto=Protocols.acdc, ilk=kering.Ilks.ace)  # make defaults for ACDC
+    serder = Serder(makify=True, proto=Protocols.acdc, ilk=Ilks.ace)  # make defaults for ACDC
     assert serder.sad == {'v': 'ACDC10JSON000064_',
                             't': 'ace',
                             'd': 'EKFsN95K2h5I6pJC6eTrNKiX8uHyn5o-SYHy6IelbPK8',
@@ -782,7 +769,7 @@ def test_serderkeri():
                           b'","k":[],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}')
 
     assert serder.verify()
-    assert serder.ilk == kering.Ilks.icp
+    assert serder.ilk == Ilks.icp
     assert serder.said == 'EF6LmlLkfoNVY25RcGTsqKLW5uHq36FbnNEdjON07Rwv'
     assert serder.pre == serder.said  # prefix is not saidive
 
@@ -796,7 +783,7 @@ def test_serderkeri():
     serder = SerderKERI(sad=sad, makify=True)
 
     assert serder.verify()
-    assert serder.ilk == kering.Ilks.icp
+    assert serder.ilk == Ilks.icp
     assert serder.said == 'EDjTI-CYL5U9jgeDNMRmbB79zogNOYmMdSUeAxmg5F9k'
     assert serder.pre == pre  # prefix is not saidive
 
@@ -809,9 +796,9 @@ def test_serderkeri():
     serder = SerderKERI(sad=sad)
     assert serder.raw == raw
     assert serder.sad == sad
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.pre == pre
     assert serder.stamp == None
@@ -839,11 +826,11 @@ def test_serderkeri():
     serder = SerderKERI(raw=raw)
     assert serder.raw == raw
     assert serder.sad == sad
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
-    assert serder.ilk == kering.Ilks.icp
+    assert serder.ilk == Ilks.icp
     assert serder.stamp == None
 
     assert serder.estive
@@ -872,7 +859,7 @@ def test_serderkeri_icp():
     """Test SerderKERI icp msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk icp
-    serder = SerderKERI(makify=True, ilk=kering.Ilks.icp)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.icp)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON0000cf_',
                         't': 'icp',
                         'd': 'EF6LmlLkfoNVY25RcGTsqKLW5uHq36FbnNEdjON07Rwv',
@@ -894,7 +881,7 @@ def test_serderkeri_icp():
 
 
     assert serder.verify()
-    assert serder.ilk == kering.Ilks.icp
+    assert serder.ilk == Ilks.icp
     assert serder.pre == serder.said  # default prefix is saidive
 
     sad = serder.sad
@@ -908,9 +895,9 @@ def test_serderkeri_icp():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
 
@@ -943,9 +930,9 @@ def test_serderkeri_icp():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == None
@@ -978,8 +965,8 @@ def test_serderkeri_icp():
 
     # Test with non-digestive code for 'i' saidive field no sad
     serder = SerderKERI(makify=True,
-                    ilk=kering.Ilks.icp,
-                    saids = {'i': core.PreDex.Ed25519},
+                    ilk=Ilks.icp,
+                    saids = {'i': PreDex.Ed25519},
                     verify=False)
 
     assert serder.sad == {'v': 'KERI10JSON0000a3_',
@@ -1001,7 +988,7 @@ def test_serderkeri_icp():
                         b':[],"a":[]}')
 
     assert not serder.verify()  # because of empty 'i' field saidive
-    assert serder.ilk == kering.Ilks.icp
+    assert serder.ilk == Ilks.icp
     assert serder.pre == '' != serder.said  # prefix is not saidive
 
     sad = serder.sad
@@ -1038,7 +1025,7 @@ def test_serderkeri_icp():
 
 
     assert serder.verify()
-    assert serder.ilk == kering.Ilks.icp
+    assert serder.ilk == Ilks.icp
     assert serder.pre == pre != said  # prefix is not saidive
 
     sad = serder.sad
@@ -1051,9 +1038,9 @@ def test_serderkeri_icp():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == None
@@ -1087,9 +1074,9 @@ def test_serderkeri_icp():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == None
@@ -1125,7 +1112,7 @@ def test_serderkeri_rot():
     """Test SerderKERI rot msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk rot
-    serder = SerderKERI(makify=True, ilk=kering.Ilks.rot, verify=False)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.rot, verify=False)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON0000ac_',
                         't': 'rot',
                         'd': 'EMgauZPVfh6807jO9QO8A4Iauq1xhYTZnKX2doVd_UDl',
@@ -1147,7 +1134,7 @@ def test_serderkeri_rot():
                           b'":[],"ba":[],"a":[]}')
 
     assert not serder.verify()  # because pre is empty
-    assert serder.ilk == kering.Ilks.rot
+    assert serder.ilk == Ilks.rot
     assert serder.pre == '' != serder.said  # prefix is not saidive
 
     sad = serder.sad
@@ -1159,7 +1146,7 @@ def test_serderkeri_rot():
     serder = SerderKERI(sad=sad, makify=True)
 
     assert serder.verify()  # because pre is valid
-    assert serder.ilk == kering.Ilks.rot
+    assert serder.ilk == Ilks.rot
     assert serder.pre == pre != serder.said  # prefix is not saidive
 
 
@@ -1173,9 +1160,9 @@ def test_serderkeri_rot():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == None
@@ -1204,9 +1191,9 @@ def test_serderkeri_rot():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == None
@@ -1242,7 +1229,7 @@ def test_serderkeri_ixn():
     """Test SerderKERI ixn msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk ixn
-    serder = SerderKERI(makify=True, ilk=kering.Ilks.ixn, verify=False)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.ixn, verify=False)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON000073_',
                         't': 'ixn',
                         'd': 'ELI1jUxlJky6RvRieoO20H7_YikKnQMthnWM38etba3r',
@@ -1255,7 +1242,7 @@ def test_serderkeri_ixn():
                           b'38etba3r","i":"","s":"0","p":"","a":[]}')
 
     assert not serder.verify()  # because pre is empty
-    assert serder.ilk == kering.Ilks.ixn
+    assert serder.ilk == Ilks.ixn
     assert serder.pre == '' != serder.said  # prefix is not saidive
 
     sad = serder.sad
@@ -1267,7 +1254,7 @@ def test_serderkeri_ixn():
     serder = SerderKERI(sad=sad, makify=True)
 
     assert serder.verify()  # because pre is now valid
-    assert serder.ilk == kering.Ilks.ixn
+    assert serder.ilk == Ilks.ixn
     assert serder.pre == pre != serder.said  # prefix is not saidive
 
 
@@ -1281,9 +1268,9 @@ def test_serderkeri_ixn():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == None
@@ -1315,9 +1302,9 @@ def test_serderkeri_ixn():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == None
@@ -1352,7 +1339,7 @@ def test_serderkeri_dip():
     """Test SerderKERI dip msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk dip
-    serder = SerderKERI(makify=True, ilk=kering.Ilks.dip, verify=False)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.dip, verify=False)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON0000d7_',
                         't': 'dip',
                         'd': 'EPyzEgwg6ls8iY4jViniM15rAFWaaVbsZ4eP2a9ZcKfC',
@@ -1374,7 +1361,7 @@ def test_serderkeri_dip():
 
 
     assert not serder.verify()  # serder.delpre empty so not valid PreDex code
-    assert serder.ilk == kering.Ilks.dip
+    assert serder.ilk == Ilks.dip
     assert serder.pre == serder.said  # default prefix is saidive
 
     delpre = 'EPyz9ZcKfCEgwg6ls8iY4jViniM15rAFWaaVbsZ4eP2a'
@@ -1415,9 +1402,9 @@ def test_serderkeri_dip():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == None
@@ -1449,9 +1436,9 @@ def test_serderkeri_dip():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == None
@@ -1483,8 +1470,8 @@ def test_serderkeri_dip():
 
     # Test with non-digestive code for 'i' saidive field no sad
     serder = SerderKERI(makify=True,
-                    ilk=kering.Ilks.dip,
-                    saids = {'i': core.PreDex.Ed25519},
+                    ilk=Ilks.dip,
+                    saids = {'i': PreDex.Ed25519},
                     verify=False)
 
     assert serder.sad == {'v': 'KERI10JSON0000ab_',
@@ -1509,7 +1496,7 @@ def test_serderkeri_dip():
 
 
     assert not serder.verify()  # because of empty 'i' field and 'di' field
-    assert serder.ilk == kering.Ilks.dip
+    assert serder.ilk == Ilks.dip
     assert serder.pre == '' != serder.said  # prefix is not saidive
 
     sad = serder.sad
@@ -1528,7 +1515,7 @@ def test_serderkeri_dip():
     serder = SerderKERI(sad=sad, makify=True)
     assert serder.verify()
 
-    assert serder.ilk == kering.Ilks.dip
+    assert serder.ilk == Ilks.dip
     assert serder.pre == said  != pre # prefix is computed
     assert serder.delpre == delpre
 
@@ -1542,7 +1529,7 @@ def test_serderkeri_dip():
 
     serder = SerderKERI(sad=sad,
                         makify=True,
-                        saids = {'i': core.PreDex.Blake3_256})
+                        saids = {'i': PreDex.Blake3_256})
 
     assert serder.sad == {'v': 'KERI10JSON000103_',
                         't': 'dip',
@@ -1565,7 +1552,7 @@ def test_serderkeri_dip():
                           b'ls8iY4jViniM15rAFWaaVbsZ4eP2a"}')
 
     assert serder.verify()
-    assert serder.ilk == kering.Ilks.dip
+    assert serder.ilk == Ilks.dip
     assert serder.pre == said  == pre  # prefix is computed same as before
     assert serder.delpre == delpre
     assert serder.said == said
@@ -1582,9 +1569,9 @@ def test_serderkeri_dip():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == None
@@ -1616,9 +1603,9 @@ def test_serderkeri_dip():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == None
@@ -1652,7 +1639,7 @@ def test_serderkeri_dip():
 def test_serderkeri_drt():
     """Test SerderKERI drt msg"""
     # Test KERI JSON with makify defaults for self bootstrap with ilk drt
-    serder = SerderKERI(makify=True, ilk=kering.Ilks.drt, verify=False)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.drt, verify=False)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON0000ac_',
                         't': 'drt',
                         'd': 'EMiEhgKRsD559TX6b03AT5P2GfKPPqoNk5COHZxU2TkR',
@@ -1674,7 +1661,7 @@ def test_serderkeri_drt():
 
 
     assert not serder.verify()  # because pre is empty
-    assert serder.ilk == kering.Ilks.drt
+    assert serder.ilk == Ilks.drt
     assert serder.pre == '' != serder.said  # prefix is not saidive
 
     sad = serder.sad
@@ -1693,7 +1680,7 @@ def test_serderkeri_drt():
     serder = SerderKERI(sad=sad, makify=True)
 
     assert serder.verify()
-    assert serder.ilk == kering.Ilks.drt
+    assert serder.ilk == Ilks.drt
     assert serder.pre == pre != serder.said  # prefix is not computed
     assert serder.delpre == None
 
@@ -1708,9 +1695,9 @@ def test_serderkeri_drt():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == None
@@ -1742,9 +1729,9 @@ def test_serderkeri_drt():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == None
@@ -1778,13 +1765,13 @@ def test_serderkeri_rct():
     """Test SerderKERI rct msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk ixn
-    serder = SerderKERI(makify=True, ilk=kering.Ilks.rct, verify=False)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.rct, verify=False)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON000039_', 't': 'rct', 'd': '', 'i': '', 's': '0'}
 
     assert serder.raw == b'{"v":"KERI10JSON000039_","t":"rct","d":"","i":"","s":"0"}'
 
     assert not serder.verify()  # because pre is empty
-    assert serder.ilk == kering.Ilks.rct
+    assert serder.ilk == Ilks.rct
     assert serder._said == None  # no saidive fields
     assert serder.pre == ''  # prefix is not saidive
     assert serder.said == ''  # d field is not saidive
@@ -1798,7 +1785,7 @@ def test_serderkeri_rct():
     serder = SerderKERI(sad=sad, makify=True)
 
     assert serder.verify()  # because pre is empty
-    assert serder.ilk == kering.Ilks.rct
+    assert serder.ilk == Ilks.rct
     assert serder.pre == pre != serder.said  # prefix is not saidive
 
 
@@ -1812,9 +1799,9 @@ def test_serderkeri_rct():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == None
@@ -1841,9 +1828,9 @@ def test_serderkeri_rct():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == None
@@ -1871,7 +1858,7 @@ def test_serderkeri_rct():
 def test_serderkeri_qry():
     """Test SerderKERI qry query msg"""
     # Test KERI JSON with makify defaults for self bootstrap with ilk qry
-    serder = SerderKERI(makify=True, ilk=kering.Ilks.qry)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.qry)  # make with defaults
     assert serder.sad =={'v': 'KERI10JSON000074_',
                         't': 'qry',
                         'd': 'EHVP7GS9B8PFKDogN3WD93NcSg6hShBXiolOqwnO3Vfm',
@@ -1885,7 +1872,7 @@ def test_serderkeri_qry():
 
 
     assert serder.verify()
-    assert serder.ilk == kering.Ilks.qry
+    assert serder.ilk == Ilks.qry
     assert serder.pre == None != serder.said  # prefix is not saidive
 
     sad = serder.sad
@@ -1898,9 +1885,9 @@ def test_serderkeri_qry():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == ''
@@ -1930,9 +1917,9 @@ def test_serderkeri_qry():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == ''
@@ -1964,7 +1951,7 @@ def test_serderkeri_rpy():
     """Test SerderKERI rpy reply msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk rpy
-    serder = SerderKERI(makify=True, ilk=kering.Ilks.rpy)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.rpy)  # make with defaults
     assert serder.sad =={'v': 'KERI10JSON00006c_',
                         't': 'rpy',
                         'd': 'EFnZ6ER7GXDjNpcn-QgXWqW4IZVAp73cCKC_zW_48Nu-',
@@ -1977,7 +1964,7 @@ def test_serderkeri_rpy():
 
 
     assert serder.verify()
-    assert serder.ilk == kering.Ilks.rpy
+    assert serder.ilk == Ilks.rpy
     assert serder.pre == None != serder.said  # prefix is not saidive
 
     sad = serder.sad
@@ -1990,9 +1977,9 @@ def test_serderkeri_rpy():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == ''
@@ -2019,9 +2006,9 @@ def test_serderkeri_rpy():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == ''
@@ -2051,7 +2038,7 @@ def test_serderkeri_rpy():
 def test_serderkeri_pro():
     """Test SerderKERI pro prod msg"""
     # Test KERI JSON with makify defaults for self bootstrap with ilk qry
-    serder = SerderKERI(makify=True, ilk=kering.Ilks.pro)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.pro)  # make with defaults
     assert serder.sad =={'v': 'KERI10JSON000074_',
                         't': 'pro',
                         'd': 'EP5pwF1ioQjnY1J0Gu12f_ZZEaoAntM3bng52tzZAvrM',
@@ -2065,7 +2052,7 @@ def test_serderkeri_pro():
 
 
     assert serder.verify()
-    assert serder.ilk == kering.Ilks.pro
+    assert serder.ilk == Ilks.pro
     assert serder.pre == None != serder.said  # prefix is not saidive
 
     sad = serder.sad
@@ -2078,9 +2065,9 @@ def test_serderkeri_pro():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == ''
@@ -2110,9 +2097,9 @@ def test_serderkeri_pro():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == ''
@@ -2143,7 +2130,7 @@ def test_serderkeri_bar():
     """Test SerderKERI bar alls msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk bar
-    serder = SerderKERI(makify=True, ilk=kering.Ilks.bar)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.bar)  # make with defaults
     assert serder.sad =={'v': 'KERI10JSON00006c_',
                         't': 'bar',
                         'd': 'EAGe-dBuaN1l1LFK8MrBS60BiFhSbxrf_l6dZBkd8JNR',
@@ -2156,7 +2143,7 @@ def test_serderkeri_bar():
 
 
     assert serder.verify()
-    assert serder.ilk == kering.Ilks.bar
+    assert serder.ilk == Ilks.bar
     assert serder.pre == None != serder.said  # prefix is not saidive
 
     sad = serder.sad
@@ -2169,9 +2156,9 @@ def test_serderkeri_bar():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == ''
@@ -2201,9 +2188,9 @@ def test_serderkeri_bar():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == ''
@@ -2234,7 +2221,7 @@ def test_serderkeri_exn():
     """Test SerderKERI exn msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk ixn
-    serder = SerderKERI(makify=True, ilk=kering.Ilks.exn)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.exn)  # make with defaults
     assert serder.sad == {'a': [],
                           'd': 'EPx9pShQTfv2FoISZJAZ4dlUcekG8-CSkgJh0i0q_iJn',
                           'dt': '',
@@ -2253,7 +2240,7 @@ def test_serderkeri_exn():
 
 
     assert serder.verify()  # because pre is empty
-    assert serder.ilk == kering.Ilks.exn
+    assert serder.ilk == Ilks.exn
     assert serder.pre == ''
     assert serder.prior == ''
 
@@ -2267,9 +2254,9 @@ def test_serderkeri_exn():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == ''
@@ -2299,9 +2286,9 @@ def test_serderkeri_exn():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
     assert serder.stamp == ''
@@ -2333,7 +2320,7 @@ def test_serderkeri_vcp():
     """Test SerderKERI vcp msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk vcp
-    serder = SerderKERI(makify=True, ilk=kering.Ilks.vcp)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.vcp)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON0000b7_',
                         't': 'vcp',
                         'd': 'ELJmaZ1Cq3JoXDmNNtTpL-oNTpo4936wx4YAvXMK5tLU',
@@ -2351,7 +2338,7 @@ def test_serderkeri_vcp():
                           b',"c":[],"bt":"0","b":[],"n":""}')
 
     assert serder.verify()
-    assert serder.ilk == kering.Ilks.vcp
+    assert serder.ilk == Ilks.vcp
     assert serder.pre == serder.said  # default prefix is saidive
 
     sad = serder.sad
@@ -2365,9 +2352,9 @@ def test_serderkeri_vcp():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
 
@@ -2395,9 +2382,9 @@ def test_serderkeri_vcp():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.keri
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == ilk
 
@@ -2428,7 +2415,7 @@ def test_serderkeri_vcp():
 def test_serderacdc():
     """Test SerderACDC"""
 
-    with pytest.raises(kering.InvalidValueError):
+    with pytest.raises(InvalidValueError):
         serder = SerderACDC()
 
     serder = SerderACDC(makify=True, proto=Protocols.acdc, verify=False)  # make defaults for ACDC
@@ -2440,9 +2427,9 @@ def test_serderacdc():
                           b'-BmSELOFNie-muw4XTi3iYCz6pT","i":"","s":""}')
 
     assert serder.proto == Protocols.acdc
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == 90
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == 'EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT'
     assert serder.ilk == None
 
@@ -2453,7 +2440,7 @@ def test_serderacdc():
     sad = serder.sad
     raw = serder.raw
 
-    with pytest.raises(kering.ValidationError):  # no issuer
+    with pytest.raises(ValidationError):  # no issuer
         serder = SerderACDC(sad=sad)
 
     isr = 'EO8CE5RH1X8QJwHHhPkj_S6LJQDRNOiGohW327FMA6D2'
@@ -2470,9 +2457,9 @@ def test_serderacdc():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == None
     assert serder.stamp == None
@@ -2483,9 +2470,9 @@ def test_serderacdc():
     assert serder.raw == raw
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.pvrsn == kering.Vrsn_1_0
+    assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.ilk == None
     assert serder.stamp == None
@@ -2501,24 +2488,24 @@ def test_serder_v2():
     """
 
 
-    assert Serder.Fields[Protocols.acdc][kering.Vrsn_2_0][None].saids == {'d': 'E'}
-    assert (Serder.Fields[Protocols.acdc][kering.Vrsn_2_0][None].alls ==
+    assert Serder.Fields[Protocols.acdc][Vrsn_2_0][None].saids == {'d': 'E'}
+    assert (Serder.Fields[Protocols.acdc][Vrsn_2_0][None].alls ==
             {'v': '', 'd': '', 'u': '', 'i': '', 'rd': '', 's': '', 'a': '', 'A': '', 'e': '', 'r': ''})
-    assert (Serder.Fields[Protocols.acdc][kering.Vrsn_2_0][None].opts ==
+    assert (Serder.Fields[Protocols.acdc][Vrsn_2_0][None].opts ==
             {'u': '', 'rd': '', 'a': '', 'A': '', 'e': '', 'r': ''})
-    assert (Serder.Fields[Protocols.acdc][kering.Vrsn_2_0][None].alts ==
+    assert (Serder.Fields[Protocols.acdc][Vrsn_2_0][None].alts ==
             {'a': 'A', 'A': 'a'})
-    assert Serder.Fields[Protocols.acdc][kering.Vrsn_2_0][None].strict
+    assert Serder.Fields[Protocols.acdc][Vrsn_2_0][None].strict
 
 
 
-    with pytest.raises(kering.InvalidValueError):
+    with pytest.raises(InvalidValueError):
         serder = Serder()
 
     #Test Serder bare makify bootstrap for ACDC JSON
     serder = Serder(makify=True,
                     proto=Protocols.acdc,
-                    pvrsn=kering.Vrsn_2_0)  # make defaults for ACDC
+                    pvrsn=Vrsn_2_0)  # make defaults for ACDC
     assert serder.sad == \
     {
         'v': 'ACDCCAACAAJSONAABc.',
@@ -2529,8 +2516,8 @@ def test_serder_v2():
     assert serder.raw == (b'{"v":"ACDCCAACAAJSONAABc.","d":"EJ2rDLVBZUH9rnUbxsAI2fokeJ4-2FyhQNKIkuWqzm1S'
                           b'","i":"","s":""}')
     assert serder.verify()
-    assert serder.pvrsn == kering.Vrsn_2_0
-    assert serder.gvrsn == kering.Vrsn_2_0
+    assert serder.pvrsn == Vrsn_2_0
+    assert serder.gvrsn == Vrsn_2_0
     sad = serder.sad
     raw = serder.raw
     said = serder.said
@@ -2541,10 +2528,10 @@ def test_serder_v2():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.pvrsn == kering.Vrsn_2_0
-    assert serder.gvrsn == kering.Vrsn_2_0
+    assert serder.pvrsn == Vrsn_2_0
+    assert serder.gvrsn == Vrsn_2_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
@@ -2566,9 +2553,9 @@ def test_serder_v2():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.pvrsn == kering.Vrsn_2_0 == serder.pvrsn
+    assert serder.pvrsn == Vrsn_2_0 == serder.pvrsn
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
@@ -2581,9 +2568,9 @@ def test_serder_v2():
     assert isinstance(serder.raw, bytes)
     assert serder.sad == sad
     assert serder.proto == Protocols.acdc
-    assert serder.pvrsn == kering.Vrsn_2_0
+    assert serder.pvrsn == Vrsn_2_0
     assert serder.size == size
-    assert serder.kind == kering.Kinds.json
+    assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
     assert serder.ilk == None
@@ -2592,7 +2579,7 @@ def test_serder_v2():
 
     # test default
     serder = Serder(makify=True,
-                    pvrsn=kering.Vrsn_2_0)  # make defaults for default proto
+                    pvrsn=Vrsn_2_0)  # make defaults for default proto
 
 
     assert serder.sad == \
@@ -2616,10 +2603,10 @@ def test_serder_v2():
                           b'"0","k":[],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}')
     assert serder.verify()
     assert serder.proto == Protocols.keri == Serder.Proto  # default
-    assert serder.pvrsn == kering.Vrsn_2_0
-    assert serder.gvrsn == kering.Vrsn_2_0
-    assert serder.kind == kering.Kinds.json == Serder.Kind  # default
-    assert serder.ilk == kering.Ilks.icp  # default first one
+    assert serder.pvrsn == Vrsn_2_0
+    assert serder.gvrsn == Vrsn_2_0
+    assert serder.kind == Kinds.json == Serder.Kind  # default
+    assert serder.ilk == Ilks.icp  # default first one
     assert serder.genus == GenDex.KERI == Serder.Genus
 
     """End Test"""
@@ -2630,7 +2617,7 @@ def test_serdery():
     """Test Serdery"""
     #Create incoming message stream for Serdery to reap
 
-    serder = SerderKERI(makify=True, ilk=kering.Ilks.ixn, verify=False)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.ixn, verify=False)  # make with defaults
     sad = serder.sad
     pre = "EDGnGYIa5obfFUhxcAuUmM4fJyeRYj2ti3KGf87Bc70J"
     sad['i'] = pre
@@ -2672,7 +2659,7 @@ def test_serdery():
 
     assert ims == bytearray(b'Not a Serder here or there or anywhere.')
 
-    with pytest.raises(kering.VersionError):
+    with pytest.raises(VersionError):
         serder = serdery.reap(ims, genus=GenDex.KERI, svrsn=Vrsn_2_0)
 
     assert ims == bytearray(b'Not a Serder here or there or anywhere.')
@@ -2687,7 +2674,7 @@ def test_keri_native_dumps_loads():
     # use same salter for all but different path
     # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     rawsalt = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    salter = core.Salter(raw=rawsalt)
+    salter = Salter(raw=rawsalt)
 
     csigners = salter.signers(count=12, transferable=True, temp=True)
     wsigners = salter.signers(count=12, transferable=False, temp=True)
@@ -2696,7 +2683,7 @@ def test_keri_native_dumps_loads():
 
     keys = [csigners[0].verfer.qb64]
     assert keys == ['DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ']
-    serder = incept(keys, version=Vrsn_2_0, kind=kering.Kinds.cesr)
+    serder = incept(keys, version=Vrsn_2_0, kind=Kinds.cesr)
 
     assert serder.sad == \
     {
@@ -2722,7 +2709,7 @@ def test_keri_native_dumps_loads():
     assert len(serder.raw) == serder.size == 188
     sizeh = serder.raw[2:4]
     assert sizeh == b"Au"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 188
+    assert b64ToInt(sizeh) * 4 + 4 == serder.size == 188
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
@@ -2735,13 +2722,13 @@ def test_keri_native_dumps_loads():
     rawjson = serder.dumps(serder.sad)  # default kind is json so converts to json
     assert len(rawjson) == 255
 
-    rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
+    rawcbor = serder.dumps(serder.sad, kind=Kinds.cbor)
     assert len(rawcbor) == 205
 
-    rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
+    rawmgpk = serder.dumps(serder.sad, kind=Kinds.mgpk)
     assert len(rawmgpk) == 205
 
-    rawcesr = serder.dumps(serder.sad, kind=kering.Kinds.cesr)
+    rawcesr = serder.dumps(serder.sad, kind=Kinds.cesr)
     assert rawcesr == serder.raw
     assert len(rawcesr) == 188
 
@@ -2755,7 +2742,7 @@ def test_keri_native_dumps_loads():
     assert sad == serder.sad  # round tripped
 
     # Test .loads
-    sad = serder.loads(raw=rawqb64, kind=kering.Kinds.cesr)
+    sad = serder.loads(raw=rawqb64, kind=Kinds.cesr)
     assert sad == serder.sad  # round tripped
 
     # test Serder inhale from raw
@@ -2772,11 +2759,11 @@ def test_keri_native_dumps_loads():
     # more complex inception event
 
     keys = [signer.verfer.qb64 for signer in csigners][:3]
-    ndigs = [core.Diger(ser=key.encode()).qb64 for key in keys][:3]
+    ndigs = [Diger(ser=key.encode()).qb64 for key in keys][:3]
     wits = [signer.verfer.qb64 for signer in wsigners][:3]
-    data = [dict(i=keys[0], s=core.Number(num=0).numh, d=ndigs[0]),
-            dict(i=keys[1], s=core.Number(num=1).numh, d=ndigs[1]),
-            dict(s=core.Number(num=15).numh, d=ndigs[2])]
+    data = [dict(i=keys[0], s=Number(num=0).numh, d=ndigs[0]),
+            dict(i=keys[1], s=Number(num=1).numh, d=ndigs[1]),
+            dict(s=Number(num=15).numh, d=ndigs[2])]
 
     assert data == \
     [
@@ -2802,9 +2789,9 @@ def test_keri_native_dumps_loads():
                     wits=wits,
                     cnfg=['DND'],
                     data=data,
-                    code=core.MtrDex.Blake3_256,
+                    code=MtrDex.Blake3_256,
                     pvrsn=Vrsn_2_0,
-                    kind=kering.Kinds.cesr)
+                    kind=Kinds.cesr)
 
     pre = serder.pre
     assert pre == 'EOB71mX8FTP7bqJzbODmicKqK491WfIDopCCHjdHSU71'
@@ -2867,7 +2854,7 @@ def test_keri_native_dumps_loads():
     assert len(serder.raw) == serder.size == 784
     sizeh = serder.raw[2:4]
     assert sizeh == b"DD"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 784
+    assert b64ToInt(sizeh) * 4 + 4 == serder.size == 784
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
@@ -2894,10 +2881,10 @@ def test_keri_native_dumps_loads():
     rawjson = serder.dumps(serder.sad)
     assert len(rawjson) == 918
 
-    rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
+    rawcbor = serder.dumps(serder.sad, kind=Kinds.cbor)
     assert len(rawcbor) == 832
 
-    rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
+    rawmgpk = serder.dumps(serder.sad, kind=Kinds.mgpk)
     assert len(rawmgpk) == 832
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
@@ -2910,7 +2897,7 @@ def test_keri_native_dumps_loads():
     assert sad == serder.sad  # round tripped
 
     # Test .loads
-    sad = serder.loads(raw=rawqb64, kind=kering.Kinds.cesr)
+    sad = serder.loads(raw=rawqb64, kind=Kinds.cesr)
     assert sad == serder.sad  # round tripped
 
     # test Serder inhale from raw
@@ -2929,10 +2916,10 @@ def test_keri_native_dumps_loads():
 
     data = \
         [
-            dict(i=keys[0], s=core.Number(num=2).numh, d=ndigs[0]),
-            dict(i=keys[1], s=core.Number(num=34).numh, d=ndigs[1]),
-            dict(s=core.Number(num=67).numh, d=ndigs[2]),
-            dict(i=keys[2], s=core.Number(num=128).numh, d=ndigs[0])
+            dict(i=keys[0], s=Number(num=2).numh, d=ndigs[0]),
+            dict(i=keys[1], s=Number(num=34).numh, d=ndigs[1]),
+            dict(s=Number(num=67).numh, d=ndigs[2]),
+            dict(i=keys[2], s=Number(num=128).numh, d=ndigs[0])
         ]
 
     assert data == \
@@ -2964,7 +2951,7 @@ def test_keri_native_dumps_loads():
                       sn=1,
                       data=data,
                       pvrsn=Vrsn_2_0,
-                      kind=kering.Kinds.cesr)
+                      kind=Kinds.cesr)
 
     said = serder.said
     assert said == 'EHSEI2ByWoUtCw9VHEGRelNBkHaMq_XsCl1TjQ4RhitF'
@@ -3012,7 +2999,7 @@ def test_keri_native_dumps_loads():
     assert len(serder.raw) == serder.size == 496
     sizeh = serder.raw[2:4]
     assert sizeh == b"B7"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 496
+    assert b64ToInt(sizeh) * 4 + 4 == serder.size == 496
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
@@ -3025,10 +3012,10 @@ def test_keri_native_dumps_loads():
     rawjson = serder.dumps(serder.sad)
     assert len(rawjson) == 604
 
-    rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
+    rawcbor = serder.dumps(serder.sad, kind=Kinds.cbor)
     assert len(rawcbor) == 539
 
-    rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
+    rawmgpk = serder.dumps(serder.sad, kind=Kinds.mgpk)
     assert len(rawmgpk) == 539
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
@@ -3041,7 +3028,7 @@ def test_keri_native_dumps_loads():
     assert sad == serder.sad  # round tripped
 
     # Test .loads
-    sad = serder.loads(raw=rawqb64, kind=kering.Kinds.cesr)
+    sad = serder.loads(raw=rawqb64, kind=Kinds.cesr)
     assert sad == serder.sad  # round tripped
 
     # test Serder inhale from raw
@@ -3059,7 +3046,7 @@ def test_keri_native_dumps_loads():
     prior = said
 
     keys = [signer.verfer.qb64 for signer in csigners][3:6]
-    ndigs = [core.Diger(ser=key.encode()).qb64 for key in keys]
+    ndigs = [Diger(ser=key.encode()).qb64 for key in keys]
     cuts = [wits[0]]
     adds = [signer.verfer.qb64 for signer in wsigners][3:4]
     data = []  # no anchors
@@ -3075,7 +3062,7 @@ def test_keri_native_dumps_loads():
                       adds=adds,
                       data=data,
                       pvrsn=Vrsn_2_0,
-                      kind=kering.Kinds.cesr)
+                      kind=Kinds.cesr)
 
     said = serder.said
     assert said == 'EFQSJ-Z4yDa8uRNy1UiDdo7ONH4jB0a5AEgvPYsswn5O'
@@ -3117,7 +3104,7 @@ def test_keri_native_dumps_loads():
     assert len(serder.raw) == serder.size == 544
     sizeh = serder.raw[2:4]
     assert sizeh == b"CH"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 544
+    assert b64ToInt(sizeh) * 4 + 4 == serder.size == 544
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
@@ -3130,10 +3117,10 @@ def test_keri_native_dumps_loads():
     rawjson = serder.dumps(serder.sad)
     assert len(rawjson) == 641
 
-    rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
+    rawcbor = serder.dumps(serder.sad, kind=Kinds.cbor)
     assert len(rawcbor) == 580
 
-    rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
+    rawmgpk = serder.dumps(serder.sad, kind=Kinds.mgpk)
     assert len(rawmgpk) == 580
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
@@ -3146,7 +3133,7 @@ def test_keri_native_dumps_loads():
     assert sad == serder.sad  # round tripped
 
     # Test .loads
-    sad = serder.loads(raw=rawqb64, kind=kering.Kinds.cesr)
+    sad = serder.loads(raw=rawqb64, kind=Kinds.cesr)
     assert sad == serder.sad  # round tripped
 
     # test Serder inhale from raw
@@ -3162,12 +3149,12 @@ def test_keri_native_dumps_loads():
     # Test delcept
     delpre = pre
     keys = [signer.verfer.qb64 for signer in csigners][6:9]
-    ndigs = [core.Diger(ser=key.encode()).qb64 for key in keys][:3]
+    ndigs = [Diger(ser=key.encode()).qb64 for key in keys][:3]
     wits = [signer.verfer.qb64 for signer in wsigners][6:9]
-    data = [dict(i=keys[0], s=core.Number(num=3).numh, d=ndigs[0]),
-            dict(i=keys[1], s=core.Number(num=4).numh, d=ndigs[1]),
-            dict(s=core.Number(num=21).numh, d=ndigs[2]),
-            dict(s=core.Number(num=15890).numh, d=ndigs[0])]
+    data = [dict(i=keys[0], s=Number(num=3).numh, d=ndigs[0]),
+            dict(i=keys[1], s=Number(num=4).numh, d=ndigs[1]),
+            dict(s=Number(num=21).numh, d=ndigs[2]),
+            dict(s=Number(num=15890).numh, d=ndigs[0])]
 
     assert data == \
     [
@@ -3200,9 +3187,9 @@ def test_keri_native_dumps_loads():
                     wits=wits,
                     data=data,
                     delpre=delpre,
-                    code=core.MtrDex.Blake3_256,
+                    code=MtrDex.Blake3_256,
                     pvrsn=Vrsn_2_0,
-                    kind=kering.Kinds.cesr)
+                    kind=Kinds.cesr)
 
     pre = serder.pre
     assert pre == 'EFGt_YP4f5yS3xBGMWxa-GO1QGcmpIvqZykClz03oKaE'
@@ -3269,7 +3256,7 @@ def test_keri_native_dumps_loads():
     assert len(serder.raw) == serder.size == 896
     sizeh = serder.raw[2:4]
     assert sizeh == b"Df"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 896
+    assert b64ToInt(sizeh) * 4 + 4 == serder.size == 896
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
@@ -3283,10 +3270,10 @@ def test_keri_native_dumps_loads():
     rawjson = serder.dumps(serder.sad)
     assert len(rawjson) == 1062
 
-    rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
+    rawcbor = serder.dumps(serder.sad, kind=Kinds.cbor)
     assert len(rawcbor) == 956
 
-    rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
+    rawmgpk = serder.dumps(serder.sad, kind=Kinds.mgpk)
     assert len(rawmgpk) == 956
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
@@ -3299,7 +3286,7 @@ def test_keri_native_dumps_loads():
     assert sad == serder.sad  # round tripped
 
     # Test .loads
-    sad = serder.loads(raw=rawqb64, kind=kering.Kinds.cesr)
+    sad = serder.loads(raw=rawqb64, kind=Kinds.cesr)
     assert sad == serder.sad  # round tripped
 
     # test Serder inhale from raw
@@ -3317,7 +3304,7 @@ def test_keri_native_dumps_loads():
     prior = said
 
     keys = [signer.verfer.qb64 for signer in csigners][9:10]
-    ndigs = [core.Diger(ser=key.encode()).qb64 for key in keys]
+    ndigs = [Diger(ser=key.encode()).qb64 for key in keys]
     cuts = [wits[0]]
     adds = [signer.verfer.qb64 for signer in wsigners][9:10]
     data = []  # no anchors
@@ -3333,7 +3320,7 @@ def test_keri_native_dumps_loads():
                       adds=adds,
                       data=data,
                       pvrsn=Vrsn_2_0,
-                      kind=kering.Kinds.cesr)
+                      kind=Kinds.cesr)
 
     said = serder.said
     assert said == 'EOTktOZADw2Ll3zwGdAIfSIByyKOhpET-wQPN6BBozfv'
@@ -3367,7 +3354,7 @@ def test_keri_native_dumps_loads():
     assert len(serder.raw) == serder.size == 368
     sizeh = serder.raw[2:4]
     assert sizeh == b"Bb"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 368
+    assert b64ToInt(sizeh) * 4 + 4 == serder.size == 368
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
@@ -3380,10 +3367,10 @@ def test_keri_native_dumps_loads():
     rawjson = serder.dumps(serder.sad)
     assert len(rawjson) == 453
 
-    rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
+    rawcbor = serder.dumps(serder.sad, kind=Kinds.cbor)
     assert len(rawcbor) == 396
 
-    rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
+    rawmgpk = serder.dumps(serder.sad, kind=Kinds.mgpk)
     assert len(rawmgpk) == 396
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
@@ -3396,7 +3383,7 @@ def test_keri_native_dumps_loads():
     assert sad == serder.sad  # round tripped
 
     # Test .loads
-    sad = serder.loads(raw=rawqb64, kind=kering.Kinds.cesr)
+    sad = serder.loads(raw=rawqb64, kind=Kinds.cesr)
     assert sad == serder.sad  # round tripped
 
     # test Serder inhale from raw
@@ -3415,7 +3402,7 @@ def test_keri_native_dumps_loads():
                       sn=1,
                       said=said,
                       pvrsn=Vrsn_2_0,
-                      kind=kering.Kinds.cesr)
+                      kind=Kinds.cesr)
 
     said = serder.said
     assert said == said
@@ -3436,7 +3423,7 @@ def test_keri_native_dumps_loads():
     assert len(serder.raw) == serder.size == 112
     sizeh = serder.raw[2:4]
     assert sizeh == b"Ab"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 112
+    assert b64ToInt(sizeh) * 4 + 4 == serder.size == 112
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
@@ -3449,10 +3436,10 @@ def test_keri_native_dumps_loads():
     rawjson = serder.dumps(serder.sad)
     assert len(rawjson) == 147
 
-    rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
+    rawcbor = serder.dumps(serder.sad, kind=Kinds.cbor)
     assert len(rawcbor) == 129
 
-    rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
+    rawmgpk = serder.dumps(serder.sad, kind=Kinds.mgpk)
     assert len(rawmgpk) == 129
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
@@ -3465,7 +3452,7 @@ def test_keri_native_dumps_loads():
     assert sad == serder.sad  # round tripped
 
     # Test .loads
-    sad = serder.loads(raw=rawqb64, kind=kering.Kinds.cesr)
+    sad = serder.loads(raw=rawqb64, kind=Kinds.cesr)
     assert sad == serder.sad  # round tripped
 
     # test Serder inhale from raw
@@ -3489,7 +3476,7 @@ def test_keri_native_dumps_loads():
                     query=q,
                     stamp=dts,
                     pvrsn=Vrsn_2_0,
-                    kind=kering.Kinds.cesr)
+                    kind=Kinds.cesr)
 
     said = serder.said
     assert said == 'EKTUu1mdTc0mLxjomuM1O8Xdva81-0MpleC-YXmtWZ9Y'
@@ -3514,7 +3501,7 @@ def test_keri_native_dumps_loads():
     assert len(serder.raw) == serder.size == 184
     sizeh = serder.raw[2:4]
     assert sizeh == b"At"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 184
+    assert b64ToInt(sizeh) * 4 + 4 == serder.size == 184
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
@@ -3527,10 +3514,10 @@ def test_keri_native_dumps_loads():
     rawjson = serder.dumps(serder.sad)
     assert len(rawjson) == 225
 
-    rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
+    rawcbor = serder.dumps(serder.sad, kind=Kinds.cbor)
     assert len(rawcbor) == 193
 
-    rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
+    rawmgpk = serder.dumps(serder.sad, kind=Kinds.mgpk)
     assert len(rawmgpk) == 193
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
@@ -3543,7 +3530,7 @@ def test_keri_native_dumps_loads():
     assert sad == serder.sad  # round tripped
 
     # Test .loads
-    sad = serder.loads(raw=rawqb64, kind=kering.Kinds.cesr)
+    sad = serder.loads(raw=rawqb64, kind=Kinds.cesr)
     assert sad == serder.sad  # round tripped
 
     # test Serder inhale from raw
@@ -3566,7 +3553,7 @@ def test_keri_native_dumps_loads():
                     data=data,
                     stamp=dts,
                     pvrsn=Vrsn_2_0,
-                    kind=kering.Kinds.cesr)
+                    kind=Kinds.cesr)
 
     said = serder.said
     assert said == 'EEMUaOQuS65JzAC3ruaGCBL8h1Z8gVlBOwjTyrDOWkgZ'
@@ -3593,7 +3580,7 @@ def test_keri_native_dumps_loads():
     assert len(serder.raw) == serder.size == 224
     sizeh = serder.raw[2:4]
     assert sizeh == b"A3"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 224
+    assert b64ToInt(sizeh) * 4 + 4 == serder.size == 224
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
@@ -3606,10 +3593,10 @@ def test_keri_native_dumps_loads():
     rawjson = serder.dumps(serder.sad)
     assert len(rawjson) == 262
 
-    rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
+    rawcbor = serder.dumps(serder.sad, kind=Kinds.cbor)
     assert len(rawcbor) == 231
 
-    rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
+    rawmgpk = serder.dumps(serder.sad, kind=Kinds.mgpk)
     assert len(rawmgpk) == 231
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
@@ -3622,7 +3609,7 @@ def test_keri_native_dumps_loads():
     assert sad == serder.sad  # round tripped
 
     # Test .loads
-    sad = serder.loads(raw=rawqb64, kind=kering.Kinds.cesr)
+    sad = serder.loads(raw=rawqb64, kind=Kinds.cesr)
     assert sad == serder.sad  # round tripped
 
     # test Serder inhale from raw
@@ -3645,7 +3632,7 @@ def test_keri_native_dumps_loads():
                     query=q,
                     stamp=dts,
                     pvrsn=Vrsn_2_0,
-                    kind=kering.Kinds.cesr)
+                    kind=Kinds.cesr)
 
     said = serder.said
     assert said == 'EOhe8oGdG32KnX4xl--LmiTQFPoNG8YtFHhVppuM13-0'
@@ -3673,7 +3660,7 @@ def test_keri_native_dumps_loads():
     assert len(serder.raw) == serder.size == 184
     sizeh = serder.raw[2:4]
     assert sizeh == b"At"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 184
+    assert b64ToInt(sizeh) * 4 + 4 == serder.size == 184
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
@@ -3686,10 +3673,10 @@ def test_keri_native_dumps_loads():
     rawjson = serder.dumps(serder.sad)
     assert len(rawjson) == 225
 
-    rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
+    rawcbor = serder.dumps(serder.sad, kind=Kinds.cbor)
     assert len(rawcbor) == 193
 
-    rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
+    rawmgpk = serder.dumps(serder.sad, kind=Kinds.mgpk)
     assert len(rawmgpk) == 193
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
@@ -3702,7 +3689,7 @@ def test_keri_native_dumps_loads():
     assert sad == serder.sad  # round tripped
 
     # Test .loads
-    sad = serder.loads(raw=rawqb64, kind=kering.Kinds.cesr)
+    sad = serder.loads(raw=rawqb64, kind=Kinds.cesr)
     assert sad == serder.sad  # round tripped
 
     # test Serder inhale from raw
@@ -3725,7 +3712,7 @@ def test_keri_native_dumps_loads():
                     data=data,
                     stamp=dts,
                     pvrsn=Vrsn_2_0,
-                    kind=kering.Kinds.cesr)
+                    kind=Kinds.cesr)
 
     said = serder.said
     assert said == 'EATsu1apFygD9IYqg3orQZWOqYZflZk4oeF4ZkkPvhnp'
@@ -3753,7 +3740,7 @@ def test_keri_native_dumps_loads():
     assert len(serder.raw) == serder.size == 224
     sizeh = serder.raw[2:4]
     assert sizeh == b"A3"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 224
+    assert b64ToInt(sizeh) * 4 + 4 == serder.size == 224
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
@@ -3766,10 +3753,10 @@ def test_keri_native_dumps_loads():
     rawjson = serder.dumps(serder.sad)
     assert len(rawjson) == 262
 
-    rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
+    rawcbor = serder.dumps(serder.sad, kind=Kinds.cbor)
     assert len(rawcbor) == 231
 
-    rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
+    rawmgpk = serder.dumps(serder.sad, kind=Kinds.mgpk)
     assert len(rawmgpk) == 231
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
@@ -3782,7 +3769,7 @@ def test_keri_native_dumps_loads():
     assert sad == serder.sad  # round tripped
 
     # Test .loads
-    sad = serder.loads(raw=rawqb64, kind=kering.Kinds.cesr)
+    sad = serder.loads(raw=rawqb64, kind=Kinds.cesr)
     assert sad == serder.sad  # round tripped
 
     # test Serder inhale from raw
@@ -3813,7 +3800,7 @@ def test_keri_native_dumps_loads():
                      nonce=nonce,
                     stamp=dts,
                     pvrsn=Vrsn_2_0,
-                    kind=kering.Kinds.cesr)
+                    kind=Kinds.cesr)
 
     said = serder.said
     assert said == 'EFPs8lNTVLRs6xjs5reB_wKbYxqgMR3fdARfH0Ndcws4'
@@ -3843,7 +3830,7 @@ def test_keri_native_dumps_loads():
     assert len(serder.raw) == serder.size == 344
     sizeh = serder.raw[2:4]
     assert sizeh == b"BV"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 344
+    assert b64ToInt(sizeh) * 4 + 4 == serder.size == 344
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
@@ -3856,10 +3843,10 @@ def test_keri_native_dumps_loads():
     rawjson = serder.dumps(serder.sad)
     assert len(rawjson) == 389
 
-    rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
+    rawcbor = serder.dumps(serder.sad, kind=Kinds.cbor)
     assert len(rawcbor) == 341
 
-    rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
+    rawmgpk = serder.dumps(serder.sad, kind=Kinds.mgpk)
     assert len(rawmgpk) == 340
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
@@ -3872,7 +3859,7 @@ def test_keri_native_dumps_loads():
     assert sad == serder.sad  # round tripped
 
     # Test .loads
-    sad = serder.loads(raw=rawqb64, kind=kering.Kinds.cesr)
+    sad = serder.loads(raw=rawqb64, kind=Kinds.cesr)
     assert sad == serder.sad  # round tripped
 
     # test Serder inhale from raw
@@ -3902,7 +3889,7 @@ def test_keri_native_dumps_loads():
                      attributes=attributes,
                      stamp=dts,
                      pvrsn=Vrsn_2_0,
-                     kind=kering.Kinds.cesr)
+                     kind=Kinds.cesr)
 
     said = serder.said
     assert said == 'ECdPE-1NCEjFow09-x-0huj19mpaDI2qXZEO5Sc6frzp'
@@ -3931,7 +3918,7 @@ def test_keri_native_dumps_loads():
     assert len(serder.raw) == serder.size == 352
     sizeh = serder.raw[2:4]
     assert sizeh == b"BX"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 352
+    assert b64ToInt(sizeh) * 4 + 4 == serder.size == 352
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
@@ -3944,10 +3931,10 @@ def test_keri_native_dumps_loads():
     rawjson = serder.dumps(serder.sad)
     assert len(rawjson) == 406
 
-    rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
+    rawcbor = serder.dumps(serder.sad, kind=Kinds.cbor)
     assert len(rawcbor) == 358
 
-    rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
+    rawmgpk = serder.dumps(serder.sad, kind=Kinds.mgpk)
     assert len(rawmgpk) == 358
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
@@ -3960,7 +3947,7 @@ def test_keri_native_dumps_loads():
     assert sad == serder.sad  # round tripped
 
     # Test .loads
-    sad = serder.loads(raw=rawqb64, kind=kering.Kinds.cesr)
+    sad = serder.loads(raw=rawqb64, kind=Kinds.cesr)
     assert sad == serder.sad  # round tripped
 
     # test Serder inhale from raw
@@ -3991,7 +3978,7 @@ def test_keri_native_dumps_loads():
                      payload=attributes,
                     date=dts,
                     pvrsn=Vrsn_2_0,
-                    kind=kering.Kinds.cesr)
+                    kind=Kinds.cesr)
 
     said = serder.said
     assert said == 'ECdPE-1NCEjFow09-x-0huj19mpaDI2qXZEO5Sc6frzp'
@@ -4020,7 +4007,7 @@ def test_keri_native_dumps_loads():
     assert len(serder.raw) == serder.size == 352
     sizeh = serder.raw[2:4]
     assert sizeh == b"BX"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 352
+    assert b64ToInt(sizeh) * 4 + 4 == serder.size == 352
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
@@ -4033,10 +4020,10 @@ def test_keri_native_dumps_loads():
     rawjson = serder.dumps(serder.sad)
     assert len(rawjson) == 406
 
-    rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
+    rawcbor = serder.dumps(serder.sad, kind=Kinds.cbor)
     assert len(rawcbor) == 358
 
-    rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
+    rawmgpk = serder.dumps(serder.sad, kind=Kinds.mgpk)
     assert len(rawmgpk) == 358
 
     raws = [rawqb2, rawqb64, rawcbor, rawmgpk, rawjson]
@@ -4049,7 +4036,7 @@ def test_keri_native_dumps_loads():
     assert sad == serder.sad  # round tripped
 
     # Test .loads
-    sad = serder.loads(raw=rawqb64, kind=kering.Kinds.cesr)
+    sad = serder.loads(raw=rawqb64, kind=Kinds.cesr)
     assert sad == serder.sad  # round tripped
 
     # test Serder inhale from raw
@@ -4071,7 +4058,7 @@ def test_acdc_native_dumps_loads():
     # use same salter for all but different path
     # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     rawsalt = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    salter = core.Salter(raw=rawsalt)
+    salter = Salter(raw=rawsalt)
 
     csigners = salter.signers(count=12, transferable=True, temp=True)
     wsigners = salter.signers(count=12, transferable=False, temp=True)
@@ -4080,7 +4067,7 @@ def test_acdc_native_dumps_loads():
 
     keys = [csigners[0].verfer.qb64]
     assert keys == ['DG9XhvcVryHjoIGcj5nK4sAE3oslQHWi4fBJre3NGwTQ']
-    serder = incept(keys, version=Vrsn_2_0, kind=kering.Kinds.cesr)
+    serder = incept(keys, version=Vrsn_2_0, kind=Kinds.cesr)
 
     assert serder.sad == \
     {
@@ -4106,7 +4093,7 @@ def test_acdc_native_dumps_loads():
     assert len(serder.raw) == serder.size == 188
     sizeh = serder.raw[2:4]
     assert sizeh == b"Au"
-    assert helping.b64ToInt(sizeh) * 4 + 4 == serder.size == 188
+    assert b64ToInt(sizeh) * 4 + 4 == serder.size == 188
 
     rawqb64 = serder._dumps()  # default is it dumps self.sad
     assert rawqb64 == serder.raw
@@ -4119,13 +4106,13 @@ def test_acdc_native_dumps_loads():
     rawjson = serder.dumps(serder.sad)  # default kind is json so converts to json
     assert len(rawjson) == 255
 
-    rawcbor = serder.dumps(serder.sad, kind=kering.Kinds.cbor)
+    rawcbor = serder.dumps(serder.sad, kind=Kinds.cbor)
     assert len(rawcbor) == 205
 
-    rawmgpk = serder.dumps(serder.sad, kind=kering.Kinds.mgpk)
+    rawmgpk = serder.dumps(serder.sad, kind=Kinds.mgpk)
     assert len(rawmgpk) == 205
 
-    rawcesr = serder.dumps(serder.sad, kind=kering.Kinds.cesr)
+    rawcesr = serder.dumps(serder.sad, kind=Kinds.cesr)
     assert rawcesr == serder.raw
     assert len(rawcesr) == 188
 
@@ -4139,7 +4126,7 @@ def test_acdc_native_dumps_loads():
     assert sad == serder.sad  # round tripped
 
     # Test .loads
-    sad = serder.loads(raw=rawqb64, kind=kering.Kinds.cesr)
+    sad = serder.loads(raw=rawqb64, kind=Kinds.cesr)
     assert sad == serder.sad  # round tripped
 
     # test Serder inhale from raw
@@ -4159,7 +4146,7 @@ def test_cesr_native_dumps_hby():
     """
 
     rawsalt = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    salter = core.Salter(raw=rawsalt)
+    salter = Salter(raw=rawsalt)
     salt = salter.qb64
     assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
 
