@@ -12,8 +12,6 @@ import os
 import stat
 from dataclasses import asdict
 
-import pysodium
-
 import lmdb
 
 from hio.base import doing
