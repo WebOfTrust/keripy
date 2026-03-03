@@ -6,12 +6,9 @@ keri.vc.proving module
 
 from typing import Optional, Union
 
-from .. import core
-from .. import help
-from ..core import coring, serdering
-from ..core.coring import (Kinds, versify, Saider, Saids, Protocols)
+from .. import help, versify, Protocols, Kinds, Version
+from ..core import Salter, Saider, serdering, Saids
 from ..help import helping
-from ..kering import Version
 
 KERI_REGISTRY_TYPE = "KERICredentialRegistry"
 
@@ -63,8 +60,8 @@ def credential(schema:str,
     )
 
     if private:
-        vc["u"] = private_credential_nonce if private_credential_nonce is not None else core.Salter().qb64
-        subject["u"] = private_subject_nonce if private_subject_nonce is not None else core.Salter().qb64
+        vc["u"] = private_credential_nonce if private_credential_nonce is not None else Salter().qb64
+        subject["u"] = private_subject_nonce if private_subject_nonce is not None else Salter().qb64
 
     if recipient is not None:
         subject['i'] = recipient

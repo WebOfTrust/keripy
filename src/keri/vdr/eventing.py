@@ -12,21 +12,18 @@ from  ordered_set import OrderedSet as oset
 
 from hio.help import decking
 
-from ..core.serdering import SerderKERI
-from ..core.coring import (MtrDex, Kinds, versify, Prefixer,
-                           Ilks, Verfer, Number, Saider, Seqner,
-                           Number, Diger, Dater)
-from ..core.signing import Salter
-from ..core import eventing
-from ..core.eventing import (SealEvent, ample, TraitDex, verifySigs)
+from .. import (Kinds, Ilks, versify, MissingWitnessSignatureError, Version,
+                MissingAnchorError, ValidationError, OutOfOrderError,
+                LikelyDuplicitousError, MissingEntryError, MissingAnchorError,
+                UntrustedKeyStateSource,UnverifiedReplyError,
+                OutOfOrderTxnStateError, MissingRegistryError)
+from ..core import (SerderKERI, Salter, Prefixer, Verfer,
+                    Number, Saider, Seqner,
+                    Diger, Dater, eventing, SealEvent,
+                    TraitDex, MtrDex, ample, verifySigs)
 from ..db import basing, dbing
 from ..db.dbing import dgKey, snKey
 from ..help import helping, ogler
-from ..kering import (MissingWitnessSignatureError, Version,
-                      MissingAnchorError, ValidationError, OutOfOrderError,
-                      LikelyDuplicitousError, MissingEntryError, MissingAnchorError,
-                      UntrustedKeyStateSource,UnverifiedReplyError,
-                      OutOfOrderTxnStateError, MissingRegistryError)
 from ..vdr import viring
 
 logger = ogler.getLogger()

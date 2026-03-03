@@ -10,23 +10,22 @@ from typing import Optional
 from hio.base import doing
 from hio.help import decking
 
-from keri.vdr import viring
-from ..kering import (Vrsn_1_0, Vrsn_2_0, ClosedError,
+from . import viring
+from ..kering import (Vrsn_1_0, ClosedError,
                       ConfigurationError, MissingAnchorError,
                       ValidationError, LikelyDuplicitousError,
                       MissingRegistryError)
 from ..help import ogler
 from ..app import agenting
 from ..app.habbing import GroupHab
-from ..core import (parsing, scheming, serdering,
-                    Counter, Codens)
-from ..core.coring import (MtrDex, NumDex, Number, Diger,
-                           Seqner, Saider, Prefixer)
-from ..core.eventing import TraitDex
-from ..db.dbing import snKey, dgKey
-from ..vc import proving
 from ..vdr import eventing
 from ..vdr.viring import Reger
+from ..core import (parsing, scheming, serdering,
+                    Counter, Codens, MtrDex, NumDex,
+                    Number, Diger, TraitDex,
+                    Seqner, Saider, Prefixer)
+from ..db.dbing import snKey, dgKey
+from ..vc import proving
 
 logger = ogler.getLogger()
 

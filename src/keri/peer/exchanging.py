@@ -9,11 +9,12 @@ from datetime import timedelta
 
 from hio.help import decking
 
-from .. import help, kering, core
+from .. import (help, core,
+                ValidationError, MissingSignatureError,
+                Vrsn_1_0, Vrsn_2_0, Ilks, versify)
 from ..app import habbing
 from ..core import eventing, coring, serdering
 from ..help import helping
-from ..kering import ValidationError, MissingSignatureError, Vrsn_1_0, Vrsn_2_0
 
 ExchangeMessageTimeWindow = timedelta(seconds=300)
 
@@ -330,7 +331,7 @@ class Exchanger:
             return False
         else:
             if serder.said != said:
-                raise kering.ValidationError(f"invalid exchange escrowed event {serder.said}-{said}")
+                raise ValidationError(f"invalid exchange escrowed event {serder.said}-{said}")
 
         return True
 
@@ -392,9 +393,9 @@ def exincept(sender="",
     }
     """
     pvrsn = pvrsn if pvrsn is not None else Vrsn_2_0
-    vs = kering.versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
 
-    ilk = kering.Ilks.xip
+    ilk = Ilks.xip
 
     sad = dict(v=vs,  # version string
                t=ilk, # message type
@@ -472,11 +473,11 @@ def exchange(route,
         if len(pathed) // 4 < 4096:
             end.extend(core.Counter(core.Codens.PathedMaterialCouples,
                                       count=(len(pathed) // 4),
-                                      version=kering.Vrsn_1_0).qb64b)
+                                      version=Vrsn_1_0).qb64b)
         else:
             end.extend(core.Counter(core.Codens.BigPathedMaterialCouples,
                                       count=(len(pathed) // 4),
-                                      version=kering.Vrsn_1_0).qb64b)
+                                      version=Vrsn_1_0).qb64b)
         end.extend(pathed)
 
     if e:
@@ -575,19 +576,19 @@ def serializeMessage(hby, said, pipelined=False):
     if len(tsgs) > 0:
         for (prefixer, seqner, saider, sigers) in tsgs:
             atc.extend(core.Counter(core.Codens.TransIdxSigGroups, count=1,
-                                    version=kering.Vrsn_1_0).qb64b)
+                                    version=Vrsn_1_0).qb64b)
             atc.extend(prefixer.qb64b)
             atc.extend(seqner.qb64b)
             atc.extend(saider.qb64b)
 
             atc.extend(core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                                    version=kering.Vrsn_1_0).qb64b)
+                                    version=Vrsn_1_0).qb64b)
             for siger in sigers:
                 atc.extend(siger.qb64b)
 
     if len(cigars) > 0:
         atc.extend(core.Counter(core.Codens.NonTransReceiptCouples,
-                                count=len(cigars), version=kering.Vrsn_1_0).qb64b)
+                                count=len(cigars), version=Vrsn_1_0).qb64b)
         for cigar in cigars:
             if cigar.verfer.code not in coring.NonTransDex:
                 raise ValueError("Attempt to use tranferable prefix={} for "
@@ -598,7 +599,7 @@ def serializeMessage(hby, said, pipelined=False):
     # Smash the pathed components on the end
     for p in hby.db.epath.get(keys=(exn.said,)):
         atc.extend(core.Counter(core.Codens.PathedMaterialCouples,
-                                  count=(len(p) // 4), version=kering.Vrsn_1_0).qb64b)
+                                  count=(len(p) // 4), version=Vrsn_1_0).qb64b)
         atc.extend(p.encode("utf-8"))
 
     msg = bytearray()
@@ -608,7 +609,7 @@ def serializeMessage(hby, said, pipelined=False):
             raise ValueError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
         msg.extend(core.Counter(core.Codens.AttachmentGroup,
-                                  count=(len(atc) // 4), version=kering.Vrsn_1_0).qb64b)
+                                  count=(len(atc) // 4), version=Vrsn_1_0).qb64b)
 
     msg.extend(atc)
     return msg

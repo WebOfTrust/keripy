@@ -11,9 +11,10 @@ from typing import Type
 
 from hio.help import decking
 
-from ..kering import (Vrsn_1_0, Vrsn_2_0, MissingChainError,
-                      MissingRegistryError, MissingSchemaError, ValidationError,
-                      FailedSchemaValidationError, MissingChainError, RevokedChainError)
+from ..kering import (Vrsn_1_0, MissingChainError,
+                      MissingRegistryError, MissingSchemaError,
+                      ValidationError, FailedSchemaValidationError,
+                      MissingChainError, RevokedChainError)
 from ..core import parsing, coring, scheming
 from ..help import helping, ogler
 from ..vdr import eventing
