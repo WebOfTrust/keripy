@@ -560,7 +560,7 @@ class Registrar(doing.DoDoer):
             number = coring.Number(sn=sn)
             diger = coring.Diger(qb64=said)
 
-            self.counselor.start(prefixer=prefixer, seqner=number, saider=diger, ghab=hab)
+            self.counselor.start(prefixer=prefixer, number=number, diger=diger, ghab=hab)
 
             print("Waiting for TEL registry vcp event multisig anchoring event")
             self.rgy.reger.tmse.add(keys=(registry.regk, rnum.qb64, registry.regd), val=(prefixer, number, diger))
@@ -600,7 +600,7 @@ class Registrar(doing.DoDoer):
             number = coring.Number(sn=sn)
             diger = coring.Diger(qb64=said)
 
-            self.counselor.start(prefixer=prefixer, seqner=number, saider=diger, ghab=hab)
+            self.counselor.start(prefixer=prefixer, number=number, diger=diger, ghab=hab)
 
             print(f"Waiting for TEL iss event multisig anchoring event {number.sn}")
             self.rgy.reger.tmse.add(keys=(vcid, rnum.qb64, iserder.said), val=(prefixer, number, diger))
@@ -643,7 +643,7 @@ class Registrar(doing.DoDoer):
             number = coring.Number(sn=sn)
             diger = coring.Diger(qb64=said)
 
-            self.counselor.start(prefixer=prefixer, seqner=number, saider=diger, ghab=hab)
+            self.counselor.start(prefixer=prefixer, number=number, diger=diger, ghab=hab)
 
             print(f"Waiting for TEL rev event multisig anchoring event {number.sn}")
             self.rgy.reger.tmse.add(keys=(vcid, rnum.qb64, rserder.said), val=(prefixer, number, diger))

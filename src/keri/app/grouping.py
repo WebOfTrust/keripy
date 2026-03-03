@@ -52,7 +52,7 @@ class Counselor(doing.DoDoer):
 
         super(Counselor, self).__init__(doers=doers, **kwa)
 
-    def start(self, ghab, prefixer, seqner, saider):
+    def start(self, ghab, prefixer, number, diger):
         """ Begin processing of escrowed group multisig identifier
 
         Escrow identifier for multisigs, witness receipts and delegation anchor
@@ -61,14 +61,14 @@ class Counselor(doing.DoDoer):
 
             ghab (Hab): group Habitat
             prefixer (Prefixer): prefixer of group identifier
-            seqner (Seqner): seqner of event of group identifier
-            saider (Saider): saider of event of group identifier
+            number (Number): number of event of group identifier
+            diger (Diger): diger of event of group identifier
 
         """
-        evt = ghab.makeOwnEvent(sn=seqner.sn, allowPartiallySigned=True)  # used just for the log message
+        evt = ghab.makeOwnEvent(sn=number.sn, allowPartiallySigned=True)  # used just for the log message
         serder = serdering.SerderKERI(raw=evt)                            # used just for the log message
-        logger.info("Waiting for other signatures on %s for %s:%s...", serder.ilk, prefixer.qb64, seqner.sn)
-        return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(seqner, saider))
+        logger.info("Waiting for other signatures on %s for %s:%s...", serder.ilk, prefixer.qb64, number.sn)
+        return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(number, diger))
 
     def complete(self, prefixer, seqner, saider=None):
         """ Check for completed multsig protocol for the specific event

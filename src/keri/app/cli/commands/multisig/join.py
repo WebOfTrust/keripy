@@ -240,9 +240,9 @@ class JoinDoer(doing.DoDoer):
                 self.postman.cues.clear()
 
             prefixer = coring.Prefixer(qb64=ghab.pre)
-            seqner = coring.Seqner(sn=0)
-            saider = coring.Saider(qb64=prefixer.qb64)
-            yield from self.startCounselor(ghab, prefixer, seqner, saider)
+            number = coring.Number(sn=0)
+            diger = coring.Diger(qb64=prefixer.qb64)
+            yield from self.startCounselor(ghab, prefixer, number, diger)
 
             print()
             displaying.printIdentifier(self.hby, ghab.pre)
@@ -309,20 +309,20 @@ class JoinDoer(doing.DoDoer):
                 self.postman.cues.clear()
 
             prefixer = coring.Prefixer(qb64=ghab.pre)
-            seqner = coring.Seqner(sn=serder.sn)
+            number = coring.Number(sn=serder.sn)
             diger = coring.Diger(qb64b=serder.saidb)
-            yield from self.startCounselor(ghab, prefixer, seqner, diger)
+            yield from self.startCounselor(ghab, prefixer, number, diger)
 
             print()
             displaying.printIdentifier(self.hby, ghab.pre)
 
             return True
 
-    def startCounselor(self, hab, prefixer, seqner, saider):
-        self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
+    def startCounselor(self, hab, prefixer, number, diger):
+        self.counselor.start(prefixer=prefixer, number=number, diger=diger, ghab=hab)
 
         while True:
-            saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
+            saider = self.hby.db.cgms.get(keys=(prefixer.qb64, number.qb64))
             if saider is not None:
                 break
 
@@ -442,9 +442,9 @@ class JoinDoer(doing.DoDoer):
 
             serder = serdering.SerderKERI(raw=rot)
             prefixer = coring.Prefixer(qb64=ghab.pre)
-            seqner = coring.Seqner(sn=serder.sn)
+            number = coring.Number(sn=serder.sn)
 
-            yield from self.startCounselor(ghab, prefixer, seqner, coring.Diger(qb64=serder.said))
+            yield from self.startCounselor(ghab, prefixer, number, coring.Diger(qb64=serder.said))
 
             print()
             displaying.printIdentifier(self.hby, ghab.pre)

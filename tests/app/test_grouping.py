@@ -45,11 +45,11 @@ def test_counselor():
         ghab = hby1.makeGroupHab(group=f"{prefix}_group1", mhab=hab1,
                                  smids=smids, rmids=rmids, **inits)
         prefixer = coring.Prefixer(qb64=ghab.pre)
-        seqner = coring.Seqner(sn=0)
-        saider = coring.Saider(qb64=prefixer.qb64)
+        number = coring.Number(sn=0)
+        diger = coring.Diger(qb64=prefixer.qb64)
 
         # Send to Counselor to post process through escrows
-        counselor.start(prefixer=prefixer, seqner=seqner, saider=saider,
+        counselor.start(prefixer=prefixer, number=number, diger=diger,
                         ghab=ghab)
         (number, diger) = hby1.db.gpse.getLast(keys=(ghab.pre,))  # Escrowed the event for sigs
         assert number.sn == 0
@@ -84,11 +84,11 @@ def test_counselor():
         merfers = [hab1.kever.verfers[0], hab2.kever.verfers[0]]
         migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0]]
         prefixer = coring.Prefixer(qb64=ghab.pre)
-        seqner = coring.Seqner(sn=ghab.kever.sn + 1)
+        number = coring.Number(sn=ghab.kever.sn + 1)
         rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
-        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Diger(qb64=rserder.said))
+        counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=coring.Diger(qb64=rserder.said))
 
         # partially signed group rotation
         val = hby1.db.gpse.get(keys=(ghab.pre,))
@@ -137,11 +137,11 @@ def test_counselor():
         merfers = [hab1.kever.verfers[0], hab2.kever.verfers[0]]
         migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0], hab3.kever.ndigers[0]]
         prefixer = coring.Prefixer(qb64=ghab.pre)
-        seqner = coring.Seqner(sn=ghab.kever.sn + 1)
+        number = coring.Number(sn=ghab.kever.sn + 1)
         rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
-        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Diger(qb64=rserder.said))
+        counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=coring.Diger(qb64=rserder.said))
 
         # partially signed group rotation
         val = hby1.db.gpse.get(keys=(ghab.pre,))
@@ -191,11 +191,11 @@ def test_counselor():
         merfers = [hab1.kever.verfers[0], hab3.kever.verfers[0]]
         migers = [hab1.kever.ndigers[0], hab3.kever.ndigers[0]]
         prefixer = coring.Prefixer(qb64=ghab.pre)
-        seqner = coring.Seqner(sn=ghab.kever.sn + 1)
+        number = coring.Number(sn=ghab.kever.sn + 1)
         rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
-        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Diger(qb64=rserder.said))
+        counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=coring.Diger(qb64=rserder.said))
 
         # partially signed group rotation
         val = hby1.db.gpse.get(keys=(ghab.pre,))
@@ -279,11 +279,11 @@ def test_the_seven():
         ghab = hby1.makeGroupHab(group=f"{prefix}_group1", mhab=hab1,
                                  smids=smids, rmids=rmids, **inits)
         prefixer = coring.Prefixer(qb64=ghab.pre)
-        seqner = coring.Seqner(sn=0)
-        saider = coring.Saider(qb64=prefixer.qb64)
+        number = coring.Number(sn=0)
+        diger = coring.Diger(qb64=prefixer.qb64)
 
         # Send to Counselor to post process through escrows
-        counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=ghab)
+        counselor.start(prefixer=prefixer, number=number, diger=diger, ghab=ghab)
         raw = (b'{"v":"KERI10JSON0003af_","t":"icp","d":"EL-f5D0esAFbZTzK9W3wtTgDmncye9IOnF0Z'
                b'8gRdICIU","i":"EL-f5D0esAFbZTzK9W3wtTgDmncye9IOnF0Z8gRdICIU","s":"0","kt":["'
                b'1/3","1/3","1/3","1/3","1/3","1/3","1/3"],"k":["DEXdkHRR2Nspj5czsFvKOa-ZnGzM'
@@ -371,12 +371,12 @@ def test_the_seven():
         migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0], hab3.kever.ndigers[0], hab4.kever.ndigers[0],
                   hab5.kever.ndigers[0], hab6.kever.ndigers[0], hab7.kever.ndigers[0]]
         prefixer = coring.Prefixer(qb64=ghab.pre)
-        seqner = coring.Seqner(sn=ghab.kever.sn + 1)
+        number = coring.Number(sn=ghab.kever.sn + 1)
         rot = ghab.rotate(isith='["1/3", "1/3", "1/3"]', nsith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
                           toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
-        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Diger(qb64=rserder.said))
+        counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=coring.Diger(qb64=rserder.said))
 
         # partially signed group rotation
         val = hby1.db.gpse.get(keys=(ghab.pre,))
@@ -433,12 +433,12 @@ def test_the_seven():
         migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0], hab3.kever.ndigers[0], hab4.kever.ndigers[0],
                   hab5.kever.ndigers[0], hab6.kever.ndigers[0], hab7.kever.ndigers[0]]
         prefixer = coring.Prefixer(qb64=ghab.pre)
-        seqner = coring.Seqner(sn=ghab.kever.sn + 1)
+        number = coring.Number(sn=ghab.kever.sn + 1)
         rot = ghab.rotate(isith='["1/3", "1/3", "1/3"]', nsith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
                           toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
-        counselor.start(ghab=ghab, prefixer=prefixer, seqner=seqner, saider=coring.Diger(qb64=rserder.said))
+        counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=coring.Diger(qb64=rserder.said))
 
         # partially signed group rotation
         val = hby1.db.gpse.get(keys=(ghab.pre,))
@@ -510,12 +510,12 @@ def test_the_seven():
         merfers = [hab4.kever.verfers[0], hab5.kever.verfers[0], hab6.kever.verfers[0]]
         migers = [hab4.kever.ndigers[0], hab5.kever.ndigers[0], hab6.kever.ndigers[0]]
         prefixer = coring.Prefixer(qb64=ghab.pre)
-        seqner = coring.Seqner(sn=ghab.kever.sn + 1)
+        number = coring.Number(sn=ghab.kever.sn + 1)
         rot = ghab4.rotate(isith='["1/3", "1/3", "1/3"]', nsith='["1/3", "1/3", "1/3"]',
                            toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
         rserder = serdering.SerderKERI(raw=rot)
 
-        counselor4.start(ghab=ghab4, prefixer=prefixer, seqner=seqner, saider=coring.Diger(qb64=rserder.said))
+        counselor4.start(ghab=ghab4, prefixer=prefixer, number=number, diger=coring.Diger(qb64=rserder.said))
 
         # partially signed group rotation
         val = hby4.db.gpse.get(keys=(ghab4.pre,))
