@@ -774,7 +774,7 @@ class Registrar(doing.DoDoer):
 
             # Anchor the message, registry or otherwise
             key = dgKey(regk, regd)
-            number = coring.Number(num=number.sn)
+            number = Number(num=number.sn)
             self.rgy.reger.ancs.put(keys=key, val=(number, diger))
 
             self.rgy.reger.tmse.rem(keys=(regk, snq, regd))
