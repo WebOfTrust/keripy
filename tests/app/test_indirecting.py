@@ -13,7 +13,7 @@ import hio
 import pytest
 
 from hio.core import http
-from hio.base import doing, tyming
+from hio.base import doing
 from hio.help import decking
 
 from keri import kering

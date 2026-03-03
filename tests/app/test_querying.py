@@ -5,7 +5,7 @@ keri.app.querying module
 """
 from hio.base import doing
 
-from keri.kering import Vrsn_1_0, Vrsn_2_0
+from keri.kering import Vrsn_1_0
 from keri.app import habbing
 from keri.app.querying import QueryDoer, KeyStateNoticer, LogQuerier, SeqNoQuerier, AnchorQuerier
 from keri.core import parsing, eventing, serdering
