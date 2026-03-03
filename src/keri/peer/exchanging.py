@@ -9,11 +9,11 @@ from datetime import timedelta
 
 from hio.help import decking
 
-from .. import (help, core,
-                ValidationError, MissingSignatureError,
-                Vrsn_1_0, Vrsn_2_0, Ilks, versify)
+from .. import (help, Vrsn_1_0, Vrsn_2_0, Ilks, versify,
+                ValidationError, MissingSignatureError)
 from ..app import habbing
-from ..core import eventing, coring, serdering
+from ..core import (Counter, eventing, coring, serdering,
+                    Codens)
 from ..help import helping
 
 ExchangeMessageTimeWindow = timedelta(seconds=300)
@@ -471,11 +471,11 @@ def exchange(route,
         pathed.extend(pather.qb64b)
         pathed.extend(atc)
         if len(pathed) // 4 < 4096:
-            end.extend(core.Counter(core.Codens.PathedMaterialCouples,
+            end.extend(Counter(Codens.PathedMaterialCouples,
                                       count=(len(pathed) // 4),
                                       version=Vrsn_1_0).qb64b)
         else:
-            end.extend(core.Counter(core.Codens.BigPathedMaterialCouples,
+            end.extend(Counter(Codens.BigPathedMaterialCouples,
                                       count=(len(pathed) // 4),
                                       version=Vrsn_1_0).qb64b)
         end.extend(pathed)
@@ -575,19 +575,19 @@ def serializeMessage(hby, said, pipelined=False):
 
     if len(tsgs) > 0:
         for (prefixer, seqner, saider, sigers) in tsgs:
-            atc.extend(core.Counter(core.Codens.TransIdxSigGroups, count=1,
+            atc.extend(Counter(Codens.TransIdxSigGroups, count=1,
                                     version=Vrsn_1_0).qb64b)
             atc.extend(prefixer.qb64b)
             atc.extend(seqner.qb64b)
             atc.extend(saider.qb64b)
 
-            atc.extend(core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
+            atc.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
                                     version=Vrsn_1_0).qb64b)
             for siger in sigers:
                 atc.extend(siger.qb64b)
 
     if len(cigars) > 0:
-        atc.extend(core.Counter(core.Codens.NonTransReceiptCouples,
+        atc.extend(Counter(Codens.NonTransReceiptCouples,
                                 count=len(cigars), version=Vrsn_1_0).qb64b)
         for cigar in cigars:
             if cigar.verfer.code not in coring.NonTransDex:
@@ -598,7 +598,7 @@ def serializeMessage(hby, said, pipelined=False):
 
     # Smash the pathed components on the end
     for p in hby.db.epath.get(keys=(exn.said,)):
-        atc.extend(core.Counter(core.Codens.PathedMaterialCouples,
+        atc.extend(Counter(Codens.PathedMaterialCouples,
                                   count=(len(p) // 4), version=Vrsn_1_0).qb64b)
         atc.extend(p.encode("utf-8"))
 
@@ -608,7 +608,7 @@ def serializeMessage(hby, said, pipelined=False):
         if len(atc) % 4:
             raise ValueError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
-        msg.extend(core.Counter(core.Codens.AttachmentGroup,
+        msg.extend(Counter(Codens.AttachmentGroup,
                                   count=(len(atc) // 4), version=Vrsn_1_0).qb64b)
 
     msg.extend(atc)
