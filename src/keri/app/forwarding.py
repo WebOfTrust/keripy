@@ -15,7 +15,7 @@ from hio.help import decking, ogler
 from .. import Roles, Vrsn_1_0, ConfigurationError, ValidationError
 from . import agenting
 from ..core import coring, eventing, serdering, MtrDex, Counter, Codens
-from ..db import dbing
+from ..db import dgKey
 from ..peer import exchanging
 from ..spac import payloading
 
@@ -532,7 +532,7 @@ def introduce(hab, wit):
 
     iserder = hab.kever.serder
     witPrefixer = coring.Prefixer(qb64=wit)
-    dgkey = dbing.dgKey(wit, iserder.said)
+    dgkey = dgKey(wit, iserder.said)
     found = False
     if witPrefixer.transferable:  # find if have rct from other pre for own icp
         for sprefixer, snum, sdiger, siger in hab.db.vrcs.getIter(dgkey):

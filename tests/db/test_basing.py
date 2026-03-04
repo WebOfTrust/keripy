@@ -15,7 +15,6 @@ import pytest
 import lmdb
 from hio.base import doing
 from keri import core
-import keri.recording as recording
 from keri.app import habbing
 from keri.core import coring, eventing, serdering, signing, indexing
 from keri.core.coring import Kinds, versify, Seqner, Diger, Number, NumDex

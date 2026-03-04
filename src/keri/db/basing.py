@@ -16,6 +16,7 @@ from hio.base import doing
 
 import keri
 from . import dbing
+from .dbing import dgKey
 from .. import kering
 from ..kering import Vrsn_1_0, Vrsn_2_0
 from ..recording import (RawRecord, StateEERecord, KeyStateRecord,
@@ -31,6 +32,8 @@ from ..help import helping
 
 
 logger = help.ogler.getLogger()
+
+
 MIGRATIONS = [
     ("0.6.8", ["hab_data_rename"]),
     ("1.0.0", ["add_key_and_reg_state_schemas"]),
@@ -1279,7 +1282,7 @@ class Baser(dbing.LMDBer):
 
         msg = bytearray()  # message
         atc = bytearray()  # attachments
-        dgkey = dbing.dgKey(pre, dig)  # get message
+        dgkey = dgKey(pre, dig)  # get message
         if not (serder := self.evts.get(keys=(pre, dig))):
             raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
         msg.extend(serder.raw)

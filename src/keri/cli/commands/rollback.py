@@ -13,7 +13,7 @@ from ..common.parsing import Parsery
 
 from ... import kering, help
 from ...core import coring, serdering
-from ...db import dbing
+from ...db import dgKey
 from ...help import helping
 from ...kering import ConfigurationError
 from ...recording import KeyStateRecord
@@ -66,7 +66,7 @@ def rollback(tymth, tock=0.0, **opts):
 
             pserder = hby.db.evts.get(keys=(serder.preb, bytes(pdig)))
 
-            dgkey = dbing.dgKey(serder.preb, serder.saidb)
+            dgkey = dgKey(serder.preb, serder.saidb)
             hby.db.wigs.rem(keys=(serder.preb, serder.saidb))
             hby.db.evts.rem(keys=(serder.preb, serder.saidb))
             hby.db.wits.rem(keys=(serder.preb, serder.saidb))
