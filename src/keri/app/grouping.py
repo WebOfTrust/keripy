@@ -538,10 +538,10 @@ def getEscrowedEvent(db, pre, sn):
         msg.extend(siger.qb64b)  # attach siger
 
     if duple is not None:
-        seqner, diger = duple
+        number, diger = duple
         msg.extend(Counter(Codens.SealSourceCouples,
                                 count=1, version=Vrsn_1_0).qb64b)
-        msg.extend(seqner.qb64b + diger.qb64b)
+        msg.extend(number.qb64b + diger.qb64b)
 
     return msg
 

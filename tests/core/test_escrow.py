@@ -12,7 +12,7 @@ import pytest
 from keri import Vrsn_1_0, help, MisfitEventSourceError
 
 from keri.core import (Seqner, Counter, Salter, coring, eventing, parsing,
-                       MtrDex, Codens)
+                       MtrDex, Codens, Number, Diger)
 
 from keri.db import dbing, basing
 from keri.app import keeping
@@ -518,9 +518,11 @@ def test_missing_delegator_escrow():
         assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
         result = bobKvy.db.aess.get(keys=(delPre, delSrdr.said))
         assert result is not None
-        rseqner, rsaider = result
-        assert rseqner.qb64b == seqner.qb64b
-        assert rsaider.qb64b == bobSrdr.saidb
+        rnumber, rdiger = result
+        assert isinstance(rnumber, Number)
+        assert isinstance(rdiger, Diger)
+        assert rnumber.qb64b == seqner.qb64b
+        assert rdiger.qb64b == bobSrdr.saidb
 
         # apply Del's inception msg to Del's Kevery
         # Because locallyOwned by delegate event does not validate delegation
@@ -566,9 +568,9 @@ def test_missing_delegator_escrow():
         assert watDelK.serder.said == delSrdr.said  # key state updated so event was validated
         result = watKvy.db.aess.get(keys=(delPre, delSrdr.said))
         assert result is not None
-        rseqner, rsaider = result
-        assert rseqner.qb64b == seqner.qb64b
-        assert rsaider.qb64b == bobSrdr.saidb
+        rnumber, rdiger = result
+        assert rnumber.qb64b == seqner.qb64b
+        assert rdiger.qb64b == bobSrdr.saidb
 
 
         # Setup Del rotation event
@@ -644,9 +646,9 @@ def test_missing_delegator_escrow():
         assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
         result = bobKvy.db.aess.get(keys=(delPre, delSrdr.said))
         assert result is not None
-        rseqner, rsaider = result
-        assert rseqner.qb64b == seqner.qb64b
-        assert rsaider.qb64b == bobSrdr.saidb
+        rnumber, rdiger = result
+        assert rnumber.qb64b == seqner.qb64b
+        assert rdiger.qb64b == bobSrdr.saidb
 
         # apply Del's delegated Rotation event message to wats's Kevery
         psr.parse(ims=bytearray(delRotMsg), kvy=watKvy, local=True)
@@ -654,9 +656,9 @@ def test_missing_delegator_escrow():
         assert watDelK.serder.said == delSrdr.said  # key state updated so event was validated
         result = watKvy.db.aess.get(keys=(delPre, delSrdr.said))
         assert result is not None
-        rseqner, rsaider = result
-        assert rseqner.qb64b == seqner.qb64b
-        assert rsaider.qb64b == bobSrdr.saidb
+        rnumber, rdiger = result
+        assert rnumber.qb64b == seqner.qb64b
+        assert rdiger.qb64b == bobSrdr.saidb
 
 
 
