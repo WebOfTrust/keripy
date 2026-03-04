@@ -35,8 +35,7 @@ from .serdering import SerderKERI
 
 from . import serdering
 
-from ..db import basing, dbing
-from ..db.dbing import dgKey, snKey
+from ..db import Baser, dgKey, snKey, fetchTsgs
 from ..recording import (EndpointRecord, EventSourceRecord, KeyStateRecord,
                          LocationRecord, OobiRecord, ObservedRecord,
                          StateEERecord)
@@ -392,45 +391,6 @@ def validateSigs(serder, sigers, verfers, tholder):
     valid = tholder.satisfy(indices)
 
     return (sigers, valid)
-
-
-def fetchTsgs(db, diger, snh=None):
-    """
-    Fetch tsgs for diger from .db.ssgs. When sn then only fetch if sn <= snh
-    Returns:
-        tsgs (list): of tsg quadruple of form (prefixer, seqner, diger, sigers)
-            where:
-                prefixer (Prefixer): instance trans signer aid,
-                seqner (Seqner): of sn of trans signer key state est event
-                diger (Diger): of digest of trans signer key state est event
-                sigers (list): of Siger instances of indexed signatures
-
-    Parameters:
-        db: (Cesr
-        diger (Diger): instance of said for reply SAD to which signatures
-            are attached
-        snh (str): 32 char zero pad lowercase hex of sequence number f"{sn:032x}"
-    """
-    klases = (Prefixer, Seqner, Diger)
-    args = ("qb64", "snh", "qb64")
-    tsgs = []  # transferable signature groups
-    sigers = []
-    old = None  # empty keys
-    for keys, siger in db.getItemIter(keys=(diger.qb64, "")):
-        trituple = keys[1:]
-        if trituple != old:  # new tsg
-            if snh is not None and trituple[1] > snh:  # only lower sn
-                break
-            if sigers:  # append tsg made for old and sigers
-                tsgs.append((*helping.klasify(sers=old, klases=klases, args=args), sigers))
-                sigers = []
-            old = trituple
-        sigers.append(siger)
-    if sigers and old:
-        tsgs.append((*helping.klasify(sers=old, klases=klases, args=args), sigers))
-
-    return tsgs
-
 
 def state(pre,
           sn,

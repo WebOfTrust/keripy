@@ -528,14 +528,14 @@ class Reger(dbing.LMDBer):
             yield msg
 
     def cloneTvtAt(self, pre, sn=0):
-        snkey = dbing.snKey(pre, sn)
+        snkey = snKey(pre, sn)
         dig = self.tels.get(keys=snkey)
         return self.cloneTvt(pre, dig)
 
     def cloneTvt(self, pre, dig):
         msg = bytearray()  # message
         atc = bytearray()  # attachments
-        dgkey = dbing.dgKey(pre, dig)  # get message
+        dgkey = dgKey(pre, dig)  # get message
         if not (raw := self.tvts.get(keys=dgkey)):
             raise MissingEntryError("Missing event for dig={}.".format(dig))
         msg.extend(raw.encode("utf-8"))

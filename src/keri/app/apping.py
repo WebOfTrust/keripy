@@ -9,7 +9,7 @@ from hio.base import doing
 from hio.core.serial import serialing
 
 from .. import help
-from ..db import basing
+from ..db import Baser
 
 logger = help.ogler.getLogger()
 
@@ -24,7 +24,7 @@ class Consoler(doing.Doer):
 
         """
         super(Consoler, self).__init__(**kwa)
-        self.db = db if db is not None else basing.Baser()
+        self.db = db if db is not None else Baser()
         self.console = console if console is not None else serialing.Console()
 
     def enter(self, *, temp=None):

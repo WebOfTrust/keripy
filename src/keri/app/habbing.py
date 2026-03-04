@@ -13,7 +13,7 @@ from hio.help import hicting
 
 from ..peer import exchanging
 from . import keeping, configing
-from ..db import dbing, basing
+from ..db import Baser, dgKey
 from ..help import ogler, fromIso8601, toIso8601
 from .. import (Vrsn_1_0, ClosedError, AuthError,
                 ConfigurationError, ValidationError, MissingEntryError,
@@ -210,12 +210,12 @@ class Habery:
                                                            reopen=True,
                                                            clear=clear,
                                                            headDirPath=headDirPath)
-        self.db = db if db is not None else basing.Baser(name=self.name,
-                                                         base=self.base,
-                                                         temp=self.temp,
-                                                         reopen=True,
-                                                         clear=clear,
-                                                         headDirPath=headDirPath)
+        self.db = db if db is not None else Baser(name=self.name,
+                                                  base=self.base,
+                                                  temp=self.temp,
+                                                  reopen=True,
+                                                  clear=clear,
+                                                  headDirPath=headDirPath)
         self.cf = cf if cf is not None else configing.Configer(name=self.name,
                                                                base=self.base,
                                                                temp=self.temp,
@@ -1574,7 +1574,7 @@ class BaseHab:
                                            "".format(pre, sn))
         dig = dig.encode("utf-8")
         dig = bytes(dig)
-        key = dbing.dgKey(pre, dig)  # digest key
+        key = dgKey(pre, dig)  # digest key
         serder = self.db.evts.get(keys=(pre, dig))
         msg.extend(serder.raw)
         msg.extend(Counter(Codens.ControllerIdxSigs, count=self.db.sigs.cnt(keys=(pre, dig)),
@@ -2118,7 +2118,7 @@ class BaseHab:
                 logger.debug(f"event=\n{cuedSerder.pretty()}\n")
 
                 if cuedKed["t"] == coring.Ilks.icp:
-                    dgkey = dbing.dgKey(self.pre, self.iserder.said)
+                    dgkey = dgKey(self.pre, self.iserder.said)
                     found = False
                     if cuedPrefixer.transferable:  # find if have rct from other pre for own icp
                         for sprefixer, snumber, sdiger, siger in self.db.vrcs.getIter(dgkey):

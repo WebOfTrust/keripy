@@ -24,7 +24,7 @@ from . import (GroupHab, directing, storing,
 from ..core import (eventing, parsing, routing, coring, serdering,
                     Counter, Codens)
 from ..app import oobiing
-from ..db import basing
+from ..db import BaserDoer
 from ..end import ending
 from ..help import helping, ogler
 from ..peer import exchanging
@@ -99,7 +99,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     httpServerDoer = http.ServerDoer(server=server)
 
     # setup doers
-    regDoer = basing.BaserDoer(baser=verfer.reger)
+    regDoer = BaserDoer(baser=verfer.reger)
 
     if tcpPort is not None:
         server = serving.Server(host="", port=tcpPort)
