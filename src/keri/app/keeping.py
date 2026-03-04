@@ -29,9 +29,9 @@ from dataclasses import dataclass, asdict, field
 import pysodium
 from hio.base import doing
 
-from .. import kering
-from .. import core
-from ..core import coring
+from .. import ClosedError, AuthError, DecryptError
+from ..core import (coring, Cipher, Signer, Salter,
+                    Encrypter, Decrypter, Tiers, MtrDex)
 from ..db import dbing, subing, koming
 from ..help import helping
 
@@ -268,10 +268,10 @@ class Keeper(dbing.LMDBer):
         self.pris = subing.CryptSignerSuber(db=self, subkey='pris.')
         self.prxs = subing.CesrSuber(db=self,
                                      subkey='prxs.',
-                                     klas=core.Cipher)
+                                     klas=Cipher)
         self.nxts = subing.CesrSuber(db=self,
                                      subkey='nxts.',
-                                     klas=core.Cipher)
+                                     klas=Cipher)
         self.smids = subing.CatCesrIoSetSuber(db=self,
                                               subkey='smids.',
                                               klas=(coring.Prefixer, coring.Number))
@@ -445,7 +445,7 @@ class RandyCreator(Creator):
             codes = [code for i in range(count)]
 
         for code in codes:
-            signers.append(core.Signer(code=code, transferable=transferable))
+            signers.append(Signer(code=code, transferable=transferable))
         return signers
 
 
@@ -478,7 +478,7 @@ class SaltyCreator(Creator):
 
         """
         super(SaltyCreator, self).__init__(**kwa)
-        self.salter = core.Salter(qb64=salt, tier=tier)
+        self.salter = Salter(qb64=salt, tier=tier)
         self._stem = stem if stem is not None else ''
 
     @property
@@ -597,9 +597,9 @@ class Manager:
 
     Attributes:
         ks (Keeper): key store LMDB database instance for storing public and private keys
-        encrypter (core.Encrypter): instance for encrypting secrets. Public
+        encrypter (Encrypter): instance for encrypting secrets. Public
             encryption key is derived from aeid (public signing key)
-        decrypter (core.Decrypter): instance for decrypting secrets. Private
+        decrypter (Decrypter): instance for decrypting secrets. Private
             decryption key is derived seed (private signing key seed)
         inited (bool): True means fully initialized wrt database.
                           False means not yet fully initialized
@@ -715,7 +715,7 @@ class Manager:
 
         """
         if not self.ks.opened:
-            raise kering.ClosedError("Attempt to setup Manager closed keystore"
+            raise ClosedError("Attempt to setup Manager closed keystore"
                                      " database .ks.")
 
         if aeid is None:
@@ -725,13 +725,13 @@ class Manager:
         if algo is None:
             algo = Algos.salty
         if salt is None:
-            salt = core.Salter().qb64
+            salt = Salter().qb64
         else:
-            if core.Salter(qb64=salt).qb64 != salt:
+            if Salter(qb64=salt).qb64 != salt:
                 raise ValueError(f"Invalid qb64 for salt={salt}.")
 
         if tier is None:
-            tier = core.Tiers.low
+            tier = Tiers.low
 
         # update  database if never before initialized
         if self.pidx is None:  # never before initialized
@@ -750,13 +750,13 @@ class Manager:
         if not self.aeid:  # never before initialized
             self.updateAeid(aeid, self.seed)
         else:
-            self.encrypter = core.Encrypter(verkey=self.aeid)  # derive encrypter from aeid
+            self.encrypter = Encrypter(verkey=self.aeid)  # derive encrypter from aeid
             if not self.seed or not self.encrypter.verifySeed(self.seed):
-                raise kering.AuthError("Last seed missing or provided last seed "
+                raise AuthError("Last seed missing or provided last seed "
                                        "not associated with last aeid={}."
                                        "".format(self.aeid))
 
-            self.decrypter = core.Decrypter(seed=self.seed)
+            self.decrypter = Decrypter(seed=self.seed)
 
         self.inited = True
 
@@ -776,16 +776,16 @@ class Manager:
         if self.aeid:  # check that last current seed matches last current .aeid
             # verifies seed belongs to aeid
             if not self.seed or not self.encrypter.verifySeed(self.seed):
-                raise kering.AuthError("Last seed missing or provided last seed "
+                raise AuthError("Last seed missing or provided last seed "
                                        "not associated with last aeid={}."
                                        "".format(self.aeid))
 
         if aeid:  # aeid provided
             if aeid != self.aeid:  # changing to a new aeid so update .encrypter
-                self.encrypter = core.Encrypter(verkey=aeid)  # derive encrypter from aeid
+                self.encrypter = Encrypter(verkey=aeid)  # derive encrypter from aeid
                 # verifies new seed belongs to new aeid
                 if not seed or not self.encrypter.verifySeed(seed):
-                    raise kering.AuthError("Seed missing or provided seed not associated"
+                    raise AuthError("Seed missing or provided seed not associated"
                                            "  with provided aeid={}.".format(aeid))
         else:  # changing to empty aeid so new encrypter is None
             self.encrypter = None
@@ -818,7 +818,7 @@ class Manager:
         self._seed = seed  # set .seed in memory
 
         # update .decrypter
-        self.decrypter = core.Decrypter(seed=seed) if seed else None
+        self.decrypter = Decrypter(seed=seed) if seed else None
 
 
     @property
@@ -902,7 +902,7 @@ class Manager:
                 may be plain text or cipher text handled by updateAeid
         """
         if self.encrypter:
-            salt = self.encrypter.encrypt(ser=salt, code=core.MtrDex.X25519_Cipher_Salt).qb64
+            salt = self.encrypter.encrypt(ser=salt, code=MtrDex.X25519_Cipher_Salt).qb64
         self.ks.gbls.pin('salt', salt)
 
 
@@ -1021,7 +1021,7 @@ class Manager:
         if creator.salt:
             pp.salt = (creator.salt if not self.encrypter
                        else self.encrypter.encrypt(ser=creator.salt,
-                                    code=core.MtrDex.X25519_Cipher_Salt).qb64)
+                                    code=MtrDex.X25519_Cipher_Salt).qb64)
 
         dt = helping.nowIso8601()
         ps = PreSit(
@@ -1172,7 +1172,7 @@ class Manager:
         verfers = []  # assign verfers from current new was prior nxt
         for pub in ps.new.pubs:
             if self.aeid and not self.decrypter:  # maybe should rethink this
-                raise kering.DecryptError("Unauthorized decryption attempt. "
+                raise DecryptError("Unauthorized decryption attempt. "
                                           "Aeid but no decrypter.")
 
             if ((signer := self.ks.pris.get(pub.encode("utf-8"),
@@ -1184,10 +1184,10 @@ class Manager:
         if salt:
             if self.aeid:
                 if not self.decrypter:
-                    raise kering.DecryptError("Unauthorized decryption. Aeid but no decrypter.")
+                    raise DecryptError("Unauthorized decryption. Aeid but no decrypter.")
                 salt = self.decrypter.decrypt(qb64=salt).qb64
             else:
-                salt = core.Salter(qb64=salt).qb64  # ensures salt was unencrypted
+                salt = Salter(qb64=salt).qb64  # ensures salt was unencrypted
 
         creator = Creatory(algo=pp.algo).make(salt=salt, stem=pp.stem, tier=pp.tier)
 
@@ -1336,7 +1336,7 @@ class Manager:
         if pubs:
             for pub in pubs:
                 if self.aeid and not self.decrypter:
-                    raise kering.DecryptError("Unauthorized decryption attempt. "
+                    raise DecryptError("Unauthorized decryption attempt. "
                                               "Aeid but no decrypter.")
                 if ((signer := self.ks.pris.get(pub, decrypter=self.decrypter))
                         is None):
@@ -1346,7 +1346,7 @@ class Manager:
         else:
             for verfer in verfers:
                 if self.aeid and not self.decrypter:
-                    raise kering.DecryptError("Unauthorized decryption attempt. "
+                    raise DecryptError("Unauthorized decryption attempt. "
                                               "Aeid but no decrypter.")
                 if ((signer := self.ks.pris.get(verfer.qb64,
                                                 decrypter=self.decrypter))
@@ -1418,7 +1418,7 @@ class Manager:
         if pubs:
             for pub in pubs:
                 if self.aeid and not self.decrypter:
-                    raise kering.DecryptError("Unauthorized decryption attempt. "
+                    raise DecryptError("Unauthorized decryption attempt. "
                                               "Aeid but no decrypter.")
                 if ((signer := self.ks.pris.get(pub, decrypter=self.decrypter))
                         is None):
@@ -1428,7 +1428,7 @@ class Manager:
         else:
             for verfer in verfers:
                 if self.aeid and not self.decrypter:
-                    raise kering.DecryptError("Unauthorized decryption attempt. "
+                    raise DecryptError("Unauthorized decryption attempt. "
                                               "Aeid but no decrypter.")
                 if ((signer := self.ks.pris.get(verfer.qb64,
                                                 decrypter=self.decrypter))
@@ -1539,7 +1539,7 @@ class Manager:
         secrecies = deque(secrecies)
         while secrecies:
             csecrets = secrecies.popleft()  # current
-            csigners = [core.Signer(qb64=secret, transferable=transferable)
+            csigners = [Signer(qb64=secret, transferable=transferable)
                                                       for secret in csecrets]
             csize = len(csigners)
             verferies.append([signer.verfer for signer in csigners])
@@ -1550,7 +1550,7 @@ class Manager:
                             algo=algo,
                             salt=(creator.salt if not self.encrypter
                                   else self.encrypter.encrypt(ser=creator.salt,
-                                        code=core.MtrDex.X25519_Cipher_Salt).qb64),
+                                        code=MtrDex.X25519_Cipher_Salt).qb64),
                             stem=creator.stem,
                             tier=creator.tier)
                 pre = csigners[0].verfer.qb64b
@@ -1686,7 +1686,7 @@ class Manager:
         verfers = []  # assign verfers from current new was prior nxt
         for pub in ps.new.pubs:
             if self.aeid and not self.decrypter:  # maybe should rethink this
-                raise kering.DecryptError("Unauthorized decryption attempt. "
+                raise DecryptError("Unauthorized decryption attempt. "
                                           "Aeid but no decrypter.")
 
             if ((signer := self.ks.pris.get(pub.encode("utf-8"),

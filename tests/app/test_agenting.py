@@ -9,7 +9,6 @@ from hio.base import doing, tyming
 
 from keri import kering, core
 from keri.app import habbing, indirecting, agenting, directing
-from keri.db import dbing
 from keri.help import nowIso8601
 
 

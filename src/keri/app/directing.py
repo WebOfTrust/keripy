@@ -8,10 +8,8 @@ simple direct mode demo support classes
 import itertools
 from hio.base import doing
 
-from ..kering import Vrsn_1_0, Vrsn_2_0
-from .. import help
-from ..core import eventing, routing
-from ..core import parsing
+from .. import help, Vrsn_1_0
+from ..core import eventing, routing, parsing
 from ..vdr.eventing import Tevery
 
 logger = help.ogler.getLogger()
