@@ -21,7 +21,7 @@ from ..kering import (MissingEntryError, UntrustedKeyStateSource,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError,
                       QueryNotFoundError, MisfitEventSourceError,
                       MissingDelegableApprovalError, Version, Versionage,
-                      TraitDex, Vrsn_1_0, Vrsn_2_0, Roles, Schemes)
+                      TraitDex, Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Ilks)
 from ..help import helping, ogler, nowIso8601
 
 from .coring import (versify, Kinds, Ilks, PreDex, DigDex, Kinds,
@@ -390,9 +390,9 @@ def validateSigs(serder, sigers, verfers, tholder):
     return (sigers, valid)
 
 
-def fetchTsgs(db, saider, snh=None):
+def fetchTsgs(db, diger, snh=None):
     """
-    Fetch tsgs for saider from .db.ssgs. When sn then only fetch if sn <= snh
+    Fetch tsgs for diger from .db.ssgs. When sn then only fetch if sn <= snh
     Returns:
         tsgs (list): of tsg quadruple of form (prefixer, seqner, diger, sigers)
             where:
@@ -403,7 +403,7 @@ def fetchTsgs(db, saider, snh=None):
 
     Parameters:
         db: (Cesr
-        saider (Saider): instance of said for reply SAD to which signatures
+        diger (Diger): instance of said for reply SAD to which signatures
             are attached
         snh (str): 32 char zero pad lowercase hex of sequence number f"{sn:032x}"
     """
@@ -412,7 +412,7 @@ def fetchTsgs(db, saider, snh=None):
     tsgs = []  # transferable signature groups
     sigers = []
     old = None  # empty keys
-    for keys, siger in db.getItemIter(keys=(saider.qb64, "")):
+    for keys, siger in db.getItemIter(keys=(diger.qb64, "")):
         trituple = keys[1:]
         if trituple != old:  # new tsg
             if snh is not None and trituple[1] > snh:  # only lower sn
@@ -3858,8 +3858,9 @@ class Kevery:
     TimeoutKSN = 3600  # seconds to timeout key state notice message escrows
     TimeoutQNF = 300   # seconds to timeout query not found escrows
 
-    def __init__(self, *, cues=None, db=None, rvy=None,
-                 lax=True, local=False, cloned=False, direct=True, check=False):
+    def __init__(self, *, cues=None, db=None, rvy=None, exc=None, tvy=None,
+                 kramer=None, lax=True, local=False, cloned=False, direct=True,
+                 check=False):
         """
         Initialize instance:
 
@@ -3867,6 +3868,10 @@ class Kevery:
             cues (Deck)  notices to create responses to evts
             kevers is dict of Kever instances of key state in db
             db (Baser): instance of database
+            rvy (Revery): instance for reply message processing
+            exc (Exchanger): instance for exchange message processing
+            tvy (Tevery): instance for TEL query route processing
+            kramer (Kramer): instance for KRAM processing
             lax (bool): True means operate in promiscuous (unrestricted) mode,
                            False means operate in nonpromiscuous (restricted) mode
                               as determined by local and prefixes
@@ -3887,6 +3892,9 @@ class Kevery:
             db = Baser(reopen=True)  # default name = "main"
         self.db = db
         self.rvy = rvy
+        self.exc = exc          # Exchanger instance for exn messages
+        self.tvy = tvy          # Tevery instance for TEL query routes
+        self.kramer = kramer    # Kramer instance for KRAM processing
         self.lax = True if lax else False  # promiscuous mode
         self.local = True if local else False  # local vs nonlocal default
         self.cloned = True if cloned else False  # process as cloned
@@ -4321,6 +4329,104 @@ class Kevery:
             logger.info(msg)
             logger.debug("event=\n%s\n", serder.pretty())
             raise UnverifiedReceiptError(msg)
+
+    def processMsg(self, serder, **kwa):
+        """Process one non-key-event KERI message with attachments.
+
+        Consolidated entry point for non-event message types:
+        qry, rpy, pro, bar, xip, exn.
+
+        Processing order:
+            1. AID-based allow/deny logic (TBD - placeholder)
+            2. KRAM processing via self.kramer.intake()
+            3. Message-type-specific processing delegation
+
+        Parameters:
+            serder (SerderKERI): message instance
+            **kwa: keyword arguments from parser exts dict (sigers, cigars, tsgs,
+                   ssgs, sscs, ssts, tdcs, wigers, trqs, frcs, ptds, essrs,
+                   bsqs, bsss, tmqs, local, etc.)
+                   Also accepts processor overrides injected by parser:
+                   rvy (Revery), exc (Exchanger), tvy (Tevery)
+        """
+        ilk = serder.ilk
+
+        # Extract processor overrides injected by parser, fall back to self
+        rvy = kwa.pop('rvy', None) or self.rvy
+        exc = kwa.pop('exc', None) or self.exc
+        tvy = kwa.pop('tvy', None) or self.tvy
+
+        # Step 1: AID-based allow/deny (TBD - placeholder for future consolidation)
+
+        # Step 2: KRAM
+        if self.kramer:
+            result = self.kramer.intake(serder, **kwa)
+            if result is None:
+                return  # message dropped or pending in KRAM
+
+        # Step 3: Dispatch to message-specific processing
+        match ilk:
+            case Ilks.qry:
+                # Extract source and sigers from ssgs (like parser originally did)
+                if kwa.get('ssgs'):
+                    pre, sigers = kwa['ssgs'][-1]
+                    kwa['source'] = pre
+                    kwa['sigers'] = sigers
+                else:
+                    kwa['sigers'] = []  # just in case sigers provided not by ssgs
+
+                if not (kwa.get('source') or kwa.get('cigars', [])):
+                    raise ValidationError(
+                        f"Missing attached requester source for query"
+                        f" msg = {serder.pretty()}.")
+
+                route = serder.ked["r"]
+                if route in ["logs", "ksn", "mbx"]:
+                    self.processQuery(serder, **kwa)
+                elif route in ["tels", "tsn"]:
+                    if tvy is None:
+                        raise ValidationError(
+                            f"No tevery to process so dropped msg"
+                            f"={serder.pretty()}")
+                    tvy.processQuery(serder, **kwa)
+                else:
+                    raise ValidationError(
+                        f"Invalid resource type {route}"
+                        f"so dropped msg={serder.pretty()}.")
+
+            case Ilks.rpy:
+                cigars = kwa.get('cigars', [])
+                tsgs = kwa.get('tsgs', [])
+                if not (cigars or tsgs):
+                    raise ValidationError(
+                        f"Missing attached endorser signature(s) "
+                        f"to reply msg = {serder.pretty()}.")
+                if rvy is None:
+                    raise ValidationError(
+                        f"No revery to process so dropped msg"
+                        f"= {serder.pretty()}.")
+                rvy.processReply(serder=serder, **kwa)
+
+            case Ilks.exn:
+                cigars = kwa.get('cigars', [])
+                tsgs = kwa.get('tsgs', [])
+                if not (cigars or tsgs):
+                    raise ValidationError(
+                        f"Missing attached exchanger "
+                        f"signatures for msg={serder.pretty()}")
+                if exc is None:
+                    raise ValidationError(
+                        f"No exchanger to process so "
+                        f"dropped msg={serder.pretty()}.")
+                exc.processEvent(serder=serder, **kwa)
+
+            case Ilks.xip | Ilks.pro | Ilks.bar:
+                raise ValidationError(
+                    f"Message type {ilk} not yet supported in processMsg")
+            case _:
+                raise ValidationError(
+                    f"Unexpected non-event message type {ilk} "
+                    f"for msg={serder.pretty()}")
 
     def processAttachedReceiptCouples(self, serder, cigars, *, firner=None,
                                       local=None, **kwa):
