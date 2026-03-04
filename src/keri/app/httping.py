@@ -7,20 +7,19 @@ import datetime
 import json
 from dataclasses import dataclass
 from urllib import parse
-from pathlib import Path
 
 import falcon
 from hio.base import doing
 from hio.core import http
 from hio.help import Hict
 
-from keri import help
-from keri import kering
-from keri.core import coring, parsing, serdering
-from keri.end import ending
-from keri.help import helping
+from .. import ShortageError, ExtractionError, ColdStartError, sniff
+from ..core import coring, parsing, serdering
+from ..end import ending
+from ..help import helping, ogler
 
-logger = help.ogler.getLogger()
+
+logger = ogler.getLogger()
 
 CESR_CONTENT_TYPE = "application/cesr+json"
 CESR_ATTACHMENT_HEADER = "CESR-ATTACHMENT"
@@ -127,8 +126,8 @@ def createCESRRequest(msg, client, dest, path=None):
 
     try:
         serder = serdering.SerderKERI(raw=msg)
-    except kering.ShortageError as ex:  # need more bytes
-        raise kering.ExtractionError("unable to extract a valid message to send as HTTP")
+    except ShortageError as ex:  # need more bytes
+        raise ExtractionError("unable to extract a valid message to send as HTTP")
     else:  # extracted successfully
         del msg[:serder.size]  # strip off event from front of ims
 
@@ -168,10 +167,10 @@ def streamCESRRequests(client, ims, dest, path=None, headers=None):
     path = path if path is not None else "/"
     path = parse.urljoin(client.requester.path, path)
 
-    cold = kering.sniff(ims)  # check for spurious counters at front of stream
+    cold = sniff(ims)  # check for spurious counters at front of stream
     if cold in (parsing.Colds.txt, parsing.Colds.bny):  # not message error out to flush stream
         # replace with pipelining here once CESR message format supported.
-        raise kering.ColdStartError("Expecting message counter tritet={}"
+        raise ColdStartError("Expecting message counter tritet={}"
                                     "".format(cold))
 
     # Otherwise its a message cold start
@@ -179,8 +178,8 @@ def streamCESRRequests(client, ims, dest, path=None, headers=None):
     while ims:  # extract and deserialize message from ims
         try:
             serder = coring.Sadder(raw=ims)
-        except kering.ShortageError as ex:  # need more bytes
-            raise kering.ExtractionError("unable to extract a valid message to send as HTTP")
+        except ShortageError as ex:  # need more bytes
+            raise ExtractionError("unable to extract a valid message to send as HTTP")
         else:  # extracted successfully
             del ims[:serder.size]  # strip off event from front of ims
 

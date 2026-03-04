@@ -10,10 +10,8 @@ from hio.base import doing
 
 from . import agenting, forwarding
 from .habbing import GroupHab
-from .. import help
-from .. import kering
+from .. import help, ValidationError
 from ..core import coring, serdering
-from ..db import dbing
 from ..peer import exchanging
 
 logger = help.ogler.getLogger()
@@ -59,7 +57,7 @@ class Anchorer(doing.DoDoer):
             auths (list[str]): TOTP authentication codes to send to witnesses to authorize event receipting
         """
         if pre not in self.hby.habs:
-            raise kering.ValidationError(f"{pre} is not a valid local AID for delegation")
+            raise ValidationError(f"{pre} is not a valid local AID for delegation")
 
         if proxy is not None:
             self.proxy = proxy
@@ -69,7 +67,7 @@ class Anchorer(doing.DoDoer):
         hab = self.hby.habs[pre]
         delpre = hab.kever.delpre  # get the delegator identifier
         if delpre not in hab.kevers:
-            raise kering.ValidationError(f"delegator {delpre} not found, unable to process delegation")
+            raise ValidationError(f"delegator {delpre} not found, unable to process delegation")
 
         sn = sn if sn is not None else hab.kever.sner.num
         self.auths = auths if auths is not None else self.auths
@@ -98,7 +96,7 @@ class Anchorer(doing.DoDoer):
             return False
         else:
             if diger and (cdiger.qb64 != diger.qb64):
-                raise kering.ValidationError(f"invalid delegation protocol escrowed event {cdiger.qb64}-{diger.qb64}")
+                raise ValidationError(f"invalid delegation protocol escrowed event {cdiger.qb64}-{diger.qb64}")
 
         return True
 
@@ -191,7 +189,7 @@ class Anchorer(doing.DoDoer):
                 elif self.proxy is not None:
                     phab = self.proxy
                 else:
-                    raise kering.ValidationError("no proxy to send messages for delegation")
+                    raise ValidationError("no proxy to send messages for delegation")
 
                 evt = hab.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
                 srdr = serdering.SerderKERI(raw=evt)

@@ -6,11 +6,10 @@ tests.app.grouping module
 from contextlib import contextmanager
 
 from keri import kering, core
-from keri.kering import Vrsn_1_0, Vrsn_2_0
+from keri.kering import Vrsn_1_0
 from keri.app import habbing, grouping, notifying
 from keri.core import coring, eventing, parsing, serdering
 from keri.vdr import eventing as veventing
-from keri.db import dbing
 from keri.peer import exchanging
 
 

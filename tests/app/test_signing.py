@@ -3,16 +3,11 @@
 tests.app.signing module
 
 """
-from keri import kering, core
-from keri.core import coring, parsing, eventing
-from keri.core.eventing import SealEvent
+from keri import core
 
-from keri.app import habbing, configing, keeping
-from keri.app import signing
-
+from keri.core import coring, eventing
+from keri.app import habbing, keeping
 from keri.db import basing
-from keri.vc import proving
-from keri.vdr import verifying, credentialing
 
 
 

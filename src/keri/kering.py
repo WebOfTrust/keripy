@@ -1039,3 +1039,40 @@ class QueryNotFoundError(KeriError):
         raise QueryNotFoundError("error message")
     """
 
+
+class KramError(KeriError):
+    """
+    Base class for KRAM (KERI Request Authentication Method) errors.
+
+    Usage:
+        raise KramError("error message")
+    """
+
+class KramConfigurationError(KramError):
+    """
+    Error when the configuration of KRAM is invalid
+    Usage:
+        raise KramConfigurationError("error message")
+    """
+
+class MissingAuthAttachmentError(KramError):
+    """
+    Error when a message lacks any authentication attachment (no seal
+    reference and no signatures). The message cannot be processed by
+    KRAM and must be dropped.
+
+    Usage:
+        raise MissingAuthAttachmentError("error message")
+    """
+
+
+class MissingSenderKeyStateError(KramError):
+    """
+    Error when the sender's KEL or required establishment event is not
+    available to determine key state for authentication. Per KRAM spec,
+    the message must be dropped (not escrowed) and a cue generated to
+    retrieve the sender's KEL.
+
+    Usage:
+        raise MissingSenderKeyStateError("error message")
+    """

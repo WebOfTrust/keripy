@@ -7,13 +7,11 @@ import time
 from hio.base import doing, tyming
 
 from keri import kering
-from keri.kering import Vrsn_1_0, Vrsn_2_0
+from keri.kering import Vrsn_1_0
 from keri import core
 from keri.core import eventing, parsing, coring
 
 from keri.app import habbing, delegating, indirecting, agenting, notifying
-
-from keri.db import dbing
 
 
 def test_anchorer(seeder):
