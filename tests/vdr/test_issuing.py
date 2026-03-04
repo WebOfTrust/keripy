@@ -5,9 +5,8 @@ tests.vdr.issuing module
 """
 import pytest
 
-from keri.app import habbing, keeping
-from keri.core import coring
-from keri.core.eventing import SealEvent
+from keri.app import keeping
+from keri.core import coring, SealEvent
 from keri.db import basing
 from keri.vc import proving
 from keri.vdr import credentialing

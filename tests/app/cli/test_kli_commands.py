@@ -11,8 +11,8 @@ from keri.core import coring
 
 from keri.app import directing
 
-from keri.app.cli import commands
-from keri.app.cli.common import existing
+from keri.cli import commands
+from keri.cli.common import existing
 
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))

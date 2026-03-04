@@ -11,15 +11,15 @@ A special purpose Verifiable Data Registry (VDR)
 from dataclasses import dataclass, field, asdict
 from  ordered_set import OrderedSet as oset
 
-from ..db import koming, subing, escrowing
+from ..db import koming, subing, escrowing, dbing, basing, dgKey, snKey
 
-from .. import kering, core
+from .. import MissingEntryError, Vrsn_1_0, Ilks
+from .. import recording
 from ..app import signing
-from ..core import coring, serdering, indexing, counting
-from ..db import dbing, basing
-from ..db.dbing import snKey
-from ..help import helping
-from ..vc import proving
+from ..core import (Counter, Number, Diger, Dater,
+                    Prefixer, Verfer, Cigar, Saider,
+                    Seqner, serdering, indexing,
+                    counting, Codens)
 from ..vdr import eventing
 
 
@@ -48,7 +48,7 @@ class rbdict(dict):
                 raise ex  # reraise KeyError
             try:
                 tever = eventing.Tever(rsr=rsr, db=self.db, reger=self.reger)
-            except kering.MissingEntryError:  # no kel event for keystate
+            except MissingEntryError:  # no kel event for keystate
                 raise ex  # reraise KeyError
             super(rbdict, self).__setitem__(k, tever)
             return tever
@@ -97,7 +97,7 @@ class RegistryRecord:
 
 
 @dataclass
-class RegStateRecord(basing.RawRecord):  # reger.state
+class RegStateRecord(recording.RawRecord):  # reger.state
     """
     Registry Event Log (REL) State information
 
@@ -148,7 +148,7 @@ class RegStateRecord(basing.RawRecord):  # reger.state
 
 
 @dataclass
-class VcStateRecord(basing.RawRecord):
+class VcStateRecord(recording.RawRecord):
     vn: list[str] = field(default_factory=list)  # version number [major, minor] round trip serializable
     i: str = ''  # identifier prefix qb64
     s: str = '0'  # sequence number of latest event in KEL as hex str
@@ -297,13 +297,13 @@ class Reger(dbing.LMDBer):
         self.tvts = subing.Suber(db=self, subkey='tvts.')
         self.tels = subing.OnSuber(db=self, subkey='tels.')
         self.ancs = subing.CatCesrSuber(db=self, subkey='ancs.',
-                        klas=(coring.Number, coring.Diger))
+                        klas=(Number, Diger))
         self.baks = subing.IoDupSuber(db=self, subkey='baks.')
         self.tibs = subing.CesrDupSuber(db=self, subkey='tibs.', klas=indexing.Siger)
         self.oots = subing.OnIoDupSuber(db=self, subkey='oots')
         self.twes = subing.OnIoDupSuber(db=self, subkey='twes')
         self.taes = subing.OnIoDupSuber(db=self, subkey='taes')
-        self.tets = subing.CesrSuber(db=self, subkey='tets.', klas=coring.Dater)
+        self.tets = subing.CesrSuber(db=self, subkey='tets.', klas=Dater)
 
         # Registry state made of RegStateRecord.
         # Each registry has registry event log keyed by registry identifier
@@ -318,7 +318,7 @@ class Reger(dbing.LMDBer):
         # database of anchors to credentials.  prefix is either AID with direct credential
         # anchor or TEL event AID (same as credential SAID) when credential uses revocation registry
         self.cancs = subing.CatCesrSuber(db=self, subkey='cancs.',
-                                         klas=(coring.Prefixer, coring.Number, coring.Diger))
+                                         klas=(Prefixer, Number, Diger))
 
         # all sad path ssgs (sad pathed indexed signature serializations) maps SAD quinkeys
         # given by quintuple (saider.qb64, path, prefixer.qb64, number.qb64, diger.qb64)
@@ -330,23 +330,23 @@ class Reger(dbing.LMDBer):
         # couple (SAD SAID, path) to couple (Verfer, Cigar) of nontrans signer of signature in Cigar
         # nontrans qb64 of Prefixer is same as Verfer
         self.spcgs = subing.CatCesrIoSetSuber(db=self, subkey='scgs.',
-                                              klas=(coring.Verfer, coring.Cigar))
+                                              klas=(Verfer, Cigar))
 
         # Index of credentials processed and saved.  Indicates fully verified (even if revoked)
-        self.saved = subing.CesrSuber(db=self, subkey='saved.', klas=coring.Saider)
+        self.saved = subing.CesrSuber(db=self, subkey='saved.', klas=Saider)
         # Index of credentials by issuer.  My credentials issued, key == hab.pre
-        self.issus = subing.CesrDupSuber(db=self, subkey='issus.', klas=coring.Saider)
+        self.issus = subing.CesrDupSuber(db=self, subkey='issus.', klas=Saider)
         # Index of credentials by subject.  My credentials received, key == hab.pre
-        self.subjs = subing.CesrDupSuber(db=self, subkey='subjs.', klas=coring.Saider)
+        self.subjs = subing.CesrDupSuber(db=self, subkey='subjs.', klas=Saider)
         # Index of credentials by schema
-        self.schms = subing.CesrDupSuber(db=self, subkey='schms.', klas=coring.Saider)
+        self.schms = subing.CesrDupSuber(db=self, subkey='schms.', klas=Saider)
 
         # Missing reegistry escrow
-        self.mre = subing.CesrSuber(db=self, subkey='mre.', klas=coring.Dater)
+        self.mre = subing.CesrSuber(db=self, subkey='mre.', klas=Dater)
         # Broken chain escrow
-        self.mce = subing.CesrSuber(db=self, subkey='mce.', klas=coring.Dater)
+        self.mce = subing.CesrSuber(db=self, subkey='mce.', klas=Dater)
         # Missing schema escrow
-        self.mse = subing.CesrSuber(db=self, subkey='mse.', klas=coring.Dater)
+        self.mse = subing.CesrSuber(db=self, subkey='mse.', klas=Dater)
 
         # Collection of sub-dbs for persisting Registry Txn State Notices
         self.txnsb = escrowing.Broker(db=self, subkey="txn.")
@@ -358,17 +358,17 @@ class Reger(dbing.LMDBer):
 
         # TEL partial witness escrow
         self.tpwe = subing.CatCesrIoSetSuber(db=self, subkey='tpwe.',
-                                             klas=(coring.Prefixer, coring.Number, coring.Diger))
+                                             klas=(Prefixer, Number, Diger))
         # TEL multisig anchor escrow
         self.tmse = subing.CatCesrIoSetSuber(db=self, subkey='tmse.',
-                                             klas=(coring.Prefixer, coring.Number, coring.Diger))
+                                             klas=(Prefixer, Number, Diger))
         # TEL event dissemination escrow
         self.tede = subing.CatCesrIoSetSuber(db=self, subkey='tede.',
-                                             klas=(coring.Prefixer, coring.Number, coring.Saider))
+                                             klas=(Prefixer, Number, Saider))
 
         # Completed TEL event
         self.ctel = subing.CesrSuber(db=self, subkey='ctel.',
-                                     klas=coring.Saider)
+                                     klas=Saider)
 
         # Credential Missing Signature Escrow
         self.cmse = subing.SerderSuber(db=self, subkey="cmse.", klas=serdering.SerderACDC)
@@ -404,7 +404,7 @@ class Reger(dbing.LMDBer):
             iserder = serdering.SerderKERI(raw=iss)
             issatc = bytes(iss[iserder.size:])
             del iss[0:iserder.size]
-            if status.et in [coring.Ilks.rev, coring.Ilks.brv]:
+            if status.et in [Ilks.rev, Ilks.brv]:
                 rev = bytearray(self.cloneTvtAt(creder.said, sn=1))
                 rserder = serdering.SerderKERI(raw=rev)
                 revatc = bytes(rev[rserder.size:])
@@ -418,7 +418,7 @@ class Reger(dbing.LMDBer):
                 if not isinstance(p, dict):
                     continue
 
-                chainSaids.append(coring.Saider(qb64=p["n"]))
+                chainSaids.append(Saider(qb64=p["n"]))
             chains = self.cloneCreds(chainSaids, db)
 
             cred = dict(
@@ -426,8 +426,8 @@ class Reger(dbing.LMDBer):
                 atc=atc.decode("utf-8"),
                 iss=iserder.sad,
                 issatc=issatc.decode("utf-8"),
-                rev=rserder.sad if status.et in [coring.Ilks.rev, coring.Ilks.brv] else None,
-                revatc=revatc.decode("utf-8") if status.et in [coring.Ilks.rev, coring.Ilks.brv] else None,
+                rev=rserder.sad if status.et in [Ilks.rev, Ilks.brv] else None,
+                revatc=revatc.decode("utf-8") if status.et in [Ilks.rev, Ilks.brv] else None,
                 pre=creder.issuer,
                 schema=schemer.sed,
                 chains=chains,
@@ -439,13 +439,13 @@ class Reger(dbing.LMDBer):
                 )
             )
 
-            ctr = core.Counter(qb64b=iss, strip=True, version=kering.Vrsn_1_0)
+            ctr = Counter(qb64b=iss, strip=True, version=Vrsn_1_0)
             if ctr.code == counting.CtrDex_1_0.AttachmentGroup:
-                ctr = core.Counter(qb64b=iss, strip=True, version=kering.Vrsn_1_0)
+                ctr = Counter(qb64b=iss, strip=True, version=Vrsn_1_0)
 
             if ctr.code == counting.CtrDex_1_0.SealSourceCouples:
-                coring.Number(qb64b=iss, strip=True)
-                saider = coring.Saider(qb64b=iss)
+                Number(qb64b=iss, strip=True)
+                saider = Saider(qb64b=iss)
 
                 anc = db.cloneEvtMsg(pre=creder.issuer, fn=0, dig=saider.qb64b)
                 aserder = serdering.SerderKERI(raw=anc)
@@ -453,14 +453,14 @@ class Reger(dbing.LMDBer):
                 cred['anc'] = aserder.sad
                 cred['ancatc'] = ancatc.decode("utf-8"),
 
-            if status.et in [coring.Ilks.rev, coring.Ilks.brv]:
-                ctr = core.Counter(qb64b=rev, strip=True, version=kering.Vrsn_1_0)
+            if status.et in [Ilks.rev, Ilks.brv]:
+                ctr = Counter(qb64b=rev, strip=True, version=Vrsn_1_0)
                 if ctr.code == counting.CtrDex_1_0.AttachmentGroup:
-                    ctr = core.Counter(qb64b=rev, strip=True, version=kering.Vrsn_1_0)
+                    ctr = Counter(qb64b=rev, strip=True, version=Vrsn_1_0)
 
                 if ctr.code == counting.CtrDex_1_0.SealSourceCouples:
-                    coring.Number(qb64b=rev, strip=True)
-                    saider = coring.Saider(qb64b=rev)
+                    Number(qb64b=rev, strip=True)
+                    saider = Saider(qb64b=rev)
 
                     anc = db.cloneEvtMsg(pre=creder.issuer, fn=0, dig=saider.qb64b)
                     aserder = serdering.SerderKERI(raw=anc)
@@ -501,7 +501,7 @@ class Reger(dbing.LMDBer):
 
         creder = self.creds.get(keys=(said,))
         if creder is None:
-            raise kering.MissingEntryError(f"no credential found with said {said}")
+            raise MissingEntryError(f"no credential found with said {said}")
         prefixer, number, saider = self.cancs.get(keys=(said,))
         return creder, prefixer, number, saider
 
@@ -528,22 +528,22 @@ class Reger(dbing.LMDBer):
             yield msg
 
     def cloneTvtAt(self, pre, sn=0):
-        snkey = dbing.snKey(pre, sn)
+        snkey = snKey(pre, sn)
         dig = self.tels.get(keys=snkey)
         return self.cloneTvt(pre, dig)
 
     def cloneTvt(self, pre, dig):
         msg = bytearray()  # message
         atc = bytearray()  # attachments
-        dgkey = dbing.dgKey(pre, dig)  # get message
+        dgkey = dgKey(pre, dig)  # get message
         if not (raw := self.tvts.get(keys=dgkey)):
-            raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
+            raise MissingEntryError("Missing event for dig={}.".format(dig))
         msg.extend(raw.encode("utf-8"))
 
         # add indexed backer signatures to attachments
         if tibs := self.tibs.get(keys=(pre, dig)):
-            atc.extend(core.Counter(core.Codens.WitnessIdxSigs, count=len(tibs),
-                                    version=kering.Vrsn_1_0).qb64b)
+            atc.extend(Counter(Codens.WitnessIdxSigs, count=len(tibs),
+                                    version=Vrsn_1_0).qb64b)
             for tib in tibs:
                 atc.extend(tib.qb64b)
 
@@ -551,10 +551,10 @@ class Reger(dbing.LMDBer):
         couple = self.ancs.get(keys=dgkey)
         if couple is not None:
             number, diger = couple
-            seqner = coring.Seqner(sn=number.sn)
-            saider = coring.Saider(qb64=diger.qb64)
-            atc.extend(core.Counter(core.Codens.SealSourceCouples, count=1,
-                                    version=kering.Vrsn_1_0).qb64b)
+            seqner = Seqner(sn=number.sn)
+            saider = Saider(qb64=diger.qb64)
+            atc.extend(Counter(Codens.SealSourceCouples, count=1,
+                                    version=Vrsn_1_0).qb64b)
             atc.extend(seqner.qb64b)
             atc.extend(saider.qb64b)
 
@@ -562,8 +562,8 @@ class Reger(dbing.LMDBer):
         if len(atc) % 4:
             raise ValueError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
-        pcnt = core.Counter(core.Codens.AttachmentGroup, count=(len(atc) // 4),
-                            version=kering.Vrsn_1_0).qb64b
+        pcnt = Counter(Codens.AttachmentGroup, count=(len(atc) // 4),
+                            version=Vrsn_1_0).qb64b
         msg.extend(pcnt)
         msg.extend(atc)
         return msg
@@ -594,8 +594,8 @@ class Reger(dbing.LMDBer):
         for said in saids:
             screder, prefixer, number, saider = self.cloneCred(said=said)
 
-            atc = bytearray(core.Counter(core.Codens.SealSourceTriples, count=1,
-                                         version=kering.Vrsn_1_0).qb64b)
+            atc = bytearray(Counter(Codens.SealSourceTriples, count=1,
+                                         version=Vrsn_1_0).qb64b)
             atc.extend(prefixer.qb64b)
             atc.extend(number.qb64b)
             atc.extend(saider.qb64b)
@@ -619,14 +619,14 @@ def buildProof(prefixer, seqner, diger, sigers):
     """
 
     prf = bytearray()
-    prf.extend(core.Counter(core.Codens.TransIdxSigGroups, count=1,
-                            version=kering.Vrsn_1_0).qb64b)
+    prf.extend(Counter(Codens.TransIdxSigGroups, count=1,
+                            version=Vrsn_1_0).qb64b)
     prf.extend(prefixer.qb64b)
     prf.extend(seqner.qb64b)
     prf.extend(diger.qb64b)
 
-    prf.extend(core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                            version=kering.Vrsn_1_0).qb64b)
+    prf.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
+                            version=Vrsn_1_0).qb64b)
     for siger in sigers:
         prf.extend(siger.qb64b)
 
@@ -649,8 +649,8 @@ def messagize(creder, proof):
     if len(proof) % 4:
         raise ValueError("Invalid attachments size={}, nonintegral"
                          " quadlets.".format(len(proof)))
-    craw.extend(core.Counter(core.Codens.AttachmentGroup, count=(len(proof) // 4),
-                             version=kering.Vrsn_1_0).qb64b)
+    craw.extend(Counter(Codens.AttachmentGroup, count=(len(proof) // 4),
+                             version=Vrsn_1_0).qb64b)
     craw.extend(proof)
 
     return craw

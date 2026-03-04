@@ -13,6 +13,7 @@ from keri.core import eventing, parsing, coring, Verser
 from keri.core.kraming import Kramer, AuthTypes
 from keri.app import habbing, configing
 from keri.db import basing
+from keri.recording import TxnMsgCacheRecord
 from keri.help import helping
 
 
@@ -1245,7 +1246,7 @@ def test_transactioned(mockHelpingNowUTC):
             # xl=300000ms = 5min. xdt = 10min ago -> now > xdt + 5min
             oldXdt = "2020-12-31T23:50:00.000000+00:00"  # 10 min before mocked now
             oldXipSaid = "E" + "C" * 43  # fabricated xip SAID for this test
-            seedRecord = basing.TxnMsgCacheRecord(
+            seedRecord = TxnMsgCacheRecord(
                 mdt=oldXdt, xdt=oldXdt, d=1000, ml=5000, pml=5000,
                 xl=300000, pxl=300000)
             receiverHby.db.tmsc.pin(keys=(skHab.pre, oldXipSaid, oldXipSaid),

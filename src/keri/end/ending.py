@@ -19,13 +19,12 @@ import falcon
 from hio import base
 from hio.core import http, wiring
 
-from .. import help
 from .. import kering
 from ..app import habbing
 from ..core import coring, indexing
-from ..help import helping
+from ..help import helping, ogler
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 Mimage = namedtuple("Mimage", "json mgpk cbor cesr")
 

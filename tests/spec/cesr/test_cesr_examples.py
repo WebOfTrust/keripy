@@ -3,19 +3,11 @@
 tests.spec.cesr.test_cesr_example module
 
 """
-from base64 import urlsafe_b64encode as encodeB64
-from base64 import urlsafe_b64decode as decodeB64
 import json
 
-import pytest
+from keri.core import (Salter, Diger, Counter,
+                       Codens, Seqner, Pather)
 
-from ordered_set import OrderedSet as oset
-
-from keri import Vrsn_2_0, Kinds, Protocols, Ilks, TraitDex
-from keri.core import (MtrDex, Salter, Signer, Diger, Noncer, Number, Structor,
-                       SealEvent, SealSource, Counter, Codens, Seqner, Pather)
-from keri.core import (incept, interact, rotate, delcept, deltate, receipt,
-                       query, reply, prod, bare, exchept, exchange)
 from keri.acdc import acdcmap
 
 def test_cesr_examples():

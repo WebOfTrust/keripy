@@ -24,11 +24,12 @@ from . import (GroupHab, directing, storing,
 from ..core import (eventing, parsing, routing, coring, serdering,
                     Counter, Codens)
 from ..app import oobiing
-from ..db import basing
+from ..db import BaserDoer
 from ..end import ending
 from ..help import helping, ogler
 from ..peer import exchanging
 from ..vdr import Tevery, verifying, viring
+from ..recording import TopicsRecord
 
 logger = ogler.getLogger()
 
@@ -98,7 +99,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     httpServerDoer = http.ServerDoer(server=server)
 
     # setup doers
-    regDoer = basing.BaserDoer(baser=verfer.reger)
+    regDoer = BaserDoer(baser=verfer.reger)
 
     if tcpPort is not None:
         server = serving.Server(host="", port=tcpPort)
@@ -771,7 +772,7 @@ class Poller(doing.DoDoer):
 
         witrec = self.hab.db.tops.get((self.pre, self.witness))
         if witrec is None:
-            witrec = basing.TopicsRecord(topics=dict())
+            witrec = TopicsRecord(topics=dict())
 
         while self.retry > 0:
             try:

@@ -12,21 +12,15 @@ import msgpack
 
 import pytest
 
-from keri import kering
-from keri.kering import Protocolage, Protocols
-from keri.kering import Kindage,  Kinds
-from keri.kering import Ilkage, Ilks
-from keri.kering import ColdCodex, ColdDex, TraitCodex, TraitDex
-from keri.kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0, MAXVERFULLSPAN,
-                         versify, deversify, Rever, Smellage, smell,
-                         VER1FULLSPAN, VER1TERM, VEREX1,
-                         VER2FULLSPAN, VER2TERM, VEREX2,
-                         VEREX)
-
-
-from keri.kering import VersionError, ProtocolError, KindError
-from keri.help.helping import (intToB64, intToB64b, b64ToInt, B64_CHARS,
-                         codeB64ToB2, codeB2ToB64, Reb64, nabSextets)
+from keri import (Protocols, ColdDex, TraitDex, Kinds,
+                  Version, Vrsn_1_0, Vrsn_2_0, Rever,
+                  versify, deversify, smell,
+                  MAXVERFULLSPAN,
+                  VER1FULLSPAN, VER1TERM, VEREX,
+                  VER2FULLSPAN, VER2TERM, VEREX2,
+                  Protocolage, Ilkage, ColdCodex,TraitCodex, Kindage,
+                  Versionage, Smellage,
+                  VersionError, ProtocolError, KindError)
 
 
 def test_protocols():

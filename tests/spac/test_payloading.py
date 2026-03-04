@@ -7,8 +7,8 @@ tests.spac.test_payloading module
 import pytest
 from base64 import urlsafe_b64decode as decodeB64
 
-from keri.kering import EmptyMaterialError, InvalidSoftError, InvalidCodeError
-from keri.core.coring import MtrDex
+from keri import EmptyMaterialError, InvalidSoftError, InvalidCodeError
+from keri.core import MtrDex
 from keri.spac.payloading import PayloadTypage, PayloadTyper, PayloadTypes
 
 

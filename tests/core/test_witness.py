@@ -11,7 +11,7 @@ from keri.core import Salter, eventing, parsing, serdering, coring
 from keri.kering import Vrsn_1_0
 from keri.app import habbing
 
-from keri.db import dbing
+from keri.db import dgKey, snKey
 
 logger = help.ogler.getLogger()
 
@@ -375,8 +375,8 @@ def test_nonindexed_witness_receipts():
         # send receipts one at a time to Van to escrow. Van not yet recieved
         # icp event from Cam so not accepted Cam's pre
         # compute keys for latest event in Cam's key state
-        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
-        snkey = dbing.snKey(pre=camHab.pre, sn=camHab.kever.serder.sn)      # for cntPwes, cntWigs, etc.
+        dgkey = dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
+        snkey = snKey(pre=camHab.pre, sn=camHab.kever.serder.sn)      # for cntPwes, cntWigs, etc.
         # Van process rct msgs from all witnesses for Cam's icp message
         for i, msg in enumerate(rctMsgs):
             parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vanKvy, local=True)
@@ -435,8 +435,8 @@ def test_nonindexed_witness_receipts():
         # send receipts one at a time to Van to escrow.
         # Van not yet recieved ixn event from Cam but has accept icp event
         # compute keys for latest event in Cam's key state
-        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
-        snkey = dbing.snKey(pre=camHab.pre, sn=camHab.kever.serder.sn)      # for cntPwes, cntWigs, etc.
+        dgkey = dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
+        snkey = snKey(pre=camHab.pre, sn=camHab.kever.serder.sn)      # for cntPwes, cntWigs, etc.
         # Van process rct msgs from all witnesses for Cam's ixn message
         for i, msg in enumerate(rctMsgs):
             parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vanKvy, local=True)
@@ -517,8 +517,8 @@ def test_nonindexed_witness_receipts():
         # send receipts one at a time to Van to escrow.
         # Van not yet recieved rot event from Cam but has accepted icp & ixn events
         # compute keys for latest event in Cam's key state
-        dgkey = dbing.dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
-        snkey = dbing.snKey(pre=camHab.pre, sn=camHab.kever.serder.sn)      # for cntPwes, cntWigs, etc.
+        dgkey = dgKey(pre=camHab.pre, dig=camHab.kever.serder.said)
+        snkey = snKey(pre=camHab.pre, sn=camHab.kever.serder.sn)      # for cntPwes, cntWigs, etc.
         # Van process rct msgs from all witnesses for Cam's ixn message
         for i, msg in enumerate(rctMsgs):
             parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vanKvy, local=True)
@@ -632,4 +632,3 @@ if __name__ == "__main__":
     test_indexed_witness_replay()
     test_nonindexed_witness_receipts()
     test_out_of_order_witnessed_events()
-

@@ -5,25 +5,22 @@ tests.vc.proving module
 """
 import pytest
 
-from keri import kering
-from keri.kering import Versionage, Vrsn_1_0, Vrsn_2_0
+from keri import InvalidValueError, Versionage, Vrsn_1_0, Kinds
+from keri.core import (Prefixer, Seqner, Diger, Siger,
+                       Salter, Counter, coring, scheming,
+                       parsing, serdering, counting, Codens)
 
-from keri import core
-from keri.core import coring, scheming, parsing, serdering
-from keri.core import counting, Counter, Codens
-from keri.core.coring import Kinds, Prefixer, Seqner, Diger
-from keri.core.indexing import Siger
 from keri.core.scheming import CacheResolver
 
 from keri.app import habbing
-from keri.vc.proving import credential
+from keri.vc import credential
 from keri.vdr import verifying, credentialing
 
 
 def test_proving(mockHelpingNowIso8601):
     """Test credential proof with SerderACDC"""
 
-    sidSalt = core.Salter(raw=b'0123456789abcdef').qb64
+    sidSalt = Salter(raw=b'0123456789abcdef').qb64
 
     with habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby:
         sidHab = sidHby.makeHab(name="test", )
@@ -114,7 +111,7 @@ def test_proving(mockHelpingNowIso8601):
 def test_credentialer():
     """Test SerderACDC as credential"""
 
-    with pytest.raises(kering.InvalidValueError):
+    with pytest.raises(InvalidValueError):
         serdering.SerderACDC()  # Creder()
 
     sub = dict(a=123, b="abc", issuanceDate="2021-06-27T21:26:21.233257+00:00")
@@ -256,8 +253,8 @@ def test_privacy_preserving_credential(mockHelpingNowIso8601):
     cred = credential(schema="EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
                       recipient="EM_S2MdMaKgP6P2Yyno6-flV6GqrwPencTIw8tCMR7iB",
                       private=True,
-                      private_credential_nonce=core.Salter(raw=b'0123456789abcdef').qb64,
-                      private_subject_nonce=core.Salter(raw=b'abcdef0123456789').qb64,
+                      private_credential_nonce=Salter(raw=b'0123456789abcdef').qb64,
+                      private_subject_nonce=Salter(raw=b'abcdef0123456789').qb64,
                       issuer="EMZeK1yLZd1JV6Ktdq_YUt-YbyoTWB9UMcFzuiDly2Y6",
                       data=d, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
 

@@ -4,6 +4,15 @@
 ### Backwards breaking interface changes
 Changes to call signatures that will break dependent libraries
 
+#### keri.app.grouping.py
+Changed `complete(self, prefixer, seqner, saider=None)` to `complete(self, prefixer, number, diger=None)`.
+Renamed `seqner` and `saider` parameter to `number` and `diger` to match the actual type (`Number`, `Diger`) being
+passed. All callers functions in `test_grouping.py` are updated.
+
+## 2.0.0-dev5
+### Backwards breaking interface changes
+Changes to call signatures that will break dependent libraries
+
 #### keri.app.delegating.py
 Changed `start(self, ghab, prefixer, seqner, saider)` to `start(self, ghab, prefixer, number, diger)`.
 Changed `startCounselor(self, hab, prefixer, seqner, saider)` to `startCounselor(self, hab, prefixer, number, diger)`.

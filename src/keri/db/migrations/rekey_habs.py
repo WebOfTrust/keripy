@@ -1,6 +1,7 @@
 from dataclasses import dataclass, field, asdict
 
-from keri.db import koming, basing
+from .. import koming, basing
+from ...recording import HabitatRecord
 
 
 @dataclass
@@ -67,7 +68,7 @@ def migrate(db):
     # Update Hab records from .habs with name
     for name, habord in habs.getItemIter():
         name = ".".join(name)  # detupleize the database key name
-        nhabord = basing.HabitatRecord(**habord)
+        nhabord = HabitatRecord(**habord)
         nhabord.name = name
         habords[habord['hid']] = nhabord
 
@@ -77,7 +78,7 @@ def migrate(db):
     for keys, habord in nmsp.getItemIter():
         ns = keys[0]
         name = ".".join(keys[1:])  # detupleize the database key name
-        nhabord = basing.HabitatRecord(**asdict(habord))
+        nhabord = HabitatRecord(**asdict(habord))
         nhabord.name = name
         nhabord.domain = ns
         habords[habord['hid']] = nhabord

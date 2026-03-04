@@ -11,7 +11,7 @@ from keri import core
 from keri.app import watching, habbing
 from keri.app.watching import DiffState
 from keri.core import coring
-from keri.db.basing import KeyStateRecord, ObservedRecord
+from keri.recording import KeyStateRecord, ObservedRecord
 
 
 def test_diffstate():

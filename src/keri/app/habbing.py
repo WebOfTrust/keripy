@@ -13,13 +13,14 @@ from hio.help import hicting
 
 from ..peer import exchanging
 from . import keeping, configing
-from ..db import dbing, basing
+from ..db import Baser, dgKey
 from ..help import ogler, fromIso8601, toIso8601
 from .. import (Vrsn_1_0, ClosedError, AuthError,
                 ConfigurationError, ValidationError, MissingEntryError,
                 KeriError, MissingSignatureError, Roles, Schemes)
 from ..core import (coring, eventing, parsing, routing,
                     Counter, Salter, Codens)
+from ..recording import EndpointRecord, HabitatRecord, LocationRecord, OobiRecord
 
 
 logger = ogler.getLogger()
@@ -209,12 +210,12 @@ class Habery:
                                                            reopen=True,
                                                            clear=clear,
                                                            headDirPath=headDirPath)
-        self.db = db if db is not None else basing.Baser(name=self.name,
-                                                         base=self.base,
-                                                         temp=self.temp,
-                                                         reopen=True,
-                                                         clear=clear,
-                                                         headDirPath=headDirPath)
+        self.db = db if db is not None else Baser(name=self.name,
+                                                  base=self.base,
+                                                  temp=self.temp,
+                                                  reopen=True,
+                                                  clear=clear,
+                                                  headDirPath=headDirPath)
         self.cf = cf if cf is not None else configing.Configer(name=self.name,
                                                                base=self.base,
                                                                temp=self.temp,
@@ -517,7 +518,7 @@ class Habery:
                        name=group, ns=ns, mhab=mhab, smids=smids, rmids=rmids, temp=self.temp)
 
         hab.pre = pre
-        habord = basing.HabitatRecord(hid=hab.pre,
+        habord = HabitatRecord(hid=hab.pre,
                                       name=self.name,
                                       domain=ns,
                                       mid=mhab.pre,
@@ -596,7 +597,7 @@ class Habery:
                               name=name, mhab=mhab, smids=smids, rmids=rmids, ns=ns, temp=self.temp)
 
         hab.pre = pre
-        habord = basing.HabitatRecord(hid=hab.pre,
+        habord = HabitatRecord(hid=hab.pre,
                                       sid=mhab.pre,
                                       name=name,
                                       domain=ns,
@@ -771,15 +772,15 @@ class Habery:
             dt = fromIso8601(conf["dt"])  # raises error if not convert
             if "iurls" in conf:  # process OOBI URLs
                 for oobi in conf["iurls"]:
-                    obr = basing.OobiRecord(date=toIso8601(dt))
+                    obr = OobiRecord(date=toIso8601(dt))
                     self.db.oobis.put(keys=(oobi,), val=obr)
             if "durls" in conf:  # process OOBI URLs
                 for oobi in conf["durls"]:
-                    obr = basing.OobiRecord(date=toIso8601(dt))
+                    obr = OobiRecord(date=toIso8601(dt))
                     self.db.oobis.put(keys=(oobi,), val=obr)
             if "wurls" in conf:  # well known OOBI URLs for MFA
                 for oobi in conf["wurls"]:
-                    obr = basing.OobiRecord(date=toIso8601(dt))
+                    obr = OobiRecord(date=toIso8601(dt))
                     self.db.woobi.put(keys=(oobi,), val=obr)
 
     @property
@@ -1573,7 +1574,7 @@ class BaseHab:
                                            "".format(pre, sn))
         dig = dig.encode("utf-8")
         dig = bytes(dig)
-        key = dbing.dgKey(pre, dig)  # digest key
+        key = dgKey(pre, dig)  # digest key
         serder = self.db.evts.get(keys=(pre, dig))
         msg.extend(serder.raw)
         msg.extend(Counter(Codens.ControllerIdxSigs, count=self.db.sigs.cnt(keys=(pre, dig)),
@@ -1586,7 +1587,7 @@ class BaseHab:
     def fetchEnd(self, cid: str, role: str, eid: str):
         """
         Returns:
-            endpoint (basing.EndpointRecord): instance or None
+            endpoint (EndpointRecord): instance or None
         """
         return self.db.ends.get(keys=(cid, role, eid))
 
@@ -1594,7 +1595,7 @@ class BaseHab:
     def fetchLoc(self, eid: str, scheme: str = Schemes.http):
         """
         Returns:
-            location (basing.LocationRecord): instance or None
+            location (LocationRecord): instance or None
         """
         return self.db.locs.get(keys=(eid, scheme))
 
@@ -2117,7 +2118,7 @@ class BaseHab:
                 logger.debug(f"event=\n{cuedSerder.pretty()}\n")
 
                 if cuedKed["t"] == coring.Ilks.icp:
-                    dgkey = dbing.dgKey(self.pre, self.iserder.said)
+                    dgkey = dgKey(self.pre, self.iserder.said)
                     found = False
                     if cuedPrefixer.transferable:  # find if have rct from other pre for own icp
                         for sprefixer, snumber, sdiger, siger in self.db.vrcs.getIter(dgkey):
@@ -2300,7 +2301,7 @@ class Hab(BaseHab):
         self.mgr.move(old=opre, new=self.pre)  # move to incept event pre
 
         # may want db method that updates .habs. and .prefixes together
-        habord = basing.HabitatRecord(hid=self.pre, name=self.name, domain=self.ns)
+        habord = HabitatRecord(hid=self.pre, name=self.name, domain=self.ns)
 
         # must add self.pre to self.prefixes before calling processEvent so that
         # Kever.locallyOwned or Kever.locallyDelegated or Kever.locallyWitnessed
@@ -2391,7 +2392,7 @@ class SignifyHab(BaseHab):
 
         self.processEvent(serder, sigers)
 
-        habord = basing.HabitatRecord(hid=self.pre, sid=self.pre, name=self.name, domain=self.ns)
+        habord = HabitatRecord(hid=self.pre, sid=self.pre, name=self.name, domain=self.ns)
         self.save(habord)
 
         self.inited = True
@@ -2553,7 +2554,7 @@ class SignifyGroupHab(SignifyHab):
 
         self.processEvent(serder, sigers)
 
-        habord = basing.HabitatRecord(hid=self.pre, mid=self.mhab.pre, smids=self.smids, rmids=self.rmids,
+        habord = HabitatRecord(hid=self.pre, mid=self.mhab.pre, smids=self.smids, rmids=self.rmids,
                                       sid=self.pre, name=self.name, domain=self.ns)
         self.save(habord)
 
@@ -2744,7 +2745,7 @@ class GroupHab(BaseHab):
         # sign handles group hab with .mhab case
         sigers = self.sign(ser=serder.raw, verfers=verfers)
 
-        habord = basing.HabitatRecord(hid=self.pre,
+        habord = HabitatRecord(hid=self.pre,
                                       mid=self.mhab.pre,
                                       name=self.name,
                                       domain=self.ns,

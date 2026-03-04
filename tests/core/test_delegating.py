@@ -166,9 +166,9 @@ def test_delegation():
         assert delK.serder.said == delSrdr.said
         result = delKvy.db.aess.get(keys=(delPre, delSrdr.said))
         assert result is not None
-        rseqner, rsaider = result
-        assert rseqner.qb64b == seqner.qb64b
-        assert rsaider.qb64b == bobSrdr.saidb
+        rnumber, rdiger = result
+        assert rnumber.qb64b == seqner.qb64b
+        assert rdiger.qb64b == bobSrdr.saidb
 
         # apply Del's delegated inception event message to bob's Kevery
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
@@ -179,9 +179,9 @@ def test_delegation():
         assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
         result = bobKvy.db.aess.get(keys=(delPre, delSrdr.said))
         assert result is not None
-        rseqner, rsaider = result
-        assert rseqner.qb64b == seqner.qb64b
-        assert rsaider.qb64b == bobSrdr.saidb
+        rnumber, rdiger = result
+        assert rnumber.qb64b == seqner.qb64b
+        assert rdiger.qb64b == bobSrdr.saidb
 
         # Setup Del rotation event assuming that Bob's next event will be an ixn delegating event
         verfers, digers = delMgr.rotate(pre=delPre, temp=True)
@@ -263,9 +263,9 @@ def test_delegation():
         assert delK.serder.said == delSrdr.said
         result = delKvy.db.aess.get(keys=(delPre, delSrdr.said))
         assert result is not None
-        rseqner, rsaider = result
-        assert rseqner.qb64b == seqner.qb64b
-        assert rsaider.qb64b == bobSrdr.saidb
+        rnumber, rdiger = result
+        assert rnumber.qb64b == seqner.qb64b
+        assert rdiger.qb64b == bobSrdr.saidb
 
         # apply Del's delegated inception event message to bob's Kevery
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
@@ -274,9 +274,9 @@ def test_delegation():
         assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
         result = delKvy.db.aess.get(keys=(delPre, delSrdr.said))
         assert result is not None
-        rseqner, rsaider = result
-        assert rseqner.qb64b == seqner.qb64b
-        assert rsaider.qb64b == bobSrdr.saidb
+        rnumber, rdiger = result
+        assert rnumber.qb64b == seqner.qb64b
+        assert rdiger.qb64b == bobSrdr.saidb
 
         # test replay
         msgs = bytearray()
@@ -616,9 +616,9 @@ def test_delegation_supersede():
         assert delK.serder.said == delSrdr.said
         result = delKvy.db.aess.get(keys=(delPre, delSrdr.said))
         assert result is not None
-        rseqner, rsaider = result
-        assert rseqner.qb64b == seqner.qb64b
-        assert rsaider.qb64b == bobSrdr.saidb
+        rnumber, rdiger = result
+        assert rnumber.qb64b == seqner.qb64b
+        assert rdiger.qb64b == bobSrdr.saidb
 
         # apply Del's delegated inception event message to bob's Kevery
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
@@ -629,9 +629,9 @@ def test_delegation_supersede():
         assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
         result = bobKvy.db.aess.get(keys=(delPre, delSrdr.said))
         assert result is not None
-        rseqner, rsaider = result
-        assert rseqner.qb64b == seqner.qb64b
-        assert rsaider.qb64b == bobSrdr.saidb
+        rnumber, rdiger = result
+        assert rnumber.qb64b == seqner.qb64b
+        assert rdiger.qb64b == bobSrdr.saidb
 
         # Setup Del rotation event assuming that Bob's next event will be an ixn delegating event
         verfers, digers = delMgr.rotate(pre=delPre, temp=True)
@@ -713,9 +713,9 @@ def test_delegation_supersede():
         assert delK.serder.said == delSrdr.said
         result = delKvy.db.aess.get(keys=(delPre, delSrdr.said))
         assert result is not None
-        rseqner, rsaider = result
-        assert rseqner.qb64b == seqner.qb64b
-        assert rsaider.qb64b == bobSrdr.saidb
+        rnumber, rdiger = result
+        assert rnumber.qb64b == seqner.qb64b
+        assert rdiger.qb64b == bobSrdr.saidb
 
         # apply Del's delegated inception event message to bob's Kevery
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
@@ -724,9 +724,9 @@ def test_delegation_supersede():
         assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
         result = delKvy.db.aess.get(keys=(delPre, delSrdr.said))
         assert result is not None
-        rseqner, rsaider = result
-        assert rseqner.qb64b == seqner.qb64b
-        assert rsaider.qb64b == bobSrdr.saidb
+        rnumber, rdiger = result
+        assert rnumber.qb64b == seqner.qb64b
+        assert rdiger.qb64b == bobSrdr.saidb
 
         # test replay
         msgs = bytearray()

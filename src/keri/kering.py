@@ -594,8 +594,8 @@ class InvalidVarRawSizeError(InvalidSizeError):
         raise InvalidRawSizeError("error message")
     """
 
-# Errors serializing messages
 
+# Errors serializing messages
 class SerializeError(KeriError):
     """
     Message creation and serialization errors
@@ -603,7 +603,6 @@ class SerializeError(KeriError):
     Usage:
         raise MessageError("error message")
     """
-
 
 
 # Errors validating  event messages and attachements
@@ -719,6 +718,7 @@ class DerivationError(ValidationError):
         raise DerivationError("error message")
     """
 
+
 class UnverifiedReplyError(ValidationError):
     """
     Error Reply message not verified usually missing sigs
@@ -726,12 +726,14 @@ class UnverifiedReplyError(ValidationError):
         raise UnverifiedReplyError("error message")
     """
 
+
 class EmptyListError(ValidationError):
     """
     Error Required non empty list is empty
     Usage:
         raise EmptyListError("error message")
     """
+
 
 class MissingAnchorError(ValidationError):
     """
@@ -788,6 +790,7 @@ class OutOfOrderTxnStateError(ValidationError):
         raise OutOfOrderTxnStateError("error message")
     """
 
+
 class MisfitEventSourceError(ValidationError):
     """
     Error referenced event missing from log so can't verify this txn state event
@@ -795,13 +798,13 @@ class MisfitEventSourceError(ValidationError):
         raise MisfitEventSourceError("error message")
     """
 
+
 class MissingDelegableApprovalError(ValidationError):
     """
     Error referenced event missing from log so can't verify this txn state event
     Usage:
         raise MissingDelegableApprovalError("error message")
     """
-
 
 
 # Stream Parsing and Extraction Errors
@@ -839,6 +842,7 @@ class SizedGroupError(ExtractionError):
         raise SizedGroupError("error message")
     """
 
+
 class TopLevelStreamError(ExtractionError):
     """
     Error while extracting top level of stream
@@ -856,6 +860,7 @@ class VersionError(ExtractionError):
         raise VersionError("error message")
     """
 
+
 class ProtocolError(ExtractionError):
     """
     Bad or Unsupported Protocol type
@@ -863,6 +868,7 @@ class ProtocolError(ExtractionError):
     Usage:
         raise ProtocolError("error message")
     """
+
 
 class KindError(ExtractionError):
     """
@@ -872,6 +878,7 @@ class KindError(ExtractionError):
         raise KindError("error message")
     """
 
+
 class IlkError(ExtractionError):
     """
     Bad or Unsupported Message Type (Ilk)
@@ -879,6 +886,7 @@ class IlkError(ExtractionError):
     Usage:
         raise IlkError("error message")
     """
+
 
 class ConversionError(ExtractionError):
     """
@@ -888,6 +896,7 @@ class ConversionError(ExtractionError):
         raise ConversionError("error message")
 
     """
+
 
 class DeserializeError(ExtractionError):
     """
@@ -904,6 +913,7 @@ class FieldError(DeserializeError):
         raise FieldError("error message")
 
     """
+
 
 class ElementError(DeserializeError):
     """
@@ -945,10 +955,7 @@ class UnexpectedOpCodeError(DerivationCodeError):
     """
 
 
-
-
 # Other errors
-
 class ExchangeError(KeriError):
     """
     Error handling an `exn` message
@@ -979,6 +986,7 @@ class InvalidGroupError(KeriError):
     Usage:
         raise InvalidGroupError("error message")
     """
+
 
 class GroupFormationError(KeriError):
     """
