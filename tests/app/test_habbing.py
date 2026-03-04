@@ -1046,6 +1046,51 @@ def test_postman_endsfor():
         }
 
 
+def test_join_group_hab_name():
+    """Test that joinGroupHab stores the group name, not the Habery name.
+
+    Regression test for https://github.com/WebOfTrust/keripy/issues/1264
+    Before the fix, HabitatRecord.name was set to self.name (the Habery's
+    name) instead of hab.name (the group alias passed as `group`).
+    After reload via loadHabs the group hab would have the wrong name.
+    """
+    salt = b'0123456789abcdef'
+    prefix = "test_group"
+    with habbing.openHab(name=f"{prefix}_1", salt=salt, transferable=True) as (hby1, hab1), \
+            habbing.openHab(name=f"{prefix}_2", salt=salt, transferable=True) as (hby2, hab2):
+
+        # Exchange inception events so each Habery knows the other's KEL
+        kev1 = eventing.Kevery(db=hab1.db, lax=True, local=False)
+        kev2 = eventing.Kevery(db=hab2.db, lax=True, local=False)
+
+        icp1 = hab1.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(icp1), kvy=kev2, local=True)
+        icp2 = hab2.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(icp2), kvy=kev1, local=True)
+
+        smids = [hab1.pre, hab2.pre]
+        rmids = None
+        inits = dict(isith='["1/2", "1/2"]', nsith='["1/2", "1/2"]', toad=0, wits=[])
+
+        # Member 1 creates the group
+        ghab1 = hby1.makeGroupHab(group=f"{prefix}_group1", mhab=hab1,
+                                  smids=smids, rmids=rmids, **inits)
+
+        # Member 2 joins the group (this is the code path with the bug)
+        group_name = f"{prefix}_group2"
+        ghab2 = hby2.joinGroupHab(pre=ghab1.pre, group=group_name,
+                                  mhab=hab2, smids=smids, rmids=smids)
+
+        # Verify the in-memory name is correct
+        assert ghab2.name == group_name
+
+        # Verify the persisted HabitatRecord has the group name, not the Habery name
+        habord = hby2.db.habs.get(keys=(ghab2.pre,))
+        assert habord is not None
+        assert habord.name == group_name
+        assert habord.name != hby2.name  # must NOT be the Habery name
+
+
 if __name__ == "__main__":
     pass
     test_habery()
