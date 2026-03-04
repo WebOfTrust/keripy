@@ -2009,6 +2009,16 @@ def test_ioset_suber():
                         (('test_key', '0002'), 'Not my type.'),
                         (('test_key', '0002'), 'A real charmer!')]
 
+        assert iosuber.put(keys=keys0, vals=vals0)
+        assert iosuber.put(keys=keys1, vals=vals1)
+        assert iosuber.cnt() == 10
+        assert iosuber.cnt(keys=keys0) == 5
+        assert iosuber.cnt(keys=keys1) == 5
+        assert iosuber.rem(keys=keys0)
+        assert iosuber.cnt(keys=keys0) == 0
+        assert iosuber.trim()  # removes whole db
+        assert iosuber.cnt() == 0
+
 
         # test with keys as string not tuple
         keys2 = "keystr"

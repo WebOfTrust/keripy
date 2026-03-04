@@ -1298,7 +1298,7 @@ class LMDBer(filing.Filer):
     def remIoSetVal(self, db, key, val=None, *, sep=b'.'):
         """Removes val if any as member of set at key if any.
         When value is None then removes all set members at key
-        When key is empty or None or missing returns False.
+        When key is empty or missing returns False.
         Uses hidden ordinal key suffix for insertion ordering.
            The suffix is suffixed and unsuffixed transparently.
 
@@ -1346,6 +1346,7 @@ class LMDBer(filing.Filer):
                     if val == cval:
                         return cursor.delete()  # delete also moves to next so doubly moved
             return False
+
 
 
     def cntIoSet(self, db, key, *, ion=0, sep=b'.'):
@@ -2019,6 +2020,7 @@ class LMDBer(filing.Filer):
                 iokey = suffix(onkey, 0) # walk hidden branches starting from zero
 
             last = None
+
             if cursor.set_range(iokey):  # not past end of database
                 for ciokey, cval in cursor.iternext():  # get iokey, val at cursor
                     conkey, cion = unsuffix(ciokey, sep=sep)
@@ -2327,7 +2329,8 @@ class LMDBer(filing.Filer):
 
 
     def cntVals(self, db, key):
-        """
+        """Counts dup values at key in db.
+
         Return count of dup values at key in db, or zero otherwise
 
         Parameters:

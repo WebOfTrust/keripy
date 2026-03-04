@@ -352,14 +352,7 @@ class SuberBase():
         """
         return self.db.cntAll(db=self.sdb)
 
-
-    def cntAll(self):
-        """Counts all the entries in subdb.
-
-        Returns:
-            cnt (int): count of all entries in sdb
-        """
-        return self.db.cntAll(db=self.sdb)
+    cntAll = cnt  # migration alias for backward compt
 
 
 class Suber(SuberBase):
@@ -445,8 +438,7 @@ class Suber(SuberBase):
 
 
     def rem(self, keys: Union[str, Iterable]):
-        """
-        Removes entry at keys
+        """Removes entry at keys
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -1269,7 +1261,7 @@ class IoSetSuber(SuberBase):
 
         """
         if not isNonStringIterable(vals):  # not iterable
-            vals = (vals, )  # make iterable
+            vals = (vals, ) if vals else ()  # make iterable
         return (self.db.putIoSetVals(db=self.sdb,
                                      key=self._tokey(keys),
                                      vals=[self._ser(val) for val in vals],
@@ -1277,24 +1269,24 @@ class IoSetSuber(SuberBase):
 
 
     def pin(self, keys: str|bytes|memoryview|Iterable,
-                  vals: str|bytes|memoryview|Iterable):
+                  vals: str|bytes|memoryview|Iterable|None):
         """Pins (sets) vals at effective key made from keys and hidden ordinal suffix.
         Overwrites. Removes all pre-existing vals that share same effective keys
         and replaces them with vals
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
-            vals (str|bytes|memoryview|Iterable): serialized value to replace
+            vals (str|bytes|memoryview|Iterable|None): serialized value to replace
                                         Value at onkey.
                                         None means empty iterable.
-                                        Empty iterable returns False
+                                        Empty iterable or None returns False
 
         Returns:
             result (bool): True If successful, False otherwise.
 
         """
         if not isNonStringIterable(vals):  # not iterable
-            vals = (vals, )  # make iterable
+            vals = (vals, ) if vals else ()  # make iterable
         return (self.db.pinIoSetVals(db=self.sdb,
                                      key=self._tokey(keys),
                                      vals=[self._ser(val) for val in vals],
@@ -1312,7 +1304,8 @@ class IoSetSuber(SuberBase):
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key parts to be
                     combined in order to form key
-            val (str|bytes|memoryview|None): serialization
+            val (str|bytes|memoryview|None): value to add
+                                             When val None returns False
 
         Returns:
             result (bool): True means unique value added among duplications,
@@ -1325,10 +1318,35 @@ class IoSetSuber(SuberBase):
                                     sep=self.sep))
 
 
+    def getItem(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
+        """Gets item list in set at effective key made from keys and hidden
+        ordinal suffix ion starting at ion >= ion.
+        When keys is empty or missing then returns empty list
+
+        All vals in set of vals that share same effecive key are retrieved in
+        insertion order starting at ion.
+
+        Parameters:
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                                                    in order to form key
+            ion (int): offset into set to start the count (0 based offset)
+
+        Returns:
+            vals (list[str]):  each item in list is str
+                          empty list if no entry at keys
+        """
+        # use iter so can more efficiently ._des(val)
+        return [(self._tokeys(key), self._des(val)) for key, val in
+                    self.db.getIoSetItemIter(db=self.sdb,
+                                             key=self._tokey(keys),
+                                             ion=ion,
+                                             sep=self.sep)]
+
+
     def get(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
         """Gets vals set list at effective key made from keys and hidden
         ordinal suffix ion starting at ion >= ion.
-        When key is empty then returns empty list
+        When keys is empty or missing then returns empty list
 
         All vals in set of vals that share same effecive key are retrieved in
         insertion order starting at ion.
@@ -1350,9 +1368,35 @@ class IoSetSuber(SuberBase):
                                              sep=self.sep)]
 
 
+    # Todo XXXX need to refactor to use getItemIter for here not alias to getTopItemIter
+    def XgetItemIter(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
+        """Iterates over set items at effecive key made from keys and hidden
+        ordinal suffix ion starting at ion >= ion.
+        When keys is empty or missing then returns empty iterator
+
+        All vals in set of vals that share same effecive key are retrieved in
+        insertion order starting at ion.
+
+        Parameters:
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                                                  in order to form key
+            ion (int): offset into set to start the count (0 based offset)
+
+        Returns:
+            vals (Iterator[str]):  str values. Raises StopIteration when done
+
+        """
+        for key, val in self.db.getIoSetItemIter(db=self.sdb,
+                                            key=self._tokey(keys),
+                                            ion=ion,
+                                            sep=self.sep):
+            yield (self._tokeys(key), self._des(val))
+
+
     def getIter(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
         """Iterates over set values at effecive key made from keys and hidden
         ordinal suffix ion starting at ion >= ion.
+        When keys is empty or missing then returns empty iterator
 
         All vals in set of vals that share same effecive key are retrieved in
         insertion order starting at ion.
@@ -1375,8 +1419,8 @@ class IoSetSuber(SuberBase):
 
     def getLastItem(self, keys: str|bytes|memoryview|Iterable):
         """Gets last set item (key, val) inserted at effecive key where
-        effective key is made from keys and hidden ordinal suffix or None when
-        keys is empty or keys not in db.
+        effective key is made from keys and hidden ordinal suffix
+        when keys is empty or missing returns empty tuple.
 
         All items in the set of items that shares the same effecive key are
         retrieved in insertion order.
@@ -1387,7 +1431,7 @@ class IoSetSuber(SuberBase):
 
         Returns:
             last ((str, str)|None): (key, val) tuple or empty tuple if no entry
-                              at keys or keys is empty
+                                   at keys or keys is empty
 
         """
         if last := self.db.getIoSetLastItem(db=self.sdb, key=self._tokey(keys)):
@@ -1416,9 +1460,6 @@ class IoSetSuber(SuberBase):
             return self._des(val)
         return None
 
-        #val = self.db.getIoSetLast(db=self.sdb, key=self._tokey(keys))
-        #return (self._des(val) if val is not None else val)
-
 
     def rem(self, keys: str|bytes|memoryview|Iterable,
                    val: str|bytes|memoryview|None=None):
@@ -1445,12 +1486,13 @@ class IoSetSuber(SuberBase):
 
 
     def cnt(self, keys: str|bytes|memoryview|Iterable = "", *, ion=0):
-        """Dount of  values at effective key made from keys and hidden ordinal
-        suffix. Zero otherwise
+        """Counts entries at effective key made from keys and hidden ordinal
+        suffix. Zero otherwise.
+        When keys empty then counts all in db.
 
         Returns:
-            cnt (int): entries in set at at starting with ion >= ion. When keys
-                is empty then counts all entries in db.
+            cnt (int): entries in set at keys starting with ion >= ion.
+                When keys is empty then counts all entries in db.
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be combined
@@ -2225,14 +2267,17 @@ class DupSuber(SuberBase):
             yield self._des(val)
 
 
-    def cnt(self, keys: str | bytes | memoryview | Iterable):
-        """
-        Return count of dup values at key made from keys, zero otherwise
+    def cnt(self, keys: str|bytes|memoryview|Iterable = ""):
+        """Counts dup values at key made from keys, zero otherwise
+        When keys is empty then counts all in db.
 
         Parameters:
-            keys (str | bytes | memoryview | Iterable): of key strs to be
-                combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be
+                combined in order to form key. When keys empty then count all
+                entires in db.
         """
+        if not keys:
+            return self.db.cntAll(db=self.sdb)
         return (self.db.cntVals(db=self.sdb, key=self._tokey(keys)))
 
 
@@ -3161,7 +3206,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
     def getOnItem(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
         """Gets list of items (key, on, val) from set of entries at onkey
         made from keys and on starting at offset ion into set.
-        When onkey missing or key empty or None returns empty list.
+        When onkey missing or key empty or missing returns empty list.
 
         Returns
             item (tuple[bytes, int, str|bytes|memoryview]|None): at onkey if any
@@ -3182,9 +3227,9 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
 
     def getOn(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
-        """Gets set vals list at key made from keys and on in insertion order from
+        """Gets set vals list at onkey made from keys and on in insertion order from
         from offset ion into set using hidden ordinal suffix.
-        When key is empty then returns empty list
+        When onkey is empty or missing then returns empty list
 
         Returns:
             vals (list[str]):  values if any else empty tuuple
@@ -3205,14 +3250,15 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
 
     def getOnItemIter(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
-        """Iterates over set items (key, on, val) at key made from keys and on
+        """Iterates over set items (key, on, val) at onkey made from keys and on
         in insertion order from from offset ion into set using hidden ordinal suffix.
+        When onkey is empty or missing then returns empty iterator
 
         Returns:
             val (Iterator[str]):  deserialized val elements of set at onkey
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): okey(s) made into base key
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
             on (int): ordinal number tail used with onKey(pre,on) to form key.
             ion (int): starting insertion ordinal value, default 0
         """
@@ -3226,14 +3272,15 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
 
     def getOnIter(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
-        """Iterates over set vals at key made from keys and on in insertion order
+        """Iterates over set vals at onkey made from keys and on in insertion order
         from from offset ion into set using hidden ordinal suffix.
+        When onkey is empty or missing then returns empty iterator
 
         Returns:
             val (Iterator[str]):  deserialized val elements of set at onkey
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): okey(s) made into base key
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
             on (int): ordinal number tail used with onKey(pre,on) to form key.
             ion (int): starting insertion ordinal value, default 0
         """
