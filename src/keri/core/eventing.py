@@ -4313,8 +4313,6 @@ class Kevery:
                         self.db.vrcs.add(keys=dgKey(pre=pre, dig=ldig),
                                        val=quadruple)  # dups kept
 
-
-
         else:  # no events to be receipted yet at that sn so escrow
             if cigars:
                 self.escrowUReceipt(serder, cigars, said=ked["d"])  # digest in receipt
@@ -4329,6 +4327,7 @@ class Kevery:
             logger.info(msg)
             logger.debug("event=\n%s\n", serder.pretty())
             raise UnverifiedReceiptError(msg)
+
 
     def processMsg(self, serder, **kwa):
         """Process one non-key-event KERI message with attachments.
@@ -5219,7 +5218,7 @@ class Kevery:
 
             # get list of witness signatures to ensure we are presenting a fully witnessed event
             wigers = self.db.wigs.get(keys=(pre, kever.serder.saidb))
-            
+
 
             if len(wigers) < kever.toader.num:
                 self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
@@ -5696,7 +5695,7 @@ class Kevery:
                     msg = f"OOO Missing escrowed event source at dig = {edig}"
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
-                
+
                  # check date if expired then remove escrow.
                 dater = self.db.dtss.get(keys=dgkey)
                 if dater is None:  # no datetime stored
@@ -6388,7 +6387,7 @@ class Kevery:
                         verify sigs via cigars
                         If successful then remove from escrow table
         """
-        
+
         for (pre, sn), (rsaider, sprefixer, cigar) in self.db.ures.getItemIter():
             sn = Seqner(qb64=sn).sn
             try:
