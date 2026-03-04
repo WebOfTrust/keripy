@@ -16,13 +16,14 @@ from dataclasses import dataclass, astuple
 
 from ordered_set import OrderedSet as oset
 
-from keri import help, kering
-from keri.core import coring, eventing, indexing
-from keri.core.coring import Verser
-from keri.help import helping
-from keri.recording import CacheTypeRecord, MsgCacheRecord, TxnMsgCacheRecord
+from .. import help, kering
+from ..core import coring, eventing, indexing
+from ..core.coring import Verser
+from ..help import helping
+from ..recording import CacheTypeRecord, MsgCacheRecord, TxnMsgCacheRecord
 
 logger = help.ogler.getLogger()
+
 
 @dataclass(frozen=True)
 class AuthTypeCodex:
