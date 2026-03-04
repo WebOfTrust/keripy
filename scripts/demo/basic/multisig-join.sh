@@ -4,6 +4,21 @@
 # To run the following scripts, open another console window and run:
 # $ kli witness demo
 
+# CI safety: bound how long multisig join waits so that failures
+# in the initiating side do not leave automated runs hanging
+# indefinitely. JOIN_TIMEOUT and TIMEOUT_BIN may be overridden
+# by the caller (for example, in CI configuration).
+JOIN_TIMEOUT=${JOIN_TIMEOUT:-60}
+TIMEOUT_BIN=${TIMEOUT_BIN:-timeout}
+
+run_multisig_join_bg() {
+  if command -v "$TIMEOUT_BIN" >/dev/null 2>&1; then
+    "$TIMEOUT_BIN" "$JOIN_TIMEOUT" kli multisig join --name multisigj2 --auto
+  else
+    kli multisig join --name multisigj2 --auto
+  fi
+}
+
 kli init --name multisigj1 --salt 0ACDEyMzQ1Njc4OWxtbm9aBc --nopasscode --config-dir "${KERI_SCRIPT_DIR}" --config-file demo-witness-oobis
 kli incept --name multisigj1 --alias multisigj1 --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-1-sample.json
 
@@ -19,7 +34,7 @@ kli multisig incept --name multisigj1 --alias multisigj1 --group multisig --file
 pid=$!
 PID_LIST+=" $pid"
 
-kli multisig join --name multisigj2 --auto &
+run_multisig_join_bg &
 pid=$!
 PID_LIST+=" $pid"
 
@@ -38,7 +53,7 @@ kli multisig rotate --name multisigj1 --alias multisig --smids EKJ6tNVUGbdaiwx2n
 pid=$!
 PID_LIST+=" $pid"
 
-kli multisig join --name multisigj2 --auto &
+run_multisig_join_bg &
 pid=$!
 PID_LIST+=" $pid"
 
@@ -52,7 +67,7 @@ kli multisig interact --name multisigj1 --alias multisig --data '{"d": "potato"}
 pid=$!
 PID_LIST+=" $pid"
 
-kli multisig join --name multisigj2 --auto &
+run_multisig_join_bg &
 pid=$!
 PID_LIST+=" $pid"
 
