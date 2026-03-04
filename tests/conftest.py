@@ -20,7 +20,7 @@ from keri.db import basing
 from keri.help import helping
 from keri import help
 
-from keri.app.cli import commands
+from keri.cli import commands
 
 WitnessUrls = {
     "wan:tcp": "tcp://127.0.0.1:5632/",
