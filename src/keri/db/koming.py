@@ -17,7 +17,6 @@ import lmdb
 
 from . import dbing
 from .. import help
-from ..core import coring
 from ..help import helping
 
 logger = help.ogler.getLogger()
@@ -47,7 +46,7 @@ class KomerBase:
     def __init__(self, db: dbing.LMDBer, *,
                  subkey: str = 'docs.',
                  schema: Type[dataclass],  # class not instance
-                 kind: str = coring.Kinds.json,
+                 kind: str | None = None,
                  dupsort: bool = False,
                  sep: str = None,
                  **kwa):
@@ -64,6 +63,9 @@ class KomerBase:
                        default is self.Sep == '.'
         """
         super(KomerBase, self).__init__()
+        if kind is None:
+            from ..core.coring import Kinds
+            kind = Kinds.json
         self.db = db
         self.sdb = self.db.env.open_db(key=subkey.encode("utf-8"), dupsort=dupsort)
         self.schema = schema
@@ -180,9 +182,11 @@ class KomerBase:
         Parameters:
             kind (str): serialization
         """
-        if kind == coring.Kinds.mgpk:
+        from ..core.coring import Kinds
+
+        if kind == Kinds.mgpk:
             return self.__serializeMGPK
-        elif kind == coring.Kinds.cbor:
+        elif kind == Kinds.cbor:
             return self.__serializeCBOR
         else:
             return self.__serializeJSON
@@ -193,9 +197,11 @@ class KomerBase:
         Parameters:
             kind (str): deserialization
         """
-        if kind == coring.Kinds.mgpk:
+        from ..core.coring import Kinds
+
+        if kind == Kinds.mgpk:
             return self.__deserializeMGPK
-        elif kind == coring.Kinds.cbor:
+        elif kind == Kinds.cbor:
             return self.__deserializeCBOR
         else:
             return self.__deserializeJSON
@@ -265,7 +271,7 @@ class Komer(KomerBase):
                  db: dbing.LMDBer, *,
                  subkey: str = 'docs.',
                  schema: Type[dataclass],  # class not instance
-                 kind: str = coring.Kinds.json,
+                 kind: str | None = None,
                  **kwa):
         """
         Parameters:
@@ -424,7 +430,7 @@ class IoSetKomer(KomerBase):
              db: dbing.LMDBer, *,
              subkey: str = 'recs.',
              schema: Type[dataclass],  # class not instance
-             kind: str = coring.Kinds.json,
+             kind: str | None = None,
              **kwa):
         """
         Parameters:
@@ -641,7 +647,7 @@ class DupKomer(KomerBase):
              db: dbing.LMDBer, *,
              subkey: str = 'recs.',
              schema: Type[dataclass],  # class not instance
-             kind: str = coring.Kinds.json,
+             kind: str | None = None,
              **kwa):
         """
         Parameters:
@@ -801,4 +807,3 @@ class DupKomer(KomerBase):
         else:
             val = b''
         return (self.db.delVals(db=self.sdb, key=self._tokey(keys), val=val))
-

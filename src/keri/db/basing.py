@@ -1,22 +1,7 @@
 # -*- encoding: utf-8 -*-
 """
-keri.db.dbing module
-
-
-import lmdb
-db = lmdb.open("/tmp/keri_db_setup_test")
-db.max_key_size()
-511
-
-The dupsort, integerkey, integerdup, and dupfixed parameters are ignored
-if the database already exists.
-The state of those settings are persistent and immutable per database.
-See _Database.flags() to view the state of those options for an opened database.
-A consequence of the immutability of these flags is that the default non-named
-database will never have these flags set.
-
-So only need to set dupsort first time opened each other opening does not
-need to call it
+KERI
+keri.db.basing module
 """
 import importlib
 import os
@@ -30,11 +15,9 @@ from ordered_set import OrderedSet as oset
 from hio.base import doing
 
 import keri
-from . import dbing, koming, subing
+from . import dbing
 from .. import kering
 from ..kering import Vrsn_1_0, Vrsn_2_0
-from .. import core
-from ..core import coring, eventing, parsing, serdering, indexing
 from ..recording import (RawRecord, StateEERecord, KeyStateRecord,
                          EventSourceRecord, HabitatRecord, TopicsRecord,
                          OobiQueryRecord, OobiRecord, EndpointRecord,
@@ -47,8 +30,6 @@ from ..help import helping
 
 
 logger = help.ogler.getLogger()
-
-
 MIGRATIONS = [
     ("0.6.8", ["hab_data_rename"]),
     ("1.0.0", ["add_key_and_reg_state_schemas"]),
@@ -103,7 +84,8 @@ class dbdict(dict):
             if (ksr := self.db.states.get(keys=k)) is None:
                 raise ex  # reraise KeyError
             try:
-                kever = eventing.Kever(state=ksr, db=self.db)
+                from ..core.eventing import Kever
+                kever = Kever(state=ksr, db=self.db)
             except kering.MissingEntryError:  # no kel event for keystate
                 raise ex  # reraise KeyError
             self.__setitem__(k, kever)
@@ -220,7 +202,7 @@ class Baser(dbing.LMDBer):
             some point in time even if later superseded by a recovery rotation.
             Whereas direct lookup in .evts could be escrowed events that may
             never have been accepted as first seen.
-            CesrSuber(db=self, subkey='fons.', klas=core.Number)
+            CesrSuber(db=self, subkey='fons.', klas=coring.Number)
 
         .esrs is named sub DB instance of Komer of EventSourceRecord
             dgKey
@@ -593,6 +575,9 @@ class Baser(dbing.LMDBer):
         Duplicates are inserted in lexocographic order by value, insertion order.
 
         """
+        from . import koming, subing
+        from ..core import coring, indexing
+
         super(Baser, self).reopen(**kwa)
 
         # Create by opening first time named sub DBs within main DB instance
@@ -613,9 +598,9 @@ class Baser(dbing.LMDBer):
         self.ures = subing.CatCesrIoSetSuber(db=self, subkey='ures.',
                                              klas=(coring.Diger, coring.Prefixer, coring.Cigar))
         self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.', 
-                                            klas=(coring.Prefixer, core.Number, coring.Diger, indexing.Siger))
+                                            klas=(coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
         self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.', 
-                                            klas=(coring.Diger, coring.Prefixer, core.Number, coring.Diger, indexing.Siger))
+                                            klas=(coring.Diger, coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
         self.pses = subing.OnIoDupSuber(db=self, subkey='pses.')
         self.pwes = subing.OnIoDupSuber(db=self, subkey='pwes.')
         self.pdes = subing.OnIoDupSuber(db=self, subkey='pdes.')
@@ -628,7 +613,7 @@ class Baser(dbing.LMDBer):
         self.qnfs = subing.IoSetSuber(db=self, subkey="qnfs.", dupsort=True)
 
         # events as ordered by first seen ordinals
-        self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=core.Number)
+        self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Number)
 
         self.migs = subing.CesrSuber(db=self, subkey="migs.", klas=coring.Dater)
         self.vers = subing.Suber(db=self, subkey="vers.")
@@ -719,15 +704,15 @@ class Baser(dbing.LMDBer):
 
         # group partial signature escrow
         self.gpse = subing.CatCesrIoSetSuber(db=self, subkey='gpse.',
-                                             klas=(core.Number, coring.Diger))
+                                             klas=(coring.Number, coring.Saider))
 
         # group delegate escrow
         self.gdee = subing.CatCesrIoSetSuber(db=self, subkey='gdee.',
-                                             klas=(core.Number, coring.Diger))
+                                             klas=(coring.Number, coring.Saider))
 
         # group partial witness escrow
         self.gpwe = subing.CatCesrIoSetSuber(db=self, subkey='gdwe.',
-                                             klas=(core.Number, coring.Diger))
+                                             klas=(coring.Number, coring.Saider))
 
         # completed group multisig
         # TODO: clean
@@ -958,7 +943,8 @@ class Baser(dbing.LMDBer):
         for keys, data in self.habs.getItemIter():
             if (ksr := self.states.get(keys=data.hid)) is not None:
                 try:
-                    kever = eventing.Kever(state=ksr,
+                    from ..core.eventing import Kever
+                    kever = Kever(state=ksr,
                                            db=self,
                                            local=True)
                 except kering.MissingEntryError as ex:  # no kel event for keystate
@@ -985,6 +971,8 @@ class Baser(dbing.LMDBer):
          of required migrations
 
         """
+        from ..core import coring
+
         for (version, migrations) in MIGRATIONS:
             # Only run migration if current source code version is at or below the migration version
             ver = semver.VersionInfo.parse(keri.__version__)
@@ -1111,6 +1099,8 @@ class Baser(dbing.LMDBer):
         readonly mode
 
         """
+        from ..core import parsing
+
         # create copy to clone into
         with openDB(name=self.name,
                     temp=False,
@@ -1122,7 +1112,8 @@ class Baser(dbing.LMDBer):
                 if not os.path.exists(self.path):
                     raise ValueError("Error while cleaning, no orig at {}."
                                      "".format(self.path))
-                kvy = eventing.Kevery(db=copy)  # promiscuous mode
+                from ..core.eventing import Kevery
+                kvy = Kevery(db=copy)  # promiscuous mode
 
                 # Revise in future to NOT parse msgs but to extract the processed
                 # objects so can pass directly to kvy.processEvent()
@@ -1282,6 +1273,9 @@ class Baser(dbing.LMDBer):
         Returns:
             bytearray: message body with attachments
         """
+        from ..core import coring
+        from ..core.counting import Counter, Codens
+
         msg = bytearray()  # message
         atc = bytearray()  # attachments
         dgkey = dbing.dgKey(pre, dig)  # get message
@@ -1292,30 +1286,30 @@ class Baser(dbing.LMDBer):
         # add indexed signatures to attachments
         if not (sigers := self.sigs.get(keys=dgkey)):
             raise kering.MissingEntryError("Missing sigs for dig={}.".format(dig))
-        atc.extend(core.Counter(code=core.Codens.ControllerIdxSigs,
-                                count=len(sigers), version=kering.Vrsn_1_0).qb64b)
+        atc.extend(Counter(code=Codens.ControllerIdxSigs,
+                           count=len(sigers), version=kering.Vrsn_1_0).qb64b)
         for siger in sigers:
             atc.extend(siger.qb64b)
 
         # add indexed witness signatures to attachments
         if wigers := self.wigs.get(keys=dgkey):
-            atc.extend(core.Counter(code=core.Codens.WitnessIdxSigs,
-                                    count=len(wigers), version=kering.Vrsn_1_0).qb64b)
+            atc.extend(Counter(code=Codens.WitnessIdxSigs,
+                               count=len(wigers), version=kering.Vrsn_1_0).qb64b)
             for wiger in wigers:
                 atc.extend(wiger.qb64b)
 
         # add authorizer (delegator/issuer) source seal event couple to attachments
         if (duple := self.aess.get(keys=(pre, dig))) is not None:
             number, diger = duple
-            atc.extend(core.Counter(code=core.Codens.SealSourceCouples,
-                                    count=1, version=kering.Vrsn_1_0).qb64b)
+            atc.extend(Counter(code=Codens.SealSourceCouples,
+                               count=1, version=kering.Vrsn_1_0).qb64b)
             atc.extend(number.qb64b + diger.qb64b)
 
         # add trans endorsement quadruples to attachments not controller
         # may have been originally key event attachments or receipted endorsements
         if quads := self.vrcs.get(keys=dgkey):
-            atc.extend(core.Counter(code=core.Codens.TransReceiptQuadruples,
-                                    count=len(quads), version=kering.Vrsn_1_0).qb64b)
+            atc.extend(Counter(code=Codens.TransReceiptQuadruples,
+                               count=len(quads), version=kering.Vrsn_1_0).qb64b)
             for pre, snu, diger, siger in quads:    # adapt to CESR 
                 atc.extend(pre.qb64b)
                 atc.extend(snu.qb64b)
@@ -1325,8 +1319,8 @@ class Baser(dbing.LMDBer):
         # add nontrans endorsement couples to attachments not witnesses
         # may have been originally key event attachments or receipted endorsements
         if coups := self.rcts.get(keys=dgkey):
-            atc.extend(core.Counter(code=core.Codens.NonTransReceiptCouples,
-                                    count=len(coups), version=kering.Vrsn_1_0).qb64b)
+            atc.extend(Counter(code=Codens.NonTransReceiptCouples,
+                               count=len(coups), version=kering.Vrsn_1_0).qb64b)
             for prefixer, cigar in coups:
                 atc.extend(prefixer.qb64b)
                 atc.extend(cigar.qb64b)
@@ -1334,17 +1328,17 @@ class Baser(dbing.LMDBer):
         # add first seen replay couple to attachments
         if not (dater := self.dtss.get(keys=dgkey)):
             raise kering.MissingEntryError("Missing datetime for dig={}.".format(dig))
-        atc.extend(core.Counter(code=core.Codens.FirstSeenReplayCouples,
-                                count=1, version=kering.Vrsn_1_0).qb64b)
-        atc.extend(core.Number(num=fn, code=core.NumDex.Huge).qb64b)  # may not need to be Huge
+        atc.extend(Counter(code=Codens.FirstSeenReplayCouples,
+                           count=1, version=kering.Vrsn_1_0).qb64b)
+        atc.extend(coring.Number(num=fn, code=coring.NumDex.Huge).qb64b)  # may not need to be Huge
         atc.extend(dater.qb64b)
 
         # prepend pipelining counter to attachments
         if len(atc) % 4:
             raise ValueError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
-        pcnt = core.Counter(code=core.Codens.AttachmentGroup,
-                            count=(len(atc) // 4), version=kering.Vrsn_1_0).qb64b
+        pcnt = Counter(code=Codens.AttachmentGroup,
+                       count=(len(atc) // 4), version=kering.Vrsn_1_0).qb64b
         msg.extend(pcnt)
         msg.extend(atc)
         return msg
@@ -1381,15 +1375,17 @@ class Baser(dbing.LMDBer):
             sn (int): beginning sn to search
 
         """
-        if tuple(seal) != eventing.SealEvent._fields:  # wrong type of seal
+        from ..core.structing import SealEvent
+
+        if tuple(seal) != SealEvent._fields:  # wrong type of seal
             return None
 
-        seal = eventing.SealEvent(**seal)  #convert to namedtuple
+        seal = SealEvent(**seal)  #convert to namedtuple
 
         for srdr in self.getEvtPreIter(pre=pre, sn=sn):  # includes disputed & superseded
             for eseal in srdr.seals or []:  # or [] for seals 'a' field missing
-                if tuple(eseal) == eventing.SealEvent._fields:
-                    eseal = eventing.SealEvent(**eseal)  # convert to namedtuple
+                if tuple(eseal) == SealEvent._fields:
+                    eseal = SealEvent(**eseal)  # convert to namedtuple
                     if seal == eseal and self.fullyWitnessed(srdr):
                         return srdr
         return None
@@ -1418,15 +1414,17 @@ class Baser(dbing.LMDBer):
             sn (int): beginning sn to search
 
         """
-        if tuple(seal) != eventing.SealEvent._fields:  # wrong type of seal
+        from ..core.structing import SealEvent
+
+        if tuple(seal) != SealEvent._fields:  # wrong type of seal
             return None
 
-        seal = eventing.SealEvent(**seal)  #convert to namedtuple
+        seal = SealEvent(**seal)  #convert to namedtuple
 
         for srdr in self.getEvtLastPreIter(pre=pre, sn=sn):  # no disputed or superseded
             for eseal in srdr.seals or []:  # or [] for seals 'a' field missing
-                if tuple(eseal) == eventing.SealEvent._fields:
-                    eseal = eventing.SealEvent(**eseal)  # convert to namedtuple
+                if tuple(eseal) == SealEvent._fields:
+                    eseal = SealEvent(**eseal)  # convert to namedtuple
                     if seal == eseal and self.fullyWitnessed(srdr):
                         return srdr
         return None
@@ -1522,6 +1520,7 @@ class Baser(dbing.LMDBer):
             dig(str) is qb64 str of digest of est event
 
         """
+        from ..core import coring
 
         prefixer = coring.Prefixer(qb64=pre)
         if prefixer.transferable:
