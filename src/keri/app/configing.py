@@ -11,9 +11,9 @@ import hjson
 import msgpack
 from hio.base import filing, doing
 
-from .. import help
+from ..help import ogler
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 def openCF(cls=None, filed=True, **kwa):

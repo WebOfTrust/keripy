@@ -12,7 +12,7 @@ import shutil
 from hio.base import doing
 
 from keri import kering
-from keri.kering import Vrsn_1_0, Vrsn_2_0
+from keri.kering import Vrsn_1_0
 from keri import help
 from keri.help import helping
 

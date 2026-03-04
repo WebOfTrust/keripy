@@ -10,22 +10,16 @@ import pytest
 
 import os
 import stat
-import json
 from dataclasses import asdict
-from math import ceil
 
 import lmdb
-import pysodium
 
 from hio.base import doing
 
-from keri import kering
+from keri import kering, core
 from keri.help import helping
 
-from keri import core
-
-from keri.core import coring, indexing
-from keri.core.indexing import IdrDex
+from keri.core import coring, indexing, IdrDex
 
 from keri.app import keeping
 
