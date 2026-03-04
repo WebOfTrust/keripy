@@ -4376,7 +4376,7 @@ class Kevery:
                     kwa['sigers'] = []  # just in case sigers provided not by ssgs
 
                 if not (kwa.get('source') or kwa.get('cigars', [])):
-                    raise kering.ValidationError(
+                    raise ValidationError(
                         f"Missing attached requester source for query"
                         f" msg = {serder.pretty()}.")
 
