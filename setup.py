@@ -107,8 +107,8 @@ setup(
             'keri_bob = keri.demo.demo_bob:main',
             'keri_eve = keri.demo.demo_eve:main',
             'keri_sam = keri.demo.demo_sam:main',
-            'kli = keri.app.cli.kli:main',
-            'klid = keri.app.cli.klid:main',
+            'kli = keri.cli.kli:main',
+            'klid = keri.cli.klid:main',
         ]
     },
 )

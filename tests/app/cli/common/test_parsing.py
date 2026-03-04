@@ -3,7 +3,7 @@ import os
 
 import pytest
 
-from keri.app.cli.common import parsing
+from keri.cli.common import parsing
 
 
 class TestKeystoreParser:
