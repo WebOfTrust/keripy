@@ -1,0 +1,64 @@
+# -*- encoding: utf-8 -*-
+"""
+KERI
+keri.kli.commands module
+
+"""
+import argparse
+
+from hio.base import doing
+
+from ...common import Parsery, existing
+
+from .... import ConfigurationError, Roles, help
+from ....app import organizing
+
+
+logger = help.ogler.getLogger()
+
+parser = argparse.ArgumentParser(description='List current mailboxes', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: handle(args))
+parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
+                    required=True)
+
+
+def handle(args):
+    """ Command line handler for adding an aid to a watcher's list of AIds to watch
+
+    Parameters:
+        args(Namespace): parsed command line arguments
+
+    """
+
+    kwa = dict(args=args)
+    return [doing.doify(listMailboxes, **kwa)]
+
+
+def listMailboxes(tymth, tock=0.0, **opts):
+    """ Command line status handler
+
+    """
+    _ = (yield tock)
+    args = opts["args"]
+    name = args.name
+    alias = args.alias
+    base = args.base
+    bran = args.bran
+
+    try:
+        with existing.existingHby(name=name, base=base, bran=bran) as hby:
+            org = organizing.Organizer(hby=hby)
+            if alias is None:
+                alias = existing.aliasInput(hby)
+
+            hab = hby.habByName(alias)
+
+            for (aid, role, eid), ender in hab.db.ends.getItemIter(keys=(hab.pre, Roles.mailbox)):
+                if ender.allowed:
+                    contact = org.get(eid)
+                    print(f"{contact['alias']}: {eid}")
+
+    except ConfigurationError as e:
+        print(f"identifier prefix for {name} does not exist, incept must be run first", )
+        return -1
