@@ -225,8 +225,7 @@ class Habery:
         self.rtr = routing.Router()
         self.rvy = routing.Revery(db=self.db, rtr=self.rtr)
         self.exc = exchanging.Exchanger(hby=self, handlers=[])
-        self.kvy = eventing.Kevery(db=self.db, lax=False, local=True,
-                                   rvy=self.rvy, exc=self.exc)
+        self.kvy = eventing.Kevery(db=self.db, lax=False, local=True, rvy=self.rvy)
         self.kvy.registerReplyRoutes(router=self.rtr)
         self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
                                   exc=self.exc, local=True, version=Vrsn_1_0)
