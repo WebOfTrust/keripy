@@ -75,7 +75,7 @@ def test_counselor():
         counselor.processEscrows()
         val = hby1.db.gpse.getLast(keys=(ghab.pre,))  # thold met, partial sig escrow should be empty
         assert val is None
-        assert counselor.complete(prefixer=prefixer, seqner=number, saider=diger)
+        assert counselor.complete(prefixer=prefixer, number=number, diger=diger)
 
         # First Partial Rotation
         hab1.rotate()
@@ -120,7 +120,7 @@ def test_counselor():
         kev1.processEscrows()  # Run escrows for Kevery1 so he processes all sigs together
 
         counselor.processEscrows()
-        assert counselor.complete(prefixer=prefixer, seqner=number, saider=diger)
+        assert counselor.complete(prefixer=prefixer, number=number, diger=diger)
 
         # Validate successful partial rotation
         nkeys = [hab1.kever.verfers[0].qb64, hab2.kever.verfers[0].qb64]
@@ -175,7 +175,7 @@ def test_counselor():
         kev1.processEscrows()  # Run escrows for Kevery1 so he processes all sigs together
 
         counselor.processEscrows()
-        assert counselor.complete(prefixer=prefixer, seqner=number, saider=diger)
+        assert counselor.complete(prefixer=prefixer, number=number, diger=diger)
 
         # Validate successful partial rotation
         nkeys = [hab1.kever.verfers[0].qb64, hab2.kever.verfers[0].qb64]
@@ -228,7 +228,7 @@ def test_counselor():
         kev1.processEscrows()  # Run escrows for Kevery1 so he processes all sigs together
 
         counselor.processEscrows()
-        assert counselor.complete(prefixer=prefixer, seqner=number, saider=diger)
+        assert counselor.complete(prefixer=prefixer, number=number, diger=diger)
 
 
 def test_the_seven():
@@ -360,7 +360,7 @@ def test_the_seven():
         counselor.processEscrows()
         val = hby1.db.gpse.getLast(keys=(ghab.pre,))  # thold met, partial sig escrow should be empty
         assert val is None
-        assert counselor.complete(prefixer=prefixer, seqner=number, saider=diger)
+        assert counselor.complete(prefixer=prefixer, number=number, diger=diger)
 
         # First Partial Rotation
         hab1.rotate()
@@ -414,7 +414,7 @@ def test_the_seven():
         kev1.processEscrows()  # Run escrows for Kevery1 so he processes all sigs together
 
         counselor.processEscrows()  # Get the rest of the way through counselor.
-        assert counselor.complete(prefixer=prefixer, seqner=number, saider=diger)
+        assert counselor.complete(prefixer=prefixer, number=number, diger=diger)
         # Validate successful partial rotation
         nkeys = [hab1.kever.verfers[0].qb64, hab2.kever.verfers[0].qb64, hab3.kever.verfers[0].qb64]
         ndigs = [hab1.kever.ndigers[0].qb64, hab2.kever.ndigers[0].qb64, hab3.kever.ndigers[0].qb64,
@@ -477,7 +477,7 @@ def test_the_seven():
         kev1.processEscrows()  # Run escrows for Kevery1 so he processes all sigs together
 
         counselor.processEscrows()  # Get the rest of the way through counselor.
-        assert counselor.complete(prefixer=prefixer, seqner=number, saider=diger)
+        assert counselor.complete(prefixer=prefixer, number=number, diger=diger)
         # Validate successful partial rotation
         nkeys = [hab1.kever.verfers[0].qb64, hab2.kever.verfers[0].qb64, hab3.kever.verfers[0].qb64]
         ndigs = [hab1.kever.ndigers[0].qb64, hab2.kever.ndigers[0].qb64, hab3.kever.ndigers[0].qb64,
@@ -550,7 +550,7 @@ def test_the_seven():
         kev4.processEscrows()  # Run escrows for Kevery1 so he processes all sigs together
 
         counselor4.processEscrows()  # Get the rest of the way through counselor.
-        assert counselor4.complete(prefixer=prefixer, seqner=number, saider=diger)
+        assert counselor4.complete(prefixer=prefixer, number=number, diger=diger)
 
         # Validate successful partial rotation
         nkeys = [hab4.kever.verfers[0].qb64, hab5.kever.verfers[0].qb64, hab6.kever.verfers[0].qb64]

@@ -66,23 +66,23 @@ class Counselor(doing.DoDoer):
         logger.info("Waiting for other signatures on %s for %s:%s...", serder.ilk, prefixer.qb64, number.sn)
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(number, diger))
 
-    def complete(self, prefixer, seqner, saider=None):
+    def complete(self, prefixer, number, diger=None):
         """ Check for completed multsig protocol for the specific event
 
         Parameters:
             prefixer (Prefixer): qb64 identifier prefix of event to check
-            seqner (Seqner): sequence number of event to check
+            number (Number): sequence number of event to check
             saider (Saider): optional digest of event to verify
 
         Returns:
 
         """
-        csaider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
-        if not csaider:
+        cdiger = self.hby.db.cgms.get(keys=(prefixer.qb64, number.qb64))
+        if not cdiger:
             return False
         else:
-            if saider and (csaider.qb64 != saider.qb64):
-                raise ValidationError(f"invalid multisig protocol escrowed event {csaider.qb64}-{saider.qb64}")
+            if diger and (cdiger.qb64 != diger.qb64):
+                raise kering.ValidationError(f"invalid multisig protocol escrowed event {cdiger.qb64}-{diger.qb64}")
 
         return True
 
