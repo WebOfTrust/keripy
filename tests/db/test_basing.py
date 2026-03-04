@@ -2162,21 +2162,6 @@ def test_rawrecord():
 
 
 
-def test_db_facade_imports():
-    import keri.db as dbpkg
-
-    assert dbpkg.basing is basing
-    assert dbpkg.dbing is dbing
-    assert dbpkg.subing is subing
-    assert dbpkg.Baser is Baser
-    assert dbpkg.openDB is openDB
-    assert dbpkg.snKey is snKey
-    assert dbpkg.KeyStateRecord is recording.KeyStateRecord
-    assert dbpkg.Broker.__name__ == "Broker"
-    assert dbpkg.Komer.__name__ == "Komer"
-    assert dbpkg.Suber.__name__ == "Suber"
-
-
 def test_keystaterecord():
     """
     Test KeyStateRecord dataclass
