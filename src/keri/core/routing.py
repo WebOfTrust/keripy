@@ -10,10 +10,10 @@ import re
 
 from hio.help import decking
 
-from .eventing import fetchTsgs, validateSigs
-from .coring import Ilks, Dater, Diger
-from ..kering import ValidationError, ConfigurationError, UnverifiedReplyError
 from ..help import helping, ogler
+from ..kering import ConfigurationError, UnverifiedReplyError, ValidationError
+from .coring import Dater, Diger, Ilks
+from .eventing import fetchTsgs, validateSigs
 
 logger = ogler.getLogger()
 
@@ -121,8 +121,10 @@ class Router:
 
         """
 
-        raise ConfigurationError(f"Resource registered for route {route} in {Ilks.rpy}"
-                                        f"does not contain the correct processReply method")
+        raise ConfigurationError(
+            f"Resource registered for route {route} in {Ilks.rpy}"
+            f"does not contain the correct processReply method"
+        )
 
 
 class Revery:
@@ -331,7 +333,7 @@ class Revery:
                 continue  # skip invalid signature is not from aid
 
             if osaider:  # check if later logic  sn > or sn == and dt >
-                if otsgs := fetchTsgs(db=self.db.ssgs, saider=osaider):
+                if otsgs := fetchTsgs(db=self.db.ssgs, diger=osaider):
                     _, osqr, _, _ = otsgs[0]  # zeroth should be authoritative
 
                     if seqner.sn < osqr.sn:  # sn earlier
@@ -384,22 +386,25 @@ class Revery:
             sserder = self.db.evts.get(keys=(spre, bytes(sdig)))
             # assumes db ensures that sserder must not be none because sdig was in KE
             if sserder.said != ssaider.qb64:  # signer's dig not match est evt
-                raise ValidationError(f"Bad trans indexed sig group at sn = "
-                                             f"{seqner.sn} for reply = {serder.ked}.")
+                raise ValidationError(
+                    f"Bad trans indexed sig group at sn = "
+                    f"{seqner.sn} for reply = {serder.ked}."
+                )
             # verify sigs
             if not (sverfers := sserder.verfers):
-                raise ValidationError(f"Invalid reply from signer={spre}, no "
-                                             f"keys at signer's est. event sn={seqner.sn}.")
+                raise ValidationError(
+                    f"Invalid reply from signer={spre}, no "
+                    f"keys at signer's est. event sn={seqner.sn}."
+                )
 
             # fetch any escrowed sigs, extract just the siger from each quad
             # want sn in numerical order so use hex
             quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", ssaider.qb64)
             esigers = self.db.ssgs.get(keys=quadkeys)
             sigers.extend(esigers)
-            sigers, valid = validateSigs(serder=serder,
-                                                  sigers=sigers,
-                                                  verfers=sverfers,
-                                                  tholder=sserder.tholder)
+            sigers, valid = validateSigs(
+                serder=serder, sigers=sigers, verfers=sverfers, tholder=sserder.tholder
+            )
             # no error so at least one verified siger
 
             if valid:  # meet threshold so save
@@ -416,10 +421,15 @@ class Revery:
                 self.removeReply(saider=osaider)  # remove obsoleted reply artifacts
                 # remove stale signatures .ssgs for this saider
                 # this ensures that zeroth tsg is authoritative
-                for prr, snr, dgr, _ in fetchTsgs(db=self.db.ssgs, saider=saider, snh=seqner.snh):
-                    if ((snr.sn < seqner.sn) or
-                            (snr.sn == seqner.sn and dgr.qb64 != ssaider.qb64)):
-                        self.db.ssgs.trim(keys=(prr.qb64, f"{snr.sn:032h}", dgr.qb64, ""))
+                for prr, snr, dgr, _ in fetchTsgs(
+                    db=self.db.ssgs, diger=saider, snh=seqner.snh
+                ):
+                    if (snr.sn < seqner.sn) or (
+                        snr.sn == seqner.sn and dgr.qb64 != ssaider.qb64
+                    ):
+                        self.db.ssgs.trim(
+                            keys=(prr.qb64, f"{snr.sn:032h}", dgr.qb64, "")
+                        )
 
                 accepted = True
 
@@ -527,7 +537,7 @@ class Revery:
         """
         for (route,), diger in self.db.rpes.getItemIter():
             try:
-                tsgs = fetchTsgs(db=self.db.ssgs, saider=diger)
+                tsgs = fetchTsgs(db=self.db.ssgs, diger=diger)
 
                 keys = (diger.qb64,)
                 dater = self.db.sdts.get(keys=keys)

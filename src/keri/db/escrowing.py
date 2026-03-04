@@ -111,7 +111,7 @@ class Broker:
         """
         for (typ, pre, aid), diger in self.escrowdb.getItemIter(keys=(typ, '')):
             try:
-                tsgs = eventing.fetchTsgs(db=self.tigerdb, saider=diger)
+                tsgs = eventing.fetchTsgs(db=self.tigerdb, diger=diger)
 
                 keys = (diger.qb64,)
                 dater = self.daterdb.get(keys=keys)
