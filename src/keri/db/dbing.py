@@ -2009,6 +2009,7 @@ class LMDBer(filing.Filer):
             return
 
         with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()  # create cursor to walk
             # iterate all on >= on at key
             if not key:  # start at first key if any
                 if not cursor.first():
@@ -2019,7 +2020,7 @@ class LMDBer(filing.Filer):
                 iokey = suffix(onkey, 0) # walk hidden branches starting from zero
 
             last = None
-            cursor = txn.cursor()  # create cursor to walk
+
             if cursor.set_range(iokey):  # not past end of database
                 for ciokey, cval in cursor.iternext():  # get iokey, val at cursor
                     conkey, cion = unsuffix(ciokey, sep=sep)
