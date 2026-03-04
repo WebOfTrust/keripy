@@ -704,15 +704,15 @@ class Baser(dbing.LMDBer):
 
         # group partial signature escrow
         self.gpse = subing.CatCesrIoSetSuber(db=self, subkey='gpse.',
-                                             klas=(coring.Number, coring.Saider))
+                                             klas=(coring.Number, coring.Diger))
 
         # group delegate escrow
         self.gdee = subing.CatCesrIoSetSuber(db=self, subkey='gdee.',
-                                             klas=(coring.Number, coring.Saider))
+                                             klas=(coring.Number, coring.Diger))
 
         # group partial witness escrow
         self.gpwe = subing.CatCesrIoSetSuber(db=self, subkey='gdwe.',
-                                             klas=(coring.Number, coring.Saider))
+                                             klas=(coring.Number, coring.Diger))
 
         # completed group multisig
         # TODO: clean
