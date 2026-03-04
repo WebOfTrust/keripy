@@ -4,16 +4,15 @@ KERI
 keri.app.signing module
 
 """
-from ..kering import Vrsn_1_0, Vrsn_2_0
-from ..app.habbing import GroupHab
-from .. import core
-from ..core import coring, eventing, counting
+from ..kering import Vrsn_1_0
+from .habbing import GroupHab
+from ..core import Pather, Counter, Seqner, Diger, Codens
 
 
 
 def serialize(creder, prefixer, seqner, saider):
     craw = bytearray(creder.raw)
-    craw.extend(core.Counter(core.Codens.SealSourceTriples, count=1,
+    craw.extend(Counter(Codens.SealSourceTriples, count=1,
                              version=Vrsn_1_0).qb64b)
     craw.extend(prefixer.qb64b)
     craw.extend(seqner.qb64b)
@@ -92,7 +91,7 @@ def signPaths(hab, serder, paths):
     if hab.kever.prefixer.transferable:
         prefixer, seqner, saider, indices = transSeal(hab)
         for parts in paths:
-            pather = coring.Pather(parts=parts)
+            pather = Pather(parts=parts)
             data = pather.tail(serder=serder)
 
             sigers = hab.sign(ser=data,
@@ -102,7 +101,7 @@ def signPaths(hab, serder, paths):
 
     else:
         for parts in paths:
-            pather = coring.Pather(parts=parts)
+            pather = Pather(parts=parts)
             data = pather.tail(serder=serder)
             cigars = hab.sign(ser=data,
                               verfers=hab.kever.verfers,
@@ -134,8 +133,8 @@ def transSeal(hab):
 
     kever = hab.kever
     prefixer = kever.prefixer
-    seqner = coring.Seqner(sn=kever.lastEst.s)
-    diger = coring.Diger(qb64=kever.lastEst.d)
+    seqner = Seqner(sn=kever.lastEst.s)
+    diger = Diger(qb64=kever.lastEst.d)
 
     return prefixer, seqner, diger, indices
 
@@ -179,8 +178,3 @@ def transSeal(hab):
             #sadcigars.append((self.pather, cigar))
 
         #return eventing.proofize(sadsigers=sadsigers, sadcigars=sadcigars, sadtsgs=sadtsgs)
-
-
-
-
-

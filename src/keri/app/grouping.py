@@ -8,13 +8,9 @@ module for enveloping and forwarding KERI message
 
 from hio.base import doing
 
-from .. import kering, core
-from ..kering import Vrsn_1_0, Vrsn_2_0
-from .. import help
-from ..app import delegating, agenting
-from ..core import coring, routing, eventing, parsing, serdering, indexing
-from ..db import dbing
-from ..db.dbing import snKey
+from .. import ValidationError, Vrsn_1_0, help
+from . import delegating, agenting
+from ..core import Counter, coring, routing, eventing, parsing, serdering, Codens
 from ..peer import exchanging
 
 logger = help.ogler.getLogger()
@@ -86,7 +82,7 @@ class Counselor(doing.DoDoer):
             return False
         else:
             if saider and (csaider.qb64 != saider.qb64):
-                raise kering.ValidationError(f"invalid multisig protocol escrowed event {csaider.qb64}-{saider.qb64}")
+                raise ValidationError(f"invalid multisig protocol escrowed event {csaider.qb64}-{saider.qb64}")
 
         return True
 
@@ -536,15 +532,15 @@ def getEscrowedEvent(db, pre, sn):
 
     msg = bytearray()
     msg.extend(serder.raw)
-    msg.extend(core.Counter(core.Codens.ControllerIdxSigs,
-                            count=len(sigers), version=kering.Vrsn_1_0).qb64b)  # attach cnt
+    msg.extend(Counter(Codens.ControllerIdxSigs,
+                            count=len(sigers), version=Vrsn_1_0).qb64b)  # attach cnt
     for siger in sigers:
         msg.extend(siger.qb64b)  # attach siger
 
     if duple is not None:
         seqner, diger = duple
-        msg.extend(core.Counter(core.Codens.SealSourceCouples,
-                                count=1, version=kering.Vrsn_1_0).qb64b)
+        msg.extend(Counter(Codens.SealSourceCouples,
+                                count=1, version=Vrsn_1_0).qb64b)
         msg.extend(seqner.qb64b + diger.qb64b)
 
     return msg

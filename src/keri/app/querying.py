@@ -6,7 +6,7 @@ keri.app.storing module
 from dataclasses import asdict
 
 from hio.base import doing
-from keri.app import agenting
+from . import agenting
 
 
 class QueryDoer(doing.DoDoer):

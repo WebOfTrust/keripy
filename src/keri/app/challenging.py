@@ -4,7 +4,7 @@ keri.vc.challenging module
 
 """
 
-from keri.core import coring
+from ..core import coring
 
 
 def loadHandlers(db, signaler, exc):
