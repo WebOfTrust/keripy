@@ -6,8 +6,8 @@ keri.spac.payloading module
 
 from collections import namedtuple
 
-from keri.core import coring, MtrDex
-from keri.kering import InvalidSoftError, InvalidCodeError
+from .. import InvalidSoftError, InvalidCodeError
+from ..core import coring, MtrDex
 
 
 PayloadTypage = namedtuple("PayloadTypage", 'HOP RFI RFA RFD SCS')

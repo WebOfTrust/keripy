@@ -31,6 +31,8 @@ ogler = ogling.initOgler(prefix='keri', syslogged=False)  # inits once only on f
 from .helping import (nowIso8601, toIso8601, fromIso8601, sceil,
                       NonStringSequence, NonStringIterable,
                       isNonStringSequence, isNonStringIterable,
-                      Reb64, Reatt, Repath, intToB64, codeB64ToB2,
-                      DTS_BASE_0, DTS_BASE_1, codeB2ToB64, b64ToInt,
-                      nabSextets)
+                      Reb64, Reatt, Repath, isign, sceil,
+                      extractValues, dictify, datify, klasify,
+                      intToB64, intToB64b, b64ToInt, B64_CHARS,
+                      nabSextets, codeB64ToB2, codeB2ToB64,
+                      DTS_BASE_0, DTS_BASE_1)

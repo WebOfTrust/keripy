@@ -9,16 +9,10 @@ simple direct mode demo support classes
 import os
 
 from hio.core import wiring
-from hio.core.serial import serialing
 from hio.core.tcp import clienting, serving
 
 from .. import help
-from ..app import habbing, keeping, directing
-from ..core import scheming
-from ..db import basing
-from ..help import helping
-from ..peer import exchanging
-from ..vc import proving, protocoling
+from ..app import habbing, directing
 
 logger = help.ogler.getLogger()
 

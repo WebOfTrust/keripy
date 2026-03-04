@@ -6,4 +6,11 @@ keri.vdr Package
 
 __all__ = ["credentialing", "eventing", "viring", "verifying"]
 
-from .eventing import Tevery
+from .credentialing import (Regery, RegeryDoer, BaseRegistry,
+                            Registry, SignifyRegistry, Registrar,
+                            Credentialer,
+                            sendCredential, sendArtifacts, sendRegistry)
+from .eventing import incept, rotate, issue, revoke, backerIssue, backerRevoke, Tever, Tevery
+from .verifying import Verifier
+from .viring import (Reger, rbdict, openReger,
+                        buildProof, messagize)

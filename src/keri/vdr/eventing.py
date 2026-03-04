@@ -5,8 +5,6 @@ keri.vdr.eventing module
 
 VC TEL  support
 """
-
-import json
 import logging
 from dataclasses import asdict
 from math import ceil
@@ -14,22 +12,21 @@ from  ordered_set import OrderedSet as oset
 
 from hio.help import decking
 
-from keri import kering
-from .. import core
-from .. import help
-from ..core import serdering, coring, indexing
-from ..core.coring import (MtrDex, Kinds, versify, Prefixer,
-                           Ilks, Seqner, Verfer, Number)
-from ..core.signing import (Salter,)
-from ..core.eventing import SealEvent, ample, TraitDex, verifySigs
+from .. import (Kinds, Ilks, versify, MissingWitnessSignatureError, Version,
+                MissingAnchorError, ValidationError, OutOfOrderError,
+                LikelyDuplicitousError, MissingEntryError, MissingAnchorError,
+                UntrustedKeyStateSource,UnverifiedReplyError,
+                OutOfOrderTxnStateError, MissingRegistryError)
+from ..core import (SerderKERI, Salter, Prefixer, Verfer,
+                    Number, Saider, Seqner,
+                    Diger, Dater, eventing, SealEvent,
+                    TraitDex, MtrDex, ample, verifySigs)
 from ..db import basing, dbing
-from ..db.dbing import dgKey, snKey, splitSnKey
-from ..help import helping
-from ..kering import (MissingWitnessSignatureError, Version,
-                      MissingAnchorError, ValidationError, OutOfOrderError, LikelyDuplicitousError)
+from ..db.dbing import dgKey, snKey
+from ..help import helping, ogler
 from ..vdr import viring
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 def incept(
@@ -104,7 +101,7 @@ def incept(
                n=nonce  # nonce of random bytes to make each registry unique
                )
 
-    serder = serdering.SerderKERI(sad=ked, makify=True)
+    serder = SerderKERI(sad=ked, makify=True)
     return serder
 
 
@@ -204,7 +201,7 @@ def rotate(
                ba=adds,  # list of qb64 may be empty
                )
 
-    serder = serdering.SerderKERI(sad=ked, makify=True)
+    serder = SerderKERI(sad=ked, makify=True)
     return serder
 
 
@@ -244,7 +241,7 @@ def issue(
     if dt is not None:
         ked["dt"] = dt
 
-    serder = serdering.SerderKERI(sad=ked, makify=True)
+    serder = SerderKERI(sad=ked, makify=True)
     return serder
 
 
@@ -291,9 +288,9 @@ def revoke(
     if dt is not None:
         ked["dt"] = dt
 
-    _, ked = coring.Saider.saidify(sad=ked)
+    _, ked = Saider.saidify(sad=ked)
 
-    serder = serdering.SerderKERI(sad=ked, makify=True)
+    serder = SerderKERI(sad=ked, makify=True)
     return serder
 
 
@@ -340,12 +337,12 @@ def backerIssue(
                ra=seal._asdict(),
                dt=helping.nowIso8601(),
                )
-    _, ked = coring.Saider.saidify(sad=ked)
+    _, ked = Saider.saidify(sad=ked)
 
     if dt is not None:
         ked["dt"] = dt
 
-    serder = serdering.SerderKERI(sad=ked, makify=True)
+    serder = SerderKERI(sad=ked, makify=True)
     return serder
 
 
@@ -394,12 +391,12 @@ def backerRevoke(
                ra=seal._asdict(),
                dt=helping.nowIso8601(),
                )
-    _, ked = coring.Saider.saidify(sad=ked)
+    _, ked = Saider.saidify(sad=ked)
 
     if dt is not None:
         ked["dt"] = dt
 
-    serder = serdering.SerderKERI(sad=ked, makify=True)
+    serder = SerderKERI(sad=ked, makify=True)
     return serder
 
 
@@ -621,12 +618,12 @@ def query(regk,
     if dtb is not None:
         qry["dtb"] = dt
 
-    return core.eventing.query(route=route,
-                               replyRoute=replyRoute,
-                               query=qry,
-                               stamp=stamp,
-                               version=version,
-                               kind=kind)
+    return eventing.query(route=route,
+                          replyRoute=replyRoute,
+                          query=qry,
+                          stamp=stamp,
+                          version=version,
+                          kind=kind)
 
 
 class Tever:
@@ -756,9 +753,9 @@ class Tever:
         self.estOnly = True if TraitDex.EstOnly in ked["c"] else False
 
         if (raw := self.reger.tvts.get(keys=(self.prefixer.qb64, ked['d']))) is None:
-            raise kering.MissingEntryError("Corresponding event for state={} not found."
+            raise MissingEntryError("Corresponding event for state={} not found."
                                            "".format(ked))
-        self.serder = serdering.SerderKERI(raw=raw.encode("utf-8"))
+        self.serder = SerderKERI(raw=raw.encode("utf-8"))
 
     def state(self):  #state(self, kind=Serials.json)
         """ Returns RegStateRecord of state notice of given Registry Event Log
@@ -777,7 +774,7 @@ class Tever:
         dgkey = dbing.dgKey(self.regk, self.serder.said)
         couple = self.reger.ancs.get(keys=dgkey)
         if couple is None:
-            raise kering.MissingEntryError(f"Missing anchor couple at key={dgkey!r}.")
+            raise MissingEntryError(f"Missing anchor couple at key={dgkey!r}.")
         number, diger = couple
 
         return (state(pre=self.pre,
@@ -1118,7 +1115,7 @@ class Tever:
         if ievt is None:
             raise ValidationError("revoke without issue... probably have to escrow")
 
-        iserder = serdering.SerderKERI(raw=ievt.encode("utf-8"))
+        iserder = SerderKERI(raw=ievt.encode("utf-8"))
         if not iserder.compare(said=ked["p"]):  # prior event dig not match
             raise ValidationError("Mismatch event dig = {} with state dig"
                                   " = {} for evt = {}.".format(ked["p"],
@@ -1181,7 +1178,7 @@ class Tever:
 
         dgkey = dbing.dgKey(vci, vcdig)  # get message
         raw = self.reger.tvts.get(keys=dgkey)
-        serder = serdering.SerderKERI(raw=raw.encode("utf-8"))
+        serder = SerderKERI(raw=raw.encode("utf-8"))
 
         if self.noBackers:
             vcilk = Ilks.iss if len(digs) == 1 else Ilks.rev
@@ -1193,10 +1190,10 @@ class Tever:
         dgkey = dbing.dgKey(vci, vcdig)
         couple = self.reger.ancs.get(keys=dgkey)
         if couple is None:
-            raise kering.MissingEntryError(f"Missing anchor couple at key={dgkey!r}.")
+            raise MissingEntryError(f"Missing anchor couple at key={dgkey!r}.")
         number, diger = couple
-        seqner = coring.Seqner(sn=number.num)
-        saider = coring.Saider(qb64=diger.qb64)
+        seqner = Seqner(sn=number.num)
+        saider = Saider(qb64=diger.qb64)
 
         return vcstate(vcpre=vci,
                        said=vcdig.decode("utf-8"),
@@ -1243,15 +1240,15 @@ class Tever:
 
         dig = serder.saidb
         key = dgKey(pre, dig)
-        number = coring.Number(num=seqner.sn)
-        diger = coring.Diger(qb64=saider.qb64)
+        number = Number(num=seqner.sn)
+        diger = Diger(qb64=saider.qb64)
         self.reger.ancs.put(keys=key, val=(number, diger))
         if bigers:
             self.reger.tibs.pin(keys=key, vals=bigers)
         if baks:
             self.reger.baks.rem(key)
             self.reger.baks.put(key, [bak.encode("utf-8") for bak in baks])
-        self.reger.tets.pin(keys=(pre.decode("utf-8"), dig.decode("utf-8")), val=coring.Dater())
+        self.reger.tets.pin(keys=(pre.decode("utf-8"), dig.decode("utf-8")), val=Dater())
         self.reger.tvts.put(keys=key, val=serder.raw)
         self.reger.tels.put(keys=snKey(pre, sn), val=dig)
         logger.info("Tever: Added to TEL valid %s event %s said=%s reg=%.8s iss=%.8s",
@@ -1374,8 +1371,8 @@ class Tever:
 
         """
         dgkey = dgKey(serder.preb, serder.saidb)
-        number = coring.Number(num=seqner.sn)
-        diger = coring.Diger(qb64=saider.qb64)
+        number = Number(num=seqner.sn)
+        diger = Diger(qb64=saider.qb64)
         self.reger.ancs.put(keys=dgkey, val=(number, diger))
         if bigers:
             self.reger.tibs.pin(keys=dgkey, vals=bigers)
@@ -1400,8 +1397,8 @@ class Tever:
         """
         key = dgKey(serder.preb, serder.saidb)
         if seqner and saider:
-            number = coring.Number(num=seqner.sn)
-            diger = coring.Diger(qb64=saider.qb64)
+            number = Number(num=seqner.sn)
+            diger = Diger(qb64=saider.qb64)
             self.reger.ancs.put(keys=key, val=(number, diger))
         if bigers:
             self.reger.tibs.pin(keys=key, vals=bigers)
@@ -1440,7 +1437,7 @@ class Tever:
         if revt is None:
             raise ValidationError("have to escrow this somewhere")
 
-        rserder = serdering.SerderKERI(raw=revt.encode("utf-8"))
+        rserder = SerderKERI(raw=revt.encode("utf-8"))
         # the backer threshold at this event in mgmt TEL
         rtoad = rserder.ked["bt"]
 
@@ -1742,7 +1739,7 @@ class Tevery:
                                   f"msg={serder.ked}.")
         aid = kwargs["aid"]
         data = serder.ked["a"]
-        dater = coring.Dater(dts=serder.ked["dt"])
+        dater = Dater(dts=serder.ked["dt"])
 
         rsr = viring.RegStateRecord(**data)
 
@@ -1756,7 +1753,7 @@ class Tevery:
                                                   dater=dater, cigars=cigars, tsgs=tsgs):
                 self.cues.append(dict(kin="query", q=dict(pre=pre)))
 
-            raise kering.MissingAnchorError("Failure verify event = {} ".format(serder.ked))
+            raise MissingAnchorError("Failure verify event = {} ".format(serder.ked))
 
         # Load backers from either tsn or Kever of issuer
         cnfg = rsr.c
@@ -1776,7 +1773,7 @@ class Tevery:
             if aid != pre and \
                     aid not in baks and \
                     aid not in wats:
-                raise kering.UntrustedKeyStateSource("transaction state notice for {} from untrusted source {} "
+                raise UntrustedKeyStateSource("transaction state notice for {} from untrusted source {} "
                                                      .format(rsr.i, aid))
 
         if regk in self.tevers:
@@ -1793,7 +1790,7 @@ class Tevery:
                                         aid=aid, osaider=osaider, cigars=cigars,
                                         tsgs=tsgs)
         if not accepted:
-            raise kering.UnverifiedReplyError(f"Unverified registry txn state reply.")
+            raise UnverifiedReplyError(f"Unverified registry txn state reply.")
 
         ldig = self.reger.tels.get(keys=snKey(pre=regk, sn=sn))  # retrieve dig of last event at sn.
 
@@ -1803,14 +1800,14 @@ class Tevery:
                                                   dater=dater, cigars=cigars, tsgs=tsgs):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk)))
 
-            raise kering.OutOfOrderTxnStateError("Out of order txn state={}.".format(rsr))
+            raise OutOfOrderTxnStateError("Out of order txn state={}.".format(rsr))
 
-        tdiger = coring.Diger(qb64=rsr.d)
+        tdiger = Diger(qb64=rsr.d)
         ldig = ldig.encode("utf-8")
         # retrieve last event itself of signer given sdig
         sraw = self.reger.tvts.get(keys=(regk, ldig))
         # assumes db ensures that sraw must not be none because sdig was in KE
-        sserder = serdering.SerderKERI(raw=sraw.encode("utf-8"))
+        sserder = SerderKERI(raw=sraw.encode("utf-8"))
 
         if sserder.said != tdiger.qb64:  # mismatch events problem with replay
             raise ValidationError("Mismatch keystate at sn = {} with db."
@@ -1874,7 +1871,7 @@ class Tevery:
                                   f"msg={serder.ked}.")
         aid = kwargs["aid"]
         data = serder.ked["a"]
-        dater = coring.Dater(dts=serder.ked["dt"])
+        dater = Dater(dts=serder.ked["dt"])
 
         vsr = viring.VcStateRecord(**data)
 
@@ -1894,7 +1891,7 @@ class Tevery:
                                                   diger=diger, dater=dater, cigars=cigars, tsgs=tsgs):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk)))
 
-            raise kering.MissingRegistryError("Failure verify event = {} ".format(serder.ked))
+            raise MissingRegistryError("Failure verify event = {} ".format(serder.ked))
 
         tever = self.tevers[regk]
         pre = tever.pre
@@ -1904,7 +1901,7 @@ class Tevery:
                                                   diger=diger, dater=dater, cigars=cigars, tsgs=tsgs):
                 self.cues.append(dict(kin="query", q=dict(pre=aid)))
 
-            raise kering.MissingAnchorError("Failure verify event = {} ".format(serder.ked))
+            raise MissingAnchorError("Failure verify event = {} ".format(serder.ked))
 
         # Load backers from either tsn or Kever of issuer
         if tever.noBackers:
@@ -1923,7 +1920,7 @@ class Tevery:
             if aid != pre and \
                     aid not in baks and \
                     aid not in wats:
-                raise kering.UntrustedKeyStateSource("transaction state notice for {} from untrusted source {} "
+                raise UntrustedKeyStateSource("transaction state notice for {} from untrusted source {} "
                                                      .format(vsr.i, aid))
 
         keys = (vci, aid,)
@@ -1934,7 +1931,7 @@ class Tevery:
                                         aid=aid, osaider=osaider, cigars=cigars,
                                         tsgs=tsgs)
         if not accepted:
-            raise kering.UnverifiedReplyError(f"Unverified credential state reply.")
+            raise UnverifiedReplyError(f"Unverified credential state reply.")
 
         ldig = self.reger.tels.get(keys=snKey(pre=vci, sn=sn))  # retrieve dig of last event at sn.
 
@@ -1944,14 +1941,14 @@ class Tevery:
                                                   diger=diger, dater=dater, cigars=cigars, tsgs=tsgs):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vci)))
 
-            raise kering.OutOfOrderTxnStateError("Out of order txn state={}.".format(vsr))
+            raise OutOfOrderTxnStateError("Out of order txn state={}.".format(vsr))
 
-        tdiger = coring.Diger(qb64=vsr.d)
+        tdiger = Diger(qb64=vsr.d)
         ldig = ldig.encode("utf-8")
         # retrieve last event itself of signer given sdig
         sraw = self.reger.tvts.get(keys=(vci, ldig))
         # assumes db ensures that sraw must not be none because sdig was in KE
-        sserder = serdering.SerderKERI(raw=sraw.encode("utf-8"))
+        sserder = SerderKERI(raw=sraw.encode("utf-8"))
 
         if sn < sserder.sn:
             raise ValidationError("Stale txn state at sn = {} with db."
@@ -2005,8 +2002,8 @@ class Tevery:
         """
         key = dgKey(serder.preb, serder.saidb)
         self.reger.tvts.put(keys=key, val=serder.raw)
-        number = coring.Number(num=seqner.sn)
-        diger = coring.Diger(qb64=saider.qb64)
+        number = Number(num=seqner.sn)
+        diger = Diger(qb64=saider.qb64)
         self.reger.ancs.put(keys=key, val=(number, diger))
         self.reger.oots.putOn(keys=serder.preb, on=serder.sn, vals=serder.saidb)
         logger.debug("Tever state: Escrowed our of order TEL event "
@@ -2019,15 +2016,15 @@ class Tevery:
             self.processEscrowAnchorless()
             self.processEscrowOutOfOrders()
             self.reger.txnsb.processEscrowState(typ="credential-mre", processReply=self.processReplyCredentialTxnState,
-                                                extype=kering.MissingRegistryError)
+                                                extype=MissingRegistryError)
             self.reger.txnsb.processEscrowState(typ="credential-mae", processReply=self.processReplyCredentialTxnState,
-                                                extype=kering.MissingAnchorError)
+                                                extype=MissingAnchorError)
             self.reger.txnsb.processEscrowState(typ="credential-ooo", processReply=self.processReplyCredentialTxnState,
-                                                extype=kering.OutOfOrderTxnStateError)
+                                                extype=OutOfOrderTxnStateError)
             self.reger.txnsb.processEscrowState(typ="registry-mae", processReply=self.processReplyRegistryTxnState,
-                                                extype=kering.MissingAnchorError)
+                                                extype=MissingAnchorError)
             self.reger.txnsb.processEscrowState(typ="registry-ooo", processReply=self.processReplyRegistryTxnState,
-                                                extype=kering.OutOfOrderTxnStateError)
+                                                extype=OutOfOrderTxnStateError)
 
         except Exception as ex:  # log diagnostics errors etc
             if logger.isEnabledFor(logging.DEBUG):
@@ -2058,7 +2055,7 @@ class Tevery:
                     logger.info("Tevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
-                tserder = serdering.SerderKERI(raw=traw.encode("utf-8"))  # escrowed event
+                tserder = SerderKERI(raw=traw.encode("utf-8"))  # escrowed event
 
                 bigers = self.reger.tibs.get(keys=(pre, digb)) or None
 
@@ -2068,7 +2065,7 @@ class Tevery:
                     logger.info("Tevery unescrow error: %s", msg)
                     raise ValidationError(msg)
                 number, diger = couple
-                seqner = coring.Seqner(sn=number.num)
+                seqner = Seqner(sn=number.num)
 
                 self.processEvent(serder=tserder, seqner=seqner, saider=diger, wigers=bigers)
 
@@ -2117,7 +2114,7 @@ class Tevery:
                     logger.trace("Tevery unescrow error: %s", msg)
                     raise ValidationError(msg)
 
-                tserder = serdering.SerderKERI(raw=traw.encode("utf-8"))  # escrowed event
+                tserder = SerderKERI(raw=traw.encode("utf-8"))  # escrowed event
 
                 bigers = self.reger.tibs.get(keys=(pre, digb)) or None
 
@@ -2127,7 +2124,7 @@ class Tevery:
                     logger.trace("Tevery unescrow error: %s", msg)
                     raise MissingAnchorError(msg)
                 number, diger = couple
-                seqner = coring.Seqner(sn=number.num)
+                seqner = Seqner(sn=number.num)
 
                 self.processEvent(serder=tserder, seqner=seqner, saider=diger, wigers=bigers)
 

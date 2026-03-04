@@ -1,12 +1,8 @@
 from dataclasses import asdict
 
-from keri import core
-from keri.core import routing, parsing, coring, serdering
-from keri.kering import Vrsn_1_0, Vrsn_2_0
-from keri.core.eventing import Kevery, SealEvent
-
+from keri import Vrsn_1_0
+from keri.core import Salter, Kevery, SealEvent, routing, parsing, coring, serdering
 from keri.app import habbing
-
 from keri.vc import proving
 from keri.vdr import viring, credentialing, eventing
 
@@ -15,7 +11,7 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
     # Bob is the controller
     # Bam is verifying the key state for Bob with a stale key state in the way
 
-    default_salt = core.Salter(raw=b'0123456789abcdef').qb64
+    default_salt = Salter(raw=b'0123456789abcdef').qb64
 
     with (habbing.openHby(name="bob", base="test", salt=default_salt) as bobHby,
           habbing.openHby(name="bam", base="test", salt=default_salt) as bamHby):
@@ -96,7 +92,7 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
 def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
     # Bob is the controller
     # Bam is verifying the key state for Bob with a stale key state in the way
-    default_salt = core.Salter(raw=b'0123456789abcdef').qb64
+    default_salt = Salter(raw=b'0123456789abcdef').qb64
     with (habbing.openHby(name="bob", base="test", salt=default_salt) as bobHby,
           habbing.openHby(name="bam", base="test", salt=default_salt) as bamHby):
 
@@ -190,7 +186,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
     # Wes is his witness
     # Bam is verifying the key state for Bob from Wes
     # Habery.makeHab uses name as stem path for salt so different pre
-    default_salt = core.Salter(raw=b'0123456789abcdef').qb64
+    default_salt = Salter(raw=b'0123456789abcdef').qb64
     with (habbing.openHby(name="wes", base="test", salt=default_salt) as wesHby,
           habbing.openHby(name="bob", base="test", salt=default_salt) as bobHby,
           habbing.openHby(name="bam", base="test", salt=default_salt) as bamHby):
@@ -311,11 +307,11 @@ def test_tsn_from_no_one(mockHelpingNowUTC, mockCoringRandomNonce):
     # Bam is verifying the key state for Bob from Wes
     # Wes is no one
     #raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    #salter = core.Salter(raw=raw)
+    #salter = Salter(raw=raw)
     #salt = salter.qb64
     #assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
     # Habery.makeHab uses name as stem path for salt so different pre
-    default_salt = core.Salter(raw=b'0123456789abcdef').qb64
+    default_salt = Salter(raw=b'0123456789abcdef').qb64
     with (habbing.openHby(name="wes", base="test", salt=default_salt) as wesHby,
           habbing.openHby(name="bob", base="test", salt=default_salt) as bobHby,
           habbing.openHby(name="bam", base="test", salt=default_salt) as bamHby):
@@ -409,7 +405,7 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
     # Bob is the controller
     # Bam is verifying the key state for Bob with a stale key state in the way
 
-    default_salt = core.Salter(raw=b'0123456789abcdef').qb64
+    default_salt = Salter(raw=b'0123456789abcdef').qb64
     with (habbing.openHby(name="bob", base="test", salt=default_salt) as bobHby,
           habbing.openHby(name="bam", base="test", salt=default_salt) as bamHby):
 
@@ -539,7 +535,7 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
 
 
 def test_tever_reload(mockHelpingNowUTC, mockCoringRandomNonce, mockHelpingNowIso8601):
-    with habbing.openHby(name="bob", base="test", salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby:
+    with habbing.openHby(name="bob", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
         bobHab = hby.makeHab(name="bob", isith='1', icount=1,)
         assert bobHab.pre == 'EFggrgspyZwbi-zB2iJzjHu0QU5dh89mA8jOhDcgrTqj'
 

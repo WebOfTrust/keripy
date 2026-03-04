@@ -11,14 +11,16 @@ from typing import Type
 
 from hio.help import decking
 
-from .. import help, kering
-from keri.kering import Vrsn_1_0, Vrsn_2_0
+from ..kering import (Vrsn_1_0, MissingChainError,
+                      MissingRegistryError, MissingSchemaError,
+                      ValidationError, FailedSchemaValidationError,
+                      MissingChainError, RevokedChainError)
 from ..core import parsing, coring, scheming
-from ..help import helping
+from ..help import helping, ogler
 from ..vdr import eventing
 from ..vdr.viring import Reger
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 class Verifier:
@@ -110,39 +112,39 @@ class Verifier:
         if regk not in self.tevers:  # registry event not found yet
             if self.escrowMRE(creder, prefixer, seqner, saider):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid, issr=creder.issuer)))
-            raise kering.MissingRegistryError("registry identifier {} not in Tevers".format(regk))
+            raise MissingRegistryError("registry identifier {} not in Tevers".format(regk))
 
         state = self.tevers[regk].vcState(vcid)
         if state is None:  # credential issuance event not found yet
             if self.escrowMRE(creder, prefixer, seqner, saider):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid)))
-            raise kering.MissingRegistryError("credential identifier {} not in Tevers".format(vcid))
+            raise MissingRegistryError("credential identifier {} not in Tevers".format(vcid))
 
         dtnow = helping.nowUTC()
         dte = helping.fromIso8601(state.dt)
         if (dtnow - dte) > datetime.timedelta(seconds=self.CredentialExpiry):
             if self.escrowMRE(creder, prefixer, seqner, saider):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid)))
-            raise kering.MissingRegistryError("credential identifier {} is out of date".format(vcid))
+            raise MissingRegistryError("credential identifier {} is out of date".format(vcid))
         elif state.et in (coring.Ilks.rev, coring.Ilks.brv):  # no escrow, credential has been revoked
             logger.error("credential {} in registrying is not in issued state".format(vcid, regk))
             # Log this and continue instead of the previous exception so we save a revoked credential.
-            # raise kering.InvalidCredentialStateError("..."))
+            # raise InvalidCredentialStateError("..."))
 
         # Verify the credential against the schema
         scraw = self.resolver.resolve(schema)
         if not scraw:
             if self.escrowMSE(creder, prefixer, seqner, saider):
                 self.cues.append(dict(kin="query", q=dict(r="schema", said=schema)))
-            raise kering.MissingSchemaError("schema {} not in cache".format(schema))
+            raise MissingSchemaError("schema {} not in cache".format(schema))
 
         schemer = scheming.Schemer(raw=scraw)
         try:
             schemer.verify(creder.raw)
-        except kering.ValidationError as ex:
+        except ValidationError as ex:
             print("Credential {} is not valid against schema {}: {}"
                   .format(creder.said, schema, ex))
-            raise kering.FailedSchemaValidationError("Credential {} is not valid against schema {}: {}"
+            raise FailedSchemaValidationError("Credential {} is not valid against schema {}: {}"
                                                      .format(creder.said, schema, ex))
 
         if isinstance(prov, list):
@@ -151,7 +153,7 @@ class Verifier:
             edges = [prov]
         else:
             print(f"Invalid type for edges: {prov}")
-            raise kering.ValidationError(f"invalid type for edges: {prov}")
+            raise ValidationError(f"invalid type for edges: {prov}")
 
         for edge in edges:
             for label, node in edge.items():
@@ -163,7 +165,7 @@ class Verifier:
                 if state is None:
                     self.escrowMCE(creder, prefixer, seqner, saider)
                     self.cues.append(dict(kin="proof",  said=nodeSaid))
-                    raise kering.MissingChainError("Failure to verify credential {} chain {}({})"
+                    raise MissingChainError("Failure to verify credential {} chain {}({})"
                                                    .format(creder.said, label, nodeSaid))
 
                 dtnow = helping.nowUTC()
@@ -171,10 +173,10 @@ class Verifier:
                 if (dtnow - dte) > datetime.timedelta(seconds=self.CredentialExpiry):
                     self.escrowMCE(creder, prefixer, seqner, saider)
                     self.cues.append(dict(kin="query", q=dict(r="tels", pre=nodeSaid)))
-                    raise kering.MissingChainError("Failure to verify credential {} chain {}({})"
+                    raise MissingChainError("Failure to verify credential {} chain {}({})"
                                                    .format(creder.said, label, nodeSaid))
                 elif state.et in (coring.Ilks.rev, coring.Ilks.brv):
-                    raise kering.RevokedChainError("Failure to verify credential {} chain {}({})"
+                    raise RevokedChainError("Failure to verify credential {} chain {}({})"
                                                    .format(creder.said, label, nodeSaid))
                 else:  # VcStatus == VcStates.Issued
                     logger.info("Successfully validated credential chain {} for credential {}"
@@ -251,9 +253,9 @@ class Verifier:
 
         """
 
-        self._processEscrow(self.reger.mce, self.TimeoutMRI, kering.MissingChainError)
-        self._processEscrow(self.reger.mse, self.TimeoutMRI, kering.MissingSchemaError)
-        self._processEscrow(self.reger.mre, self.TimeoutMRE, kering.MissingRegistryError)
+        self._processEscrow(self.reger.mce, self.TimeoutMRI, MissingChainError)
+        self._processEscrow(self.reger.mse, self.TimeoutMRI, MissingSchemaError)
+        self._processEscrow(self.reger.mre, self.TimeoutMRE, MissingRegistryError)
 
     def _processEscrow(self, db, timeout, etype: Type[Exception]):
         """ Generic credential escrow processing
@@ -276,7 +278,7 @@ class Verifier:
                     logger.info("Verifier unescrow error: Stale event escrow "
                                 " at said = %s", said)
 
-                    raise kering.ValidationError("Stale event escrow "
+                    raise ValidationError("Stale event escrow "
                                                  "at said = {}.".format(said))
 
                 self.processCredential(creder, prefixer, seqner, saider)

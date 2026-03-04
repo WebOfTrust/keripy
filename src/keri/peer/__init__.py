@@ -4,5 +4,6 @@ KERI
 keri.peer Package
 Exchange Messages
 """
-from .exchanging import exincept, exchange
-
+from .exchanging import (Exchanger, exincept, exchange,
+                         cloneMessage, serializeMessage,
+                         nesting, verify)

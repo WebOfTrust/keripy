@@ -10,13 +10,10 @@ import time
 from hio.base import doing
 from hio.core.tcp import clienting, serving
 
-from keri import help  # logger support
+from keri import help, core
 
-from keri import core
 from keri.core import eventing, coring
-
 from keri.app import habbing, directing
-
 from keri.demo import demoing
 
 

@@ -10,22 +10,24 @@ from typing import Optional
 from hio.base import doing
 from hio.help import decking
 
-from keri.vdr import viring
-from ..kering import Vrsn_1_0, Vrsn_2_0
-from .. import help
-from .. import kering, core
+from . import viring
+from ..kering import (Vrsn_1_0, ClosedError,
+                      ConfigurationError, MissingAnchorError,
+                      ValidationError, LikelyDuplicitousError,
+                      MissingRegistryError)
+from ..help import ogler
 from ..app import agenting
 from ..app.habbing import GroupHab
-from ..core import parsing, coring, scheming, serdering
-from ..core.coring import Seqner, MtrDex
-from ..core.eventing import TraitDex
-from ..db import dbing
-from ..db.dbing import snKey, dgKey
-from ..vc import proving
 from ..vdr import eventing
 from ..vdr.viring import Reger
+from ..core import (parsing, scheming, serdering,
+                    Counter, Codens, MtrDex, NumDex,
+                    Number, Diger, TraitDex,
+                    Seqner, Saider, Prefixer)
+from ..db.dbing import snKey, dgKey
+from ..vc import proving
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 class Regery:
@@ -66,7 +68,7 @@ class Regery:
 
     def setup(self):
         if not self.reger.opened:
-            raise kering.ClosedError("Attempt to setup Regery with closed "
+            raise ClosedError("Attempt to setup Regery with closed "
                                      "reger.")
         self.loadRegistries()
         self.inited = True
@@ -83,7 +85,7 @@ class Regery:
 
             hab = self.hby.habs[pre]
             if hab is None:
-                raise kering.ConfigurationError(f"Unknown prefix {pre} for creating Registry {name}")
+                raise ConfigurationError(f"Unknown prefix {pre} for creating Registry {name}")
 
             reg = Registry(hab=hab, reger=self.reger, tvy=self.tvy, psr=self.psr,
                            name=name, regk=regk, cues=self.cues)
@@ -95,7 +97,7 @@ class Regery:
     def makeRegistry(self, name, prefix, **kwa):
         hab = self.hby.habs[prefix]
         if hab is None:
-            raise kering.ConfigurationError(f"Unknown prefix {prefix} for creating Registry {name}")
+            raise ConfigurationError(f"Unknown prefix {prefix} for creating Registry {name}")
 
         reg = Registry(hab=hab, name=name, reger=self.reger, tvy=self.tvy, psr=self.psr, cues=self.cues)
 
@@ -107,7 +109,7 @@ class Regery:
     def makeSignifyRegistry(self, name, prefix, regser):
         hab = self.hby.habs[prefix]
         if hab is None:
-            raise kering.ConfigurationError(f"Unknown prefix {prefix} for creating Registry {name}")
+            raise ConfigurationError(f"Unknown prefix {prefix} for creating Registry {name}")
 
         reg = SignifyRegistry(hab=hab, name=name, reger=self.reger, tvy=self.tvy, psr=self.psr, cues=self.cues)
 
@@ -253,7 +255,7 @@ class BaseRegistry:
 
         try:
             self.tvy.processEvent(serder=serder)
-        except kering.MissingAnchorError:
+        except MissingAnchorError:
             logger.info("Credential registry missing anchor for inception = %s", serder.said)
             logger.debug("Event=\n%s\n", serder.pretty())
 
@@ -267,8 +269,8 @@ class BaseRegistry:
             saider (Saider): SAID of the anchoring KEL event
         """
         key = dgKey(pre, regd)
-        number = coring.Number(num=seqner.sn)
-        diger = coring.Diger(qb64=saider.qb64)
+        number = Number(num=seqner.sn)
+        diger = Diger(qb64=saider.qb64)
         self.reger.ancs.put(keys=key, val=(number, diger))
 
 
@@ -381,7 +383,7 @@ class Registry(BaseRegistry):
         vci = said
         vcser = self.reger.tels.get(keys=snKey(pre=vci, sn=0))
         if vcser is None:
-            raise kering.ValidationError("Invalid revoke of {} that has not been issued "
+            raise ValidationError("Invalid revoke of {} that has not been issued "
                                          "pre={}.".format(vci, self.regk))
         ievt = self.reger.tvts.get(keys=dgKey(pre=vci, dig=vcser))
         iserder = serdering.SerderKERI(raw=ievt.encode("utf-8"))
@@ -423,7 +425,7 @@ class SignifyRegistry(BaseRegistry):
 
         try:
             self.processEvent(serder=regser)
-        except kering.LikelyDuplicitousError:
+        except LikelyDuplicitousError:
             pass
 
         self.inited = True
@@ -480,7 +482,7 @@ class SignifyRegistry(BaseRegistry):
         vci = said
         vcser = self.reger.tels.get(keys=snKey(pre=vci, sn=0))
         if vcser is None:
-            raise kering.ValidationError("Invalid revoke of {} that has not been issued "
+            raise ValidationError("Invalid revoke of {} that has not been issued "
                                          "pre={}.".format(vci, self.regk))
         ievt = self.reger.tvts.get(keys=dgKey(pre=vci, dig=vcser))
         iserder = serdering.SerderACDC(raw=ievt.encode("utf-8"))
@@ -537,11 +539,11 @@ class Registrar(doing.DoDoer):
         """
         registry = self.rgy.regs[iserder.pre]
         hab = registry.hab
-        rnum = coring.Number(num=0, code=coring.NumDex.Huge)
+        rnum = Number(num=0, code=NumDex.Huge)
 
         if not isinstance(hab, GroupHab):  # not a multisig group
-            number = coring.Number(sn=hab.kever.sner.num)
-            diger = coring.Diger(qb64=hab.kever.serder.said)
+            number = Number(sn=hab.kever.sner.num)
+            diger = Diger(qb64=hab.kever.serder.said)
             registry.anchorMsg(pre=iserder.pre,
                                regd=iserder.said,
                                seqner=number,
@@ -556,9 +558,9 @@ class Registrar(doing.DoDoer):
             sn = anc.sn
             said = anc.said
 
-            prefixer = coring.Prefixer(qb64=hab.pre)
-            number = coring.Number(sn=sn)
-            diger = coring.Diger(qb64=said)
+            prefixer = Prefixer(qb64=hab.pre)
+            number = Number(sn=sn)
+            diger = Diger(qb64=said)
 
             self.counselor.start(prefixer=prefixer, number=number, diger=diger, ghab=hab)
 
@@ -580,11 +582,11 @@ class Registrar(doing.DoDoer):
         hab = registry.hab
 
         vcid = iserder.ked["i"]
-        rnum = coring.Number(num=iserder.ked["s"], code=coring.NumDex.Huge)
+        rnum = Number(num=iserder.ked["s"], code=NumDex.Huge)
 
         if not isinstance(hab, GroupHab):  # not a multisig group
-            number = coring.Number(sn=hab.kever.sner.num)
-            diger = coring.Diger(qb64=hab.kever.serder.said)
+            number = Number(sn=hab.kever.sner.num)
+            diger = Diger(qb64=hab.kever.serder.said)
             registry.anchorMsg(pre=vcid, regd=iserder.said, seqner=number, saider=diger)
 
             print("Waiting for TEL event witness receipts")
@@ -596,9 +598,9 @@ class Registrar(doing.DoDoer):
             sn = anc.sn
             said = anc.said
 
-            prefixer = coring.Prefixer(qb64=hab.pre)
-            number = coring.Number(sn=sn)
-            diger = coring.Diger(qb64=said)
+            prefixer = Prefixer(qb64=hab.pre)
+            number = Number(sn=sn)
+            diger = Diger(qb64=said)
 
             self.counselor.start(prefixer=prefixer, number=number, diger=diger, ghab=hab)
 
@@ -623,11 +625,11 @@ class Registrar(doing.DoDoer):
         hab = registry.hab
 
         vcid = rserder.ked["i"]
-        rnum = coring.Number(num=rserder.ked["s"], code=coring.NumDex.Huge)
+        rnum = Number(num=rserder.ked["s"], code=NumDex.Huge)
 
         if not isinstance(hab, GroupHab):  # not a multisig group
-            number = coring.Number(sn=hab.kever.sner.num)
-            diger = coring.Diger(qb64=hab.kever.serder.said)
+            number = Number(sn=hab.kever.sner.num)
+            diger = Diger(qb64=hab.kever.serder.said)
             registry.anchorMsg(pre=vcid, regd=rserder.said, seqner=number, saider=diger)
 
             print("Waiting for TEL event witness receipts")
@@ -639,9 +641,9 @@ class Registrar(doing.DoDoer):
             sn = anc.sn
             said = anc.said
 
-            prefixer = coring.Prefixer(qb64=hab.pre)
-            number = coring.Number(sn=sn)
-            diger = coring.Diger(qb64=said)
+            prefixer = Prefixer(qb64=hab.pre)
+            number = Number(sn=sn)
+            diger = Diger(qb64=said)
 
             self.counselor.start(prefixer=prefixer, number=number, diger=diger, ghab=hab)
 
@@ -667,9 +669,9 @@ class Registrar(doing.DoDoer):
         sn = serder.sn
         said = serder.said
 
-        prefixer = coring.Prefixer(qb64=hab.pre)
-        seqner = coring.Seqner(sn=sn)
-        saider = coring.Saider(qb64=said)
+        prefixer = Prefixer(qb64=hab.pre)
+        seqner = Seqner(sn=sn)
+        saider = Saider(qb64=said)
 
         return ixn, prefixer, seqner, saider
 
@@ -686,7 +688,7 @@ class Registrar(doing.DoDoer):
             bool: True means event has completed and is commited to database
         """
 
-        seqner = coring.Seqner(sn=sn)
+        seqner = Seqner(sn=sn)
         said = self.rgy.reger.ctel.get(keys=(pre, seqner.qb64))
         return said is not None and self.witPub.sent(said=pre)
 
@@ -748,7 +750,7 @@ class Registrar(doing.DoDoer):
                 else:
                     continue
 
-            rnum = coring.Number(qb64=snq, code=coring.NumDex.Huge)
+            rnum = Number(qb64=snq, code=NumDex.Huge)
             self.rgy.reger.tpwe.rem(keys=(regk, snq))
 
             self.rgy.reger.tede.add(keys=(regk, rnum.qb64), val=(prefixer, number, diger))
@@ -763,15 +765,15 @@ class Registrar(doing.DoDoer):
             try:
                 if not self.counselor.complete(prefixer, number, diger):
                     continue
-            except kering.ValidationError:
+            except ValidationError:
                 self.rgy.reger.tmse.rem(keys=(regk, snq, regd))
                 continue
 
-            rnum = coring.Number(qb64=snq, code=coring.NumDex.Huge)
+            rnum = Number(qb64=snq, code=NumDex.Huge)
 
             # Anchor the message, registry or otherwise
             key = dgKey(regk, regd)
-            number = coring.Number(num=number.sn)
+            number = Number(num=number.sn)
             self.rgy.reger.ancs.put(keys=key, val=(number, diger))
 
             self.rgy.reger.tmse.rem(keys=(regk, snq, regd))
@@ -784,7 +786,7 @@ class Registrar(doing.DoDoer):
         handles sending events to the witnesses and collecting receipts.
         """
         for (regk, snq), (prefixer, number, saider) in self.rgy.reger.tede.getItemIter():  # group multisig escrow
-            rnum = coring.Number(qb64=snq, code=coring.NumDex.Huge)
+            rnum = Number(qb64=snq, code=NumDex.Huge)
             dig = self.rgy.reger.tels.get(keys=snKey(pre=regk, sn=rnum.sn))
             if dig is None:
                 continue
@@ -850,12 +852,12 @@ class Credentialer(doing.DoDoer):
 
         """
         if recp is not None and recp not in self.hby.kevers:
-            raise kering.ConfigurationError("Unable to issue credential to {}.  A connection to that identifier must "
+            raise ConfigurationError("Unable to issue credential to {}.  A connection to that identifier must "
                                             "already be established".format(recp))
 
         registry = self.rgy.registryByName(regname)
         if registry is None:
-            raise kering.ConfigurationError("Credential registry {} does not exist.  It must be created before issuing "
+            raise ConfigurationError("Credential registry {} does not exist.  It must be created before issuing "
                                             "credentials".format(regname))
 
         creder = proving.credential(issuer=registry.hab.pre,
@@ -885,14 +887,14 @@ class Credentialer(doing.DoDoer):
         schema = creder.sad['s']
         scraw = self.verifier.resolver.resolve(schema)
         if not scraw:
-            raise kering.ConfigurationError("Credential schema {} not found.  It must be loaded with data oobi before "
+            raise ConfigurationError("Credential schema {} not found.  It must be loaded with data oobi before "
                                             "issuing credentials".format(schema))
 
         schemer = scheming.Schemer(raw=scraw)
         try:
             schemer.verify(creder.raw)
-        except kering.ValidationError as ex:
-            raise kering.ConfigurationError(f"Credential schema validation failed for {schema}: {ex}")
+        except ValidationError as ex:
+            raise ConfigurationError(f"Credential schema validation failed for {schema}: {ex}")
 
         return True
 
@@ -905,15 +907,15 @@ class Credentialer(doing.DoDoer):
                 need to contribute digest of next rotating key
         """
         # escrow waiting for other signatures
-        prefixer = coring.Prefixer(qb64=serder.pre)
-        seqner = coring.Seqner(sn=serder.sn)
+        prefixer = Prefixer(qb64=serder.pre)
+        seqner = Seqner(sn=serder.sn)
 
         self.rgy.reger.cmse.put(keys=(creder.said, seqner.qb64), val=creder)
 
         try:
             self.verifier.processCredential(creder=creder, prefixer=prefixer, seqner=seqner,
-                                            saider=coring.Saider(qb64=serder.said))
-        except kering.MissingRegistryError:
+                                            saider=Saider(qb64=serder.said))
+        except MissingRegistryError:
             pass
 
     def processCredentialMissingSigEscrow(self):
@@ -922,7 +924,7 @@ class Credentialer(doing.DoDoer):
         event signing is complete then disseminate the event to the witnesses for receipting.
         """
         for (said, snq), creder in self.rgy.reger.cmse.getItemIter():
-            rseq = coring.Seqner(qb64=snq)
+            rseq = Seqner(qb64=snq)
             if not self.registrar.complete(pre=said, sn=rseq.sn):
                 continue
 
@@ -999,8 +1001,8 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
         postman.send(serder=source, attachment=atc)
 
     serder, prefixer, seqner, saider = reger.cloneCred(creder.said)
-    atc = bytearray(core.Counter(core.Codens.SealSourceTriples,
-                                 count=1, version=kering.Vrsn_1_0).qb64b)
+    atc = bytearray(Counter(Codens.SealSourceTriples,
+                                 count=1, version=Vrsn_1_0).qb64b)
     atc.extend(prefixer.qb64b)
     atc.extend(seqner.qb64b)
     atc.extend(saider.qb64b)
