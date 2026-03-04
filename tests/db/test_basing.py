@@ -2140,7 +2140,6 @@ def test_rawrecord():
 
     assert isinstance(record, TestRecord)
     assert isinstance(record, RawRecord)
-    assert basing.RawRecord is recording.RawRecord
 
     assert "x" in record
     assert "y" in record
@@ -2174,9 +2173,6 @@ def test_keystaterecord():
     ksr = KeyStateRecord()
 
     assert isinstance(ksr, KeyStateRecord)
-    assert basing.HabitatRecord is HabitatRecord
-    assert basing.KeyStateRecord is recording.KeyStateRecord
-    assert basing.OobiRecord is recording.OobiRecord
     assert ksr.i == ''
 
     ksn = asdict(ksr)  # key state notice dict

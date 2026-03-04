@@ -22,6 +22,7 @@ from ..recording import (RawRecord, StateEERecord, KeyStateRecord,
                          EventSourceRecord, HabitatRecord, TopicsRecord,
                          OobiQueryRecord, OobiRecord, EndpointRecord,
                          EndAuthRecord, LocationRecord, ObservedRecord,
+                         CacheTypeRecord, TxnMsgCacheRecord, MsgCacheRecord,
                          WellKnownAuthN)
 
 

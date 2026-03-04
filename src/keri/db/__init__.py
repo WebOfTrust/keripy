@@ -22,8 +22,3 @@ from .subing import (SuberBase, Suber, OnSuberBase, OnSuber,
                      CatCesrDupSuber, IoDupSuber, B64IoDupSuber,
                      OnIoDupSuber, B64OnIoDupSuber, OnIoSetSuber,
                      B64OnIoSetSuber)
-from ..recording import (RawRecord, StateEERecord, KeyStateRecord,
-                         EventSourceRecord, HabitatRecord, TopicsRecord,
-                         OobiQueryRecord, OobiRecord, EndpointRecord,
-                         EndAuthRecord, LocationRecord, ObservedRecord,
-                         WellKnownAuthN)

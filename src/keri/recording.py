@@ -427,6 +427,100 @@ class ObservedRecord:  # baser.obvs
 
 
 @dataclass
+class CacheTypeRecord:
+    """Cache type window size parameters for KRAM timeliness caching.
+
+    Keyed by cache-type expression string in ctyp database.
+    Allowed key expressions:
+        '~'                     default (catchall, sorts last in LMDB)
+        'qry', 'rpy', etc.     message type
+        'qry.R.open/sesame'    message type + route
+
+    All lag values are in milliseconds.
+
+    Constraints:
+        0 <= d
+        0 < sl <= ll <= xl
+        0 < sl <= psl
+        0 < ll <= pll
+        0 < xl <= pxl
+
+    Attributes:
+        d (int): network time server clock drift/skew in ms
+        sl (int): short lag for seal-ref or single-key sig windows in ms
+        ll (int): long lag for multi-key sig windows in ms
+        xl (int): exchange lag for exchange transaction windows in ms
+        psl (int): prune short lag in ms (>= sl)
+        pll (int): prune long lag in ms (>= ll)
+        pxl (int): prune exchange lag in ms (>= xl)
+    """
+    d: int = 0
+    sl: int = 0
+    ll: int = 0
+    xl: int = 0
+    psl: int = 0
+    pll: int = 0
+    pxl: int = 0
+
+    def __iter__(self):
+        return iter(asdict(self))
+
+
+@dataclass
+class MsgCacheRecord:
+    """Message cache entry for KRAM timeliness caching.
+
+    Keyed by (AID, MID) in msgc database. Values are static once created
+    until pruned and deleted.
+
+    Attributes:
+        mdt (str): message datetime stamp ISO-8601 from msg dt field
+        d (int): drift in ms from cache-type at creation time
+        ml (int): message lag in ms (sl or ll from cache-type)
+        pml (int): prune message lag in ms (psl or pll from cache-type)
+        xl (int): exchange lag in ms from cache-type
+        pxl (int): prune exchange lag in ms from cache-type
+    """
+    mdt: str = ''
+    d: int = 0
+    ml: int = 0
+    pml: int = 0
+    xl: int = 0
+    pxl: int = 0
+
+    def __iter__(self):
+        return iter(asdict(self))
+
+
+@dataclass
+class TxnMsgCacheRecord:
+    """Transactioned message cache entry for KRAM timeliness caching.
+
+    Keyed by (AID, XID, MID) in tmsc database. Values are static once created
+    until pruned and deleted. For the starting xip message, xdt == mdt.
+
+    Attributes:
+        mdt (str): message datetime stamp ISO-8601 from msg dt field
+        xdt (str): exchange transaction start datetime ISO-8601 from xip dt field
+        d (int): drift in ms from cache-type at creation time
+        ml (int): message lag in ms (sl or ll from cache-type)
+        pml (int): prune message lag in ms (psl or pll from cache-type)
+        xl (int): exchange lag in ms from cache-type
+        pxl (int): prune exchange lag in ms from cache-type
+    """
+    mdt: str = ''
+    xdt: str = ''
+    d: int = 0
+    ml: int = 0
+    pml: int = 0
+    xl: int = 0
+    pxl: int = 0
+
+    def __iter__(self):
+        return iter(asdict(self))
+
+
+@dataclass
 class WellKnownAuthN:
     """
     Each WellKnownAuthN represents a successfully resolved .well-known OOBI URL keyed by
@@ -436,4 +530,3 @@ class WellKnownAuthN:
 
     url: str  # full .well-known OOBI URL resolved
     dt: str  # iso8601 date/time of success resolution
-
