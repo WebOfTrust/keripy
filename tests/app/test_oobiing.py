@@ -13,10 +13,10 @@ from keri import help, kering, core
 from keri.kering import Vrsn_1_0
 from keri.app import habbing, oobiing, notifying
 from keri.core import serdering, eventing, parsing, routing
-from keri.db import basing
 from keri.end import ending
 from keri.help import helping
 from keri.peer import exchanging
+from keri.recording import OobiRecord
 
 
 def test_oobi_share(mockHelpingNowUTC):
@@ -88,19 +88,19 @@ def test_oobiery():
         # Insert some that will fail
         url = 'http://127.0.0.1:5644/oobi/EADqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness' \
               '/BAyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw?name=jim'
-        obr = basing.OobiRecord(date=helping.nowIso8601())
+        obr = OobiRecord(date=helping.nowIso8601())
         hby.db.oobis.pin(keys=(url,), val=obr)
         url = 'http://127.0.0.1:5644/oobi/EBRzmSCFmG2a5U2OqZF-yUobeSYkW-a3FsN82eZXMxY0'
-        obr = basing.OobiRecord(date=helping.nowIso8601())
+        obr = OobiRecord(date=helping.nowIso8601())
         hby.db.oobis.pin(keys=(url,), val=obr)
         url = 'http://127.0.0.1:5644/oobi?name=Blind'
-        obr = basing.OobiRecord(date=helping.nowIso8601())
+        obr = OobiRecord(date=helping.nowIso8601())
         hby.db.oobis.pin(keys=(url,), val=obr)
 
         # Configure the MOOBI rpy URL and the controller URL
         curl = f'http://127.0.0.1:5644/oobi/{hab.pre}/controller'
         murl = f'http://127.0.0.1:5644/.well-known/keri/oobi/{hab.pre}?name=Root'
-        obr = basing.OobiRecord(date=helping.nowIso8601())
+        obr = OobiRecord(date=helping.nowIso8601())
         hby.db.oobis.pin(keys=(murl,), val=obr)
 
         app = falcon.App()  # falcon.App instances are callable WSGI apps
@@ -226,10 +226,10 @@ def test_authenticator(mockHelpingNowUTC):
         authn = keri.app.oobiing.Authenticator(hby=hby)
 
         url = 'http://127.0.0.1:5644/.well-known/keri/oobi/EN9CoGmdCd8fNaYK3FrYUJhmJHL7aZ3OhFZzEutJ5xZZ?name=Root'
-        obr = basing.OobiRecord(date=helping.nowIso8601())
+        obr = OobiRecord(date=helping.nowIso8601())
         hby.db.woobi.pin(keys=(url,), val=obr)
         url = 'http://127.0.0.1:5644/oobi/EBRzmSCFmG2a5U2OqZF-yUobeSYkW-a3FsN82eZXMxY0'
-        obr = basing.OobiRecord(date=helping.nowIso8601())
+        obr = OobiRecord(date=helping.nowIso8601())
         hby.db.woobi.pin(keys=(url,), val=obr)
 
         app = falcon.App()  # falcon.App instances are callable WSGI apps
@@ -244,4 +244,3 @@ def test_authenticator(mockHelpingNowUTC):
         assert doist.limit == limit
 
         doist.exit()
-

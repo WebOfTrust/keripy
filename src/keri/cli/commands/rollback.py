@@ -13,10 +13,10 @@ from ..common.parsing import Parsery
 
 from ... import kering, help
 from ...core import coring, serdering
-from ...db import dbing, basing
+from ...db import dbing
 from ...help import helping
 from ...kering import ConfigurationError
-
+from ...recording import KeyStateRecord
 
 logger = help.ogler.getLogger()
 
@@ -88,7 +88,7 @@ def rollback(tymth, tock=0.0, **opts):
 
             state = serdering.SerderKERI(ked=ked)  # This is wrong key state is not Serder anymore
             hby.db.states.pin(keys=hab.pre,
-                              val=helping.datify(basing.KeyStateRecord,
+                              val=helping.datify(KeyStateRecord,
                                                  state.ked))
 
             # Refresh all habs to reload this one

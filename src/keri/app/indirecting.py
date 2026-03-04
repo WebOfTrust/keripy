@@ -29,6 +29,7 @@ from ..end import ending
 from ..help import helping, ogler
 from ..peer import exchanging
 from ..vdr import Tevery, verifying, viring
+from ..recording import TopicsRecord
 
 logger = ogler.getLogger()
 
@@ -771,7 +772,7 @@ class Poller(doing.DoDoer):
 
         witrec = self.hab.db.tops.get((self.pre, self.witness))
         if witrec is None:
-            witrec = basing.TopicsRecord(topics=dict())
+            witrec = TopicsRecord(topics=dict())
 
         while self.retry > 0:
             try:

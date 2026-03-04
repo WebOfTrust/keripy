@@ -16,8 +16,7 @@ from ....help import helping
 
 from ....app import oobiing
 from ....app import organizing as connecting, habbing, oobiing
-from ....db import basing
-
+from ....recording import OobiRecord
 
 logger = help.ogler.getLogger()
 
@@ -80,7 +79,7 @@ class ContactAddDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        obr = basing.OobiRecord(date=helping.nowIso8601())
+        obr = OobiRecord(date=helping.nowIso8601())
         if self.alias:
             obr.oobialias = self.alias
 

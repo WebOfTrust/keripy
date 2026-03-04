@@ -32,10 +32,14 @@ from .counting import Counter, Codens
 from .structing import (SealEvent, SealLast, StateEstEvent)
 from .indexing import Siger
 from .serdering import SerderKERI
-from ..db.basing import (KeyStateRecord, StateEERecord, OobiRecord,
-                         KeyStateRecord, EventSourceRecord, EndpointRecord,
-                         LocationRecord, ObservedRecord, Baser)
+
+from . import serdering
+
+from ..db import basing, dbing
 from ..db.dbing import dgKey, snKey
+from ..recording import (EndpointRecord, EventSourceRecord, KeyStateRecord,
+                         LocationRecord, OobiRecord, ObservedRecord,
+                         StateEERecord)
 
 
 logger = ogler.getLogger()

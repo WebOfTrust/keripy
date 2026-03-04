@@ -14,6 +14,7 @@ from  ordered_set import OrderedSet as oset
 from ..db import koming, subing, escrowing, dbing, basing
 
 from .. import MissingEntryError, Vrsn_1_0, Ilks
+from .. import recording
 from ..app import signing
 from ..core import (Counter, Number, Diger, Dater,
                     Prefixer, Verfer, Cigar, Saider,
@@ -96,7 +97,7 @@ class RegistryRecord:
 
 
 @dataclass
-class RegStateRecord(basing.RawRecord):  # reger.state
+class RegStateRecord(recording.RawRecord):  # reger.state
     """
     Registry Event Log (REL) State information
 
@@ -147,7 +148,7 @@ class RegStateRecord(basing.RawRecord):  # reger.state
 
 
 @dataclass
-class VcStateRecord(basing.RawRecord):
+class VcStateRecord(recording.RawRecord):
     vn: list[str] = field(default_factory=list)  # version number [major, minor] round trip serializable
     i: str = ''  # identifier prefix qb64
     s: str = '0'  # sequence number of latest event in KEL as hex str
