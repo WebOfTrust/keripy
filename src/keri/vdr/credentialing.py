@@ -24,7 +24,7 @@ from ..core import (parsing, scheming, serdering,
                     Counter, Codens, MtrDex, NumDex,
                     Number, Diger, TraitDex,
                     Seqner, Saider, Prefixer)
-from ..db.dbing import snKey, dgKey
+from ..db import snKey, dgKey
 from ..vc import proving
 
 logger = ogler.getLogger()

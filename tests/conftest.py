@@ -16,8 +16,8 @@ from hio.base import doing
 from keri import help, Schemes, Roles
 from keri.kering import Vrsn_1_0
 from keri.core import scheming, coring, routing, eventing, parsing, signing
-from keri.db import basing
 from keri.help import helping
+from keri.recording import EndpointRecord, LocationRecord
 
 from keri.cli import commands
 
@@ -134,16 +134,16 @@ class DbSeed:
 
         watEndKeys = ('BGYNONqsgWKDQuKyCNanZ-7DyT0oeb6ectMZ1WGyT7o8', "controller",
                       'BGYNONqsgWKDQuKyCNanZ-7DyT0oeb6ectMZ1WGyT7o8')
-        ender = basing.EndpointRecord(allowed=True)  # create new record
+        ender = EndpointRecord(allowed=True)  # create new record
         db.ends.pin(keys=watEndKeys, val=ender)  # overwrite
 
         if Schemes.tcp in protocols:
-            locer = basing.LocationRecord(url="tcp://127.0.0.1:5634/")  # create new record
+            locer = LocationRecord(url="tcp://127.0.0.1:5634/")  # create new record
             watLocKeys = ('BGYNONqsgWKDQuKyCNanZ-7DyT0oeb6ectMZ1WGyT7o8', Schemes.tcp)
             db.locs.pin(keys=watLocKeys, val=locer)  # overwrite
 
         if Schemes.http in protocols:
-            httplocer = basing.LocationRecord(url="http://127.0.0.1:5644/")  # create new record
+            httplocer = LocationRecord(url="http://127.0.0.1:5644/")  # create new record
             watHttpLocKeys = ('BGYNONqsgWKDQuKyCNanZ-7DyT0oeb6ectMZ1WGyT7o8', Schemes.http)
             db.locs.pin(keys=watHttpLocKeys, val=httplocer)  # overwrite
 

@@ -22,10 +22,10 @@ from ..help import ogler, nowIso8601
 from ..app import organizing
 from ..core import (Prefixer, routing, eventing,
                     parsing, scheming, serdering)
-from ..db import basing
 from ..end import ending, OOBI_RE, DOOBI_RE
 from ..help import helping
 from ..peer import exchanging
+from ..recording import OobiRecord, WellKnownAuthN
 
 logger = ogler.getLogger()
 
@@ -184,7 +184,7 @@ class OobiResource:
         if "url" in body:
             oobi = body["url"]
 
-            obr = basing.OobiRecord(date=helping.nowIso8601())
+            obr = OobiRecord(date=helping.nowIso8601())
             if "oobialias" in body:
                 obr.oobialias = body["oobialias"]
 
@@ -236,7 +236,7 @@ class OobiRequestHandler:
             return
         oobi = pay["oobi"]
 
-        obr = basing.OobiRecord(date=helping.nowIso8601())
+        obr = OobiRecord(date=helping.nowIso8601())
         self.hby.db.oobis.pin(keys=(oobi,), val=obr)
 
         data = dict(
@@ -383,7 +383,7 @@ class Oobiery:
         if not accepted:
             raise UnverifiedReplyError(f"Unverified introduction reply. {serder.ked}")
 
-        obr = basing.OobiRecord(cid=cid, date=dt)
+        obr = OobiRecord(cid=cid, date=dt)
         self.hby.db.oobis.put(keys=(oobi,), val=obr)
 
     def scoobiDo(self, tymth=None, tock=0.0, **kwa):
@@ -626,7 +626,7 @@ class Oobiery:
         mobr.urls = urls
 
         for murl in urls:
-            obr = basing.OobiRecord(date=helping.nowIso8601())
+            obr = OobiRecord(date=helping.nowIso8601())
             obr.oobialias = mobr.oobialias
             obr.cid = mobr.cid
             self.hby.db.oobis.put(keys=(murl,), val=obr)
@@ -658,7 +658,7 @@ class Authenticator:
 
     def addAuthToAid(self, cid, url):
         now = nowIso8601()
-        wkan = basing.WellKnownAuthN(url=url, dt=now)
+        wkan = WellKnownAuthN(url=url, dt=now)
         self.hby.db.wkas.add(keys=(cid,), val=wkan)
 
     def authzDo(self, tymth=None, tock=0.0, **kwa):

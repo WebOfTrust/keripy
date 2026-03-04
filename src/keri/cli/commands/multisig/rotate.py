@@ -14,7 +14,7 @@ from ...common import Parsery, rotating, existing, displaying, config
 from .... import ConfigurationError, help
 from ....app import Notifier, grouping, indirecting, habbing, forwarding
 from ....core import coring, serdering
-from ....db import dbing
+from ....db import dgKey
 from ....peer import exchanging
 
 
@@ -180,7 +180,7 @@ class GroupMultisigRotate(doing.DoDoer):
                     if dig is None:
                         raise ConfigurationError(f"non-existant event {sn} for rotation member {mid}")
                     dig = dig.encode("utf-8")
-                    if (serder := self.hby.db.evts.get(keys=dbing.dgKey(mid, bytes(dig)))) is None or not serder.estive:
+                    if (serder := self.hby.db.evts.get(keys=dgKey(mid, bytes(dig)))) is None or not serder.estive:
                         raise ConfigurationError(f"invalid event {sn} for rotation member {mid}")
 
                     migers.append(serder.ndigers[0])

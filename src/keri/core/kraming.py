@@ -19,8 +19,8 @@ from ordered_set import OrderedSet as oset
 from keri import help, kering
 from keri.core import coring, eventing, indexing
 from keri.core.coring import Verser
-from keri.db import basing
 from keri.help import helping
+from keri.recording import CacheTypeRecord, MsgCacheRecord, TxnMsgCacheRecord
 
 logger = help.ogler.getLogger()
 
@@ -113,7 +113,7 @@ class Kramer:
         """Prepopulate ctyp cache with configured values"""
         for key, val in ctypCf.items():
             try:
-                record = basing.CacheTypeRecord(*map(int, val))
+                record = CacheTypeRecord(*map(int, val))
                 self.db.ctyp.pin(key, record)
             except Exception as e:
                 raise kering.KramConfigurationError(f"Invalid cache configuration for {key}, {val}: {e}")
@@ -646,7 +646,7 @@ class Kramer:
                             return None
 
                     # Create cache and accept
-                    mcr = basing.MsgCacheRecord(
+                    mcr = MsgCacheRecord(
                         mdt=mdts, d=d, ml=ml, pml=pml,
                         xl=cacheTypeRecord.xl, pxl=cacheTypeRecord.pxl)
                     self.db.msgc.pin(key, mcr)
@@ -661,7 +661,7 @@ class Kramer:
                         return None
 
                     # Create cache and accept
-                    mcr = basing.MsgCacheRecord(
+                    mcr = MsgCacheRecord(
                         mdt=mdts, d=d, ml=ml, pml=pml,
                         xl=cacheTypeRecord.xl, pxl=cacheTypeRecord.pxl)
                     self.db.msgc.pin(key, mcr)
@@ -682,7 +682,7 @@ class Kramer:
                         return None  # no sigs verified at all
 
                     # Create cache entry (at least one sig verified)
-                    mcr = basing.MsgCacheRecord(
+                    mcr = MsgCacheRecord(
                         mdt=mdts, d=d, ml=ml, pml=pml,
                         xl=cacheTypeRecord.xl, pxl=cacheTypeRecord.pxl)
                     self.db.msgc.pin(key, mcr)
@@ -871,7 +871,7 @@ class Kramer:
                                 return None
 
                         # Create txn cache and accept
-                        mcr = basing.TxnMsgCacheRecord(
+                        mcr = TxnMsgCacheRecord(
                             mdt=mdts, xdt=xdts, d=d, ml=ml, pml=pml,
                             xl=cacheTypeRecord.xl, pxl=cacheTypeRecord.pxl)
                         self.db.tmsc.pin(key, mcr)
@@ -892,7 +892,7 @@ class Kramer:
                             return None
 
                         # Create txn cache and accept
-                        mcr = basing.TxnMsgCacheRecord(
+                        mcr = TxnMsgCacheRecord(
                             mdt=mdts, xdt=xdts, d=d, ml=ml, pml=pml,
                             xl=cacheTypeRecord.xl, pxl=cacheTypeRecord.pxl)
                         self.db.tmsc.pin(key, mcr)
@@ -944,7 +944,7 @@ class Kramer:
                         return None  # no sigs verified at all
 
                     # At least one sig verified, create txn cache entry
-                    mcr = basing.TxnMsgCacheRecord(
+                    mcr = TxnMsgCacheRecord(
                         mdt=mdts, xdt=xdts, d=d, ml=ml, pml=pml,
                         xl=cacheTypeRecord.xl, pxl=cacheTypeRecord.pxl)
                     self.db.tmsc.pin(key, mcr)
@@ -971,4 +971,3 @@ class Kramer:
                     return None  # message pending
                 else:
                     raise kering.KramError("Unexpected auth type while kraming.")
-

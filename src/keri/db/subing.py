@@ -94,14 +94,17 @@ etc.
 
 
 """
-from typing import Type, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Type, Union
 from collections.abc import Iterable, Iterator
 
 from .. import help
 from ..help.helping import isNonStringIterable, Reb64
-from .. import core
-from ..core import coring, scheming, serdering, signing
 from . import dbing
+
+if TYPE_CHECKING:
+    from ..core import coring, scheming, serdering, signing
 
 logger = help.ogler.getLogger()
 
@@ -953,7 +956,7 @@ class CesrSuberBase(SuberBase):
 
     def __init__(self,
                  *pa,
-                 klas: Type[coring.Matter] = coring.Matter,
+                 klas: Type[coring.Matter] | None = None,
                  strict: bool = False,
                  **kwa):
         """
@@ -974,6 +977,10 @@ class CesrSuberBase(SuberBase):
                            False means do not enforce. Default False
 
         """
+        if klas is None:
+            from ..core import coring
+            klas = coring.Matter
+
         super(CesrSuberBase, self).__init__(*pa, **kwa)
         self.klas = klas
         self.strict = bool(strict)
@@ -1107,6 +1114,7 @@ class CatCesrSuberBase(CesrSuberBase):
 
         """
         if klas is None:
+            from ..core import coring
             klas = (coring.Matter, )  # set default to tuple of single Matter
         if not isNonStringIterable(klas):  # not iterable
             klas = (klas, )  # make it so
@@ -1742,14 +1750,17 @@ class SignerSuber(CesrSuber):
     of a public key for the associated Verfer instance. This allows returned
     Signer instance to have its .transferable property set correctly.
     """
-
-    def __init__(self, *pa, klas: Type[signing.Signer] = signing.Signer, **kwa):
+    def __init__(self, *pa, klas: Type[signing.Signer] | None = None, **kwa):
         """
         Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
             klas (Type[coring.Matter]): Class reference to subclass of Matter
         """
+        from ..core import signing
+
+        if klas is None:
+            klas = signing.Signer
         if not (issubclass(klas, signing.Signer)):
             raise ValueError("Invalid klas type={}, expected {}."
                              "".format(klas, signing.Signer))
@@ -1780,6 +1791,7 @@ class SignerSuber(CesrSuber):
         key = self._tokey(keys)  # keys maybe string or tuple
         val = self.db.getVal(db=self.sdb, key=key)
         keys = self._tokeys(key)  # verkey is last split if any
+        from ..core import coring
         verfer = coring.Verfer(qb64b=keys[-1])  # last split
         return (self.klas(qb64b=bytes(val), transferable=verfer.transferable)
                 if val is not None else None)
@@ -1815,6 +1827,7 @@ class SignerSuber(CesrSuber):
         for key, val in self.db.getTopItemIter(db=self.sdb,
                                         top=self._tokey(keys, topive=topive)):
             ikeys = self._tokeys(key)  # verkey is last split if any
+            from ..core import coring
             verfer = coring.Verfer(qb64b=ikeys[-1])   # last split
             yield (ikeys, self.klas(qb64b=bytes(val),
                                    transferable=verfer.transferable))
@@ -1834,7 +1847,7 @@ class CryptSignerSuber(SignerSuber):
     """
 
     def put(self, keys: Union[str, Iterable], val: coring.Matter,
-            encrypter: core.Encrypter = None):
+            encrypter: signing.Encrypter = None):
         """
         Puts qb64 of Matter instance val at key made from keys. Does not overwrite
         If encrypter provided then encrypts first
@@ -1842,7 +1855,7 @@ class CryptSignerSuber(SignerSuber):
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
             val (Signer): instance of self.klas
-            encrypter (core.Encrypter): optional
+            encrypter (signing.Encrypter): optional
 
         Returns:
             result (bool): True If successful, False otherwise, such as key
@@ -1856,7 +1869,7 @@ class CryptSignerSuber(SignerSuber):
 
 
     def pin(self, keys: Union[str, Iterable], val: coring.Matter,
-            encrypter: core.Encrypter = None):
+            encrypter: signing.Encrypter = None):
         """
         Pins (sets) qb64 of Matter instance val at key made from keys. Overwrites.
         If encrypter provided then encrypts first
@@ -1864,7 +1877,7 @@ class CryptSignerSuber(SignerSuber):
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
             val (Signer): instance of self.klas
-            encrypter (core.Encrypter): optional
+            encrypter (signing.Encrypter): optional
 
         Returns:
             result (bool): True If successful. False otherwise.
@@ -1877,7 +1890,7 @@ class CryptSignerSuber(SignerSuber):
 
 
 
-    def get(self, keys: Union[str, Iterable], decrypter: core.Decrypter = None):
+    def get(self, keys: Union[str, Iterable], decrypter: signing.Decrypter = None):
         """
         Gets Signer instance at keys. If decrypter then assumes value in db was
         encrypted and so decrypts value in db before converting to Signer.
@@ -1891,7 +1904,7 @@ class CryptSignerSuber(SignerSuber):
             keys (Union[str, iterable]): key strs to be combined in order to
                 form key. Last element of keys is verkey used to determin
                 .transferable for Signer
-            decrypter (core.Decrypter): optional. If provided assumes value in
+            decrypter (signing.Decrypter): optional. If provided assumes value in
                 db was encrypted and so decrypts before converting to Signer.
 
         Usage:
@@ -1906,6 +1919,7 @@ class CryptSignerSuber(SignerSuber):
         if val is None:
             return None
         keys = self._tokeys(key)  # verkey is last split if any
+        from ..core import coring
         verfer = coring.Verfer(qb64b=keys[-1])  # last split
         if decrypter:
             return (decrypter.decrypt(qb64=bytes(val),
@@ -1915,7 +1929,7 @@ class CryptSignerSuber(SignerSuber):
 
 
     def getItemIter(self, keys: str|bytes|memoryview|Iterable= "",
-                       decrypter: core.Decrypter = None, *, topive=False):
+                       decrypter: signing.Decrypter = None, *, topive=False):
         """Iterates over all the items in top branch defined by keys where
         keys may be truncation of full branch.
 
@@ -1925,7 +1939,7 @@ class CryptSignerSuber(SignerSuber):
             prefix to return branches of key space. When keys is empty then
             returns all items in subdb
 
-        decrypter (core.Decrypter): optional. If provided assumes value in
+        decrypter (signing.Decrypter): optional. If provided assumes value in
                 db was encrypted and so decrypts before converting to Signer.
 
         Parameters:
@@ -1947,6 +1961,7 @@ class CryptSignerSuber(SignerSuber):
         for key, val in self.db.getTopItemIter(db=self.sdb,
                                         top=self._tokey(keys, topive=topive)):
             ikeys = self._tokeys(key)  # verkey is last split if any
+            from ..core import coring
             verfer = coring.Verfer(qb64b=ikeys[-1])   # last split
             if decrypter:
                 yield (ikeys, decrypter.decrypt(qb64=bytes(val),
@@ -1963,7 +1978,7 @@ class SerderSuberBase(SuberBase):
     """
 
     def __init__(self, *pa,
-                 klas: Type[serdering.Serder] = serdering.SerderKERI,
+                 klas: Type[serdering.Serder] | None = None,
                  **kwa):
         """
         Inherited Parameters:
@@ -1980,6 +1995,10 @@ class SerderSuberBase(SuberBase):
         Overridden Parameters:
             klas (Type[serdering.Serder]): Class reference to subclass of Serder
         """
+        if klas is None:
+            from ..core import serdering
+            klas = serdering.SerderKERI
+
         super(SerderSuberBase, self).__init__(*pa, **kwa)
         self.klas = klas
 
@@ -2093,7 +2112,7 @@ class SchemerSuber(SerderSuberBase, Suber):
     """
 
     def __init__(self, *pa,
-                 klas: Type[ scheming.Schemer] = scheming.Schemer,
+                 klas: Type[scheming.Schemer] | None = None,
                  **kwa):
         """
         Inherited Parameters:
@@ -2113,6 +2132,10 @@ class SchemerSuber(SerderSuberBase, Suber):
             klas (Type[scheming.Schemer]): Class reference to ducktyped subclass
                 of Serder  intercepts passed in klas and forces it to Schemer
         """
+        from ..core import scheming
+
+        if klas is None:
+            klas = scheming.Schemer
         if not issubclass(klas, scheming.Schemer):
             raise TypeError(f"Invalid {klas=}, not subclass of {scheming.Schemer}.")
         super(SchemerSuber, self).__init__(*pa, klas=klas, **kwa)

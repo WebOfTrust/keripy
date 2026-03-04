@@ -21,8 +21,7 @@ from ..core import (SerderKERI, Salter, Prefixer, Verfer,
                     Number, Saider, Seqner,
                     Diger, Dater, eventing, SealEvent,
                     TraitDex, MtrDex, ample, verifySigs)
-from ..db import basing, dbing
-from ..db.dbing import dgKey, snKey
+from ..db import Baser, dgKey, snKey
 from ..help import helping, ogler
 from ..vdr import viring
 
@@ -693,7 +692,7 @@ class Tever:
         self.reger = reger if reger is not None else viring.Reger()
         self.cues = cues if cues is not None else decking.Deck()
 
-        self.db = db if db is not None else basing.Baser(reopen=True)
+        self.db = db if db is not None else Baser(reopen=True)
         self.local = True if local else False
 
         if rsr:  # preload from state
@@ -771,7 +770,7 @@ class Tever:
         if self.noBackers:
             cnfg.append(TraitDex.NoBackers)
 
-        dgkey = dbing.dgKey(self.regk, self.serder.said)
+        dgkey = dgKey(self.regk, self.serder.said)
         couple = self.reger.ancs.get(keys=dgkey)
         if couple is None:
             raise MissingEntryError(f"Missing anchor couple at key={dgkey!r}.")
@@ -1176,7 +1175,7 @@ class Tever:
         vcsn = len(digs) - 1
         vcdig = digs[-1].encode("utf-8")
 
-        dgkey = dbing.dgKey(vci, vcdig)  # get message
+        dgkey = dgKey(vci, vcdig)  # get message
         raw = self.reger.tvts.get(keys=dgkey)
         serder = SerderKERI(raw=raw.encode("utf-8"))
 
@@ -1187,7 +1186,7 @@ class Tever:
             vcilk = Ilks.bis if len(digs) == 1 else Ilks.brv
             ra = serder.ked["ra"]
 
-        dgkey = dbing.dgKey(vci, vcdig)
+        dgkey = dgKey(vci, vcdig)
         couple = self.reger.ancs.get(keys=dgkey)
         if couple is None:
             raise MissingEntryError(f"Missing anchor couple at key={dgkey!r}.")
@@ -1478,7 +1477,7 @@ class Tevery:
 
 
         """
-        self.db = db if db is not None else basing.Baser(reopen=True)  # default name = "main"
+        self.db = db if db is not None else Baser(reopen=True)  # default name = "main"
         self.rvy = rvy
         self.reger = reger if reger is not None else viring.Reger()
         self.local = True if local else False  # local vs nonlocal restrictions

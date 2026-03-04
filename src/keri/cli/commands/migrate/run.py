@@ -11,8 +11,7 @@ from ...common import Parsery
 
 from .... import help
 from ....kering import DatabaseError
-from ....db import basing
-
+from ....db import Baser
 
 logger = help.ogler.getLogger()
 
@@ -41,10 +40,10 @@ class MigrateDoer(doing.Doer):
         super(MigrateDoer, self).__init__()
 
     def recur(self, tyme):
-        db = basing.Baser(name=self.args.name,
-                          base=self.args.base,
-                          temp=self.args.temp,
-                          reopen=False)
+        db = Baser(name=self.args.name,
+                   base=self.args.base,
+                   temp=self.args.temp,
+                   reopen=False)
 
         try:
             db.reopen()

@@ -12,9 +12,8 @@ from ...common.parsing import Parsery
 
 from .... import help
 from ....app import habbing, oobiing
-from ....db import basing
 from ....help import helping
-
+from ....recording import OobiRecord
 
 logger = help.ogler.getLogger()
 
@@ -59,7 +58,7 @@ class OobiDoer(doing.DoDoer):
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)
 
-        obr = basing.OobiRecord(date=helping.nowIso8601())
+        obr = OobiRecord(date=helping.nowIso8601())
         if oobiAlias is not None:
             obr.oobialias = oobiAlias
 

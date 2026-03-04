@@ -10,8 +10,7 @@ from hio.base import doing
 from ...common import Parsery, existing
 
 from .... import ConfigurationError, help
-from ....db import basing
-
+from ....recording import TopicsRecord
 
 logger = help.ogler.getLogger()
 
@@ -58,7 +57,7 @@ def update(tymth, tock=0.0, **opts):
 
             witrec = hab.db.tops.get((hab.pre, witness))
             if witrec is None:
-                witrec = basing.TopicsRecord(topics=dict())
+                witrec = TopicsRecord(topics=dict())
 
             witrec.topics[topic] = int(idx)
             hab.db.tops.pin((hab.pre, witness), witrec)

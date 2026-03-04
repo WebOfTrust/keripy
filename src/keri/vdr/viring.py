@@ -11,9 +11,10 @@ A special purpose Verifiable Data Registry (VDR)
 from dataclasses import dataclass, field, asdict
 from  ordered_set import OrderedSet as oset
 
-from ..db import koming, subing, escrowing, dbing, basing
+from ..db import koming, subing, escrowing, dbing, basing, dgKey, snKey
 
 from .. import MissingEntryError, Vrsn_1_0, Ilks
+from .. import recording
 from ..app import signing
 from ..core import (Counter, Number, Diger, Dater,
                     Prefixer, Verfer, Cigar, Saider,
@@ -96,7 +97,7 @@ class RegistryRecord:
 
 
 @dataclass
-class RegStateRecord(basing.RawRecord):  # reger.state
+class RegStateRecord(recording.RawRecord):  # reger.state
     """
     Registry Event Log (REL) State information
 
@@ -147,7 +148,7 @@ class RegStateRecord(basing.RawRecord):  # reger.state
 
 
 @dataclass
-class VcStateRecord(basing.RawRecord):
+class VcStateRecord(recording.RawRecord):
     vn: list[str] = field(default_factory=list)  # version number [major, minor] round trip serializable
     i: str = ''  # identifier prefix qb64
     s: str = '0'  # sequence number of latest event in KEL as hex str
@@ -527,14 +528,14 @@ class Reger(dbing.LMDBer):
             yield msg
 
     def cloneTvtAt(self, pre, sn=0):
-        snkey = dbing.snKey(pre, sn)
+        snkey = snKey(pre, sn)
         dig = self.tels.get(keys=snkey)
         return self.cloneTvt(pre, dig)
 
     def cloneTvt(self, pre, dig):
         msg = bytearray()  # message
         atc = bytearray()  # attachments
-        dgkey = dbing.dgKey(pre, dig)  # get message
+        dgkey = dgKey(pre, dig)  # get message
         if not (raw := self.tvts.get(keys=dgkey)):
             raise MissingEntryError("Missing event for dig={}.".format(dig))
         msg.extend(raw.encode("utf-8"))
