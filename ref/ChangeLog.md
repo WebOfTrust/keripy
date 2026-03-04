@@ -4,6 +4,29 @@
 ### Backwards breaking interface changes
 Changes to call signatures that will break dependent libraries
 
+#### keri.core.routing.py
+Changed `Router.dispatch(self, serder, saider, ...)` to `dispatch(self, serder, diger, ...)`.
+Changed `Router.processRouteNotFound(self, *, serder, saider, ...)` to `processRouteNotFound(self, *, serder, diger, ...)`.
+Changed `Revery.processReply` local variable from `saider` to `diger`.
+
+#### keri.core.eventing.py
+Changed `Kevery.processReplyEndRole(self, *, serder, saider, ...)` to `processReplyEndRole(self, *, serder, diger, ...)`.
+Changed `Kevery.processReplyLocScheme(self, *, serder, saider, ...)` to `processReplyLocScheme(self, *, serder, diger, ...)`.
+Changed `Kevery.processReplyKeyStateNotice(self, *, serder, saider, ...)` to `processReplyKeyStateNotice(self, *, serder, diger, ...)`.
+Renamed local `diger` to `ksr_diger` in `processReplyKeyStateNotice` to avoid shadowing the parameter.
+Changed `Kevery.processReplyAddWatched(self, *, serder, saider, ...)` to `processReplyAddWatched(self, *, serder, diger, ...)`.
+
+#### keri.app.oobiing.py
+Changed `Oobiery.processReply(self, *, serder, saider, ...)` to `processReply(self, *, serder, diger, ...)`.
+
+#### keri.vdr.eventing.py
+Changed `Tvy.processReplyRegistryTxnState(self, *, serder, saider, ...)` to `processReplyRegistryTxnState(self, *, serder, diger, ...)`.
+Changed `Tvy.processReplyCredentialTxnState(self, *, serder, saider, ...)` to `processReplyCredentialTxnState(self, *, serder, diger, ...)`.
+Removed redundant `diger = saider` alias lines in both functions.
+
+#### keri.db.escrowing.py
+Changed `Broker.processEscrowState` dispatch call from `processReply(saider=diger, ...)` to `processReply(diger=diger, ...)`.
+
 #### keri.app.grouping.py
 Changed `complete(self, prefixer, seqner, saider=None)` to `complete(self, prefixer, number, diger=None)`.
 Renamed `seqner` and `saider` parameter to `number` and `diger` to match the actual type (`Number`, `Diger`) being
@@ -96,7 +119,3 @@ from keri.core import Streamer still works.
 moved Tierage and Tiers defintions from keri.core.coring to keri.core.signing
 where they more naturally belong (not used in coring)
 from keri.core import Tiers still works
-
-
-
-
