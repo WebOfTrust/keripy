@@ -55,12 +55,12 @@ class Router:
             Route(regex=regex, fields=fields, resource=resource, suffix=suffix)
         )
 
-    def dispatch(self, serder, saider, cigars, tsgs):
+    def dispatch(self, serder, diger, cigars, tsgs):
         """
 
         Parameters:
             serder:
-            saider:
+            diger:
             cigars:
             tsgs:
 
@@ -84,7 +84,7 @@ class Router:
                 raise ValidationError(f"parameter {name} not found in route {r}")
 
         fn = getattr(route.resource, fname, self.processRouteNotFound)
-        fn(serder=serder, saider=saider, route=r, cigars=cigars, tsgs=tsgs, **kwargs)
+        fn(serder=serder, diger=diger, route=r, cigars=cigars, tsgs=tsgs, **kwargs)
 
     def _find(self, route):
         """Linear seach thru added routes, returning the first one that matchs
@@ -107,13 +107,13 @@ class Router:
         return None, None
 
     def processRouteNotFound(
-        self, *, serder, saider, route, cigars=None, tsgs=None, **kwargs
+        self, *, serder, diger, route, cigars=None, tsgs=None, **kwargs
     ):
         """Default handler for processing reply message with an unregistered route
 
         Parameters:
             serder (Serder): reply event message
-            saider (Diger): instance from said of reply serder
+            diger (Diger): instance from said of reply serder
             route (str): route ('r') of the event message
             cigars (Optional(list)): list of non-transferable signature tuples
             tsgs (Optional(list)): list of transferable signature tuples
@@ -191,8 +191,8 @@ class Revery:
         if not serder.verify():
             raise ValidationError(f"Invalid said for reply msg={serder.ked}.")
 
-        saider = Diger(qb64=serder.said)
-        self.rtr.dispatch(serder=serder, saider=saider, cigars=cigars, tsgs=tsgs)
+        diger = Diger(qb64=serder.said)
+        self.rtr.dispatch(serder=serder, diger=diger, cigars=cigars, tsgs=tsgs)
 
     def acceptReply(
         self, serder, saider, route, aid, osaider=None, cigars=None, tsgs=None
