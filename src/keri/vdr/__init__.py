@@ -5,3 +5,5 @@ keri.vdr Package
 """
 
 __all__ = ["credentialing", "eventing", "viring", "verifying"]
+
+from .eventing import Tevery

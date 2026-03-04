@@ -13,39 +13,32 @@ from ordered_set import OrderedSet as oset
 from hio.help import decking
 
 
-from .. import kering, core
-from ..kering import (MissingEntryError,
+from ..kering import (MissingEntryError, UntrustedKeyStateSource,
                       ValidationError, MissingSignatureError,
                       MissingWitnessSignatureError, UnverifiedReplyError,
                       MissingDelegationError, OutOfOrderError,
                       LikelyDuplicitousError, UnverifiedWitnessReceiptError,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError,
                       QueryNotFoundError, MisfitEventSourceError,
-                      MissingDelegableApprovalError)
-from ..kering import Version, Versionage, TraitDex, Vrsn_1_0, Vrsn_2_0
+                      MissingDelegableApprovalError, Version, Versionage,
+                      TraitDex, Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Ilks)
+from ..help import helping, ogler, nowIso8601
 
-from .. import help
-from ..help import helping
-
-from . import coring
-from .coring import (versify, Kinds, Ilks, PreDex, DigDex,
-                     NonTransDex,
-                     Number, Seqner, Cigar, Dater,
-                     Verfer, Diger, Prefixer, Tholder, Saider)
-
+from .coring import (versify, Kinds, Ilks, PreDex, DigDex, Kinds,
+                     NonTransDex, NumDex, Prefixer, Seqner, Diger,
+                     Number, Seqner, Cigar, Dater, Noncer, versify,
+                     Verfer, Diger, Prefixer, Tholder)
 from .counting import Counter, Codens
 from .structing import (SealEvent, SealLast, StateEstEvent)
-
 from .indexing import Siger
-
-from . import serdering
-
-from ..db import basing, dbing
-from ..db.basing import KeyStateRecord, StateEERecord, OobiRecord
+from .serdering import SerderKERI
+from ..db.basing import (KeyStateRecord, StateEERecord, OobiRecord,
+                         KeyStateRecord, EventSourceRecord, EndpointRecord,
+                         LocationRecord, ObservedRecord, Baser)
 from ..db.dbing import dgKey, snKey
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 EscrowTimeoutPS = 3600  # seconds for partial signed escrow timeout
 
@@ -397,9 +390,9 @@ def validateSigs(serder, sigers, verfers, tholder):
     return (sigers, valid)
 
 
-def fetchTsgs(db, saider, snh=None):
+def fetchTsgs(db, diger, snh=None):
     """
-    Fetch tsgs for saider from .db.ssgs. When sn then only fetch if sn <= snh
+    Fetch tsgs for diger from .db.ssgs. When sn then only fetch if sn <= snh
     Returns:
         tsgs (list): of tsg quadruple of form (prefixer, seqner, diger, sigers)
             where:
@@ -410,16 +403,16 @@ def fetchTsgs(db, saider, snh=None):
 
     Parameters:
         db: (Cesr
-        saider (Saider): instance of said for reply SAD to which signatures
+        diger (Diger): instance of said for reply SAD to which signatures
             are attached
         snh (str): 32 char zero pad lowercase hex of sequence number f"{sn:032x}"
     """
-    klases = (coring.Prefixer, coring.Seqner, coring.Diger)
+    klases = (Prefixer, Seqner, Diger)
     args = ("qb64", "snh", "qb64")
     tsgs = []  # transferable signature groups
     sigers = []
     old = None  # empty keys
-    for keys, siger in db.getItemIter(keys=(saider.qb64, "")):
+    for keys, siger in db.getItemIter(keys=(diger.qb64, "")):
         trituple = keys[1:]
         if trituple != old:  # new tsg
             if snh is not None and trituple[1] > snh:  # only lower sn
@@ -567,7 +560,7 @@ def state(pre,
         raise ValueError(f"Intersecting cuts = {cuts} and adds = {adds} in "
                          f"latest est event.")
 
-    ksr = basing.KeyStateRecord(
+    ksr = KeyStateRecord(
                vn=list(version), # version number as list [major, minor]
                i=pre,  # qb64 prefix
                s=sner.numh,  # lowercase hex string no leading zeros
@@ -716,7 +709,7 @@ def incept(keys,
     if code is not None and code in PreDex:  # use code to override all else
         saids = {'i': code}
 
-    serder = serdering.SerderKERI(sad=ked, makify=True, saids=saids)
+    serder = SerderKERI(sad=ked, makify=True, saids=saids)
     return serder
 
 
@@ -901,7 +894,7 @@ def rotate(pre,
     else:
         ked['a'] = data  # list of seals
 
-    serder = serdering.SerderKERI(sad=ked, makify=True)
+    serder = SerderKERI(sad=ked, makify=True)
     return serder
 
 
@@ -989,7 +982,7 @@ def interact(pre,
                a=data,  # list of seals
                )
 
-    serder = serdering.SerderKERI(sad=sad, makify=True)
+    serder = SerderKERI(sad=sad, makify=True)
     return serder
 
 
@@ -1033,7 +1026,7 @@ def receipt(pre,
                s=sner.numh,  # hex string no leading zeros lowercase
                )
 
-    serder = serdering.SerderKERI(sad=sad, makify=True)
+    serder = SerderKERI(sad=sad, makify=True)
     return serder
 
 
@@ -1126,12 +1119,8 @@ def query(pre="",
                    )
 
 
-    serder = serdering.SerderKERI(sad=sad, makify=True)
+    serder = SerderKERI(sad=sad, makify=True)
     return serder
-
-    #_, ked = coring.Saider.saidify(sad=ked)
-
-    #return Serder(ked=ked)  # return serialized ked
 
 
 def reply(pre="",
@@ -1219,7 +1208,7 @@ def reply(pre="",
                    )
 
 
-    serder = serdering.SerderKERI(sad=sad, makify=True)
+    serder = SerderKERI(sad=sad, makify=True)
     return serder
 
 
@@ -1309,7 +1298,7 @@ def prod(pre="",
                    q=query,
                    )
 
-    serder = serdering.SerderKERI(sad=sad, makify=True)
+    serder = SerderKERI(sad=sad, makify=True)
     return serder
 
 
@@ -1417,7 +1406,7 @@ def bare(pre="",
                    a=data if data else {},  # dict of SADs
                    )
 
-    serder = serdering.SerderKERI(sad=sad, makify=True)
+    serder = SerderKERI(sad=sad, makify=True)
     return serder
 
 
@@ -1431,7 +1420,7 @@ def exchept(sender="",
             stamp=None,
             pvrsn=Vrsn_2_0,
             gvrsn=None,
-            kind=coring.Kinds.json):
+            kind=Kinds.json):
     """Utility function to automate creation of exchange incept, exchept, 'xip',
     message. The exchept 'xip' message is a SAD item with an associated derived
     SAID in its 'd' field.  Only defined for KERI v2.
@@ -1486,7 +1475,7 @@ def exchept(sender="",
     sad = dict(v=vs,  # version string
                t=ilk, # message type
                d="",  # message said
-               u=nonce if nonce is not None else coring.Noncer().qb64,
+               u=nonce if nonce is not None else Noncer().qb64,
                i=sender,  # sender aid qb64
                ri=receiver,  # receiver aid qb64
                dt=stamp if stamp is not None else helping.nowIso8601(),
@@ -1495,7 +1484,7 @@ def exchept(sender="",
                a=attributes if attributes is not None else {},  # attributes
                )
 
-    serder = serdering.SerderKERI(sad=sad, makify=True)
+    serder = SerderKERI(sad=sad, makify=True)
     return serder
 
 
@@ -1509,7 +1498,7 @@ def exchange(sender="",
              stamp=None,
              pvrsn=Vrsn_2_0,
              gvrsn=None,
-             kind=coring.Kinds.json):
+             kind=Kinds.json):
     """ Create an `exn` message with the specified route and payload
 
     Parameters:
@@ -1529,7 +1518,7 @@ def exchange(sender="",
 
 
     """
-    vs = coring.versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
 
     ilk = Ilks.exn
 
@@ -1546,7 +1535,7 @@ def exchange(sender="",
                a=attributes if attributes is not None else {}
                )
 
-    return serdering.SerderKERI(sad=sad, makify=True)
+    return SerderKERI(sad=sad, makify=True)
 
 
 def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
@@ -1584,24 +1573,24 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
     if sigers:
         if isinstance(seal, SealEvent):
             atc.extend(Counter(Codens.TransIdxSigGroups, count=1,
-                                    version=kering.Vrsn_1_0).qb64b)
+                                    version=Vrsn_1_0).qb64b)
             atc.extend(seal.i.encode("utf-8"))
             atc.extend(Seqner(snh=seal.s).qb64b)
             atc.extend(seal.d.encode("utf-8"))
 
         elif isinstance(seal, SealLast):
             atc.extend(Counter(Codens.TransLastIdxSigGroups, count=1,
-                               version=kering.Vrsn_1_0).qb64b)
+                               version=Vrsn_1_0).qb64b)
             atc.extend(seal.i.encode("utf-8"))
 
         atc.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                           version=kering.Vrsn_1_0).qb64b)
+                           version=Vrsn_1_0).qb64b)
         for siger in sigers:
             atc.extend(siger.qb64b)
 
     if wigers:
         atc.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
-                           version=kering.Vrsn_1_0).qb64b)
+                           version=Vrsn_1_0).qb64b)
         for wiger in wigers:
             if wiger.verfer and wiger.verfer.code not in NonTransDex:
                 raise ValueError("Attempt to use tranferable prefix={} for "
@@ -1610,7 +1599,7 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
 
     if cigars:
         atc.extend(Counter(Codens.NonTransReceiptCouples, count=len(cigars),
-                           version=kering.Vrsn_1_0).qb64b)
+                           version=Vrsn_1_0).qb64b)
         for cigar in cigars:
             if cigar.verfer.code not in NonTransDex:
                 raise ValueError("Attempt to use tranferable prefix={} for "
@@ -1623,7 +1612,7 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
             raise ValueError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
         msg.extend(Counter(Codens.AttachmentGroup,
-                           count=(len(atc) // 4), version=kering.Vrsn_1_0).qb64b)
+                           count=(len(atc) // 4), version=Vrsn_1_0).qb64b)
 
     msg.extend(atc)
     return msg
@@ -1749,7 +1738,7 @@ class Kever:
                              " and sigers")
 
         if db is None:
-            db = basing.Baser(reopen=True)  # default name = "main"
+            db = Baser(reopen=True)  # default name = "main"
         self.db = db
         self.cues = cues
         local = True if local else False
@@ -3021,7 +3010,7 @@ class Kever:
                                                                      seal=seal)
                 if dserder is not None:  # found seal in dserder
                     delnum = Number(num=dserder.sn)  # replace with found
-                    deldiger = coring.Diger(qb64=dserder.said)  # replace with found
+                    deldiger = Diger(qb64=dserder.said)  # replace with found
 
             if not dserder: # just escrow and try later
                 self.escrowPDEvent(serder=serder, sigers=sigers, wigers=wigers,
@@ -3317,8 +3306,8 @@ class Kever:
                 # Repair .aess of delegated event by writing found source
                 # seal couple of delegation. This is safe becaause we confirmed
                 # delegation event was accepted in delegator's kel.
-                diger = coring.Diger(qb64b=dserder.saidb)
-                self.db.aess.pin(keys=(serder.preb, serder.saidb), val=(coring.Number(num=dserder.sn), diger))  # authorizer (delegator/issuer) event seal
+                diger = Diger(qb64b=dserder.saidb)
+                self.db.aess.pin(keys=(serder.preb, serder.saidb), val=(Number(num=dserder.sn), diger))  # authorizer (delegator/issuer) event seal
 
             return dserder
 
@@ -3361,14 +3350,14 @@ class Kever:
         fn = None  # None means not a first seen log event so does not return an fn
         dgkeys = (serder.pre, serder.said)
         dgkey = dgKey(serder.preb, serder.saidb)
-        nowdater = coring.Dater()  # now timestamp
+        nowdater = Dater()  # now timestamp
         self.db.dtss.put(keys=dgkey, val=nowdater)  # idempotent do not change dts if already
         if sigers:
             self.db.sigs.put(keys=dgkey, vals=sigers)  # idempotent
         if wigers:
             self.db.wigs.put(keys=dgkey, vals=wigers)
         if wits:
-            self.db.wits.put(keys=dgkey, vals=[coring.Prefixer(qb64=w) for w in wits])
+            self.db.wits.put(keys=dgkey, vals=[Prefixer(qb64=w) for w in wits])
 
         self.db.evts.put(keys=(serder.pre, serder.said), val=serder)  # idempotent (maybe already excrowed)
         # update event source
@@ -3382,7 +3371,7 @@ class Kever:
         # MUST NOT setAes if not delegated or locallyOwned or locallyWitnessed
         if (self.delpre and not serder.ilk == Ilks.ixn and not self.locallyOwned()
             and not self.locallyWitnessed(wits=wits) and delnum and diger):
-            self.db.aess.pin(keys=(serder.preb, serder.saidb), val=(coring.Number(num=delnum.num, code=coring.NumDex.Huge), diger))  # authorizer (delegator/issuer) event seal
+            self.db.aess.pin(keys=(serder.preb, serder.saidb), val=(Number(num=delnum.num, code=NumDex.Huge), diger))  # authorizer (delegator/issuer) event seal
 
         if esr := self.db.esrs.get(keys=dgkeys):  # preexisting esr
             if local and not esr.local:  # local overwrites prexisting remote
@@ -3390,7 +3379,7 @@ class Kever:
                 self.db.esrs.pin(keys=dgkeys, val=esr)
             # otherwise don't change
         else:  # not preexisting so put
-            esr = basing.EventSourceRecord(local=local)
+            esr = EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkeys, val=esr)
 
         pre = self.prefixer.qb64
@@ -3443,10 +3432,10 @@ class Kever:
                 self.db.esrs.pin(keys=dgkey, val=esr)
             # otherwise don't change
         else:  # not preexisting so put
-            esr = basing.EventSourceRecord(local=local)
+            esr = EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkey, val=esr)
 
-        self.db.dtss.put(keys=dgkey, val=coring.Dater())
+        self.db.dtss.put(keys=dgkey, val=Dater())
         self.db.sigs.put(keys=(serder.preb, serder.saidb), vals=sigers)
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
@@ -3481,10 +3470,10 @@ class Kever:
                 self.db.esrs.pin(keys=dgkey, val=esr)
             # otherwise don't change
         else:  # not preexisting so put
-            esr = basing.EventSourceRecord(local=local)
+            esr = EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkey, val=esr)
 
-        self.db.dtss.put(keys=dgkey, val=coring.Dater())
+        self.db.dtss.put(keys=dgkey, val=Dater())
         self.db.sigs.put(keys=dgkey, vals=sigers)
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
@@ -3513,7 +3502,7 @@ class Kever:
         """
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
-        self.db.dtss.put(keys=dgkey, val=coring.Dater())  # idempotent
+        self.db.dtss.put(keys=dgkey, val=Dater())  # idempotent
         if sigers:
             self.db.sigs.put(keys=dgkey, vals=sigers)
         if wigers:
@@ -3529,7 +3518,7 @@ class Kever:
                 self.db.esrs.pin(keys=dgkey, val=esr)
             # otherwise don't change
         else:  # not preexisting so put
-            esr = basing.EventSourceRecord(local=local)
+            esr = EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkey, val=esr)
 
         snkey = snKey(serder.preb, serder.sn)
@@ -3556,7 +3545,7 @@ class Kever:
         """
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
-        self.db.dtss.put(keys=dgkey, val=coring.Dater())  # idempotent
+        self.db.dtss.put(keys=dgkey, val=Dater())  # idempotent
 
         if sigers:
             self.db.sigs.put(keys=dgkey, vals=sigers)
@@ -3573,7 +3562,7 @@ class Kever:
                 self.db.esrs.pin(keys=dgkey, val=esr)
             # otherwise don't change
         else: # not preexisting so put
-            esr = basing.EventSourceRecord(local=local)
+            esr = EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkey, val=esr)
 
         logger.trace("Kever state: Escrowed partially witnessed event = %s", serder.said)
@@ -3612,7 +3601,7 @@ class Kever:
         """
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
-        self.db.dtss.put(keys=dgkey, val=coring.Dater())  # idempotent
+        self.db.dtss.put(keys=dgkey, val=Dater())  # idempotent
 
         if sigers:  # idempotent
             self.db.sigs.put(keys=dgkey, vals=sigers)
@@ -3638,7 +3627,7 @@ class Kever:
                 self.db.esrs.pin(keys=dgkey, val=esr)
             # otherwise don't change
         else: # not preexisting so put
-            esr = basing.EventSourceRecord(local=local)
+            esr = EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkey, val=esr)
 
         logger.debug(f"Kever: Escrowed partially delegated event=\n%s\n", serder.pretty())
@@ -3869,8 +3858,9 @@ class Kevery:
     TimeoutKSN = 3600  # seconds to timeout key state notice message escrows
     TimeoutQNF = 300   # seconds to timeout query not found escrows
 
-    def __init__(self, *, cues=None, db=None, rvy=None,
-                 lax=True, local=False, cloned=False, direct=True, check=False):
+    def __init__(self, *, cues=None, db=None, rvy=None, exc=None, tvy=None,
+                 kramer=None, lax=True, local=False, cloned=False, direct=True,
+                 check=False):
         """
         Initialize instance:
 
@@ -3878,6 +3868,10 @@ class Kevery:
             cues (Deck)  notices to create responses to evts
             kevers is dict of Kever instances of key state in db
             db (Baser): instance of database
+            rvy (Revery): instance for reply message processing
+            exc (Exchanger): instance for exchange message processing
+            tvy (Tevery): instance for TEL query route processing
+            kramer (Kramer): instance for KRAM processing
             lax (bool): True means operate in promiscuous (unrestricted) mode,
                            False means operate in nonpromiscuous (restricted) mode
                               as determined by local and prefixes
@@ -3895,9 +3889,12 @@ class Kevery:
         """
         self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
         if db is None:
-            db = basing.Baser(reopen=True)  # default name = "main"
+            db = Baser(reopen=True)  # default name = "main"
         self.db = db
         self.rvy = rvy
+        self.exc = exc          # Exchanger instance for exn messages
+        self.tvy = tvy          # Tevery instance for TEL query routes
+        self.kramer = kramer    # Kramer instance for KRAM processing
         self.lax = True if lax else False  # promiscuous mode
         self.local = True if local else False  # local vs nonlocal default
         self.cloned = True if cloned else False  # process as cloned
@@ -3932,7 +3929,7 @@ class Kevery:
             sn (int): sequence number of the event for which witness state is desired
 
         Returns:
-            list:  list of coring.Prefixer objects representing the witness state for the identifier prefix at
+            list:  list of Prefixer objects representing the witness state for the identifier prefix at
                  the sequence number
 
         """
@@ -4333,6 +4330,104 @@ class Kevery:
             logger.debug("event=\n%s\n", serder.pretty())
             raise UnverifiedReceiptError(msg)
 
+    def processMsg(self, serder, **kwa):
+        """Process one non-key-event KERI message with attachments.
+
+        Consolidated entry point for non-event message types:
+        qry, rpy, pro, bar, xip, exn.
+
+        Processing order:
+            1. AID-based allow/deny logic (TBD - placeholder)
+            2. KRAM processing via self.kramer.intake()
+            3. Message-type-specific processing delegation
+
+        Parameters:
+            serder (SerderKERI): message instance
+            **kwa: keyword arguments from parser exts dict (sigers, cigars, tsgs,
+                   ssgs, sscs, ssts, tdcs, wigers, trqs, frcs, ptds, essrs,
+                   bsqs, bsss, tmqs, local, etc.)
+                   Also accepts processor overrides injected by parser:
+                   rvy (Revery), exc (Exchanger), tvy (Tevery)
+        """
+        ilk = serder.ilk
+
+        # Extract processor overrides injected by parser, fall back to self
+        rvy = kwa.pop('rvy', None) or self.rvy
+        exc = kwa.pop('exc', None) or self.exc
+        tvy = kwa.pop('tvy', None) or self.tvy
+
+        # Step 1: AID-based allow/deny (TBD - placeholder for future consolidation)
+
+        # Step 2: KRAM
+        if self.kramer:
+            result = self.kramer.intake(serder, **kwa)
+            if result is None:
+                return  # message dropped or pending in KRAM
+
+        # Step 3: Dispatch to message-specific processing
+        match ilk:
+            case Ilks.qry:
+                # Extract source and sigers from ssgs (like parser originally did)
+                if kwa.get('ssgs'):
+                    pre, sigers = kwa['ssgs'][-1]
+                    kwa['source'] = pre
+                    kwa['sigers'] = sigers
+                else:
+                    kwa['sigers'] = []  # just in case sigers provided not by ssgs
+
+                if not (kwa.get('source') or kwa.get('cigars', [])):
+                    raise ValidationError(
+                        f"Missing attached requester source for query"
+                        f" msg = {serder.pretty()}.")
+
+                route = serder.ked["r"]
+                if route in ["logs", "ksn", "mbx"]:
+                    self.processQuery(serder, **kwa)
+                elif route in ["tels", "tsn"]:
+                    if tvy is None:
+                        raise ValidationError(
+                            f"No tevery to process so dropped msg"
+                            f"={serder.pretty()}")
+                    tvy.processQuery(serder, **kwa)
+                else:
+                    raise ValidationError(
+                        f"Invalid resource type {route}"
+                        f"so dropped msg={serder.pretty()}.")
+
+            case Ilks.rpy:
+                cigars = kwa.get('cigars', [])
+                tsgs = kwa.get('tsgs', [])
+                if not (cigars or tsgs):
+                    raise ValidationError(
+                        f"Missing attached endorser signature(s) "
+                        f"to reply msg = {serder.pretty()}.")
+                if rvy is None:
+                    raise ValidationError(
+                        f"No revery to process so dropped msg"
+                        f"= {serder.pretty()}.")
+                rvy.processReply(serder=serder, **kwa)
+
+            case Ilks.exn:
+                cigars = kwa.get('cigars', [])
+                tsgs = kwa.get('tsgs', [])
+                if not (cigars or tsgs):
+                    raise ValidationError(
+                        f"Missing attached exchanger "
+                        f"signatures for msg={serder.pretty()}")
+                if exc is None:
+                    raise ValidationError(
+                        f"No exchanger to process so "
+                        f"dropped msg={serder.pretty()}.")
+                exc.processEvent(serder=serder, **kwa)
+
+            case Ilks.xip | Ilks.pro | Ilks.bar:
+                raise ValidationError(
+                    f"Message type {ilk} not yet supported in processMsg")
+            case _:
+                raise ValidationError(
+                    f"Unexpected non-event message type {ilk} "
+                    f"for msg={serder.pretty()}")
+
     def processAttachedReceiptCouples(self, serder, cigars, *, firner=None,
                                       local=None, **kwa):
         """
@@ -4589,7 +4684,7 @@ class Kevery:
           "a" :
           {
              "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-             "role": "watcher",  # one of kering.Roles
+             "role": "watcher",  # one of Roles
              "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
           }
         }
@@ -4603,7 +4698,7 @@ class Kevery:
           "a" :
           {
              "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-             "role": "watcher",  # one of kering.Roles
+             "role": "watcher",  # one of Roles
              "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
           }
         }
@@ -4625,13 +4720,13 @@ class Kevery:
                 raise ValidationError(f"Missing element={k} from attributes in"
                                       f" {Ilks.rpy} msg={serder.ked}.")
 
-        cider = coring.Prefixer(qb64=data["cid"])  # raises error if unsupported code
+        cider = Prefixer(qb64=data["cid"])  # raises error if unsupported code
         cid = cider.qb64  # controller authorizing eid at role
         role = data["role"]
-        if role not in kering.Roles:
+        if role not in Roles:
             raise ValidationError(f"Invalid role={role} from attributes in "
                                   f"{Ilks.rpy} msg={serder.ked}.")
-        eider = coring.Prefixer(qb64=data["eid"])  # raises error if unsupported code
+        eider = Prefixer(qb64=data["eid"])  # raises error if unsupported code
         eid = eider.qb64  # controller of endpoint at role
         aid = cid  # authorizing attribution id
         keys = (aid, role, eid)
@@ -4691,7 +4786,7 @@ class Kevery:
           "a" :
           {
              "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
-             "scheme": "http",  # one of kering.Schemes
+             "scheme": "http",  # one of Schemes
              "url":  "http://localhost:8080/watcher/wilma",
           }
         }
@@ -4705,7 +4800,7 @@ class Kevery:
           "a" :
           {
              "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
-             "scheme": "http",  # one of kering.Schemes
+             "scheme": "http",  # one of Schemes
              "url":  "",  # Nullifies
           }
         }
@@ -4723,10 +4818,10 @@ class Kevery:
             if k not in data:
                 raise ValidationError("Missing element={} from attributes in {} "
                                       "msg={}.".format(k, Ilks.rpy, serder.ked))
-        eider = coring.Prefixer(qb64=data["eid"])  # raises error if unsupported code
+        eider = Prefixer(qb64=data["eid"])  # raises error if unsupported code
         eid = eider.qb64  # controller of endpoint at role
         scheme = data["scheme"]
-        if scheme not in kering.Schemes:
+        if scheme not in Schemes:
             raise ValidationError("Invalid scheme={} from attributes in {} "
                                   "msg={}.".format(scheme, Ilks.rpy, serder.ked))
         url = data["url"]
@@ -4844,7 +4939,7 @@ class Kevery:
             if aid != ksr.i and \
                     aid not in baks and \
                     aid not in wats:
-                raise kering.UntrustedKeyStateSource("key state notice for {} from untrusted source {} "
+                raise UntrustedKeyStateSource("key state notice for {} from untrusted source {} "
                                                      .format(ksr.pre, aid))
 
         if ksr.i in self.kevers:
@@ -4855,7 +4950,7 @@ class Kevery:
 
         keys = (pre, aid,)
         osaider = self.db.knas.get(keys=keys)  # get old said if any
-        dater = coring.Dater(dts=ksr.dt)
+        dater = Dater(dts=ksr.dt)
 
         # BADA Logic
         accepted = self.rvy.acceptReply(serder=serder, saider=saider, route=route,
@@ -4865,7 +4960,7 @@ class Kevery:
             raise UnverifiedReplyError(f"Unverified key state notice reply. {serder.ked}")
 
         ldig = self.db.kels.getOnLast(keys=pre, on=sn)  # retrieve dig of last event at sn.
-        diger = coring.Diger(qb64=ksr.d)
+        diger = Diger(qb64=ksr.d)
 
         # Only accept key state if for last seen version of event at sn
         if ldig is not None:  # escrow because event does not yet exist in database
@@ -4895,7 +4990,7 @@ class Kevery:
         if ender := self.db.ends.get(keys=keys):  # preexisting record
             ender.allowed = allowed  # update allowed status
         else:  # no preexisting record
-            ender = basing.EndpointRecord(allowed=allowed)  # create new record
+            ender = EndpointRecord(allowed=allowed)  # create new record
         self.db.ends.pin(keys=keys, val=ender)  # overwrite
 
 
@@ -4912,7 +5007,7 @@ class Kevery:
         if locer := self.db.locs.get(keys=keys):  # preexisting record
             locer.url = url  # update preexisting record
         else:  # no preexisting record
-            locer = basing.LocationRecord(url=url)  # create new record
+            locer = LocationRecord(url=url)  # create new record
 
         self.db.locs.pin(keys=keys, val=locer)  # overwrite
 
@@ -5020,7 +5115,7 @@ class Kevery:
             raise UnverifiedReplyError(f"Unverified watcher add reply. {serder.ked}")
 
         if oobi:
-            self.db.oobis.pin(keys=(oobi,), val=OobiRecord(date=help.nowIso8601()))
+            self.db.oobis.pin(keys=(oobi,), val=OobiRecord(date=nowIso8601()))
         self.updateWatched(keys=keys, saider=saider, enabled=enabled)
 
     def updateWatched(self, keys, saider, enabled=None):
@@ -5036,7 +5131,7 @@ class Kevery:
         if observed := self.db.obvs.get(keys=keys):  # preexisting record
             observed.enabled = enabled  # update preexisting record
         else:  # no preexisting record
-            observed = basing.ObservedRecord(enabled=enabled, datetime=helping.nowIso8601())  # create new record
+            observed = ObservedRecord(enabled=enabled, datetime=helping.nowIso8601())  # create new record
 
         self.db.obvs.pin(keys=keys, val=observed)  # overwrite
 
@@ -5216,10 +5311,10 @@ class Kevery:
                 self.db.esrs.pin(keys=dgkey, val=esr)
             # otherwise don't change
         else:  # not preexisting so put
-            esr = basing.EventSourceRecord(local=local)
+            esr = EventSourceRecord(local=local)
             self.db.esrs.put(keys=(serder.preb, serder.saidb), val=esr)
 
-        self.db.dtss.put(keys=dgkey, val=coring.Dater())
+        self.db.dtss.put(keys=dgkey, val=Dater())
         self.db.sigs.put(keys=dgkey, vals=sigers)
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
@@ -5254,10 +5349,10 @@ class Kevery:
                 self.db.esrs.pin(keys=dgkey, val=esr)
             # otherwise don't change
         else:  # not preexisting so put
-            esr = basing.EventSourceRecord(local=local)
+            esr = EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkey, val=esr)
 
-        self.db.dtss.put(keys=dgkey, val=coring.Dater())
+        self.db.dtss.put(keys=dgkey, val=Dater())
         self.db.sigs.put(keys=dgkey, vals=sigers)
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
@@ -5280,7 +5375,7 @@ class Kevery:
         """
         cigars = cigars if cigars is not None else []
         dgkey = dgKey(prefixer.qb64b, serder.saidb)
-        self.db.dtss.put(keys=dgkey, val=coring.Dater())
+        self.db.dtss.put(keys=dgkey, val=Dater())
         self.db.sigs.put(keys=dgkey, vals=sigers)
         self.db.evts.put(keys=(prefixer.qb64b, serder.saidb), val=serder)
         self.db.qnfs.add(keys=(prefixer.qb64, serder.said), val=serder.saidb)
@@ -5312,10 +5407,10 @@ class Kevery:
                 self.db.esrs.pin(keys=dgkey, val=esr)
             # otherwise don't change
         else:  # not preexisting so put
-            esr = basing.EventSourceRecord(local=local)
+            esr = EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkey, val=esr)
 
-        self.db.dtss.put(keys=dgkey, val=coring.Dater())
+        self.db.dtss.put(keys=dgkey, val=Dater())
         self.db.sigs.put(keys=dgkey, vals=sigers)
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         self.db.addLde(snKey(serder.preb, serder.sn), serder.saidb)
@@ -5347,7 +5442,7 @@ class Kevery:
         # so can compare digs from receipt and in database for receipted event
         # with different algos.  Can't lookup event by dig for same reason. Must
         # lookup last event by sn not by dig.
-        self.db.dtss.put(keys=dgKey(serder.preb, said), val=coring.Dater())
+        self.db.dtss.put(keys=dgKey(serder.preb, said), val=Dater())
         for wiger in wigers:  # escrow each couple
             # don't know witness pre yet without witness list so no verfer in wiger
             # if wiger.verfer.transferable:  # skip transferable verfers
@@ -5379,16 +5474,16 @@ class Kevery:
         # so can compare digs from receipt and in database for receipted event
         # with different algos.  Can't lookup event by dig for same reason. Must
         # lookup last event by sn not by dig.
-        self.db.dtss.put(keys=dgKey(serder.preb, said), val=coring.Dater())
+        self.db.dtss.put(keys=dgKey(serder.preb, said), val=Dater())
         for cigar in cigars:  # escrow each triple
             if cigar.verfer.transferable:  # skip transferable verfers
                 continue  # skip invalid triplets
             trituple = (
-                coring.Diger(qb64=said),
-                coring.Prefixer(qb64=cigar.verfer.qb64),
+                Diger(qb64=said),
+                Prefixer(qb64=cigar.verfer.qb64),
                 cigar
             )
-            self.db.ures.add(keys=(serder.pre, coring.Number(num=serder.sn, code=coring.NumDex.Huge).qb64), val=trituple)
+            self.db.ures.add(keys=(serder.pre, Number(num=serder.sn, code=NumDex.Huge).qb64), val=trituple)
         # log escrowed
         logger.debug("Kevery process: escrowed unverified receipt of pre= %s "
                      " sn=%x dig=%s", serder.pre, serder.sn, said)
@@ -5425,15 +5520,15 @@ class Kevery:
         # lookup last event by sn not by dig.
         for tsg in tsgs:
             prefixer, number, saider, sigers = tsg
-            self.db.dtss.put(keys=dgKey(serder.preb, serder.saidb), val=coring.Dater())
+            self.db.dtss.put(keys=dgKey(serder.preb, serder.saidb), val=Dater())
             # since serder of of receipt not receipted event must use dig in
             # serder.ked["d"] not serder.dig
             for siger in sigers:  # escrow each quintlet
                 quintuple = (
-                    coring.Diger(qb64=serder.ked["d"]),
+                    Diger(qb64=serder.ked["d"]),
                     prefixer,
-                    core.Number(num=number.sn),
-                    coring.Diger(qb64=saider.qb64),
+                    Number(num=number.sn),
+                    Diger(qb64=saider.qb64),
                     siger,
                 )
                 self.db.vres.add(keys=snKey(serder.preb, serder.sn), val=quintuple)
@@ -5471,16 +5566,16 @@ class Kevery:
         # and sig stored at kel pre, sn so can compare digs
         # with different algos.  Can't lookup by dig for the same reason. Must
         # lookup last event by sn not by dig.
-        self.db.dtss.put(keys=dgKey(serder.preb, serder.saidb), val=coring.Dater())
+        self.db.dtss.put(keys=dgKey(serder.preb, serder.saidb), val=Dater())
         # since serder of of receipt not receipted event must use dig in
         # serder.ked["d"] not serder.dig
 
         for siger in sigers:  # escrow each quintlet
             quintuple = (
-                coring.Diger(qb64=serder.ked["d"]),
+                Diger(qb64=serder.ked["d"]),
                 prefixer,
-                core.Number(num=number.sn),
-                coring.Diger(qb64=saider.qb64),
+                Number(num=number.sn),
+                Diger(qb64=saider.qb64),
                 siger,
             )
             self.db.vres.add(keys=snKey(serder.preb, serder.sn), val=quintuple)
@@ -5513,12 +5608,12 @@ class Kevery:
         # and sig stored at kel pre, sn so can compare digs
         # with different algos.  Can't lookup by dig for the same reason. Must
         # lookup last event by sn not by dig.
-        self.db.dtss.put(keys=dgKey(serder.preb, serder.said), val=coring.Dater())
+        self.db.dtss.put(keys=dgKey(serder.preb, serder.said), val=Dater())
         quintuple = (
-            coring.Diger(qb64=serder.said),     # event digest
+            Diger(qb64=serder.said),     # event digest
             sprefixer,                          # Prefixer
-            core.Number(num=snumber.sn),        # Number
-            coring.Diger(qb64=saider.qb64),     # est event digest
+            Number(num=snumber.sn),        # Number
+            Diger(qb64=saider.qb64),     # est event digest
             siger,                              # Siger
         )
         self.db.vres.add(keys=snKey(serder.preb, serder.sn), val=quintuple)
@@ -5568,7 +5663,7 @@ class Kevery:
 
         Original Escrow steps:
             dgkey = dgKey(pre, serder.dig)
-            self.db.dtss.put(keys=dgkey, val=coring.Dater())
+            self.db.dtss.put(keys=dgkey, val=Dater())
             self.db.sigs.put(keys=dgkey, vals=sigers)
             self.db.evts.put(keys=(pre, serder.dig), val=serder)
             self.db.ooes.addOn(pre, sn, serder.dig)
@@ -5693,7 +5788,7 @@ class Kevery:
 
         Original Escrow steps:
             dgkey = dgKey(pre, serder.digb)
-            .db.dtss.put(keys=dgkey, val=coring.Dater())
+            .db.dtss.put(keys=dgkey, val=Dater())
             self.db.sigs.put(keys=dgkey, vals=sigers)
             .db.evts.put(keys=(pre, serder.digb), val=serder)
             .db.pses.addOn(pre, sn, serder.digb)
@@ -5849,7 +5944,7 @@ class Kevery:
 
         Original Escrow steps:
             dgkey = dgKey(pre, serder.digb)
-            .db.dtss.put(keys=dgkey, val=coring.Dater())
+            .db.dtss.put(keys=dgkey, val=Dater())
             .db.putWigs(dgkey, [siger.qb64b for siger in sigers])
             .db.pwes.addOn(pre, sn, serder.digb)
             .db.evts.put(keys=(pre, serder.digb), val=serder)
@@ -6013,7 +6108,6 @@ class Kevery:
 
         for (epre,), esn, edig in self.db.pdes.getOnItemIterAll(keys=b''):
             try:
-                #pre, sn = splitSnKey(ekey)  # get pre and sn from escrow item
                 dgkey = dgKey(epre, edig)
                 if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
                     # no local source so raise ValidationError which unescrows below
@@ -6088,8 +6182,8 @@ class Kevery:
                     #seal = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
                     #srdr = self.db.findAnchoringSealEvent(pre=delpre, seal=seal)
                     #if srdr is not None:  # found seal in srdr
-                        #delseqner = coring.Seqner(sn=srdr.sn)
-                        #delsaider = coring.Saider(qb64=srdr.said)
+                        #delseqner = Seqner(sn=srdr.sn)
+                        #delsaider = Saider(qb64=srdr.said)
                         #self.db.udes.put(keys=dgkey, val=(delseqner, delsaider))
 
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
@@ -6169,7 +6263,7 @@ class Kevery:
         Value is couple
 
         Original Escrow steps:
-            self.db.dtss.put(keys=dgKey(pre, dig), val=coring.Dater())
+            self.db.dtss.put(keys=dgKey(pre, dig), val=Dater())
             for wiger in wigers:  # escrow each couple
                 couple = dig.encode("utf-8") + wiger.qb64b
                 self.db.addUwe(key=snKey(pre, sn), val=triple)
@@ -6273,12 +6367,12 @@ class Kevery:
         Value is triple
 
         Original Escrow steps:
-            self.db.dtss.put(keys=dgKey(pre, dig), val=coring.Dater())
+            self.db.dtss.put(keys=dgKey(pre, dig), val=Dater())
             for cigar in cigars:  # escrow each triple
                 if cigar.verfer.transferable:  # skip transferable verfers
                     continue  # skip invalid couplets
                 triple = dig.encode("utf-8") + cigar.verfer.qb64b + cigar.qb64b
-                self.db.ures.add(keys=(serder.pre, coring.Number(num=serder.sn, code=coring.NumDex.Huge).qb64), val=triple)  # should be snKey
+                self.db.ures.add(keys=(serder.pre, Number(num=serder.sn, code=NumDex.Huge).qb64), val=triple)  # should be snKey
             where:
                 dig is dig in receipt of receipted event
                 cigars is list of cigars instances for receipted event
@@ -6296,7 +6390,7 @@ class Kevery:
         """
         
         for (pre, sn), (rsaider, sprefixer, cigar) in self.db.ures.getItemIter():
-            sn = coring.Seqner(qb64=sn).sn
+            sn = Seqner(qb64=sn).sn
             try:
                 cigar.verfer = Verfer(qb64b=sprefixer.qb64b)
 
@@ -6387,7 +6481,7 @@ class Kevery:
 
             except Exception as ex:  # log diagnostics errors etc
                 # error other than out of order so remove from OO escrow
-                self.db.ures.rem(keys=(pre, coring.Number(num=sn, code=coring.NumDex.Huge).qb64), val=(rsaider, sprefixer, cigar))  # removes one escrow at key val
+                self.db.ures.rem(keys=(pre, Number(num=sn, code=NumDex.Huge).qb64), val=(rsaider, sprefixer, cigar))  # removes one escrow at key val
                 if logger.isEnabledFor(logging.DEBUG):  # adds exception data
                     logger.exception("Kevery URE unescrowed: %s", ex.args[0])
                 else:
@@ -6397,7 +6491,7 @@ class Kevery:
                 # We don't remove all escrows at pre,sn because some might be
                 # duplicitous so we process remaining escrows in spite of found
                 # valid event escrow.
-                self.db.ures.rem(keys=(pre, coring.Number(num=sn, code=coring.NumDex.Huge).qb64), val=(rsaider, sprefixer, cigar))  # removes one escrow at key val
+                self.db.ures.rem(keys=(pre, Number(num=sn, code=NumDex.Huge).qb64), val=(rsaider, sprefixer, cigar))  # removes one escrow at key val
                 logger.info("Kevery URE unescrow succeeded for event pre=%s "
                             "sn=%s", pre, sn)
 
@@ -6581,7 +6675,7 @@ class Kevery:
                     for prefixer, cigar in self.db.rcts.getIter(keys=(pre.encode("utf-8"), edig.encode("utf-8"))):
                         cigars.append(cigar)
 
-                    source = coring.Prefixer(qb64b=pre)
+                    source = Prefixer(qb64b=pre)
                     self.processQuery(serder=eserder, source=source, sigers=sigers, cigars=cigars)
 
                 except QueryNotFoundError as ex:
@@ -6741,7 +6835,7 @@ class Kevery:
         Value is quintuple
 
         Original Escrow steps:
-            self.db.dtss.put(keys=dgKey(serder.preb, dig), val=coring.Dater())
+            self.db.dtss.put(keys=dgKey(serder.preb, dig), val=Dater())
             prelet = (dig.encode("utf-8") + seal.i.encode("utf-8") +
                   Seqner(sn=int(seal.s, 16)).qb64b + seal.d.encode("utf-8"))
             for siger in sigers:  # escrow each quintlet
@@ -6894,7 +6988,7 @@ class Kevery:
 
         Original Escrow steps:
             dgkey = dgKey(pre, serder.dig)
-            self.db.dtss.put(keys=dgkey, val=coring.Dater())
+            self.db.dtss.put(keys=dgkey, val=Dater())
             self.db.sigs.put(keys=dgkey, vals=sigers)
             self.db.evts.put(keys=(pre, serder.dig), val=serder)
             self.db.addLde(snKey(pre, sn), serder.digb)
@@ -7029,7 +7123,7 @@ def loadEvent(db, preb, dig):
 
     """
     event = dict()
-    dgkey = dbing.dgKey(preb, dig)  # get message
+    dgkey = dgKey(preb, dig)  # get message
     if not (serder := db.evts.get(keys=(preb, dig))):
         raise ValueError("Missing event for dig={}.".format(dig))
 

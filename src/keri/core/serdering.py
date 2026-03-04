@@ -13,43 +13,27 @@ from base64 import urlsafe_b64encode as encodeB64
 
 import cbor2 as cbor
 import msgpack
-import pysodium
-import blake3
-import hashlib
 from  ordered_set import OrderedSet as oset
 
 
-from .. import kering
 from ..kering import (ValidationError,  MissingFieldError, ExtraFieldError,
                       AlternateFieldError, InvalidValueError,
-                      ShortageError, VersionError, ProtocolError, KindError,
-                      DeserializeError, FieldError, SerializeError)
-from ..kering import (Versionage, Version, Vrsn_1_0, Vrsn_2_0,
-                      VERRAWSIZE1, VERFMT1,
-                      MAXVERFULLSPAN, VER1FULLSPAN,  VER2FULLSPAN)
-from ..kering import SMELLSIZE, Smellage, smell, sniff, Colds
+                      ShortageError, VersionError, ProtocolError,
+                      DeserializeError, FieldError, SerializeError,
+                      Vrsn_1_0, Vrsn_2_0, VER1FULLSPAN,  VER2FULLSPAN,
+                      Smellage, Colds, Protocols, Kinds, Ilks,
+                      smell, sniff, versify, deversify)
 
-from ..kering import Protocols, Kinds, versify, deversify, Ilks
-
-from .. import help
-from ..help import helping
-from ..help import NonStringIterable
-
-
-from . import coring
-from .coring import (MtrDex, LabelDex, DigDex, PreDex, NonTransDex, PreNonDigDex,
-                     Saids,  Digestage, NonceDex)
-from .coring import (Matter, Saider, Verfer, Prefixer, Diger, Number, Tholder,
-                     Tagger, Ilker, Traitor, Verser, Dater, Texter, Pather,
-                     Noncer, Labeler)
+from ..help import helping, NonStringIterable, ogler
+from .coring import (DigDex, PreDex, NonTransDex, PreNonDigDex, Saids,
+                     Matter, Verfer, Prefixer, Diger, Number, Tholder,
+                     Ilker, Traitor, Verser, Dater, Pather, Noncer, Labeler)
 from .mapping import Mapper, Compactor, Aggor
-
 from .counting import GenDex, ProGen, Counter, Codens, SealDex_2_0, MUDex_2_0
-
 from .structing import Sealer, SClanDom
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 @dataclass
@@ -776,8 +760,8 @@ class Serder:
 
         if (self.kind == Kinds.cesr and (self.pvrsn.major < Vrsn_2_0.major or
                 (self.gvrsn is not None and self.gvrsn.major < Vrsn_2_0.major))):
-            raise ValidationError(f"Invalid major protocol version={pvrsn} and/or"
-                                  f" invalid major genus version={gvrsn} "
+            raise ValidationError(f"Invalid major protocol version={self.pvrsn} and/or"
+                                  f" invalid major genus version={self.gvrsn} "
                                   f"for native CESR serialization.")
 
         if self.pvrsn not in self.Fields[self.proto]:
@@ -1465,8 +1449,8 @@ class Serder:
 
                     case _:  # if extra fields this is where logic would be
                         raise DeserializeError(f"Unsupported protocol field label"
-                                             f"='{l}' for protocol={proto}"
-                                             f" version={pvrsn}.")
+                                             f"='{l}' for protocol={self.proto}"
+                                             f" version={self.pvrsn}.")
 
 
         elif self.proto == Protocols.acdc:
@@ -1586,8 +1570,8 @@ class Serder:
 
                     case _:  # if extra fields this is where logic would be
                         raise DeserializeError(f"Unsupported protocol field label"
-                                             f"='{l}' for protocol={proto}"
-                                             f" version={pvrsn}.")
+                                             f"='{l}' for protocol={self.proto}"
+                                             f" version={self.pvrsn}.")
 
         else:  # unsupported protocol type
             raise DeserializeError(f"Unsupported protocol={self.proto}.")
@@ -1792,7 +1776,7 @@ class Serder:
                                         gcode = code  # new group or keep same group
                                         gframe.extend(sealer.qb64b)  # extend in new group
 
-                                except kering.InvalidValueError:
+                                except InvalidValueError:
                                     if gframe:
                                         counter = Counter(code=gcode,
                                                           count=len(gframe) // 4,
@@ -2488,8 +2472,16 @@ class SerderKERI(Serder):
 
     #Properties for exn  exchange
 
+    @property
+    def route(self):
+        """
+        Returns:
+           route (str): qb64 of .sad["r"] route property getter
+        """
+        return self._sad.get("r")
 
     #Properties for vcp  (registry  inception event)
+
     @property
     def uuid(self):
         """uuid property getter

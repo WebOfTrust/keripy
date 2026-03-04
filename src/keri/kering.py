@@ -2,13 +2,11 @@
 """
 Generic Constants and Classes
 """
-import sys
 import re
-from collections import namedtuple, deque
+from collections import namedtuple
 from dataclasses import dataclass, astuple
 
-from .help.helping import sceil
-from .help.helping import intToB64, intToB64b, b64ToInt
+from .help.helping import intToB64, b64ToInt
 
 
 MaxON = int("f"*32, 16)  # 256 ** 16 - 1 maximum ordinal number, sequence or first seen etc
@@ -161,7 +159,7 @@ def versify(proto=Protocols.keri, pvrsn=Version, kind=Kinds.json, size=0, gvrsn=
         if gvrsn is not None:
             raise VersionError(f"Invalid (not None) CESR genus version="
                                f"{gvrsn.major}.{gvrsn.minor} for pvrsn="
-                               f"{pvrsn.major}.{pvrson.minor} ")
+                               f"{pvrsn.major}.{pvrsn.minor} ")
         if kind == Kinds.cesr:
             raise KindError(f"Invalid serialization {kind=} for message protocol"
                             f"  major version={pvrsn.major}")
@@ -1041,3 +1039,40 @@ class QueryNotFoundError(KeriError):
         raise QueryNotFoundError("error message")
     """
 
+
+class KramError(KeriError):
+    """
+    Base class for KRAM (KERI Request Authentication Method) errors.
+
+    Usage:
+        raise KramError("error message")
+    """
+
+class KramConfigurationError(KramError):
+    """
+    Error when the configuration of KRAM is invalid
+    Usage:
+        raise KramConfigurationError("error message")
+    """
+
+class MissingAuthAttachmentError(KramError):
+    """
+    Error when a message lacks any authentication attachment (no seal
+    reference and no signatures). The message cannot be processed by
+    KRAM and must be dropped.
+
+    Usage:
+        raise MissingAuthAttachmentError("error message")
+    """
+
+
+class MissingSenderKeyStateError(KramError):
+    """
+    Error when the sender's KEL or required establishment event is not
+    available to determine key state for authentication. Per KRAM spec,
+    the message must be dropped (not escrowed) and a cue generated to
+    retrieve the sender's KEL.
+
+    Usage:
+        raise MissingSenderKeyStateError("error message")
+    """

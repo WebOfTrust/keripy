@@ -5,20 +5,18 @@ tests.core.test_partial_rotation module
 """
 import pytest
 
-from keri import kering
+from keri import MissingSignatureError
 
-from keri import core
-from keri.core import coring, eventing
+from keri.core import Salter, coring, eventing
 
 from keri.db.basing import openDB
-
 
 
 def test_partial_rotation():
 
     #  create signers
     raw = b"ABCDEFGH01234567"
-    signers = core.Salter(raw=raw).signers(count=18, path='rot', temp=True)
+    signers = Salter(raw=raw).signers(count=18, path='rot', temp=True)
 
     # partial rotation with numeric thresholds
     with openDB(name="controller") as db:
@@ -115,7 +113,7 @@ def test_partial_rotation():
         siger2 = signers[8].sign(rotser.raw, index=2)  # returns siger
 
         # update key event verifier state
-        with pytest.raises(kering.MissingSignatureError):
+        with pytest.raises(MissingSignatureError):
             kever.update(serder=rotser, sigers=[siger0, siger1, siger2])
 
     # partial rotation with weighted thresholds
@@ -196,7 +194,7 @@ def test_partial_rotation():
         siger1 = signers[14].sign(rotser.raw, index=1, ondex=3)  # returns siger
 
         # update key event verifier state
-        with pytest.raises(kering.MissingSignatureError):
+        with pytest.raises(MissingSignatureError):
             kever.update(serder=rotser, sigers=[siger0, siger1])
 
 

@@ -6,24 +6,18 @@ tests.core.test_eventing module
 import os
 
 import pytest
-from hio.help import decking
-
 
 from keri.kering import ValidationError, Vrsn_1_0, Vrsn_2_0, Kinds
 
 from keri import help
 
-from keri import core
 from keri.core import coring
 from keri.core import (Counter, GenDex, Codens, Seqner, Dater, Texter, Pather,
-                       Blinder, Mediar, TypeMedia, Sealer, SealKind, Verser)
-from keri.core.parsing import Parser
-
-from keri.core.eventing import (Kever, Kevery, incept, rotate, interact)
+                       Blinder, Mediar, TypeMedia, Sealer, SealKind, Verser,
+                       Salter, Parser, Kever, Kevery, incept, rotate, interact)
 
 from keri.db.basing import openDB
-from keri.app import habbing
-from keri.peer import exchanging
+
 
 logger = help.ogler.getLogger()
 
@@ -56,11 +50,11 @@ def test_parser_v1_basic():
 
     #  create transferable signers
     raw = b"ABCDEFGH01234567"
-    signers = core.Salter(raw=raw).signers(count=8, path='psr', temp=True)
+    signers = Salter(raw=raw).signers(count=8, path='psr', temp=True)
 
     # create non-transferable signers
     raw = b"abcdefghijklmnop"
-    nsigners = core.Salter(raw=raw).signers(count=8,
+    nsigners = Salter(raw=raw).signers(count=8,
                                             path='psr',
                                             temp=True,
                                             transferable=False)
@@ -410,11 +404,11 @@ def test_parser_v1_version():
 
     #  create transferable signers
     raw = b"ABCDEFGH01234567"
-    signers1 = core.Salter(raw=raw).signers(count=8, path='psr', temp=True)
+    signers1 = Salter(raw=raw).signers(count=8, path='psr', temp=True)
 
     # create non-transferable signers
     raw = b"abcdefghijklmnop"
-    nsigners1 = core.Salter(raw=raw).signers(count=8,
+    nsigners1 = Salter(raw=raw).signers(count=8,
                                             path='psr',
                                             temp=True,
                                             transferable=False)
@@ -611,11 +605,11 @@ def test_parser_v1_enclosed_attachments():
 
     #  create transferable signers
     raw = b"ABCDEFGH01234567"
-    signers = core.Salter(raw=raw).signers(count=8, path='psr', temp=True)
+    signers = Salter(raw=raw).signers(count=8, path='psr', temp=True)
 
     # create non-transferable signers
     raw = b"abcdefghijklmnop"
-    nsigners = core.Salter(raw=raw).signers(count=8,
+    nsigners = Salter(raw=raw).signers(count=8,
                                             path='psr',
                                             temp=True,
                                             transferable=False)
@@ -945,11 +939,11 @@ def test_parser_v1_enclosed_message():
 
     #  create transferable signers
     raw = b"ABCDEFGH01234567"
-    signers = core.Salter(raw=raw).signers(count=8, path='psr', temp=True)
+    signers = Salter(raw=raw).signers(count=8, path='psr', temp=True)
 
     # create non-transferable signers
     raw = b"abcdefghijklmnop"
-    nsigners = core.Salter(raw=raw).signers(count=8,
+    nsigners = Salter(raw=raw).signers(count=8,
                                             path='psr',
                                             temp=True,
                                             transferable=False)
@@ -1357,11 +1351,11 @@ def test_parser_v1_non_native_message():
 
     #  create transferable signers
     raw = b"ABCDEFGH01234567"
-    signers = core.Salter(raw=raw).signers(count=8, path='psr', temp=True)
+    signers = Salter(raw=raw).signers(count=8, path='psr', temp=True)
 
     # create non-transferable signers
     raw = b"abcdefghijklmnop"
-    nsigners = core.Salter(raw=raw).signers(count=8,
+    nsigners = Salter(raw=raw).signers(count=8,
                                             path='psr',
                                             temp=True,
                                             transferable=False)
@@ -1728,11 +1722,11 @@ def test_parser_v2_basic():
 
     #  create transferable signers
     raw = b"ABCDEFGH01234567"
-    signers2 = core.Salter(raw=raw).signers(count=8, path='psr', temp=True)
+    signers2 = Salter(raw=raw).signers(count=8, path='psr', temp=True)
 
     # create non-transferable signers
     raw = b"abcdefghijklmnop"
-    nsigners2 = core.Salter(raw=raw).signers(count=8,
+    nsigners2 = Salter(raw=raw).signers(count=8,
                                             path='psr',
                                             temp=True,
                                             transferable=False)
@@ -2212,11 +2206,11 @@ def test_parser_v2_mix():
 
     #  create transferable signers
     raw = b"ABCDEFGH01234567"
-    signers2 = core.Salter(raw=raw).signers(count=8, path='psr', temp=True)
+    signers2 = Salter(raw=raw).signers(count=8, path='psr', temp=True)
 
     # create non-transferable signers
     raw = b"abcdefghijklmnop"
-    nsigners2 = core.Salter(raw=raw).signers(count=8,
+    nsigners2 = Salter(raw=raw).signers(count=8,
                                             path='psr',
                                             temp=True,
                                             transferable=False)
@@ -2643,11 +2637,11 @@ def test_parser_v2_enclosed_attachments():
 
     #  create transferable signers
     raw = b"ABCDEFGH01234567"
-    signers2 = core.Salter(raw=raw).signers(count=8, path='psr', temp=True)
+    signers2 = Salter(raw=raw).signers(count=8, path='psr', temp=True)
 
     # create non-transferable signers
     raw = b"abcdefghijklmnop"
-    nsigners2 = core.Salter(raw=raw).signers(count=8,
+    nsigners2 = Salter(raw=raw).signers(count=8,
                                             path='psr',
                                             temp=True,
                                             transferable=False)
@@ -3030,11 +3024,11 @@ def test_parser_v2_enclosed_message():
 
     #  create transferable signers
     raw = b"ABCDEFGH01234567"
-    signers2 = core.Salter(raw=raw).signers(count=8, path='psr', temp=True)
+    signers2 = Salter(raw=raw).signers(count=8, path='psr', temp=True)
 
     # create non-transferable signers
     raw = b"abcdefghijklmnop"
-    nsigners2 = core.Salter(raw=raw).signers(count=8,
+    nsigners2 = Salter(raw=raw).signers(count=8,
                                             path='psr',
                                             temp=True,
                                             transferable=False)
@@ -3470,11 +3464,11 @@ def test_parse_generic_group():
 
     #  create transferable signers
     raw = b"ABCDEFGH01234567"
-    signers2 = core.Salter(raw=raw).signers(count=8, path='psr', temp=True)
+    signers2 = Salter(raw=raw).signers(count=8, path='psr', temp=True)
 
     # create non-transferable signers
     raw = b"abcdefghijklmnop"
-    nsigners2 = core.Salter(raw=raw).signers(count=8,
+    nsigners2 = Salter(raw=raw).signers(count=8,
                                             path='psr',
                                             temp=True,
                                             transferable=False)
@@ -3920,11 +3914,11 @@ def test_group_parsator():
 
     #  create transferable signers
     raw = b"ABCDEFGH01234567"
-    signers2 = core.Salter(raw=raw).signers(count=8, path='psr', temp=True)
+    signers2 = Salter(raw=raw).signers(count=8, path='psr', temp=True)
 
     # create non-transferable signers
     raw = b"abcdefghijklmnop"
-    nsigners2 = core.Salter(raw=raw).signers(count=8,
+    nsigners2 = Salter(raw=raw).signers(count=8,
                                             path='psr',
                                             temp=True,
                                             transferable=False)
@@ -4403,11 +4397,11 @@ def test_parse_native_cesr_fixed_field():
 
     #  create transferable signers
     raw = b"ABCDEFGH01234567"
-    signers2 = core.Salter(raw=raw).signers(count=8, path='psr', temp=True)
+    signers2 = Salter(raw=raw).signers(count=8, path='psr', temp=True)
 
     # create non-transferable signers
     raw = b"abcdefghijklmnop"
-    nsigners2 = core.Salter(raw=raw).signers(count=8,
+    nsigners2 = Salter(raw=raw).signers(count=8,
                                             path='psr',
                                             temp=True,
                                             transferable=False)

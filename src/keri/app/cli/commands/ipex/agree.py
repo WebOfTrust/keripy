@@ -6,8 +6,7 @@ keri.app.cli.commands module
 import argparse
 
 from hio.base import doing
-
-from keri.core import signing
+from .....core import Salter
 
 parser = argparse.ArgumentParser(description='Reply to IPEX offer message acknowledged willingness to accept offered '
                                              'credential')
@@ -23,4 +22,4 @@ def nonce(tymth, tock=0.0, **kwa):
     """
     _ = (yield tock)
 
-    print(signing.Salter().qb64)
+    print(Salter().qb64)

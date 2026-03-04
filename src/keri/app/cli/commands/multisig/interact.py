@@ -9,13 +9,11 @@ from ordered_set import OrderedSet as oset
 
 from hio.base import doing
 
-from keri import help, kering
-from keri.app import grouping, indirecting, habbing, forwarding
-from keri.app.cli.common import existing, displaying, config
-from keri.app.cli.common.parsing import Parsery
-from keri.app.notifying import Notifier
-from keri.core import coring, serdering
-from keri.peer import exchanging
+from ..... import ConfigurationError, help
+from .... import Notifier, grouping, indirecting, habbing, forwarding
+from ...common import Parsery, existing, displaying, config
+from .....core import coring, serdering
+from .....peer import exchanging
 
 logger = help.ogler.getLogger()
 
@@ -103,7 +101,7 @@ class GroupMultisigInteract(doing.DoDoer):
 
         ghab = self.hby.habByName(name=self.alias)
         if ghab is None:
-            raise kering.ConfigurationError(f"invalid alias {self.alias} specified for database {self.hby.name}")
+            raise ConfigurationError(f"invalid alias {self.alias} specified for database {self.hby.name}")
 
         aids = self.aids if self.aids is not None else ghab.smids
 
@@ -118,12 +116,12 @@ class GroupMultisigInteract(doing.DoDoer):
             self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=ims)
 
         prefixer = coring.Prefixer(qb64=ghab.pre)
-        seqner = coring.Seqner(sn=serder.sn)
+        number = coring.Number(sn=serder.sn)
         diger = coring.Diger(qb64b=serder.saidb)
-        self.counselor.start(prefixer=prefixer, seqner=seqner, saider=diger, ghab=ghab)
+        self.counselor.start(prefixer=prefixer, number=number, diger=diger, ghab=ghab)
 
         while True:
-            saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
+            saider = self.hby.db.cgms.get(keys=(prefixer.qb64, number.qb64))
             if saider is not None:
                 break
 

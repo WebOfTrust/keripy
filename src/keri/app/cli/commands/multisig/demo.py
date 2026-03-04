@@ -1,7 +1,7 @@
 import argparse
 import json
 
-from keri.app.cli.commands.multisig import incept
+from . import incept
 
 parser = argparse.ArgumentParser(description="Run a demo collection of witnesses")
 parser.set_defaults(handler=lambda args: demo(args))

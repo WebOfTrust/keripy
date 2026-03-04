@@ -10,7 +10,7 @@ from hio.core import http
 
 import keri
 from keri import help, kering, core
-from keri.kering import Vrsn_1_0, Vrsn_2_0
+from keri.kering import Vrsn_1_0
 from keri.app import habbing, oobiing, notifying
 from keri.core import serdering, eventing, parsing, routing
 from keri.db import basing

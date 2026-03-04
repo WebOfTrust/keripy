@@ -11,14 +11,12 @@ from ordered_set import OrderedSet as oset
 from hio.base import doing
 from prettytable import PrettyTable
 
-from keri import help, kering
-from keri.kering import Vrsn_1_0, Vrsn_2_0
-from keri.app import habbing, indirecting, agenting, notifying, grouping, organizing, forwarding
-from keri.app.cli.common import existing, displaying
-from keri.app.cli.common.parsing import Parsery
-from keri.core import coring, eventing, scheming, parsing, routing, serdering
-from keri.peer import exchanging
-from keri.vdr import verifying, credentialing
+from ..... import TraitCodex, ConfigurationError, MissingAnchorError, Vrsn_1_0, help
+from .... import habbing, indirecting, agenting, notifying, grouping, organizing, forwarding
+from ...common import Parsery, existing, displaying
+from .....core import coring, eventing, scheming, parsing, routing, serdering
+from .....peer import exchanging
+from .....vdr import verifying, credentialing
 
 logger = help.ogler.getLogger()
 
@@ -180,8 +178,8 @@ class JoinDoer(doing.DoDoer):
         inits["isith"] = oicp.ked["kt"]
         inits["nsith"] = oicp.ked["nt"]
 
-        inits["estOnly"] = kering.TraitCodex.EstOnly in oicp.ked["c"]
-        inits["DnD"] = kering.TraitCodex.DoNotDelegate in oicp.ked["c"]
+        inits["estOnly"] = TraitCodex.EstOnly in oicp.ked["c"]
+        inits["DnD"] = TraitCodex.DoNotDelegate in oicp.ked["c"]
 
         inits["toad"] = oicp.ked["bt"]
         inits["wits"] = oicp.ked["b"]
@@ -240,9 +238,9 @@ class JoinDoer(doing.DoDoer):
                 self.postman.cues.clear()
 
             prefixer = coring.Prefixer(qb64=ghab.pre)
-            seqner = coring.Seqner(sn=0)
-            saider = coring.Saider(qb64=prefixer.qb64)
-            yield from self.startCounselor(ghab, prefixer, seqner, saider)
+            number = coring.Number(sn=0)
+            diger = coring.Diger(qb64=prefixer.qb64)
+            yield from self.startCounselor(ghab, prefixer, number, diger)
 
             print()
             displaying.printIdentifier(self.hby, ghab.pre)
@@ -309,20 +307,20 @@ class JoinDoer(doing.DoDoer):
                 self.postman.cues.clear()
 
             prefixer = coring.Prefixer(qb64=ghab.pre)
-            seqner = coring.Seqner(sn=serder.sn)
+            number = coring.Number(sn=serder.sn)
             diger = coring.Diger(qb64b=serder.saidb)
-            yield from self.startCounselor(ghab, prefixer, seqner, diger)
+            yield from self.startCounselor(ghab, prefixer, number, diger)
 
             print()
             displaying.printIdentifier(self.hby, ghab.pre)
 
             return True
 
-    def startCounselor(self, hab, prefixer, seqner, saider):
-        self.counselor.start(prefixer=prefixer, seqner=seqner, saider=saider, ghab=hab)
+    def startCounselor(self, hab, prefixer, number, diger):
+        self.counselor.start(prefixer=prefixer, number=number, diger=diger, ghab=hab)
 
         while True:
-            saider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
+            saider = self.hby.db.cgms.get(keys=(prefixer.qb64, number.qb64))
             if saider is not None:
                 break
 
@@ -442,9 +440,9 @@ class JoinDoer(doing.DoDoer):
 
             serder = serdering.SerderKERI(raw=rot)
             prefixer = coring.Prefixer(qb64=ghab.pre)
-            seqner = coring.Seqner(sn=serder.sn)
+            number = coring.Number(sn=serder.sn)
 
-            yield from self.startCounselor(ghab, prefixer, seqner, coring.Diger(qb64=serder.said))
+            yield from self.startCounselor(ghab, prefixer, number, coring.Diger(qb64=serder.said))
 
             print()
             displaying.printIdentifier(self.hby, ghab.pre)
@@ -643,7 +641,7 @@ class JoinDoer(doing.DoDoer):
             vserder = serdering.SerderKERI(sad=vcp)
             try:
                 self.rgy.tvy.processEvent(serder=vserder)
-            except kering.MissingAnchorError:
+            except MissingAnchorError:
                 pass
 
             self.rgy.makeRegistry(name=registryName, prefix=hab.pre, vcp=vserder)
@@ -692,7 +690,7 @@ class JoinDoer(doing.DoDoer):
         schema = acdc['s']
         scraw = self.verifier.resolver.resolve(schema)
         if not scraw:
-            raise kering.ConfigurationError("Credential schema {} not found".format(schema))
+            raise ConfigurationError("Credential schema {} not found".format(schema))
 
         schemer = scheming.Schemer(raw=scraw)
 
@@ -741,7 +739,7 @@ class JoinDoer(doing.DoDoer):
             iserder = serdering.SerderKERI(sad=iss)
             try:
                 self.rgy.tvy.processEvent(serder=iserder)
-            except kering.MissingAnchorError:
+            except MissingAnchorError:
                 pass
 
             acdc = embeds["acdc"]
@@ -800,7 +798,7 @@ class JoinDoer(doing.DoDoer):
         embeds = exn.ked['e']
         scraw = self.verifier.resolver.resolve(creder.schema)
         if not scraw:
-            raise kering.ConfigurationError("Credential schema {} not found".format(creder.schema))
+            raise ConfigurationError("Credential schema {} not found".format(creder.schema))
 
         schemer = scheming.Schemer(raw=scraw)
 
@@ -843,7 +841,7 @@ class JoinDoer(doing.DoDoer):
             rserder = serdering.SerderKERI(sad=rev)
             try:
                 self.rgy.tvy.processEvent(serder=rserder)
-            except kering.MissingAnchorError:
+            except MissingAnchorError:
                 pass
 
             self.registrar.revoke(creder, rserder, aserder)

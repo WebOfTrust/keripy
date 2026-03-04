@@ -100,7 +100,7 @@ from collections.abc import Iterable, Iterator
 from .. import help
 from ..help.helping import isNonStringIterable, Reb64
 from .. import core
-from ..core import coring, scheming, serdering
+from ..core import coring, scheming, serdering, signing
 from . import dbing
 
 logger = help.ogler.getLogger()
@@ -1743,16 +1743,16 @@ class SignerSuber(CesrSuber):
     Signer instance to have its .transferable property set correctly.
     """
 
-    def __init__(self, *pa, klas: Type[core.Signer] = core.Signer, **kwa):
+    def __init__(self, *pa, klas: Type[signing.Signer] = signing.Signer, **kwa):
         """
         Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
             klas (Type[coring.Matter]): Class reference to subclass of Matter
         """
-        if not (issubclass(klas, core.Signer)):
+        if not (issubclass(klas, signing.Signer)):
             raise ValueError("Invalid klas type={}, expected {}."
-                             "".format(klas, core.Signer))
+                             "".format(klas, signing.Signer))
         super(SignerSuber, self).__init__(*pa, **kwa)
         self.klas = klas
 

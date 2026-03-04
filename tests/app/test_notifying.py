@@ -3,7 +3,6 @@
 tests.app.test_multisig module
 
 """
-import datetime
 import platform
 import tempfile
 

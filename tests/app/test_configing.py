@@ -4,7 +4,6 @@ tests.app.configin module
 """
 import os
 import platform
-import shutil
 import tempfile
 
 import pytest

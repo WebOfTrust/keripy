@@ -5,13 +5,10 @@ tests delegation primaily from keri.core.eventing
 """
 import os
 
-import pytest
-
 from keri import help
 
-from keri import core, kering
-from keri.kering import Vrsn_1_0, Vrsn_2_0
-from keri.core import coring, eventing, parsing
+from keri.kering import Vrsn_1_0
+from keri.core import Salter, Counter, coring, eventing, parsing, Codens
 
 from keri.db import basing
 from keri.app import keeping
@@ -25,7 +22,7 @@ def test_weighted():
     Test multisig with weighted threshold
 
     """
-    wesSalt = core.Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
+    wesSalt = Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
 
     # init event DB and keep DB
     with basing.openDB(name="wes") as wesDB, keeping.openKS(name="wes") as wesKS:
@@ -54,8 +51,8 @@ def test_weighted():
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=verfers)
 
         msg = bytearray(wesSrdr.raw)
-        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                               version=kering.Vrsn_1_0)
+        counter = Counter(Codens.ControllerIdxSigs, count=len(sigers),
+                               version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -90,8 +87,8 @@ def test_weighted():
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=wesK.verfers)
 
         msg = bytearray(wesSrdr.raw)
-        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                               version=kering.Vrsn_1_0)
+        counter = Counter(Codens.ControllerIdxSigs, count=len(sigers),
+                               version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -127,8 +124,8 @@ def test_weighted():
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=verfers)
 
         msg = bytearray(wesSrdr.raw)
-        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                               version=kering.Vrsn_1_0)
+        counter = Counter(Codens.ControllerIdxSigs, count=len(sigers),
+                               version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -173,8 +170,8 @@ def test_weighted():
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=verfers)
 
         msg = bytearray(wesSrdr.raw)
-        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                               version=kering.Vrsn_1_0)
+        counter = Counter(Codens.ControllerIdxSigs, count=len(sigers),
+                               version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -219,8 +216,8 @@ def test_weighted():
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=verfers)
 
         msg = bytearray(wesSrdr.raw)
-        counter = core.Counter(core.Codens.ControllerIdxSigs, count=len(sigers),
-                               version=kering.Vrsn_1_0)
+        counter = Counter(Codens.ControllerIdxSigs, count=len(sigers),
+                               version=Vrsn_1_0)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)

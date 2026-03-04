@@ -563,6 +563,99 @@ class WellKnownAuthN:
     url: str  # full .well-known OOBI URL resolved
     dt: str  # iso8601 date/time of success resolution
 
+@dataclass
+class CacheTypeRecord:
+    """Cache type window size parameters for KRAM timeliness caching.
+
+    Keyed by cache-type expression string in ctyp database.
+    Allowed key expressions:
+        '~'                     default (catchall, sorts last in LMDB)
+        'qry', 'rpy', etc.     message type
+        'qry.R.open/sesame'    message type + route
+
+    All lag values are in milliseconds.
+
+    Constraints:
+        0 <= d
+        0 < sl <= ll <= xl
+        0 < sl <= psl
+        0 < ll <= pll
+        0 < xl <= pxl
+
+    Attributes:
+        d (int): network time server clock drift/skew in ms
+        sl (int): short lag for seal-ref or single-key sig windows in ms
+        ll (int): long lag for multi-key sig windows in ms
+        xl (int): exchange lag for exchange transaction windows in ms
+        psl (int): prune short lag in ms (>= sl)
+        pll (int): prune long lag in ms (>= ll)
+        pxl (int): prune exchange lag in ms (>= xl)
+    """
+    d: int = 0        # drift
+    sl: int = 0       # short lag
+    ll: int = 0       # long lag
+    xl: int = 0       # exchange lag
+    psl: int = 0      # prune short lag
+    pll: int = 0      # prune long lag
+    pxl: int = 0      # prune exchange lag
+
+    def __iter__(self):
+        return iter(asdict(self))
+
+
+@dataclass
+class MsgCacheRecord:
+    """Message cache entry for KRAM timeliness caching.
+
+    Keyed by (AID, MID) in msgc database. Values are static once created
+    until pruned and deleted.
+
+    Attributes:
+        mdt (str): message datetime stamp ISO-8601 from msg dt field
+        d (int): drift in ms from cache-type at creation time
+        ml (int): message lag in ms (sl or ll from cache-type)
+        pml (int): prune message lag in ms (psl or pll from cache-type)
+        xl (int): exchange lag in ms from cache-type
+        pxl (int): prune exchange lag in ms from cache-type
+    """
+    mdt: str = ''     # message datetime ISO-8601
+    d: int = 0        # drift
+    ml: int = 0       # message lag (sl or ll)
+    pml: int = 0      # prune message lag (psl or pll)
+    xl: int = 0       # exchange lag
+    pxl: int = 0      # prune exchange lag
+
+    def __iter__(self):
+        return iter(asdict(self))
+
+
+@dataclass
+class TxnMsgCacheRecord:
+    """Transactioned message cache entry for KRAM timeliness caching.
+
+    Keyed by (AID, XID, MID) in tmsc database. Values are static once created
+    until pruned and deleted. For the starting xip message, xdt == mdt.
+
+    Attributes:
+        mdt (str): message datetime stamp ISO-8601 from msg dt field
+        xdt (str): exchange transaction start datetime ISO-8601 from xip dt field
+        d (int): drift in ms from cache-type at creation time
+        ml (int): message lag in ms (sl or ll from cache-type)
+        pml (int): prune message lag in ms (psl or pll from cache-type)
+        xl (int): exchange lag in ms from cache-type
+        pxl (int): prune exchange lag in ms from cache-type
+    """
+    mdt: str = ''     # message datetime ISO-8601
+    xdt: str = ''     # exchange transaction start datetime ISO-8601
+    d: int = 0        # drift
+    ml: int = 0       # message lag (sl or ll)
+    pml: int = 0      # prune message lag (psl or pll)
+    xl: int = 0       # exchange lag
+    pxl: int = 0      # prune exchange lag
+
+    def __iter__(self):
+        return iter(asdict(self))
+
 
 def openDB(*, cls=None, name="test", **kwa):
     """
@@ -1144,15 +1237,15 @@ class Baser(dbing.LMDBer):
 
         # group partial signature escrow
         self.gpse = subing.CatCesrIoSetSuber(db=self, subkey='gpse.',
-                                             klas=(core.Number, coring.Saider))
+                                             klas=(core.Number, coring.Diger))
 
         # group delegate escrow
         self.gdee = subing.CatCesrIoSetSuber(db=self, subkey='gdee.',
-                                             klas=(core.Number, coring.Saider))
+                                             klas=(core.Number, coring.Diger))
 
         # group partial witness escrow
         self.gpwe = subing.CatCesrIoSetSuber(db=self, subkey='gdwe.',
-                                             klas=(core.Number, coring.Saider))
+                                             klas=(core.Number, coring.Diger))
 
         # completed group multisig
         # TODO: clean
@@ -1344,6 +1437,27 @@ class Baser(dbing.LMDBer):
         # multisig sig embed payload SAID mapped to group multisig participants AIDs
         # TODO: clean
         self.maids = subing.CesrIoSetSuber(db=self, subkey="maids.", klas=coring.Prefixer)
+
+        # KRAM cache type — key: expression string, value: drift and lag params
+        self.ctyp = koming.Komer(db=self, subkey='ctyp.',
+                                 schema=CacheTypeRecord)
+
+        # KRAM message cache — key: (AID, MID), value: msg datetime, drift, lags
+        self.msgc = koming.Komer(db=self, subkey='msgc.',
+                                 schema=MsgCacheRecord)
+
+        # KRAM transactioned message cache — key: (AID, XID, MID), value: datetimes, drift, lags
+        self.tmsc = koming.Komer(db=self, subkey='tmsc.',
+                                 schema=TxnMsgCacheRecord)
+
+        # KRAM partially signed multi-key message key (AID.MID) mapped to associated message (SerderKERI)
+        self.pmkm = subing.SerderSuber(db=self, subkey='pmkm.')
+
+        # KRAM partially signed multi-key signature key (AID.MID) mapped to associated signatures
+        self.pmks = subing.CesrIoSetSuber(db=self, subkey='pmks.', klas=indexing.Siger)
+
+        # KRAM partially signed multi-key sender key state key (AID.MID) mapped to SN and event SAID
+        self.pmsk = subing.CatCesrSuber(db=self, subkey='pmsk.', klas=(coring.Number, coring.Diger))
 
         self.reload()
 
