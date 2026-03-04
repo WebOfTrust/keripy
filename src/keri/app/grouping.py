@@ -82,7 +82,7 @@ class Counselor(doing.DoDoer):
             return False
         else:
             if diger and (cdiger.qb64 != diger.qb64):
-                raise kering.ValidationError(f"invalid multisig protocol escrowed event {cdiger.qb64}-{diger.qb64}")
+                raise ValidationError(f"invalid multisig protocol escrowed event {cdiger.qb64}-{diger.qb64}")
 
         return True
 
