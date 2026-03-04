@@ -14,7 +14,7 @@ from ...common.parsing import Parsery
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Generate and print role OOBIs for the AID of the provide alias.', 
+parser = argparse.ArgumentParser(description='Generate and print role OOBIs for the AID of the provide alias.',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', default=None)
@@ -60,7 +60,7 @@ def generate(tymth, tock=0.0, **opts):
                        or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
                 if not urls:
                     raise kering.ConfigurationError(f"unable to query witness {wit}, no http endpoint")
-            
+
                 url = urls[kering.Schemes.https] if kering.Schemes.https in urls else urls[kering.Schemes.http]
                 print(f"{url.rstrip("/")}/oobi/{hab.pre}/witness")
         elif role in (kering.Roles.controller,):
@@ -76,7 +76,7 @@ def generate(tymth, tock=0.0, **opts):
                 if not (end.allowed and end.enabled is not False):
                     continue
 
-                urls = hab.fetchUrls(eid=eid, scheme=kering.Schemes.http) or hab.fetchUrls(eid=hab.pre,
+                urls = hab.fetchUrls(eid=eid, scheme=kering.Schemes.http) or hab.fetchUrls(eid=eid,
                                                                                            scheme=kering.Schemes.https)
                 if not urls:
                     print(f"{alias} identifier {hab.pre} does not have any mailbox endpoints")
