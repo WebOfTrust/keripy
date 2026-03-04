@@ -1302,7 +1302,7 @@ class Baser(dbing.LMDBer):
 
         # Chunked image data for contact information for remote identifiers
         # TODO: clean
-        self.imgs = self.env.open_db(key=b'imgs.')
+        self.imgs = subing.Suber(db=self, subkey='imgs.')
 
         # Field values for identifier information for local identifiers. Keyed by prefix/field
         # TODO: clean
@@ -1320,7 +1320,7 @@ class Baser(dbing.LMDBer):
 
         # Chunked image data for identifier information for local identifiers
         # TODO: clean
-        self.iimgs = self.env.open_db(key=b'iimgs.')
+        self.iimgs = subing.Suber(db=self, subkey='iimgs.')
 
         # Delegation escrow dbs #
         # delegated partial witness escrow
@@ -1562,12 +1562,12 @@ class Baser(dbing.LMDBer):
                         cpydb.add(keys=keys, val=val)
 
                 # Insecure raw imgs database copy.
-                for (key, val) in self.getTopItemIter(self.imgs):
-                    copy.imgs.setVal(key=key, val=val)
+                for (key, val) in self.getTopItemIter(self.imgs.sdb):
+                    copy.setVal(db=copy.imgs.sdb, key=key, val=val)
 
                 # Insecure raw iimgs database copy.
-                for (key, val) in self.getTopItemIter(self.iimgs):
-                    copy.iimgs.setVal(key=key, val=val)
+                for (key, val) in self.getTopItemIter(self.iimgs.sdb):
+                    copy.setVal(db=copy.iimgs.sdb, key=key, val=val)
 
                 # clone .habs  habitat name prefix Komer subdb
                 # copy.habs = koming.Komer(db=copy, schema=HabitatRecord, subkey='habs.')  # copy
