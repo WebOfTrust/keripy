@@ -69,9 +69,9 @@ SuffixSize = 32  # does not include trailing separator
 MaxSuffix = int("f"*(SuffixSize), 16)
 
 
-def fetchTsgs(db, saider, snh=None):
+def fetchTsgs(db, diger, snh=None):
     """
-    Fetch tsgs for saider from .db.ssgs. When sn then only fetch if sn <= snh
+    Fetch tsgs for diger from .db.ssgs. When sn then only fetch if sn <= snh
     Returns:
         tsgs (list): of tsg quadruple of form (prefixer, seqner, diger, sigers)
             where:
@@ -82,7 +82,7 @@ def fetchTsgs(db, saider, snh=None):
 
     Parameters:
         db: (Cesr
-        saider (Saider): instance of said for reply SAD to which signatures
+        diger (Diger): instance of said for reply SAD to which signatures
             are attached
         snh (str): 32 char zero pad lowercase hex of sequence number f"{sn:032x}"
     """
@@ -93,12 +93,12 @@ def fetchTsgs(db, saider, snh=None):
     tsgs = []  # transferable signature groups
     sigers = []
     old = None  # empty keys
-    for keys, siger in db.getItemIter(keys=(saider.qb64, "")):
+    for keys, siger in db.getItemIter(keys=(diger.qb64, "")):
         trituple = keys[1:]
-        if trituple != old:
-            if snh is not None and trituple[1] > snh:
+        if trituple != old:  # new tsg
+            if snh is not None and trituple[1] > snh:  # only lower sn
                 break
-            if sigers:
+            if sigers:  # append tsg made for old and sigers
                 tsgs.append((*helping.klasify(sers=old, klases=klases, args=args), sigers))
                 sigers = []
             old = trituple

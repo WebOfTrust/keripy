@@ -1,5 +1,5 @@
 from keri import help
-from keri.core import coring, serdering
+from keri.core import coring
 from .. import koming, subing, dbing
 from keri.kering import ConfigurationError, Version
 from ...recording import KeyStateRecord, StateEERecord
