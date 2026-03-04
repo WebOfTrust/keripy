@@ -21,7 +21,7 @@ from ..kering import (MissingEntryError, UntrustedKeyStateSource,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError,
                       QueryNotFoundError, MisfitEventSourceError,
                       MissingDelegableApprovalError, Version, Versionage,
-                      TraitDex, Vrsn_1_0, Vrsn_2_0, Roles, Schemes)
+                      TraitDex, Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Ilks)
 from ..help import helping, ogler, nowIso8601
 
 from .coring import (versify, Kinds, Ilks, PreDex, DigDex, Kinds,
@@ -4366,7 +4366,7 @@ class Kevery:
 
         # Step 3: Dispatch to message-specific processing
         match ilk:
-            case kering.Ilks.qry:
+            case Ilks.qry:
                 # Extract source and sigers from ssgs (like parser originally did)
                 if kwa.get('ssgs'):
                     pre, sigers = kwa['ssgs'][-1]
@@ -4385,46 +4385,46 @@ class Kevery:
                     self.processQuery(serder, **kwa)
                 elif route in ["tels", "tsn"]:
                     if tvy is None:
-                        raise kering.ValidationError(
+                        raise ValidationError(
                             f"No tevery to process so dropped msg"
                             f"={serder.pretty()}")
                     tvy.processQuery(serder, **kwa)
                 else:
-                    raise kering.ValidationError(
+                    raise ValidationError(
                         f"Invalid resource type {route}"
                         f"so dropped msg={serder.pretty()}.")
 
-            case kering.Ilks.rpy:
+            case Ilks.rpy:
                 cigars = kwa.get('cigars', [])
                 tsgs = kwa.get('tsgs', [])
                 if not (cigars or tsgs):
-                    raise kering.ValidationError(
+                    raise ValidationError(
                         f"Missing attached endorser signature(s) "
                         f"to reply msg = {serder.pretty()}.")
                 if rvy is None:
-                    raise kering.ValidationError(
+                    raise ValidationError(
                         f"No revery to process so dropped msg"
                         f"= {serder.pretty()}.")
                 rvy.processReply(serder=serder, **kwa)
 
-            case kering.Ilks.exn:
+            case Ilks.exn:
                 cigars = kwa.get('cigars', [])
                 tsgs = kwa.get('tsgs', [])
                 if not (cigars or tsgs):
-                    raise kering.ValidationError(
+                    raise ValidationError(
                         f"Missing attached exchanger "
                         f"signatures for msg={serder.pretty()}")
                 if exc is None:
-                    raise kering.ValidationError(
+                    raise ValidationError(
                         f"No exchanger to process so "
                         f"dropped msg={serder.pretty()}.")
                 exc.processEvent(serder=serder, **kwa)
 
-            case kering.Ilks.xip | kering.Ilks.pro | kering.Ilks.bar:
-                raise kering.ValidationError(
+            case Ilks.xip | Ilks.pro | Ilks.bar:
+                raise ValidationError(
                     f"Message type {ilk} not yet supported in processMsg")
             case _:
-                raise kering.ValidationError(
+                raise ValidationError(
                     f"Unexpected non-event message type {ilk} "
                     f"for msg={serder.pretty()}")
 

@@ -7,12 +7,8 @@ processMsg on Kevery.
 
 import pytest
 
-from keri import core
-from keri.kering import (Vrsn_1_0, Vrsn_2_0,
-                         KramConfigurationError,
-                         MissingAuthAttachmentError,
-                         MissingSenderKeyStateError,
-                         ValidationError)
+from keri import core, kering
+from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri.core import eventing, parsing, coring, Verser
 from keri.core.kraming import Kramer, AuthTypes
 from keri.app import habbing, configing
@@ -124,7 +120,7 @@ def test_configuration():
     with configing.openCF(name="kram", base="test") as cf:
         cf.put(badStructCf)
         with basing.openDB(name="test_config_bad_struct", temp=True) as db:
-            with pytest.raises(KramConfigurationError):
+            with pytest.raises(kering.KramConfigurationError):
                 Kramer(db, cf)
 
     # Error path: malformed denial (too many elements in version)
@@ -140,7 +136,7 @@ def test_configuration():
     with configing.openCF(name="kram", base="test") as cf:
         cf.put(badVersionCf)
         with basing.openDB(name="test_config_bad_version", temp=True) as db:
-            with pytest.raises(KramConfigurationError):
+            with pytest.raises(kering.KramConfigurationError):
                 Kramer(db, cf)
 
     # Error path: invalid cache type values (non-integer strings)
@@ -158,7 +154,7 @@ def test_configuration():
     with configing.openCF(name="kram", base="test") as cf:
         cf.put(badCacheCf)
         with basing.openDB(name="test_config_bad_cache", temp=True) as db:
-            with pytest.raises(KramConfigurationError):
+            with pytest.raises(kering.KramConfigurationError):
                 Kramer(db, cf)
 
 
@@ -466,7 +462,7 @@ def test_assk(mockHelpingNowUTC):
                                        stamp=stamp,
                                        pvrsn=Vrsn_2_0)
 
-            with pytest.raises(MissingAuthAttachmentError):
+            with pytest.raises(kering.MissingAuthAttachmentError):
                 kvy.processMsg(noAuthMsg)  # empty kwa — no auth attachments
 
 
@@ -485,7 +481,7 @@ def test_assk(mockHelpingNowUTC):
             unknownPrefixer = coring.Prefixer(qb64=unknownHab.pre)
             unknownKwa = dict(ssgs=[(unknownPrefixer, unknownSigers)])
 
-            with pytest.raises(MissingSenderKeyStateError):
+            with pytest.raises(kering.MissingSenderKeyStateError):
                 kvy.processMsg(unknownMsg, **unknownKwa)
 
     """Done Test"""
@@ -791,7 +787,7 @@ def test_asr(mockHelpingNowUTC):
 
             # Pure seal, no sigs. kramit accepts via asr, but downstream
             # _processMsgQry raises ValidationError (no source/cigars).
-            with pytest.raises(ValidationError):
+            with pytest.raises(kering.ValidationError):
                 kvy.processMsg(msg, **dict(sscs=sscs))
 
             # Assert: kramit created cache before downstream error
@@ -1209,7 +1205,7 @@ def test_transactioned(mockHelpingNowUTC):
             kwa = dict(ssgs=[(skPrefixer, sigers)])
 
             # Error raised due to lack of exchanger. Could probably set one up for this test
-            with pytest.raises(ValidationError):
+            with pytest.raises(kering.ValidationError):
                 kvy.processMsg(exn, **kwa)
 
             # Assert tmsc entry created for exn
@@ -1329,7 +1325,7 @@ def test_transactioned(mockHelpingNowUTC):
             kwa = dict(ssgs=[(mkPrefixer, [allSigers[2]])])
             # kramit returns msg (threshold met). processMsg dispatches to
             # _processMsgExn which raises ValidationError (no Exchanger).
-            with pytest.raises(ValidationError):
+            with pytest.raises(kering.ValidationError):
                 kvy.processMsg(mkExn, **kwa)
 
             # Partials cleaned up

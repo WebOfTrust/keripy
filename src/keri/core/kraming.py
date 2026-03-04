@@ -17,10 +17,9 @@ from dataclasses import dataclass, astuple
 from ordered_set import OrderedSet as oset
 
 from keri import help, kering
-from keri.core import coring, eventing, indexing, serdering
+from keri.core import coring, eventing, indexing
 from keri.core.coring import Verser
-from keri.app import configing
-from keri.db import basing, dbing
+from keri.db import basing
 from keri.help import helping
 
 logger = help.ogler.getLogger()
