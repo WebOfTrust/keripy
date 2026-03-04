@@ -11,7 +11,7 @@ A special purpose Verifiable Data Registry (VDR)
 from dataclasses import dataclass, field, asdict
 from  ordered_set import OrderedSet as oset
 
-from ..db import koming, subing, escrowing, dbing, basing, dgKey, snKey
+from ..db import koming, subing, escrowing, dbing, dgKey, snKey
 
 from .. import MissingEntryError, Vrsn_1_0, Ilks
 from .. import recording

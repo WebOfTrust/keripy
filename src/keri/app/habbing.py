@@ -20,7 +20,7 @@ from .. import (Vrsn_1_0, ClosedError, AuthError,
                 KeriError, MissingSignatureError, Roles, Schemes)
 from ..core import (coring, eventing, parsing, routing,
                     Counter, Salter, Codens)
-from ..recording import EndpointRecord, HabitatRecord, LocationRecord, OobiRecord
+from ..recording import HabitatRecord, OobiRecord
 
 
 logger = ogler.getLogger()

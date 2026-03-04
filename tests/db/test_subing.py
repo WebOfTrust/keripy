@@ -7,18 +7,12 @@ import os
 
 import pytest
 
-import pysodium
-
 from keri import help
-
 from keri import core
 from keri.core import coring, eventing, serdering, indexing, scheming
 
 from keri.db import dbing, subing
 from keri.app import keeping
-
-
-
 
 
 def test_suber():
