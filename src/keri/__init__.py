@@ -35,4 +35,6 @@ from .kering import (Vrsn_1_0, Vrsn_2_0, Kinds, Protocols, Schemes, Rever,
                      UnexpectedOpCodeError, ExchangeError, InvalidEventTypeError,
                      MissingAidError, InvalidGroupError, GroupFormationError,
                      MissingChainError, RevokedChainError, MissingSchemaError,
-                     FailedSchemaValidationError, UntrustedKeyStateSource, Versionage)
+                     FailedSchemaValidationError, UntrustedKeyStateSource, Versionage,
+                     KramError, KramConfigurationError, MissingAuthAttachmentError,
+                     MissingSenderKeyStateError)
