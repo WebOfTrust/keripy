@@ -228,3 +228,37 @@ def test_witness_inquisitor(mockHelpingNowUTC, seeder):
         assert qinHab.pre in palHab.kevers
 
         doist.exit()
+
+
+def test_telquery_uses_pre_not_wits():
+    """Test that WitnessInquisitor.telquery queues a message with `pre` parameter
+    for endpoint resolution instead of `wits`, matching KERIA behavior.
+
+    Regression test for issue #1160: kli admit fails when issuer has no witness
+    because telquery was called with wits=[] (empty list) instead of pre=issr.
+    When wits is an empty list, random.choice([]) raises IndexError.
+    When pre is provided, WitnessInquisitor.msgDo resolves endpoints via
+    hab.endsFor(pre=pre) which works for issuers with or without witnesses.
+    """
+    with habbing.openHby(name="test", temp=True) as hby:
+        hab = hby.makeHab(name="test")
+        witq = agenting.WitnessInquisitor(hby=hby)
+
+        issr_pre = hab.pre  # use hab's own prefix as a stand-in issuer
+        ri = "EAbcdefghijklmnopqrstuvwxyz012345678901234567"
+        acdc_said = "EBcdefghijklmnopqrstuvwxyz0123456789012345678"
+
+        # Call telquery with pre= (the fix) instead of wits=
+        witq.telquery(src=hab.pre, pre=issr_pre, ri=ri, i=acdc_said)
+
+        assert len(witq.msgs) == 1
+        msg = witq.msgs[0]
+
+        # Verify pre is set for endpoint resolution
+        assert msg["pre"] == issr_pre
+        # Verify wits is None (endpoint resolution path, not random witness path)
+        assert msg["wits"] is None
+        # Verify other fields
+        assert msg["src"] == hab.pre
+        assert msg["target"] == acdc_said
+        assert msg["q"]["ri"] == ri
