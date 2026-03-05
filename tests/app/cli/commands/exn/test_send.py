@@ -5,7 +5,7 @@ import pytest
 from hio.base import doing
 
 from keri.app import habbing, directing
-from keri.app.cli.commands.exn import send as send_cmd
+from keri.cli.commands.exn import send as send_cmd
 
 
 def patch_poster(monkeypatch):

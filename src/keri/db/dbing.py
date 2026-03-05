@@ -68,6 +68,46 @@ MaxProem = int("f"*(ProemSize), 16)
 SuffixSize = 32  # does not include trailing separator
 MaxSuffix = int("f"*(SuffixSize), 16)
 
+
+def fetchTsgs(db, diger, snh=None):
+    """
+    Fetch tsgs for diger from .db.ssgs. When sn then only fetch if sn <= snh
+    Returns:
+        tsgs (list): of tsg quadruple of form (prefixer, seqner, diger, sigers)
+            where:
+                prefixer (Prefixer): instance trans signer aid,
+                seqner (Seqner): of sn of trans signer key state est event
+                diger (Diger): of digest of trans signer key state est event
+                sigers (list): of Siger instances of indexed signatures
+
+    Parameters:
+        db: (Cesr
+        diger (Diger): instance of said for reply SAD to which signatures
+            are attached
+        snh (str): 32 char zero pad lowercase hex of sequence number f"{sn:032x}"
+    """
+    from ..core import coring
+
+    klases = (coring.Prefixer, coring.Seqner, coring.Diger)
+    args = ("qb64", "snh", "qb64")
+    tsgs = []  # transferable signature groups
+    sigers = []
+    old = None  # empty keys
+    for keys, siger in db.getItemIter(keys=(diger.qb64, "")):
+        trituple = keys[1:]
+        if trituple != old:  # new tsg
+            if snh is not None and trituple[1] > snh:  # only lower sn
+                break
+            if sigers:  # append tsg made for old and sigers
+                tsgs.append((*helping.klasify(sers=old, klases=klases, args=args), sigers))
+                sigers = []
+            old = trituple
+        sigers.append(siger)
+    if sigers and old:
+        tsgs.append((*helping.klasify(sers=old, klases=klases, args=args), sigers))
+
+    return tsgs
+
 def onKey(top, on, *, sep=b'.'):
     """
     Returns:
@@ -1298,7 +1338,7 @@ class LMDBer(filing.Filer):
     def remIoSetVal(self, db, key, val=None, *, sep=b'.'):
         """Removes val if any as member of set at key if any.
         When value is None then removes all set members at key
-        When key is empty or None or missing returns False.
+        When key is empty or missing returns False.
         Uses hidden ordinal key suffix for insertion ordering.
            The suffix is suffixed and unsuffixed transparently.
 
@@ -1346,6 +1386,7 @@ class LMDBer(filing.Filer):
                     if val == cval:
                         return cursor.delete()  # delete also moves to next so doubly moved
             return False
+
 
 
     def cntIoSet(self, db, key, *, ion=0, sep=b'.'):
@@ -2008,6 +2049,7 @@ class LMDBer(filing.Filer):
             return
 
         with self.env.begin(db=db, write=False, buffers=True) as txn:
+            cursor = txn.cursor()  # create cursor to walk
             # iterate all on >= on at key
             if not key:  # start at first key if any
                 if not cursor.first():
@@ -2018,7 +2060,7 @@ class LMDBer(filing.Filer):
                 iokey = suffix(onkey, 0) # walk hidden branches starting from zero
 
             last = None
-            cursor = txn.cursor()  # create cursor to walk
+
             if cursor.set_range(iokey):  # not past end of database
                 for ciokey, cval in cursor.iternext():  # get iokey, val at cursor
                     conkey, cion = unsuffix(ciokey, sep=sep)
@@ -2327,7 +2369,8 @@ class LMDBer(filing.Filer):
 
 
     def cntVals(self, db, key):
-        """
+        """Counts dup values at key in db.
+
         Return count of dup values at key in db, or zero otherwise
 
         Parameters:
@@ -3279,4 +3322,3 @@ class LMDBer(filing.Filer):
 
 
     # ToDo do we need a replay last backwards?
-

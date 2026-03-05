@@ -4,14 +4,13 @@ tests.vc.protocoling module
 
 """
 
-from keri import core, kering
-from keri.kering import Vrsn_1_0, Vrsn_2_0
-from keri.core import coring, scheming, parsing
-from keri.core.eventing import SealEvent
+from keri import Vrsn_1_0
+from keri.core import (Salter, Counter, SealEvent,
+                       coring, scheming, parsing,
+                       Codens)
 
 from keri.peer import exchanging
-from keri.vc import protocoling
-from keri.vc.proving import credential
+from keri.vc import protocoling, credential
 from keri.vdr import credentialing, verifying
 from keri.app import habbing, notifying
 
@@ -19,12 +18,12 @@ from keri.app import habbing, notifying
 def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingNowUTC):
     """ Test IPEX exchange protocol """
 
-    sidSalt = core.Salter(raw=b'0123456789abcdef').qb64
+    sidSalt = Salter(raw=b'0123456789abcdef').qb64
     assert sidSalt == '0AAUiJMii_rPXXCiLTEEaDT7'
-    wanSalt = core.Salter(raw=b'wann-the-witness').qb64
+    wanSalt = Salter(raw=b'wann-the-witness').qb64
     assert wanSalt == '0AAUiJMii_rPXXCiLTEEaDT7'
 
-    default_salt = core.Salter(raw=b'0123456789abcdef').qb64
+    default_salt = Salter(raw=b'0123456789abcdef').qb64
 
     with (habbing.openHby(name="red", base="test", salt=default_salt) as redHby,
           habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby):
@@ -97,7 +96,7 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
                        b'I":"254900OPPU84GM83MG36"}}')
 
         atc = bytearray(msg)
-        atc.extend(core.Counter(core.Codens.SealSourceTriples, count=1, version=kering.Vrsn_1_0).qb64b)
+        atc.extend(Counter(Codens.SealSourceTriples, count=1, version=Vrsn_1_0).qb64b)
         atc.extend(coring.Prefixer(qb64=iss.pre).qb64b)
         atc.extend(coring.Seqner(sn=0).qb64b)
         atc.extend(iss.saidb)

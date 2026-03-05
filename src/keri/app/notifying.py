@@ -7,11 +7,11 @@ import os
 from collections.abc import Iterable
 from typing import Union, Type
 
-from keri import kering
-from keri.help import helping
-from keri.app import signaling
-from keri.core import coring
-from keri.db import dbing, subing
+from .. import kering
+from ..help import helping
+from ..app import signaling
+from ..core import coring
+from ..db import dbing, subing
 
 
 def notice(attrs, dt=None, read=False):

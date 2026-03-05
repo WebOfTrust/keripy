@@ -5,26 +5,20 @@ keri.end.priming module
 Prime (preload) setup witnesses, watchers, etc
 
 """
-import sys
-import os
 import argparse
 import logging
 
 import keri
-from keri import kering
-from keri.core import coring, eventing
 
-from keri import help
+from ..help import ogler
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 def prime(name="main"):
     """
     Prime (preload) db with service endpoints
     """
-
-
 
 
 def parseArgs(version=keri.__version__):

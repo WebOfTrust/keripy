@@ -15,8 +15,9 @@ from keri import help, Vrsn_1_0, Roles, Schemes
 
 from keri.core import Salter, eventing, parsing, routing, MtrDex
 
-from keri.db import basing
-from keri.app import habbing
+from keri.app import habbing, keeping
+from keri.kering import Roles
+from keri.recording import EndpointRecord, LocationRecord
 
 logger = help.ogler.getLogger()
 
@@ -1102,7 +1103,7 @@ def test_reply(mockHelpingNowUTC):
         rurls = tamHab.fetchRoleUrls(cid=nelHab.pre)
         assert len(rurls.getall("watcher")) == 1
 
-        assert tamHab.fetchLoc(eid=watHab.pre) == basing.LocationRecord(
+        assert tamHab.fetchLoc(eid=watHab.pre) == LocationRecord(
             url='http://localhost:8080/watcher/wat')
 
         assert tamHab.fetchUrl(eid=watHab.pre) == 'http://localhost:8080/watcher/wat'
@@ -1110,7 +1111,7 @@ def test_reply(mockHelpingNowUTC):
         end = tamHab.fetchEnd(cid=tamHab.pre,
                               role='controller',
                               eid=tamHab.pre)
-        assert end == basing.EndpointRecord(allowed=True, name='')
+        assert end == EndpointRecord(allowed=True, name='')
 
         assert tamHab.fetchEndAllowed(cid=tamHab.pre, role='controller', eid=tamHab.pre)
 

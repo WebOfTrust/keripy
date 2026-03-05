@@ -4,13 +4,11 @@ tests.app.cli.commands.contacts.test_contacts module
 
 Tests for KLI contacts commands: get, add, rename, delete
 """
-import json
-import pytest
 
 import multicommand
 
 from keri.app import habbing, organizing as connecting
-from keri.app.cli import commands
+from keri.cli import commands
 
 
 def test_contacts_get_by_aid(capsys):

@@ -7,13 +7,11 @@ import time
 from hio.base import doing, tyming
 
 from keri import kering
-from keri.kering import Vrsn_1_0, Vrsn_2_0
+from keri.kering import Vrsn_1_0
 from keri import core
 from keri.core import eventing, parsing, coring
 
 from keri.app import habbing, delegating, indirecting, agenting, notifying
-
-from keri.db import dbing
 
 
 def test_anchorer(seeder):
@@ -63,8 +61,8 @@ def test_anchorer(seeder):
         couple = seqner.qb64b + diger.qb64b
         result = delHby.db.aess.get(keys=(delHab.kever.prefixer.qb64b, delHab.kever.serder.saidb))
         assert result is not None
-        rseqner, rdiger = result
-        assert rseqner.qb64b + rdiger.qb64b == couple
+        rnumber, rdiger = result
+        assert rnumber.qb64b + rdiger.qb64b == couple
 
 
 def anchorer_test_do(tymth=None, tock=0.0, **opts):
@@ -121,8 +119,8 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
     couple = seqner.qb64b + diger.qb64b
 
     while result := delHby.db.aess.get(keys=(delHab.kever.prefixer.qb64b, delHab.kever.serder.saidb)):
-        rseqner, rdiger = result
-        if rseqner.qb64b + rdiger.qb64b == couple:
+        rnumber, rdiger = result
+        if rnumber.qb64b + rdiger.qb64b == couple:
             break
         yield tock
 

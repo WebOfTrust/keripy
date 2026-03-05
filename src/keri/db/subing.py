@@ -94,14 +94,17 @@ etc.
 
 
 """
-from typing import Type, Union
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Type, Union
 from collections.abc import Iterable, Iterator
 
 from .. import help
 from ..help.helping import isNonStringIterable, Reb64
-from .. import core
-from ..core import coring, scheming, serdering, signing
 from . import dbing
+
+if TYPE_CHECKING:
+    from ..core import coring, scheming, serdering, signing
 
 logger = help.ogler.getLogger()
 
@@ -352,14 +355,7 @@ class SuberBase():
         """
         return self.db.cntAll(db=self.sdb)
 
-
-    def cntAll(self):
-        """Counts all the entries in subdb.
-
-        Returns:
-            cnt (int): count of all entries in sdb
-        """
-        return self.db.cntAll(db=self.sdb)
+    cntAll = cnt  # migration alias for backward compt
 
 
 class Suber(SuberBase):
@@ -445,8 +441,7 @@ class Suber(SuberBase):
 
 
     def rem(self, keys: Union[str, Iterable]):
-        """
-        Removes entry at keys
+        """Removes entry at keys
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -961,7 +956,7 @@ class CesrSuberBase(SuberBase):
 
     def __init__(self,
                  *pa,
-                 klas: Type[coring.Matter] = coring.Matter,
+                 klas: Type[coring.Matter] | None = None,
                  strict: bool = False,
                  **kwa):
         """
@@ -982,6 +977,10 @@ class CesrSuberBase(SuberBase):
                            False means do not enforce. Default False
 
         """
+        if klas is None:
+            from ..core import coring
+            klas = coring.Matter
+
         super(CesrSuberBase, self).__init__(*pa, **kwa)
         self.klas = klas
         self.strict = bool(strict)
@@ -1115,6 +1114,7 @@ class CatCesrSuberBase(CesrSuberBase):
 
         """
         if klas is None:
+            from ..core import coring
             klas = (coring.Matter, )  # set default to tuple of single Matter
         if not isNonStringIterable(klas):  # not iterable
             klas = (klas, )  # make it so
@@ -1269,7 +1269,7 @@ class IoSetSuber(SuberBase):
 
         """
         if not isNonStringIterable(vals):  # not iterable
-            vals = (vals, )  # make iterable
+            vals = (vals, ) if vals else ()  # make iterable
         return (self.db.putIoSetVals(db=self.sdb,
                                      key=self._tokey(keys),
                                      vals=[self._ser(val) for val in vals],
@@ -1277,24 +1277,24 @@ class IoSetSuber(SuberBase):
 
 
     def pin(self, keys: str|bytes|memoryview|Iterable,
-                  vals: str|bytes|memoryview|Iterable):
+                  vals: str|bytes|memoryview|Iterable|None):
         """Pins (sets) vals at effective key made from keys and hidden ordinal suffix.
         Overwrites. Removes all pre-existing vals that share same effective keys
         and replaces them with vals
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key
-            vals (str|bytes|memoryview|Iterable): serialized value to replace
+            vals (str|bytes|memoryview|Iterable|None): serialized value to replace
                                         Value at onkey.
                                         None means empty iterable.
-                                        Empty iterable returns False
+                                        Empty iterable or None returns False
 
         Returns:
             result (bool): True If successful, False otherwise.
 
         """
         if not isNonStringIterable(vals):  # not iterable
-            vals = (vals, )  # make iterable
+            vals = (vals, ) if vals else ()  # make iterable
         return (self.db.pinIoSetVals(db=self.sdb,
                                      key=self._tokey(keys),
                                      vals=[self._ser(val) for val in vals],
@@ -1312,7 +1312,8 @@ class IoSetSuber(SuberBase):
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key parts to be
                     combined in order to form key
-            val (str|bytes|memoryview|None): serialization
+            val (str|bytes|memoryview|None): value to add
+                                             When val None returns False
 
         Returns:
             result (bool): True means unique value added among duplications,
@@ -1325,10 +1326,35 @@ class IoSetSuber(SuberBase):
                                     sep=self.sep))
 
 
+    def getItem(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
+        """Gets item list in set at effective key made from keys and hidden
+        ordinal suffix ion starting at ion >= ion.
+        When keys is empty or missing then returns empty list
+
+        All vals in set of vals that share same effecive key are retrieved in
+        insertion order starting at ion.
+
+        Parameters:
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                                                    in order to form key
+            ion (int): offset into set to start the count (0 based offset)
+
+        Returns:
+            vals (list[str]):  each item in list is str
+                          empty list if no entry at keys
+        """
+        # use iter so can more efficiently ._des(val)
+        return [(self._tokeys(key), self._des(val)) for key, val in
+                    self.db.getIoSetItemIter(db=self.sdb,
+                                             key=self._tokey(keys),
+                                             ion=ion,
+                                             sep=self.sep)]
+
+
     def get(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
         """Gets vals set list at effective key made from keys and hidden
         ordinal suffix ion starting at ion >= ion.
-        When key is empty then returns empty list
+        When keys is empty or missing then returns empty list
 
         All vals in set of vals that share same effecive key are retrieved in
         insertion order starting at ion.
@@ -1350,9 +1376,35 @@ class IoSetSuber(SuberBase):
                                              sep=self.sep)]
 
 
+    # Todo XXXX need to refactor to use getItemIter for here not alias to getTopItemIter
+    def XgetItemIter(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
+        """Iterates over set items at effecive key made from keys and hidden
+        ordinal suffix ion starting at ion >= ion.
+        When keys is empty or missing then returns empty iterator
+
+        All vals in set of vals that share same effecive key are retrieved in
+        insertion order starting at ion.
+
+        Parameters:
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                                                  in order to form key
+            ion (int): offset into set to start the count (0 based offset)
+
+        Returns:
+            vals (Iterator[str]):  str values. Raises StopIteration when done
+
+        """
+        for key, val in self.db.getIoSetItemIter(db=self.sdb,
+                                            key=self._tokey(keys),
+                                            ion=ion,
+                                            sep=self.sep):
+            yield (self._tokeys(key), self._des(val))
+
+
     def getIter(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
         """Iterates over set values at effecive key made from keys and hidden
         ordinal suffix ion starting at ion >= ion.
+        When keys is empty or missing then returns empty iterator
 
         All vals in set of vals that share same effecive key are retrieved in
         insertion order starting at ion.
@@ -1375,8 +1427,8 @@ class IoSetSuber(SuberBase):
 
     def getLastItem(self, keys: str|bytes|memoryview|Iterable):
         """Gets last set item (key, val) inserted at effecive key where
-        effective key is made from keys and hidden ordinal suffix or None when
-        keys is empty or keys not in db.
+        effective key is made from keys and hidden ordinal suffix
+        when keys is empty or missing returns empty tuple.
 
         All items in the set of items that shares the same effecive key are
         retrieved in insertion order.
@@ -1387,7 +1439,7 @@ class IoSetSuber(SuberBase):
 
         Returns:
             last ((str, str)|None): (key, val) tuple or empty tuple if no entry
-                              at keys or keys is empty
+                                   at keys or keys is empty
 
         """
         if last := self.db.getIoSetLastItem(db=self.sdb, key=self._tokey(keys)):
@@ -1416,9 +1468,6 @@ class IoSetSuber(SuberBase):
             return self._des(val)
         return None
 
-        #val = self.db.getIoSetLast(db=self.sdb, key=self._tokey(keys))
-        #return (self._des(val) if val is not None else val)
-
 
     def rem(self, keys: str|bytes|memoryview|Iterable,
                    val: str|bytes|memoryview|None=None):
@@ -1445,12 +1494,13 @@ class IoSetSuber(SuberBase):
 
 
     def cnt(self, keys: str|bytes|memoryview|Iterable = "", *, ion=0):
-        """Dount of  values at effective key made from keys and hidden ordinal
-        suffix. Zero otherwise
+        """Counts entries at effective key made from keys and hidden ordinal
+        suffix. Zero otherwise.
+        When keys empty then counts all in db.
 
         Returns:
-            cnt (int): entries in set at at starting with ion >= ion. When keys
-                is empty then counts all entries in db.
+            cnt (int): entries in set at keys starting with ion >= ion.
+                When keys is empty then counts all entries in db.
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be combined
@@ -1700,14 +1750,17 @@ class SignerSuber(CesrSuber):
     of a public key for the associated Verfer instance. This allows returned
     Signer instance to have its .transferable property set correctly.
     """
-
-    def __init__(self, *pa, klas: Type[signing.Signer] = signing.Signer, **kwa):
+    def __init__(self, *pa, klas: Type[signing.Signer] | None = None, **kwa):
         """
         Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
             klas (Type[coring.Matter]): Class reference to subclass of Matter
         """
+        from ..core import signing
+
+        if klas is None:
+            klas = signing.Signer
         if not (issubclass(klas, signing.Signer)):
             raise ValueError("Invalid klas type={}, expected {}."
                              "".format(klas, signing.Signer))
@@ -1738,6 +1791,7 @@ class SignerSuber(CesrSuber):
         key = self._tokey(keys)  # keys maybe string or tuple
         val = self.db.getVal(db=self.sdb, key=key)
         keys = self._tokeys(key)  # verkey is last split if any
+        from ..core import coring
         verfer = coring.Verfer(qb64b=keys[-1])  # last split
         return (self.klas(qb64b=bytes(val), transferable=verfer.transferable)
                 if val is not None else None)
@@ -1773,6 +1827,7 @@ class SignerSuber(CesrSuber):
         for key, val in self.db.getTopItemIter(db=self.sdb,
                                         top=self._tokey(keys, topive=topive)):
             ikeys = self._tokeys(key)  # verkey is last split if any
+            from ..core import coring
             verfer = coring.Verfer(qb64b=ikeys[-1])   # last split
             yield (ikeys, self.klas(qb64b=bytes(val),
                                    transferable=verfer.transferable))
@@ -1792,7 +1847,7 @@ class CryptSignerSuber(SignerSuber):
     """
 
     def put(self, keys: Union[str, Iterable], val: coring.Matter,
-            encrypter: core.Encrypter = None):
+            encrypter: signing.Encrypter = None):
         """
         Puts qb64 of Matter instance val at key made from keys. Does not overwrite
         If encrypter provided then encrypts first
@@ -1800,7 +1855,7 @@ class CryptSignerSuber(SignerSuber):
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
             val (Signer): instance of self.klas
-            encrypter (core.Encrypter): optional
+            encrypter (signing.Encrypter): optional
 
         Returns:
             result (bool): True If successful, False otherwise, such as key
@@ -1814,7 +1869,7 @@ class CryptSignerSuber(SignerSuber):
 
 
     def pin(self, keys: Union[str, Iterable], val: coring.Matter,
-            encrypter: core.Encrypter = None):
+            encrypter: signing.Encrypter = None):
         """
         Pins (sets) qb64 of Matter instance val at key made from keys. Overwrites.
         If encrypter provided then encrypts first
@@ -1822,7 +1877,7 @@ class CryptSignerSuber(SignerSuber):
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
             val (Signer): instance of self.klas
-            encrypter (core.Encrypter): optional
+            encrypter (signing.Encrypter): optional
 
         Returns:
             result (bool): True If successful. False otherwise.
@@ -1835,7 +1890,7 @@ class CryptSignerSuber(SignerSuber):
 
 
 
-    def get(self, keys: Union[str, Iterable], decrypter: core.Decrypter = None):
+    def get(self, keys: Union[str, Iterable], decrypter: signing.Decrypter = None):
         """
         Gets Signer instance at keys. If decrypter then assumes value in db was
         encrypted and so decrypts value in db before converting to Signer.
@@ -1849,7 +1904,7 @@ class CryptSignerSuber(SignerSuber):
             keys (Union[str, iterable]): key strs to be combined in order to
                 form key. Last element of keys is verkey used to determin
                 .transferable for Signer
-            decrypter (core.Decrypter): optional. If provided assumes value in
+            decrypter (signing.Decrypter): optional. If provided assumes value in
                 db was encrypted and so decrypts before converting to Signer.
 
         Usage:
@@ -1864,6 +1919,7 @@ class CryptSignerSuber(SignerSuber):
         if val is None:
             return None
         keys = self._tokeys(key)  # verkey is last split if any
+        from ..core import coring
         verfer = coring.Verfer(qb64b=keys[-1])  # last split
         if decrypter:
             return (decrypter.decrypt(qb64=bytes(val),
@@ -1873,7 +1929,7 @@ class CryptSignerSuber(SignerSuber):
 
 
     def getItemIter(self, keys: str|bytes|memoryview|Iterable= "",
-                       decrypter: core.Decrypter = None, *, topive=False):
+                       decrypter: signing.Decrypter = None, *, topive=False):
         """Iterates over all the items in top branch defined by keys where
         keys may be truncation of full branch.
 
@@ -1883,7 +1939,7 @@ class CryptSignerSuber(SignerSuber):
             prefix to return branches of key space. When keys is empty then
             returns all items in subdb
 
-        decrypter (core.Decrypter): optional. If provided assumes value in
+        decrypter (signing.Decrypter): optional. If provided assumes value in
                 db was encrypted and so decrypts before converting to Signer.
 
         Parameters:
@@ -1905,6 +1961,7 @@ class CryptSignerSuber(SignerSuber):
         for key, val in self.db.getTopItemIter(db=self.sdb,
                                         top=self._tokey(keys, topive=topive)):
             ikeys = self._tokeys(key)  # verkey is last split if any
+            from ..core import coring
             verfer = coring.Verfer(qb64b=ikeys[-1])   # last split
             if decrypter:
                 yield (ikeys, decrypter.decrypt(qb64=bytes(val),
@@ -1921,7 +1978,7 @@ class SerderSuberBase(SuberBase):
     """
 
     def __init__(self, *pa,
-                 klas: Type[serdering.Serder] = serdering.SerderKERI,
+                 klas: Type[serdering.Serder] | None = None,
                  **kwa):
         """
         Inherited Parameters:
@@ -1938,6 +1995,10 @@ class SerderSuberBase(SuberBase):
         Overridden Parameters:
             klas (Type[serdering.Serder]): Class reference to subclass of Serder
         """
+        if klas is None:
+            from ..core import serdering
+            klas = serdering.SerderKERI
+
         super(SerderSuberBase, self).__init__(*pa, **kwa)
         self.klas = klas
 
@@ -2051,7 +2112,7 @@ class SchemerSuber(SerderSuberBase, Suber):
     """
 
     def __init__(self, *pa,
-                 klas: Type[ scheming.Schemer] = scheming.Schemer,
+                 klas: Type[scheming.Schemer] | None = None,
                  **kwa):
         """
         Inherited Parameters:
@@ -2071,6 +2132,10 @@ class SchemerSuber(SerderSuberBase, Suber):
             klas (Type[scheming.Schemer]): Class reference to ducktyped subclass
                 of Serder  intercepts passed in klas and forces it to Schemer
         """
+        from ..core import scheming
+
+        if klas is None:
+            klas = scheming.Schemer
         if not issubclass(klas, scheming.Schemer):
             raise TypeError(f"Invalid {klas=}, not subclass of {scheming.Schemer}.")
         super(SchemerSuber, self).__init__(*pa, klas=klas, **kwa)
@@ -2225,14 +2290,17 @@ class DupSuber(SuberBase):
             yield self._des(val)
 
 
-    def cnt(self, keys: str | bytes | memoryview | Iterable):
-        """
-        Return count of dup values at key made from keys, zero otherwise
+    def cnt(self, keys: str|bytes|memoryview|Iterable = ""):
+        """Counts dup values at key made from keys, zero otherwise
+        When keys is empty then counts all in db.
 
         Parameters:
-            keys (str | bytes | memoryview | Iterable): of key strs to be
-                combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be
+                combined in order to form key. When keys empty then count all
+                entires in db.
         """
+        if not keys:
+            return self.db.cntAll(db=self.sdb)
         return (self.db.cntVals(db=self.sdb, key=self._tokey(keys)))
 
 
@@ -3161,7 +3229,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
     def getOnItem(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
         """Gets list of items (key, on, val) from set of entries at onkey
         made from keys and on starting at offset ion into set.
-        When onkey missing or key empty or None returns empty list.
+        When onkey missing or key empty or missing returns empty list.
 
         Returns
             item (tuple[bytes, int, str|bytes|memoryview]|None): at onkey if any
@@ -3182,9 +3250,9 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
 
     def getOn(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
-        """Gets set vals list at key made from keys and on in insertion order from
+        """Gets set vals list at onkey made from keys and on in insertion order from
         from offset ion into set using hidden ordinal suffix.
-        When key is empty then returns empty list
+        When onkey is empty or missing then returns empty list
 
         Returns:
             vals (list[str]):  values if any else empty tuuple
@@ -3205,14 +3273,15 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
 
     def getOnItemIter(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
-        """Iterates over set items (key, on, val) at key made from keys and on
+        """Iterates over set items (key, on, val) at onkey made from keys and on
         in insertion order from from offset ion into set using hidden ordinal suffix.
+        When onkey is empty or missing then returns empty iterator
 
         Returns:
             val (Iterator[str]):  deserialized val elements of set at onkey
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): okey(s) made into base key
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
             on (int): ordinal number tail used with onKey(pre,on) to form key.
             ion (int): starting insertion ordinal value, default 0
         """
@@ -3226,14 +3295,15 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
 
     def getOnIter(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
-        """Iterates over set vals at key made from keys and on in insertion order
+        """Iterates over set vals at onkey made from keys and on in insertion order
         from from offset ion into set using hidden ordinal suffix.
+        When onkey is empty or missing then returns empty iterator
 
         Returns:
             val (Iterator[str]):  deserialized val elements of set at onkey
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): okey(s) made into base key
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key
             on (int): ordinal number tail used with onKey(pre,on) to form key.
             ion (int): starting insertion ordinal value, default 0
         """

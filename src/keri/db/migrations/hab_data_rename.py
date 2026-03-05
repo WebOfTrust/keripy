@@ -1,8 +1,9 @@
 from dataclasses import dataclass, field, asdict
 from typing import Optional
 
-from keri.db import koming, basing
-from keri.db.basing import HabitatRecord, Baser
+from .. import koming
+from ..basing import Baser
+from ...recording import HabitatRecord
 from keri.vdr.viring import Reger
 
 

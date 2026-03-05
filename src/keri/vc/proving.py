@@ -6,12 +6,9 @@ keri.vc.proving module
 
 from typing import Optional, Union
 
-from .. import core
-from .. import help
-from ..core import coring, serdering
-from ..core.coring import (Kinds, versify)
+from .. import help, versify, Protocols, Kinds, Version
+from ..core import Salter, Saider, serdering, Saids
 from ..help import helping
-from ..kering import Version
 
 KERI_REGISTRY_TYPE = "KERICredentialRegistry"
 
@@ -51,7 +48,7 @@ def credential(schema:str,
         serdering.SerderACDC: credential instance
 
     """
-    vs = versify(proto=coring.Protocols.acdc, pvrsn=version, kind=kind, size=0)
+    vs = versify(proto=Protocols.acdc, pvrsn=version, kind=kind, size=0)
 
     vc = dict(
         v=vs,
@@ -63,8 +60,8 @@ def credential(schema:str,
     )
 
     if private:
-        vc["u"] = private_credential_nonce if private_credential_nonce is not None else core.Salter().qb64
-        subject["u"] = private_subject_nonce if private_subject_nonce is not None else core.Salter().qb64
+        vc["u"] = private_credential_nonce if private_credential_nonce is not None else Salter().qb64
+        subject["u"] = private_subject_nonce if private_subject_nonce is not None else Salter().qb64
 
     if recipient is not None:
         subject['i'] = recipient
@@ -91,12 +88,7 @@ def credential(schema:str,
     if rules is not None:
         vc["r"] = rules
 
-    _, sad = coring.Saider.saidify(sad=subject, kind=kind, label=coring.Saids.d)
+    _, sad = Saider.saidify(sad=subject, kind=kind, label=Saids.d)
     vc["a"] = sad
 
-    #_, vc = coring.Saider.saidify(sad=vc)
-
     return serdering.SerderACDC(sad=vc, makify=True)
-
-
-

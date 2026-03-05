@@ -1,0 +1,66 @@
+# -*- encoding: utf-8 -*-
+"""
+KERI
+keri.kli.commands module
+
+"""
+import argparse
+
+from hio.base import doing
+
+from ...common import existing
+from ...common.parsing import Parsery
+
+from .... import help
+
+
+logger = help.ogler.getLogger()
+
+parser = argparse.ArgumentParser(description='Display OOBIs waiting for resolution and allow for clean up', 
+                                 parents=[Parsery.keystore()])
+parser.set_defaults(handler=lambda args: list_oobis(args))
+
+def list_oobis(args):
+    """ Command line list handler
+
+    """
+    kwa = dict(args=args)
+    return [doing.doify(oobis, **kwa)]
+
+
+def oobis(tymth, tock=0.0, **opts):
+    _ = (yield tock)
+
+    args = opts["args"]
+    name = args.name
+    base = args.base
+    bran = args.bran
+
+
+    with existing.existingHby(name=name, base=base, bran=bran) as hby:
+        oobis = []
+        for (oobi,), _ in hby.db.oobis.getItemIter():
+            oobis.append(oobi)
+
+        if not oobis:
+            print("No OOBIs waiting resolution")
+            return
+
+        print("The following OOBIs are pending resolution (enter number to delete):")
+        for idx, oobi in enumerate(oobis):
+            print(f"\t{idx+1}: {oobi}")
+
+        try:
+            idx = input("Number: ")
+            idx = int(idx) - 1
+            if 0 <= idx < len(oobis):
+                if hby.db.oobis.rem(oobis[idx]):
+                    print("OOBI deleted")
+                else:
+                    print("Unable to delete OOBI")
+            else:
+                print("Invalid number\n")
+        except ValueError:
+            print("Invalid number\n")
+
+

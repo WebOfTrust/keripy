@@ -12,13 +12,12 @@ from ordered_set import OrderedSet as oset
 from hio.base import doing
 from hio.help import decking, ogler
 
-from keri import kering
-from keri.app import agenting
-from keri.core import coring, eventing, serdering, MtrDex, Counter, Codens
-from keri.db import dbing
-from keri.kering import Roles
-from keri.peer import exchanging
-from keri.spac import payloading
+from .. import Roles, Vrsn_1_0, ConfigurationError, ValidationError
+from . import agenting
+from ..core import coring, eventing, serdering, MtrDex, Counter, Codens
+from ..db import dgKey
+from ..peer import exchanging
+from ..spac import payloading
 
 logger = ogler.getLogger()
 
@@ -88,7 +87,7 @@ class Poster(doing.DoDoer):
                     else:
                         logger.info(f"No end roles for {recp} to send evt={srdr.said}")
                         continue
-                except kering.ConfigurationError as e:
+                except ConfigurationError as e:
                     logger.error(f"Error sending to {recp} with ends={ends}.  Err={e}")
                     continue
                 # Get the kever of the recipient and choose a witness
@@ -321,7 +320,7 @@ class StreamPoster:
                 logger.info(f"No end roles for {self.recp} to send evt={self.recp}")
                 return []
 
-        except kering.ConfigurationError as e:
+        except ConfigurationError as e:
             logger.error(f"Error sending to {self.recp} with ends={ends}.  Err={e}")
             return []
 
@@ -351,10 +350,10 @@ class StreamPoster:
                                                         atc=attachment, topic=self.topic)
             else:
                 logger.info(f"No end roles for {self.recp} to send evt={self.recp}")
-                raise kering.ValidationError(f"No end roles for {self.recp} to send evt={self.recp}")
-        except kering.ConfigurationError as e:
+                raise ValidationError(f"No end roles for {self.recp} to send evt={self.recp}")
+        except ConfigurationError as e:
             logger.error(f"Error sending to {self.recp} with ends={ends}.  Err={e}")
-            raise kering.ValidationError(f"Error sending to {self.recp} with ends={ends}.  Err={e}")
+            raise ValidationError(f"Error sending to {self.recp} with ends={ends}.  Err={e}")
 
         evt = dict(serder=serder)
         if attachment is not None:
@@ -387,7 +386,7 @@ class StreamPoster:
                                       modifiers=dict(src=hab.pre, dest=ctrl))
         ims = hab.endorse(serder=essr, pipelined=False)
         ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
-                           gvrsn=kering.Vrsn_1_0).qb64b)
+                           gvrsn=Vrsn_1_0).qb64b)
         ims.extend(texter.qb64b)
         return ims
 
@@ -533,7 +532,7 @@ def introduce(hab, wit):
 
     iserder = hab.kever.serder
     witPrefixer = coring.Prefixer(qb64=wit)
-    dgkey = dbing.dgKey(wit, iserder.said)
+    dgkey = dgKey(wit, iserder.said)
     found = False
     if witPrefixer.transferable:  # find if have rct from other pre for own icp
         for sprefixer, snum, sdiger, siger in hab.db.vrcs.getIter(dgkey):

@@ -14,21 +14,20 @@ import falcon
 from hio.base import doing
 from hio.help import decking
 
-from keri.core import coring
 from . import httping
-from .. import help
-from .. import kering
-from ..kering import Vrsn_1_0, Vrsn_2_0
+from .. import (Vrsn_1_0, Roles, Schemes, Ilks,
+                ValidationError, UnverifiedReplyError,
+                ConfigurationError)
+from ..help import ogler, nowIso8601
 from ..app import organizing
-from ..core import routing, eventing, parsing, scheming, serdering
-from ..db import basing
-from ..end import ending
-from ..end.ending import OOBI_RE, DOOBI_RE
+from ..core import (Prefixer, routing, eventing,
+                    parsing, scheming, serdering)
+from ..end import ending, OOBI_RE, DOOBI_RE
 from ..help import helping
-from ..kering import Ilks, ValidationError, UnverifiedReplyError, ConfigurationError
 from ..peer import exchanging
+from ..recording import OobiRecord, WellKnownAuthN
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 Resultage = namedtuple("Resultage", 'resolved failed')  # stream cold start status
 Result = Resultage(resolved='resolved', failed='failed')
@@ -113,28 +112,28 @@ class OobiResource:
         role = req.params["role"]
 
         res = dict(role=role)
-        if role in (kering.Roles.witness,):  # Fetch URL OOBIs for all witnesses
+        if role in (Roles.witness,):  # Fetch URL OOBIs for all witnesses
             oobis = []
             for wit in hab.kever.wits:
-                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) \
-                       or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
+                urls = hab.fetchUrls(eid=wit, scheme=Schemes.http) \
+                       or hab.fetchUrls(eid=wit, scheme=Schemes.https)
                 if not urls:
                     rep.status = falcon.HTTP_404
                     rep.text = f"unable to query witness {wit}, no http endpoint"
                     return
 
-                url = urls[kering.Schemes.https] if kering.Schemes.https in urls else urls[kering.Schemes.http]
+                url = urls[Schemes.https] if Schemes.https in urls else urls[Schemes.http]
                 oobis.append(f"{url.rstrip("/")}/oobi/{hab.pre}/witness/{wit}")
             res["oobis"] = oobis
-        elif role in (kering.Roles.controller,):  # Fetch any controller URL OOBIs
+        elif role in (Roles.controller,):  # Fetch any controller URL OOBIs
             oobis = []
-            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http) or hab.fetchUrls(eid=hab.pre,
-                                                                                           scheme=kering.Schemes.https)
+            urls = hab.fetchUrls(eid=hab.pre, scheme=Schemes.http) or hab.fetchUrls(eid=hab.pre,
+                                                                                           scheme=Schemes.https)
             if not urls:
                 rep.status = falcon.HTTP_404
                 rep.text = f"unable to query controller {hab.pre}, no http endpoint"
                 return
-            url = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
+            url = urls[Schemes.http] if Schemes.http in urls else urls[Schemes.https]
             oobis.append(f"{url.rstrip("/")}/oobi/{hab.pre}/controller")
             res["oobis"] = oobis
         else:
@@ -185,7 +184,7 @@ class OobiResource:
         if "url" in body:
             oobi = body["url"]
 
-            obr = basing.OobiRecord(date=helping.nowIso8601())
+            obr = OobiRecord(date=helping.nowIso8601())
             if "oobialias" in body:
                 obr.oobialias = body["oobialias"]
 
@@ -237,7 +236,7 @@ class OobiRequestHandler:
             return
         oobi = pay["oobi"]
 
-        obr = basing.OobiRecord(date=helping.nowIso8601())
+        obr = OobiRecord(date=helping.nowIso8601())
         self.hby.db.oobis.pin(keys=(oobi,), val=obr)
 
         data = dict(
@@ -365,7 +364,7 @@ class Oobiery:
                 raise ValidationError(f"Missing element={k} from attributes in"
                                       f" {Ilks.rpy} msg={serder.ked}.")
 
-        cider = coring.Prefixer(qb64=data["cid"])  # raises error if unsupported code
+        cider = Prefixer(qb64=data["cid"])  # raises error if unsupported code
         cid = cider.qb64  # controller authorizing eid at role
         aid = cid  # authorizing attribution id
 
@@ -384,7 +383,7 @@ class Oobiery:
         if not accepted:
             raise UnverifiedReplyError(f"Unverified introduction reply. {serder.ked}")
 
-        obr = basing.OobiRecord(cid=cid, date=dt)
+        obr = OobiRecord(cid=cid, date=dt)
         self.hby.db.oobis.put(keys=(oobi,), val=obr)
 
     def scoobiDo(self, tymth=None, tock=0.0, **kwa):
@@ -519,7 +518,7 @@ class Oobiery:
                         else:
                             result = Result.failed
 
-                    except (kering.ValidationError, ValueError):
+                    except (ValidationError, ValueError):
                         result = Result.failed
 
                     obr.state = result
@@ -541,7 +540,7 @@ class Oobiery:
                         self.hby.db.roobi.put(keys=(url,), val=obr)
                         continue
 
-                    except (kering.ValidationError, ValueError):
+                    except (ValidationError, ValueError):
                         pass
 
                     try:
@@ -551,7 +550,7 @@ class Oobiery:
                         self.hby.db.coobi.rem(keys=(url,))
                         self.hby.db.roobi.put(keys=(url,), val=obr)
                         continue
-                    if not serder.ked['t'] == coring.Ilks.rpy:
+                    if not serder.ked['t'] == Ilks.rpy:
                         obr.state = Result.failed
                         self.hby.db.coobi.rem(keys=(url,))
                         self.hby.db.roobi.put(keys=(url,), val=obr)
@@ -627,7 +626,7 @@ class Oobiery:
         mobr.urls = urls
 
         for murl in urls:
-            obr = basing.OobiRecord(date=helping.nowIso8601())
+            obr = OobiRecord(date=helping.nowIso8601())
             obr.oobialias = mobr.oobialias
             obr.cid = mobr.cid
             self.hby.db.oobis.put(keys=(murl,), val=obr)
@@ -658,8 +657,8 @@ class Authenticator:
         self.hby.db.mfa.pin(keys=(wurl,), val=obr)
 
     def addAuthToAid(self, cid, url):
-        now = help.nowIso8601()
-        wkan = basing.WellKnownAuthN(url=url, dt=now)
+        now = nowIso8601()
+        wkan = WellKnownAuthN(url=url, dt=now)
         self.hby.db.wkas.add(keys=(cid,), val=wkan)
 
     def authzDo(self, tymth=None, tock=0.0, **kwa):

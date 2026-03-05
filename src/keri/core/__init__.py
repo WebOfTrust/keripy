@@ -10,17 +10,17 @@ from .coring import (sizeify, dumps, loads, MtrDex, SmallVrzDex, LargeVrzDex,
                      Seqner, Number, Decimer, Dater, Tagger, Ilker, Traitor,
                      Verser, Texter, Bexter, Pather, Labeler, Verfer, Cigar,
                      Diger, Prefixer, Noncer, Saider, Sadder, Tholder, Dicter,
-                     Saids, Versage, Sizage, MapDom, IceMapDom)
+                     Saids, TraitDex, Versage, Sizage, MapDom, IceMapDom)
 from .counting import (GenDex, ProGen, CtrDex_1_0, CtrDex_2_0, QTDex_1_0,
                        UniDex_1_0, SUDex_1_0, MUDex_1_0, CtrDex_2_0, UniDex_2_0,
-                        SUDex_2_0, MUDex_2_0, CodeNames, Codenage, Codens,
-                        SealDex_2_0, Cizage, Counter)
+                        SUDex_2_0, MUDex_2_0, CodeNames, SealDex_2_0, Codens,
+                        Codenage, Cizage, Counter)
 from .eventing import (simple, ample, deWitnessCouple, deReceiptCouple,
                        deSourceCouple, deReceiptTriple, deTransReceiptQuadruple,
                        deTransReceiptQuintuple, verifySigs, validateSigs,
                        fetchTsgs, state, incept, delcept, rotate, deltate,
-                       interact, receipt, query, reply, prod, bare, LastEstLoc,
-                       exchept, exchange, messagize, Kever, Kevery, loadEvent)
+                       interact, receipt, query, reply, prod, bare, loadEvent,
+                       exchept, exchange, messagize, Kever, Kevery, LastEstLoc)
 from .indexing import (Indexer, Siger, Xizage, IdrDex, IdxSigDex, IdxCrtSigDex,
                        IdxBthSigDex)
 from .mapping import Mapper, EscapeDex, Compactor, Aggor

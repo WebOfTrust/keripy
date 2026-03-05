@@ -11,18 +11,19 @@ from urllib.parse import urlsplit
 from hio.base import doing
 from hio.help import hicting
 
-from keri.peer import exchanging
+from ..peer import exchanging
 from . import keeping, configing
-from .. import help
-from .. import kering
-from ..kering import Vrsn_1_0, Vrsn_2_0
-from .. import core
-from ..core import (coring, eventing, parsing, routing, serdering, indexing,
-                    Counter, Codens)
-from ..db import dbing, basing
-from ..kering import MissingSignatureError, Roles
+from ..db import Baser, dgKey
+from ..help import ogler, fromIso8601, toIso8601
+from .. import (Vrsn_1_0, ClosedError, AuthError,
+                ConfigurationError, ValidationError, MissingEntryError,
+                KeriError, MissingSignatureError, Roles, Schemes)
+from ..core import (coring, eventing, parsing, routing,
+                    Counter, Salter, Codens)
+from ..recording import EndpointRecord, HabitatRecord, LocationRecord, OobiRecord
 
-logger = help.ogler.getLogger()
+
+logger = ogler.getLogger()
 
 @contextmanager
 def openHby(*, name="test", base="", temp=True, salt=None, **kwa):
@@ -71,7 +72,7 @@ def openHby(*, name="test", base="", temp=True, salt=None, **kwa):
 
     """
     habery = None
-    salt = salt if salt is not None else core.Salter().qb64
+    salt = salt if salt is not None else Salter().qb64
     try:
         habery = Habery(name=name, base=base, temp=temp, salt=salt, **kwa)
         yield habery
@@ -98,7 +99,7 @@ def openHab(name="test", base="", salt=None, temp=True, cf=None, **kwa):
 
     """
 
-    salt = core.Salter(raw=salt).qb64
+    salt = Salter(raw=salt).qb64
 
     with openHby(name=name, base=base, salt=salt, temp=temp, cf=cf) as hby:
         if (hab := hby.habByName(name)) is None:
@@ -209,12 +210,12 @@ class Habery:
                                                            reopen=True,
                                                            clear=clear,
                                                            headDirPath=headDirPath)
-        self.db = db if db is not None else basing.Baser(name=self.name,
-                                                         base=self.base,
-                                                         temp=self.temp,
-                                                         reopen=True,
-                                                         clear=clear,
-                                                         headDirPath=headDirPath)
+        self.db = db if db is not None else Baser(name=self.name,
+                                                  base=self.base,
+                                                  temp=self.temp,
+                                                  reopen=True,
+                                                  clear=clear,
+                                                  headDirPath=headDirPath)
         self.cf = cf if cf is not None else configing.Configer(name=self.name,
                                                                base=self.base,
                                                                temp=self.temp,
@@ -284,7 +285,7 @@ class Habery:
                     Otherwise use more resources set by tier to stretch
         """
         if not (self.ks.opened and self.db.opened):
-            raise kering.ClosedError("Attempt to setup Habitat with closed "
+            raise ClosedError("Attempt to setup Habitat with closed "
                                      "database, .ks or .db.")
         self.free = True if free else False
 
@@ -292,7 +293,7 @@ class Habery:
             if len(bran) < 21:
                 raise ValueError(f"Bran (passcode seed material) too short.")
             bran = coring.MtrDex.Salt_128 + 'A' + bran[:21]  # qb64 salt for seed
-            signer = core.Salter(qb64=bran).signer(transferable=False,
+            signer = Salter(qb64=bran).signer(transferable=False,
                                                      tier=tier,
                                                      temp=temp)
             seed = signer.qb64
@@ -300,14 +301,14 @@ class Habery:
                 aeid = signer.verfer.qb64  # lest it remove encryption
 
         if salt is None:  # salt for signing keys not aeid seed
-            salt = core.Salter().qb64
+            salt = Salter().qb64
         else:
-            salt = core.Salter(qb64=salt).qb64
+            salt = Salter(qb64=salt).qb64
 
         try:
             self.mgr = keeping.Manager(ks=self.ks, seed=seed, aeid=aeid, pidx=pidx,
                                        algo=algo, salt=salt, tier=tier)
-        except kering.AuthError as ex:
+        except AuthError as ex:
             self.close()
             raise ex
 
@@ -356,7 +357,7 @@ class Habery:
             # It is accepted into its own local KEL even if it has not been fully
             # witnessed and if delegated, its delegator has not yet sealed it
             if not hab.accepted and not habord.mid:
-                raise kering.ConfigurationError(f"Problem loading Hab pre="
+                raise ConfigurationError(f"Problem loading Hab pre="
                                                 f"{pre} name={habord.name} from db.")
 
             # read in config file and process any oobis or endpoints for hab
@@ -390,7 +391,7 @@ class Habery:
             data (list | None): seal dicts
         """
         if ns is not None and "." in ns:
-            raise kering.ConfigurationError("Hab namespace names are not allowed to contain the '.' character")
+            raise ConfigurationError("Hab namespace names are not allowed to contain the '.' character")
 
         cf = cf if cf is not None else self.cf
         hab = Hab(ks=self.ks, db=self.db, cf=cf, mgr=self.mgr,
@@ -441,21 +442,21 @@ class Habery:
         """
 
         if mhab.pre not in smids and mhab.pre not in rmids:
-            raise kering.ConfigurationError(f"Local member identifier "
+            raise ConfigurationError(f"Local member identifier "
                                             f"{mhab.pre} must be member of "
                                             f"smids ={smids} and/or "
                                             f"rmids={rmids}.")
 
         for mid in smids:
             if mid not in self.kevers:
-                raise kering.ConfigurationError(f"KEL missing for signing member "
+                raise ConfigurationError(f"KEL missing for signing member "
                                                 f"identifier {mid} from group's "
                                                 f"current members ={smids}")
 
         if rmids is not None:
             for rmid in rmids:
                 if rmid not in self.kevers:
-                    raise kering.ConfigurationError(f"KEL missing for next member "
+                    raise ConfigurationError(f"KEL missing for next member "
                                                     f"identifier {rmid} in group's"
                                                     f" next members ={rmids}")
 
@@ -493,21 +494,21 @@ class Habery:
         """
 
         if mhab.pre not in smids and mhab.pre not in rmids:
-            raise kering.ConfigurationError(f"Local member identifier "
+            raise ConfigurationError(f"Local member identifier "
                                             f"{mhab.pre} must be member of "
                                             f"smids ={smids} and/or "
                                             f"rmids={rmids}.")
 
         for mid in smids:
             if mid not in self.kevers:
-                raise kering.ConfigurationError(f"KEL missing for signing member "
+                raise ConfigurationError(f"KEL missing for signing member "
                                                 f"identifier {mid} from group's "
                                                 f"current members ={smids}")
 
         if rmids is not None:
             for rmid in rmids:
                 if rmid not in self.kevers:
-                    raise kering.ConfigurationError(f"KEL missing for next member "
+                    raise ConfigurationError(f"KEL missing for next member "
                                                     f"identifier {rmid} in group's"
                                                     f" next members ={rmids}")
 
@@ -517,7 +518,7 @@ class Habery:
                        name=group, ns=ns, mhab=mhab, smids=smids, rmids=rmids, temp=self.temp)
 
         hab.pre = pre
-        habord = basing.HabitatRecord(hid=hab.pre,
+        habord = HabitatRecord(hid=hab.pre,
                                       name=self.name,
                                       domain=ns,
                                       mid=mhab.pre,
@@ -572,21 +573,21 @@ class Habery:
         """
 
         if mhab.pre not in smids and mhab.pre not in rmids:
-            raise kering.ConfigurationError(f"Local member identifier "
+            raise ConfigurationError(f"Local member identifier "
                                             f"{mhab.pre} must be member of "
                                             f"smids ={smids} and/or "
                                             f"rmids={rmids}.")
 
         for mid in smids:
             if mid not in self.kevers:
-                raise kering.ConfigurationError(f"KEL missing for signing member "
+                raise ConfigurationError(f"KEL missing for signing member "
                                                 f"identifier {mid} from group's "
                                                 f"current members ={smids}")
 
         if rmids is not None:
             for rmid in rmids:
                 if rmid not in self.kevers:
-                    raise kering.ConfigurationError(f"KEL missing for next member "
+                    raise ConfigurationError(f"KEL missing for next member "
                                                     f"identifier {rmid} in group's"
                                                     f" next members ={rmids}")
 
@@ -596,7 +597,7 @@ class Habery:
                               name=name, mhab=mhab, smids=smids, rmids=rmids, ns=ns, temp=self.temp)
 
         hab.pre = pre
-        habord = basing.HabitatRecord(hid=hab.pre,
+        habord = HabitatRecord(hid=hab.pre,
                                       sid=mhab.pre,
                                       name=name,
                                       domain=ns,
@@ -651,7 +652,7 @@ class Habery:
             verfers = kever.verfers
             merfers.append(verfers[0])  # assumes always verfers
             if len(verfers) > 1:
-                raise kering.ConfigurationError("Identifier must have only one key, {} has {}"
+                raise ConfigurationError("Identifier must have only one key, {} has {}"
                                                 .format(mid, len(verfers)))
 
         for mid in rmids:
@@ -660,7 +661,7 @@ class Habery:
             if digers:  # abandoned id  may have empty next digers
                 migers.append(digers[0])
             if len(digers) > 1:
-                raise kering.ConfigurationError("Identifier must have only one next key commitment, {} has {}"
+                raise ConfigurationError("Identifier must have only one next key commitment, {} has {}"
                                                 .format(mid, len(digers)))
 
         return merfers, migers
@@ -768,18 +769,18 @@ class Habery:
         """
         conf = self.cf.get()
         if "dt" in conf:  # datetime of config file
-            dt = help.fromIso8601(conf["dt"])  # raises error if not convert
+            dt = fromIso8601(conf["dt"])  # raises error if not convert
             if "iurls" in conf:  # process OOBI URLs
                 for oobi in conf["iurls"]:
-                    obr = basing.OobiRecord(date=help.toIso8601(dt))
+                    obr = OobiRecord(date=toIso8601(dt))
                     self.db.oobis.put(keys=(oobi,), val=obr)
             if "durls" in conf:  # process OOBI URLs
                 for oobi in conf["durls"]:
-                    obr = basing.OobiRecord(date=help.toIso8601(dt))
+                    obr = OobiRecord(date=toIso8601(dt))
                     self.db.oobis.put(keys=(oobi,), val=obr)
             if "wurls" in conf:  # well known OOBI URLs for MFA
                 for oobi in conf["wurls"]:
-                    obr = basing.OobiRecord(date=help.toIso8601(dt))
+                    obr = OobiRecord(date=toIso8601(dt))
                     self.db.woobi.put(keys=(oobi,), val=obr)
 
     @property
@@ -1114,20 +1115,20 @@ class BaseHab:
 
         conf = conf[self.name]
         if "dt" in conf:  # datetime of config file
-            dt = help.fromIso8601(conf["dt"])  # raises error if not convert
+            dt = fromIso8601(conf["dt"])  # raises error if not convert
             msgs = bytearray()
             msgs.extend(self.makeEndRole(eid=self.pre,
-                                         role=kering.Roles.controller,
-                                         stamp=help.toIso8601(dt=dt)))
+                                         role=Roles.controller,
+                                         stamp=toIso8601(dt=dt)))
             if "curls" in conf:
                 curls = conf["curls"]
                 for url in curls:
                     splits = urlsplit(url)
-                    scheme = (splits.scheme if splits.scheme in kering.Schemes
-                              else kering.Schemes.http)
+                    scheme = (splits.scheme if splits.scheme in Schemes
+                              else Schemes.http)
                     msgs.extend(self.makeLocScheme(url=url,
                                                    scheme=scheme,
-                                                   stamp=help.toIso8601(dt=dt)))
+                                                   stamp=toIso8601(dt=dt)))
             self.psr.parse(ims=msgs)
 
     @property
@@ -1136,11 +1137,11 @@ class BaseHab:
         Return serder of inception event
         """
         if (dig := self.db.kels.getOnLast(keys=self.pre, on=0)) is None:
-            raise kering.ConfigurationError("Missing inception event in KEL for "
+            raise ConfigurationError("Missing inception event in KEL for "
                                             "Habitat pre={}.".format(self.pre))
         dig = dig.encode("utf-8")
         if (serder := self.db.evts.get(keys=(self.pre, bytes(dig)))) is None:
-            raise kering.ConfigurationError("Missing inception event for "
+            raise ConfigurationError("Missing inception event for "
                                             "Habitat pre={}.".format(self.pre))
         return serder
 
@@ -1220,7 +1221,7 @@ class BaseHab:
                 indices.append(idx)
 
         if not kever.ntholder.satisfy(indices):
-            raise kering.ValidationError("invalid rotation, new key set unable to satisfy prior next signing threshold")
+            raise ValidationError("invalid rotation, new key set unable to satisfy prior next signing threshold")
 
         if kever.delpre is not None:  # delegator only shows up in delcept
             serder = eventing.deltate(pre=kever.prefixer.qb64,
@@ -1260,7 +1261,7 @@ class BaseHab:
         except MissingSignatureError:
             pass
         except Exception as ex:
-            raise kering.ValidationError("Improper Habitat rotation for "
+            raise ValidationError("Improper Habitat rotation for "
                                          "pre={self.pre}.") from ex
 
         return msg
@@ -1285,7 +1286,7 @@ class BaseHab:
         except MissingSignatureError:
             pass
         except Exception as ex:
-            raise kering.ValidationError("Improper Habitat interaction for "
+            raise ValidationError("Improper Habitat interaction for "
                                          "pre={}.".format(self.pre)) from ex
 
         return msg
@@ -1569,15 +1570,15 @@ class BaseHab:
         msg = bytearray()
         dig = self.db.kels.getOnLast(keys=pre, on=sn)
         if dig is None:
-            raise kering.MissingEntryError("Missing event for pre={} at sn={}."
+            raise MissingEntryError("Missing event for pre={} at sn={}."
                                            "".format(pre, sn))
         dig = dig.encode("utf-8")
         dig = bytes(dig)
-        key = dbing.dgKey(pre, dig)  # digest key
+        key = dgKey(pre, dig)  # digest key
         serder = self.db.evts.get(keys=(pre, dig))
         msg.extend(serder.raw)
         msg.extend(Counter(Codens.ControllerIdxSigs, count=self.db.sigs.cnt(keys=(pre, dig)),
-                           version=kering.Vrsn_1_0).qb64b)  # attach cnt
+                           version=Vrsn_1_0).qb64b)  # attach cnt
         for siger in self.db.sigs.getIter(keys=(pre, dig)):
             msg.extend(siger.qb64b)  # attach siger
         return msg
@@ -1586,15 +1587,15 @@ class BaseHab:
     def fetchEnd(self, cid: str, role: str, eid: str):
         """
         Returns:
-            endpoint (basing.EndpointRecord): instance or None
+            endpoint (EndpointRecord): instance or None
         """
         return self.db.ends.get(keys=(cid, role, eid))
 
 
-    def fetchLoc(self, eid: str, scheme: str = kering.Schemes.http):
+    def fetchLoc(self, eid: str, scheme: str = Schemes.http):
         """
         Returns:
-            location (basing.LocationRecord): instance or None
+            location (LocationRecord): instance or None
         """
         return self.db.locs.get(keys=(eid, scheme))
 
@@ -1644,7 +1645,7 @@ class BaseHab:
         return (end.enabled or end.allowed) if end else None
 
 
-    def fetchUrl(self, eid: str, scheme: str = kering.Schemes.http):
+    def fetchUrl(self, eid: str, scheme: str = Schemes.http):
         """
         Returns:
             url (str): for endpoint provider given by eid
@@ -1693,14 +1694,14 @@ class BaseHab:
 
         rurls = hicting.Mict()
 
-        if role == kering.Roles.witness:
+        if role == Roles.witness:
             if kever := self.kevers[cid] if cid in self.kevers else None:
                 # latest key state for cid
                 for eid in kever.wits:
                     if not eids or eid in eids:
                         surls = self.fetchUrls(eid, scheme=scheme)
                         if surls:
-                            rurls.add(kering.Roles.witness,
+                            rurls.add(Roles.witness,
                                       hicting.Mict([(eid, surls)]))
 
         for (_, erole, eid), end in self.db.ends.getItemIter(keys=(cid, role)):
@@ -1733,7 +1734,7 @@ class BaseHab:
             allowed (bool): True means fetech any enabled witnesses as well
         """
         return (self.fetchRoleUrls(cid=cid,
-                                   role=kering.Roles.witness,
+                                   role=Roles.witness,
                                    scheme=scheme,
                                    eids=eids,
                                    enabled=enabled,
@@ -1795,7 +1796,7 @@ class BaseHab:
         return self.endorse(eventing.reply(**kwa))
 
 
-    def makeEndRole(self, eid, role=kering.Roles.controller, allow=True, stamp=None):
+    def makeEndRole(self, eid, role=Roles.controller, allow=True, stamp=None):
         """
         Returns:
             msg (bytearray): reply message allowing/disallowing endpoint provider
@@ -1814,14 +1815,14 @@ class BaseHab:
         return self.reply(route=route, data=data, stamp=stamp)
 
 
-    def loadEndRole(self, cid, eid, role=kering.Roles.controller):
+    def loadEndRole(self, cid, eid, role=Roles.controller):
         msgs = bytearray()
         end = self.db.ends.get(keys=(cid, role, eid))
         if end and (end.enabled or end.allowed):
             said = self.db.eans.get(keys=(cid, role, eid))
             serder = self.db.rpys.get(keys=(said.qb64,))
             cigars = self.db.scgs.get(keys=(said.qb64,))
-            tsgs = eventing.fetchTsgs(db=self.db.ssgs, saider=said)
+            tsgs = eventing.fetchTsgs(db=self.db.ssgs, diger=said)
 
             if len(cigars) == 1:
                 (verfer, cigar) = cigars[0]
@@ -1900,7 +1901,7 @@ class BaseHab:
         for (pre, _), said in self.db.lans.getItemIter(keys=keys):
             serder = self.db.rpys.get(keys=(said.qb64,))
             cigars = self.db.scgs.get(keys=(said.qb64,))
-            tsgs = eventing.fetchTsgs(db=self.db.ssgs, saider=said)
+            tsgs = eventing.fetchTsgs(db=self.db.ssgs, diger=said)
 
             if len(cigars) == 1:
                 (verfer, cigar) = cigars[0]
@@ -1973,7 +1974,7 @@ class BaseHab:
         kever = self.kevers[cid]
         witness = self.pre in kever.wits  # see if we are cid's witness
 
-        if role == kering.Roles.witness:
+        if role == Roles.witness:
             # latest key state for cid
             for eid in kever.wits:
                 if not eids or eid in eids:
@@ -2034,7 +2035,7 @@ class BaseHab:
             dig = vals.encode("utf-8") if vals else None
 
         if dig is None:
-            raise kering.MissingEntryError("Missing event for pre={} at sn={}."
+            raise MissingEntryError("Missing event for pre={} at sn={}."
                                            "".format(self.pre, sn))
         serder = self.db.evts.get(keys=(self.pre, dig))
         sigers = self.db.sigs.get(keys=(self.pre, dig))
@@ -2060,14 +2061,14 @@ class BaseHab:
                                                 allowPartiallySigned=allowPartiallySigned)
         msg.extend(serder.raw)
         msg.extend(Counter(Codens.ControllerIdxSigs, count=len(sigs),
-                           version=kering.Vrsn_1_0).qb64b)  # attach cnt
+                           version=Vrsn_1_0).qb64b)  # attach cnt
         for sig in sigs:
             msg.extend(sig.qb64b)  # attach sig
 
         if duple is not None:
             seqner, diger = duple
             msg.extend(Counter(Codens.SealSourceCouples, count=1,
-                               version=kering.Vrsn_1_0).qb64b)
+                               version=Vrsn_1_0).qb64b)
             msg.extend(seqner.qb64b + diger.qb64b)
 
         return msg
@@ -2117,7 +2118,7 @@ class BaseHab:
                 logger.debug(f"event=\n{cuedSerder.pretty()}\n")
 
                 if cuedKed["t"] == coring.Ilks.icp:
-                    dgkey = dbing.dgKey(self.pre, self.iserder.said)
+                    dgkey = dgKey(self.pre, self.iserder.said)
                     found = False
                     if cuedPrefixer.transferable:  # find if have rct from other pre for own icp
                         for sprefixer, snumber, sdiger, siger in self.db.vrcs.getIter(dgkey):
@@ -2249,7 +2250,7 @@ class Hab(BaseHab):
 
         """
         if not (self.ks.opened and self.db.opened and self.cf.opened):
-            raise kering.ClosedError("Attempt to make Hab with unopened "
+            raise ClosedError("Attempt to make Hab with unopened "
                                      "resources.")
         if nsith is None:
             nsith = isith
@@ -2300,7 +2301,7 @@ class Hab(BaseHab):
         self.mgr.move(old=opre, new=self.pre)  # move to incept event pre
 
         # may want db method that updates .habs. and .prefixes together
-        habord = basing.HabitatRecord(hid=self.pre, name=self.name, domain=self.ns)
+        habord = HabitatRecord(hid=self.pre, name=self.name, domain=self.ns)
 
         # must add self.pre to self.prefixes before calling processEvent so that
         # Kever.locallyOwned or Kever.locallyDelegated or Kever.locallyWitnessed
@@ -2319,7 +2320,7 @@ class Hab(BaseHab):
         except MissingSignatureError:
             pass
         except Exception as ex:
-            raise kering.ConfigurationError("Improper Habitat inception for "
+            raise ConfigurationError("Improper Habitat inception for "
                                             "pre={} {}".format(self.pre, ex))
 
         # read in self.cf config file and process any oobis or endpoints
@@ -2391,7 +2392,7 @@ class SignifyHab(BaseHab):
 
         self.processEvent(serder, sigers)
 
-        habord = basing.HabitatRecord(hid=self.pre, sid=self.pre, name=self.name, domain=self.ns)
+        habord = HabitatRecord(hid=self.pre, sid=self.pre, name=self.name, domain=self.ns)
         self.save(habord)
 
         self.inited = True
@@ -2417,7 +2418,7 @@ class SignifyHab(BaseHab):
                 when indexed is True. See Manager.sign
 
         """
-        raise kering.KeriError("Signify hab does not support local signing")
+        raise KeriError("Signify hab does not support local signing")
 
     def rotate(self, *, serder=None, sigers=None, **kwargs):
         """
@@ -2471,7 +2472,7 @@ class SignifyHab(BaseHab):
             # verify event, update kever state, and escrow if group
             self.kvy.processEvent(serder=serder, sigers=sigers)
         except Exception:
-            raise kering.ConfigurationError(f"Improper Habitat event type={serder.ked['t']} for "
+            raise ConfigurationError(f"Improper Habitat event type={serder.ked['t']} for "
                                             f"pre={self.pre}.")
 
     def replyEndRole(self, cid, role=None, eids=None, scheme=""):
@@ -2517,7 +2518,7 @@ class SignifyHab(BaseHab):
         # introduce yourself, please
         msgs.extend(self.replay(cid))
 
-        if role == kering.Roles.witness:
+        if role == Roles.witness:
             if kever := self.kevers[cid] if cid in self.kevers else None:
                 witness = self.pre in kever.wits  # see if we are cid's witness
 
@@ -2553,7 +2554,7 @@ class SignifyGroupHab(SignifyHab):
 
         self.processEvent(serder, sigers)
 
-        habord = basing.HabitatRecord(hid=self.pre, mid=self.mhab.pre, smids=self.smids, rmids=self.rmids,
+        habord = HabitatRecord(hid=self.pre, mid=self.mhab.pre, smids=self.smids, rmids=self.rmids,
                                       sid=self.pre, name=self.name, domain=self.ns)
         self.save(habord)
 
@@ -2577,13 +2578,13 @@ class SignifyGroupHab(SignifyHab):
         except MissingSignatureError:
             pass
         except Exception:
-            raise kering.ValidationError(f"Improper Habitat event type={serder.ked['t']} for "
+            raise ValidationError(f"Improper Habitat event type={serder.ked['t']} for "
                                          f"pre={self.pre}.")
 
     def rotate(self, *, smids=None, rmids=None, serder=None, sigers=None, **kwargs):
 
         if (habord := self.db.habs.get(keys=(self.pre,))) is None:
-            raise kering.ValidationError(f"Missing HabitatRecord for pre={self.pre}")
+            raise ValidationError(f"Missing HabitatRecord for pre={self.pre}")
 
         super(SignifyGroupHab, self).rotate(serder=serder, sigers=sigers, **kwargs)
 
@@ -2716,7 +2717,7 @@ class GroupHab(BaseHab):
 
         """
         if not (self.ks.opened and self.db.opened and self.cf.opened):
-            raise kering.ClosedError("Attempt to make Hab with unopened "
+            raise ClosedError("Attempt to make Hab with unopened "
                                      "resources.")
         if nsith is None:
             nsith = isith
@@ -2744,7 +2745,7 @@ class GroupHab(BaseHab):
         # sign handles group hab with .mhab case
         sigers = self.sign(ser=serder.raw, verfers=verfers)
 
-        habord = basing.HabitatRecord(hid=self.pre,
+        habord = HabitatRecord(hid=self.pre,
                                       mid=self.mhab.pre,
                                       name=self.name,
                                       domain=self.ns,
@@ -2760,7 +2761,7 @@ class GroupHab(BaseHab):
         except MissingSignatureError:
             pass
         except Exception as ex:
-            raise kering.ConfigurationError("Improper Habitat inception for "
+            raise ConfigurationError("Improper Habitat inception for "
                                             "pre={} {}".format(self.pre, ex))
 
 
@@ -2772,7 +2773,7 @@ class GroupHab(BaseHab):
             return super(GroupHab, self).rotate(**kwargs)
 
         if (habord := self.db.habs.get(keys=(self.pre,))) is None:
-            raise kering.ValidationError(f"Missing HabitatRecord for pre={self.pre}")
+            raise ValidationError(f"Missing HabitatRecord for pre={self.pre}")
 
         # sign handles group hab with .mhab case
         sigers = self.sign(ser=serder.raw, verfers=serder.verfers, rotated=True)
@@ -2785,7 +2786,7 @@ class GroupHab(BaseHab):
         except MissingSignatureError:
             pass
         except Exception as ex:
-            raise kering.ValidationError("Improper Habitat rotation for "
+            raise ValidationError("Improper Habitat rotation for "
                                          "pre={self.pre}.") from ex
 
         self.smids = smids

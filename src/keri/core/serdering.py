@@ -2472,8 +2472,16 @@ class SerderKERI(Serder):
 
     #Properties for exn  exchange
 
+    @property
+    def route(self):
+        """
+        Returns:
+           route (str): qb64 of .sad["r"] route property getter
+        """
+        return self._sad.get("r")
 
     #Properties for vcp  (registry  inception event)
+
     @property
     def uuid(self):
         """uuid property getter

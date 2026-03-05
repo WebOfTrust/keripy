@@ -5,8 +5,6 @@ tests.help.test_ogling module
 """
 import tempfile
 
-import pytest
-
 import os
 import platform
 import logging

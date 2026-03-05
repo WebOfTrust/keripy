@@ -24,10 +24,12 @@ from keri.core.signing import Signer
 from keri.db import basing
 from keri.db import dbing
 from keri.db import subing
-from keri.db.basing import openDB, Baser, KeyStateRecord, OobiRecord
+from keri.db.basing import openDB, Baser
 from keri.db.dbing import (dgKey, onKey, snKey)
 from keri.db.dbing import openLMDB
 from keri.help.helping import datify, dictify
+from keri.recording import (EventSourceRecord, HabitatRecord, KeyStateRecord,
+                            OobiRecord, RawRecord, StateEERecord)
 # this breaks when running as __main__ better to do a custom import call to
 # walk the directory tree and import explicity rather than depend on it
 # being a known package. Works with pytest because pytest contructs a path
@@ -168,7 +170,7 @@ def test_baser():
         assert db.evts.get(keys=(preb, digb)) is None
 
         # test eventsourcerecords .srcs
-        record = basing.EventSourceRecord()
+        record = EventSourceRecord()
         assert db.esrs.get(key) == None
         assert db.esrs.put(key, record) == True
         actual = db.esrs.get(key)
@@ -326,32 +328,32 @@ def test_baser():
         ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAAAC'
         sdig2 = b'EBYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
         number1 = coring.Number(qb64b=ssnu1)
-        saider1 = coring.Diger(qb64b=sdig1)
+        diger1 = coring.Diger(qb64b=sdig1)
         number2 = coring.Number(qb64b=ssnu2)
-        saider2 = coring.Diger(qb64b=sdig2)
-        val1 = (number1, saider1)
-        val2 = (number2, saider2)
+        diger2 = coring.Diger(qb64b=sdig2)
+        val1 = (number1, diger1)
+        val2 = (number2, diger2)
 
         assert db.aess.get(keys=(preb, digb)) == None
         assert db.aess.rem(keys=(preb, digb)) == False
         assert db.aess.put(keys=(preb, digb), val=val1) == True
         result = db.aess.get(keys=(preb, digb))
         assert result is not None
-        rnumber1, rsaider1 = result
+        rnumber1, rdiger1 = result
         assert rnumber1.qb64b == number1.qb64b
-        assert rsaider1.qb64b == saider1.qb64b
+        assert rdiger1.qb64b == diger1.qb64b
         assert db.aess.put(keys=(preb, digb), val=val2) == False
         result = db.aess.get(keys=(preb, digb))
         assert result is not None
-        rnumber1, rsaider1 = result
+        rnumber1, rdiger1 = result
         assert rnumber1.qb64b == number1.qb64b
-        assert rsaider1.qb64b == saider1.qb64b
+        assert rdiger1.qb64b == diger1.qb64b
         assert db.aess.pin(keys=(preb, digb), val=val2) == True
         result = db.aess.get(keys=(preb, digb))
         assert result is not None
-        rnumber2, rsaider2 = result
+        rnumber2, rdiger2 = result
         assert rnumber2.qb64b == number2.qb64b
-        assert rsaider2.qb64b == saider2.qb64b
+        assert rdiger2.qb64b == diger2.qb64b
         assert db.aess.rem(keys=(preb, digb)) == True
         assert db.aess.get(keys=(preb, digb)) == None
 
@@ -2129,14 +2131,14 @@ def test_rawrecord():
     Test RawRecord dataclass
     """
     @dataclass
-    class TestRecord(basing.RawRecord):
+    class TestRecord(RawRecord):
         x: str = ""
         y: int = 0
 
     record = TestRecord()
 
     assert isinstance(record, TestRecord)
-    assert isinstance(record, basing.RawRecord)
+    assert isinstance(record, RawRecord)
 
     assert "x" in record
     assert "y" in record
@@ -2162,14 +2164,14 @@ def test_keystaterecord():
     """
     Test KeyStateRecord dataclass
     """
-    seer = basing.StateEERecord()
+    seer = StateEERecord()
     assert seer.s == '0'
     assert seer.d == ''
     assert seer._asdict() == {'s': '0', 'd': '', 'br': [], 'ba': []}
 
-    ksr = basing.KeyStateRecord()
+    ksr = KeyStateRecord()
 
-    assert isinstance(ksr, basing.KeyStateRecord)
+    assert isinstance(ksr, KeyStateRecord)
     assert ksr.i == ''
 
     ksn = asdict(ksr)  # key state notice dict
@@ -2212,10 +2214,10 @@ def test_keystaterecord():
     dksn = dictify(ksr)
     assert dksn == ksn
 
-    dksr = datify(basing.KeyStateRecord, ksn)
+    dksr = datify(KeyStateRecord, ksn)
     assert dksr == ksr
 
-    nksr = basing.KeyStateRecord._fromdict(ksn)
+    nksr = KeyStateRecord._fromdict(ksn)
     assert nksr == ksr
     assert nksr._asdict() == ksn
 
@@ -2226,8 +2228,8 @@ def test_eventsourcerecord():
     """
     Test EventSourceRecord dataclass
     """
-    record = basing.EventSourceRecord()  # default local is True
-    assert isinstance(record, basing.EventSourceRecord)
+    record = EventSourceRecord()  # default local is True
+    assert isinstance(record, EventSourceRecord)
     assert record.local is True
     assert record.local
     assert "local" in record  # asdict means in is against the keys (labels)
@@ -2238,15 +2240,15 @@ def test_eventsourcerecord():
     assert not record.local
     assert (asdict(record)) == {'local': False}
 
-    record = basing.EventSourceRecord(local=False)
-    assert isinstance(record, basing.EventSourceRecord)
+    record = EventSourceRecord(local=False)
+    assert isinstance(record, EventSourceRecord)
     assert record.local is False
     assert not record.local
     assert "local" in record  # asdict means in is against the keys (labels)
     assert (asdict(record)) == {'local': False}
 
-    record = basing.EventSourceRecord(local=None)
-    assert isinstance(record, basing.EventSourceRecord)
+    record = EventSourceRecord(local=None)
+    assert isinstance(record, EventSourceRecord)
     assert record.local is None
     assert not record.local
     assert "local" in record  # asdict means in is against the keys (labels)

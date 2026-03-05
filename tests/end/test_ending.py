@@ -15,11 +15,8 @@ from hio.help import Hict
 
 from keri import help, kering
 
-from keri import core
-from keri.core import coring, serdering
-
+from keri.core import Salter, coring, serdering
 from keri.app import habbing
-
 from keri.end import ending
 
 logger = help.ogler.getLogger()
@@ -64,7 +61,7 @@ def test_signature_designature():
     # db = basing.Baser(name=name, temp=temp, reopen=reopen)
 
     # Setup Habery and Hab
-    with habbing.openHby(name=name, base=base, salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby:
+    with habbing.openHby(name=name, base=base, salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
         # hby = habbing.Habery(name=name, base=base, temp=temp, free=True)
         hab = hby.makeHab(name=name, icount=3)
         print()
@@ -326,7 +323,7 @@ def test_seid_api():
     # Setup Habery and Hab
     name = 'zoe'
     base = 'test'
-    with habbing.openHby(name=name, base=base, salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby:
+    with habbing.openHby(name=name, base=base, salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
         hab = hby.makeHab(name=name)
         # hab = setupTestHab(name='zoe')
         # must do it here to inject into Falcon endpoint resource instances
@@ -395,7 +392,7 @@ def test_get_admin():
     # Setup Habery and Hab
     name = 'zoe'
     base = 'test'
-    with habbing.openHby(name=name, base=base, salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby:
+    with habbing.openHby(name=name, base=base, salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
         hab = hby.makeHab(name=name)
         # hab = setupTestHab(name='zoe')
 
@@ -420,7 +417,7 @@ def test_get_oobi():
     # Setup Habery and Hab
     name = 'oobi'
     base = 'test'
-    salt = core.Salter(raw=b'0123456789abcdef').qb64
+    salt = Salter(raw=b'0123456789abcdef').qb64
     with habbing.openHby(name=name, base=base, salt=salt) as hby:
         hab = hby.makeHab(name=name)
         msgs = bytearray()

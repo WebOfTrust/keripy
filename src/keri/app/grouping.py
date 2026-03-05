@@ -8,13 +8,9 @@ module for enveloping and forwarding KERI message
 
 from hio.base import doing
 
-from .. import kering, core
-from ..kering import Vrsn_1_0, Vrsn_2_0
-from .. import help
-from ..app import delegating, agenting
-from ..core import coring, routing, eventing, parsing, serdering, indexing
-from ..db import dbing
-from ..db.dbing import snKey
+from .. import ValidationError, Vrsn_1_0, help
+from . import delegating, agenting
+from ..core import Counter, coring, routing, eventing, parsing, serdering, Codens
 from ..peer import exchanging
 
 logger = help.ogler.getLogger()
@@ -70,23 +66,23 @@ class Counselor(doing.DoDoer):
         logger.info("Waiting for other signatures on %s for %s:%s...", serder.ilk, prefixer.qb64, number.sn)
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(number, diger))
 
-    def complete(self, prefixer, seqner, saider=None):
+    def complete(self, prefixer, number, diger=None):
         """ Check for completed multsig protocol for the specific event
 
         Parameters:
             prefixer (Prefixer): qb64 identifier prefix of event to check
-            seqner (Seqner): sequence number of event to check
+            number (Number): sequence number of event to check
             saider (Saider): optional digest of event to verify
 
         Returns:
 
         """
-        csaider = self.hby.db.cgms.get(keys=(prefixer.qb64, seqner.qb64))
-        if not csaider:
+        cdiger = self.hby.db.cgms.get(keys=(prefixer.qb64, number.qb64))
+        if not cdiger:
             return False
         else:
-            if saider and (csaider.qb64 != saider.qb64):
-                raise kering.ValidationError(f"invalid multisig protocol escrowed event {csaider.qb64}-{saider.qb64}")
+            if diger and (cdiger.qb64 != diger.qb64):
+                raise kering.ValidationError(f"invalid multisig protocol escrowed event {cdiger.qb64}-{diger.qb64}")
 
         return True
 
@@ -536,16 +532,16 @@ def getEscrowedEvent(db, pre, sn):
 
     msg = bytearray()
     msg.extend(serder.raw)
-    msg.extend(core.Counter(core.Codens.ControllerIdxSigs,
-                            count=len(sigers), version=kering.Vrsn_1_0).qb64b)  # attach cnt
+    msg.extend(Counter(Codens.ControllerIdxSigs,
+                            count=len(sigers), version=Vrsn_1_0).qb64b)  # attach cnt
     for siger in sigers:
         msg.extend(siger.qb64b)  # attach siger
 
     if duple is not None:
-        seqner, diger = duple
-        msg.extend(core.Counter(core.Codens.SealSourceCouples,
-                                count=1, version=kering.Vrsn_1_0).qb64b)
-        msg.extend(seqner.qb64b + diger.qb64b)
+        number, diger = duple
+        msg.extend(Counter(Codens.SealSourceCouples,
+                                count=1, version=Vrsn_1_0).qb64b)
+        msg.extend(number.qb64b + diger.qb64b)
 
     return msg
 
@@ -707,4 +703,3 @@ class Multiplexor:
             ))
 
         return exns
-
