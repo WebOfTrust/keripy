@@ -602,7 +602,7 @@ class OOBIEnd:
         if msgs:
             rep.status = falcon.HTTP_200  # This is the default status
             rep.set_header(OOBI_AID_HEADER, aid)
-            rep.content_type = "application/json+cesr"
+            rep.content_type = "application/cesr"
             rep.data = bytes(msgs)
 
         else:
@@ -693,5 +693,3 @@ def setup(name="who", temp=False, tymth=None, isith=None, count=1,
     # serverDoer, directant, webServerDoer]
 
     return [hbyDoer, wireDoer, webServerDoer]
-
-
