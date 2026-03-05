@@ -96,9 +96,11 @@ class GrantDoer(doing.DoDoer):
         elif self.recp in self.hby.kevers:
             recp = self.recp
         else:
-            recp = self.org.find("alias", self.recp)
-            if len(recp) != 1:
-                raise ValueError(f"invalid recipient {self.recp}")
+            recp = self.org.findExact("alias", self.recp)
+            if len(recp) == 0:
+                raise ValueError(f"no contact found with alias {self.recp!r}")
+            if len(recp) > 1:
+                raise ValueError(f"multiple contacts match alias {self.recp!r}, use prefix instead")
             recp = recp[0]['id']
 
         if recp is None:

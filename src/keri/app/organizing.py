@@ -176,6 +176,28 @@ class BaseOrganizer:
 
         return [self.get(pre) for pre in pres]
 
+    def findExact(self, field, val):
+        """ Find all contacts where field is an exact case-sensitive match for val
+
+        Unlike find(), which uses a substring regex, this performs a strict
+        equality comparison suitable for alias lookups where similar names
+        (e.g. "sally" vs "sally-direct") must not collide.
+
+        Parameters:
+            field (str): field name to search for
+            val (str): exact value to match (case-sensitive)
+
+        Returns:
+            list: All contacts whose field equals val exactly
+
+        """
+        pres = []
+        for (pre, f), v in self.fielddb.getItemIter():
+            if f == field and v == val:
+                pres.append(pre)
+
+        return [self.get(pre) for pre in pres]
+
     def values(self, field, val=None):
         """ Find unique values for field in all contacts
 
