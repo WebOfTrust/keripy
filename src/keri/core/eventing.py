@@ -22,20 +22,20 @@ from ..kering import (MissingEntryError, UntrustedKeyStateSource,
                       QueryNotFoundError, MisfitEventSourceError,
                       MissingDelegableApprovalError, Version, Versionage,
                       TraitDex, Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Ilks)
+
 from ..help import helping, ogler, nowIso8601
 
-from .coring import (versify, Kinds, Ilks, PreDex, DigDex, Kinds,
+from .coring import (versify, Kinds, PreDex, DigDex, Kinds,
                      NonTransDex, NumDex, Prefixer, Seqner, Diger,
-                     Number, Seqner, Cigar, Dater, Noncer, versify,
+                     Number, Seqner, Cigar, Dater, Noncer,
                      Verfer, Diger, Prefixer, Tholder)
+
 from .counting import Counter, Codens
 from .structing import (SealEvent, SealLast, StateEstEvent)
 from .indexing import Siger
 from .serdering import SerderKERI
 
-from . import serdering
-
-from ..db import Baser, dgKey, snKey, fetchTsgs
+from ..db import Baser, dgKey, snKey
 from ..recording import (EndpointRecord, EventSourceRecord, KeyStateRecord,
                          LocationRecord, OobiRecord, ObservedRecord,
                          StateEERecord)

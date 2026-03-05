@@ -18,7 +18,7 @@ from .counting import (GenDex, ProGen, CtrDex_1_0, CtrDex_2_0, QTDex_1_0,
 from .eventing import (simple, ample, deWitnessCouple, deReceiptCouple,
                        deSourceCouple, deReceiptTriple, deTransReceiptQuadruple,
                        deTransReceiptQuintuple, verifySigs, validateSigs,
-                       fetchTsgs, state, incept, delcept, rotate, deltate,
+                       state, incept, delcept, rotate, deltate,
                        interact, receipt, query, reply, prod, bare, loadEvent,
                        exchept, exchange, messagize, Kever, Kevery, LastEstLoc)
 from .indexing import (Indexer, Siger, Xizage, IdrDex, IdxSigDex, IdxCrtSigDex,
