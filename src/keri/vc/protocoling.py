@@ -127,7 +127,8 @@ class IpexHandler:
             m=attrs["m"]
         )
 
-        self.notifier.add(attrs=data)
+        if serder.ked.get('i', "") not in self.hby.habs:
+            self.notifier.add(attrs=data)
 
 
 def ipexApplyExn(hab, recp, message, schema, attrs):

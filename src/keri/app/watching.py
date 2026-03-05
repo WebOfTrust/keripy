@@ -13,7 +13,7 @@ from hio.help import decking
 
 from keri import help
 
-logger = help.ogler.getLogger()
+logger = help.ogler.getLogger(__name__)
 
 Stateage = namedtuple("Stateage", 'even ahead behind duplicitous')
 

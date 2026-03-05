@@ -4,13 +4,15 @@ keri.app.cli.commands module
 
 """
 import argparse
+import random
 
 from hio.base import doing
 
+from keri import kering
 from keri.app import forwarding, connecting, habbing, grouping, indirecting, signing
 from keri.app.cli.common import existing
 from keri.app.notifying import Notifier
-from keri.core import coring, parsing, serdering
+from keri.core import coring, parsing, serdering, Salter
 from keri.peer import exchanging
 from keri.vc import protocoling
 from keri.vdr import credentialing
@@ -32,6 +34,8 @@ parser.add_argument("--said", "-s", help="SAID of the credential to grant", requ
 parser.add_argument("--message", "-m", help="optional human readable message to "
                                             "send to recipient", required=False, default="")
 parser.add_argument("--time", help="timestamp for the revocation", required=False, default=None)
+parser.add_argument("--save-file", help="file path to save the generated credential", required=False, default=None)
+parser.add_argument("--no-send", help="do not send IPEX message automatically", required=False, action="store_true")
 
 
 def handler(args):
@@ -42,17 +46,21 @@ def handler(args):
                    said=args.said,
                    recp=args.recipient,
                    message=args.message,
-                   timestamp=args.time)
+                   timestamp=args.time,
+                   save_file=args.save_file,
+                   no_send=args.no_send)
     return [ed]
 
 
 class GrantDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, said, recp, message, timestamp):
+    def __init__(self, name, alias, base, bran, said, recp, message, timestamp, save_file, no_send):
         self.said = said
         self.recp = recp
         self.message = message
         self.timestamp = timestamp
+        self.save_file = save_file
+        self.no_send = no_send
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
@@ -106,6 +114,7 @@ class GrantDoer(doing.DoDoer):
         if recp is None:
             raise ValueError("unable to find recipient")
 
+        reg = self.rgy.reger.cloneTvtAt(creder.regi)
         iss = self.rgy.reger.cloneTvtAt(creder.said)
 
         iserder = serdering.SerderKERI(raw=bytes(iss))
@@ -115,7 +124,8 @@ class GrantDoer(doing.DoDoer):
                                                               seal=dict(i=iserder.pre, s=seqner.snh, d=iserder.said))
         anc = self.hby.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
 
-        exn, atc = protocoling.ipexGrantExn(hab=self.hab, recp=recp, message=self.message, acdc=acdc, iss=iss, anc=anc,
+        exn, atc = protocoling.ipexGrantExn(hab=self.hab, recp=recp, message=self.message,
+                                            acdc=acdc, reg=reg, iss=iss, anc=anc,
                                             dt=self.timestamp)
         msg = bytearray(exn.raw)
         msg.extend(atc)
@@ -140,7 +150,12 @@ class GrantDoer(doing.DoDoer):
             while not self.exc.complete(said=exn.said):
                 yield self.tock
 
-        if self.exc.lead(self.hab, said=exn.said):
+        if self.save_file:
+            # Write to file
+            with open(self.save_file, 'wb') as f:
+                f.write(msg)
+
+        if not self.no_send and self.exc.lead(self.hab, said=exn.said):
             print(f"Sending message {exn.said} to {recp}")
             postman = forwarding.StreamPoster(hby=self.hby, hab=sender, recp=recp, topic="credential")
 
@@ -165,3 +180,14 @@ class GrantDoer(doing.DoDoer):
             self.remove([doer])
 
         self.remove(self.toRemove)
+
+    def _generate_oobi(self, hab):
+        wit = random.choice(self.hab.kever.wits)
+        urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) \
+               or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
+        if not urls:
+            raise kering.ConfigurationError(f"unable to query witness {wit}, no http endpoint")
+
+        url = urls[kering.Schemes.https] if kering.Schemes.https in urls else urls[kering.Schemes.http]
+        return f"{url.rstrip("/")}/oobi/{hab.pre}/witness"
+

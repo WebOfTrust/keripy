@@ -347,6 +347,7 @@ class OobiRecord:
     date: str = None
     state: str = None
     urls: list = None
+    retries: int = 0
 
 
 @dataclass
