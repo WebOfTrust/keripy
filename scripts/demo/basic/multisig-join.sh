@@ -4,19 +4,13 @@
 # To run the following scripts, open another console window and run:
 # $ kli witness demo
 
-# CI safety: bound how long multisig join waits so that failures
-# in the initiating side do not leave automated runs hanging
-# indefinitely. JOIN_TIMEOUT and TIMEOUT_BIN may be overridden
+# Bound how long multisig join waits so that failures in the initiating side do not leave runs hanging.
+# JOIN_TIMEOUT and TIMEOUT_BIN may be overridden
 # by the caller (for example, in CI configuration).
 JOIN_TIMEOUT=${JOIN_TIMEOUT:-60}
-TIMEOUT_BIN=${TIMEOUT_BIN:-timeout}
 
 run_multisig_join_bg() {
-  if command -v "$TIMEOUT_BIN" >/dev/null 2>&1; then
-    "$TIMEOUT_BIN" "$JOIN_TIMEOUT" kli multisig join --name multisigj2 --auto
-  else
-    kli multisig join --name multisigj2 --auto
-  fi
+  timeout "$JOIN_TIMEOUT" kli multisig join --name multisigj2 --auto
 }
 
 kli init --name multisigj1 --salt 0ACDEyMzQ1Njc4OWxtbm9aBc --nopasscode --config-dir "${KERI_SCRIPT_DIR}" --config-file demo-witness-oobis
