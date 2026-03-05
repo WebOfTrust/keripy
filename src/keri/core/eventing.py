@@ -298,7 +298,6 @@ def deTransReceiptQuintuple(data, strip=False):
     return ediger, sprefixer, snumber, sdiger, siger
 
 
-
 def verifySigs(raw, sigers, verfers):
     """
     Returns tuple of (vsigers, vindices) where:
@@ -391,6 +390,7 @@ def validateSigs(serder, sigers, verfers, tholder):
     valid = tholder.satisfy(indices)
 
     return (sigers, valid)
+
 
 def state(pre,
           sn,
@@ -546,6 +546,7 @@ def state(pre,
                di=dpre if dpre is not None else "",
                )
     return ksr  # return KeyStateRecord  use asdict(ksr) to get dict version
+
 
 # should remove intive as its not standard KERI so confusing and leads to errors
 # this is an old feature that is now deprecated.
@@ -898,7 +899,6 @@ def deltate(pre,
 
     """
     return rotate(pre=pre, keys=keys, dig=dig, ilk=ilk, **kwa)
-
 
 
 def interact(pre,
@@ -1374,7 +1374,6 @@ def bare(pre="",
     return serder
 
 
-
 def exchept(sender="",
             receiver="",
             route="",
@@ -1580,7 +1579,6 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
 
     msg.extend(atc)
     return msg
-
 
 
 class Kever:
@@ -3770,7 +3768,6 @@ class Kever:
                 return (serder.sn, i, serder.verfers)
 
         return None
-
 
 
 class Kevery:
