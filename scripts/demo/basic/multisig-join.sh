@@ -5,7 +5,7 @@
 # $ kli witness demo
 
 # Bound how long multisig join waits so that failures in the initiating side do not leave runs hanging.
-# JOIN_TIMEOUT and TIMEOUT_BIN may be overridden
+# JOIN_TIMEOUT may be overridden
 # by the caller (for example, in CI configuration).
 JOIN_TIMEOUT=${JOIN_TIMEOUT:-60}
 
