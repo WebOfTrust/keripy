@@ -2375,6 +2375,7 @@ def test_serderkeri_vcp():
     assert serder.berfers == []
     assert serder.delpre == None
     assert serder.delpreb == None
+    assert serder.route == None
     assert serder.uuid == None
     assert serder.nonce == ''
 
@@ -2405,6 +2406,7 @@ def test_serderkeri_vcp():
     assert serder.berfers == []
     assert serder.delpre == None
     assert serder.delpreb == None
+    assert serder.route == None
     assert serder.uuid == None
     assert serder.nonce == ''
 
