@@ -39,6 +39,12 @@ pid=$!
 PID_LIST+=" $pid"
 
 wait $PID_LIST
+# Exit immediately if incept or join failed or later phases will hang indefinitely
+wait_status=$?
+if [ $wait_status -ne 0 ]; then
+  echo "multisig-join.sh: group phase failed with exit code $wait_status"
+  exit $wait_status
+fi
 
 kli status --name multisigj1 --alias multisig
 
@@ -58,6 +64,12 @@ pid=$!
 PID_LIST+=" $pid"
 
 wait $PID_LIST
+# Exit immediately if rotate or join failed; broken state causes script to hang waiting for events that never come.
+wait_status=$?
+if [ $wait_status -ne 0 ]; then
+  echo "multisig-join.sh: group phase failed with exit code $wait_status"
+  exit $wait_status
+fi
 
 kli status --name multisigj1 --alias multisig
 
@@ -72,5 +84,11 @@ pid=$!
 PID_LIST+=" $pid"
 
 wait $PID_LIST
+# Exit on failure instead of falsely reporting success after a timeout.
+wait_status=$?
+if [ $wait_status -ne 0 ]; then
+  echo "multisig-join.sh: group phase failed with exit code $wait_status"
+  exit $wait_status
+fi
 
 kli status --name multisigj1 --alias multisig
