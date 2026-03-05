@@ -18,7 +18,7 @@ from ....core import serdering
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Add AID or Alias to list of AIDs for a watcher to watch', 
+parser = argparse.ArgumentParser(description='Add AID or Alias to list of AIDs for a watcher to watch',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: add(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
@@ -55,10 +55,9 @@ class AddDoer(doing.DoDoer):
         if watcher in self.hby.kevers:
             wat = watcher
         else:
-            contacts = self.org.find("alias", watcher)
-            for contact in contacts:
-                if contact['alias'] == watcher:
-                    wat = contact['id']
+            contacts = self.org.findExact("alias", watcher)
+            if len(contacts) == 1:
+                wat = contacts[0]['id']
 
         if not wat:
             raise ValueError(f"unknown watcher {watcher}")
@@ -67,10 +66,9 @@ class AddDoer(doing.DoDoer):
         if watched in self.hby.kevers:
             watd = watched
         else:
-            contacts = self.org.find("alias", watched)
-            for contact in contacts:
-                if contact['alias'] == watched:
-                    watd = contact['id']
+            contacts = self.org.findExact("alias", watched)
+            if len(contacts) == 1:
+                watd = contacts[0]['id']
 
         if not watd:
             raise ValueError(f"unknown watched {watched}")

@@ -18,7 +18,7 @@ from ....app.agenting import httpClient, WitnessPublisher
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Add mailbox role', 
+parser = argparse.ArgumentParser(description='Add mailbox role',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: add(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
@@ -53,9 +53,11 @@ class AddDoer(doing.DoDoer):
         if mailbox in self.hby.kevers:
             mbx = mailbox
         else:
-            mbx = self.org.find("alias", mailbox)
-            if len(mbx) != 1:
-                raise ValueError(f"invalid mailbox {mailbox}")
+            mbx = self.org.findExact("alias", mailbox)
+            if len(mbx) == 0:
+                raise ValueError(f"no contact found with alias {mailbox!r}")
+            if len(mbx) > 1:
+                raise ValueError(f"multiple contacts match alias {mailbox!r}, use prefix instead")
             mbx = mbx[0]['id']
 
         if not mbx:

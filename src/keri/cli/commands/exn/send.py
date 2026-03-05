@@ -76,9 +76,11 @@ def resolveRecipient(org: organizing.Organizer, hby, recipient: str) -> str:
     if recipient in hby.kevers:
         return recipient
 
-    matches = org.find("alias", recipient)
-    if len(matches) != 1:
-        raise ValueError(f"invalid recipient {recipient}")
+    matches = org.findExact("alias", recipient)
+    if len(matches) == 0:
+        raise ValueError(f"no contact found with alias {recipient!r}")
+    if len(matches) > 1:
+        raise ValueError(f"multiple contacts match alias {recipient!r}, use prefix instead")
     return matches[0]["id"]
 
 

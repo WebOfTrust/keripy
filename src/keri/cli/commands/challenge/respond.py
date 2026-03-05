@@ -7,7 +7,7 @@ import argparse
 
 from hio.base import doing
 
-from ...common import existing 
+from ...common import existing
 from ...common.parsing import Parsery
 from ....app import habbing, forwarding, organizing
 from ....app.habbing import GroupHab
@@ -98,9 +98,11 @@ class RespondDoer(doing.DoDoer):
         if hab is None:
             raise ValueError(f"invalid alias {self.alias}")
 
-        recp = self.org.find("alias", self.recp)
-        if len(recp) != 1:
-            raise ValueError(f"invalid recipient {self.recp}")
+        recp = self.org.findExact("alias", self.recp)
+        if len(recp) == 0:
+            raise ValueError(f"no contact found with alias {self.recp!r}")
+        if len(recp) > 1:
+            raise ValueError(f"multiple contacts match alias {self.recp!r}, use prefix instead")
 
         recp = recp[0]['id']
 
