@@ -2361,19 +2361,42 @@ class Hab(BaseHab):
         if ncount is None:
             ncount = len(kever.ndigers)  # use len of prior next digers as default
 
+        # Save pre-rotation key state so we can rollback if event validation
+        # fails. Both mgr.replay() and mgr.rotate() advance and persist key
+        # state before the rotation event is validated by BaseHab.rotate().
+        # Without rollback, a failed rotation leaves the key store out of
+        # sync with the KEL (issue #819).
+        ps_before = self.mgr.ks.sits.get(self.pre)
+
         try:
-            verfers, digers = self.mgr.replay(pre=self.pre)
+            verfers, digers = self.mgr.replay(pre=self.pre, erase=False)
         except IndexError:  # old next is new current
             verfers, digers = self.mgr.rotate(pre=self.pre,
                                               ncount=ncount,
-                                              temp=self.temp)
-        return super(Hab, self).rotate(verfers=verfers, digers=digers,
-                                       isith=isith,
-                                       nsith=nsith,
-                                       toad=toad,
-                                       cuts=cuts,
-                                       adds=adds,
-                                       data=data)
+                                              temp=self.temp,
+                                              erase=False)
+
+        try:
+            msg = super(Hab, self).rotate(verfers=verfers, digers=digers,
+                                          isith=isith,
+                                          nsith=nsith,
+                                          toad=toad,
+                                          cuts=cuts,
+                                          adds=adds,
+                                          data=data)
+        except Exception:
+            # Rotation event validation failed. Rollback key state to
+            # pre-rotation snapshot so KEL and key store stay in sync.
+            self.mgr.ks.sits.pin(self.pre, val=ps_before)
+            raise
+
+        # Event validated successfully. Now safe to erase old stale
+        # private keys that were preserved during the key advancement.
+        if ps_before.old.pubs:
+            for pub in ps_before.old.pubs:
+                self.mgr.ks.pris.rem(pub)
+
+        return msg
 
 
 class SignifyHab(BaseHab):
