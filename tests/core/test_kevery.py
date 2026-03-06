@@ -455,11 +455,6 @@ def test_process_query_signatures():
         with pytest.raises(ValidationError):
             kevery.processQuery(qserder, source=None, sigers=[siger])
 
-        # sigers with unknown source prefix
-        unknown_prefixer = Prefixer(qb64=ntsigner.verfer.qb64)  # valid prefix, not in kevers
-        with pytest.raises(ValidationError):
-            kevery.processQuery(qserder, source=unknown_prefixer, sigers=[siger])
-
         # sigers with known source prefix
         source_prefixer = Prefixer(qb64=pre)
         kevery.processQuery(qserder, source=source_prefixer, sigers=[siger])

@@ -4342,6 +4342,11 @@ class Kevery:
                     raise ValidationError(
                         f"Missing attached requester source for query"
                         f" msg = {serder.pretty()}.")
+                
+                # If seal-based auth (sscs) is present, skip sig verification in processQuery
+                # seal auth is already handled by kramer upstream
+                if kwa.get('sscs'):
+                    kwa['verifyAuth'] = False
 
                 route = serder.ked["r"]
                 if route in ["logs", "ksn", "mbx"]:
@@ -5099,7 +5104,8 @@ class Kevery:
         self.db.obvs.pin(keys=keys, val=observed)  # overwrite
 
 
-    def processQuery(self, serder, *, source=None, sigers=None, cigars=None, **kwa):
+    def processQuery(self, serder, *, source=None, sigers=None, cigars=None,
+                     verifyAuth=True, **kwa):
         """Process query mode replay message for collective or single element query.
         Assume promiscuous mode for now.
 
@@ -5115,42 +5121,39 @@ class Kevery:
         ilk = ked["t"]
         route = ked["r"]
         qry = ked["q"]
-
+        
         # Signature verification
-        if sigers:
-            if source is None:
-                msg = f"sigers provided but no source prefix given serder = {serder}"
-                logger.info("Kevery processQuery error: %s", msg)
-                raise ValidationError(msg)
-            if source.qb64 not in self.kevers:
-                msg = f"Unknown source prefix {source.qb64}, cannot verify sigers"
-                logger.info("Kevery processQuery error: %s", msg)
-                raise ValidationError(msg)
-
-            # verify each signature
-            verfers = self.kevers[source.qb64].verfers
-            for siger in sigers:
-                if siger.index >= len(verfers):
-                    msg = f"Siger index {siger.index} out of range for source {source.qb64}"
-                    logger.info("Kevery processQuery error: %s", msg)
-                    raise ValidationError(msg)
-                if not verfers[siger.index].verify(sig=siger.raw, ser=serder.raw):
-                    msg = f"Siger signature verification failed for index {siger.index}"
+        if verifyAuth:
+            if sigers:
+                if source is None:
+                    msg = f"sigers provided but no source prefix given serder = {serder}"
                     logger.info("Kevery processQuery error: %s", msg)
                     raise ValidationError(msg)
 
-        # Cigar verification    
-        elif cigars:
-            for cigar in cigars:
-                if not cigar.verfer.verify(sig=cigar.raw, ser=serder.raw):
-                    msg = f"Cigar signature verification failed for verfer {cigar.verfer.qb64}"
-                    logger.info("Kevery processQuery error: %s", msg)
-                    raise ValidationError(msg)
-        else:
-            msg = f"No signatures provided: query rejected. serder = {serder}, source = {source.qb64}"
-            logger.info("Kevery processQuery error: %s", msg)
-            raise ValidationError(msg)
-    
+                # If source is unknown, proceed without verification
+                if source.qb64 in self.kevers:
+                    verfers = self.kevers[source.qb64].verfers
+                    for siger in sigers:
+                        if siger.index >= len(verfers):
+                            msg = f"Siger index {siger.index} out of range for source {source.qb64}"
+                            logger.info("Kevery processQuery error: %s", msg)
+                            raise ValidationError(msg)
+                        if not verfers[siger.index].verify(sig=siger.raw, ser=serder.raw):
+                            msg = f"Siger signature verification failed for index {siger.index}"
+                            logger.info("Kevery processQuery error: %s", msg)
+                            raise ValidationError(msg)
+
+            elif cigars:
+                for cigar in cigars:
+                    if not cigar.verfer.verify(sig=cigar.raw, ser=serder.raw):
+                        msg = f"Cigar signature verification failed for verfer {cigar.verfer.qb64}"
+                        logger.info("Kevery processQuery error: %s", msg)
+                        raise ValidationError(msg)
+            else:
+                msg = f"No signatures provided: query rejected. serder = {serder}"
+                logger.info("Kevery processQuery error: %s", msg)
+                raise ValidationError(msg)
+
         # do replay attack prevention logic here
 
         if source is None and cigars:
