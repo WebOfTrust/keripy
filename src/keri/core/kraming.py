@@ -440,38 +440,6 @@ class Kramer:
 
         return False  # No matching seal digest found
 
-    def _storeNonAuthAttachments(self, key, **kwa):
-        """Idempotently store non-authenticator attachments in partial DBs.
-
-        Called after pmkm/pmks/pmsk have been written. Stores each non-auth
-        attachment type in its own DB, keyed by (AID, MID). All DBs use
-        IoSetSuber semantics so re-insertion of identical values is a no-op.
-
-        Non-authenticator attachment kwargs stored:
-            pmkfer  - first-seen replay couples: list[(Number, Diger)]
-            pmkper  - pathed SAD material: list[bytes]
-            pmkeer - ESSR groups: list[Texter]
-            pmkber  - big SAD indexed sig quadruples: list[(Prefixer, Number, Diger, Siger)]
-            pmkter  - trans message quintuples: list[(Diger, Prefixer, Number, Diger, Siger)]
-
-        Parameters:
-            key (tuple): (AID, MID) partial DB key
-            **kwa: keyword arguments from parser exts dict
-        """
-        for pmkfer in kwa.get('frcs', []):
-            self.db.pmkf.add(key, pmkfer)
-
-        for pmkper in kwa.get('ptds', []):
-            self.db.pmkp.add(key, pmkper)
-
-        for pmkeer in kwa.get('essrs', []):
-            self.db.pmke.add(key, pmkeer)
-
-        for pmkber in kwa.get('bsqs', []):
-            self.db.pmkb.add(key, pmkber)
-
-        for pmkter in kwa.get('tmqs', []):
-            self.db.pmkt.add(key, pmkter)
 
     def intake(self, serder, **kwa):
         """Process message through KRAM denial and cache logic.
@@ -613,7 +581,14 @@ class Kramer:
                     if storedKeyState is None:
                         self.db.pmsk.pin(key, currentKeyState)
 
-                self._storeNonAuthAttachments(key, **kwa)
+                for pmkmer in kwa.get('pmkm', []):
+                    self.db.pmkm.add(key, pmkmer)
+
+                for pmkser in kwa.get('pmks', []):
+                    self.db.pmks.add(key, pmkser)
+
+                for pmsker in kwa.get('pmsk', []):
+                    self.db.pmsk(key, pmsker)
 
                 # Check threshold using current kever's tholder
                 allSigs = existingSigs + newSigs
@@ -621,11 +596,7 @@ class Kramer:
                     sigIndices = [sig.index for sig in allSigs]
 
                     if kever.tholder.satisfy(indices=sigIndices):
-                        # Accept, remove all partial database entries
-                        self.db.pmkm.rem(key)
-                        self.db.pmks.rem(key)
-                        self.db.pmsk.rem(key)
-                        # TODO: Remove from other partial attachment databases
+                        # Accept, partial database entries will be removed by pruner
                         return msg
 
                 # Threshold not satisfied, message remains pending
@@ -736,7 +707,14 @@ class Kramer:
 
                     self.db.pmsk.pin(key, currentKeyState)
 
-                    self._storeNonAuthAttachments(key, **kwa)
+                    for pmkmer in kwa.get('pmkm', []):
+                        self.db.pmkm.add(key, pmkmer)
+
+                    for pmkser in kwa.get('pmks', []):
+                        self.db.pmks.add(key, pmkser)
+
+                    for pmsker in kwa.get('pmsk', []):
+                        self.db.pmsk(key, pmsker)
 
                     return None  # message pending
 
@@ -819,7 +797,14 @@ class Kramer:
                     if storedKeyState is None:
                         self.db.pmsk.pin(partialKey, currentKeyState)
 
-                self._storeNonAuthAttachments(partialKey, **kwa)
+                for pmkmer in kwa.get('pmkm', []):
+                    self.db.pmkm.add(key, pmkmer)
+
+                for pmkser in kwa.get('pmks', []):
+                    self.db.pmks.add(key, pmkser)
+
+                for pmsker in kwa.get('pmsk', []):
+                    self.db.pmsk(key, pmsker)
 
                 # Check threshold using current kever's tholder
                 allSigs = existingSigs + newSigs
@@ -827,11 +812,7 @@ class Kramer:
                     sigIndices = [sig.index for sig in allSigs]
 
                     if kever.tholder.satisfy(indices=sigIndices):
-                        # Accept, remove all partial database entries
-                        self.db.pmkm.rem(partialKey)
-                        self.db.pmks.rem(partialKey)
-                        self.db.pmsk.rem(partialKey)
-                        # TODO: Remove from other partial attachment databases
+                        # Accept, partial database entries will be removed by pruner
                         return msg
 
                 # Threshold not satisfied, message remains pending
@@ -999,7 +980,14 @@ class Kramer:
 
                     self.db.pmsk.pin(partialKey, currentKeyState)
 
-                    self._storeNonAuthAttachments(partialKey, **kwa)
+                    for pmkmer in kwa.get('pmkm', []):
+                        self.db.pmkm.add(key, pmkmer)
+
+                    for pmkser in kwa.get('pmks', []):
+                        self.db.pmks.add(key, pmkser)
+
+                    for pmsker in kwa.get('pmsk', []):
+                        self.db.pmsk(key, pmsker)
 
                     return None  # message pending
                 else:

@@ -562,33 +562,24 @@ def test_asmk(mockHelpingNowUTC):
 
             # Step 3: Partial accumulation
 
+            # First delivery, 1 sig (below 2-of-3 threshold)
+            # Distinct stamp so msg2.said != msg.said (partials from step 2 don't collide)
+            stamp2 = "2020-12-31T23:59:59.000000+00:00"
             msg2 = eventing.query(pre=senderHab.pre,
                                    route="ksn",
                                    query=dict(i=senderHab.pre, src=senderHab.pre),
-                                   stamp=stamp,
+                                   stamp=stamp2,
                                    pvrsn=Vrsn_2_0)
             allSigers2 = signMsg(msg2)
 
-            # First delivery, 1 sig (below 2-of-3 threshold), with one of each
-            # non-auth attachment type so _storeNonAuthAttachments is exercised
-            frc  = (coring.Number(num=0), coring.Diger(ser=msg2.raw))
-            ptd  = b"pathed-sad-material-alpha"
-            essr = coring.Texter(text="essr-step3")
-            bsq  = (prefixer, coring.Number(num=0),
-                    coring.Diger(ser=b"estEvt"), allSigers2[0])
-            tmq  = (coring.Diger(ser=b"rct"), prefixer,
-                    coring.Number(num=0), coring.Diger(ser=b"estEvt2"),
-                    allSigers2[0])
-            kwa = dict(ssgs=[(prefixer, [allSigers2[0]])],
-                       frcs=[frc], ptds=[ptd], essrs=[essr],
-                       bsqs=[bsq], tmqs=[tmq])
+            kwa = dict(ssgs=[(prefixer, [allSigers2[0]])])
             kvy.processMsg(msg2, **kwa)
 
             # Assert msgc cache created for partial sigs
             cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg2.said))
             assert cache is not None
 
-            # Assert that core partial DBs are populated
+            # Assert that partial DBs are populated
             pmkm = receiverHby.db.pmkm.get(keys=(senderHab.pre, msg2.said))
             assert pmkm is not None
             pmks = receiverHby.db.pmks.get(keys=(senderHab.pre, msg2.said))
@@ -597,43 +588,18 @@ def test_asmk(mockHelpingNowUTC):
             pmsk = receiverHby.db.pmsk.get(keys=(senderHab.pre, msg2.said))
             assert pmsk is not None
 
-            # Assert non-auth partial DBs populated on first partial delivery
-            partialKey2 = (senderHab.pre, msg2.said)
-            assert len(receiverHby.db.pmkf.get(keys=partialKey2)) == 1
-            assert len(receiverHby.db.pmkp.get(keys=partialKey2)) == 1
-            assert len(receiverHby.db.pmke.get(keys=partialKey2)) == 1
-            assert len(receiverHby.db.pmkb.get(keys=partialKey2)) == 1
-            assert len(receiverHby.db.pmkt.get(keys=partialKey2)) == 1
-
             # No cue generated because threshold not met
             assert len(kvy.cues) == 0
 
-            # Second delivery: 2 of 3 sigs,  threshold met; distinct non-auth
-            # values to confirm they accumulate across deliveries
-            frc2 = (coring.Number(num=1), coring.Diger(ser=b"event-one"))
-            ptd2 = b"pathed-sad-material-beta"
-            essr2 = coring.Texter(text="essr-step3b")
-            bsq2  = (prefixer, coring.Number(num=1),
-                     coring.Diger(ser=b"estEvt-b"), allSigers2[2])
-            tmq2  = (coring.Diger(ser=b"rct-b"), prefixer,
-                     coring.Number(num=1), coring.Diger(ser=b"estEvt2-b"),
-                     allSigers2[2])
-            kwa = dict(ssgs=[(prefixer, [allSigers2[2]])],
-                       frcs=[frc2], ptds=[ptd2], essrs=[essr2],
-                       bsqs=[bsq2], tmqs=[tmq2])
+            # Second delivery: 2 of 3 sigs, threshold met
+            kwa = dict(ssgs=[(prefixer, [allSigers2[2]])])
             kvy.processMsg(msg2, **kwa)
 
-            # Assert core auth partials pruned on threshold
-            assert receiverHby.db.pmkm.get(keys=(senderHab.pre, msg2.said)) is None
-            assert receiverHby.db.pmks.get(keys=(senderHab.pre, msg2.said)) == []
-            assert receiverHby.db.pmsk.get(keys=(senderHab.pre, msg2.said)) is None
-
-            # Assert non-auth partials survive threshold
-            assert len(receiverHby.db.pmkf.get(keys=partialKey2)) == 2
-            assert len(receiverHby.db.pmkp.get(keys=partialKey2)) == 2
-            assert len(receiverHby.db.pmke.get(keys=partialKey2)) == 2
-            assert len(receiverHby.db.pmkb.get(keys=partialKey2)) == 2
-            assert len(receiverHby.db.pmkt.get(keys=partialKey2)) == 2
+            # Partials persist until pruner cleans up (not deleted on threshold)
+            assert receiverHby.db.pmkm.get(keys=(senderHab.pre, msg2.said)) is not None
+            pmks = receiverHby.db.pmks.get(keys=(senderHab.pre, msg2.said))
+            assert len(pmks) >= 2
+            assert receiverHby.db.pmsk.get(keys=(senderHab.pre, msg2.said)) is not None
 
             # Assert that downstream dispatch occurred via cue gen
             assert len(kvy.cues) > 0
@@ -647,7 +613,7 @@ def test_asmk(mockHelpingNowUTC):
             msg3 = eventing.query(pre=senderHab.pre,
                                    route="ksn",
                                    query=dict(i=senderHab.pre, src=senderHab.pre),
-                                   stamp=stamp,
+                                   stamp="2020-12-31T23:59:58.000000+00:00",
                                    pvrsn=Vrsn_2_0)
             allSigers3 = signMsg(msg3)
 
@@ -669,7 +635,7 @@ def test_asmk(mockHelpingNowUTC):
             msg4 = eventing.query(pre=senderHab.pre,
                                    route="ksn",
                                    query=dict(i=senderHab.pre, src=senderHab.pre),
-                                   stamp=stamp,
+                                   stamp="2020-12-31T23:59:57.000000+00:00",
                                    pvrsn=Vrsn_2_0)
             allSigers4 = signMsg(msg4)
 
@@ -688,7 +654,7 @@ def test_asmk(mockHelpingNowUTC):
             # Assert both sigs pooled, 2 of 3 threshold met
             cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg4.said))
             assert cache is not None
-            # Partials cleaned up
+            # Partials persist until pruner cleans up (not deleted on threshold)
             assert receiverHby.db.pmkm.get(keys=(senderHab.pre, msg4.said)) is None
 
             kvy.cues.clear()
@@ -699,7 +665,7 @@ def test_asmk(mockHelpingNowUTC):
             msg5 = eventing.query(pre=senderHab.pre,
                                    route="ksn",
                                    query=dict(i=senderHab.pre, src=senderHab.pre),
-                                   stamp=stamp,
+                                   stamp="2020-12-31T23:59:56.000000+00:00",
                                    pvrsn=Vrsn_2_0)
             allSigers2f = signMsg(msg5)
 
@@ -1116,9 +1082,10 @@ def test_both_attached(mockHelpingNowUTC):
             kvy.processMsg(msg3, **dict(sscs=sscs,
                                         ssgs=[(mkPrefixer, [allSigers[1]])]))
 
-            # Partials cleaned up
-            assert receiverHby.db.pmkm.get(keys=(mkHab.pre, msg3.said)) is None
-            assert receiverHby.db.pmks.get(keys=(mkHab.pre, msg3.said)) == []
+            # Partials persist until pruner cleans up (not deleted on threshold)
+            assert receiverHby.db.pmkm.get(keys=(mkHab.pre, msg3.said)) is not None
+            pmks = receiverHby.db.pmks.get(keys=(mkHab.pre, msg3.said))
+            assert len(pmks) >= 2
 
             kvy.cues.clear()
 
@@ -1367,109 +1334,9 @@ def test_transactioned(mockHelpingNowUTC):
             with pytest.raises(kering.ValidationError):
                 kvy.processMsg(mkExn, **kwa)
 
-            # Partials cleaned up
-            assert receiverHby.db.pmkm.get(keys=partialKey) is None
-            assert receiverHby.db.pmks.get(keys=partialKey) == []
-
-    """Done Test"""
-
-
-def test_non_auth_attachments(mockHelpingNowUTC):
-    """Test _storeNonAuthAttachments: IoSet idempotency and empty-kwa no-op."""
-
-    salt1 = core.Salter(raw=b'0123456789abcdej').qb64
-    salt2 = core.Salter(raw=b'0123456789abcdek').qb64
-
-    with (habbing.openHby(name="naaSndr", base="test", salt=salt1) as senderHby,
-          habbing.openHby(name="naaRcvr", base="test", salt=salt2) as receiverHby):
-
-        senderHab = senderHby.makeHab(name="naaSndr", isith='2', icount=3,
-                                      transferable=True)
-        receiverHby.makeHab(name="naaRcvr", isith='1', icount=1,
-                            transferable=True)
-
-        crossKvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
-        senderIcp = senderHab.makeOwnEvent(sn=0)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
-        assert senderHab.pre in crossKvy.kevers
-
-        with configing.openCF(name="naaKram", base="test") as cf:
-            cf.put(KRAM_INTEGRATION_CONFIG)
-            kramer = Kramer(db=receiverHby.db, cf=cf)
-            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False,
-                                  kramer=kramer)
-
-            stamp = helping.nowIso8601()
-            prefixer = coring.Prefixer(qb64=senderHab.pre)
-
-            msg = eventing.query(pre=senderHab.pre,
-                                 route="ksn",
-                                 query=dict(i=senderHab.pre, src=senderHab.pre,
-                                            n="naa"),
-                                 stamp=stamp,
-                                 pvrsn=Vrsn_2_0)
-            allSigers = senderHab.mgr.sign(ser=msg.raw,
-                                           verfers=senderHab.kever.verfers,
-                                           indexed=True)
-            assert len(allSigers) == 3
-
-            partialKey = (senderHab.pre, msg.said)
-
-            # Attachment values reused across steps to test idempotency.
-            frc  = (coring.Number(num=0), coring.Diger(ser=msg.raw))
-            ptd  = b"pathed-sad-material-alpha"
-            essr = coring.Texter(text="essr-naa")
-            bsq  = (prefixer, coring.Number(num=0),
-                    coring.Diger(ser=b"estEvt"), allSigers[0])
-            tmq  = (coring.Diger(ser=b"rct"), prefixer,
-                    coring.Number(num=0), coring.Diger(ser=b"estEvt2"),
-                    allSigers[0])
-
-
-            # first partial delivery, all five DB types populated
-
-            kvy.processMsg(msg, **dict(ssgs=[(prefixer, [allSigers[0]])],
-                                       frcs=[frc], ptds=[ptd], essrs=[essr],
-                                       bsqs=[bsq], tmqs=[tmq]))
-
-            # Threshold not yet met: message is pending
+            # Partials persist until pruner cleans up (not deleted on threshold)
             assert receiverHby.db.pmkm.get(keys=partialKey) is not None
-            assert len(receiverHby.db.pmks.get(keys=partialKey)) == 1
-
-            assert len(receiverHby.db.pmkf.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.pmkp.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.pmke.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.pmkb.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.pmkt.get(keys=partialKey)) == 1
-
-            # same sig index and same attachment values, counts unchanged
-
-            kvy.processMsg(msg, **dict(ssgs=[(prefixer, [allSigers[0]])],
-                                       frcs=[frc], ptds=[ptd], essrs=[essr],
-                                       bsqs=[bsq], tmqs=[tmq]))
-
-            assert len(receiverHby.db.pmks.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.pmkf.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.pmkp.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.pmke.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.pmkb.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.pmkt.get(keys=partialKey)) == 1
-
-
-            # sig-only delivery (no non-auth kwa keys) meets threshold;
-            # non-auth counts must stay at 1, empty kwa is a true no-op
-
-            kvy.processMsg(msg, **dict(ssgs=[(prefixer, [allSigers[1]])]))
-
-            assert len(receiverHby.db.pmkf.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.pmkp.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.pmke.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.pmkb.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.pmkt.get(keys=partialKey)) == 1
-
-            # Core auth partials pruned on threshold; non-auth partials survive
-            assert receiverHby.db.pmkm.get(keys=partialKey) is None
-            assert receiverHby.db.pmks.get(keys=partialKey) == []
-            assert receiverHby.db.pmsk.get(keys=partialKey) is None
+            pmks = receiverHby.db.pmks.get(keys=partialKey)
+            assert len(pmks) >= 2
 
     """Done Test"""

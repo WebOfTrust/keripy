@@ -930,26 +930,6 @@ class Baser(dbing.LMDBer):
         # KRAM partially signed multi-key sender key state key (AID.MID) mapped to SN and event SAID
         self.pmsk = subing.CatCesrSuber(db=self, subkey='pmsk.', klas=(coring.Number, coring.Diger))
 
-        # KRAM partially signed multi-key first-seen replay couples key (AID.MID)
-        self.pmkf = subing.CatCesrIoSetSuber(db=self, subkey='pmkf.',
-                                             klas=(coring.Number, coring.Diger))
-
-        # KRAM partially signed multi-key pathed SAD material key (AID.MID) mapped to raw pathed CESR bytes
-        self.pmkp = subing.IoSetSuber(db=self, subkey='pmkp.')
-
-        # KRAM partially signed multi-key ESSR groups key (AID.MID) mapped to SAD sig reference strings
-        self.pmke = subing.CesrIoSetSuber(db=self, subkey='pmke.', klas=coring.Texter)
-
-        # KRAM partially signed multi-key big SAD indexed sig quadruples key (AID.MID)
-        self.pmkb = subing.CatCesrIoSetSuber(db=self, subkey='pmkb.',
-                                             klas=(coring.Prefixer, coring.Number,
-                                                   coring.Diger, indexing.Siger))
-
-        # KRAM partially signed multi-key trans message quintuples key (AID.MID)
-        self.pmkt = subing.CatCesrIoSetSuber(db=self, subkey='pmkt.',
-                                             klas=(coring.Diger, coring.Prefixer,
-                                                   coring.Number, coring.Diger, indexing.Siger))
-
         self.reload()
 
         return self.env
