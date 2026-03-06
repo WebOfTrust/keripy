@@ -10,7 +10,6 @@ from keri.app import habbing, keeping
 from keri.db import basing
 
 
-
 def test_signatory():
     salt = core.Salter(raw=b'0123456789abcdef')  # init sig Salter
 

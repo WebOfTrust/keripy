@@ -22,20 +22,20 @@ from ..kering import (MissingEntryError, UntrustedKeyStateSource,
                       QueryNotFoundError, MisfitEventSourceError,
                       MissingDelegableApprovalError, Version, Versionage,
                       TraitDex, Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Ilks)
+
 from ..help import helping, ogler, nowIso8601
 
-from .coring import (versify, Kinds, Ilks, PreDex, DigDex, Kinds,
+from .coring import (versify, Kinds, PreDex, DigDex, Kinds,
                      NonTransDex, NumDex, Prefixer, Seqner, Diger,
-                     Number, Seqner, Cigar, Dater, Noncer, versify,
+                     Number, Seqner, Cigar, Dater, Noncer,
                      Verfer, Diger, Prefixer, Tholder)
+
 from .counting import Counter, Codens
 from .structing import (SealEvent, SealLast, StateEstEvent)
 from .indexing import Siger
 from .serdering import SerderKERI
 
-from . import serdering
-
-from ..db import Baser, dgKey, snKey, fetchTsgs
+from ..db import Baser, dgKey, snKey
 from ..recording import (EndpointRecord, EventSourceRecord, KeyStateRecord,
                          LocationRecord, OobiRecord, ObservedRecord,
                          StateEERecord)
@@ -298,7 +298,6 @@ def deTransReceiptQuintuple(data, strip=False):
     return ediger, sprefixer, snumber, sdiger, siger
 
 
-
 def verifySigs(raw, sigers, verfers):
     """
     Returns tuple of (vsigers, vindices) where:
@@ -391,6 +390,7 @@ def validateSigs(serder, sigers, verfers, tholder):
     valid = tholder.satisfy(indices)
 
     return (sigers, valid)
+
 
 def state(pre,
           sn,
@@ -546,6 +546,7 @@ def state(pre,
                di=dpre if dpre is not None else "",
                )
     return ksr  # return KeyStateRecord  use asdict(ksr) to get dict version
+
 
 # should remove intive as its not standard KERI so confusing and leads to errors
 # this is an old feature that is now deprecated.
@@ -898,7 +899,6 @@ def deltate(pre,
 
     """
     return rotate(pre=pre, keys=keys, dig=dig, ilk=ilk, **kwa)
-
 
 
 def interact(pre,
@@ -1374,7 +1374,6 @@ def bare(pre="",
     return serder
 
 
-
 def exchept(sender="",
             receiver="",
             route="",
@@ -1580,7 +1579,6 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
 
     msg.extend(atc)
     return msg
-
 
 
 class Kever:
@@ -3770,7 +3768,6 @@ class Kever:
                 return (serder.sn, i, serder.verfers)
 
         return None
-
 
 
 class Kevery:

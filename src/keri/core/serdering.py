@@ -5,10 +5,9 @@ keri.core.serdering module
 """
 import copy
 import json
-from collections import namedtuple, deque
-from collections.abc import Mapping, Iterable
+from collections import deque
+from collections.abc import Mapping
 from dataclasses import dataclass, asdict, field
-from base64 import urlsafe_b64decode as decodeB64
 from base64 import urlsafe_b64encode as encodeB64
 
 import cbor2 as cbor

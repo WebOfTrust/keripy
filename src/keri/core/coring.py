@@ -21,22 +21,20 @@ from cryptography import exceptions
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 
-from ..kering import MaxON
+from .. import (EmptyMaterialError, RawMaterialError, SoftMaterialError,
+                InvalidCodeError, InvalidSoftError, InvalidCodeSizeError,
+                InvalidVarRawSizeError, ConversionError, InvalidValueError,
+                ValidationError, VersionError, ShortageError,
+                UnexpectedCodeError, DeserializeError, Versionage,
+                UnexpectedCountCodeError, UnexpectedOpCodeError,
+                versify, deversify, smell, MAXVERFULLSPAN,
+                Version, Vrsn_2_0, Rever, MaxON,
+                Kinds, Protocols,Ilks, TraitDex)
 
-from ..kering import (EmptyMaterialError, RawMaterialError, SoftMaterialError,
-                      InvalidCodeError, InvalidSoftError, InvalidCodeSizeError,
-                      InvalidVarRawSizeError, ConversionError, InvalidValueError,
-                      ValidationError, VersionError, ShortageError,
-                      UnexpectedCodeError, DeserializeError,
-                      UnexpectedCountCodeError, UnexpectedOpCodeError,
-                      Versionage, Version, Vrsn_2_0, MAXVERFULLSPAN,
-                      versify, deversify, Rever, smell,
-                      Kinds, Protocols,Ilks, TraitDex)
-
-from ..help.helping import (sceil, isNonStringIterable, isNonStringSequence,
-                            intToB64, b64ToInt, codeB64ToB2, nabSextets,
-                            codeB2ToB64, Reb64, Reatt, Repath,
-                            nowIso8601, fromIso8601)
+from ..help import (sceil, isNonStringIterable, isNonStringSequence,
+                    intToB64, b64ToInt, codeB64ToB2, nabSextets,
+                    codeB2ToB64, Reb64, Reatt, Repath,
+                    nowIso8601, fromIso8601)
 
 DSS_SIG_MODE = "fips-186-3"
 ECDSA_256r1_SEEDBYTES = 32

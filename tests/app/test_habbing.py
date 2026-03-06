@@ -20,9 +20,7 @@ from keri import core
 from keri.core import coring, eventing, parsing, serdering
 
 from keri.app import habbing, keeping, configing
-from keri.db import basing, dbing
-
-
+from keri.db import basing
 
 
 def test_habery():

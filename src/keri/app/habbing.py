@@ -13,14 +13,14 @@ from hio.help import hicting
 
 from ..peer import exchanging
 from . import keeping, configing
-from ..db import Baser, dgKey
+from ..db import Baser, dgKey, fetchTsgs
 from ..help import ogler, fromIso8601, toIso8601
 from .. import (Vrsn_1_0, ClosedError, AuthError,
                 ConfigurationError, ValidationError, MissingEntryError,
                 KeriError, MissingSignatureError, Roles, Schemes)
 from ..core import (coring, eventing, parsing, routing,
                     Counter, Salter, Codens)
-from ..recording import EndpointRecord, HabitatRecord, LocationRecord, OobiRecord
+from ..recording import HabitatRecord, OobiRecord
 
 
 logger = ogler.getLogger()
@@ -1822,7 +1822,7 @@ class BaseHab:
             said = self.db.eans.get(keys=(cid, role, eid))
             serder = self.db.rpys.get(keys=(said.qb64,))
             cigars = self.db.scgs.get(keys=(said.qb64,))
-            tsgs = eventing.fetchTsgs(db=self.db.ssgs, diger=said)
+            tsgs = fetchTsgs(db=self.db.ssgs, diger=said)
 
             if len(cigars) == 1:
                 (verfer, cigar) = cigars[0]
@@ -1901,7 +1901,7 @@ class BaseHab:
         for (pre, _), said in self.db.lans.getItemIter(keys=keys):
             serder = self.db.rpys.get(keys=(said.qb64,))
             cigars = self.db.scgs.get(keys=(said.qb64,))
-            tsgs = eventing.fetchTsgs(db=self.db.ssgs, diger=said)
+            tsgs = fetchTsgs(db=self.db.ssgs, diger=said)
 
             if len(cigars) == 1:
                 (verfer, cigar) = cigars[0]
