@@ -4,9 +4,9 @@ import pytest
 
 
 from keri import help, Vrsn_1_0, ValidationError
-from keri.core import (Salter, parsing, eventing, coring, serdering,
+from keri.core import (Prefixer, Salter, parsing, eventing, coring, serdering,
                        Counter, Kever, Kevery, Codens,
-                       incept, rotate, interact)
+                       incept, rotate, interact, query)
 from keri.app import habbing
 from keri.db.basing import openDB
 
@@ -424,6 +424,72 @@ def test_stale_event_receipts():
         """ Done Test """
 
 
+def test_process_query_signatures():
+    logger.setLevel("ERROR")
+
+    raw = b"ABCDEFGH01234567"
+    signers = Salter(raw=raw).signers(count=8, path='kev', temp=True)
+
+    # non-transferable signer for cigar tests
+    nt_raw = b"raw salt for cigar test"
+    ntsigner = Salter(raw=nt_raw).signer(path="nt", temp=True, transferable=False)
+
+    with openDB(name="test") as db:
+        kevery = Kevery(db=db)
+
+        serder = incept(keys=[signers[0].verfer.qb64],
+                        ndigs=[coring.Diger(ser=signers[1].verfer.qb64b).qb64])
+        siger = signers[0].sign(serder.raw, index=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(serder.raw +
+                       Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0).qb64b +
+                       siger.qb64b), kvy=kevery)
+
+        pre = serder.pre
+        assert pre in kevery.kevers
+
+        qserder = query(route="logs",
+                        query=dict(i=pre, src=pre, s="0", fn="0"))
+
+        # sigers provided but source is None
+        siger = signers[0].sign(qserder.raw, index=0)
+        with pytest.raises(ValidationError):
+            kevery.processQuery(qserder, source=None, sigers=[siger])
+
+        # sigers with unknown source prefix
+        unknown_prefixer = Prefixer(qb64=ntsigner.verfer.qb64)  # valid prefix, not in kevers
+        with pytest.raises(ValidationError):
+            kevery.processQuery(qserder, source=unknown_prefixer, sigers=[siger])
+
+        # sigers with known source prefix
+        source_prefixer = Prefixer(qb64=pre)
+        kevery.processQuery(qserder, source=source_prefixer, sigers=[siger])
+
+        # sigers with forged signature
+        tampered = bytearray(qserder.raw)
+        tampered[10] ^= 0xFF
+        bad_siger = signers[0].sign(bytes(tampered), index=0)
+        with pytest.raises(ValidationError):
+            kevery.processQuery(qserder, source=source_prefixer, sigers=[bad_siger])
+
+        # valid cigar signature
+        cigar = ntsigner.sign(qserder.raw)
+        kevery.processQuery(qserder, source=None, cigars=[cigar])
+
+        # invalid cigar (signed different bytes)
+        tampered = bytearray(qserder.raw)
+        tampered[10] ^= 0xFF
+        bad_cigar = ntsigner.sign(bytes(tampered))
+        with pytest.raises(ValidationError):
+            kevery.processQuery(qserder, source=None, cigars=[bad_cigar])
+
+        # neither sigers nor cigars
+        with pytest.raises((ValidationError, AttributeError)):
+            kevery.processQuery(qserder, source=None, sigers=None, cigars=None)
+
+    """ Done Test """
+
+
 if __name__ == "__main__":
     test_kevery()
     test_stale_event_receipts()
+    test_process_query_signatures()
