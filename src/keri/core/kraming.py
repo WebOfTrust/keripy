@@ -440,6 +440,39 @@ class Kramer:
 
         return False  # No matching seal digest found
 
+    def _storeNonAuthAttachments(self, key, **kwa):
+        """Idempotently store non-authenticator attachments in partial DBs.
+
+        Called after pmkm/pmks/pmsk have been written. Stores each non-auth
+        attachment type in its own DB, keyed by (AID, MID). All DBs use
+        IoSetSuber semantics so re-insertion of identical values is a no-op.
+
+        Non-authenticator attachment kwargs stored:
+            pmkfer  - first-seen replay couples: list[(Number, Diger)]
+            pmkper  - pathed SAD material: list[bytes]
+            pmkeer - ESSR groups: list[Texter]
+            pmkber  - big SAD indexed sig quadruples: list[(Prefixer, Number, Diger, Siger)]
+            pmkter  - trans message quintuples: list[(Diger, Prefixer, Number, Diger, Siger)]
+
+        Parameters:
+            key (tuple): (AID, MID) partial DB key
+            **kwa: keyword arguments from parser exts dict
+        """
+        for pmkfer in kwa.get('frcs', []):
+            self.db.pmkf.add(key, pmkfer)
+
+        for pmkper in kwa.get('ptds', []):
+            self.db.pmkp.add(key, pmkper)
+
+        for pmkeer in kwa.get('essrs', []):
+            self.db.pmke.add(key, pmkeer)
+
+        for pmkber in kwa.get('bsqs', []):
+            self.db.pmkb.add(key, pmkber)
+
+        for pmkter in kwa.get('tmqs', []):
+            self.db.pmkt.add(key, pmkter)
+
     def intake(self, serder, **kwa):
         """Process message through KRAM denial and cache logic.
 
@@ -580,7 +613,7 @@ class Kramer:
                     if storedKeyState is None:
                         self.db.pmsk.pin(key, currentKeyState)
 
-                # TODO: Idempotently add non-signature attachments
+                self._storeNonAuthAttachments(key, **kwa)
 
                 # Check threshold using current kever's tholder
                 allSigs = existingSigs + newSigs
@@ -703,7 +736,7 @@ class Kramer:
 
                     self.db.pmsk.pin(key, currentKeyState)
 
-                    # TODO: Store non-auth attachments in pmsa databases
+                    self._storeNonAuthAttachments(key, **kwa)
 
                     return None  # message pending
 
@@ -786,7 +819,7 @@ class Kramer:
                     if storedKeyState is None:
                         self.db.pmsk.pin(partialKey, currentKeyState)
 
-                # TODO: Idempotently add non-signature attachments
+                self._storeNonAuthAttachments(partialKey, **kwa)
 
                 # Check threshold using current kever's tholder
                 allSigs = existingSigs + newSigs
@@ -966,7 +999,7 @@ class Kramer:
 
                     self.db.pmsk.pin(partialKey, currentKeyState)
 
-                    # TODO: Store non-auth attachments in pmsa databases
+                    self._storeNonAuthAttachments(partialKey, **kwa)
 
                     return None  # message pending
                 else:
