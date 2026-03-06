@@ -562,14 +562,16 @@ def test_asmk(mockHelpingNowUTC):
 
             # Step 3: Partial accumulation
 
+            # First delivery, 1 sig (below 2-of-3 threshold)
+            # Distinct stamp so msg2.said != msg.said (partials from step 2 don't collide)
+            stamp2 = "2020-12-31T23:59:59.000000+00:00"
             msg2 = eventing.query(pre=senderHab.pre,
                                    route="ksn",
                                    query=dict(i=senderHab.pre, src=senderHab.pre),
-                                   stamp=stamp,
+                                   stamp=stamp2,
                                    pvrsn=Vrsn_2_0)
             allSigers2 = signMsg(msg2)
 
-            # First delivery, 1 sig (below 2-of-3 threshold)
             kwa = dict(ssgs=[(prefixer, [allSigers2[0]])])
             kvy.processMsg(msg2, **kwa)
 
@@ -589,14 +591,15 @@ def test_asmk(mockHelpingNowUTC):
             # No cue generated because threshold not met
             assert len(kvy.cues) == 0
 
-            # Second delivery, now 2 of 3 sigs, threshold met
+            # Second delivery: 2 of 3 sigs, threshold met
             kwa = dict(ssgs=[(prefixer, [allSigers2[2]])])
             kvy.processMsg(msg2, **kwa)
 
-            # Assert partials got cleaned up
-            assert receiverHby.db.pmkm.get(keys=(senderHab.pre, msg2.said)) is None
-            assert receiverHby.db.pmks.get(keys=(senderHab.pre, msg2.said)) == []
-            assert receiverHby.db.pmsk.get(keys=(senderHab.pre, msg2.said)) is None
+            # Partials persist until pruner cleans up (not deleted on threshold)
+            assert receiverHby.db.pmkm.get(keys=(senderHab.pre, msg2.said)) is not None
+            pmks = receiverHby.db.pmks.get(keys=(senderHab.pre, msg2.said))
+            assert len(pmks) >= 2
+            assert receiverHby.db.pmsk.get(keys=(senderHab.pre, msg2.said)) is not None
 
             # Assert that downstream dispatch occurred via cue gen
             assert len(kvy.cues) > 0
@@ -610,7 +613,7 @@ def test_asmk(mockHelpingNowUTC):
             msg3 = eventing.query(pre=senderHab.pre,
                                    route="ksn",
                                    query=dict(i=senderHab.pre, src=senderHab.pre),
-                                   stamp=stamp,
+                                   stamp="2020-12-31T23:59:58.000000+00:00",
                                    pvrsn=Vrsn_2_0)
             allSigers3 = signMsg(msg3)
 
@@ -632,7 +635,7 @@ def test_asmk(mockHelpingNowUTC):
             msg4 = eventing.query(pre=senderHab.pre,
                                    route="ksn",
                                    query=dict(i=senderHab.pre, src=senderHab.pre),
-                                   stamp=stamp,
+                                   stamp="2020-12-31T23:59:57.000000+00:00",
                                    pvrsn=Vrsn_2_0)
             allSigers4 = signMsg(msg4)
 
@@ -651,7 +654,7 @@ def test_asmk(mockHelpingNowUTC):
             # Assert both sigs pooled, 2 of 3 threshold met
             cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg4.said))
             assert cache is not None
-            # Partials cleaned up
+            # Partials persist until pruner cleans up (not deleted on threshold)
             assert receiverHby.db.pmkm.get(keys=(senderHab.pre, msg4.said)) is None
 
             kvy.cues.clear()
@@ -662,7 +665,7 @@ def test_asmk(mockHelpingNowUTC):
             msg5 = eventing.query(pre=senderHab.pre,
                                    route="ksn",
                                    query=dict(i=senderHab.pre, src=senderHab.pre),
-                                   stamp=stamp,
+                                   stamp="2020-12-31T23:59:56.000000+00:00",
                                    pvrsn=Vrsn_2_0)
             allSigers2f = signMsg(msg5)
 
@@ -933,6 +936,7 @@ def test_asr(mockHelpingNowUTC):
 
     """Done Test"""
 
+
 def test_both_attached(mockHelpingNowUTC):
     """Test processMsg with both seal refs and sigs present.
 
@@ -1078,9 +1082,10 @@ def test_both_attached(mockHelpingNowUTC):
             kvy.processMsg(msg3, **dict(sscs=sscs,
                                         ssgs=[(mkPrefixer, [allSigers[1]])]))
 
-            # Partials cleaned up
-            assert receiverHby.db.pmkm.get(keys=(mkHab.pre, msg3.said)) is None
-            assert receiverHby.db.pmks.get(keys=(mkHab.pre, msg3.said)) == []
+            # Partials persist until pruner cleans up (not deleted on threshold)
+            assert receiverHby.db.pmkm.get(keys=(mkHab.pre, msg3.said)) is not None
+            pmks = receiverHby.db.pmks.get(keys=(mkHab.pre, msg3.said))
+            assert len(pmks) >= 2
 
             kvy.cues.clear()
 
@@ -1329,8 +1334,9 @@ def test_transactioned(mockHelpingNowUTC):
             with pytest.raises(kering.ValidationError):
                 kvy.processMsg(mkExn, **kwa)
 
-            # Partials cleaned up
-            assert receiverHby.db.pmkm.get(keys=partialKey) is None
-            assert receiverHby.db.pmks.get(keys=partialKey) == []
+            # Partials persist until pruner cleans up (not deleted on threshold)
+            assert receiverHby.db.pmkm.get(keys=partialKey) is not None
+            pmks = receiverHby.db.pmks.get(keys=partialKey)
+            assert len(pmks) >= 2
 
     """Done Test"""
