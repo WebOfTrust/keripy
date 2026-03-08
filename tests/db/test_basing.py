@@ -2775,6 +2775,55 @@ def test_db_keyspace_end_to_end_migration():
         assert ordered_sns == sns
 
 
+def test_semver_dev_tag_comparison():
+    """Regression test for issue #820: semver dev tag lexicographic comparison.
+
+    semver compares alphanumeric prerelease identifiers lexicographically,
+    so 'dev4' > 'dev10' (because '4' > '1'). The _strip_prerelease helper
+    normalizes version strings so dev releases within the same cycle compare
+    correctly in migrate(), current, and complete().
+    """
+    import semver
+    from keri.db.basing import _strip_prerelease
+
+    # Core bug: dev4 should be LESS than dev10, but semver says otherwise
+    assert semver.compare("1.2.0-dev4", "1.2.0-dev10") == 1  # broken by design
+    assert semver.compare("1.2.0-dev10", "1.2.0-dev4") == -1  # broken by design
+
+    # _strip_prerelease removes prerelease so both normalize to same base
+    assert _strip_prerelease("1.2.0-dev4") == "1.2.0"
+    assert _strip_prerelease("1.2.0-dev10") == "1.2.0"
+    assert _strip_prerelease("1.2.0") == "1.2.0"
+    assert _strip_prerelease("0.6.8") == "0.6.8"
+    assert _strip_prerelease("1.2.0-rc1") == "1.2.0"
+    assert _strip_prerelease("2.0.0-dev5+build42") == "2.0.0"
+
+    # After stripping, migration version vs DB version compares correctly
+    # Scenario: DB at 1.2.0-dev4, migration version 1.2.0
+    #   Should skip (migration already within this cycle)
+    db_ver = _strip_prerelease("1.2.0-dev4")
+    assert semver.compare("1.2.0", db_ver) == 0  # equal, so skip
+
+    # Scenario: DB at 1.0.0, migration version 1.2.0
+    #   Should run (migration is newer)
+    db_ver = _strip_prerelease("1.0.0")
+    assert semver.compare("1.2.0", db_ver) == 1  # newer, so run
+
+    # Scenario: DB at 1.2.0-dev10, checking if DB is ahead of lib 1.2.0-dev4
+    #   Should NOT raise (same release cycle)
+    db_stripped = _strip_prerelease("1.2.0-dev10")
+    lib_stripped = _strip_prerelease("1.2.0-dev4")
+    assert semver.compare(db_stripped, lib_stripped) == 0  # same cycle
+
+    # Scenario: DB at 1.3.0-dev1, lib at 1.2.0 — DB IS ahead
+    db_stripped = _strip_prerelease("1.3.0-dev1")
+    assert semver.compare(db_stripped, "1.2.0") == 1  # correctly ahead
+
+    # Scenario: complete() should list 1.2.0 migrations when DB is at 1.2.0-dev4
+    db_ver = _strip_prerelease("1.2.0-dev4")
+    assert semver.compare("1.2.0", db_ver) <= 0  # 0 <= 0, so list it
+
+
 if __name__ == "__main__":
     test_baser()
     test_clean_baser()
@@ -2785,3 +2834,4 @@ if __name__ == "__main__":
     test_db_keyspace_end_to_end_migration()
     test_trim_all_escrows_during_migration()
     test_trim_all_escrows_old_key_format()
+    test_semver_dev_tag_comparison()
