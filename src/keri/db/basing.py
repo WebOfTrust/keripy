@@ -34,6 +34,18 @@ from ..help import helping
 logger = help.ogler.getLogger()
 
 
+def _strip_prerelease(version_str):
+    """Strip prerelease and build metadata from a semver string.
+
+    Semver compares alphanumeric prerelease identifiers lexicographically,
+    so 'dev4' > 'dev10' (because '4' > '1'). Stripping prerelease ensures
+    dev releases within the same version cycle compare as equal.
+    See: https://github.com/WebOfTrust/keripy/issues/820
+    """
+    ver = semver.VersionInfo.parse(version_str)
+    return str(semver.Version(ver.major, ver.minor, ver.patch))
+
+
 MIGRATIONS = [
     ("0.6.8", ["hab_data_rename"]),
     ("1.0.0", ["add_key_and_reg_state_schemas"]),
@@ -303,14 +315,14 @@ class Baser(dbing.LMDBer):
             of serialized event
             More than one value per DB key is allowed
 
-        .vrcs is named subDB instance of CatCesrIoSetSuber that stores verified 
-            transferable‑validator receipt quadruples. 
+        .vrcs is named subDB instance of CatCesrIoSetSuber that stores verified
+            transferable‑validator receipt quadruples.
             Each stored value is a typed CESR tuple—(Prefixer, Number, Diger, Siger)—
-            representing a validator’s transferable receipt, including the validator’s 
-            AID, its latest establishment‑event sequence number, digest, and its indexed 
-            signature over the event. Values are preserved in insertion order 
+            representing a validator’s transferable receipt, including the validator’s
+            AID, its latest establishment‑event sequence number, digest, and its indexed
+            signature over the event. Values are preserved in insertion order
             and represent fully validated receipts that have been moved out of escrow.
-            
+
 
         .vres is a named subDB instance of CatCesrIoSetSuber that maps
             an event’s (prefix, sequence number) snKey to a set of escrowed
@@ -327,14 +339,14 @@ class Baser(dbing.LMDBer):
             Used by Kevery to track events that have at least one verified signature
             but cannot yet be fully validated due to missing signatures or dependent
             events. Values are stored in insertion order.
-        .vrcs is named subDB instance of CatCesrIoSetSuber that stores verified 
-            transferable‑validator receipt quadruples. 
+        .vrcs is named subDB instance of CatCesrIoSetSuber that stores verified
+            transferable‑validator receipt quadruples.
             Each stored value is a typed CESR tuple—(Prefixer, Number, Diger, Siger)—
-            representing a validator’s transferable receipt, including the validator’s 
-            AID, its latest establishment‑event sequence number, digest, and its indexed 
-            signature over the event. Values are preserved in insertion order 
+            representing a validator’s transferable receipt, including the validator’s
+            AID, its latest establishment‑event sequence number, digest, and its indexed
+            signature over the event. Values are preserved in insertion order
             and represent fully validated receipts that have been moved out of escrow.
-            
+
 
         .vres is a named subDB instance of CatCesrIoSetSuber that maps
             an event’s (prefix, sequence number) snKey to a set of escrowed
@@ -352,8 +364,8 @@ class Baser(dbing.LMDBer):
             but cannot yet be fully validated due to missing signatures or dependent
             events. Values are stored in insertion order.
 
-        .pwes is named subDB instance of OnIoDupSuber for partially witnessed 
-            key event escrows that each map under a composite 
+        .pwes is named subDB instance of OnIoDupSuber for partially witnessed
+            key event escrows that each map under a composite
             keys of the form "<pre><sep><on>" to serialized event digest.
             these are for escrows of events with verified signatures but not
             yet verified witness receipts.
@@ -601,9 +613,9 @@ class Baser(dbing.LMDBer):
                                              klas=(coring.Prefixer, coring.Cigar))
         self.ures = subing.CatCesrIoSetSuber(db=self, subkey='ures.',
                                              klas=(coring.Diger, coring.Prefixer, coring.Cigar))
-        self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.', 
+        self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.',
                                             klas=(coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
-        self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.', 
+        self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.',
                                             klas=(coring.Diger, coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
         self.pses = subing.OnIoDupSuber(db=self, subkey='pses.')
         self.pwes = subing.OnIoDupSuber(db=self, subkey='pwes.')
@@ -986,7 +998,8 @@ class Baser(dbing.LMDBer):
                     f"Skipping migration {version} as higher than the current KERI version {keri.__version__}")
                 continue
             # Skip migrations already run - where version less than (-1) or equal to (0) database version
-            if self.version is not None and semver.compare(version, self.version) != 1:
+            # Strip prerelease from DB version to avoid lexicographic comparison bugs (#820)
+            if self.version is not None and semver.compare(version, _strip_prerelease(self.version)) != 1:
                 continue
 
             print(f"Migrating database v{self.version} --> v{version}")
@@ -1055,7 +1068,8 @@ class Baser(dbing.LMDBer):
 
         ver = semver.VersionInfo.parse(keri.__version__)
         ver_no_prerelease = semver.Version(ver.major, ver.minor, ver.patch)
-        if self.version is not None and semver.compare(self.version, str(ver_no_prerelease)) == 1:
+        # Strip prerelease from DB version to avoid lexicographic comparison bugs (#820)
+        if self.version is not None and semver.compare(_strip_prerelease(self.version), str(ver_no_prerelease)) == 1:
             raise kering.ConfigurationError(
                 f"Database version={self.version} is ahead of library version={keri.__version__}")
 
@@ -1082,7 +1096,8 @@ class Baser(dbing.LMDBer):
         if not name:
             for version, migs in MIGRATIONS:
                 # Print entries only for migrations that have been run
-                if self.version is not None and semver.compare(version, self.version) <= 0:
+                # Strip prerelease from DB version to avoid lexicographic comparison bugs (#820)
+                if self.version is not None and semver.compare(version, _strip_prerelease(self.version)) <= 0:
                     for mig in migs:
                         dater = self.migs.get(keys=(mig,))
                         migrations.append((mig, dater))
@@ -1314,7 +1329,7 @@ class Baser(dbing.LMDBer):
         if quads := self.vrcs.get(keys=dgkey):
             atc.extend(Counter(code=Codens.TransReceiptQuadruples,
                                count=len(quads), version=kering.Vrsn_1_0).qb64b)
-            for pre, snu, diger, siger in quads:    # adapt to CESR 
+            for pre, snu, diger, siger in quads:    # adapt to CESR
                 atc.extend(pre.qb64b)
                 atc.extend(snu.qb64b)
                 atc.extend(diger.qb64b)
