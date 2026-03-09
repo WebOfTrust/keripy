@@ -12,8 +12,7 @@ import pytest
 from keri.kering import (ValidationError, UnverifiedReceiptError,
                          Ilks, TraitDex, Vrsn_1_0, Ilks, Kinds,
                          versify)
-from keri.app import habbing
-from keri.app.keeping import openKS, Manager
+from keri.app import habbing, openKS, Manager
 from keri.core import (Signer, Counter, Codens, eventing, parsing,
                        serdering, Salter, Diger, Matter, Cigar, Seqner,
                        Verfer, Prefixer, Number, Saider, Seqner,
@@ -26,8 +25,7 @@ from keri.core import (Signer, Counter, Codens, eventing, parsing,
                        incept, rotate, interact, receipt, query, delcept,
                        deltate, state, messagize)
 
-from keri.db.basing import openDB
-from keri.db.dbing import dgKey, snKey
+from keri.db import openDB, dgKey, snKey
 from keri.help import helping, ogler
 
 logger = ogler.getLogger()

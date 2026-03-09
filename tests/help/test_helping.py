@@ -135,7 +135,7 @@ def test_klasify():
     """
     Test klasify utility function
     """
-    from keri.core.coring import Dater, Seqner, Diger
+    from keri.core import Dater, Seqner, Diger
 
     dater = Dater(dts="2021-01-01T00:00:00.000000+00:00")
     assert dater.qb64 == '1AAG2021-01-01T00c00c00d000000p00c00'

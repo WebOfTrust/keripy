@@ -8,8 +8,7 @@ from base64 import urlsafe_b64decode as decodeB64
 
 from keri import Vrsn_2_0, Kinds, Protocols, Ilks
 from keri.core import (MtrDex, Salter, Labeler, Noncer, Mapper, Compactor, Aggor,
-                       Blinder, BlindState, BoundState, GenDex)
-from keri.core.eventing import incept
+                       Blinder, BlindState, BoundState, GenDex, incept)
 from keri.acdc import regcept, blindate, update, acdcmap
 
 
@@ -3588,5 +3587,3 @@ if __name__ == "__main__":
     test_acdc_aggregate_section_CESR()
     test_acdc_rule_section_JSON()
     test_acdc_examples_JSON()
-
-
