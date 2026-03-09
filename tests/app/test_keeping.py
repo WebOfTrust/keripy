@@ -18,9 +18,7 @@ from hio.base import doing
 
 from keri import kering, core
 from keri.help import helping
-
 from keri.core import coring, indexing, IdrDex
-
 from keri.app import keeping
 
 

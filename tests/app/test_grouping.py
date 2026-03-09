@@ -719,9 +719,9 @@ def test_multisig_incept_handler(mockHelpingNowUTC):
         assert len(notifier.signaler.signals) == 0
 
         esaid = exn.ked['e']['d']
-        saiders = hby.db.meids.get(keys=(esaid, ))
-        assert len(saiders) == 1
-        assert saiders[0].qb64 == exn.said
+        digers = hby.db.meids.get(keys=(esaid, ))
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn.said
         prefixers = hby.db.maids.get(keys=(esaid,))
         assert len(prefixers) == 1
         assert prefixers[0].qb64 == exn.pre
@@ -746,9 +746,9 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
         assert len(notifier.signaler.signals) == 1
 
         esaid = exn.ked['e']['d']
-        saiders = hby1.db.meids.get(keys=(esaid, ))
-        assert len(saiders) == 1
-        assert saiders[0].qb64 == exn.said
+        digers = hby1.db.meids.get(keys=(esaid, ))
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn.said
         prefixers = hby1.db.maids.get(keys=(esaid,))
         assert len(prefixers) == 1
         assert prefixers[0].qb64 == ghab2.mhab.pre
@@ -763,9 +763,9 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
         # There should still only be one notification because we don't notify for our own event
         assert len(notifier.signaler.signals) == 1
 
-        saiders = hby1.db.meids.get(keys=(esaid, ))
-        assert len(saiders) == 2
-        assert saiders[1].qb64 == exn.said
+        digers = hby1.db.meids.get(keys=(esaid, ))
+        assert len(digers) == 2
+        assert digers[1].qb64 == exn.said
         prefixers = hby1.db.maids.get(keys=(esaid,))
         assert len(prefixers) == 2
         assert prefixers[1].qb64 == ghab1.mhab.pre
@@ -788,9 +788,9 @@ def test_multisig_interact_handler(mockHelpingNowUTC):
 
         esaid = exn.ked['e']['d']
         assert len(notifier.signaler.signals) == 1
-        saiders = hby1.db.meids.get(keys=(esaid, ))
-        assert len(saiders) == 1
-        assert saiders[0].qb64 == exn.said
+        digers = hby1.db.meids.get(keys=(esaid, ))
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn.said
         prefixers = hby1.db.maids.get(keys=(esaid,))
         assert len(prefixers) == 1
         assert prefixers[0].qb64 == ghab2.mhab.pre

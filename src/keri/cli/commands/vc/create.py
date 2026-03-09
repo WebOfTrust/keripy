@@ -17,7 +17,7 @@ from ....vdr import credentialing, verifying
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Issue a verifiable credential', 
+parser = argparse.ArgumentParser(description='Issue a verifiable credential',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: issueCredential(args))
 parser.add_argument('--registry-name', '-r', help='Human readable name for registry, defaults to name of Habitat',
@@ -135,6 +135,9 @@ class CredentialIssuer(doing.DoDoer):
              private_subject_nonce (Optional[str]): nonce used for subject
 
         """
+        if schema is not None and schema == "":
+            raise kering.ConfigurationError("--schema value must not be empty.  Provide a valid qb64 SAID.")
+
         self.name = name
         self.registryName = registryName
         self.timestamp = timestamp

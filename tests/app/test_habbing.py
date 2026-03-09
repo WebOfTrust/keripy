@@ -20,9 +20,7 @@ from keri import core
 from keri.core import coring, eventing, parsing, serdering
 
 from keri.app import habbing, keeping, configing
-from keri.db import basing, dbing
-
-
+from keri.db import basing
 
 
 def test_habery():
@@ -1050,3 +1048,45 @@ if __name__ == "__main__":
     pass
     test_habery()
     # pytest.main(['-vv', 'test_habbing.py::test_habery_reconfigure'])
+
+
+def test_failed_rotation_rollback():
+    """Test that a failed rotation does not mutate key store state.
+
+    Reproduces issue #819: kli rotate with invalid parameters persists key
+    state to DB (via Manager.rotate) before event validation, leaving the
+    key store out of sync with the KEL when validation fails.
+    """
+    salt = core.Salter(raw=b'0123456789abcdef').qb64
+
+    with habbing.openHby(name="rollback-test", temp=True, salt=salt) as hby:
+        hab = hby.makeHab(name="rollback-test", isith="1", icount=1,
+                          ncount=1, nsith="1")
+
+        assert hab.kever.sn == 0
+        pre = hab.pre
+
+        # Snapshot key state before attempting rotation
+        ps_before = hab.mgr.ks.sits.get(pre)
+        old_pubs_new = list(ps_before.new.pubs)
+        old_pubs_nxt = list(ps_before.nxt.pubs)
+        old_ridx = ps_before.new.ridx
+
+        # Attempt rotation with isith too high for the number of keys.
+        # This should fail during event creation (eventing.rotate raises
+        # ValueError when tholder.size > len(keys)).
+        with pytest.raises(ValueError):
+            hab.rotate(isith="2")
+
+        # Key store state must be unchanged after the failed rotation
+        ps_after = hab.mgr.ks.sits.get(pre)
+        assert list(ps_after.new.pubs) == old_pubs_new
+        assert list(ps_after.nxt.pubs) == old_pubs_nxt
+        assert ps_after.new.ridx == old_ridx
+
+        # KEL sequence number must also be unchanged
+        assert hab.kever.sn == 0
+
+        # A subsequent valid rotation must still succeed
+        hab.rotate()
+        assert hab.kever.sn == 1

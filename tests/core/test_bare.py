@@ -174,6 +174,3 @@ def test_bare():
 if __name__ == "__main__":
     test_bare()
     # pytest.main(['-vv', 'test_reply.py::test_reply'])
-
-
-

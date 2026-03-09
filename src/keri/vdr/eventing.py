@@ -1674,7 +1674,7 @@ class Tevery:
         router.addRoute("/tsn/registry/{aid}", self, suffix="RegistryTxnState")
         router.addRoute("/tsn/credential/{aid}", self, suffix="CredentialTxnState")
 
-    def processReplyRegistryTxnState(self, *, serder, saider, route, cigars=None, tsgs=None, **kwargs):
+    def processReplyRegistryTxnState(self, *, serder, diger, route, cigars=None, tsgs=None, **kwargs):
         """ Process one reply message for key state = /tsn/registry
 
          Process one reply message for key state = /tsn/registry
@@ -1728,7 +1728,6 @@ class Tevery:
          }
 
          """
-        diger = saider  # Diger instance passed as saider by Router.dispatch()
         cigars = cigars if cigars is not None else []
         tsgs = tsgs if tsgs is not None else []
 
@@ -1815,7 +1814,7 @@ class Tevery:
         self.reger.txnsb.updateReply(aid=aid, serder=serder, diger=tdiger, dater=dater)
         self.cues.append(dict(kin="txnStateSaved", record=rsr))
 
-    def processReplyCredentialTxnState(self, *, serder, saider, route, cigars=None, tsgs=None, **kwargs):
+    def processReplyCredentialTxnState(self, *, serder, diger, route, cigars=None, tsgs=None, **kwargs):
         """ Process one reply message for key state = /tsn/registry
 
          Process one reply message for key state = /tsn/registry
@@ -1860,7 +1859,6 @@ class Tevery:
          }
 
          """
-        diger = saider  # Diger instance passed as saider by Router.dispatch()
         cigars = cigars if cigars is not None else []
         tsgs = tsgs if tsgs is not None else []
 

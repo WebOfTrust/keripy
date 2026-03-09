@@ -314,16 +314,16 @@ class Oobiery:
         """
         router.addRoute("/introduce", self)
 
-    def processReply(self, *, serder, saider, route, cigars=None, tsgs=None, **kwargs):
+    def processReply(self, *, serder, diger, route, cigars=None, tsgs=None, **kwargs):
         """
         Process one reply message for route = /introduce
         with either attached nontrans receipt couples in cigars or attached trans
         indexed sig groups in tsgs.
-        Assumes already validated saider, dater, and route from serder.ked
+        Assumes already validated diger, dater, and route from serder.ked
 
         Parameters:
             serder (SerderKERI): instance of reply msg (SAD)
-            saider (Diger): instance from said in serder (SAD)
+            diger (Diger): instance from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
                           signature in .raw and public key in .verfer
@@ -377,7 +377,7 @@ class Oobiery:
             raise ConfigurationError("this oobiery is not configured to handle rpy introductions")
 
         # Process BADA RUN but with no previous reply message, always process introductions
-        accepted = self.rvy.acceptReply(serder=serder, saider=saider, route=route,
+        accepted = self.rvy.acceptReply(serder=serder, saider=diger, route=route,
                                         aid=aid, osaider=None, cigars=cigars,
                                         tsgs=tsgs)
         if not accepted:

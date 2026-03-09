@@ -1792,5 +1792,3 @@ if __name__ == "__main__":
     test_counter_class()
     test_counter_v1()
     test_counter_v2()
-
-

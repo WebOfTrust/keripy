@@ -72,7 +72,7 @@ class Counselor(doing.DoDoer):
         Parameters:
             prefixer (Prefixer): qb64 identifier prefix of event to check
             number (Number): sequence number of event to check
-            saider (Saider): optional digest of event to verify
+            diger (Diger): optional digest of event to verify
 
         Returns:
 
@@ -82,7 +82,7 @@ class Counselor(doing.DoDoer):
             return False
         else:
             if diger and (cdiger.qb64 != diger.qb64):
-                raise kering.ValidationError(f"invalid multisig protocol escrowed event {cdiger.qb64}-{diger.qb64}")
+                raise ValidationError(f"invalid multisig protocol escrowed event {cdiger.qb64}-{diger.qb64}")
 
         return True
 
@@ -692,11 +692,11 @@ class Multiplexor:
                 self.notifier.add(attrs=data)
 
     def get(self, esaid):
-        saiders = self.hby.db.meids.get(keys=(esaid,))
+        digers = self.hby.db.meids.get(keys=(esaid,))
 
         exns = []
-        for saider in saiders:
-            exn, paths = exchanging.cloneMessage(hby=self.hby, said=saider.qb64)
+        for diger in digers:
+            exn, paths = exchanging.cloneMessage(hby=self.hby, said=diger.qb64)
             exns.append(dict(
                 exn=exn.ked,
                 paths={k: path.decode("utf-8") for k, path in paths.items()},
