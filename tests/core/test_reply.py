@@ -15,7 +15,7 @@ from keri import help, Vrsn_1_0, Roles, Schemes
 
 from keri.core import Salter, eventing, parsing, routing, MtrDex
 
-from keri.app import habbing, keeping
+from keri.app import habbing
 from keri.kering import Roles
 from keri.recording import EndpointRecord, LocationRecord
 

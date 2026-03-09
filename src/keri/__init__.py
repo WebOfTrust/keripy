@@ -3,7 +3,7 @@
 __version__ = '2.0.0-dev5'  # also change in setup.py
 
 from .kering import (Vrsn_1_0, Vrsn_2_0, Kinds, Protocols, Schemes, Rever,
-                     Colds, Ilks, ColdDex, Roles, TraitDex, Version,
+                     Colds, Ilks, ColdDex, Roles, TraitDex, Version, MaxON,
                      VER1FULLSPAN, VER1TERM, VEREX1, VEREX,
                      VER2FULLSPAN, VER2TERM, VEREX2, MAXVERFULLSPAN,
                      sniff, rematch, versify, deversify, smell,

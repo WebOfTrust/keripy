@@ -4,9 +4,7 @@ import multicommand
 import pytest
 
 
-from keri.kering import ValidationError
-
-from keri import core
+from keri import core, ValidationError
 from keri.core import coring
 
 from keri.app import directing

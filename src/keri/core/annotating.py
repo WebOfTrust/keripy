@@ -4,8 +4,6 @@ keri.core.annotating module
 
 Provides support for Annotater
 """
-from collections import namedtuple
-
 from ..kering import (sniff, Colds, Ilks, IlkError,
                       ExtractionError, ColdStartError)
 from .coring import (Verser, Ilker, Diger, Prefixer, Number, Tholder,

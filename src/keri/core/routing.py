@@ -10,10 +10,11 @@ import re
 
 from hio.help import decking
 
+from ..db import fetchTsgs
 from ..help import helping, ogler
-from ..kering import ConfigurationError, UnverifiedReplyError, ValidationError
+from .. import ConfigurationError, UnverifiedReplyError, ValidationError
 from .coring import Dater, Diger, Ilks
-from .eventing import fetchTsgs, validateSigs
+from .eventing import validateSigs
 
 logger = ogler.getLogger()
 

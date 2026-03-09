@@ -8,27 +8,21 @@ import os
 import platform
 import tempfile
 from dataclasses import dataclass, asdict
-import subprocess
 
 import pytest
 
 import lmdb
 from hio.base import doing
-from keri import core
+
+from keri import core, Kinds, versify
 from keri.app import habbing
-from keri.core import coring, eventing, serdering, signing, indexing
-from keri.core.coring import Kinds, versify, Seqner, Diger, Number, NumDex
-from keri.core.eventing import incept, rotate, interact, Kever
-from keri.core.serdering import Serder
-from keri.core.signing import Signer
-from keri.db import basing
-from keri.db import dbing
-from keri.db import subing
-from keri.db.basing import openDB, Baser
-from keri.db.dbing import (dgKey, onKey, snKey)
-from keri.db.dbing import openLMDB
-from keri.help.helping import datify, dictify
-from keri.recording import (EventSourceRecord, HabitatRecord, KeyStateRecord,
+from keri.core import (Seqner, Diger, Number, Kever, Serder, Signer,
+                       coring, eventing, serdering, signing, indexing,
+                       incept, rotate, interact)
+from keri.db import (Baser, basing, subing,
+                     openDB, dgKey, snKey, openLMDB)
+from keri.help import datify, dictify
+from keri.recording import (EventSourceRecord, KeyStateRecord,
                             OobiRecord, RawRecord, StateEERecord)
 # this breaks when running as __main__ better to do a custom import call to
 # walk the directory tree and import explicity rather than depend on it

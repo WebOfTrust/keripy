@@ -5,28 +5,17 @@ tests.db.dbing module
 """
 import platform
 import tempfile
-
 import pytest
-
 import os
-import json
-import datetime
-
 import lmdb
-from  ordered_set import OrderedSet as oset
-
-from hio.base import doing
 
 from keri.db import dbing
-from keri.db.dbing import clearDatabaserDir, openLMDB
-from keri.db.dbing import (dgKey, onKey, fnKey, snKey, dtKey, splitKey,
-                           splitOnKey, splitKeyFN, splitSnKey, splitKeyDT)
-from keri.db.dbing import LMDBer
+from keri.db.dbing import (LMDBer, dgKey, onKey, openLMDB,
+                           snKey, dtKey, splitKey,
+                           splitOnKey, splitKeyDT, splitSnKey)
 
-
-
-from keri.core.eventing import incept, rotate, interact, Kever, Kevery
 from keri.help import helping
+
 
 def test_key_funcs():
     """
