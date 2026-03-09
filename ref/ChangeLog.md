@@ -8,6 +8,8 @@ Changes to call signatures that will break dependent libraries
 Changed `complete(self, prefixer, seqner, saider=None)` to `complete(self, prefixer, number, diger=None)`.
 Renamed `seqner` and `saider` parameter to `number` and `diger` to match the actual type (`Number`, `Diger`) being
 passed. All callers functions in `test_grouping.py` are updated.
+Fixed stale docstring in `complete()`: `saider (Saider)` → `diger (Diger)`.
+Renamed `saiders`/`saider` → `digers`/`diger` local variables in `Counselor.get()` (meids sub-DB returns Diger instances).
 
 ## 2.0.0-dev5
 ### Backwards breaking interface changes
@@ -96,7 +98,3 @@ from keri.core import Streamer still works.
 moved Tierage and Tiers defintions from keri.core.coring to keri.core.signing
 where they more naturally belong (not used in coring)
 from keri.core import Tiers still works
-
-
-
-
