@@ -6,7 +6,6 @@ from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri import core
 from keri.core import  eventing, parsing
 from keri.core import MtrDex
-from keri.core.coring import Seqner
 
 from keri.core.eventing import (incept, rotate, interact, messagize, SealEvent, receipt)
 

@@ -12,7 +12,7 @@ import msgpack
 
 from .coring import MtrDex, Kinds, Saider, Saids, dumps
 from ..help import ogler
-from ..kering import ValidationError, DeserializeError
+from .. import ValidationError, DeserializeError
 
 logger = ogler.getLogger()
 

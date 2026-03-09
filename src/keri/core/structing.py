@@ -9,8 +9,8 @@ from collections import namedtuple
 from collections.abc import Mapping
 from dataclasses import dataclass, astuple
 
-from ..kering import (Colds, ValidationError, InvalidValueError,
-                      EmptyMaterialError)
+from .. import (Colds, ValidationError,
+                InvalidValueError, EmptyMaterialError)
 from ..help import isNonStringSequence
 
 from .coring import (IceMapDom, Diger, DigDex, Prefixer, Number, Verser,

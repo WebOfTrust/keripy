@@ -23,7 +23,7 @@ from ....vdr import credentialing, verifying
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='List credentials and check mailboxes for any newly issued credentials', 
+parser = argparse.ArgumentParser(description='List credentials and check mailboxes for any newly issued credentials',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: list_credentials(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
@@ -61,6 +61,10 @@ class ListDoer(doing.DoDoer):
         self.poll = poll
         self.said = said
         self.issued = issued
+
+        if schema is not None and schema == "":
+            raise kering.ConfigurationError("--schema value must not be empty.  Provide a valid qb64 SAID.")
+
         self.schema = schema
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)

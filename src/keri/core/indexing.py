@@ -14,8 +14,8 @@ from ..kering import (EmptyMaterialError, RawMaterialError, InvalidCodeSizeError
                       ShortageError, UnexpectedCodeError,
                       UnexpectedCountCodeError, UnexpectedOpCodeError)
 
-from ..help.helping import (sceil, intToB64, b64ToInt,
-                            codeB64ToB2, codeB2ToB64, nabSextets)
+from ..help import (sceil, intToB64, b64ToInt,
+                    codeB64ToB2, codeB2ToB64, nabSextets)
 
 
 @dataclass(frozen=True)

@@ -14,7 +14,6 @@ from keri.app import habbing
 from keri.app.keeping import SaltyCreator
 
 
-
 def test_remote_salty_hab():
     name = "test"
     tier = core.Tiers.low

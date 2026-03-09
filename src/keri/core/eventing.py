@@ -22,20 +22,20 @@ from ..kering import (MissingEntryError, UntrustedKeyStateSource,
                       QueryNotFoundError, MisfitEventSourceError,
                       MissingDelegableApprovalError, Version, Versionage,
                       TraitDex, Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Ilks)
+
 from ..help import helping, ogler, nowIso8601
 
-from .coring import (versify, Kinds, Ilks, PreDex, DigDex, Kinds,
+from .coring import (versify, Kinds, PreDex, DigDex, Kinds,
                      NonTransDex, NumDex, Prefixer, Seqner, Diger,
-                     Number, Seqner, Cigar, Dater, Noncer, versify,
+                     Number, Seqner, Cigar, Dater, Noncer,
                      Verfer, Diger, Prefixer, Tholder)
+
 from .counting import Counter, Codens
 from .structing import (SealEvent, SealLast, StateEstEvent)
 from .indexing import Siger
 from .serdering import SerderKERI
 
-from . import serdering
-
-from ..db import Baser, dgKey, snKey, fetchTsgs
+from ..db import Baser, dgKey, snKey
 from ..recording import (EndpointRecord, EventSourceRecord, KeyStateRecord,
                          LocationRecord, OobiRecord, ObservedRecord,
                          StateEERecord)
@@ -298,7 +298,6 @@ def deTransReceiptQuintuple(data, strip=False):
     return ediger, sprefixer, snumber, sdiger, siger
 
 
-
 def verifySigs(raw, sigers, verfers):
     """
     Returns tuple of (vsigers, vindices) where:
@@ -391,6 +390,7 @@ def validateSigs(serder, sigers, verfers, tholder):
     valid = tholder.satisfy(indices)
 
     return (sigers, valid)
+
 
 def state(pre,
           sn,
@@ -546,6 +546,7 @@ def state(pre,
                di=dpre if dpre is not None else "",
                )
     return ksr  # return KeyStateRecord  use asdict(ksr) to get dict version
+
 
 # should remove intive as its not standard KERI so confusing and leads to errors
 # this is an old feature that is now deprecated.
@@ -898,7 +899,6 @@ def deltate(pre,
 
     """
     return rotate(pre=pre, keys=keys, dig=dig, ilk=ilk, **kwa)
-
 
 
 def interact(pre,
@@ -1374,7 +1374,6 @@ def bare(pre="",
     return serder
 
 
-
 def exchept(sender="",
             receiver="",
             route="",
@@ -1580,7 +1579,6 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
 
     msg.extend(atc)
     return msg
-
 
 
 class Kever:
@@ -3772,7 +3770,6 @@ class Kever:
         return None
 
 
-
 class Kevery:
     """
     Kevery (Key Event Message Processing Facility) processes an incoming
@@ -4613,16 +4610,16 @@ class Kevery:
         router.addRoute("/watcher/{aid}/{action}", self, suffix="AddWatched")
 
 
-    def processReplyEndRole(self, *, serder, saider, route, cigars=None, tsgs=None, **kwargs):
+    def processReplyEndRole(self, *, serder, diger, route, cigars=None, tsgs=None, **kwargs):
         """
         Process one reply message for route = /end/role/add or /end/role/cut
         with either attached nontrans receipt couples in cigars or attached trans
         indexed sig groups in tsgs.
-        Assumes already validated saider, dater, and route from serder.ked
+        Assumes already validated diger, dater, and route from serder.ked
 
         Parameters:
             serder (SerderKERI): instance of reply msg (SAD)
-            saider (Diger): instance from said in serder (SAD)
+            diger (Diger): instance from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
                           signature in .raw and public key in .verfer
@@ -4694,10 +4691,10 @@ class Kevery:
         aid = cid  # authorizing attribution id
         keys = (aid, role, eid)
         osaider = self.db.eans.get(keys=keys)  # get old said if any
-        if osaider is not None and osaider.qb64b == saider.qb64b: # check idempotent
+        if osaider is not None and osaider.qb64b == diger.qb64b: # check idempotent
             osaider = None
         # BADA Logic
-        accepted = self.rvy.acceptReply(serder=serder, saider=saider, route=route,
+        accepted = self.rvy.acceptReply(serder=serder, saider=diger, route=route,
                                         aid=aid, osaider=osaider, cigars=cigars,
                                         tsgs=tsgs)
         if not accepted:
@@ -4706,20 +4703,20 @@ class Kevery:
             logger.debug(f"Event=\n%s\n", serder.pretty())
             raise UnverifiedReplyError(msg)
 
-        self.updateEnd(keys=keys, saider=saider, allowed=allowed)  # update .eans and .ends
+        self.updateEnd(keys=keys, saider=diger, allowed=allowed)  # update .eans and .ends
 
 
-    def processReplyLocScheme(self, *, serder, saider, route,
+    def processReplyLocScheme(self, *, serder, diger, route,
                               cigars=None, tsgs=None):
         """
         Process one reply message for route = /loc/scheme with either
         attached nontrans receipt couples in cigars or attached trans indexed
         sig groups in tsgs.
-        Assumes already validated saider, dater, and route from serder.ked
+        Assumes already validated diger, dater, and route from serder.ked
 
         Parameters:
             serder (SerderKERI): instance of reply msg (SAD)
-            saider (Diger): instance from said in serder (SAD)
+            diger (Diger): instance from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
                           signature in .raw and public key in .verfer
@@ -4798,7 +4795,7 @@ class Kevery:
         keys = (aid, scheme)
         osaider = self.db.lans.get(keys=keys)  # get old said if any
         # BADA Logic
-        accepted = self.rvy.acceptReply(serder=serder, saider=saider, route=route,
+        accepted = self.rvy.acceptReply(serder=serder, saider=diger, route=route,
                                       aid=aid, osaider=osaider, cigars=cigars,
                                       tsgs=tsgs)
         if not accepted:
@@ -4807,21 +4804,21 @@ class Kevery:
             logger.debug("Event Body=\n%s\n", serder.pretty())
             raise UnverifiedReplyError(msg)
 
-        self.updateLoc(keys=keys, saider=saider, url=url)  # update .lans and .locs
+        self.updateLoc(keys=keys, saider=diger, url=url)  # update .lans and .locs
 
 
-    def processReplyKeyStateNotice(self, *, serder, saider, route,
+    def processReplyKeyStateNotice(self, *, serder, diger, route,
                                    cigars=None, tsgs=None, **kwa):
         """ Process one reply message for key state = /ksn
 
         Process one reply message for key state = /ksn
         with either attached nontrans receipt couples in cigars or attached trans
         indexed sig groups in tsgs.
-        Assumes already validated saider, dater, and route from serder.ked
+        Assumes already validated diger, dater, and route from serder.ked
 
         Parameters:
             serder (SerderKERI): instance of reply msg (SAD)
-            saider (Diger): instance from said in serder (SAD)
+            diger (Diger): instance from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
                           signature in .raw and public key in .verfer
@@ -4916,14 +4913,14 @@ class Kevery:
         dater = Dater(dts=ksr.dt)
 
         # BADA Logic
-        accepted = self.rvy.acceptReply(serder=serder, saider=saider, route=route,
+        accepted = self.rvy.acceptReply(serder=serder, saider=diger, route=route,
                                         aid=aid, osaider=osaider, cigars=cigars,
                                         tsgs=tsgs)
         if not accepted:
             raise UnverifiedReplyError(f"Unverified key state notice reply. {serder.ked}")
 
         ldig = self.db.kels.getOnLast(keys=pre, on=sn)  # retrieve dig of last event at sn.
-        diger = Diger(qb64=ksr.d)
+        ksr_diger = Diger(qb64=ksr.d)
 
         # Only accept key state if for last seen version of event at sn
         if ldig is not None:  # escrow because event does not yet exist in database
@@ -4931,10 +4928,10 @@ class Kevery:
             # retrieve last event itself of signer given sdig
             sserder = self.db.evts.get(keys=(pre, ldig))
             # assumes db ensures that sserder must not be none because sdig was in KE
-            if not sserder.compare(said=diger.qb64b):  # mismatch events problem with replay
+            if not sserder.compare(said=ksr_diger.qb64b):  # mismatch events problem with replay
                 raise ValidationError(f"Mismatch keystate at sn = {int(ksr.s,16)} with db.")
 
-        self.updateKeyState(aid=aid, ksr=ksr, saider=diger, dater=dater)
+        self.updateKeyState(aid=aid, ksr=ksr, saider=ksr_diger, dater=dater)
         self.cues.push(dict(kin="keyStateSaved", ksn=asdict(ksr)))
 
 
@@ -5004,18 +5001,18 @@ class Kevery:
             self.db.kdts.rem(keys=keys)
 
 
-    def processReplyAddWatched(self, *, serder, saider, route,
+    def processReplyAddWatched(self, *, serder, diger, route,
                                cigars=None, tsgs=None, **kwa):
         """ Process one reply message for adding an AID for a watcher to watch
 
         Process one reply message for adding an AID for a watcher to watch = /watcher/{aid}/add
         with either attached nontrans receipt couples in cigars or attached trans
         indexed sig groups in tsgs.
-        Assumes already validated saider, dater, and route from serder.ked
+        Assumes already validated diger, dater, and route from serder.ked
 
         Parameters:
             serder (SerderKERI): instance of reply msg (SAD)
-            saider (Diger): instance from said in serder (SAD)
+            diger (Diger): instance from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
                           signature in .raw and public key in .verfer
@@ -5071,7 +5068,7 @@ class Kevery:
         osaider = self.db.wwas.get(keys=keys)  # get old said if any
 
         # BADA Logic
-        accepted = self.rvy.acceptReply(serder=serder, saider=saider, route=route,
+        accepted = self.rvy.acceptReply(serder=serder, saider=diger, route=route,
                                         aid=cid, osaider=osaider, cigars=cigars,
                                         tsgs=tsgs)
         if not accepted:
@@ -5079,7 +5076,7 @@ class Kevery:
 
         if oobi:
             self.db.oobis.pin(keys=(oobi,), val=OobiRecord(date=nowIso8601()))
-        self.updateWatched(keys=keys, saider=saider, enabled=enabled)
+        self.updateWatched(keys=keys, saider=diger, enabled=enabled)
 
     def updateWatched(self, keys, saider, enabled=None):
         """

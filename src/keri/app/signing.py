@@ -4,10 +4,9 @@ KERI
 keri.app.signing module
 
 """
-from ..kering import Vrsn_1_0
+from .. import Vrsn_1_0
 from .habbing import GroupHab
 from ..core import Pather, Counter, Seqner, Diger, Codens
-
 
 
 def serialize(creder, prefixer, seqner, saider):
