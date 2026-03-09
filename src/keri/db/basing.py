@@ -64,8 +64,7 @@ class komerdict(dict):
 '''
 
 
-# ToDo XXXX change name to statedict since not a generic dbdict
-class dbdict(dict):
+class statedict(dict):
     """
     Subclass of dict that has db as attribute and employs read through cache
     from db Baser.stts of kever states to reload kever from state in database
@@ -74,12 +73,12 @@ class dbdict(dict):
     __slots__ = ('db')  # no .__dict__ just for db reference
 
     def __init__(self, *pa, **kwa):
-        super(dbdict, self).__init__(*pa, **kwa)
+        super(statedict, self).__init__(*pa, **kwa)
         self.db = None
 
     def __getitem__(self, k):
         try:
-            return super(dbdict, self).__getitem__(k)
+            return super(statedict, self).__getitem__(k)
         except KeyError as ex:
             if not self.db:
                 raise ex  # reraise KeyError
@@ -94,7 +93,7 @@ class dbdict(dict):
             return kever
 
     def __contains__(self, k):
-        if not super(dbdict, self).__contains__(k):
+        if not super(statedict, self).__contains__(k):
             try:
                 self.__getitem__(k)
                 return True
@@ -114,7 +113,7 @@ class dbdict(dict):
             kever: converted from underlying dict or database
 
         """
-        if not super(dbdict, self).__contains__(k):
+        if not super(statedict, self).__contains__(k):
             return default
         else:
             return self.__getitem__(k)
@@ -518,7 +517,7 @@ class Baser(dbing.LMDBer):
             such as .wits etc
 
     Properties:
-        kevers (dbdict): read through cache of kevers of states for KELs in db
+        kevers (statedict): read through cache of kevers of states for KELs in db
 
     """
 
@@ -542,7 +541,7 @@ class Baser(dbing.LMDBer):
         """
         self.prefixes = oset()  # should change to hids for hab ids
         self.groups = oset()  # group hab ids
-        self._kevers = dbdict()
+        self._kevers = statedict()
         self._kevers.db = self  # assign db for read through cache of kevers
 
         if (mapSize := os.getenv(KERIBaserMapSizeKey)) is not None:
