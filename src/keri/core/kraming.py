@@ -60,7 +60,8 @@ class Kramer:
         self.cf = cf if cf else None
 
         # Load config once at init, inject into runtime state
-        kram = self._getKramCf()
+        config = self.cf.get()
+        kram = config.get('kram', {})
 
         self._enabled = kram.get('enabled', False)
 
@@ -68,12 +69,15 @@ class Kramer:
         self._denials = self._compactDenials(self._fullDenials)
 
         self._ctypCf = kram.get('caches', {})
-        self._populateCtyp(self._ctypCf)
+        # Prepopulate ctyp cache with configured values
+        ctypCf = self._ctypCf
+        for key, val in ctypCf.items():
+            try:
+                record = CacheTypeRecord(*map(int, val))
+                self.db.ctyp.pin(key, record)
+            except Exception as e:
+                raise kering.KramConfigurationError(f"Invalid cache configuration for {key}, {val}: {e}")
 
-    def _getKramCf(self):
-        """Get the kram config dict"""
-        config = self.cf.get()
-        return config.get('kram', {})
 
     @staticmethod
     def _compactDenials(fullDenials):
@@ -108,15 +112,6 @@ class Kramer:
             except Exception as e:
                 raise kering.KramConfigurationError(f"Invalid denial for {denial}: {e}")
         return compact
-
-    def _populateCtyp(self, ctypCf):
-        """Prepopulate ctyp cache with configured values"""
-        for key, val in ctypCf.items():
-            try:
-                record = CacheTypeRecord(*map(int, val))
-                self.db.ctyp.pin(key, record)
-            except Exception as e:
-                raise kering.KramConfigurationError(f"Invalid cache configuration for {key}, {val}: {e}")
 
     @property
     def enabled(self):
