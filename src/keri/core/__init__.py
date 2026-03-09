@@ -23,6 +23,7 @@ from .eventing import (simple, ample, deWitnessCouple, deReceiptCouple,
                        exchept, exchange, messagize, Kever, Kevery, LastEstLoc)
 from .indexing import (Indexer, Siger, Xizage, IdrDex, IdxSigDex, IdxCrtSigDex,
                        IdxBthSigDex)
+from .kraming import Kramer, AuthTypes
 from .mapping import Mapper, EscapeDex, Compactor, Aggor
 from .parsing import Parser
 from .routing import Router, Revery, Route, compile_uri_template

@@ -7,12 +7,12 @@ processMsg on Kevery.
 
 import pytest
 
-from keri import core, kering
-from keri.kering import Vrsn_1_0, Vrsn_2_0
+from keri import core, kering, Vrsn_1_0, Vrsn_2_0
 from keri.core import eventing, parsing, coring, Verser
 from keri.core.kraming import Kramer, AuthTypes
 from keri.app import habbing, configing
 from keri.db import basing
+from keri.peer import exchanging
 from keri.recording import TxnMsgCacheRecord
 from keri.help import helping
 
@@ -1332,5 +1332,48 @@ def test_transactioned(mockHelpingNowUTC):
             # Partials cleaned up
             assert receiverHby.db.pmkm.get(keys=partialKey) is None
             assert receiverHby.db.pmks.get(keys=partialKey) == []
+
+
+            # Step 8: exc happy path
+
+            exc = exchanging.Exchanger(hby=receiverHby, handlers=[])
+            kvyWithExc = eventing.Kevery(db=receiverHby.db, lax=False, local=False,
+                                         kramer=kramer, exc=exc)
+            assert kvyWithExc.exc is exc
+
+            # Seed a fresh xip via kramit directly (processMsg rejects xip ilk)
+            xip8 = eventing.exchept(sender=skHab.pre,
+                                    receiver=receiverHab.pre,
+                                    route="/test/exchange",
+                                    stamp=stamp)
+            sigers8 = skHab.mgr.sign(ser=xip8.raw,
+                                     verfers=skHab.kever.verfers,
+                                     indexed=True)
+            assert kramer.kramit(xip8, **dict(ssgs=[(skPrefixer, sigers8)])) is not None
+
+            exn8 = eventing.exchange(sender=skHab.pre,
+                                     receiver=receiverHab.pre,
+                                     xid=xip8.said,
+                                     route="/test/exchange",
+                                     attributes=dict(n='5h'),
+                                     stamp=stamp)
+
+            # Sign exn8 for both KRAM (ssgs) and downstream exn handler (tsgs)
+            sigers8 = skHab.mgr.sign(ser=exn8.raw,
+                                     verfers=skHab.kever.verfers,
+                                     indexed=True)
+            skKever = receiverHby.db.kevers[skHab.pre]
+            tsg8 = (skPrefixer,
+                    coring.Seqner(sn=skKever.sner.num),
+                    coring.Saider(qb64=skKever.serder.said),
+                    sigers8)
+
+            kvyWithExc.processMsg(exn8,
+                                  **dict(ssgs=[(skPrefixer, sigers8)],
+                                         tsgs=[tsg8]))
+
+            cache = receiverHby.db.tmsc.get(keys=(skHab.pre, xip8.said, exn8.said))
+            assert cache is not None
+            assert cache.mdt == stamp
 
     """Done Test"""
