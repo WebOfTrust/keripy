@@ -928,6 +928,17 @@ class Baser(dbing.LMDBer):
         # KRAM partially signed multi-key sender key state key (AID.MID) mapped to SN and event SAID
         self.pmsk = subing.CatCesrSuber(db=self, subkey='pmsk.', klas=(coring.Number, coring.Diger))
 
+        # KRAM partially signed multi-key non-authenticator attachments
+
+        # -O## First seen replay couples (seqner, dater) from frcs
+        self.pmao = subing.CatCesrIoSetSuber(db=self, subkey='pmao.', klas=(coring.Seqner, coring.Dater))
+
+        # -P## Pathed streams (raw bytes) from ptds
+        self.pmap = subing.IoSetSuber(db=self, subkey='pmap.')
+
+        # -W## Typed digest seal couples (verser, diger) from tdcs
+        self.pmaw = subing.CatCesrIoSetSuber(db=self, subkey='pmaw.', klas=(coring.Verser, coring.Diger))
+
         self.reload()
 
         return self.env

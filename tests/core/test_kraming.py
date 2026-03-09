@@ -1335,7 +1335,7 @@ def test_transactioned(mockHelpingNowUTC):
                 kvy.processMsg(mkExn, **kwa)
 
             # Partials persist until pruner cleans up (not deleted on threshold)
-            assert receiverHby.db.pmkm.get(keys=partialKey) is None
+            assert receiverHby.db.pmkm.get(keys=partialKey) is not None
             pmks = receiverHby.db.pmks.get(keys=partialKey)
             assert len(pmks) >= 2
 
@@ -1424,5 +1424,249 @@ def test_transactioned(mockHelpingNowUTC):
             cache = receiverHby.db.tmsc.get(keys=(skHab.pre, xip8.said, exn8.said))
             assert cache is not None
             assert cache.mdt == stamp
+
+    """Done Test"""
+
+
+def test_non_auth_attachments_stored(mockHelpingNowUTC):
+    """Test that non-authenticator attachments (frcs, ptds, tdcs) are stored
+    in their respective partial databases during multi-key accumulation and
+    are retrievable after threshold satisfaction.
+
+    Covers: pmao (frcs), pmap (ptds), pmaw (tdcs) populated on partial
+    delivery, idempotency on re-delivery, persistence after threshold met.
+    """
+
+    salt1 = core.Salter(raw=b'0123456789abcdef').qb64
+    salt2 = core.Salter(raw=b'0123456789abcdeg').qb64
+
+    with (habbing.openHby(name="naaSender", base="test", salt=salt1) as senderHby,
+          habbing.openHby(name="naaReceiver", base="test", salt=salt2) as receiverHby):
+
+        # Multi-key sender
+        senderHab = senderHby.makeHab(name="naaSender", isith='2', icount=3,
+                                      transferable=True)
+        assert len(senderHab.kever.verfers) == 3
+
+        receiverHby.makeHab(name="naaReceiver", isith='1', icount=1,
+                            transferable=True)
+
+        crossKvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+        senderIcp = senderHab.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+        assert senderHab.pre in crossKvy.kevers
+
+        with configing.openCF(name="naaKram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False,
+                                  kramer=kramer)
+
+            stamp = helping.nowIso8601()
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+
+            msg = eventing.query(pre=senderHab.pre,
+                                 route="ksn",
+                                 query=dict(i=senderHab.pre, src=senderHab.pre),
+                                 stamp=stamp,
+                                 pvrsn=Vrsn_2_0)
+
+            allSigers = senderHab.mgr.sign(ser=msg.raw,
+                                           verfers=senderHab.kever.verfers,
+                                           indexed=True)
+
+            partialKey = (senderHab.pre, msg.said)
+
+            # Build non-auth attachments to include in kwa
+
+            # frcs: first seen replay couple (seqner, dater)
+            firner = coring.Seqner(sn=0)
+            dater = coring.Dater(dts=stamp)
+            frcs = [(firner, dater)]
+
+            # ptds: pathed stream (raw bytes)
+            ptds = [b'\x00\x01\x02\x03']
+
+            # tdcs: typed digest seal couple (verser, diger)
+            verser = coring.Verser(pvrsn=Vrsn_2_0)
+            diger = coring.Diger(ser=msg.raw)
+            tdcs = [(verser, diger)]
+
+
+            # First delivery with 1 sig (below threshold) + non-auth attachments
+
+            kwa = dict(ssgs=[(prefixer, [allSigers[0]])],
+                       frcs=frcs, ptds=ptds, tdcs=tdcs)
+            kvy.processMsg(msg, **kwa)
+
+            # Threshold not met, partials populated
+            assert receiverHby.db.pmkm.get(keys=partialKey) is not None
+            pmks = receiverHby.db.pmks.get(keys=partialKey)
+            assert len(pmks) == 1
+
+            # Non-auth attachment dbs populated
+            pmao = receiverHby.db.pmao.get(keys=partialKey)
+            assert pmao is not None
+            assert len(pmao) == 1
+
+            pmap = receiverHby.db.pmap.get(keys=partialKey)
+            assert pmap is not None
+            assert len(pmap) == 1
+
+            pmaw = receiverHby.db.pmaw.get(keys=partialKey)
+            assert pmaw is not None
+            assert len(pmaw) == 1
+
+            assert len(kvy.cues) == 0
+
+
+            # Re-delivery of same non-auth attachments is idempotent
+
+            kvy.processMsg(msg, **kwa)
+
+            pmao_after = receiverHby.db.pmao.get(keys=partialKey)
+            assert len(pmao_after) == 1  # no duplicate added
+
+            pmap_after = receiverHby.db.pmap.get(keys=partialKey)
+            assert len(pmap_after) == 1
+
+            pmaw_after = receiverHby.db.pmaw.get(keys=partialKey)
+            assert len(pmaw_after) == 1
+
+
+            # Second delivery with 2nd sig meets threshold
+            # Non-auth attachments should persist (pruner responsibility)
+
+            kwa2 = dict(ssgs=[(prefixer, [allSigers[2]])],
+                        frcs=frcs, ptds=ptds, tdcs=tdcs)
+            kvy.processMsg(msg, **kwa2)
+
+            # Threshold met, cue generated
+            assert len(kvy.cues) > 0
+            cue = kvy.cues.popleft()
+            assert cue["kin"] == "reply"
+
+            # Non-auth attachments persist (pruner cleans up, not kramit)
+            assert receiverHby.db.pmao.get(keys=partialKey) is not None
+            assert receiverHby.db.pmap.get(keys=partialKey) is not None
+            assert receiverHby.db.pmaw.get(keys=partialKey) is not None
+
+    """Done Test"""
+
+
+def test_non_auth_attachments_empty_kwa(mockHelpingNowUTC):
+    """Test that _storeNonAuthAttachments is a no-op when kwa contains no
+    non-auth attachment keys. Partial dbs remain empty.
+    """
+
+    salt1 = core.Salter(raw=b'0123456789abcdef').qb64
+    salt2 = core.Salter(raw=b'0123456789abcdeg').qb64
+
+    with (habbing.openHby(name="naesSender", base="test", salt=salt1) as senderHby,
+          habbing.openHby(name="naesReceiver", base="test", salt=salt2) as receiverHby):
+
+        senderHab = senderHby.makeHab(name="naesSender", isith='2', icount=3,
+                                      transferable=True)
+        receiverHby.makeHab(name="naesReceiver", isith='1', icount=1,
+                            transferable=True)
+
+        crossKvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+        senderIcp = senderHab.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+
+        with configing.openCF(name="naesKram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False,
+                                  kramer=kramer)
+
+            stamp = helping.nowIso8601()
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+
+            msg = eventing.query(pre=senderHab.pre,
+                                 route="ksn",
+                                 query=dict(i=senderHab.pre, src=senderHab.pre),
+                                 stamp=stamp,
+                                 pvrsn=Vrsn_2_0)
+
+            allSigers = senderHab.mgr.sign(ser=msg.raw,
+                                           verfers=senderHab.kever.verfers,
+                                           indexed=True)
+
+            partialKey = (senderHab.pre, msg.said)
+
+
+            # Partial delivery with no non-auth attachments in kwa
+
+            kwa = dict(ssgs=[(prefixer, [allSigers[0]])])
+            kvy.processMsg(msg, **kwa)
+
+            # Sig partial populated
+            assert receiverHby.db.pmkm.get(keys=partialKey) is not None
+
+            # Non-auth attachment dbs empty
+            assert receiverHby.db.pmao.get(keys=partialKey) == []
+            assert receiverHby.db.pmap.get(keys=partialKey) == []
+            assert receiverHby.db.pmaw.get(keys=partialKey) == []
+
+    """Done Test"""
+
+
+def test_rem_non_auth_attachments(mockHelpingNowUTC):
+    """Test _remNonAuthAttachments clears all three non-auth dbs for a key."""
+
+    salt1 = core.Salter(raw=b'0123456789abcdef').qb64
+    salt2 = core.Salter(raw=b'0123456789abcdeg').qb64
+
+    with (habbing.openHby(name="remSender", base="test", salt=salt1) as senderHby,
+          habbing.openHby(name="remReceiver", base="test", salt=salt2) as receiverHby):
+
+        senderHab = senderHby.makeHab(name="remSender", isith='2', icount=3,
+                                      transferable=True)
+        receiverHby.makeHab(name="remReceiver", isith='1', icount=1,
+                            transferable=True)
+
+        crossKvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+        senderIcp = senderHab.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+
+        with configing.openCF(name="remKram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+
+            stamp = helping.nowIso8601()
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+
+            msg = eventing.query(pre=senderHab.pre,
+                                 route="ksn",
+                                 query=dict(i=senderHab.pre, src=senderHab.pre),
+                                 stamp=stamp,
+                                 pvrsn=Vrsn_2_0)
+
+            partialKey = (senderHab.pre, msg.said)
+
+            # Populate all three non-auth dbs directly
+            firner = coring.Seqner(sn=0)
+            dater = coring.Dater(dts=stamp)
+            receiverHby.db.pmao.add(keys=partialKey, val=(firner, dater))
+
+            receiverHby.db.pmap.add(keys=partialKey, val=b'\x00\x01')
+
+            verser = coring.Verser(pvrsn=Vrsn_2_0)
+            diger = coring.Diger(ser=msg.raw)
+            receiverHby.db.pmaw.add(keys=partialKey, val=(verser, diger))
+
+            # Confirm populated
+            assert len(receiverHby.db.pmao.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.pmap.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.pmaw.get(keys=partialKey)) == 1
+
+            # Call _remNonAuthAttachments
+            kramer._remNonAuthAttachments(partialKey)
+
+            # All three cleared
+            assert receiverHby.db.pmao.get(keys=partialKey) == []
+            assert receiverHby.db.pmap.get(keys=partialKey) == []
+            assert receiverHby.db.pmaw.get(keys=partialKey) == []
 
     """Done Test"""
