@@ -749,35 +749,6 @@ class Baser(dbing.LMDBer):
             subkey 'pmsk.'
             Only one value per DB key is allowed.
 
-        .pmao is named subDB instance of CatCesrIoSetSuber for KRAM partially
-            signed multi-key non-authenticator first-seen replay couple attachments.
-            subkey 'pmao.'
-            DB is keyed by (AID, MID): sender identifier prefix plus message SAID
-            Value is (Seqner, Dater) tuple; first-seen ordinal number plus
-            datetime of first-seen event. Sourced from parser kwa key 'frcs'
-            (-O## first seen replay couples).
-            Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
-
-        .pmap is named subDB instance of IoSetSuber for KRAM partially signed
-            multi-key non-authenticator pathed stream attachments.
-            subkey 'pmap.'
-            DB is keyed by (AID, MID): sender identifier prefix plus message SAID
-            Value is raw bytes of pathed CESR stream. Sourced from parser kwa
-            key 'ptds' (-P## pathed material group path+mixed-types).
-            Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
-
-        .pmaw is named subDB instance of CatCesrIoSetSuber for KRAM partially
-            signed multi-key non-authenticator typed digest seal couple attachments.
-            subkey 'pmaw.'
-            DB is keyed by (AID, MID): sender identifier prefix plus message SAID
-            Value is (Verser, Diger) tuple; protocol version plus digest of
-            sealed data. Sourced from parser kwa key 'tdcs'
-            (-W## typed digest seal couples).
-            Multiple values per key stored as ordered set (duplicates ignored).
-            Entries persist until removed by the KRAM pruner.
-
     Properties:
         kevers (dbdict): read through cache of kevers of states for KELs in db
 
