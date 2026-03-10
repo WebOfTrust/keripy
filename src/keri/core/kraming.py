@@ -976,19 +976,13 @@ class Kramer:
                 else:
                     raise kering.KramError("Unexpected auth type while kraming.")
 
-    def pruneMessages(self, rdt=None):
+    def pruneMessages(self, rdt_ms):
         """
         Check message ID and prune expired cache entries and associated state.
         rdt (Iso8601): receiver time 
         pml (int): prune lag cache value in milliseconds
         d (int): drift lag cache value in milliseconds
         """
-        # If rdt is not provided, use current time, otherwise convert provided rdt to milliseconds
-        if rdt is None:
-            rdt_ms = int(helping.nowUTC().timestamp() * 1000)
-        else:
-            rdt_ms = rdt
-
         # Initialize a flag to track if pruned
         pruned = False
 
@@ -1012,18 +1006,12 @@ class Kramer:
 
         return pruned
     
-    def pruneExchanges(self, rdt=None):
+    def pruneExchanges(self, rdt_ms):
         """
         Check exchanges ID and prune expired cache entries and associated state.
-        rdt (Iso8601): receiver time 
+        rdt (int): receiver time in milliseconds
         pxl (int): prune lag cache value in milliseconds
         """
-        # If rdt is not provided, use current time, otherwise convert provided rdt to milliseconds
-        if rdt is None:
-            rdt_ms = int(helping.nowUTC().timestamp() * 1000)
-        else:
-            rdt_ms = rdt
-
         # Initialize a flag to track if pruned
         pruned = False
 
@@ -1062,9 +1050,9 @@ class Pruner(doing.Doer):
             # compute receiver time in ms
             rdt_ms = int(helping.nowUTC().timestamp() * 1000)
             
-            # prune both caches
-            self.kramer.pruneMessages(rdt=rdt_ms)
-            self.kramer.pruneExchanges(rdt=rdt_ms)
+            # check prune both messages and exchanges
+            self.kramer.pruneMessages(rdt_ms=rdt_ms)
+            self.kramer.pruneExchanges(rdt_ms=rdt_ms)
 
             # yield back to Doist
             yield self.tock

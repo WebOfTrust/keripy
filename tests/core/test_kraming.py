@@ -1432,8 +1432,6 @@ def test_pruning_messages_single_key(fakeHelpingClock):
             # Create Kevery 
             kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
 
-            
-
             # Setup Doist with PruneDoer
             tock = 1
             limit = 1.0
@@ -1567,7 +1565,6 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
     """
 
     # Step 1: Setup
-
     # Instantiate Clock
     clock = fakeHelpingClock
 
@@ -1682,10 +1679,10 @@ def test_pruning_exchanges(fakeHelpingClock):
     done for all messages belonging to the exchange.
 
     Steps:
-    - accept a message
-    - accept a message from the same sender with a later timestamp
-    - Advance time to trigger pruning for the 1st message, assert 2nd message is still cached
-    - Advance time to trigger pruning for the 2nd message
+    - accept an exn
+    - accept an exn from the same sender with a later timestamp
+    - Advance time to trigger pruning, since the exchange is outside the window, 
+      messsages are deleted
     """
 
     # Instantiate Clock
@@ -1832,5 +1829,5 @@ def test_pruning_exchanges(fakeHelpingClock):
             # First Cache is pruned
             assert receiverHby.db.tmsc.get(keys=(senderHab.pre, xip.said, exn.said)) is None
 
-            # Second Cache is also pruned because it is from the same exchange
+            # Second Cache is also pruned because it belongs to the same exchange
             assert receiverHby.db.tmsc.get(keys=(senderHab.pre, xip.said, exn2.said)) is None
