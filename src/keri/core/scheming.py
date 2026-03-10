@@ -34,6 +34,7 @@ class CacheResolver:
         """
         self.db = db
 
+
     def add(self, key, schema):
         """ Add schema to cache for resolution
 
@@ -47,11 +48,13 @@ class CacheResolver:
 
         self.db.schema.pin(key, schemer)
 
+
     def resolve(self, uri):
         schemer = self.db.schema.get(uri)
         if schemer is None:
             return None
         return schemer.raw
+
 
     def handler(self, uri):
         """ Handler provided to jsonschema for cache resolution
@@ -70,6 +73,7 @@ class CacheResolver:
             return None
 
         return schemer.sed
+
 
     def resolver(self, scer=b''):
         """ Locally cached schema resolver
@@ -111,6 +115,7 @@ class JSONSchema:
         """
         self.resolver = resolver
 
+
     def resolve(self, uri):
         """ Resolve remote reference to schema
 
@@ -122,6 +127,7 @@ class JSONSchema:
             return None
 
         return self.resolver.resolve(uri)
+
 
     def load(self, raw, kind=Kinds.json):
         """ Schema loader
@@ -171,6 +177,7 @@ class JSONSchema:
 
         return sed, kind, saider
 
+
     @staticmethod
     def dump(sed, kind=Kinds.json):
         """ Serailize schema based on kind
@@ -185,6 +192,7 @@ class JSONSchema:
         """
         raw = dumps(sed, kind)
         return raw
+
 
     @staticmethod
     def detect(raw):
@@ -206,6 +214,7 @@ class JSONSchema:
 
         return True
 
+
     @staticmethod
     def verify_schema(schema):
         """ Validate schema integrity
@@ -222,6 +231,7 @@ class JSONSchema:
             return False
 
         return True
+
 
     def verify_json(self, schema=b'', raw=b''):
         """ Verify the raw content against the schema for JSON that conforms to the schema
@@ -319,6 +329,7 @@ class Schemer:
             raise ValidationError("invalid kind {} for schema {}"
                                   "".format(self.kind, self.sed))
 
+
     def _inhale(self, raw):
         """
         Loads type specific Schema ked and verifies the self-addressing identifier
@@ -333,6 +344,7 @@ class Schemer:
 
         return sed, kind, saider
 
+
     def _exhale(self, sed, kind=None):
         """ Dumps type specific Schema JSON and returns the raw bytes, sed and schema kind
 
@@ -346,6 +358,7 @@ class Schemer:
         raw = self.typ.dump(sed)
 
         return raw, sed, kind, saider
+
 
     @staticmethod
     def _sniff(raw):
@@ -365,10 +378,12 @@ class Schemer:
         # Default for now is JSONSchema because we don't support any other
         return JSONSchema()
 
+
     @property
     def raw(self):
         """ raw property getter """
         return self._raw
+
 
     @raw.setter
     def raw(self, raw):
@@ -379,10 +394,12 @@ class Schemer:
         self._kind = kind
         self._saider = saider
 
+
     @property
     def sed(self):
         """ ked property getter"""
         return self._sed
+
 
     @sed.setter
     def sed(self, sed):
@@ -393,10 +410,12 @@ class Schemer:
         self._sed = sed
         self._saider = saider
 
+
     @property
     def kind(self):
         """ kind property getter """
         return self._kind
+
 
     @kind.setter
     def kind(self, kind):
@@ -407,15 +426,18 @@ class Schemer:
         self._kind = kind
         self._saider = Saider(raw=self._raw, code=self._code, label=Saids.dollar)
 
+
     @property
     def saider(self):
         """ saider property getter """
         return self._saider
 
+
     @property
     def said(self):
         """ said property getter, relies on saider """
         return self.saider.qb64
+
 
     def verify(self, raw=b''):
         """
@@ -429,6 +451,7 @@ class Schemer:
 
         return self.typ.verify_json(schema=self.sed, raw=raw)
 
+
     def pretty(self, *, size=1024):
         """
         Returns str JSON of .sed with pretty formatting
@@ -437,6 +460,7 @@ class Schemer:
         like 1024 for ogler.logger
         """
         return json.dumps(self.sed, indent=1)[:size if size is not None else None]
+
 
     def _verify_schema(self):
         """
@@ -447,4 +471,3 @@ class Schemer:
         """
 
         return self.typ.verify_schema(schema=self.sed)
-    
