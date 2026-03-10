@@ -440,28 +440,39 @@ class Kramer:
 
         return False  # No matching seal digest found
 
-    _NON_AUTH_KWA_TO_DB = (
-        ('frcs', 'pmao'),  # -O## first seen replay couples (seqner, dater)
-        ('ptds', 'pmap'),  # -P## pathed streams (raw bytes)
-        ('tdcs', 'pmaw'),  # -W## typed digest seal couples (verser, diger)
-    )
-
 
     def _storeNonAuthAttachments(self, key, **kwa):
         """Idempotently store non-authenticator attachments for a partially
         signed multi-key message pending threshold satisfaction.
 
+        Handles all parser kwa attachment keys except ssgs and essrs, which
+        are handled separately as authenticators or encapsulations.
+
         Parameters:
             key (tuple): (AID, MID) partial db key
             **kwa: keyword arguments from parser exts dict
         """
-        for kwkey, dbattr in self._NON_AUTH_KWA_TO_DB:
-            items = kwa.get(kwkey, [])
-            if not items:
-                continue
-            db = getattr(self.db, dbattr)
-            for item in items:
-                db.add(key, item)
+        for item in kwa.get('trqs', []):
+            self.db.trqs.add(key, item)
+        for prefixer, seqner, saider, sigers in kwa.get('tsgs', []):
+            for siger in sigers:
+                self.db.tsgs.add(key, (prefixer, seqner, saider, siger))
+        for item in kwa.get('sscs', []):
+            self.db.sscs.add(key, item)
+        for item in kwa.get('ssts', []):
+            self.db.ssts.add(key, item)
+        for item in kwa.get('frcs', []):
+            self.db.frcs.add(key, item)
+        for item in kwa.get('tdcs', []):
+            self.db.tdcs.add(key, item)
+        for item in kwa.get('ptds', []):
+            self.db.ptds.add(key, item)
+        for item in kwa.get('bsqs', []):
+            self.db.bsqs.add(key, item)
+        for item in kwa.get('bsss', []):
+            self.db.bsss.add(key, item)
+        for item in kwa.get('tmqs', []):
+            self.db.tmqs.add(key, item)
 
 
     def _remNonAuthAttachments(self, key):
@@ -470,8 +481,16 @@ class Kramer:
         Parameters:
             key (tuple): (AID, MID) partial db key
         """
-        for _, dbattr in self._NON_AUTH_KWA_TO_DB:
-            getattr(self.db, dbattr).rem(key)
+        self.db.trqs.rem(key)
+        self.db.tsgs.rem(key)
+        self.db.sscs.rem(key)
+        self.db.ssts.rem(key)
+        self.db.frcs.rem(key)
+        self.db.tdcs.rem(key)
+        self.db.ptds.rem(key)
+        self.db.bsqs.rem(key)
+        self.db.bsss.rem(key)
+        self.db.tmqs.rem(key)
 
 
     def intake(self, serder, **kwa):

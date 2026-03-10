@@ -1428,12 +1428,13 @@ def test_transactioned(mockHelpingNowUTC):
 
 
 def test_non_auth_attachments_stored(mockHelpingNowUTC):
-    """Test that non-authenticator attachments (frcs, ptds, tdcs) are stored
-    in their respective partial databases during multi-key accumulation and
-    are retrievable after threshold satisfaction.
+    """Test that all non-authenticator attachments are stored in their
+    respective partial databases during multi-key accumulation and are
+    retrievable after threshold satisfaction.
 
-    Covers: pmao (frcs), pmap (ptds), pmaw (tdcs) populated on partial
-    delivery, idempotency on re-delivery, persistence after threshold met.
+    Covers: trqs, tsgs, sscs, ssts, frcs, tdcs, ptds, bsqs, bsss, tmqs
+    populated on partial delivery, idempotency on re-delivery, persistence
+    after threshold met.
     """
 
     salt1 = core.Salter(raw=b'0123456789abcdef').qb64
@@ -1478,24 +1479,57 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
 
             # Build non-auth attachments to include in kwa
 
+            senderKever = receiverHby.db.kevers[senderHab.pre]
+            seqner = coring.Seqner(sn=senderKever.sner.num)
+            saider = coring.Saider(qb64=senderKever.serder.said)
+            diger = coring.Diger(ser=msg.raw)
+
+            # trqs: trans receipt quadruple (prefixer, seqner, saider, siger)
+            trqs = [(prefixer, seqner, saider, allSigers[0])]
+
+            # tsgs: trans last sig group (prefixer, seqner, saider, [sigers])
+            tsgs = [(prefixer, seqner, saider, [allSigers[0]])]
+
+            # sscs: first seen seal couple (seqner, saider) issuing or delegating
+            sscs = [(seqner, saider)]
+
+            # ssts: source seal triple (prefixer, seqner, saider) issued or delegated
+            ssts = [(prefixer, seqner, saider)]
+
             # frcs: first seen replay couple (seqner, dater)
             firner = coring.Seqner(sn=0)
             dater = coring.Dater(dts=stamp)
             frcs = [(firner, dater)]
 
+            # tdcs: typed digest seal couple (verser, diger)
+            verser = coring.Verser(pvrsn=Vrsn_2_0)
+            tdcs = [(verser, diger)]
+
             # ptds: pathed stream (raw bytes)
             ptds = [b'\x00\x01\x02\x03']
 
-            # tdcs: typed digest seal couple (verser, diger)
-            verser = coring.Verser(pvrsn=Vrsn_2_0)
-            diger = coring.Diger(ser=msg.raw)
-            tdcs = [(verser, diger)]
+            # bsqs: blind state quadruple (diger, noncer, noncer, labeler)
+            noncer0 = coring.Noncer()
+            noncer1 = coring.Noncer()
+            labeler = coring.Labeler(label='test')
+            bsqs = [(diger, noncer0, noncer1, labeler)]
+
+            # bsss: bound state sextuple (diger, noncer, noncer, labeler, number, noncer)
+            number = coring.Number(num=1)
+            noncer2 = coring.Noncer()
+            bsss = [(diger, noncer0, noncer1, labeler, number, noncer2)]
+
+            # tmqs: type media quadruple (diger, noncer, labeler, texter)
+            texter = coring.Texter(text='application/json')
+            tmqs = [(diger, noncer0, labeler, texter)]
 
 
             # First delivery with 1 sig (below threshold) + non-auth attachments
 
             kwa = dict(ssgs=[(prefixer, [allSigers[0]])],
-                       frcs=frcs, ptds=ptds, tdcs=tdcs)
+                       trqs=trqs, tsgs=tsgs, sscs=sscs, ssts=ssts,
+                       frcs=frcs, tdcs=tdcs, ptds=ptds,
+                       bsqs=bsqs, bsss=bsss, tmqs=tmqs)
             kvy.processMsg(msg, **kwa)
 
             # Threshold not met, partials populated
@@ -1503,18 +1537,17 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
             pmks = receiverHby.db.pmks.get(keys=partialKey)
             assert len(pmks) == 1
 
-            # Non-auth attachment dbs populated
-            pmao = receiverHby.db.pmao.get(keys=partialKey)
-            assert pmao is not None
-            assert len(pmao) == 1
-
-            pmap = receiverHby.db.pmap.get(keys=partialKey)
-            assert pmap is not None
-            assert len(pmap) == 1
-
-            pmaw = receiverHby.db.pmaw.get(keys=partialKey)
-            assert pmaw is not None
-            assert len(pmaw) == 1
+            # All non-auth attachment dbs populated
+            assert len(receiverHby.db.trqs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.tsgs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.sscs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.ssts.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.frcs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.tdcs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.ptds.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.bsqs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.bsss.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.tmqs.get(keys=partialKey)) == 1
 
             assert len(kvy.cues) == 0
 
@@ -1523,21 +1556,25 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
 
             kvy.processMsg(msg, **kwa)
 
-            pmao_after = receiverHby.db.pmao.get(keys=partialKey)
-            assert len(pmao_after) == 1  # no duplicate added
-
-            pmap_after = receiverHby.db.pmap.get(keys=partialKey)
-            assert len(pmap_after) == 1
-
-            pmaw_after = receiverHby.db.pmaw.get(keys=partialKey)
-            assert len(pmaw_after) == 1
+            assert len(receiverHby.db.trqs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.tsgs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.sscs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.ssts.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.frcs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.tdcs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.ptds.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.bsqs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.bsss.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.tmqs.get(keys=partialKey)) == 1
 
 
             # Second delivery with 2nd sig meets threshold
             # Non-auth attachments should persist (pruner responsibility)
 
             kwa2 = dict(ssgs=[(prefixer, [allSigers[2]])],
-                        frcs=frcs, ptds=ptds, tdcs=tdcs)
+                        trqs=trqs, tsgs=tsgs, sscs=sscs, ssts=ssts,
+                        frcs=frcs, tdcs=tdcs, ptds=ptds,
+                        bsqs=bsqs, bsss=bsss, tmqs=tmqs)
             kvy.processMsg(msg, **kwa2)
 
             # Threshold met, cue generated
@@ -1546,9 +1583,16 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
             assert cue["kin"] == "reply"
 
             # Non-auth attachments persist (pruner cleans up, not kramit)
-            assert receiverHby.db.pmao.get(keys=partialKey) is not None
-            assert receiverHby.db.pmap.get(keys=partialKey) is not None
-            assert receiverHby.db.pmaw.get(keys=partialKey) is not None
+            assert len(receiverHby.db.trqs.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.tsgs.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.sscs.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.ssts.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.frcs.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.tdcs.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.ptds.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.bsqs.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.bsss.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.tmqs.get(keys=partialKey)) >= 1
 
     """Done Test"""
 
@@ -1603,16 +1647,23 @@ def test_non_auth_attachments_empty_kwa(mockHelpingNowUTC):
             # Sig partial populated
             assert receiverHby.db.pmkm.get(keys=partialKey) is not None
 
-            # Non-auth attachment dbs empty
-            assert receiverHby.db.pmao.get(keys=partialKey) == []
-            assert receiverHby.db.pmap.get(keys=partialKey) == []
-            assert receiverHby.db.pmaw.get(keys=partialKey) == []
+            # All non-auth attachment dbs empty
+            assert receiverHby.db.trqs.get(keys=partialKey) == []
+            assert receiverHby.db.tsgs.get(keys=partialKey) == []
+            assert receiverHby.db.sscs.get(keys=partialKey) == []
+            assert receiverHby.db.ssts.get(keys=partialKey) == []
+            assert receiverHby.db.frcs.get(keys=partialKey) == []
+            assert receiverHby.db.tdcs.get(keys=partialKey) == []
+            assert receiverHby.db.ptds.get(keys=partialKey) == []
+            assert receiverHby.db.bsqs.get(keys=partialKey) == []
+            assert receiverHby.db.bsss.get(keys=partialKey) == []
+            assert receiverHby.db.tmqs.get(keys=partialKey) == []
 
     """Done Test"""
 
 
 def test_rem_non_auth_attachments(mockHelpingNowUTC):
-    """Test _remNonAuthAttachments clears all three non-auth dbs for a key."""
+    """Test _remNonAuthAttachments clears all ten non-auth dbs for a key."""
 
     salt1 = core.Salter(raw=b'0123456789abcdef').qb64
     salt2 = core.Salter(raw=b'0123456789abcdeg').qb64
@@ -1642,30 +1693,74 @@ def test_rem_non_auth_attachments(mockHelpingNowUTC):
                                  stamp=stamp,
                                  pvrsn=Vrsn_2_0)
 
+            allSigers = senderHab.mgr.sign(ser=msg.raw,
+                                           verfers=senderHab.kever.verfers,
+                                           indexed=True)
+
             partialKey = (senderHab.pre, msg.said)
 
-            # Populate all three non-auth dbs directly
+            senderKever = receiverHby.db.kevers[senderHab.pre]
+            seqner = coring.Seqner(sn=senderKever.sner.num)
+            saider = coring.Saider(qb64=senderKever.serder.said)
+            diger = coring.Diger(ser=msg.raw)
+
+            # Populate all ten non-auth dbs directly
+            receiverHby.db.trqs.add(keys=partialKey,
+                                    val=(prefixer, seqner, saider, allSigers[0]))
+            receiverHby.db.tsgs.add(keys=partialKey,
+                                    val=(prefixer, seqner, saider, allSigers[0]))
+            receiverHby.db.sscs.add(keys=partialKey, val=(seqner, saider))
+            receiverHby.db.ssts.add(keys=partialKey, val=(prefixer, seqner, saider))
+
             firner = coring.Seqner(sn=0)
             dater = coring.Dater(dts=stamp)
-            receiverHby.db.pmao.add(keys=partialKey, val=(firner, dater))
-
-            receiverHby.db.pmap.add(keys=partialKey, val=b'\x00\x01')
+            receiverHby.db.frcs.add(keys=partialKey, val=(firner, dater))
 
             verser = coring.Verser(pvrsn=Vrsn_2_0)
-            diger = coring.Diger(ser=msg.raw)
-            receiverHby.db.pmaw.add(keys=partialKey, val=(verser, diger))
+            receiverHby.db.tdcs.add(keys=partialKey, val=(verser, diger))
 
-            # Confirm populated
-            assert len(receiverHby.db.pmao.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.pmap.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.pmaw.get(keys=partialKey)) == 1
+            receiverHby.db.ptds.add(keys=partialKey, val=b'\x00\x01')
+
+            noncer0 = coring.Noncer()
+            noncer1 = coring.Noncer()
+            labeler = coring.Labeler(label='test')
+            receiverHby.db.bsqs.add(keys=partialKey,
+                                    val=(diger, noncer0, noncer1, labeler))
+
+            number = coring.Number(num=1)
+            noncer2 = coring.Noncer()
+            receiverHby.db.bsss.add(keys=partialKey,
+                                    val=(diger, noncer0, noncer1, labeler, number, noncer2))
+
+            texter = coring.Texter(text='application/json')
+            receiverHby.db.tmqs.add(keys=partialKey,
+                                    val=(diger, noncer0, labeler, texter))
+
+            # Confirm all populated
+            assert len(receiverHby.db.trqs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.tsgs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.sscs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.ssts.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.frcs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.tdcs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.ptds.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.bsqs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.bsss.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.tmqs.get(keys=partialKey)) == 1
 
             # Call _remNonAuthAttachments
             kramer._remNonAuthAttachments(partialKey)
 
-            # All three cleared
-            assert receiverHby.db.pmao.get(keys=partialKey) == []
-            assert receiverHby.db.pmap.get(keys=partialKey) == []
-            assert receiverHby.db.pmaw.get(keys=partialKey) == []
+            # All ten cleared
+            assert receiverHby.db.trqs.get(keys=partialKey) == []
+            assert receiverHby.db.tsgs.get(keys=partialKey) == []
+            assert receiverHby.db.sscs.get(keys=partialKey) == []
+            assert receiverHby.db.ssts.get(keys=partialKey) == []
+            assert receiverHby.db.frcs.get(keys=partialKey) == []
+            assert receiverHby.db.tdcs.get(keys=partialKey) == []
+            assert receiverHby.db.ptds.get(keys=partialKey) == []
+            assert receiverHby.db.bsqs.get(keys=partialKey) == []
+            assert receiverHby.db.bsss.get(keys=partialKey) == []
+            assert receiverHby.db.tmqs.get(keys=partialKey) == []
 
     """Done Test"""
