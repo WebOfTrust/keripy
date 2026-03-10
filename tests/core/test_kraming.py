@@ -8,7 +8,7 @@ processMsg on Kevery.
 import pytest
 
 from keri import core, kering, Vrsn_1_0, Vrsn_2_0
-from keri.core import eventing, parsing, coring, Verser, Kramer, AuthTypes
+from keri.core import eventing, parsing, coring, Verser, Kramer, AuthTypes, Pruner
 from keri.app import habbing, configing
 from keri.db import basing
 from keri.peer import exchanging
