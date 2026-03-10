@@ -127,13 +127,13 @@ class OobiResource:
             res["oobis"] = oobis
         elif role in (Roles.controller,):  # Fetch any controller URL OOBIs
             oobis = []
-            urls = hab.fetchUrls(eid=hab.pre, scheme=Schemes.http) or hab.fetchUrls(eid=hab.pre,
-                                                                                           scheme=Schemes.https)
+            urls = hab.fetchUrls(eid=hab.pre, scheme=Schemes.https) or hab.fetchUrls(eid=hab.pre,
+                                                                                           scheme=Schemes.http)
             if not urls:
                 rep.status = falcon.HTTP_404
                 rep.text = f"unable to query controller {hab.pre}, no http endpoint"
                 return
-            url = urls[Schemes.http] if Schemes.http in urls else urls[Schemes.https]
+            url = urls[Schemes.https] if Schemes.https in urls else urls[Schemes.http]
             oobis.append(f"{url.rstrip("/")}/oobi/{hab.pre}/controller")
             res["oobis"] = oobis
         else:

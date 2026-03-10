@@ -35,12 +35,6 @@ The directories each exercise different parts of the KERI core library:
 Each directory contains a README.md file that details additional steps or modifications to the steps listed below for running
 the scripts in that directory.
 
-## Command Line vs ReST Scripts
-In many cases, the scripts were created in pairs with one script exercising a set of functions from the `kli` command line
-utility and a sister script with `-agent` appended to the name that exercises the same set of funcitons using `curl` against
-a running agent.  To run the `-agent` commands, a single agent or set of agents must be run before using the script.  In addition
-many scripts require a set of witnesses be running locally.  The following section details how to run agents and witnesses.
-
 ### Running Witnesses
 Witnesses can be started in several ways using the `kli witness` subcommands or the shell script `demo/basic/start-witness.sh`.  The
 following 2 subcommands are available for starting witnesses:

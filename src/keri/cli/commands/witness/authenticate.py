@@ -25,7 +25,7 @@ from ....core import coring
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Perform authentication against an witness to get a OTP code', 
+parser = argparse.ArgumentParser(description='Perform authentication against an witness to get a OTP code',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: auth(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
@@ -63,9 +63,11 @@ class AuthDoer(doing.DoDoer):
         if witness in self.hby.kevers:
             wit = witness
         else:
-            wit = self.org.find("alias", witness)
-            if len(wit) != 1:
-                raise ValueError(f"invalid recipient {witness}")
+            wit = self.org.findExact("alias", witness)
+            if len(wit) == 0:
+                raise ValueError(f"no contact found with alias {witness!r}")
+            if len(wit) > 1:
+                raise ValueError(f"multiple contacts match alias {witness!r}, use prefix instead")
             wit = wit[0]['id']
 
         if not wit:

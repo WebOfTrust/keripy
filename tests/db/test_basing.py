@@ -2253,11 +2253,11 @@ def test_eventsourcerecord():
     """End Test"""
 
 
-def test_dbdict():
+def test_statedict():
     """
-    Test custom dbdict subclass of dict
+    Test custom statedict subclass of dict
     """
-    dbd = basing.dbdict(a=1, b=2, c=3)  # init in memory so never acesses db
+    dbd = basing.statedict(a=1, b=2, c=3)  # init in memory so never acesses db
     assert dbd.db == None
     assert 'a' in dbd
     assert 'b' in dbd
@@ -2653,6 +2653,6 @@ if __name__ == "__main__":
     test_clean_baser()
     test_fetchkeldel()
     test_usebaser()
-    test_dbdict()
+    test_statedict()
     test_baserdoer()
     test_db_keyspace_end_to_end_migration()

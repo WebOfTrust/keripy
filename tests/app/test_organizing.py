@@ -155,6 +155,60 @@ def test_organizer():
             org.find(field="company", val="GLEIF")
 
 
+def test_find_exact():
+    """Test that findExact returns only exact alias matches.
+
+    Regression test for https://github.com/WebOfTrust/keripy/issues/1001
+    where find() regex caused "sally" to match "sally-direct".
+    """
+    sal = "Eo60ITGA69z4jNBU4RsvbgsjfAHFcTM2HVEXea1SvnXk"
+    sal_direct = "EPzeu5_C80nzPc_BGUHVBkXXfNmlS55Ayl7Rd1I0gWFE"
+    bob = "EuEQX8At31X96iDVpigv-rTdOKvFiWFunbJ1aDfq89IQ"
+
+    sald = dict(first="Sally", last="Smith", alias="sally")
+    sdird = dict(first="Sally", last="Smith-Direct", alias="sally-direct")
+    bobd = dict(first="Bob", last="Burns", alias="bob")
+
+    with habbing.openHby(name="test_exact", temp=True) as hby:
+        org = organizing.Organizer(hby=hby)
+
+        org.replace(pre=sal, data=sald)
+        org.replace(pre=sal_direct, data=sdird)
+        org.replace(pre=bob, data=bobd)
+
+        # find() regex matches both "sally" and "sally-direct"
+        fuzzy = org.find("alias", "sally")
+        assert len(fuzzy) == 2
+
+        # findExact() matches only "sally"
+        exact = org.findExact("alias", "sally")
+        assert len(exact) == 1
+        assert exact[0]["id"] == sal
+        assert exact[0]["alias"] == "sally"
+
+        # findExact() matches only "sally-direct"
+        exact_dir = org.findExact("alias", "sally-direct")
+        assert len(exact_dir) == 1
+        assert exact_dir[0]["id"] == sal_direct
+
+        # findExact() returns empty list for non-existent alias
+        missing = org.findExact("alias", "sal")
+        assert len(missing) == 0
+
+        # findExact() is case-sensitive (unlike find)
+        case_miss = org.findExact("alias", "Sally")
+        assert len(case_miss) == 0
+
+        # find() is case-insensitive
+        case_hit = org.find("alias", "Sally")
+        assert len(case_hit) == 2
+
+        # findExact() works on non-alias fields too
+        exact_bob = org.findExact("first", "Bob")
+        assert len(exact_bob) == 1
+        assert exact_bob[0]["id"] == bob
+
+
 def test_organizer_imgs():
 
     with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
@@ -191,7 +245,7 @@ def test_base_organizer():
     """Test BaseOrganizer with custom database configuration"""
     joe = "EtyPSuUjLyLdXAtGMrsTt0-ELyWeU8fJcymHiGOfuaSA"
     bob = "EuEQX8At31X96iDVpigv-rTdOKvFiWFunbJ1aDfq89IQ"
-    
+
     joed = {"first": "Joe", "last": "Jury", "address": "9934 Glen Creek St.", "city": "Lawrence", "state": "MA", "zip": "01841",
                 "company": "HCF", "alias": "joe"}
     bobd = {"first": "Bob", "last": "Burns", "address": "37 East Shadow Brook St.", "city": "Sebastian", "state": "FL",
@@ -253,13 +307,13 @@ def test_identifier_organizer():
     aid2 = "EuEQX8At31X96iDVpigv-rTdOKvFiWFunbJ1aDfq89IQ"
 
     # Sample identifier metadata
-    id1_data = {"name": "Primary ID", "description": "Main identifier", "role": "controller", 
+    id1_data = {"name": "Primary ID", "description": "Main identifier", "role": "controller",
                    "created": "2025-08-29T00:00:00Z", "status": "active"}
     id2_data = {"name": "Secondary ID", "description": "Backup identifier", "role": "witness",
                    "created": "2025-08-29T01:00:00Z", "status": "active"}
 
     with habbing.openHby(name="test", temp=True) as hby:
-        # Test IdentifierOrganizer 
+        # Test IdentifierOrganizer
         id_org = organizing.IdentifierOrganizer(hby=hby)
 
         # Test basic CRUD operations
@@ -339,7 +393,7 @@ def test_organizer_vs_identifier_organizer_separation():
         assert contacts[0]["first"] == "John"
         assert contacts[0]["company"] == "ACME Corp"
 
-        # Verify identifier organizer only has identifier data  
+        # Verify identifier organizer only has identifier data
         identifiers = id_org.list()
         assert len(identifiers) == 1
         assert identifiers[0]["name"] == "Test ID"
@@ -412,21 +466,21 @@ def test_base_organizer_inheritance():
         assert isinstance(id_org, organizing.BaseOrganizer)
 
         # Test that they have all the expected methods
-        expected_methods = ['update', 'replace', 'set', 'unset', 'rem', 'get', 'list', 'find', 'values', 
+        expected_methods = ['update', 'replace', 'set', 'unset', 'rem', 'get', 'list', 'find', 'values',
                           'setImg', 'getImgData', 'getImg']
-        
+
         for method in expected_methods:
             assert hasattr(contact_org, method)
             assert hasattr(id_org, method)
             assert callable(getattr(contact_org, method))
             assert callable(getattr(id_org, method))
-        
+
         # Test that database attributes are set correctly
         assert contact_org.cigsdb == hby.db.ccigs
         assert contact_org.datadb == hby.db.cons
         assert contact_org.fielddb == hby.db.cfld
         assert contact_org.imgsdb == hby.db.imgs
-        
+
         assert id_org.cigsdb == hby.db.icigs
         assert id_org.datadb == hby.db.sids
         assert id_org.fielddb == hby.db.ifld

@@ -14,7 +14,7 @@ from keri.core import (Salter, Counter, coring, serdering,
 from keri.app import habbing
 
 from keri.peer import exchanging
-from keri.vdr.eventing import incept
+from keri.vdr import incept
 
 
 def test_nesting():

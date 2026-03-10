@@ -7,11 +7,10 @@ import os
 
 import lmdb
 
-from keri.app import keeping
+from keri.app import keeping, Mailboxer
 from keri.core import coring, serdering
 from keri.db import dbing, basing, subing
 from keri.peer import exchanging
-from keri.app.storing import Mailboxer
 
 
 def test_mailboxing():
