@@ -800,4 +800,3 @@ if __name__ == "__main__":
     test_indexer_class()
     test_indexer()
     test_siger()
-

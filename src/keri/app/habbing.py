@@ -13,14 +13,14 @@ from hio.help import hicting
 
 from ..peer import exchanging
 from . import keeping, configing
-from ..db import Baser, dgKey
+from ..db import Baser, dgKey, fetchTsgs
 from ..help import ogler, fromIso8601, toIso8601
 from .. import (Vrsn_1_0, ClosedError, AuthError,
                 ConfigurationError, ValidationError, MissingEntryError,
                 KeriError, MissingSignatureError, Roles, Schemes)
 from ..core import (coring, eventing, parsing, routing,
                     Counter, Salter, Codens)
-from ..recording import EndpointRecord, HabitatRecord, LocationRecord, OobiRecord
+from ..recording import HabitatRecord, OobiRecord
 
 
 logger = ogler.getLogger()
@@ -1822,7 +1822,7 @@ class BaseHab:
             said = self.db.eans.get(keys=(cid, role, eid))
             serder = self.db.rpys.get(keys=(said.qb64,))
             cigars = self.db.scgs.get(keys=(said.qb64,))
-            tsgs = eventing.fetchTsgs(db=self.db.ssgs, diger=said)
+            tsgs = fetchTsgs(db=self.db.ssgs, diger=said)
 
             if len(cigars) == 1:
                 (verfer, cigar) = cigars[0]
@@ -1901,7 +1901,7 @@ class BaseHab:
         for (pre, _), said in self.db.lans.getItemIter(keys=keys):
             serder = self.db.rpys.get(keys=(said.qb64,))
             cigars = self.db.scgs.get(keys=(said.qb64,))
-            tsgs = eventing.fetchTsgs(db=self.db.ssgs, diger=said)
+            tsgs = fetchTsgs(db=self.db.ssgs, diger=said)
 
             if len(cigars) == 1:
                 (verfer, cigar) = cigars[0]
@@ -2361,19 +2361,42 @@ class Hab(BaseHab):
         if ncount is None:
             ncount = len(kever.ndigers)  # use len of prior next digers as default
 
+        # Save pre-rotation key state so we can rollback if event validation
+        # fails. Both mgr.replay() and mgr.rotate() advance and persist key
+        # state before the rotation event is validated by BaseHab.rotate().
+        # Without rollback, a failed rotation leaves the key store out of
+        # sync with the KEL (issue #819).
+        ps_before = self.mgr.ks.sits.get(self.pre)
+
         try:
-            verfers, digers = self.mgr.replay(pre=self.pre)
+            verfers, digers = self.mgr.replay(pre=self.pre, erase=False)
         except IndexError:  # old next is new current
             verfers, digers = self.mgr.rotate(pre=self.pre,
                                               ncount=ncount,
-                                              temp=self.temp)
-        return super(Hab, self).rotate(verfers=verfers, digers=digers,
-                                       isith=isith,
-                                       nsith=nsith,
-                                       toad=toad,
-                                       cuts=cuts,
-                                       adds=adds,
-                                       data=data)
+                                              temp=self.temp,
+                                              erase=False)
+
+        try:
+            msg = super(Hab, self).rotate(verfers=verfers, digers=digers,
+                                          isith=isith,
+                                          nsith=nsith,
+                                          toad=toad,
+                                          cuts=cuts,
+                                          adds=adds,
+                                          data=data)
+        except Exception:
+            # Rotation event validation failed. Rollback key state to
+            # pre-rotation snapshot so KEL and key store stay in sync.
+            self.mgr.ks.sits.pin(self.pre, val=ps_before)
+            raise
+
+        # Event validated successfully. Now safe to erase old stale
+        # private keys that were preserved during the key advancement.
+        if ps_before.old.pubs:
+            for pub in ps_before.old.pubs:
+                self.mgr.ks.pris.rem(pub)
+
+        return msg
 
 
 class SignifyHab(BaseHab):

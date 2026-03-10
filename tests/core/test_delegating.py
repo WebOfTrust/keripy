@@ -904,4 +904,3 @@ if __name__ == "__main__":
     test_delegation()
     test_fetch_delegating_event()
     test_delegation_supersede()
-

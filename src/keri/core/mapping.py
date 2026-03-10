@@ -8,7 +8,7 @@ from copy import deepcopy
 from collections.abc import Mapping, Iterable
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
-from dataclasses import dataclass, astuple, asdict
+from dataclasses import dataclass, astuple
 import json
 
 import cbor2 as cbor
@@ -16,8 +16,8 @@ import msgpack
 
 from ordered_set import OrderedSet as oset
 
-from ..kering import (Colds, Kinds, EmptyMaterialError, InvalidValueError,
-                      DeserializeError, SerializeError)
+from .. import (Colds, Kinds, EmptyMaterialError, InvalidValueError,
+                DeserializeError, SerializeError)
 
 from ..help import isNonStringIterable
 

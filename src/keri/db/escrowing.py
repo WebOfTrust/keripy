@@ -140,7 +140,7 @@ class Broker:
                         logger.trace("Broker %s: %s", typ, msg)
                         raise kering.ValidationError(msg)
 
-                    processReply(serder=serder, saider=diger, route=serder.ked["r"],
+                    processReply(serder=serder, diger=diger, route=serder.ked["r"],
                                  cigars=cigars, tsgs=tsgs, aid=aid)
 
                 except extype as ex:
