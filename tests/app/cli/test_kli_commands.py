@@ -1,3 +1,4 @@
+import json
 import os
 
 import multicommand
@@ -242,15 +243,33 @@ def test_standalone_kli_commands(helpers, capsys):
     doers = args.handler(args)
     directing.runController(doers=doers)
     capesc = capsys.readouterr()
-    assert capesc.out == ('{\n'
-                          '  "out-of-order-events": [],\n'
-                          '  "partially-witnessed-events": [],\n'
-                          '  "partially-signed-events": [],\n'
-                          '  "likely-duplicitous-events": [],\n'
-                          '  "missing-registry-escrow": [],\n'
-                          '  "broken-chain-escrow": [],\n'
-                          '  "missing-schema-escrow": []\n'
-                          '}\n')
+    result = json.loads(capesc.out)
+    assert result["out-of-order-events"] == []
+    assert result["partially-witnessed-events"] == []
+    assert result["partially-signed-events"] == []
+    assert result["likely-duplicitous-events"] == []
+    assert result["partially-delegated-events"] == []
+    assert result["query-not-found"] == []
+    assert result["misfits"] == []
+    assert result["missing-registry-escrow"] == []
+    assert result["broken-chain-escrow"] == []
+    assert result["missing-schema-escrow"] == []
+    assert result["tel-partial-witness-escrow"] == []
+    assert result["group-partially-signed-events"] == []
+    assert result["group-delegated-events"] == []
+    assert result["group-partially-witnessed-events"] == []
+    assert result["escrowed-partially-signed-exchange"] == []
+    assert result["escrowed-exchange-datetime"] == []
+    assert result["delegated-partially-witnessed-events"] == []
+    assert result["delegated-unverified-events"] == []
+    assert result["delegated-partially-unduplicated-backer"] == []
+    assert result["reply-escrow"] == []
+    assert result["delegable-events"] == {"count": 0}
+    assert result["unverified-delegated-events"] == {"count": 0}
+    assert result["escrowed-oobi"] == {"count": 0}
+    assert result["unverified-receipt-escrow"] == {"count": 0}
+    assert result["unverified-witness-escrow"] == {"count": 0}
+    assert result["unverified-transferable-receipt-escrow"] == {"count": 0}
 
 
 def test_incept_and_rotate_opts(helpers, capsys):
@@ -293,7 +312,3 @@ def test_incept_and_rotate_opts(helpers, capsys):
     doers = args.handler(args)
 
     directing.runController(doers=doers)
-
-
-
-
