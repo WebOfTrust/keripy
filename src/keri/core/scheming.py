@@ -9,6 +9,9 @@ import json
 import cbor2 as cbor
 import jsonschema
 import msgpack
+import referencing
+import referencing.exceptions
+import referencing.jsonschema
 
 from .coring import MtrDex, Kinds, Saider, Saids, dumps
 from ..help import ogler
@@ -71,14 +74,27 @@ class CacheResolver:
     def resolver(self, scer=b''):
         """ Locally cached schema resolver
 
-        Returns a jsonschema resolver for returning locally cached schema based on self-addressing
+        Returns a referencing.Registry for returning locally cached schema based on self-addressing
         identifier URIs.
 
         Parameters:
             scer (Optional(bytes)) is the source document that is being processed for reference resolution
 
         """
-        return jsonschema.RefResolver("", scer, handlers={"did": self.handler})
+        def retrieve(uri):
+            try:
+                idx = uri.rindex(":")
+                key = uri[idx + 1:]
+            except ValueError:
+                key = uri
+
+            schemer = self.db.schema.get(key)
+            if not schemer:
+                raise referencing.exceptions.NoSuchResource(ref=uri)
+
+            return referencing.jsonschema.DRAFT7.create_resource(schemer.sed)
+
+        return referencing.Registry(retrieve=retrieve)
 
 
 class JSONSchema:
@@ -224,7 +240,7 @@ class JSONSchema:
             d = json.loads(raw)
             kwargs = dict()
             if self.resolver is not None:
-                kwargs["resolver"] = self.resolver.resolver(scer=raw)
+                kwargs["registry"] = self.resolver.resolver(scer=raw)
             jsonschema.validate(instance=d, schema=schema, **kwargs)
         except jsonschema.exceptions.ValidationError as ex:
             raise ValidationError(f'Credential validation exception: {ex}')
@@ -431,3 +447,4 @@ class Schemer:
         """
 
         return self.typ.verify_schema(schema=self.sed)
+    
