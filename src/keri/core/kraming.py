@@ -1048,35 +1048,10 @@ class Kramer:
 
 
 class Pruner(doing.Doer):
-    """
-    Doer that periodically calls KRAM pruner to clean up cache entries outside the pruning window.
 
-    Parameters:
-        kramer (Kramer): instance of Kramer to call prune on
-        period (float): time in seconds between prune calls
-    """
-    def __init__(self, kramer, period=1.0, **kwa):
+    def __init__(self, kramer, tock, period=1.0):
         self.kramer = kramer
-        
-        super(Pruner, self).__init__(**kwa)
-
-    def recur(self, tyme):
-        # Get current receiver time and convert it to milliseconds
-        base = int(helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000)  # ms
-
-        # Add scheduler time to base time to get the receiver time for pruning
-        rdt = base + tyme*1000  # Convert tyme to milliseconds
-
-        # Call prune messages with the calculated receiver time
-        self.kramer.pruneMessages(rdt=rdt)
-        self.kramer.pruneExchanges(rdt=rdt)
-
-        return False
-
-class PrunerRt(doing.Doer):
-
-    def __init__(self, kramer, period=1.0):
-        self.kramer = kramer
+        self.tock = tock
         super().__init__(doers=[self.do], tock=period)
 
     def do(self, tymth, tock=0.0, **opts):

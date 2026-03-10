@@ -9,7 +9,7 @@ import pytest
 
 from keri import core, kering, Vrsn_1_0, Vrsn_2_0
 from keri.core import eventing, parsing, coring, Verser
-from keri.core.kraming import Kramer, AuthTypes, Pruner, PrunerRt
+from keri.core.kraming import Kramer, AuthTypes, Pruner
 from keri.app import habbing, configing
 from keri.db import basing
 from keri.peer import exchanging
@@ -937,6 +937,7 @@ def test_asr(mockHelpingNowUTC):
 
     """Done Test"""
 
+
 def test_both_attached(mockHelpingNowUTC):
     """Test processMsg with both seal refs and sigs present.
 
@@ -1382,7 +1383,8 @@ def test_transactioned(mockHelpingNowUTC):
 
     """Done Test"""
 
-def test_pruning_messages_single_key(mockHelpingNowUTC):
+
+def test_pruning_messages_single_key(fakeHelpingClock):
     """
     Test pruning behavior for single-key sender messages.
     
@@ -1395,6 +1397,12 @@ def test_pruning_messages_single_key(mockHelpingNowUTC):
     - Advance time to trigger pruning for the 1st message, assert 2nd message is still cached
     - Advance time to trigger pruning for the 2nd message
     """
+    
+    # Instantiate Clock
+    clock = fakeHelpingClock
+
+    # Assert the clock
+    assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
 
     # Setup sender/receiver
     salt_sender = core.Salter(raw=b'0123456789abcdef').qb64
@@ -1425,17 +1433,22 @@ def test_pruning_messages_single_key(mockHelpingNowUTC):
             # Create Kevery 
             kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
 
-            # Create PruneDoer
-            pruneDoer = Pruner(kramer, tock=1.0)
+            
 
             # Setup Doist with PruneDoer
             tock = 1
             limit = 1.0
+
+            # Create PruneDoer
+            pruneDoer = Pruner(kramer, tock)
+
             doist = doing.Doist(tock=tock, limit=limit)
             deeds = doist.enter(doers=[pruneDoer])
 
             # Step 1: Accept a fresh message 
             earlyStamp = helping.nowIso8601()
+            assert earlyStamp == "2021-01-01T00:00:00.000000+00:00"
+
             earlyMsg = eventing.query(
                 pre=senderHab.pre,
                 route="ksn",
@@ -1468,8 +1481,12 @@ def test_pruning_messages_single_key(mockHelpingNowUTC):
             assert earlyCache.pml == 5000    # short prune lag = 5s
 
             # Step 2: send another message at a later time 
-            # The timeliness window allows only 1s drift (d = 1000ms) so 1s after is still inside 
-            rdtLater = "2021-01-01T00:00:01.000000+00:00"
+            # The timeliness window allows 1s drift (d = 1000ms) so 1s after is still inside
+            # Advance time by 1s
+            clock.advance(seconds=1)
+
+            rdtLater = helping.nowIso8601()
+            assert rdtLater == "2021-01-01T00:00:01.000000+00:00"
 
             # Create a new message with the later timestamp
             laterMsg = eventing.query(
@@ -1496,7 +1513,10 @@ def test_pruning_messages_single_key(mockHelpingNowUTC):
             assert laterCache.mdt == rdtLater
 
             # Advance time
-            doist.tyme = 5.0
+            clock.advance(seconds=4)
+            assert helping.nowIso8601() == "2021-01-01T00:00:05.000000+00:00"
+            
+            # Run doist
             doist.recur(deeds=deeds)
 
             # Both entries must still exist because both messages are still within their respective pruning windows.
@@ -1511,8 +1531,8 @@ def test_pruning_messages_single_key(mockHelpingNowUTC):
             # Step 3: increase the time to trigger pruning for the first messsage but not the second message
             # Increase the time to passed to 6.1s which is just past the 5s drift + 1s prune lag = 6s total
             # for the first message, but the second message is still within its pruning window
-            doist.tyme = 6.1
-            assert doist.tyme == 6.1    # 6.1s have passed in the doist
+            clock.advance(seconds=1.1)
+            assert helping.nowIso8601() == "2021-01-01T00:00:06.100000+00:00"
 
             # Recur to trigger pruning of the 1st message
             doist.recur(deeds=deeds)
@@ -1524,7 +1544,10 @@ def test_pruning_messages_single_key(mockHelpingNowUTC):
             assert receiverHby.db.msgc.get(keys=(senderHab.pre, laterMsg.said)) is not None
 
             # Step 4: Advance time to prune the second message
-            doist.tyme = 7.1
+            clock.advance(seconds=1)
+            assert helping.nowIso8601() == "2021-01-01T00:00:07.100000+00:00"
+            
+            # Run doist
             doist.recur(deeds=deeds)
 
             # Second message must now be pruned
@@ -1535,7 +1558,8 @@ def test_pruning_messages_single_key(mockHelpingNowUTC):
 
         """Done Test"""
 
-def test_pruning_messages_multi_key(mockHelpingNowUTC):
+
+def test_pruning_messages_multi_key(fakeHelpingClock):
     """Test processMsg with multi-key sender (asmk auth type, 2-of-3 threshold).
 
     Covers: full sigs immediate threshold, partial accumulation then threshold,
@@ -1544,6 +1568,12 @@ def test_pruning_messages_multi_key(mockHelpingNowUTC):
     """
 
     # Step 1: Setup
+
+    # Instantiate Clock
+    clock = fakeHelpingClock
+
+    # Check the clock
+    assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
 
     salt1 = core.Salter(raw=b'0123456789abcdef').qb64
     salt2 = core.Salter(raw=b'0123456789abcdeg').qb64
@@ -1573,12 +1603,14 @@ def test_pruning_messages_multi_key(mockHelpingNowUTC):
             kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False,
                                   kramer=kramer)
 
-            # Create PruneDoer
-            pruneDoer = Pruner(kramer, tock=1.0)
-
             # Setup Doist with PruneDoer
             tock = 1
             limit = 1
+
+            # Create PruneDoer
+            pruneDoer = Pruner(kramer, tock)
+            
+            # Create Doist
             doist = doing.Doist(tock=tock, limit=limit, real=True)
             deeds = doist.enter(doers=[pruneDoer])
 
@@ -1628,7 +1660,12 @@ def test_pruning_messages_multi_key(mockHelpingNowUTC):
 
             # Signatures never come, advance time to pruning
             pml = cache.pml/1000 # convert pml to seconds
-            doist.tyme = pml + cache.d + 0.1    # .1s outside the pruning window
+            d = cache.d/1000    # convert d to seconds
+            delta = pml + d + 0.1    # .1s outside the pruning window
+
+            clock.advance(seconds=delta)
+            assert helping.nowIso8601() == "2021-01-01T00:01:01.100000+00:00"
+
             doist.recur(deeds=deeds)
 
             # Assert cache and partials got cleaned up
@@ -1638,7 +1675,7 @@ def test_pruning_messages_multi_key(mockHelpingNowUTC):
             assert receiverHby.db.pmsk.get(keys=(senderHab.pre, msg.said)) is None
 
 
-def test_pruning_exchanges(mockHelpingNowUTC):
+def test_pruning_exchanges(fakeHelpingClock):
     """
     Test pruning behavior for exchanges.
     
@@ -1652,6 +1689,12 @@ def test_pruning_exchanges(mockHelpingNowUTC):
     - Advance time to trigger pruning for the 2nd message
     """
 
+    # Instantiate Clock
+    clock = fakeHelpingClock
+
+    # Check the clock
+    assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
+    
     # Setup sender/receiver
     salt_sender = core.Salter(raw=b'0123456789abcdef').qb64
     salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
@@ -1681,12 +1724,13 @@ def test_pruning_exchanges(mockHelpingNowUTC):
             # Create Kevery 
             kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
 
-            # Create PruneDoer
-            pruneDoer = Pruner(kramer, tock=1.0)
-
             # Setup Doist with PruneDoer
             tock = 1
             limit = 1.0
+
+            # Create PruneDoer
+            pruneDoer = Pruner(kramer,tock)
+
             doist = doing.Doist(tock=tock, limit=limit)
             deeds = doist.enter(doers=[pruneDoer])
 
@@ -1718,7 +1762,9 @@ def test_pruning_exchanges(mockHelpingNowUTC):
             assert cache.xdt == stamp  # xip's xdt == its own dt 
 
             # Send first exn with exchange ID via processMsg
-            firstStamp = "2021-01-01T00:00:00.000000+00:00"
+            firstStamp = helping.nowIso8601()
+            assert firstStamp == "2021-01-01T00:00:00.000000+00:00"
+
             exn = eventing.exchange(sender=senderHab.pre,
                                     receiver=receiverHab.pre,
                                     xid=xip.said,
@@ -1743,15 +1789,16 @@ def test_pruning_exchanges(mockHelpingNowUTC):
             assert firstCache.mdt == firstCache.xdt
             
             # Run pruner, shouldn't prune anything
-            doist.recur(deeds=deeds)    # tyme = 1
-            assert doist.tyme == 1
+            doist.recur(deeds=deeds)
 
             # cache is still here
             assert firstCache is not None
 
             # Send another message with a later stamp
+            clock.advance(seconds=1)
+            secondStamp = helping.nowIso8601() # 1s after xdt
+            assert secondStamp == "2021-01-01T00:00:01.000000+00:00"
 
-            secondStamp = "2021-01-01T00:00:01.000000+00:00" # 1s after xdt
             exn2 = eventing.exchange(sender=senderHab.pre,
                                     receiver=receiverHab.pre,
                                     xid=xip.said,
@@ -1776,8 +1823,11 @@ def test_pruning_exchanges(mockHelpingNowUTC):
             assert secondCache.mdt != secondCache.xdt   # message time and exchange time are different
 
             # Delete or archive any cache entries (all messages associated with the exchange) where [xdt, xdt+xl] is not true.
-            # Advance time to prune the exchange
-            doist.tyme = (firstCache.pxl/1000) + 1 # Set the Doist time 1s over the prune window
+            # Advance time to prune the exchange using pxl (pruning exchange lag)
+            delta = (firstCache.pxl/1000) 
+            clock.advance(seconds=delta)
+            assert helping.nowIso8601() == "2021-01-01T00:05:01.000000+00:00"
+
             doist.recur(deeds=deeds)
 
             # First Cache is pruned
@@ -1785,154 +1835,3 @@ def test_pruning_exchanges(mockHelpingNowUTC):
 
             # Second Cache is also pruned because it is from the same exchange
             assert receiverHby.db.tmsc.get(keys=(senderHab.pre, xip.said, exn2.said)) is None
-
-def test_pruning_messages_real_time():
-    """
-    Test pruning behavior for single-key sender messages.
-    
-    Covers: pruning of messages with different timestamps, ensuring pruning is 
-    based on each message's own timestamp and not affected by other messages from the same sender.
-
-    Steps:
-    - accept a message
-    - accept a message from the same sender with a later timestamp
-    - Advance time to trigger pruning for the 1st message, assert 2nd message is still cached
-    - Advance time to trigger pruning for the 2nd message
-    """
-
-    # Setup sender/receiver
-    salt_sender = core.Salter(raw=b'0123456789abcdef').qb64
-    salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
-
-    with (habbing.openHby(name="sender", base="test", salt=salt_sender) as senderHby,
-          habbing.openHby(name="receiver", base="test", salt=salt_receiver) as receiverHby):
-
-        # Create transferable single-key sender
-        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True)
-        
-        # Create receiver hab
-        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True)
-
-        # Load sender's ICP into receiver
-        cross = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
-
-        senderIcp = senderHab.makeOwnEvent(sn=0)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
-        assert senderHab.pre in cross.kevers
-
-        # Create Kramer with config
-        with configing.openCF(name="kram", base="test") as cf:
-            cf.put(KRAM_INTEGRATION_CONFIG)
-            kramer = Kramer(db=receiverHby.db, cf=cf)
-            assert kramer.enabled
-
-            # Create Kevery 
-            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
-
-            # Create PruneDoer
-            pruneDoer = PrunerRt(kramer)
-
-            # Setup Doist with PruneDoer
-            tock = 1
-            limit = 1
-            doist = doing.Doist(tock=tock, limit=limit, real=True)
-
-            # Step 1: Accept a fresh message 
-            earlyStamp = helping.nowIso8601()
-            earlyMsg = eventing.query(
-                pre=senderHab.pre,
-                route="ksn",
-                query=dict(i=senderHab.pre, src=senderHab.pre),
-                stamp=earlyStamp,
-                pvrsn=Vrsn_2_0,
-            )
-
-            # Sign with sender's keys
-            earlySigers = senderHab.mgr.sign(
-                ser=earlyMsg.raw,
-                verfers=senderHab.kever.verfers,
-                indexed=True,
-            )
-            prefixer = coring.Prefixer(qb64=senderHab.pre)
-            kwa = dict(ssgs=[(prefixer, earlySigers)])
-
-            # Process message, should be accepted and cached
-            kvy.processMsg(earlyMsg, **kwa)
-
-            # Cache must exist
-            earlyCache = receiverHby.db.msgc.get(keys=(senderHab.pre, earlyMsg.said))
-            assert earlyCache is not None
-            assert earlyCache.mdt == earlyStamp
-            assert earlyCache.d == 1000   # drift = 1s
-            assert earlyCache.ml == 5000     # short lag = 5s
-            assert earlyCache.pml == 5000    # short prune lag = 5s
-
-            # Step 2: send another message at a later time 
-            # The timeliness window allows only 1s drift (d = 1000ms) so 1s after is still inside 
-            time.sleep(1)
-            laterStamp = helping.nowIso8601()
-            # Create a new message with the later timestamp
-            laterMsg = eventing.query(
-                pre=senderHab.pre,
-                route="ksn",
-                query=dict(i=senderHab.pre, src=senderHab.pre),
-                stamp=laterStamp,
-                pvrsn=Vrsn_2_0,
-            )
-            laterSigers = senderHab.mgr.sign(
-                ser=laterMsg.raw,
-                verfers=senderHab.kever.verfers,
-                indexed=True,
-            )
-            prefixer = coring.Prefixer(qb64=senderHab.pre)
-            kwa = dict(ssgs=[(prefixer, laterSigers)])
-
-            # Process the later message
-            kvy.processMsg(laterMsg, **kwa)
-
-            # Assert later message is cached with its own timestamp
-            laterCache = receiverHby.db.msgc.get(keys=(senderHab.pre, laterMsg.said))
-            assert laterCache is not None
-            assert laterCache.mdt == laterStamp
-
-            # Advance time and run the pruner, nothing should be pruned
-            time.sleep(2)       # 3s have passed 
-
-            doist.do(doers=[pruneDoer])     # +1s because we ran the doer so 4s total
-
-            # Current time elapsed: 4s
-
-            # Both entries must still exist because both messages are still within their respective pruning windows.
-            earlyCache = receiverHby.db.msgc.get(keys=(senderHab.pre, earlyMsg.said))
-            assert earlyCache is not None
-            assert earlyCache.mdt == earlyStamp
-
-            laterCache = receiverHby.db.msgc.get(keys=(senderHab.pre, laterMsg.said))
-            assert laterCache is not None
-            assert laterCache.mdt == laterStamp
-
-            # Step 3: increase the time to trigger pruning for the first messsage but not the second message
-            # Increase the time to passed to 6.1s which is just past the 5s drift + 1s prune lag = 6s total
-            # for the first message, but the second message is still within its pruning window
-            time.sleep(2.1)     # 6.1s have passed
-
-            # Run the doist
-            doist.do(doers=[pruneDoer])    
-            
-            # Current time elapsed: 7.1s
-            # First message must now be pruned
-            assert receiverHby.db.msgc.get(keys=(senderHab.pre, earlyMsg.said)) is None
-
-            # Second message is still here because of its later timestamp and pruning was ran when time elapsed was 6.1 not 7.1
-            assert receiverHby.db.msgc.get(keys=(senderHab.pre, laterMsg.said)) is not None
-
-            # We can run the doist right after for pruning because its been 7.1s 
-            doist.do(doers=[pruneDoer])
-
-            # Second message must now be pruned
-            assert receiverHby.db.msgc.get(keys=(senderHab.pre, laterMsg.said)) is None
-
-            # Close doist
-            doist.exit()
-
-        """Done Test"""
