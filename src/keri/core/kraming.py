@@ -22,6 +22,8 @@ from keri.core.coring import Verser
 from keri.help import helping
 from keri.recording import CacheTypeRecord, MsgCacheRecord, TxnMsgCacheRecord
 
+from hio.base import doing
+
 logger = help.ogler.getLogger()
 
 @dataclass(frozen=True)
@@ -847,11 +849,13 @@ class Kramer:
                     rdt = helping.fromIso8601(
                         helping.nowIso8601()).timestamp() * 1000  # ms
 
+                    # Timeliness window
                     if not (rdt - d - ml) <= mdt <= (rdt + d):
                         return None
 
                     xl = cacheTypeRecord.xl
 
+                    # Echange window
                     if not (xdt <= mdt <= xdt + xl):
                         return None
 
@@ -971,3 +975,121 @@ class Kramer:
                     return None  # message pending
                 else:
                     raise kering.KramError("Unexpected auth type while kraming.")
+
+    def pruneMessages(self, rdt=None):
+        """
+        Check message ID and prune expired cache entries and associated state.
+        rdt (Iso8601): receiver time 
+        pml (int): prune lag cache value in milliseconds
+        d (int): drift lag cache value in milliseconds
+        """
+        # If rdt is not provided, use current time, otherwise convert provided rdt to milliseconds
+        if rdt is None:
+            rdt_ms = int(helping.nowUTC().timestamp() * 1000)
+        else:
+            rdt_ms = rdt
+
+        # Initialize a flag to track if pruned
+        pruned = False
+
+        # Iterate over all message cache entries 
+        for (aid, mid), cache in list(self.db.msgc.getItemIter()):
+            
+            # Convert messsage time from cache to milliseconds Int for comparison 
+            mdt_ms = int(helping.fromIso8601(cache.mdt).timestamp() * 1000)
+
+            # Get the drift and prune lag values from the cache record
+            d = cache.d
+            pml = cache.pml
+
+            # Apply the comparison from the whitepaper
+            if not rdt_ms - d - pml <= mdt_ms <= rdt_ms + d:
+                self.db.msgc.rem(keys=(aid, mid))
+                self.db.pmkm.rem(keys=(aid, mid))
+                self.db.pmks.rem(keys=(aid, mid))
+                self.db.pmsk.rem(keys=(aid, mid))
+                pruned = True
+
+        return pruned
+    
+    def pruneExchanges(self, rdt=None):
+        """
+        Check exchanges ID and prune expired cache entries and associated state.
+        rdt (Iso8601): receiver time 
+        pxl (int): prune lag cache value in milliseconds
+        """
+        # If rdt is not provided, use current time, otherwise convert provided rdt to milliseconds
+        if rdt is None:
+            rdt_ms = int(helping.nowUTC().timestamp() * 1000)
+        else:
+            rdt_ms = rdt
+
+        # Initialize a flag to track if pruned
+        pruned = False
+
+        # Iterate over all message cache entries 
+        for key, cache in list(self.db.tmsc.getItemIter()):
+            
+            # Get the exchange time from the cache
+            xdt_ms = int(helping.fromIso8601(cache.xdt).timestamp() * 1000)
+
+            # Get the prune lag values from the cache record
+            pxl = cache.pxl
+
+            # Apply the comparison
+            if not xdt_ms <= rdt_ms <= xdt_ms + pxl:
+                self.db.tmsc.rem(keys=key)
+                self.db.pmkm.rem(keys=key)
+                self.db.pmks.rem(keys=key)
+                self.db.pmsk.rem(keys=key)
+                pruned = True
+
+        return pruned
+
+
+class Pruner(doing.Doer):
+    """
+    Doer that periodically calls KRAM pruner to clean up cache entries outside the pruning window.
+
+    Parameters:
+        kramer (Kramer): instance of Kramer to call prune on
+        period (float): time in seconds between prune calls
+    """
+    def __init__(self, kramer, period=1.0, **kwa):
+        self.kramer = kramer
+        
+        super(Pruner, self).__init__(**kwa)
+
+    def recur(self, tyme):
+        # Get current receiver time and convert it to milliseconds
+        base = int(helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000)  # ms
+
+        # Add scheduler time to base time to get the receiver time for pruning
+        rdt = base + tyme*1000  # Convert tyme to milliseconds
+
+        # Call prune messages with the calculated receiver time
+        self.kramer.pruneMessages(rdt=rdt)
+        self.kramer.pruneExchanges(rdt=rdt)
+
+        return False
+
+class PrunerRt(doing.Doer):
+
+    def __init__(self, kramer, period=1.0):
+        self.kramer = kramer
+        super().__init__(doers=[self.do], tock=period)
+
+    def do(self, tymth, tock=0.0, **opts):
+        self.wind(tymth)
+        self.tock = tock
+
+        while True:
+            # compute receiver time in ms
+            rdt_ms = int(helping.nowUTC().timestamp() * 1000)
+            
+            # prune both caches
+            self.kramer.pruneMessages(rdt=rdt_ms)
+            self.kramer.pruneExchanges(rdt=rdt_ms)
+
+            # yield back to Doist
+            yield self.tock
