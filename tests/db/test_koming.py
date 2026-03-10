@@ -10,7 +10,7 @@ from dataclasses import dataclass, asdict
 
 import pytest
 
-from keri.core.coring import Kinds
+from keri import Kinds
 from keri.db import dbing, koming
 from keri.help import helping
 

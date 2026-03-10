@@ -1203,6 +1203,8 @@ class BaseHab:
             isith = kever.ntholder.sith  # use prior next sith as default
         if nsith is None:
             nsith = isith  # use new current as default
+        if toad is None and not cuts and not adds:
+            toad = kever.toader.num  # preserve prior toad when no witness changes
 
         if isith is None:  # compute default from newly rotated verfers above
             isith = f"{max(1, ceil(len(verfers) / 2)):x}"

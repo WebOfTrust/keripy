@@ -10,8 +10,7 @@ from keri.core import (Number, Seqner, Diger, Kevery, SealEvent, parsing,
                        NumDex, MtrDex, incept, delcept, interact, deltate)
 
 from keri.app import keeping, habbing
-from keri.db import basing
-from keri.db.dbing import snKey
+from keri.db import basing, snKey
 
 logger = help.ogler.getLogger()
 

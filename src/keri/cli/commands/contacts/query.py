@@ -98,7 +98,7 @@ class ContactQueryDoer(doing.DoDoer):
             pre = self.contact_aid
             contact = org.get(pre)
         elif self.contact_alias:
-            contacts = org.find('alias', f"^{self.contact_alias}$")
+            contacts = org.findExact('alias', self.contact_alias)
             if len(contacts) == 0:
                 print(f"Contact with alias '{self.contact_alias}' not found")
                 self.remove([self.hbyDoer, self.mbd])

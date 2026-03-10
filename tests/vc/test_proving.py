@@ -8,9 +8,8 @@ import pytest
 from keri import InvalidValueError, Versionage, Vrsn_1_0, Kinds
 from keri.core import (Prefixer, Seqner, Diger, Siger,
                        Salter, Counter, coring, scheming,
-                       parsing, serdering, counting, Codens)
-
-from keri.core.scheming import CacheResolver
+                       parsing, serdering, counting, Codens,
+                       CacheResolver)
 
 from keri.app import habbing
 from keri.vc import credential

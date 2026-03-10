@@ -16,7 +16,7 @@ from keri.core import (Counter, GenDex, Codens, Seqner, Dater, Texter, Pather,
                        Blinder, Mediar, TypeMedia, Sealer, SealKind, Verser,
                        Salter, Parser, Kever, Kevery, incept, rotate, interact)
 
-from keri.db.basing import openDB
+from keri.db import openDB
 
 
 logger = help.ogler.getLogger()

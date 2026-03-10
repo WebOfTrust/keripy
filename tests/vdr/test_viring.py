@@ -13,9 +13,8 @@ import lmdb
 from keri import versify, Kinds
 
 from keri.core import indexing, Diger, Number, Prefixer, Saider, Seqner
-from keri.db import subing
-from keri.db.dbing import openLMDB, dgKey, snKey
-from keri.vdr.viring import Reger
+from keri.db import subing, openLMDB, dgKey, snKey
+from keri.vdr import Reger
 
 
 def test_issuer():
