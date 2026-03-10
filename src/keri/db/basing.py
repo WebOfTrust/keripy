@@ -919,10 +919,10 @@ class Baser(dbing.LMDBer):
                                              klas=(coring.Prefixer, coring.Cigar))
         self.ures = subing.CatCesrIoSetSuber(db=self, subkey='ures.',
                                              klas=(coring.Diger, coring.Prefixer, coring.Cigar))
-        self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.', 
-                                            klas=(coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
-        self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.', 
-                                            klas=(coring.Diger, coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
+        self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.',
+                        klas=(coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
+        self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.',
+                        klas=(coring.Diger, coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
         self.pses = subing.OnIoDupSuber(db=self, subkey='pses.')
         self.pwes = subing.OnIoDupSuber(db=self, subkey='pwes.')
         self.pdes = subing.OnIoDupSuber(db=self, subkey='pdes.')
@@ -1182,9 +1182,11 @@ class Baser(dbing.LMDBer):
         # TODO: clean
         self.ccigs = subing.CesrSuber(db=self, subkey='ccigs.', klas=coring.Cigar)
 
-        # Chunked image data for contact information for remote identifiers
-        # TODO: clean
-        self.imgs = subing.Suber(db=self, subkey='imgs.')
+        # Blinded media for contact information for remote identifiers.
+        # CatCesrSuber with TypeMedia format: (Noncer=SAID, Noncer=UUID, Labeler=MIME, Texter=data)
+        self.imgs = subing.CatCesrSuber(db=self, subkey='imgs.',
+                                         klas=(coring.Noncer, coring.Noncer,
+                                               coring.Labeler, coring.Texter))
 
         # Field values for identifier information for local identifiers. Keyed by prefix/field
         # TODO: clean
@@ -1200,9 +1202,11 @@ class Baser(dbing.LMDBer):
         # TODO: clean
         self.icigs = subing.CesrSuber(db=self, subkey='icigs.', klas=coring.Cigar)
 
-        # Chunked image data for identifier information for local identifiers
-        # TODO: clean
-        self.iimgs = subing.Suber(db=self, subkey='iimgs.')
+        # Blinded media for identifier information for local identifiers.
+        # CatCesrSuber with TypeMedia format: (Noncer=SAID, Noncer=UUID, Labeler=MIME, Texter=data)
+        self.iimgs = subing.CatCesrSuber(db=self, subkey='iimgs.',
+                                          klas=(coring.Noncer, coring.Noncer,
+                                                coring.Labeler, coring.Texter))
 
         # Delegation escrow dbs #
         # delegated partial witness escrow
@@ -1518,13 +1522,13 @@ class Baser(dbing.LMDBer):
                     for keys, val in srcdb.getItemIter():
                         cpydb.add(keys=keys, val=val)
 
-                # Insecure raw imgs database copy.
-                for (key, val) in self.getTopItemIter(self.imgs.sdb):
-                    copy.setVal(db=copy.imgs.sdb, key=key, val=val)
+                # Copy imgs (blinded media for remote identifiers)
+                for keys, val in self.imgs.getItemIter():
+                    copy.imgs.pin(keys=keys, val=val)
 
-                # Insecure raw iimgs database copy.
-                for (key, val) in self.getTopItemIter(self.iimgs.sdb):
-                    copy.setVal(db=copy.iimgs.sdb, key=key, val=val)
+                # Copy iimgs (blinded media for local identifiers)
+                for keys, val in self.iimgs.getItemIter():
+                    copy.iimgs.pin(keys=keys, val=val)
 
                 # clone .habs  habitat name prefix Komer subdb
                 # copy.habs = koming.Komer(db=copy, schema=HabitatRecord, subkey='habs.')  # copy
@@ -1680,7 +1684,7 @@ class Baser(dbing.LMDBer):
         if quads := self.vrcs.get(keys=dgkey):
             atc.extend(Counter(code=Codens.TransReceiptQuadruples,
                                count=len(quads), version=kering.Vrsn_1_0).qb64b)
-            for pre, snu, diger, siger in quads:    # adapt to CESR 
+            for pre, snu, diger, siger in quads:    # adapt to CESR
                 atc.extend(pre.qb64b)
                 atc.extend(snu.qb64b)
                 atc.extend(diger.qb64b)
