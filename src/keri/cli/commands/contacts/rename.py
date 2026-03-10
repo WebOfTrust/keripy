@@ -62,7 +62,7 @@ def rename(tymth, tock=0.0, **opts):
                 pre = aid
                 contact = org.get(aid)
             elif old_alias:
-                contacts = org.find('alias', f"^{old_alias}$")  # Exact match
+                contacts = org.findExact('alias', old_alias)
                 if len(contacts) == 0:
                     print(f"Contact with alias '{old_alias}' not found")
                     return -1

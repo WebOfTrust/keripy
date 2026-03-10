@@ -60,7 +60,7 @@ def get(tymth, tock=0.0, **opts):
                 pre = aid
                 contact = org.get(aid)
             elif alias:
-                contacts = org.find('alias', f"^{alias}$")  # Exact match
+                contacts = org.findExact('alias', alias)
                 if len(contacts) > 1:
                     print(f"Multiple contacts match alias '{alias}'")
                     return -1

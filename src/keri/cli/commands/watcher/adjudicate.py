@@ -21,7 +21,7 @@ from ....help import helping
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Perform key event adjudication on any new key state from watchers.', 
+parser = argparse.ArgumentParser(description='Perform key event adjudication on any new key state from watchers.',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: handle(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
@@ -86,9 +86,11 @@ class AdjudicationDoer(doing.DoDoer):
             if self.watched in self.hby.kevers:
                 watd = self.watched
             else:
-                watd = org.find("alias", self.watched)
-                if len(watd) != 1:
-                    raise ValueError(f"invalid recipient {self.watched}")
+                watd = org.findExact("alias", self.watched)
+                if len(watd) == 0:
+                    raise ValueError(f"no contact found with alias {self.watched!r}")
+                if len(watd) > 1:
+                    raise ValueError(f"multiple contacts match alias {self.watched!r}, use prefix instead")
                 watd = watd[0]['id']
 
             if not watd:
@@ -154,4 +156,3 @@ class AdjudicationDoer(doing.DoDoer):
         except ConfigurationError as e:
             print(f"identifier prefix for {self.name} does not exist, incept must be run first", )
             return -1
-
