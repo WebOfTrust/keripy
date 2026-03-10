@@ -1562,6 +1562,11 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
     Covers: full sigs immediate threshold, partial accumulation then threshold,
     duplicate sig dedup, mixed sig sources (ssgs+tsgs), key state change during
     accumulation, long lag timeliness, cache-exists idempotency.
+
+    Steps:
+    - Multi-key message created threshold is not met yet, cache created, partials populated
+    - Advance time past the exchange pruning window
+    - Assert all entries for cache and partials are deleted
     """
 
     # Step 1: Setup
@@ -1679,10 +1684,11 @@ def test_pruning_exchanges(fakeHelpingClock):
     done for all messages belonging to the exchange.
 
     Steps:
+    - create xip and seed it directly
     - accept an exn
     - accept an exn from the same sender with a later timestamp
     - Advance time to trigger pruning, since the exchange is outside the window, 
-      messsages are deleted
+      all messsages are deleted
     """
 
     # Instantiate Clock
@@ -1826,8 +1832,9 @@ def test_pruning_exchanges(fakeHelpingClock):
 
             doist.recur(deeds=deeds)
 
-            # First Cache is pruned
+            # Xip and First Cache is pruned
             assert receiverHby.db.tmsc.get(keys=(senderHab.pre, xip.said, exn.said)) is None
+            assert receiverHby.db.tmsc.get(keys=(senderHab.pre, xip.said, xip.said)) is None
 
             # Second Cache is also pruned because it belongs to the same exchange
             assert receiverHby.db.tmsc.get(keys=(senderHab.pre, xip.said, exn2.said)) is None
