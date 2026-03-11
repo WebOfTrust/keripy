@@ -62,7 +62,8 @@ class Kramer:
         self.cf = cf if cf else None
 
         # Load config once at init, inject into runtime state
-        kram = self._getKramCf()
+        config = self.cf.get()
+        kram = config.get('kram', {})
 
         self._enabled = kram.get('enabled', False)
 
@@ -70,12 +71,15 @@ class Kramer:
         self._denials = self._compactDenials(self._fullDenials)
 
         self._ctypCf = kram.get('caches', {})
-        self._populateCtyp(self._ctypCf)
+        # Prepopulate ctyp cache with configured values
+        ctypCf = self._ctypCf
+        for key, val in ctypCf.items():
+            try:
+                record = CacheTypeRecord(*map(int, val))
+                self.db.ctyp.pin(key, record)
+            except Exception as e:
+                raise kering.KramConfigurationError(f"Invalid cache configuration for {key}, {val}: {e}")
 
-    def _getKramCf(self):
-        """Get the kram config dict"""
-        config = self.cf.get()
-        return config.get('kram', {})
 
     @staticmethod
     def _compactDenials(fullDenials):
@@ -111,15 +115,6 @@ class Kramer:
                 raise kering.KramConfigurationError(f"Invalid denial for {denial}: {e}")
         return compact
 
-    def _populateCtyp(self, ctypCf):
-        """Prepopulate ctyp cache with configured values"""
-        for key, val in ctypCf.items():
-            try:
-                record = CacheTypeRecord(*map(int, val))
-                self.db.ctyp.pin(key, record)
-            except Exception as e:
-                raise kering.KramConfigurationError(f"Invalid cache configuration for {key}, {val}: {e}")
-
     @property
     def enabled(self):
         return self._enabled
@@ -144,6 +139,7 @@ class Kramer:
             serder (SerderKERI): message instance
         """
         return f"{Verser.verToB64(version=serder.pvrsn)}.{serder.ilk}.{serder.route}"
+
 
     def _fetchCacheType(self, msgType, route):
         """Fetch the most specific matching cache-type entry.
@@ -191,6 +187,7 @@ class Kramer:
         raise kering.KramError(f"No cache-type entry found for "
                                f"msgType={msgType}, route={route}")
 
+
     @staticmethod
     def _hasSeals(senderId, **kwa):
         """Check if kwa contains seal reference attachments from the sender.
@@ -226,6 +223,7 @@ class Kramer:
                 return True
         return False
 
+
     @staticmethod
     def _hasSigs(senderId, **kwa):
         """Check if kwa contains signature attachments applicable to sender.
@@ -253,6 +251,7 @@ class Kramer:
             if prefixer.qb64 == senderId:
                 return True
         return False
+
 
     def _resolveAuthType(self, msg, kwa, kever, hasSealRef, hasSigs, senderId):
         """Resolve authentication type, validating seal exactly once for
@@ -300,6 +299,7 @@ class Kramer:
             return AuthTypes.AttachedSignatureMultiKey, False
 
         return None, False
+
 
     def _verifyAttachedSigs(self, *, msg, senderId, kever, **kwa):
         """Verify attached signatures using cigar gate then oset pooling.
@@ -442,6 +442,59 @@ class Kramer:
 
         return False  # No matching seal digest found
 
+
+    def _storeNonAuthAttachments(self, key, **kwa):
+        """Idempotently store non-authenticator attachments for a partially
+        signed multi-key message pending threshold satisfaction.
+
+        Handles all parser kwa attachment keys except ssgs and essrs, which
+        are handled separately as authenticators or encapsulations.
+
+        Parameters:
+            key (tuple): (AID, MID) partial db key
+            **kwa: keyword arguments from parser exts dict
+        """
+        for item in kwa.get('trqs', []):
+            self.db.trqs.add(key, item)
+        for prefixer, seqner, saider, sigers in kwa.get('tsgs', []):
+            for siger in sigers:
+                self.db.tsgs.add(key, (prefixer, seqner, saider, siger))
+        for item in kwa.get('sscs', []):
+            self.db.sscs.add(key, item)
+        for item in kwa.get('ssts', []):
+            self.db.ssts.add(key, item)
+        for item in kwa.get('frcs', []):
+            self.db.frcs.add(key, item)
+        for item in kwa.get('tdcs', []):
+            self.db.tdcs.add(key, item)
+        for item in kwa.get('ptds', []):
+            self.db.ptds.add(key, item)
+        for item in kwa.get('bsqs', []):
+            self.db.bsqs.add(key, item)
+        for item in kwa.get('bsss', []):
+            self.db.bsss.add(key, item)
+        for item in kwa.get('tmqs', []):
+            self.db.tmqs.add(key, item)
+
+
+    def _remNonAuthAttachments(self, key):
+        """Remove all non-authenticator attachment db entries for key.
+
+        Parameters:
+            key (tuple): (AID, MID) partial db key
+        """
+        self.db.trqs.rem(key)
+        self.db.tsgs.rem(key)
+        self.db.sscs.rem(key)
+        self.db.ssts.rem(key)
+        self.db.frcs.rem(key)
+        self.db.tdcs.rem(key)
+        self.db.ptds.rem(key)
+        self.db.bsqs.rem(key)
+        self.db.bsss.rem(key)
+        self.db.tmqs.rem(key)
+
+
     def intake(self, serder, **kwa):
         """Process message through KRAM denial and cache logic.
 
@@ -456,6 +509,7 @@ class Kramer:
                     return serder
             return self.kramit(serder, **kwa)
         return serder  # KRAM disabled for all messages return message for further processing
+
 
     def kramit(self, msg, **kwa):
         """Core KRAM processing logic.
@@ -582,7 +636,8 @@ class Kramer:
                     if storedKeyState is None:
                         self.db.pmsk.pin(key, currentKeyState)
 
-                # TODO: Idempotently add non-signature attachments
+                    # Store non-auth attachments alongside new sigs
+                    self._storeNonAuthAttachments(key, **kwa)                    
 
                 # Check threshold using current kever's tholder
                 allSigs = existingSigs + newSigs
@@ -590,11 +645,7 @@ class Kramer:
                     sigIndices = [sig.index for sig in allSigs]
 
                     if kever.tholder.satisfy(indices=sigIndices):
-                        # Accept, remove all partial database entries
-                        self.db.pmkm.rem(key)
-                        self.db.pmks.rem(key)
-                        self.db.pmsk.rem(key)
-                        # TODO: Remove from other partial attachment databases
+                        # Accept, partial database entries will be removed by pruner
                         return msg
 
                 # Threshold not satisfied, message remains pending
@@ -705,7 +756,8 @@ class Kramer:
 
                     self.db.pmsk.pin(key, currentKeyState)
 
-                    # TODO: Store non-auth attachments in pmsa databases
+                    # Store non-auth attachments for forwarding on threshold satisfaction
+                    self._storeNonAuthAttachments(key, **kwa)
 
                     return None  # message pending
 
@@ -788,7 +840,8 @@ class Kramer:
                     if storedKeyState is None:
                         self.db.pmsk.pin(partialKey, currentKeyState)
 
-                # TODO: Idempotently add non-signature attachments
+                    # Store non-auth attachments alongside new sigs
+                    self._storeNonAuthAttachments(partialKey, **kwa)                    
 
                 # Check threshold using current kever's tholder
                 allSigs = existingSigs + newSigs
@@ -796,11 +849,7 @@ class Kramer:
                     sigIndices = [sig.index for sig in allSigs]
 
                     if kever.tholder.satisfy(indices=sigIndices):
-                        # Accept, remove all partial database entries
-                        self.db.pmkm.rem(partialKey)
-                        self.db.pmks.rem(partialKey)
-                        self.db.pmsk.rem(partialKey)
-                        # TODO: Remove from other partial attachment databases
+                        # Accept, partial database entries will be removed by pruner
                         return msg
 
                 # Threshold not satisfied, message remains pending
@@ -970,7 +1019,8 @@ class Kramer:
 
                     self.db.pmsk.pin(partialKey, currentKeyState)
 
-                    # TODO: Store non-auth attachments in pmsa databases
+                    # Store non-auth attachments for forwarding on threshold satisfaction
+                    self._storeNonAuthAttachments(partialKey, **kwa)
 
                     return None  # message pending
                 else:
