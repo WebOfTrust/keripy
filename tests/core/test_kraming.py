@@ -1945,16 +1945,15 @@ def test_pruning_messages_single_key(fakeHelpingClock):
 
 
 def test_pruning_messages_multi_key(fakeHelpingClock):
-    """Test processMsg with multi-key sender (asmk auth type, 2-of-3 threshold).
+    """Test pruning with multi-key sender (asmk auth type, 2-of-3 threshold) and nont auth attachments.
 
-    Covers: full sigs immediate threshold, partial accumulation then threshold,
-    duplicate sig dedup, mixed sig sources (ssgs+tsgs), key state change during
-    accumulation, long lag timeliness, cache-exists idempotency.
+    Covers: partial accumulation where threshold is never met,
+    pruning is called and cleans up cache and attachments.
 
     Steps:
     - Multi-key message created threshold is not met yet, cache created, partials populated
-    - Advance time past the exchange pruning window
-    - Assert all entries for cache and partials are deleted
+    - Threshold is never met, advance time past the exchange pruning window
+    - Assert all entries for cache, partials and attachments are deleted
     """
 
     # Step 1: Setup
@@ -2018,10 +2017,62 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
                                    query=dict(i=senderHab.pre, src=senderHab.pre),
                                    stamp=stamp,
                                    pvrsn=Vrsn_2_0)
-            allSigers2 = signMsg(msg)
+            allSigers = signMsg(msg)
 
-            # First delivery, 1 sig (below 2-of-3 threshold)
-            kwa = dict(ssgs=[(prefixer, [allSigers2[0]])])
+            # Build non-auth attachments to include in kwa
+            partialKey = (senderHab.pre, msg.said)
+            senderKever = receiverHby.db.kevers[senderHab.pre]
+            seqner = coring.Seqner(sn=senderKever.sner.num)
+            saider = coring.Saider(qb64=senderKever.serder.said)
+            diger = coring.Diger(ser=msg.raw)
+
+            # trqs: trans receipt quadruple (prefixer, seqner, saider, siger)
+            trqs = [(prefixer, seqner, saider, allSigers[0])]
+
+            # tsgs: trans last sig group (prefixer, seqner, saider, [sigers])
+            tsgs = [(prefixer, seqner, saider, [allSigers[0]])]
+
+            # sscs: first seen seal couple (seqner, saider) issuing or delegating
+            sscs = [(seqner, saider)]
+
+            # ssts: source seal triple (prefixer, seqner, saider) issued or delegated
+            ssts = [(prefixer, seqner, saider)]
+
+            # frcs: first seen replay couple (seqner, dater)
+            firner = coring.Seqner(sn=0)
+            dater = coring.Dater(dts=stamp)
+            frcs = [(firner, dater)]
+
+            # tdcs: typed digest seal couple (verser, diger)
+            verser = coring.Verser(pvrsn=Vrsn_2_0)
+            tdcs = [(verser, diger)]
+
+            # ptds: pathed stream (raw bytes)
+            ptds = [b'\x00\x01\x02\x03']
+
+            # bsqs: blind state quadruple (diger, noncer, noncer, labeler)
+            noncer0 = coring.Noncer()
+            noncer1 = coring.Noncer()
+            labeler = coring.Labeler(label='test')
+            bsqs = [(diger, noncer0, noncer1, labeler)]
+
+            # bsss: bound state sextuple (diger, noncer, noncer, labeler, number, noncer)
+            number = coring.Number(num=1)
+            noncer2 = coring.Noncer()
+            bsss = [(diger, noncer0, noncer1, labeler, number, noncer2)]
+
+            # tmqs: type media quadruple (diger, noncer, labeler, texter)
+            texter = coring.Texter(text='application/json')
+            tmqs = [(diger, noncer0, labeler, texter)]
+
+
+            # First delivery with 1 sig (below threshold) + non-auth attachments
+
+            kwa = dict(ssgs=[(prefixer, [allSigers[0]])],
+                       trqs=trqs, tsgs=tsgs, sscs=sscs, ssts=ssts,
+                       frcs=frcs, tdcs=tdcs, ptds=ptds,
+                       bsqs=bsqs, bsss=bsss, tmqs=tmqs)
+
             kvy.processMsg(msg, **kwa)
 
             # Run the doist to process pruning (it shouldn't prune anything yet)
@@ -2044,6 +2095,18 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
             pmsk = receiverHby.db.pmsk.get(keys=(senderHab.pre, msg.said))
             assert pmsk is not None
 
+            # All non-auth attachment dbs populated
+            assert len(receiverHby.db.trqs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.tsgs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.sscs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.ssts.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.frcs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.tdcs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.ptds.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.bsqs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.bsss.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.tmqs.get(keys=partialKey)) == 1
+
             # No cue generated because threshold not met
             assert len(kvy.cues) == 0
 
@@ -2063,6 +2126,161 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
             assert receiverHby.db.pmks.get(keys=(senderHab.pre, msg.said)) == []
             assert receiverHby.db.pmsk.get(keys=(senderHab.pre, msg.said)) is None
 
+            # Non auth attachments got cleaned up
+            assert receiverHby.db.trqs.get(keys=partialKey) == []
+            assert receiverHby.db.tsgs.get(keys=partialKey) == []
+            assert receiverHby.db.sscs.get(keys=partialKey) == []
+            assert receiverHby.db.ssts.get(keys=partialKey) == []
+            assert receiverHby.db.frcs.get(keys=partialKey) == []
+            assert receiverHby.db.tdcs.get(keys=partialKey) == []
+            assert receiverHby.db.ptds.get(keys=partialKey) == []
+            assert receiverHby.db.bsqs.get(keys=partialKey) == []
+            assert receiverHby.db.bsss.get(keys=partialKey) == []
+            assert receiverHby.db.tmqs.get(keys=partialKey) == []
+
+            # Happy path, attachments pruned after threshold is met
+            stamp = helping.nowIso8601()
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+
+            msg = eventing.query(pre=senderHab.pre,
+                                 route="ksn",
+                                 query=dict(i=senderHab.pre, src=senderHab.pre),
+                                 stamp=stamp,
+                                 pvrsn=Vrsn_2_0)
+
+            allSigers = senderHab.mgr.sign(ser=msg.raw,
+                                           verfers=senderHab.kever.verfers,
+                                           indexed=True)
+
+            partialKey = (senderHab.pre, msg.said)
+
+            # Build non-auth attachments to include in kwa
+
+            senderKever = receiverHby.db.kevers[senderHab.pre]
+            seqner = coring.Seqner(sn=senderKever.sner.num)
+            saider = coring.Saider(qb64=senderKever.serder.said)
+            diger = coring.Diger(ser=msg.raw)
+
+            # trqs: trans receipt quadruple (prefixer, seqner, saider, siger)
+            trqs = [(prefixer, seqner, saider, allSigers[0])]
+
+            # tsgs: trans last sig group (prefixer, seqner, saider, [sigers])
+            tsgs = [(prefixer, seqner, saider, [allSigers[0]])]
+
+            # sscs: first seen seal couple (seqner, saider) issuing or delegating
+            sscs = [(seqner, saider)]
+
+            # ssts: source seal triple (prefixer, seqner, saider) issued or delegated
+            ssts = [(prefixer, seqner, saider)]
+
+            # frcs: first seen replay couple (seqner, dater)
+            firner = coring.Seqner(sn=0)
+            dater = coring.Dater(dts=stamp)
+            frcs = [(firner, dater)]
+
+            # tdcs: typed digest seal couple (verser, diger)
+            verser = coring.Verser(pvrsn=Vrsn_2_0)
+            tdcs = [(verser, diger)]
+
+            # ptds: pathed stream (raw bytes)
+            ptds = [b'\x00\x01\x02\x03']
+
+            # bsqs: blind state quadruple (diger, noncer, noncer, labeler)
+            noncer0 = coring.Noncer()
+            noncer1 = coring.Noncer()
+            labeler = coring.Labeler(label='test')
+            bsqs = [(diger, noncer0, noncer1, labeler)]
+
+            # bsss: bound state sextuple (diger, noncer, noncer, labeler, number, noncer)
+            number = coring.Number(num=1)
+            noncer2 = coring.Noncer()
+            bsss = [(diger, noncer0, noncer1, labeler, number, noncer2)]
+
+            # tmqs: type media quadruple (diger, noncer, labeler, texter)
+            texter = coring.Texter(text='application/json')
+            tmqs = [(diger, noncer0, labeler, texter)]
+
+
+            # First delivery with 1 sig (below threshold) + non-auth attachments
+
+            kwa = dict(ssgs=[(prefixer, [allSigers[0]])],
+                       trqs=trqs, tsgs=tsgs, sscs=sscs, ssts=ssts,
+                       frcs=frcs, tdcs=tdcs, ptds=ptds,
+                       bsqs=bsqs, bsss=bsss, tmqs=tmqs)
+            kvy.processMsg(msg, **kwa)
+
+            # Assert msgc cache created for partial sigs
+            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg.said))
+            assert cache is not None
+            assert cache.mdt == stamp
+            assert cache.d == 1000   # drift = 1s
+            assert cache.ml == 60000     # message long lag = 60s
+            assert cache.pml == 60000    # message long prune lag = 60s
+
+            # Threshold not met, partials populated
+            assert receiverHby.db.pmkm.get(keys=partialKey) is not None
+            pmks = receiverHby.db.pmks.get(keys=partialKey)
+            assert len(pmks) == 1
+
+            # All non-auth attachment dbs populated
+            assert len(receiverHby.db.trqs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.tsgs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.sscs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.ssts.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.frcs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.tdcs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.ptds.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.bsqs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.bsss.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.tmqs.get(keys=partialKey)) == 1
+
+            assert len(kvy.cues) == 0
+
+            # Second delivery with 2nd sig meets threshold
+            # Non-auth attachments should persist (pruner responsibility)
+
+            kwa2 = dict(ssgs=[(prefixer, [allSigers[2]])],
+                        trqs=trqs, tsgs=tsgs, sscs=sscs, ssts=ssts,
+                        frcs=frcs, tdcs=tdcs, ptds=ptds,
+                        bsqs=bsqs, bsss=bsss, tmqs=tmqs)
+            kvy.processMsg(msg, **kwa2)
+
+            # Threshold met, cue generated
+            assert len(kvy.cues) > 0
+            cue = kvy.cues.popleft()
+            assert cue["kin"] == "reply"
+
+            # Non-auth attachments persist
+            assert len(receiverHby.db.trqs.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.tsgs.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.sscs.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.ssts.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.frcs.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.tdcs.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.ptds.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.bsqs.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.bsss.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.tmqs.get(keys=partialKey)) >= 1
+
+            # Advance time past pruning window
+            pml = cache.pml/1000 # convert pml to seconds
+            d = cache.d/1000    # convert d to seconds
+            delta = pml + d + 0.1    # .1s outside the pruning window
+
+            clock.advance(seconds=delta)
+            doist.recur(deeds=deeds)
+
+            # Non auth attachments got cleaned up
+            assert receiverHby.db.trqs.get(keys=partialKey) == []
+            assert receiverHby.db.tsgs.get(keys=partialKey) == []
+            assert receiverHby.db.sscs.get(keys=partialKey) == []
+            assert receiverHby.db.ssts.get(keys=partialKey) == []
+            assert receiverHby.db.frcs.get(keys=partialKey) == []
+            assert receiverHby.db.tdcs.get(keys=partialKey) == []
+            assert receiverHby.db.ptds.get(keys=partialKey) == []
+            assert receiverHby.db.bsqs.get(keys=partialKey) == []
+            assert receiverHby.db.bsss.get(keys=partialKey) == []
+            assert receiverHby.db.tmqs.get(keys=partialKey) == []
 
 def test_pruning_exchanges(fakeHelpingClock):
     """

@@ -1026,7 +1026,7 @@ class Kramer:
                 else:
                     raise kering.KramError("Unexpected auth type while kraming.")
 
-    def pruneMessages(self, rdt_ms):
+    def _pruneMessages(self, rdt_ms):
         """
         Check message ID and prune expired cache entries and associated state.
         rdt (Iso8601): receiver time 
@@ -1052,11 +1052,15 @@ class Kramer:
                 self.db.pmkm.rem(keys=(aid, mid))
                 self.db.pmks.rem(keys=(aid, mid))
                 self.db.pmsk.rem(keys=(aid, mid))
+
+                # Remove non Auth Partials
+                self._remNonAuthAttachments((aid, mid))
+
                 pruned = True
 
         return pruned
     
-    def pruneExchanges(self, rdt_ms):
+    def _pruneExchanges(self, rdt_ms):
         """
         Check exchanges ID and prune expired cache entries and associated state.
         rdt (int): receiver time in milliseconds
@@ -1066,7 +1070,7 @@ class Kramer:
         pruned = False
 
         # Iterate over all message cache entries 
-        for key, cache in list(self.db.tmsc.getItemIter()):
+        for (aid, xid, mid), cache in list(self.db.tmsc.getItemIter()):
             
             # Get the exchange time from the cache
             xdt_ms = int(helping.fromIso8601(cache.xdt).timestamp() * 1000)
@@ -1076,10 +1080,14 @@ class Kramer:
 
             # Apply the comparison
             if not xdt_ms <= rdt_ms <= xdt_ms + pxl:
-                self.db.tmsc.rem(keys=key)
-                self.db.pmkm.rem(keys=key)
-                self.db.pmks.rem(keys=key)
-                self.db.pmsk.rem(keys=key)
+                self.db.tmsc.rem(keys=(aid, xid, mid))
+                self.db.pmkm.rem(keys=(aid, xid, mid))
+                self.db.pmks.rem(keys=(aid, xid, mid))
+                self.db.pmsk.rem(keys=(aid, xid, mid))
+
+                # Remove non Auth Partials
+                self._remNonAuthAttachments((aid, mid))
+
                 pruned = True
 
         return pruned
@@ -1101,8 +1109,8 @@ class Pruner(doing.Doer):
             rdt_ms = int(helping.nowUTC().timestamp() * 1000)
             
             # check prune both messages and exchanges
-            self.kramer.pruneMessages(rdt_ms=rdt_ms)
-            self.kramer.pruneExchanges(rdt_ms=rdt_ms)
+            self.kramer._pruneMessages(rdt_ms=rdt_ms)
+            self.kramer._pruneExchanges(rdt_ms=rdt_ms)
 
             # yield back to Doist
             yield self.tock
