@@ -453,26 +453,26 @@ class Kramer:
             **kwa: keyword arguments from parser exts dict
         """
         for item in kwa.get('trqs', []):
-            self.db.trqs.add(key, item)
+            self.db.kramTRQS.add(key, item)
         for prefixer, seqner, saider, sigers in kwa.get('tsgs', []):
             for siger in sigers:
-                self.db.tsgs.add(key, (prefixer, seqner, saider, siger))
+                self.db.kramTSGS.add(key, (prefixer, seqner, saider, siger))
         for item in kwa.get('sscs', []):
-            self.db.sscs.add(key, item)
+            self.db.kramSSCS.add(key, item)
         for item in kwa.get('ssts', []):
-            self.db.ssts.add(key, item)
+            self.db.kramSSTS.add(key, item)
         for item in kwa.get('frcs', []):
-            self.db.frcs.add(key, item)
+            self.db.kramFRCS.add(key, item)
         for item in kwa.get('tdcs', []):
-            self.db.tdcs.add(key, item)
+            self.db.kramTDCS.add(key, item)
         for item in kwa.get('ptds', []):
-            self.db.ptds.add(key, item)
+            self.db.kramPTDS.add(key, item)
         for item in kwa.get('bsqs', []):
-            self.db.bsqs.add(key, item)
+            self.db.kramBSQS.add(key, item)
         for item in kwa.get('bsss', []):
-            self.db.bsss.add(key, item)
+            self.db.kramBSSS.add(key, item)
         for item in kwa.get('tmqs', []):
-            self.db.tmqs.add(key, item)
+            self.db.kramTMQS.add(key, item)
 
 
     def _remNonAuthAttachments(self, key):
@@ -481,16 +481,16 @@ class Kramer:
         Parameters:
             key (tuple): (AID, MID) partial db key
         """
-        self.db.trqs.rem(key)
-        self.db.tsgs.rem(key)
-        self.db.sscs.rem(key)
-        self.db.ssts.rem(key)
-        self.db.frcs.rem(key)
-        self.db.tdcs.rem(key)
-        self.db.ptds.rem(key)
-        self.db.bsqs.rem(key)
-        self.db.bsss.rem(key)
-        self.db.tmqs.rem(key)
+        self.db.kramTRQS.rem(key)
+        self.db.kramTSGS.rem(key)
+        self.db.kramSSCS.rem(key)
+        self.db.kramSSTS.rem(key)
+        self.db.kramFRCS.rem(key)
+        self.db.kramTDCS.rem(key)
+        self.db.kramPTDS.rem(key)
+        self.db.kramBSQS.rem(key)
+        self.db.kramBSSS.rem(key)
+        self.db.kramTMQS.rem(key)
 
 
     def intake(self, serder, **kwa):
