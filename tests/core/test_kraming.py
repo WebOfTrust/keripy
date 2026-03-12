@@ -1438,9 +1438,9 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
     non-empty prior p field value.
 
     Covers:
-    - v1 exn with non-empty p field, no x field -> msgc (non-txn) cache
-    - v1 exn that carries an x field -> still msgc, not tmsc (x ignored)
-    - v2 exn with x field -> tmsc (transactional) cache, confirming the
+    - v1 exn with non-empty p field, no x field -> kramMSGC (non-txn) cache
+    - v1 exn that carries an x field -> still kramMSGC, not kramTMSC (x ignored)
+    - v2 exn with x field -> kramTMSC (transactional) cache, confirming the
       version gate does not break the v2 path
     """
 
@@ -1471,7 +1471,7 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
 # Step 2: v1 exn with non-empty p field, no x field
             # The v1 exn schema rejects x/ri via the builder, so hand-craft
             # the ked to produce a spec-conformant v1 exn on the wire.
-            # Must route to msgc (non-transactional), not tmsc.
+            # Must route to kramMSGC (non-transactional), not kramTMSC.
 
             fakePrior = "E" + "A" * 43
             v1ExnWithPKed = {
@@ -1504,10 +1504,10 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
 
             assert result is not None  # accepted
             # Routed to non-transactional cache
-            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, v1ExnWithP.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, v1ExnWithP.said))
             assert cache is not None
             # NOT written to transactional cache
-            assert receiverHby.db.tmsc.get(
+            assert receiverHby.db.kramTMSC.get(
                 keys=(senderHab.pre, fakePrior, v1ExnWithP.said)) is None
 
 
@@ -1515,7 +1515,7 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
             # The v1 serializer rejects x as an unallowed field, so we
             # hand-craft the ked to simulate a malformed message arriving
             # on the wire. The x field must be ignored by kramit; the
-            # message must still route to msgc, not tmsc.
+            # message must still route to kramMSGC, not kramTMSC.
 
             fakeXid = "E" + "B" * 43
             v1ExnKed = {
@@ -1545,17 +1545,17 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
 
             assert result is not None  # accepted
             # Still routes to non-transactional cache (x field ignored for v1)
-            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, v1ExnWithX.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, v1ExnWithX.said))
             assert cache is not None
             # NOT written to transactional cache under the injected x field
-            assert receiverHby.db.tmsc.get(
+            assert receiverHby.db.kramTMSC.get(
                 keys=(senderHab.pre, fakeXid, v1ExnWithX.said)) is None
 
 
-            # Step 4: v2 exn with x field -> transactional (tmsc) cache
+            # Step 4: v2 exn with x field -> transactional (kramTMSC) cache
             # Confirms the version gate does not regress the v2 path.
 
-            # First seed a v2 xip so tmsc has an entry for the exchange ID
+            # First seed a v2 xip so kramTMSC has an entry for the exchange ID
             v2Xip = eventing.exchept(sender=senderHab.pre,
                                      receiver=receiverHab.pre,
                                      route="/test/exchange",
@@ -1586,11 +1586,11 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
 
             assert result is not None  # accepted
             # Routed to transactional cache
-            cache = receiverHby.db.tmsc.get(
+            cache = receiverHby.db.kramTMSC.get(
                 keys=(senderHab.pre, v2Xip.said, v2Exn.said))
             assert cache is not None
             # NOT written to non-transactional cache
-            assert receiverHby.db.msgc.get(
+            assert receiverHby.db.kramMSGC.get(
                 keys=(senderHab.pre, v2Exn.said)) is None
 
     """Done Test"""
