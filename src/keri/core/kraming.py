@@ -40,12 +40,18 @@ class AuthTypeCodex:
 
 AuthTypes = AuthTypeCodex()
 
-SigVerifyResult = namedtuple("SigVerifyResult", "verified sigers")
+SigVerifyResult = namedtuple("SigVerifyResult", "verified sigers stale_tsgs")
 """Result of _verifyAttachedSigs dispatching.
 
 Fields:
     verified (bool): True if at least one signature verified
     sigers (list[Siger]): verified Siger instances (empty for cigars)
+    stale_tsgs (list[tuple]): tsgs entries of the form (prefixer, number,
+        sdiger, sigers) whose (number, sdiger) references a past
+        establishment event and whose signatures verified against that
+        historical key state. Not counted toward the current threshold.
+        Empty when no non-current tsgs verified. Held for forwarding so
+        callers can reconstruct the full set of signers across key states.
 
 Key state ref and tholder are derivable from the sender's kever
 (current key state) and are not included here. Callers that need
@@ -329,7 +335,7 @@ class Kramer:
             **kwa: keyword arguments from parser exts dict
 
         Returns:
-            SigVerifyResult: namedtuple with (verified, sigers)
+            SigVerifyResult: namedtuple with (verified, sigers, stale_tsgs)
         """
 
         # If any cigar from the matching sender verifies, return immediately.
@@ -339,7 +345,7 @@ class Kramer:
             if senderId != cigar.verfer.qb64:  # sender identity check
                 continue
             if cigar.verfer.verify(cigar.raw, msg.raw):
-                return SigVerifyResult(verified=True, sigers=[])
+                return SigVerifyResult(verified=True, sigers=[], stale_tsgs=[])
 
         # Build siger pool, oset by siger.qb64 to deduplicate.
         pool = oset()
@@ -355,19 +361,31 @@ class Kramer:
             for siger in sigers:
                 pool.add(siger.qb64)
 
-        # tsgs gate: prefixer matches AND current keystate matches
+        # tsgs gate: prefixer matches AND current keystate matches.
+        # Non-current but sender-matching tsgs are verified against their
+        # historical event and held in stale_tsgs for forwarding.
+        stale_tsgs = []
         for prefixer, number, sdiger, sigers in kwa.get('tsgs', []):
             if prefixer.qb64 != senderId:
                 continue
             if (number.sn != kever.sner.num or
                     sdiger.qb64 != kever.serder.said):
-                continue  # non-current keystate, passed on, not counted
+                sdig = self.db.kels.getOnLast(keys=senderId, on=number.sn)
+                if sdig is not None and sdig == sdiger.qb64:
+                    evtSerder = self.db.evts.get(keys=(senderId, sdiger.qb64))
+                    if evtSerder is not None:
+                        vsigers, _ = eventing.verifySigs(
+                            raw=msg.raw, sigers=list(sigers),
+                            verfers=evtSerder.verfers)
+                        if vsigers:
+                            stale_tsgs.append((prefixer, number, sdiger, vsigers))
+                continue  # still not counted toward current threshold
             for siger in sigers:
                 pool.add(siger.qb64)
 
         # Verify pool in one pass against current key state.
         if not pool:
-            return SigVerifyResult(verified=False, sigers=[])
+            return SigVerifyResult(verified=False, sigers=[], stale_tsgs=stale_tsgs)
 
         poolSigers = [indexing.Siger(qb64=q) for q in pool]
         vsigers, _ = eventing.verifySigs(
@@ -375,7 +393,8 @@ class Kramer:
 
         return SigVerifyResult(
             verified=True if vsigers else False,
-            sigers=vsigers)
+            sigers=vsigers,
+            stale_tsgs=stale_tsgs)
 
     def _validateSenderSeal(self, msg, senderId, **kwa):
         """Validate seal reference attachments against sender's KEL.
@@ -451,6 +470,10 @@ class Kramer:
         Handles all parser kwa attachment keys except ssgs and essrs, which
         are handled separately as authenticators or encapsulations.
 
+        Stale tsgs (verified against a historical key state) are folded into
+        kwa['tsgs'] by the caller before this method is invoked, so they are
+        stored alongside current-keystate tsgs in the same db.
+
         Parameters:
             key (tuple): (AID, MID) partial db key
             **kwa: keyword arguments from parser exts dict
@@ -479,11 +502,6 @@ class Kramer:
 
 
     def _remNonAuthAttachments(self, key):
-        """Remove all non-authenticator attachment db entries for key.
-
-        Parameters:
-            key (tuple): (AID, MID) partial db key
-        """
         self.db.trqs.rem(key)
         self.db.tsgs.rem(key)
         self.db.sscs.rem(key)
@@ -652,8 +670,13 @@ class Kramer:
                     if storedKeyState is None:
                         self.db.pmsk.pin(key, currentKeyState)
 
-                    # Store non-auth attachments alongside new sigs
-                    self._storeNonAuthAttachments(key, **kwa)                    
+                    # Store non-auth attachments alongside new sigs,
+                    # folding stale tsgs into kwa['tsgs'] so they flow
+                    # through the existing tsgs store path.
+                    if sigResult.stale_tsgs:
+                        kwa.setdefault('tsgs', [])
+                        kwa['tsgs'].extend(sigResult.stale_tsgs)
+                    self._storeNonAuthAttachments(key, **kwa)
 
                 # Check threshold using current kever's tholder
                 allSigs = existingSigs + newSigs
@@ -661,7 +684,6 @@ class Kramer:
                     sigIndices = [sig.index for sig in allSigs]
 
                     if kever.tholder.satisfy(indices=sigIndices):
-                        # Accept, partial database entries will be removed by pruner
                         return msg
 
                 # Threshold not satisfied, message remains pending
@@ -775,7 +797,11 @@ class Kramer:
                     sigIndices = [sig.index for sig in sigResult.sigers]
 
                     if kever.tholder and kever.tholder.satisfy(indices=sigIndices):
-                        # Threshold met on first delivery, accept
+                        # Threshold met on first delivery: stale_tsgs not yet in
+                        # DB so merge directly from sigResult
+                        if sigResult.stale_tsgs:
+                            kwa.setdefault('tsgs', [])
+                            kwa['tsgs'].extend(sigResult.stale_tsgs)
                         return msg
 
                     # Threshold not met, store partials for accumulation
@@ -787,7 +813,12 @@ class Kramer:
 
                     self.db.pmsk.pin(key, currentKeyState)
 
-                    # Store non-auth attachments for forwarding on threshold satisfaction
+                    # Store non-auth attachments for forwarding on threshold satisfaction,
+                    # folding stale tsgs into kwa['tsgs'] so they flow
+                    # through the existing tsgs store path.
+                    if sigResult.stale_tsgs:
+                        kwa.setdefault('tsgs', [])
+                        kwa['tsgs'].extend(sigResult.stale_tsgs)
                     self._storeNonAuthAttachments(key, **kwa)
 
                     return None  # message pending
@@ -879,8 +910,13 @@ class Kramer:
                     if storedKeyState is None:
                         self.db.pmsk.pin(partialKey, currentKeyState)
 
-                    # Store non-auth attachments alongside new sigs
-                    self._storeNonAuthAttachments(partialKey, **kwa)                    
+                    # Store non-auth attachments alongside new sigs,
+                    # folding stale tsgs into kwa['tsgs'] so they flow
+                    # through the existing tsgs store path.
+                    if sigResult.stale_tsgs:
+                        kwa.setdefault('tsgs', [])
+                        kwa['tsgs'].extend(sigResult.stale_tsgs)
+                    self._storeNonAuthAttachments(partialKey, **kwa)
 
                 # Check threshold using current kever's tholder
                 allSigs = existingSigs + newSigs
@@ -888,7 +924,6 @@ class Kramer:
                     sigIndices = [sig.index for sig in allSigs]
 
                     if kever.tholder.satisfy(indices=sigIndices):
-                        # Accept, partial database entries will be removed by pruner
                         return msg
 
                 # Threshold not satisfied, message remains pending
@@ -1052,7 +1087,11 @@ class Kramer:
                     sigIndices = [sig.index for sig in sigResult.sigers]
 
                     if kever.tholder and kever.tholder.satisfy(indices=sigIndices):
-                        # Threshold met on first delivery, accept
+                        # Threshold met on first delivery: stale_tsgs not yet in
+                        # DB so merge directly from sigResult
+                        if sigResult.stale_tsgs:
+                            kwa.setdefault('tsgs', [])
+                            kwa['tsgs'].extend(sigResult.stale_tsgs)
                         return msg
 
                     # Threshold not met, store partials for accumulation.
@@ -1065,7 +1104,12 @@ class Kramer:
 
                     self.db.pmsk.pin(partialKey, currentKeyState)
 
-                    # Store non-auth attachments for forwarding on threshold satisfaction
+                    # Store non-auth attachments for forwarding on threshold satisfaction,
+                    # folding stale tsgs into kwa['tsgs'] so they flow
+                    # through the existing tsgs store path.
+                    if sigResult.stale_tsgs:
+                        kwa.setdefault('tsgs', [])
+                        kwa['tsgs'].extend(sigResult.stale_tsgs)
                     self._storeNonAuthAttachments(partialKey, **kwa)
 
                     return None  # message pending
