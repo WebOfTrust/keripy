@@ -426,12 +426,12 @@ class Baser(dbing.LMDBer):
 
         .ssgs is named subDB instance of CesrIoSetSuber (klas=Siger) for SAD
             transferable indexed signatures. Maps quadruple key
-            (saider.qb64, prefixer.qb64, seqner.qb64, diger.qb64) to Siger
-            of the transferable signer's signature. Saider is the SAID of the
-            SAD; prefixer, seqner, and diger indicate the key state
+            (diger.qb64, prefixer.qb64, number.qb64, diger.qb64) to Siger
+            of the transferable signer's signature. Diger is the SAID of the
+            SAD; prefixer, number, and diger indicate the key state
             establishment event for the signer.
             subkey 'ssgs.'
-            Key: join(saider.qb64b, prefixer.qb64b, seqner.qb64b, diger.qb64b)
+            Key: join(diger.qb64b, prefixer.qb64b, number.qb64b, diger.qb64b)
             Multiple values per key (one per signer, insertion ordered).
 
         .scgs is named subDB instance of CatCesrIoSetSuber
@@ -752,7 +752,7 @@ class Baser(dbing.LMDBer):
             signed multi-key trans receipt quadruple attachments.
             subkey 'trqs.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
-            Value is (Prefixer, Seqner, Saider, Siger) tuple. Sourced from
+            Value is (Prefixer, Number, Diger, Siger) tuple. Sourced from
             parser kwa key 'trqs'.
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
@@ -761,7 +761,7 @@ class Baser(dbing.LMDBer):
             signed multi-key trans last sig group attachments.
             subkey 'tsgs.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
-            Value is (Prefixer, Seqner, Saider, Siger) tuple. Sourced from
+            Value is (Prefixer, Number, Diger, Siger) tuple. Sourced from
             parser kwa key 'tsgs'.
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
@@ -771,7 +771,7 @@ class Baser(dbing.LMDBer):
             delegating events.
             subkey 'sscs.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
-            Value is (Seqner, Saider) tuple. Sourced from parser kwa key 'sscs'.
+            Value is (Number, Diger) tuple. Sourced from parser kwa key 'sscs'.
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
 
@@ -780,7 +780,7 @@ class Baser(dbing.LMDBer):
             delegated events.
             subkey 'ssts.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
-            Value is (Prefixer, Seqner, Saider) tuple. Sourced from parser kwa
+            Value is (Prefixer, Number, Diger) tuple. Sourced from parser kwa
             key 'ssts'.
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
@@ -789,7 +789,7 @@ class Baser(dbing.LMDBer):
             signed multi-key first seen replay couple attachments.
             subkey 'frcs.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
-            Value is (Seqner, Dater) tuple. Sourced from parser kwa key 'frcs'.
+            Value is (Number, Dater) tuple. Sourced from parser kwa key 'frcs'.
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
 
@@ -971,7 +971,7 @@ class Baser(dbing.LMDBer):
         self.sdts = subing.CesrSuber(db=self, subkey='sdts.', klas=coring.Dater)
 
         # all sad ssgs (sad indexed signature serializations) maps SAD quadkeys
-        # given by quadruple (saider.qb64, prefixer.qb64, seqner.q64, diger.qb64)
+        # given by quadruple (diger.qb64, prefixer.qb64, seqner.q64, diger.qb64)
         #  of reply and trans signer's key state est evt to val Siger for each
         # signature.
         self.ssgs = subing.CesrIoSetSuber(db=self, subkey='ssgs.', klas=indexing.Siger)
@@ -1250,28 +1250,28 @@ class Baser(dbing.LMDBer):
 
         # KRAM partially signed multi-key non-authenticator attachments
 
-        # trqs: trans receipt quadruples (prefixer, seqner, saider, siger)
+        # trqs: trans receipt quadruples (prefixer, number, diger, siger)
         self.trqs = subing.CatCesrIoSetSuber(db=self, subkey='trqs.',
-                                             klas=(coring.Prefixer, coring.Seqner,
-                                                   coring.Saider, indexing.Siger))
+                                             klas=(coring.Prefixer, coring.Number,
+                                                   coring.Diger, indexing.Siger))
 
-        # tsgs: trans last sig groups (prefixer, seqner, saider, siger)
+        # tsgs: trans last sig groups (prefixer, number, diger, siger)
         self.tsgs = subing.CatCesrIoSetSuber(db=self, subkey='tsgs.',
-                                             klas=(coring.Prefixer, coring.Seqner,
-                                                   coring.Saider, indexing.Siger))
+                                             klas=(coring.Prefixer, coring.Number,
+                                                   coring.Diger, indexing.Siger))
 
-        # sscs: first seen seal couples (seqner, saider) issuing or delegating
+        # sscs: first seen seal couples (number, diger) issuing or delegating
         self.sscs = subing.CatCesrIoSetSuber(db=self, subkey='sscs.',
-                                             klas=(coring.Seqner, coring.Saider))
+                                             klas=(coring.Number, coring.Diger))
 
-        # ssts: source seal triples (prefixer, seqner, saider) issued or delegated
+        # ssts: source seal triples (prefixer, number, diger) issued or delegated
         self.ssts = subing.CatCesrIoSetSuber(db=self, subkey='ssts.',
-                                             klas=(coring.Prefixer, coring.Seqner,
-                                                   coring.Saider))
+                                             klas=(coring.Prefixer, coring.Number,
+                                                   coring.Diger))
 
-        # frcs: first seen replay couples (seqner, dater)
+        # frcs: first seen replay couples (number, dater)
         self.frcs = subing.CatCesrIoSetSuber(db=self, subkey='frcs.',
-                                             klas=(coring.Seqner, coring.Dater))
+                                             klas=(coring.Number, coring.Dater))
 
         # tdcs: typed digest seal couples (verser, diger)
         self.tdcs = subing.CatCesrIoSetSuber(db=self, subkey='tdcs.',

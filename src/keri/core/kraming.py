@@ -192,10 +192,10 @@ class Kramer:
 
         Two attachment types qualify for KRAM seal-based authentication:
 
-        sscs (seal source couples) are (seqner, saider) tuples that
+        sscs (seal source couples) are (number, diger) tuples that
         implicitly reference the sender's own KEL. Always qualify.
 
-        ssts (seal source triples) are (prefixer, seqner, saider) tuples
+        ssts (seal source triples) are (prefixer, number, diger) tuples
         where the prefixer can point to any entity's KEL. Only qualify
         when prefixer.qb64 == senderId (i.e., the sender is sealing
         in their own KEL). Non-matching ssts are not dropped, they
@@ -216,7 +216,7 @@ class Kramer:
         """
         if kwa.get('sscs'):
             return True
-        for prefixer, seqner, saider in kwa.get('ssts', []):
+        for prefixer, number, diger in kwa.get('ssts', []):
             if prefixer.qb64 == senderId:
                 return True
         return False
@@ -245,7 +245,7 @@ class Kramer:
         for prefixer, sigers in kwa.get('ssgs', []):
             if prefixer.qb64 == senderId:
                 return True
-        for prefixer, seqner, ssaider, sigers in kwa.get('tsgs', []):
+        for prefixer, number, sdiger, sigers in kwa.get('tsgs', []):
             if prefixer.qb64 == senderId:
                 return True
         return False
@@ -311,7 +311,7 @@ class Kramer:
         Gating logic for pool contributions:
             - bare sigers: always included
             - ssgs: prefixer must match senderId
-            - tsgs: prefixer must match senderId AND (seqner, saider)
+            - tsgs: prefixer must match senderId AND (number, diger)
               must correspond to sender's current key state
 
         Signatures that fail crypto verification are dropped (not in the
@@ -353,11 +353,11 @@ class Kramer:
                 pool.add(siger.qb64)
 
         # tsgs gate: prefixer matches AND current keystate matches
-        for prefixer, seqner, ssaider, sigers in kwa.get('tsgs', []):
+        for prefixer, number, sdiger, sigers in kwa.get('tsgs', []):
             if prefixer.qb64 != senderId:
                 continue
-            if (seqner.sn != kever.sner.num or
-                    ssaider.qb64 != kever.serder.said):
+            if (number.sn != kever.sner.num or
+                    sdiger.qb64 != kever.serder.said):
                 continue  # non-current keystate, passed on, not counted
             for siger in sigers:
                 pool.add(siger.qb64)
@@ -400,38 +400,38 @@ class Kramer:
             MissingSenderKeyStateError: when a referenced event is not
                 found in the sender's KEL (caller should drop + cue)
         """
-        # Build list of (seqner, saider) candidates to check.
+        # Build list of (number, diger) candidates to check.
         # sscs first (implicit sender KEL ref), then sender-matching ssts.
         candidates = []
-        for seqner, saider in kwa.get('sscs', []):
-            candidates.append((seqner, saider))
-        for prefixer, seqner, saider in kwa.get('ssts', []):
+        for number, diger in kwa.get('sscs', []):
+            candidates.append((number, diger))
+        for prefixer, number, diger in kwa.get('ssts', []):
             if prefixer.qb64 == senderId:
-                candidates.append((seqner, saider))
+                candidates.append((number, diger))
 
         if not candidates:
             return False
 
         # Use last candidate per parser convention
-        seqner, saider = candidates[-1]
+        number, diger = candidates[-1]
 
         # Look up event digest at (senderId, sn) in sender's KEL
         prefixer = coring.Prefixer(qb64=senderId)
-        sdig = self.db.kels.getOnLast(keys=prefixer.qb64b, on=seqner.sn)
+        sdig = self.db.kels.getOnLast(keys=prefixer.qb64b, on=number.sn)
 
         if sdig is None:
             raise kering.MissingSenderKeyStateError(
-                f"Event at sn={seqner.sn} not in KEL for sender {senderId}")
+                f"Event at sn={number.sn} not in KEL for sender {senderId}")
 
         # Verify the event SAID matches the seal reference
-        if bytes(sdig, "utf-8") != saider.qb64b:
+        if bytes(sdig, "utf-8") != diger.qb64b:
             return False  # Event at that sn doesn't match reference
 
         # Fetch the actual event
         evtSerder = self.db.evts.get(keys=(prefixer.qb64b, bytes(sdig, "utf-8")))
         if evtSerder is None:
             raise kering.MissingSenderKeyStateError(
-                f"Event data missing for sender {senderId} at sn={seqner.sn}")
+                f"Event data missing for sender {senderId} at sn={number.sn}")
 
         # Search event's seal list for a seal whose 'd' field matches msg SAID
         for seal in (evtSerder.seals or []):
@@ -454,9 +454,9 @@ class Kramer:
         """
         for item in kwa.get('trqs', []):
             self.db.trqs.add(key, item)
-        for prefixer, seqner, saider, sigers in kwa.get('tsgs', []):
+        for prefixer, number, diger, sigers in kwa.get('tsgs', []):
             for siger in sigers:
-                self.db.tsgs.add(key, (prefixer, seqner, saider, siger))
+                self.db.tsgs.add(key, (prefixer, number, diger, siger))
         for item in kwa.get('sscs', []):
             self.db.sscs.add(key, item)
         for item in kwa.get('ssts', []):
