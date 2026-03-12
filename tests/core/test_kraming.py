@@ -29,6 +29,7 @@ def test_auth_type_codex():
     assert 'asmk' in codes
     assert len(codes) == 3
 
+
 def test_configuration():
     """Test Kramer configuration handles valid denials, cache types, and raises appropriate errors"""
 
@@ -160,6 +161,7 @@ def test_configuration():
 
 _testSigner = core.Salter(raw=b'0123456789abcdef').signer(transferable=True)
 TEST_PRE = _testSigner.verfer.qb64
+
 
 def test_intake():
     """Test intake routes messages through denial, passthrough, and kramit logic"""
@@ -307,6 +309,7 @@ KRAM_INTEGRATION_CONFIG = {
             "http://127.0.0.1:5644/.well-known/keri/oobi/EBNaNu-M9P5cgrnfl2Fvymy4E_jvxxyjb70PRtiANlJy?name=Root"
         ]
 }
+
 
 def test_assk(mockHelpingNowUTC):
     """Test processMsg with single-key sender (assk auth type).
@@ -1426,12 +1429,13 @@ def test_transactioned(mockHelpingNowUTC):
 
     """Done Test"""
 
+
 def test_v1_exn_non_transactioned(mockHelpingNowUTC):
     """Test that v1 exn messages are always routed as non-transactional.
 
     The v1 KERI exn message has no x field, so must be treated as
     non-transactioned from the standpoint of KRAM even when it has a
-    non-empty prior p field value (per spec).
+    non-empty prior p field value.
 
     Covers:
     - v1 exn with non-empty p field, no x field -> msgc (non-txn) cache
