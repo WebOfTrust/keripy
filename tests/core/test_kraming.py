@@ -8,7 +8,7 @@ processMsg on Kevery.
 import pytest
 
 from keri import core, kering, Vrsn_1_0, Vrsn_2_0
-from keri.core import eventing, parsing, coring, Verser, Kramer, AuthTypes, Pruner
+from keri.core import eventing, parsing, coring, Verser, Kramer, AuthTypes, serdering, Pruner
 from keri.app import habbing, configing
 from keri.db import basing
 from keri.peer import exchanging
@@ -32,6 +32,7 @@ def test_auth_type_codex():
     assert 'assk' in codes
     assert 'asmk' in codes
     assert len(codes) == 3
+
 
 def test_configuration():
     """Test Kramer configuration handles valid denials, cache types, and raises appropriate errors"""
@@ -164,6 +165,7 @@ def test_configuration():
 
 _testSigner = core.Salter(raw=b'0123456789abcdef').signer(transferable=True)
 TEST_PRE = _testSigner.verfer.qb64
+
 
 def test_intake():
     """Test intake routes messages through denial, passthrough, and kramit logic"""
@@ -311,6 +313,7 @@ KRAM_INTEGRATION_CONFIG = {
             "http://127.0.0.1:5644/.well-known/keri/oobi/EBNaNu-M9P5cgrnfl2Fvymy4E_jvxxyjb70PRtiANlJy?name=Root"
         ]
 }
+
 
 def test_assk(mockHelpingNowUTC):
     """Test processMsg with single-key sender (assk auth type).
@@ -1428,6 +1431,172 @@ def test_transactioned(mockHelpingNowUTC):
             cache = receiverHby.db.tmsc.get(keys=(skHab.pre, xip8.said, exn8.said))
             assert cache is not None
             assert cache.mdt == stamp
+
+    """Done Test"""
+
+
+def test_v1_exn_non_transactioned(mockHelpingNowUTC):
+    """Test that v1 exn messages are always routed as non-transactional.
+
+    The v1 KERI exn message has no x field, so must be treated as
+    non-transactioned from the standpoint of KRAM even when it has a
+    non-empty prior p field value.
+
+    Covers:
+    - v1 exn with non-empty p field, no x field -> msgc (non-txn) cache
+    - v1 exn that carries an x field -> still msgc, not tmsc (x ignored)
+    - v2 exn with x field -> tmsc (transactional) cache, confirming the
+      version gate does not break the v2 path
+    """
+
+    salt1 = core.Salter(raw=b'0123456789abcdef').qb64
+    salt2 = core.Salter(raw=b'0123456789abcdeg').qb64
+
+    with (habbing.openHby(name="v1exnSender", base="test", salt=salt1) as senderHby,
+          habbing.openHby(name="v1exnReceiver", base="test", salt=salt2) as receiverHby):
+
+        senderHab = senderHby.makeHab(name="v1exnSender", isith='1', icount=1,
+                                      transferable=True)
+        receiverHab = receiverHby.makeHab(name="v1exnReceiver", isith='1', icount=1,
+                                          transferable=True)
+
+        crossKvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+        senderIcp = senderHab.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+        assert senderHab.pre in crossKvy.kevers
+
+        with configing.openCF(name="v1exnKram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+            skPrefixer = coring.Prefixer(qb64=senderHab.pre)
+
+            stamp = helping.nowIso8601()
+
+
+# Step 2: v1 exn with non-empty p field, no x field
+            # The v1 exn schema rejects x/ri via the builder, so hand-craft
+            # the ked to produce a spec-conformant v1 exn on the wire.
+            # Must route to msgc (non-transactional), not tmsc.
+
+            fakePrior = "E" + "A" * 43
+            v1ExnWithPKed = {
+                'v': coring.versify(proto=kering.Protocols.keri,
+                                    pvrsn=Vrsn_1_0,
+                                    kind=kering.Kinds.json),
+                't': kering.Ilks.exn,
+                'd': '',
+                'i': senderHab.pre,
+                'p': fakePrior,    # non-empty prior, no x field
+                'dt': stamp,
+                'r': '/test/exchange',
+                'q': {},
+                'a': dict(n='v1p'),
+            }
+            _, v1ExnWithPKed = coring.Saider.saidify(sad=v1ExnWithPKed)
+            v1ExnWithP = serdering.SerderKERI(sad=v1ExnWithPKed, verify=False)
+
+            # Confirm no x field present in the v1 ked
+            assert v1ExnWithP.ked.get('x', None) is None
+            # Confirm p field is non-empty
+            assert v1ExnWithP.ked.get('p', '') != ''
+
+            sigers = senderHab.mgr.sign(ser=v1ExnWithP.raw,
+                                        verfers=senderHab.kever.verfers,
+                                        indexed=True)
+            kwa = dict(ssgs=[(skPrefixer, sigers)])
+
+            result = kramer.kramit(v1ExnWithP, **kwa)
+
+            assert result is not None  # accepted
+            # Routed to non-transactional cache
+            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, v1ExnWithP.said))
+            assert cache is not None
+            # NOT written to transactional cache
+            assert receiverHby.db.tmsc.get(
+                keys=(senderHab.pre, fakePrior, v1ExnWithP.said)) is None
+
+
+            # Step 3: v1 exn that carries an x field (malformed/cross-version)
+            # The v1 serializer rejects x as an unallowed field, so we
+            # hand-craft the ked to simulate a malformed message arriving
+            # on the wire. The x field must be ignored by kramit; the
+            # message must still route to msgc, not tmsc.
+
+            fakeXid = "E" + "B" * 43
+            v1ExnKed = {
+                'v': coring.versify(proto=kering.Protocols.keri,
+                                    pvrsn=Vrsn_1_0,
+                                    kind=kering.Kinds.json),
+                't': kering.Ilks.exn,
+                'd': '',           # placeholder, will be replaced by SAID derivation
+                'i': senderHab.pre,
+                'p': "E" + "A" * 43,
+                'x': fakeXid,      # injected — invalid in v1 schema
+                'dt': stamp,
+                'r': '/test/exchange',
+                'q': {},
+                'a': dict(n='v1x'),
+            }
+            # Derive SAID and raw bytes directly, bypassing builder validation
+            _, v1ExnKed = coring.Saider.saidify(sad=v1ExnKed)
+            v1ExnWithX = serdering.SerderKERI(sad=v1ExnKed, verify=False)
+
+            sigers = senderHab.mgr.sign(ser=v1ExnWithX.raw,
+                                        verfers=senderHab.kever.verfers,
+                                        indexed=True)
+            kwa = dict(ssgs=[(skPrefixer, sigers)])
+
+            result = kramer.kramit(v1ExnWithX, **kwa)
+
+            assert result is not None  # accepted
+            # Still routes to non-transactional cache (x field ignored for v1)
+            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, v1ExnWithX.said))
+            assert cache is not None
+            # NOT written to transactional cache under the injected x field
+            assert receiverHby.db.tmsc.get(
+                keys=(senderHab.pre, fakeXid, v1ExnWithX.said)) is None
+
+
+            # Step 4: v2 exn with x field -> transactional (tmsc) cache
+            # Confirms the version gate does not regress the v2 path.
+
+            # First seed a v2 xip so tmsc has an entry for the exchange ID
+            v2Xip = eventing.exchept(sender=senderHab.pre,
+                                     receiver=receiverHab.pre,
+                                     route="/test/exchange",
+                                     stamp=stamp)
+
+            xipSigers = senderHab.mgr.sign(ser=v2Xip.raw,
+                                            verfers=senderHab.kever.verfers,
+                                            indexed=True)
+            xipResult = kramer.kramit(v2Xip, **dict(ssgs=[(skPrefixer, xipSigers)]))
+            assert xipResult is not None  # xip accepted
+
+            v2Exn = eventing.exchange(sender=senderHab.pre,
+                                      receiver=receiverHab.pre,
+                                      xid=v2Xip.said,
+                                      route="/test/exchange",
+                                      attributes=dict(n='v2x'),
+                                      stamp=stamp)
+
+            # Confirm x field present in v2 ked
+            assert v2Exn.ked.get('x', None) is not None
+
+            sigers = senderHab.mgr.sign(ser=v2Exn.raw,
+                                        verfers=senderHab.kever.verfers,
+                                        indexed=True)
+            kwa = dict(ssgs=[(skPrefixer, sigers)])
+
+            result = kramer.kramit(v2Exn, **kwa)
+
+            assert result is not None  # accepted
+            # Routed to transactional cache
+            cache = receiverHby.db.tmsc.get(
+                keys=(senderHab.pre, v2Xip.said, v2Exn.said))
+            assert cache is not None
+            # NOT written to non-transactional cache
+            assert receiverHby.db.msgc.get(
+                keys=(senderHab.pre, v2Exn.said)) is None
 
     """Done Test"""
 
