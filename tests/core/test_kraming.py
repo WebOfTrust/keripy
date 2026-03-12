@@ -1783,7 +1783,9 @@ def test_rem_non_auth_attachments(mockHelpingNowUTC):
 
 def test_cue_ks_non_transactioned(mockHelpingNowUTC):
     """
-    Test cue key state retrieval for new cache single-key, multi-key and reference seal 
+    Test cue key state retrieval for non transactional messages
+    
+    Covers: new cache for single-key, multi-key and reference seal 
     """
     # Step 1: Setup
 
@@ -1915,8 +1917,9 @@ def test_cue_ks_non_transactioned(mockHelpingNowUTC):
 
 def test_cue_ks_transactioned(mockHelpingNowUTC):
     """
-    Test cue key state retrieval transactional exchange messages
-    for new cache single-key, multi-key and reference seal 
+    Test cue key state retrieval for transactional exchange messages
+    
+    Covers: new cache for single-key, multi-key and reference seal 
     """
     # Step 1: Setup
 
