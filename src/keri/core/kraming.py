@@ -553,7 +553,8 @@ class Kramer:
             case kering.Ilks.xip:
                 exId = msgId
             case kering.Ilks.exn:
-                exId = msg.ked.get('x', None)
+                if msg.pvrsn >= kering.Vrsn_2_0:
+                    exId = msg.ked.get('x', None)
             case _:
                 pass
 
