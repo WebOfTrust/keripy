@@ -472,6 +472,9 @@ def test_assk(mockHelpingNowUTC):
             with pytest.raises(kering.MissingAuthAttachmentError):
                 kvy.processMsg(noAuthMsg)  # empty kwa — no auth attachments
 
+            # Clear the cues
+            kvy.cues.clear()
+
 
             # Step 7: Trigger MissingSenderKeyStateError
 
@@ -490,6 +493,12 @@ def test_assk(mockHelpingNowUTC):
 
             with pytest.raises(kering.MissingSenderKeyStateError):
                 kvy.processMsg(unknownMsg, **unknownKwa)
+            
+            # Assert cue key state retrieval notification 
+            cue = kvy.cues.popleft()
+            assert cue['kin'] == 'keystate'
+            assert cue['aid'] == unknownHab.pre
+            assert cue['sn'] is None
 
     """Done Test"""
 
@@ -915,6 +924,12 @@ def test_asr(mockHelpingNowUTC):
 
             cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg5.said))
             assert cache is None  # no cache
+
+            # Assert for cue key state retrieval
+            cue = kvy.cues.popleft()
+            assert cue['kin'] == "keystate"
+            assert cue['aid'] == senderHab.pre
+            assert cue['sn'] == 2
 
             kvy.cues.clear()
 
@@ -1939,6 +1954,271 @@ def test_rem_non_auth_attachments(mockHelpingNowUTC):
 
     """Done Test"""
 
+
+def test_cue_ks_non_transactioned(mockHelpingNowUTC):
+    """
+    Test cue key state retrieval for non transactional messages
+    
+    Covers: new cache for single-key, multi-key and reference seal 
+    """
+    # Step 1: Setup
+
+    salt1 = core.Salter(raw=b'0123456789abcdef').qb64
+    salt2 = core.Salter(raw=b'0123456789abcdeg').qb64
+    salt3 = core.Salter(raw=b'0123456789abcdeh').qb64
+    salt4 = core.Salter(raw=b'0123456789abcdei').qb64
+
+    with (habbing.openHby(name="senderSk", base="test", salt=salt1) as senderSkHby,
+          habbing.openHby(name="senderMk", base="test", salt=salt2) as senderMkHby,
+          habbing.openHby(name="knownSender", base="test", salt=salt3) as knownSenderHby,
+          habbing.openHby(name="receiver", base="test", salt=salt4) as receiverHby):
+
+        # Create transferable single-key sender (no witnesses)
+        senderSkHab = senderSkHby.makeHab(name="senderSk", isith='1', icount=1,
+                                      transferable=True)
+        # Create multi-key sender
+        senderMkHab = senderMkHby.makeHab(name="senderMk", isith='2', icount=3,
+                                          transferable=True)
+        # Create known Sender
+        kownSenderHab = knownSenderHby.makeHab(name="knownSender", isith='1', icount=1,
+                                            transferable=True)
+
+        # Create receiver hab (needed for receiver db context)
+        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1,
+                                          transferable=True)
+        
+        # Do not cross-feed senders ICP to receiver so they remain unknown to sender
+        crossKvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+
+        senderSkHab.makeOwnEvent(sn=0)
+        senderMkHab.makeOwnEvent(sn=0)
+        assert senderSkHab.pre not in crossKvy.kevers
+        assert senderMkHab.pre not in crossKvy.kevers
+
+        # Cross for the known sender
+        senderIcp = kownSenderHab.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+        assert kownSenderHab.pre in crossKvy.kevers
+
+        # Create Kramer + Kevery
+        with configing.openCF(name="kram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False,
+                                  kramer=kramer)
+
+            # Stamp for events            
+            stamp = helping.nowIso8601()
+
+            # Single-key Missing KEL
+
+            skPrefixer = coring.Prefixer(qb64=senderSkHab.pre)
+
+            msg = eventing.query(pre=senderSkHab.pre,
+                                            route="ksn",
+                                            query=dict(i=senderSkHab.pre, src=senderSkHab.pre),
+                                            stamp=stamp,
+                                            pvrsn=Vrsn_2_0)
+
+            sigers = senderSkHab.mgr.sign(ser=msg.raw,
+                                                verfers=senderSkHab.kever.verfers,
+                                                indexed=True)
+            kwa = dict(ssgs=[(skPrefixer, sigers)])
+
+            with pytest.raises(kering.MissingSenderKeyStateError):
+                kvy.processMsg(msg, **kwa)
+            
+            # Assert cue key state retrieval notification 
+            cue = kvy.cues.popleft()
+            assert cue['kin'] == 'keystate'
+            assert cue['aid'] == senderSkHab.pre
+            assert cue['sn'] is None
+            kvy.cues.clear()
+
+
+            # Multi-key missing KEL
+
+            MkPrefixer = coring.Prefixer(qb64=senderMkHab.pre)
+
+            msg = eventing.query(pre=senderMkHab.pre,
+                                            route="ksn",
+                                            query=dict(i=senderMkHab.pre, src=senderMkHab.pre),
+                                            stamp=stamp,
+                                            pvrsn=Vrsn_2_0)
+
+            sigers = senderMkHab.mgr.sign(ser=msg.raw,
+                                                verfers=senderMkHab.kever.verfers,
+                                                indexed=True)
+            kwa = dict(ssgs=[(MkPrefixer, sigers)])
+
+            with pytest.raises(kering.MissingSenderKeyStateError):
+                kvy.processMsg(msg, **kwa)
+            
+            # Assert cue key state retrieval notification 
+            cue = kvy.cues.popleft()
+            assert cue['kin'] == 'keystate'
+            assert cue['aid'] == senderMkHab.pre
+            assert cue['sn'] is None
+            kvy.cues.clear()
+
+
+            # Seal reference missing KEL event
+
+            ixnSaid = kownSenderHab.kever.serder.said
+
+            msg = eventing.query(pre=kownSenderHab.pre,
+                                    route="ksn",
+                                    query=dict(i=kownSenderHab.pre, src=kownSenderHab.pre, n='3f'),
+                                    stamp=stamp,
+                                    pvrsn=Vrsn_2_0)
+
+            # Reference sn=999 (event doesn't exist in receiver's copy)
+            sscs = [(coring.Seqner(sn=999), coring.Saider(qb64=ixnSaid))]
+            kwa = dict(sscs=sscs)  # pure sscs, no sigs
+
+            kvy.processMsg(msg, **kwa)
+
+            cache = receiverHby.db.msgc.get(keys=(kownSenderHab.pre, msg.said))
+            assert cache is None  # no cache
+
+            # Assert for cue key state retrieval
+            cue = kvy.cues.popleft()
+            assert cue['kin'] == "keystate"
+            assert cue['aid'] == kownSenderHab.pre
+            assert cue['sn'] == 0
+            kvy.cues.clear()
+
+
+def test_cue_ks_transactioned(mockHelpingNowUTC):
+    """
+    Test cue key state retrieval for transactional exchange messages
+    
+    Covers: new cache for single-key, multi-key and reference seal 
+    """
+    # Step 1: Setup
+
+    salt1 = core.Salter(raw=b'0123456789abcdef').qb64
+    salt2 = core.Salter(raw=b'0123456789abcdeg').qb64
+    salt3 = core.Salter(raw=b'0123456789abcdeh').qb64
+    salt4 = core.Salter(raw=b'0123456789abcdei').qb64
+
+    with (habbing.openHby(name="senderSk", base="test", salt=salt1) as senderSkHby,
+          habbing.openHby(name="senderMk", base="test", salt=salt2) as senderMkHby,
+          habbing.openHby(name="knownSender", base="test", salt=salt3) as knownSenderHby,
+          habbing.openHby(name="receiver", base="test", salt=salt4) as receiverHby):
+
+        # Create transferable single-key sender (no witnesses)
+        senderSkHab = senderSkHby.makeHab(name="senderSk", isith='1', icount=1,
+                                      transferable=True)
+        # Create multi-key sender
+        senderMkHab = senderMkHby.makeHab(name="senderMk", isith='2', icount=3,
+                                          transferable=True)
+        # Create known Sender
+        kownSenderHab = knownSenderHby.makeHab(name="knownSender", isith='1', icount=1,
+                                            transferable=True)
+
+        # Create receiver hab (needed for receiver db context)
+        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1,
+                                          transferable=True)
+        
+        # Do not cross-feed senders ICP to receiver so they remain unknown to sender
+        crossKvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+
+        senderSkHab.makeOwnEvent(sn=0)
+        senderMkHab.makeOwnEvent(sn=0)
+        assert senderSkHab.pre not in crossKvy.kevers
+        assert senderMkHab.pre not in crossKvy.kevers
+
+        # Cross for the known sender
+        senderIcp = kownSenderHab.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+
+        # Create Kramer + Kevery
+        with configing.openCF(name="kram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False,
+                                  kramer=kramer)
+
+            stamp = helping.nowIso8601()
+
+            # Get the prefix for the single-key sender
+            skPrefixer = coring.Prefixer(qb64=senderSkHab.pre)
+            
+            # Create the exchange start event
+            xip = eventing.exchept(sender=senderSkHab.pre,
+                                   receiver=receiverHab.pre,
+                                   route="/test/exchange",
+                                   stamp=stamp)
+
+            # Sign xip
+            sigers = senderSkHab.mgr.sign(ser=xip.raw,
+                                    verfers=senderSkHab.kever.verfers,
+                                    indexed=True)
+            kwa = dict(ssgs=[(skPrefixer, sigers)])
+
+            # Call kramit directly (processMsg rejects xip)
+            with pytest.raises(kering.MissingSenderKeyStateError):
+                result = kramer.kramit(xip, **kwa)
+
+            # Assert cue key state retrieval notification 
+            cue = kvy.cues.popleft()
+            assert cue['kin'] == 'keystate'
+            assert cue['aid'] == senderSkHab.pre
+            assert cue['sn'] is None
+            kvy.cues.clear()
+
+
+            # Multi-key missing KEL
+
+            mkPrefixer = coring.Prefixer(qb64=senderMkHab.pre)
+
+            xip = eventing.exchept(sender=senderMkHab.pre,
+                                   receiver=receiverHab.pre,
+                                   route="/test/exchange",
+                                   stamp=stamp)
+
+            # Sign xip
+            sigers = senderMkHab.mgr.sign(ser=xip.raw,
+                                    verfers=senderMkHab.kever.verfers,
+                                    indexed=True)
+            kwa = dict(ssgs=[(mkPrefixer, sigers)])
+
+            # Call kramit directly (processMsg rejects xip)
+            with pytest.raises(kering.MissingSenderKeyStateError):
+                result = kramer.kramit(xip, **kwa)
+
+            # Assert cue key state retrieval notification 
+            cue = kvy.cues.popleft()
+            assert cue['kin'] == 'keystate'
+            assert cue['aid'] == senderMkHab.pre
+            assert cue['sn'] is None
+            kvy.cues.clear()
+
+
+            # Seal reference missing KEL event
+
+            xip = eventing.exchept(sender=kownSenderHab.pre,
+                        receiver=receiverHab.pre,
+                        route="/test/exchange",
+                        stamp=stamp)
+
+            # Build sscs referencing the ixn event
+            ixnSaid = kownSenderHab.kever.serder.said
+
+            # Reference sn=999 (event doesn't exist in receiver's copy)
+            sscs = [(coring.Seqner(sn=999), coring.Saider(qb64=ixnSaid))]
+            kwa = dict(sscs=sscs)  # pure sscs, no sigs
+
+            # Call kramit directly (processMsg rejects xip)
+            kramer.kramit(xip, **kwa)
+
+            # Assert for cue key state retrieval
+            cue = kvy.cues.popleft()
+            assert cue['kin'] == "keystate"
+            assert cue['aid'] == kownSenderHab.pre
+            assert cue['sn'] == 0
+            kvy.cues.clear()
 
 def test_pruning_messages_single_key(fakeHelpingClock):
     """
