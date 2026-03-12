@@ -1824,7 +1824,7 @@ def test_cue_ks_non_transactioned(mockHelpingNowUTC):
         # Cross for the known sender
         senderIcp = kownSenderHab.makeOwnEvent(sn=0)
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
-        assert kownSenderHab.pre not in crossKvy.kevers
+        assert kownSenderHab.pre in crossKvy.kevers
 
         # Create Kramer + Kevery
         with configing.openCF(name="kram", base="test") as cf:
