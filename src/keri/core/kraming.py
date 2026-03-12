@@ -515,6 +515,11 @@ class Kramer:
         Implements timeliness cache checking, auth type detection,
         and cache management for replay attack prevention.
 
+        For exn messages, exchange ID routing is version-gated: v2 exn
+        messages use the x field to determine transactioned vs non-transactioned
+        routing. v1 exn messages have no x field and are always treated as
+        non-transactioned (routed to the msgc cache).
+
         Parameters:
             msg (SerderKERI): message instance
             **kwa: keyword arguments from parser exts dict containing
@@ -527,7 +532,8 @@ class Kramer:
         Raises:
             MissingAuthAttachmentError: no auth attachments on message
             MissingSenderKeyStateError: sender KEL unavailable
-            KramError: General errors used for linter compliance. Something is very wrong if these pop up
+            KramError: general errors used for linter compliance; indicates
+                something is very wrong if raised
         """
 
         senderId = msg.pre
@@ -553,7 +559,8 @@ class Kramer:
             case kering.Ilks.xip:
                 exId = msgId
             case kering.Ilks.exn:
-                exId = msg.ked.get('x', None)
+                if msg.pvrsn >= kering.Vrsn_2_0:
+                    exId = msg.ked.get('x', None)
             case _:
                 pass
 
