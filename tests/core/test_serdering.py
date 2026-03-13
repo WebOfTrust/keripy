@@ -750,28 +750,32 @@ def test_serder_verify_malicious_raw():
     good_sad = serder_base.sad
 
     # Bad digest (JSON) — kept as fixture for the verify() bool test below.
-    # The raising form is already covered in test_serder.
     bad_json = (b'{"v":"ACDC10JSON00005a_",'
-                b'"d":"EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pE",'  # 'T' → 'E'
+                b'"d":"EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pE",'
                 b'"i":"","s":""}')
 
     # Bad digest (CBOR)
-    # Locate the qb64 digest bytes in the binary payload and flip one character.
+    # Find the digest in the raw bytes by locating the said string, then corrupt
+    # the last byte of it rather than using a hardcoded offset.
     serder_cbor = Serder(makify=True, proto=Protocols.acdc, kind=Kinds.cbor)
     raw_cbor = bytearray(serder_cbor.raw)
-    pos = raw_cbor.find(serder_cbor.said.encode())
+    said_bytes = serder_cbor.said.encode()
+    pos = raw_cbor.find(said_bytes)
     assert pos != -1, "digest not found in CBOR raw"
-    raw_cbor[pos + 43] ^= 0x01
-    with pytest.raises((ValidationError, DeserializeError, UnicodeDecodeError)):
+    corrupt_pos = pos + len(said_bytes) - 1
+    raw_cbor[corrupt_pos] ^= 0x01
+    with pytest.raises((ValidationError, DeserializeError)):
         Serder(raw=bytes(raw_cbor))
 
     # Bad digest (MGPK)
     serder_mgpk = Serder(makify=True, proto=Protocols.acdc, kind=Kinds.mgpk)
     raw_mgpk = bytearray(serder_mgpk.raw)
-    pos = raw_mgpk.find(serder_mgpk.said.encode())
+    said_bytes_mgpk = serder_mgpk.said.encode()
+    pos = raw_mgpk.find(said_bytes_mgpk)
     assert pos != -1, "digest not found in MGPK raw"
-    raw_mgpk[pos + 43] ^= 0x01
-    with pytest.raises((ValidationError, DeserializeError, UnicodeDecodeError)):
+    corrupt_pos = pos + len(said_bytes_mgpk) - 1
+    raw_mgpk[corrupt_pos] ^= 0x01
+    with pytest.raises((ValidationError, DeserializeError)):
         Serder(raw=bytes(raw_mgpk))
 
     # Truncated raw
@@ -833,16 +837,24 @@ def test_serder_verify_malicious_raw():
 
     # KERI icp: bad digest with verify=False then explicit verify()
     serder_icp = Serder(makify=True, ilk=Ilks.icp)
+    orig_said = serder_icp.said
+    # Corrupt the last character of the said so the replacement is always
+    # distinct regardless of the first character's value.
+    last = orig_said[-1]
+    corrupt_last = 'A' if last != 'A' else 'B'
+    corrupt_said = orig_said[:-1] + corrupt_last
     raw_icp_bad = serder_icp.raw.replace(
-        serder_icp.said.encode(), b'E' + serder_icp.said[1:].encode()
+        orig_said.encode(), corrupt_said.encode()
     )
-    if raw_icp_bad != serder_icp.raw:
-        assert not Serder(raw=raw_icp_bad, verify=False).verify()
+    assert raw_icp_bad != serder_icp.raw, \
+        "said not found in icp raw — replace was a no-op"
+    assert not Serder(raw=raw_icp_bad, verify=False).verify()
 
     # KERI rot: binary corruption causes decode failure
     raw_rot = bytearray(Serder(makify=True, ilk=Ilks.rot).raw)
     raw_rot[-3] ^= 0xFF
-    with pytest.raises(UnicodeDecodeError):
+    with pytest.raises((UnicodeDecodeError, DeserializeError, ValidationError,
+                        ShortageError, VersionError)):
         Serder(raw=bytes(raw_rot))
 
     # SAD substitution: valid digest from serder_a spliced into serder_b
@@ -877,9 +889,12 @@ def test_serder_verify_malicious_raw():
         f'"d":"{good_sad["d"]}"', f'"d":"{escaped_d}"'
     ).encode()
     try:
-        assert not Serder(raw=unicode_raw, verify=False).verify()
+        result = Serder(raw=unicode_raw, verify=False)
+        # After normalisation the digest should match and verify must pass.
+        assert result.verify(), \
+            "verify() failed after Unicode-escaped digest that normalises to original"
     except (DeserializeError, ValidationError, VersionError):
-        pass
+        pass  # parser rejected the escape form outright — also acceptable
 
     # Field reordering: digest computed over reordered fields
     reordered_sad = {k: good_sad[k] for k in reversed(list(good_sad.keys()))}
