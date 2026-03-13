@@ -97,7 +97,7 @@ etc.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Type, Union
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable
 
 from .. import help
 from ..help.helping import isNonStringIterable, Reb64

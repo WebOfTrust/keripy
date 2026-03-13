@@ -4,7 +4,6 @@ KERI
 keri.db.koming module
 
 """
-import types
 import json
 from dataclasses import dataclass
 from typing import Type, Union
@@ -12,7 +11,6 @@ from collections.abc import Iterable
 
 import cbor2
 import msgpack
-import lmdb
 
 
 from . import dbing

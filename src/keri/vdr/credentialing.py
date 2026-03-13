@@ -988,11 +988,6 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
         creder (Creder): the credential to pull artifacts for and send
         recp (str): qb64 prefix of the recipient to send the artifacts to
     """
-    if isinstance(hab, GroupHab):
-        sender = hab.mhab.pre
-    else:
-        sender = hab.pre
-
     sendArtifacts(hby, reger, postman, creder, recp)
 
     sources = reger.sources(hby.db, creder)
