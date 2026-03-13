@@ -2214,3 +2214,122 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
             assert cue['aid'] == kownSenderHab.pre
             assert cue['sn'] == 0
             kvy.cues.clear()
+
+
+def test_aid_allow_deny(mockHelpingNowUTC):
+    """
+    Test AID based allow/deny in processMsg()
+    """
+    # Step 1: Setup
+    
+    salt1 = core.Salter(raw=b'0123456789abcdef').qb64
+    salt2 = core.Salter(raw=b'0123456789abcdeg').qb64
+    salt3 = core.Salter(raw=b'0123456789abcdeh').qb64
+
+    with (habbing.openHby(name="sender", base="test", salt=salt1) as allowSenderHby,
+          habbing.openHby(name="senderNT", base="test", salt=salt2) as denySenderHby,
+          habbing.openHby(name="receiver", base="test", salt=salt3) as receiverHby):
+
+        # Create single-key sender
+        allowHab = allowSenderHby.makeHab(name="sender", isith='1', icount=1,
+                                      transferable=True)
+        # Create single-key sender
+        denyHab = denySenderHby.makeHab(name="senderNT", isith='1', icount=1,
+                                          transferable=True)
+        # Create receiver hab (needed for receiver db context)
+        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1,
+                                          transferable=True)
+
+        # Parse sender ICPs into receiver's db via a cross-feed Kevery.
+        crossKvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+
+        allowSenderIcp = allowHab.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(allowSenderIcp), kvy=crossKvy)
+        assert allowHab.pre in crossKvy.kevers
+
+        denySenderIcp = denyHab.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(denySenderIcp), kvy=crossKvy)
+        assert denyHab.pre in crossKvy.kevers
+
+        # Create Kramer with config
+        with configing.openCF(name="kram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+            assert kramer.enabled
+
+            # Create Kevery with kramer for KRAM testing
+            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False,
+                                  kramer=kramer)
+ 
+            # Put AID in Deny list of Kevery
+            kvy.denyList.add(denyHab.pre)
+
+            # Build qry message with mocked timestamp
+            stamp = helping.nowIso8601()
+            msg = eventing.query(pre=denyHab.pre,
+                                 route="ksn",
+                                 query=dict(i=denyHab.pre, src=denyHab.pre),
+                                 stamp=stamp,
+                                 pvrsn=Vrsn_2_0)
+
+            # Sign with sender's keys
+            sigers = denyHab.mgr.sign(ser=msg.raw,
+                                        verfers=denyHab.kever.verfers,
+                                        indexed=True)
+            prefixer = coring.Prefixer(qb64=denyHab.pre)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+            kvy.processMsg(msg, **kwa)
+
+            # Assert cache was not created
+            assert receiverHby.db.msgc.get(keys=(denyHab.pre, msg.said)) is None
+
+            # Remove denyHab from deny list
+            kvy.denyList.discard(denyHab.pre)
+
+            # Add allowHab to allow list           
+            kvy.allowList.add(allowHab.pre)
+
+            msg = eventing.query(pre=allowHab.pre,
+                                 route="ksn",
+                                 query=dict(i=allowHab.pre, src=allowHab.pre),
+                                 stamp=stamp,
+                                 pvrsn=Vrsn_2_0)
+
+            # Sign with sender's keys
+            sigers = allowHab.mgr.sign(ser=msg.raw,
+                                        verfers=allowHab.kever.verfers,
+                                        indexed=True)
+            prefixer = coring.Prefixer(qb64=allowHab.pre)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+            kvy.processMsg(msg, **kwa)
+
+            # Assert cache was created
+            assert receiverHby.db.msgc.get(keys=(allowHab.pre, msg.said)) is not None
+
+            # Send another message with denyHab 
+            msg = eventing.query(pre=denyHab.pre,
+                                 route="ksn",
+                                 query=dict(i=denyHab.pre, src=denyHab.pre),
+                                 stamp=stamp,
+                                 pvrsn=Vrsn_2_0)
+
+            # Sign with sender's keys
+            sigers = denyHab.mgr.sign(ser=msg.raw,
+                                        verfers=denyHab.kever.verfers,
+                                        indexed=True)
+            prefixer = coring.Prefixer(qb64=denyHab.pre)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+            kvy.processMsg(msg, **kwa)
+
+            # Assert cache was not created because the allow list is active and denyHab is not 
+            # in the allow list
+            assert receiverHby.db.msgc.get(keys=(denyHab.pre, msg.said)) is None
+
+            # Add denyHab to the allow list
+            kvy.allowList.add(denyHab.pre)
+
+            # Re process the message
+            kvy.processMsg(msg, **kwa)
+
+            # Assert cache was created
+            assert receiverHby.db.msgc.get(keys=(denyHab.pre, msg.said)) is not None
