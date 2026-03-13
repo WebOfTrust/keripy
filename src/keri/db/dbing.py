@@ -108,6 +108,7 @@ def fetchTsgs(db, diger, snh=None):
 
     return tsgs
 
+
 def onKey(top, on, *, sep=b'.'):
     """
     Returns:
@@ -427,6 +428,7 @@ class LMDBer(filing.Filer):
         self.readonly = True if readonly else False
         super(LMDBer, self).__init__(**kwa)
 
+
     def reopen(self, readonly=False, **kwa):
         """
         Open if closed or close and reopen if opened or create and open if not
@@ -469,6 +471,7 @@ class LMDBer(filing.Filer):
 
         return self.opened
 
+
     @property
     def version(self):
         """ Return the version of database stored in __version__ key.
@@ -484,6 +487,7 @@ class LMDBer(filing.Filer):
 
         return self._version
 
+
     @version.setter
     def version(self, val):
         """  Set the version of the database in memory and in the __version__ key
@@ -497,6 +501,7 @@ class LMDBer(filing.Filer):
 
         self._version = val
         self.setVer(self._version)
+
 
     def close(self, clear=False):
         """
@@ -514,6 +519,7 @@ class LMDBer(filing.Filer):
 
         return super(LMDBer, self).close(clear=clear)
 
+
     def getVer(self):
         """ Returns the value of the the semver formatted version in the __version__ key in this database
 
@@ -525,6 +531,7 @@ class LMDBer(filing.Filer):
             cursor = txn.cursor()
             version = cursor.get(b'__version__')
             return version.decode("utf-8") if version is not None else None
+
 
     def setVer(self, val):
         """  Set the version of the database in the __version__ key
@@ -734,7 +741,6 @@ class LMDBer(filing.Filer):
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
-
     # For subdbs  the use keys with trailing part the is  monotonically
     # ordinal number serialized as 32 hex bytes
 
@@ -756,15 +762,16 @@ class LMDBer(filing.Filer):
                               When None returns False
             sep (bytes): separator character for split
         """
-        if val is None:
+        if val is None or not key:
             return False
         with self.env.begin(db=db, write=True, buffers=True) as txn:
-            onkey = onKey(key, on, sep=sep)  # start replay at this enty 0 is earliest
+            onkey = onKey(key, on, sep=sep)
             try:
                 return (txn.put(onkey, val, overwrite=False))
             except lmdb.BadValsizeError as ex:
                 raise KeyError(f"Key: `{onkey}` is either empty, too big (for lmdb),"
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
+
 
     # used in OnSuberBase
     def pinOnVal(self, db, key, on=0, val=None,  *, sep=b'.'):
@@ -1388,7 +1395,6 @@ class LMDBer(filing.Filer):
             return False
 
 
-
     def cntIoSet(self, db, key, *, ion=0, sep=b'.'):
         """Count set entries at onkey = key + sep + on for ion >= ion.
         Count beginning with entry at insertion offset ion.
@@ -1708,7 +1714,8 @@ class LMDBer(filing.Filer):
         transparently suffixed and unsuffixed
         Assumes DB opened with dupsort=False
         """
-        # val of None will return False
+        if not key or val is None:
+            return False
         return self.addIoSetVal(db=db, key=onKey(key, on, sep=sep), val=val, sep=sep)
 
 
@@ -2803,6 +2810,8 @@ class LMDBer(filing.Filer):
              sep (bytes): separator character for split
         """
 
+        if not key:
+            return False
         result = False
         dups = set(self.getOnIoDupVals(db, key))  #get preexisting dups if any
         with self.env.begin(db=db, write=True, buffers=True) as txn:
@@ -2851,6 +2860,8 @@ class LMDBer(filing.Filer):
             val (bytes): serialized value to add at onkey as dup
             sep (bytes): separator character for split
         """
+        if not key:
+            return False
         onkey = onKey(key, on, sep=sep)
         return (self.addIoDupVal(db, key=onkey, val=val))
 
@@ -3092,7 +3103,6 @@ class LMDBer(filing.Filer):
                     return  # no values end of db raises StopIteration
 
 
-
     def delOnIoDups(self, db, key, on=0, sep=b'.'):
         """Deletes all dup iovals at onkey consisting of key + sep + serialized
         on in db.
@@ -3176,7 +3186,6 @@ class LMDBer(filing.Filer):
             sep (bytes): separator character for split
         """
         return self.cntIoDups(db=db, key=onKey(key, on, sep=sep))
-
 
 
     def getOnIoDupValBackIter(self, db,  key=b'', on=0, *, sep=b'.'):
