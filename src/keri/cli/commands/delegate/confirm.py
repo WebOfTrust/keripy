@@ -93,6 +93,21 @@ class ConfirmDoer(doing.DoDoer):
         self.auto = auto
         super(ConfirmDoer, self).__init__(doers=doers)
 
+    def _addAuthorizerSeal(self, pre, edig, anchorSn, anchorSaid):
+        """Save the authorizer (delegator) event seal of the anchoring IXN event for an approved delegation."""
+        sner = core.Number(num=anchorSn, code=core.NumDex.Huge)
+        diger = coring.Diger(qb64=anchorSaid)
+        self.hby.db.aess.pin(keys=(pre, edig), val=(sner, diger))
+
+    def _processEvent(self, pre, edig, eserder, anchorSn, anchorSaid):
+        """Process the DIP or DRT event so it appears in the delegator's hby.kevers."""
+        sigers = self.hby.db.sigs.get(keys=(pre, edig))
+        wigers = self.hby.db.wigs.get(keys=(pre, bytes(edig)))
+        sner = core.Number(num=anchorSn, code=core.NumDex.Huge)
+        saider = coring.Saider(qb64=anchorSaid)
+        self.hby.kvy.processEvent(serder=eserder, sigers=sigers, wigers=wigers, delseqner=sner,
+                                      delsaider=saider, local=True)
+
     def confirmDo(self, tymth, tock=0.0, **kwa):
         """
         Parameters:
@@ -171,7 +186,11 @@ class ConfirmDoer(doing.DoDoer):
 
                         print(f"Delegate {eserder.pre} {typ} event committed.")
 
+                        # TODO: once both delegables and misfit escrows are automated then refactor
+                        #   the following direct removal to instead rely on normal escrow processing.
                         self.hby.db.delegables.rem(keys=(pre, sn), val=edig)
+                        self._addAuthorizerSeal(pre, edig, anchorSn=serder.sn, anchorSaid=serder.said)
+                        self._processEvent(pre=pre, edig=edig, eserder=eserder, anchorSn=serder.sn, anchorSaid=serder.said)
                         self.remove(self.toRemove)
                         return True
 
@@ -228,7 +247,11 @@ class ConfirmDoer(doing.DoDoer):
 
                             print(f"Delegate {eserder.pre} {typ} event committed.")
 
+                        # TODO: once both delegables and misfit escrows are automated then refactor
+                        #   the following direct removal to instead rely on normal escrow processing.
                         self.hby.db.delegables.rem(keys=(pre, sn), val=edig)
+                        self._addAuthorizerSeal(pre, edig, anchorSn=hab.kever.sn, anchorSaid=hab.kever.serder.said)
+                        self._processEvent(pre=pre, edig=edig, eserder=eserder, anchorSn=eserder.sn, anchorSaid=eserder.said)
                         self.remove(self.toRemove)
                         return True
 
