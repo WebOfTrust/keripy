@@ -653,7 +653,6 @@ def test_matter_class():
     assert Matter._special(MtrDex.Tag3)
 
 
-
 def test_matter():
     """Test Matter instances"""
     # verkey,  sigkey = pysodium.crypto_sign_keypair()
@@ -1901,6 +1900,7 @@ def test_matter():
 
     """ Done Test """
 
+
 def test_matter_special():
     """
     Test Matter instances using code with special soft values
@@ -2412,7 +2412,6 @@ def test_matter_special():
     """ Done Test """
 
 
-
 def test_seqner():
     """
     Test Seqner sequence number subclass Matter
@@ -2577,6 +2576,7 @@ def test_seqner():
     assert number.qb2 == snqb2
 
     """ Done Test """
+
 
 def test_number():
     """
@@ -3976,6 +3976,7 @@ def test_decimer():
 
     """Done Test"""
 
+
 def test_dater():
     """
     Test Dater date time subclass of Matter
@@ -4089,6 +4090,7 @@ def test_dater():
     assert dater4.datetime > dater3.datetime
 
     """ Done Test """
+
 
 def test_tagger():
     """
@@ -4779,7 +4781,6 @@ def test_texter():
     assert texter.text == text
 
     """ Done Test """
-
 
 
 def test_bexter():
@@ -5860,7 +5861,6 @@ def test_cigar():
     """ Done Test """
 
 
-
 def test_diger():
     """
     Test the support functionality for Diger subclass of CryMat
@@ -6266,7 +6266,6 @@ def test_noncer():
     """ Done Test """
 
 
-
 def test_prefixer():
     """Test the support functionality for prefixer subclass of Matter"""
 
@@ -6344,7 +6343,6 @@ def test_prefixer():
 
 
     """ Done Test """
-
 
 
 def test_saider():
@@ -6598,8 +6596,6 @@ def test_saider():
     assert sad2["read"] is True
 
     """Done Test"""
-
-
 
 
 def test_tholder():
@@ -7112,6 +7108,7 @@ def test_tholder():
 
 
     """ Done Test """
+
 
 def test_dicter():
     """Test Dicter base class"""
