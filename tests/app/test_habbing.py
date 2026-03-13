@@ -1129,292 +1129,103 @@ def test_failed_rotation_rollback():
         assert hab.kever.sn == 1
 
 
-def test_process_cues_iter_receipt():
+def test_cues():
     """
-    Test processCuesIter kin="receipt" handler.
-    A non-transferable (witness) hab receipts an inception event from a
-    transferable hab. Verifies that the returned message is a non-empty
-    receipt and that processing it back into the transferable hab's kevery
-    records the witness receipt.
+    Test BaseHab.processCuesIter and GroupHab.processCuesIter cue handlers.
+
+    Covers all implemented kins:
+        receipt, replay, reply, witness, query,
+        notice, noticeBadCloneFN, keyStateSaved, stream, invalid,
+        remoteMemberedSig (GroupHab only)
     """
     with habbing.openHby(name="cam", temp=True,
                          salt=core.Salter(raw=b'camcamcamcamcamc').qb64) as camHby, \
          habbing.openHby(name="wes", temp=True,
-                         salt=core.Salter(raw=b'wesweswesweswesx').qb64) as wesHby:
+                         salt=core.Salter(raw=b'wesweswesweswesx').qb64) as wesHby, \
+         habbing.openHby(name="bob", temp=True,
+                         salt=core.Salter(raw=b'bobbobbobbobbobb').qb64) as bobHby:
 
+        # shared habs
         wesHab = wesHby.makeHab(name='wes', isith="1", icount=1, transferable=False)
         assert not wesHab.kever.prefixer.transferable
 
         camHab = camHby.makeHab(name='cam', isith="1", icount=1,
                                 toad=1, wits=[wesHab.pre])
+        bobHab = bobHby.makeHab(name='bob', isith="1", icount=1)
 
         wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
         camKvy = eventing.Kevery(db=camHab.db, lax=False, local=False)
 
-        icpMsg = camHab.makeOwnInception()
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(icpMsg),
-                                                kvy=wesKvy, local=True)
-        assert camHab.pre in wesKvy.kevers
-
-        # receipt cue is pushed by Kevery after processing inception
-        assert any(c["kin"] == "receipt" for c in wesKvy.cues)
-
-        rctMsg = wesHab.processCues(wesKvy.cues)
-        assert len(rctMsg) > 0
-
-        # parse receipt back into cam's kevery to confirm it is accepted
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(rctMsg),
-                                                kvy=camKvy, local=False)
-        assert wesHab.pre in camKvy.kevers
-
-
-def test_process_cues_iter_replay():
-    """
-    Test processCuesIter kin="replay" handler.
-    Pushes a replay cue directly and confirms the raw msgs bytearray is
-    returned unchanged.
-    """
-    with habbing.openHby(name="cam", temp=True,
-                         salt=core.Salter(raw=b'camcamcamcamcamc').qb64) as camHby:
-
-        camHab = camHby.makeHab(name='cam', isith="1", icount=1)
-        kvy = eventing.Kevery(db=camHab.db, lax=False, local=True)
-
-        replay_payload = bytearray(b"fake-replay-msgs")
-        kvy.cues.push(dict(kin="replay", msgs=replay_payload))
-
-        result = camHab.processCues(kvy.cues)
-        assert result == replay_payload
-
-
-def test_process_cues_iter_reply():
-    """
-    Test processCuesIter kin="reply" handler.
-    Pushes a reply cue and confirms a non-empty endorsed reply message
-    is returned.
-    """
-    with habbing.openHby(name="cam", temp=True,
-                         salt=core.Salter(raw=b'camcamcamcamcamc').qb64) as camHby:
-
-        camHab = camHby.makeHab(name='cam', isith="1", icount=1)
-        kvy = eventing.Kevery(db=camHab.db, lax=False, local=True)
-
-        kvy.cues.push(dict(kin="reply",
-                           route="/end/role/add",
-                           data=dict(cid=camHab.pre,
-                                     role=kering.Roles.controller,
-                                     eid=camHab.pre)))
-
-        result = camHab.processCues(kvy.cues)
-        assert len(result) > 0
-
-
-def test_process_cues_iter_witness():
-    """
-    Test processCuesIter kin="witness" handler.
-    A non-transferable (witness) hab processes an inception event from a
-    transferable hab, then handles the witness cue to produce a witness receipt.
-    """
-    with habbing.openHby(name="cam", temp=True,
-                         salt=core.Salter(raw=b'camcamcamcamcamc').qb64) as camHby, \
-         habbing.openHby(name="wes", temp=True,
-                         salt=core.Salter(raw=b'wesweswesweswesx').qb64) as wesHby:
-
-        wesHab = wesHby.makeHab(name='wes', isith="1", icount=1, transferable=False)
-        camHab = camHby.makeHab(name='cam', isith="1", icount=1,
-                                toad=1, wits=[wesHab.pre])
-
-        # parse cam's inception into wes's db so wes knows cam's key state
-        wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=True)
+        # parse cam's inception into wes so wes has cam's key state
         icpMsg = camHab.makeOwnInception()
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(icpMsg),
                                                 kvy=wesKvy, local=True)
         assert camHab.pre in wesKvy.kevers
         assert wesHab.pre in wesKvy.kevers[camHab.pre].wits
 
-        # drain any existing cues, then push a witness cue directly
-        wesKvy.cues.pull() if wesKvy.cues else None
+        # receipt
+        assert any(c["kin"] == "receipt" for c in wesKvy.cues)
+        rctMsg = wesHab.processCues(wesKvy.cues)
+        assert len(rctMsg) > 0
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(rctMsg),
+                                                kvy=camKvy, local=False)
+        assert wesHab.pre in camKvy.kevers
+
+        # replay
+        kvy = eventing.Kevery(db=camHab.db, lax=False, local=True)
+        replay_payload = bytearray(b"fake-replay-msgs")
+        kvy.cues.push(dict(kin="replay", msgs=replay_payload))
+        assert camHab.processCues(kvy.cues) == replay_payload
+
+        # reply
+        kvy.cues.push(dict(kin="reply",
+                           route="/end/role/add",
+                           data=dict(cid=camHab.pre,
+                                     role=kering.Roles.controller,
+                                     eid=camHab.pre)))
+        assert len(camHab.processCues(kvy.cues)) > 0
+
+        # witness
+        # drain incidental cues from parsing above, then push witness cue
         while wesKvy.cues:
             wesKvy.cues.pull()
+        wesKvy.cues.push(dict(kin="witness", serder=camHab.iserder))
+        assert len(wesHab.processCues(wesKvy.cues)) > 0
 
-        camSerder = camHab.iserder
-        wesKvy.cues.push(dict(kin="witness", serder=camSerder))
+        # query
+        kvy.cues.push(dict(kin="query", pre=bobHab.pre, src=camHab.pre))
+        assert len(camHab.processCues(kvy.cues)) > 0
 
-        result = wesHab.processCues(wesKvy.cues)
-        assert len(result) > 0
-
-
-def test_process_cues_iter_query():
-    """
-    Test processCuesIter kin="query" handler.
-    Pushes a query cue and confirms a non-empty signed query message is returned.
-    """
-    with habbing.openHby(name="cam", temp=True,
-                         salt=core.Salter(raw=b'camcamcamcamcamc').qb64) as camHby, \
-         habbing.openHby(name="wes", temp=True,
-                         salt=core.Salter(raw=b'wesweswesweswesx').qb64) as wesHby:
-
-        camHab = camHby.makeHab(name='cam', isith="1", icount=1)
-        wesHab = wesHby.makeHab(name='wes', isith="1", icount=1)
-
-        kvy = eventing.Kevery(db=camHab.db, lax=False, local=True)
-        kvy.cues.push(dict(kin="query",
-                           pre=wesHab.pre,
-                           src=camHab.pre))
-
-        result = camHab.processCues(kvy.cues)
-        assert len(result) > 0
-
-
-def test_process_cues_iter_notice():
-    """
-    Test processCuesIter kin="notice" handler.
-    Pushes a notice cue and confirms it is consumed without error and
-    produces no outgoing message bytes.
-    """
-    with habbing.openHby(name="cam", temp=True,
-                         salt=core.Salter(raw=b'camcamcamcamcamc').qb64) as camHby:
-
-        camHab = camHby.makeHab(name='cam', isith="1", icount=1)
-        kvy = eventing.Kevery(db=camHab.db, lax=False, local=True)
-
+        # notice
         kvy.cues.push(dict(kin="notice", serder=camHab.iserder))
+        assert camHab.processCues(kvy.cues) == b""
+        assert not kvy.cues
 
-        result = camHab.processCues(kvy.cues)
-        assert result == b""
-        assert not kvy.cues  # cue was consumed
-
-
-def test_process_cues_iter_notice_bad_clone_fn():
-    """
-    Test processCuesIter kin="noticeBadCloneFN" handler.
-    Pushes a noticeBadCloneFN cue with full payload and confirms it is
-    consumed without error and produces no outgoing message bytes.
-    """
-    with habbing.openHby(name="cam", temp=True,
-                         salt=core.Salter(raw=b'camcamcamcamcamc').qb64) as camHby:
-
-        camHab = camHby.makeHab(name='cam', isith="1", icount=1)
-        kvy = eventing.Kevery(db=camHab.db, lax=False, local=True)
-
-        firner = coring.Seqner(sn=5)   # expected fn from cloned replay
-        dater = coring.Dater()          # cloned replay datetime
-        actual_fn = 7                   # mismatched fn assigned by db
-
+        # noticeBadCloneFN
         kvy.cues.push(dict(kin="noticeBadCloneFN",
                            serder=camHab.iserder,
-                           fn=actual_fn,
-                           firner=firner,
-                           dater=dater))
-
-        result = camHab.processCues(kvy.cues)
-        assert result == b""
+                           fn=7,
+                           firner=coring.Seqner(sn=5),
+                           dater=coring.Dater()))
+        assert camHab.processCues(kvy.cues) == b""
         assert not kvy.cues
 
-
-def test_process_cues_iter_key_state_saved():
-    """
-    Test processCuesIter kin="keyStateSaved" handler.
-    Pushes a keyStateSaved cue with a ksn dict and confirms it is
-    consumed without error and produces no outgoing message bytes.
-    """
-    with habbing.openHby(name="cam", temp=True,
-                         salt=core.Salter(raw=b'camcamcamcamcamc').qb64) as camHby:
-
-        camHab = camHby.makeHab(name='cam', isith="1", icount=1)
-        kvy = eventing.Kevery(db=camHab.db, lax=False, local=True)
-
-        # minimal ksn dict matching the schema from eventing.py asdict(ksr)
+        # keyStateSaved
         ksn = {"i": camHab.pre, "s": "0", "d": camHab.kever.serder.said}
         kvy.cues.push(dict(kin="keyStateSaved", ksn=ksn))
-
-        result = camHab.processCues(kvy.cues)
-        assert result == b""
+        assert camHab.processCues(kvy.cues) == b""
         assert not kvy.cues
 
-
-def test_process_cues_iter_stream():
-    """
-    Test processCuesIter kin="stream" handler.
-    Pushes a stream cue with pre/src/topics and confirms it is consumed
-    without error and produces no outgoing message bytes.
-    """
-    with habbing.openHby(name="cam", temp=True,
-                         salt=core.Salter(raw=b'camcamcamcamcamc').qb64) as camHby, \
-         habbing.openHby(name="wes", temp=True,
-                         salt=core.Salter(raw=b'wesweswesweswesx').qb64) as wesHby:
-
-        camHab = camHby.makeHab(name='cam', isith="1", icount=1)
-        wesHab = wesHby.makeHab(name='wes', isith="1", icount=1)
-        kvy = eventing.Kevery(db=camHab.db, lax=False, local=True)
-
+        # stream
         kvy.cues.push(dict(kin="stream",
                            serder=camHab.iserder,
-                           pre=wesHab.pre,
+                           pre=bobHab.pre,
                            src=camHab.pre,
                            topics={"/receipt": 0, "/replay": 0}))
-
-        result = camHab.processCues(kvy.cues)
-        assert result == b""
+        assert camHab.processCues(kvy.cues) == b""
         assert not kvy.cues
 
-
-def test_process_cues_iter_invalid():
-    """
-    Test processCuesIter kin="invalid" handler.
-    Pushes an invalid cue and confirms it is consumed without error and
-    produces no outgoing message bytes.
-    """
-    with habbing.openHby(name="cam", temp=True,
-                         salt=core.Salter(raw=b'camcamcamcamcamc').qb64) as camHby:
-
-        camHab = camHby.makeHab(name='cam', isith="1", icount=1)
-        kvy = eventing.Kevery(db=camHab.db, lax=False, local=True)
-
+        # invalid
         kvy.cues.push(dict(kin="invalid", serder=camHab.iserder))
-
-        result = camHab.processCues(kvy.cues)
-        assert result == b""
-        assert not kvy.cues
-
-
-def test_process_cues_iter_remote_membered_sig():
-    """
-    Test GroupHab.processCuesIter kin="remoteMemberedSig" handler.
-    Verifies that the cue is consumed without error, produces no outgoing
-    message bytes, and that non-group cues are still delegated to BaseHab.
-    """
-    with habbing.openHby(name="cam", temp=True,
-                         salt=core.Salter(raw=b'camcamcamcamcamc').qb64) as camHby, \
-         habbing.openHby(name="bob", temp=True,
-                         salt=core.Salter(raw=b'bobbobbobbobbobb').qb64) as bobHby:
-
-        camHab = camHby.makeHab(name='cam', isith="1", icount=1)
-        bobHab = bobHby.makeHab(name='bob', isith="1", icount=1)
-
-        # parse each member's inception into the other's db
-        camKvy = eventing.Kevery(db=camHab.db, lax=True, local=False)
-        bobIcpMsg = bobHab.makeOwnInception()
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcpMsg),
-                                                kvy=camKvy, local=False)
-
-        smids = [camHab.pre, bobHab.pre]
-        groupHab = camHby.makeGroupHab(group='cam-bob', mhab=camHab, smids=smids)
-
-        kvy = eventing.Kevery(db=groupHab.db, lax=False, local=True)
-
-        # push remoteMemberedSig cue
-        kvy.cues.push(dict(kin="remoteMemberedSig",
-                           serder=groupHab.iserder,
-                           index=1))
-
-        result = groupHab.processCues(kvy.cues)
-        assert result == b""
-        assert not kvy.cues
-
-        # confirm non-group cues are still handled via BaseHab delegation
-        ksn = {"i": groupHab.pre, "s": "0", "d": groupHab.kever.serder.said}
-        kvy.cues.push(dict(kin="keyStateSaved", ksn=ksn))
-        result = groupHab.processCues(kvy.cues)
-        assert result == b""
+        assert camHab.processCues(kvy.cues) == b""
         assert not kvy.cues
