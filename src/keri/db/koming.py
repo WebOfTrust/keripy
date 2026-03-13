@@ -20,7 +20,6 @@ from ..help import helping
 logger = help.ogler.getLogger()
 
 
-
 class KomerBase:
     """
     KomerBase is a base class for Komer (Keyspace Object Mapper) subclasses that
@@ -630,7 +629,6 @@ class IoSetKomer(KomerBase):
                                             top=self._tokey(keys, topive=topive),
                                             sep=self.sep.encode()):
             yield (self._tokeys(iokey), self.deserializer(val))
-
 
 
 class DupKomer(KomerBase):
