@@ -2148,18 +2148,64 @@ class BaseHab:
                 msg = self.reply(data=data, route=route)
                 yield msg
 
-            # ToDo XXXX cue for kin = "query" various types of queries
-            #     (query witness, query delegation etc)
-            # ToDo XXXX cue for kin = "notice" new event
-            # ToDo XXXX cue for kin = "witness" to create witness receipt own is witness
-            # ToDo XXXX cue for kin = "noticeBadCloneFN"
-            # ToDo XXXX cue for kin = "approveDelegation" own is delegator
+            elif cueKin in ("witness",):  # cue to witness a received event, own pre must be a witness
+                cuedSerder = cue["serder"]
+                logger.info("%s got cue: kin=%s %s", self.pre, cueKin,
+                            cuedSerder.said)
+                logger.debug(f"event=\n{cuedSerder.pretty()}\n")
+                msgs.extend(self.witness(cuedSerder))
+                yield msgs
 
-            # ToDo XXXX cue for kin = "keyStateSaved"
+            elif cueKin in ("query",):  # cue to send a query message
+                pre = cue["pre"]
+                src = cue["src"]
+                route = cue.get("route")
+                query = cue.get("query")
+                kwa = dict()
+                if route is not None:
+                    kwa["route"] = route
+                msg = self.query(pre=pre, src=src, query=query, **kwa)
+                yield msg
+
+            elif cueKin in ("notice",):  # cue to notify of new own event accepted into KEL
+                cuedSerder = cue["serder"]
+                logger.info("%s got cue: kin=%s %s", self.pre, cueKin,
+                            cuedSerder.said)
+                logger.debug(f"event=\n{cuedSerder.pretty()}\n")
+
+            elif cueKin in ("noticeBadCloneFN",):  # cue to notify of bad cloned first seen ordinal
+                cuedSerder = cue["serder"]
+                fn = cue["fn"]
+                firner = cue["firner"]
+                dater = cue["dater"]
+                logger.error("%s got cue: kin=%s %s mismatch fn=%s expected=%s at %s",
+                             self.pre, cueKin, cuedSerder.said, fn, firner.sn,
+                             dater.dts)
+                logger.debug(f"event=\n{cuedSerder.pretty()}\n")
+
+            # ToDo XXXX cue for kin = "approveDelegation" own is delegator
             # ToDo XXXX cue for kin = "psUnescrow"
-            # ToDo XXXX cue for kin = "stream"
-            # ToDo XXXX cue for kin = "invalid"
             # ToDo XXXX cue for kin=""remoteMemberedSig""
+
+            elif cueKin in ("keyStateSaved",):  # cue to notify that key state has been saved
+                ksn = cue["ksn"]
+                logger.info("%s got cue: kin=%s for aid=%s at sn=%s",
+                            self.pre, cueKin, ksn.get("i"), ksn.get("s"))
+
+            elif cueKin in ("stream",):  # cue to notify of a query stream request
+                cuedSerder = cue["serder"]
+                pre = cue["pre"]
+                src = cue["src"]
+                topics = cue["topics"]
+                logger.info("%s got cue: kin=%s for pre=%s src=%s topics=%s",
+                            self.pre, cueKin, pre, src, topics)
+                logger.debug(f"event=\n{cuedSerder.pretty()}\n")
+
+            elif cueKin in ("invalid",):  # cue to notify of an invalid query message
+                cuedSerder = cue["serder"]
+                logger.error("%s got cue: kin=%s %s",
+                             self.pre, cueKin, cuedSerder.said)
+                logger.debug(f"event=\n{cuedSerder.pretty()}\n")
 
     def witnesser(self):
         return True
