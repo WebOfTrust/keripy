@@ -11,7 +11,9 @@ from  ordered_set import OrderedSet as oset
 
 from keri.kering import (Protocols, Vrsn_1_0, Vrsn_2_0, Kinds, Ilks,
                          VER1FULLSPAN, VER2FULLSPAN,
-                         InvalidValueError, ValidationError,
+                         InvalidValueError, ValidationError, ShortageError,
+                         DeserializeError, FieldError, ExtraFieldError,
+                         MissingFieldError, AlternateFieldError,
                          SerializeError, VersionError)
 
 from keri.help import b64ToInt
@@ -45,6 +47,7 @@ def test_fielddom():
     assert fdom.strict == True
 
     """End Test"""
+
 
 def test_spans():
     """
@@ -735,14 +738,453 @@ def test_serder():
     sad["ri"] = ""
     serder = Serder(makify=True, sad=sad)  # makify fixes order with extra
 
-    # ToDo: create malicious raw values to test verify more thoroughly
-    # ToDo: create bad sad values to test makify more thoroughly
-    # unhappy paths
+    """End Test"""
 
 
+def test_serder_verify_malicious_raw():
+    """Test Serder._verify / .verify against malicious and malformed raw values."""
 
+    # Baseline fixtures
+    serder_base = Serder(makify=True, proto=Protocols.acdc)
+    good_raw = serder_base.raw
+    good_sad = serder_base.sad
+
+    # Bad digest (JSON) — kept as fixture for the verify() bool test below.
+    # The raising form is already covered in test_serder.
+    bad_json = (b'{"v":"ACDC10JSON00005a_",'
+                b'"d":"EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pE",'  # 'T' → 'E'
+                b'"i":"","s":""}')
+
+    # Bad digest (CBOR)
+    # Locate the qb64 digest bytes in the binary payload and flip one character.
+    serder_cbor = Serder(makify=True, proto=Protocols.acdc, kind=Kinds.cbor)
+    raw_cbor = bytearray(serder_cbor.raw)
+    pos = raw_cbor.find(serder_cbor.said.encode())
+    assert pos != -1, "digest not found in CBOR raw"
+    raw_cbor[pos + 43] ^= 0x01
+    with pytest.raises((ValidationError, DeserializeError, UnicodeDecodeError)):
+        Serder(raw=bytes(raw_cbor))
+
+    # Bad digest (MGPK)
+    serder_mgpk = Serder(makify=True, proto=Protocols.acdc, kind=Kinds.mgpk)
+    raw_mgpk = bytearray(serder_mgpk.raw)
+    pos = raw_mgpk.find(serder_mgpk.said.encode())
+    assert pos != -1, "digest not found in MGPK raw"
+    raw_mgpk[pos + 43] ^= 0x01
+    with pytest.raises((ValidationError, DeserializeError, UnicodeDecodeError)):
+        Serder(raw=bytes(raw_mgpk))
+
+    # Truncated raw
+    with pytest.raises((ShortageError, DeserializeError, ValidationError)):
+        Serder(raw=good_raw[:-10])
+
+    # Truncated bytearray with strip=True
+    with pytest.raises((ShortageError, DeserializeError, ValidationError)):
+        Serder(raw=bytearray(good_raw[:-10]), strip=True)
+
+    # Size field in version string is wrong
+    sad_bad_size = dict(good_sad)
+    sad_bad_size['v'] = good_sad['v'].replace('00005a', '00005b')
+    with pytest.raises((ValidationError, ShortageError, DeserializeError)):
+        Serder(raw=serder_base.dumps(sad_bad_size, Kinds.json))
+
+    # Protocol mismatch: 'v' claims ACDC but content is KERI
+    raw_keri = Serder(makify=True, ilk=Ilks.icp).raw
+    with pytest.raises((ValidationError, DeserializeError, FieldError)):
+        Serder(raw=raw_keri.replace(b'KERI10JSON', b'ACDC10JSON'))
+
+    # Kind mismatch: version string says CBOR but bytes are JSON
+    with pytest.raises((ValidationError, DeserializeError)):
+        Serder(raw=good_raw.replace(b'JSON', b'CBOR'))
+
+    # Version mismatch: version string claims v2.0
+    with pytest.raises((ValidationError, DeserializeError, VersionError)):
+        Serder(raw=good_raw.replace(b'ACDC10JSON', b'ACDC20JSON'))
+
+    # Missing 'v' field entirely
+    no_v_sad = {k: v for k, v in good_sad.items() if k != 'v'}
+    with pytest.raises((FieldError, DeserializeError, ValidationError, VersionError)):
+        Serder(raw=serder_base.dumps(no_v_sad, Kinds.json))
+
+    # Completely malformed bytes
+    with pytest.raises((ShortageError, DeserializeError, ValidationError, VersionError)):
+        Serder(raw=b'not json at all!!!')
+
+    # Empty bytes
+    with pytest.raises((ShortageError, DeserializeError, ValidationError, VersionError,
+                        InvalidValueError)):
+        Serder(raw=b'')
+
+    # Valid structure but digest value mutated (size preserved)
+    serder_nv = Serder(raw=good_raw, verify=False)
+    mutated_sad = dict(serder_nv.sad)
+    orig_d = mutated_sad['d']
+    mutated_sad['d'] = orig_d[:-1] + ('A' if orig_d[-1] != 'A' else 'B')
+    with pytest.raises(ValidationError):
+        Serder(raw=serder_base.dumps(mutated_sad, Kinds.json), verify=True)
+
+    # verify() bool form mirrors raising form
+    assert Serder(raw=good_raw, verify=False).verify()
+    assert not Serder(raw=bad_json, verify=False).verify()
+
+    # compare(said=None) raises
+    with pytest.raises(ValidationError):
+        Serder(raw=good_raw).compare(said=None)
+
+    # KERI icp: bad digest with verify=False then explicit verify()
+    serder_icp = Serder(makify=True, ilk=Ilks.icp)
+    raw_icp_bad = serder_icp.raw.replace(
+        serder_icp.said.encode(), b'E' + serder_icp.said[1:].encode()
+    )
+    if raw_icp_bad != serder_icp.raw:
+        assert not Serder(raw=raw_icp_bad, verify=False).verify()
+
+    # KERI rot: binary corruption causes decode failure
+    raw_rot = bytearray(Serder(makify=True, ilk=Ilks.rot).raw)
+    raw_rot[-3] ^= 0xFF
+    with pytest.raises(UnicodeDecodeError):
+        Serder(raw=bytes(raw_rot))
+
+    # SAD substitution: valid digest from serder_a spliced into serder_b
+    serder_a = Serder(makify=True, proto=Protocols.acdc)
+    serder_b = Serder(makify=True, proto=Protocols.acdc)
+    spliced_raw = serder_b.raw.replace(serder_b.said.encode(), serder_a.said.encode())
+    if spliced_raw != serder_b.raw:
+        assert not Serder(raw=spliced_raw, verify=False).verify()
+
+    # Second-preimage: original 'd' retained, content changed
+    evil_sad = dict(good_sad)
+    evil_sad['i'] = 'Dmalicious_prefix_value_injected_here_x'
+    evil_sad['d'] = good_sad['d']
+    assert not Serder(sad=evil_sad, verify=False).verify()
+
+    # Size over-read: 'v' size patched to consume a trailing second message
+    actual_size_hex = good_sad['v'][10:16]
+    second_msg = b'{"v":"ACDC10JSON00005a_","d":"' + b'E' * 44 + b'","i":"","s":""}'
+    stream_raw = bytearray(good_raw) + bytearray(second_msg)
+    overread_hex = format(int(actual_size_hex, 16) + len(second_msg), '06x')
+    stream_patched = bytes(stream_raw).replace(actual_size_hex.encode(), overread_hex.encode(), 1)
+    with pytest.raises((ValidationError, ShortageError, DeserializeError)):
+        Serder(raw=stream_patched)
+
+    # Size field set to maximum (ffffff): must error cleanly
+    with pytest.raises((ValidationError, ShortageError, DeserializeError)):
+        Serder(raw=good_raw.replace(actual_size_hex.encode(), b'ffffff', 1))
+
+    # Unicode escape: 'd' spelled with \u0045 instead of 'E'
+    escaped_d = good_sad['d'].replace('E', r'\u0045', 1)
+    unicode_raw = good_raw.decode().replace(
+        f'"d":"{good_sad["d"]}"', f'"d":"{escaped_d}"'
+    ).encode()
+    try:
+        assert not Serder(raw=unicode_raw, verify=False).verify()
+    except (DeserializeError, ValidationError, VersionError):
+        pass
+
+    # Field reordering: digest computed over reordered fields
+    reordered_sad = {k: good_sad[k] for k in reversed(list(good_sad.keys()))}
+    reordered_raw = Serder(sad=reordered_sad, makify=True, verify=False).raw
+    try:
+        serder_ro = Serder(raw=reordered_raw, verify=True)
+        assert serder_ro.sad == good_sad  # must have been canonicalised
+    except (ValidationError, DeserializeError, FieldError):
+        pass
+
+    # Cross-proto digest reuse: valid KERI said injected into ACDC SAD
+    evil_acdc = dict(good_sad)
+    evil_acdc['d'] = Serder(makify=True, ilk=Ilks.icp).said
+    assert not Serder(sad=evil_acdc, verify=False).verify()
 
     """End Test"""
+
+
+def test_serder_makify_bad_sad():
+    """Test Serder.makify / _makify with invalid parameters and bad sad values."""
+
+    serder_ok = Serder(makify=True, proto=Protocols.acdc)
+    good_sad = serder_ok.sad
+
+    # Invalid proto string
+    with pytest.raises(SerializeError):
+        Serder(makify=True, proto='BOGUS')
+
+    # Bad 'v' in sad: _makify ignores it and falls back to default proto
+    bad_v_sad = dict(good_sad)
+    bad_v_sad['v'] = 'BOGUS10JSON00005a_'
+    serder_bad_v = Serder(makify=True, sad=bad_v_sad)
+    assert serder_bad_v.proto == Protocols.keri  # falls back to self.Proto default
+
+    # Invalid pvrsn
+    with pytest.raises(SerializeError):
+        Serder(makify=True, proto=Protocols.acdc, pvrsn=Vrsn_1_0.__class__(9, 9))
+
+    # Invalid kind
+    with pytest.raises(SerializeError):
+        Serder(makify=True, proto=Protocols.acdc, kind='XML')
+
+    # Invalid ilk for proto
+    with pytest.raises(SerializeError):
+        Serder(makify=True, proto=Protocols.acdc, ilk='xxx')
+
+    with pytest.raises(SerializeError):
+        Serder(makify=True, proto=Protocols.keri, ilk='zzz')
+
+    # Extra fields in strict ACDC sad
+    strict_sad = dict(good_sad)
+    strict_sad['extra_field'] = 'bad'
+    with pytest.raises(SerializeError):
+        Serder(makify=True, sad=strict_sad, proto=Protocols.acdc)
+
+    # Extra fields in strict KERI icp sad
+    icp_sad = Serder(makify=True, ilk=Ilks.icp).sad
+    icp_sad['extra'] = 'bad'
+    with pytest.raises(SerializeError):
+        Serder(makify=True, sad=icp_sad)
+
+    # Both alternate fields ('a' and 'A') present
+    alt_sad = dict(good_sad)
+    alt_sad['a'] = ''
+    alt_sad['A'] = ''
+    with pytest.raises(SerializeError):
+        Serder(sad=alt_sad, makify=True)
+
+    # makify always fills in 'v' even from an empty sad
+    assert 'v' in Serder(makify=True, proto=Protocols.acdc).sad
+
+    # Invalid gvrsn (major < 2)
+    with pytest.raises(SerializeError):
+        Serder(makify=True, proto=Protocols.keri, pvrsn=Vrsn_2_0,
+               gvrsn=Vrsn_1_0)
+
+    # Non-digestive code for 'd': field left empty, verify fails
+    serder_bad_code = Serder(makify=True, proto=Protocols.acdc,
+                             saids={'d': PreDex.Ed25519},
+                             verify=False)
+    assert serder_bad_code.sad['d'] == ''
+    assert not serder_bad_code.verify()
+
+    # Out-of-order fields: makify reorders, raw-only path rejects
+    serder_icp2 = Serder(makify=True, ilk=Ilks.icp)
+    ooo_sad = serder_icp2.sad
+    keys = list(ooo_sad.keys())
+    keys.remove('a')
+    keys.insert(keys.index('d'), 'a')
+    ooo_sad_reordered = {k: ooo_sad[k] for k in keys}
+
+    serder_fixed = Serder(sad=ooo_sad_reordered, makify=True)
+    fixed_keys = list(serder_fixed.sad.keys())
+    assert fixed_keys.index('a') > fixed_keys.index('d')
+
+    with pytest.raises(ValidationError):
+        Serder(raw=serder_ok.dumps(ooo_sad_reordered, Kinds.json), verify=True)
+
+    # Ilk valid for one proto but not the other
+    with pytest.raises(SerializeError):
+        Serder(makify=True, proto=Protocols.acdc, ilk=Ilks.rot)
+
+    with pytest.raises(SerializeError):
+        Serder(makify=True, proto=Protocols.keri, ilk=Ilks.ace)
+
+    # sad with KERI 'v' + no explicit proto → infers KERI
+    keri_sad = Serder(makify=True, ilk=Ilks.icp).sad
+    assert Serder(sad=keri_sad, makify=True).proto == Protocols.keri
+
+    # KERI-shaped sad + proto=ACDC → ilk 'icp' not valid for ACDC
+    with pytest.raises(SerializeError):
+        Serder(sad=keri_sad, makify=True, proto=Protocols.acdc)
+
+    # Stale digest in sad: _exhale serializes, _verify detects mismatch
+    corrupted_sad = dict(good_sad)
+    orig_d = corrupted_sad['d']
+    corrupted_sad['d'] = orig_d[:-1] + ('A' if orig_d[-1] != 'A' else 'B')
+    with pytest.raises(ValidationError):
+        Serder(sad=corrupted_sad, verify=True)
+
+    serder_corrupt_nv = Serder(sad=corrupted_sad, verify=False)
+    assert serder_corrupt_nv.sad['d'] == corrupted_sad['d']
+    assert not serder_corrupt_nv.verify()
+
+    # KERI icp with non-digestive 'i' override: 'i' stays empty, verify fails
+    assert not Serder(makify=True, ilk=Ilks.icp,
+                      saids={'i': PreDex.Ed25519},
+                      verify=False).verify()
+
+    # No args at all
+    with pytest.raises(InvalidValueError):
+        Serder()
+
+    with pytest.raises(InvalidValueError):
+        Serder(sad=None, makify=False)
+
+    """End Test"""
+
+
+def test_serder_validate_unhappy():
+    """Test _validate branches not reachable via happy-path construction.
+
+    Each case constructs a valid Serder with verify=False, then monkey-patches
+    a single internal attribute before calling _verify() directly.
+    """
+
+    serder_ok = Serder(makify=True, proto=Protocols.acdc)
+
+    def fresh(raw=None):
+        """Return a new unverified Serder from good raw."""
+        return Serder(raw=(raw or serder_ok.raw), verify=False)
+
+    # Proto not in Fields
+    s = fresh()
+    s._proto = 'XXXX'
+    with pytest.raises(ValidationError):
+        s._verify()
+
+    # Genus not in GenDex
+    s = fresh()
+    s._genus = 'INVALID_GENUS'
+    with pytest.raises(ValidationError):
+        s._verify()
+
+    # Proto / genus mismatch
+    s = fresh()
+    s._proto = Protocols.keri  # ACDC genus stored but KERI proto patched in
+    with pytest.raises(ValidationError):
+        s._verify()
+
+    # gvrsn.major < 2
+    s = fresh()
+    s._gvrsn = Vrsn_1_0
+    with pytest.raises(ValidationError):
+        s._verify()
+
+    # pvrsn not in Fields[proto]
+    s = fresh()
+    s._pvrsn = Vrsn_1_0.__class__(9, 9)
+    with pytest.raises(ValidationError):
+        s._verify()
+
+    # ilk not in Fields[proto][pvrsn]
+    s = fresh()
+    s._sad = dict(s._sad)
+    s._sad['t'] = 'zzz'
+    with pytest.raises(ValidationError):
+        s._verify()
+
+    # Missing required field ('d')
+    s = fresh()
+    sad = dict(s._sad)
+    del sad['d']
+    s._sad = sad
+    with pytest.raises((ValidationError, MissingFieldError)):
+        s._verify()
+
+    # Extra field in strict sad
+    s = fresh()
+    sad = dict(s._sad)
+    sad['extra'] = 'bad'
+    s._sad = sad
+    with pytest.raises((ValidationError, ExtraFieldError)):
+        s._verify()
+
+    # Both alternate fields ('a' and 'A') present
+    s = fresh()
+    sad = dict(s._sad)
+    sad['a'] = ''
+    sad['A'] = ''
+    s._sad = sad
+    with pytest.raises((ValidationError, AlternateFieldError)):
+        s._verify()
+
+    # CESR kind requires pvrsn.major >= 2
+    s = fresh()
+    s._kind = Kinds.cesr
+    s._pvrsn = Vrsn_1_0
+    with pytest.raises(ValidationError):
+        s._verify()
+
+    """End Test"""
+    """Test _validate branches not reachable via happy-path construction.
+
+    Each case constructs a valid Serder with verify=False, then monkey-patches
+    a single internal attribute before calling _verify() directly.
+    """
+
+    serder_ok = Serder(makify=True, proto=Protocols.acdc)
+
+    def fresh(raw=None):
+        """Return a new unverified Serder from good raw."""
+        return Serder(raw=(raw or serder_ok.raw), verify=False)
+
+    # Proto not in Fields
+    s = fresh()
+    s._proto = 'XXXX'
+    with pytest.raises(ValidationError):
+        s._verify()
+
+    # Genus not in GenDex
+    s = fresh()
+    s._genus = 'INVALID_GENUS'
+    with pytest.raises(ValidationError):
+        s._verify()
+
+    # Proto / genus mismatch
+    s = fresh()
+    s._proto = Protocols.keri  # ACDC genus stored but KERI proto patched in
+    with pytest.raises(ValidationError):
+        s._verify()
+
+    # gvrsn.major < 2
+    s = fresh()
+    s._gvrsn = Vrsn_1_0
+    with pytest.raises(ValidationError):
+        s._verify()
+
+    # pvrsn not in Fields[proto]
+    s = fresh()
+    s._pvrsn = Vrsn_1_0.__class__(9, 9)
+    with pytest.raises(ValidationError):
+        s._verify()
+
+    # ilk not in Fields[proto][pvrsn]
+    s = fresh()
+    s._sad = dict(s._sad)
+    s._sad['t'] = 'zzz'
+    with pytest.raises(ValidationError):
+        s._verify()
+
+    # Missing required field ('d')
+    s = fresh()
+    sad = dict(s._sad)
+    del sad['d']
+    s._sad = sad
+    with pytest.raises((ValidationError, MissingFieldError)):
+        s._verify()
+
+    # Extra field in strict sad
+    s = fresh()
+    sad = dict(s._sad)
+    sad['extra'] = 'bad'
+    s._sad = sad
+    with pytest.raises((ValidationError, ExtraFieldError)):
+        s._verify()
+
+    # Both alternate fields ('a' and 'A') present
+    s = fresh()
+    sad = dict(s._sad)
+    sad['a'] = ''
+    sad['A'] = ''
+    s._sad = sad
+    with pytest.raises((ValidationError, AlternateFieldError)):
+        s._verify()
+
+    # CESR kind requires pvrsn.major >= 2
+    s = fresh()
+    s._kind = Kinds.cesr
+    s._pvrsn = Vrsn_1_0
+    with pytest.raises(ValidationError):
+        s._verify()
+
+    """End Test"""
+
 
 def test_serderkeri():
     """Test SerderKERI default"""
@@ -852,7 +1294,6 @@ def test_serderkeri():
     assert [verfer.qb64 for verfer in serder.berfers] == []
     assert serder.delpre == None
     assert serder.delpreb == None
-
 
 
 def test_serderkeri_icp():
@@ -1108,6 +1549,7 @@ def test_serderkeri_icp():
 
     """End Test"""
 
+
 def test_serderkeri_rot():
     """Test SerderKERI rot msg"""
 
@@ -1225,6 +1667,7 @@ def test_serderkeri_rot():
 
     """End Test"""
 
+
 def test_serderkeri_ixn():
     """Test SerderKERI ixn msg"""
 
@@ -1334,6 +1777,7 @@ def test_serderkeri_ixn():
     assert serder.delpreb == None
 
     """End Test"""
+
 
 def test_serderkeri_dip():
     """Test SerderKERI dip msg"""
@@ -1636,6 +2080,7 @@ def test_serderkeri_dip():
 
     """End Test"""
 
+
 def test_serderkeri_drt():
     """Test SerderKERI drt msg"""
     # Test KERI JSON with makify defaults for self bootstrap with ilk drt
@@ -1761,6 +2206,7 @@ def test_serderkeri_drt():
 
     """End Test"""
 
+
 def test_serderkeri_rct():
     """Test SerderKERI rct msg"""
 
@@ -1854,6 +2300,7 @@ def test_serderkeri_rct():
     assert serder.delpre == None
     assert serder.delpreb == None
     """End Test"""
+
 
 def test_serderkeri_qry():
     """Test SerderKERI qry query msg"""
@@ -2035,6 +2482,7 @@ def test_serderkeri_rpy():
 
     """End Test"""
 
+
 def test_serderkeri_pro():
     """Test SerderKERI pro prod msg"""
     # Test KERI JSON with makify defaults for self bootstrap with ilk qry
@@ -2126,6 +2574,7 @@ def test_serderkeri_pro():
 
     """End Test"""
 
+
 def test_serderkeri_bar():
     """Test SerderKERI bar alls msg"""
 
@@ -2216,6 +2665,7 @@ def test_serderkeri_bar():
 
 
     """End Test"""
+
 
 def test_serderkeri_exn():
     """Test SerderKERI exn msg"""
@@ -2315,6 +2765,7 @@ def test_serderkeri_exn():
     assert serder.delpreb == None
 
     """End Test"""
+
 
 def test_serderkeri_vcp():
     """Test SerderKERI vcp msg"""
@@ -2484,6 +2935,7 @@ def test_serderacdc():
 
     """End Test"""
 
+
 def test_serder_v2():
     """
     Test Serder with version 2.00 of protocols
@@ -2612,7 +3064,6 @@ def test_serder_v2():
     assert serder.genus == GenDex.KERI == Serder.Genus
 
     """End Test"""
-
 
 
 def test_serdery():
@@ -4054,6 +4505,7 @@ def test_keri_native_dumps_loads():
 
     """End Test"""
 
+
 def test_acdc_native_dumps_loads():
     """Test ACDC messages with CESR native Serder._dumps and Serder._loads"""
 
@@ -4230,4 +4682,3 @@ if __name__ == "__main__":
     test_keri_native_dumps_loads()
     test_acdc_native_dumps_loads()
     test_cesr_native_dumps_hby()
-
