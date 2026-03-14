@@ -83,10 +83,123 @@ def test_postman(seeder):
 
 
 def test_forward_handler():
-    with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
-        mbx = storing.Mailboxer()
+    with habbing.openHab(name="sender", transferable=True, temp=True) as (hby, hab), \
+         habbing.openHab(name="recp", transferable=True, temp=True) as (recpHby, recpHab), \
+         habbing.openHab(name="recp2", transferable=True, temp=True) as (recp2Hby, recp2Hab):
+
+        mbx = storing.Mailboxer(temp=True)
         forwarder = forwarding.ForwardHandler(hby=hby, mbx=mbx)
-        # TODO: implement a real test here
+
+        # Happy path: single embed
+        inner_exn, _ = exchanging.exchange(route="/echo", payload=dict(msg="hello"), sender=hab.pre)
+        inner_atc = hab.endorse(inner_exn, last=False)
+        del inner_atc[:inner_exn.size]
+
+        evt = bytearray(inner_exn.raw)
+        evt.extend(inner_atc)
+        fwd, _ = exchanging.exchange(
+            route='/fwd',
+            modifiers=dict(pre=recpHab.pre, topic="echo"),
+            payload={},
+            embeds=dict(evt=evt),
+            sender=hab.pre,
+        )
+        pather = coring.Pather(path=["evt"])
+        forwarder.handle(serder=fwd, attachments=[(pather, inner_atc)])
+
+        msgs = list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/echo"))
+        assert len(msgs) == 1
+        _, _, raw = msgs[0]
+
+        # Field-level correctness
+        stored = serdering.SerderKERI(raw=raw)
+        assert stored.ked["t"] == coring.Ilks.exn
+        assert stored.ked["r"] == "/echo"
+        assert stored.ked["a"] == dict(msg="hello")
+
+        # Byte-level fidelity: stored blob must start with the exact serder bytes
+        # and total length must equal serder + attachment
+        assert raw[:inner_exn.size] == bytes(inner_exn.raw)
+        assert len(raw) == len(inner_exn.raw) + len(inner_atc)
+
+        # Topic/recipient routing isolation
+        # Same recipient, different topic
+        inner_exn2, _ = exchanging.exchange(route="/delegate", payload=dict(msg="delegate"), sender=hab.pre)
+        inner_atc2 = hab.endorse(inner_exn2, last=False)
+        del inner_atc2[:inner_exn2.size]
+
+        evt2 = bytearray(inner_exn2.raw)
+        evt2.extend(inner_atc2)
+        fwd2, _ = exchanging.exchange(
+            route='/fwd',
+            modifiers=dict(pre=recpHab.pre, topic="delegate"),
+            payload={},
+            embeds=dict(evt=evt2),
+            sender=hab.pre,
+        )
+        forwarder.handle(serder=fwd2, attachments=[(coring.Pather(path=["evt"]), inner_atc2)])
+
+        echo_msgs = list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/echo"))
+        delegate_msgs = list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/delegate"))
+        assert len(echo_msgs) == 1    # unchanged
+        assert len(delegate_msgs) == 1
+
+        # Different recipient, same topic
+        inner_exn3, _ = exchanging.exchange(route="/echo", payload=dict(msg="other"), sender=hab.pre)
+        inner_atc3 = hab.endorse(inner_exn3, last=False)
+        del inner_atc3[:inner_exn3.size]
+
+        evt3 = bytearray(inner_exn3.raw)
+        evt3.extend(inner_atc3)
+        fwd3, _ = exchanging.exchange(
+            route='/fwd',
+            modifiers=dict(pre=recp2Hab.pre, topic="echo"),
+            payload={},
+            embeds=dict(evt=evt3),
+            sender=hab.pre,
+        )
+        forwarder.handle(serder=fwd3, attachments=[(coring.Pather(path=["evt"]), inner_atc3)])
+
+        recp1_echo = list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/echo"))
+        recp2_echo = list(mbx.cloneTopicIter(topic=f"{recp2Hab.pre}/echo"))
+        assert len(recp1_echo) == 1   # unchanged
+        assert len(recp2_echo) == 1
+
+        # Multiple attachments in one call
+        # Two embeds in a single /fwd: both must appear in the stored blob
+        inner_exnA, _ = exchanging.exchange(route="/echo", payload=dict(msg="A"), sender=hab.pre)
+        inner_atcA = hab.endorse(inner_exnA, last=False)
+        del inner_atcA[:inner_exnA.size]
+
+        inner_exnB, _ = exchanging.exchange(route="/echo", payload=dict(msg="B"), sender=hab.pre)
+        inner_atcB = hab.endorse(inner_exnB, last=False)
+        del inner_atcB[:inner_exnB.size]
+
+        evtA = bytearray(inner_exnA.raw); evtA.extend(inner_atcA)
+        evtB = bytearray(inner_exnB.raw); evtB.extend(inner_atcB)
+        fwd_multi, _ = exchanging.exchange(
+            route='/fwd',
+            modifiers=dict(pre=recpHab.pre, topic="multi"),
+            payload={},
+            embeds=dict(evtA=evtA, evtB=evtB),
+            sender=hab.pre,
+        )
+        patherA = coring.Pather(path=["evtA"])
+        patherB = coring.Pather(path=["evtB"])
+        forwarder.handle(serder=fwd_multi, attachments=[(patherA, inner_atcA), (patherB, inner_atcB)])
+
+        multi_msgs = list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/multi"))
+        assert len(multi_msgs) == 1
+        _, _, multi_raw = multi_msgs[0]
+        # Both serder payloads must be present in the concatenated blob
+        assert bytes(inner_exnA.raw) in multi_raw
+        assert bytes(inner_exnB.raw) in multi_raw
+
+        # Edge: empty attachments, pevt stays empty, nothing stored
+        count_before = len(list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/echo")))
+        forwarder.handle(serder=fwd, attachments=[])
+        count_after = len(list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/echo")))
+        assert count_after == count_before
 
 
 def test_essr_stream(seeder):
@@ -156,6 +269,7 @@ def test_essr_stream(seeder):
         assert essrSerderA.ked["q"] == {'src': hab.pre, 'dest': recpHab.pre}
 
         essrSaidB, essrSerderB = next(iter)
+        iter.close()
         assert essrSerderB.ked["r"] == "/essr/req"
         assert essrSerderB.ked["q"] == {'src': hab.pre, 'dest': recpHab.pre}
 
@@ -259,6 +373,7 @@ def test_essr_mbx(seeder):
         assert essrSerderA.ked["q"] == {'src': hab.pre, 'dest': wesHab.pre}
 
         essrSaidB, essrSerderB = next(iter)
+        iter.close()
         assert essrSerderB.ked["r"] == "/essr/req"
         assert essrSerderB.ked["q"] == {'src': hab.pre, 'dest': wesHab.pre}
 

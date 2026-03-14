@@ -97,9 +97,11 @@ class VerifyDoer(doing.DoDoer):
         if self.signer in self.hby.kevers:
             sig = self.signer
         else:
-            sig = self.org.find("alias", self.signer)
-            if len(sig) != 1:
-                raise ValueError(f"invalid signer {self.signer}")
+            sig = self.org.findExact("alias", self.signer)
+            if len(sig) == 0:
+                raise ValueError(f"no contact found with alias {self.signer!r}")
+            if len(sig) > 1:
+                raise ValueError(f"multiple contacts match alias {self.signer!r}, use prefix instead")
             sig = sig[0]['id']
 
         if self.generate:

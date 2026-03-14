@@ -9,10 +9,9 @@ import pytest
 import os
 import lmdb
 
-from keri.db import dbing
-from keri.db.dbing import (LMDBer, dgKey, onKey, openLMDB,
-                           snKey, dtKey, splitKey,
-                           splitOnKey, splitKeyDT, splitSnKey)
+from keri.db import (dbing, LMDBer, dgKey, onKey, openLMDB,
+                     snKey, dtKey, splitKey,
+                     splitOnKey, splitKeyDT, splitSnKey)
 
 from keri.help import helping
 

@@ -8,7 +8,7 @@ from keri.core import (Salter, parsing, eventing, coring, serdering,
                        Counter, Kever, Kevery, Codens,
                        incept, rotate, interact)
 from keri.app import habbing
-from keri.db.basing import openDB
+from keri.db import openDB
 
 
 logger = help.ogler.getLogger()

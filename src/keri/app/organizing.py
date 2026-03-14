@@ -176,6 +176,28 @@ class BaseOrganizer:
 
         return [self.get(pre) for pre in pres]
 
+    def findExact(self, field, val):
+        """ Find all contacts where field is an exact case-sensitive match for val
+
+        Unlike find(), which uses a substring regex, this performs a strict
+        equality comparison suitable for alias lookups where similar names
+        (e.g. "sally" vs "sally-direct") must not collide.
+
+        Parameters:
+            field (str): field name to search for
+            val (str): exact value to match (case-sensitive)
+
+        Returns:
+            list: All contacts whose field equals val exactly
+
+        """
+        pres = []
+        for (pre, f), v in self.fielddb.getItemIter():
+            if f == field and v == val:
+                pres.append(pre)
+
+        return [self.get(pre) for pre in pres]
+
     def values(self, field, val=None):
         """ Find unique values for field in all contacts
 
@@ -208,10 +230,10 @@ class BaseOrganizer:
             stream (file): file-like stream of image data
 
         """
-        self.hby.db.delTop(db=self.imgsdb, top=pre.encode("utf-8"))
+        self.hby.db.delTop(db=self.imgsdb.sdb, top=pre.encode("utf-8"))
 
         key = f"{pre}.content-type".encode("utf-8")
-        self.hby.db.setVal(db=self.imgsdb, key=key, val=typ.encode("utf-8"))
+        self.hby.db.setVal(db=self.imgsdb.sdb, key=key, val=typ.encode("utf-8"))
 
         idx = 0
         size = 0
@@ -220,12 +242,12 @@ class BaseOrganizer:
             if not chunk:
                 break
             key = f"{pre}.{idx}".encode("utf-8")
-            self.hby.db.setVal(db=self.imgsdb, key=key, val=chunk)
+            self.hby.db.setVal(db=self.imgsdb.sdb, key=key, val=chunk)
             idx += 1
             size += len(chunk)
 
         key = f"{pre}.content-length".encode("utf-8")
-        self.hby.db.setVal(db=self.imgsdb, key=key, val=size.to_bytes(4, "big"))
+        self.hby.db.setVal(db=self.imgsdb.sdb, key=key, val=size.to_bytes(4, "big"))
 
     def getImgData(self, pre):
         """ Get image metadata for identifier image if one exists
@@ -238,12 +260,12 @@ class BaseOrganizer:
 
         """
         key = f"{pre}.content-length".encode("utf-8")
-        size = self.hby.db.getVal(db=self.imgsdb, key=key)
+        size = self.hby.db.getVal(db=self.imgsdb.sdb, key=key)
         if size is None:
             return None
 
         key = f"{pre}.content-type".encode("utf-8")
-        typ = self.hby.db.getVal(db=self.imgsdb, key=key)
+        typ = self.hby.db.getVal(db=self.imgsdb.sdb, key=key)
         if typ is None:
             return None
 
@@ -262,7 +284,7 @@ class BaseOrganizer:
         idx = 0
         while True:
             key = f"{pre}.{idx}".encode("utf-8")
-            chunk = self.hby.db.getVal(db=self.imgsdb, key=key)
+            chunk = self.hby.db.getVal(db=self.imgsdb.sdb, key=key)
             if not chunk:
                 break
             yield bytes(chunk)

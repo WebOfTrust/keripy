@@ -8,8 +8,7 @@ from dataclasses import asdict
 import pytest
 
 from keri import core
-from keri.app import watching, habbing
-from keri.app.watching import DiffState
+from keri.app import watching, habbing, DiffState
 from keri.core import coring
 from keri.recording import KeyStateRecord, ObservedRecord
 

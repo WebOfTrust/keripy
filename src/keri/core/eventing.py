@@ -3856,6 +3856,8 @@ class Kevery:
         self.exc = exc          # Exchanger instance for exn messages
         self.tvy = tvy          # Tevery instance for TEL query routes
         self.kramer = kramer    # Kramer instance for KRAM processing
+        if self.kramer is not None:
+            self.kramer.cues = self.cues
         self.lax = True if lax else False  # promiscuous mode
         self.local = True if local else False  # local vs nonlocal default
         self.cloned = True if cloned else False  # process as cloned

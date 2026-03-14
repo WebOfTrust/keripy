@@ -8,7 +8,7 @@ from keri.core import (Salter, Counter, coring,
 from keri.kering import Vrsn_1_0
 from keri.app import habbing
 
-from keri.vc.proving import credential
+from keri.vc import credential
 from keri.vdr import verifying, credentialing
 
 

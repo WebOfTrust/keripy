@@ -10,8 +10,7 @@ from keri import kering
 from keri import core
 from keri.core import coring, eventing
 
-from keri.app import habbing
-from keri.app.keeping import SaltyCreator
+from keri.app import habbing, SaltyCreator
 
 
 def test_remote_salty_hab():

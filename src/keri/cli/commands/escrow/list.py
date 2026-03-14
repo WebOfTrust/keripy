@@ -117,6 +117,37 @@ def escrows(tymth, tock=0.0, **opts):
 
                 escrows["likely-duplicitous-events"] = ldes
 
+            if (not escrow) or escrow == "partially-delegated-events":
+                pdes = list()
+                for pre, sn, edig in hby.db.pdes.getOnItemIterAll():
+                    try:
+                        pdes.append(eventing.loadEvent(hby.db, pre, edig))
+                    except ValueError:
+                        continue
+                escrows["partially-delegated-events"] = pdes
+
+            if (not escrow) or escrow == "query-not-found":
+                items = list()
+                for (pre, said), saidb in hby.db.qnfs.getItemIter():
+                    try:
+                        items.append(eventing.loadEvent(hby.db,
+                                                        pre.encode("utf-8"),
+                                                        saidb))
+                    except ValueError:
+                        continue
+                escrows["query-not-found"] = items
+
+            if (not escrow) or escrow == "misfits":
+                items = list()
+                for (pre, snh), saidb in hby.db.misfits.getItemIter():
+                    try:
+                        items.append(eventing.loadEvent(hby.db,
+                                                        pre.encode("utf-8"),
+                                                        saidb))
+                    except ValueError:
+                        continue
+                escrows["misfits"] = items
+
             if (not escrow) or escrow == "missing-registry-escrow":
                 creds = list()
                 for (said,), dater in reger.mre.getItemIter():
@@ -141,11 +172,95 @@ def escrows(tymth, tock=0.0, **opts):
 
                 escrows["missing-schema-escrow"] = creds
 
-            print(json.dumps(escrows, indent=2))
-
-            if not (escrow) or escrow == "tel-partial-witness-escrow":
+            if (not escrow) or escrow == "tel-partial-witness-escrow":
+                tpwes = list()
                 for (regk, snq), (prefixer, number, diger) in reger.tpwe.getItemIter():
-                    pass
+                    tpwes.append(dict(
+                        registry=regk,
+                        prefix=prefixer.qb64,
+                        sn=number.sn,
+                        digest=diger.qb64,
+                    ))
+                escrows["tel-partial-witness-escrow"] = tpwes
+
+            if (not escrow) or escrow == "group-partially-signed-events":
+                items = list()
+                for (pre,), (number, diger) in hby.db.gpse.getItemIter():
+                    items.append(dict(prefix=pre, sn=number.sn,
+                                      digest=diger.qb64))
+                escrows["group-partially-signed-events"] = items
+
+            if (not escrow) or escrow == "group-delegated-events":
+                items = list()
+                for (pre,), (number, diger) in hby.db.gdee.getItemIter():
+                    items.append(dict(prefix=pre, sn=number.sn,
+                                      digest=diger.qb64))
+                escrows["group-delegated-events"] = items
+
+            if (not escrow) or escrow == "group-partially-witnessed-events":
+                items = list()
+                for (pre,), (number, diger) in hby.db.gpwe.getItemIter():
+                    items.append(dict(prefix=pre, sn=number.sn,
+                                      digest=diger.qb64))
+                escrows["group-partially-witnessed-events"] = items
+
+            if (not escrow) or escrow == "escrowed-partially-signed-exchange":
+                items = list()
+                for keys, serder in hby.db.epse.getItemIter():
+                    items.append(serder.sad)
+                escrows["escrowed-partially-signed-exchange"] = items
+
+            if (not escrow) or escrow == "escrowed-exchange-datetime":
+                items = list()
+                for (dig,), dater in hby.db.epsd.getItemIter():
+                    items.append(dict(said=dig, datetime=dater.dts))
+                escrows["escrowed-exchange-datetime"] = items
+
+            if (not escrow) or escrow == "delegated-partially-witnessed-events":
+                items = list()
+                for keys, serder in hby.db.dpwe.getItemIter():
+                    items.append(serder.sad)
+                escrows["delegated-partially-witnessed-events"] = items
+
+            if (not escrow) or escrow == "delegated-unverified-events":
+                items = list()
+                for keys, serder in hby.db.dune.getItemIter():
+                    items.append(serder.sad)
+                escrows["delegated-unverified-events"] = items
+
+            if (not escrow) or escrow == "delegated-partially-unduplicated-backer":
+                items = list()
+                for keys, serder in hby.db.dpub.getItemIter():
+                    items.append(serder.sad)
+                escrows["delegated-partially-unduplicated-backer"] = items
+
+            if (not escrow) or escrow == "reply-escrow":
+                items = list()
+                for (route,), diger in hby.db.rpes.getItemIter():
+                    items.append(dict(route=route, said=diger.qb64))
+                escrows["reply-escrow"] = items
+
+            if (not escrow) or escrow == "delegable-events":
+                escrows["delegable-events"] = {"count": hby.db.delegables.cnt()}
+
+            if (not escrow) or escrow == "unverified-delegated-events":
+                escrows["unverified-delegated-events"] = {"count": hby.db.udes.cnt()}
+
+            if (not escrow) or escrow == "escrowed-oobi":
+                escrows["escrowed-oobi"] = {"count": hby.db.eoobi.cnt()}
+
+            if (not escrow) or escrow == "unverified-receipt-escrow":
+                escrows["unverified-receipt-escrow"] = {"count": hby.db.ures.cnt()}
+
+            if (not escrow) or escrow == "unverified-witness-escrow":
+                escrows["unverified-witness-escrow"] = {"count": hby.db.uwes.cnt()}
+
+            if (not escrow) or escrow == "unverified-transferable-receipt-escrow":
+                escrows["unverified-transferable-receipt-escrow"] = {
+                    "count": hby.db.vres.cnt()
+                }
+
+            print(json.dumps(escrows, indent=2))
 
     except ConfigurationError:
         print(

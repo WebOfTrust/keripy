@@ -5,8 +5,7 @@ tests.db.escrowing module
 """
 from keri import kering
 
-from keri.core import Salter, coring, eventing, serdering
-from keri.core.eventing import SealEvent
+from keri.core import Salter, coring, eventing, serdering, SealEvent
 
 from keri.app import habbing
 from keri.db import escrowing, dbing, subing

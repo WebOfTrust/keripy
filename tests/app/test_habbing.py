@@ -1044,6 +1044,43 @@ def test_postman_endsfor():
         }
 
 
+def test_rotate_preserves_toad():
+    """Test that rotating without specifying toad preserves the prior toad value.
+
+    Reproduces issue #962: rotation was silently recalculating toad via ample()
+    instead of preserving the inception-time value.
+    """
+    salt = core.Salter(raw=b'0123456789abcdef').qb64
+
+    with (habbing.openHby(name="wit0", temp=True,
+                          salt=core.Salter(raw=b'witsalt000000000').qb64) as w0Hby,
+          habbing.openHby(name="wit1", temp=True,
+                          salt=core.Salter(raw=b'witsalt000000001').qb64) as w1Hby,
+          habbing.openHby(name="wit2", temp=True,
+                          salt=core.Salter(raw=b'witsalt000000002').qb64) as w2Hby,
+          habbing.openHby(name="toad-test", temp=True, salt=salt) as hby):
+
+        # Create 3 non-transferable witness prefixes
+        wits = []
+        for wHby, wname in [(w0Hby, "wit0"), (w1Hby, "wit1"), (w2Hby, "wit2")]:
+            wHab = wHby.makeHab(name=wname, isith="1", icount=1,
+                                transferable=False)
+            wits.append(wHab.pre)
+
+        # Incept with toad=2 (not the ample default of 3 for 3 witnesses)
+        hab = hby.makeHab(name="toad-test", isith="1", icount=1,
+                          ncount=1, nsith="1", toad=2, wits=wits)
+
+        assert hab.kever.toader.num == 2
+        assert len(hab.kever.wits) == 3
+        assert hab.kever.sn == 0
+
+        # Rotate WITHOUT specifying toad — should preserve toad=2
+        hab.rotate()
+        assert hab.kever.sn == 1
+        assert hab.kever.toader.num == 2  # must stay 2, not recalculate to ample(3)
+
+
 if __name__ == "__main__":
     pass
     test_habery()

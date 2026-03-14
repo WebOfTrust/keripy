@@ -198,7 +198,7 @@ def test_exn_send_invalid_recipient(monkeypatch, capsys, helpers):
     assert len(doers) == 1
 
     try:
-        with pytest.raises(ValueError, match="invalid recipient"):
+        with pytest.raises(ValueError, match="no contact found with alias"):
             directing.runController(doers=doers)
     finally:
         helpers.remove_test_dirs(name)
