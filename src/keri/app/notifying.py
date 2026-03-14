@@ -172,7 +172,7 @@ class DicterSuber(subing.Suber):
         Returns:
            bool: True if key exists so delete successful. False otherwise
         """
-        return self.db.delVal(db=self.sdb, key=self._tokey(keys))
+        return self.db.remVal(db=self.sdb, key=self._tokey(keys))
 
     def getItemIter(self, keys: Union[str, Iterable] = b""):
         """ Return iterator over the all the items in subdb

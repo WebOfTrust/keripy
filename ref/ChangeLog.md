@@ -4,6 +4,9 @@
 ### Backwards breaking interface changes
 Changes to call signatures that will break dependent libraries
 
+#### keri.db.dbing
+Changed LMDBer.delval to LMDBer.remval
+
 #### keri.core.routing.py
 Changed `Router.dispatch(self, serder, saider, ...)` to `dispatch(self, serder, diger, ...)`.
 Changed `Router.processRouteNotFound(self, *, serder, saider, ...)` to `processRouteNotFound(self, *, serder, diger, ...)`.

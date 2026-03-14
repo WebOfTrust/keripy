@@ -717,22 +717,29 @@ class LMDBer(filing.Filer):
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
-    def delVal(self, db, key):
-        """
-        Deletes value at key in db.
-        Returns True If key exists in database Else False
+    def remVal(self, db, key):
+        """Removes value at key in db.
+        Returns:
+            result (bool): True If key exists in database and item deleted
+                           False If key empty or missing from database
+
+        Raises KeyError if problem with key
 
         Parameters:
             db is opened named sub db with dupsort=False
             key is bytes of key within sub db's keyspace
         """
+        if not key:
+            return False
+
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             try:
                 return (txn.delete(key))
             except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
-                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
+                raise KeyError(f"Invalid {key=} too big (for lmdb),"
+                               " or bad DUPFIXED size. ") from ex
 
+    delVal = remVal  # backwards compat alias for refactoring
 
 
     # For subdbs  the use keys with trailing part the is  monotonically

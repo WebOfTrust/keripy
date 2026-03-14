@@ -365,7 +365,7 @@ class Komer(KomerBase):
         Returns:
            result (bool): True if key exists so delete successful. False otherwise
         """
-        return (self.db.delVal(db=self.sdb, key=self._tokey(keys)))
+        return (self.db.remVal(db=self.sdb, key=self._tokey(keys)))
 
 
     def trim(self, keys: Union[str, Iterable]=b""):
