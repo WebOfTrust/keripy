@@ -97,7 +97,7 @@ etc.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Type, Union
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable
 
 from .. import help
 from ..help.helping import isNonStringIterable, Reb64
@@ -944,7 +944,6 @@ class B64Suber(B64SuberBase, Suber):
         super(B64Suber, self).__init__(*pa, **kwa)
 
 
-
 class CesrSuberBase(SuberBase):
     """Sub class of SuberBase where data is CESR encode/decode ducktyped subclass
     instance such as Matter, Indexer, Counter with .qb64b property when provided
@@ -1684,7 +1683,6 @@ class CesrIoSetSuber(CesrSuberBase, IoSetSuber):
         super(CesrIoSetSuber, self).__init__(*pa, **kwa)
 
 
-
 class CatCesrIoSetSuber(CatCesrSuberBase, IoSetSuber):
     """
     Sub class of CatSuberBase and IoSetSuber where values stored in db are a
@@ -1737,7 +1735,6 @@ class CatCesrIoSetSuber(CatCesrSuberBase, IoSetSuber):
 
         """
         super(CatCesrIoSetSuber, self).__init__(*pa, **kwa)
-
 
 
 class SignerSuber(CesrSuber):
@@ -1970,6 +1967,7 @@ class CryptSignerSuber(SignerSuber):
                 yield (ikeys, self.klas(qb64b=bytes(val),
                                             transferable=verfer.transferable))
 
+
 class SerderSuberBase(SuberBase):
     """
     Sub class of SuberBase where data is serialized Serder Subclass instance
@@ -2102,8 +2100,6 @@ class SerderIoSetSuber(SerderSuberBase, IoSetSuber):
         super(SerderIoSetSuber, self).__init__(*pa, **kwa)
 
 
-
-
 class SchemerSuber(SerderSuberBase, Suber):
     """
     Sub class of SerderSuberBase and Suber where data is serialized Schemer instance
@@ -2139,7 +2135,6 @@ class SchemerSuber(SerderSuberBase, Suber):
         if not issubclass(klas, scheming.Schemer):
             raise TypeError(f"Invalid {klas=}, not subclass of {scheming.Schemer}.")
         super(SchemerSuber, self).__init__(*pa, klas=klas, **kwa)
-
 
 
 class DupSuber(SuberBase):
@@ -2646,7 +2641,6 @@ class B64IoDupSuber(B64SuberBase, IoDupSuber):
                            False means do not reverify. Default False
         """
         super(B64IoDupSuber, self).__init__(*pa, **kwa)
-
 
 
 class OnIoDupSuber(OnSuberBase, IoDupSuber):

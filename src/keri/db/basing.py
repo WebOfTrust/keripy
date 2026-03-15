@@ -919,10 +919,10 @@ class Baser(dbing.LMDBer):
                                              klas=(coring.Prefixer, coring.Cigar))
         self.ures = subing.CatCesrIoSetSuber(db=self, subkey='ures.',
                                              klas=(coring.Diger, coring.Prefixer, coring.Cigar))
-        self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.', 
-                                            klas=(coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
-        self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.', 
-                                            klas=(coring.Diger, coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
+        self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.',
+                             klas=(coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
+        self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.',
+                             klas=(coring.Diger, coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
         self.pses = subing.OnIoDupSuber(db=self, subkey='pses.')
         self.pwes = subing.OnIoDupSuber(db=self, subkey='pwes.')
         self.pdes = subing.OnIoDupSuber(db=self, subkey='pdes.')
@@ -1182,9 +1182,11 @@ class Baser(dbing.LMDBer):
         # TODO: clean
         self.ccigs = subing.CesrSuber(db=self, subkey='ccigs.', klas=coring.Cigar)
 
-        # Chunked image data for contact information for remote identifiers
-        # TODO: clean
-        self.imgs = self.env.open_db(key=b'imgs.')
+        # Blinded media for contact information for remote identifiers.
+        # CatCesrSuber with TypeMedia format: (Noncer=SAID, Noncer=UUID, Labeler=MIME, Texter=data)
+        self.imgs = subing.CatCesrSuber(db=self, subkey='imgs.',
+                                         klas=(coring.Noncer, coring.Noncer,
+                                               coring.Labeler, coring.Texter))
 
         # Field values for identifier information for local identifiers. Keyed by prefix/field
         # TODO: clean
@@ -1200,9 +1202,11 @@ class Baser(dbing.LMDBer):
         # TODO: clean
         self.icigs = subing.CesrSuber(db=self, subkey='icigs.', klas=coring.Cigar)
 
-        # Chunked image data for identifier information for local identifiers
-        # TODO: clean
-        self.iimgs = self.env.open_db(key=b'iimgs.')
+        # Blinded media for identifier information for local identifiers.
+        # CatCesrSuber with TypeMedia format: (Noncer=SAID, Noncer=UUID, Labeler=MIME, Texter=data)
+        self.iimgs = subing.CatCesrSuber(db=self, subkey='iimgs.',
+                                          klas=(coring.Noncer, coring.Noncer,
+                                                coring.Labeler, coring.Texter))
 
         # Delegation escrow dbs #
         # delegated partial witness escrow
@@ -1343,6 +1347,8 @@ class Baser(dbing.LMDBer):
         """
         from ..core import coring
 
+        escrows_cleared = False
+
         for (version, migrations) in MIGRATIONS:
             # Only run migration if current source code version is at or below the migration version
             ver = semver.VersionInfo.parse(keri.__version__)
@@ -1354,6 +1360,13 @@ class Baser(dbing.LMDBer):
             # Skip migrations already run - where version less than (-1) or equal to (0) database version
             if self.version is not None and semver.compare(version, self.version) != 1:
                 continue
+
+            # Clear all escrows before first migration to prevent old key
+            # format crashes (e.g. qnfs keys without insertion-order suffix).
+            # Uses .trim() which bypasses key parsing. See #863.
+            if not escrows_cleared:
+                self._trimAllEscrows()
+                escrows_cleared = True
 
             print(f"Migrating database v{self.version} --> v{version}")
             for migration in migrations:
@@ -1375,6 +1388,30 @@ class Baser(dbing.LMDBer):
             self.version = version
 
         self.version = keri.__version__
+
+    def _trimAllEscrows(self):
+        """Trim all escrow databases via low-level .trim().
+
+        Safe for old key formats that would crash higher-level iterators
+        (e.g., qnfs keys without insertion-order suffix from pre-1.2.0).
+        Called at the beginning of migration per spec call guidance.
+        See: https://github.com/WebOfTrust/keripy/issues/863
+        """
+        escrows = [
+            self.ures, self.vres, self.pses, self.pwes, self.ooes,
+            self.qnfs, self.uwes, self.misfits, self.delegables,
+            self.pdes, self.udes, self.rpes, self.ldes, self.epsd,
+            self.eoobi, self.dpub, self.gpwe, self.gdee, self.dpwe,
+            self.gpse, self.epse, self.dune,
+        ]
+        total = 0
+        for escrow in escrows:
+            count = escrow.cnt()
+            if count > 0:
+                escrow.trim()
+                total += count
+        if total > 0:
+            print(f"Cleared {total} escrow entries before migration")
 
     def clearEscrows(self):
         """
@@ -1518,13 +1555,13 @@ class Baser(dbing.LMDBer):
                     for keys, val in srcdb.getItemIter():
                         cpydb.add(keys=keys, val=val)
 
-                # Insecure raw imgs database copy.
-                for (key, val) in self.getTopItemIter(self.imgs):
-                    copy.imgs.setVal(key=key, val=val)
+                # Copy imgs (blinded media for remote identifiers)
+                for keys, val in self.imgs.getItemIter():
+                    copy.imgs.pin(keys=keys, val=val)
 
-                # Insecure raw iimgs database copy.
-                for (key, val) in self.getTopItemIter(self.iimgs):
-                    copy.iimgs.setVal(key=key, val=val)
+                # Copy iimgs (blinded media for local identifiers)
+                for keys, val in self.iimgs.getItemIter():
+                    copy.iimgs.pin(keys=keys, val=val)
 
                 # clone .habs  habitat name prefix Komer subdb
                 # copy.habs = koming.Komer(db=copy, schema=HabitatRecord, subkey='habs.')  # copy
@@ -1680,7 +1717,7 @@ class Baser(dbing.LMDBer):
         if quads := self.vrcs.get(keys=dgkey):
             atc.extend(Counter(code=Codens.TransReceiptQuadruples,
                                count=len(quads), version=kering.Vrsn_1_0).qb64b)
-            for pre, snu, diger, siger in quads:    # adapt to CESR 
+            for pre, snu, diger, siger in quads:    # adapt to CESR
                 atc.extend(pre.qb64b)
                 atc.extend(snu.qb64b)
                 atc.extend(diger.qb64b)

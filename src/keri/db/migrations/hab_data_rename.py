@@ -2,9 +2,6 @@ from dataclasses import dataclass, field, asdict
 from typing import Optional
 
 from .. import koming
-from ..basing import Baser
-from ...recording import HabitatRecord
-from keri.vdr.viring import Reger
 
 
 @dataclass
@@ -23,6 +20,7 @@ class HabitatRecordV0_6_7:  # baser.habs
     aids: Optional[list]  # all identifiers participating in the group identity
 
     watchers: list[str] = field(default_factory=list)  # aids qb64 of watchers
+
 
 @dataclass
 class HabitatRecordV0_6_8:  # baser.habs
@@ -45,6 +43,7 @@ class HabitatRecordV0_6_8:  # baser.habs
     sid: str | None = None  # Signify identifier qb64 when hid is Signify
     watchers: list[str] = field(default_factory=list)  # id prefixes qb64 of watchers
 
+
 def _check_if_needed(db):
     """
     Check if the migration is needed
@@ -61,6 +60,7 @@ def _check_if_needed(db):
     if 'prefix' in habord:
         return True
     return False
+
 
 def migrate(db):
     """Rename data in HabitatRecord from the old labels to the new labels as of 2022-10-17

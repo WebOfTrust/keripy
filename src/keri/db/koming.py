@@ -4,7 +4,6 @@ KERI
 keri.db.koming module
 
 """
-import types
 import json
 from dataclasses import dataclass
 from typing import Type, Union
@@ -12,7 +11,6 @@ from collections.abc import Iterable
 
 import cbor2
 import msgpack
-import lmdb
 
 
 from . import dbing
@@ -20,7 +18,6 @@ from .. import help
 from ..help import helping
 
 logger = help.ogler.getLogger()
-
 
 
 class KomerBase:
@@ -632,7 +629,6 @@ class IoSetKomer(KomerBase):
                                             top=self._tokey(keys, topive=topive),
                                             sep=self.sep.encode()):
             yield (self._tokeys(iokey), self.deserializer(val))
-
 
 
 class DupKomer(KomerBase):
