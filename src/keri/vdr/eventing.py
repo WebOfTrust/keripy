@@ -774,7 +774,6 @@ class Tever:
         couple = self.reger.ancs.get(keys=dgkey)
         if couple is None:
             raise MissingEntryError(f"Missing anchor couple at key={dgkey!r}.")
-        number, diger = couple
 
         return (state(pre=self.pre,
                       said=self.serder.said,

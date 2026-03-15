@@ -21,7 +21,7 @@ from .. import (Vrsn_1_0, ClosedError, AuthError,
 from ..core import (coring, eventing, parsing, routing,
                     Counter, Salter, Codens)
 from ..recording import HabitatRecord, OobiRecord
-
+ 
 
 logger = ogler.getLogger()
 
@@ -1576,7 +1576,6 @@ class BaseHab:
                                            "".format(pre, sn))
         dig = dig.encode("utf-8")
         dig = bytes(dig)
-        key = dgKey(pre, dig)  # digest key
         serder = self.db.evts.get(keys=(pre, dig))
         msg.extend(serder.raw)
         msg.extend(Counter(Codens.ControllerIdxSigs, count=self.db.sigs.cnt(keys=(pre, dig)),
