@@ -305,7 +305,7 @@ def test_lmdber():
         assert dber.cntTop(db, top=b"a.2") == 1
         assert dber.cntTop(db, top=b"b.") == 1
 
-        assert dber.delTop(db, top=b"a.")
+        assert dber.remTop(db, top=b"a.")
         items = [ (key, bytes(val)) for key, val in dber.getTopItemIter(db=db )]
         assert items == [(b'b.1', b'woo')]
 

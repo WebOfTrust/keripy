@@ -131,7 +131,7 @@ class KomerBase:
         return tuple(key.decode("utf-8").split(self.sep))
 
 
-    def getItemIter(self, keys: Union[str, Iterable]=b""):
+    def getTopItemIter(self, keys: Union[str, Iterable]=b""):
         """Iterator over items in .db subclasses that do special hidden transforms
         on either the keyspace or valuespace should override this method to hide
         hidden parts from the returned items. For example, adding either
@@ -154,6 +154,8 @@ class KomerBase:
         """
         for key, val in self.db.getTopItemIter(db=self.sdb, top=self._tokey(keys)):
             yield (self._tokeys(key), self.deserializer(val))
+
+    getItemIter = getTopItemIter  # alias for refactoring backwards compat
 
 
     def getFullItemIter(self, keys: Union[str, Iterable]=b""):
@@ -381,7 +383,7 @@ class Komer(KomerBase):
         Returns:
            result (bool): True if key exists so delete successful. False otherwise
         """
-        return(self.db.delTop(db=self.sdb, top=self._tokey(keys)))
+        return(self.db.remTop(db=self.sdb, top=self._tokey(keys)))
 
 
     def cnt(self):
@@ -601,7 +603,7 @@ class IoSetKomer(KomerBase):
                                    sep=self.sep)
 
 
-    def getItemIter(self, keys: Union[str, Iterable]=b"", *, topive=False):
+    def getTopItemIter(self, keys: Union[str, Iterable]=b"", *, topive=False):
         """Get items iterator
         Returns:
             items (Iterator): of (key, val) tuples over the all the items in
@@ -632,6 +634,8 @@ class IoSetKomer(KomerBase):
                                             top=self._tokey(keys, topive=topive),
                                             sep=self.sep.encode()):
             yield (self._tokeys(iokey), self.deserializer(val))
+
+    getItemIter = getTopItemIter  # alias refactoring backards compat
 
 
 

@@ -542,7 +542,7 @@ class LMDBer(filing.Filer):
 
     # Universal methods for all dbs
 
-    def delTop(self, db, top=b''):
+    def remTop(self, db, top=b''):
         """Deletes all values in branch of db given top key. Top empty deletes
         whole db.
 
@@ -575,10 +575,12 @@ class LMDBer(filing.Filer):
                     ckey, cval = cursor.item()  # cursor now at next item after deleted
             return result
 
+    delTop = remTop  # alias for backwards compat during refactor
+
 
     def cntTop(self, db, top=b''):
-        """Counts all values in branch of db given top key. Top empty counts
-        whole db.
+        """Counts all entries in branch of db given by top key.
+        When top is empty then counts all entries in whole db.
 
         Returns:
             count (int): number of counted entries in branch if any
@@ -971,7 +973,7 @@ class LMDBer(filing.Filer):
         Assumes DB opened with dupsort=False
         """
         if not key:
-            return self.delTop(db=db, top=b'')
+            return self.remTop(db=db, top=b'')
 
         # del all on >= on for key
         with self.env.begin(db=db, write=True, buffers=True) as txn:
@@ -1847,7 +1849,7 @@ class LMDBer(filing.Filer):
         Assumes DB opened with dupsort=False
         """
         if not key:
-            return self.delTop(db=db, top=b'')
+            return self.remTop(db=db, top=b'')
 
         # del all on >= on for key
         with self.env.begin(db=db, write=True, buffers=True) as txn:

@@ -171,7 +171,7 @@ def test_kom_get_item_iter():
         mydb.put(keys=("a","3"), val=y)
         mydb.put(keys=("a","4"), val=z)
 
-        items = [(keys, asdict(data)) for keys, data in mydb.getItemIter()]
+        items = [(keys, asdict(data)) for keys, data in mydb.getTopItemIter()]
         assert items == [(('a', '1'), {'a': 'Big', 'b': 'Blue'}),
                         (('a', '2'), {'a': 'Tall', 'b': 'Red'}),
                         (('a', '3'), {'a': 'Fat', 'b': 'Green'}),
@@ -183,12 +183,12 @@ def test_kom_get_item_iter():
         mydb.put(keys=("bc","4"), val=z)
 
         topkeys = ("b", "")  # append empty str to force trailing .sep
-        items = [(keys, asdict(data)) for keys, data in mydb.getItemIter(keys=topkeys)]
+        items = [(keys, asdict(data)) for keys, data in mydb.getTopItemIter(keys=topkeys)]
         assert items == [(('b', '1'), {'a': 'Big', 'b': 'Blue'}),
                          (('b', '2'), {'a': 'Tall', 'b': 'Red'})]
 
 
-        items = [(keys, asdict(data)) for keys, data in mydb.getItemIter()]
+        items = [(keys, asdict(data)) for keys, data in mydb.getTopItemIter()]
         assert items == [(('a', '1'), {'a': 'Big', 'b': 'Blue'}),
                         (('a', '2'), {'a': 'Tall', 'b': 'Red'}),
                         (('a', '3'), {'a': 'Fat', 'b': 'Green'}),
@@ -201,7 +201,7 @@ def test_kom_get_item_iter():
         assert mydb.cnt() == 8
 
         assert mydb.trim(keys=("b", ""))
-        items = [(keys, asdict(data)) for keys, data in mydb.getItemIter()]
+        items = [(keys, asdict(data)) for keys, data in mydb.getTopItemIter()]
         assert items == [(('a', '1'), {'a': 'Big', 'b': 'Blue'}),
                         (('a', '2'), {'a': 'Tall', 'b': 'Red'}),
                         (('a', '3'), {'a': 'Fat', 'b': 'Green'}),
@@ -210,7 +210,7 @@ def test_kom_get_item_iter():
                         (('bc', '4'), {'a': 'Eat', 'b': 'White'})]
 
         assert mydb.trim()
-        items = [(keys, asdict(data)) for keys, data in mydb.getItemIter()]
+        items = [(keys, asdict(data)) for keys, data in mydb.getTopItemIter()]
         assert items == []
 
     assert not os.path.exists(db.path)
@@ -575,23 +575,23 @@ def test_dup_komer():
 
         ends = ends + [wit3end]
         i = 0
-        for keys, end in endDB.getItemIter():
+        for keys, end in endDB.getTopItemIter():
             assert end == ends[i]
             i += 1
 
         i = 0
-        for keys, end in endDB.getItemIter(keys=(cid0, "" )):
+        for keys, end in endDB.getTopItemIter(keys=(cid0, "" )):
             assert end == ends[i]
             i += 1
 
         alllocs =  locs +  [wit3loc]
         i = 0
-        for keys, loc in locDB.getItemIter():
+        for keys, loc in locDB.getTopItemIter():
             assert loc == alllocs[i]
             i += 1
 
         i = 0
-        for keys, loc in locDB.getItemIter(keys=(eids[0], "" )):
+        for keys, loc in locDB.getTopItemIter(keys=(eids[0], "" )):
             assert loc == locs[i]
             i += 1
 
@@ -773,33 +773,33 @@ def test_ioset_komer():
                     'witness',
                     '00000000000000000000000000000002')]
 
-        # test getItemIter
+        # test getTopItemIter
         i = 0
-        for keys, end in endDB.getItemIter(keys=keys0):
+        for keys, end in endDB.getTopItemIter(keys=keys0):
             assert end == ends[i]
             assert keys == keys0
             i += 1
 
         ends = ends + [wit3end]
         i = 0
-        for keys, end in endDB.getItemIter():
+        for keys, end in endDB.getTopItemIter():
             assert end == ends[i]
             assert keys in  (keys0, keys1)
             i += 1
 
         i = 0
-        for keys, end in endDB.getItemIter(keys=(cid0, "")):
+        for keys, end in endDB.getTopItemIter(keys=(cid0, "")):
             assert end == ends[i]
             i += 1
 
         alllocs = locs + [wit3loc]
         i = 0
-        for keys, loc in locDB.getItemIter():
+        for keys, loc in locDB.getTopItemIter():
             assert loc == alllocs[i]
             i += 1
 
         i = 0
-        for keys, loc in locDB.getItemIter(keys=(eids[0], "")):
+        for keys, loc in locDB.getTopItemIter(keys=(eids[0], "")):
             assert loc == locs[i]
             i += 1
 

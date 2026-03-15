@@ -230,32 +230,66 @@ class SuberBase():
 
 
     def trim(self, keys: str|bytes|memoryview|Iterable=b"", *, topive=False):
-        """Removes all entries whose keys startswith keys. Enables removal of whole
-        branches of db key space. To ensure that proper separation of a branch
-        include empty string as last key in keys. For example ("a","") deletes
-        'a.1'and 'a.2' but not 'ab'
+        """Removes all entries in top branch of db given by keys.
+        Enables removal of whole branches of db key space.
+
+        Returns:
+           result (bool): True if val at key exists so delete successful.
+                          False otherwise
 
         Parameters:
-            keys (Iteratabke[str | bytes | memoryview]): of key parts that may be
+            keys (str|bytes|memoryview|Iterable): of key parts that may be
                 a truncation of a full keys tuple in  in order to address all the
                 items from multiple branches of the key space.
                 If keys is empty then trims all items in database.
                 Either append "" to end of keys Iterable to ensure get properly
-                separated top branch key or use top=True.
+                separated top branch key or use topive=True.
 
-            topive (bool): True means treat as partial key tuple from top branch of
-                       key space given by partial keys. Resultant key ends in .sep
-                       character.
-                       False means treat as full branch in key space. Resultant key
-                       does not end in .sep character.
-                       When last item in keys is empty str then will treat as
-                       partial ending in sep regardless of top value
+            topive (bool): True means treat as partial key tuple from top branch
+                of key space given by partial keys. Resultant key ends in .sep
+                character.
+                False means treat as full branch in key space. Resultant key
+                does not end in .sep character.
+                When last item in keys is empty str then will treat as
+                partial ending in sep regardless of top value
 
+        Uses python .startswith() to match keyspace since str.startswith('')
+        always returns True so empty str will match all keys in db.
+        """
+        return self.db.remTop(db=self.sdb, top=self._tokey(keys, topive=topive))
+
+    remTop = trim  # alias for convenience
+
+
+    def cntTop(self, keys: str|bytes|memoryview|Iterable="",
+                       *, topive=False):
+        """Counts all entries in top branch of db given by keys.
+        When keys is empty then counts all entries in whole db.
 
         Returns:
-           result (bool): True if val at key exists so delete successful. False otherwise
+            cnt (int): count of all entries in top branch of sdb
+
+        Parameters:
+            keys (str|bytes|memoryview|Iterable): of key
+                parts that may be a truncation of a full keys tuple in
+                in order to address all the items from multiple branches of the
+                key space.
+                If keys is empty then gets all items in database.
+                Either append "" to end of keys Iterable to ensure get properly
+                separated top branch key or use topive=True.
+
+            topive (bool): True means treat keys as delimited top of partial
+                branch in key space by forcing resultant key to end in .sep
+                character.
+                False means treat keys as undelimited partial or full branch in
+                key space by not forcing resultant key to ebd in .sep character.
+                When last item in keys is empty str then will treat as delimited
+                partial branch ending in .sep regardless of topive value.
+
+        Uses python .startswith() to match keyspace since str.startswith('')
+        always returns True so empty str will match all keys in db.
         """
-        return(self.db.delTop(db=self.sdb, top=self._tokey(keys, topive=topive)))
+        return self.db.cntTop(db=self.sdb, top=self._tokey(keys, topive=topive))
 
 
     def cntAll(self):
@@ -294,15 +328,13 @@ class SuberBase():
             When keys is empty then returns all items in subdb
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable[str|bytes|memoryview]): of key
+            keys (str|bytes|memoryview|Iterable): of key
                 parts that may be a truncation of a full keys tuple in
                 in order to address all the items from multiple branches of the
                 key space.
                 If keys is empty then gets all items in database.
                 Either append "" to end of keys Iterable to ensure get properly
-                separated top branch key or use top=True.
-                In Python str.startswith('') always returns True so if branch
-                key is empty string it matches all keys in db with startswith.
+                separated top branch key or use topive=True.
 
             topive (bool): True means treat keys as delimited top of partial
                 branch in key space by forcing resultant key to end in .sep
@@ -312,8 +344,8 @@ class SuberBase():
                 When last item in keys is empty str then will treat as delimited
                 partial branch ending in .sep regardless of topive value.
 
-        Uses python .startswith to match which always returns True if top is
-        empty string so empty will matches all keys in db.
+        Uses python .startswith() to match keyspace since str.startswith('')
+        always returns True so empty str will match all keys in db.
         """
         for key, val in self.db.getTopItemIter(db=self.sdb,
                                                top=self._tokey(keys, topive=topive)):
@@ -322,7 +354,7 @@ class SuberBase():
     getItemIter = getTopItemIter  # alias for backwards compat while refactoring
 
 
-    def getFullItemIter(self, keys: str|bytes|memoryview|Iterable[str|bytes]="",
+    def getFullItemIter(self, keys: str|bytes|memoryview|Iterable="",
                        *, topive=False):
         """Iterator over items in .db that returns full items with subclass
         specific special hidden parts shown for debugging or testing.
@@ -336,25 +368,23 @@ class SuberBase():
             valuespace which may be useful in debugging or testing.
 
         Parameters:
-            keys (str|bytes|memoryview|Iteratable[str | bytes | memoryview]):
-                of key parts that may be
+            keys (str|bytes|memoryview|Iteratable): of key parts that may be
                 a truncation of a full keys tuple in  in order to address all the
                 items from multiple branches of the key space.
                 If keys is empty then gets all items in database.
                 Either append "" to end of keys Iterable to ensure get properly
-                separated top branch key or use top=True.
-                In Python str.startswith('') always returns True so if branch
-                key is empty string it matches all keys in db with startswith.
-
+                separated top branch key or use topive=True.
 
             topive (bool): True means treat as partial key tuple from top branch of
-                       key space given by partial keys. Resultant key ends in .sep
-                       character.
-                       False means treat as full branch in key space. Resultant key
-                       does not end in .sep character.
-                       When last item in keys is empty str then will treat as
-                       partial ending in sep regardless of top value
+                key space given by partial keys. Resultant key ends in .sep
+                character.
+                False means treat as full branch in key space. Resultant key
+                does not end in .sep character.
+                When last item in keys is empty str then will treat as
+                partial ending in sep regardless of top value
 
+        Uses python .startswith() to match keyspace since str.startswith('')
+        always returns True so empty str will match all keys in db.
         """
         for key, val in self.db.getTopItemIter(db=self.sdb,
                                                top=self._tokey(keys, topive=topive)):

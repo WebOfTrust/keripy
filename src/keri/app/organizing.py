@@ -230,7 +230,7 @@ class BaseOrganizer:
             stream (file): file-like stream of image data
 
         """
-        self.hby.db.delTop(db=self.imgsdb.sdb, top=pre.encode("utf-8"))
+        self.hby.db.remTop(db=self.imgsdb.sdb, top=pre.encode("utf-8"))
 
         key = f"{pre}.content-type".encode("utf-8")
         self.hby.db.setVal(db=self.imgsdb.sdb, key=key, val=typ.encode("utf-8"))
