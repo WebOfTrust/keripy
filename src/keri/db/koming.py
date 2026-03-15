@@ -46,7 +46,7 @@ class KomerBase:
     def __init__(self, db: dbing.LMDBer, *,
                  subkey: str = 'docs.',
                  schema: Type[dataclass],  # class not instance
-                 kind: str | None = None,
+                 kind: str|None = None,
                  dupsort: bool = False,
                  sep: str = None,
                  **kwa):
@@ -69,10 +69,10 @@ class KomerBase:
         self.db = db
         self.sdb = self.db.env.open_db(key=subkey.encode("utf-8"), dupsort=dupsort)
         self.schema = schema
-        self.kind = kind
-        self.serializer = self._serializer(kind)
-        self.deserializer = self._deserializer(kind)
         self.sep = sep if sep is not None else self.Sep
+        self.kind = kind
+        self._ser = self._serializer(kind)
+        self._des = self._deserializer(kind)
 
 
     def _tokey(self, keys: str|bytes|memoryview|Iterable, topive: bool=False):
@@ -112,87 +112,19 @@ class KomerBase:
 
 
     def _tokeys(self, key: str|bytes|memoryview):
-        """Converts key str to keys tuple of strs by decoding and then splitting
-        at separator .sep.
+        """Converts key bytes|memoryview to keys tuple of strs by decoding and
+        then splitting at separator .sep.
 
         Returns:
            keys (Iterable): keyspace elements
 
         Parameters:
-           key (str|bytes|memoryview): keyspace index
+           key (bytes|memoryview): keyspace index
 
         """
         if isinstance(key, memoryview):  # memoryview of bytes
             key = bytes(key)
         return tuple(key.decode("utf-8").split(self.sep))
-
-
-    def getTopItemIter(self, keys: Union[str, Iterable]=b"", *, topive=False):
-        """Iterator over items in top branch of db given by keys.
-        Subclasses that do special hidden transforms on either the keyspace or
-        valuespace should override this method to hide hidden parts from the
-        returned items.
-
-        For example, adding either a hidden key space suffix or hidden val
-        space proem to ensure insertion order.
-
-        To return full items with hidden parts shown for debugging or testing,
-        use getFullItemIter instead.
-
-        Returns:
-            items (Iterator): of (key, val) tuples  over the all the items in
-            subdb whose key startswith key made from keys. Keys may be keyspace
-            prefix to return branches of key space. When keys is empty then
-            returns all items in subdb
-
-        Parameters:
-            keys (Iterator): tuple of bytes or strs that may be a truncation of
-                a full keys tuple in  in order to get all the items from
-                multiple branches of the key space. If keys is empty then gets
-                all items in database.
-            topive (bool): True means treat as partial key tuple from top branch of
-                key space given by partial keys. Resultant key ends in .sep
-                character.
-                False means treat as full branch in key space. Resultant key
-                does not end in .sep character.
-                When last item in keys is empty str then will treat as
-                partial ending in sep regardless of top value
-
-        """
-        for key, val in self.db.getTopItemIter(db=self.sdb,
-                                        top=self._tokey(keys, topive=topive)):
-            yield (self._tokeys(key), self.deserializer(val))
-
-    getItemIter = getTopItemIter  # alias for refactoring backwards compat
-
-
-    def getFullItemIter(self, keys: Union[str, Iterable]=b"",  *, topive=False):
-        """Iterator over items in top branch of db that returns full items
-        with subclass specific special hidden parts shown for debugging or testing.
-
-        Returns:
-            items (Iterator): of (key, val) tuples  over the all the items in
-            subdb whose key startswith key made from keys. Keys may be keyspace
-            prefix to return branches of key space. When keys is empty then
-            returns all items in subdb
-
-        Parameters:
-            keys (Iterator): tuple of bytes or strs that may be a truncation of
-                a full keys tuple in  in order to get all the items from
-                multiple branches of the key space. If keys is empty then gets
-                all items in database.
-            topive (bool): True means treat as partial key tuple from top branch of
-                key space given by partial keys. Resultant key ends in .sep
-                character.
-                False means treat as full branch in key space. Resultant key
-                does not end in .sep character.
-                When last item in keys is empty str then will treat as
-                partial ending in sep regardless of top value
-
-        """
-        for key, val in self.db.getTopItemIter(db=self.sdb,
-                                    top=self._tokey(keys, topive=topive)):
-            yield (self._tokeys(key), self.deserializer(val))
 
 
     def _serializer(self, kind):
@@ -281,6 +213,100 @@ class KomerBase:
         return val
 
 
+    def trim(self, keys: str|bytes|memoryview|Iterable=b"", *, topive=False):
+        """Removes all entries whose keys startswith keys. Enables removal of whole
+        branches of db key space. To ensure that proper separation of a branch
+        include empty string as last key in keys. For example ("a","") deletes
+        'a.1'and 'a.2' but not 'ab'
+
+        Parameters:
+            keys (str|bytes|memoryview|Iterable): of key space elements to be
+                    combined in order to form key
+            topive (bool): True means treat as partial key tuple from top branch of
+                key space given by partial keys. Resultant key ends in .sep
+                character.
+                False means treat as full branch in key space. Resultant key
+                does not end in .sep character.
+                When last item in keys is empty str then will treat as
+                partial ending in sep regardless of top value
+
+        Returns:
+           result (bool): True if key exists so delete successful. False otherwise
+        """
+        return(self.db.remTop(db=self.sdb, top=self._tokey(keys, topive=topive)))
+
+    remTop = trim  # convenience alias
+
+
+    def getTopItemIter(self, keys: Union[str, Iterable]=b"", *, topive=False):
+        """Iterator over items in top branch of db given by keys.
+        Subclasses that do special hidden transforms on either the keyspace or
+        valuespace should override this method to hide hidden parts from the
+        returned items.
+
+        For example, adding either a hidden key space suffix or hidden val
+        space proem to ensure insertion order.
+
+        To return full items with hidden parts shown for debugging or testing,
+        use getFullItemIter instead.
+
+        Returns:
+            items (Iterator): of (key, val) tuples  over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+        Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+            topive (bool): True means treat as partial key tuple from top branch of
+                key space given by partial keys. Resultant key ends in .sep
+                character.
+                False means treat as full branch in key space. Resultant key
+                does not end in .sep character.
+                When last item in keys is empty str then will treat as
+                partial ending in sep regardless of top value
+
+        """
+        for key, val in self.db.getTopItemIter(db=self.sdb,
+                                        top=self._tokey(keys, topive=topive)):
+            yield (self._tokeys(key), self._des(val))
+
+    #getItemIter = getTopItemIter  # alias for refactoring backwards compat
+
+
+    def getFullItemIter(self, keys: Union[str, Iterable]=b"",  *, topive=False):
+        """Iterator over items in top branch of db that returns full items
+        with subclass specific special hidden parts shown for debugging or testing.
+
+        Returns:
+            items (Iterator): of (key, val) tuples  over the all the items in
+            subdb whose key startswith key made from keys. Keys may be keyspace
+            prefix to return branches of key space. When keys is empty then
+            returns all items in subdb
+
+        Parameters:
+            keys (Iterator): tuple of bytes or strs that may be a truncation of
+                a full keys tuple in  in order to get all the items from
+                multiple branches of the key space. If keys is empty then gets
+                all items in database.
+            topive (bool): True means treat as partial key tuple from top branch of
+                key space given by partial keys. Resultant key ends in .sep
+                character.
+                False means treat as full branch in key space. Resultant key
+                does not end in .sep character.
+                When last item in keys is empty str then will treat as
+                partial ending in sep regardless of top value
+
+        """
+        for key, val in self.db.getTopItemIter(db=self.sdb,
+                                    top=self._tokey(keys, topive=topive)):
+            yield (self._tokeys(key), self._des(val))
+
+
+
 class Komer(KomerBase):
     """
     Keyspace Object Mapper factory class.
@@ -315,7 +341,7 @@ class Komer(KomerBase):
         """
         return (self.db.putVal(db=self.sdb,
                                key=self._tokey(keys),
-                               val=self.serializer(val)))
+                               val=self._ser(val)))
 
     def pin(self, keys: Union[str, Iterable], val: dataclass):
         """
@@ -330,7 +356,7 @@ class Komer(KomerBase):
         """
         return (self.db.setVal(db=self.sdb,
                                key=self._tokey(keys),
-                               val=self.serializer(val)))
+                               val=self._ser(val)))
 
     def get(self, keys: Union[str, Iterable]):
         """
@@ -349,12 +375,11 @@ class Komer(KomerBase):
                 raise ExceptionHere
             use val here
         """
-        return (self.deserializer(self.db.getVal(db=self.sdb,
+        return (self._des(self.db.getVal(db=self.sdb,
                                   key=self._tokey(keys))))
 
     def getDict(self, keys: Union[str, Iterable]):
-        """
-        Gets dictified val at keys
+        """Gets dictified val at keys
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -386,22 +411,6 @@ class Komer(KomerBase):
         return (self.db.remVal(db=self.sdb, key=self._tokey(keys)))
 
 
-    def trim(self, keys: Union[str, Iterable]=b""):
-        """
-        Removes all entries whose keys startswith keys. Enables removal of whole
-        branches of db key space. To ensure that proper separation of a branch
-        include empty string as last key in keys. For example ("a","") deletes
-        'a.1'and 'a.2' but not 'ab'
-
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-
-        Returns:
-           result (bool): True if key exists so delete successful. False otherwise
-        """
-        return(self.db.remTop(db=self.sdb, top=self._tokey(keys)))
-
-
     def cnt(self):
         """Count all items in db
 
@@ -418,8 +427,7 @@ class Komer(KomerBase):
 
 
 class IoSetKomer(KomerBase):
-    """
-    Insertion Ordered Set Keyspace Object Mapper factory class that supports
+    """Insertion Ordered Set Keyspace Object Mapper factory class that supports
     a set of distinct entries at a given effective database key but with
     dupsort==False. Effective data model is that there are multiple values in a
     set of values where every member of the set has the same key (duplicate key).
@@ -462,8 +470,7 @@ class IoSetKomer(KomerBase):
 
 
     def put(self, keys: Union[str, Iterable], vals: list):
-        """
-        Puts all vals at key made from keys. Does not overwrite. Puts all vals
+        """Puts all vals at key made from keys. Does not overwrite. Puts all vals
         at effective key made from keys and hidden ordinal suffix.
         that are not already in set of vals at key. Does not overwrite.
 
@@ -477,7 +484,7 @@ class IoSetKomer(KomerBase):
         Apparently always returns True (how .put works with dupsort=True)
 
         """
-        vals = [self.serializer(val) for val in vals]
+        vals = [self._ser(val) for val in vals]
         return (self.db.putIoSetVals(db=self.sdb,
                                      key=self._tokey(keys),
                                      vals=vals,
@@ -485,8 +492,7 @@ class IoSetKomer(KomerBase):
 
 
     def add(self, keys: Union[str, Iterable], val: dataclass):
-        """
-        Add val to vals at effective key made from keys and hidden ordinal suffix.
+        """Add val to vals at effective key made from keys and hidden ordinal suffix.
         that is not already in set of vals at key. Does not overwrite.
 
         Parameters:
@@ -500,13 +506,12 @@ class IoSetKomer(KomerBase):
         """
         return (self.db.addIoSetVal(db=self.sdb,
                                     key=self._tokey(keys),
-                                    val=self.serializer(val),
+                                    val=self._ser(val),
                                     sep=self.sep))
 
 
     def pin(self, keys: Union[str, Iterable], vals: list):
-        """
-        Pins (sets) vals at effective key made from keys and hidden ordinal suffix.
+        """Pins (sets) vals at effective key made from keys and hidden ordinal suffix.
         Overwrites. Removes all pre-existing vals that share same effective keys
         and replaces them with vals
 
@@ -520,13 +525,12 @@ class IoSetKomer(KomerBase):
         """
         return (self.db.pinIoSetVals(db=self.sdb,
                                      key=self._tokey(keys),
-                                     vals=[self.serializer(val) for val in vals],
+                                     vals=[self._ser(val) for val in vals],
                                      sep=self.sep))
 
 
     def get(self, keys: Union[str, Iterable]):
-        """
-        Gets dup vals list at key made from keys
+        """Gets dup vals list at key made from keys
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -536,7 +540,7 @@ class IoSetKomer(KomerBase):
                           empty list if no entry at keys
 
         """
-        return [self.deserializer(val) for key, val in
+        return [self._des(val) for key, val in
                     self.db.getIoSetItemIter(db=self.sdb,
                                              key=self._tokey(keys),
                                              sep=self.sep)]
@@ -555,18 +559,12 @@ class IoSetKomer(KomerBase):
         """
         if last := self.db.getIoSetLastItem(db=self.sdb, key=self._tokey(keys)):
             key, val = last
-            return self.deserializer(val)
+            return self._des(val)
         return None
-
-        #val = self.db.getIoSetLast(db=self.sdb, key=self._tokey(keys))
-        #if val is not None:
-            #val = self.deserializer(val)
-        #return val
 
 
     def getIter(self, keys: Union[str, Iterable]):
-        """
-        Gets vals iterator at effecive key made from keys and hidden ordinal suffix.
+        """Gets vals iterator at effecive key made from keys and hidden ordinal suffix.
         All vals in set of vals that share same effecive key are retrieved in
         insertion order.
 
@@ -580,8 +578,7 @@ class IoSetKomer(KomerBase):
         for key, val in self.db.getIoSetItemIter(db=self.sdb,
                                             key=self._tokey(keys),
                                             sep=self.sep):
-            yield self.deserializer(val)
-
+            yield self._des(val)
 
 
     def cnt(self, keys: Union[str, Iterable] = ""):
@@ -601,8 +598,7 @@ class IoSetKomer(KomerBase):
 
 
     def rem(self, keys: str|Iterable, val=None):
-        """
-        Removes entry at keys
+        """Removes entry at keys
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -615,12 +611,13 @@ class IoSetKomer(KomerBase):
         """
         return self.db.remIoSetVal(db=self.sdb,
                                    key=self._tokey(keys),
-                                   val=self.serializer(val) if val is not None else val,
+                                   val=self._ser(val) if val is not None else val,
                                    sep=self.sep)
 
 
     def getTopItemIter(self, keys: Union[str, Iterable]=b"", *, topive=False):
-        """Get items iterator
+        """Get items iterator over top branch of db given by keys.
+
         Returns:
             items (Iterator): of (key, val) tuples over the all the items in
             subdb whose effective key startswith key made from keys.
@@ -649,9 +646,9 @@ class IoSetKomer(KomerBase):
         for iokey, val in self.db.getTopIoSetItemIter(db=self.sdb,
                                             top=self._tokey(keys, topive=topive),
                                             sep=self.sep.encode()):
-            yield (self._tokeys(iokey), self.deserializer(val))
+            yield (self._tokeys(iokey), self._des(val))
 
-    getItemIter = getTopItemIter  # alias refactoring backards compat
+    #getItemIter = getTopItemIter  # alias refactoring backards compat
 
 
 
@@ -699,7 +696,7 @@ class DupKomer(KomerBase):
         Apparently always returns True (how .put works with dupsort=True)
 
         """
-        vals = [self.serializer(val) for val in vals]
+        vals = [self._ser(val) for val in vals]
         return (self.db.putVals(db=self.sdb,
                                 key=self._tokey(keys),
                                 vals=vals))
@@ -724,7 +721,7 @@ class DupKomer(KomerBase):
         """
         return (self.db.addVal(db=self.sdb,
                                key=self._tokey(keys),
-                               val=self.serializer(val)))
+                               val=self._ser(val)))
 
 
     def pin(self, keys: Union[str, Iterable], vals: list):
@@ -742,7 +739,7 @@ class DupKomer(KomerBase):
         """
         key = self._tokey(keys)
         self.db.delVals(db=self.sdb, key=key)  # delete all values
-        vals = [self.serializer(val) for val in vals]
+        vals = [self._ser(val) for val in vals]
         return (self.db.putVals(db=self.sdb,
                                 key=key,
                                 vals=vals))
@@ -760,7 +757,7 @@ class DupKomer(KomerBase):
                           empty list if no entry at keys
 
         """
-        return ([self.deserializer(val) for val in
+        return ([self._des(val) for val in
                 self.db.getValsIter(db=self.sdb, key=self._tokey(keys))])
 
 
@@ -778,7 +775,7 @@ class DupKomer(KomerBase):
         """
         val = self.db.getValLast(db=self.sdb, key=self._tokey(keys))
         if val is not None:
-            val = self.deserializer(val)
+            val = self._des(val)
         return val
 
 
@@ -796,7 +793,7 @@ class DupKomer(KomerBase):
 
         """
         for val in self.db.getValsIter(db=self.sdb, key=self._tokey(keys)):
-            yield self.deserializer(val)
+            yield self._des(val)
 
 
     def cnt(self, keys: Union[str, Iterable]):
@@ -823,7 +820,7 @@ class DupKomer(KomerBase):
 
         """
         if val is not None:
-            val = self.serializer(val)
+            val = self._ser(val)
         else:
             val = b''
         return (self.db.delVals(db=self.sdb, key=self._tokey(keys), val=val))
