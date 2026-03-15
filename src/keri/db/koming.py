@@ -329,8 +329,7 @@ class Komer(KomerBase):
                                     kind=kind, dupsort=False, **kwa)
 
     def put(self, keys: str|bytes|memoryview|Iterable, val: dataclass):
-        """
-        Puts val at key made from keys. Does not overwrite
+        """Puts val at key made from keys. Does not overwrite
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be combined
@@ -347,8 +346,7 @@ class Komer(KomerBase):
 
 
     def pin(self, keys: str|bytes|memoryview|Iterable, val: dataclass):
-        """
-        Pins (sets) val at key made from keys. Overwrites.
+        """Pins (sets) val at key made from keys. Overwrites.
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be combined
@@ -363,8 +361,7 @@ class Komer(KomerBase):
                                val=self._ser(val)))
 
     def get(self, keys: str|bytes|memoryview|Iterable):
-        """
-        Gets val at keys
+        """Gets val at keys
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be combined
@@ -405,8 +402,7 @@ class Komer(KomerBase):
 
 
     def rem(self, keys: str|bytes|memoryview|Iterable):
-        """
-        Removes entry at keys
+        """Removes entry at keys
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be combined
@@ -669,8 +665,7 @@ class IoSetKomer(KomerBase):
 
 
 class DupKomer(KomerBase):
-    """
-    Duplicate Keyspace Object Mapper factory class that supports multiple entries
+    """Duplicate Keyspace Object Mapper factory class that supports multiple entries
     a given database key (lmdb dupsort == True).
 
     Do not use if Komer dataclass instance serializes to greater than 511 bytes.
@@ -695,8 +690,7 @@ class DupKomer(KomerBase):
 
 
     def put(self, keys: str|bytes|memoryview|Iterable, vals: list):
-        """
-        Puts all vals at key made from keys. Does not overwrite. Adds to existing
+        """Puts all vals at key made from keys. Does not overwrite. Adds to existing
         dup values at key if any. Duplicate means another entry at the same key
         but the entry is still a unique value. Duplicates are inserted in
         lexocographic order not insertion order. Lmdb does not insert a duplicate
@@ -720,8 +714,7 @@ class DupKomer(KomerBase):
 
 
     def add(self, keys: str|bytes|memoryview|Iterable, val: dataclass):
-        """
-        Add val to vals at key made from keys. Does not overwrite. Adds to existing
+        """Add val to vals at key made from keys. Does not overwrite. Adds to existing
         dup values at key if any. Duplicate means another entry at the same key
         but the entry is still a unique value. Duplicates are inserted in
         lexocographic order not insertion order. Lmdb does not insert a duplicate
@@ -743,8 +736,7 @@ class DupKomer(KomerBase):
 
 
     def pin(self, keys: str|bytes|memoryview|Iterable, vals: list):
-        """
-        Pins (sets) vals at key made from keys. Overwrites. Removes all
+        """Pins (sets) vals at key made from keys. Overwrites. Removes all
         pre-existing dup vals and replaces them with vals
 
         Parameters:
@@ -765,8 +757,7 @@ class DupKomer(KomerBase):
 
 
     def get(self, keys: str|bytes|memoryview|Iterable):
-        """
-        Gets dup vals list at key made from keys
+        """Gets dup vals list at key made from keys
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be combined
@@ -782,8 +773,7 @@ class DupKomer(KomerBase):
 
 
     def getLast(self, keys: str|bytes|memoryview|Iterable):
-        """
-        Gets last dup val at key made from keys
+        """Gets last dup val at key made from keys
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be combined
@@ -801,8 +791,7 @@ class DupKomer(KomerBase):
 
 
     def getIter(self, keys: str|bytes|memoryview|Iterable):
-        """
-        Gets dup vals iterator at key made from keys
+        """Gets dup vals iterator at key made from keys
 
         Duplicates are retrieved in lexocographic order not insertion order.
 
@@ -819,8 +808,10 @@ class DupKomer(KomerBase):
 
 
     def cnt(self, keys: str|bytes|memoryview|Iterable):
-        """
-        Return count of dup values at key made from keys, zero otherwise
+        """Count entries (dups) at key made from keys.
+
+        Returns:
+            count (int): dup values at key made from keys, zero otherwise
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be combined
@@ -830,8 +821,7 @@ class DupKomer(KomerBase):
 
 
     def rem(self, keys: str|bytes|memoryview|Iterable, val=None):
-        """
-        Removes entry at keys
+        """Removes entry at key made from keys
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): of key strs to be combined
