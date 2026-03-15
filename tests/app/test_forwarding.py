@@ -263,7 +263,7 @@ def test_essr_stream(seeder):
 
         recpHby.psr.parse()  # ims already populated from http server
 
-        iter = recpHby.db.exns.getItemIter()
+        iter = recpHby.db.exns.getTopItemIter()
         essrSaidA, essrSerderA = next(iter)
         assert essrSerderA.ked["r"] == "/essr/req"
         assert essrSerderA.ked["q"] == {'src': hab.pre, 'dest': recpHab.pre}
@@ -367,7 +367,7 @@ def test_essr_mbx(seeder):
 
         doist.exit()
 
-        iter = wesHby.db.exns.getItemIter()
+        iter = wesHby.db.exns.getTopItemIter()
         essrSaidA, essrSerderA = next(iter)
         assert essrSerderA.ked["r"] == "/essr/req"
         assert essrSerderA.ked["q"] == {'src': hab.pre, 'dest': wesHab.pre}

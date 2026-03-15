@@ -140,7 +140,7 @@ class InitDoer(doing.DoDoer):
 
             while True:
                 cap = []
-                for (_,), wk in hby.db.wkas.getItemIter(keys=b''):
+                for (_,), wk in hby.db.wkas.getTopItemIter(keys=b''):
                     cap.append(wk.url)
 
                 if set(wc) & set(cap) == set(wc):

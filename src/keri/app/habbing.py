@@ -1900,7 +1900,7 @@ class BaseHab:
     def loadLocScheme(self, eid, scheme=None):
         msgs = bytearray()
         keys = (eid, scheme) if scheme else (eid,)
-        for (pre, _), said in self.db.lans.getItemIter(keys=keys):
+        for (pre, _), said in self.db.lans.getTopItemIter(keys=keys):
             serder = self.db.rpys.get(keys=(said.qb64,))
             cigars = self.db.scgs.get(keys=(said.qb64,))
             tsgs = fetchTsgs(db=self.db.ssgs, diger=said)

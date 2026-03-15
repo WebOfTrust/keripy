@@ -93,7 +93,7 @@ def fetchTsgs(db, diger, snh=None):
     tsgs = []  # transferable signature groups
     sigers = []
     old = None  # empty keys
-    for keys, siger in db.getItemIter(keys=(diger.qb64, "")):
+    for keys, siger in db.getTopItemIter(keys=(diger.qb64, "")):
         trituple = keys[1:]
         if trituple != old:  # new tsg
             if snh is not None and trituple[1] > snh:  # only lower sn

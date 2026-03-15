@@ -1509,7 +1509,7 @@ class Baser(dbing.LMDBer):
                 for name in unsecured:
                     srcdb = getattr(self, name)
                     cpydb = getattr(copy, name)
-                    for keys, val in srcdb.getItemIter():
+                    for keys, val in srcdb.getTopItemIter():
                         cpydb.put(keys=keys, val=val)
 
                 # This is the list of set based databases that are not created as part of event processing.
@@ -1519,7 +1519,7 @@ class Baser(dbing.LMDBer):
                 for name in sets:
                     srcdb = getattr(self, name)
                     cpydb = getattr(copy, name)
-                    for keys, val in srcdb.getItemIter():
+                    for keys, val in srcdb.getTopItemIter():
                         cpydb.add(keys=keys, val=val)
 
                 # Copy imgs (blinded media for remote identifiers)
