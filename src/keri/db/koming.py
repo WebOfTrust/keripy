@@ -7,7 +7,6 @@ keri.db.koming module
 import types
 import json
 from dataclasses import dataclass
-from typing import Type, Union
 from collections.abc import Iterable
 
 import cbor2
@@ -45,7 +44,7 @@ class KomerBase:
 
     def __init__(self, db: dbing.LMDBer, *,
                  subkey: str = 'docs.',
-                 schema: Type[dataclass],  # class not instance
+                 schema: type[dataclass],  # class not instance
                  kind: str|None = None,
                  dupsort: bool = False,
                  sep: str = None,
@@ -53,7 +52,7 @@ class KomerBase:
         """
         Parameters:
             db (dbing.LMDBer): base db
-            schema (Type[dataclass]):  reference to Class definition for dataclass sub class
+            schema (type[dataclass]):  reference to Class definition for dataclass sub class
             subkey (str):  LMDB sub database key
             kind (str): serialization/deserialization type
             dupsort (bool): True means enable duplicates at each key
@@ -238,7 +237,7 @@ class KomerBase:
     remTop = trim  # convenience alias
 
 
-    def getTopItemIter(self, keys: Union[str, Iterable]=b"", *, topive=False):
+    def getTopItemIter(self, keys: str|bytes|memoryview|Iterable=b"", *, topive=False):
         """Iterator over items in top branch of db given by keys.
         Subclasses that do special hidden transforms on either the keyspace or
         valuespace should override this method to hide hidden parts from the
@@ -257,9 +256,10 @@ class KomerBase:
             returns all items in subdb
 
         Parameters:
-            keys (Iterator): tuple of bytes or strs that may be a truncation of
-                a full keys tuple in  in order to get all the items from
-                multiple branches of the key space. If keys is empty then gets
+            keys (str|bytes|memoryview|Iterable): tuple of bytes or strs that
+                may be a truncation of a full keys tuple in  in order to get
+                all the items from multiple branches of the key space.
+                If keys is empty then gets
                 all items in database.
             topive (bool): True means treat as partial key tuple from top branch of
                 key space given by partial keys. Resultant key ends in .sep
@@ -277,7 +277,7 @@ class KomerBase:
     #getItemIter = getTopItemIter  # alias for refactoring backwards compat
 
 
-    def getFullItemIter(self, keys: Union[str, Iterable]=b"",  *, topive=False):
+    def getFullItemIter(self, keys: str|bytes|memoryview|Iterable=b"",  *, topive=False):
         """Iterator over items in top branch of db that returns full items
         with subclass specific special hidden parts shown for debugging or testing.
 
@@ -288,7 +288,7 @@ class KomerBase:
             returns all items in subdb
 
         Parameters:
-            keys (Iterator): tuple of bytes or strs that may be a truncation of
+            keys (str|bytes|memoryview|Iterable):  may be a truncation of
                 a full keys tuple in  in order to get all the items from
                 multiple branches of the key space. If keys is empty then gets
                 all items in database.
@@ -308,16 +308,17 @@ class KomerBase:
 
 
 class Komer(KomerBase):
+    """Keyspace dataclass Object Mapper factory class. Maps (serializes and
+    deserializes) dataclass to/from database entry at key made from keys
     """
-    Keyspace Object Mapper factory class.
-    """
+
     def __init__(self,
                  db: dbing.LMDBer, *,
                  subkey: str = 'docs.',
-                 schema: Type[dataclass],  # class not instance
+                 schema: type[dataclass],  # class not instance
                  kind: str | None = None,
                  **kwa):
-        """
+        """Initialize instance
         Parameters:
             db (dbing.LMDBer): base db
             schema (Type[dataclass]):  reference to Class definition for dataclass sub class
@@ -327,12 +328,13 @@ class Komer(KomerBase):
         super(Komer, self).__init__(db=db, subkey=subkey, schema=schema,
                                     kind=kind, dupsort=False, **kwa)
 
-    def put(self, keys: Union[str, Iterable], val: dataclass):
+    def put(self, keys: str|bytes|memoryview|Iterable, val: dataclass):
         """
         Puts val at key made from keys. Does not overwrite
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                in order to form key
             val (dataclass): instance of dataclass of type self.schema as value
 
         Returns:
@@ -343,12 +345,14 @@ class Komer(KomerBase):
                                key=self._tokey(keys),
                                val=self._ser(val)))
 
-    def pin(self, keys: Union[str, Iterable], val: dataclass):
+
+    def pin(self, keys: str|bytes|memoryview|Iterable, val: dataclass):
         """
         Pins (sets) val at key made from keys. Overwrites.
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                in order to form key
             val (dataclass): instance of dataclass of type self.schema as value
 
         Returns:
@@ -358,12 +362,13 @@ class Komer(KomerBase):
                                key=self._tokey(keys),
                                val=self._ser(val)))
 
-    def get(self, keys: Union[str, Iterable]):
+    def get(self, keys: str|bytes|memoryview|Iterable):
         """
         Gets val at keys
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                in order to form key
 
         Returns:
             val (dataclass):
@@ -378,11 +383,12 @@ class Komer(KomerBase):
         return (self._des(self.db.getVal(db=self.sdb,
                                   key=self._tokey(keys))))
 
-    def getDict(self, keys: Union[str, Iterable]):
+    def getDict(self, keys: str|bytes|memoryview|Iterable):
         """Gets dictified val at keys
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                in order to form key
 
         Returns:
             val (dict):
@@ -398,12 +404,13 @@ class Komer(KomerBase):
         return helping.dictify(val) if val is not None else None
 
 
-    def rem(self, keys: Union[str, Iterable]):
+    def rem(self, keys: str|bytes|memoryview|Iterable):
         """
         Removes entry at keys
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                in order to form key
 
         Returns:
            result (bool): True if key exists so delete successful. False otherwise
@@ -455,7 +462,7 @@ class IoSetKomer(KomerBase):
     def __init__(self,
              db: dbing.LMDBer, *,
              subkey: str = 'recs.',
-             schema: Type[dataclass],  # class not instance
+             schema: type[dataclass],  # class not instance
              kind: str | None = None,
              **kwa):
         """
@@ -469,13 +476,14 @@ class IoSetKomer(KomerBase):
                                        kind=kind, dupsort=False, **kwa)
 
 
-    def put(self, keys: Union[str, Iterable], vals: list):
+    def put(self, keys: str|bytes|memoryview|Iterable, vals: list):
         """Puts all vals at key made from keys. Does not overwrite. Puts all vals
         at effective key made from keys and hidden ordinal suffix.
         that are not already in set of vals at key. Does not overwrite.
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                in order to form key
             vals (list): dataclass instances each of type self.schema as values
 
         Returns:
@@ -491,12 +499,13 @@ class IoSetKomer(KomerBase):
                                      sep=self.sep))
 
 
-    def add(self, keys: Union[str, Iterable], val: dataclass):
+    def add(self, keys: str|bytes|memoryview|Iterable, val: dataclass):
         """Add val to vals at effective key made from keys and hidden ordinal suffix.
         that is not already in set of vals at key. Does not overwrite.
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                in order to form key
             val (dataclass): instance of type self.schema
 
         Returns:
@@ -510,13 +519,14 @@ class IoSetKomer(KomerBase):
                                     sep=self.sep))
 
 
-    def pin(self, keys: Union[str, Iterable], vals: list):
+    def pin(self, keys: str|bytes|memoryview|Iterable, vals: list):
         """Pins (sets) vals at effective key made from keys and hidden ordinal suffix.
         Overwrites. Removes all pre-existing vals that share same effective keys
         and replaces them with vals
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                in order to form key
             vals (list): dataclass instances each of type self.schema as values
 
         Returns:
@@ -529,11 +539,12 @@ class IoSetKomer(KomerBase):
                                      sep=self.sep))
 
 
-    def get(self, keys: Union[str, Iterable]):
+    def get(self, keys: str|bytes|memoryview|Iterable):
         """Gets dup vals list at key made from keys
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                in order to form key
 
         Returns:
             vals (list):  each item in list is instance of type self.schema
@@ -546,11 +557,12 @@ class IoSetKomer(KomerBase):
                                              sep=self.sep)]
 
 
-    def getLast(self, keys: Union[str, Iterable]):
+    def getLast(self, keys: str|bytes|memoryview|Iterable):
         """Gets last effective dup val at effective dup key made from keys
 
         Parameters:
-            keys (tuple): of key strs to be combined to form effective key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                to form effective key
 
         Returns:
             val (Type[dataclass]):  instance of type self.schema
@@ -563,13 +575,14 @@ class IoSetKomer(KomerBase):
         return None
 
 
-    def getIter(self, keys: Union[str, Iterable]):
+    def getIter(self, keys: str|bytes|memoryview|Iterable):
         """Gets vals iterator at effecive key made from keys and hidden ordinal suffix.
         All vals in set of vals that share same effecive key are retrieved in
         insertion order.
 
         Parameters:
-            keys (Iterable): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                in order to form key
 
         Returns:
             vals (Iterator):  str values. Raises StopIteration when done
@@ -581,12 +594,13 @@ class IoSetKomer(KomerBase):
             yield self._des(val)
 
 
-    def cnt(self, keys: Union[str, Iterable] = ""):
+    def cnt(self, keys: str|bytes|memoryview|Iterable = ""):
         """Count of effective dup values at key made from keys. If keys is empty
         then returns count of all entries in db
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key. If
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                in order to form key. If
                 empty then returns coutn of all entries in db.
         """
         if not keys:
@@ -597,11 +611,12 @@ class IoSetKomer(KomerBase):
                                      sep=self.sep))
 
 
-    def rem(self, keys: str|Iterable, val=None):
+    def rem(self, keys: str|bytes|memoryview|Iterable, val=None):
         """Removes entry at keys
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                in order to form key
             val (dataclass):  instance of effective dup val at key to delete
                               if val is None then remove all values at key
 
@@ -615,7 +630,8 @@ class IoSetKomer(KomerBase):
                                    sep=self.sep)
 
 
-    def getTopItemIter(self, keys: Union[str, Iterable]=b"", *, topive=False):
+    def getTopItemIter(self, keys: str|bytes|memoryview|Iterable=b"", *,
+                             topive=False):
         """Get items iterator over top branch of db given by keys.
 
         Returns:
@@ -626,7 +642,7 @@ class IoSetKomer(KomerBase):
             Returned key in each item has ordinal suffix removed.
 
         Parameters:
-            keys (Iterable): tuple of bytes or strs that may be a truncation of
+            keys (str|bytes|memoryview|Iterable): may be a truncation of
                 a full keys tuple in  in order to address all the items from
                 multiple branches of the key space. If keys is empty then gets
                 all items in database.
@@ -663,7 +679,7 @@ class DupKomer(KomerBase):
     def __init__(self,
              db: dbing.LMDBer, *,
              subkey: str = 'recs.',
-             schema: Type[dataclass],  # class not instance
+             schema: type[dataclass],  # class not instance
              kind: str | None = None,
              **kwa):
         """
@@ -678,7 +694,7 @@ class DupKomer(KomerBase):
 
 
 
-    def put(self, keys: Union[str, Iterable], vals: list):
+    def put(self, keys: str|bytes|memoryview|Iterable, vals: list):
         """
         Puts all vals at key made from keys. Does not overwrite. Adds to existing
         dup values at key if any. Duplicate means another entry at the same key
@@ -687,7 +703,8 @@ class DupKomer(KomerBase):
         unless it is a unique value for that key.
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                in order to form key
             vals (list): dataclass instances each of type self.schema as values
 
         Returns:
@@ -702,7 +719,7 @@ class DupKomer(KomerBase):
                                 vals=vals))
 
 
-    def add(self, keys: Union[str, Iterable], val: dataclass):
+    def add(self, keys: str|bytes|memoryview|Iterable, val: dataclass):
         """
         Add val to vals at key made from keys. Does not overwrite. Adds to existing
         dup values at key if any. Duplicate means another entry at the same key
@@ -711,7 +728,8 @@ class DupKomer(KomerBase):
         unless it is a unique value for that key.
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                in order to form key
             val (dataclass): instance of type self.schema
 
         Returns:
@@ -724,13 +742,14 @@ class DupKomer(KomerBase):
                                val=self._ser(val)))
 
 
-    def pin(self, keys: Union[str, Iterable], vals: list):
+    def pin(self, keys: str|bytes|memoryview|Iterable, vals: list):
         """
         Pins (sets) vals at key made from keys. Overwrites. Removes all
         pre-existing dup vals and replaces them with vals
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                in order to form key
             vals (list): dataclass instances each of type self.schema as values
 
         Returns:
@@ -745,12 +764,13 @@ class DupKomer(KomerBase):
                                 vals=vals))
 
 
-    def get(self, keys: Union[str, Iterable]):
+    def get(self, keys: str|bytes|memoryview|Iterable):
         """
         Gets dup vals list at key made from keys
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                in order to form key
 
         Returns:
             vals (list):  each item in list is instance of type self.schema
@@ -761,12 +781,13 @@ class DupKomer(KomerBase):
                 self.db.getValsIter(db=self.sdb, key=self._tokey(keys))])
 
 
-    def getLast(self, keys: Union[str, Iterable]):
+    def getLast(self, keys: str|bytes|memoryview|Iterable):
         """
         Gets last dup val at key made from keys
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                in order to form key
 
         Returns:
             val (Type[dataclass]):  instance of type self.schema
@@ -779,14 +800,15 @@ class DupKomer(KomerBase):
         return val
 
 
-    def getIter(self, keys: Union[str, Iterable]):
+    def getIter(self, keys: str|bytes|memoryview|Iterable):
         """
         Gets dup vals iterator at key made from keys
 
         Duplicates are retrieved in lexocographic order not insertion order.
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                in order to form key
 
         Returns:
             iterator:  vals each of type self.schema. Raises StopIteration when done
@@ -796,22 +818,24 @@ class DupKomer(KomerBase):
             yield self._des(val)
 
 
-    def cnt(self, keys: Union[str, Iterable]):
+    def cnt(self, keys: str|bytes|memoryview|Iterable):
         """
         Return count of dup values at key made from keys, zero otherwise
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                in order to form key
         """
         return (self.db.cntVals(db=self.sdb, key=self._tokey(keys)))
 
 
-    def rem(self, keys: Union[str, Iterable], val=None):
+    def rem(self, keys: str|bytes|memoryview|Iterable, val=None):
         """
         Removes entry at keys
 
         Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+            keys (str|bytes|memoryview|Iterable): of key strs to be combined
+                in order to form key
             val (dataclass):  instance of dup val at key to delete
                               if val is None then remove all values at key
 
