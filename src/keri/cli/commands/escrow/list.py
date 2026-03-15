@@ -150,7 +150,7 @@ def escrows(tymth, tock=0.0, **opts):
 
             if (not escrow) or escrow == "missing-registry-escrow":
                 creds = list()
-                for (said,), dater in reger.mre.getItemIter():
+                for (said,), dater in reger.mre.getTopItemIter():
                     creder, *_ = reger.cloneCred(said)
                     creds.append(creder.sad)
 
@@ -158,7 +158,7 @@ def escrows(tymth, tock=0.0, **opts):
 
             if (not escrow) or escrow == "broken-chain-escrow":
                 creds = list()
-                for (said,), dater in reger.mce.getItemIter():
+                for (said,), dater in reger.mce.getTopItemIter():
                     creder, *_ = reger.cloneCred(said)
                     creds.append(creder.sad)
 
@@ -166,7 +166,7 @@ def escrows(tymth, tock=0.0, **opts):
 
             if (not escrow) or escrow == "missing-schema-escrow":
                 creds = list()
-                for (said,), dater in reger.mse.getItemIter():
+                for (said,), dater in reger.mse.getTopItemIter():
                     creder, *_ = reger.cloneCred(said)
                     creds.append(creder.sad)
 
@@ -174,7 +174,7 @@ def escrows(tymth, tock=0.0, **opts):
 
             if (not escrow) or escrow == "tel-partial-witness-escrow":
                 tpwes = list()
-                for (regk, snq), (prefixer, number, diger) in reger.tpwe.getItemIter():
+                for (regk, snq), (prefixer, number, diger) in reger.tpwe.getTopItemIter():
                     tpwes.append(dict(
                         registry=regk,
                         prefix=prefixer.qb64,

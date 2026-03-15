@@ -174,7 +174,7 @@ class DicterSuber(subing.Suber):
         """
         return self.db.remVal(db=self.sdb, key=self._tokey(keys))
 
-    def getItemIter(self, keys: Union[str, Iterable] = b""):
+    def getTopItemIter(self, keys: Union[str, Iterable] = b""):
         """ Return iterator over the all the items in subdb
 
         Parameters:
@@ -338,7 +338,7 @@ class Noter(dbing.LMDBer):
             start = start.isoformat()
 
         notes = []
-        it = self.notes.getItemIter(keys=())
+        it = self.notes.getTopItemIter(keys=())
 
         # Run off the items before start
         for _ in range(start):

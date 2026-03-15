@@ -1384,9 +1384,9 @@ class Baser(dbing.LMDBer):
         """
         Clear all escrows
         """
-        for (k, _) in self.ures.getItemIter():
+        for (k, _) in self.ures.getTopItemIter():
             self.ures.rem(keys=k)
-        for (k, _) in self.vres.getItemIter():
+        for (k, _) in self.vres.getTopItemIter():
             self.vres.rem(keys=k)
         for (pre, on, dig) in self.pses.getOnItemIterAll():
             self.pses.remOn(keys=pre, on=on, val=dig)
@@ -1396,9 +1396,9 @@ class Baser(dbing.LMDBer):
             self.pwes.remOn(keys=pre, on=sn, val=dig)
         for (pre, on, dig) in self.ooes.getOnItemIterAll():
             self.ooes.remOn(keys=pre, on=on, val=dig)
-        for (pre, said), edig in self.qnfs.getItemIter():
+        for (pre, said), edig in self.qnfs.getTopItemIter():
             self.qnfs.rem(keys=(pre, said))
-        for (pre, snh), rdigerWigerTuple in self.uwes.getItemIter():
+        for (pre, snh), rdigerWigerTuple in self.uwes.getTopItemIter():
             self.uwes.rem(keys=(pre, snh))
 
         for escrow in [self.qnfs, self.misfits, self.delegables, self.pdes,
@@ -1523,11 +1523,11 @@ class Baser(dbing.LMDBer):
                         cpydb.add(keys=keys, val=val)
 
                 # Copy imgs (blinded media for remote identifiers)
-                for keys, val in self.imgs.getItemIter():
+                for keys, val in self.imgs.getTopItemIter():
                     copy.imgs.pin(keys=keys, val=val)
 
                 # Copy iimgs (blinded media for local identifiers)
-                for keys, val in self.iimgs.getItemIter():
+                for keys, val in self.iimgs.getTopItemIter():
                     copy.iimgs.pin(keys=keys, val=val)
 
                 # clone .habs  habitat name prefix Komer subdb

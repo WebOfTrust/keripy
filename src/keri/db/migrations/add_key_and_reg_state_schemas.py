@@ -96,7 +96,7 @@ def migrate(db):
             # ksr = stateFromKever(kever)
             rgy.states.pin(sad['i'], val=rsr)
 
-        for (said,), _ in rgy.saved.getItemIter():
+        for (said,), _ in rgy.saved.getTopItemIter():
             snkey = dbing.snKey(said, 0)
             dig = rgy.tels.get(keys=snkey)
 

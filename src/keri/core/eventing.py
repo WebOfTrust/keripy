@@ -6246,7 +6246,7 @@ class Kevery:
                         If successful then remove from escrow table
         """
 
-        for (pre, snh), (rdiger, wiger) in self.db.uwes.getItemIter():
+        for (pre, snh), (rdiger, wiger) in self.db.uwes.getTopItemIter():
             try:
                 rdigerBytes = rdiger.encode('utf-8')
                 # check date if expired then remove escrow.
@@ -6351,7 +6351,7 @@ class Kevery:
                         If successful then remove from escrow table
         """
 
-        for (pre, sn), (rsaider, sprefixer, cigar) in self.db.ures.getItemIter():
+        for (pre, sn), (rsaider, sprefixer, cigar) in self.db.ures.getTopItemIter():
             sn = Seqner(qb64=sn).sn
             try:
                 cigar.verfer = Verfer(qb64b=sprefixer.qb64b)
@@ -6481,7 +6481,7 @@ class Kevery:
                         If successful then remove from escrow table
         """
 
-        for (pre, sn), dig in self.db.delegables.getItemIter():
+        for (pre, sn), dig in self.db.delegables.getTopItemIter():
             try:
                 edig = dig.encode("utf-8")
                 dgkey = dgKey(pre.encode("utf-8"), edig)
@@ -6591,7 +6591,7 @@ class Kevery:
         pre = b''
         sn = 0
         while True:  # break when done
-            for (pre, said), edig in self.db.qnfs.getItemIter(keys=key):
+            for (pre, said), edig in self.db.qnfs.getTopItemIter(keys=key):
                 try:
                     # check date if expired then remove escrow.
                     dgkey = dgKey(pre.encode("utf-8"), edig.encode("utf-8"))
@@ -6821,7 +6821,7 @@ class Kevery:
         ims = bytearray()
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
-            for ekey, equinlet in self.db.vres.getItemIter(keys=key):
+            for ekey, equinlet in self.db.vres.getTopItemIter(keys=key):
                 try:
                     pre, sn_hex = ekey      # ekey is a tuple (pre, sn)
                     sn = int(sn_hex, 16)
