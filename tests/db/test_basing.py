@@ -662,7 +662,7 @@ def test_baser():
         assert db.ures.rem(key) == True
         assert db.ures.get(key) == []
 
-        # Setup multi-key tests for getItemIter
+        # Setup multi-key tests for getTopItemIter
         aKey = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", coring.Seqner(sn=1).qb64)
         aVals = [(diger0, pre0, cigar0), (diger1, pre1, cigar1), (diger2, pre2, cigar2)]
         bKey = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", coring.Seqner(sn=2).qb64)
@@ -677,7 +677,7 @@ def test_baser():
         assert db.ures.put(keys=cKey, vals=cVals)
         assert db.ures.put(keys=dKey, vals=dVals)
 
-        # Test getItemIter with no key
+        # Test getTopItemIter with no key
         items = [(keys, val) for keys, val in db.ures.getTopItemIter()]
         assert items  # not empty
         ikey = items[0][0]
@@ -1049,7 +1049,7 @@ def test_baser():
         items = db.pses.getTopItemIter(keys=b'X')
         assert list(items) == []
 
-        # getItemIter retrieval of (key, val) pairs in lexicographic key order
+        # getTopItemIter retrieval of (key, val) pairs in lexicographic key order
         items = list(db.pses.getOnItemIterAll())
         assert items == [(('A',), 0, 'z'), (('A',), 0, 'm'), (('A',), 0, 'x'), (('A',), 0, 'a')]  # Insertion order preserved for vals
         assert db.pses.putOn(keys=[b'B', b'C'], vals=[b'1', b'2', b'3']) == True
@@ -1515,7 +1515,7 @@ def test_baser():
         items = db.ooes.getOnItemIterAll(keys=b'X')
         assert list(items) == []
 
-        # getItemIter retrieval of (key, val) pairs in lexicographic key order
+        # getTopItemIter retrieval of (key, val) pairs in lexicographic key order
         items = list(db.ooes.getOnItemIterAll())
         assert items == [(('A',), 0, 'z'), (('A',), 0, 'm'), (('A',), 0, 'x'), (('A',), 0, 'a')]  # Insertion order preserved for vals
         assert db.ooes.putOn(keys=[b'B', b'C'], vals=[b'1', b'2', b'3']) == True

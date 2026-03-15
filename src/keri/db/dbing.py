@@ -2728,7 +2728,6 @@ class LMDBer(filing.Filer):
             return count
 
 
-# used in IoDupSuber.getItemIter
     def getTopIoDupItemIter(self, db, top=b''):
         """
         Iterates over top branch of db given by key of IoDup items where each value

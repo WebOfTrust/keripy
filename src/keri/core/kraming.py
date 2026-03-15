@@ -145,7 +145,7 @@ class Kramer:
     def _fetchCacheType(self, msgType, route):
         """Fetch the most specific matching cache-type entry.
 
-        Uses Komer.getItemIter to scan the message-type branch of the ctyp
+        Uses Komer.getTopItemIter to scan the message-type branch of the ctyp
         database in a single LMDB cursor pass. The cursor positions at the
         first key >= msgType and iterates forward through all keys sharing
         the msgType prefix. Among matches, the most specific key (longest
