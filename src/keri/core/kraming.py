@@ -69,15 +69,42 @@ class Kramer:
         self._denials = self._compactDenials(self._fullDenials)
 
         self._ctypCf = kram.get('caches', {})
-        # Prepopulate ctyp cache with configured values
-        ctypCf = self._ctypCf
+        self._populateCtyp(self._ctypCf)
+
+    def _populateCtyp(self, ctypCf):
+        """Prepopulate ctyp cache with configured values.
+
+        Validates each cache-type tuple against KRAM spec constraints before pinning.
+        Raises KramConfigurationError if any constraint is violated.
+
+        Parameters:
+            ctypCf (dict): cache-type config key -> list of (d, sl, ll, xl, psl, pll, pxl)
+        """
         for key, val in ctypCf.items():
             try:
                 record = CacheTypeRecord(*map(int, val))
-                self.db.ctyp.pin(key, record)
             except Exception as e:
-                raise kering.KramConfigurationError(f"Invalid cache configuration for {key}, {val}: {e}")
+                raise kering.KramConfigurationError(
+                    f"Invalid cache configuration for {key}, {val}: {e}")
 
+            if record.d < 0:
+                raise kering.KramConfigurationError(
+                    f"Cache type {key}: d must be >= 0, got {record.d}")
+            if not (record.sl > 0 and record.sl <= record.ll <= record.xl):
+                raise kering.KramConfigurationError(
+                    f"Cache type {key}: require 0 < sl <= ll <= xl, "
+                    f"got sl={record.sl} ll={record.ll} xl={record.xl}")
+            if record.psl < record.sl:
+                raise kering.KramConfigurationError(
+                    f"Cache type {key}: psl must be >= sl, got psl={record.psl} sl={record.sl}")
+            if record.pll < record.ll:
+                raise kering.KramConfigurationError(
+                    f"Cache type {key}: pll must be >= ll, got pll={record.pll} ll={record.ll}")
+            if record.pxl < record.xl:
+                raise kering.KramConfigurationError(
+                    f"Cache type {key}: pxl must be >= xl, got pxl={record.pxl} xl={record.xl}")
+
+            self.db.ctyp.pin(key, record)
 
     @staticmethod
     def _compactDenials(fullDenials):

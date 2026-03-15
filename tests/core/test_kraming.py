@@ -159,6 +159,117 @@ def test_configuration():
                 Kramer(db, cf)
 
 
+def test_cache_type_constraints_valid():
+    """Kramer init succeeds when cache-type tuple satisfies spec constraints."""
+    validCf = {
+        "kram": {
+            "enabled": False,
+            "denials": [],
+            "caches": {
+                "~": [100, 2000, 7200000, 172800000, 2000, 7200000, 172800000],
+            },
+        }
+    }
+    with configing.openCF(name="kram", base="test") as cf:
+        cf.put(validCf)
+        with basing.openDB(name="test_config_constraints_valid", temp=True) as db:
+            Kramer(db, cf)
+            rec = db.ctyp.get("~")
+            assert rec is not None
+            assert rec.d == 100
+            assert rec.sl == 2000
+            assert rec.ll == 7200000
+            assert rec.xl == 172800000
+            assert rec.psl == 2000
+            assert rec.pll == 7200000
+            assert rec.pxl == 172800000
+
+
+def test_cache_type_constraint_d_negative():
+    """Kramer init raises KramConfigurationError when d < 0."""
+    cf = {
+        "kram": {
+            "enabled": False,
+            "denials": [],
+            "caches": {"~": [-1, 2000, 7200000, 172800000, 2000, 7200000, 172800000]},
+        }
+    }
+    with configing.openCF(name="kram", base="test") as cf_handle:
+        cf_handle.put(cf)
+        with basing.openDB(name="test_config_d_negative", temp=True) as db:
+            with pytest.raises(kering.KramConfigurationError) as exc_info:
+                Kramer(db, cf_handle)
+            assert "d must be >= 0" in str(exc_info.value)
+
+
+def test_cache_type_constraint_sl_ll_xl():
+    """Kramer init raises KramConfigurationError when 0 < sl <= ll <= xl is violated."""
+    cf = {
+        "kram": {
+            "enabled": False,
+            "denials": [],
+            "caches": {"~": [100, 8000000, 2000, 172800000, 2000, 7200000, 172800000]},
+        }
+    }
+    with configing.openCF(name="kram", base="test") as cf_handle:
+        cf_handle.put(cf)
+        with basing.openDB(name="test_config_sl_ll_xl", temp=True) as db:
+            with pytest.raises(kering.KramConfigurationError) as exc_info:
+                Kramer(db, cf_handle)
+            assert "require 0 < sl <= ll <= xl" in str(exc_info.value)
+
+
+def test_cache_type_constraint_psl_sl():
+    """Kramer init raises KramConfigurationError when psl < sl."""
+    cf = {
+        "kram": {
+            "enabled": False,
+            "denials": [],
+            "caches": {"~": [100, 2000, 7200000, 172800000, 1000, 7200000, 172800000]},
+        }
+    }
+    with configing.openCF(name="kram", base="test") as cf_handle:
+        cf_handle.put(cf)
+        with basing.openDB(name="test_config_psl_sl", temp=True) as db:
+            with pytest.raises(kering.KramConfigurationError) as exc_info:
+                Kramer(db, cf_handle)
+            assert "psl must be >= sl" in str(exc_info.value)
+
+
+def test_cache_type_constraint_pll_ll():
+    """Kramer init raises KramConfigurationError when pll < ll."""
+    cf = {
+        "kram": {
+            "enabled": False,
+            "denials": [],
+            "caches": {"~": [100, 2000, 7200000, 172800000, 2000, 5000000, 172800000]},
+        }
+    }
+    with configing.openCF(name="kram", base="test") as cf_handle:
+        cf_handle.put(cf)
+        with basing.openDB(name="test_config_pll_ll", temp=True) as db:
+            with pytest.raises(kering.KramConfigurationError) as exc_info:
+                Kramer(db, cf_handle)
+            assert "pll must be >= ll" in str(exc_info.value)
+
+
+def test_cache_type_constraint_pxl_xl():
+    """Kramer init raises KramConfigurationError when pxl < xl."""
+    cf = {
+        "kram": {
+            "enabled": False,
+            "denials": [],
+            "caches": {"~": [100, 2000, 7200000, 172800000, 2000, 7200000, 100000000]},
+        }
+    }
+    with configing.openCF(name="kram", base="test") as cf_handle:
+        cf_handle.put(cf)
+        with basing.openDB(name="test_config_pxl_xl", temp=True) as db:
+            with pytest.raises(kering.KramConfigurationError) as exc_info:
+                Kramer(db, cf_handle)
+            assert "pxl must be >= xl" in str(exc_info.value)
+
+
 _testSigner = core.Salter(raw=b'0123456789abcdef').signer(transferable=True)
 TEST_PRE = _testSigner.verfer.qb64
 
