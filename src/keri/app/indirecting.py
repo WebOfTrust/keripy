@@ -1096,7 +1096,7 @@ class ReceiptEnd(doing.DoDoer):
 
             self.psr.parseOne(bytes(rct))
 
-            rep.set_header('Content-Type', "application/json+cesr")
+            rep.set_header('Content-Type', httping.CESR_CONTENT_TYPE)
             rep.status = falcon.HTTP_200
             rep.data = rct
         else:
@@ -1147,7 +1147,7 @@ class ReceiptEnd(doing.DoDoer):
             for wiger in wigers:
                 rct.extend(wiger.qb64b)
 
-        rep.set_header('Content-Type', "application/json+cesr")
+        rep.set_header('Content-Type', httping.CESR_CONTENT_TYPE)
         rep.status = falcon.HTTP_200
         rep.data = rct
 
@@ -1211,7 +1211,7 @@ class QueryEnd:
                 vcid (string, optional): For 'tel' queries, credential said. required if `reg` is not provided.
 
             Response:
-                - 200 OK: Returns event data in "application/json+cesr" format.
+                - 200 OK: Returns event data in "application/cesr" format.
                 - 400 Bad Request: Returned if required query parameters are missing or if an invalid `typ` is specified.
 
             Example:
@@ -1251,7 +1251,7 @@ class QueryEnd:
                     evnts.extend(msg)
 
 
-            rep.set_header('Content-Type', "application/json+cesr")
+            rep.set_header('Content-Type', httping.CESR_CONTENT_TYPE)
             rep.status = falcon.HTTP_200
             rep.data = bytes(evnts)
 
@@ -1273,7 +1273,7 @@ class QueryEnd:
                 for msg in cloner:
                     evnts.extend(msg)
 
-            rep.set_header('Content-Type', "application/json+cesr")
+            rep.set_header('Content-Type', httping.CESR_CONTENT_TYPE)
             rep.status = falcon.HTTP_200
             rep.data = bytes(evnts)
 
