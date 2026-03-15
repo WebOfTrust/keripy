@@ -11,7 +11,7 @@ def _check_if_needed(db):
     states = koming.Komer(db=db,
                           schema=dict,
                           subkey='stts.')
-    first = next(states.getItemIter(), None)
+    first = next(states.getTopItemIter(), None)
     if first is None:
         return False
     keys, sad = first
@@ -51,7 +51,7 @@ def migrate(db):
                                schema=KeyStateRecord,
                                subkey='stts.')
 
-        for keys, sad in states.getItemIter():
+        for keys, sad in states.getTopItemIter():
             ksr = KeyStateRecord(
                 vn=Version,  # version number as list [major, minor]
                 i=sad['i'],  # qb64 prefix
@@ -80,7 +80,7 @@ def migrate(db):
                                schema=dict,
                                subkey='stts.')
 
-        for _, sad in rstates.getItemIter():
+        for _, sad in rstates.getTopItemIter():
             rsr = viring.RegStateRecord(
                 vn=list(Version),  # version number as list [major, minor]
                 i=sad['i'],  # qb64 registry SAID

@@ -1314,7 +1314,7 @@ class Baser(dbing.LMDBer):
             raise kering.DatabaseError(f"Database migrations must be run. DB version {self.version}; current {keri.__version__}")
 
         removes = []
-        for keys, data in self.habs.getItemIter():
+        for keys, data in self.habs.getTopItemIter():
             if (ksr := self.states.get(keys=data.hid)) is not None:
                 try:
                     from ..core.eventing import Kever
@@ -1532,7 +1532,7 @@ class Baser(dbing.LMDBer):
 
                 # clone .habs  habitat name prefix Komer subdb
                 # copy.habs = koming.Komer(db=copy, schema=HabitatRecord, subkey='habs.')  # copy
-                for keys, val in self.habs.getItemIter():
+                for keys, val in self.habs.getTopItemIter():
                     if val.hid in copy.kevers:  # only copy habs that verified
                         copy.habs.put(keys=keys, val=val)
                         ns = "" if val.domain is None else val.domain
@@ -1542,7 +1542,7 @@ class Baser(dbing.LMDBer):
                             copy.groups.add(val.hid)
 
                 # clone .ends and .locs databases
-                for (cid, role, eid), val in self.ends.getItemIter():
+                for (cid, role, eid), val in self.ends.getTopItemIter():
                     exists = False  # only copy if entries in both .ends and .locs
                     for scheme in ("https", "http", "tcp"):  # all supported schemes
                         lval = self.locs.get(keys=(eid, scheme))

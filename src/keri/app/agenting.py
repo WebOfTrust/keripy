@@ -968,7 +968,7 @@ def mailbox(hab, cid):
         hab (Hab): Hab to use to look up witness URLs
         cid (str): qb64 identifier prefix of controller to find mailbox for
     """
-    for (_, erole, eid), end in hab.db.ends.getItemIter(keys=(cid, Roles.mailbox)):
+    for (_, erole, eid), end in hab.db.ends.getTopItemIter(keys=(cid, Roles.mailbox)):
         if end.allowed:
             return eid
 

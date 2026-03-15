@@ -124,7 +124,7 @@ class InitDoer(doing.DoDoer):
             while oc > hby.db.roobi.cnt():
                 yield 0.25
 
-            for (oobi,), obr in hby.db.roobi.getItemIter():
+            for (oobi,), obr in hby.db.roobi.getTopItemIter():
                 if obr.state in (oobiing.Result.resolved,):
                     print(oobi, "succeeded")
                 if obr in (oobiing.Result.failed,):
@@ -132,7 +132,7 @@ class InitDoer(doing.DoDoer):
 
             self.remove(obi.doers)
 
-        wc = [oobi for (oobi,), _ in hby.db.woobi.getItemIter()]
+        wc = [oobi for (oobi,), _ in hby.db.woobi.getTopItemIter()]
         if len(wc) > 0:
             print(f"\nAuthenticating Well-Knowns...")
             authn = oobiing.Authenticator(hby=hby)

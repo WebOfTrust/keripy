@@ -29,7 +29,7 @@ def _check_if_needed(db):
     habs = koming.Komer(db=db,
                         subkey='habs.',
                         schema=dict, )
-    first = next(habs.getItemIter(), None)
+    first = next(habs.getTopItemIter(), None)
     if first is None:
         return False
     name, habord = first
@@ -66,7 +66,7 @@ def migrate(db):
 
     habords = dict()
     # Update Hab records from .habs with name
-    for name, habord in habs.getItemIter():
+    for name, habord in habs.getTopItemIter():
         name = ".".join(name)  # detupleize the database key name
         nhabord = HabitatRecord(**habord)
         nhabord.name = name
@@ -75,7 +75,7 @@ def migrate(db):
     habs.trim()
 
     # Update Hab records from .nmsp with name and domain (ns)
-    for keys, habord in nmsp.getItemIter():
+    for keys, habord in nmsp.getTopItemIter():
         ns = keys[0]
         name = ".".join(keys[1:])  # detupleize the database key name
         nhabord = HabitatRecord(**asdict(habord))

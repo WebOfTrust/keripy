@@ -4893,7 +4893,7 @@ class Kevery:
         # check source and ensure we should accept it
         baks = ksr.b
         wats = set()
-        for _, habr in self.db.habs.getItemIter():
+        for _, habr in self.db.habs.getTopItemIter():
             wats |= set(habr.watchers)
 
         # not in promiscuous mode

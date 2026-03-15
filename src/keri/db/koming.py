@@ -75,10 +75,8 @@ class KomerBase:
         self.sep = sep if sep is not None else self.Sep
 
 
-    def _tokey(self, keys: str|bytes|memoryview|Iterable[str|bytes|memoryview],
-                topive: bool=False):
-        """
-        Converts keys to key bytes with proper separators and returns key bytes.
+    def _tokey(self, keys: str|bytes|memoryview|Iterable, topive: bool=False):
+        """Converts keys Iterable to key bytes with proper separators and returns key bytes.
         If keys is already str or bytes or memoryview then returns key bytes.
         Else If keys is iterable (non-str) of strs or bytes then joins with
         separator converts to key bytes and returns. When keys is iterable and
@@ -113,17 +111,15 @@ class KomerBase:
                               for key in keys).encode("utf-8"))
 
 
-
-    def _tokeys(self, key: Union[str, bytes, memoryview]):
-        """
-        Converts key bytes to keys tuple of strs by decoding and then splitting
-        at separator.
+    def _tokeys(self, key: str|bytes|memoryview):
+        """Converts key str to keys tuple of strs by decoding and then splitting
+        at separator .sep.
 
         Returns:
-           keys (iterable): of str
+           keys (Iterable): keyspace elements
 
         Parameters:
-           key (Union[str, bytes]): str or bytes.
+           key (str|bytes|memoryview): keyspace index
 
         """
         if isinstance(key, memoryview):  # memoryview of bytes
@@ -131,13 +127,17 @@ class KomerBase:
         return tuple(key.decode("utf-8").split(self.sep))
 
 
-    def getTopItemIter(self, keys: Union[str, Iterable]=b""):
-        """Iterator over items in .db subclasses that do special hidden transforms
-        on either the keyspace or valuespace should override this method to hide
-        hidden parts from the returned items. For example, adding either
-        a hidden key space suffix or hidden val space proem to ensure insertion
-        order. Use getFullItemIter instead to return full items with hidden parts
-        shown for debugging or testing.
+    def getTopItemIter(self, keys: Union[str, Iterable]=b"", *, topive=False):
+        """Iterator over items in top branch of db given by keys.
+        Subclasses that do special hidden transforms on either the keyspace or
+        valuespace should override this method to hide hidden parts from the
+        returned items.
+
+        For example, adding either a hidden key space suffix or hidden val
+        space proem to ensure insertion order.
+
+        To return full items with hidden parts shown for debugging or testing,
+        use getFullItemIter instead.
 
         Returns:
             items (Iterator): of (key, val) tuples  over the all the items in
@@ -150,17 +150,25 @@ class KomerBase:
                 a full keys tuple in  in order to get all the items from
                 multiple branches of the key space. If keys is empty then gets
                 all items in database.
+            topive (bool): True means treat as partial key tuple from top branch of
+                key space given by partial keys. Resultant key ends in .sep
+                character.
+                False means treat as full branch in key space. Resultant key
+                does not end in .sep character.
+                When last item in keys is empty str then will treat as
+                partial ending in sep regardless of top value
 
         """
-        for key, val in self.db.getTopItemIter(db=self.sdb, top=self._tokey(keys)):
+        for key, val in self.db.getTopItemIter(db=self.sdb,
+                                        top=self._tokey(keys, topive=topive)):
             yield (self._tokeys(key), self.deserializer(val))
 
     getItemIter = getTopItemIter  # alias for refactoring backwards compat
 
 
-    def getFullItemIter(self, keys: Union[str, Iterable]=b""):
-        """Iterator over items in .db that returns full items with subclass
-        specific special hidden parts shown for debugging or testing.
+    def getFullItemIter(self, keys: Union[str, Iterable]=b"",  *, topive=False):
+        """Iterator over items in top branch of db that returns full items
+        with subclass specific special hidden parts shown for debugging or testing.
 
         Returns:
             items (Iterator): of (key, val) tuples  over the all the items in
@@ -173,9 +181,17 @@ class KomerBase:
                 a full keys tuple in  in order to get all the items from
                 multiple branches of the key space. If keys is empty then gets
                 all items in database.
+            topive (bool): True means treat as partial key tuple from top branch of
+                key space given by partial keys. Resultant key ends in .sep
+                character.
+                False means treat as full branch in key space. Resultant key
+                does not end in .sep character.
+                When last item in keys is empty str then will treat as
+                partial ending in sep regardless of top value
 
         """
-        for key, val in self.db.getTopItemIter(db=self.sdb, top=self._tokey(keys)):
+        for key, val in self.db.getTopItemIter(db=self.sdb,
+                                    top=self._tokey(keys, topive=topive)):
             yield (self._tokeys(key), self.deserializer(val))
 
 
