@@ -2617,6 +2617,93 @@ def test_clear_escrows():
         assert db.epsd.cntAll() == 0
         assert db.dpub.cntAll() == 0
 
+
+def test_trim_all_escrows_during_migration():
+    """Regression test for issue #863: old qnfs key format crashes migration.
+
+    When upgrading from keripy <1.2.0, qnfs entries lack the insertion-order
+    suffix (e.g. 'PRE.SAID' instead of 'PRE.SAID.00000000'). The high-level
+    iterators in clearEscrows() call unsuffix() which does int(SAID, 16) and
+    crashes with ValueError.
+
+    _trimAllEscrows() uses low-level .trim() which bypasses key parsing,
+    safely clearing all escrow databases regardless of key format.
+    """
+    with openDB() as db:
+        # Populate escrow databases with test data
+        pre = b'k'
+        saidb = b'saidb'
+        vals = [b"z", b"m", b"x"]
+
+        db.qnfs.add(keys=(pre, saidb), val=b"z")
+        assert db.qnfs.cnt(keys=(pre, saidb)) == 1
+
+        db.pses.putOn(keys=pre, vals=vals)
+        assert db.pses.cntOn(keys=pre) == 3
+
+        ooes_key = (snKey(pre, 0),)
+        db.ooes.putOn(keys=ooes_key, vals=vals)
+        assert db.ooes.cntAll() > 0
+
+        db.misfits.add(keys=(pre, b'snh'), val=saidb)
+        assert db.misfits.cnt(keys=(pre, b'snh')) == 1
+
+        # _trimAllEscrows clears everything via .trim()
+        db._trimAllEscrows()
+
+        assert db.qnfs.cntAll() == 0
+        assert db.pses.cntAll() == 0
+        assert db.ooes.cntAll() == 0
+        assert db.misfits.cntAll() == 0
+        assert db.ures.cntAll() == 0
+        assert db.vres.cntAll() == 0
+        assert db.pwes.cntAll() == 0
+        assert db.uwes.cntAll() == 0
+        assert db.delegables.cntAll() == 0
+        assert db.pdes.cntAll() == 0
+        assert db.udes.cntAll() == 0
+        assert db.rpes.cntAll() == 0
+        assert db.ldes.cntAll() == 0
+        assert db.epsd.cntAll() == 0
+        assert db.eoobi.cnt() == 0
+        assert db.dpub.cntAll() == 0
+        assert db.gpwe.cntAll() == 0
+        assert db.gdee.cntAll() == 0
+        assert db.dpwe.cntAll() == 0
+        assert db.gpse.cntAll() == 0
+        assert db.epse.cntAll() == 0
+        assert db.dune.cntAll() == 0
+
+
+def test_trim_all_escrows_old_key_format():
+    """Regression test for issue #863: simulate old qnfs key format.
+
+    Injects a raw LMDB entry with the old key format (no insertion-order
+    suffix) directly into the qnfs sub-database, then verifies that
+    _trimAllEscrows() clears it without crashing.
+    """
+    with openDB() as db:
+        # Simulate an old-format qnfs key by writing directly to LMDB.
+        # Old format: 'PRE.SAID' (no '.00000000' suffix)
+        # New format: 'PRE.SAID.00000000'
+        old_key = b'EBMbr7Z-pd4KJwzxuptSmCYqxrBnE2xKVO-MnjYkeUrt.EBMbr7Z-pd4KJwzxuptSmCYqxrBnE2xKVO-MnjYkeUrt'
+        old_val = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+        with db.env.begin(db=db.qnfs.sdb, write=True) as txn:
+            txn.put(old_key, old_val)
+
+        # Verify the entry exists
+        with db.env.begin(db=db.qnfs.sdb) as txn:
+            assert txn.get(old_key) == old_val
+
+        # _trimAllEscrows must not crash on old key format
+        db._trimAllEscrows()
+
+        # Verify it was cleared
+        with db.env.begin(db=db.qnfs.sdb) as txn:
+            assert txn.get(old_key) is None
+        assert db.qnfs.cntAll() == 0
+
+
 def test_db_keyspace_end_to_end_migration():
     """
     End-to-end test for DB keyspace migration from Seqner.qb64 to Number with Huge code.
@@ -2696,3 +2783,5 @@ if __name__ == "__main__":
     test_statedict()
     test_baserdoer()
     test_db_keyspace_end_to_end_migration()
+    test_trim_all_escrows_during_migration()
+    test_trim_all_escrows_old_key_format()
