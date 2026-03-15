@@ -351,8 +351,6 @@ class SuberBase():
                                                top=self._tokey(keys, topive=topive)):
             yield (self._tokeys(key), self._des(val))
 
-    #getItemIter = getTopItemIter  # alias for backwards compat while refactoring
-
 
     def getFullItemIter(self, keys: str|bytes|memoryview|Iterable="",
                        *, topive=False):
@@ -389,7 +387,6 @@ class SuberBase():
         for key, val in self.db.getTopItemIter(db=self.sdb,
                                                top=self._tokey(keys, topive=topive)):
             yield (self._tokeys(key), self._des(val))
-
 
 
 class Suber(SuberBase):
@@ -1424,8 +1421,7 @@ class IoSetSuber(SuberBase):
                                              sep=self.sep)]
 
 
-    # Todo XXXX need to refactor to use getItemIter for here not alias to getTopItemIter
-    def XgetItemIter(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
+    def getItemIter(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
         """Iterates over set items at effecive key made from keys and hidden
         ordinal suffix ion starting at ion >= ion.
         When keys is empty or missing then returns empty iterator
@@ -1604,8 +1600,6 @@ class IoSetSuber(SuberBase):
         for key, val in self.db.getTopIoSetItemIter(db=self.sdb,
                 top=self._tokey(keys, topive=topive), sep=self.sep.encode()):
             yield (self._tokeys(key), self._des(val))
-
-    #getItemIter = getTopItemIter  # migration alias for backwards compat
 
 
     def getLastIter(self, keys: str|bytes|memoryview|Iterable = ""):
@@ -1880,8 +1874,6 @@ class SignerSuber(CesrSuber):
             yield (ikeys, self.klas(qb64b=bytes(val),
                                    transferable=verfer.transferable))
 
-    #getItemIter = getTopItemIter  # alias for backwards compat while refactoring
-
 
 class CryptSignerSuber(SignerSuber):
     """
@@ -2018,8 +2010,6 @@ class CryptSignerSuber(SignerSuber):
             else:
                 yield (ikeys, self.klas(qb64b=bytes(val),
                                             transferable=verfer.transferable))
-
-    #getItemIter = getTopItemIter  # alias for backwards compat while refactoring
 
 
 class SerderSuberBase(SuberBase):
@@ -2669,9 +2659,6 @@ class IoDupSuber(DupSuber):
         for key, val in self.db.getTopIoDupItemIter(db=self.sdb,
                                          top=self._tokey(keys, topive=topive)):
             yield (self._tokeys(key), self._des(val))
-
-
-    #getItemIter = getTopItemIter  # alias for backwards compat while refactoring
 
 
 class B64IoDupSuber(B64SuberBase, IoDupSuber):

@@ -1773,6 +1773,12 @@ def test_ioset_suber():
         # keys0
         # ion default 0
         assert [val for val in iosuber.getIter(keys=keys0)] == vals0
+        assert [(key, val) for key, val in iosuber.getItemIter(keys=keys0)] == \
+        [
+            (('test_key', '0001'), 'Hello sailer!'),
+            (('test_key', '0001'), 'Not my type.'),
+            (('test_key', '0001'), 'A real charmer!')
+        ]
         assert iosuber.get(keys=keys0) == vals0
         assert iosuber.cnt(keys=keys0) == 3
         assert iosuber.getLastItem(keys=keys0) == (keys0, sam)
@@ -1780,11 +1786,22 @@ def test_ioset_suber():
 
         # ion = 0
         assert [val for val in iosuber.getIter(keys=keys0, ion=0)] == [sue, sal, sam]
+        assert [(key, val) for key, val in iosuber.getItemIter(keys=keys0, ion=0)] == \
+        [
+            (('test_key', '0001'), 'Hello sailer!'),
+            (('test_key', '0001'), 'Not my type.'),
+            (('test_key', '0001'), 'A real charmer!')
+        ]
         assert iosuber.get(keys=keys0, ion=0) == [sue, sal, sam]
         assert iosuber.cnt(keys=keys0, ion=0) == 3
 
         # ion = 1
         assert [val for val in iosuber.getIter(keys=keys0, ion=1)] == [sal, sam]
+        assert [(key, val) for key, val in iosuber.getItemIter(keys=keys0, ion=1)] == \
+        [
+            (('test_key', '0001'), 'Not my type.'),
+            (('test_key', '0001'), 'A real charmer!')
+        ]
         assert iosuber.get(keys=keys0, ion=1) == [sal, sam]
         assert iosuber.cnt(keys=keys0, ion=1) == 2
 
@@ -1795,6 +1812,7 @@ def test_ioset_suber():
 
         # ion = 3  past end of keys0 set
         assert [val for val in iosuber.getIter(keys=keys0, ion=3)] == []
+        assert [(key, val) for key, val in iosuber.getItemIter(keys=keys0, ion=3)] == []
         assert iosuber.get(keys=keys0, ion=3) == []
         assert iosuber.cnt(keys=keys0, ion=3) == 0
 
