@@ -351,7 +351,7 @@ class SuberBase():
                                                top=self._tokey(keys, topive=topive)):
             yield (self._tokeys(key), self._des(val))
 
-    getItemIter = getTopItemIter  # alias for backwards compat while refactoring
+    #getItemIter = getTopItemIter  # alias for backwards compat while refactoring
 
 
     def getFullItemIter(self, keys: str|bytes|memoryview|Iterable="",
@@ -1605,7 +1605,7 @@ class IoSetSuber(SuberBase):
                 top=self._tokey(keys, topive=topive), sep=self.sep.encode()):
             yield (self._tokeys(key), self._des(val))
 
-    getItemIter = getTopItemIter  # migration alias for backwards compat
+    #getItemIter = getTopItemIter  # migration alias for backwards compat
 
 
     def getLastIter(self, keys: str|bytes|memoryview|Iterable = ""):
@@ -1880,7 +1880,7 @@ class SignerSuber(CesrSuber):
             yield (ikeys, self.klas(qb64b=bytes(val),
                                    transferable=verfer.transferable))
 
-    getItemIter = getTopItemIter  # alias for backwards compat while refactoring
+    #getItemIter = getTopItemIter  # alias for backwards compat while refactoring
 
 
 class CryptSignerSuber(SignerSuber):
@@ -2019,7 +2019,7 @@ class CryptSignerSuber(SignerSuber):
                 yield (ikeys, self.klas(qb64b=bytes(val),
                                             transferable=verfer.transferable))
 
-    getItemIter = getTopItemIter  # alias for backwards compat while refactoring
+    #getItemIter = getTopItemIter  # alias for backwards compat while refactoring
 
 
 class SerderSuberBase(SuberBase):
@@ -2671,7 +2671,7 @@ class IoDupSuber(DupSuber):
             yield (self._tokeys(key), self._des(val))
 
 
-    getItemIter = getTopItemIter  # alias for backwards compat while refactoring
+    #getItemIter = getTopItemIter  # alias for backwards compat while refactoring
 
 
 class B64IoDupSuber(B64SuberBase, IoDupSuber):
