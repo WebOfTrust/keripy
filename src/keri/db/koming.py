@@ -274,8 +274,6 @@ class KomerBase:
                                         top=self._tokey(keys, topive=topive)):
             yield (self._tokeys(key), self._des(val))
 
-    #getItemIter = getTopItemIter  # alias for refactoring backwards compat
-
 
     def getFullItemIter(self, keys: str|bytes|memoryview|Iterable=b"",  *, topive=False):
         """Iterator over items in top branch of db that returns full items
@@ -660,9 +658,6 @@ class IoSetKomer(KomerBase):
                                             sep=self.sep.encode()):
             yield (self._tokeys(iokey), self._des(val))
 
-    #getItemIter = getTopItemIter  # alias refactoring backards compat
-
-
 
 class DupKomer(KomerBase):
     """Duplicate Keyspace Object Mapper factory class that supports multiple entries
@@ -686,7 +681,6 @@ class DupKomer(KomerBase):
         """
         super(DupKomer, self).__init__(db=db, subkey=subkey, klas=klas,
                                        kind=kind, dupsort=True, **kwa)
-
 
 
     def put(self, keys: str|bytes|memoryview|Iterable, vals: list):
