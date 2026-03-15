@@ -28,7 +28,7 @@ class HabitatRecordV0_6_8:  # baser.habs
 def _check_if_needed(db):
     habs = koming.Komer(db=db,
                         subkey='habs.',
-                        schema=dict, )
+                        klas=dict, )
     first = next(habs.getTopItemIter(), None)
     if first is None:
         return False
@@ -57,12 +57,12 @@ def migrate(db):
 
     habs = koming.Komer(db=db,
                         subkey='habs.',
-                        schema=dict, )
+                        klas=dict, )
 
     # habitat application state keyed by habitat namespace + b'\x00' + name, includes prefix
     nmsp = koming.Komer(db=db,
                         subkey='nmsp.',
-                        schema=HabitatRecordV0_6_8, )
+                        klas=HabitatRecordV0_6_8, )
 
     habords = dict()
     # Update Hab records from .habs with name

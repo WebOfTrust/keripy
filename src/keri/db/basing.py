@@ -942,7 +942,7 @@ class Baser(dbing.LMDBer):
 
         # event source local (protected) or non-local (remote not protected)
         self.esrs = koming.Komer(db=self,
-                                   schema=EventSourceRecord,
+                                   klas=EventSourceRecord,
                                    subkey='esrs.')
 
         # misfit escrows whose processing may change the .esrs event source record
@@ -954,7 +954,7 @@ class Baser(dbing.LMDBer):
         # Kever state made of KeyStateRecord key states
         # TODO: clean
         self.states = koming.Komer(db=self,
-                                   schema=KeyStateRecord,
+                                   klas=KeyStateRecord,
                                    subkey='stts.')
 
         self.wits = subing.CesrIoSetSuber(db=self, subkey="wits.", klas=coring.Prefixer)
@@ -962,7 +962,7 @@ class Baser(dbing.LMDBer):
         # habitat application state keyed by habitat name, includes prefix
         self.habs = koming.Komer(db=self,
                                  subkey='habs.',
-                                 schema=HabitatRecord, )
+                                 klas=HabitatRecord, )
         # habitat name database mapping (domain,name) as key to Prefixer
         self.names = subing.Suber(db=self, subkey='names.', sep="^")
 
@@ -1005,24 +1005,24 @@ class Baser(dbing.LMDBer):
         # service endpoint identifier (eid) auths keyed by controller cid.role.eid
         # data extracted from reply /end/role/add or /end/role/cut
         self.ends = koming.Komer(db=self, subkey='ends.',
-                                 schema=EndpointRecord, )
+                                 klas=EndpointRecord, )
 
         # service endpoint locations keyed by eid.scheme  (endpoint identifier)
         # data extracted from reply loc
         self.locs = koming.Komer(db=self,
                                  subkey='locs.',
-                                 schema=LocationRecord, )
+                                 klas=LocationRecord, )
         # observed oids by watcher by cid.aid.oid  (endpoint identifier)
         # data extracted from reply loc
         self.obvs = koming.Komer(db=self,
                                  subkey='obvs.',
-                                 schema=ObservedRecord, )
+                                 klas=ObservedRecord, )
 
         # index of last retrieved message from witness mailbox
         # TODO: clean
         self.tops = koming.Komer(db=self,
                                  subkey='witm.',
-                                 schema=TopicsRecord, )
+                                 klas=TopicsRecord, )
 
         # group partial signature escrow
         self.gpse = subing.CatCesrIoSetSuber(db=self, subkey='gpse.',
@@ -1081,7 +1081,7 @@ class Baser(dbing.LMDBer):
 
         # authorzied well known OOBIs
         # TODO: clean
-        self.wkas = koming.IoSetKomer(db=self, subkey='wkas.', schema=WellKnownAuthN)
+        self.wkas = koming.IoSetKomer(db=self, subkey='wkas.', klas=WellKnownAuthN)
 
         # KSN support datetime stamps and signatures indexed and not-indexed
         # all ksn  kdts (key state datetime serializations) maps said to date-time
@@ -1093,7 +1093,7 @@ class Baser(dbing.LMDBer):
         # use  .kdts, .ksgs, and .kcgs for datetimes and signatures
         # TODO: clean
         self.ksns = koming.Komer(db=self,
-                                schema=KeyStateRecord,
+                                klas=KeyStateRecord,
                                 subkey='ksns.')
 
         # key state SAID database for successfully saved key state notices
@@ -1110,54 +1110,54 @@ class Baser(dbing.LMDBer):
         # TODO: clean
         self.oobis = koming.Komer(db=self,
                                   subkey='oobis.',
-                                  schema=OobiRecord,
+                                  klas=OobiRecord,
                                   sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
 
         # escrow OOBIs that failed to load, retriable, keyed by oobi URL
         self.eoobi = koming.Komer(db=self,
                                   subkey='eoobi.',
-                                  schema=OobiRecord,
+                                  klas=OobiRecord,
                                   sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
 
         # OOBIs with outstand client requests.
         self.coobi = koming.Komer(db=self,
                                   subkey='coobi.',
-                                  schema=OobiRecord,
+                                  klas=OobiRecord,
                                   sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
 
         # Resolved OOBIs (those that have been processed successfully for this database.
         # TODO: clean
         self.roobi = koming.Komer(db=self,
                                   subkey='roobi.',
-                                  schema=OobiRecord,
+                                  klas=OobiRecord,
                                   sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
 
         # Well known OOBIs that are to be used for mfa against a resolved OOBI.
         # TODO: clean
         self.woobi = koming.Komer(db=self,
                                   subkey='woobi.',
-                                  schema=OobiRecord,
+                                  klas=OobiRecord,
                                   sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
 
         # Well known OOBIs that are to be used for mfa against a resolved OOBI.
         # TODO: clean
         self.moobi = koming.Komer(db=self,
                                   subkey='moobi.',
-                                  schema=OobiRecord,
+                                  klas=OobiRecord,
                                   sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
 
         # Multifactor well known OOBI auth records to process.  Keys by controller URL
         # TODO: clean
         self.mfa = koming.Komer(db=self,
                                 subkey='mfa.',
-                                schema=OobiRecord,
+                                klas=OobiRecord,
                                 sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
 
         # Resolved multifactor well known OOBI auth records.  Keys by controller URL
         # TODO: clean
         self.rmfa = koming.Komer(db=self,
                                  subkey='rmfa.',
-                                 schema=OobiRecord,
+                                 klas=OobiRecord,
                                  sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
 
         # JSON schema SADs keys by the SAID
@@ -1233,15 +1233,15 @@ class Baser(dbing.LMDBer):
 
         # KRAM cache type — key: expression string, value: drift and lag params
         self.ctyp = koming.Komer(db=self, subkey='ctyp.',
-                                 schema=CacheTypeRecord)
+                                 klas=CacheTypeRecord)
 
         # KRAM message cache — key: (AID, MID), value: msg datetime, drift, lags
         self.msgc = koming.Komer(db=self, subkey='msgc.',
-                                 schema=MsgCacheRecord)
+                                 klas=MsgCacheRecord)
 
         # KRAM transactioned message cache — key: (AID, XID, MID), value: datetimes, drift, lags
         self.tmsc = koming.Komer(db=self, subkey='tmsc.',
-                                 schema=TxnMsgCacheRecord)
+                                 klas=TxnMsgCacheRecord)
 
         # KRAM partially signed multi-key message key (AID.MID) mapped to associated message (SerderKERI)
         self.pmkm = subing.SerderSuber(db=self, subkey='pmkm.')

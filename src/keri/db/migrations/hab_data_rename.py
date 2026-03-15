@@ -53,7 +53,7 @@ def _check_if_needed(db):
     Returns:
         bool: True if the migration is needed, False otherwise
     """
-    habs = koming.Komer(db=db, subkey='habs.', schema=dict, )
+    habs = koming.Komer(db=db, subkey='habs.', klas=dict, )
     first = next(habs.getTopItemIter(), None)
     if first is None:
         return False
@@ -81,7 +81,7 @@ def migrate(db):
 
     habs = koming.Komer(db=db,
                         subkey='habs.',
-                        schema=HabitatRecordV0_6_7, )
+                        klas=HabitatRecordV0_6_7, )
 
     habords = dict()
     # Update Hab records from .habs with name
@@ -103,7 +103,7 @@ def migrate(db):
     # Add in the renamed records
     habs = koming.Komer(db=db,
                         subkey='habs.',
-                        schema=HabitatRecordV0_6_8, )
+                        klas=HabitatRecordV0_6_8, )
 
     for name, habord in habords.items():
         name, = name

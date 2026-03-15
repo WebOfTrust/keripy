@@ -283,13 +283,13 @@ class Keeper(dbing.LMDBer):
                                      klas=coring.Prefixer)
         self.prms = koming.Komer(db=self,
                                  subkey='prms.',
-                                 schema=PrePrm,)  # New Prefix Parameters
+                                 klas=PrePrm,)  # New Prefix Parameters
         self.sits = koming.Komer(db=self,
                                  subkey='sits.',
-                                 schema=PreSit,)  # Prefix Situation
+                                 klas=PreSit,)  # Prefix Situation
         self.pubs = koming.Komer(db=self,
                                  subkey='pubs.',
-                                 schema=PubSet,)  # public key set at pre.ridx
+                                 klas=PubSet,)  # public key set at pre.ridx
         return self.opened
 
 

@@ -44,7 +44,7 @@ class KomerBase:
 
     def __init__(self, db: dbing.LMDBer, *,
                  subkey: str = 'docs.',
-                 schema: type[dataclass],  # class not instance
+                 klas: type[dataclass],  # class not instance
                  kind: str|None = None,
                  dupsort: bool = False,
                  sep: str = None,
@@ -52,7 +52,7 @@ class KomerBase:
         """
         Parameters:
             db (dbing.LMDBer): base db
-            schema (type[dataclass]):  reference to Class definition for dataclass sub class
+            klas (type[dataclass]):  reference to Class definition for dataclass sub class
             subkey (str):  LMDB sub database key
             kind (str): serialization/deserialization type
             dupsort (bool): True means enable duplicates at each key
@@ -67,7 +67,7 @@ class KomerBase:
             kind = Kinds.json
         self.db = db
         self.sdb = self.db.env.open_db(key=subkey.encode("utf-8"), dupsort=dupsort)
-        self.schema = schema
+        self.klas = klas
         self.sep = sep if sep is not None else self.Sep
         self.kind = kind
         self._ser = self._serializer(kind)
@@ -158,36 +158,36 @@ class KomerBase:
 
     def __deserializeJSON(self, val):
         if val is not None:
-            val = helping.datify(self.schema, json.loads(bytes(val).decode("utf-8")))
-            if not isinstance(val, self.schema):
+            val = helping.datify(self.klas, json.loads(bytes(val).decode("utf-8")))
+            if not isinstance(val, self.klas):
                 raise ValueError("Invalid schema type={} of value={}, expected {}."
-                                 "".format(type(val), val, self.schema))
+                                 "".format(type(val), val, self.klas))
         return val
 
 
     def __deserializeMGPK(self, val):
         if val is not None:
-            val = helping.datify(self.schema, msgpack.loads(bytes(val)))
-            if not isinstance(val, self.schema):
+            val = helping.datify(self.klas, msgpack.loads(bytes(val)))
+            if not isinstance(val, self.klas):
                 raise ValueError("Invalid schema type={} of value={}, expected {}."
-                                 "".format(type(val), val, self.schema))
+                                 "".format(type(val), val, self.klas))
         return val
 
 
     def __deserializeCBOR(self, val):
         if val is not None:
-            val = helping.datify(self.schema, cbor2.loads(bytes(val)))
-            if not isinstance(val, self.schema):
+            val = helping.datify(self.klas, cbor2.loads(bytes(val)))
+            if not isinstance(val, self.klas):
                 raise ValueError("Invalid schema type={} of value={}, expected {}."
-                                 "".format(type(val), val, self.schema))
+                                 "".format(type(val), val, self.klas))
         return val
 
 
     def __serializeJSON(self, val):
         if val is not None:
-            if not isinstance(val, self.schema):
+            if not isinstance(val, self.klas):
                 raise ValueError("Invalid schema type={} of value={}, expected {}."
-                                 "".format(type(val), val, self.schema))
+                                 "".format(type(val), val, self.klas))
             val = json.dumps(helping.dictify(val),
                           separators=(",", ":"),
                           ensure_ascii=False).encode("utf-8")
@@ -196,18 +196,18 @@ class KomerBase:
 
     def __serializeMGPK(self, val):
         if val is not None:
-            if not isinstance(val, self.schema):
+            if not isinstance(val, self.klas):
                 raise ValueError("Invalid schema type={} of value={}, expected {}."
-                                 "".format(type(val), val, self.schema))
+                                 "".format(type(val), val, self.klas))
             val = msgpack.dumps(helping.dictify(val))
         return val
 
 
     def __serializeCBOR(self, val):
         if val is not None:
-            if not isinstance(val, self.schema):
+            if not isinstance(val, self.klas):
                 raise ValueError("Invalid schema type={} of value={}, expected {}."
-                                 "".format(type(val), val, self.schema))
+                                 "".format(type(val), val, self.klas))
             val = cbor2.dumps(helping.dictify(val))
         return val
 
@@ -315,17 +315,17 @@ class Komer(KomerBase):
     def __init__(self,
                  db: dbing.LMDBer, *,
                  subkey: str = 'docs.',
-                 schema: type[dataclass],  # class not instance
+                 klas: type[dataclass],  # class not instance
                  kind: str | None = None,
                  **kwa):
         """Initialize instance
         Parameters:
             db (dbing.LMDBer): base db
-            schema (Type[dataclass]):  reference to Class definition for dataclass sub class
+            klas (Type[dataclass]):  reference to Class definition for dataclass sub class
             subkey (str):  LMDB sub database key
             kind (str): serialization/deserialization type
         """
-        super(Komer, self).__init__(db=db, subkey=subkey, schema=schema,
+        super(Komer, self).__init__(db=db, subkey=subkey, klas=klas,
                                     kind=kind, dupsort=False, **kwa)
 
     def put(self, keys: str|bytes|memoryview|Iterable, val: dataclass):
@@ -462,17 +462,17 @@ class IoSetKomer(KomerBase):
     def __init__(self,
              db: dbing.LMDBer, *,
              subkey: str = 'recs.',
-             schema: type[dataclass],  # class not instance
+             klas: type[dataclass],  # class not instance
              kind: str | None = None,
              **kwa):
         """
         Parameters:
             db (dbing.LMDBer): base db
-            schema (Type[dataclass]):  reference to Class definition for dataclass sub class
+            clas (type[dataclass]):  reference to Class definition for dataclass sub class
             subkey (str):  LMDB sub database key
             kind (str): serialization/deserialization type
         """
-        super(IoSetKomer, self).__init__(db=db, subkey=subkey, schema=schema,
+        super(IoSetKomer, self).__init__(db=db, subkey=subkey, klas=klas,
                                        kind=kind, dupsort=False, **kwa)
 
 
@@ -673,13 +673,13 @@ class DupKomer(KomerBase):
     Duplicate Keyspace Object Mapper factory class that supports multiple entries
     a given database key (lmdb dupsort == True).
 
-    Do not use if Komer schema instance serialized is greater than 511 bytes.
+    Do not use if Komer dataclass instance serializes to greater than 511 bytes.
     This is a limitation of dupsort==True sub dbs in LMDB
     """
     def __init__(self,
              db: dbing.LMDBer, *,
              subkey: str = 'recs.',
-             schema: type[dataclass],  # class not instance
+             klas: type[dataclass],  # class not instance
              kind: str | None = None,
              **kwa):
         """
@@ -689,7 +689,7 @@ class DupKomer(KomerBase):
             subkey (str):  LMDB sub database key
             kind (str): serialization/deserialization type
         """
-        super(DupKomer, self).__init__(db=db, subkey=subkey, schema=schema,
+        super(DupKomer, self).__init__(db=db, subkey=subkey, klas=klas,
                                        kind=kind, dupsort=True, **kwa)
 
 

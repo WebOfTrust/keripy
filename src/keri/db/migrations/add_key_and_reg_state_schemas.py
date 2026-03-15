@@ -9,7 +9,7 @@ logger = help.ogler.getLogger()
 
 def _check_if_needed(db):
     states = koming.Komer(db=db,
-                          schema=dict,
+                          klas=dict,
                           subkey='stts.')
     first = next(states.getTopItemIter(), None)
     if first is None:
@@ -45,10 +45,10 @@ def migrate(db):
     try:
         logger.debug(f"Migrating keystate and regstate dict to schema for {db.path}")
         states = koming.Komer(db=db,
-                              schema=dict,
+                              klas=dict,
                               subkey='stts.')
         nstates = koming.Komer(db=db,
-                               schema=KeyStateRecord,
+                               klas=KeyStateRecord,
                                subkey='stts.')
 
         for keys, sad in states.getTopItemIter():
@@ -77,7 +77,7 @@ def migrate(db):
         rgy = viring.Reger(name=db.name, base=db.base, db=db, temp=db.temp, reopen=True)
 
         rstates = koming.Komer(db=rgy,
-                               schema=dict,
+                               klas=dict,
                                subkey='stts.')
 
         for _, sad in rstates.getTopItemIter():

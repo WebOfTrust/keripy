@@ -201,7 +201,7 @@ class Reger(dbing.LMDBer):
             Values are digests used to lookup event in .tvts sub DB
             DB is keyed by identifier prefix plus sequence number of key event
             Only one value per DB key is allowed
-        .baks is named subDB instance of IoDupSuber which represents an 
+        .baks is named subDB instance of IoDupSuber which represents an
             ordered list of backers at given point in management TEL.
             dgKey
             DB is keyed by identifier prefix plus digest of serialized event
@@ -308,7 +308,7 @@ class Reger(dbing.LMDBer):
         # Registry state made of RegStateRecord.
         # Each registry has registry event log keyed by registry identifier
         self.states = koming.Komer(db=self,
-                                   schema=RegStateRecord,
+                                   klas=RegStateRecord,
                                    subkey='stts.')
         #self.states = subing.SerderSuber(db=self, subkey='stts.')  # registry event state
 
@@ -354,7 +354,7 @@ class Reger(dbing.LMDBer):
         # registry keys keyed by Registry name
         self.regs = koming.Komer(db=self,
                                  subkey='regs.',
-                                 schema=RegistryRecord, )
+                                 klas=RegistryRecord, )
 
         # TEL partial witness escrow
         self.tpwe = subing.CatCesrIoSetSuber(db=self, subkey='tpwe.',
