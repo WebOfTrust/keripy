@@ -238,6 +238,6 @@ class ConfirmDoer(doing.DoDoer):
 
     def escrowed(self):
         esc = []
-        for (pre, sn), edig in self.hby.db.delegables.getItemIter():
+        for (pre, sn), edig in self.hby.db.delegables.getTopItemIter():
             esc.append((pre, sn, edig))
         return esc

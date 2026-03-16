@@ -421,7 +421,7 @@ class Oobiery:
         There should be only one OOBIERY that minds the OOBI table, this should read from the table like an escrow
 
         """
-        for (url,), obr in self.hby.db.oobis.getItemIter():
+        for (url,), obr in self.hby.db.oobis.getTopItemIter():
             try:
                 # Don't process OOBIs we've already resolved or are in escrow being retried
                 if ((fnd := self.hby.db.roobi.get(keys=(url,))) is not None and fnd.state == Result.resolved) and \
@@ -474,7 +474,7 @@ class Oobiery:
         """ Process Client responses by parsing the messages and removing the client/doer
 
         """
-        for (url,), obr in self.hby.db.coobi.getItemIter():
+        for (url,), obr in self.hby.db.coobi.getTopItemIter():
             if url not in self.clients:
                 self.request(url, obr)
                 continue
@@ -576,7 +576,7 @@ class Oobiery:
         """ Process Client responses by parsing the messages and removing the client/doer
 
         """
-        for (url,), obr in self.hby.db.moobi.getItemIter():
+        for (url,), obr in self.hby.db.moobi.getTopItemIter():
             result = Result.resolved
             complete = True
             for oobi in obr.urls:
@@ -596,7 +596,7 @@ class Oobiery:
         """ Process Client responses by parsing the messages and removing the client/doer
 
         """
-        for (url,), obr in self.hby.db.eoobi.getItemIter():
+        for (url,), obr in self.hby.db.eoobi.getTopItemIter():
             last = helping.fromIso8601(obr.date)
             now = helping.nowUTC()
             if (now - last) > datetime.timedelta(seconds=self.RetryDelay):
@@ -692,7 +692,7 @@ class Authenticator:
         Process wOOBI URLs by requesting from the endpoint and confirming the results
 
         """
-        for (wurl,), obr in self.hby.db.woobi.getItemIter():
+        for (wurl,), obr in self.hby.db.woobi.getTopItemIter():
             # Find any woobis that match and can be used to perform MFA for this resolved AID
             purl = urlparse(wurl)
             if (match := ending.WOOBI_RE.match(purl.path)) is not None:
@@ -709,7 +709,7 @@ class Authenticator:
         """ Process Client responses by parsing the messages and removing the client
 
         """
-        for (wurl,), obr in self.hby.db.mfa.getItemIter():
+        for (wurl,), obr in self.hby.db.mfa.getTopItemIter():
             if wurl not in self.clients:
                 self.request(wurl, obr)
                 continue

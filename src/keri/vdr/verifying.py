@@ -266,7 +266,7 @@ class Verifier:
             etype (TypeOf(Exception)): exception class to catch and ignore
 
         """
-        for (said,), dater in db.getItemIter():
+        for (said,), dater in db.getTopItemIter():
             creder, prefixer, seqner, saider = self.reger.cloneCred(said)
 
             try:

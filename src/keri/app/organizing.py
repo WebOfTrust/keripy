@@ -143,7 +143,7 @@ class BaseOrganizer:
         key = ""
         data = None
         contacts = []
-        for (pre, field), val in self.fielddb.getItemIter():
+        for (pre, field), val in self.fielddb.getTopItemIter():
             if pre != key:
                 if data is not None:
                     contacts.append(data)
@@ -170,7 +170,7 @@ class BaseOrganizer:
         """
         pres = []
         prog = re.compile(f".*{val}.*", re.I)
-        for (pre, f), v in self.fielddb.getItemIter():
+        for (pre, f), v in self.fielddb.getTopItemIter():
             if f == field and prog.match(v):
                 pres.append(pre)
 
@@ -192,7 +192,7 @@ class BaseOrganizer:
 
         """
         pres = []
-        for (pre, f), v in self.fielddb.getItemIter():
+        for (pre, f), v in self.fielddb.getTopItemIter():
             if f == field and v == val:
                 pres.append(pre)
 
@@ -212,7 +212,7 @@ class BaseOrganizer:
         prog = re.compile(f".*{val}.*", re.I) if val is not None else None
 
         vals = oset()
-        for (pre, f), v in self.fielddb.getItemIter():
+        for (pre, f), v in self.fielddb.getTopItemIter():
             if f == field and (prog is None or prog.match(v)):
                 vals.add(v)
 
@@ -230,7 +230,7 @@ class BaseOrganizer:
             stream (file): file-like stream of image data
 
         """
-        self.hby.db.delTop(db=self.imgsdb.sdb, top=pre.encode("utf-8"))
+        self.hby.db.remTop(db=self.imgsdb.sdb, top=pre.encode("utf-8"))
 
         key = f"{pre}.content-type".encode("utf-8")
         self.hby.db.setVal(db=self.imgsdb.sdb, key=key, val=typ.encode("utf-8"))

@@ -26,7 +26,7 @@ from ....vdr import credentialing, verifying
 
 logger = ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='List notifications related to IPEX protocol messages', 
+parser = argparse.ArgumentParser(description='List notifications related to IPEX protocol messages',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: listNotes(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
@@ -126,7 +126,7 @@ class ListDoer(doing.DoDoer):
         if self.type is not None:
             q = f"/exn/ipex/{self.type}"
 
-        for keys, notice in self.notifier.noter.notes.getItemIter():
+        for keys, notice in self.notifier.noter.notes.getTopItemIter():
             if notice.pad['a']['r'].startswith(q):
                 self.notes.append(notice)
 

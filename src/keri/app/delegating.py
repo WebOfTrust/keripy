@@ -47,9 +47,9 @@ class Anchorer(doing.DoDoer):
 
     def delegation(self, pre, sn=None, proxy=None, auths=None):
         """
-        Add witness publishers by prefix and send delegation event to witnesses and place event on 
+        Add witness publishers by prefix and send delegation event to witnesses and place event on
         the delegation partial witness escrow.
-        
+
         Parameters:
             pre (str): qb64 identifier prefix of delegated identifier
             sn (int): optional sequence number of event to anchor, defaults to latest event
@@ -136,7 +136,7 @@ class Anchorer(doing.DoDoer):
         Process escrow of unanchored delegation events.  Message processing will send this local
         controller's event to witnesses.
         """
-        for (pre, said), serder in self.hby.db.dune.getItemIter():  # delegated unanchored escrow
+        for (pre, said), serder in self.hby.db.dune.getTopItemIter():  # delegated unanchored escrow
             kever = self.hby.kevers[pre]
             dkever = self.hby.kevers[kever.delpre]
 
@@ -160,7 +160,7 @@ class Anchorer(doing.DoDoer):
         that the event is complete.
 
         """
-        for (pre, said), serder in self.hby.db.dpwe.getItemIter():  # group partial witness escrow
+        for (pre, said), serder in self.hby.db.dpwe.getTopItemIter():  # group partial witness escrow
             kever = self.hby.kevers[pre]
             seqner = coring.Seqner(sn=serder.sn)
 
@@ -216,7 +216,7 @@ class Anchorer(doing.DoDoer):
         Process escrow of partially signed delegation events.  Message processing waits for
         publication to the witnesses to complete then completes the delegation.
         """
-        for (pre, said), serder in self.hby.db.dpub.getItemIter():  # group partial witness escrow
+        for (pre, said), serder in self.hby.db.dpub.getTopItemIter():  # group partial witness escrow
             if pre not in self.publishers:
                 continue
 
