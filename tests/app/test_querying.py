@@ -6,10 +6,10 @@ keri.app.querying module
 from hio.base import doing
 
 from keri.kering import Vrsn_1_0
-from keri.app import habbing
-from keri.app.querying import QueryDoer, KeyStateNoticer, LogQuerier, SeqNoQuerier, AnchorQuerier
+from keri.app import (habbing, QueryDoer, KeyStateNoticer, LogQuerier,
+                      SeqNoQuerier, AnchorQuerier)
 from keri.core import parsing, eventing, serdering
-from keri.db.dbing import dgKey
+from keri.db import dgKey
 
 
 def test_querying():

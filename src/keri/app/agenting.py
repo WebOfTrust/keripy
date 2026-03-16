@@ -175,11 +175,11 @@ class Receiptor(doing.DoDoer):
             return
 
         wit = random.choice(hab.kever.wits)
-        urls = hab.fetchUrls(eid=wit, scheme=Schemes.http) or hab.fetchUrls(eid=wit, scheme=Schemes.https)
+        urls = hab.fetchUrls(eid=wit, scheme=Schemes.https) or hab.fetchUrls(eid=wit, scheme=Schemes.http)
         if not urls:
             raise MissingEntryError(f"unable to query witness {wit}, no http endpoint")
 
-        base = urls[Schemes.http] if Schemes.http in urls else urls[Schemes.https]
+        base = urls[Schemes.https] if Schemes.https in urls else urls[Schemes.http]
         url = urljoin(base, f"/receipts?pre={pre}&sn={sn}")
 
         client = self.clienter.request("GET", url)
@@ -968,7 +968,7 @@ def mailbox(hab, cid):
         hab (Hab): Hab to use to look up witness URLs
         cid (str): qb64 identifier prefix of controller to find mailbox for
     """
-    for (_, erole, eid), end in hab.db.ends.getItemIter(keys=(cid, Roles.mailbox)):
+    for (_, erole, eid), end in hab.db.ends.getTopItemIter(keys=(cid, Roles.mailbox)):
         if end.allowed:
             return eid
 
@@ -1011,7 +1011,7 @@ def messengerFrom(hab, pre, urls, auth=None):
         Optional(TcpWitnesser, HTTPMessenger): witnesser for ensuring full reciepts
     """
     if Schemes.http in urls or Schemes.https in urls:
-        url = urls[Schemes.http] if Schemes.http in urls else urls[Schemes.https]
+        url = urls[Schemes.https] if Schemes.https in urls else urls[Schemes.http]
         witer = HTTPMessenger(hab=hab, wit=pre, url=url, auth=auth)
     elif Schemes.tcp in urls:
         url = urls[Schemes.tcp]
@@ -1036,7 +1036,7 @@ def streamMessengerFrom(hab, pre, urls, msg, headers=None):
         Optional(TcpWitnesser, HTTPMessenger): witnesser for ensuring full reciepts
     """
     if Schemes.http in urls or Schemes.https in urls:
-        url = urls[Schemes.http] if Schemes.http in urls else urls[Schemes.https]
+        url = urls[Schemes.https] if Schemes.https in urls else urls[Schemes.http]
         witer = HTTPStreamMessenger(hab=hab, wit=pre, url=url, msg=msg, headers=headers)
     elif Schemes.tcp in urls:
         url = urls[Schemes.tcp]
@@ -1059,11 +1059,11 @@ def httpClient(hab, wit):
         ClientDoer: Doer for client
 
     """
-    urls = hab.fetchUrls(eid=wit, scheme=Schemes.http) or hab.fetchUrls(eid=wit, scheme=Schemes.https)
+    urls = hab.fetchUrls(eid=wit, scheme=Schemes.https) or hab.fetchUrls(eid=wit, scheme=Schemes.http)
     if not urls:
         raise MissingEntryError(f"unable to query witness {wit}, no http endpoint")
 
-    url = urls[Schemes.http] if Schemes.http in urls else urls[Schemes.https]
+    url = urls[Schemes.https] if Schemes.https in urls else urls[Schemes.http]
     up = urlparse(url)
     client = http.clienting.Client(scheme=up.scheme, hostname=up.hostname, port=up.port, path=up.path)
     clientDoer = http.clienting.ClientDoer(client=client)

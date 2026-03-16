@@ -62,7 +62,7 @@ def delete(tymth, tock=0.0, **opts):
                 pre = aid
                 contact = org.get(aid)
             elif alias:
-                contacts = org.find('alias', f"^{alias}$")  # Exact match
+                contacts = org.findExact('alias', alias)
                 if len(contacts) == 0:
                     print(f"Contact with alias '{alias}' not found")
                     return -1

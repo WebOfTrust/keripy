@@ -55,12 +55,16 @@ and kever.tholder.
 
 
 class Kramer:
-    def __init__(self, db, cf=None):
+    def __init__(self, db, cf=None, cues=None):
         self.db = db
         self.cf = cf if cf else None
 
+        # Define cues
+        self.cues = cues if cues is not None else []
+
         # Load config once at init, inject into runtime state
-        kram = self._getKramCf()
+        config = self.cf.get()
+        kram = config.get('kram', {})
 
         self._enabled = kram.get('enabled', False)
 
@@ -68,12 +72,15 @@ class Kramer:
         self._denials = self._compactDenials(self._fullDenials)
 
         self._ctypCf = kram.get('caches', {})
-        self._populateCtyp(self._ctypCf)
+        # Prepopulate ctyp cache with configured values
+        ctypCf = self._ctypCf
+        for key, val in ctypCf.items():
+            try:
+                record = CacheTypeRecord(*map(int, val))
+                self.db.ctyp.pin(key, record)
+            except Exception as e:
+                raise kering.KramConfigurationError(f"Invalid cache configuration for {key}, {val}: {e}")
 
-    def _getKramCf(self):
-        """Get the kram config dict"""
-        config = self.cf.get()
-        return config.get('kram', {})
 
     @staticmethod
     def _compactDenials(fullDenials):
@@ -109,15 +116,6 @@ class Kramer:
                 raise kering.KramConfigurationError(f"Invalid denial for {denial}: {e}")
         return compact
 
-    def _populateCtyp(self, ctypCf):
-        """Prepopulate ctyp cache with configured values"""
-        for key, val in ctypCf.items():
-            try:
-                record = CacheTypeRecord(*map(int, val))
-                self.db.ctyp.pin(key, record)
-            except Exception as e:
-                raise kering.KramConfigurationError(f"Invalid cache configuration for {key}, {val}: {e}")
-
     @property
     def enabled(self):
         return self._enabled
@@ -143,10 +141,11 @@ class Kramer:
         """
         return f"{Verser.verToB64(version=serder.pvrsn)}.{serder.ilk}.{serder.route}"
 
+
     def _fetchCacheType(self, msgType, route):
         """Fetch the most specific matching cache-type entry.
 
-        Uses Komer.getItemIter to scan the message-type branch of the ctyp
+        Uses Komer.getTopItemIter to scan the message-type branch of the ctyp
         database in a single LMDB cursor pass. The cursor positions at the
         first key >= msgType and iterates forward through all keys sharing
         the msgType prefix. Among matches, the most specific key (longest
@@ -171,7 +170,7 @@ class Kramer:
         exactRoute = f"{msgType}.R.{route}" if route else None
 
         # Single cursor scan of the msgType branch
-        for keys, rec in self.db.ctyp.getItemIter(keys=msgType):
+        for keys, rec in self.db.ctyp.getTopItemIter(keys=msgType):
             key = self.db.ctyp.sep.join(keys)  # rejoin tuple to string
             if exactRoute and key == exactRoute:
                 return rec  # exact type+route match, most specific
@@ -189,16 +188,17 @@ class Kramer:
         raise kering.KramError(f"No cache-type entry found for "
                                f"msgType={msgType}, route={route}")
 
+
     @staticmethod
     def _hasSeals(senderId, **kwa):
         """Check if kwa contains seal reference attachments from the sender.
 
         Two attachment types qualify for KRAM seal-based authentication:
 
-        sscs (seal source couples) are (seqner, saider) tuples that
+        sscs (seal source couples) are (number, diger) tuples that
         implicitly reference the sender's own KEL. Always qualify.
 
-        ssts (seal source triples) are (prefixer, seqner, saider) tuples
+        ssts (seal source triples) are (prefixer, number, diger) tuples
         where the prefixer can point to any entity's KEL. Only qualify
         when prefixer.qb64 == senderId (i.e., the sender is sealing
         in their own KEL). Non-matching ssts are not dropped, they
@@ -219,10 +219,11 @@ class Kramer:
         """
         if kwa.get('sscs'):
             return True
-        for prefixer, seqner, saider in kwa.get('ssts', []):
+        for prefixer, number, diger in kwa.get('ssts', []):
             if prefixer.qb64 == senderId:
                 return True
         return False
+
 
     @staticmethod
     def _hasSigs(senderId, **kwa):
@@ -247,10 +248,11 @@ class Kramer:
         for prefixer, sigers in kwa.get('ssgs', []):
             if prefixer.qb64 == senderId:
                 return True
-        for prefixer, seqner, ssaider, sigers in kwa.get('tsgs', []):
+        for prefixer, number, sdiger, sigers in kwa.get('tsgs', []):
             if prefixer.qb64 == senderId:
                 return True
         return False
+
 
     def _resolveAuthType(self, msg, kwa, kever, hasSealRef, hasSigs, senderId):
         """Resolve authentication type, validating seal exactly once for
@@ -299,6 +301,7 @@ class Kramer:
 
         return None, False
 
+
     def _verifyAttachedSigs(self, *, msg, senderId, kever, **kwa):
         """Verify attached signatures using cigar gate then oset pooling.
 
@@ -311,7 +314,7 @@ class Kramer:
         Gating logic for pool contributions:
             - bare sigers: always included
             - ssgs: prefixer must match senderId
-            - tsgs: prefixer must match senderId AND (seqner, saider)
+            - tsgs: prefixer must match senderId AND (number, diger)
               must correspond to sender's current key state
 
         Signatures that fail crypto verification are dropped (not in the
@@ -353,11 +356,11 @@ class Kramer:
                 pool.add(siger.qb64)
 
         # tsgs gate: prefixer matches AND current keystate matches
-        for prefixer, seqner, ssaider, sigers in kwa.get('tsgs', []):
+        for prefixer, number, sdiger, sigers in kwa.get('tsgs', []):
             if prefixer.qb64 != senderId:
                 continue
-            if (seqner.sn != kever.sner.num or
-                    ssaider.qb64 != kever.serder.said):
+            if (number.sn != kever.sner.num or
+                    sdiger.qb64 != kever.serder.said):
                 continue  # non-current keystate, passed on, not counted
             for siger in sigers:
                 pool.add(siger.qb64)
@@ -400,38 +403,38 @@ class Kramer:
             MissingSenderKeyStateError: when a referenced event is not
                 found in the sender's KEL (caller should drop + cue)
         """
-        # Build list of (seqner, saider) candidates to check.
+        # Build list of (number, diger) candidates to check.
         # sscs first (implicit sender KEL ref), then sender-matching ssts.
         candidates = []
-        for seqner, saider in kwa.get('sscs', []):
-            candidates.append((seqner, saider))
-        for prefixer, seqner, saider in kwa.get('ssts', []):
+        for number, diger in kwa.get('sscs', []):
+            candidates.append((number, diger))
+        for prefixer, number, diger in kwa.get('ssts', []):
             if prefixer.qb64 == senderId:
-                candidates.append((seqner, saider))
+                candidates.append((number, diger))
 
         if not candidates:
             return False
 
         # Use last candidate per parser convention
-        seqner, saider = candidates[-1]
+        number, diger = candidates[-1]
 
         # Look up event digest at (senderId, sn) in sender's KEL
         prefixer = coring.Prefixer(qb64=senderId)
-        sdig = self.db.kels.getOnLast(keys=prefixer.qb64b, on=seqner.sn)
+        sdig = self.db.kels.getOnLast(keys=prefixer.qb64b, on=number.sn)
 
         if sdig is None:
             raise kering.MissingSenderKeyStateError(
-                f"Event at sn={seqner.sn} not in KEL for sender {senderId}")
+                f"Event at sn={number.sn} not in KEL for sender {senderId}")
 
         # Verify the event SAID matches the seal reference
-        if bytes(sdig, "utf-8") != saider.qb64b:
+        if bytes(sdig, "utf-8") != diger.qb64b:
             return False  # Event at that sn doesn't match reference
 
         # Fetch the actual event
         evtSerder = self.db.evts.get(keys=(prefixer.qb64b, bytes(sdig, "utf-8")))
         if evtSerder is None:
             raise kering.MissingSenderKeyStateError(
-                f"Event data missing for sender {senderId} at sn={seqner.sn}")
+                f"Event data missing for sender {senderId} at sn={number.sn}")
 
         # Search event's seal list for a seal whose 'd' field matches msg SAID
         for seal in (evtSerder.seals or []):
@@ -439,6 +442,59 @@ class Kramer:
                 return True
 
         return False  # No matching seal digest found
+
+
+    def _storeNonAuthAttachments(self, key, **kwa):
+        """Idempotently store non-authenticator attachments for a partially
+        signed multi-key message pending threshold satisfaction.
+
+        Handles all parser kwa attachment keys except ssgs and essrs, which
+        are handled separately as authenticators or encapsulations.
+
+        Parameters:
+            key (tuple): (AID, MID) partial db key
+            **kwa: keyword arguments from parser exts dict
+        """
+        for item in kwa.get('trqs', []):
+            self.db.trqs.add(key, item)
+        for prefixer, number, diger, sigers in kwa.get('tsgs', []):
+            for siger in sigers:
+                self.db.tsgs.add(key, (prefixer, number, diger, siger))
+        for item in kwa.get('sscs', []):
+            self.db.sscs.add(key, item)
+        for item in kwa.get('ssts', []):
+            self.db.ssts.add(key, item)
+        for item in kwa.get('frcs', []):
+            self.db.frcs.add(key, item)
+        for item in kwa.get('tdcs', []):
+            self.db.tdcs.add(key, item)
+        for item in kwa.get('ptds', []):
+            self.db.ptds.add(key, item)
+        for item in kwa.get('bsqs', []):
+            self.db.bsqs.add(key, item)
+        for item in kwa.get('bsss', []):
+            self.db.bsss.add(key, item)
+        for item in kwa.get('tmqs', []):
+            self.db.tmqs.add(key, item)
+
+
+    def _remNonAuthAttachments(self, key):
+        """Remove all non-authenticator attachment db entries for key.
+
+        Parameters:
+            key (tuple): (AID, MID) partial db key
+        """
+        self.db.trqs.rem(key)
+        self.db.tsgs.rem(key)
+        self.db.sscs.rem(key)
+        self.db.ssts.rem(key)
+        self.db.frcs.rem(key)
+        self.db.tdcs.rem(key)
+        self.db.ptds.rem(key)
+        self.db.bsqs.rem(key)
+        self.db.bsss.rem(key)
+        self.db.tmqs.rem(key)
+
 
     def intake(self, serder, **kwa):
         """Process message through KRAM denial and cache logic.
@@ -455,11 +511,17 @@ class Kramer:
             return self.kramit(serder, **kwa)
         return serder  # KRAM disabled for all messages return message for further processing
 
+
     def kramit(self, msg, **kwa):
         """Core KRAM processing logic.
 
         Implements timeliness cache checking, auth type detection,
         and cache management for replay attack prevention.
+
+        For exn messages, exchange ID routing is version-gated: v2 exn
+        messages use the x field to determine transactioned vs non-transactioned
+        routing. v1 exn messages have no x field and are always treated as
+        non-transactioned (routed to the msgc cache).
 
         Parameters:
             msg (SerderKERI): message instance
@@ -473,7 +535,8 @@ class Kramer:
         Raises:
             MissingAuthAttachmentError: no auth attachments on message
             MissingSenderKeyStateError: sender KEL unavailable
-            KramError: General errors used for linter compliance. Something is very wrong if these pop up
+            KramError: general errors used for linter compliance; indicates
+                something is very wrong if raised
         """
 
         senderId = msg.pre
@@ -499,7 +562,8 @@ class Kramer:
             case kering.Ilks.xip:
                 exId = msgId
             case kering.Ilks.exn:
-                exId = msg.ked.get('x', None)
+                if msg.pvrsn >= kering.Vrsn_2_0:
+                    exId = msg.ked.get('x', None)
             case _:
                 pass
 
@@ -520,6 +584,17 @@ class Kramer:
                 # All remaining paths need sender's key state
                 kever = self.db.kevers.get(senderId)
                 if kever is None:
+                    # Append the cue for the keystate retrieval notification including the senderID
+                    self.cues.append({
+                        "kin": "keystate",
+                        "aid": senderId,
+                        "sn": kever.sn if kever else None,
+                    })
+                    logger.info(
+                        "Cueing keystate retrieval: missing KEL for sender=%s, current_sn=%s, error=%s",
+                        senderId,
+                        kever.sn if kever else None,
+                    )
                     raise kering.MissingSenderKeyStateError(
                         f"Sender KEL unavailable for {senderId}")
 
@@ -540,11 +615,8 @@ class Kramer:
                 # "both attached with invalid seal, multi-key" paths.
 
                 # Verify attached sigs using type-appropriate dispatch
-                try:
-                    sigResult = self._verifyAttachedSigs(
-                        msg=msg, senderId=senderId, kever=kever, **kwa)
-                except kering.MissingSenderKeyStateError:
-                    return None  # drop, tsg referenced event not in KEL
+                sigResult = self._verifyAttachedSigs(
+                    msg=msg, senderId=senderId, kever=kever, **kwa)
 
                 if not sigResult.verified:
                     return None  # no valid sigs in this delivery
@@ -580,7 +652,8 @@ class Kramer:
                     if storedKeyState is None:
                         self.db.pmsk.pin(key, currentKeyState)
 
-                # TODO: Idempotently add non-signature attachments
+                    # Store non-auth attachments alongside new sigs
+                    self._storeNonAuthAttachments(key, **kwa)
 
                 # Check threshold using current kever's tholder
                 allSigs = existingSigs + newSigs
@@ -588,11 +661,7 @@ class Kramer:
                     sigIndices = [sig.index for sig in allSigs]
 
                     if kever.tholder.satisfy(indices=sigIndices):
-                        # Accept, remove all partial database entries
-                        self.db.pmkm.rem(key)
-                        self.db.pmks.rem(key)
-                        self.db.pmsk.rem(key)
-                        # TODO: Remove from other partial attachment databases
+                        # Accept, partial database entries will be removed by pruner
                         return msg
 
                 # Threshold not satisfied, message remains pending
@@ -603,6 +672,17 @@ class Kramer:
 
                 kever = self.db.kevers.get(senderId)
                 if kever is None:
+                    # Append the cue for the keystate retrieval notification including the senderID
+                    self.cues.append({
+                        "kin": "keystate",
+                        "aid": senderId,
+                        "sn": kever.sn if kever else None,
+                    })
+                    logger.info(
+                        "Cueing keystate retrieval: missing KEL for sender=%s, current_sn=%s, error=%s",
+                        senderId,
+                        kever.sn if kever else None,
+                    )
                     raise kering.MissingSenderKeyStateError(
                         f"Sender KEL unavailable for {senderId}")
 
@@ -640,7 +720,17 @@ class Kramer:
                         except kering.MissingSenderKeyStateError as e:
                             logger.info("Missing sender key state for "
                                         "%s: %s", senderId, e)
-                            # TODO: cue keystate retrieval notification
+                            # Append the cue for the keystate retrieval notification including the senderID and the sn
+                            self.cues.append({
+                                "kin": "keystate",
+                                "aid": senderId,
+                                "sn": kever.sn if kever else None,
+                            })
+                            logger.info(
+                                "Cueing keystate retrieval: missing key state in seal reference for sender=%s, current_sn=%s, error=%s",
+                                senderId,
+                                kever.sn if kever else None,
+                            )
                             return None
                         if not sealValidated:
                             return None
@@ -669,14 +759,8 @@ class Kramer:
 
                 elif authType == AuthTypes.AttachedSignatureMultiKey:
                     # Verify multi-key signatures
-                    try:
-                        sigResult = self._verifyAttachedSigs(
-                            msg=msg, senderId=senderId, kever=kever, **kwa)
-                    except kering.MissingSenderKeyStateError as e:
-                        logger.info("Missing sender key state for "
-                                    "%s: %s", senderId, e)
-                        # TODO: cue keystate retrieval notification
-                        return None
+                    sigResult = self._verifyAttachedSigs(
+                        msg=msg, senderId=senderId, kever=kever, **kwa)
 
                     if not sigResult.verified:
                         return None  # no sigs verified at all
@@ -703,7 +787,8 @@ class Kramer:
 
                     self.db.pmsk.pin(key, currentKeyState)
 
-                    # TODO: Store non-auth attachments in pmsa databases
+                    # Store non-auth attachments for forwarding on threshold satisfaction
+                    self._storeNonAuthAttachments(key, **kwa)
 
                     return None  # message pending
 
@@ -725,6 +810,17 @@ class Kramer:
                 # All remaining paths need sender's key state
                 kever = self.db.kevers.get(senderId)
                 if kever is None:
+                    # Append the cue for the keystate retrieval notification including the senderID
+                    self.cues.append({
+                        "kin": "keystate",
+                        "aid": senderId,
+                        "sn": kever.sn if kever else None,
+                    })
+                    logger.info(
+                        "Cueing keystate retrieval: missing KEL for sender=%s, current_sn=%s, error=%s",
+                        senderId,
+                        kever.sn if kever else None,
+                    )
                     raise kering.MissingSenderKeyStateError(
                         f"Sender KEL unavailable for {senderId}")
 
@@ -745,11 +841,8 @@ class Kramer:
                 # "both attached with invalid seal, multi-key" paths.
 
                 # Verify attached sigs using type-appropriate dispatch
-                try:
-                    sigResult = self._verifyAttachedSigs(
-                        msg=msg, senderId=senderId, kever=kever, **kwa)
-                except kering.MissingSenderKeyStateError:
-                    return None  # drop, tsg referenced event not in KEL
+                sigResult = self._verifyAttachedSigs(
+                    msg=msg, senderId=senderId, kever=kever, **kwa)
 
                 if not sigResult.verified:
                     return None  # no valid sigs in this delivery
@@ -786,7 +879,8 @@ class Kramer:
                     if storedKeyState is None:
                         self.db.pmsk.pin(partialKey, currentKeyState)
 
-                # TODO: Idempotently add non-signature attachments
+                    # Store non-auth attachments alongside new sigs
+                    self._storeNonAuthAttachments(partialKey, **kwa)
 
                 # Check threshold using current kever's tholder
                 allSigs = existingSigs + newSigs
@@ -794,11 +888,7 @@ class Kramer:
                     sigIndices = [sig.index for sig in allSigs]
 
                     if kever.tholder.satisfy(indices=sigIndices):
-                        # Accept, remove all partial database entries
-                        self.db.pmkm.rem(partialKey)
-                        self.db.pmks.rem(partialKey)
-                        self.db.pmsk.rem(partialKey)
-                        # TODO: Remove from other partial attachment databases
+                        # Accept, partial database entries will be removed by pruner
                         return msg
 
                 # Threshold not satisfied, message remains pending
@@ -809,6 +899,17 @@ class Kramer:
 
                 kever = self.db.kevers.get(senderId)
                 if kever is None:
+                    # Append the cue for the keystate retrieval notification including the senderID
+                    self.cues.append({
+                        "kin": "keystate",
+                        "aid": senderId,
+                        "sn": kever.sn if kever else None,
+                    })
+                    logger.info(
+                        "Cueing keystate retrieval: missing KEL for sender=%s, current_sn=%s, error=%s",
+                        senderId,
+                        kever.sn if kever else None,
+                    )
                     raise kering.MissingSenderKeyStateError(
                         f"Sender KEL unavailable for {senderId}")
 
@@ -831,7 +932,7 @@ class Kramer:
                         case kering.Ilks.exn:
                             # x field value to fetch any existing cache entry with a matching AID.XID and copy its xdt
                             # value. When no existing cache entry is found, then drop the event and exit.
-                            existingCache = next(self.db.tmsc.getItemIter((senderId, exId)), None)
+                            existingCache = next(self.db.tmsc.getTopItemIter((senderId, exId)), None)
 
                             if existingCache is not None:
                                 keys, cacheRecord = existingCache
@@ -865,7 +966,17 @@ class Kramer:
                             except kering.MissingSenderKeyStateError as e:
                                 logger.info("Missing sender key state for "
                                             "%s: %s", senderId, e)
-                                # TODO: cue keystate retrieval notification
+                                # Append the cue for the keystate retrieval notification including the senderID and the sn
+                                self.cues.append({
+                                    "kin": "keystate",
+                                    "aid": senderId,
+                                    "sn": kever.sn if kever else None,
+                                })
+                                logger.info(
+                                    "Cueing keystate retrieval: missing key state in seal reference for sender=%s, current_sn=%s, error=%s",
+                                    senderId,
+                                    kever.sn if kever else None,
+                                )
                                 return None
                             if not sealValidated:
                                 return None
@@ -879,14 +990,8 @@ class Kramer:
 
                     elif authType == AuthTypes.AttachedSignatureSingleKey:
                         # Verify single-key signature
-                        try:
-                            sigResult = self._verifyAttachedSigs(
-                                msg=msg, senderId=senderId, kever=kever, **kwa)
-                        except kering.MissingSenderKeyStateError as e:
-                            logger.info("Missing sender key state for "
-                                        "%s: %s", senderId, e)
-                            # TODO: cue keystate retrieval notification
-                            return None
+                        sigResult = self._verifyAttachedSigs(
+                            msg=msg, senderId=senderId, kever=kever, **kwa)
 
                         if not sigResult.verified:
                             return None
@@ -912,7 +1017,7 @@ class Kramer:
                             xdts = msg.ked.get('dt', None)
                         case kering.Ilks.exn:
                             existingCache = next(
-                                self.db.tmsc.getItemIter((senderId, exId)),
+                                self.db.tmsc.getTopItemIter((senderId, exId)),
                                 None)
                             if existingCache is not None:
                                 keys, cacheRecord = existingCache
@@ -931,14 +1036,8 @@ class Kramer:
                         return None  # outside exchange window
 
                     # Verify multi-key signatures
-                    try:
-                        sigResult = self._verifyAttachedSigs(
-                            msg=msg, senderId=senderId, kever=kever, **kwa)
-                    except kering.MissingSenderKeyStateError as e:
-                        logger.info("Missing sender key state for "
-                                    "%s: %s", senderId, e)
-                        # TODO: cue keystate retrieval notification
-                        return None
+                    sigResult = self._verifyAttachedSigs(
+                        msg=msg, senderId=senderId, kever=kever, **kwa)
 
                     if not sigResult.verified:
                         return None  # no sigs verified at all
@@ -966,7 +1065,8 @@ class Kramer:
 
                     self.db.pmsk.pin(partialKey, currentKeyState)
 
-                    # TODO: Store non-auth attachments in pmsa databases
+                    # Store non-auth attachments for forwarding on threshold satisfaction
+                    self._storeNonAuthAttachments(partialKey, **kwa)
 
                     return None  # message pending
                 else:

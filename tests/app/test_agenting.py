@@ -228,3 +228,49 @@ def test_witness_inquisitor(mockHelpingNowUTC, seeder):
         assert qinHab.pre in palHab.kevers
 
         doist.exit()
+
+
+def test_messenger_prefers_https():
+    """Verify messengerFrom and streamMessengerFrom prefer HTTPS over HTTP.
+
+    Regression test for https://github.com/WebOfTrust/keripy/issues/1008
+    """
+    from unittest.mock import MagicMock, patch
+    from keri.app.agenting import messengerFrom, streamMessengerFrom
+
+    hab = MagicMock()
+    pre = "EtyPSuUjLyLdXAtGMrsTt0-ELyWeU8fJcymHiGOfuaSA"
+
+    # Both HTTP and HTTPS available
+    urls = {
+        kering.Schemes.http: "http://example.com:5632",
+        kering.Schemes.https: "https://example.com:5643",
+    }
+
+    with patch("keri.app.agenting.HTTPMessenger") as MockHTTP:
+        messengerFrom(hab, pre, urls)
+        MockHTTP.assert_called_once()
+        call_url = MockHTTP.call_args[1]["url"]
+        assert call_url == "https://example.com:5643", f"Expected HTTPS URL, got {call_url}"
+
+    with patch("keri.app.agenting.HTTPStreamMessenger") as MockStream:
+        streamMessengerFrom(hab, pre, urls, msg=b"test")
+        MockStream.assert_called_once()
+        call_url = MockStream.call_args[1]["url"]
+        assert call_url == "https://example.com:5643", f"Expected HTTPS URL, got {call_url}"
+
+    # Only HTTP available - should still work
+    http_only = {kering.Schemes.http: "http://example.com:5632"}
+
+    with patch("keri.app.agenting.HTTPMessenger") as MockHTTP:
+        messengerFrom(hab, pre, http_only)
+        call_url = MockHTTP.call_args[1]["url"]
+        assert call_url == "http://example.com:5632"
+
+    # Only HTTPS available - should still work
+    https_only = {kering.Schemes.https: "https://example.com:5643"}
+
+    with patch("keri.app.agenting.HTTPStreamMessenger") as MockStream:
+        streamMessengerFrom(hab, pre, https_only, msg=b"test")
+        call_url = MockStream.call_args[1]["url"]
+        assert call_url == "https://example.com:5643"

@@ -3,8 +3,6 @@
 keri.app.storing module
 
 """
-from dataclasses import asdict
-
 from hio.base import doing
 from . import agenting
 

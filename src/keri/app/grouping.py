@@ -125,7 +125,7 @@ class Counselor(doing.DoDoer):
         then this escrow waits for signatures from all other participants
 
         """
-        for (pre,), (number, diger) in self.hby.db.gpse.getItemIter():  # group partially signed escrow
+        for (pre,), (number, diger) in self.hby.db.gpse.getTopItemIter():  # group partially signed escrow
             sdig = self.hby.db.kels.getOnLast(keys=pre, on=number.sn)
             if sdig:
                 sdig = sdig.encode("utf-8")
@@ -174,7 +174,7 @@ class Counselor(doing.DoDoer):
         waiting for delegator approval of a recent establishment event.
 
         """
-        for (pre,), (number, diger) in self.hby.db.gdee.getItemIter():  # group delegatee escrow
+        for (pre,), (number, diger) in self.hby.db.gdee.getTopItemIter():  # group delegatee escrow
             anchor = dict(i=pre, s=number.numh, d=diger.qb64)
             ghab = self.hby.habs[pre]
             kever = ghab.kevers[pre]
@@ -211,7 +211,7 @@ class Counselor(doing.DoDoer):
         that the event is complete.
 
         """
-        for (pre,), (number, diger) in self.hby.db.gpwe.getItemIter():  # group partial witness escrow
+        for (pre,), (number, diger) in self.hby.db.gpwe.getTopItemIter():  # group partial witness escrow
             kever = self.hby.kevers[pre]
 
             # Load all the witness receipts we have so far

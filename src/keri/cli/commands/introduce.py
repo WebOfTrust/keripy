@@ -14,7 +14,7 @@ from ...core import serdering
 from ...app import habbing, organizing, forwarding
 
 
-parser = argparse.ArgumentParser(description='Send an rpy /introduce message to recipient with OOBI', 
+parser = argparse.ArgumentParser(description='Send an rpy /introduce message to recipient with OOBI',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: introduce(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
@@ -87,9 +87,11 @@ class IntroduceDoer(doing.DoDoer):
         if self.recipient in self.hby.kevers:
             recp = self.recipient
         else:
-            recp = self.org.find("alias", self.recipient)
-            if len(recp) != 1:
-                raise ValueError(f"invalid recipient {self.recipient}")
+            recp = self.org.findExact("alias", self.recipient)
+            if len(recp) == 0:
+                raise ValueError(f"no contact found with alias {self.recipient!r}")
+            if len(recp) > 1:
+                raise ValueError(f"multiple contacts match alias {self.recipient!r}, use prefix instead")
             recp = recp[0]['id']
 
         if (ihab := self.hby.habByName(self.introducee)) is not None:
@@ -99,16 +101,14 @@ class IntroduceDoer(doing.DoDoer):
         elif self.introducee in self.hby.kevers:
             introducee = self.introducee
         else:
-            introducee = None
-            results = self.org.find("alias", self.introducee)
-            for result in results:
-                if result["alias"] == self.introducee:
-                    introducee = result['id']
-            if not introducee:
+            results = self.org.findExact("alias", self.introducee)
+            if len(results) == 1:
+                introducee = results[0]['id']
+            else:
                 raise ValueError(f"invalid introducee {self.introducee}")
 
         oobi = None
-        for (key,), obr in self.hby.db.roobi.getItemIter():
+        for (key,), obr in self.hby.db.roobi.getTopItemIter():
             if obr.cid == introducee and obr.role == self.role:
                 oobi = key
 

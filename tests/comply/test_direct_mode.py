@@ -5,14 +5,12 @@ import os
 from keri.kering import Vrsn_1_0, Vrsn_2_0
 from keri import core
 from keri.core import  eventing, parsing
-from keri.core import MtrDex
+from keri.core import (MtrDex, incept, rotate, interact, messagize,
+                       SealEvent, receipt)
 
-from keri.core.eventing import (incept, rotate, interact, messagize, SealEvent, receipt)
+from keri.app import Manager, openKS
 
-from keri.app.keeping import Manager, openKS
-
-from keri.db.dbing import dgKey, snKey
-from keri.db.basing import  openDB
+from keri.db import dgKey, snKey, openDB
 
 
 def test_direct_mode_with_manager():
@@ -153,7 +151,7 @@ def test_direct_mode_with_manager():
         assert val_prefixer.qb64 == valKever.prefixer.qb64
         assert est_num.num == valKever.sn
         assert est_diger.qb64 == valKever.serder.said
-        assert sig.qb64b == sigers[0].qb64b 
+        assert sig.qb64b == sigers[0].qb64b
 
 
         # create receipt to escrow use invalid digest and sequence number so not in controller's db
@@ -177,7 +175,7 @@ def test_direct_mode_with_manager():
         assert val_prefixer.qb64 == valKever.prefixer.qb64
         assert est_num.num == valKever.sn
         assert est_diger.qb64 == valKever.serder.said
-        assert sig.qb64b == sigers[0].qb64b 
+        assert sig.qb64b == sigers[0].qb64b
 
         # Send receipt from controller to validator
         # create receipt of validator's inception
@@ -211,11 +209,11 @@ def test_direct_mode_with_manager():
         result = valKevery.db.vrcs.get(keys=dgKey(pre=valKever.prefixer.qb64,
                                                 dig=valKever.serder.said))
         rct_prefixer, rct_num, rct_est_diger, rct_siger = result[0]
-        
+
         assert rct_prefixer.qb64 == coeKever.prefixer.qb64
         assert rct_num.num == coeKever.sn
         assert rct_est_diger.qb64 == coeKever.serder.said
-        assert rct_siger.qb64b == sigers[0].qb64b 
+        assert rct_siger.qb64b == sigers[0].qb64b
 
         # Controller Event 1 Rotation Transferable
         csn += 1
@@ -280,11 +278,11 @@ def test_direct_mode_with_manager():
         result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
                                                 dig=coeKever.serder.said))
         rct_prefixer, rct_num, rct_est_diger, rct_siger = result[0]
-        
+
         assert rct_prefixer.qb64 == valKever.prefixer.qb64
         assert rct_num.num == valKever.sn
         assert rct_est_diger.qb64 == valKever.serder.said
-        assert rct_siger.qb64b == sigers[0].qb64b 
+        assert rct_siger.qb64b == sigers[0].qb64b
 
         # Next Event 2 Controller Interaction
         csn += 1  # do not increment esn
@@ -346,11 +344,11 @@ def test_direct_mode_with_manager():
         result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
                                                 dig=coeKever.serder.said))
         rct_prefixer, rct_num, rct_est_diger, rct_siger = result[0]
-        
+
         assert rct_prefixer.qb64 == valKever.prefixer.qb64
         assert rct_num.num == valKever.sn
         assert rct_est_diger.qb64 == valKever.serder.said
-        assert rct_siger.qb64b == sigers[0].qb64b 
+        assert rct_siger.qb64b == sigers[0].qb64b
 
 
         #  verify final controller event state

@@ -9,7 +9,7 @@ from keri import MissingSignatureError
 
 from keri.core import Salter, coring, eventing
 
-from keri.db.basing import openDB
+from keri.db import openDB
 
 
 def test_partial_rotation():

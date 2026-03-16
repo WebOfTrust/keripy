@@ -18,7 +18,7 @@ from ....peer import exchanging
 from ....vdr import credentialing, verifying
 
 
-parser = argparse.ArgumentParser(description='Revoke a verifiable credential', 
+parser = argparse.ArgumentParser(description='Revoke a verifiable credential',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: revokeCredential(args))
 parser.add_argument('--registry-name', '-r', help='Human readable name for registry, defaults to name of Habitat',
@@ -157,9 +157,11 @@ class RevokeDoer(doing.DoDoer):
                     if send in self.hby.kevers:
                         recp = send
                     else:
-                        recp = self.org.find("alias", send)
-                        if len(recp) != 1:
-                            raise ValueError(f"invalid recipient {send}")
+                        recp = self.org.findExact("alias", send)
+                        if len(recp) == 0:
+                            raise ValueError(f"no contact found with alias {send!r}")
+                        if len(recp) > 1:
+                            raise ValueError(f"multiple contacts match alias {send!r}, use prefix instead")
                         recp = recp[0]['id']
                     for (serder, atc) in msgs:
                         self.postman.send(src=senderHab.pre, dest=recp, topic="credential", serder=serder,

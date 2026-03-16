@@ -64,8 +64,7 @@ class komerdict(dict):
 '''
 
 
-# ToDo XXXX change name to statedict since not a generic dbdict
-class dbdict(dict):
+class statedict(dict):
     """
     Subclass of dict that has db as attribute and employs read through cache
     from db Baser.stts of kever states to reload kever from state in database
@@ -74,12 +73,12 @@ class dbdict(dict):
     __slots__ = ('db')  # no .__dict__ just for db reference
 
     def __init__(self, *pa, **kwa):
-        super(dbdict, self).__init__(*pa, **kwa)
+        super(statedict, self).__init__(*pa, **kwa)
         self.db = None
 
     def __getitem__(self, k):
         try:
-            return super(dbdict, self).__getitem__(k)
+            return super(statedict, self).__getitem__(k)
         except KeyError as ex:
             if not self.db:
                 raise ex  # reraise KeyError
@@ -94,7 +93,7 @@ class dbdict(dict):
             return kever
 
     def __contains__(self, k):
-        if not super(dbdict, self).__contains__(k):
+        if not super(statedict, self).__contains__(k):
             try:
                 self.__getitem__(k)
                 return True
@@ -114,13 +113,10 @@ class dbdict(dict):
             kever: converted from underlying dict or database
 
         """
-        if not super(dbdict, self).__contains__(k):
+        if not super(statedict, self).__contains__(k):
             return default
         else:
             return self.__getitem__(k)
-
-
-
 
 
 def openDB(*, cls=None, name="test", **kwa):
@@ -166,359 +162,683 @@ class Baser(dbing.LMDBer):
     Attributes:
         see superclass LMDBer for inherited attributes
 
-        kevers (dict): Kever instances indexed by identifier prefix qb64
-        prefixes (OrderedSet): local prefixes corresponding to habitats for this db
+        kevers (dbdict): read-through cache of Kever instances indexed by
+            identifier prefix qb64
+        prefixes (OrderedSet): local prefixes corresponding to habitats for
+            this db
+        groups (OrderedSet): group hab identifier prefixes for this db
 
         .evts is named subDB instance of SerderSuber whose values are serialized
             key events
-            dgKey
+            subkey 'evts.'
+            dgKey (prefix + digest)
             DB is keyed by identifier prefix plus digest of serialized event
             Only one value per DB key is allowed
 
-        .kels is a named subDB instance of OnIoDupSuber for key event logs as indices that map a composite
-            key of the form "<pre><sep><on>" to serialized key event digests.
+        .fels is named subDB instance of OnSuber for first seen event logs (FEL)
+            as indices mapping first-seen ordinal fn to event digests.
             Actual serialized key events are stored in .evts by SAID digest
-            Values are digests used to lookup event in .evts sub DB
-            DB is keyed by identifier prefix plus sequence number of key event
-            More than one value per DB key is allowed
-
-        .fels is named sub DB instance of OnSuber for first seen event logs (FEL)
-            as indices that map first seen ordinal number fn to event digests.
-            Actual serialized key events are stored in .evts by SAID digest
-            This indexes events in first 'seen' accepted order for replay and
-            cloning of event log.
-            Uses first seen order number or fn.
-            DB is keyed by identifier prefix plus monotonically increasing first
-            seen order number fn.
-            Value is qb64 str of serialized event used to lookup event in .evts sub DB.
+            Indexed in first-seen accepted order for replay and cloning.
+            subkey 'fels.'
+            Key: identifier prefix + monotonically increasing fn.
+            Value: qb64 str of event digest used to lookup event in .evts.
             Only one value per DB key is allowed.
-            Provides append-only ordering of accepted first seen events.
+            Append-only ordering of accepted first-seen events.
 
-        .fons is named subDB CesrSuber
-            Uses digest
-            dgKey
-            Maps prefix and digest to fn value (first seen ordinal number) of
-            the associated event. So one used pre and event digest, get its fn here
-            and then use fn to fetch event from .evnts by fn from .fels.
-            This ensures that any event looked up this way was first seen at
-            some point in time even if later superseded by a recovery rotation.
-            Whereas direct lookup in .evts could be escrowed events that may
-            never have been accepted as first seen.
-            CesrSuber(db=self, subkey='fons.', klas=coring.Number)
+        .kels is named subDB instance of OnIoDupSuber for key event logs as indices
+            mapping composite key "<pre><sep><on>" to serialized key event digests.
+            Actual serialized key events are stored in .evts by SAID digest.
+            subkey 'kels.'
+            Key: identifier prefix + sequence number.
+            Value: qb64 digest used to lookup event in .evts.
+            More than one value per DB key is allowed.
 
-        .esrs is named sub DB instance of Komer of EventSourceRecord
-            dgKey
-            DB is keyed by identifier prefix plus digest (said) of serialized event
-            Value is serialized instance of EventSourceRecord dataclass.
-            Only one value per DB key is allowed.
-            Keeps track of the source of the event. When .local is Truthy the
-            event was sourced in a protected way such as being generated
-            locally or via a protected path. When .local is Falsey the event was
-            NOT sourced in a protected way. The value of .local determines what
-            validation logic to run on the event. This database is used to track
-            the source when processing escrows that would otherwise be decoupled
-            from the original source of the event.
-
-        .misfits is named sub DB instance of CesrIoSetSuber for misfit escrows
-            subkey "mfes."
-            snKey
-            DB is keyed by event controller prefix plus sn of serialized event
-            where sn is 32 char hex string with leading zeros
-            Value is serialized qb64b dig (said) of event
-            Misfit escrows are events with remote (nonlocal) sources that are
-            inappropriate (i.e. would be dropped) unless they can be promoted
-            to local source via some extra after the fact authentication.
-            Escrow processing determines if and how to promote event source to
-            local and then reprocess
-
-        .delegables is named sub DB instance of CesrIoSetSuber for delegable event
-            escrows of key event with local delegator that need approval.
-            subkey "dees."  delegable event escrows
-            snKey
-            DB is keyed by event controller prefix plus sn of serialized event
-            where sn is 32 char hex string with leading zeros
-            Value is serialized qb64b dig (said) of event
-            Delegable event escrows are events with local delegator that need
-            to be approved via the anchoring of the delegated event seal in
-            the delegator's KEL. Event source must be local. A nonlocal (remote)
-            source for a delegable event of a local delegator must first pass
-            through the misfit escrow and get promoted to local source.
-
-
-        .dtss is named sub DB instance of CesrSuber for datetime stamps
-            of the datetime when the event was first escrowed and then later
-            first seen by log. Used for escrow timeouts and extended validation.
+        .dtss is named subDB instance of CesrSuber (klas=Dater) for datetime
+            stamps of when the event was first escrowed and then later first
+            seen by log. Used for escrow timeouts and extended validation.
             subkey 'dtss.'
-            dgKey
-            DB is keyed by identifier prefix plus digest of serialized event
-            Value is Dater instance
-
-        .aess is named sub DB instance of CatCesrSuber for authorizing event
-            source seal couples that map digest of key event to seal source
-            couple of authorizer's (delegator or issuer) event.
-            subkey "aess."
-            dgKey
-            DB is keyed by identifier prefix plus digest of key event
-            Value is (Number, Diger) tuple; first component serialized as
-            Huge (fixed 24-char), used to lookup authorizer's source event
-            in .kels sub DB.
+            dgKey (prefix + digest)
+            Value: Dater instance
             Only one value per DB key is allowed.
 
-        .sigs is named sub DB of fully qualified indexed event signatures
-            dgKey
-            DB is keyed by identifier prefix plus digest of serialized event
-            More than one value per DB key is allowed
+        .aess is named subDB instance of CatCesrSuber (klas=(Number, Diger))
+            for authorizing event source seal couples that map digest of key
+            event to seal source couple of authorizer's (delegator or issuer)
+            event.
+            subkey 'aess.'
+            dgKey (prefix + digest)
+            Value: (Number, Diger) tuple; Number serialized as Huge
+            (fixed 24-char), used to lookup authorizer's source event in .kels.
+            Only one value per DB key is allowed.
 
-        .wigs is a CesrIoSetSuber of indexed witness signatures of event that may
-            come directly or derived from a witness receipt message.
-            Witnesses always have nontransferable identifier prefixes.
-            The index is the offset of the witness into the witness list
-            of the most recent establishment event wrt the receipted event.
-            dgKey
-            DB is keyed by identifier prefix plus digest of serialized event
-            Stores Siger objects using CesrIoSetSuber
-            More than one Siger value per DB key is allowed
+        .sigs is named subDB instance of CesrIoSetSuber (klas=Siger) for
+            fully qualified indexed event signatures from the controller.
+            subkey 'sigs.'
+            dgKey (prefix + digest)
+            More than one value per DB key is allowed.
 
-        .rcts is CatCesrIoSetSuber for event receipt couplets from nontransferable
-            signers.
-            These are endorsements from nontrasferable signers who are not witnesses
+        .wigs is named subDB instance of CesrIoSetSuber (klas=Siger) for
+            indexed witness signatures of events that may come directly or be
+            derived from a witness receipt message. Witnesses always have
+            nontransferable identifier prefixes. The index is the offset of
+            the witness into the witness list of the most recent establishment
+            event wrt the receipted event.
+            subkey 'wigs.'
+            dgKey (prefix + digest)
+            More than one value per DB key is allowed.
+
+        .rcts is named subDB instance of CatCesrIoSetSuber (klas=(Prefixer, Cigar))
+            for event receipt couplets from nontransferable signers.
+            These are endorsements from nontransferable signers who are not witnesses
             May be watchers or other
-            Each entry is a duple of CESR objects: Prefixer and Cigar
-            DB is keyed by dgKey: identifier prefix plus digest of serialized event
-            Multiple values per key are stored as an ordered set (duplicates ignored,
-            insertion order preserved)
+            Each entry is a (Prefixer, Cigar) duple.
+            subkey 'rcts.'
+            dgKey (prefix + digest)
+            Multiple values per key stored as ordered set (duplicates ignored,
+            insertion order preserved).
 
+        .ures is named subDB instance of CatCesrIoSetSuber
+            (klas=(Diger, Prefixer, Cigar)) for unverified event receipt
+            escrowed triples from nontransferable signers. Each triple is
+            (receipted event digest, receiptor prefix, receipt signature).
+            Used to escrow receipt couples until the receipted event appears.
+            subkey 'ures.'
+            snKey (prefix + sequence number)
+            More than one value per DB key is allowed.
 
-        .ures is named sub DB of unverified event receipt escrowed triples from
-            non-transferable signers. Each triple is concatenation of fully
-            qualified items. These are: receipted event digest,
-            non-transferable receiptor identifier prefix,
-            plus nonindexed receipt event signature by that prefix.
-             Used to manage out of order events such as escrowing
-            receipt couple until event receipted shows up.
-            snKey
-            DB is keyed by receipted event controller prefix plus sn
-            of serialized event
-            More than one value per DB key is allowed
+        .vrcs is named subDB instance of CatCesrIoSetSuber
+            (klas=(Prefixer, Number, Diger, Siger)) for verified transferable-
+            validator receipt quadruples. Each stored value is a typed CESR
+            tuple (Prefixer, Number, Diger, Siger) representing a validator's
+            AID, its latest establishment-event sequence number, digest, and
+            its indexed signature over the event. Values preserved in insertion
+            order. Represents fully validated receipts moved out of escrow.
+            subkey 'vrcs.'
+            dgKey (prefix + digest)
+            Multiple values per key stored as ordered set.
 
-        .vrcs is named subDB instance of CatCesrIoSetSuber that stores verified 
-            transferable‑validator receipt quadruples. 
-            Each stored value is a typed CESR tuple—(Prefixer, Number, Diger, Siger)—
-            representing a validator’s transferable receipt, including the validator’s 
-            AID, its latest establishment‑event sequence number, digest, and its indexed 
-            signature over the event. Values are preserved in insertion order 
-            and represent fully validated receipts that have been moved out of escrow.
-            
+        .vres is named subDB instance of CatCesrIoSetSuber for escrowed
+            transferable-receipt quintuples. Each value is a typed CESR tuple
+            (Diger, Prefixer, Number, Diger, Siger) representing a validator's
+            receipt escrow entry. Holds unverified transferable receipts until
+            validated and moved into .vrcs.
+            subkey 'vres.'
+            snKey (prefix + sequence number)
+            Values stored in insertion order.
 
-        .vres is a named subDB instance of CatCesrIoSetSuber that maps
-            an event’s (prefix, sequence number) snKey to a set of escrowed
-            transferable‑receipt quintuples. Each value is a typed CESR tuple
-            (Diger, Prefixer, Number, Diger, Siger) representing a validator’s
-            receipt escrow. Used by Kevery to hold
-            unverified transferable receipts until they can be validated and moved
-            into the verified‑receipt store. Values are stored in insertion order.
+        .pses is named subDB instance of OnIoDupSuber for partially-signed
+            event escrows under composite keys "<pre><sep><on>". Tracks events
+            with at least one verified signature but not yet fully validated
+            due to missing signatures or dependent events.
+            subkey 'pses.'
+            Key: identifier prefix + sequence number.
+            Values stored in insertion order.
 
+        .pwes is named subDB instance of OnIoDupSuber for partially witnessed
+            key event escrows under composite keys "<pre><sep><on>" to
+            serialized event digest. Escrows events with verified signatures
+            but not yet verified witness receipts.
+            subkey 'pwes.'
+            Key: identifier prefix + sequence number.
+            More than one value per DB key is allowed.
 
-        .pses is a named subDB instance of OnIoDupSuber stores partially‑signed
-            escrows under composite keys of the form "<pre><sep><on>", where pre
-            is the identifier prefix and on is the event’s sequence number.
-            Used by Kevery to track events that have at least one verified signature
-            but cannot yet be fully validated due to missing signatures or dependent
-            events. Values are stored in insertion order.
-        .vrcs is named subDB instance of CatCesrIoSetSuber that stores verified 
-            transferable‑validator receipt quadruples. 
-            Each stored value is a typed CESR tuple—(Prefixer, Number, Diger, Siger)—
-            representing a validator’s transferable receipt, including the validator’s 
-            AID, its latest establishment‑event sequence number, digest, and its indexed 
-            signature over the event. Values are preserved in insertion order 
-            and represent fully validated receipts that have been moved out of escrow.
-            
+        .pdes is named subDB instance of OnIoDupSuber for partially delegated
+            key event escrows that map prefix + sequence number to serialized
+            event digest. Used in conjunction with .udes which escrows the
+            associated seal source couple.
+            subkey 'pdes.'
+            snKey (prefix + sequence number)
+            More than one value per DB key is allowed.
 
-        .vres is a named subDB instance of CatCesrIoSetSuber that maps
-            an event’s (prefix, sequence number) snKey to a set of escrowed
-            transferable‑receipt quintuples. Each value is a typed CESR tuple
-            (Diger, Prefixer, Number, Diger, Siger) representing a validator’s
-            receipt escrow. Used by Kevery to hold
-            unverified transferable receipts until they can be validated and moved
-            into the verified‑receipt store. Values are stored in insertion order.
+        .udes is named subDB instance of CatCesrSuber (klas=(Number, Diger))
+            for unverified delegation seal source couple escrows that map
+            (prefix, digest) of delegated event to delegating seal source
+            couple (sn, dig) that provides the source delegator event seal.
+            Each couple is (Number(num=sn).qb64b, Diger.qb64b) used to lookup
+            the source event in the delegator's KEL. Once accepted, entries
+            move into .aess.
+            subkey 'udes.'
+            dgKey (prefix + digest)
+            Only one value per DB key is allowed.
 
+        .uwes is named subDB instance of B64OnIoDupSuber for unverified event
+            indexed escrowed couples from witness signers. Each couple is
+            (edig, wig) where edig is receipted event digest and wig is the
+            indexed witness signature derived from the witness nontrans prefix
+            and offset into the witness list of the latest establishment event.
+            subkey 'uwes.'
+            Key: receipted event controller prefix + sequence number.
+            More than one value per DB key is allowed.
 
-        .pses is a named subDB instance of OnIoDupSuber stores partially‑signed
-            escrows under composite keys of the form "<pre><sep><on>", where pre
-            is the identifier prefix and on is the event’s sequence number.
-            Used by Kevery to track events that have at least one verified signature
-            but cannot yet be fully validated due to missing signatures or dependent
-            events. Values are stored in insertion order.
+        .ooes is named subDB instance of OnIoDupSuber for out-of-order event
+            escrows under composite keys "<pre><sep><on>". Tracks events whose
+            prior event has not yet been accepted into the KEL.
+            subkey 'ooes.'
+            Key: identifier prefix + sequence number.
+            Values stored in insertion order.
 
-        .pwes is named subDB instance of OnIoDupSuber for partially witnessed 
-            key event escrows that each map under a composite 
-            keys of the form "<pre><sep><on>" to serialized event digest.
-            these are for escrows of events with verified signatures but not
-            yet verified witness receipts.
-            Values are digests used to lookup event in .evts sub DB
-            DB is keyed by identifier prefix plus sequence number of key event
-            More than one value per DB key is allowed
-
-        .pdes is named sub DB of partially delegated key event escrows
-            that each map pre + sequence number to serialized event digest. This is
-            used in conjunction with .udes which escrows the associated seal
-            source couple.
-            snKey
-            Values are digests used to lookup delegated event in .evts sub DB
-            DB is keyed by identifier prefix plus sequence number of key event
-            More than one value per DB key is allowed
-
-        .udes is named sub DB of unverified delegation seal source couple escrows
-            that map (pre, digest) of delegated event to delegating seal source
-            couple (sn, dig) that provides source delegator event seal.
-            Each couple is concatenation of fully qualified items, snu+dig
-            of delegating source event in which seal of delegated event appears.
-            dgKey
-            Values are serialized instances of CatCesrSuber as couples
-            (Number(num=sn).qb64b, Diger.qb64b) used to lookup source event in delegator's
-            KEL.
-            DB is keyed by identifier prefix plus digest of key event
-            Only one value per DB key is allowed
-            Once escrow is accepted then delegation approval source seal couples
-            go into .aess database of authorizing event source seal couples
-
-        .uwes is named sub DB of unverified event indexed escrowed couples from
-            witness signers. Witnesses are from witness list of latest establishment
-            event for the receipted event. Each couple is concatenation of fully
-            qualified items, edig+sig where:
-                edig is receipted event digest
-                wig is indexed signature of that event with keypair derived from
-                    witness nontrans identifier prefix from witness list and index
-                    is offset into witness list of latest establishment event for
-                    receipted event
-            DB is keyed by receipted event controller prefix plus sn
-            of serialized event
-            More than one value per DB key is allowed
-
-        .ooes is a named subDB instance of OnIoDupSuber stores out‑of‑order
-            escrows under composite keys of the form "<pre><sep><on>", where
-            pre is the identifier prefix and on is the event’s sequence number.
-            Used by Kevery to track events whose prior event has not yet been
-            accepted into the KEL. Values are stored in insertion order.
-
-        .dels is named sub DB instance of OnIoDupSuber for duplicitous event
+        .dels is named subDB instance of OnIoDupSuber for duplicitous event
             log tables that map identifier prefix plus sequence number to
             serialized event digests.
-            subkey "dels."
-            snKey (prefix + ordinal sequence number)
-            DB is keyed by identifier prefix, ordinal is sequence number
-            Values are qb64 digests used to lookup event in .evts sub DB
+            subkey 'dels.'
+            snKey (prefix + sequence number)
+            Values are qb64 digests used to lookup event in .evts.
             More than one value per DB key is allowed (insertion ordered).
 
-        .ldes is named sub DB instance of OnIoDupSuber for likely duplicitous
+        .ldes is named subDB instance of OnIoDupSuber for likely duplicitous
             escrowed event tables that map identifier prefix plus sequence
             number to serialized event digests.
-            subkey "ldes."
-            snKey (prefix + ordinal sequence number)
-            DB is keyed by identifier prefix, ordinal is sequence number
-            Values are qb64 digests used to lookup event in .evts sub DB
+            subkey 'ldes.'
+            snKey (prefix + sequence number)
+            Values are qb64 digests used to lookup event in .evts.
             More than one value per DB key is allowed (insertion ordered).
 
+        .qnfs is named subDB instance of IoSetSuber for queued not-first-seen
+            event escrows. Maps (prefix, said) to event digest.
+            subkey 'qnfs.'
+            dupsort=True
+            More than one value per DB key is allowed.
 
-        .states (subkey stts.) is named subDB instance of SerderSuber that maps a prefix
-            to the latest keystate for that prefix. Used by ._kevers.db for read
-            through cache of key state to reload kevers in memory
+        .fons is named subDB instance of CesrSuber (klas=Number) mapping
+            prefix and digest to fn value (first seen ordinal number) of the
+            associated event. Given pre and event digest, retrieve fn here then
+            fetch event from .fels. Ensures any event looked up this way was
+            first seen at some point, even if later superseded by a recovery
+            rotation. Direct lookup in .evts could return escrowed events that
+            may never have been accepted as first seen.
+            subkey 'fons.'
+            dgKey (prefix + digest)
+            Only one value per DB key is allowed.
 
-        .habs is named subDB instance of Komer that maps habitat names to habitat
-            application state. Includes habitat identifier prefix
-            key is habitat name str
-            value is serialized HabitatRecord dataclass
+        .migs is named subDB instance of CesrSuber (klas=Dater) tracking
+            completed migrations. Maps migration module name to the Dater
+            timestamp of when it was run.
+            subkey 'migs.'
+            Key: migration name str.
+            Only one value per DB key is allowed.
 
-        .nmsp is named subDB instance of Komer that maps habitat namespaces and names to habitat
-            application state. Includes habitat identifier prefix
-            key is habitat namespace + b'\x00' + name str
-            value is serialized HabitatRecord dataclass
+        .vers is named subDB instance of Suber storing the current database
+            schema version string.
+            subkey 'vers.'
 
-        .sdts (sad date-time-stamp) named subDB instance of CesrSuber that
-            that maps SAD SAID to Dater instance's CESR serialization of
-            ISO-8601 datetime
-            key = said (bytes) of sad, val = dater.qb64b
+        .esrs is named subDB instance of Komer (schema=EventSourceRecord)
+            tracking the source of each event. When .local is Truthy the event
+            was sourced in a protected way (generated locally or via a protected
+            path). When .local is Falsey the event was NOT sourced in a
+            protected way. The value of .local determines what validation logic
+            to run. Used to track source when processing escrows that would
+            otherwise be decoupled from the original source of the event.
+            subkey 'esrs.'
+            dgKey (prefix + digest)
+            Only one value per DB key is allowed.
 
-        .ssgs (sad trans indexed sigs) named subDB instance of CesrIoSetSuber
-            that maps keys quadruple (saider.qb64, prefixer.qb64, seqner.q64,
-            diger.qb64) to val Siger of trans id siganture. Where: saider is
-            said of SAD and prefixer, seqner, and diger indicate the key state
-            est event for signer or reply SAD. Each key may
-            have a set of vals in insertion order one for each signer of the sad.
-            key = join (saider.qb64b, prefixer.qb64b, seqner.qb64b, diger.qb64b)
-            (bytes)  val = siger.qb64b
+        .misfits is named subDB instance of IoSetSuber for misfit escrows.
+            Events with remote (nonlocal) sources that are inappropriate (i.e.
+            would be dropped) unless promoted to local source via extra
+            after-the-fact authentication. Escrow processing determines if and
+            how to promote event source to local and then reprocess.
+            subkey 'mfes.'
+            snKey (prefix + sequence number)
+            Value: qb64b digest of event.
 
-        .scgs (sad nontrans cigs) named subDB instance of CatCesrIoSetSuber
-            that maps said of SAD to couple (Verfer, Cigar) for nontrans signer.
-            For nontrans qb64 of Verfer is same as Prefixer.
-            Each key may have a set of vals in insertion order one for each
-            nontrans signer of the sad.
-            key = said (bytes of SAD, val = cat of (verfer.qb64, cigar.qb64b)
+        .delegables is named subDB instance of IoSetSuber for delegable event
+            escrows of key events with a local delegator that need approval.
+            Approval is via anchoring of the delegated event seal in the
+            delegator's KEL. Event source must be local. A nonlocal (remote)
+            source must first pass through .misfits and be promoted to local.
+            subkey 'dees.'
+            snKey (prefix + sequence number)
+            Value: qb64b digest of event.
 
-        .rpys (replys) named subDB instance of SerderSuber that maps said of
-            reply message (versioned SAD) to serialization of that reply message.
-            key is said bytes, val is Serder.raw bytes of reply 'rpy' message
+        .states is named subDB instance of Komer (schema=KeyStateRecord)
+            mapping a prefix to its latest key state. Used as read-through
+            cache backing .kevers to reload Kever instances from persistent
+            storage.
+            subkey 'stts.'
+            Key: identifier prefix.
+            Only one value per DB key is allowed.
 
-        .rpes (reply escrows) named subDB instance of CesrIoSetSuber that
-            maps routes of reply (versioned SAD) to single Saider of that
-            reply msg.
-            Routes such as '/end/role/' and '/loc/scheme'
-            key is route bytes,  vals = diger.qb64b of reply 'rpy' msg
+        .wits is named subDB instance of CesrIoSetSuber (klas=Prefixer)
+            storing the current witness set for an identifier.
+            subkey 'wits.'
+            Key: identifier prefix.
+            Multiple values per key (one per witness).
 
-        .eans is named subDB instance of CesrSuber with klas=Saider that maps
-            cid.role.eid to said of reply SAD as auth:  authN by controller cid
-            of authZ that designates endpoint provider eid in role
-            routes /end/role/add and /end/role/cut to nullify
-            key is cid.role.eid,  val = saider.qb64b of reply 'rpy' msg SAD
+        .habs is named subDB instance of Komer (schema=HabitatRecord) mapping
+            habitat names to habitat application state including identifier
+            prefix.
+            subkey 'habs.'
+            Key: habitat name str.
+            Only one value per DB key is allowed.
 
-        .lans is named subDB instance of CesrSuber with klas=Saider that maps
-            eid.scheme to said of reply SAD as auth: authN by endpoint provider
-            eid that designates scheme for url
-            route /loc/scheme   use null url to nullify
-            key is eid.scheme,  val = saider.qb64b of reply 'rpy' msg SAD
+        .names is named subDB instance of Suber (sep='^') mapping
+            (namespace, name) to identifier prefix. Provides namespace-scoped
+            name lookup for habitats.
+            subkey 'names.'
+            Key: namespace + '^' + name.
 
-        .ends is named subDB instance of Komer that maps (cid, role, eid)
-            to attributes about endpoint authorization where:
-            cid is controller prefix, role is endpoint role, watcher etc, and
-            eid is controller prefix of endpoint controller watcher etc.
-            key is cid.role.eid,  value is serialized EndpointRecord dataclass
+        .sdts is named subDB instance of CesrSuber (klas=Dater) mapping SAD
+            SAID to Dater CESR serialization of ISO-8601 datetime
+            (sad date-time stamp).
+            subkey 'sdts.'
+            Key: said (bytes) of SAD.
+            Only one value per DB key is allowed.
 
-        .locs is named subDB instance of Komer that maps endpoint prefix eid
-            and endpoint network location scheme to endpoint location details
-            key is eid.scheme, val is serialized LocationRecord dataclass
+        .ssgs is named subDB instance of CesrIoSetSuber (klas=Siger) for SAD
+            transferable indexed signatures. Maps quadruple key
+            (diger.qb64, prefixer.qb64, number.qb64, diger.qb64) to Siger
+            of the transferable signer's signature. Diger is the SAID of the
+            SAD; prefixer, number, and diger indicate the key state
+            establishment event for the signer.
+            subkey 'ssgs.'
+            Key: join(diger.qb64b, prefixer.qb64b, number.qb64b, diger.qb64b)
+            Multiple values per key (one per signer, insertion ordered).
 
-        .tops is named subDB instance of Komer that maps Witness identifier
-            prefix to topic index of last received mailbox message.
-            key is witness prefix identifier
-            value is serialized TopicsRecord dataclass
+        .scgs is named subDB instance of CatCesrIoSetSuber
+            (klas=(Verfer, Cigar)) for SAD nontransferable signatures. Maps
+            SAD SAID to (Verfer, Cigar) couple for each nontransferable signer.
+            For nontransferable signers, qb64 of Verfer equals Prefixer.
+            subkey 'scgs.'
+            Key: said (bytes) of SAD.
+            Multiple values per key (one per nontransferable signer, insertion
+            ordered).
 
-        .gids is named subDB instance of Komer that maps group identifier prefix
-            to the local identifier prefix and list of remote identifier prefixes
-            that participate in the group identifier.
-            key is group identifier prefix
-            value is serialized GroupIdentifier dataclass
+        .rpys is named subDB instance of SerderSuber for reply messages. Maps
+            reply SAID to serialization of the reply message (versioned SAD).
+            Use .sdts, .ssgs, and .scgs for associated datetimes and
+            signatures.
+            subkey 'rpys.'
+            Key: said bytes.
+            Only one value per DB key is allowed.
 
-        .mpids is named subDB instance of CesrIoSetSuber mapping payload SAID (of 'e' block)
-            to the SAID of the `exn` messages is was contained in.  This aggregates
-            identical message bodies across participants in group multisig body trying
-            to reach concensus on events or credentials.
+        .rpes is named subDB instance of CesrIoSetSuber (klas=Diger) for
+            reply escrows. Maps reply route to Diger of the escrowed reply
+            message. Routes such as '/end/role' and '/loc/scheme'.
+            subkey 'rpes.'
+            Key: route bytes.
+            Multiple values per key.
 
-        .pubs is CatCesrIoSetSuber with subkey="pubs." of concatenated tuples
-        (qb64 pre, qb64 snh) indexed by qb64 of public key. Maps each signing
-        public key from establishment event to the events's prefix and sequence number
-        so can look up an event by any of its signing keys. Updated by Kever.logEvent
+        .eans is named subDB instance of CesrSuber (klas=Diger) for endpoint
+            role authorizations. Maps cid.role.eid to SAID of the reply SAD
+            that authN by controller cid authZ endpoint provider eid in the
+            given role. Routes /end/role/add and /end/role/cut to nullify.
+            subkey 'eans.'
+            Key: cid.role.eid.
+            Only one value per DB key is allowed.
 
-        .digs is CatCesrIoSetSuber with subkey="digs." of of concatenated tuples
-        (qb64 pre, qb64 snh) indexed by qb64 of digest of next signing public key.
-        Maps each next signing public key digest from establishment event to
-        the events's prefix and sequence number so can look up an event by any
-        of its next public signing key digests. Updated by Kever.logEvent
+        .lans is named subDB instance of CesrSuber (klas=Diger) for location
+            authorizations. Maps eid.scheme to SAID of the reply SAD that
+            authN by endpoint provider eid designates scheme URL.
+            Route /loc/scheme; null URL nullifies.
+            subkey 'lans.'
+            Key: eid.scheme.
+            Only one value per DB key is allowed.
 
-        Missing ToDo XXXX other attributes as sub dbs not documented here
-            such as .wits etc
+        .ends is named subDB instance of Komer (schema=EndpointRecord) mapping
+            (cid, role, eid) to EndpointRecord attributes about endpoint
+            authorization. cid is controller prefix, role is endpoint role
+            (e.g. watcher), eid is controller prefix of endpoint provider.
+            Data extracted from reply /end/role/add or /end/role/cut.
+            subkey 'ends.'
+            Key: cid.role.eid.
+
+        .locs is named subDB instance of Komer (schema=LocationRecord) mapping
+            endpoint prefix eid and network location scheme to endpoint
+            location details. Data extracted from reply /loc/scheme.
+            subkey 'locs.'
+            Key: eid.scheme.
+
+        .obvs is named subDB instance of Komer (schema=ObservedRecord) for
+            observed OIDs by watcher. Maps (cid, aid, oid) to ObservedRecord.
+            subkey 'obvs.'
+            Key: cid.aid.oid.
+
+        .tops is named subDB instance of Komer (schema=TopicsRecord) mapping
+            witness identifier prefix to the topic index of the last recieved
+            mailbox message.
+            subkey 'witm.'
+            Key: witness prefix identifier.
+
+        .gpse is named subDB instance of CatCesrIoSetSuber
+            (klas=(Number, Diger)) for group multisig partial signature
+            escrows.
+            subkey 'gpse.'
+            Multiple values per key.
+
+        .gdee is named subDB instance of CatCesrIoSetSuber
+            (klas=(Number, Diger)) for group multisig delegate escrows.
+            subkey 'gdee.'
+            Multiple values per key.
+
+        .gpwe is named subDB instance of CatCesrIoSetSuber
+            (klas=(Number, Diger)) for group multisig partial witness escrows.
+            subkey 'gdwe.'
+            Multiple values per key.
+
+        .cgms is named subDB instance of CesrSuber (klas=Diger) for completed
+            group multisig events. Maps key to Diger of completed event.
+            subkey 'cgms.'
+            Only one value per DB key is allowed.
+
+        .epse is named subDB instance of SerderSuber for exchange message
+            partial signature escrows. Maps key to serialized Serder of the
+            escrowed exchange message.
+            subkey 'epse.'
+
+        .epsd is named subDB instance of CesrSuber (klas=Dater) for exchange
+            message partial signature escrow datetimes. Maps key to Dater
+            timestamp of the escrowed message.
+            subkey 'epsd.'
+
+        .exns is named subDB instance of SerderSuber for accepted exchange
+            messages. Maps key to serialized Serder of the exchange message.
+            subkey 'exns.'
+
+        .erpy is named subDB instance of CesrSuber (klas=Saider) as a forward
+            pointer to a provided reply message associated with an exchange
+            message.
+            subkey 'erpy.'
+            Only one value per DB key is allowed.
+
+        .esigs is named subDB instance of CesrIoSetSuber (klas=Siger) for
+            exchange message transferable indexed signatures.
+            subkey 'esigs.'
+            Multiple values per key.
+
+        .ecigs is named subDB instance of CatCesrIoSetSuber
+            (klas=(Verfer, Cigar)) for exchange message nontransferable
+            signatures. Maps key to (Verfer, Cigar) couples.
+            subkey 'ecigs.'
+            Multiple values per key.
+
+        .epath is named subDB instance of IoSetSuber for exchange message
+            pathed attachments.
+            subkey '.epath'
+            Multiple values per key.
+
+        .essrs is named subDB instance of CesrIoSetSuber (klas=Texter) for
+            exchange message event source records.
+            subkey '.essrs'
+            Multiple values per key.
+
+        .chas is named subDB instance of CesrIoSetSuber (klas=Diger) for
+            accepted signed 12-word challenge response exn messages. Keyed by
+            prefix of signer.
+            subkey 'chas.'
+            Multiple values per key.
+
+        .reps is named subDB instance of CesrIoSetSuber (klas=Diger) for
+            successful signed 12-word challenge response exn messages. Keyed
+            by prefix of signer.
+            subkey 'reps.'
+            Multiple values per key.
+
+        .wkas is named subDB instance of IoSetKomer (schema=WellKnownAuthN)
+            for authorized well-known OOBIs.
+            subkey 'wkas.'
+            Multiple values per key.
+
+        .kdts is named subDB instance of CesrSuber (klas=Dater) mapping key
+            state SAID to ISO-8601 datetime stamp (ksn date-time stamp).
+            subkey 'kdts.'
+            Key: said (bytes).
+            Only one value per DB key is allowed.
+
+        .ksns is named subDB instance of Komer (schema=KeyStateRecord) for
+            key state notice messages. Maps key state SAID to KeyStateRecord.
+            Use .kdts for associated datetimes and signatures.
+            subkey 'ksns.'
+
+        .knas is named subDB instance of CesrSuber (klas=Diger) for key state
+            SAID records of successfully saved key state notices. Maps
+            (prefix, aid) to SAID of key state.
+            subkey 'knas.'
+            Only one value per DB key is allowed.
+
+        .wwas is named subDB instance of CesrSuber (klas=Diger) for watcher
+            watched SAID records. Maps (cid, aid, oid) to SAID of the reply
+            message for successfully saved watched AIDs.
+            subkey 'wwas.'
+            Only one value per DB key is allowed.
+
+        .oobis is named subDB instance of Komer (schema=OobiRecord, sep='>')
+            for configured OOBIs to be processed asynchronously. Keyed by
+            OOBI URL. sep='>' prevents splitting as '>' is not valid in URLs.
+            subkey 'oobis.'
+
+        .eoobi is named subDB instance of Komer (schema=OobiRecord, sep='>')
+            for OOBIs that failed to load and are pending retry. Keyed by
+            OOBI URL.
+            subkey 'eoobi.'
+
+        .coobi is named subDB instance of Komer (schema=OobiRecord, sep='>')
+            for OOBIs with outstanding client requests. Keyed by OOBI URL.
+            subkey 'coobi.'
+
+        .roobi is named subDB instance of Komer (schema=OobiRecord, sep='>')
+            for resolved OOBIs that have been successfully processed. Keyed
+            by OOBI URL.
+            subkey 'roobi.'
+
+        .woobi is named subDB instance of Komer (schema=OobiRecord, sep='>')
+            for well-known OOBIs used for MFA against a resolved OOBI. Keyed
+            by OOBI URL.
+            subkey 'woobi.'
+
+        .moobi is named subDB instance of Komer (schema=OobiRecord, sep='>')
+            for multifactor well-known OOBI records. Keyed by OOBI URL.
+            subkey 'moobi.'
+
+        .mfa is named subDB instance of Komer (schema=OobiRecord, sep='>')
+            for multifactor well-known OOBI auth records pending processing.
+            Keyed by controller URL.
+            subkey 'mfa.'
+
+        .rmfa is named subDB instance of Komer (schema=OobiRecord, sep='>')
+            for resolved multifactor well-known OOBI auth records. Keyed by
+            controller URL.
+            subkey 'rmfa.'
+
+        .schema is named subDB instance of SchemerSuber storing JSON schema
+            SADs keyed by SAID of the schema.
+            subkey 'schema.'
+
+        .cfld is named subDB instance of Suber for contact field values for
+            remote identifiers. Keyed by prefix/field.
+            subkey 'cfld.'
+
+        .hbys is named subDB instance of Suber for global settings of the
+            Habery environment.
+            subkey 'hbys.'
+
+        .cons is named subDB instance of Suber for signed contact data. Keyed
+            by prefix.
+            subkey 'cons.'
+
+        .ccigs is named subDB instance of CesrSuber (klas=Cigar) for
+            transferable signatures on contact data. Keyed by prefix.
+            subkey 'ccigs.'
+            Only one value per DB key is allowed.
+
+        .imgs is raw LMDB sub database for chunked image data for contact
+            information of remote identifiers. Keyed by prefix/chunk-index.
+            subkey b'imgs.'
+            Raw bytes values; accessed directly via env.open_db.
+
+        .ifld is named subDB instance of Suber for identifier field values
+            for local identifiers. Keyed by prefix/field.
+            subkey 'ifld.'
+
+        .sids is named subDB instance of Suber for signed local identifier
+            data. Keyed by prefix.
+            subkey 'sids.'
+
+        .icigs is named subDB instance of CesrSuber (klas=Cigar) for
+            transferable signatures on local identifier data. Keyed by prefix.
+            subkey 'icigs.'
+            Only one value per DB key is allowed.
+
+        .iimgs is raw LMDB sub database for chunked image data for local
+            identifier information. Keyed by prefix/chunk-index.
+            subkey b'iimgs.'
+            Raw bytes values; accessed directly via env.open_db.
+
+        .dpwe is named subDB instance of SerderSuber for delegated partial
+            witness escrows. Maps key to serialized Serder of the escrowed
+            delegated event.
+            subkey 'dpwe.'
+
+        .dune is named subDB instance of SerderSuber for delegated unanchored
+            escrows. Maps key to serialized Serder of the unanchored delegated
+            event awaiting delegation anchor.
+            subkey 'dune.'
+
+        .dpub is named subDB instance of SerderSuber for delegate publication
+            escrows used to send delegator info to the delegate's witnesses.
+            subkey 'dpub.'
+
+        .cdel is named subDB instance of CesrOnSuber (klas=Diger) for
+            completed group delegated AIDs. Maps ordinal key to Diger of the
+            completed delegation event.
+            subkey 'cdel.'
+
+        .meids is named subDB instance of CesrIoSetSuber (klas=Diger) mapping
+            multisig embed payload SAID to the SAIDs of the exn messages that
+            contained it. Aggregates identical message bodies across group
+            multisig participants reaching consensus on events or credentials.
+            subkey 'meids.'
+            Multiple values per key.
+
+        .maids is named subDB instance of CesrIoSetSuber (klas=Prefixer)
+            mapping multisig embed payload SAID to the AIDs of the group
+            multisig participants that contributed it.
+            subkey 'maids.'
+            Multiple values per key.
+
+        .ctyp is named subDB instance of Komer (schema=CacheTypeRecord) for
+            KRAM cache type records. Maps expression string to drift and lag
+            parameters.
+            subkey 'ctyp.'
+
+        .msgc is named subDB instance of Komer (schema=MsgCacheRecord) for
+            KRAM message cache. Maps (AID, MID) to message datetime, drift,
+            and lag values.
+            subkey 'msgc.'
+
+        .tmsc is named subDB instance of Komer (schema=TxnMsgCacheRecord) for
+            KRAM transactioned message cache. Maps (AID, XID, MID) to
+            datetimes, drift, and lag values.
+            subkey 'tmsc.'
+
+        .pmkm is named subDB instance of SerderSuber for KRAM partially signed
+            multi-key messages. Maps (AID, MID) key to the associated
+            SerderKERI message.
+            subkey 'pmkm.'
+
+        .pmks is named subDB instance of CesrIoSetSuber (klas=Siger) for
+            KRAM partially signed multi-key signatures. Maps (AID, MID) key
+            to associated Siger instances.
+            subkey 'pmks.'
+            Multiple values per key.
+
+        .pmsk is named subDB instance of CatCesrSuber (klas=(Number, Diger))
+            for KRAM partially signed multi-key sender key state records. Maps
+            (AID, MID) key to (sn, event SAID) couple identifying the sender's
+            key state.
+            subkey 'pmsk.'
+            Only one value per DB key is allowed.
+
+        .trqs is named subDB instance of CatCesrIoSetSuber for KRAM partially
+            signed multi-key trans receipt quadruple attachments.
+            subkey 'trqs.'
+            DB is keyed by (AID, MID): sender identifier prefix plus message SAID
+            Value is (Prefixer, Number, Diger, Siger) tuple. Sourced from
+            parser kwa key 'trqs'.
+            Multiple values per key stored as ordered set (duplicates ignored).
+            Entries persist until removed by the KRAM pruner.
+
+        .tsgs is named subDB instance of CatCesrIoSetSuber for KRAM partially
+            signed multi-key trans last sig group attachments.
+            subkey 'tsgs.'
+            DB is keyed by (AID, MID): sender identifier prefix plus message SAID
+            Value is (Prefixer, Number, Diger, Siger) tuple. Sourced from
+            parser kwa key 'tsgs'.
+            Multiple values per key stored as ordered set (duplicates ignored).
+            Entries persist until removed by the KRAM pruner.
+
+        .sscs is named subDB instance of CatCesrIoSetSuber for KRAM partially
+            signed multi-key first seen seal couple attachments from issuing or
+            delegating events.
+            subkey 'sscs.'
+            DB is keyed by (AID, MID): sender identifier prefix plus message SAID
+            Value is (Number, Diger) tuple. Sourced from parser kwa key 'sscs'.
+            Multiple values per key stored as ordered set (duplicates ignored).
+            Entries persist until removed by the KRAM pruner.
+
+        .ssts is named subDB instance of CatCesrIoSetSuber for KRAM partially
+            signed multi-key source seal triple attachments from issued or
+            delegated events.
+            subkey 'ssts.'
+            DB is keyed by (AID, MID): sender identifier prefix plus message SAID
+            Value is (Prefixer, Number, Diger) tuple. Sourced from parser kwa
+            key 'ssts'.
+            Multiple values per key stored as ordered set (duplicates ignored).
+            Entries persist until removed by the KRAM pruner.
+
+        .frcs is named subDB instance of CatCesrIoSetSuber for KRAM partially
+            signed multi-key first seen replay couple attachments.
+            subkey 'frcs.'
+            DB is keyed by (AID, MID): sender identifier prefix plus message SAID
+            Value is (Number, Dater) tuple. Sourced from parser kwa key 'frcs'.
+            Multiple values per key stored as ordered set (duplicates ignored).
+            Entries persist until removed by the KRAM pruner.
+
+        .tdcs is named subDB instance of CatCesrIoSetSuber for KRAM partially
+            signed multi-key typed digest seal couple attachments.
+            subkey 'tdcs.'
+            DB is keyed by (AID, MID): sender identifier prefix plus message SAID
+            Value is (Verser, Diger) tuple. Sourced from parser kwa key 'tdcs'.
+            Multiple values per key stored as ordered set (duplicates ignored).
+            Entries persist until removed by the KRAM pruner.
+
+        .ptds is named subDB instance of IoSetSuber for KRAM partially signed
+            multi-key pathed stream attachments.
+            subkey 'ptds.'
+            DB is keyed by (AID, MID): sender identifier prefix plus message SAID
+            Value is raw bytes of pathed CESR stream. Sourced from parser kwa
+            key 'ptds'.
+            Multiple values per key stored as ordered set (duplicates ignored).
+            Entries persist until removed by the KRAM pruner.
+
+        .bsqs is named subDB instance of CatCesrIoSetSuber for KRAM partially
+            signed multi-key blind state quadruple attachments.
+            subkey 'bsqs.'
+            DB is keyed by (AID, MID): sender identifier prefix plus message SAID
+            Value is (Diger, Noncer, Noncer, Labeler) tuple. Sourced from
+            parser kwa key 'bsqs'.
+            Multiple values per key stored as ordered set (duplicates ignored).
+            Entries persist until removed by the KRAM pruner.
+
+        .bsss is named subDB instance of CatCesrIoSetSuber for KRAM partially
+            signed multi-key bound state sextuple attachments.
+            subkey 'bsss.'
+            DB is keyed by (AID, MID): sender identifier prefix plus message SAID
+            Value is (Diger, Noncer, Noncer, Labeler, Number, Noncer) tuple.
+            Sourced from parser kwa key 'bsss'.
+            Multiple values per key stored as ordered set (duplicates ignored).
+            Entries persist until removed by the KRAM pruner.
+
+        .tmqs is named subDB instance of CatCesrIoSetSuber for KRAM partially
+            signed multi-key type media quadruple attachments.
+            subkey 'tmqs.'
+            DB is keyed by (AID, MID): sender identifier prefix plus message SAID
+            Value is (Diger, Noncer, Labeler, Texter) tuple. Sourced from
+            parser kwa key 'tmqs'.
+            Multiple values per key stored as ordered set (duplicates ignored).
+            Entries persist until removed by the KRAM pruner.
 
     Properties:
-        kevers (dbdict): read through cache of kevers of states for KELs in db
+        kevers (statedict): read through cache of kevers of states for KELs in db
 
     """
 
@@ -542,7 +862,7 @@ class Baser(dbing.LMDBer):
         """
         self.prefixes = oset()  # should change to hids for hab ids
         self.groups = oset()  # group hab ids
-        self._kevers = dbdict()
+        self._kevers = statedict()
         self._kevers.db = self  # assign db for read through cache of kevers
 
         if (mapSize := os.getenv(KERIBaserMapSizeKey)) is not None:
@@ -599,10 +919,10 @@ class Baser(dbing.LMDBer):
                                              klas=(coring.Prefixer, coring.Cigar))
         self.ures = subing.CatCesrIoSetSuber(db=self, subkey='ures.',
                                              klas=(coring.Diger, coring.Prefixer, coring.Cigar))
-        self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.', 
-                                            klas=(coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
-        self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.', 
-                                            klas=(coring.Diger, coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
+        self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.',
+                             klas=(coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
+        self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.',
+                             klas=(coring.Diger, coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
         self.pses = subing.OnIoDupSuber(db=self, subkey='pses.')
         self.pwes = subing.OnIoDupSuber(db=self, subkey='pwes.')
         self.pdes = subing.OnIoDupSuber(db=self, subkey='pdes.')
@@ -622,7 +942,7 @@ class Baser(dbing.LMDBer):
 
         # event source local (protected) or non-local (remote not protected)
         self.esrs = koming.Komer(db=self,
-                                   schema=EventSourceRecord,
+                                   klas=EventSourceRecord,
                                    subkey='esrs.')
 
         # misfit escrows whose processing may change the .esrs event source record
@@ -634,7 +954,7 @@ class Baser(dbing.LMDBer):
         # Kever state made of KeyStateRecord key states
         # TODO: clean
         self.states = koming.Komer(db=self,
-                                   schema=KeyStateRecord,
+                                   klas=KeyStateRecord,
                                    subkey='stts.')
 
         self.wits = subing.CesrIoSetSuber(db=self, subkey="wits.", klas=coring.Prefixer)
@@ -642,7 +962,7 @@ class Baser(dbing.LMDBer):
         # habitat application state keyed by habitat name, includes prefix
         self.habs = koming.Komer(db=self,
                                  subkey='habs.',
-                                 schema=HabitatRecord, )
+                                 klas=HabitatRecord, )
         # habitat name database mapping (domain,name) as key to Prefixer
         self.names = subing.Suber(db=self, subkey='names.', sep="^")
 
@@ -651,7 +971,7 @@ class Baser(dbing.LMDBer):
         self.sdts = subing.CesrSuber(db=self, subkey='sdts.', klas=coring.Dater)
 
         # all sad ssgs (sad indexed signature serializations) maps SAD quadkeys
-        # given by quadruple (saider.qb64, prefixer.qb64, seqner.q64, diger.qb64)
+        # given by quadruple (diger.qb64, prefixer.qb64, seqner.q64, diger.qb64)
         #  of reply and trans signer's key state est evt to val Siger for each
         # signature.
         self.ssgs = subing.CesrIoSetSuber(db=self, subkey='ssgs.', klas=indexing.Siger)
@@ -685,24 +1005,24 @@ class Baser(dbing.LMDBer):
         # service endpoint identifier (eid) auths keyed by controller cid.role.eid
         # data extracted from reply /end/role/add or /end/role/cut
         self.ends = koming.Komer(db=self, subkey='ends.',
-                                 schema=EndpointRecord, )
+                                 klas=EndpointRecord, )
 
         # service endpoint locations keyed by eid.scheme  (endpoint identifier)
         # data extracted from reply loc
         self.locs = koming.Komer(db=self,
                                  subkey='locs.',
-                                 schema=LocationRecord, )
+                                 klas=LocationRecord, )
         # observed oids by watcher by cid.aid.oid  (endpoint identifier)
         # data extracted from reply loc
         self.obvs = koming.Komer(db=self,
                                  subkey='obvs.',
-                                 schema=ObservedRecord, )
+                                 klas=ObservedRecord, )
 
         # index of last retrieved message from witness mailbox
         # TODO: clean
         self.tops = koming.Komer(db=self,
                                  subkey='witm.',
-                                 schema=TopicsRecord, )
+                                 klas=TopicsRecord, )
 
         # group partial signature escrow
         self.gpse = subing.CatCesrIoSetSuber(db=self, subkey='gpse.',
@@ -749,7 +1069,7 @@ class Baser(dbing.LMDBer):
         # TODO: clean
         self.epath = subing.IoSetSuber(db=self, subkey=".epath")
 
-        self.essrs = subing.CesrIoSetSuber(db=self, subkey=".essrs", klass=coring.Texter)
+        self.essrs = subing.CesrIoSetSuber(db=self, subkey=".essrs", klas=coring.Texter)
 
         # accepted signed 12-word challenge response exn messages keys by prefix of signer
         # TODO: clean
@@ -761,7 +1081,7 @@ class Baser(dbing.LMDBer):
 
         # authorzied well known OOBIs
         # TODO: clean
-        self.wkas = koming.IoSetKomer(db=self, subkey='wkas.', schema=WellKnownAuthN)
+        self.wkas = koming.IoSetKomer(db=self, subkey='wkas.', klas=WellKnownAuthN)
 
         # KSN support datetime stamps and signatures indexed and not-indexed
         # all ksn  kdts (key state datetime serializations) maps said to date-time
@@ -773,7 +1093,7 @@ class Baser(dbing.LMDBer):
         # use  .kdts, .ksgs, and .kcgs for datetimes and signatures
         # TODO: clean
         self.ksns = koming.Komer(db=self,
-                                schema=KeyStateRecord,
+                                klas=KeyStateRecord,
                                 subkey='ksns.')
 
         # key state SAID database for successfully saved key state notices
@@ -790,55 +1110,55 @@ class Baser(dbing.LMDBer):
         # TODO: clean
         self.oobis = koming.Komer(db=self,
                                   subkey='oobis.',
-                                  schema=OobiRecord,
-                                  sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
+                                  klas=OobiRecord,
+                                  sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
 
         # escrow OOBIs that failed to load, retriable, keyed by oobi URL
         self.eoobi = koming.Komer(db=self,
                                   subkey='eoobi.',
-                                  schema=OobiRecord,
-                                  sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
+                                  klas=OobiRecord,
+                                  sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
 
         # OOBIs with outstand client requests.
         self.coobi = koming.Komer(db=self,
                                   subkey='coobi.',
-                                  schema=OobiRecord,
-                                  sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
+                                  klas=OobiRecord,
+                                  sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
 
         # Resolved OOBIs (those that have been processed successfully for this database.
         # TODO: clean
         self.roobi = koming.Komer(db=self,
                                   subkey='roobi.',
-                                  schema=OobiRecord,
-                                  sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
+                                  klas=OobiRecord,
+                                  sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
 
         # Well known OOBIs that are to be used for mfa against a resolved OOBI.
         # TODO: clean
         self.woobi = koming.Komer(db=self,
                                   subkey='woobi.',
-                                  schema=OobiRecord,
-                                  sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
+                                  klas=OobiRecord,
+                                  sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
 
         # Well known OOBIs that are to be used for mfa against a resolved OOBI.
         # TODO: clean
         self.moobi = koming.Komer(db=self,
                                   subkey='moobi.',
-                                  schema=OobiRecord,
-                                  sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
+                                  klas=OobiRecord,
+                                  sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
 
         # Multifactor well known OOBI auth records to process.  Keys by controller URL
         # TODO: clean
         self.mfa = koming.Komer(db=self,
                                 subkey='mfa.',
-                                schema=OobiRecord,
-                                sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
+                                klas=OobiRecord,
+                                sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
 
         # Resolved multifactor well known OOBI auth records.  Keys by controller URL
         # TODO: clean
         self.rmfa = koming.Komer(db=self,
                                  subkey='rmfa.',
-                                 schema=OobiRecord,
-                                 sep=">")  # Use seperator not a allowed in URLs so no splitting occurs.
+                                 klas=OobiRecord,
+                                 sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
 
         # JSON schema SADs keys by the SAID
         # TODO: clean
@@ -862,9 +1182,11 @@ class Baser(dbing.LMDBer):
         # TODO: clean
         self.ccigs = subing.CesrSuber(db=self, subkey='ccigs.', klas=coring.Cigar)
 
-        # Chunked image data for contact information for remote identifiers
-        # TODO: clean
-        self.imgs = self.env.open_db(key=b'imgs.')
+        # Blinded media for contact information for remote identifiers.
+        # CatCesrSuber with TypeMedia format: (Noncer=SAID, Noncer=UUID, Labeler=MIME, Texter=data)
+        self.imgs = subing.CatCesrSuber(db=self, subkey='imgs.',
+                                         klas=(coring.Noncer, coring.Noncer,
+                                               coring.Labeler, coring.Texter))
 
         # Field values for identifier information for local identifiers. Keyed by prefix/field
         # TODO: clean
@@ -880,9 +1202,11 @@ class Baser(dbing.LMDBer):
         # TODO: clean
         self.icigs = subing.CesrSuber(db=self, subkey='icigs.', klas=coring.Cigar)
 
-        # Chunked image data for identifier information for local identifiers
-        # TODO: clean
-        self.iimgs = self.env.open_db(key=b'iimgs.')
+        # Blinded media for identifier information for local identifiers.
+        # CatCesrSuber with TypeMedia format: (Noncer=SAID, Noncer=UUID, Labeler=MIME, Texter=data)
+        self.iimgs = subing.CatCesrSuber(db=self, subkey='iimgs.',
+                                          klas=(coring.Noncer, coring.Noncer,
+                                                coring.Labeler, coring.Texter))
 
         # Delegation escrow dbs #
         # delegated partial witness escrow
@@ -909,15 +1233,15 @@ class Baser(dbing.LMDBer):
 
         # KRAM cache type — key: expression string, value: drift and lag params
         self.ctyp = koming.Komer(db=self, subkey='ctyp.',
-                                 schema=CacheTypeRecord)
+                                 klas=CacheTypeRecord)
 
         # KRAM message cache — key: (AID, MID), value: msg datetime, drift, lags
         self.msgc = koming.Komer(db=self, subkey='msgc.',
-                                 schema=MsgCacheRecord)
+                                 klas=MsgCacheRecord)
 
         # KRAM transactioned message cache — key: (AID, XID, MID), value: datetimes, drift, lags
         self.tmsc = koming.Komer(db=self, subkey='tmsc.',
-                                 schema=TxnMsgCacheRecord)
+                                 klas=TxnMsgCacheRecord)
 
         # KRAM partially signed multi-key message key (AID.MID) mapped to associated message (SerderKERI)
         self.pmkm = subing.SerderSuber(db=self, subkey='pmkm.')
@@ -927,6 +1251,54 @@ class Baser(dbing.LMDBer):
 
         # KRAM partially signed multi-key sender key state key (AID.MID) mapped to SN and event SAID
         self.pmsk = subing.CatCesrSuber(db=self, subkey='pmsk.', klas=(coring.Number, coring.Diger))
+
+        # KRAM partially signed multi-key non-authenticator attachments
+
+        # trqs: trans receipt quadruples (prefixer, number, diger, siger)
+        self.trqs = subing.CatCesrIoSetSuber(db=self, subkey='trqs.',
+                                             klas=(coring.Prefixer, coring.Number,
+                                                   coring.Diger, indexing.Siger))
+
+        # tsgs: trans last sig groups (prefixer, number, diger, siger)
+        self.tsgs = subing.CatCesrIoSetSuber(db=self, subkey='tsgs.',
+                                             klas=(coring.Prefixer, coring.Number,
+                                                   coring.Diger, indexing.Siger))
+
+        # sscs: first seen seal couples (number, diger) issuing or delegating
+        self.sscs = subing.CatCesrIoSetSuber(db=self, subkey='sscs.',
+                                             klas=(coring.Number, coring.Diger))
+
+        # ssts: source seal triples (prefixer, number, diger) issued or delegated
+        self.ssts = subing.CatCesrIoSetSuber(db=self, subkey='ssts.',
+                                             klas=(coring.Prefixer, coring.Number,
+                                                   coring.Diger))
+
+        # frcs: first seen replay couples (number, dater)
+        self.frcs = subing.CatCesrIoSetSuber(db=self, subkey='frcs.',
+                                             klas=(coring.Number, coring.Dater))
+
+        # tdcs: typed digest seal couples (verser, diger)
+        self.tdcs = subing.CatCesrIoSetSuber(db=self, subkey='tdcs.',
+                                             klas=(coring.Verser, coring.Diger))
+
+        # ptds: pathed streams (raw bytes)
+        self.ptds = subing.IoSetSuber(db=self, subkey='ptds.')
+
+        # bsqs: blind state quadruples (diger, noncer, noncer, labeler)
+        self.bsqs = subing.CatCesrIoSetSuber(db=self, subkey='bsqs.',
+                                             klas=(coring.Diger, coring.Noncer,
+                                                   coring.Noncer, coring.Labeler))
+
+        # bsss: bound state sextuples (diger, noncer, noncer, labeler, number, noncer)
+        self.bsss = subing.CatCesrIoSetSuber(db=self, subkey='bsss.',
+                                             klas=(coring.Diger, coring.Noncer,
+                                                   coring.Noncer, coring.Labeler,
+                                                   coring.Number, coring.Noncer))
+
+        # tmqs: type media quadruples (diger, noncer, labeler, texter)
+        self.tmqs = subing.CatCesrIoSetSuber(db=self, subkey='tmqs.',
+                                             klas=(coring.Diger, coring.Noncer,
+                                                   coring.Labeler, coring.Texter))
 
         self.reload()
 
@@ -942,7 +1314,7 @@ class Baser(dbing.LMDBer):
             raise kering.DatabaseError(f"Database migrations must be run. DB version {self.version}; current {keri.__version__}")
 
         removes = []
-        for keys, data in self.habs.getItemIter():
+        for keys, data in self.habs.getTopItemIter():
             if (ksr := self.states.get(keys=data.hid)) is not None:
                 try:
                     from ..core.eventing import Kever
@@ -975,6 +1347,8 @@ class Baser(dbing.LMDBer):
         """
         from ..core import coring
 
+        escrows_cleared = False
+
         for (version, migrations) in MIGRATIONS:
             # Only run migration if current source code version is at or below the migration version
             ver = semver.VersionInfo.parse(keri.__version__)
@@ -986,6 +1360,13 @@ class Baser(dbing.LMDBer):
             # Skip migrations already run - where version less than (-1) or equal to (0) database version
             if self.version is not None and semver.compare(version, self.version) != 1:
                 continue
+
+            # Clear all escrows before first migration to prevent old key
+            # format crashes (e.g. qnfs keys without insertion-order suffix).
+            # Uses .trim() which bypasses key parsing. See #863.
+            if not escrows_cleared:
+                self._trimAllEscrows()
+                escrows_cleared = True
 
             print(f"Migrating database v{self.version} --> v{version}")
             for migration in migrations:
@@ -1008,13 +1389,37 @@ class Baser(dbing.LMDBer):
 
         self.version = keri.__version__
 
+    def _trimAllEscrows(self):
+        """Trim all escrow databases via low-level .trim().
+
+        Safe for old key formats that would crash higher-level iterators
+        (e.g., qnfs keys without insertion-order suffix from pre-1.2.0).
+        Called at the beginning of migration per spec call guidance.
+        See: https://github.com/WebOfTrust/keripy/issues/863
+        """
+        escrows = [
+            self.ures, self.vres, self.pses, self.pwes, self.ooes,
+            self.qnfs, self.uwes, self.misfits, self.delegables,
+            self.pdes, self.udes, self.rpes, self.ldes, self.epsd,
+            self.eoobi, self.dpub, self.gpwe, self.gdee, self.dpwe,
+            self.gpse, self.epse, self.dune,
+        ]
+        total = 0
+        for escrow in escrows:
+            count = escrow.cnt()
+            if count > 0:
+                escrow.trim()
+                total += count
+        if total > 0:
+            print(f"Cleared {total} escrow entries before migration")
+
     def clearEscrows(self):
         """
         Clear all escrows
         """
-        for (k, _) in self.ures.getItemIter():
+        for (k, _) in self.ures.getTopItemIter():
             self.ures.rem(keys=k)
-        for (k, _) in self.vres.getItemIter():
+        for (k, _) in self.vres.getTopItemIter():
             self.vres.rem(keys=k)
         for (pre, on, dig) in self.pses.getOnItemIterAll():
             self.pses.remOn(keys=pre, on=on, val=dig)
@@ -1024,9 +1429,9 @@ class Baser(dbing.LMDBer):
             self.pwes.remOn(keys=pre, on=sn, val=dig)
         for (pre, on, dig) in self.ooes.getOnItemIterAll():
             self.ooes.remOn(keys=pre, on=on, val=dig)
-        for (pre, said), edig in self.qnfs.getItemIter():
+        for (pre, said), edig in self.qnfs.getTopItemIter():
             self.qnfs.rem(keys=(pre, said))
-        for (pre, snh), rdigerWigerTuple in self.uwes.getItemIter():
+        for (pre, snh), rdigerWigerTuple in self.uwes.getTopItemIter():
             self.uwes.rem(keys=(pre, snh))
 
         for escrow in [self.qnfs, self.misfits, self.delegables, self.pdes,
@@ -1137,7 +1542,7 @@ class Baser(dbing.LMDBer):
                 for name in unsecured:
                     srcdb = getattr(self, name)
                     cpydb = getattr(copy, name)
-                    for keys, val in srcdb.getItemIter():
+                    for keys, val in srcdb.getTopItemIter():
                         cpydb.put(keys=keys, val=val)
 
                 # This is the list of set based databases that are not created as part of event processing.
@@ -1147,20 +1552,20 @@ class Baser(dbing.LMDBer):
                 for name in sets:
                     srcdb = getattr(self, name)
                     cpydb = getattr(copy, name)
-                    for keys, val in srcdb.getItemIter():
+                    for keys, val in srcdb.getTopItemIter():
                         cpydb.add(keys=keys, val=val)
 
-                # Insecure raw imgs database copy.
-                for (key, val) in self.getTopItemIter(self.imgs):
-                    copy.imgs.setVal(key=key, val=val)
+                # Copy imgs (blinded media for remote identifiers)
+                for keys, val in self.imgs.getTopItemIter():
+                    copy.imgs.pin(keys=keys, val=val)
 
-                # Insecure raw iimgs database copy.
-                for (key, val) in self.getTopItemIter(self.iimgs):
-                    copy.iimgs.setVal(key=key, val=val)
+                # Copy iimgs (blinded media for local identifiers)
+                for keys, val in self.iimgs.getTopItemIter():
+                    copy.iimgs.pin(keys=keys, val=val)
 
                 # clone .habs  habitat name prefix Komer subdb
                 # copy.habs = koming.Komer(db=copy, schema=HabitatRecord, subkey='habs.')  # copy
-                for keys, val in self.habs.getItemIter():
+                for keys, val in self.habs.getTopItemIter():
                     if val.hid in copy.kevers:  # only copy habs that verified
                         copy.habs.put(keys=keys, val=val)
                         ns = "" if val.domain is None else val.domain
@@ -1170,7 +1575,7 @@ class Baser(dbing.LMDBer):
                             copy.groups.add(val.hid)
 
                 # clone .ends and .locs databases
-                for (cid, role, eid), val in self.ends.getItemIter():
+                for (cid, role, eid), val in self.ends.getTopItemIter():
                     exists = False  # only copy if entries in both .ends and .locs
                     for scheme in ("https", "http", "tcp"):  # all supported schemes
                         lval = self.locs.get(keys=(eid, scheme))
@@ -1312,7 +1717,7 @@ class Baser(dbing.LMDBer):
         if quads := self.vrcs.get(keys=dgkey):
             atc.extend(Counter(code=Codens.TransReceiptQuadruples,
                                count=len(quads), version=kering.Vrsn_1_0).qb64b)
-            for pre, snu, diger, siger in quads:    # adapt to CESR 
+            for pre, snu, diger, siger in quads:    # adapt to CESR
                 atc.extend(pre.qb64b)
                 atc.extend(snu.qb64b)
                 atc.extend(diger.qb64b)
@@ -1600,6 +2005,7 @@ class Baser(dbing.LMDBer):
                 continue  # skip this event
 
             yield serder  # event as Serder
+
 
 class BaserDoer(doing.Doer):
     """

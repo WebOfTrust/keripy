@@ -111,7 +111,7 @@ class Broker:
             extype (Type[Exception]): the expected exception type if the message should remain in escrow
 
         """
-        for (typ, pre, aid), diger in self.escrowdb.getItemIter(keys=(typ, '')):
+        for (typ, pre, aid), diger in self.escrowdb.getTopItemIter(keys=(typ, '')):
             try:
                 tsgs = dbing.fetchTsgs(db=self.tigerdb, diger=diger)
 

@@ -10,7 +10,7 @@ from dataclasses import dataclass, asdict
 
 import pytest
 
-from keri.core.coring import Kinds
+from keri import Kinds
 from keri.db import dbing, koming
 from keri.help import helping
 
@@ -48,7 +48,7 @@ def test_kom_happy_path():
         assert db.name == "test"
         assert db.opened
 
-        mydb = koming.Komer(db=db, schema=Record, subkey='records.')
+        mydb = koming.Komer(db=db, klas=Record, subkey='records.')
         assert isinstance(mydb, koming.Komer)
         assert not mydb.sdb.flags()["dupsort"]
 
@@ -162,7 +162,7 @@ def test_kom_get_item_iter():
         assert db.name == "test"
         assert db.opened
 
-        mydb = koming.Komer(db=db, schema=Stuff, subkey='recs.')
+        mydb = koming.Komer(db=db, klas=Stuff, subkey='recs.')
         assert isinstance(mydb, koming.Komer)
 
 
@@ -171,7 +171,7 @@ def test_kom_get_item_iter():
         mydb.put(keys=("a","3"), val=y)
         mydb.put(keys=("a","4"), val=z)
 
-        items = [(keys, asdict(data)) for keys, data in mydb.getItemIter()]
+        items = [(keys, asdict(data)) for keys, data in mydb.getTopItemIter()]
         assert items == [(('a', '1'), {'a': 'Big', 'b': 'Blue'}),
                         (('a', '2'), {'a': 'Tall', 'b': 'Red'}),
                         (('a', '3'), {'a': 'Fat', 'b': 'Green'}),
@@ -183,12 +183,12 @@ def test_kom_get_item_iter():
         mydb.put(keys=("bc","4"), val=z)
 
         topkeys = ("b", "")  # append empty str to force trailing .sep
-        items = [(keys, asdict(data)) for keys, data in mydb.getItemIter(keys=topkeys)]
+        items = [(keys, asdict(data)) for keys, data in mydb.getTopItemIter(keys=topkeys)]
         assert items == [(('b', '1'), {'a': 'Big', 'b': 'Blue'}),
                          (('b', '2'), {'a': 'Tall', 'b': 'Red'})]
 
 
-        items = [(keys, asdict(data)) for keys, data in mydb.getItemIter()]
+        items = [(keys, asdict(data)) for keys, data in mydb.getTopItemIter()]
         assert items == [(('a', '1'), {'a': 'Big', 'b': 'Blue'}),
                         (('a', '2'), {'a': 'Tall', 'b': 'Red'}),
                         (('a', '3'), {'a': 'Fat', 'b': 'Green'}),
@@ -201,7 +201,7 @@ def test_kom_get_item_iter():
         assert mydb.cnt() == 8
 
         assert mydb.trim(keys=("b", ""))
-        items = [(keys, asdict(data)) for keys, data in mydb.getItemIter()]
+        items = [(keys, asdict(data)) for keys, data in mydb.getTopItemIter()]
         assert items == [(('a', '1'), {'a': 'Big', 'b': 'Blue'}),
                         (('a', '2'), {'a': 'Tall', 'b': 'Red'}),
                         (('a', '3'), {'a': 'Fat', 'b': 'Green'}),
@@ -210,7 +210,7 @@ def test_kom_get_item_iter():
                         (('bc', '4'), {'a': 'Eat', 'b': 'White'})]
 
         assert mydb.trim()
-        items = [(keys, asdict(data)) for keys, data in mydb.getItemIter()]
+        items = [(keys, asdict(data)) for keys, data in mydb.getTopItemIter()]
         assert items == []
 
     assert not os.path.exists(db.path)
@@ -231,7 +231,7 @@ def test_put_invalid_dataclass():
         age: int
 
     with dbing.openLMDB() as db:
-        mydb = koming.Komer(db=db, schema=AnotherClass, subkey='records.')
+        mydb = koming.Komer(db=db, klas=AnotherClass, subkey='records.')
         sue = Record(first="Susan")
         keys = ("test_key", "0001")
 
@@ -252,12 +252,12 @@ def test_get_invalid_dataclass():
         age: int
 
     with dbing.openLMDB() as db:
-        mydb = koming.Komer(db=db, schema=Record, subkey='records.')
+        mydb = koming.Komer(db=db, klas=Record, subkey='records.')
         sue = Record(first="Susan")
         keys = ("test_key", "0001")
         mydb.put(keys=keys, val=sue)
 
-        mydb = koming.Komer(db=db, schema=AnotherClass, subkey='records.')
+        mydb = koming.Komer(db=db, klas=AnotherClass, subkey='records.')
         with pytest.raises(ValueError):
             mydb.get(keys)
 
@@ -271,7 +271,7 @@ def test_not_found_entity():
             return iter(asdict(self))
 
     with dbing.openLMDB() as db:
-        mydb = koming.Komer(db=db, schema=Record, subkey='records.')
+        mydb = koming.Komer(db=db, klas=Record, subkey='records.')
         sue = Record(first="Susan")
         keys = ("test_key", "0001")
 
@@ -298,7 +298,7 @@ def test_serialization():
                  zip=84058)
 
     with dbing.openLMDB() as db:
-        k = koming.Komer(db=db, schema=Record, subkey='records.')
+        k = koming.Komer(db=db, klas=Record, subkey='records.')
         srl = k._serializer(Kinds.mgpk)
 
         expected = b'\x86\xa5first\xa3Jim\xa4last\xa5Black\xa6street\xaf100 Main Street\xa4city\xa8Riverton\xa5state\xa2UT\xa3zip\xce\x00\x01HZ'
@@ -355,7 +355,7 @@ def test_custom_serialization():
                  zip=84058)
 
     with dbing.openLMDB() as db:
-        mydb = koming.Komer(db=db, schema=Record, subkey='records.')
+        mydb = koming.Komer(db=db, klas=Record, subkey='records.')
 
         keys = ("test_key", "0001")
         mydb.put(keys=keys, val=jim)
@@ -387,7 +387,7 @@ def test_deserialization():
     json = b'{"first": "Jim", "last": "Black", "street": "100 Main Street", "city": "Riverton", "state": "UT", "zip": 84058}'
 
     with dbing.openLMDB() as db:
-        k = koming.Komer(db=db, schema=Record, subkey='records.')
+        k = koming.Komer(db=db, klas=Record, subkey='records.')
 
         desrl = k._deserializer(Kinds.mgpk)
         actual = helping.datify(Record, desrl(msgp))
@@ -514,12 +514,12 @@ def test_dup_komer():
         assert db.name == "test"
         assert db.opened
 
-        endDB = koming.DupKomer(db=db, schema=Endpoint, subkey='ends.')
+        endDB = koming.DupKomer(db=db, klas=Endpoint, subkey='ends.')
         assert isinstance(endDB, koming.DupKomer)
         assert endDB.sdb.flags()["dupsort"]
         assert endDB.sep == endDB.Sep == "."
 
-        locDB = koming.Komer(db=db, schema=Location, subkey='locs.')
+        locDB = koming.Komer(db=db, klas=Location, subkey='locs.')
         assert isinstance(locDB, koming.Komer)
         assert not locDB.sdb.flags()["dupsort"]
         assert locDB.sep == locDB.Sep == "."
@@ -575,23 +575,23 @@ def test_dup_komer():
 
         ends = ends + [wit3end]
         i = 0
-        for keys, end in endDB.getItemIter():
+        for keys, end in endDB.getTopItemIter():
             assert end == ends[i]
             i += 1
 
         i = 0
-        for keys, end in endDB.getItemIter(keys=(cid0, "" )):
+        for keys, end in endDB.getTopItemIter(keys=(cid0, "" )):
             assert end == ends[i]
             i += 1
 
         alllocs =  locs +  [wit3loc]
         i = 0
-        for keys, loc in locDB.getItemIter():
+        for keys, loc in locDB.getTopItemIter():
             assert loc == alllocs[i]
             i += 1
 
         i = 0
-        for keys, loc in locDB.getItemIter(keys=(eids[0], "" )):
+        for keys, loc in locDB.getTopItemIter(keys=(eids[0], "" )):
             assert loc == locs[i]
             i += 1
 
@@ -698,12 +698,12 @@ def test_ioset_komer():
         assert db.name == "test"
         assert db.opened
 
-        endDB = koming.IoSetKomer(db=db, schema=Endpoint, subkey='ends.')
+        endDB = koming.IoSetKomer(db=db, klas=Endpoint, subkey='ends.')
         assert isinstance(endDB, koming.IoSetKomer)
         assert not endDB.sdb.flags()["dupsort"]
         assert endDB.sep == endDB.Sep == "."
 
-        locDB = koming.Komer(db=db, schema=Location, subkey='locs.')
+        locDB = koming.Komer(db=db, klas=Location, subkey='locs.')
         assert isinstance(locDB, koming.Komer)
         assert not locDB.sdb.flags()["dupsort"]
         assert locDB.sep == locDB.Sep == "."
@@ -773,33 +773,33 @@ def test_ioset_komer():
                     'witness',
                     '00000000000000000000000000000002')]
 
-        # test getItemIter
+        # test getTopItemIter
         i = 0
-        for keys, end in endDB.getItemIter(keys=keys0):
+        for keys, end in endDB.getTopItemIter(keys=keys0):
             assert end == ends[i]
             assert keys == keys0
             i += 1
 
         ends = ends + [wit3end]
         i = 0
-        for keys, end in endDB.getItemIter():
+        for keys, end in endDB.getTopItemIter():
             assert end == ends[i]
             assert keys in  (keys0, keys1)
             i += 1
 
         i = 0
-        for keys, end in endDB.getItemIter(keys=(cid0, "")):
+        for keys, end in endDB.getTopItemIter(keys=(cid0, "")):
             assert end == ends[i]
             i += 1
 
         alllocs = locs + [wit3loc]
         i = 0
-        for keys, loc in locDB.getItemIter():
+        for keys, loc in locDB.getTopItemIter():
             assert loc == alllocs[i]
             i += 1
 
         i = 0
-        for keys, loc in locDB.getItemIter(keys=(eids[0], "")):
+        for keys, loc in locDB.getTopItemIter(keys=(eids[0], "")):
             assert loc == locs[i]
             i += 1
 
