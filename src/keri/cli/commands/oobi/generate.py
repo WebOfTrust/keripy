@@ -74,7 +74,7 @@ def generate(tymth, tock=0.0, **opts):
             url = urls[kering.Schemes.https] if kering.Schemes.https in urls else urls[kering.Schemes.http]
             print(f"{url.rstrip("/")}/oobi/{hab.pre}/controller")
         elif role in (kering.Roles.mailbox,):
-            for (_, _, eid), end in hab.db.ends.getItemIter(keys=(hab.pre, kering.Roles.mailbox, )):
+            for (_, _, eid), end in hab.db.ends.getTopItemIter(keys=(hab.pre, kering.Roles.mailbox, )):
                 if not (end.allowed and end.enabled is not False):
                     continue
 

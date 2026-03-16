@@ -439,7 +439,7 @@ def test_reply(mockHelpingNowUTC):
 
         # get all watchers in ends
         items = [(keys, ender.allowed) for keys, ender
-                 in tamHab.db.ends.getItemIter(keys=(nelHab.pre, role))]
+                 in tamHab.db.ends.getTopItemIter(keys=(nelHab.pre, role))]
         assert items == [(('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y',
                             'watcher',
                             'BD0enuaak8Gk_sDSWrHy7H-RwqM7KNfiCj6k5JKz1oEC'),
@@ -452,7 +452,7 @@ def test_reply(mockHelpingNowUTC):
 
         # get all watchers in ends
         items = [(keys, ender.allowed) for keys, ender
-                 in nelHab.db.ends.getItemIter(keys=(nelHab.pre, role))]
+                 in nelHab.db.ends.getTopItemIter(keys=(nelHab.pre, role))]
         assert items == [(('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y',
                             'watcher',
                             'BD0enuaak8Gk_sDSWrHy7H-RwqM7KNfiCj6k5JKz1oEC'),
@@ -980,7 +980,7 @@ def test_reply(mockHelpingNowUTC):
 
         # get all roles in ends
         items = [(keys, ender.allowed) for keys, ender
-                 in nelHab.db.ends.getItemIter(keys=(tamHab.pre, ""))]
+                 in nelHab.db.ends.getTopItemIter(keys=(tamHab.pre, ""))]
         assert items == [(('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e',
                             'controller',
                             'ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e'),
@@ -996,7 +996,7 @@ def test_reply(mockHelpingNowUTC):
 
 
         items = [(keys, ender.allowed) for keys, ender
-                 in nelHab.db.ends.getItemIter(keys=(nelHab.pre, ""))]
+                 in nelHab.db.ends.getTopItemIter(keys=(nelHab.pre, ""))]
         assert items == [(('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y',
                             'watcher',
                             'BD0enuaak8Gk_sDSWrHy7H-RwqM7KNfiCj6k5JKz1oEC'),
@@ -1007,14 +1007,14 @@ def test_reply(mockHelpingNowUTC):
                            True)]
 
         items = [(keys, ender.allowed) for keys, ender
-                 in tamHab.db.ends.getItemIter(keys=(tamHab.pre, ""))]
+                 in tamHab.db.ends.getTopItemIter(keys=(tamHab.pre, ""))]
         assert items == [(('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e',
                         'controller',
                         'ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e'),
                          True)]
 
         items = [(keys, ender.allowed) for keys, ender
-                 in tamHab.db.ends.getItemIter(keys=(nelHab.pre, ""))]
+                 in tamHab.db.ends.getTopItemIter(keys=(nelHab.pre, ""))]
         assert items == [(('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y',
                             'watcher',
                             'BD0enuaak8Gk_sDSWrHy7H-RwqM7KNfiCj6k5JKz1oEC'),
@@ -1027,62 +1027,62 @@ def test_reply(mockHelpingNowUTC):
         # get all schemes in locs
         # nel locs
         items = [(keys, locer.url) for keys, locer
-                 in nelHab.db.locs.getItemIter(keys=(tamHab.pre, ""))]
+                 in nelHab.db.locs.getTopItemIter(keys=(tamHab.pre, ""))]
         assert items == [(('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e', 'http'),
                           'http://localhost:8088/controller/tam')]
 
 
         items = [(keys, locer.url) for keys, locer
-                 in nelHab.db.locs.getItemIter(keys=(nelHab.pre, ""))]
+                 in nelHab.db.locs.getTopItemIter(keys=(nelHab.pre, ""))]
         assert not items
 
         items = [(keys, locer.url) for keys, locer
-                 in nelHab.db.locs.getItemIter(keys=(wesHab.pre, ""))]
+                 in nelHab.db.locs.getTopItemIter(keys=(wesHab.pre, ""))]
         assert items == []
 
         items = [(keys, locer.url) for keys, locer
-                 in nelHab.db.locs.getItemIter(keys=(wokHab.pre, ""))]
+                 in nelHab.db.locs.getTopItemIter(keys=(wokHab.pre, ""))]
         assert items == [(('BKVb58uITf48YoMPz8SBOTVwLgTO9BY4oEXRPoYIOErX', 'http'),
                           'http://localhost:8080/witness/wok')]
 
         items = [(keys, locer.url) for keys, locer
-                 in nelHab.db.locs.getItemIter(keys=(watHab.pre, ""))]
+                 in nelHab.db.locs.getTopItemIter(keys=(watHab.pre, ""))]
         assert items == [(('BF6YSJGAtVNmq3b7dpBi04Q0YdqvTfsk9PFkkZaR8LRr', 'http'),
                           'http://localhost:8080/watcher/wat')]
 
         items = [(keys, locer.url) for keys, locer
-                 in nelHab.db.locs.getItemIter(keys=(welHab.pre, ""))]
+                 in nelHab.db.locs.getTopItemIter(keys=(welHab.pre, ""))]
         assert not items
 
         # tam locs
         items = [(keys, locer.url) for keys, locer
-                 in tamHab.db.locs.getItemIter(keys=(tamHab.pre, ""))]
+                 in tamHab.db.locs.getTopItemIter(keys=(tamHab.pre, ""))]
         assert items == [(('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e', 'http'),
                           'http://localhost:8088/controller/tam')]
 
         items = [(keys, locer.url) for keys, locer
-                 in tamHab.db.locs.getItemIter(keys=(nelHab.pre, ""))]
+                 in tamHab.db.locs.getTopItemIter(keys=(nelHab.pre, ""))]
         assert not items
 
         items = [(keys, locer.url) for keys, locer
-                 in tamHab.db.locs.getItemIter(keys=(wesHab.pre, ""))]
+                 in tamHab.db.locs.getTopItemIter(keys=(wesHab.pre, ""))]
         assert items == []
 
         items = [(keys, locer.url) for keys, locer
-                 in tamHab.db.locs.getItemIter(keys=(wokHab.pre, ""))]
+                 in tamHab.db.locs.getTopItemIter(keys=(wokHab.pre, ""))]
         assert not items
 
         items = [(keys, locer.url) for keys, locer
-                 in tamHab.db.locs.getItemIter(keys=(wamHab.pre, ""))]
+                 in tamHab.db.locs.getTopItemIter(keys=(wamHab.pre, ""))]
         assert not items
 
         items = [(keys, locer.url) for keys, locer
-                 in tamHab.db.locs.getItemIter(keys=(watHab.pre, ""))]
+                 in tamHab.db.locs.getTopItemIter(keys=(watHab.pre, ""))]
         assert items == [(('BF6YSJGAtVNmq3b7dpBi04Q0YdqvTfsk9PFkkZaR8LRr', 'http'),
                           'http://localhost:8080/watcher/wat')]
 
         items = [(keys, locer.url) for keys, locer
-                 in tamHab.db.locs.getItemIter(keys=(welHab.pre, ""))]
+                 in tamHab.db.locs.getTopItemIter(keys=(welHab.pre, ""))]
         assert not items
 
         # test Habitat methods to fetch urls ends and locs
@@ -1156,7 +1156,7 @@ def test_reply(mockHelpingNowUTC):
 
         # get all roles in ends
         items = [(keys, ender.allowed) for keys, ender
-                 in nelHab.db.ends.getItemIter(keys=(tamHab.pre, ""))]
+                 in nelHab.db.ends.getTopItemIter(keys=(tamHab.pre, ""))]
         assert items == [(('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e',
                             'controller',
                             'ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e'),
@@ -1175,7 +1175,7 @@ def test_reply(mockHelpingNowUTC):
                            True)]
 
         items = [(keys, ender.allowed) for keys, ender
-                 in nelHab.db.ends.getItemIter(keys=(nelHab.pre, ""))]
+                 in nelHab.db.ends.getTopItemIter(keys=(nelHab.pre, ""))]
         assert items == [(('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y',
                         'controller',
                         'BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y'),
@@ -1190,7 +1190,7 @@ def test_reply(mockHelpingNowUTC):
                        True)]
 
         items = [(keys, ender.allowed) for keys, ender
-                 in tamHab.db.ends.getItemIter(keys=(tamHab.pre, ""))]
+                 in tamHab.db.ends.getTopItemIter(keys=(tamHab.pre, ""))]
         assert items == [(('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e',
                             'controller',
                             'ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e'),
@@ -1209,7 +1209,7 @@ def test_reply(mockHelpingNowUTC):
                            True)]
 
         items = [(keys, ender.allowed) for keys, ender
-                 in tamHab.db.ends.getItemIter(keys=(nelHab.pre, ""))]
+                 in tamHab.db.ends.getTopItemIter(keys=(nelHab.pre, ""))]
         assert items == [(('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y',
                             'controller',
                             'BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y'),
@@ -1225,37 +1225,37 @@ def test_reply(mockHelpingNowUTC):
 
         # tam locs
         items = [(keys, locer.url) for keys, locer
-                 in tamHab.db.locs.getItemIter(keys=(tamHab.pre, ""))]
+                 in tamHab.db.locs.getTopItemIter(keys=(tamHab.pre, ""))]
         assert items == [(('ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e', 'http'),
                           'http://localhost:8088/controller/tam')]
 
         items = [(keys, locer.url) for keys, locer
-                 in tamHab.db.locs.getItemIter(keys=(nelHab.pre, ""))]
+                 in tamHab.db.locs.getTopItemIter(keys=(nelHab.pre, ""))]
         assert items == [(('BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuPr_xUwKcj7y', 'http'),
                           'http://localhost:8080/controller/nel')]
 
         items = [(keys, locer.url) for keys, locer
-                 in tamHab.db.locs.getItemIter(keys=(wesHab.pre, ""))]
+                 in tamHab.db.locs.getTopItemIter(keys=(wesHab.pre, ""))]
         assert items == [(('BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfXGNrFRom', 'http'),
                           'http://localhost:8080/witness/wes')]
 
         items = [(keys, locer.url) for keys, locer
-                 in tamHab.db.locs.getItemIter(keys=(wokHab.pre, ""))]
+                 in tamHab.db.locs.getTopItemIter(keys=(wokHab.pre, ""))]
         assert items == [(('BKVb58uITf48YoMPz8SBOTVwLgTO9BY4oEXRPoYIOErX', 'http'),
                           'http://localhost:8080/witness/wok')]
 
         items = [(keys, locer.url) for keys, locer
-                 in tamHab.db.locs.getItemIter(keys=(wamHab.pre, ""))]
+                 in tamHab.db.locs.getTopItemIter(keys=(wamHab.pre, ""))]
         assert items == [(('BByq5Nfi0KgohEaJ8h9JrLqbhX_waySFSXKsgumxEYQp', 'http'),
                          'http://localhost:8080/witness/wam')]
 
         items = [(keys, locer.url) for keys, locer
-                 in tamHab.db.locs.getItemIter(keys=(watHab.pre, ""))]
+                 in tamHab.db.locs.getTopItemIter(keys=(watHab.pre, ""))]
         assert items == [(('BF6YSJGAtVNmq3b7dpBi04Q0YdqvTfsk9PFkkZaR8LRr', 'http'),
                           'http://localhost:8080/watcher/wat')]
 
         items = [(keys, locer.url) for keys, locer
-                 in tamHab.db.locs.getItemIter(keys=(welHab.pre, ""))]
+                 in tamHab.db.locs.getTopItemIter(keys=(welHab.pre, ""))]
         assert items == [(('BD0enuaak8Gk_sDSWrHy7H-RwqM7KNfiCj6k5JKz1oEC', 'http'),
                           'http://localhost:8080/watcher/wel')]
 

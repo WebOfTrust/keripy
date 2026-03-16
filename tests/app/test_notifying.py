@@ -103,7 +103,7 @@ def test_dictersuber():
         assert dsub.put(keys=(note.datetime, note.rid), val=note) is True
 
         res = []
-        for (_, _), note in dsub.getItemIter(keys=()):
+        for (_, _), note in dsub.getTopItemIter(keys=()):
             res.append(note)
 
         assert len(res) == 3
@@ -145,13 +145,13 @@ def test_noter(mockHelpingNowUTC):
     notes = noter.getNotes(start=0)
     assert len(notes) == 0
 
-    note = notifying.notice(attrs=dict(a=1), 
+    note = notifying.notice(attrs=dict(a=1),
                             dt=helping.fromIso8601("2022-07-08T15:01:05.453632"))
     assert noter.add(note, cig) is True
-    note = notifying.notice(attrs=dict(a=2), 
+    note = notifying.notice(attrs=dict(a=2),
                             dt=helping.fromIso8601("2022-07-08T15:01:06.453632"))
     assert noter.add(note, cig) is True
-    note = notifying.notice(attrs=dict(a=3), 
+    note = notifying.notice(attrs=dict(a=3),
                             dt=helping.fromIso8601("2022-07-08T15:01:07.453632"))
     assert noter.add(note, cig) is True
 

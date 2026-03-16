@@ -3856,6 +3856,8 @@ class Kevery:
         self.exc = exc          # Exchanger instance for exn messages
         self.tvy = tvy          # Tevery instance for TEL query routes
         self.kramer = kramer    # Kramer instance for KRAM processing
+        if self.kramer is not None:
+            self.kramer.cues = self.cues
         self.lax = True if lax else False  # promiscuous mode
         self.local = True if local else False  # local vs nonlocal default
         self.cloned = True if cloned else False  # process as cloned
@@ -4274,8 +4276,6 @@ class Kevery:
                         self.db.vrcs.add(keys=dgKey(pre=pre, dig=ldig),
                                        val=quadruple)  # dups kept
 
-
-
         else:  # no events to be receipted yet at that sn so escrow
             if cigars:
                 self.escrowUReceipt(serder, cigars, said=ked["d"])  # digest in receipt
@@ -4290,6 +4290,7 @@ class Kevery:
             logger.info(msg)
             logger.debug("event=\n%s\n", serder.pretty())
             raise UnverifiedReceiptError(msg)
+
 
     def processMsg(self, serder, **kwa):
         """Process one non-key-event KERI message with attachments.
@@ -4892,7 +4893,7 @@ class Kevery:
         # check source and ensure we should accept it
         baks = ksr.b
         wats = set()
-        for _, habr in self.db.habs.getItemIter():
+        for _, habr in self.db.habs.getTopItemIter():
             wats |= set(habr.watchers)
 
         # not in promiscuous mode
@@ -5180,7 +5181,7 @@ class Kevery:
 
             # get list of witness signatures to ensure we are presenting a fully witnessed event
             wigers = self.db.wigs.get(keys=(pre, kever.serder.saidb))
-            
+
 
             if len(wigers) < kever.toader.num:
                 self.escrowQueryNotFoundEvent(serder=serder, prefixer=source, sigers=sigers, cigars=cigars)
@@ -5657,7 +5658,7 @@ class Kevery:
                     msg = f"OOO Missing escrowed event source at dig = {edig}"
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise ValidationError(msg)
-                
+
                  # check date if expired then remove escrow.
                 dater = self.db.dtss.get(keys=dgkey)
                 if dater is None:  # no datetime stored
@@ -6245,7 +6246,7 @@ class Kevery:
                         If successful then remove from escrow table
         """
 
-        for (pre, snh), (rdiger, wiger) in self.db.uwes.getItemIter():
+        for (pre, snh), (rdiger, wiger) in self.db.uwes.getTopItemIter():
             try:
                 rdigerBytes = rdiger.encode('utf-8')
                 # check date if expired then remove escrow.
@@ -6349,8 +6350,8 @@ class Kevery:
                         verify sigs via cigars
                         If successful then remove from escrow table
         """
-        
-        for (pre, sn), (rsaider, sprefixer, cigar) in self.db.ures.getItemIter():
+
+        for (pre, sn), (rsaider, sprefixer, cigar) in self.db.ures.getTopItemIter():
             sn = Seqner(qb64=sn).sn
             try:
                 cigar.verfer = Verfer(qb64b=sprefixer.qb64b)
@@ -6480,7 +6481,7 @@ class Kevery:
                         If successful then remove from escrow table
         """
 
-        for (pre, sn), dig in self.db.delegables.getItemIter():
+        for (pre, sn), dig in self.db.delegables.getTopItemIter():
             try:
                 edig = dig.encode("utf-8")
                 dgkey = dgKey(pre.encode("utf-8"), edig)
@@ -6590,7 +6591,7 @@ class Kevery:
         pre = b''
         sn = 0
         while True:  # break when done
-            for (pre, said), edig in self.db.qnfs.getItemIter(keys=key):
+            for (pre, said), edig in self.db.qnfs.getTopItemIter(keys=key):
                 try:
                     # check date if expired then remove escrow.
                     dgkey = dgKey(pre.encode("utf-8"), edig.encode("utf-8"))
@@ -6820,7 +6821,7 @@ class Kevery:
         ims = bytearray()
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
-            for ekey, equinlet in self.db.vres.getItemIter(keys=key):
+            for ekey, equinlet in self.db.vres.getTopItemIter(keys=key):
                 try:
                     pre, sn_hex = ekey      # ekey is a tuple (pre, sn)
                     sn = int(sn_hex, 16)

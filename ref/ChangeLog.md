@@ -4,6 +4,17 @@
 ### Backwards breaking interface changes
 Changes to call signatures that will break dependent libraries
 
+#### keri.db.subing
+SuberBase.getItemIter and subclasses is changed to .getTopItemIter this is to clearly indicate
+that it iterates over the top branch given by keys and uses the topive parameter.
+
+#### keri.db.koming
+KomerBase.getItemIter and subclasses is changed to .getTopItemIter this is to clearly indicate
+that it iterates over the top branch given by keys and uses the topive parameter.
+
+#### keri.db.dbing
+Changed LMDBer.delval to LMDBer.remval
+
 #### keri.core.routing.py
 Changed `Router.dispatch(self, serder, saider, ...)` to `dispatch(self, serder, diger, ...)`.
 Changed `Router.processRouteNotFound(self, *, serder, saider, ...)` to `processRouteNotFound(self, *, serder, diger, ...)`.
