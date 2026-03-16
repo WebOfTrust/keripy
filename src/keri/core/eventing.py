@@ -6351,7 +6351,7 @@ class Kevery:
                         If successful then remove from escrow table
         """
 
-    for (pre, sn), (rsaider, sprefixer, cigar) in self.db.ures.getTopItemIter():
+        for (pre, sn), (rsaider, sprefixer, cigar) in self.db.ures.getTopItemIter():
             sn = Seqner(qb64=sn).sn
             try:
                 cigar.verfer = Verfer(qb64b=sprefixer.qb64b)
