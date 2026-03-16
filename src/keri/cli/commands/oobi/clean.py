@@ -16,7 +16,7 @@ from .... import help
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Display OOBIs waiting for resolution and allow for clean up', 
+parser = argparse.ArgumentParser(description='Display OOBIs waiting for resolution and allow for clean up',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: list_oobis(args))
 
@@ -39,7 +39,7 @@ def oobis(tymth, tock=0.0, **opts):
 
     with existing.existingHby(name=name, base=base, bran=bran) as hby:
         oobis = []
-        for (oobi,), _ in hby.db.oobis.getItemIter():
+        for (oobi,), _ in hby.db.oobis.getTopItemIter():
             oobis.append(oobi)
 
         if not oobis:

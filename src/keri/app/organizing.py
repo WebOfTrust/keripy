@@ -143,7 +143,7 @@ class BaseOrganizer:
         key = ""
         data = None
         contacts = []
-        for (pre, field), val in self.fielddb.getItemIter():
+        for (pre, field), val in self.fielddb.getTopItemIter():
             if pre != key:
                 if data is not None:
                     contacts.append(data)
@@ -170,7 +170,7 @@ class BaseOrganizer:
         """
         pres = []
         prog = re.compile(f".*{val}.*", re.I)
-        for (pre, f), v in self.fielddb.getItemIter():
+        for (pre, f), v in self.fielddb.getTopItemIter():
             if f == field and prog.match(v):
                 pres.append(pre)
 
@@ -192,7 +192,7 @@ class BaseOrganizer:
 
         """
         pres = []
-        for (pre, f), v in self.fielddb.getItemIter():
+        for (pre, f), v in self.fielddb.getTopItemIter():
             if f == field and v == val:
                 pres.append(pre)
 
@@ -212,7 +212,7 @@ class BaseOrganizer:
         prog = re.compile(f".*{val}.*", re.I) if val is not None else None
 
         vals = oset()
-        for (pre, f), v in self.fielddb.getItemIter():
+        for (pre, f), v in self.fielddb.getTopItemIter():
             if f == field and (prog is None or prog.match(v)):
                 vals.add(v)
 
@@ -230,10 +230,10 @@ class BaseOrganizer:
             stream (file): file-like stream of image data
 
         """
-        self.hby.db.delTop(db=self.imgsdb, top=pre.encode("utf-8"))
+        self.hby.db.remTop(db=self.imgsdb.sdb, top=pre.encode("utf-8"))
 
         key = f"{pre}.content-type".encode("utf-8")
-        self.hby.db.setVal(db=self.imgsdb, key=key, val=typ.encode("utf-8"))
+        self.hby.db.setVal(db=self.imgsdb.sdb, key=key, val=typ.encode("utf-8"))
 
         idx = 0
         size = 0
@@ -242,12 +242,12 @@ class BaseOrganizer:
             if not chunk:
                 break
             key = f"{pre}.{idx}".encode("utf-8")
-            self.hby.db.setVal(db=self.imgsdb, key=key, val=chunk)
+            self.hby.db.setVal(db=self.imgsdb.sdb, key=key, val=chunk)
             idx += 1
             size += len(chunk)
 
         key = f"{pre}.content-length".encode("utf-8")
-        self.hby.db.setVal(db=self.imgsdb, key=key, val=size.to_bytes(4, "big"))
+        self.hby.db.setVal(db=self.imgsdb.sdb, key=key, val=size.to_bytes(4, "big"))
 
     def getImgData(self, pre):
         """ Get image metadata for identifier image if one exists
@@ -260,12 +260,12 @@ class BaseOrganizer:
 
         """
         key = f"{pre}.content-length".encode("utf-8")
-        size = self.hby.db.getVal(db=self.imgsdb, key=key)
+        size = self.hby.db.getVal(db=self.imgsdb.sdb, key=key)
         if size is None:
             return None
 
         key = f"{pre}.content-type".encode("utf-8")
-        typ = self.hby.db.getVal(db=self.imgsdb, key=key)
+        typ = self.hby.db.getVal(db=self.imgsdb.sdb, key=key)
         if typ is None:
             return None
 
@@ -284,7 +284,7 @@ class BaseOrganizer:
         idx = 0
         while True:
             key = f"{pre}.{idx}".encode("utf-8")
-            chunk = self.hby.db.getVal(db=self.imgsdb, key=key)
+            chunk = self.hby.db.getVal(db=self.imgsdb.sdb, key=key)
             if not chunk:
                 break
             yield bytes(chunk)

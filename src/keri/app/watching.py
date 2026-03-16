@@ -92,7 +92,7 @@ class Adjudicator:
 
         """
         watchers = set()
-        for (cid, aid, oid), observed in self.hab.db.obvs.getItemIter(keys=(self.hab.pre,)):
+        for (cid, aid, oid), observed in self.hab.db.obvs.getTopItemIter(keys=(self.hab.pre,)):
             if observed.enabled and oid == watched:
                 watchers.add(aid)
 

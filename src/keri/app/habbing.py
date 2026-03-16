@@ -21,7 +21,7 @@ from .. import (Vrsn_1_0, ClosedError, AuthError,
 from ..core import (coring, eventing, parsing, routing,
                     Counter, Salter, Codens)
 from ..recording import HabitatRecord, OobiRecord
-
+ 
 
 logger = ogler.getLogger()
 
@@ -330,7 +330,7 @@ class Habery:
         self.reconfigure()  # pre hab load reconfiguration
 
         groups = []
-        for prefix, habord in self.db.habs.getItemIter():
+        for prefix, habord in self.db.habs.getTopItemIter():
             pre = habord.hid
 
             # create Hab instance and inject dependencies
@@ -1576,7 +1576,6 @@ class BaseHab:
                                            "".format(pre, sn))
         dig = dig.encode("utf-8")
         dig = bytes(dig)
-        key = dgKey(pre, dig)  # digest key
         serder = self.db.evts.get(keys=(pre, dig))
         msg.extend(serder.raw)
         msg.extend(Counter(Codens.ControllerIdxSigs, count=self.db.sigs.cnt(keys=(pre, dig)),
@@ -1670,7 +1669,7 @@ class BaseHab:
             scheme (str): url scheme
         """
         return hicting.Mict([(keys[1], loc.url) for keys, loc in
-                             self.db.locs.getItemIter(keys=(eid, scheme)) if loc.url])
+                             self.db.locs.getTopItemIter(keys=(eid, scheme)) if loc.url])
 
 
     def fetchRoleUrls(self, cid: str, *, role: str = "", scheme: str = "",
@@ -1706,7 +1705,7 @@ class BaseHab:
                             rurls.add(Roles.witness,
                                       hicting.Mict([(eid, surls)]))
 
-        for (_, erole, eid), end in self.db.ends.getItemIter(keys=(cid, role)):
+        for (_, erole, eid), end in self.db.ends.getTopItemIter(keys=(cid, role)):
             if (enabled and end.enabled) or (allowed and end.allowed):
                 if not eids or eid in eids:
                     surls = self.fetchUrls(eid, scheme=scheme)
@@ -1755,7 +1754,7 @@ class BaseHab:
         """
         ends = dict()
 
-        for (_, erole, eid), end in self.db.ends.getItemIter(keys=(pre,)):
+        for (_, erole, eid), end in self.db.ends.getTopItemIter(keys=(pre,)):
             locs = dict()
             urls = self.fetchUrls(eid=eid, scheme="")
             for rscheme, url in urls.firsts():
@@ -1900,7 +1899,7 @@ class BaseHab:
     def loadLocScheme(self, eid, scheme=None):
         msgs = bytearray()
         keys = (eid, scheme) if scheme else (eid,)
-        for (pre, _), said in self.db.lans.getItemIter(keys=keys):
+        for (pre, _), said in self.db.lans.getTopItemIter(keys=keys):
             serder = self.db.rpys.get(keys=(said.qb64,))
             cigars = self.db.scgs.get(keys=(said.qb64,))
             tsgs = fetchTsgs(db=self.db.ssgs, diger=said)
@@ -1987,7 +1986,7 @@ class BaseHab:
                     if not witness:  # we are not witness, send auth records
                         msgs.extend(self.makeEndRole(eid=eid, role=role))
 
-        for (_, erole, eid), end in self.db.ends.getItemIter(keys=(cid,)):
+        for (_, erole, eid), end in self.db.ends.getTopItemIter(keys=(cid,)):
             if (end.enabled or end.allowed) and (not role or role == erole) and (not eids or eid in eids):
                 msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
                 msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole))
@@ -2556,7 +2555,7 @@ class SignifyHab(BaseHab):
                 if witness:  # we are witness, set KEL as authz
                     msgs.extend(self.replay(cid))
 
-        for (_, erole, eid), end in self.db.ends.getItemIter(keys=(cid,)):
+        for (_, erole, eid), end in self.db.ends.getTopItemIter(keys=(cid,)):
             if (end.enabled or end.allowed) and (not role or role == erole) and (not eids or eid in eids):
                 msgs.extend(self.replay(eid))
                 msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))

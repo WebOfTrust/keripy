@@ -77,7 +77,7 @@ class AddDoer(doing.DoDoer):
         self.watched = watd
 
         self.oobi = None
-        for (key,), obr in self.hby.db.roobi.getItemIter():
+        for (key,), obr in self.hby.db.roobi.getTopItemIter():
             if obr.cid == watd:
                 self.oobi = key
 

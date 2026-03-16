@@ -115,7 +115,7 @@ class JoinDoer(doing.DoDoer):
         while self.notifier.noter.notes.cnt() == 0:
             yield self.tock
 
-        for keys, notice in self.notifier.noter.notes.getItemIter():
+        for keys, notice in self.notifier.noter.notes.getTopItemIter():
             attrs = notice.attrs
             route = attrs['r']
 
