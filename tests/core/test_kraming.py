@@ -2073,7 +2073,7 @@ def test_cue_ks_non_transactioned(mockHelpingNowUTC):
 
             kvy.processMsg(msg, **kwa)
 
-            cache = receiverHby.db.msgc.get(keys=(kownSenderHab.pre, msg.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(kownSenderHab.pre, msg.said))
             assert cache is None  # no cache
 
             # Assert for cue key state retrieval
