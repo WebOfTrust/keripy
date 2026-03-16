@@ -774,7 +774,6 @@ class Tever:
         couple = self.reger.ancs.get(keys=dgkey)
         if couple is None:
             raise MissingEntryError(f"Missing anchor couple at key={dgkey!r}.")
-        number, diger = couple
 
         return (state(pre=self.pre,
                       said=self.serder.said,
@@ -1404,7 +1403,7 @@ class Tever:
         if baks:
             self.reger.baks.rem(key)
             self.reger.baks.put(key, [bak.encode("utf-8") for bak in baks])
-            
+
         self.reger.tvts.put(keys=key, val=serder.raw)
         logger.debug("Tever state: Escrowed anchorless event "
                      "event = %s", serder.ked)
@@ -1762,7 +1761,7 @@ class Tevery:
             baks = rsr.b
 
         wats = set()
-        for _, habr in self.db.habs.getItemIter():
+        for _, habr in self.db.habs.getTopItemIter():
             wats |= set(habr.watchers)
 
         # not in promiscuous mode
@@ -1908,7 +1907,7 @@ class Tevery:
             baks = tever.baks
 
         wats = set()
-        for _, habr in self.db.habs.getItemIter():
+        for _, habr in self.db.habs.getTopItemIter():
             wats |= set(habr.watchers)
 
         # not in promiscuous mode
