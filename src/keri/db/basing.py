@@ -1937,7 +1937,7 @@ class Baser(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for dig in self.kels.getOnIterAll(keys=pre, on=sn):
+        for dig in self.kels.getAllIter(keys=pre, on=sn):
             try:
                 if not (serder := self.evts.get(keys=(pre, dig))):
                     raise kering.MissingEntryError("Missing event for dig={}.".format(dig))

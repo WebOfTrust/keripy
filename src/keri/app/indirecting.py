@@ -1239,7 +1239,7 @@ class QueryEnd:
                 dig = self.hab.db.kels.getOnLast(keys=pre, on=sn)
                 if dig is None:
                     raise falcon.HTTPBadRequest(description=f"non-existant event at seq-num {sn}")
-                for dig in self.hab.db.kels.getOnIterAll(keys=pre, on=sn):
+                for dig in self.hab.db.kels.getAllIter(keys=pre, on=sn):
                     try:
                         dig = dig.encode("utf-8")
                         msg = self.hab.db.cloneEvtMsg(pre=pre, fn=0, dig=dig)

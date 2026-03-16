@@ -1503,13 +1503,13 @@ def test_baser():
         # insertion order preserved
         assert db.ooes.putOn(keys=pre,on=sn, vals=vals) == True
         assert db.ooes.getOn(keys=pre,on=sn) == deserialized_vals
-        assert list(db.ooes.getOnIterAll(pre,on=sn)) == deserialized_vals
+        assert list(db.ooes.getAllIter(pre,on=sn)) == deserialized_vals
         assert db.ooes.getOnLast(keys=pre, on=sn) == deserialized_vals[-1]
         assert db.ooes.cntOnAll(pre,on=sn) == len(vals) == 4
 
         # retrieval on empty list
         assert db.ooes.getOn(keys=b'X') == []
-        assert list(db.ooes.getOnIterAll(b'X')) == []
+        assert list(db.ooes.getAllIter(b'X')) == []
         assert db.ooes.getOnLast(keys=b'X') == None
         assert db.ooes.cntOnAll(b'X') == 0
         items = db.ooes.getOnItemIterAll(keys=b'X')
@@ -2045,7 +2045,7 @@ def test_fetchkeldel():
         for val in vals2:
             assert db.kels.addOn(keys=preb, on=sn, val=val) == True
 
-        vals = list(db.kels.getOnIterAll(keys=preb))
+        vals = list(db.kels.getAllIter(keys=preb))
         allvals = [v.decode("utf-8") for v in (vals0 + vals1 + vals2)]
         assert vals == allvals
 

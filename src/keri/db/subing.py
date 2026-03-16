@@ -784,7 +784,7 @@ class OnSuberBase(SuberBase):
     getOnItemIterAll = getOnAllItemIter  # migration alias for backwards compat
 
 
-    def getOnAllIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
+    def getAllIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """
         Returns:
             items (Iterator[bytes]): of val with same key but increments of
@@ -805,7 +805,7 @@ class OnSuberBase(SuberBase):
                                                        sep=self.sep.encode())):
             yield (self._des(val))
 
-    getOnIterAll = getOnAllIter  # migration alias for backwards compat
+    #getAllIter = getAllIter  # migration alias for backwards compat
 
 
 class OnSuber(OnSuberBase, Suber):
@@ -2966,7 +2966,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
             yield (self._tokeys(keys), on, self._des(val))
 
 
-    def getOnIterAll(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+    def getAllIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
         """
         Returns
             val (Iterator[bytes]):  deserialized val of of each onkey  but
@@ -2982,6 +2982,8 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
         for val in (self.db.getOnIoDupIterAll(db=self.sdb,
                         key=self._tokey(keys), on=on, sep=self.sep.encode())):
             yield (self._des(val))
+
+    #getAllIter = getAllIter  # alias for refactor
 
 
     def getOnLastIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
@@ -3547,7 +3549,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._tokeys(keys), on, self._des(val))
 
 
-    def getOnAllIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
+    def getAllIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Iterates over alls values of each set for all on >= on for key.
         When on ==0, default, Iterates over alls items of each set for all on for key.
         When key is empty then iterates over all items in whole db
