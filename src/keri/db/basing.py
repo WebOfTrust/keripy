@@ -1384,28 +1384,13 @@ class Baser(dbing.LMDBer):
         """
         Clear all escrows
         """
-        for (k, _) in self.ures.getTopItemIter():
-            self.ures.rem(keys=k)
-        for (k, _) in self.vres.getTopItemIter():
-            self.vres.rem(keys=k)
-        for (pre, on, dig) in self.pses.getAllItemIter():
-            self.pses.remOn(keys=pre, on=on, val=dig)
-        for (pre, sn, dig) in self.pwes.getAllItemIter():
-            pre = pre[0]
-            dig = dig.encode("utf-8")
-            self.pwes.remOn(keys=pre, on=sn, val=dig)
-        for (pre, on, dig) in self.ooes.getAllItemIter():
-            self.ooes.remOn(keys=pre, on=on, val=dig)
-        for (pre, said), edig in self.qnfs.getTopItemIter():
-            self.qnfs.rem(keys=(pre, said))
-        for (pre, snh), rdigerWigerTuple in self.uwes.getTopItemIter():
-            self.uwes.rem(keys=(pre, snh))
-
-        for escrow in [self.qnfs, self.misfits, self.delegables, self.pdes,
+        for escrow in [self.ures, self.vres, self.pses, self.pwes, self.ooes,
+                       self.qnfs, self.uwes,
+                       self.qnfs, self.misfits, self.delegables, self.pdes,
                        self.udes, self.rpes, self.ldes, self.epsd, self.eoobi,
                        self.dpub, self.gpwe, self.gdee, self.dpwe, self.gpse,
                        self.epse, self.dune]:
-            count = escrow.cnt()
+            count = escrow.cntAll()
             escrow.trim()
             logger.info(f"KEL: Cleared {count} escrows from ({escrow}")
 

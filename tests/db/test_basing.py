@@ -1052,9 +1052,15 @@ def test_baser():
         # getTopItemIter retrieval of (key, val) pairs in lexicographic key order
         items = list(db.pses.getAllItemIter())
         assert items == [(('A',), 0, 'z'), (('A',), 0, 'm'), (('A',), 0, 'x'), (('A',), 0, 'a')]  # Insertion order preserved for vals
-        assert db.pses.putOn(keys=[b'B', b'C'], vals=[b'1', b'2', b'3']) == True
-        items = list(db.pses.getTopItemIter(keys=key))
-        assert all(k[0] == 'A' for k, v in items)
+        items = list(db.pses.getOnTopItemIter(keys=key))
+        assert items == [(('A',), 0, 'z'), (('A',), 0, 'm'), (('A',), 0, 'x'), (('A',), 0, 'a')]
+        keysB = (b'B', b'C')
+        assert db.pses.putOn(keys=keysB, vals=[b'1', b'2', b'3']) == True
+        items = list(db.pses.getOnTopItemIter(keys=keysB))
+        assert items == [(('B', 'C'), 0, '1'), (('B', 'C'), 0, '2'), (('B', 'C'), 0, '3')]
+        items = list(db.pses.getOnTopItemIter(keys=keysB[0]))  # top key first element
+        assert items == [(('B', 'C'), 0, '1'), (('B', 'C'), 0, '2'), (('B', 'C'), 0, '3')]
+
 
         # retrieval with different key types, A is the key used above where key = b'A'
         assert db.pses.getOn(keys=b'A') == deserialized_vals  # key as bytes
@@ -1153,55 +1159,46 @@ def test_baser():
         assert db.pses.putOn(keys=pre, on=4, vals=cVals)
         assert db.pses.putOn(keys=pre, on=7, vals=dVals)
 
-
-
         # Test getPseItemsNextIter(key=b"")
         # vals are in bytes, assertion is done after serializing
 
         # aVals
-        items = [item for item in db.pses.getTopItemIter()]
-        assert items  # not empty
-        ikey = db.pses._tokey(items[0][0])
-        assert  ikey == aKey
-        vals = [db.pses._ser(val) for key, val in items]
-        assert vals ==  aVals + bVals + cVals + dVals
+        items = [item for item in db.pses.getOnTopItemIter()]
+        assert items == \
+        [
+            (('A',), 1, 'z'),
+            (('A',), 1, 'm'),
+            (('A',), 1, 'x'),
+            (('A',), 2, 'o'),
+            (('A',), 2, 'r'),
+            (('A',), 2, 'z'),
+            (('A',), 4, 'h'),
+            (('A',), 4, 'n'),
+            (('A',), 7, 'k'),
+            (('A',), 7, 'b')
+        ]
 
-        items = [item for item in db.pses.getTopItemIter(keys=aKey)]
-        assert items  # not empty
-        ikey = db.pses._tokey(items[0][0])
-        assert  ikey == aKey
-        vals = [db.pses._ser(val) for key, val in items]
-        assert vals == aVals
+        # avals
+        items = [item for item in db.pses.getOnTopItemIter(keys=aKey)]
+        assert items == [(('A',), 1, 'z'), (('A',), 1, 'm'), (('A',), 1, 'x')]
 
         # bVals
-        items = [item for item in db.pses.getTopItemIter(keys=bKey)]
-        assert items  # not empty
-        ikey = db.pses._tokey(items[0][0])
-        assert  ikey == bKey
-        vals = [db.pses._ser(val) for key, val in items]
-        assert vals == bVals
-        for key, val in items:
-            assert db.pses.remOn(keys=pre, on=bSn, val=val) == True
+        items = [item for item in db.pses.getOnTopItemIter(keys=bKey)]
+        assert items  == [(('A',), 2, 'o'), (('A',), 2, 'r'), (('A',), 2, 'z')]
+        for keys, on, val in items:
+            assert db.pses.remOn(keys=keys, on=on, val=val) == True
 
         # cVals
-        items = [item for item in db.pses.getTopItemIter(keys=cKey)]
-        assert items  # not empty
-        ikey = db.pses._tokey(items[0][0])
-        assert  ikey == cKey
-        vals = [db.pses._ser(val) for key, val in items]
-        assert vals == cVals
-        for key, val in items:
-            assert db.pses.remOn(keys=pre, on=cSn, val=val) == True
+        items = [item for item in db.pses.getOnTopItemIter(keys=cKey)]
+        assert items == [(('A',), 4, 'h'), (('A',), 4, 'n')]
+        for keys, on, val in items:
+            assert db.pses.remOn(keys=keys, on=on, val=val) == True
 
         # dVals
-        items = [item for item in db.pses.getTopItemIter(keys=dKey)]
-        assert items  # not empty
-        ikey = db.pses._tokey(items[0][0])
-        assert  ikey == dKey
-        vals = [db.pses._ser(val) for key, val in items]
-        assert vals == dVals
-        for key, val in items:
-            assert db.pses.remOn(keys=pre, on=dSn, val=val) == True
+        items = [item for item in db.pses.getOnTopItemIter(keys=dKey)]
+        assert items == [(('A',), 7, 'k'), (('A',), 7, 'b')]
+        for keys, on, val in items:
+            assert db.pses.remOn(keys=keys, on=on, val=val) == True
 
         # clean up all entries
         for k, sn, v in list(db.pses.getAllItemIter()):
@@ -1216,7 +1213,7 @@ def test_baser():
         key = dgKey(preb, digb)
         assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
-        # test .pdes SerderIoSetSuber methods
+        # test .pdes methods
         assert isinstance(db.pdes, subing.OnIoDupSuber)
 
 
@@ -1305,42 +1302,42 @@ def test_baser():
         vals = [db.pwes._ser(val) for  key, sn, val in items]
         assert vals ==  aVals + bVals + cVals + dVals
 
-        items = [item for item in db.pwes.getTopItemIter(keys=aKey)]
-        assert items  # not empty
-        ikey = db.pwes._tokey(items[0][0])
-        assert  ikey == aKey
-        vals = [db.pwes._ser(val) for  key, val in items]
-        assert vals == aVals
+        items = [item for item in db.pwes.getOnTopItemIter()]
+        assert items == \
+        [
+            (('A',), 1, 'z'),
+            (('A',), 1, 'm'),
+            (('A',), 1, 'x'),
+            (('A',), 2, 'o'),
+            (('A',), 2, 'r'),
+            (('A',), 2, 'z'),
+            (('A',), 4, 'h'),
+            (('A',), 4, 'n'),
+            (('A',), 7, 'k'),
+            (('A',), 7, 'b')
+        ]
+
+        # avals
+        items = [item for item in db.pwes.getOnTopItemIter(keys=aKey)]
+        assert items == [(('A',), 1, 'z'), (('A',), 1, 'm'), (('A',), 1, 'x')]
 
         # bVals
-        items = [item for item in db.pwes.getTopItemIter(keys=bKey)]
-        assert items  # not empty
-        ikey = db.pwes._tokey(items[0][0])
-        assert  ikey == bKey
-        vals = [db.pwes._ser(val) for  key, val in items]
-        assert vals == bVals
-        for key, val in items:
-            assert db.pwes.remOn(keys=pre, on=bSn, val=val) == True
+        items = [item for item in db.pwes.getOnTopItemIter(keys=bKey)]
+        assert items  == [(('A',), 2, 'o'), (('A',), 2, 'r'), (('A',), 2, 'z')]
+        for keys, on, val in items:
+            assert db.pwes.remOn(keys=keys, on=on, val=val) == True
 
         # cVals
-        items = [item for item in db.pwes.getTopItemIter(keys=cKey)]
-        assert items  # not empty
-        ikey = db.pwes._tokey(items[0][0])
-        assert  ikey == cKey
-        vals = [db.pwes._ser(val) for  key, val in items]
-        assert vals == cVals
-        for key, val in items:
-            assert db.pwes.remOn(keys=pre, on=cSn, val=val) == True
+        items = [item for item in db.pwes.getOnTopItemIter(keys=cKey)]
+        assert items == [(('A',), 4, 'h'), (('A',), 4, 'n')]
+        for keys, on, val in items:
+            assert db.pwes.remOn(keys=keys, on=on, val=val) == True
 
         # dVals
-        items = [item for item in db.pwes.getTopItemIter(keys=dKey)]
-        assert items  # not empty
-        ikey = db.pwes._tokey(items[0][0])
-        assert  ikey == dKey
-        vals = [db.pwes._ser(val) for  key, val in items]
-        assert vals == dVals
-        for key, val in items:
-            assert db.pwes.remOn(keys=pre, on=dSn, val=val) == True
+        items = [item for item in db.pwes.getOnTopItemIter(keys=dKey)]
+        assert items == [(('A',), 7, 'k'), (('A',), 7, 'b')]
+        for keys, on, val in items:
+            assert db.pwes.remOn(keys=keys, on=on, val=val) == True
 
 
         # Unverified Witness Receipt Escrows
@@ -1348,85 +1345,46 @@ def test_baser():
         key = b'A'
         vals = [('z',), ('m',), ('x',), ('a',)]
 
-        assert db.uwes.get(key) == []
-        assert db.uwes.getLast(key) == None
-        assert db.uwes.cnt(key) == 0
-        assert db.uwes.rem(key) == False
-        assert db.uwes.put(key, vals) == True
-        assert db.uwes.get(key) == vals # preserved insertion order
-        assert db.uwes.cnt(key) == len(vals) == 4
-        assert db.uwes.getLast(key) == vals[-1]
-        assert db.uwes.put(key, vals=[b'a']) == False   # duplicate
-        assert db.uwes.get(key) == vals  #  no change
-        assert db.uwes.add(key, b'a') == False   # duplicate
-        assert db.uwes.add(key, b'b') == True
-        assert db.uwes.get(key) == [('z',), ('m',), ('x',), ('a',), ('b',)]
-        assert [val for key, val in db.uwes.getTopItemIter(key)] == [('z',), ('m',), ('x',), ('a',), ('b',)]
-        assert db.uwes.rem(key) == True
-        assert db.uwes.get(key) == []
+        assert db.uwes.getOn(key) == []  # default on = 0
+        assert db.uwes.getOnLast(key) == None
+        assert db.uwes.cntOn(key) == 0
+        assert db.uwes.remOn(key) == False
+        assert db.uwes.putOn(key, on=0, vals=vals) == True
+        assert db.uwes.getOn(key, 0) == vals # preserved insertion order
+        assert db.uwes.cntOn(key, 0) == len(vals) == 4
+        assert db.uwes.getOnLast(key, 0) == vals[-1]
+        assert db.uwes.putOn(key, 0, vals=[b'a']) == False   # duplicate
+        assert db.uwes.getOn(key, 0) == vals  #  no change
+        assert db.uwes.addOn(key, 0, b'a') == False   # duplicate
+        assert db.uwes.addOn(key, 0, b'b') == True
+        assert db.uwes.getOn(key, 0) == [('z',), ('m',), ('x',), ('a',), ('b',)]
+        assert [val for key, on, val in db.uwes.getOnTopItemIter(key)] == \
+        [('z',), ('m',), ('x',), ('a',), ('b',)]
+        assert db.uwes.remOn(key, 0) == True
+        assert db.uwes.getOn(key, 0) == []
 
-        # Setup Tests for getUweItemsNext and getUweItemsNextIter
-        aKey = ('A', '00000000000000000000000000000001')
-        aVals = [('z',), ('m',), ('x',)]
-        bKey = ('A', '00000000000000000000000000000002')
-        bVals = [('o',), ('r',), ('z',)]
-        cKey = ('A', '00000000000000000000000000000004')
-        cVals = [('h',), ('n',)]
-        dKey = ('A', '00000000000000000000000000000007')
-        dVals = [('k',), ('b',)]
+        # Setup Tests
+        keys = ("A", )
+        assert db.uwes.putOn(keys=keys, on=1, vals=aVals)
+        assert db.uwes.putOn(keys=keys, on=2, vals=bVals)
+        assert db.uwes.putOn(keys=keys, on=4, vals=cVals)
+        assert db.uwes.putOn(keys=keys, on=7, vals=dVals)
 
-        assert db.uwes.put(keys=aKey, vals=aVals)
-        assert db.uwes.put(keys=bKey, vals=bVals)
-        assert db.uwes.put(keys=cKey, vals=cVals)
-        assert db.uwes.put(keys=dKey, vals=dVals)
+        items = [item for item in db.uwes.getOnTopItemIter()]
+        assert items == \
+        [
+            (('A',), 1, ('z',)),
+            (('A',), 1, ('m',)),
+            (('A',), 1, ('x',)),
+            (('A',), 2, ('o',)),
+            (('A',), 2, ('r',)),
+            (('A',), 2, ('z',)),
+            (('A',), 4, ('h',)),
+            (('A',), 4, ('n',)),
+            (('A',), 7, ('k',)),
+            (('A',), 7, ('b',))
+        ]
 
-
-        # Test getUweItemsNextIter(key=b"")
-        #  get dups at first key in database
-        # aVals
-        items = [item for item in db.uwes.getTopItemIter()]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals ==  aVals + bVals + cVals + dVals
-
-        items = [item for item in db.uwes.getTopItemIter(keys=aKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == aKey
-        vals = [val for  key, val in items]
-        assert vals == aVals
-
-        # bVals
-        items = [item for item in db.uwes.getTopItemIter(keys=bKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == bKey
-        vals = [val for key, val in items]
-        assert vals == bVals
-        for key, val in items:
-            assert db.uwes.rem(ikey, val) == True
-
-        # cVals
-        items = [item for item in db.uwes.getTopItemIter(keys=cKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == cKey
-        vals = [val for key, val in items]
-        assert vals == cVals
-        for key, val in items:
-            assert db.uwes.rem(ikey, val) == True
-
-        # dVals
-        items = [item for item in db.uwes.getTopItemIter(keys=dKey)]
-        assert items  # not empty
-        ikey = items[0][0]
-        assert  ikey == dKey
-        vals = [val for key, val in items]
-        assert vals == dVals
-        for key, val in items:
-            assert db.uwes.rem(ikey, val) == True
 
 
         # Ooes tests
@@ -1621,51 +1579,29 @@ def test_baser():
         assert db.ooes.putOn(keys=pre, on=4, vals=cVals)
         assert db.ooes.putOn(keys=pre, on=7, vals=dVals)
 
-        # Test getOoeItemsNextIter(key=b"")
-        #  get dups at first key in database
-        # aVals
 
-        items = [item for item in db.ooes.getTopItemIter()]
-        assert items  # not empty
-        ikey = db.ooes._tokey(items[0][0])
-        assert  ikey == aKey
-        vals = [db.ooes._ser(val) for  key, val in items]
-        assert vals ==  aVals + bVals + cVals + dVals
 
-        items = [item for item in db.ooes.getTopItemIter(keys=aKey)]
-        assert items  # not empty
-        ikey = db.ooes._tokey(items[0][0])
-        assert  ikey == aKey
-        vals = [db.ooes._ser(val) for  key, val in items]
-        assert vals == aVals
+        # avals
+        items = [item for item in db.ooes.getOnTopItemIter(keys=aKey)]
+        assert items == [(('A',), 1, 'z'), (('A',), 1, 'm'), (('A',), 1, 'x')]
 
         # bVals
-        items = [item for item in db.ooes.getTopItemIter(keys=bKey)]
-        assert items  # not empty
-        ikey = db.ooes._tokey(items[0][0])
-        assert  ikey == bKey
-        vals = [db.ooes._ser(val) for key, val in items]
-        assert vals == bVals
-        for key, val in items:
-            assert db.ooes.remOn(pre, bSn, val) == True
+        items = [item for item in db.ooes.getOnTopItemIter(keys=bKey)]
+        assert items  == [(('A',), 2, 'o'), (('A',), 2, 'r'), (('A',), 2, 'z')]
+        for keys, on, val in items:
+            assert db.ooes.remOn(keys=keys, on=on, val=val) == True
 
         # cVals
-        items = [item for item in db.ooes.getTopItemIter(keys=cKey)]
-        assert items  # not empty
-        ikey = db.ooes._tokey(items[0][0])
-        assert  ikey == cKey
-        vals = [db.ooes._ser(val) for key, val in items]
-        assert vals == cVals
-        for key, val in items:
-            assert db.ooes.remOn(pre, cSn, val) == True
+        items = [item for item in db.ooes.getOnTopItemIter(keys=cKey)]
+        assert items == [(('A',), 4, 'h'), (('A',), 4, 'n')]
+        for keys, on, val in items:
+            assert db.ooes.remOn(keys=keys, on=on, val=val) == True
 
         # dVals
-        items = [item for item in db.ooes.getTopItemIter(keys=dKey)]
-        assert items  # not empty
-        ikey = db.ooes._tokey(items[0][0])
-        assert  ikey == dKey
-        vals = [db.ooes._ser(val) for key, val in items]
-        assert vals == dVals
+        items = [item for item in db.ooes.getOnTopItemIter(keys=dKey)]
+        assert items == [(('A',), 7, 'k'), (('A',), 7, 'b')]
+        for keys, on, val in items:
+            assert db.ooes.remOn(keys=keys, on=on, val=val) == True
 
         # clean up all entries
         for k, sn, v in list(db.pses.getAllItemIter()):
@@ -2536,11 +2472,12 @@ def test_clear_escrows():
         db.ldes.put(keys=key, vals=vals)
 
         pre = b'k'
-        snh = b'snh'
+        sn = 0
+        snh = b"%032x" % sn
         saidb = b'saidb'
 
-        db.uwes.add(keys=(pre, snh), val=saidb)
-        assert db.uwes.cnt(keys=(pre, snh)) == 1
+        db.uwes.addOn(keys=pre, on=sn, val=saidb)
+        assert db.uwes.cntOn(keys=pre, on=sn) == 1
 
         db.qnfs.add(keys=(pre, saidb), val=b"z")
         assert db.qnfs.cnt(keys=(pre, saidb)) == 1
@@ -2594,28 +2531,14 @@ def test_clear_escrows():
 
         db.clearEscrows()
 
-        assert db.ures.get(key) == []
-        assert db.vres.get(key) == []
-        assert db.pses.getOn(keys=key) == []
-        assert db.pwes.getOn(key) == []
-        assert db.uwes.get(key) == []
-        assert db.ooes.getOn(keys=key) == []
-        assert db.ldes.get(keys=key) == []
-        assert db.qnfs.cntAll() == 0
-        assert db.pdes.cntAll() == 0
-        assert db.rpes.cntAll() == 0
-        assert db.eoobi.cnt() == 0
-        assert db.gpwe.cntAll() == 0
-        assert db.gdee.cntAll() == 0
-        assert db.dpwe.cntAll() == 0
-        assert db.gpse.cntAll() == 0
-        assert db.epse.cntAll() == 0
-        assert db.dune.cntAll() == 0
-        assert db.misfits.cntAll() == 0
-        assert db.delegables.cntAll() == 0
-        assert db.udes.cntAll() == 0
-        assert db.epsd.cntAll() == 0
-        assert db.dpub.cntAll() == 0
+        for escrow in [db.ures, db.vres, db.pses, db.pwes, db.ooes,
+                       db.qnfs, db.uwes,
+                       db.qnfs, db.misfits, db.delegables, db.pdes,
+                       db.udes, db.rpes, db.ldes, db.epsd, db.eoobi,
+                       db.dpub, db.gpwe, db.gdee, db.dpwe, db.gpse,
+                       db.epse, db.dune]:
+            assert escrow.cntAll() == 0
+
 
 def test_db_keyspace_end_to_end_migration():
     """

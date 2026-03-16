@@ -426,6 +426,8 @@ class Komer(KomerBase):
         """
         return self.db.cntAll(db=self.sdb)
 
+    cntAll = cnt  # alias that matches suber interface
+
 
 class IoSetKomer(KomerBase):
     """Insertion Ordered Set Keyspace Object Mapper factory class that supports
