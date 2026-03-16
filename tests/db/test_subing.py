@@ -1180,10 +1180,10 @@ def test_on_iodup_suber():
                          (('a',), 3, 'White snow')]
 
         # test add duplicates
-        assert oidsuber.add(keys=dbing.onKey("b", 0), val=w)
-        assert oidsuber.add(keys=dbing.onKey("b", 1), val=x)
-        assert oidsuber.add(keys=dbing.onKey("bc", 0), val=y)
-        assert oidsuber.add(keys=dbing.onKey("ac", 0), val=z)
+        assert oidsuber.add(keys="b", on=0, val=w)
+        assert oidsuber.add(keys="b", on=1, val=x)
+        assert oidsuber.add(keys="bc", on=0, val=y)
+        assert oidsuber.add(keys="ac", on=0, val=z)
 
         assert oidsuber.cntOnAll(keys=("b",)) == 2
         assert oidsuber.cntOnAll(keys=("ac",), on=2) == 0
@@ -1262,10 +1262,10 @@ def test_on_iodup_suber():
                         'Red apple']
 
         # test with duplicates
-        assert oidsuber.add(keys=dbing.onKey("a", 0), val=z)
-        assert oidsuber.add(keys=dbing.onKey("a", 1), val=y)
-        assert oidsuber.add(keys=dbing.onKey("a", 2), val=x)
-        assert oidsuber.add(keys=dbing.onKey("a", 3), val=w)
+        assert oidsuber.add(keys="a", on=0, val=z)
+        assert oidsuber.add(keys="a", on=1, val=y)
+        assert oidsuber.add(keys="a", on=2, val=x)
+        assert oidsuber.add(keys="a", on=3, val=w)
 
         assert oidsuber.cntOnAll(keys=("a",)) == 8
         assert oidsuber.cntOnAll(keys=("a",), on=2) == 4
@@ -1492,10 +1492,10 @@ def test_b64_oniodup_suber():
         assert items == [(('b',), 2, ('Red',)), (('b',), 3, ('White',))]
 
         # test add duplicates
-        assert oidbuber.add(keys=dbing.onKey(k, 0), val=w)
-        assert oidbuber.add(keys=dbing.onKey(k, 1), val=x)
-        assert oidbuber.add(keys=dbing.onKey("bc", 0), val=y)
-        assert oidbuber.add(keys=dbing.onKey("ac", 0), val=z)
+        assert oidbuber.add(keys=k, on=0, val=w)
+        assert oidbuber.add(keys=k, on=1, val=x)
+        assert oidbuber.add(keys="bc", on=0, val=y)
+        assert oidbuber.add(keys="ac", on=0, val=z)
 
         assert oidbuber.cntOnAll(keys=(k,)) == 2
         assert oidbuber.cntOnAll(keys=("bc",), on=2) == 0
@@ -1574,10 +1574,10 @@ def test_b64_oniodup_suber():
                         ('Red',)]
 
         # test with duplicates
-        assert oidbuber.add(keys=dbing.onKey(j, 0), val=z)
-        assert oidbuber.add(keys=dbing.onKey(j, 1), val=y)
-        assert oidbuber.add(keys=dbing.onKey(j, 2), val=x)
-        assert oidbuber.add(keys=dbing.onKey(j, 3), val=w)
+        assert oidbuber.add(keys=j, on=0, val=z)
+        assert oidbuber.add(keys=j, on=1, val=y)
+        assert oidbuber.add(keys=j, on=2, val=x)
+        assert oidbuber.add(keys=j, on=3, val=w)
 
         assert oidbuber.cntOnAll(keys=(j,)) == 8
         assert oidbuber.cntOnAll(keys=(j,), on=2) == 4

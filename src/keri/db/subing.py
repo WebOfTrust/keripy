@@ -525,7 +525,7 @@ class OnSuberBase(SuberBase):
         super(OnSuberBase, self).__init__(*pa, **kwa)
 
 
-    def putOn(self, keys: str|bytes|memoryview|Iterable, on: int=0,
+    def put(self, keys: str|bytes|memoryview|Iterable, on: int=0,
                     val: str|bytes|memoryview|None=None):
         """
         Returns
@@ -549,7 +549,9 @@ class OnSuberBase(SuberBase):
                                  val=self._ser(val),
                                  sep=self.sep.encode()))
 
-    def pinOn(self, keys: str|bytes|memoryview|Iterable, on: int=0,
+    putOn = put  # refactoring alias
+
+    def pin(self, keys: str|bytes|memoryview|Iterable, on: int=0,
                     val: str|bytes|memoryview|None=None):
         """
         Returns
@@ -571,8 +573,10 @@ class OnSuberBase(SuberBase):
                                  val=self._ser(val),
                                  sep=self.sep.encode()))
 
+    pinOn = pin  # refactoring alias
 
-    def appendOn(self, keys: str|bytes|memoryview|Iterable,
+
+    def append(self, keys: str|bytes|memoryview|Iterable,
                        val: str|bytes|memoryview):
         """Appends val to next highest unused exposed ordinal tail and returns the
         ordinal.
@@ -591,6 +595,8 @@ class OnSuberBase(SuberBase):
                                        key=self._tokey(keys),
                                        val=self._ser(val),
                                        sep=self.sep.encode()))
+
+    appendOn = append  # refactoring alias
 
 
     def getOnItem(self, keys: str|bytes|memoryview|Iterable, on: int=0):
@@ -2735,7 +2741,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
         super(OnIoDupSuber, self).__init__(*pa, **kwa)
 
 
-    def putOn(self, keys: str|bytes|memoryview|Iterable, on: int=0,
+    def put(self, keys: str|bytes|memoryview|Iterable, on: int=0,
             vals: str|bytes|memoryview|Iterable = b''):
         """Put all vals idempotently at key at key made from keys with on suffix
         in insertion order using hidden ordinal proem. Idempotently means do
@@ -2758,8 +2764,10 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                                       vals=tuple(self._ser(val) for val in vals),
                                       sep=self.sep.encode())
 
+    putOn = put  # refactoring alias
 
-    def pinOn(self, keys: str|bytes|memoryview|Iterable, on: int=0,
+
+    def pin(self, keys: str|bytes|memoryview|Iterable, on: int=0,
             vals: str|bytes|memoryview|Iterable = b''):
         """
         Pins (sets) vals at key made from keys with on suffix in insertion order
@@ -2789,8 +2797,10 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                                       vals=tuple(self._ser(val) for val in vals),
                                       sep=self.sep.encode())
 
+    pinOn = pin  # refactoring alias
 
-    def addOn(self, keys: str | bytes | memoryview | Iterable, on: int=0,
+
+    def add(self, keys: str | bytes | memoryview | Iterable, on: int=0,
                   val: str | bytes | memoryview = ''):
         """Add val idempotently at key made from keys with on suffix
         in insertion order using hidden ordinal proem. Idempotently means do not
@@ -2813,9 +2823,11 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                                     val=self._ser(val),
                                     sep=self.sep.encode()))
 
+    addOn = add  # refactoring alias
 
 
-    def appendOn(self, keys: str | bytes | memoryview,
+
+    def append(self, keys: str | bytes | memoryview,
                        val: str | bytes | memoryview):
         """
         Returns:
@@ -2830,6 +2842,8 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                                        key=self._tokey(keys),
                                        val=self._ser(val),
                                        sep=self.sep.encode()))
+
+    appendOn = append  # refactoring alias
 
 
     def getOn(self, keys: str|bytes|memoryview|Iterable, on: int = 0):
