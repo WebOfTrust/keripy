@@ -172,7 +172,7 @@ class Kramer:
     def _fetchCacheType(self, msgType, route):
         """Fetch the most specific matching cache-type entry.
 
-        Uses Komer.getItemIter to scan the message-type branch of the ctyp
+        Uses Komer.getTopItemIter to scan the message-type branch of the ctyp
         database in a single LMDB cursor pass. The cursor positions at the
         first key >= msgType and iterates forward through all keys sharing
         the msgType prefix. Among matches, the most specific key (longest
@@ -197,7 +197,7 @@ class Kramer:
         exactRoute = f"{msgType}.R.{route}" if route else None
 
         # Single cursor scan of the msgType branch
-        for keys, rec in self.db.ctyp.getItemIter(keys=msgType):
+        for keys, rec in self.db.ctyp.getTopItemIter(keys=msgType):
             key = self.db.ctyp.sep.join(keys)  # rejoin tuple to string
             if exactRoute and key == exactRoute:
                 return rec  # exact type+route match, most specific
@@ -680,7 +680,7 @@ class Kramer:
                         self.db.pmsk.pin(key, currentKeyState)
 
                     # Store non-auth attachments alongside new sigs
-                    self._storeNonAuthAttachments(key, **kwa)                    
+                    self._storeNonAuthAttachments(key, **kwa)
 
                 # Check threshold using current kever's tholder
                 allSigs = existingSigs + newSigs
@@ -907,7 +907,7 @@ class Kramer:
                         self.db.pmsk.pin(partialKey, currentKeyState)
 
                     # Store non-auth attachments alongside new sigs
-                    self._storeNonAuthAttachments(partialKey, **kwa)                    
+                    self._storeNonAuthAttachments(partialKey, **kwa)
 
                 # Check threshold using current kever's tholder
                 allSigs = existingSigs + newSigs
@@ -959,7 +959,7 @@ class Kramer:
                         case kering.Ilks.exn:
                             # x field value to fetch any existing cache entry with a matching AID.XID and copy its xdt
                             # value. When no existing cache entry is found, then drop the event and exit.
-                            existingCache = next(self.db.tmsc.getItemIter((senderId, exId)), None)
+                            existingCache = next(self.db.tmsc.getTopItemIter((senderId, exId)), None)
 
                             if existingCache is not None:
                                 keys, cacheRecord = existingCache
@@ -993,7 +993,7 @@ class Kramer:
                             except kering.MissingSenderKeyStateError as e:
                                 logger.info("Missing sender key state for "
                                             "%s: %s", senderId, e)
-                                # Append the cue for the keystate retrieval notification including the senderID and the sn                           
+                                # Append the cue for the keystate retrieval notification including the senderID and the sn
                                 self.cues.append({
                                     "kin": "keystate",
                                     "aid": senderId,
@@ -1044,7 +1044,7 @@ class Kramer:
                             xdts = msg.ked.get('dt', None)
                         case kering.Ilks.exn:
                             existingCache = next(
-                                self.db.tmsc.getItemIter((senderId, exId)),
+                                self.db.tmsc.getTopItemIter((senderId, exId)),
                                 None)
                             if existingCache is not None:
                                 keys, cacheRecord = existingCache

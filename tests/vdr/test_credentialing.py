@@ -230,12 +230,12 @@ def test_tede():
 
         assert len(rgy.reger.tede.get(keys=(reg_pwe.regk, rnum.huge))) == 1
 
-        # getItemIter is the read path used by processDisseminationEscrow
+        # getTopItemIter is the read path used by processDisseminationEscrow
         found = False
-        for (regk, _), triple in rgy.reger.tede.getItemIter():
+        for (regk, _), triple in rgy.reger.tede.getTopItemIter():
             if regk == reg_pwe.regk:
                 found = True
-        assert found, "tede.getItemIter yielded no entry for our regk"
+        assert found, "tede.getTopItemIter yielded no entry for our regk"
 
         # processMultisigEscrow seeds tede with correct values
         reg_ms = rgy.makeRegistry(name="tede_ms", prefix=hab.pre, noBackers=True)
@@ -296,10 +296,10 @@ def test_escrow_suber_klas():
         assert items, "tpwe entry missing"
 
         found = False
-        for (regk, _), triple in rgy.reger.tpwe.getItemIter():
+        for (regk, _), triple in rgy.reger.tpwe.getTopItemIter():
             if regk == reg_tpwe.regk:
                 found = True
-        assert found, "tpwe getItemIter yielded nothing"
+        assert found, "tpwe getTopItemIter yielded nothing"
 
         # tmse
         reg_tmse = rgy.makeRegistry(name="klas_tmse", prefix=hab.pre, noBackers=True)
@@ -310,10 +310,10 @@ def test_escrow_suber_klas():
         assert items, "tmse entry missing"
 
         found = False
-        for (regk, _, _), triple in rgy.reger.tmse.getItemIter():
+        for (regk, _, _), triple in rgy.reger.tmse.getTopItemIter():
             if regk == reg_tmse.regk:
                 found = True
-        assert found, "tmse getItemIter yielded nothing"
+        assert found, "tmse getTopItemIter yielded nothing"
 
         # tede
         reg_tede = rgy.makeRegistry(name="klas_tede", prefix=hab.pre, noBackers=True)
@@ -323,10 +323,10 @@ def test_escrow_suber_klas():
         assert items, "tede entry missing"
 
         found = False
-        for (regk, _), triple in rgy.reger.tede.getItemIter():
+        for (regk, _), triple in rgy.reger.tede.getTopItemIter():
             if regk == reg_tede.regk:
                 found = True
-        assert found, "tede getItemIter yielded nothing"
+        assert found, "tede getTopItemIter yielded nothing"
 
 
 if __name__ == "__main__":

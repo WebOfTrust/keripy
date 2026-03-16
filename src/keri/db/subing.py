@@ -20,12 +20,12 @@ child class statement.
 * a super class is visited only after all sub classes have been visited
 * linearized graph is monotonic (a class is only visted once)
 
-
-
 Principally:
-
-Suber class provides put, pin, get, rem and getItemIter method for managing
-a serialized value in a sub db with an iterable set of keys defining the key space
+SuberBase class provides  trim, cnt, getTopItemIter, and getFullItemIter
+Suber subclass of SuberBase also provides, put, pin, get, and rem methods
+Suber is the simple class for managing a serialized value in a subdb with a
+set of keys as a tuple (iterable) that is converted to a .sep delimited key
+that defines the key space.
 
 CesrSuber class extends Suber for values that are serializations of CESR serializable
 object instances. Ducktyped subclasses of Matter, Indexer, and Counter or the like.
@@ -230,77 +230,87 @@ class SuberBase():
 
 
     def trim(self, keys: str|bytes|memoryview|Iterable=b"", *, topive=False):
-        """Removes all entries whose keys startswith keys. Enables removal of whole
-        branches of db key space. To ensure that proper separation of a branch
-        include empty string as last key in keys. For example ("a","") deletes
-        'a.1'and 'a.2' but not 'ab'
+        """Removes all entries in top branch of db given by keys.
+        Enables removal of whole branches of db key space.
+
+        Returns:
+           result (bool): True if val at key exists so delete successful.
+                          False otherwise
 
         Parameters:
-            keys (Iteratabke[str | bytes | memoryview]): of key parts that may be
+            keys (str|bytes|memoryview|Iterable): of key parts that may be
                 a truncation of a full keys tuple in  in order to address all the
                 items from multiple branches of the key space.
                 If keys is empty then trims all items in database.
                 Either append "" to end of keys Iterable to ensure get properly
-                separated top branch key or use top=True.
+                separated top branch key or use topive=True.
 
-            topive (bool): True means treat as partial key tuple from top branch of
-                       key space given by partial keys. Resultant key ends in .sep
-                       character.
-                       False means treat as full branch in key space. Resultant key
-                       does not end in .sep character.
-                       When last item in keys is empty str then will treat as
-                       partial ending in sep regardless of top value
+            topive (bool): True means treat as partial key tuple from top branch
+                of key space given by partial keys. Resultant key ends in .sep
+                character.
+                False means treat as full branch in key space. Resultant key
+                does not end in .sep character.
+                When last item in keys is empty str then will treat as
+                partial ending in sep regardless of top value
 
-
-        Returns:
-           result (bool): True if val at key exists so delete successful. False otherwise
+        Uses python .startswith() to match keyspace since str.startswith('')
+        always returns True so empty str will match all keys in db.
         """
-        return(self.db.delTop(db=self.sdb, top=self._tokey(keys, topive=topive)))
+        return self.db.remTop(db=self.sdb, top=self._tokey(keys, topive=topive))
+
+    remTop = trim  # alias for convenience
 
 
-    def getFullItemIter(self, keys: str|bytes|memoryview|Iterable[str|bytes]="",
+    def cntTop(self, keys: str|bytes|memoryview|Iterable="",
                        *, topive=False):
-        """Iterator over items in .db that returns full items with subclass
-        specific special hidden parts shown for debugging or testing.
+        """Counts all entries in top branch of db given by keys.
+        When keys is empty then counts all entries in whole db.
 
         Returns:
-            items (Iterator[tuple[key,val]]): (key, val) tuples of each item
-            over the all the items in subdb whose key startswith key made from
-            keys. Keys may be keyspace prefix to return branches of key space.
-            When keys is empty then returns all items in subdb.
-            This is meant to return full parts of items in both keyspace and
-            valuespace which may be useful in debugging or testing.
+            cnt (int): count of all entries in top branch of sdb
 
         Parameters:
-            keys (str|bytes|memoryview|Iteratable[str | bytes | memoryview]):
-                of key parts that may be
-                a truncation of a full keys tuple in  in order to address all the
-                items from multiple branches of the key space.
+            keys (str|bytes|memoryview|Iterable): of key
+                parts that may be a truncation of a full keys tuple in
+                in order to address all the items from multiple branches of the
+                key space.
                 If keys is empty then gets all items in database.
                 Either append "" to end of keys Iterable to ensure get properly
-                separated top branch key or use top=True.
-                In Python str.startswith('') always returns True so if branch
-                key is empty string it matches all keys in db with startswith.
+                separated top branch key or use topive=True.
+
+            topive (bool): True means treat keys as delimited top of partial
+                branch in key space by forcing resultant key to end in .sep
+                character.
+                False means treat keys as undelimited partial or full branch in
+                key space by not forcing resultant key to ebd in .sep character.
+                When last item in keys is empty str then will treat as delimited
+                partial branch ending in .sep regardless of topive value.
+
+        Uses python .startswith() to match keyspace since str.startswith('')
+        always returns True so empty str will match all keys in db.
+        """
+        return self.db.cntTop(db=self.sdb, top=self._tokey(keys, topive=topive))
 
 
-            topive (bool): True means treat as partial key tuple from top branch of
-                       key space given by partial keys. Resultant key ends in .sep
-                       character.
-                       False means treat as full branch in key space. Resultant key
-                       does not end in .sep character.
-                       When last item in keys is empty str then will treat as
-                       partial ending in sep regardless of top value
+    def cntAll(self):
+        """Counts all the entries in subdb.
+        Should be overidden in subclasses with parameters to count more
+        specifically.
+
+        Returns:
+            cnt (int): count of all entries in sdb
 
         """
-        for key, val in self.db.getTopItemIter(db=self.sdb,
-                                               top=self._tokey(keys, topive=topive)):
-            yield (self._tokeys(key), self._des(val))
+        return self.db.cntAll(db=self.sdb)
+
+    cnt = cntAll  # migration alias for backward compt
 
 
-    def getItemIter(self, keys: str|bytes|memoryview|Iterable="",
+    def getTopItemIter(self, keys: str|bytes|memoryview|Iterable="",
                        *, topive=False):
         """Iterates over all the items in top branch defined by keys where
-        keys may be truncation of full branch.
+        keys may be a truncation of a full branch. The truncation format may be
+        modified by the topive parameter.
 
         Iterates over top branch of items in .db subclasses that do special
         hidden transforms on either the keyspace or valuespace.
@@ -318,16 +328,50 @@ class SuberBase():
             When keys is empty then returns all items in subdb
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable[str|bytes|memoryview]): of key
+            keys (str|bytes|memoryview|Iterable): of key
                 parts that may be a truncation of a full keys tuple in
                 in order to address all the items from multiple branches of the
                 key space.
                 If keys is empty then gets all items in database.
                 Either append "" to end of keys Iterable to ensure get properly
-                separated top branch key or use top=True.
-                In Python str.startswith('') always returns True so if branch
-                key is empty string it matches all keys in db with startswith.
+                separated top branch key or use topive=True.
 
+            topive (bool): True means treat keys as delimited top of partial
+                branch in key space by forcing resultant key to end in .sep
+                character.
+                False means treat keys as undelimited partial or full branch in
+                key space by not forcing resultant key to ebd in .sep character.
+                When last item in keys is empty str then will treat as delimited
+                partial branch ending in .sep regardless of topive value.
+
+        Uses python .startswith() to match keyspace since str.startswith('')
+        always returns True so empty str will match all keys in db.
+        """
+        for key, val in self.db.getTopItemIter(db=self.sdb,
+                                               top=self._tokey(keys, topive=topive)):
+            yield (self._tokeys(key), self._des(val))
+
+
+    def getFullItemIter(self, keys: str|bytes|memoryview|Iterable="",
+                       *, topive=False):
+        """Iterator over items in .db that returns full items with subclass
+        specific special hidden parts shown for debugging or testing.
+
+        Returns:
+            items (Iterator[tuple[key,val]]): (key, val) tuples of each item
+            over the all the items in subdb whose key startswith key made from
+            keys. Keys may be keyspace prefix to return branches of key space.
+            When keys is empty then returns all items in subdb.
+            This is meant to return full parts of items in both keyspace and
+            valuespace which may be useful in debugging or testing.
+
+        Parameters:
+            keys (str|bytes|memoryview|Iteratable): of key parts that may be
+                a truncation of a full keys tuple in  in order to address all the
+                items from multiple branches of the key space.
+                If keys is empty then gets all items in database.
+                Either append "" to end of keys Iterable to ensure get properly
+                separated top branch key or use topive=True.
 
             topive (bool): True means treat as partial key tuple from top branch of
                 key space given by partial keys. Resultant key ends in .sep
@@ -337,25 +381,12 @@ class SuberBase():
                 When last item in keys is empty str then will treat as
                 partial ending in sep regardless of top value
 
-        Uses python .startswith to match which always returns True if top is
-        empty string so empty will matches all keys in db.
+        Uses python .startswith() to match keyspace since str.startswith('')
+        always returns True so empty str will match all keys in db.
         """
         for key, val in self.db.getTopItemIter(db=self.sdb,
                                                top=self._tokey(keys, topive=topive)):
             yield (self._tokeys(key), self._des(val))
-
-    def cnt(self):
-        """Counts all the entries in subdb.
-        Should be overidden in subclasses with parameters to count more
-        specifically.
-
-        Returns:
-            cnt (int): count of all entries in sdb
-
-        """
-        return self.db.cntAll(db=self.sdb)
-
-    cntAll = cnt  # migration alias for backward compt
 
 
 class Suber(SuberBase):
@@ -366,7 +397,8 @@ class Suber(SuberBase):
     def __init__(self, db: dbing.LMDBer, *,
                        subkey: str = 'docs.',
                        dupsort: bool=False, **kwa):
-        """
+        """Initialze instance
+
         Inherited Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
@@ -386,8 +418,7 @@ class Suber(SuberBase):
 
 
     def put(self, keys: Union[str, Iterable], val: Union[bytes, str, any]):
-        """
-        Puts val at key made from keys. Does not overwrite
+        """Puts val at key made from keys. Does not overwrite
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -403,8 +434,7 @@ class Suber(SuberBase):
 
 
     def pin(self, keys: Union[str, Iterable], val: Union[bytes, str]):
-        """
-        Pins (sets) val at key made from keys. Overwrites.
+        """Pins (sets) val at key made from keys. Overwrites.
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -419,8 +449,7 @@ class Suber(SuberBase):
 
 
     def get(self, keys: Union[str, Iterable]):
-        """
-        Gets val at keys
+        """Gets val at keys
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -441,15 +470,31 @@ class Suber(SuberBase):
 
 
     def rem(self, keys: Union[str, Iterable]):
-        """Removes entry at keys
+        """Removes entry at keys. This safe if keys empty or missing then
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
 
         Returns:
-           result (bool): True if key exists so delete successful. False otherwise
+            result (bool): True if key exists so delete successful.
+                          False if key empty or missing from db
+
+        Raises KeyError if key to big or otherwise bad
         """
-        return(self.db.delVal(db=self.sdb, key=self._tokey(keys)))
+        return(self.db.remVal(db=self.sdb, key=self._tokey(keys)))
+
+
+    def cnt(self):
+        """Counts all the entries in subdb.
+        Should be overidden in subclasses with parameters to count more
+        specifically.
+
+        Returns:
+            cnt (int): count of all entries in sdb
+
+        """
+        # for non-collective non-on subers cnt is cntAll
+        return self.db.cntAll(db=self.sdb)
 
 
 class OnSuberBase(SuberBase):
@@ -1375,8 +1420,7 @@ class IoSetSuber(SuberBase):
                                              sep=self.sep)]
 
 
-    # Todo XXXX need to refactor to use getItemIter for here not alias to getTopItemIter
-    def XgetItemIter(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
+    def getItemIter(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
         """Iterates over set items at effecive key made from keys and hidden
         ordinal suffix ion starting at ion >= ion.
         When keys is empty or missing then returns empty iterator
@@ -1492,7 +1536,7 @@ class IoSetSuber(SuberBase):
                                    sep=self.sep)
 
 
-    def cnt(self, keys: str|bytes|memoryview|Iterable = "", *, ion=0):
+    def cnt(self, keys: str|bytes|memoryview|Iterable="", *, ion=0):
         """Counts entries at effective key made from keys and hidden ordinal
         suffix. Zero otherwise.
         When keys empty then counts all in db.
@@ -1555,8 +1599,6 @@ class IoSetSuber(SuberBase):
         for key, val in self.db.getTopIoSetItemIter(db=self.sdb,
                 top=self._tokey(keys, topive=topive), sep=self.sep.encode()):
             yield (self._tokeys(key), self._des(val))
-
-    getItemIter = getTopItemIter  # migration alias for backwards compat
 
 
     def getLastIter(self, keys: str|bytes|memoryview|Iterable = ""):
@@ -1794,7 +1836,7 @@ class SignerSuber(CesrSuber):
                 if val is not None else None)
 
 
-    def getItemIter(self, keys: str | bytes | memoryview | Iterable = "",
+    def getTopItemIter(self, keys: str | bytes | memoryview | Iterable = "",
                     *, topive=False):
         """Iterates over all the items in top branch defined by keys where
         keys may be truncation of full branch.
@@ -1924,8 +1966,7 @@ class CryptSignerSuber(SignerSuber):
         return (self.klas(qb64b=bytes(val), transferable=verfer.transferable))
 
 
-
-    def getItemIter(self, keys: str|bytes|memoryview|Iterable= "",
+    def getTopItemIter(self, keys: str|bytes|memoryview|Iterable= "",
                        decrypter: signing.Decrypter = None, *, topive=False):
         """Iterates over all the items in top branch defined by keys where
         keys may be truncation of full branch.
@@ -2570,7 +2611,7 @@ class IoDupSuber(DupSuber):
         return (self.db.cntIoDups(db=self.sdb, key=self._tokey(keys)))
 
 
-    def getItemIter(self, keys: str | bytes | memoryview | Iterable = "",
+    def getTopItemIter(self, keys: str | bytes | memoryview | Iterable = "",
                     *, topive=False):
         """Iterates over all the items in top branch defined by keys where
         keys may be truncation of full branch.

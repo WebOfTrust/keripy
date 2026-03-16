@@ -622,7 +622,7 @@ class MailboxDirector(doing.DoDoer):
             hab (Hab): the Hab of the prefix
 
         """
-        for (_, erole, eid), end in hab.db.ends.getItemIter(keys=(hab.pre, Roles.mailbox)):
+        for (_, erole, eid), end in hab.db.ends.getTopItemIter(keys=(hab.pre, Roles.mailbox)):
             if end.allowed:
                 poller = Poller(hab=hab, topics=self.topics, witness=eid)
                 self.pollers.append(poller)

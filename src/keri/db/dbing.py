@@ -93,7 +93,7 @@ def fetchTsgs(db, diger, snh=None):
     tsgs = []  # transferable signature groups
     sigers = []
     old = None  # empty keys
-    for keys, siger in db.getItemIter(keys=(diger.qb64, "")):
+    for keys, siger in db.getTopItemIter(keys=(diger.qb64, "")):
         trituple = keys[1:]
         if trituple != old:  # new tsg
             if snh is not None and trituple[1] > snh:  # only lower sn
@@ -542,7 +542,7 @@ class LMDBer(filing.Filer):
 
     # Universal methods for all dbs
 
-    def delTop(self, db, top=b''):
+    def remTop(self, db, top=b''):
         """Deletes all values in branch of db given top key. Top empty deletes
         whole db.
 
@@ -575,10 +575,12 @@ class LMDBer(filing.Filer):
                     ckey, cval = cursor.item()  # cursor now at next item after deleted
             return result
 
+    delTop = remTop  # alias for backwards compat during refactor
+
 
     def cntTop(self, db, top=b''):
-        """Counts all values in branch of db given top key. Top empty counts
-        whole db.
+        """Counts all entries in branch of db given by top key.
+        When top is empty then counts all entries in whole db.
 
         Returns:
             count (int): number of counted entries in branch if any
@@ -717,22 +719,29 @@ class LMDBer(filing.Filer):
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
-    def delVal(self, db, key):
-        """
-        Deletes value at key in db.
-        Returns True If key exists in database Else False
+    def remVal(self, db, key):
+        """Removes value at key in db.
+        Returns:
+            result (bool): True If key exists in database and item deleted
+                           False If key empty or missing from database
+
+        Raises KeyError if problem with key
 
         Parameters:
             db is opened named sub db with dupsort=False
             key is bytes of key within sub db's keyspace
         """
+        if not key:
+            return False
+
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             try:
                 return (txn.delete(key))
             except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
-                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
+                raise KeyError(f"Invalid {key=} too big (for lmdb),"
+                               " or bad DUPFIXED size. ") from ex
 
+    delVal = remVal  # backwards compat alias for refactoring
 
 
     # For subdbs  the use keys with trailing part the is  monotonically
@@ -964,7 +973,7 @@ class LMDBer(filing.Filer):
         Assumes DB opened with dupsort=False
         """
         if not key:
-            return self.delTop(db=db, top=b'')
+            return self.remTop(db=db, top=b'')
 
         # del all on >= on for key
         with self.env.begin(db=db, write=True, buffers=True) as txn:
@@ -1840,7 +1849,7 @@ class LMDBer(filing.Filer):
         Assumes DB opened with dupsort=False
         """
         if not key:
-            return self.delTop(db=db, top=b'')
+            return self.remTop(db=db, top=b'')
 
         # del all on >= on for key
         with self.env.begin(db=db, write=True, buffers=True) as txn:
@@ -2719,7 +2728,6 @@ class LMDBer(filing.Filer):
             return count
 
 
-# used in IoDupSuber.getItemIter
     def getTopIoDupItemIter(self, db, top=b''):
         """
         Iterates over top branch of db given by key of IoDup items where each value

@@ -536,7 +536,7 @@ class Revery:
         quadruple (prefixer, seqner, diger, siger)
 
         """
-        for (route,), diger in self.db.rpes.getItemIter():
+        for (route,), diger in self.db.rpes.getTopItemIter():
             try:
                 tsgs = fetchTsgs(db=self.db.ssgs, diger=diger)
 
