@@ -78,7 +78,7 @@ class NotesDoer(doing.DoDoer):
         while self.notifier.noter.notes.cnt() == 0:
             yield self.tock
 
-        for keys, notice in self.notifier.noter.notes.getItemIter():
+        for keys, notice in self.notifier.noter.notes.getTopItemIter():
             if self.verbose:
                 print(keys)
                 print(json.dumps(notice.pad, indent=4))

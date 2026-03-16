@@ -78,7 +78,7 @@ class Regery:
 
         """
 
-        for name, regord in self.reger.regs.getItemIter():
+        for name, regord in self.reger.regs.getTopItemIter():
             name, = name
             regk = regord.registryKey
             pre = regord.prefix
@@ -732,7 +732,7 @@ class Registrar(doing.DoDoer):
         from witnesses yet.  When receipting is complete, remove from escrow and cue up a message
         that the event is complete.
         """
-        for (regk, snq), (prefixer, number, diger) in self.rgy.reger.tpwe.getItemIter():  # partial witness escrow
+        for (regk, snq), (prefixer, number, diger) in self.rgy.reger.tpwe.getTopItemIter():  # partial witness escrow
             kever = self.hby.kevers[prefixer.qb64]
 
             # Load all the witness receipts we have so far
@@ -761,7 +761,7 @@ class Registrar(doing.DoDoer):
         from witnesses yet.  When receipting is complete, remove from escrow and cue up a message
         that the event is complete.
         """
-        for (regk, snq, regd), (prefixer, number, diger) in self.rgy.reger.tmse.getItemIter():  # multisig escrow 
+        for (regk, snq, regd), (prefixer, number, diger) in self.rgy.reger.tmse.getTopItemIter():  # multisig escrow
             try:
                 if not self.counselor.complete(prefixer, number, diger):
                     continue
@@ -785,7 +785,7 @@ class Registrar(doing.DoDoer):
         disseminated to witnesses.  This is a fire and forget mechanism where the WitnessPublisher
         handles sending events to the witnesses and collecting receipts.
         """
-        for (regk, snq), (prefixer, number, saider) in self.rgy.reger.tede.getItemIter():  # group multisig escrow
+        for (regk, snq), (prefixer, number, saider) in self.rgy.reger.tede.getTopItemIter():  # group multisig escrow
             rnum = Number(qb64=snq, code=NumDex.Huge)
             dig = self.rgy.reger.tels.get(keys=snKey(pre=regk, sn=rnum.sn))
             if dig is None:
@@ -923,7 +923,7 @@ class Credentialer(doing.DoDoer):
         Process credential events that are missing signatures. If the TEL event's underlying KEL
         event signing is complete then disseminate the event to the witnesses for receipting.
         """
-        for (said, snq), creder in self.rgy.reger.cmse.getItemIter():
+        for (said, snq), creder in self.rgy.reger.cmse.getTopItemIter():
             rseq = Seqner(qb64=snq)
             if not self.registrar.complete(pre=said, sn=rseq.sn):
                 continue
@@ -988,11 +988,6 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
         creder (Creder): the credential to pull artifacts for and send
         recp (str): qb64 prefix of the recipient to send the artifacts to
     """
-    if isinstance(hab, GroupHab):
-        sender = hab.mhab.pre
-    else:
-        sender = hab.pre
-
     sendArtifacts(hby, reger, postman, creder, recp)
 
     sources = reger.sources(hby.db, creder)

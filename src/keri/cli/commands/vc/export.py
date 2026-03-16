@@ -20,7 +20,7 @@ from ....vdr import credentialing
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Export credential from store and any related material', 
+parser = argparse.ArgumentParser(description='Export credential from store and any related material',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: export_credentials(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
@@ -92,7 +92,7 @@ class ExportDoer(doing.DoDoer):
         _ = (yield self.tock)
 
         if self.said is None:
-            for (said,), _ in self.rgy.reger.creds.getItemIter():
+            for (said,), _ in self.rgy.reger.creds.getTopItemIter():
                 self.outputCred(said=said)
 
         else:

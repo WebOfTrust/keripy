@@ -119,7 +119,7 @@ def test_suber():
         suber.put(keys=("a","3"), val=y)
         suber.put(keys=("a","4"), val=z)
 
-        items = [(keys, val) for keys, val in suber.getItemIter()]
+        items = [(keys, val) for keys, val in suber.getTopItemIter()]
         assert items == [(('a', '1'), w),
                         (('a', '2'), x),
                         (('a', '3'), y),
@@ -130,7 +130,7 @@ def test_suber():
         suber.put(keys=("bc","3"), val=y)
         suber.put(keys=("ac","4"), val=z)
 
-        items = [(keys, val) for keys, val in suber.getItemIter()]
+        items = [(keys, val) for keys, val in suber.getTopItemIter()]
         assert items == [(('a', '1'), 'Blue dog'),
                         (('a', '2'), 'Green tree'),
                         (('a', '3'), 'Red apple'),
@@ -143,12 +143,12 @@ def test_suber():
 
         # test with top keys for partial tree
         topkeys = ("b","")  # last element empty to force trailing separator
-        items = [(keys, val) for keys, val in suber.getItemIter(keys=topkeys)]
+        items = [(keys, val) for keys, val in suber.getTopItemIter(keys=topkeys)]
         assert items == [(('b', '1'), w),
                          (('b', '2'), x)]
 
         topkeys = ("a","")  # last element empty to force trailing separator
-        items = [(keys, val) for keys, val in suber.getItemIter(keys=topkeys)]
+        items = [(keys, val) for keys, val in suber.getTopItemIter(keys=topkeys)]
         assert items == [(('a', '1'), w),
                         (('a', '2'), x),
                         (('a', '3'), y),
@@ -156,12 +156,12 @@ def test_suber():
 
         # test with top parameter
         keys = ("b", )  # last element empty to force trailing separator
-        items = [(keys, val) for keys, val in suber.getItemIter(keys=keys, topive=True)]
+        items = [(keys, val) for keys, val in suber.getTopItemIter(keys=keys, topive=True)]
         assert items == [(('b', '1'), w),
                          (('b', '2'), x)]
 
         keys = ("a", )  # last element empty to force trailing separator
-        items = [(keys, val) for keys, val in suber.getItemIter(keys=keys, topive=True)]
+        items = [(keys, val) for keys, val in suber.getTopItemIter(keys=keys, topive=True)]
         assert items == [(('a', '1'), w),
                         (('a', '2'), x),
                         (('a', '3'), y),
@@ -169,7 +169,7 @@ def test_suber():
 
         # Test trim
         assert suber.trim(keys=("b", ""))
-        items = [(keys, val) for keys, val in suber.getItemIter()]
+        items = [(keys, val) for keys, val in suber.getTopItemIter()]
         assert items == [(('a', '1'), 'Blue dog'),
                         (('a', '2'), 'Green tree'),
                         (('a', '3'), 'Red apple'),
@@ -178,7 +178,7 @@ def test_suber():
                         (('bc', '3'), 'Red apple')]
 
         assert suber.trim(keys=("a", ""))
-        items = [(keys, val) for keys, val in suber.getItemIter()]
+        items = [(keys, val) for keys, val in suber.getTopItemIter()]
         assert items == [(('ac', '4'), 'White snow'), (('bc', '3'), 'Red apple')]
 
         # Test trim with top parameters
@@ -189,8 +189,15 @@ def test_suber():
         suber.put(keys=("b","1"), val=w)
         suber.put(keys=("b","2"), val=x)
 
+        assert suber.cntAll() == 8
+        assert suber.cntTop() == 8
+        assert suber.cntTop(keys=("a", ), topive=True) == 4
+        assert suber.cntTop(keys=("a", ""), topive=False) == 4
+        assert suber.cntTop(keys=("a", ), topive=False) == 5
+        assert suber.cntTop(keys="a", topive=False) == 5
+
         assert suber.trim(keys=("b",), topive=True)
-        items = [(keys, val) for keys, val in suber.getItemIter()]
+        items = [(keys, val) for keys, val in suber.getTopItemIter()]
         assert items == [(('a', '1'), 'Blue dog'),
                         (('a', '2'), 'Green tree'),
                         (('a', '3'), 'Red apple'),
@@ -199,12 +206,12 @@ def test_suber():
                         (('bc', '3'), 'Red apple')]
 
         assert suber.trim(keys=("a",), topive=True)
-        items = [(keys, val) for keys, val in suber.getItemIter()]
+        items = [(keys, val) for keys, val in suber.getTopItemIter()]
         assert items == [(('ac', '4'), 'White snow'),
                          (('bc', '3'), 'Red apple')]
 
         assert suber.trim()
-        items = [(keys, val) for keys, val in suber.getItemIter()]
+        items = [(keys, val) for keys, val in suber.getTopItemIter()]
         assert items == []
 
         assert not suber.trim()
@@ -247,7 +254,7 @@ def test_on_suber():
         assert onsuber.cntOn(keys=("a",), on=2) == 2
         assert onsuber.cntOn(keys=("a",), on=4) == 0
 
-        items = [(keys, val) for keys, val in onsuber.getItemIter()]
+        items = [(keys, val) for keys, val in onsuber.getTopItemIter()]
         assert items == [(('a', '00000000000000000000000000000000'), 'Blue dog'),
                         (('a', '00000000000000000000000000000001'), 'Green tree'),
                         (('a', '00000000000000000000000000000002'), 'Red apple'),
@@ -305,7 +312,7 @@ def test_on_suber():
         assert onsuber.cntOnAll(keys=("ac",), on=2) == 0
         assert onsuber.cntOnAll(keys="") == 8
 
-        items = [(keys, val) for keys, val in onsuber.getItemIter()]
+        items = [(keys, val) for keys, val in onsuber.getTopItemIter()]
         assert items == [(('a', '00000000000000000000000000000000'), 'Blue dog'),
                         (('a', '00000000000000000000000000000001'), 'Green tree'),
                         (('a', '00000000000000000000000000000002'), 'Red apple'),
@@ -499,7 +506,7 @@ def test_b64_suber():
         assert buber.put(keys0, vals0)
         assert buber.put(keys1, vals1)
 
-        items = [ items for items in buber.getItemIter()]
+        items = [ items for items in buber.getTopItemIter()]
         assert items == [(('bird', 'fish'), ('gamma',)), (('cat', 'dog'), ('alpha', 'beta'))]
 
         buber.put(keys=("b","1"), val=vals0)
@@ -508,7 +515,7 @@ def test_b64_suber():
         buber.put(keys=("c","2"), val=vals1)
 
         topkeys = ("b","")  # last element empty to force trailing separator
-        items = [items for items in  buber.getItemIter(keys=topkeys)]
+        items = [items for items in  buber.getTopItemIter(keys=topkeys)]
         assert items == [(('b', '1'), ('alpha', 'beta')),
                          (('b', '2'), ('gamma',))]
 
@@ -574,7 +581,7 @@ def test_dup_suber():
         for i, val in enumerate(dupber.getIter(keys=keys1)):
             assert val == actual[i]
 
-        items = [(keys, val) for keys, val in dupber.getItemIter()]
+        items = [(keys, val) for keys, val in dupber.getTopItemIter()]
         assert items == [(('test_key', '0001'), 'Hey gorgeous!'),
                         (('test_key', '0001'), 'See ya later.'),
                         (('test_key', '0002'), 'A real charmer!'),
@@ -584,7 +591,7 @@ def test_dup_suber():
 
         assert dupber.put(keys=("test", "blue"), vals=[sal, sue, sam])
         topkeys = ("test", "")
-        items = [(keys, val) for keys, val in dupber.getItemIter(keys=topkeys)]
+        items = [(keys, val) for keys, val in dupber.getTopItemIter(keys=topkeys)]
         assert items == [(('test', 'blue'), 'A real charmer!'),
                          (('test', 'blue'), 'Hello sailer!'),
                          (('test', 'blue'), 'Not my type.')]
@@ -624,7 +631,7 @@ def test_dup_suber():
         for i, val in enumerate(vals):
             assert dupber.put(keys=dbing.onKey("bob", i), vals=val)
 
-        items = [(keys, val) for keys, val in dupber.getItemIter(keys="bob")]
+        items = [(keys, val) for keys, val in dupber.getTopItemIter(keys="bob")]
         assert items == [
             (('bob', '00000000000000000000000000000000'), 'bye'),
             (('bob', '00000000000000000000000000000000'), 'hi'),
@@ -713,7 +720,7 @@ def test_iodup_suber():
         for i, val in enumerate(ioduber.getIter(keys=keys1)):
             assert val == actuals[i]
 
-        items = [(keys, val) for keys, val in ioduber.getItemIter()]
+        items = [(keys, val) for keys, val in ioduber.getTopItemIter()]
         assert items == [(('test_key', '0001'), 'See ya later.'),
                         (('test_key', '0001'), 'Hey gorgeous!'),
                         (('test_key', '0002'), 'Not my type.'),
@@ -727,12 +734,12 @@ def test_iodup_suber():
                         (('test_key', '0002'), '00000000000000000000000000000001.Hello sailer!'),
                         (('test_key', '0002'), '00000000000000000000000000000002.A real charmer!')]
 
-        items = [(keys, val) for keys,  val in ioduber.getItemIter(keys=keys1)]
+        items = [(keys, val) for keys,  val in ioduber.getTopItemIter(keys=keys1)]
         assert items == [(('test_key', '0002'), 'Not my type.'),
                          (('test_key', '0002'), 'Hello sailer!'),
                          (('test_key', '0002'), 'A real charmer!')]
 
-        items = [(keys, val) for keys,  val in  ioduber.getItemIter(keys=keys0)]
+        items = [(keys, val) for keys,  val in  ioduber.getTopItemIter(keys=keys0)]
         assert items == [(('test_key', '0001'), 'See ya later.'),
                          (('test_key', '0001'), 'Hey gorgeous!')]
 
@@ -742,14 +749,14 @@ def test_iodup_suber():
         # Test with top keys
         assert ioduber.put(keys=("test", "pop"), vals=[sal, sue, sam])
         topkeys = ("test", "")
-        items = [(keys, val) for keys, val in ioduber.getItemIter(keys=topkeys)]
+        items = [(keys, val) for keys, val in ioduber.getTopItemIter(keys=topkeys)]
         assert items == [(('test', 'pop'), 'Not my type.'),
                          (('test', 'pop'), 'Hello sailer!'),
                          (('test', 'pop'), 'A real charmer!')]
 
         # test with top parameter
         keys = ("test", )
-        items = [(keys, val) for keys, val in ioduber.getItemIter(keys=keys, topive=True)]
+        items = [(keys, val) for keys, val in ioduber.getTopItemIter(keys=keys, topive=True)]
         assert items == [(('test', 'pop'), 'Not my type.'),
                          (('test', 'pop'), 'Hello sailer!'),
                          (('test', 'pop'), 'A real charmer!')]
@@ -762,7 +769,7 @@ def test_iodup_suber():
 
         # test remove with a specific val
         assert ioduber.rem(keys=("test_key", "0002"), val=sue)
-        items = [(keys, val) for keys, val in ioduber.getItemIter()]
+        items = [(keys, val) for keys, val in ioduber.getTopItemIter()]
         assert items == [(('test', 'pop'), 'Not my type.'),
                         (('test', 'pop'), 'Hello sailer!'),
                         (('test', 'pop'), 'A real charmer!'),
@@ -772,7 +779,7 @@ def test_iodup_suber():
                         (('test_key', '0002'), 'A real charmer!')]
 
         assert ioduber.trim(keys=("test", ""))
-        items = [(keys, val) for keys, val in ioduber.getItemIter()]
+        items = [(keys, val) for keys, val in ioduber.getTopItemIter()]
         assert items == [(('test_key', '0001'), 'See ya later.'),
                         (('test_key', '0001'), 'Hey gorgeous!'),
                         (('test_key', '0002'), 'Not my type.'),
@@ -896,7 +903,7 @@ def test_b64_iodup_suber():
         assert iobuber.put(keys0, [vals0])
         assert iobuber.put(keys1, [vals1])
 
-        items = [ items for items in iobuber.getItemIter()]
+        items = [ items for items in iobuber.getTopItemIter()]
         assert items == [(('bird', 'fish'), ('gamma',)), (('cat', 'dog'), ('alpha', 'beta'))]
 
         keys3 = ("b","1")
@@ -910,7 +917,7 @@ def test_b64_iodup_suber():
         iobuber.put(keys=keys6, vals=[vals1])
 
         topkeys = ("b","")  # last element empty to force trailing separator
-        items = [items for items in  iobuber.getItemIter(keys=topkeys)]
+        items = [items for items in  iobuber.getTopItemIter(keys=topkeys)]
         assert items == [(('b', '1'), ('alpha', 'beta')),
                          (('b', '2'), ('gamma',))]
 
@@ -973,7 +980,7 @@ def test_b64_iodup_suber():
         for i, val in enumerate(iobuber.getIter(keys=keys1)):
             assert val == actuals[i]
 
-        items = [(keys, val) for keys, val in iobuber.getItemIter()]
+        items = [(keys, val) for keys, val in iobuber.getTopItemIter()]
         assert items == [(('test_key', '0001'), ('later', 'alligator')),
                          (('test_key', '0001'), ('soon', 'baboon')),
                          (('test_key', '0002'), ('Toodles',)),
@@ -989,26 +996,26 @@ def test_b64_iodup_suber():
             (('test_key', '0002'), ('00000000000000000000000000000002', 'Bye'))
         ]
 
-        items = [(keys, val) for keys,  val in iobuber.getItemIter(keys=keys1)]
+        items = [(keys, val) for keys,  val in iobuber.getTopItemIter(keys=keys1)]
         assert items == [(('test_key', '0002'), ('Toodles',)),
                          (('test_key', '0002'), ('Hello',)),
                          (('test_key', '0002'), ('Bye',))]
 
-        items = [(keys, val) for keys,  val in  iobuber.getItemIter(keys=keys0)]
+        items = [(keys, val) for keys,  val in  iobuber.getTopItemIter(keys=keys0)]
         assert items == [(('test_key', '0001'), ('later', 'alligator')),
                          (('test_key', '0001'), ('soon', 'baboon'))]
 
         # Test with top keys
         assert iobuber.put(keys=("test", "pop"), vals=[sal, sue, sam])
         topkeys = ("test", "")
-        items = [(keys, val) for keys, val in iobuber.getItemIter(keys=topkeys)]
+        items = [(keys, val) for keys, val in iobuber.getTopItemIter(keys=topkeys)]
         assert items == [(('test', 'pop'), ('Toodles',)),
                          (('test', 'pop'), ('Hello',)),
                          (('test', 'pop'), ('Bye',))]
 
         # test with top parameter
         keys = ("test", )
-        items = [(keys, val) for keys, val in iobuber.getItemIter(keys=keys, topive=True)]
+        items = [(keys, val) for keys, val in iobuber.getTopItemIter(keys=keys, topive=True)]
         assert items == [(('test', 'pop'), ('Toodles',)),
                          (('test', 'pop'), ('Hello',)),
                          (('test', 'pop'), ('Bye',))]
@@ -1021,7 +1028,7 @@ def test_b64_iodup_suber():
 
         # test remove with a specific val
         assert iobuber.rem(keys=("test_key", "0002"), val=sue)
-        items = [(keys, val) for keys, val in iobuber.getItemIter()]
+        items = [(keys, val) for keys, val in iobuber.getTopItemIter()]
         assert items ==[(('test', 'pop'), ('Toodles',)),
                         (('test', 'pop'), ('Hello',)),
                         (('test', 'pop'), ('Bye',)),
@@ -1032,7 +1039,7 @@ def test_b64_iodup_suber():
 
 
         assert iobuber.trim(keys=("test", ""))
-        items = [(keys, val) for keys, val in iobuber.getItemIter()]
+        items = [(keys, val) for keys, val in iobuber.getTopItemIter()]
         assert items == [(('test_key', '0001'), ('later', 'alligator')),
                          (('test_key', '0001'), ('soon', 'baboon')),
                          (('test_key', '0002'), ('Toodles',)),
@@ -1146,7 +1153,7 @@ def test_on_iodup_suber():
         assert oidsuber.cntOnAll(keys=("a",), on=4) == 0
         assert oidsuber.cntOnAll() == 4
 
-        items = [(keys, val) for keys, val in oidsuber.getItemIter()]
+        items = [(keys, val) for keys, val in oidsuber.getTopItemIter()]
         assert items == [(('a', '00000000000000000000000000000000'), 'Blue dog'),
                         (('a', '00000000000000000000000000000001'), 'Green tree'),
                         (('a', '00000000000000000000000000000002'), 'Red apple'),
@@ -1185,7 +1192,7 @@ def test_on_iodup_suber():
         assert oidsuber.cntOnAll(keys=("ac",), on=2) == 0
         assert oidsuber.cntOnAll(keys="") == 8
 
-        items = [(keys, val) for keys, val in oidsuber.getItemIter()]
+        items = [(keys, val) for keys, val in oidsuber.getTopItemIter()]
         assert items == [(('a', '00000000000000000000000000000000'), 'Blue dog'),
                         (('a', '00000000000000000000000000000001'), 'Green tree'),
                         (('a', '00000000000000000000000000000002'), 'Red apple'),
@@ -1267,7 +1274,7 @@ def test_on_iodup_suber():
         assert oidsuber.cntOnAll(keys=("a",), on=2) == 4
         assert oidsuber.cntOnAll(keys=("a",), on=4) == 0
 
-        items = [(keys, val) for keys, val in oidsuber.getItemIter(keys=("a", ""))]
+        items = [(keys, val) for keys, val in oidsuber.getTopItemIter(keys=("a", ""))]
         assert items == [(('a', '00000000000000000000000000000000'), 'Blue dog'),
                         (('a', '00000000000000000000000000000000'), 'White snow'),
                         (('a', '00000000000000000000000000000001'), 'Green tree'),
@@ -1461,7 +1468,7 @@ def test_b64_oniodup_suber():
         assert oidbuber.cntOnAll(keys=(j,), on=2) == 2
         assert oidbuber.cntOnAll(keys=(j,), on=4) == 0
 
-        items = [(keys, val) for keys, val in oidbuber.getItemIter()]
+        items = [(keys, val) for keys, val in oidbuber.getTopItemIter()]
         assert items == [(('b', '00000000000000000000000000000000'), ('Blue', 'dog')),
                          (('b', '00000000000000000000000000000001'), ('Green', 'tree')),
                          (('b', '00000000000000000000000000000002'), ('Red',)),
@@ -1497,7 +1504,7 @@ def test_b64_oniodup_suber():
         assert oidbuber.cntOnAll(keys=("bc",), on=2) == 0
         assert oidbuber.cntOnAll(keys="") == 8
 
-        items = [(keys, val) for keys, val in oidbuber.getItemIter()]
+        items = [(keys, val) for keys, val in oidbuber.getTopItemIter()]
         assert items == [(('a', '00000000000000000000000000000000'), ('Blue', 'dog')),
                         (('a', '00000000000000000000000000000001'), ('Green', 'tree')),
                         (('ac', '00000000000000000000000000000000'), ('White',)),
@@ -1579,7 +1586,7 @@ def test_b64_oniodup_suber():
         assert oidbuber.cntOnAll(keys=(j,), on=2) == 4
         assert oidbuber.cntOnAll(keys=(j,), on=4) == 0
 
-        items = [(keys, val) for keys, val in oidbuber.getItemIter(keys=(j, ""))]
+        items = [(keys, val) for keys, val in oidbuber.getTopItemIter(keys=(j, ""))]
         assert items == [(('b', '00000000000000000000000000000000'), ('Blue', 'dog')),
                         (('b', '00000000000000000000000000000000'), ('White',)),
                         (('b', '00000000000000000000000000000001'), ('Green', 'tree')),
@@ -1766,6 +1773,12 @@ def test_ioset_suber():
         # keys0
         # ion default 0
         assert [val for val in iosuber.getIter(keys=keys0)] == vals0
+        assert [(key, val) for key, val in iosuber.getItemIter(keys=keys0)] == \
+        [
+            (('test_key', '0001'), 'Hello sailer!'),
+            (('test_key', '0001'), 'Not my type.'),
+            (('test_key', '0001'), 'A real charmer!')
+        ]
         assert iosuber.get(keys=keys0) == vals0
         assert iosuber.cnt(keys=keys0) == 3
         assert iosuber.getLastItem(keys=keys0) == (keys0, sam)
@@ -1773,11 +1786,22 @@ def test_ioset_suber():
 
         # ion = 0
         assert [val for val in iosuber.getIter(keys=keys0, ion=0)] == [sue, sal, sam]
+        assert [(key, val) for key, val in iosuber.getItemIter(keys=keys0, ion=0)] == \
+        [
+            (('test_key', '0001'), 'Hello sailer!'),
+            (('test_key', '0001'), 'Not my type.'),
+            (('test_key', '0001'), 'A real charmer!')
+        ]
         assert iosuber.get(keys=keys0, ion=0) == [sue, sal, sam]
         assert iosuber.cnt(keys=keys0, ion=0) == 3
 
         # ion = 1
         assert [val for val in iosuber.getIter(keys=keys0, ion=1)] == [sal, sam]
+        assert [(key, val) for key, val in iosuber.getItemIter(keys=keys0, ion=1)] == \
+        [
+            (('test_key', '0001'), 'Not my type.'),
+            (('test_key', '0001'), 'A real charmer!')
+        ]
         assert iosuber.get(keys=keys0, ion=1) == [sal, sam]
         assert iosuber.cnt(keys=keys0, ion=1) == 2
 
@@ -1788,6 +1812,7 @@ def test_ioset_suber():
 
         # ion = 3  past end of keys0 set
         assert [val for val in iosuber.getIter(keys=keys0, ion=3)] == []
+        assert [(key, val) for key, val in iosuber.getItemIter(keys=keys0, ion=3)] == []
         assert iosuber.get(keys=keys0, ion=3) == []
         assert iosuber.cnt(keys=keys0, ion=3) == 0
 
@@ -1919,7 +1944,7 @@ def test_ioset_suber():
         for i, val in enumerate(iosuber.getIter(keys=keys1)):
             assert val == actuals[i]
 
-        items = [(keys, val) for keys, val in iosuber.getItemIter()]
+        items = [(keys, val) for keys, val in iosuber.getTopItemIter()]
         assert items == [(('test_key', '0001'), 'See ya later.'),
                         (('test_key', '0001'), 'Hey gorgeous!'),
                         (('test_key', '0002'), 'Not my type.'),
@@ -1941,7 +1966,7 @@ def test_ioset_suber():
                         (('test_key', '0002', '00000000000000000000000000000002'), 'A real charmer!')]
 
 
-        items = [(keys, val) for keys,  val in  iosuber.getItemIter(keys=keys0)]
+        items = [(keys, val) for keys,  val in  iosuber.getTopItemIter(keys=keys0)]
         assert items == [(('test_key', '0001'), 'See ya later.'),
                          (('test_key', '0001'), 'Hey gorgeous!')]
 
@@ -1952,7 +1977,7 @@ def test_ioset_suber():
         lasts = [val for val in iosuber.getLastIter(keys=keys0)]
         assert lasts == ['Hey gorgeous!', 'A real charmer!']
 
-        items = [(keys, val) for keys,  val in iosuber.getItemIter(keys=keys1)]
+        items = [(keys, val) for keys,  val in iosuber.getTopItemIter(keys=keys1)]
         assert items == [(('test_key', '0002'), 'Not my type.'),
                         (('test_key', '0002'), 'Hello sailer!'),
                         (('test_key', '0002'), 'A real charmer!')]
@@ -1967,14 +1992,14 @@ def test_ioset_suber():
         # Test with top keys
         assert iosuber.put(keys=("test", "pop"), vals=[sal, sue, sam])
         topkeys = ("test", "")
-        items = [(keys, val) for keys, val in iosuber.getItemIter(keys=topkeys)]
+        items = [(keys, val) for keys, val in iosuber.getTopItemIter(keys=topkeys)]
         assert items == [(('test', 'pop'), 'Not my type.'),
                          (('test', 'pop'), 'Hello sailer!'),
                          (('test', 'pop'), 'A real charmer!')]
 
         # test with top parameter
         keys = ("test", )
-        items = [(keys, val) for keys, val in iosuber.getItemIter(keys=keys, topive=True)]
+        items = [(keys, val) for keys, val in iosuber.getTopItemIter(keys=keys, topive=True)]
         assert items == [(('test', 'pop'), 'Not my type.'),
                          (('test', 'pop'), 'Hello sailer!'),
                          (('test', 'pop'), 'A real charmer!')]
@@ -1987,7 +2012,7 @@ def test_ioset_suber():
 
         # test remove with a specific val
         assert iosuber.rem(keys=("test_key", "0002"), val=sue)
-        items = [(keys, val) for keys, val in iosuber.getItemIter()]
+        items = [(keys, val) for keys, val in iosuber.getTopItemIter()]
         assert items == [(('test', 'pop'), 'Not my type.'),
                         (('test', 'pop'), 'Hello sailer!'),
                         (('test', 'pop'), 'A real charmer!'),
@@ -1997,7 +2022,7 @@ def test_ioset_suber():
                         (('test_key', '0002'), 'A real charmer!')]
 
         assert iosuber.trim(keys=("test", ""))
-        items = [(keys, val) for keys, val in iosuber.getItemIter()]
+        items = [(keys, val) for keys, val in iosuber.getTopItemIter()]
         assert items == [(('test_key', '0001'), 'See ya later.'),
                         (('test_key', '0001'), 'Hey gorgeous!'),
                         (('test_key', '0002'), 'Not my type.'),
@@ -2127,7 +2152,7 @@ def test_b64_ioset_suber():
         assert iobuber.put(keys0, [vals0])
         assert iobuber.put(keys1, [vals1])
 
-        items = [ items for items in iobuber.getItemIter()]
+        items = [ items for items in iobuber.getTopItemIter()]
         assert items == [(('bird', 'fish'), ('gamma',)), (('cat', 'dog'), ('alpha', 'beta'))]
 
         keys3 = ("b","1")
@@ -2141,7 +2166,7 @@ def test_b64_ioset_suber():
         iobuber.put(keys=keys6, vals=[vals1])
 
         topkeys = ("b","")  # last element empty to force trailing separator
-        items = [items for items in  iobuber.getItemIter(keys=topkeys)]
+        items = [items for items in  iobuber.getTopItemIter(keys=topkeys)]
         assert items == [(('b', '1'), ('alpha', 'beta')),
                          (('b', '2'), ('gamma',))]
 
@@ -2204,7 +2229,7 @@ def test_b64_ioset_suber():
         for i, val in enumerate(iobuber.getIter(keys=keys1)):
             assert val == actuals[i]
 
-        items = [(keys, val) for keys, val in iobuber.getItemIter()]
+        items = [(keys, val) for keys, val in iobuber.getTopItemIter()]
         assert items == [(('test_key', '0001'), ('later', 'alligator')),
                          (('test_key', '0001'), ('soon', 'baboon')),
                          (('test_key', '0002'), ('Toodles',)),
@@ -2221,26 +2246,26 @@ def test_b64_ioset_suber():
            (('test_key', '0002', '00000000000000000000000000000002'), ('Bye',))
         ]
 
-        items = [(keys, val) for keys,  val in iobuber.getItemIter(keys=keys1)]
+        items = [(keys, val) for keys,  val in iobuber.getTopItemIter(keys=keys1)]
         assert items == [(('test_key', '0002'), ('Toodles',)),
                          (('test_key', '0002'), ('Hello',)),
                          (('test_key', '0002'), ('Bye',))]
 
-        items = [(keys, val) for keys,  val in  iobuber.getItemIter(keys=keys0)]
+        items = [(keys, val) for keys,  val in  iobuber.getTopItemIter(keys=keys0)]
         assert items == [(('test_key', '0001'), ('later', 'alligator')),
                          (('test_key', '0001'), ('soon', 'baboon'))]
 
         # Test with top keys
         assert iobuber.put(keys=("test", "pop"), vals=[sal, sue, sam])
         topkeys = ("test", "")
-        items = [(keys, val) for keys, val in iobuber.getItemIter(keys=topkeys)]
+        items = [(keys, val) for keys, val in iobuber.getTopItemIter(keys=topkeys)]
         assert items == [(('test', 'pop'), ('Toodles',)),
                          (('test', 'pop'), ('Hello',)),
                          (('test', 'pop'), ('Bye',))]
 
         # test with top parameter
         keys = ("test", )
-        items = [(keys, val) for keys, val in iobuber.getItemIter(keys=keys, topive=True)]
+        items = [(keys, val) for keys, val in iobuber.getTopItemIter(keys=keys, topive=True)]
         assert items == [(('test', 'pop'), ('Toodles',)),
                          (('test', 'pop'), ('Hello',)),
                          (('test', 'pop'), ('Bye',))]
@@ -2255,7 +2280,7 @@ def test_b64_ioset_suber():
         ]
                    # test remove with a specific val
         assert iobuber.rem(keys=("test_key", "0002"), val=sue)
-        items = [(keys, val) for keys, val in iobuber.getItemIter()]
+        items = [(keys, val) for keys, val in iobuber.getTopItemIter()]
         assert items ==[(('test', 'pop'), ('Toodles',)),
                         (('test', 'pop'), ('Hello',)),
                         (('test', 'pop'), ('Bye',)),
@@ -2266,7 +2291,7 @@ def test_b64_ioset_suber():
 
 
         assert iobuber.trim(keys=("test", ""))
-        items = [(keys, val) for keys, val in iobuber.getItemIter()]
+        items = [(keys, val) for keys, val in iobuber.getTopItemIter()]
         assert items == [(('test_key', '0001'), ('later', 'alligator')),
                          (('test_key', '0001'), ('soon', 'baboon')),
                          (('test_key', '0002'), ('Toodles',)),
@@ -2454,7 +2479,7 @@ def test_cesr_ioset_suber():
         sers = [val.qb64 for val in cisuber.getIter(keys=keys1)]
         assert sers == [said2, said0]
 
-        items = [(keys, val.qb64) for keys, val in cisuber.getItemIter()]
+        items = [(keys, val.qb64) for keys, val in cisuber.getTopItemIter()]
         assert items == [
                             (keys1, said2),
                             (keys1, said0),
@@ -2471,10 +2496,10 @@ def test_cesr_ioset_suber():
                             ((*keys0, '00000000000000000000000000000001'), said2),
                         ]
 
-        items = [(iokeys, val.qb64) for iokeys,  val in  cisuber.getItemIter(keys=keys0)]
+        items = [(iokeys, val.qb64) for iokeys,  val in  cisuber.getTopItemIter(keys=keys0)]
         assert items == [(keys0, said1), (keys0, said2)]
 
-        items = [(iokeys, val.qb64) for iokeys, val in cisuber.getItemIter(keys=keys1)]
+        items = [(iokeys, val.qb64) for iokeys, val in cisuber.getTopItemIter(keys=keys1)]
         assert items == [
                             (keys1, said2),
                             (keys1, said0),
@@ -2482,7 +2507,7 @@ def test_cesr_ioset_suber():
 
 
         topkeys = (seq1, "")
-        items = [(keys, val.qb64) for keys, val in cisuber.getItemIter(keys=topkeys)]
+        items = [(keys, val.qb64) for keys, val in cisuber.getTopItemIter(keys=topkeys)]
         assert items == [
                             (keys1, said2),
                             (keys1, said0),
@@ -3383,7 +3408,7 @@ def test_serder_suber():
         serber.put(keys=("a","1"), val=srdr0)
         serber.put(keys=("a","2"), val=srdr1)
 
-        items = [(keys, srdr.said) for keys, srdr in serber.getItemIter()]
+        items = [(keys, srdr.said) for keys, srdr in serber.getTopItemIter()]
         assert items == [(('a', '1'), srdr0.said),
                          (('a', '2'), srdr1.said)]
 
@@ -3392,7 +3417,7 @@ def test_serder_suber():
         assert serber.put(keys=("bc","1"), val=srdr0)
 
         topkeys =  ("b", "")  # append empty str to force trailing .sep
-        items = [(keys, srdr.said) for keys, srdr in serber.getItemIter(keys=topkeys)]
+        items = [(keys, srdr.said) for keys, srdr in serber.getTopItemIter(keys=topkeys)]
         assert items == [(('b', '1'), srdr0.said),
                          (('b', '2'), srdr1.said)]
 
@@ -3493,7 +3518,7 @@ def test_serder_ioset_suber():
         serber.put(keys=("a","1"), vals=(srdr1, ))
         serber.put(keys=("a","2"), vals=(srdr1, ))
 
-        items = [(keys, srdr.said) for keys, srdr in serber.getItemIter()]
+        items = [(keys, srdr.said) for keys, srdr in serber.getTopItemIter()]
         assert items == [
                             (('a', '1'), srdr0.said),
                             (('a', '1'), srdr1.said),
@@ -3505,7 +3530,7 @@ def test_serder_ioset_suber():
         assert serber.put(keys=("bc","1"), vals=(srdr0, ))
 
         topkeys =  ("b", "")  # append empty str to force trailing .sep
-        items = [(keys, srdr.said) for keys, srdr in serber.getItemIter(keys=topkeys)]
+        items = [(keys, srdr.said) for keys, srdr in serber.getTopItemIter(keys=topkeys)]
         assert items == [(('b', '1'), srdr0.said),
                          (('b', '2'), srdr1.said)]
 
@@ -3592,7 +3617,7 @@ def test_schemer_suber():
         scmber.put(keys=("a","1"), val=scmr0)
         scmber.put(keys=("a","2"), val=scmr1)
 
-        items = [(keys, srdr.said) for keys, srdr in scmber.getItemIter()]
+        items = [(keys, srdr.said) for keys, srdr in scmber.getTopItemIter()]
         assert items == [(('a', '1'), scmr0.said),
                          (('a', '2'), scmr1.said)]
 
@@ -3601,7 +3626,7 @@ def test_schemer_suber():
         assert scmber.put(keys=("bc","1"), val=scmr0)
 
         topkeys =  ("b", "")  # append empty str to force trailing .sep
-        items = [(keys, srdr.said) for keys, srdr in scmber.getItemIter(keys=topkeys)]
+        items = [(keys, srdr.said) for keys, srdr in scmber.getTopItemIter(keys=topkeys)]
         assert items == [(('b', '1'), scmr0.said),
                          (('b', '2'), scmr1.said)]
 
@@ -3680,7 +3705,7 @@ def test_cesr_suber():
         assert sdb.put(keys=("a","1"), val=val0)
         assert sdb.put(keys=("a","2"), val=val1)
 
-        items = [(keys, srdr.qb64) for keys, srdr in sdb.getItemIter()]
+        items = [(keys, srdr.qb64) for keys, srdr in sdb.getTopItemIter()]
         assert items == [(('a', '1'), val0.qb64),
                          (('a', '2'), val1.qb64)]
 
@@ -3725,7 +3750,7 @@ def test_cesr_suber():
         assert sdb.put(keys=("a","1"), val=val0)
         assert sdb.put(keys=("a","2"), val=val1)
 
-        items = [(keys, srdr.qb64) for keys, srdr in sdb.getItemIter()]
+        items = [(keys, srdr.qb64) for keys, srdr in sdb.getTopItemIter()]
         assert items == [(('a', '1'), val0.qb64),
                          (('a', '2'), val1.qb64)]
 
@@ -3734,7 +3759,7 @@ def test_cesr_suber():
         assert sdb.put(keys=("bc","1"), val=val0)
 
         topkeys =  ("b", "")  # append empty str to force trailing .sep
-        items = [(keys, srdr.qb64) for keys, srdr in sdb.getItemIter(keys=topkeys)]
+        items = [(keys, srdr.qb64) for keys, srdr in sdb.getTopItemIter(keys=topkeys)]
         assert items == [(('b', '1'), val0.qb64),
                          (('b', '2'), val1.qb64)]
 
@@ -3825,7 +3850,7 @@ def test_cesr_on_suber():
         assert onsuber.cntOnAll(keys=("a",), on=2) == 2
         assert onsuber.cntOnAll(keys=("a",), on=4) == 0
 
-        items = [(keys, val.qb64) for keys, val in onsuber.getItemIter()]
+        items = [(keys, val.qb64) for keys, val in onsuber.getTopItemIter()]
         assert items == [(('a', '00000000000000000000000000000000'), w.qb64),
                         (('a', '00000000000000000000000000000001'), x.qb64),
                         (('a', '00000000000000000000000000000002'), y.qb64),
@@ -3852,7 +3877,7 @@ def test_cesr_on_suber():
         assert onsuber.cntOnAll(keys=("ac",), on=2) == 0
         assert onsuber.cntOnAll(keys="") == 8
 
-        items = [(keys, val.qb64) for keys, val in onsuber.getItemIter()]
+        items = [(keys, val.qb64) for keys, val in onsuber.getTopItemIter()]
         assert items == [(('a', '00000000000000000000000000000000'), w.qb64),
                         (('a', '00000000000000000000000000000001'), x.qb64),
                         (('a', '00000000000000000000000000000002'), y.qb64),
@@ -3974,7 +3999,7 @@ def test_cat_cesr_suber():
         assert sdb.put(keys1, vals1)
 
         items = [(keys, [val.qb64 for val in vals])
-                                       for keys, vals in sdb.getItemIter()]
+                                       for keys, vals in sdb.getTopItemIter()]
         assert items == [(('alpha', 'dog'), [matter0.qb64]),
                          (('beta', 'fish'), [matter1.qb64])]
 
@@ -3985,7 +4010,7 @@ def test_cat_cesr_suber():
 
         topkeys = ("b","")  # last element empty to force trailing separator
         items = [(keys, [val.qb64 for val in vals])
-                            for keys, vals in  sdb.getItemIter(keys=topkeys)]
+                            for keys, vals in  sdb.getTopItemIter(keys=topkeys)]
         assert items == [(('b', '1'), [matter0.qb64]),
                          (('b', '2'), [matter1.qb64])]
 
@@ -4215,7 +4240,7 @@ def test_cat_cesr_ioset_suber():
         assert sdb.put(keys=keys2, vals=[vals0, vals2])
 
         items = [(keys, [val.qb64 for val in  vals])
-                                         for keys, vals in sdb.getItemIter()]
+                                         for keys, vals in sdb.getTopItemIter()]
         assert items == [
                          (keys0, [sqr0.qb64, dgr0.qb64]),
                          (keys0, [sqr1.qb64, dgr1.qb64]),
@@ -4235,11 +4260,11 @@ def test_cat_cesr_ioset_suber():
                          ]
 
         items = [(keys, [val.qb64 for val in vals])
-                                 for keys, vals in sdb.getItemIter(keys=keys1)]
+                                 for keys, vals in sdb.getTopItemIter(keys=keys1)]
         assert items == [(keys1, [sqr2.qb64, dgr2.qb64])]
 
         items = [(keys, [val.qb64 for val in vals])
-                             for keys, vals in  sdb.getItemIter(keys=keys0)]
+                             for keys, vals in  sdb.getTopItemIter(keys=keys0)]
         assert items == [
                         (keys0, [sqr0.qb64, dgr0.qb64]),
                         (keys0, [sqr1.qb64, dgr1.qb64]),
@@ -4248,7 +4273,7 @@ def test_cat_cesr_ioset_suber():
 
         topkeys = ("a", "")
         items = [(keys, [val.qb64 for val in vals])
-                            for keys, vals in sdb.getItemIter(keys=topkeys)]
+                            for keys, vals in sdb.getTopItemIter(keys=topkeys)]
         assert items == [
                           (keys0, [sqr0.qb64, dgr0.qb64]),
                           (keys0, [sqr1.qb64, dgr1.qb64]),
@@ -4358,7 +4383,7 @@ def test_cesr_dup_suber():
         assert pres == [val3.qb64] == [pre3]  # lexicographic order
 
 
-        items = [(keys, val.qb64) for keys, val in sdb.getItemIter()]
+        items = [(keys, val.qb64) for keys, val in sdb.getTopItemIter()]
         assert items == [(('alpha', 'dog'), 'BEK0gzhcQPYGGwTmuupUhWk1x4ejWzwEHHzqPx5_yZ-w'),
                          (('beta', 'cat'), 'BAzhcQPYGGwTmuupUhWk1x4ejWzwEHHzq7K0Px5_yZ-Y'),
                          (('beta', 'cat'), 'BBPYGGwTmuupUhPx5_yZ-Wk1x4ejWzwEHHzq7K0gzhcA'),
@@ -4367,7 +4392,7 @@ def test_cesr_dup_suber():
 
 
         topkeys = ("beta", "")  # append empty str to force trailing .sep
-        items = [(keys, val.qb64) for keys, val in sdb.getItemIter(keys=topkeys)]
+        items = [(keys, val.qb64) for keys, val in sdb.getTopItemIter(keys=topkeys)]
         assert items == [(('beta', 'cat'), 'BAzhcQPYGGwTmuupUhWk1x4ejWzwEHHzq7K0Px5_yZ-Y'),
                          (('beta', 'cat'), 'BBPYGGwTmuupUhPx5_yZ-Wk1x4ejWzwEHHzq7K0gzhcA'),
                          (('beta', 'cat'), 'BDzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc')]
@@ -4553,7 +4578,7 @@ def test_cat_cesr_dup_suber():
         assert sdb.put(keys=keys2, vals=[vals0, vals2])
 
         items = [(keys, [val.qb64 for val in  vals])
-                                         for keys, vals in sdb.getItemIter()]
+                                         for keys, vals in sdb.getTopItemIter()]
         assert items == [
                          (keys0, [sqr0.qb64, dgr0.qb64]),
                          (keys0, [sqr1.qb64, dgr1.qb64]),
@@ -4573,11 +4598,11 @@ def test_cat_cesr_dup_suber():
                          ]
 
         items = [(keys, [val.qb64 for val in vals])
-                                 for keys, vals in sdb.getItemIter(keys=keys1)]
+                                 for keys, vals in sdb.getTopItemIter(keys=keys1)]
         assert items == [(keys1, [sqr2.qb64, dgr2.qb64])]
 
         items = [(keys, [val.qb64 for val in vals])
-                             for keys, vals in  sdb.getItemIter(keys=keys0)]
+                             for keys, vals in  sdb.getTopItemIter(keys=keys0)]
         assert items == [
                         (keys0, [sqr0.qb64, dgr0.qb64]),
                         (keys0, [sqr1.qb64, dgr1.qb64]),
@@ -4586,7 +4611,7 @@ def test_cat_cesr_dup_suber():
 
         topkeys = ("a", "")
         items = [(keys, [val.qb64 for val in vals])
-                            for keys, vals in sdb.getItemIter(keys=topkeys)]
+                            for keys, vals in sdb.getTopItemIter(keys=topkeys)]
         assert items == [
                           (keys0, [sqr0.qb64, dgr0.qb64]),
                           (keys0, [sqr1.qb64, dgr1.qb64]),
@@ -4739,7 +4764,7 @@ def test_signer_suber():
         assert sdb.put(keys=signer0.verfer.qb64b, val=signer0)
         assert sdb.put(keys=signer1.verfer.qb64b, val=signer1)
 
-        items = [(keys, srdr.qb64) for keys, srdr in sdb.getItemIter()]
+        items = [(keys, srdr.qb64) for keys, srdr in sdb.getTopItemIter()]
         assert items == [((signer1.verfer.qb64, ), signer1.qb64),
                          ((signer0.verfer.qb64, ), signer0.qb64)]
 
@@ -4749,7 +4774,7 @@ def test_signer_suber():
         assert sdb.put(keys=("ab", signer1.verfer.qb64), val=signer1)
 
         topkeys = ("a", "")  # append empty str to force trailing .sep
-        items = [(keys, srdr.qb64) for keys, srdr in sdb.getItemIter(keys=topkeys)]
+        items = [(keys, srdr.qb64) for keys, srdr in sdb.getTopItemIter(keys=topkeys)]
         assert items == [(("a", signer1.verfer.qb64), signer1.qb64),
                          (("a", signer0.verfer.qb64, ), signer0.qb64)]
 
@@ -4874,7 +4899,7 @@ def test_crypt_signer_suber():
         assert sdb.put(keys=signer0.verfer.qb64b, val=signer0)
         assert sdb.put(keys=signer1.verfer.qb64b, val=signer1)
 
-        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getItemIter()]
+        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getTopItemIter()]
         assert items == [((signer1.verfer.qb64, ), signer1.qb64),
                          ((signer0.verfer.qb64, ), signer0.qb64)]
 
@@ -4914,7 +4939,7 @@ def test_crypt_signer_suber():
         assert sdb.put(keys=signer0.verfer.qb64b, val=signer0, encrypter=encrypter0)
         assert sdb.put(keys=signer1.verfer.qb64b, val=signer1, encrypter=encrypter0)
 
-        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getItemIter(decrypter=decrypter0)]
+        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getTopItemIter(decrypter=decrypter0)]
         assert items == [((signer1.verfer.qb64, ), signer1.qb64),
                              ((signer0.verfer.qb64, ), signer0.qb64)]
 
@@ -4924,7 +4949,7 @@ def test_crypt_signer_suber():
         assert sdb.put(keys=("ab", signer1.verfer.qb64), val=signer1, encrypter=encrypter0)
 
         topkeys = ("a", "")  # append empty str to force trailing .sep
-        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getItemIter(keys=topkeys,
+        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getTopItemIter(keys=topkeys,
                                                             decrypter=decrypter0)]
         assert items == [(("a", signer1.verfer.qb64 ), signer1.qb64),
                           (("a", signer0.verfer.qb64 ), signer0.qb64)]
@@ -4933,10 +4958,10 @@ def test_crypt_signer_suber():
         # test re-encrypt
         encrypter1 = core.Encrypter(verkey=cryptsigner1.verfer.qb64)
         decrypter1 = core.Decrypter(seed=cryptsigner1.qb64b)
-        for keys, sgnr in sdb.getItemIter(decrypter=decrypter0):
+        for keys, sgnr in sdb.getTopItemIter(decrypter=decrypter0):
             sdb.pin(keys, sgnr, encrypter=encrypter1)
 
-        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getItemIter(decrypter=decrypter1)]
+        items = [(keys, sgnr.qb64) for keys, sgnr in sdb.getTopItemIter(decrypter=decrypter1)]
         assert items == [((signer1.verfer.qb64, ), signer1.qb64),
                          ((signer0.verfer.qb64, ), signer0.qb64),
                          (("a", signer1.verfer.qb64, ), signer1.qb64),
