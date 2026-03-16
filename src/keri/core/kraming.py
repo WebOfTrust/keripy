@@ -81,6 +81,7 @@ class Kramer:
             except Exception as e:
                 raise kering.KramConfigurationError(f"Invalid cache configuration for {key}, {val}: {e}")
 
+        self._pending = {}
 
     @staticmethod
     def _compactDenials(fullDenials):
@@ -1071,3 +1072,99 @@ class Kramer:
                     return None  # message pending
                 else:
                     raise kering.KramError("Unexpected auth type while kraming.")
+
+    def changeConfig(self, newCf):
+        """
+        Dynamically update Kramer cache-type configuration using only
+        old CF values and new CF values. All in-memory.
+        Drift (d) is preserved for existing cache-types.
+        """
+
+        old = self._ctypCf
+        config = newCf.get()
+        new = config.get("kram", {}).get("caches", {})
+
+        for ctype, newvals in new.items():
+            d_new, sl_new, ll_new, xl_new, psl_new, pll_new, pxl_new = map(int, newvals)
+
+            if ctype not in old:
+                # New cache-type: write directly
+                rec = CacheTypeRecord(*map(int, newvals))
+                self.db.ctyp.pin(ctype, rec)
+                continue
+
+            # Old values
+            d_old, sl_old, ll_old, xl_old, psl_old, pll_old, pxl_old = map(int, old[ctype])
+
+            # Case 1: pure decreases
+            if (sl_new <= sl_old and ll_new <= ll_old and xl_new <= xl_old and
+                psl_new <= psl_old and pll_new <= pll_old and pxl_new <= pxl_old):
+
+                rec = CacheTypeRecord(
+                    d=d_new, 
+                    sl=sl_new, ll=ll_new, xl=xl_new,
+                    psl=psl_new, pll=pll_new, pxl=pxl_new,
+                )
+                self.db.ctyp.pin(ctype, rec)
+                continue
+
+            # Case 2: increases = prune immediately and accept staged
+
+            # Keep the old message lag values
+            sl_cur = sl_old
+            ll_cur = ll_old
+            xl_cur = xl_old
+
+            # Get the highest value for pruning
+            psl_cur = max(psl_new, sl_new)
+            pll_cur = max(pll_new, ll_new)
+            pxl_cur = max(pxl_new, xl_new)
+            
+            # Check accept window accross all 3 and get delta from the highest
+            d_sl = max(0, sl_new - sl_old)
+            d_ll = max(0, ll_new - ll_old)
+            d_xl = max(0, xl_new - xl_old)
+            delta = max(d_sl, d_ll, d_xl)
+
+            # Get the start time of the change
+            start = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
+
+            # Set up pending with the new values
+            self._pending[ctype] = {
+                "sl_new": sl_new,
+                "ll_new": ll_new,
+                "xl_new": xl_new,
+                "start": start,
+                "delta": delta,
+            }
+
+            rec = CacheTypeRecord(
+                d=d_old,    # Drift is unchanged
+                sl=sl_cur, ll=ll_cur, xl=xl_cur,
+                psl=psl_cur, pll=pll_cur, pxl=pxl_cur,
+            )
+            self.db.ctyp.pin(ctype, rec)
+
+        self._ctypCf = new
+        
+    
+    def reconcileConfig(self):
+        
+        # Return if pending is empty
+        if not self._pending.items():
+            return
+
+        now = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
+
+        for ctype, pend in list(self._pending.items()):
+            # Once delta expires, it is safe to change the accept window values
+            if now - pend["start"] >= pend["delta"]:
+                rec = self.db.ctyp.get(ctype)
+
+                # Update accept windows only
+                rec.sl = pend["sl_new"]
+                rec.ll = pend["ll_new"]
+                rec.xl = pend["xl_new"]
+
+                self.db.ctyp.pin(ctype, rec)
+                del self._pending[ctype]

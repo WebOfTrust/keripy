@@ -2214,3 +2214,374 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
             assert cue['aid'] == kownSenderHab.pre
             assert cue['sn'] == 0
             kvy.cues.clear()
+
+
+def test_dynamic_cache_increase(fakeHelpingClock):
+    """
+    Tests that Kramer.changeConfig() correctly applies:
+    - immediate prune increases
+    - staged accept increases
+    - preserves drift (d)
+    using only old CF vs new CF
+    """
+
+    clock = fakeHelpingClock
+    assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
+
+    salt_sender = core.Salter(raw=b'0123456789abcdef').qb64
+    salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
+
+    with (
+        habbing.openHby(name="sender", base="test", salt=salt_sender, temp=True) as senderHby,
+        habbing.openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
+    ):
+
+        # 1. Initial CF (old config)
+        old_cfg = {
+            "kram": {
+                "enabled": True,
+                "caches": {
+                    "~": [1000, 1000, 1000, 1000, 1000, 1000, 1000],  # d,sl,ll,xl,psl,pll,pxl
+                }
+            }
+        }
+
+        with configing.openCF(name="kram", base="test", temp=True) as cf:
+            cf.put(old_cfg)
+
+
+            # 2. Instantiate Kramer with old config
+
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+
+            rec = receiverHby.db.ctyp.get("~")
+            assert rec.d == 1000
+            assert rec.sl == 1000
+            assert rec.psl == 1000
+
+
+            # 3. New CF (increase accept + prune, same drift)
+
+            new_cfg = {
+                "kram": {
+                    "enabled": True,
+                    "caches": {
+                        "~": [1000, 5000, 5000, 5000, 5000, 5000, 5000],
+                    }
+                }
+            }
+            cf.put(new_cfg)
+
+            # 4. Apply dynamic update
+
+            kramer.changeConfig(cf)
+
+            rec = receiverHby.db.ctyp.get("~")
+
+            # Drift must remain unchanged
+            assert rec.d == 1000
+
+            # Accept windows remain OLD
+            assert rec.sl == 1000
+            assert rec.ll == 1000
+            assert rec.xl == 1000
+
+            # Prune windows update immediately
+            assert rec.psl == 5000
+            assert rec.pll == 5000
+            assert rec.pxl == 5000
+
+            # Pending state exists
+            assert "~" in kramer._pending
+            pend = kramer._pending["~"]
+            assert pend["sl_new"] == 5000
+            assert pend["delta"] == 4000
+
+
+            # 5. Advance time LESS than delta → no change
+            assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
+
+            clock.advance(seconds=3)
+            assert helping.nowIso8601() == "2021-01-01T00:00:03.000000+00:00"
+
+            kramer.reconcileConfig()
+
+            rec = receiverHby.db.ctyp.get("~")
+            assert rec.sl == 1000
+            assert rec.d == 1000
+            assert "~" in kramer._pending
+
+
+            # 6. Advance time BEYOND delta → accept updates
+
+            clock.advance(seconds=1)
+            kramer.reconcileConfig()
+
+            rec = receiverHby.db.ctyp.get("~")
+
+            # Accept windows updated
+            assert rec.sl == 5000
+            assert rec.ll == 5000
+            assert rec.xl == 5000
+
+            # Drift still preserved
+            assert rec.d == 1000
+
+            # Prune windows remain correct
+            assert rec.psl == 5000
+            assert rec.pll == 5000
+            assert rec.pxl == 5000
+
+            # Pending cleaned up
+            assert "~" not in kramer._pending
+
+
+def test_dynamic_cache_decrease(fakeHelpingClock):
+    """
+    Tests that Kramer.changeConfig() correctly applies:
+    - immediate accept decreases
+    - immediate prune decreases
+    - preserves drift (d)
+    - no staging occurs
+    """
+
+    clock = fakeHelpingClock
+    assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
+
+    salt_sender = core.Salter(raw=b'0123456789abcdef').qb64
+    salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
+
+    with (
+        habbing.openHby(name="sender", base="test", salt=salt_sender, temp=True) as senderHby,
+        habbing.openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
+    ):
+
+        # 1. Initial CF (old config)
+        old_cfg = {
+            "kram": {
+                "enabled": True,
+                "caches": {
+                    "~": [1000, 5000, 5000, 5000, 5000, 5000, 5000],
+                }
+            }
+        }
+
+        with configing.openCF(name="kram", base="test", temp=True) as cf:
+            cf.put(old_cfg)
+
+            
+            # Instantiate Kramer with old config
+            
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+
+            rec = receiverHby.db.ctyp.get("~")
+            assert rec.d == 1000
+            assert rec.sl == 5000
+            assert rec.psl == 5000
+
+            
+            # New CF (pure decrease)
+            new_cfg = {
+                "kram": {
+                    "enabled": True,
+                    "caches": {
+                        "~": [1000, 1000, 1000, 1000, 1000, 1000, 1000],
+                    }
+                }
+            }
+            cf.put(new_cfg)
+
+            # 4. Apply dynamic update
+            kramer.changeConfig(cf)
+
+            rec = receiverHby.db.ctyp.get("~")
+
+            # Drift preserved
+            assert rec.d == 1000
+
+            # Accept windows decreased immediately
+            assert rec.sl == 1000
+            assert rec.ll == 1000
+            assert rec.xl == 1000
+
+            # Prune windows decreased immediately
+            assert rec.psl == 1000
+            assert rec.pll == 1000
+            assert rec.pxl == 1000
+
+            # No pending state should exist
+            assert "~" not in kramer._pending
+
+            # Advance time — nothing should change
+            clock.advance(10000)
+            kramer.reconcileConfig()
+
+            rec = receiverHby.db.ctyp.get("~")
+
+            # Still the decreased values
+            assert rec.sl == 1000
+            assert rec.psl == 1000
+            assert "~" not in kramer._pending
+
+
+def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
+    """
+    Ensures that existing caches in message-ID cache DB (msgc)
+    remain unchanged when Kramer cache-type configuration changes.
+    """
+
+    clock = fakeHelpingClock
+    assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
+
+    salt_sender = core.Salter(raw=b'0123456789abcdef').qb64
+    salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
+
+    with (
+        habbing.openHby(name="sender", base="test", salt=salt_sender, temp=True) as senderHby,
+        habbing.openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
+    ):
+
+        # Initial CF (old config)
+        old_cfg = {
+            "kram": {
+                "enabled": True,
+                "caches": {
+                    "~": [1000, 1000, 1000, 1000, 1000, 1000, 1000],
+                }
+            }
+        }
+
+        # Create transferable single-key sender
+        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1,
+                                      transferable=True)
+
+        # Create receiver hab (needed for receiver db context)
+        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1,
+                                          transferable=True)
+
+        # Parse sender ICPs into receiver's db via a cross-feed Kevery.
+        crossKvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+
+        senderIcp = senderHab.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+        assert senderHab.pre in crossKvy.kevers
+
+        with configing.openCF(name="kram", base="test", temp=True) as cf:
+            # Set the initial config
+            cf.put(old_cfg)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False,
+                                  kramer=kramer)
+
+            # Stamp for events            
+            stamp = helping.nowIso8601()
+            
+            # Create an existing cache entry
+            
+            msg = eventing.query(pre=senderHab.pre,
+                                 route="ksn",
+                                 query=dict(i=senderHab.pre, src=senderHab.pre),
+                                 stamp=stamp,
+                                 pvrsn=Vrsn_2_0)
+
+            # Sign with sender's keys
+            sigers = senderHab.mgr.sign(ser=msg.raw,
+                                        verfers=senderHab.kever.verfers,
+                                        indexed=True)
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+
+            kvy.processMsg(msg, **kwa)
+
+            # Assert cache created
+            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg.said))
+            assert cache is not None
+            assert cache.mdt == stamp
+            assert cache.d == 1000   # drift from config
+            assert cache.ml == 1000  # short lag (assk)
+            assert cache.pml == 1000  # prune short lag (assk)
+            
+            # New CF (increase accept + prune)
+            new_cfg = {
+                "kram": {
+                    "enabled": True,
+                    "caches": {
+                        "~": [1000, 5000, 5000, 5000, 5000, 5000, 5000],
+                    }
+                }
+            }
+            # Set the new config
+            cf.put(new_cfg)
+            
+            # Apply dynamic update
+            kramer.changeConfig(cf)
+            
+            # Verify existing caches DID NOT change
+            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg.said))
+            
+            # Existing caches must remain unchanged
+            assert cache.d == 1000
+            assert cache.ml == 1000
+            assert cache.pml == 1000
+            assert cache.xl == 1000
+            assert cache.pxl == 1000
+            
+            # Verify cache-type template DID change
+            ctyp = receiverHby.db.ctyp.get("~")
+
+            # Accept windows remain old (staged)
+            assert ctyp.d == 1000
+            assert ctyp.sl == 1000
+            assert ctyp.ll == 1000
+            assert ctyp.xl == 1000
+
+            # Prune windows updated immediately
+            assert ctyp.psl == 5000
+            assert ctyp.pll == 5000
+            assert ctyp.pxl == 5000
+            
+            # Advance time to complete staging
+            clock.advance(5000)
+            kramer.reconcileConfig()
+
+            ctyp2 = receiverHby.db.ctyp.get("~")
+            # Accept windows updated
+            assert ctyp2.sl == 5000
+            assert ctyp2.ll == 5000
+            assert ctyp2.xl == 5000
+
+            # Existing cache STILL unchanged
+            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg.said))
+
+            assert cache.d == 1000
+            assert cache.ml == 1000
+            assert cache.pml == 1000
+            assert cache.xl == 1000
+            assert cache.pxl == 1000
+
+            # Create a new message with the new cache values
+            stamp = helping.nowIso8601()
+            msg = eventing.query(pre=senderHab.pre,
+                                 route="ksn",
+                                 query=dict(i=senderHab.pre, src=senderHab.pre),
+                                 stamp=stamp,
+                                 pvrsn=Vrsn_2_0)
+
+            # Sign with sender's keys
+            sigers = senderHab.mgr.sign(ser=msg.raw,
+                                        verfers=senderHab.kever.verfers,
+                                        indexed=True)
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+
+            kvy.processMsg(msg, **kwa)
+
+            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg.said))
+
+            # Assert the new cache uses the new values
+            assert cache.mdt == stamp
+            assert cache.d == 1000
+            assert cache.ml == 5000
+            assert cache.pml == 5000
+            assert cache.xl == 5000
+            assert cache.pxl == 5000
