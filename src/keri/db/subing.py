@@ -3159,14 +3159,14 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
     Set inclusion scales with O(1) whereas list inclusion scales with O(n).
     """
     def __init__(self, *pa, **kwa):
-        """
-        Inherited Parameters:
+        """Initialize instance
 
+        Inherited Parameters:
         """
         super(OnIoSetSuber, self).__init__(*pa, **kwa)
 
 
-    def putOn(self, keys: str|bytes|memoryview|Iterable,
+    def put(self, keys: str|bytes|memoryview|Iterable,
                     on: int=0,
                     vals: str|bytes|memoryview|Iterable|None=None):
         """Put all vals idempotently at key at key made from keys with exposed
@@ -3195,7 +3195,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                       sep=self.sep.encode())
 
 
-    def pinOn(self, keys: str|bytes|memoryview|Iterable,
+    def pin(self, keys: str|bytes|memoryview|Iterable,
                     on: int=0,
                     vals: str|bytes|memoryview|Iterable|None=None):
         """Pins (sets) vals at key  made from keys with exposed
@@ -3223,7 +3223,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                       sep=self.sep.encode())
 
 
-    def appendOn(self, keys: str|bytes|memoryview|Iterable,
+    def append(self, keys: str|bytes|memoryview|Iterable,
                        vals: str|bytes|memoryview|Iterable|None=None):
         """Appends vals to next highest unused exposed ordinal tail and returns the
         ordinal. If vals None or empty raises ValueError.
@@ -3245,7 +3245,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                          sep=self.sep.encode()))
 
 
-    def addOn(self, keys: str|bytes|memoryview|Iterable,
+    def add(self, keys: str|bytes|memoryview|Iterable,
                     on: int=0,
                     val: str|bytes|memoryview |None=None):
         """Add val idempotently at key made from keys with exposed on tail in
@@ -3270,7 +3270,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                       sep=self.sep.encode()))
 
 
-    def getOnItem(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
+    def getItem(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
         """Gets list of items (key, on, val) from set of entries at onkey
         made from keys and on starting at offset ion into set.
         When onkey missing or key empty or missing returns empty list.
@@ -3293,7 +3293,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                                sep=self.sep.encode())]
 
 
-    def getOn(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
+    def get(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
         """Gets set vals list at onkey made from keys and on in insertion order from
         from offset ion into set using hidden ordinal suffix.
         When onkey is empty or missing then returns empty list
@@ -3316,7 +3316,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                                sep=self.sep.encode())]
 
 
-    def getOnItemIter(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
+    def getItemIter(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
         """Iterates over set items (key, on, val) at onkey made from keys and on
         in insertion order from from offset ion into set using hidden ordinal suffix.
         When onkey is empty or missing then returns empty iterator
@@ -3338,7 +3338,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._tokeys(key), on, self._des(val))
 
 
-    def getOnIter(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
+    def getIter(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
         """Iterates over set vals at onkey made from keys and on in insertion order
         from from offset ion into set using hidden ordinal suffix.
         When onkey is empty or missing then returns empty iterator
@@ -3359,7 +3359,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._des(val))
 
 
-    def getOnLastItem(self, keys: str|bytes|memoryview|Iterable, on: int=0):
+    def getLastItem(self, keys: str|bytes|memoryview|Iterable, on: int=0):
         """Gets last item inserted at key made from keys in insertion order using
         hidden ordinal proem.
 
@@ -3382,7 +3382,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
 
 
-    def getOnLast(self, keys: str|bytes|memoryview|Iterable, on: int=0):
+    def getLast(self, keys: str|bytes|memoryview|Iterable, on: int=0):
         """Gets last val inserted at key made from keys in insertion order using
         hidden ordinal proem.
 
@@ -3403,7 +3403,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
         return None
 
 
-    def remOn(self, keys: str|bytes|memoryview|Iterable,
+    def rem(self, keys: str|bytes|memoryview|Iterable,
                     on: int=0,
                     val: str|bytes|memoryview|None=None):
         """Removes entry in set with val if any at key made and on in insertion order
@@ -3433,7 +3433,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
 
 
-    def remOnAll(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
+    def remAll(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Removes all entries for all sets for all on >= on at key.
         When on i==0, default, then removes all entries for all sets for all on at key.
         When key is empty then removes whole db.
@@ -3453,7 +3453,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                       sep=self.sep.encode())
 
 
-    def cntOn(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
+    def cnt(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
         """Counts all entries in set at onkey = keys + sep + on starting at
         offset suffix ion into set.
 
@@ -3472,7 +3472,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                      sep=self.sep.encode()))
 
 
-    def cntOnAll(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
+    def cntAll(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Counts all set entries for all on >= on at key.
         When on == 0, default, then count all set members for all on for key
         When key is empty then count all on for all key i.e. whole db
@@ -3492,7 +3492,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                       sep=self.sep.encode()))
 
 
-    def getOnTopItemIter(self, keys: str|bytes|memoryview|Iterable=""):
+    def getTopItemIter(self, keys: str|bytes|memoryview|Iterable=""):
         """Iterates over top branch of all insertion ordered set values where
         each key startwith top.
         Assumes every effective key in db has trailing on element,
@@ -3521,7 +3521,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._tokeys(keys), on, self._des(val))
 
 
-    def getOnAllItemIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
+    def getAllItemIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Iterates over all items of each set for all on >= on for key.
         When on ==0, default Iterates over alls items of each set for all on for key.
         When key is empty then iterates over all items in whole db
@@ -3574,7 +3574,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._des(val))
 
 
-    def getOnAllLastItemIter(self, keys: str|bytes|memoryview|Iterable="",
+    def getAllLastItemIter(self, keys: str|bytes|memoryview|Iterable="",
                                    on: int=0):
         """Iterates over last items of each set for all on >= on at key.
         When on is None iterates over last items of each set for all on at key.
@@ -3599,7 +3599,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._tokeys(keys), on, self._des(val))
 
 
-    def getOnAllLastIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
+    def getAllLastIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Iterates over last value of each set for all on >= on at key
         When on ==0, default, iterates over last value of each set for all on at key
         When key is empty iterates over last value of each set of all on for
@@ -3623,7 +3623,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
 
 
-    def getOnAllItemBackIter(self, keys: str|bytes|memoryview|Iterable="",
+    def getAllItemBackIter(self, keys: str|bytes|memoryview|Iterable="",
                                 on: int|None=None):
         """Iterates backwards over all set items for all on <= on at key.
         When on is None iterates backwards over all set items for all on at key.
@@ -3656,7 +3656,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._tokeys(keys), on, self._des(val))
 
 
-    def getOnAllBackIter(self, keys: str|bytes|memoryview|Iterable = "",
+    def getAllBackIter(self, keys: str|bytes|memoryview|Iterable = "",
                             on: int|None=None):
         """Iterates backwards over all set values for all on <= on at key.
         When on is None iterates backwards over all set values for all on at key.
@@ -3683,7 +3683,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._des(val))
 
 
-    def getOnAllLastItemBackIter(self, keys: str|bytes|memoryview|Iterable="",
+    def getAllLastItemBackIter(self, keys: str|bytes|memoryview|Iterable="",
                                 on: int|None=None):
         """Iterates backwards over last set items for all on <= on at key.
         When on is None iterates backwards over last set items for all on at key.
@@ -3715,7 +3715,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._tokeys(keys), on, self._des(val))
 
 
-    def getOnAllLastBackIter(self, keys: str|bytes|memoryview|Iterable = "",
+    def getAllLastBackIter(self, keys: str|bytes|memoryview|Iterable = "",
                             on: int|None=None):
         """Iterates backwards over last set values for all on <= on at key.
         When on is None iterates backwards over last set values for all on at key.
