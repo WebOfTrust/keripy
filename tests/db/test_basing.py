@@ -265,15 +265,15 @@ def test_baser():
 
         # replay preB events in database
         _pre = lambda k: k[0].encode() if isinstance(k[0], str) else k[0]
-        items = [(_pre(keys), on, val) for keys, on, val in db.fels.getOnItemIterAll(keys=preB)]
+        items = [(_pre(keys), on, val) for keys, on, val in db.fels.getAllItemIter(keys=preB)]
         assert items == [(preB, 0, digU.decode("utf-8")), (preB, 1, digV.decode("utf-8")), (preB, 2, digW.decode("utf-8")), (preB, 3, digX.decode("utf-8")), (preB, 4, digY.decode("utf-8"))]
 
         # resume replay preB events at on = 3
-        items = [(_pre(keys), on, val) for keys, on, val in db.fels.getOnItemIterAll(keys=preB, on=3)]
+        items = [(_pre(keys), on, val) for keys, on, val in db.fels.getAllItemIter(keys=preB, on=3)]
         assert items == [(preB, 3, digX.decode("utf-8")), (preB, 4, digY.decode("utf-8"))]
 
         # resume replay preB events at on = 5
-        items = [(_pre(keys), on, val) for keys, on, val in db.fels.getOnItemIterAll(keys=preB, on=5)]
+        items = [(_pre(keys), on, val) for keys, on, val in db.fels.getAllItemIter(keys=preB, on=5)]
         assert items == []
 
         # replay all events in database with pre events before and after
@@ -281,7 +281,7 @@ def test_baser():
         assert db.fels.putOn(keys=preC, on=0, val=digC) == True
 
         # replay all pres in first-seen order (keys=b'', on=0)
-        items = [(_pre(keys), on, val) for keys, on, val in db.fels.getOnItemIterAll(keys=b'', on=0)]
+        items = [(_pre(keys), on, val) for keys, on, val in db.fels.getAllItemIter(keys=b'', on=0)]
         assert items == [
             (preA, 0, digA.decode("utf-8")),
             (preB, 0, digU.decode("utf-8")),
@@ -1050,7 +1050,7 @@ def test_baser():
         assert list(items) == []
 
         # getTopItemIter retrieval of (key, val) pairs in lexicographic key order
-        items = list(db.pses.getOnItemIterAll())
+        items = list(db.pses.getAllItemIter())
         assert items == [(('A',), 0, 'z'), (('A',), 0, 'm'), (('A',), 0, 'x'), (('A',), 0, 'a')]  # Insertion order preserved for vals
         assert db.pses.putOn(keys=[b'B', b'C'], vals=[b'1', b'2', b'3']) == True
         items = list(db.pses.getTopItemIter(keys=key))
@@ -1130,7 +1130,7 @@ def test_baser():
         assert db.pses.getOn(keys=b'B') == ['2']
 
         # clean up all entries
-        for k, sn, v in list(db.pses.getOnItemIterAll()):
+        for k, sn, v in list(db.pses.getAllItemIter()):
             assert db.pses.remOn(keys=k, on=sn, val=v) == True
 
         # Setup Tests for getPsesNext and getPsesNextIter
@@ -1204,7 +1204,7 @@ def test_baser():
             assert db.pses.remOn(keys=pre, on=dSn, val=val) == True
 
         # clean up all entries
-        for k, sn, v in list(db.pses.getOnItemIterAll()):
+        for k, sn, v in list(db.pses.getAllItemIter()):
             db.pses.remOn(keys=k)
 
         # test _tokey and _tokeys
@@ -1298,7 +1298,7 @@ def test_baser():
         # Test getOnItemIterAll()
         #  get dups at first key in database
         # aVals
-        items = [item for item in db.pwes.getOnItemIterAll()]
+        items = [item for item in db.pwes.getAllItemIter()]
         assert items  # not empty
         ikey = snKey(items[0][0][0], items[0][1])
         assert  ikey == aKey
@@ -1512,14 +1512,14 @@ def test_baser():
         assert list(db.ooes.getAllIter(b'X')) == []
         assert db.ooes.getOnLast(keys=b'X') == None
         assert db.ooes.cntOnAll(b'X') == 0
-        items = db.ooes.getOnItemIterAll(keys=b'X')
+        items = db.ooes.getAllItemIter(keys=b'X')
         assert list(items) == []
 
         # getTopItemIter retrieval of (key, val) pairs in lexicographic key order
-        items = list(db.ooes.getOnItemIterAll())
+        items = list(db.ooes.getAllItemIter())
         assert items == [(('A',), 0, 'z'), (('A',), 0, 'm'), (('A',), 0, 'x'), (('A',), 0, 'a')]  # Insertion order preserved for vals
         assert db.ooes.putOn(keys=[b'B', b'C'], vals=[b'1', b'2', b'3']) == True
-        items = list(db.ooes.getOnItemIterAll(keys=key))
+        items = list(db.ooes.getAllItemIter(keys=key))
         assert all(k[0] == 'A' for k, sn, v in items)
 
         # retrieval with different key types, A is the key used above where key = b'A'
@@ -1596,7 +1596,7 @@ def test_baser():
         assert db.ooes.getOn(keys=b'B') == ['2']
 
         # clean up all entries
-        for k, sn, v in list(db.ooes.getOnItemIterAll()):
+        for k, sn, v in list(db.ooes.getAllItemIter()):
             assert db.ooes.remOn(keys=k, on=sn, val=v) == True
 
 
@@ -1668,7 +1668,7 @@ def test_baser():
         assert vals == dVals
 
         # clean up all entries
-        for k, sn, v in list(db.pses.getOnItemIterAll()):
+        for k, sn, v in list(db.pses.getAllItemIter()):
             db.ooes.remOn(keys=k)
 
         # test _tokey and _tokeys
@@ -1737,7 +1737,7 @@ def test_baser():
             assert db.ldes.addOn(keys=b'A', on=7, val=val) == True
 
         # Test getOnItemIterAll - iterate all items for prefix b'A'
-        items = [item for item in db.ldes.getOnItemIterAll(keys=b'A')]
+        items = [item for item in db.ldes.getAllItemIter(keys=b'A')]
         assert items  # not empty
         # item is (keys, on, val)
         vals = [val for pre, sn, val in items]
@@ -1745,7 +1745,7 @@ def test_baser():
         assert vals == [v.decode("utf-8") for v in allVals]
 
         # Iterate starting from specific ordinal (sn=1)
-        items = [item for item in db.ldes.getOnItemIterAll(keys=b'A', on=1)]
+        items = [item for item in db.ldes.getAllItemIter(keys=b'A', on=1)]
         assert items
         pre, sn, val = items[0]
         assert sn == 1
@@ -1756,7 +1756,7 @@ def test_baser():
         assert vals == [v.decode("utf-8") for v in aVals]
 
         # bVals at sn=2
-        items = [item for item in db.ldes.getOnItemIterAll(keys=b'A', on=2)]
+        items = [item for item in db.ldes.getAllItemIter(keys=b'A', on=2)]
         vals = [val for p, s, val in items if s == 2]
         assert vals == [v.decode("utf-8") for v in bVals]
         # Remove bVals using remOn
@@ -1765,7 +1765,7 @@ def test_baser():
                 assert db.ldes.remOn(keys=b'A', on=s, val=val) == True
 
         # cVals at sn=4
-        items = [item for item in db.ldes.getOnItemIterAll(keys=b'A', on=4)]
+        items = [item for item in db.ldes.getAllItemIter(keys=b'A', on=4)]
         vals = [val for p, s, val in items if s == 4]
         assert vals == [v.decode("utf-8") for v in cVals]
         for p, s, val in items:
@@ -1773,7 +1773,7 @@ def test_baser():
                 assert db.ldes.remOn(keys=b'A', on=s, val=val) == True
 
         # dVals at sn=7
-        items = [item for item in db.ldes.getOnItemIterAll(keys=b'A', on=7)]
+        items = [item for item in db.ldes.getAllItemIter(keys=b'A', on=7)]
         vals = [val for p, s, val in items if s == 7]
         assert vals == [v.decode("utf-8") for v in dVals]
         for p, s, val in items:
@@ -2092,7 +2092,7 @@ def test_fetchkeldel():
 
         allvals = vals0 + vals1 + vals2
         vals = [(val.encode("utf-8") if isinstance(val, str) else bytes(val))
-            for keys, on, val in db.dels.getOnItemIterAll(keys=preb)]
+            for keys, on, val in db.dels.getAllItemIter(keys=preb)]
         assert vals == allvals
 
     assert not os.path.exists(db.path)

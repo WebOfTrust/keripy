@@ -523,7 +523,7 @@ class Reger(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for _, fn, dig in self.tels.getOnItemIterAll(keys=pre, on=fn):
+        for _, fn, dig in self.tels.getAllItemIter(keys=pre, on=fn):
             msg = self.cloneTvt(pre, dig)
             yield msg
 

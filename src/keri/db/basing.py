@@ -1388,13 +1388,13 @@ class Baser(dbing.LMDBer):
             self.ures.rem(keys=k)
         for (k, _) in self.vres.getTopItemIter():
             self.vres.rem(keys=k)
-        for (pre, on, dig) in self.pses.getOnItemIterAll():
+        for (pre, on, dig) in self.pses.getAllItemIter():
             self.pses.remOn(keys=pre, on=on, val=dig)
-        for (pre, sn, dig) in self.pwes.getOnItemIterAll():
+        for (pre, sn, dig) in self.pwes.getAllItemIter():
             pre = pre[0]
             dig = dig.encode("utf-8")
             self.pwes.remOn(keys=pre, on=sn, val=dig)
-        for (pre, on, dig) in self.ooes.getOnItemIterAll():
+        for (pre, on, dig) in self.ooes.getAllItemIter():
             self.ooes.remOn(keys=pre, on=on, val=dig)
         for (pre, said), edig in self.qnfs.getTopItemIter():
             self.qnfs.rem(keys=(pre, said))
@@ -1606,7 +1606,7 @@ class Baser(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for keys, fn, dig in self.fels.getOnItemIterAll(keys=pre, on=fn):
+        for keys, fn, dig in self.fels.getAllItemIter(keys=pre, on=fn):
             try:
                 msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig)
             except Exception:
@@ -1626,7 +1626,7 @@ class Baser(dbing.LMDBer):
            msgs (Iterator): over all items in db
 
         """
-        for keys, fn, dig in self.fels.getOnItemIterAll(keys=b'', on=0):
+        for keys, fn, dig in self.fels.getAllItemIter(keys=b'', on=0):
             pre = keys[0].encode() if isinstance(keys[0], str) else keys[0]
             try:
                 msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig)

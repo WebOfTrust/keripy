@@ -5645,7 +5645,7 @@ class Kevery:
                         Process event as if it came in over the wire
                         If successful then remove from escrow table
         """
-        for pre, sn, edig in self.db.ooes.getOnItemIterAll():
+        for pre, sn, edig in self.db.ooes.getAllItemIter():
 
             if isinstance(pre, (tuple, list)):
                 pre = pre[0]
@@ -5772,7 +5772,7 @@ class Kevery:
 
         #key = ekey = b''  # both start same. when not same means escrows found
         #while True:  # break when done
-        for pre, sn, edig in self.db.pses.getOnItemIterAll():
+        for pre, sn, edig in self.db.pses.getAllItemIter():
             eserder = None
             try:
                 if isinstance(pre, (tuple, list)):
@@ -5926,7 +5926,7 @@ class Kevery:
                         Process event as if it came in over the wire
                         If successful then remove from escrow table
         """
-        for pre, sn, edig in self.db.pwes.getOnItemIterAll(keys=b''):
+        for pre, sn, edig in self.db.pwes.getAllItemIter(keys=b''):
             try:
                 if isinstance(pre, (tuple, list)):
                     pre = pre[0]
@@ -6068,7 +6068,7 @@ class Kevery:
                         If successful then remove from escrow table
         """
 
-        for (epre,), esn, edig in self.db.pdes.getOnItemIterAll(keys=b''):
+        for (epre,), esn, edig in self.db.pdes.getAllItemIter(keys=b''):
             try:
                 dgkey = dgKey(epre, edig)
                 if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
@@ -6971,7 +6971,7 @@ class Kevery:
         """
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
-            for (pre,), sn, edig in self.db.ldes.getOnItemIterAll(keys=key):
+            for (pre,), sn, edig in self.db.ldes.getAllItemIter(keys=key):
                 try:
                     # pre and sn are already unpacked
                     ekey = snKey(pre, sn)

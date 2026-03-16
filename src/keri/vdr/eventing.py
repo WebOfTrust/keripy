@@ -1166,7 +1166,7 @@ class Tever:
             status (Serder): transaction event state notification message
         """
         digs = []
-        for _, _, dig in self.reger.tels.getOnItemIterAll(keys=vci.encode("utf-8")):
+        for _, _, dig in self.reger.tels.getAllItemIter(keys=vci.encode("utf-8")):
             digs.append(dig)
 
         if len(digs) == 0:
@@ -2040,7 +2040,7 @@ class Tevery:
            5. Remove event digest from oots if processed successfully or a non-out-of-order event occurs.
 
         """
-        for pre, sn, digb in self.reger.oots.getOnItemIterAll(): # (pre, snb, digb) in self.reger.getOotItemIter()
+        for pre, sn, digb in self.reger.oots.getAllItemIter(): # (pre, snb, digb) in self.reger.getOotItemIter()
             pre = pre[0]
             try:
                 #sn = int(snb, 16)
@@ -2100,7 +2100,7 @@ class Tevery:
            6. Remove event digest from oots if processed successfully or a non-anchorless event occurs.
 
         """
-        for pre, sn, digb in self.reger.taes.getOnItemIterAll():
+        for pre, sn, digb in self.reger.taes.getAllItemIter():
             pre = pre[0]
             try:
                 dgkey = dgKey(pre, digb)

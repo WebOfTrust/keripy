@@ -249,7 +249,7 @@ def test_issuer():
         assert issuer.tels.put(keys=snKey(vcdig, sn + 2), val=idig.qb64b) is True
         assert issuer.tels.put(keys=snKey(vcdig, sn + 3), val=rdig.qb64b) is True
 
-        result = [(sn, dig) for _, sn, dig in issuer.tels.getOnItemIterAll(keys=vcdig)]
+        result = [(sn, dig) for _, sn, dig in issuer.tels.getAllItemIter(keys=vcdig)]
         assert result == [(0, idig.qb64), (1, rdig.qb64), (2, idig.qb64), (3, rdig.qb64)]
 
         bak1 = b'BA1Q98kT0HRn9R62lY-LufjjKdbCeL1mqu9arTgOmbqI'

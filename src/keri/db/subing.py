@@ -757,7 +757,7 @@ class OnSuberBase(SuberBase):
     getOnItemIter = getOnTopItemIter  # alias for shadow super class method
 
 
-    def getOnAllItemIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
+    def getAllItemIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Iterates over all entries in db for all onkey made from keys and on
         for all on >= on.
         When on==0 default then gets all on.
@@ -781,8 +781,6 @@ class OnSuberBase(SuberBase):
                                                        sep=self.sep.encode())):
             yield (self._tokeys(keys), on, self._des(val))
 
-    getOnItemIterAll = getOnAllItemIter  # migration alias for backwards compat
-
 
     def getAllIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """
@@ -804,8 +802,6 @@ class OnSuberBase(SuberBase):
                                                        on=on,
                                                        sep=self.sep.encode())):
             yield (self._des(val))
-
-    #getAllIter = getAllIter  # migration alias for backwards compat
 
 
 class OnSuber(OnSuberBase, Suber):
@@ -2944,11 +2940,11 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                                        on=on, sep=self.sep.encode()))
 
 
-    # ToDo XXXX: make getOnTopItemIter to mirrow for OnSuber and OnIoSetSuber
+    # ToDo XXXX: make getTopItemIter to mirror for OnSuber and OnIoSetSuber
     # getOnItemIter = getOnTopItemIter  # alias to shadow super class method
 
 
-    def getOnItemIterAll(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+    def getAllItemIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
         """
         Returns:
             items (Iterator[(top keys, on, val)]): triples of (onkeys, on int,
