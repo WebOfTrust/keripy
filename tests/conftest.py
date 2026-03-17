@@ -8,6 +8,7 @@ https://docs.pytest.org/en/latest/pythonpath.html
 import os
 import shutil
 import multicommand
+import datetime
 
 import pytest
 
@@ -61,6 +62,42 @@ def mockHelpingNowIso8601(monkeypatch):
         return "2021-06-27T21:26:21.233257+00:00"
 
     monkeypatch.setattr(helping, "nowIso8601", mockNowIso8601)
+
+
+@pytest.fixture()
+def fakeHelpingClock(monkeypatch):
+    """
+    Monkeypatch helping.nowUTC and helping.nowIso8601 with a dynamic, mutable clock.
+    """
+
+    class FakeClock:
+        def __init__(self):
+            self._now = helping.fromIso8601("2021-01-01T00:00:00.000000+00:00")
+
+        def set(self, iso):
+            """Set time to an ISO8601 string."""
+            self._now = helping.fromIso8601(iso)
+
+        def advance(self, seconds=0, milliseconds=0):
+            """Move time forward."""
+            delta = datetime.timedelta(seconds=seconds, milliseconds=milliseconds)
+            self._now = self._now + delta
+
+        def nowUTC(self):
+            """Return datetime."""
+            return self._now
+
+        def nowIso8601(self):
+            """Return ISO8601 string."""
+            return helping.toIso8601(self._now)
+
+    clock = FakeClock()
+
+    # Patch both helpers
+    monkeypatch.setattr(helping, "nowUTC", clock.nowUTC)
+    monkeypatch.setattr(helping, "nowIso8601", clock.nowIso8601)
+
+    return clock
 
 
 @pytest.fixture()

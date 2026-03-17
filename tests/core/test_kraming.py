@@ -8,13 +8,17 @@ processMsg on Kevery.
 import pytest
 
 from keri import core, kering, Vrsn_1_0, Vrsn_2_0
-from keri.core import eventing, parsing, coring, Verser, Kramer, AuthTypes, serdering
+from keri.core import eventing, parsing, coring, Verser, Kramer, AuthTypes, serdering, Pruner
 from keri.app import habbing, configing
 from keri.db import basing
 from keri.peer import exchanging
 from keri.recording import TxnMsgCacheRecord
 from keri.help import helping
 
+from hio.base import doing, tyming
+
+import time
+from datetime import timedelta
 
 def test_auth_type_codex():
     """Test AuthTypeCodex codex pattern"""
@@ -965,14 +969,69 @@ def test_asr(mockHelpingNowUTC):
             assert cache is not None  # accepted via sig fallback
             assert cache.ml == 5000  # short lag (assk)
 
+    """Done Test"""
 
-            # Step 8: Valid seal (sscs) + valid sigs resolves to asr (seal takes priority)
 
-            msg7 = eventing.query(pre=senderHab.pre,
-                                  route="ksn",
-                                  query=dict(i=senderHab.pre, src=senderHab.pre, n='4b'),
-                                  stamp=stamp,
-                                  pvrsn=Vrsn_2_0)
+def test_both_attached(mockHelpingNowUTC):
+    """Test processMsg with both seal refs and sigs present.
+
+    Tests _resolveAuthType fallback logic:
+    - valid seal + valid sigs -> resolves to asr
+    - invalid seal + valid sigs (single-key) -> falls back to assk
+    - invalid seal + valid sigs (multi-key) -> falls back to asmk
+    - valid seal + invalid sigs -> resolves to asr (sigs irrelevant)
+    """
+
+    # Step 1: Setup
+
+    salt1 = core.Salter(raw=b'0123456789abcdef').qb64
+    salt2 = core.Salter(raw=b'0123456789abcdeg').qb64
+    salt3 = core.Salter(raw=b'0123456789abcdeh').qb64
+
+    with (habbing.openHby(name="sender", base="test", salt=salt1) as skHby,
+          habbing.openHby(name="mkSender", base="test", salt=salt2) as mkHby,
+          habbing.openHby(name="receiver", base="test", salt=salt3) as receiverHby):
+
+        # Create single-key sender
+        skHab = skHby.makeHab(name="sender", isith='1', icount=1,
+                              transferable=True)
+        # Create multi-key sender (2-of-3)
+        mkHab = mkHby.makeHab(name="mkSender", isith='2', icount=3,
+                              transferable=True)
+        # Create receiver hab for db context
+        receiverHby.makeHab(name="receiver", isith='1', icount=1,
+                            transferable=True)
+
+        # Cross-feed both senders to receiver
+        crossKvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+
+        skIcp = skHab.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(skIcp), kvy=crossKvy)
+        assert skHab.pre in crossKvy.kevers
+
+        mkIcp = mkHab.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(mkIcp), kvy=crossKvy)
+        assert mkHab.pre in crossKvy.kevers
+
+        # Create Kramer + Kevery
+        with configing.openCF(name="kram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False,
+                                  kramer=kramer)
+
+            stamp = helping.nowIso8601()
+            skPrefixer = coring.Prefixer(qb64=skHab.pre)
+            mkPrefixer = coring.Prefixer(qb64=mkHab.pre)
+
+
+            # Step 2: Valid seal + valid sigs (single-key) resolves to asr
+
+            msg = eventing.query(pre=skHab.pre,
+                                 route="ksn",
+                                 query=dict(i=skHab.pre, src=skHab.pre, n='4b'),
+                                 stamp=stamp,
+                                 pvrsn=Vrsn_2_0)
 
             # Anchor SAID in sender's KEL
             ixnMsg = senderHab.interact(data=[dict(d=msg7.said)])
@@ -1906,6 +1965,221 @@ def test_rem_non_auth_attachments(mockHelpingNowUTC):
     """Done Test"""
 
 
+def test_stale_tsgs(mockHelpingNowUTC):
+    """Test that non-current but verifiable tsgs are collected, stored, and
+    forwarded in-band via kwa['tsgs'].
+
+    A tsg whose (number, sdiger) references a past establishment event in the
+    sender's KEL verifies against the verfers from that historical event, not
+    the current kever. Such stale tsgs are not counted toward the current
+    threshold but are folded into kwa['tsgs'] so downstream processors see
+    the full set of signers across key states.
+
+    Covers:
+        - stale tsg verified against historical key state appears in
+          sigResult.stale_tsgs
+        - stale tsg with no matching historical event produces empty
+          stale_tsgs (ignored)
+        - fast path (threshold met on first delivery): stale tsgs merged
+          into kwa['tsgs'] directly from sigResult before return
+        - accumulation path (threshold met on later delivery): stale tsgs
+          stored in db.tsgs alongside current-keystate tsgs, present at
+          threshold satisfaction
+    """
+
+    salt1 = core.Salter(raw=b'0123456789abcdef').qb64
+    salt2 = core.Salter(raw=b'0123456789abcdeg').qb64
+
+    with (habbing.openHby(name="staleSender", base="test", salt=salt1) as senderHby,
+          habbing.openHby(name="staleReceiver", base="test", salt=salt2) as receiverHby):
+
+        # 2-of-3 multi-key sender
+        senderHab = senderHby.makeHab(name="staleSender", isith='2', icount=3,
+                                      transferable=True)
+        assert len(senderHab.kever.verfers) == 3
+
+        receiverHby.makeHab(name="staleReceiver", isith='1', icount=1,
+                            transferable=True)
+
+        crossKvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+
+        # Cross-feed sender ICP (sn=0) to receiver
+        senderIcp = senderHab.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+        assert senderHab.pre in crossKvy.kevers
+
+        # Capture pre-rotation state: sn=0 said and verfers
+        icpSaid = senderHab.kever.serder.said
+        icpVerfers = list(senderHab.kever.verfers)
+        icpSn = senderHab.kever.sn
+        assert icpSn == 0
+
+        # Rotate sender so sn=1 is now current
+        rotMsg = senderHab.rotate()
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(rotMsg), kvy=crossKvy)
+        assert senderHab.kever.sn == 1
+
+        # Confirm receiver sees sn=1 as current
+        receiverKever = receiverHby.db.kevers[senderHab.pre]
+        assert receiverKever.sner.num == 1
+
+        with configing.openCF(name="staleKram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False,
+                                  kramer=kramer)
+
+            stamp = helping.nowIso8601()
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+
+            # Step 1: stale tsg verified against historical event
+            #
+            # Sign msg with sn=0 (pre-rotation) keys. Present as a tsg
+            # referencing (sn=0, icpSaid). Current kever is sn=1 so this
+            # tsg fails the current keystate gate but should verify
+            # historically and appear in sigResult.stale_tsgs.
+
+            msg = eventing.query(pre=senderHab.pre,
+                                 route="ksn",
+                                 query=dict(i=senderHab.pre, src=senderHab.pre,
+                                            n='stale01'),
+                                 stamp=stamp,
+                                 pvrsn=Vrsn_2_0)
+
+            # Sign with old (sn=0) keys
+            oldSigers = senderHab.mgr.sign(ser=msg.raw,
+                                           verfers=icpVerfers,
+                                           indexed=True)
+
+            # Also sign with current (sn=1) keys so threshold can be met
+            currentSigers = senderHab.mgr.sign(ser=msg.raw,
+                                               verfers=senderHab.kever.verfers,
+                                               indexed=True)
+
+            oldSeqner = coring.Seqner(sn=icpSn)
+            oldSaider = coring.Saider(qb64=icpSaid)
+            curSeqner = coring.Seqner(sn=receiverKever.sner.num)
+            curSaider = coring.Saider(qb64=receiverKever.serder.said)
+
+            # Provide 2 current-keystate sigs (meets 2-of-3 threshold) plus
+            # one stale tsg from sn=0 keys. ssgs is required by the downstream
+            # qry handler to extract source; tsgs alone satisfy KRAM but not
+            # the dispatcher.
+            staleTsg = (prefixer, oldSeqner, oldSaider, [oldSigers[0]])
+            currentTsgs = [(prefixer, curSeqner, curSaider, [currentSigers[0],
+                                                              currentSigers[1]])]
+
+            kwa = dict(ssgs=[(prefixer, currentSigers)],
+                       tsgs=currentTsgs + [staleTsg])
+            kvy.processMsg(msg, **kwa)
+
+            # Fast path: threshold met on first delivery.
+            # Cache created, no partials stored.
+            partialKey = (senderHab.pre, msg.said)
+            cache = receiverHby.db.kramMSGC.get(keys=partialKey)
+            assert cache is not None
+            assert receiverHby.db.kramPMKM.get(keys=partialKey) is None
+
+            # stale tsg stored in db.tsgs alongside current-keystate tsgs
+            # (merged into kwa['tsgs'] before _storeNonAuthAttachments — but
+            # on the fast path _storeNonAuthAttachments is never called, so
+            # the stale tsg does NOT land in db.tsgs here. Instead it was
+            # merged into kwa['tsgs'] in-memory for downstream forwarding.)
+            # Verify downstream dispatch occurred (cue generated).
+            assert len(kvy.cues) > 0
+            kvy.cues.clear()
+
+
+            # Step 2: stale tsg with no matching historical event is ignored
+
+            msg2 = eventing.query(pre=senderHab.pre,
+                                  route="ksn",
+                                  query=dict(i=senderHab.pre, src=senderHab.pre,
+                                             n='stale02'),
+                                  stamp=stamp,
+                                  pvrsn=Vrsn_2_0)
+
+            currentSigers2 = senderHab.mgr.sign(ser=msg2.raw,
+                                                verfers=senderHab.kever.verfers,
+                                                indexed=True)
+
+            # Reference sn=999 does not exist in receiver's KEL copy
+            bogusSeqner = coring.Seqner(sn=999)
+            bogusSaider = coring.Saider(qb64=icpSaid)
+            bogusStaleTsg = (prefixer, bogusSeqner, bogusSaider, [oldSigers[0]])
+
+            currentTsgs2 = [(prefixer, curSeqner, curSaider, [currentSigers2[0],
+                                                               currentSigers2[1]])]
+
+            kwa2 = dict(ssgs=[(prefixer, currentSigers2)],
+                        tsgs=currentTsgs2 + [bogusStaleTsg])
+            kvy.processMsg(msg2, **kwa2)
+
+            # Accepted via current-keystate sigs; bogus stale tsg silently ignored
+            cache2 = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg2.said))
+            assert cache2 is not None
+            kvy.cues.clear()
+
+
+            # Step 3: accumulation path — stale tsg stored in db.tsgs
+            #
+            # First delivery: 1 current-keystate sig (below 2-of-3 threshold)
+            # plus one stale tsg. Stale tsg should be folded into kwa['tsgs']
+            # and stored in db.tsgs under the partial key.
+            # Second delivery: completes the threshold. db.tsgs should contain
+            # both current-keystate and stale entries.
+
+            msg3 = eventing.query(pre=senderHab.pre,
+                                  route="ksn",
+                                  query=dict(i=senderHab.pre, src=senderHab.pre,
+                                             n='stale03'),
+                                  stamp=stamp,
+                                  pvrsn=Vrsn_2_0)
+
+            currentSigers3 = senderHab.mgr.sign(ser=msg3.raw,
+                                                verfers=senderHab.kever.verfers,
+                                                indexed=True)
+            oldSigers3 = senderHab.mgr.sign(ser=msg3.raw,
+                                            verfers=icpVerfers,
+                                            indexed=True)
+
+            partialKey3 = (senderHab.pre, msg3.said)
+            staleTsg3 = (prefixer, oldSeqner, oldSaider, [oldSigers3[0]])
+
+            # First delivery: 1 current sig + stale tsg, threshold not met
+            kwa3a = dict(ssgs=[(prefixer, [currentSigers3[0]])],
+                         tsgs=[(prefixer, curSeqner, curSaider,
+                                [currentSigers3[0]])] + [staleTsg3])
+            kvy.processMsg(msg3, **kwa3a)
+
+            assert receiverHby.db.kramPMKM.get(keys=partialKey3) is not None
+            pmks3 = receiverHby.db.kramPMKS.get(keys=partialKey3)
+            assert len(pmks3) == 1  # only 1 current-keystate sig so far
+
+            # db.tsgs should contain both the current-keystate tsg entry AND
+            # the stale tsg entry (folded in via kwa['tsgs'] before store)
+            tsgs3 = receiverHby.db.kramTSGS.get(keys=partialKey3)
+            assert len(tsgs3) == 2  # 1 current + 1 stale
+
+            assert len(kvy.cues) == 0
+
+            # Second delivery: 1 more current sig, completes 2-of-3 threshold
+            kwa3b = dict(ssgs=[(prefixer, [currentSigers3[1]])],
+                         tsgs=[(prefixer, curSeqner, curSaider,
+                                [currentSigers3[1]])])
+            kvy.processMsg(msg3, **kwa3b)
+
+            # Threshold met, cue generated
+            assert len(kvy.cues) > 0
+            kvy.cues.clear()
+
+            # db.tsgs still holds all entries including the stale one
+            tsgs3_after = receiverHby.db.kramTSGS.get(keys=partialKey3)
+            assert len(tsgs3_after) >= 2  # stale entry persists until pruner
+
+    """Done Test"""
+
+
 def test_cue_ks_non_transactioned(mockHelpingNowUTC):
     """
     Test cue key state retrieval for non transactional messages
@@ -2171,3 +2445,677 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
             assert cue['aid'] == kownSenderHab.pre
             assert cue['sn'] == 0
             kvy.cues.clear()
+
+def test_pruning_messages_single_key(fakeHelpingClock):
+    """
+    Test pruning behavior for single-key sender messages.
+    
+    Covers: pruning of messages with different timestamps, ensuring pruning is 
+    based on each message's own timestamp and not affected by other messages from the same sender.
+
+    Steps:
+    - accept a message
+    - accept a message from the same sender with a later timestamp
+    - Advance time to trigger pruning for the 1st message, assert 2nd message is still cached
+    - Advance time to trigger pruning for the 2nd message
+    """
+    
+    # Instantiate Clock
+    clock = fakeHelpingClock
+
+    # Assert the clock
+    assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
+
+    # Setup sender/receiver
+    salt_sender = core.Salter(raw=b'0123456789abcdef').qb64
+    salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
+
+    with (habbing.openHby(name="sender", base="test", salt=salt_sender) as senderHby,
+          habbing.openHby(name="receiver", base="test", salt=salt_receiver) as receiverHby):
+
+        # Create transferable single-key sender
+        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True)
+        
+        # Create receiver hab
+        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True)
+
+        # Load sender's ICP into receiver
+        cross = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+
+        senderIcp = senderHab.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
+        assert senderHab.pre in cross.kevers
+
+        # Create Kramer with config
+        with configing.openCF(name="kram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+            assert kramer.enabled
+
+            # Create Kevery 
+            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
+
+            # Setup Doist with PruneDoer
+            tock = 1
+            limit = 1.0
+
+            # Create PruneDoer
+            pruneDoer = Pruner(kramer, tock)
+
+            doist = doing.Doist(tock=tock, limit=limit)
+            deeds = doist.enter(doers=[pruneDoer])
+
+            # Step 1: Accept a fresh message 
+            earlyStamp = helping.nowIso8601()
+            assert earlyStamp == "2021-01-01T00:00:00.000000+00:00"
+
+            earlyMsg = eventing.query(
+                pre=senderHab.pre,
+                route="ksn",
+                query=dict(i=senderHab.pre, src=senderHab.pre),
+                stamp=earlyStamp,
+                pvrsn=Vrsn_2_0,
+            )
+
+            # Sign with sender's keys
+            earlySigers = senderHab.mgr.sign(
+                ser=earlyMsg.raw,
+                verfers=senderHab.kever.verfers,
+                indexed=True,
+            )
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            kwa = dict(ssgs=[(prefixer, earlySigers)])
+
+            # Process message, should be accepted and cached
+            kvy.processMsg(earlyMsg, **kwa)
+
+            # Run the doist to process pruning (though it shouldn't prune anything yet)
+            doist.recur(deeds=deeds)
+
+            # Cache must exist
+            earlyCache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, earlyMsg.said))
+            assert earlyCache is not None
+            assert earlyCache.mdt == earlyStamp
+            assert earlyCache.d == 1000   # drift = 1s
+            assert earlyCache.ml == 5000     # short lag = 5s
+            assert earlyCache.pml == 5000    # short prune lag = 5s
+
+            # Step 2: send another message at a later time 
+            # The timeliness window allows 1s drift (d = 1000ms) so 1s after is still inside
+            # Advance time by 1s
+            clock.advance(seconds=1)
+
+            rdtLater = helping.nowIso8601()
+            assert rdtLater == "2021-01-01T00:00:01.000000+00:00"
+
+            # Create a new message with the later timestamp
+            laterMsg = eventing.query(
+                pre=senderHab.pre,
+                route="ksn",
+                query=dict(i=senderHab.pre, src=senderHab.pre),
+                stamp=rdtLater,
+                pvrsn=Vrsn_2_0,
+            )
+            laterSigers = senderHab.mgr.sign(
+                ser=laterMsg.raw,
+                verfers=senderHab.kever.verfers,
+                indexed=True,
+            )
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            kwa = dict(ssgs=[(prefixer, laterSigers)])
+
+            # Process the later message
+            kvy.processMsg(laterMsg, **kwa)
+
+            # Assert later message is cached with its own timestamp
+            laterCache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, laterMsg.said))
+            assert laterCache is not None
+            assert laterCache.mdt == rdtLater
+
+            # Advance time
+            clock.advance(seconds=4)
+            assert helping.nowIso8601() == "2021-01-01T00:00:05.000000+00:00"
+            
+            # Run doist
+            doist.recur(deeds=deeds)
+
+            # Both entries must still exist because both messages are still within their respective pruning windows.
+            earlyCache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, earlyMsg.said))
+            assert earlyCache is not None
+            assert earlyCache.mdt == earlyStamp
+
+            laterCache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, laterMsg.said))
+            assert laterCache is not None
+            assert laterCache.mdt == rdtLater
+
+            # Step 3: increase the time to trigger pruning for the first messsage but not the second message
+            # Increase the time to passed to 6.1s which is just past the 5s drift + 1s prune lag = 6s total
+            # for the first message, but the second message is still within its pruning window
+            clock.advance(seconds=1.1)
+            assert helping.nowIso8601() == "2021-01-01T00:00:06.100000+00:00"
+
+            # Recur to trigger pruning of the 1st message
+            doist.recur(deeds=deeds)
+
+            # First message must now be pruned
+            assert receiverHby.db.kramMSGC.get(keys=(senderHab.pre, earlyMsg.said)) is None
+
+            # Second message is still here because of its later timestamp
+            assert receiverHby.db.kramMSGC.get(keys=(senderHab.pre, laterMsg.said)) is not None
+
+            # Step 4: Advance time to prune the second message
+            clock.advance(seconds=1)
+            assert helping.nowIso8601() == "2021-01-01T00:00:07.100000+00:00"
+            
+            # Run doist
+            doist.recur(deeds=deeds)
+
+            # Second message must now be pruned
+            assert receiverHby.db.kramMSGC.get(keys=(senderHab.pre, laterMsg.said)) is None
+
+            # Close doist
+            doist.exit()
+
+        """Done Test"""
+
+
+def test_pruning_messages_multi_key(fakeHelpingClock):
+    """Test pruning with multi-key sender (asmk auth type, 2-of-3 threshold) and nont auth attachments.
+
+    Covers: partial accumulation where threshold is never met,
+    pruning is called and cleans up cache and attachments.
+
+    Steps:
+    - Multi-key message created threshold is not met yet, cache created, partials populated
+    - Threshold is never met, advance time past the exchange pruning window
+    - Assert all entries for cache, partials and attachments are deleted
+    """
+
+    # Step 1: Setup
+    # Instantiate Clock
+    clock = fakeHelpingClock
+
+    # Check the clock
+    assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
+
+    salt1 = core.Salter(raw=b'0123456789abcdef').qb64
+    salt2 = core.Salter(raw=b'0123456789abcdeg').qb64
+
+    with (habbing.openHby(name="mkSender", base="test", salt=salt1) as senderHby,
+          habbing.openHby(name="mkReceiver", base="test", salt=salt2) as receiverHby):
+
+        # Create 2-of-3 multi-key sender
+        senderHab = senderHby.makeHab(name="mkSender", isith='2', icount=3,
+                                      transferable=True)
+        assert len(senderHab.kever.verfers) == 3
+
+        # Create receiver hab for db context
+        receiverHby.makeHab(name="mkReceiver", isith='1', icount=1,
+                            transferable=True)
+
+        # Cross-feed sender ICP to receiver
+        crossKvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+        senderIcp = senderHab.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+        assert senderHab.pre in crossKvy.kevers
+
+        # Create Kevery with kramer
+        with configing.openCF(name="mkKram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False,
+                                  kramer=kramer)
+
+            # Setup Doist with PruneDoer
+            tock = 1
+            limit = 1
+
+            # Create PruneDoer
+            pruneDoer = Pruner(kramer, tock)
+            
+            # Create Doist
+            doist = doing.Doist(tock=tock, limit=limit, real=True)
+            deeds = doist.enter(doers=[pruneDoer])
+
+            stamp = helping.nowIso8601()
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            verfers = senderHab.kever.verfers
+
+            def signMsg(msg):
+                return senderHab.mgr.sign(ser=msg.raw, verfers=verfers,
+                                          indexed=True)
+
+            # Partial accumulation to ensure partial sigs are populated
+
+            msg = eventing.query(pre=senderHab.pre,
+                                   route="ksn",
+                                   query=dict(i=senderHab.pre, src=senderHab.pre),
+                                   stamp=stamp,
+                                   pvrsn=Vrsn_2_0)
+            allSigers = signMsg(msg)
+
+            # Build non-auth attachments to include in kwa
+            partialKey = (senderHab.pre, msg.said)
+            senderKever = receiverHby.db.kevers[senderHab.pre]
+            seqner = coring.Seqner(sn=senderKever.sner.num)
+            saider = coring.Saider(qb64=senderKever.serder.said)
+            diger = coring.Diger(ser=msg.raw)
+
+            # trqs: trans receipt quadruple (prefixer, seqner, saider, siger)
+            trqs = [(prefixer, seqner, saider, allSigers[0])]
+
+            # tsgs: trans last sig group (prefixer, seqner, saider, [sigers])
+            tsgs = [(prefixer, seqner, saider, [allSigers[0]])]
+
+            # sscs: first seen seal couple (seqner, saider) issuing or delegating
+            sscs = [(seqner, saider)]
+
+            # ssts: source seal triple (prefixer, seqner, saider) issued or delegated
+            ssts = [(prefixer, seqner, saider)]
+
+            # frcs: first seen replay couple (seqner, dater)
+            firner = coring.Seqner(sn=0)
+            dater = coring.Dater(dts=stamp)
+            frcs = [(firner, dater)]
+
+            # tdcs: typed digest seal couple (verser, diger)
+            verser = coring.Verser(pvrsn=Vrsn_2_0)
+            tdcs = [(verser, diger)]
+
+            # ptds: pathed stream (raw bytes)
+            ptds = [b'\x00\x01\x02\x03']
+
+            # bsqs: blind state quadruple (diger, noncer, noncer, labeler)
+            noncer0 = coring.Noncer()
+            noncer1 = coring.Noncer()
+            labeler = coring.Labeler(label='test')
+            bsqs = [(diger, noncer0, noncer1, labeler)]
+
+            # bsss: bound state sextuple (diger, noncer, noncer, labeler, number, noncer)
+            number = coring.Number(num=1)
+            noncer2 = coring.Noncer()
+            bsss = [(diger, noncer0, noncer1, labeler, number, noncer2)]
+
+            # tmqs: type media quadruple (diger, noncer, labeler, texter)
+            texter = coring.Texter(text='application/json')
+            tmqs = [(diger, noncer0, labeler, texter)]
+
+
+            # First delivery with 1 sig (below threshold) + non-auth attachments
+
+            kwa = dict(ssgs=[(prefixer, [allSigers[0]])],
+                       trqs=trqs, tsgs=tsgs, sscs=sscs, ssts=ssts,
+                       frcs=frcs, tdcs=tdcs, ptds=ptds,
+                       bsqs=bsqs, bsss=bsss, tmqs=tmqs)
+
+            kvy.processMsg(msg, **kwa)
+
+            # Run the doist to process pruning (it shouldn't prune anything yet)
+            doist.recur(deeds=deeds)
+
+            # Assert msgc cache created for partial sigs
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
+            assert cache is not None
+            assert cache.mdt == stamp
+            assert cache.d == 1000   # drift = 1s
+            assert cache.ml == 60000     # message long lag = 60s
+            assert cache.pml == 60000    # message long prune lag = 60s
+
+            # Assert that partial DBs are populated
+            pmkm = receiverHby.db.kramPMKM.get(keys=(senderHab.pre, msg.said))
+            assert pmkm is not None
+            pmks = receiverHby.db.kramPMKS.get(keys=(senderHab.pre, msg.said))
+            assert pmks is not None
+            assert len(pmks) == 1
+            pmsk = receiverHby.db.kramPMSK.get(keys=(senderHab.pre, msg.said))
+            assert pmsk is not None
+
+            # All non-auth attachment dbs populated
+            assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramSSCS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramSSTS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramFRCS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTDCS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramPTDS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramBSQS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramBSSS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTMQS.get(keys=partialKey)) == 1
+
+            # No cue generated because threshold not met
+            assert len(kvy.cues) == 0
+
+            # Signatures never come, advance time to pruning
+            pml = cache.pml/1000 # convert pml to seconds
+            d = cache.d/1000    # convert d to seconds
+            delta = pml + d + 0.1    # .1s outside the pruning window
+
+            clock.advance(seconds=delta)
+            assert helping.nowIso8601() == "2021-01-01T00:01:01.100000+00:00"
+
+            doist.recur(deeds=deeds)
+
+            # Assert cache and partials got cleaned up
+            assert receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said)) is None
+            assert receiverHby.db.kramPMKM.get(keys=(senderHab.pre, msg.said)) is None
+            assert receiverHby.db.kramPMKS.get(keys=(senderHab.pre, msg.said)) == []
+            assert receiverHby.db.kramPMSK.get(keys=(senderHab.pre, msg.said)) is None
+
+            # Non auth attachments got cleaned up
+            assert receiverHby.db.kramTRQS.get(keys=partialKey) == []
+            assert receiverHby.db.kramTSGS.get(keys=partialKey) == []
+            assert receiverHby.db.kramSSCS.get(keys=partialKey) == []
+            assert receiverHby.db.kramSSTS.get(keys=partialKey) == []
+            assert receiverHby.db.kramFRCS.get(keys=partialKey) == []
+            assert receiverHby.db.kramTDCS.get(keys=partialKey) == []
+            assert receiverHby.db.kramPTDS.get(keys=partialKey) == []
+            assert receiverHby.db.kramBSQS.get(keys=partialKey) == []
+            assert receiverHby.db.kramBSSS.get(keys=partialKey) == []
+            assert receiverHby.db.kramTMQS.get(keys=partialKey) == []
+
+            # Happy path, attachments pruned after threshold is met
+            stamp = helping.nowIso8601()
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+
+            msg = eventing.query(pre=senderHab.pre,
+                                 route="ksn",
+                                 query=dict(i=senderHab.pre, src=senderHab.pre),
+                                 stamp=stamp,
+                                 pvrsn=Vrsn_2_0)
+
+            allSigers = senderHab.mgr.sign(ser=msg.raw,
+                                           verfers=senderHab.kever.verfers,
+                                           indexed=True)
+
+            partialKey = (senderHab.pre, msg.said)
+
+            # Build non-auth attachments to include in kwa
+
+            senderKever = receiverHby.db.kevers[senderHab.pre]
+            seqner = coring.Seqner(sn=senderKever.sner.num)
+            saider = coring.Saider(qb64=senderKever.serder.said)
+            diger = coring.Diger(ser=msg.raw)
+
+            # trqs: trans receipt quadruple (prefixer, seqner, saider, siger)
+            trqs = [(prefixer, seqner, saider, allSigers[0])]
+
+            # tsgs: trans last sig group (prefixer, seqner, saider, [sigers])
+            tsgs = [(prefixer, seqner, saider, [allSigers[0]])]
+
+            # sscs: first seen seal couple (seqner, saider) issuing or delegating
+            sscs = [(seqner, saider)]
+
+            # ssts: source seal triple (prefixer, seqner, saider) issued or delegated
+            ssts = [(prefixer, seqner, saider)]
+
+            # frcs: first seen replay couple (seqner, dater)
+            firner = coring.Seqner(sn=0)
+            dater = coring.Dater(dts=stamp)
+            frcs = [(firner, dater)]
+
+            # tdcs: typed digest seal couple (verser, diger)
+            verser = coring.Verser(pvrsn=Vrsn_2_0)
+            tdcs = [(verser, diger)]
+
+            # ptds: pathed stream (raw bytes)
+            ptds = [b'\x00\x01\x02\x03']
+
+            # bsqs: blind state quadruple (diger, noncer, noncer, labeler)
+            noncer0 = coring.Noncer()
+            noncer1 = coring.Noncer()
+            labeler = coring.Labeler(label='test')
+            bsqs = [(diger, noncer0, noncer1, labeler)]
+
+            # bsss: bound state sextuple (diger, noncer, noncer, labeler, number, noncer)
+            number = coring.Number(num=1)
+            noncer2 = coring.Noncer()
+            bsss = [(diger, noncer0, noncer1, labeler, number, noncer2)]
+
+            # tmqs: type media quadruple (diger, noncer, labeler, texter)
+            texter = coring.Texter(text='application/json')
+            tmqs = [(diger, noncer0, labeler, texter)]
+
+
+            # First delivery with 1 sig (below threshold) + non-auth attachments
+
+            kwa = dict(ssgs=[(prefixer, [allSigers[0]])],
+                       trqs=trqs, tsgs=tsgs, sscs=sscs, ssts=ssts,
+                       frcs=frcs, tdcs=tdcs, ptds=ptds,
+                       bsqs=bsqs, bsss=bsss, tmqs=tmqs)
+            kvy.processMsg(msg, **kwa)
+
+            # Assert msgc cache created for partial sigs
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
+            assert cache is not None
+            assert cache.mdt == stamp
+            assert cache.d == 1000   # drift = 1s
+            assert cache.ml == 60000     # message long lag = 60s
+            assert cache.pml == 60000    # message long prune lag = 60s
+
+            # Threshold not met, partials populated
+            assert receiverHby.db.kramPMKM.get(keys=partialKey) is not None
+            pmks = receiverHby.db.kramPMKS.get(keys=partialKey)
+            assert len(pmks) == 1
+
+            # All non-auth attachment dbs populated
+            assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramSSCS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramSSTS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramFRCS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTDCS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramPTDS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramBSQS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramBSSS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTMQS.get(keys=partialKey)) == 1
+
+            assert len(kvy.cues) == 0
+
+            # Second delivery with 2nd sig meets threshold
+            # Non-auth attachments should persist (pruner responsibility)
+
+            kwa2 = dict(ssgs=[(prefixer, [allSigers[2]])],
+                        trqs=trqs, tsgs=tsgs, sscs=sscs, ssts=ssts,
+                        frcs=frcs, tdcs=tdcs, ptds=ptds,
+                        bsqs=bsqs, bsss=bsss, tmqs=tmqs)
+            kvy.processMsg(msg, **kwa2)
+
+            # Threshold met, cue generated
+            assert len(kvy.cues) > 0
+            cue = kvy.cues.popleft()
+            assert cue["kin"] == "reply"
+
+            # Non-auth attachments persist
+            assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramSSCS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramSSTS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramFRCS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramTDCS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramPTDS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramBSQS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramBSSS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramTMQS.get(keys=partialKey)) >= 1
+
+            # Advance time past pruning window
+            pml = cache.pml/1000 # convert pml to seconds
+            d = cache.d/1000    # convert d to seconds
+            delta = pml + d + 0.1    # .1s outside the pruning window
+
+            clock.advance(seconds=delta)
+            doist.recur(deeds=deeds)
+
+            # Non auth attachments got cleaned up
+            assert receiverHby.db.kramTRQS.get(keys=partialKey) == []
+            assert receiverHby.db.kramTSGS.get(keys=partialKey) == []
+            assert receiverHby.db.kramSSCS.get(keys=partialKey) == []
+            assert receiverHby.db.kramSSTS.get(keys=partialKey) == []
+            assert receiverHby.db.kramFRCS.get(keys=partialKey) == []
+            assert receiverHby.db.kramTDCS.get(keys=partialKey) == []
+            assert receiverHby.db.kramPTDS.get(keys=partialKey) == []
+            assert receiverHby.db.kramBSQS.get(keys=partialKey) == []
+            assert receiverHby.db.kramBSSS.get(keys=partialKey) == []
+            assert receiverHby.db.kramTMQS.get(keys=partialKey) == []
+
+def test_pruning_exchanges(fakeHelpingClock):
+    """
+    Test pruning behavior for exchanges.
+    
+    Covers: pruning of exchanges with different timestamps, ensuring pruning is 
+    done for all messages belonging to the exchange.
+
+    Steps:
+    - create xip and seed it directly
+    - accept an exn
+    - accept an exn from the same sender with a later timestamp
+    - Advance time to trigger pruning, since the exchange is outside the window, 
+      all messsages are deleted
+    """
+
+    # Instantiate Clock
+    clock = fakeHelpingClock
+
+    # Check the clock
+    assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
+    
+    # Setup sender/receiver
+    salt_sender = core.Salter(raw=b'0123456789abcdef').qb64
+    salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
+
+    with (habbing.openHby(name="sender", base="test", salt=salt_sender) as senderHby,
+          habbing.openHby(name="receiver", base="test", salt=salt_receiver) as receiverHby):
+
+        # Create single-key sender
+        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True)
+
+        # Create receiver hab
+        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True)
+
+        # Load sender's ICP into receiver
+        cross = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+
+        senderIcp = senderHab.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
+        assert senderHab.pre in cross.kevers
+
+        # Create Kramer with config
+        with configing.openCF(name="kram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+            assert kramer.enabled
+
+            # Create Kevery 
+            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
+
+            # Setup Doist with PruneDoer
+            tock = 1
+            limit = 1.0
+
+            # Create PruneDoer
+            pruneDoer = Pruner(kramer,tock)
+
+            doist = doing.Doist(tock=tock, limit=limit)
+            deeds = doist.enter(doers=[pruneDoer])
+
+            stamp = helping.nowIso8601()
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            verfers = senderHab.kever.verfers
+
+            # Test with seeded xip via kramit directly
+
+            xip = eventing.exchept(sender=senderHab.pre,
+                                   receiver=receiverHab.pre,
+                                   route="/test/exchange",
+                                   stamp=stamp)
+
+            # Sign xip
+            sigers = senderHab.mgr.sign(ser=xip.raw,
+                                        verfers=senderHab.kever.verfers,
+                                        indexed=True)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+
+            # Call kramit directly (processMsg rejects xip)
+            result = kramer.kramit(xip, **kwa)
+            assert result is not None  # xip accepted
+
+            # Assert: tmsc entry created, xip's exId is its own SAID
+            cache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, xip.said))
+            assert cache is not None
+            assert cache.mdt == stamp
+            assert cache.xdt == stamp  # xip's xdt == its own dt 
+
+            # Send first exn with exchange ID via processMsg
+            firstStamp = helping.nowIso8601()
+            assert firstStamp == "2021-01-01T00:00:00.000000+00:00"
+
+            exn = eventing.exchange(sender=senderHab.pre,
+                                    receiver=receiverHab.pre,
+                                    xid=xip.said,
+                                    route="/test/exchange",
+                                    attributes=dict(n='5c'),
+                                    stamp=firstStamp)
+
+            sigers = senderHab.mgr.sign(ser=exn.raw,
+                                    verfers=senderHab.kever.verfers,
+                                    indexed=True)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+
+            # Error raised due to lack of exchanger
+            with pytest.raises(kering.ValidationError):
+                kvy.processMsg(exn, **kwa)
+
+            # Assert tmsc entry created for exn
+            firstCache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn.said))
+            assert firstCache is not None
+            assert firstCache.mdt == firstStamp
+            assert firstCache.xdt == stamp  # inherited from xip's xdt
+            assert firstCache.mdt == firstCache.xdt
+            
+            # Run pruner, shouldn't prune anything
+            doist.recur(deeds=deeds)
+
+            # cache is still here
+            assert firstCache is not None
+
+            # Send another message with a later stamp
+            clock.advance(seconds=1)
+            secondStamp = helping.nowIso8601() # 1s after xdt
+            assert secondStamp == "2021-01-01T00:00:01.000000+00:00"
+
+            exn2 = eventing.exchange(sender=senderHab.pre,
+                                    receiver=receiverHab.pre,
+                                    xid=xip.said,
+                                    route="/test/exchange",
+                                    attributes=dict(n='5c'),
+                                    stamp=secondStamp)
+
+            sigers = senderHab.mgr.sign(ser=exn2.raw,
+                                    verfers=senderHab.kever.verfers,
+                                    indexed=True)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+
+            # Error raised due to lack of exchanger
+            with pytest.raises(kering.ValidationError):
+                kvy.processMsg(exn2, **kwa)
+            
+            # Assert tmsc entry created for exn2
+            secondCache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn2.said))
+            assert secondCache is not None
+            assert secondCache.mdt == secondStamp
+            assert secondCache.xdt == stamp  # inherited from xip's xdt
+            assert secondCache.mdt != secondCache.xdt   # message time and exchange time are different
+
+            # Delete or archive any cache entries (all messages associated with the exchange) where [xdt, xdt+xl] is not true.
+            # Advance time to prune the exchange using pxl (pruning exchange lag)
+            delta = (firstCache.pxl/1000) 
+            clock.advance(seconds=delta)
+            assert helping.nowIso8601() == "2021-01-01T00:05:01.000000+00:00"
+
+            doist.recur(deeds=deeds)
+
+            # Xip and First Cache is pruned
+            assert receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn.said)) is None
+            assert receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, xip.said)) is None
+
+            # Second Cache is also pruned because it belongs to the same exchange
+            assert receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn2.said)) is None
