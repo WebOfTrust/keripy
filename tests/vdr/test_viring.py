@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-tests.vdr.eventing module viring related
+tests.vdr.eventing module tests of the old viring classes and functions.
 
 """
 

@@ -13,7 +13,6 @@ from  ordered_set import OrderedSet as oset
 
 from hio.help import decking
 
-from .. import recording
 from ..kering import (Kinds, Ilks, versify,
                     Version,  Vrsn_1_0,
                     MissingWitnessSignatureError, MissingAnchorError,
