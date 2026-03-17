@@ -94,6 +94,7 @@ setup(
                         'wheel>=0.45.1',
     ],
     extras_require={
+        'browser': ['sortedcontainers>=2.4.0'],
     },
     tests_require=[
                     'coverage>=7.13.1',

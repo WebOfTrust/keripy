@@ -4,12 +4,13 @@ KERI
 keri.db Package
 """
 
-from . import basing, dbing, escrowing, koming, subing
+from . import basing, dbing, escrowing, koming, subing, webdbing
 
 from .basing import Baser, BaserDoer, openDB, reopenDB
 from .dbing import (LMDBer, clearDatabaserDir, openLMDB, onKey, snKey, fnKey,
                     dgKey, dtKey, splitKey, splitOnKey, splitKeyFN,
                     splitSnKey, splitKeyDT, fetchTsgs)
+from .webdbing import WebDBer
 from .escrowing import Broker
 from .koming import KomerBase, Komer, IoSetKomer, DupKomer
 from .subing import (SuberBase, Suber, OnSuberBase, OnSuber,
