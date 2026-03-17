@@ -22,6 +22,15 @@ that it iterates over the top branch given by keys and uses the topive parameter
 #### keri.db.dbing
 Changed LMDBer.delval to LMDBer.remval
 
+#### keri.core.scheming.py
+Replaced deprecated `jsonschema.RefResolver` with `referencing.Registry` in
+`CacheResolver.resolver()`. The method now returns a `referencing.Registry`
+instance instead of a `jsonschema.RefResolver` instance.
+Requires `jsonschema >= 4.18.0` and the `referencing` package.
+Users on older versions of `jsonschema` must upgrade.
+`JSONSchema.verify_json()` now passes `registry=` instead of `resolver=` to
+`jsonschema.validate()`.
+
 #### keri.core.routing.py
 Changed `Router.dispatch(self, serder, saider, ...)` to `dispatch(self, serder, diger, ...)`.
 Changed `Router.processRouteNotFound(self, *, serder, saider, ...)` to `processRouteNotFound(self, *, serder, diger, ...)`.
