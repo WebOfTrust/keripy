@@ -276,12 +276,12 @@ def test_lmdber():
         db = dber.env.open_db(key=b'beep.')
 
         assert dber.getVal(db, key) == None
-        assert dber.delVal(db, key) == False
+        assert dber.remVal(db, key) == False
         assert dber.putVal(db, key, val) == True
         assert dber.putVal(db, key, val) == False
         assert dber.setVal(db, key, val) == True
         assert dber.getVal(db, key) == val
-        assert dber.delVal(db, key) == True
+        assert dber.remVal(db, key) == True
         assert dber.getVal(db, key) == None
 
         # Test getTopItemIter
@@ -305,7 +305,7 @@ def test_lmdber():
         assert dber.cntTop(db, top=b"a.2") == 1
         assert dber.cntTop(db, top=b"b.") == 1
 
-        assert dber.delTop(db, top=b"a.")
+        assert dber.remTop(db, top=b"a.")
         items = [ (key, bytes(val)) for key, val in dber.getTopItemIter(db=db )]
         assert items == [(b'b.1', b'woo')]
 
@@ -345,14 +345,14 @@ def test_lmdber():
         digC = b'EG5RimdY_OWoreR-Z-Q5G81-I4tjASJCaP_MqkBbtM2w'
 
         assert dber.getVal(db, keyA0) == None
-        assert dber.delVal(db, keyA0) == False
+        assert dber.remVal(db, keyA0) == False
         assert dber.putVal(db, keyA0, val=digA) == True
         assert dber.getVal(db, keyA0) == digA
         assert dber.putVal(db, keyA0, val=digA) == False
         assert dber.setVal(db, keyA0, val=digA) == True
         assert dber.getVal(db, keyA0) == digA
         assert dber.getOnVal(db, preA, 0) == digA
-        assert dber.delVal(db, keyA0) == True
+        assert dber.remVal(db, keyA0) == True
         assert dber.getVal(db, keyA0) == None
         assert dber.getOnVal(db, preA, 0) == None
 
@@ -397,7 +397,7 @@ def test_lmdber():
         on = dber.appendOnVal(db, preB, digU)
         assert on == 0
         assert dber.getVal(db, keyB0) == digU
-        assert dber.delVal(db, keyB0) == True
+        assert dber.remVal(db, keyB0) == True
         assert dber.getVal(db, keyB0) == None
 
         # earlier pre in database only
@@ -405,7 +405,7 @@ def test_lmdber():
         on = dber.appendOnVal(db, preB, digU)
         assert on == 0
         assert dber.getVal(db, keyB0) == digU
-        assert dber.delVal(db, keyB0) == True
+        assert dber.remVal(db, keyB0) == True
         assert dber.getVal(db, keyB0) == None
 
         # earlier and later pre in db but not same pre
@@ -414,11 +414,11 @@ def test_lmdber():
         on = dber.appendOnVal(db, preB, digU)
         assert on == 0
         assert dber.getVal(db, keyB0) == digU
-        assert dber.delVal(db, keyB0) == True
+        assert dber.remVal(db, keyB0) == True
         assert dber.getVal(db, keyB0) == None
 
         # later pre only
-        assert dber.delVal(db, keyA0) == True
+        assert dber.remVal(db, keyA0) == True
         assert dber.getVal(db, keyA0) == None
         assert dber.getVal(db, keyC0) == digC
         on = dber.appendOnVal(db, preB, digU)
@@ -432,9 +432,9 @@ def test_lmdber():
         assert dber.getVal(db, keyB1) == digV
 
         # earlier entry for same pre but only same pre
-        assert dber.delVal(db, keyA0) == True
+        assert dber.remVal(db, keyA0) == True
         assert dber.getVal(db, keyA0) == None
-        assert dber.delVal(db, keyC0) == True
+        assert dber.remVal(db, keyC0) == True
         assert dber.getVal(db, keyC0) == None
         # another value for preB
         on = dber.appendOnVal(db, preB, digW)
@@ -825,6 +825,34 @@ def test_lmdber():
         assert dber.getOnIoDupLast(ldb, preB, on=1) == valsB1[3]
         assert dber.getOnIoDupLast(ldb, preB, on=2) == valsB2[2]
 
+        # test getOnTopIoDupItemIter
+        assert [(key, on, bytes(val)) for key, on, val in
+                dber.getOnTopIoDupItemIter(ldb, top=preA)] == \
+        [
+            (preA, 0, b'echo'),
+            (preA, 0, b'bravo'),
+            (preA, 1, b'sue'),
+            (preA, 1, b'bob'),
+            (preA, 1, b'val'),
+            (preA, 1, b'zoe'),
+            (preA, 2, b'fish'),
+            (preA, 2, b'bat'),
+            (preA, 2, b'snail')]
+
+        assert [(key, on, bytes(val)) for key, on, val in
+                dber.getOnTopIoDupItemIter(ldb, top=preB)] == \
+        [
+            (preB, 0, b'gamma'),
+            (preB, 0, b'beta'),
+            (preB, 1, b'mary'),
+            (preB, 1, b'peter'),
+            (preB, 1, b'john'),
+            (preB, 1, b'paul'),
+            (preB, 2, b'dog'),
+            (preB, 2, b'cat'),
+            (preB, 2, b'bird')
+        ]
+
 
         items = [(key, on, bytes(val)) for key, on, val in dber.getOnIoDupLastItemIter(ldb, preA)]
         lastitems = [itemsA0[-1], itemsA1[-1], itemsA2[-1]]
@@ -1073,6 +1101,8 @@ def test_lmdber():
                          (b'Y', 0, b's'),
                          (b'Y', 1, b't'),
                          (b'Y', 1, b'u')]
+
+
 
         assert dber.delOnIoDupVal(ldb, key, on=0, val=b's')
         assert dber.delOnIoDups(ldb, key, on=1)
@@ -2091,8 +2121,6 @@ def test_lmdber():
             dber.setVal(db, empty_key, some_value)
         with pytest.raises(KeyError):
             dber.getVal(db, empty_key)
-        with pytest.raises(KeyError):
-            dber.delVal(db, empty_key)
         dber.putIoSetVals(db, empty_key, [some_value])
         dber.addIoSetVal(db, empty_key, some_value)
         dber.pinIoSetVals(db, empty_key, [some_value])

@@ -108,7 +108,7 @@ class IntroduceDoer(doing.DoDoer):
                 raise ValueError(f"invalid introducee {self.introducee}")
 
         oobi = None
-        for (key,), obr in self.hby.db.roobi.getItemIter():
+        for (key,), obr in self.hby.db.roobi.getTopItemIter():
             if obr.cid == introducee and obr.role == self.role:
                 oobi = key
 

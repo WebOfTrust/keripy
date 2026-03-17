@@ -60,7 +60,7 @@ class Broker:
 
         # RegStateRecords used as basis for registry state notices in replies
         #self.rsrdb = koming.Komer(db=self.db,
-                                   #schema=viring.RegStateRecord,
+                                   #klas=RegStateRecord,
                                    #subkey=subkey + '-sns.')
 
         # all key state ksgs (ksn indexed signature serializations) maps ksn quadkeys
@@ -111,7 +111,7 @@ class Broker:
             extype (Type[Exception]): the expected exception type if the message should remain in escrow
 
         """
-        for (typ, pre, aid), diger in self.escrowdb.getItemIter(keys=(typ, '')):
+        for (typ, pre, aid), diger in self.escrowdb.getTopItemIter(keys=(typ, '')):
             try:
                 tsgs = dbing.fetchTsgs(db=self.tigerdb, diger=diger)
 

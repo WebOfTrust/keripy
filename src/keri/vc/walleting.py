@@ -6,8 +6,6 @@ keri.vc.walleting module
 from hio.base import doing
 
 from .. import help
-from ..app import agenting
-from ..vdr import viring
 
 logger = help.ogler.getLogger()
 
@@ -19,18 +17,20 @@ class Wallet:
 
     """
 
-    def __init__(self, reger: viring.Reger = None, name="test", temp=False):
+    def __init__(self, reger: Reger = None, name="test", temp=False):
         """
         Create a Wallet associated with a Habitat
 
         Parameters:
-            reger: (viring.Registry) the database for the wallet
+            reger: (Reger) the database for the wallet
 
         """
         self.name = name
         self.temp = temp
 
-        self.reger = reger if reger is not None else viring.Reger(name=self.name, temp=self.temp)
+        from ..vdr import Reger  # dynamic import to avoid circular
+
+        self.reger = reger if reger is not None else Reger(name=self.name, temp=self.temp)
 
     def getCredentials(self, schema=None):
         """
@@ -68,7 +68,9 @@ class WalletDoer(doing.DoDoer):
         self.verifier = verifier
 
         doers = [doing.doify(self.escrowDo)]
-        self.witq = agenting.WitnessInquisitor(hby=hby, klas=agenting.TCPMessenger)
+        from ..app import WitnessInquisitor, TCPMessenger  # dynamic to avoid circular
+
+        self.witq = WitnessInquisitor(hby=hby, klas=agenting.TCPMessenger)
 
         super(WalletDoer, self).__init__(doers=doers, **kwa)
 

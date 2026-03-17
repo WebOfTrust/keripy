@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field, asdict
 
-from .. import koming, basing
+from .. import koming
 from ...recording import HabitatRecord
 
 
@@ -28,8 +28,8 @@ class HabitatRecordV0_6_8:  # baser.habs
 def _check_if_needed(db):
     habs = koming.Komer(db=db,
                         subkey='habs.',
-                        schema=dict, )
-    first = next(habs.getItemIter(), None)
+                        klas=dict, )
+    first = next(habs.getTopItemIter(), None)
     if first is None:
         return False
     name, habord = first
@@ -57,16 +57,16 @@ def migrate(db):
 
     habs = koming.Komer(db=db,
                         subkey='habs.',
-                        schema=dict, )
+                        klas=dict, )
 
     # habitat application state keyed by habitat namespace + b'\x00' + name, includes prefix
     nmsp = koming.Komer(db=db,
                         subkey='nmsp.',
-                        schema=HabitatRecordV0_6_8, )
+                        klas=HabitatRecordV0_6_8, )
 
     habords = dict()
     # Update Hab records from .habs with name
-    for name, habord in habs.getItemIter():
+    for name, habord in habs.getTopItemIter():
         name = ".".join(name)  # detupleize the database key name
         nhabord = HabitatRecord(**habord)
         nhabord.name = name
@@ -75,7 +75,7 @@ def migrate(db):
     habs.trim()
 
     # Update Hab records from .nmsp with name and domain (ns)
-    for keys, habord in nmsp.getItemIter():
+    for keys, habord in nmsp.getTopItemIter():
         ns = keys[0]
         name = ".".join(keys[1:])  # detupleize the database key name
         nhabord = HabitatRecord(**asdict(habord))

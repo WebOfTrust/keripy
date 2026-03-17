@@ -354,22 +354,22 @@ def test_direct_mode_with_manager():
         #  verify final controller event state
         assert coeKever.sn == coeK.sn == csn
 
-        db_digs = [v for v in coeKever.db.kels.getOnIterAll(keys=coepre)]
+        db_digs = [v for v in coeKever.db.kels.getAllIter(keys=coepre)]
         assert len(db_digs) == len(coe_event_digs) == csn + 1
         assert db_digs == coe_event_digs
 
-        db_digs = [v for v in valKever.db.kels.getOnIterAll(keys=coepre)]
+        db_digs = [v for v in valKever.db.kels.getAllIter(keys=coepre)]
         assert len(db_digs) == len(coe_event_digs) == csn + 1
         assert db_digs == coe_event_digs
 
         #  verify final validator event state
         assert valKever.sn == valK.sn == vsn
 
-        db_digs = [v for v in valKever.db.kels.getOnIterAll(keys=valpre)]
+        db_digs = [v for v in valKever.db.kels.getAllIter(keys=valpre)]
         assert len(db_digs) == len(val_event_digs) == vsn + 1
         assert db_digs == val_event_digs
 
-        db_digs = [v for v in coeKever.db.kels.getOnIterAll(keys=valpre)]
+        db_digs = [v for v in coeKever.db.kels.getAllIter(keys=valpre)]
         assert len(db_digs) == len(val_event_digs) == vsn + 1
         assert db_digs == val_event_digs
 

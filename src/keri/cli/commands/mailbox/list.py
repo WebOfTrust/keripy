@@ -16,7 +16,7 @@ from ....app import organizing
 
 logger = help.ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='List current mailboxes', 
+parser = argparse.ArgumentParser(description='List current mailboxes',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: handle(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the identifier to whom the credential was issued',
@@ -54,7 +54,7 @@ def listMailboxes(tymth, tock=0.0, **opts):
 
             hab = hby.habByName(alias)
 
-            for (aid, role, eid), ender in hab.db.ends.getItemIter(keys=(hab.pre, Roles.mailbox)):
+            for (aid, role, eid), ender in hab.db.ends.getTopItemIter(keys=(hab.pre, Roles.mailbox)):
                 if ender.allowed:
                     contact = org.get(eid)
                     print(f"{contact['alias']}: {eid}")

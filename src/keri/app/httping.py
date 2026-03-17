@@ -21,7 +21,7 @@ from ..help import helping, ogler
 
 logger = ogler.getLogger()
 
-CESR_CONTENT_TYPE = "application/cesr+json"
+CESR_CONTENT_TYPE = "application/cesr"
 CESR_ATTACHMENT_HEADER = "CESR-ATTACHMENT"
 CESR_DESTINATION_HEADER = "CESR-DESTINATION"
 
@@ -322,4 +322,3 @@ class Clienter(doing.DoDoer):
                 self.remove(client)
 
             yield self.tock
-

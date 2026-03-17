@@ -2,9 +2,7 @@ from dataclasses import dataclass, field, asdict
 from typing import Optional
 
 from .. import koming
-from ..basing import Baser
-from ...recording import HabitatRecord
-from keri.vdr.viring import Reger
+
 
 
 @dataclass
@@ -23,6 +21,7 @@ class HabitatRecordV0_6_7:  # baser.habs
     aids: Optional[list]  # all identifiers participating in the group identity
 
     watchers: list[str] = field(default_factory=list)  # aids qb64 of watchers
+
 
 @dataclass
 class HabitatRecordV0_6_8:  # baser.habs
@@ -45,6 +44,7 @@ class HabitatRecordV0_6_8:  # baser.habs
     sid: str | None = None  # Signify identifier qb64 when hid is Signify
     watchers: list[str] = field(default_factory=list)  # id prefixes qb64 of watchers
 
+
 def _check_if_needed(db):
     """
     Check if the migration is needed
@@ -53,14 +53,15 @@ def _check_if_needed(db):
     Returns:
         bool: True if the migration is needed, False otherwise
     """
-    habs = koming.Komer(db=db, subkey='habs.', schema=dict, )
-    first = next(habs.getItemIter(), None)
+    habs = koming.Komer(db=db, subkey='habs.', klas=dict, )
+    first = next(habs.getTopItemIter(), None)
     if first is None:
         return False
     name, habord = first
     if 'prefix' in habord:
         return True
     return False
+
 
 def migrate(db):
     """Rename data in HabitatRecord from the old labels to the new labels as of 2022-10-17
@@ -81,11 +82,11 @@ def migrate(db):
 
     habs = koming.Komer(db=db,
                         subkey='habs.',
-                        schema=HabitatRecordV0_6_7, )
+                        klas=HabitatRecordV0_6_7, )
 
     habords = dict()
     # Update Hab records from .habs with name
-    for name, habord in habs.getItemIter():
+    for name, habord in habs.getTopItemIter():
         existing = asdict(habord)
         habord_0_6_7 = HabitatRecordV0_6_7(**existing)
         habord_0_6_8 = HabitatRecordV0_6_8(
@@ -103,7 +104,7 @@ def migrate(db):
     # Add in the renamed records
     habs = koming.Komer(db=db,
                         subkey='habs.',
-                        schema=HabitatRecordV0_6_8, )
+                        klas=HabitatRecordV0_6_8, )
 
     for name, habord in habords.items():
         name, = name

@@ -75,7 +75,7 @@ def test_configuration():
             assert compact[2] == f"{v2b64}.rpy./end"
 
             # Default cache type
-            rec = db.ctyp.get("~")
+            rec = db.kramCTYP.get("~")
             assert rec is not None
             assert rec.d == 100
             assert rec.sl == 2000
@@ -86,7 +86,7 @@ def test_configuration():
             assert rec.pxl == 172800000
 
             # qry cache type
-            rec = db.ctyp.get("qry")
+            rec = db.kramCTYP.get("qry")
             assert rec is not None
             assert rec.d == 50
             assert rec.sl == 1000
@@ -385,7 +385,7 @@ def test_assk(mockHelpingNowUTC):
             kvy.processMsg(msg, **kwa)
 
             # Assert cache created
-            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             assert cache is not None
             assert cache.mdt == stamp
             assert cache.d == 1000   # drift from config
@@ -414,7 +414,7 @@ def test_assk(mockHelpingNowUTC):
             kvy.processMsg(msg2, **kwa)
 
             # Assert cache created for non-transferable sender
-            cache = receiverHby.db.msgc.get(keys=(senderNTHab.pre, msg2.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderNTHab.pre, msg2.said))
             assert cache is not None
             assert cache.mdt == stamp
 
@@ -438,7 +438,7 @@ def test_assk(mockHelpingNowUTC):
             kvy.processMsg(staleMsg, **staleKwa)
 
             # Assert no cache entry created for stale message
-            staleCache = receiverHby.db.msgc.get(keys=(senderHab.pre, staleMsg.said))
+            staleCache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, staleMsg.said))
             assert staleCache is None
 
 
@@ -446,13 +446,13 @@ def test_assk(mockHelpingNowUTC):
 
             # Resend the same message + kwa from step 2
             # kramit finds existing cache -> returns None (assk idempotent drop)
-            origCache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg.said))
+            origCache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             assert origCache is not None  # still there from step 2
 
             kvy.processMsg(msg, **dict(ssgs=[(prefixer, sigers)]))
 
             # Cache entry unchanged, no error raised
-            cacheAfter = receiverHby.db.msgc.get(keys=(senderHab.pre, msg.said))
+            cacheAfter = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             assert cacheAfter is not None
             assert cacheAfter.mdt == origCache.mdt
 
@@ -560,13 +560,13 @@ def test_asmk(mockHelpingNowUTC):
             kwa = dict(ssgs=[(prefixer, allSigers)])
             kvy.processMsg(msg, **kwa)
 
-            # Assert msgc cache created, partials empty (threshold met immediately)
-            cacheOrig = receiverHby.db.msgc.get(keys=(senderHab.pre, msg.said))
+            # Assert kramMSGC cache created, partials empty (threshold met immediately)
+            cacheOrig = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             assert cacheOrig is not None
             assert cacheOrig.ml == 60000  # long lag (asmk)
-            assert receiverHby.db.pmkm.get(keys=(senderHab.pre, msg.said)) is None
-            assert receiverHby.db.pmks.get(keys=(senderHab.pre, msg.said)) == []
-            assert receiverHby.db.pmsk.get(keys=(senderHab.pre, msg.said)) is None
+            assert receiverHby.db.kramPMKM.get(keys=(senderHab.pre, msg.said)) is None
+            assert receiverHby.db.kramPMKS.get(keys=(senderHab.pre, msg.said)) == []
+            assert receiverHby.db.kramPMSK.get(keys=(senderHab.pre, msg.said)) is None
 
             kvy.cues.clear()
 
@@ -586,18 +586,18 @@ def test_asmk(mockHelpingNowUTC):
             kwa = dict(ssgs=[(prefixer, [allSigers2[0]])])
             kvy.processMsg(msg2, **kwa)
 
-            # Assert msgc cache created for partial sigs
-            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg2.said))
+            # Assert kramMSGC cache created for partial sigs
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg2.said))
             assert cache is not None
 
             # Assert that partial DBs are populated
-            pmkm = receiverHby.db.pmkm.get(keys=(senderHab.pre, msg2.said))
-            assert pmkm is not None
-            pmks = receiverHby.db.pmks.get(keys=(senderHab.pre, msg2.said))
-            assert pmks is not None
-            assert len(pmks) == 1
-            pmsk = receiverHby.db.pmsk.get(keys=(senderHab.pre, msg2.said))
-            assert pmsk is not None
+            kramPMKM = receiverHby.db.kramPMKM.get(keys=(senderHab.pre, msg2.said))
+            assert kramPMKM is not None
+            kramPMKS = receiverHby.db.kramPMKS.get(keys=(senderHab.pre, msg2.said))
+            assert kramPMKS is not None
+            assert len(kramPMKS) == 1
+            kramPMSK = receiverHby.db.kramPMSK.get(keys=(senderHab.pre, msg2.said))
+            assert kramPMSK is not None
 
             # No cue generated because threshold not met
             assert len(kvy.cues) == 0
@@ -607,10 +607,10 @@ def test_asmk(mockHelpingNowUTC):
             kvy.processMsg(msg2, **kwa)
 
             # Partials persist until pruner cleans up (not deleted on threshold)
-            assert receiverHby.db.pmkm.get(keys=(senderHab.pre, msg2.said)) is not None
-            pmks = receiverHby.db.pmks.get(keys=(senderHab.pre, msg2.said))
-            assert len(pmks) >= 2
-            assert receiverHby.db.pmsk.get(keys=(senderHab.pre, msg2.said)) is not None
+            assert receiverHby.db.kramPMKM.get(keys=(senderHab.pre, msg2.said)) is not None
+            kramPMKS = receiverHby.db.kramPMKS.get(keys=(senderHab.pre, msg2.said))
+            assert len(kramPMKS) >= 2
+            assert receiverHby.db.kramPMSK.get(keys=(senderHab.pre, msg2.said)) is not None
 
             # Assert that downstream dispatch occurred via cue gen
             assert len(kvy.cues) > 0
@@ -630,13 +630,13 @@ def test_asmk(mockHelpingNowUTC):
 
             # First delivery, sig index 0
             kvy.processMsg(msg3, **dict(ssgs=[(prefixer, [allSigers3[0]])]))
-            pmks = receiverHby.db.pmks.get(keys=(senderHab.pre, msg3.said))
-            assert len(pmks) == 1
+            kramPMKS = receiverHby.db.kramPMKS.get(keys=(senderHab.pre, msg3.said))
+            assert len(kramPMKS) == 1
 
             # Second delivery: same sig index 0 again
             kvy.processMsg(msg3, **dict(ssgs=[(prefixer, [allSigers3[0]])]))
-            pmks_after = receiverHby.db.pmks.get(keys=(senderHab.pre, msg3.said))
-            assert len(pmks_after) == 1  # deduped, still 1 unique sig
+            kramPMKS_after = receiverHby.db.kramPMKS.get(keys=(senderHab.pre, msg3.said))
+            assert len(kramPMKS_after) == 1  # deduped, still 1 unique sig
 
             kvy.cues.clear()
 
@@ -663,10 +663,10 @@ def test_asmk(mockHelpingNowUTC):
             kvy.processMsg(msg4, **kwa)
 
             # Assert both sigs pooled, 2 of 3 threshold met
-            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg4.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg4.said))
             assert cache is not None
             # Partials persist until pruner cleans up (not deleted on threshold)
-            assert receiverHby.db.pmkm.get(keys=(senderHab.pre, msg4.said)) is None
+            assert receiverHby.db.kramPMKM.get(keys=(senderHab.pre, msg4.said)) is None
 
             kvy.cues.clear()
 
@@ -682,7 +682,7 @@ def test_asmk(mockHelpingNowUTC):
 
             # First delivery, 1 sig
             kvy.processMsg(msg5, **dict(ssgs=[(prefixer, [allSigers2f[0]])]))
-            assert receiverHby.db.pmks.get(keys=(senderHab.pre, msg5.said)) is not None
+            assert receiverHby.db.kramPMKS.get(keys=(senderHab.pre, msg5.said)) is not None
 
             # Rotate sender
             rotMsg = senderHab.rotate()
@@ -722,7 +722,7 @@ def test_asmk(mockHelpingNowUTC):
             kvy.processMsg(msg6, **dict(ssgs=[(prefixer, allSigers2g)]))
 
             # Assert accepted because multi-key uses long lag (ll=60000ms)
-            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg6.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg6.said))
             assert cache is not None
             assert cache.ml == 60000  # confirms long lag used
 
@@ -734,7 +734,7 @@ def test_asmk(mockHelpingNowUTC):
 
             # kramit finds existing cache, multi-key path -> accumulation attempt
             # but threshold already met -> idempotent drop, no error
-            cacheAfter = receiverHby.db.msgc.get(keys=(senderHab.pre, msg.said))
+            cacheAfter = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             assert cacheAfter is not None
             assert cacheAfter.mdt == cacheOrig.mdt
 
@@ -806,7 +806,7 @@ def test_asr(mockHelpingNowUTC):
                 kvy.processMsg(msg, **dict(sscs=sscs))
 
             # Assert: kramit created cache before downstream error
-            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             assert cache is not None
             assert cache.mdt == stamp
             assert cache.ml == 5000  # short lag (asr)
@@ -843,7 +843,7 @@ def test_asr(mockHelpingNowUTC):
             kvy.processMsg(msg2, **kwa)
 
             # Assert accepted via asr, full flow succeeds
-            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg2.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg2.said))
             assert cache is not None
             assert len(kvy.cues) > 0
             cue = kvy.cues.popleft()
@@ -874,7 +874,7 @@ def test_asr(mockHelpingNowUTC):
             kvy.processMsg(msg3, **kwa)
 
             # Resolves to assk (single-key). Accepted via sig auth.
-            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg3.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg3.said))
             assert cache is not None
             assert cache.ml == 5000  # short lag (assk, same as sl)
 
@@ -898,7 +898,7 @@ def test_asr(mockHelpingNowUTC):
             # kramit returns None (message dropped)
             kvy.processMsg(msg4, **kwa)
 
-            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg4.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg4.said))
             assert cache is None  # no cache created
 
             kvy.cues.clear()
@@ -918,7 +918,7 @@ def test_asr(mockHelpingNowUTC):
 
             kvy.processMsg(msg5, **kwa)
 
-            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg5.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg5.said))
             assert cache is None  # no cache
 
             # Assert for cue key state retrieval
@@ -947,7 +947,7 @@ def test_asr(mockHelpingNowUTC):
             # falls back to assk
             kvy.processMsg(msg6, **kwa)
 
-            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg6.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg6.said))
             assert cache is not None  # accepted via sig fallback
             assert cache.ml == 5000  # short lag (assk)
 
@@ -1032,7 +1032,7 @@ def test_both_attached(mockHelpingNowUTC):
             kvy.processMsg(msg, **kwa)
 
             # Assert: accepted via asr (seal takes priority), short lag
-            cache = receiverHby.db.msgc.get(keys=(skHab.pre, msg.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(skHab.pre, msg.said))
             assert cache is not None
             assert cache.ml == 5000  # short lag (asr)
 
@@ -1059,7 +1059,7 @@ def test_both_attached(mockHelpingNowUTC):
             kvy.processMsg(msg2, **kwa)
 
             # _resolveAuthType: seal fails -> single-key resolves to assk
-            cache = receiverHby.db.msgc.get(keys=(skHab.pre, msg2.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(skHab.pre, msg2.said))
             assert cache is not None
             assert cache.ml == 5000  # short lag (assk)
 
@@ -1087,22 +1087,22 @@ def test_both_attached(mockHelpingNowUTC):
             kvy.processMsg(msg3, **kwa)
 
             # _resolveAuthType: seal fails, resolves to asmk
-            cache = receiverHby.db.msgc.get(keys=(mkHab.pre, msg3.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(mkHab.pre, msg3.said))
             assert cache is not None
             assert cache.ml == 60000  # long lag (asmk)
             # Partials populated, threshold not met
-            assert receiverHby.db.pmkm.get(keys=(mkHab.pre, msg3.said)) is not None
-            pmks = receiverHby.db.pmks.get(keys=(mkHab.pre, msg3.said))
-            assert len(pmks) == 1
+            assert receiverHby.db.kramPMKM.get(keys=(mkHab.pre, msg3.said)) is not None
+            kramPMKS = receiverHby.db.kramPMKS.get(keys=(mkHab.pre, msg3.said))
+            assert len(kramPMKS) == 1
 
             # Send 2nd sig -> threshold met (2 of 3)
             kvy.processMsg(msg3, **dict(sscs=sscs,
                                         ssgs=[(mkPrefixer, [allSigers[1]])]))
 
             # Partials persist until pruner cleans up (not deleted on threshold)
-            assert receiverHby.db.pmkm.get(keys=(mkHab.pre, msg3.said)) is not None
-            pmks = receiverHby.db.pmks.get(keys=(mkHab.pre, msg3.said))
-            assert len(pmks) >= 2
+            assert receiverHby.db.kramPMKM.get(keys=(mkHab.pre, msg3.said)) is not None
+            kramPMKS = receiverHby.db.kramPMKS.get(keys=(mkHab.pre, msg3.said))
+            assert len(kramPMKS) >= 2
 
             kvy.cues.clear()
 
@@ -1132,7 +1132,7 @@ def test_both_attached(mockHelpingNowUTC):
             kvy.processMsg(msg4, **kwa)
 
             # _resolveAuthType: seal validates -> asr -> sigs never checked
-            cache = receiverHby.db.msgc.get(keys=(skHab.pre, msg4.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(skHab.pre, msg4.said))
             assert cache is not None
             assert cache.ml == 5000  # short lag (asr)
 
@@ -1140,7 +1140,7 @@ def test_both_attached(mockHelpingNowUTC):
 
 
 def test_transactioned(mockHelpingNowUTC):
-    """Test processMsg with transactioned messages (xip/exn, tmsc cache).
+    """Test processMsg with transactioned messages (xip/exn, kramTMSC cache).
 
     Covers: seed xip via kramit directly, exn via processMsg, missing xip
     cache, exchange window test, multi-key accumulation in transactioned path.
@@ -1206,8 +1206,8 @@ def test_transactioned(mockHelpingNowUTC):
             result = kramer.kramit(xip, **kwa)
             assert result is not None  # xip accepted
 
-            # Assert: tmsc entry created, xip's exId is its own SAID
-            cache = receiverHby.db.tmsc.get(keys=(skHab.pre, xip.said, xip.said))
+            # Assert: kramTMSC entry created, xip's exId is its own SAID
+            cache = receiverHby.db.kramTMSC.get(keys=(skHab.pre, xip.said, xip.said))
             assert cache is not None
             assert cache.mdt == stamp
             assert cache.xdt == stamp  # xip's xdt == its own dt
@@ -1231,8 +1231,8 @@ def test_transactioned(mockHelpingNowUTC):
             with pytest.raises(kering.ValidationError):
                 kvy.processMsg(exn, **kwa)
 
-            # Assert tmsc entry created for exn
-            cache = receiverHby.db.tmsc.get(keys=(skHab.pre, xip.said, exn.said))
+            # Assert kramTMSC entry created for exn
+            cache = receiverHby.db.kramTMSC.get(keys=(skHab.pre, xip.said, exn.said))
             assert cache is not None
             assert cache.mdt == stamp
             assert cache.xdt == stamp  # inherited from xip's xdt
@@ -1240,7 +1240,7 @@ def test_transactioned(mockHelpingNowUTC):
 
             # Step 4: Missing xip cache
 
-            fakeXid = "E" + "B" * 43  # fabricated xip SAID with no tmsc entry
+            fakeXid = "E" + "B" * 43  # fabricated xip SAID with no kramTMSC entry
             msg3 = eventing.exchange(sender=skHab.pre,
                                      receiver=receiverHab.pre,
                                      xid=fakeXid,
@@ -1256,14 +1256,14 @@ def test_transactioned(mockHelpingNowUTC):
             # kramit can't find xip's xdt, returns None, processMsg returns
             kvy.processMsg(msg3, **kwa)
 
-            # Assert no tmsc entry for the exn
-            cache = receiverHby.db.tmsc.get(keys=(skHab.pre, fakeXid, msg3.said))
+            # Assert no kramTMSC entry for the exn
+            cache = receiverHby.db.kramTMSC.get(keys=(skHab.pre, fakeXid, msg3.said))
             assert cache is None
 
 
             # Step 5: Exchange window test
 
-            # Seed a tmsc entry with an old xdt directly in the database
+            # Seed a kramTMSC entry with an old xdt directly in the database
             # so the exn's mdt (now) is outside the exchange window
             # xl=300000ms = 5min. xdt = 10min ago -> now > xdt + 5min
             oldXdt = "2020-12-31T23:50:00.000000+00:00"  # 10 min before mocked now
@@ -1271,7 +1271,7 @@ def test_transactioned(mockHelpingNowUTC):
             seedRecord = TxnMsgCacheRecord(
                 mdt=oldXdt, xdt=oldXdt, d=1000, ml=5000, pml=5000,
                 xl=300000, pxl=300000)
-            receiverHby.db.tmsc.pin(keys=(skHab.pre, oldXipSaid, oldXipSaid),
+            receiverHby.db.kramTMSC.pin(keys=(skHab.pre, oldXipSaid, oldXipSaid),
                                     val=seedRecord)
 
             msg4 = eventing.exchange(sender=skHab.pre,
@@ -1290,8 +1290,8 @@ def test_transactioned(mockHelpingNowUTC):
             # xdt=10min ago, mdt=now: xdt + xl = 5min ago < now -> fails
             kvy.processMsg(msg4, **kwa)
 
-            # Assert no tmsc entry (exchange window failed)
-            cache = receiverHby.db.tmsc.get(
+            # Assert no kramTMSC entry (exchange window failed)
+            cache = receiverHby.db.kramTMSC.get(
                 keys=(skHab.pre, oldXipSaid, msg4.said))
             assert cache is None
 
@@ -1310,7 +1310,7 @@ def test_transactioned(mockHelpingNowUTC):
             result = kramer.kramit(mkXip, **dict(ssgs=[(mkPrefixer, sigers)]))
             assert result is not None
 
-            cache = receiverHby.db.tmsc.get(
+            cache = receiverHby.db.kramTMSC.get(
                 keys=(mkHab.pre, mkXip.said, mkXip.said))
             assert cache is not None
 
@@ -1333,16 +1333,16 @@ def test_transactioned(mockHelpingNowUTC):
             # kramit returns None (pending) -> processMsg returns without dispatch
             kvy.processMsg(mkExn, **kwa)
 
-            # tmsc cache created (multi-key still creates cache entry)
-            cache = receiverHby.db.tmsc.get(
+            # kramTMSC cache created (multi-key still creates cache entry)
+            cache = receiverHby.db.kramTMSC.get(
                 keys=(mkHab.pre, mkXip.said, mkExn.said))
             assert cache is not None
 
             # Partials populated (keyed by (AID, MID) per spec)
             partialKey = (mkHab.pre, mkExn.said)
-            assert receiverHby.db.pmkm.get(keys=partialKey) is not None
-            pmks = receiverHby.db.pmks.get(keys=partialKey)
-            assert len(pmks) == 1
+            assert receiverHby.db.kramPMKM.get(keys=partialKey) is not None
+            kramPMKS = receiverHby.db.kramPMKS.get(keys=partialKey)
+            assert len(kramPMKS) == 1
 
             # Second delivery: sig at index 2 -> 2 of 3 -> threshold met
             kwa = dict(ssgs=[(mkPrefixer, [allSigers[2]])])
@@ -1352,9 +1352,9 @@ def test_transactioned(mockHelpingNowUTC):
                 kvy.processMsg(mkExn, **kwa)
 
             # Partials persist until pruner cleans up (not deleted on threshold)
-            assert receiverHby.db.pmkm.get(keys=partialKey) is not None
-            pmks = receiverHby.db.pmks.get(keys=partialKey)
-            assert len(pmks) >= 2
+            assert receiverHby.db.kramPMKM.get(keys=partialKey) is not None
+            kramPMKS = receiverHby.db.kramPMKS.get(keys=partialKey)
+            assert len(kramPMKS) >= 2
 
 
             # Step 8: exc happy path
@@ -1395,7 +1395,7 @@ def test_transactioned(mockHelpingNowUTC):
                                   **dict(ssgs=[(skPrefixer, sigers8)],
                                          tsgs=[tsg8]))
 
-            cache = receiverHby.db.tmsc.get(keys=(skHab.pre, xip8.said, exn8.said))
+            cache = receiverHby.db.kramTMSC.get(keys=(skHab.pre, xip8.said, exn8.said))
             assert cache is not None
             assert cache.mdt == stamp
 
@@ -1438,7 +1438,7 @@ def test_transactioned(mockHelpingNowUTC):
                                   **dict(ssgs=[(skPrefixer, sigers8)],
                                          tsgs=[tsg8]))
 
-            cache = receiverHby.db.tmsc.get(keys=(skHab.pre, xip8.said, exn8.said))
+            cache = receiverHby.db.kramTMSC.get(keys=(skHab.pre, xip8.said, exn8.said))
             assert cache is not None
             assert cache.mdt == stamp
 
@@ -1453,9 +1453,9 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
     non-empty prior p field value.
 
     Covers:
-    - v1 exn with non-empty p field, no x field -> msgc (non-txn) cache
-    - v1 exn that carries an x field -> still msgc, not tmsc (x ignored)
-    - v2 exn with x field -> tmsc (transactional) cache, confirming the
+    - v1 exn with non-empty p field, no x field -> kramMSGC (non-txn) cache
+    - v1 exn that carries an x field -> still kramMSGC, not kramTMSC (x ignored)
+    - v2 exn with x field -> kramTMSC (transactional) cache, confirming the
       version gate does not break the v2 path
     """
 
@@ -1486,7 +1486,7 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
 # Step 2: v1 exn with non-empty p field, no x field
             # The v1 exn schema rejects x/ri via the builder, so hand-craft
             # the ked to produce a spec-conformant v1 exn on the wire.
-            # Must route to msgc (non-transactional), not tmsc.
+            # Must route to kramMSGC (non-transactional), not kramTMSC.
 
             fakePrior = "E" + "A" * 43
             v1ExnWithPKed = {
@@ -1519,10 +1519,10 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
 
             assert result is not None  # accepted
             # Routed to non-transactional cache
-            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, v1ExnWithP.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, v1ExnWithP.said))
             assert cache is not None
             # NOT written to transactional cache
-            assert receiverHby.db.tmsc.get(
+            assert receiverHby.db.kramTMSC.get(
                 keys=(senderHab.pre, fakePrior, v1ExnWithP.said)) is None
 
 
@@ -1530,7 +1530,7 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
             # The v1 serializer rejects x as an unallowed field, so we
             # hand-craft the ked to simulate a malformed message arriving
             # on the wire. The x field must be ignored by kramit; the
-            # message must still route to msgc, not tmsc.
+            # message must still route to kramMSGC, not kramTMSC.
 
             fakeXid = "E" + "B" * 43
             v1ExnKed = {
@@ -1560,17 +1560,17 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
 
             assert result is not None  # accepted
             # Still routes to non-transactional cache (x field ignored for v1)
-            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, v1ExnWithX.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, v1ExnWithX.said))
             assert cache is not None
             # NOT written to transactional cache under the injected x field
-            assert receiverHby.db.tmsc.get(
+            assert receiverHby.db.kramTMSC.get(
                 keys=(senderHab.pre, fakeXid, v1ExnWithX.said)) is None
 
 
-            # Step 4: v2 exn with x field -> transactional (tmsc) cache
+            # Step 4: v2 exn with x field -> transactional (kramTMSC) cache
             # Confirms the version gate does not regress the v2 path.
 
-            # First seed a v2 xip so tmsc has an entry for the exchange ID
+            # First seed a v2 xip so kramTMSC has an entry for the exchange ID
             v2Xip = eventing.exchept(sender=senderHab.pre,
                                      receiver=receiverHab.pre,
                                      route="/test/exchange",
@@ -1601,11 +1601,11 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
 
             assert result is not None  # accepted
             # Routed to transactional cache
-            cache = receiverHby.db.tmsc.get(
+            cache = receiverHby.db.kramTMSC.get(
                 keys=(senderHab.pre, v2Xip.said, v2Exn.said))
             assert cache is not None
             # NOT written to non-transactional cache
-            assert receiverHby.db.msgc.get(
+            assert receiverHby.db.kramMSGC.get(
                 keys=(senderHab.pre, v2Exn.said)) is None
 
     """Done Test"""
@@ -1717,21 +1717,21 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
             kvy.processMsg(msg, **kwa)
 
             # Threshold not met, partials populated
-            assert receiverHby.db.pmkm.get(keys=partialKey) is not None
-            pmks = receiverHby.db.pmks.get(keys=partialKey)
-            assert len(pmks) == 1
+            assert receiverHby.db.kramPMKM.get(keys=partialKey) is not None
+            kramPMKS = receiverHby.db.kramPMKS.get(keys=partialKey)
+            assert len(kramPMKS) == 1
 
             # All non-auth attachment dbs populated
-            assert len(receiverHby.db.trqs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.tsgs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.sscs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.ssts.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.frcs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.tdcs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.ptds.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.bsqs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.bsss.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.tmqs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramSSCS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramSSTS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramFRCS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTDCS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramPTDS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramBSQS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramBSSS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTMQS.get(keys=partialKey)) == 1
 
             assert len(kvy.cues) == 0
 
@@ -1740,16 +1740,16 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
 
             kvy.processMsg(msg, **kwa)
 
-            assert len(receiverHby.db.trqs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.tsgs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.sscs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.ssts.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.frcs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.tdcs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.ptds.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.bsqs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.bsss.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.tmqs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramSSCS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramSSTS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramFRCS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTDCS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramPTDS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramBSQS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramBSSS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTMQS.get(keys=partialKey)) == 1
 
 
             # Second delivery with 2nd sig meets threshold
@@ -1767,16 +1767,16 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
             assert cue["kin"] == "reply"
 
             # Non-auth attachments persist (pruner cleans up, not kramit)
-            assert len(receiverHby.db.trqs.get(keys=partialKey)) >= 1
-            assert len(receiverHby.db.tsgs.get(keys=partialKey)) >= 1
-            assert len(receiverHby.db.sscs.get(keys=partialKey)) >= 1
-            assert len(receiverHby.db.ssts.get(keys=partialKey)) >= 1
-            assert len(receiverHby.db.frcs.get(keys=partialKey)) >= 1
-            assert len(receiverHby.db.tdcs.get(keys=partialKey)) >= 1
-            assert len(receiverHby.db.ptds.get(keys=partialKey)) >= 1
-            assert len(receiverHby.db.bsqs.get(keys=partialKey)) >= 1
-            assert len(receiverHby.db.bsss.get(keys=partialKey)) >= 1
-            assert len(receiverHby.db.tmqs.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramSSCS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramSSTS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramFRCS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramTDCS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramPTDS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramBSQS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramBSSS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramTMQS.get(keys=partialKey)) >= 1
 
     """Done Test"""
 
@@ -1829,19 +1829,19 @@ def test_non_auth_attachments_empty_kwa(mockHelpingNowUTC):
             kvy.processMsg(msg, **kwa)
 
             # Sig partial populated
-            assert receiverHby.db.pmkm.get(keys=partialKey) is not None
+            assert receiverHby.db.kramPMKM.get(keys=partialKey) is not None
 
             # All non-auth attachment dbs empty
-            assert receiverHby.db.trqs.get(keys=partialKey) == []
-            assert receiverHby.db.tsgs.get(keys=partialKey) == []
-            assert receiverHby.db.sscs.get(keys=partialKey) == []
-            assert receiverHby.db.ssts.get(keys=partialKey) == []
-            assert receiverHby.db.frcs.get(keys=partialKey) == []
-            assert receiverHby.db.tdcs.get(keys=partialKey) == []
-            assert receiverHby.db.ptds.get(keys=partialKey) == []
-            assert receiverHby.db.bsqs.get(keys=partialKey) == []
-            assert receiverHby.db.bsss.get(keys=partialKey) == []
-            assert receiverHby.db.tmqs.get(keys=partialKey) == []
+            assert receiverHby.db.kramTRQS.get(keys=partialKey) == []
+            assert receiverHby.db.kramTSGS.get(keys=partialKey) == []
+            assert receiverHby.db.kramSSCS.get(keys=partialKey) == []
+            assert receiverHby.db.kramSSTS.get(keys=partialKey) == []
+            assert receiverHby.db.kramFRCS.get(keys=partialKey) == []
+            assert receiverHby.db.kramTDCS.get(keys=partialKey) == []
+            assert receiverHby.db.kramPTDS.get(keys=partialKey) == []
+            assert receiverHby.db.kramBSQS.get(keys=partialKey) == []
+            assert receiverHby.db.kramBSSS.get(keys=partialKey) == []
+            assert receiverHby.db.kramTMQS.get(keys=partialKey) == []
 
     """Done Test"""
 
@@ -1889,63 +1889,63 @@ def test_rem_non_auth_attachments(mockHelpingNowUTC):
             diger = coring.Diger(ser=msg.raw)
 
             # Populate all ten non-auth dbs directly
-            receiverHby.db.trqs.add(keys=partialKey,
+            receiverHby.db.kramTRQS.add(keys=partialKey,
                                     val=(prefixer, seqner, saider, allSigers[0]))
-            receiverHby.db.tsgs.add(keys=partialKey,
+            receiverHby.db.kramTSGS.add(keys=partialKey,
                                     val=(prefixer, seqner, saider, allSigers[0]))
-            receiverHby.db.sscs.add(keys=partialKey, val=(seqner, saider))
-            receiverHby.db.ssts.add(keys=partialKey, val=(prefixer, seqner, saider))
+            receiverHby.db.kramSSCS.add(keys=partialKey, val=(seqner, saider))
+            receiverHby.db.kramSSTS.add(keys=partialKey, val=(prefixer, seqner, saider))
 
             firner = coring.Seqner(sn=0)
             dater = coring.Dater(dts=stamp)
-            receiverHby.db.frcs.add(keys=partialKey, val=(firner, dater))
+            receiverHby.db.kramFRCS.add(keys=partialKey, val=(firner, dater))
 
             verser = coring.Verser(pvrsn=Vrsn_2_0)
-            receiverHby.db.tdcs.add(keys=partialKey, val=(verser, diger))
+            receiverHby.db.kramTDCS.add(keys=partialKey, val=(verser, diger))
 
-            receiverHby.db.ptds.add(keys=partialKey, val=b'\x00\x01')
+            receiverHby.db.kramPTDS.add(keys=partialKey, val=b'\x00\x01')
 
             noncer0 = coring.Noncer()
             noncer1 = coring.Noncer()
             labeler = coring.Labeler(label='test')
-            receiverHby.db.bsqs.add(keys=partialKey,
+            receiverHby.db.kramBSQS.add(keys=partialKey,
                                     val=(diger, noncer0, noncer1, labeler))
 
             number = coring.Number(num=1)
             noncer2 = coring.Noncer()
-            receiverHby.db.bsss.add(keys=partialKey,
+            receiverHby.db.kramBSSS.add(keys=partialKey,
                                     val=(diger, noncer0, noncer1, labeler, number, noncer2))
 
             texter = coring.Texter(text='application/json')
-            receiverHby.db.tmqs.add(keys=partialKey,
+            receiverHby.db.kramTMQS.add(keys=partialKey,
                                     val=(diger, noncer0, labeler, texter))
 
             # Confirm all populated
-            assert len(receiverHby.db.trqs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.tsgs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.sscs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.ssts.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.frcs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.tdcs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.ptds.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.bsqs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.bsss.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.tmqs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramSSCS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramSSTS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramFRCS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTDCS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramPTDS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramBSQS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramBSSS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTMQS.get(keys=partialKey)) == 1
 
             # Call _remNonAuthAttachments
             kramer._remNonAuthAttachments(partialKey)
 
             # All ten cleared
-            assert receiverHby.db.trqs.get(keys=partialKey) == []
-            assert receiverHby.db.tsgs.get(keys=partialKey) == []
-            assert receiverHby.db.sscs.get(keys=partialKey) == []
-            assert receiverHby.db.ssts.get(keys=partialKey) == []
-            assert receiverHby.db.frcs.get(keys=partialKey) == []
-            assert receiverHby.db.tdcs.get(keys=partialKey) == []
-            assert receiverHby.db.ptds.get(keys=partialKey) == []
-            assert receiverHby.db.bsqs.get(keys=partialKey) == []
-            assert receiverHby.db.bsss.get(keys=partialKey) == []
-            assert receiverHby.db.tmqs.get(keys=partialKey) == []
+            assert receiverHby.db.kramTRQS.get(keys=partialKey) == []
+            assert receiverHby.db.kramTSGS.get(keys=partialKey) == []
+            assert receiverHby.db.kramSSCS.get(keys=partialKey) == []
+            assert receiverHby.db.kramSSTS.get(keys=partialKey) == []
+            assert receiverHby.db.kramFRCS.get(keys=partialKey) == []
+            assert receiverHby.db.kramTDCS.get(keys=partialKey) == []
+            assert receiverHby.db.kramPTDS.get(keys=partialKey) == []
+            assert receiverHby.db.kramBSQS.get(keys=partialKey) == []
+            assert receiverHby.db.kramBSSS.get(keys=partialKey) == []
+            assert receiverHby.db.kramTMQS.get(keys=partialKey) == []
 
     """Done Test"""
 
@@ -2073,7 +2073,7 @@ def test_cue_ks_non_transactioned(mockHelpingNowUTC):
 
             kvy.processMsg(msg, **kwa)
 
-            cache = receiverHby.db.msgc.get(keys=(kownSenderHab.pre, msg.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(kownSenderHab.pre, msg.said))
             assert cache is None  # no cache
 
             # Assert for cue key state retrieval
