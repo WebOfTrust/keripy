@@ -960,17 +960,17 @@ def test_on_suber_contract():
         assert onsuber.cntOn() == 0
         assert onsuber.cntOn(keys="a") == 4
 
-        assert list(onsuber.getOnTopItemIter()) == [
+        assert list(onsuber.getTopItemIter()) == [
             (("a",), 0, w), (("a",), 1, x), (("a",), 2, y), (("a",), 3, z),
         ]
-        assert list(onsuber.getOnAllItemIter()) == [
+        assert list(onsuber.getAllItemIter()) == [
             (("a",), 0, w), (("a",), 1, x), (("a",), 2, y), (("a",), 3, z),
         ]
-        assert list(onsuber.getOnAllItemIter(keys="a", on=2)) == [
+        assert list(onsuber.getAllItemIter(keys="a", on=2)) == [
             (("a",), 2, y), (("a",), 3, z),
         ]
-        assert list(onsuber.getOnIterAll()) == [w, x, y, z]
-        assert list(onsuber.getOnIterAll(keys="a", on=2)) == [y, z]
+        assert list(onsuber.getAllIter()) == [w, x, y, z]
+        assert list(onsuber.getAllIter(keys="a", on=2)) == [y, z]
 
         assert onsuber.appendOn(keys=("b",), val=w) == 0
         assert onsuber.appendOn(keys=("b",), val=x) == 1
@@ -980,13 +980,13 @@ def test_on_suber_contract():
         assert onsuber.cntOnAll(keys=("b",)) == 2
         assert onsuber.cntOnAll(keys="") == 8
 
-        assert list(onsuber.getOnTopItemIter(keys="b")) == [
+        assert list(onsuber.getTopItemIter(keys="b")) == [
             (("b",), 0, w), (("b",), 1, x), (("bc",), 0, y),
         ]
-        assert list(onsuber.getOnAllItemIter(keys="b")) == [
+        assert list(onsuber.getAllItemIter(keys="b")) == [
             (("b",), 0, w), (("b",), 1, x),
         ]
-        assert list(onsuber.getOnAllItemIter(keys=("b", ""))) == []
+        assert list(onsuber.getAllItemIter(keys=("b", ""))) == []
 
         assert onsuber.remOn(keys="a", on=1) is True
         assert onsuber.remOn(keys="a", on=1) is False
