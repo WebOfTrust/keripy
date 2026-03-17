@@ -17,8 +17,8 @@ from ..kering import (Vrsn_1_0, MissingChainError,
                       MissingChainError, RevokedChainError)
 from ..core import parsing, coring, scheming
 from ..help import helping, ogler
-from ..vdr import eventing
-from ..vdr.viring import Reger
+
+from .eventing import Tevery, Reger, query
 
 logger = ogler.getLogger()
 
@@ -64,7 +64,7 @@ class Verifier:
         Should not be called until .hab is initialized
 
         """
-        self.tvy = eventing.Tevery(reger=self.reger, db=self.hby.db, local=False)
+        self.tvy = Tevery(reger=self.reger, db=self.hby.db, local=False)
         self.psr = parsing.Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy,
                                   version=Vrsn_1_0)
         self.resolver = scheming.CacheResolver(db=self.hby.db)
@@ -328,7 +328,7 @@ class Verifier:
         """ Returns query message for querying registry
         """
 
-        serder = eventing.query(regk=regk, vcid=vcid, dt=dt, dta=dta,
+        serder = query(regk=regk, vcid=vcid, dt=dt, dta=dta,
                                 dtb=dtb, **kwa)
         hab = self.hby.habs[pre]
         return hab.endorse(serder, last=True)

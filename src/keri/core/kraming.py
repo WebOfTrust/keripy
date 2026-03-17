@@ -71,13 +71,13 @@ class Kramer:
         self._fullDenials = kram.get('denials', [])
         self._denials = self._compactDenials(self._fullDenials)
 
-        self._ctypCf = kram.get('caches', {})
-        # Prepopulate ctyp cache with configured values
-        ctypCf = self._ctypCf
-        for key, val in ctypCf.items():
+        self._kramCTYPCf = kram.get('caches', {})
+        # Prepopulate kramCTYP cache with configured values
+        kramCTYPCf = self._kramCTYPCf
+        for key, val in kramCTYPCf.items():
             try:
                 record = CacheTypeRecord(*map(int, val))
-                self.db.ctyp.pin(key, record)
+                self.db.kramCTYP.pin(key, record)
             except Exception as e:
                 raise kering.KramConfigurationError(f"Invalid cache configuration for {key}, {val}: {e}")
 
@@ -146,7 +146,7 @@ class Kramer:
     def _fetchCacheType(self, msgType, route):
         """Fetch the most specific matching cache-type entry.
 
-        Uses Komer.getTopItemIter to scan the message-type branch of the ctyp
+        Uses Komer.getTopItemIter to scan the message-type branch of the kramCTYP
         database in a single LMDB cursor pass. The cursor positions at the
         first key >= msgType and iterates forward through all keys sharing
         the msgType prefix. Among matches, the most specific key (longest
@@ -171,8 +171,8 @@ class Kramer:
         exactRoute = f"{msgType}.R.{route}" if route else None
 
         # Single cursor scan of the msgType branch
-        for keys, rec in self.db.ctyp.getTopItemIter(keys=msgType):
-            key = self.db.ctyp.sep.join(keys)  # rejoin tuple to string
+        for keys, rec in self.db.kramCTYP.getTopItemIter(keys=msgType):
+            key = self.db.kramCTYP.sep.join(keys)  # rejoin tuple to string
             if exactRoute and key == exactRoute:
                 return rec  # exact type+route match, most specific
             elif key == msgType:
@@ -182,7 +182,7 @@ class Kramer:
             return bestRec
 
         # Fall back to default catchall
-        rec = self.db.ctyp.get("~")
+        rec = self.db.kramCTYP.get("~")
         if rec is not None:
             return rec
 
@@ -457,26 +457,26 @@ class Kramer:
             **kwa: keyword arguments from parser exts dict
         """
         for item in kwa.get('trqs', []):
-            self.db.trqs.add(key, item)
+            self.db.kramTRQS.add(key, item)
         for prefixer, number, diger, sigers in kwa.get('tsgs', []):
             for siger in sigers:
-                self.db.tsgs.add(key, (prefixer, number, diger, siger))
+                self.db.kramTSGS.add(key, (prefixer, number, diger, siger))
         for item in kwa.get('sscs', []):
-            self.db.sscs.add(key, item)
+            self.db.kramSSCS.add(key, item)
         for item in kwa.get('ssts', []):
-            self.db.ssts.add(key, item)
+            self.db.kramSSTS.add(key, item)
         for item in kwa.get('frcs', []):
-            self.db.frcs.add(key, item)
+            self.db.kramFRCS.add(key, item)
         for item in kwa.get('tdcs', []):
-            self.db.tdcs.add(key, item)
+            self.db.kramTDCS.add(key, item)
         for item in kwa.get('ptds', []):
-            self.db.ptds.add(key, item)
+            self.db.kramPTDS.add(key, item)
         for item in kwa.get('bsqs', []):
-            self.db.bsqs.add(key, item)
+            self.db.kramBSQS.add(key, item)
         for item in kwa.get('bsss', []):
-            self.db.bsss.add(key, item)
+            self.db.kramBSSS.add(key, item)
         for item in kwa.get('tmqs', []):
-            self.db.tmqs.add(key, item)
+            self.db.kramTMQS.add(key, item)
 
 
     def _remNonAuthAttachments(self, key):
@@ -485,16 +485,16 @@ class Kramer:
         Parameters:
             key (tuple): (AID, MID) partial db key
         """
-        self.db.trqs.rem(key)
-        self.db.tsgs.rem(key)
-        self.db.sscs.rem(key)
-        self.db.ssts.rem(key)
-        self.db.frcs.rem(key)
-        self.db.tdcs.rem(key)
-        self.db.ptds.rem(key)
-        self.db.bsqs.rem(key)
-        self.db.bsss.rem(key)
-        self.db.tmqs.rem(key)
+        self.db.kramTRQS.rem(key)
+        self.db.kramTSGS.rem(key)
+        self.db.kramSSCS.rem(key)
+        self.db.kramSSTS.rem(key)
+        self.db.kramFRCS.rem(key)
+        self.db.kramTDCS.rem(key)
+        self.db.kramPTDS.rem(key)
+        self.db.kramBSQS.rem(key)
+        self.db.kramBSSS.rem(key)
+        self.db.kramTMQS.rem(key)
 
 
     def intake(self, serder, **kwa):
@@ -571,7 +571,7 @@ class Kramer:
         # Non-transactioned-exchange message is checked against the message-ID-based cache database.
         if not exId:
             key = (senderId, msgId)
-            cache = self.db.msgc.get(key)
+            cache = self.db.kramMSGC.get(key)
 
             if cache:  # Existing message-ID-cache processing logic.
                 # Determine authentication type (resolve "both attached"
@@ -626,7 +626,7 @@ class Kramer:
                 # Compare stored key state ref against current kever state
                 currentKeyState = (kever.sner,
                                    coring.Diger(qb64=kever.serder.said))
-                storedKeyState = self.db.pmsk.get(key)
+                storedKeyState = self.db.kramPMSK.get(key)
                 if storedKeyState:
                     storedSn, storedSaid = storedKeyState
                     if (storedSn.num != currentKeyState[0].num or
@@ -634,7 +634,7 @@ class Kramer:
                         return None  # drop, key state changed
 
                 # Idempotently accumulate newly verified signatures
-                existingSigs = self.db.pmks.get(key)
+                existingSigs = self.db.kramPMKS.get(key)
                 if existingSigs is None:
                     existingSigs = []
 
@@ -643,15 +643,15 @@ class Kramer:
                            if sig.index not in existingSigIndices]
 
                 for sig in newSigs:
-                    self.db.pmks.add(key, sig)
+                    self.db.kramPMKS.add(key, sig)
 
                 # Store message and key state on first verified signature
                 if newSigs:
-                    if self.db.pmkm.get(key) is None:
-                        self.db.pmkm.put(key, msg)
+                    if self.db.kramPMKM.get(key) is None:
+                        self.db.kramPMKM.put(key, msg)
 
                     if storedKeyState is None:
-                        self.db.pmsk.pin(key, currentKeyState)
+                        self.db.kramPMSK.pin(key, currentKeyState)
 
                     # Store non-auth attachments alongside new sigs
                     self._storeNonAuthAttachments(key, **kwa)
@@ -740,7 +740,7 @@ class Kramer:
                     mcr = MsgCacheRecord(
                         mdt=mdts, d=d, ml=ml, pml=pml,
                         xl=cacheTypeRecord.xl, pxl=cacheTypeRecord.pxl)
-                    self.db.msgc.pin(key, mcr)
+                    self.db.kramMSGC.pin(key, mcr)
                     return msg
 
                 elif authType == AuthTypes.AttachedSignatureSingleKey:
@@ -755,7 +755,7 @@ class Kramer:
                     mcr = MsgCacheRecord(
                         mdt=mdts, d=d, ml=ml, pml=pml,
                         xl=cacheTypeRecord.xl, pxl=cacheTypeRecord.pxl)
-                    self.db.msgc.pin(key, mcr)
+                    self.db.kramMSGC.pin(key, mcr)
                     return msg
 
                 elif authType == AuthTypes.AttachedSignatureMultiKey:
@@ -770,7 +770,7 @@ class Kramer:
                     mcr = MsgCacheRecord(
                         mdt=mdts, d=d, ml=ml, pml=pml,
                         xl=cacheTypeRecord.xl, pxl=cacheTypeRecord.pxl)
-                    self.db.msgc.pin(key, mcr)
+                    self.db.kramMSGC.pin(key, mcr)
 
                     # Check if threshold is immediately satisfied
                     sigIndices = [sig.index for sig in sigResult.sigers]
@@ -782,11 +782,11 @@ class Kramer:
                     # Threshold not met, store partials for accumulation
                     currentKeyState = (kever.sner,
                                        coring.Diger(qb64=kever.serder.said))
-                    self.db.pmkm.put(key, msg)
+                    self.db.kramPMKM.put(key, msg)
                     for sig in sigResult.sigers:
-                        self.db.pmks.add(key, sig)
+                        self.db.kramPMKS.add(key, sig)
 
-                    self.db.pmsk.pin(key, currentKeyState)
+                    self.db.kramPMSK.pin(key, currentKeyState)
 
                     # Store non-auth attachments for forwarding on threshold satisfaction
                     self._storeNonAuthAttachments(key, **kwa)
@@ -796,7 +796,7 @@ class Kramer:
         else:  # If we have an exchange id, x field value
             key = (senderId, exId, msgId)
             partialKey = (senderId, msgId)  # partial dbs keyed by (AID.MID) per spec
-            cache = self.db.tmsc.get(key)
+            cache = self.db.kramTMSC.get(key)
 
             if cache:
                 # Existing message-ID-cache processing logic.
@@ -853,7 +853,7 @@ class Kramer:
                 # Partial dbs use (AID.MID) key per spec, not (AID.XID.MID).
                 currentKeyState = (kever.sner,
                                    coring.Diger(qb64=kever.serder.said))
-                storedKeyState = self.db.pmsk.get(partialKey)
+                storedKeyState = self.db.kramPMSK.get(partialKey)
                 if storedKeyState:
                     storedSn, storedSaid = storedKeyState
                     if (storedSn.num != currentKeyState[0].num or
@@ -861,7 +861,7 @@ class Kramer:
                         return None  # drop, key state changed
 
                 # Idempotently accumulate newly verified signatures
-                existingSigs = self.db.pmks.get(partialKey)
+                existingSigs = self.db.kramPMKS.get(partialKey)
                 if existingSigs is None:
                     existingSigs = []
 
@@ -870,15 +870,15 @@ class Kramer:
                            if sig.index not in existingSigIndices]
 
                 for sig in newSigs:
-                    self.db.pmks.add(partialKey, sig)
+                    self.db.kramPMKS.add(partialKey, sig)
 
                 # Store message and key state on first verified signature
                 if newSigs:
-                    if self.db.pmkm.get(partialKey) is None:
-                        self.db.pmkm.put(partialKey, msg)
+                    if self.db.kramPMKM.get(partialKey) is None:
+                        self.db.kramPMKM.put(partialKey, msg)
 
                     if storedKeyState is None:
-                        self.db.pmsk.pin(partialKey, currentKeyState)
+                        self.db.kramPMSK.pin(partialKey, currentKeyState)
 
                     # Store non-auth attachments alongside new sigs
                     self._storeNonAuthAttachments(partialKey, **kwa)
@@ -933,7 +933,7 @@ class Kramer:
                         case kering.Ilks.exn:
                             # x field value to fetch any existing cache entry with a matching AID.XID and copy its xdt
                             # value. When no existing cache entry is found, then drop the event and exit.
-                            existingCache = next(self.db.tmsc.getTopItemIter((senderId, exId)), None)
+                            existingCache = next(self.db.kramTMSC.getTopItemIter((senderId, exId)), None)
 
                             if existingCache is not None:
                                 keys, cacheRecord = existingCache
@@ -986,7 +986,7 @@ class Kramer:
                         mcr = TxnMsgCacheRecord(
                             mdt=mdts, xdt=xdts, d=d, ml=ml, pml=pml,
                             xl=cacheTypeRecord.xl, pxl=cacheTypeRecord.pxl)
-                        self.db.tmsc.pin(key, mcr)
+                        self.db.kramTMSC.pin(key, mcr)
                         return msg
 
                     elif authType == AuthTypes.AttachedSignatureSingleKey:
@@ -1001,7 +1001,7 @@ class Kramer:
                         mcr = TxnMsgCacheRecord(
                             mdt=mdts, xdt=xdts, d=d, ml=ml, pml=pml,
                             xl=cacheTypeRecord.xl, pxl=cacheTypeRecord.pxl)
-                        self.db.tmsc.pin(key, mcr)
+                        self.db.kramTMSC.pin(key, mcr)
                         return msg
 
                 elif authType == AuthTypes.AttachedSignatureMultiKey:
@@ -1018,7 +1018,7 @@ class Kramer:
                             xdts = msg.ked.get('dt', None)
                         case kering.Ilks.exn:
                             existingCache = next(
-                                self.db.tmsc.getTopItemIter((senderId, exId)),
+                                self.db.kramTMSC.getTopItemIter((senderId, exId)),
                                 None)
                             if existingCache is not None:
                                 keys, cacheRecord = existingCache
@@ -1047,7 +1047,7 @@ class Kramer:
                     mcr = TxnMsgCacheRecord(
                         mdt=mdts, xdt=xdts, d=d, ml=ml, pml=pml,
                         xl=cacheTypeRecord.xl, pxl=cacheTypeRecord.pxl)
-                    self.db.tmsc.pin(key, mcr)
+                    self.db.kramTMSC.pin(key, mcr)
 
                     # Check if threshold is immediately satisfied
                     sigIndices = [sig.index for sig in sigResult.sigers]
@@ -1060,11 +1060,11 @@ class Kramer:
                     # Partial dbs use (AID.MID) key per spec, not (AID.XID.MID).
                     currentKeyState = (kever.sner,
                                        coring.Diger(qb64=kever.serder.said))
-                    self.db.pmkm.put(partialKey, msg)
+                    self.db.kramPMKM.put(partialKey, msg)
                     for sig in sigResult.sigers:
-                        self.db.pmks.add(partialKey, sig)
+                        self.db.kramPMKS.add(partialKey, sig)
 
-                    self.db.pmsk.pin(partialKey, currentKeyState)
+                    self.db.kramPMSK.pin(partialKey, currentKeyState)
 
                     # Store non-auth attachments for forwarding on threshold satisfaction
                     self._storeNonAuthAttachments(partialKey, **kwa)
