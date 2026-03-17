@@ -1,0 +1,1264 @@
+# -*- encoding: utf-8 -*-
+"""
+tests.db.test_webdbing module
+
+"""
+
+import asyncio
+from dataclasses import asdict, dataclass
+from typing import Any
+
+import pytest
+
+try:
+    from keri.db.webdbing import (
+        WebDBer,
+        _META_KEY,
+        _RECORDS_KEY,
+        _deserialize_meta,
+        _deserialize_records,
+        _serialize_meta,
+        _serialize_records,
+        onKey,
+        splitOnKey,
+    )
+    from keri.db import webdbing as webdbing_module
+except ImportError:
+    from webdbing import (  # standalone import for Pyodide
+        WebDBer,
+        _META_KEY,
+        _RECORDS_KEY,
+        _deserialize_meta,
+        _deserialize_records,
+        _serialize_meta,
+        _serialize_records,
+        onKey,
+        splitOnKey,
+    )
+    import webdbing as webdbing_module
+
+try:
+    from keri.db import subing, koming
+except ImportError:
+    subing = None
+    koming = None
+
+needskeri = pytest.mark.skipif(subing is None, reason="requires full keri (lmdb)")
+
+
+class FakeStorageHandle:
+    """Async storage handle with local writes and explicit sync commit."""
+
+    def __init__(self, backend, namespace):
+        self.backend = backend
+        self.namespace = namespace
+        self._local = dict(self.backend.persisted.get(namespace, {}))
+
+    def get(self, key, default=None):
+        return self._local.get(key, default)
+
+    def __getitem__(self, key):
+        return self._local[key]
+
+    def __setitem__(self, key, value):
+        self._local[key] = value
+
+    async def sync(self):
+        self.backend.persisted[self.namespace] = dict(self._local)
+
+
+class FakeStorageBackend:
+    """Minimal async opener that mimics PyScript storage commit semantics."""
+
+    def __init__(self):
+        self.persisted = {}
+
+    async def open(self, namespace):
+        return FakeStorageHandle(self, namespace)
+
+
+async def _open_fake_dber(*, name="test-webdber", stores=None,
+                          clear=False, backend=None):
+    if backend is None:
+        backend = FakeStorageBackend()
+    dber = await WebDBer.open(
+        name=name,
+        stores=stores or ["bags.", "docs.", "beep.", "pugs."],
+        clear=clear,
+        storageOpener=backend.open,
+    )
+    return dber, backend
+
+
+def test_open_declares_stores_and_clear():
+    """Test open() store declaration, persisted reload, and clear reset."""
+    async def _go():
+        backend = FakeStorageBackend()
+        dber, _ = await _open_fake_dber(
+            name="open-clear", stores=["bags.", "docs."],
+            clear=True, backend=backend,
+        )
+        assert dber.name == "open-clear"
+        assert dber.stores == ["bags.", "docs."]
+
+        bags = dber.env.open_db(b"bags.")
+        docs = dber.env.open_db("docs.")
+        assert bags.namespace == "open-clear:bags."
+        assert docs.namespace == "open-clear:docs."
+        assert dber.cntAll(bags) == 0
+        assert dber.cntAll(docs) == 0
+        assert await dber.flush() == 2
+
+        assert dber.setVal(docs, b"alpha", b"one") is True
+        assert await dber.flush() == 1
+
+        reopened, _ = await _open_fake_dber(
+            name="open-clear", stores=["bags.", "docs."], backend=backend,
+        )
+        docs_reopened = reopened.env.open_db("docs.")
+        assert reopened.getVal(docs_reopened, b"alpha") == b"one"
+
+        cleared, _ = await _open_fake_dber(
+            name="open-clear", stores=["bags.", "docs."],
+            clear=True, backend=backend,
+        )
+        docs_cleared = cleared.env.open_db("docs.")
+        assert cleared.getVal(docs_cleared, b"alpha") is None
+        assert cleared.cntAll(docs_cleared) == 0
+
+    asyncio.run(_go())
+
+
+def test_open_requires_storage_backend():
+    """Test open() fails without storage backend."""
+    async def _go():
+        original = webdbing_module.storage
+        webdbing_module.storage = None
+        try:
+            with pytest.raises(RuntimeError, match="pyscript.storage is unavailable"):
+                await WebDBer.open(name="missing-storage", stores=["docs."])
+        finally:
+            webdbing_module.storage = original
+
+    asyncio.run(_go())
+
+
+def test_open_db_flag_persistence():
+    """Test dupsort latching is stable in-process and persists across reopen."""
+    async def _go():
+        backend = FakeStorageBackend()
+        dber, _ = await _open_fake_dber(stores=["bags.", "docs."],
+                                        clear=True, backend=backend)
+
+        bags = dber.env.open_db(b"bags.", dupsort=False)
+        assert bags.flags()["dupsort"] is False
+        assert bags.dirty is True
+
+        same = dber.env.open_db("bags.", dupsort=True)
+        assert same is bags
+        assert same.flags()["dupsort"] is False
+
+        docs = dber.env.open_db("docs.", dupsort=True)
+        assert docs.flags()["dupsort"] is True
+        assert await dber.flush() == 2
+
+        reopened, _ = await _open_fake_dber(stores=["bags.", "docs."],
+                                            backend=backend)
+        bags_reopened = reopened.env.open_db("bags.", dupsort=True)
+        docs_reopened = reopened.env.open_db("docs.", dupsort=False)
+        assert bags_reopened.flags()["dupsort"] is False
+        assert docs_reopened.flags()["dupsort"] is True
+
+    asyncio.run(_go())
+
+
+def test_open_db_metadata_only_flush():
+    """Test first-open dupsort metadata flushes even before any record writes."""
+    async def _go():
+        backend = FakeStorageBackend()
+        dber, _ = await _open_fake_dber(name="meta-only", stores=["docs."],
+                                        clear=True, backend=backend)
+
+        docs = dber.env.open_db("docs.", dupsort=True)
+        assert docs.flags()["dupsort"] is True
+        assert docs.dirty is True
+        assert await dber.flush() == 1
+        assert docs.dirty is False
+        assert _deserialize_meta(
+            backend.persisted["meta-only:docs."][_META_KEY]) == {"dupsort": True}
+        assert _deserialize_records(
+            backend.persisted["meta-only:docs."][_RECORDS_KEY]) == {}
+
+        reopened, _ = await _open_fake_dber(name="meta-only", stores=["docs."],
+                                            backend=backend)
+        docs_reopened = reopened.env.open_db("docs.", dupsort=False)
+        assert docs_reopened.flags()["dupsort"] is True
+
+    asyncio.run(_go())
+
+
+def test_clear_resets_metadata():
+    """Test clear=True drops persisted dupsort metadata and allows relatching."""
+    async def _go():
+        backend = FakeStorageBackend()
+        dber, _ = await _open_fake_dber(name="clear-meta", stores=["docs."],
+                                        clear=True, backend=backend)
+
+        docs = dber.env.open_db("docs.", dupsort=True)
+        assert await dber.flush() == 1
+
+        cleared, _ = await _open_fake_dber(name="clear-meta", stores=["docs."],
+                                           clear=True, backend=backend)
+        docs_cleared = cleared.env.open_db("docs.", dupsort=False)
+        assert docs_cleared.flags()["dupsort"] is False
+        assert await cleared.flush() == 1
+
+        reopened, _ = await _open_fake_dber(name="clear-meta", stores=["docs."],
+                                            backend=backend)
+        docs_reopened = reopened.env.open_db("docs.", dupsort=True)
+        assert docs_reopened.flags()["dupsort"] is False
+
+    asyncio.run(_go())
+
+
+def test_open_rejects_missing_metadata():
+    """Test open() fails on non-empty stores missing flag metadata."""
+    async def _go():
+        backend = FakeStorageBackend()
+        backend.persisted["legacy:docs."] = {
+            _RECORDS_KEY: _serialize_records({b"alpha": b"one"}),
+        }
+
+        with pytest.raises(ValueError, match="Persisted store metadata missing"):
+            await WebDBer.open(
+                name="legacy", stores=["docs."],
+                storageOpener=backend.open,
+            )
+
+    asyncio.run(_go())
+
+
+def test_open_db_rejects_unconfigured():
+    """Test open_db rejects stores not declared at open time."""
+    async def _go():
+        dber, _ = await _open_fake_dber(stores=["bags."], clear=True)
+
+        with pytest.raises(KeyError, match="Store not configured"):
+            dber.env.open_db("docs.")
+
+    asyncio.run(_go())
+
+
+def test_storify():
+    """Test store-handle normalization."""
+    assert WebDBer._storify("docs.") == "docs."
+    assert WebDBer._storify(b"bags.") == "bags."
+
+    with pytest.raises(TypeError, match="Unsupported store handle type"):
+        WebDBer._storify(lambda: None)
+
+
+def test_serialize_deserialize():
+    """Test record and metadata serialization helpers."""
+    records = {b"b": b"\x02", b"a": b"\x01"}
+    serialized = _serialize_records(records)
+    assert serialized == '{"61": "01", "62": "02"}'
+    meta = {"dupsort": True}
+    serialized_meta = _serialize_meta(meta)
+    assert serialized_meta == '{"dupsort": true}'
+
+    assert _deserialize_records(None) == {}
+    assert _deserialize_records("") == {}
+    assert _deserialize_records(serialized) == {b"a": b"\x01", b"b": b"\x02"}
+    assert _deserialize_records(serialized.encode("utf-8")) == {b"a": b"\x01", b"b": b"\x02"}
+    assert _deserialize_records(memoryview(serialized.encode("utf-8"))) == {
+        b"a": b"\x01", b"b": b"\x02",
+    }
+    assert _deserialize_records({"61": "31"}) == {b"a": b"1"}
+    assert _deserialize_meta(None) == {}
+    assert _deserialize_meta("") == {}
+    assert _deserialize_meta(serialized_meta) == meta
+    assert _deserialize_meta(serialized_meta.encode("utf-8")) == meta
+    assert _deserialize_meta(memoryview(serialized_meta.encode("utf-8"))) == meta
+    assert _deserialize_meta(meta) == meta
+
+    with pytest.raises(TypeError, match="Unsupported persisted record payload type"):
+        _deserialize_records(42)
+    with pytest.raises(TypeError, match="Unsupported persisted metadata payload type"):
+        _deserialize_meta(42)
+
+
+def test_val_crud():
+    """Test Val CRUD semantics and dirty flags."""
+    async def _go():
+        dber, _ = await _open_fake_dber(stores=["docs."], clear=True)
+        docs = dber.env.open_db("docs.")
+
+        assert docs.dirty is True
+        assert await dber.flush() == 1
+        assert docs.dirty is False
+        assert dber.getVal(docs, b"alpha") is None
+        assert docs.dirty is False
+        assert dber.remVal(docs, b"alpha") is False
+        assert docs.dirty is False
+
+        assert dber.putVal(docs, b"alpha", b"one") is True
+        assert docs.dirty is True
+        assert dber.getVal(docs, b"alpha") == b"one"
+        assert await dber.flush() == 1
+        assert docs.dirty is False
+
+        assert dber.putVal(docs, b"alpha", b"shadow") is False
+        assert docs.dirty is False
+
+        assert dber.setVal(docs, b"\xff\x00", b"\x01\x02") is True
+        assert docs.dirty is True
+        assert dber.getVal(docs, b"\xff\x00") == b"\x01\x02"
+        assert await dber.flush() == 1
+        assert docs.dirty is False
+
+        assert dber.setVal(docs, b"alpha", b"two") is True
+        assert docs.dirty is True
+        assert dber.getVal(docs, b"alpha") == b"two"
+        assert await dber.flush() == 1
+        assert docs.dirty is False
+
+        assert dber.remVal(docs, b"alpha") is True
+        assert docs.dirty is True
+        assert dber.getVal(docs, b"alpha") is None
+        assert await dber.flush() == 1
+        assert docs.dirty is False
+
+        assert dber.remVal(docs, b"alpha") is False
+        assert docs.dirty is False
+
+    asyncio.run(_go())
+
+
+def test_empty_key_errors():
+    """Test LMDB-compatible empty-key validation."""
+    async def _go():
+        dber, _ = await _open_fake_dber(stores=["docs."], clear=True)
+        docs = dber.env.open_db("docs.")
+
+        with pytest.raises(KeyError, match="empty"):
+            dber.putVal(docs, b"", b"val")
+        with pytest.raises(KeyError, match="empty"):
+            dber.setVal(docs, b"", b"val")
+        with pytest.raises(KeyError, match="empty"):
+            dber.getVal(docs, b"")
+
+        assert dber.remVal(docs, b"") is False
+
+    asyncio.run(_go())
+
+
+def test_prefix_iteration():
+    """Test lexical prefix iteration and whole-store count."""
+    async def _go():
+        dber, _ = await _open_fake_dber(stores=["docs."], clear=True)
+        docs = dber.env.open_db("docs.")
+
+        assert dber.setVal(docs, b"a.1", b"blue") is True
+        assert dber.setVal(docs, b"a.2", b"green") is True
+        assert dber.setVal(docs, b"ac.4", b"white") is True
+        assert dber.setVal(docs, b"b.1", b"red") is True
+        assert dber.setVal(docs, b"bc.3", b"black") is True
+
+        assert list(dber.getTopItemIter(docs)) == [
+            (b"a.1", b"blue"),
+            (b"a.2", b"green"),
+            (b"ac.4", b"white"),
+            (b"b.1", b"red"),
+            (b"bc.3", b"black"),
+        ]
+        assert list(dber.getTopItemIter(docs, b"a.")) == [
+            (b"a.1", b"blue"),
+            (b"a.2", b"green"),
+        ]
+        assert list(dber.getTopItemIter(docs, b"ac")) == [(b"ac.4", b"white")]
+        assert list(dber.getTopItemIter(docs, b"z")) == []
+        assert dber.cntAll(docs) == 5
+
+    asyncio.run(_go())
+
+
+def test_del_top():
+    """Test prefix and whole-store deletion semantics."""
+    async def _go():
+        dber, _ = await _open_fake_dber(stores=["docs."], clear=True)
+        docs = dber.env.open_db("docs.")
+
+        assert dber.setVal(docs, b"a.1", b"blue") is True
+        assert dber.setVal(docs, b"a.2", b"green") is True
+        assert dber.setVal(docs, b"b.1", b"red") is True
+        assert await dber.flush() == 1
+        assert docs.dirty is False
+
+        assert dber.delTop(docs, b"z.") is False
+        assert docs.dirty is False
+
+        assert dber.delTop(docs, b"a.") is True
+        assert docs.dirty is True
+        assert list(dber.getTopItemIter(docs)) == [(b"b.1", b"red")]
+        assert await dber.flush() == 1
+
+        assert dber.delTop(docs) is True
+        assert list(dber.getTopItemIter(docs)) == []
+        assert await dber.flush() == 1
+
+        assert dber.delTop(docs) is False
+        assert docs.dirty is False
+
+    asyncio.run(_go())
+
+
+def test_flush_persistence():
+    """Test unsynced vs synced reopen visibility."""
+    async def _go():
+        backend = FakeStorageBackend()
+        dber, _ = await _open_fake_dber(name="flush-sem", stores=["docs."],
+                                        clear=True, backend=backend)
+        docs = dber.env.open_db("docs.")
+
+        assert await dber.flush() == 1
+        assert await dber.flush() == 0
+
+        assert dber.setVal(docs, b"alpha", b"one") is True
+
+        reopened_before, _ = await _open_fake_dber(
+            name="flush-sem", stores=["docs."], backend=backend,
+        )
+        docs_before = reopened_before.env.open_db("docs.")
+        assert reopened_before.getVal(docs_before, b"alpha") is None
+
+        assert await dber.flush() == 1
+        assert await dber.flush() == 0
+
+        assert dber.setVal(docs, b"alpha", b"two") is True
+        reopened_unsynced, _ = await _open_fake_dber(
+            name="flush-sem", stores=["docs."], backend=backend,
+        )
+        docs_unsynced = reopened_unsynced.env.open_db("docs.")
+        assert reopened_unsynced.getVal(docs_unsynced, b"alpha") == b"one"
+
+        assert await dber.flush() == 1
+        reopened_after, _ = await _open_fake_dber(
+            name="flush-sem", stores=["docs."], backend=backend,
+        )
+        docs_after = reopened_after.env.open_db("docs.")
+        assert reopened_after.getVal(docs_after, b"alpha") == b"two"
+
+    asyncio.run(_go())
+
+
+def test_flush_dirty_counting():
+    """Test flush counts only dirty stores."""
+    async def _go():
+        dber, _ = await _open_fake_dber(stores=["bags.", "docs.", "pugs."],
+                                        clear=True)
+        bags = dber.env.open_db("bags.")
+        docs = dber.env.open_db("docs.")
+        pugs = dber.env.open_db("pugs.")
+        assert await dber.flush() == 3
+
+        assert dber.setVal(bags, b"bag.1", b"blue") is True
+        assert dber.setVal(docs, b"doc.1", b"green") is True
+        assert await dber.flush() == 2
+
+        assert dber.putVal(docs, b"doc.1", b"shadow") is False
+        assert dber.remVal(pugs, b"missing") is False
+        assert dber.getVal(bags, b"bag.1") == b"blue"
+        assert await dber.flush() == 0
+
+        assert dber.setVal(docs, b"doc.2", b"white") is True
+        assert await dber.flush() == 1
+        assert await dber.flush() == 0
+
+    asyncio.run(_go())
+
+
+@pytest.mark.skip(reason="Requires hio>=0.7.20 Doist.ado() for async task integration")
+def test_flush_with_hio_ado():
+    """Test flush completion under hio Doist.ado() scheduling."""
+    pass
+
+
+@pytest.mark.skip(reason="Requires hio>=0.7.20 Doist.ado() for async task integration")
+def test_flush_with_hio_ado_when_clean():
+    """Test hio Doist.ado() flush when no stores are dirty."""
+    pass
+
+
+def test_ordinal_key_helpers():
+    """Test onKey/splitOnKey from dbing.py for WebDBer use cases."""
+    pre = b"BAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
+
+    assert onKey(pre, 0) == pre + b"." + b"%032x" % 0
+    assert onKey(pre, 1) == pre + b"." + b"%032x" % 1
+    assert onKey(pre, 15) == pre + b"." + b"%032x" % 15
+
+    assert onKey(pre, 0, sep=b"|") == pre + b"|" + b"%032x" % 0
+    assert onKey(pre, 4, sep=b"|") == pre + b"|" + b"%032x" % 4
+
+    okey = onKey(pre, 0)
+    assert splitOnKey(okey) == (pre, 0)
+    okey = onKey(pre, 1)
+    assert splitOnKey(okey) == (pre, 1)
+    okey = onKey(pre, 15)
+    assert splitOnKey(okey) == (pre, 15)
+
+    okey = onKey(pre, 0, sep=b"|")
+    assert splitOnKey(okey, sep=b"|") == (pre, 0)
+    okey = onKey(pre, 15, sep=b"|")
+    assert splitOnKey(okey, sep=b"|") == (pre, 15)
+
+    pre_str = "BAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
+
+    assert onKey(pre_str, 0) == b"BAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc.00000000000000000000000000000000"
+    assert onKey(pre_str, 15, sep=b"|") == b"BAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc|0000000000000000000000000000000f"
+
+    okey = onKey(pre_str, 0).decode("utf-8")
+    assert splitOnKey(okey) == (pre_str, 0)
+    okey = onKey(pre_str, 15).decode("utf-8")
+    assert splitOnKey(okey) == (pre_str, 15)
+
+    pre = b"BAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
+    okey = memoryview(onKey(pre, 15))
+    assert splitOnKey(okey) == (pre, 15)
+    okey = memoryview(onKey(pre, 15, sep=b"|"))
+    assert splitOnKey(okey, sep=b"|") == (pre, 15)
+
+
+def test_on_item_empty_value():
+    """Test getOnItem returns triple even for empty-bytes value."""
+    async def _go():
+        dber, _ = await _open_fake_dber(stores=["seen."], clear=True)
+        sdb = dber.env.open_db(key=b"seen.")
+
+        pre = b"BBKY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc"
+        assert dber.putOnVal(sdb, pre, 0, val=b"") is True
+        assert dber.getOnVal(sdb, pre, 0) == b""
+        assert dber.getOnItem(sdb, pre, 0) == (pre, 0, b"")
+
+    asyncio.run(_go())
+
+
+def test_on_val_contract():
+    """Test ordinal CRUD, count, and remove block."""
+    async def _go():
+        dber, _ = await _open_fake_dber(stores=["seen."], clear=True)
+        sdb = dber.env.open_db(key=b"seen.")
+
+        preA = b"BBKY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc"
+        preB = b"EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w"
+
+        keyA0 = onKey(preA, 0)
+
+        digA = b"EA73b7reENuBahMJsMTLbeyyNPsfTRzKRWtJ3ytmInvw"
+        digU = b"EB73b7reENuBahMJsMTLbeyyNPsfTRzKRWtJ3ytmInvw"
+        digV = b"EC4vCeJswIBJlO3RqE-wsE72Vt3wAceJ_LzqKvbDtBSY"
+        digW = b"EDAyl33W9ja_wLX85UrzRnL4KNzlsIKIA7CrD04nVX1w"
+        digX = b"EEnwxEm5Bg5s5aTLsgQCNpubIYzwlvMwZIzdOM0Z3u7o"
+        digY = b"EFrq74_Q11S2vHx1gpK_46Ik5Q7Yy9K1zZ5BavqGDKnk"
+        digC = b"EG5RimdY_OWoreR-Z-Q5G81-I4tjASJCaP_MqkBbtM2w"
+
+        assert dber.getVal(sdb, keyA0) is None
+        assert dber.remVal(sdb, keyA0) is False
+        assert dber.putVal(sdb, keyA0, val=digA) is True
+        assert dber.getVal(sdb, keyA0) == digA
+        assert dber.putVal(sdb, keyA0, val=digA) is False
+        assert dber.setVal(sdb, keyA0, val=digA) is True
+        assert dber.getVal(sdb, keyA0) == digA
+        assert dber.getOnVal(sdb, preA, 0) == digA
+        assert dber.remVal(sdb, keyA0) is True
+        assert dber.getVal(sdb, keyA0) is None
+        assert dber.getOnVal(sdb, preA, 0) is None
+
+        assert dber.putOnVal(sdb, preA, 0, val=digA) is True
+        assert dber.getOnVal(sdb, preA, 0) == digA
+        assert dber.getOnItem(sdb, preA, 0) == (preA, 0, digA)
+        assert dber.putOnVal(sdb, preA, 0, val=digA) is False
+        assert dber.pinOnVal(sdb, preA, 0, val=digA) is True
+        assert dber.getOnVal(sdb, preA, 0) == digA
+        assert dber.getOnItem(sdb, preA, 0) == (preA, 0, digA)
+        assert dber.remOn(sdb, preA, 0) is True
+        assert dber.getOnVal(sdb, preA, 0) is None
+        assert dber.getOnItem(sdb, preA, 0) is None
+
+        assert dber.putOnVal(sdb, preA, 0, val=digA) is True
+        assert dber.putOnVal(sdb, preA, 1, val=digC) is True
+        assert dber.putOnVal(sdb, preA, 2, val=digU) is True
+        assert dber.putOnVal(sdb, preA, 3, val=digV) is True
+        assert dber.putOnVal(sdb, preA, 4, val=digW) is True
+        assert dber.putOnVal(sdb, preB, 0, val=digX) is True
+        assert dber.putOnVal(sdb, preB, 1, val=digY) is True
+
+        assert dber.cntOnAll(sdb, preA) == 5
+        assert dber.cntOnAll(sdb, preB) == 2
+        assert dber.cntOnAll(sdb) == 7
+
+        assert dber.remOnAll(sdb, preA, on=3) is True
+        assert dber.cntOnAll(sdb, preA) == 3
+        assert dber.cntOnAll(sdb, preB) == 2
+
+        assert dber.remOnAll(sdb, preA) is True
+        assert dber.cntOnAll(sdb, preA) == 0
+        assert dber.cntOnAll(sdb, preB) == 2
+
+        assert dber.remOnAll(sdb) is True
+        assert dber.cntOnAll(sdb) == 0
+
+    asyncio.run(_go())
+
+
+def test_append_on_iter_contract():
+    """Test append and iterator block."""
+    async def _go():
+        dber, _ = await _open_fake_dber(stores=["seen."], clear=True)
+        sdb = dber.env.open_db(key=b"seen.")
+
+        preA = b"BBKY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc"
+        preB = b"EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w"
+        preC = b"EIDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg"
+        preD = b"EAYC49i5zY_qrIZIicQgIDA1n-WiBA0A8YOqnKrB-wWQ"
+
+        keyA0 = onKey(preA, 0)
+        keyB0 = onKey(preB, 0)
+        keyB1 = onKey(preB, 1)
+        keyB2 = onKey(preB, 2)
+        keyB3 = onKey(preB, 3)
+        keyB4 = onKey(preB, 4)
+        keyC0 = onKey(preC, 0)
+
+        digA = b"EA73b7reENuBahMJsMTLbeyyNPsfTRzKRWtJ3ytmInvw"
+        digU = b"EB73b7reENuBahMJsMTLbeyyNPsfTRzKRWtJ3ytmInvw"
+        digV = b"EC4vCeJswIBJlO3RqE-wsE72Vt3wAceJ_LzqKvbDtBSY"
+        digW = b"EDAyl33W9ja_wLX85UrzRnL4KNzlsIKIA7CrD04nVX1w"
+        digX = b"EEnwxEm5Bg5s5aTLsgQCNpubIYzwlvMwZIzdOM0Z3u7o"
+        digY = b"EFrq74_Q11S2vHx1gpK_46Ik5Q7Yy9K1zZ5BavqGDKnk"
+        digC = b"EG5RimdY_OWoreR-Z-Q5G81-I4tjASJCaP_MqkBbtM2w"
+
+        assert dber.getVal(sdb, keyB0) is None
+        assert dber.appendOnVal(sdb, preB, digU) == 0
+        assert dber.getVal(sdb, keyB0) == digU
+        assert dber.remVal(sdb, keyB0) is True
+        assert dber.getVal(sdb, keyB0) is None
+
+        assert dber.putVal(sdb, keyA0, val=digA) is True
+        assert dber.appendOnVal(sdb, preB, digU) == 0
+        assert dber.getVal(sdb, keyB0) == digU
+        assert dber.remVal(sdb, keyB0) is True
+
+        assert dber.putVal(sdb, keyC0, val=digC) is True
+        assert dber.appendOnVal(sdb, preB, digU) == 0
+        assert dber.getVal(sdb, keyB0) == digU
+        assert dber.remVal(sdb, keyB0) is True
+
+        assert dber.remVal(sdb, keyA0) is True
+        assert dber.getVal(sdb, keyC0) == digC
+        assert dber.appendOnVal(sdb, preB, digU) == 0
+        assert dber.getVal(sdb, keyB0) == digU
+
+        assert dber.putVal(sdb, keyA0, val=digA) is True
+        assert dber.appendOnVal(sdb, preB, digV) == 1
+        assert dber.getVal(sdb, keyB1) == digV
+
+        assert dber.remVal(sdb, keyA0) is True
+        assert dber.remVal(sdb, keyC0) is True
+        assert dber.appendOnVal(sdb, preB, digW) == 2
+        assert dber.getVal(sdb, keyB2) == digW
+        assert dber.appendOnVal(sdb, preB, digX) == 3
+        assert dber.getVal(sdb, keyB3) == digX
+        assert dber.appendOnVal(sdb, preB, digY) == 4
+        assert dber.getVal(sdb, keyB4) == digY
+
+        assert dber.appendOnVal(sdb, preD, digY) == 0
+
+        assert dber.cntOnAll(sdb, key=preB) == 5
+        assert dber.cntOnAll(sdb, key=b"") == 6
+        assert dber.cntOnAll(sdb) == 6
+        assert dber.cntAll(sdb) == 6
+
+        assert list(dber.getOnAllItemIter(sdb, preB)) == [
+            (preB, 0, digU), (preB, 1, digV), (preB, 2, digW),
+            (preB, 3, digX), (preB, 4, digY),
+        ]
+        assert list(dber.getOnAllItemIter(sdb, preB, on=3)) == [
+            (preB, 3, digX), (preB, 4, digY),
+        ]
+        assert list(dber.getOnAllItemIter(sdb, preB, on=5)) == []
+
+        assert dber.putVal(sdb, keyA0, val=digA) is True
+        assert dber.putVal(sdb, keyC0, val=digC) is True
+
+        assert list(dber.getOnTopItemIter(sdb, top=preB)) == [
+            (preB, 0, digU), (preB, 1, digV), (preB, 2, digW),
+            (preB, 3, digX), (preB, 4, digY),
+        ]
+        assert list(dber.getOnTopItemIter(sdb)) == [
+            (preA, 0, digA), (preD, 0, digY),
+            (preB, 0, digU), (preB, 1, digV), (preB, 2, digW),
+            (preB, 3, digX), (preB, 4, digY),
+            (preC, 0, digC),
+        ]
+        assert list(dber.getOnAllItemIter(sdb, key=b"")) == [
+            (preA, 0, digA), (preD, 0, digY),
+            (preB, 0, digU), (preB, 1, digV), (preB, 2, digW),
+            (preB, 3, digX), (preB, 4, digY),
+            (preC, 0, digC),
+        ]
+
+        top, on = splitOnKey(keyB2)
+        assert list(dber.getOnAllItemIter(sdb, key=top, on=on)) == [
+            (top, 2, digW), (top, 3, digX), (top, 4, digY),
+        ]
+        assert list(dber.getOnAllItemIter(sdb, key=preC, on=1)) == []
+
+        assert dber.remOn(sdb, key=preB) is True
+        assert dber.remOn(sdb, key=preB, on=0) is False
+        assert dber.remOn(sdb, key=preB, on=1) is True
+        assert dber.remOn(sdb, key=preB, on=1) is False
+        assert list(dber.getOnAllItemIter(sdb, key=preB)) == [
+            (top, 2, digW), (top, 3, digX), (top, 4, digY),
+        ]
+        assert dber.remOn(sdb, key=b"") is False
+
+    asyncio.run(_go())
+
+
+def test_on_val_flush_persistence():
+    """Test dirty flags and reopen persistence for ordinal methods."""
+    async def _go():
+        backend = FakeStorageBackend()
+        dber, _ = await _open_fake_dber(
+            name="on-flush", stores=["ords."], clear=True, backend=backend,
+        )
+        ords = dber.env.open_db("ords.")
+
+        assert await dber.flush() == 1
+        assert await dber.flush() == 0
+
+        assert dber.putOnVal(ords, b"evt", 0, b"icp") is True
+        assert ords.dirty is True
+        assert await dber.flush() == 1
+        assert ords.dirty is False
+
+        assert dber.putOnVal(ords, b"evt", 0, b"dup") is False
+        assert ords.dirty is False
+
+        assert dber.pinOnVal(ords, b"evt", 0, b"rot") is True
+        assert ords.dirty is True
+        assert await dber.flush() == 1
+        assert ords.dirty is False
+
+        assert dber.remOn(ords, b"evt", 1) is False
+        assert ords.dirty is False
+
+        assert dber.appendOnVal(ords, b"evt", b"ixn") == 1
+        assert ords.dirty is True
+        assert await dber.flush() == 1
+        assert ords.dirty is False
+
+        reopened, _ = await _open_fake_dber(
+            name="on-flush", stores=["ords."], backend=backend,
+        )
+        ords_reopened = reopened.env.open_db("ords.")
+        assert reopened.getOnVal(ords_reopened, b"evt", 0) == b"rot"
+        assert reopened.getOnVal(ords_reopened, b"evt", 1) == b"ixn"
+        assert list(reopened.getOnAllItemIter(ords_reopened, b"evt")) == [
+            (b"evt", 0, b"rot"), (b"evt", 1, b"ixn"),
+        ]
+
+    asyncio.run(_go())
+
+
+def test_on_val_empty_key():
+    """Test ordinal empty-key behavior."""
+    async def _go():
+        dber, _ = await _open_fake_dber(stores=["ords."], clear=True)
+        ords = dber.env.open_db("ords.")
+
+        assert dber.putOnVal(ords, b"evt", 0, b"icp") is True
+        assert dber.putOnVal(ords, b"\xff", 1, b"\x01\x02") is True
+        assert dber.getOnVal(ords, b"evt", 0) == b"icp"
+        assert dber.getOnVal(ords, b"\xff", 1) == b"\x01\x02"
+        assert dber.getOnItem(ords, b"\xff", 1) == (b"\xff", 1, b"\x01\x02")
+        assert list(dber.getOnTopItemIter(ords, b"\xff")) == [
+            (b"\xff", 1, b"\x01\x02"),
+        ]
+
+        assert dber.putOnVal(ords, b"", 0, b"root") is True
+        assert dber.getVal(ords, onKey(b"", 0)) == b"root"
+        assert dber.getOnVal(ords, b"", 0) is None
+        assert dber.getOnItem(ords, b"", 0) is None
+        assert dber.pinOnVal(ords, b"", 0, b"shadow") is False
+        assert dber.remOn(ords, b"", 0) is False
+
+        with pytest.raises(ValueError, match="Bad append parameter"):
+            dber.appendOnVal(ords, b"", b"bad")
+
+        assert dber.remOnAll(ords, b"", 0) is True
+        assert dber.cntAll(ords) == 0
+        assert dber.remOnAll(ords, b"", 0) is False
+
+    asyncio.run(_go())
+
+
+def test_append_on_val_put_fails():
+    """Test appendOnVal fails closed when final insert does not succeed."""
+    async def _go():
+        dber, _ = await _open_fake_dber(stores=["ords."], clear=True)
+        ords = dber.env.open_db("ords.")
+
+        assert dber.putOnVal(ords, b"evt", 0, b"icp") is True
+
+        putVal = dber.putVal
+
+        def reject_next_on(*, db, key, val):
+            if key == onKey(b"evt", 1):
+                return False
+            return putVal(db=db, key=key, val=val)
+
+        dber.putVal = reject_next_on
+        try:
+            with pytest.raises(ValueError, match="Failed appending"):
+                dber.appendOnVal(ords, b"evt", b"rot")
+        finally:
+            dber.putVal = putVal
+
+    asyncio.run(_go())
+
+
+def test_append_on_val_max_overflow():
+    """Test appendOnVal rejects append after MaxON."""
+    async def _go():
+        dber, _ = await _open_fake_dber(stores=["ords."], clear=True)
+        ords = dber.env.open_db("ords.")
+        maxon = int("f" * 32, 16)
+
+        assert dber.putOnVal(ords, b"evt", maxon, b"last") is True
+        with pytest.raises(ValueError, match="exceeds maximum size"):
+            dber.appendOnVal(ords, b"evt", b"overflow")
+
+    asyncio.run(_go())
+
+
+def test_webdber_core_contract():
+    """Test WebDBer core LMDBer method contract."""
+    async def _go():
+        dber, _ = await _open_fake_dber(stores=["beep."], clear=True)
+        sdb = dber.env.open_db(key=b"beep.")
+
+        key = b"A"
+        val = b"whatever"
+        assert dber.getVal(sdb, key) is None
+        assert dber.remVal(sdb, key) is False
+        assert dber.putVal(sdb, key, val) is True
+        assert dber.putVal(sdb, key, val) is False
+        assert dber.setVal(sdb, key, val) is True
+        assert dber.getVal(sdb, key) == val
+        assert dber.remVal(sdb, key) is True
+        assert dber.getVal(sdb, key) is None
+
+        assert dber.putVal(sdb, b"a.1", b"wow") is True
+        assert dber.putVal(sdb, b"a.2", b"wee") is True
+        assert dber.putVal(sdb, b"b.1", b"woo") is True
+
+        assert list(dber.getTopItemIter(sdb)) == [
+            (b"a.1", b"wow"), (b"a.2", b"wee"), (b"b.1", b"woo"),
+        ]
+        assert list(dber.getTopItemIter(sdb, b"a.")) == [
+            (b"a.1", b"wow"), (b"a.2", b"wee"),
+        ]
+        assert dber.cntAll(sdb) == 3
+        assert dber.delTop(sdb, b"a.") is True
+        assert list(dber.getTopItemIter(sdb)) == [(b"b.1", b"woo")]
+
+    asyncio.run(_go())
+
+
+@needskeri
+def test_suber_contract():
+    """Test Suber wrapper operating against WebDBer."""
+    async def _go():
+        backend = FakeStorageBackend()
+        dber, _ = await _open_fake_dber(
+            name="suber-contract", stores=["bags.", "pugs."],
+            clear=True, backend=backend,
+        )
+
+        bags = subing.Suber(db=dber, subkey="bags.")
+        assert bags.sdb.flags()["dupsort"] is False
+
+        assert bags.put(("test_key", "0001"), "Hello sailer!") is True
+        assert bags.get(("test_key", "0001")) == "Hello sailer!"
+        assert bags.put(("test_key", "0001"), "shadow") is False
+        assert bags.pin(("test_key", "0001"), "Hey gorgeous!") is True
+        assert bags.get(("test_key", "0001")) == "Hey gorgeous!"
+        assert bags.rem(("test_key", "0001")) is True
+        assert bags.get(("test_key", "0001")) is None
+
+        assert bags.put((b"test_key", b"0002"), "Hello sailer!") is True
+        assert bags.get((b"test_key", b"0002")) == "Hello sailer!"
+        assert bags.put((b"test_key", "0003"), "Hello sailer!") is True
+        assert bags.get((b"test_key", "0003")) == "Hello sailer!"
+
+        assert bags.put("keystr", "Shove off!") is True
+        assert bags.get("keystr") == "Shove off!"
+        assert bags.pin("keystr", "Go away.") is True
+        assert bags.get("keystr") == "Go away."
+
+        pugs = subing.Suber(db=dber, subkey="pugs.")
+        assert pugs.put(("a", "1"), "Blue dog") is True
+        assert pugs.put(("a", "2"), "Green tree") is True
+        assert pugs.put(("a", "3"), "Red apple") is True
+        assert pugs.put(("a", "4"), "White snow") is True
+        assert pugs.put(("b", "1"), "Blue dog") is True
+        assert pugs.put(("b", "2"), "Green tree") is True
+        assert pugs.put(("bc", "3"), "Red apple") is True
+        assert pugs.put(("ac", "4"), "White snow") is True
+        assert pugs.cnt() == 8
+
+        assert list(pugs.getTopItemIter()) == [
+            (("a", "1"), "Blue dog"), (("a", "2"), "Green tree"),
+            (("a", "3"), "Red apple"), (("a", "4"), "White snow"),
+            (("ac", "4"), "White snow"), (("b", "1"), "Blue dog"),
+            (("b", "2"), "Green tree"), (("bc", "3"), "Red apple"),
+        ]
+        assert list(pugs.getTopItemIter(keys=("b", ""))) == [
+            (("b", "1"), "Blue dog"), (("b", "2"), "Green tree"),
+        ]
+        assert list(pugs.getTopItemIter(keys=("a",), topive=True)) == [
+            (("a", "1"), "Blue dog"), (("a", "2"), "Green tree"),
+            (("a", "3"), "Red apple"), (("a", "4"), "White snow"),
+        ]
+
+        assert pugs.trim(keys=("b", "")) is True
+        assert pugs.trim(keys=("a",), topive=True) is True
+        assert list(pugs.getTopItemIter()) == [
+            (("ac", "4"), "White snow"), (("bc", "3"), "Red apple"),
+        ]
+
+        assert bags.pin(("persist", "bag"), "kept") is True
+        assert pugs.pin(("persist", "leaf"), "saved") is True
+        assert await dber.flush() == 2
+
+        reopened = await WebDBer.open(
+            name="suber-contract", stores=["bags.", "pugs."],
+            storageOpener=backend.open,
+        )
+        bags_reloaded = subing.Suber(db=reopened, subkey="bags.")
+        pugs_reloaded = subing.Suber(db=reopened, subkey="pugs.")
+        assert bags_reloaded.get(("persist", "bag")) == "kept"
+        assert pugs_reloaded.get(("persist", "leaf")) == "saved"
+
+    asyncio.run(_go())
+
+
+@needskeri
+def test_on_suber_contract():
+    """Test OnSuber wrapper operating against WebDBer."""
+    async def _go():
+        dber, _ = await _open_fake_dber(
+            name="onsuber-contract", stores=["bags."], clear=True,
+        )
+
+        onsuber = subing.OnSuber(db=dber, subkey="bags.")
+        assert onsuber.sdb.flags()["dupsort"] is False
+
+        w = "Blue dog"
+        x = "Green tree"
+        y = "Red apple"
+        z = "White snow"
+
+        assert onsuber.appendOn(keys=("a",), val=w) == 0
+        assert onsuber.appendOn(keys=("a",), val=x) == 1
+        assert onsuber.appendOn(keys=("a",), val=y) == 2
+        assert onsuber.appendOn(keys=("a",), val=z) == 3
+
+        assert onsuber.cntOnAll(keys=("a",)) == 4
+        assert onsuber.cntOnAll(keys=("a",), on=2) == 2
+        assert onsuber.cntOnAll(keys=("a",), on=4) == 0
+        assert onsuber.cntOnAll() == 4
+        assert onsuber.cntOn() == 0
+        assert onsuber.cntOn(keys="a") == 4
+
+        assert list(onsuber.getTopItemIter()) == [
+            (("a",), 0, w), (("a",), 1, x), (("a",), 2, y), (("a",), 3, z),
+        ]
+        assert list(onsuber.getAllItemIter()) == [
+            (("a",), 0, w), (("a",), 1, x), (("a",), 2, y), (("a",), 3, z),
+        ]
+        assert list(onsuber.getAllItemIter(keys="a", on=2)) == [
+            (("a",), 2, y), (("a",), 3, z),
+        ]
+        assert list(onsuber.getAllIter()) == [w, x, y, z]
+        assert list(onsuber.getAllIter(keys="a", on=2)) == [y, z]
+
+        assert onsuber.appendOn(keys=("b",), val=w) == 0
+        assert onsuber.appendOn(keys=("b",), val=x) == 1
+        assert onsuber.appendOn(keys=("bc",), val=y) == 0
+        assert onsuber.appendOn(keys=("ac",), val=z) == 0
+
+        assert onsuber.cntOnAll(keys=("b",)) == 2
+        assert onsuber.cntOnAll(keys="") == 8
+
+        assert list(onsuber.getTopItemIter(keys="b")) == [
+            (("b",), 0, w), (("b",), 1, x), (("bc",), 0, y),
+        ]
+        assert list(onsuber.getAllItemIter(keys="b")) == [
+            (("b",), 0, w), (("b",), 1, x),
+        ]
+        assert list(onsuber.getAllItemIter(keys=("b", ""))) == []
+
+        assert onsuber.remOn(keys="a", on=1) is True
+        assert onsuber.remOn(keys="a", on=1) is False
+        assert onsuber.remOn(keys="a", on=3) is True
+        assert onsuber.cntOnAll(keys=("a",)) == 2
+        assert onsuber.cntOnAll() == 6
+
+        assert onsuber.putOn(keys="d", on=0, val="moon") is True
+        assert onsuber.getOn(keys="d", on=0) == "moon"
+        assert onsuber.getOnItem(keys="d", on=0) == (("d",), 0, "moon")
+        assert onsuber.putOn(keys="d", on=0, val="moon") is False
+        assert onsuber.pinOn(keys="d", on=0, val="sun") is True
+        assert onsuber.getOn(keys="d", on=0) == "sun"
+        assert onsuber.remOn(keys="d", on=0) is True
+        assert onsuber.getOn(keys="d", on=0) is None
+
+        assert onsuber.putOn(keys="d", on=0, val="moon") is True
+        assert onsuber.putOn(keys="d", on=1, val="sun") is True
+        assert onsuber.putOn(keys="d", on=2, val="stars") is True
+        assert onsuber.putOn(keys="e", on=0, val="stars") is True
+        assert onsuber.putOn(keys="e", on=1, val="moon") is True
+        assert onsuber.putOn(keys="e", on=2, val="sun") is True
+
+        assert onsuber.remOnAll(keys="d", on=1) is True
+        assert onsuber.cntOnAll(keys="d") == 1
+        assert onsuber.remOnAll(keys="d") is True
+        assert onsuber.cntOnAll(keys="d") == 0
+        assert onsuber.remOnAll() is True
+        assert onsuber.cntOnAll() == 0
+
+    asyncio.run(_go())
+
+
+@needskeri
+def test_komer_contract():
+    """Test Komer wrapper operating against WebDBer."""
+    async def _go():
+        backend = FakeStorageBackend()
+
+        @dataclass
+        class Record:
+            first: str
+            last: str
+            street: str
+            city: str
+            state: str
+            zip: int
+
+            def __iter__(self):
+                return iter(asdict(self))
+
+        dber, _ = await _open_fake_dber(
+            name="komer-contract", stores=["records."],
+            clear=True, backend=backend,
+        )
+
+        mydb = koming.Komer(db=dber, klas=Record, subkey="records.")
+        assert mydb.sdb.flags()["dupsort"] is False
+        assert mydb.sep == mydb.Sep == "."
+
+        sue = Record(first="Susan", last="Black", street="100 Main Street",
+                     city="Riverton", state="UT", zip=84058)
+        kip = Record(first="Kip", last="Thorne", street="200 Center Street",
+                     city="Bluffdale", state="UT", zip=84043)
+        bob = Record(first="Bob", last="Brown", street="100 Center Street",
+                     city="Bluffdale", state="UT", zip=84043)
+
+        keys = ("test_key", "0001")
+        key = mydb._tokey(keys)
+        assert key == b"test_key.0001"
+        assert mydb._tokeys(key) == keys
+
+        assert mydb.put(keys=keys, val=sue) is True
+        assert mydb.get(keys=keys) == sue
+        assert mydb.put(keys=keys, val=kip) is False
+        assert mydb.getDict(keys=keys) == asdict(sue)
+
+        assert mydb.pin(keys=keys, val=kip) is True
+        assert mydb.get(keys=keys) == kip
+
+        assert mydb.rem(keys) is True
+        assert mydb.get(keys=keys) is None
+
+        assert mydb.put(keys="keystr", val=bob) is True
+        assert mydb.get(keys="keystr") == bob
+        assert mydb.pin(keys="keystr", val=sue) is True
+        assert mydb.get(keys="keystr") == sue
+
+        assert mydb.pin(keys=("persist", "0001"), val=kip) is True
+        assert await dber.flush() == 1
+
+        reopened, _ = await _open_fake_dber(
+            name="komer-contract", stores=["records."], backend=backend,
+        )
+        reloaded = koming.Komer(db=reopened, klas=Record, subkey="records.")
+        assert reloaded.get(keys="keystr") == sue
+        assert reloaded.get(keys=("persist", "0001")) == kip
+
+    asyncio.run(_go())
+
+
+@needskeri
+def test_komer_iter_and_trim():
+    """Test Komer getTopItemIter and trim."""
+    async def _go():
+        @dataclass
+        class Stuff:
+            a: str
+            b: str
+
+            def __iter__(self):
+                return iter(asdict(self))
+
+        dber, _ = await _open_fake_dber(
+            name="komer-items", stores=["recs."], clear=True,
+        )
+        mydb = koming.Komer(db=dber, klas=Stuff, subkey="recs.")
+
+        w = Stuff(a="Big", b="Blue")
+        x = Stuff(a="Tall", b="Red")
+        y = Stuff(a="Fat", b="Green")
+        z = Stuff(a="Eat", b="White")
+
+        assert mydb.put(keys=("a", "1"), val=w) is True
+        assert mydb.put(keys=("a", "2"), val=x) is True
+        assert mydb.put(keys=("a", "3"), val=y) is True
+        assert mydb.put(keys=("a", "4"), val=z) is True
+        assert mydb.put(keys=("b", "1"), val=w) is True
+        assert mydb.put(keys=("b", "2"), val=x) is True
+        assert mydb.put(keys=("bc", "3"), val=y) is True
+        assert mydb.put(keys=("bc", "4"), val=z) is True
+
+        assert [(k, asdict(d)) for k, d in mydb.getTopItemIter(keys=("b", ""))] == [
+            (("b", "1"), {"a": "Big", "b": "Blue"}),
+            (("b", "2"), {"a": "Tall", "b": "Red"}),
+        ]
+
+        assert mydb.cnt() == 8
+        assert mydb.trim(keys=("b", "")) is True
+        assert mydb.cnt() == 6
+        assert mydb.trim() is True
+        assert list(mydb.getTopItemIter()) == []
+
+    asyncio.run(_go())
+
+
+@needskeri
+def test_komer_serialization():
+    """Test Komer klas validation and custom serializers."""
+    async def _go():
+        from keri.core.coring import Kinds
+
+        backend = FakeStorageBackend()
+
+        @dataclass
+        class Record:
+            first: str
+            last: str
+            street: str
+            city: str
+            state: str
+            zip: int
+
+            def __iter__(self):
+                return iter(asdict(self))
+
+        @dataclass
+        class AnotherClass:
+            age: int
+
+        @dataclass
+        class CustomRecord:
+            first: str
+            last: str
+            street: str
+            city: str
+            state: str
+            zip: int
+
+            @staticmethod
+            def _der(d):
+                name = d["name"].split()
+                city, state, zip_code = d["address2"].split()
+                return CustomRecord(
+                    first=name[0], last=name[1], street=d["address1"],
+                    city=city, state=state, zip=int(zip_code, 10),
+                )
+
+            def _ser(self):
+                return {
+                    "name": f"{self.first} {self.last}",
+                    "address1": self.street,
+                    "address2": f"{self.city} {self.state} {self.zip}",
+                }
+
+        dber, _ = await _open_fake_dber(
+            name="komer-serde", stores=["records.", "custom."],
+            clear=True, backend=backend,
+        )
+
+        records = koming.Komer(db=dber, klas=Record, subkey="records.")
+        invalid = koming.Komer(db=dber, klas=AnotherClass, subkey="records.")
+        custom = koming.Komer(db=dber, klas=CustomRecord, subkey="custom.")
+
+        sue = Record(first="Susan", last="Black", street="100 Main Street",
+                     city="Riverton", state="UT", zip=84058)
+        keys = ("test_key", "0001")
+
+        with pytest.raises(ValueError):
+            invalid.put(keys=keys, val=sue)
+
+        assert records.put(keys=keys, val=sue) is True
+
+        with pytest.raises(ValueError):
+            invalid.get(keys)
+
+        jim = Record(first="Jim", last="Black", street="100 Main Street",
+                     city="Riverton", state="UT", zip=84058)
+
+        mgpk = b"\x86\xa5first\xa3Jim\xa4last\xa5Black\xa6street\xaf100 Main Street\xa4city\xa8Riverton\xa5state\xa2UT\xa3zip\xce\x00\x01HZ"
+        cbor = b"\xa6efirstcJimdlasteBlackfstreeto100 Main StreetdcityhRivertonestatebUTczip\x1a\x00\x01HZ"
+        jsn = b'{"first":"Jim","last":"Black","street":"100 Main Street","city":"Riverton","state":"UT","zip":84058}'
+        jsn_pretty = b'{"first": "Jim", "last": "Black", "street": "100 Main Street", "city": "Riverton", "state": "UT", "zip": 84058}'
+
+        assert records._serializer(Kinds.json)(jim) == jsn
+        assert records._serializer(Kinds.mgpk)(jim) == mgpk
+        assert records._serializer(Kinds.cbor)(jim) == cbor
+        assert records._deserializer(Kinds.mgpk)(mgpk) == jim
+        assert records._deserializer(Kinds.cbor)(cbor) == jim
+        assert records._deserializer(Kinds.json)(jsn_pretty) == jim
+
+        custom_keys = ("custom", "0001")
+        custom_jim = CustomRecord(first="Jim", last="Black",
+                                  street="100 Main Street",
+                                  city="Riverton", state="UT", zip=84058)
+        assert custom.put(keys=custom_keys, val=custom_jim) is True
+        assert custom.get(keys=custom_keys) == custom_jim
+        assert dber.getVal(custom.sdb, custom._tokey(custom_keys)) == (
+            b'{"name":"Jim Black","address1":"100 Main Street","address2":"Riverton UT 84058"}'
+        )
+
+        assert await dber.flush() == 2
+
+        reopened, _ = await _open_fake_dber(
+            name="komer-serde", stores=["records.", "custom."],
+            backend=backend,
+        )
+        reloaded = koming.Komer(db=reopened, klas=CustomRecord, subkey="custom.")
+        assert reloaded.get(keys=custom_keys) == custom_jim
+
+    asyncio.run(_go())
