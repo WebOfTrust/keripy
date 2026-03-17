@@ -1,6 +1,6 @@
 from dataclasses import dataclass, field, asdict
 
-from .. import koming, basing
+from .. import koming
 from ...recording import HabitatRecord
 
 
