@@ -2435,7 +2435,6 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
             assert cue['sn'] == 0
             kvy.cues.clear()
 
-<<<<<<< feature-aid-kram
 
 def test_aid_allow_deny(mockHelpingNowUTC):
     """
@@ -2471,55 +2470,12 @@ def test_aid_allow_deny(mockHelpingNowUTC):
         denySenderIcp = denyHab.makeOwnEvent(sn=0)
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(denySenderIcp), kvy=crossKvy)
         assert denyHab.pre in crossKvy.kevers
-=======
-def test_pruning_messages_single_key(fakeHelpingClock):
-    """
-    Test pruning behavior for single-key sender messages.
-    
-    Covers: pruning of messages with different timestamps, ensuring pruning is 
-    based on each message's own timestamp and not affected by other messages from the same sender.
-
-    Steps:
-    - accept a message
-    - accept a message from the same sender with a later timestamp
-    - Advance time to trigger pruning for the 1st message, assert 2nd message is still cached
-    - Advance time to trigger pruning for the 2nd message
-    """
-    
-    # Instantiate Clock
-    clock = fakeHelpingClock
-
-    # Assert the clock
-    assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
-
-    # Setup sender/receiver
-    salt_sender = core.Salter(raw=b'0123456789abcdef').qb64
-    salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
-
-    with (habbing.openHby(name="sender", base="test", salt=salt_sender) as senderHby,
-          habbing.openHby(name="receiver", base="test", salt=salt_receiver) as receiverHby):
-
-        # Create transferable single-key sender
-        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True)
-        
-        # Create receiver hab
-        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True)
-
-        # Load sender's ICP into receiver
-        cross = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
-
-        senderIcp = senderHab.makeOwnEvent(sn=0)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
-        assert senderHab.pre in cross.kevers
->>>>>>> main
 
         # Create Kramer with config
         with configing.openCF(name="kram", base="test") as cf:
             cf.put(KRAM_INTEGRATION_CONFIG)
             kramer = Kramer(db=receiverHby.db, cf=cf)
             assert kramer.enabled
-
-<<<<<<< feature-aid-kram
             # Create Kevery with kramer for KRAM testing
             kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False,
                                   kramer=kramer)
@@ -2596,7 +2552,54 @@ def test_pruning_messages_single_key(fakeHelpingClock):
 
             # Assert cache was created
             assert receiverHby.db.kramMSGC.get(keys=(denyHab.pre, msg.said)) is not None
-=======
+
+
+def test_pruning_messages_single_key(fakeHelpingClock):
+    """
+    Test pruning behavior for single-key sender messages.
+    
+    Covers: pruning of messages with different timestamps, ensuring pruning is 
+    based on each message's own timestamp and not affected by other messages from the same sender.
+
+    Steps:
+    - accept a message
+    - accept a message from the same sender with a later timestamp
+    - Advance time to trigger pruning for the 1st message, assert 2nd message is still cached
+    - Advance time to trigger pruning for the 2nd message
+    """
+    
+    # Instantiate Clock
+    clock = fakeHelpingClock
+
+    # Assert the clock
+    assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
+
+    # Setup sender/receiver
+    salt_sender = core.Salter(raw=b'0123456789abcdef').qb64
+    salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
+
+    with (habbing.openHby(name="sender", base="test", salt=salt_sender) as senderHby,
+          habbing.openHby(name="receiver", base="test", salt=salt_receiver) as receiverHby):
+
+        # Create transferable single-key sender
+        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True)
+        
+        # Create receiver hab
+        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True)
+
+        # Load sender's ICP into receiver
+        cross = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+
+        senderIcp = senderHab.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
+        assert senderHab.pre in cross.kevers
+
+        # Create Kramer with config
+        with configing.openCF(name="kram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+            assert kramer.enabled
+           
             # Create Kevery 
             kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
 
@@ -3224,4 +3227,3 @@ def test_pruning_exchanges(fakeHelpingClock):
 
             # Second Cache is also pruned because it belongs to the same exchange
             assert receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn2.said)) is None
->>>>>>> main
