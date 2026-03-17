@@ -623,7 +623,8 @@ class LMDBer(filing.Filer):
 
 
     def getTopItemIter(self, db, top=b''):
-        """Iterates over branch of db given by top key
+        """Iterates over branch of db given by top key. When top is empty then
+        iterates over whole db.
 
         Works for both dupsort==False and dupsort==True
         Because cursor.iternext() advances cursor after returning item its safe
@@ -1040,10 +1041,10 @@ class LMDBer(filing.Filer):
 
     def getOnTopItemIter(self, db, top=b'', *, sep=b'.'):
         """Iterates over top branch of all entries where each top key startwith
-        top.
+        top. When top key is empty, gets all items in database.
         Assumes every effective key in db has trailing on element,
         onkey = key + sep + on, so can return on in item.
-        When top key is empty, gets all items in database.
+
 
         Returns:
             items (Iterator[(tuple, int, bytes)]): iterator of triples
@@ -1432,8 +1433,8 @@ class LMDBer(filing.Filer):
 
     def getTopIoSetItemIter(self, db, top=b'', *, sep=b'.'):
         """Iterates over top branch of all insertion ordered set values where each
-            effective key has hidden suffix of serialization of insertion
-            ordering ordinal ion.
+        effective key has hidden suffix of serialization of insertion
+        ordering ordinal ion. When top is empty then iterates over whole db.
 
         Uses hidden ordinal key suffix for insertion ordering.
             The suffix is suffixed and unsuffixed transparently.
@@ -1935,10 +1936,10 @@ class LMDBer(filing.Filer):
 
     def getOnTopIoSetItemIter(self, db, top=b'', *, sep=b'.'):
         """Iterates over top branch of all insertion ordered set values where
-        each key startwith top.
+        each key startwith top. When top is empty then iterates over whole db.
         Assumes every effective key in db has trailing on element,
         onkey = key + sep + on, so can return on in item.
-        Also assumes every effective key includes hiddion isertion ordinal ion
+        Also assumes every effective key includes hiddion insertion ordinal ion
         suffix that is suffixed and unsuffixed transparently.
 
         Items are triples of (keys, on, val)
@@ -3271,7 +3272,68 @@ class LMDBer(filing.Filer):
                 yield (ckey, on, cval[33:])
 
 
-    # used in OnIoDupSuber
+    def getOnTopIoDupItemIter(self, db, top=b'', *, sep=b'.'):
+        """Iterates over top branch of all insertion ordered set values where
+        each key startwith top. When top is empty then iterates over whole db.
+        Assumes every effective key in db has trailing on element,
+        onkey = key + sep + on, so can return on in item.
+        Also assumes every value includes hiddion insertion ordinal ion proem
+        that is prepended and stripped transparently.
+
+        Items are triples of (key, on, val)
+
+        when key is empty then retrieves whole db
+
+        Raises StopIteration Error when empty.
+
+        Returns:
+            items (Iterator[(key, on, val)]): triples of key, on, val
+
+        Parameters:
+            db (subdb): named sub db in lmdb
+            key (bytes): key within sub db's keyspace plus trailing part on
+                when key is empty then retrieves whole db
+            sep (bytes): separator character for split
+
+        Uses python .startswith to match which always returns True if top is
+        empty string so empty will matches all keys in db.
+
+        Uses hidden ordinal value proem for insertion ordering which is
+        transparently prepended and stripped
+        Assumes DB opened with dupsort=True
+        """
+        for key, on, val in self.getOnTopItemIter(db=db, top=top, sep=sep):
+            val = val[33:] # strip proem
+            yield (key, on, val)
+
+
+    def getOnIoDupItemIterAll(self, db, key=b'', on=0, *, sep=b'.'):
+        """Returns iterator of triples (key, on, val), at each key over all ordinal
+        numbered keys starting at key + sep + on for all on >= on but same key
+        in db. Values are sorted by
+        onKey(key, on) where on is ordinal number int and key is prefix sans on.
+        Values duplicates are sorted internally by hidden prefixed insertion order
+        proem ordinal
+        Returned items are triples of (key, on, val)
+        when key is empty then retrieves whole db
+
+        Raises StopIteration Error when empty.
+
+        Returns:
+            items (Iterator[(key, on, val)]): triples of key, on, val
+
+        Parameters:
+            db (subdb): named sub db in lmdb
+            key (bytes): key within sub db's keyspace plus trailing part on
+                when key is empty then retrieves whole db
+            on (int): ordinal number at which to initiate retrieval
+            sep (bytes): separator character for split
+        """
+        for key, on, val in self.getOnAllItemIter(db=db, key=key, on=on, sep=sep):
+            val = val[33:] # strip proem
+            yield (key, on, val)
+
+
     def getOnIoDupIterAll(self, db, key=b'', on=0, *, sep=b'.'):
         """
         Returns iterator of val at each key over all ordinal
@@ -3299,34 +3361,5 @@ class LMDBer(filing.Filer):
         """
         for key, on, val in self.getOnIoDupItemIterAll(db=db, key=key, on=on, sep=sep):
             yield (val)
-
-
-    # used in OnIoDupSuber
-    def getOnIoDupItemIterAll(self, db, key=b'', on=0, *, sep=b'.'):
-        """Returns iterator of triples (key, on, val), at each key over all ordinal
-        numbered keys starting at key + sep + on for all on >= on but same key
-        in db. Values are sorted by
-        onKey(key, on) where on is ordinal number int and key is prefix sans on.
-        Values duplicates are sorted internally by hidden prefixed insertion order
-        proem ordinal
-        Returned items are triples of (key, on, val)
-        when key is empty then retrieves whole db
-
-        Raises StopIteration Error when empty.
-
-        Returns:
-            items (Iterator[(key, on, val)]): triples of key, on, val
-
-        Parameters:
-            db (subdb): named sub db in lmdb
-            key (bytes): key within sub db's keyspace plus trailing part on
-                when key is empty then retrieves whole db
-            on (int): ordinal number at which to initiate retrieval
-            sep (bytes): separator character for split
-        """
-        for key, on, val in self.getOnAllItemIter(db=db, key=key, on=on, sep=sep):
-            val = val[33:] # strip proem
-            yield (key, on, val)
-
 
     # ToDo do we need a replay last backwards?
