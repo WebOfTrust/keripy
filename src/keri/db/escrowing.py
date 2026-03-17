@@ -60,7 +60,7 @@ class Broker:
 
         # RegStateRecords used as basis for registry state notices in replies
         #self.rsrdb = koming.Komer(db=self.db,
-                                   #schema=viring.RegStateRecord,
+                                   #klas=RegStateRecord,
                                    #subkey=subkey + '-sns.')
 
         # all key state ksgs (ksn indexed signature serializations) maps ksn quadkeys

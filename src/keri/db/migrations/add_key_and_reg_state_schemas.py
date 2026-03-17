@@ -3,7 +3,7 @@ from keri.core import coring
 from .. import koming, subing, dbing
 from keri.kering import ConfigurationError, Version
 from ...recording import KeyStateRecord, StateEERecord
-from keri.vdr import viring
+from keri.vdr import Reger, RegStateRecord
 
 logger = help.ogler.getLogger()
 
@@ -74,14 +74,14 @@ def migrate(db):
 
             nstates.pin(keys=keys, val=ksr)
 
-        rgy = viring.Reger(name=db.name, base=db.base, db=db, temp=db.temp, reopen=True)
+        rgy = Reger(name=db.name, base=db.base, db=db, temp=db.temp, reopen=True)
 
         rstates = koming.Komer(db=rgy,
                                klas=dict,
                                subkey='stts.')
 
         for _, sad in rstates.getTopItemIter():
-            rsr = viring.RegStateRecord(
+            rsr = RegStateRecord(
                 vn=list(Version),  # version number as list [major, minor]
                 i=sad['i'],  # qb64 registry SAID
                 s=sad['s'],  # lowercase hex string no leading zeros

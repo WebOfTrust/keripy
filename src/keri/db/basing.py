@@ -49,10 +49,7 @@ class komerdict(dict):
 
     add method that answers is a given pre a group hab pre .localGroup(pre)
 
-    ToDo XXXX change name of dbdict to stateDict since now have differen types
-    and can't subclass dict with init parameters.
-    but can change function by manually assigning attributes but that is ugly
-    need wrapper decorator to do that. So can update attributes with wrapper
+    Todo add wrapper decorator to update attributes
     on class that injects instance attributes when class is instanced
     one of the injected parameters is function that that maps returned Komer to
     object class
@@ -1417,28 +1414,13 @@ class Baser(dbing.LMDBer):
         """
         Clear all escrows
         """
-        for (k, _) in self.ures.getTopItemIter():
-            self.ures.rem(keys=k)
-        for (k, _) in self.vres.getTopItemIter():
-            self.vres.rem(keys=k)
-        for (pre, on, dig) in self.pses.getOnItemIterAll():
-            self.pses.remOn(keys=pre, on=on, val=dig)
-        for (pre, sn, dig) in self.pwes.getOnItemIterAll():
-            pre = pre[0]
-            dig = dig.encode("utf-8")
-            self.pwes.remOn(keys=pre, on=sn, val=dig)
-        for (pre, on, dig) in self.ooes.getOnItemIterAll():
-            self.ooes.remOn(keys=pre, on=on, val=dig)
-        for (pre, said), edig in self.qnfs.getTopItemIter():
-            self.qnfs.rem(keys=(pre, said))
-        for (pre, snh), rdigerWigerTuple in self.uwes.getTopItemIter():
-            self.uwes.rem(keys=(pre, snh))
-
-        for escrow in [self.qnfs, self.misfits, self.delegables, self.pdes,
+        for escrow in [self.ures, self.vres, self.pses, self.pwes, self.ooes,
+                       self.qnfs, self.uwes,
+                       self.qnfs, self.misfits, self.delegables, self.pdes,
                        self.udes, self.rpes, self.ldes, self.epsd, self.eoobi,
                        self.dpub, self.gpwe, self.gdee, self.dpwe, self.gpse,
                        self.epse, self.dune]:
-            count = escrow.cnt()
+            count = escrow.cntAll()
             escrow.trim()
             logger.info(f"KEL: Cleared {count} escrows from ({escrow}")
 
@@ -1639,7 +1621,7 @@ class Baser(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for keys, fn, dig in self.fels.getOnItemIterAll(keys=pre, on=fn):
+        for keys, fn, dig in self.fels.getAllItemIter(keys=pre, on=fn):
             try:
                 msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig)
             except Exception:
@@ -1659,7 +1641,7 @@ class Baser(dbing.LMDBer):
            msgs (Iterator): over all items in db
 
         """
-        for keys, fn, dig in self.fels.getOnItemIterAll(keys=b'', on=0):
+        for keys, fn, dig in self.fels.getAllItemIter(keys=b'', on=0):
             pre = keys[0].encode() if isinstance(keys[0], str) else keys[0]
             try:
                 msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig)
@@ -1970,7 +1952,7 @@ class Baser(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for dig in self.kels.getOnIterAll(keys=pre, on=sn):
+        for dig in self.kels.getAllIter(keys=pre, on=sn):
             try:
                 if not (serder := self.evts.get(keys=(pre, dig))):
                     raise kering.MissingEntryError("Missing event for dig={}.".format(dig))

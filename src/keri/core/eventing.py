@@ -5645,7 +5645,7 @@ class Kevery:
                         Process event as if it came in over the wire
                         If successful then remove from escrow table
         """
-        for pre, sn, edig in self.db.ooes.getOnItemIterAll():
+        for pre, sn, edig in self.db.ooes.getAllItemIter():
 
             if isinstance(pre, (tuple, list)):
                 pre = pre[0]
@@ -5772,7 +5772,7 @@ class Kevery:
 
         #key = ekey = b''  # both start same. when not same means escrows found
         #while True:  # break when done
-        for pre, sn, edig in self.db.pses.getOnItemIterAll():
+        for pre, sn, edig in self.db.pses.getAllItemIter():
             eserder = None
             try:
                 if isinstance(pre, (tuple, list)):
@@ -5926,7 +5926,7 @@ class Kevery:
                         Process event as if it came in over the wire
                         If successful then remove from escrow table
         """
-        for pre, sn, edig in self.db.pwes.getOnItemIterAll(keys=b''):
+        for pre, sn, edig in self.db.pwes.getAllItemIter(keys=b''):
             try:
                 if isinstance(pre, (tuple, list)):
                     pre = pre[0]
@@ -6068,7 +6068,7 @@ class Kevery:
                         If successful then remove from escrow table
         """
 
-        for (epre,), esn, edig in self.db.pdes.getOnItemIterAll(keys=b''):
+        for (epre,), esn, edig in self.db.pdes.getAllItemIter(keys=b''):
             try:
                 dgkey = dgKey(epre, edig)
                 if not (esr := self.db.esrs.get(keys=dgkey)):  # get event source, otherwise error
@@ -6161,7 +6161,7 @@ class Kevery:
                 # with respect to processing events that result in escrow items.
                 # On re-escrow attempt by process, Pses escrow is called by
                 # Kever.self.escrowPDEvent Which calls
-                # self.db.pdes.add(snKey(pre, sn), serder.digb)
+                # self.db.pdes.addOn(pre, sn, serder.digb)
                 # which in turn will NOT enter dig as dup if one already exists.
                 # So re-escrow attempt will not change the escrows in db.pdes.
                 # Non re-escrow ValidationError means some other issue so unescrow.
@@ -6245,16 +6245,16 @@ class Kevery:
                         verify wigs via wigers
                         If successful then remove from escrow table
         """
-
-        for (pre, snh), (rdiger, wiger) in self.db.uwes.getTopItemIter():
+        #for (pre, snh), (rdiger, wiger) in self.db.uwes.getTopItemIter():
+        for (pre, ), sn, (rdig, wig) in self.db.uwes.getTopItemIter():
             try:
-                rdigerBytes = rdiger.encode('utf-8')
+                #rdigerBytes = rdig.encode('utf-8')
                 # check date if expired then remove escrow.
-                dater = self.db.dtss.get(keys=dgKey(pre, bytes(rdigerBytes)))
+                dater = self.db.dtss.get(keys=dgKey(pre, rdig))
                 if dater is None:  # no datetime stored
                     # no date time so raise ValidationError which unescrows below
-                    msg = f"UWE Missing escrowed event datetime at dig = {rdiger.qb64b}"
-                    logger.trace("Kevery unescrow error: %s", rdiger.qb64b)
+                    msg = f"UWE Missing escrowed event datetime at dig = {rdig}"
+                    logger.trace("Kevery unescrow error: %s", rdig)
                     raise ValidationError(msg)
 
                 # do date math here and discard if stale
@@ -6262,23 +6262,23 @@ class Kevery:
                 dte = dater.datetime
                 if (dtnow - dte) > datetime.timedelta(seconds=self.TimeoutUWE):
                     # escrow stale so raise ValidationError which unescrows below
-                    msg = f"UWE Stale event escrow at dig = {rdiger.qb64b}"
-                    logger.trace("Kevery unescrow error: %s", rdiger.qb64b)
+                    msg = f"UWE Stale event escrow at dig = {rdig}"
+                    logger.trace("Kevery unescrow error: %s", rdig)
                     raise ValidationError(msg)
 
                 # lookup database dig of the receipted event in pwes escrow
                 # using pre and sn lastEvt
-                sn = int(snh, 16)
-                rdigerClassed = Diger(qb64=rdiger)
-                wigerClassed = Siger(qb64=wiger)
+                #sn = int(snh, 16)
+                rdiger = Diger(qb64=rdig)
+                wiger = Siger(qb64=wig)
                 found = self._processEscrowFindUnver(pre=pre,
                                                      sn=sn,
-                                                     rsaider=rdigerClassed,
-                                                     wiger=wigerClassed)
+                                                     rsaider=rdiger,
+                                                     wiger=wiger)
 
                 if not found:  # no partial witness escrow of event found
                     # so keep in escrow by raising UnverifiedWitnessReceiptError
-                    msg = f"UWE Missing witness receipted evt at pre={pre}  sn={sn:x}"
+                    msg = f"UWE Missing witness receipted evt at pre={pre} {sn=}"
                     logger.trace("Kevery unescrow error: %s", msg)
                     raise UnverifiedWitnessReceiptError(msg)
 
@@ -6292,7 +6292,7 @@ class Kevery:
 
             except Exception as ex:  # log diagnostics errors etc
                 # error other than out of order so remove from OO escrow
-                self.db.uwes.rem(keys=(pre, snh), val=(rdiger, wiger))
+                self.db.uwes.remOn(keys=(pre,), on=sn, val=(rdig, wig))
                 if logger.isEnabledFor(logging.DEBUG):  # adds exception data
                     logger.trace("Kevery: UWE other unescrow error: %s\n", ex.args[0])
                     logger.exception("Kevery: UWE other unescrow error: %s\n", ex.args[0])
@@ -6301,7 +6301,7 @@ class Kevery:
                 # We don't remove all escrows at pre,sn because some might be
                 # duplicitous so we process remaining escrows in spite of found
                 # valid event escrow.
-                self.db.uwes.rem(keys=(pre, snh), val=(rdiger, wiger))
+                self.db.uwes.remOn(keys=(pre,), on=sn, val=(rdig, wig))
                 logger.info("Kevery UWE unescrow succeeded for event pre=%s sn=%s", pre, sn)
 
     def processEscrowUnverNonTrans(self):
@@ -6971,7 +6971,7 @@ class Kevery:
         """
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
-            for (pre,), sn, edig in self.db.ldes.getOnItemIterAll(keys=key):
+            for (pre,), sn, edig in self.db.ldes.getAllItemIter(keys=key):
                 try:
                     # pre and sn are already unpacked
                     ekey = snKey(pre, sn)

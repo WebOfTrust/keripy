@@ -15,7 +15,7 @@ from ...common.parsing import Parsery
 
 from .... import help, ConfigurationError
 from ....core import eventing
-from ....vdr import viring
+from ....vdr import Reger
 
 
 logger = help.ogler.getLogger()
@@ -47,14 +47,14 @@ def escrows(tymth, tock=0.0, **opts):
 
     try:
         with existing.existingHby(name=name, base=base, bran=bran) as hby:
-            reger = viring.Reger(name=hby.name, db=hby.db, temp=False)
+            reger = Reger(name=hby.name, db=hby.db, temp=False)
 
             escrows = dict()
             if (not escrow) or escrow == "out-of-order-events":
                 oots = list()
                 key = ekey = b""  # both start same. when not same means escrows found
                 while True:
-                    for pre, sn, edig in hby.db.ooes.getOnItemIterAll(keys=key):
+                    for pre, sn, edig in hby.db.ooes.getAllItemIter(keys=key):
                         try:
                             oots.append(eventing.loadEvent(hby.db, pre, edig))
                         except ValueError as e:
@@ -72,7 +72,7 @@ def escrows(tymth, tock=0.0, **opts):
                 pwes = list()
                 key = ekey = b""  # both start same. when not same means escrows found
                 while True:  # break when done
-                    for pre, sn, edig in hby.db.pwes.getOnItemIterAll(keys=key):
+                    for pre, sn, edig in hby.db.pwes.getAllItemIter(keys=key):
                         try:
                             pwes.append(eventing.loadEvent(hby.db, pre, edig))
                         except ValueError as e:
@@ -90,7 +90,7 @@ def escrows(tymth, tock=0.0, **opts):
                 pses = list()
                 key = ekey = b""  # both start same. when not same means escrows found
                 while True:  # break when done
-                    for pre, sn, edig in hby.db.pses.getOnItemIterAll(keys=key):
+                    for pre, sn, edig in hby.db.pses.getAllItemIter(keys=key):
                         try:
                             pses.append(eventing.loadEvent(hby.db, pre, edig))
                         except ValueError as e:
@@ -106,7 +106,7 @@ def escrows(tymth, tock=0.0, **opts):
 
             if (not escrow) or escrow == "likely-duplicitous-events":
                 ldes = list()
-                for (pre,), sn, edig in hby.db.ldes.getOnItemIterAll(keys=b""):
+                for (pre,), sn, edig in hby.db.ldes.getAllItemIter(keys=b""):
                     if hasattr(edig, "encode"):
                         edig = edig.encode("utf-8")  # Suber returns str, loadEvent expects bytes
 
@@ -119,7 +119,7 @@ def escrows(tymth, tock=0.0, **opts):
 
             if (not escrow) or escrow == "partially-delegated-events":
                 pdes = list()
-                for pre, sn, edig in hby.db.pdes.getOnItemIterAll():
+                for pre, sn, edig in hby.db.pdes.getAllItemIter():
                     try:
                         pdes.append(eventing.loadEvent(hby.db, pre, edig))
                     except ValueError:
