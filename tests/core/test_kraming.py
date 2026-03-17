@@ -969,69 +969,14 @@ def test_asr(mockHelpingNowUTC):
             assert cache is not None  # accepted via sig fallback
             assert cache.ml == 5000  # short lag (assk)
 
-    """Done Test"""
 
+            # Step 8: Valid seal (sscs) + valid sigs resolves to asr (seal takes priority)
 
-def test_both_attached(mockHelpingNowUTC):
-    """Test processMsg with both seal refs and sigs present.
-
-    Tests _resolveAuthType fallback logic:
-    - valid seal + valid sigs -> resolves to asr
-    - invalid seal + valid sigs (single-key) -> falls back to assk
-    - invalid seal + valid sigs (multi-key) -> falls back to asmk
-    - valid seal + invalid sigs -> resolves to asr (sigs irrelevant)
-    """
-
-    # Step 1: Setup
-
-    salt1 = core.Salter(raw=b'0123456789abcdef').qb64
-    salt2 = core.Salter(raw=b'0123456789abcdeg').qb64
-    salt3 = core.Salter(raw=b'0123456789abcdeh').qb64
-
-    with (habbing.openHby(name="sender", base="test", salt=salt1) as skHby,
-          habbing.openHby(name="mkSender", base="test", salt=salt2) as mkHby,
-          habbing.openHby(name="receiver", base="test", salt=salt3) as receiverHby):
-
-        # Create single-key sender
-        skHab = skHby.makeHab(name="sender", isith='1', icount=1,
-                              transferable=True)
-        # Create multi-key sender (2-of-3)
-        mkHab = mkHby.makeHab(name="mkSender", isith='2', icount=3,
-                              transferable=True)
-        # Create receiver hab for db context
-        receiverHby.makeHab(name="receiver", isith='1', icount=1,
-                            transferable=True)
-
-        # Cross-feed both senders to receiver
-        crossKvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
-
-        skIcp = skHab.makeOwnEvent(sn=0)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(skIcp), kvy=crossKvy)
-        assert skHab.pre in crossKvy.kevers
-
-        mkIcp = mkHab.makeOwnEvent(sn=0)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(mkIcp), kvy=crossKvy)
-        assert mkHab.pre in crossKvy.kevers
-
-        # Create Kramer + Kevery
-        with configing.openCF(name="kram", base="test") as cf:
-            cf.put(KRAM_INTEGRATION_CONFIG)
-            kramer = Kramer(db=receiverHby.db, cf=cf)
-            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False,
-                                  kramer=kramer)
-
-            stamp = helping.nowIso8601()
-            skPrefixer = coring.Prefixer(qb64=skHab.pre)
-            mkPrefixer = coring.Prefixer(qb64=mkHab.pre)
-
-
-            # Step 2: Valid seal + valid sigs (single-key) resolves to asr
-
-            msg = eventing.query(pre=skHab.pre,
-                                 route="ksn",
-                                 query=dict(i=skHab.pre, src=skHab.pre, n='4b'),
-                                 stamp=stamp,
-                                 pvrsn=Vrsn_2_0)
+            msg7 = eventing.query(pre=senderHab.pre,
+                                  route="ksn",
+                                  query=dict(i=senderHab.pre, src=senderHab.pre, n='4b'),
+                                  stamp=stamp,
+                                  pvrsn=Vrsn_2_0)
 
             # Anchor SAID in sender's KEL
             ixnMsg = senderHab.interact(data=[dict(d=msg7.said)])
