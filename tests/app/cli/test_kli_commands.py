@@ -312,3 +312,13 @@ def test_incept_and_rotate_opts(helpers, capsys):
     doers = args.handler(args)
 
     directing.runController(doers=doers)
+
+
+def test_create_parser_can_be_called_multiple_times():
+    parser = multicommand.create_parser(commands)
+    args = parser.parse_args(["escrow", "list", "--name", "test"])
+    assert args.handler is not None
+
+    parser = multicommand.create_parser(commands)
+    args = parser.parse_args(["escrow", "list", "--name", "test"])
+    assert args.handler is not None

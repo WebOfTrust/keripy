@@ -78,7 +78,7 @@ setup(
                         'multidict>=6.7.0',
                         'ordered-set>=4.1.0',
                         'hio>=0.7.19',
-                        'multicommand==1.0.0',
+                        'multicommand==2.0.1',
                         'jsonschema>=4.26.0',
                         'falcon>=4.2.0',
                         'hjson>=3.1.0',
