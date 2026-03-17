@@ -19,8 +19,65 @@ except ImportError:  # pragma: no cover
 
 from sortedcontainers import SortedDict
 
-from ..kering import MaxON
-from .dbing import onKey, splitOnKey
+# The following are necessary to define in this file 
+# to prevent non wasm compatible imports (importing from dbing)
+# MaxON, onKey, splitKey, splitOnKey
+
+MaxON = int("f"*32, 16)  # max ordinal number, same as kering.MaxON
+
+
+def onKey(top, on, *, sep=b'.'):
+    """
+    Returns:
+        onkey (bytes): key formed by joining top key and hex str conversion of
+                       int ordinal number on with sep character.
+
+    Parameters:
+        top (str | bytes): top key prefix to be joined with hex version of on using sep
+        on (int): ordinal number to be converted to 32 hex bytes
+        sep (bytes): separator character for join
+    """
+    if hasattr(top, "encode"):
+        top = top.encode("utf-8")
+    return (b'%s%s%032x' % (top, sep, on))
+
+
+def splitKey(key, sep=b'.'):
+    """
+    Returns duple of pre and either dig or on, sn, fn str or dts datetime str by
+    splitting key at bytes sep
+    Accepts either bytes or str key and returns same type
+    Raises ValueError if key does not split into exactly two elements
+
+    Parameters:
+       key is database key with split at sep
+       sep is bytes separator character. default is b'.'
+    """
+    if isinstance(key, memoryview):
+        key = bytes(key)
+    if hasattr(key, "encode"):  # str not bytes
+        if hasattr(sep, 'decode'):  # make sep match bytes or str
+            sep = sep.decode("utf-8")
+    else:
+        if hasattr(sep, 'encode'):  # make sep match bytes or str
+            sep = sep.encode("utf-8")
+    splits = key.rsplit(sep, 1)
+    if len(splits) != 2:
+        raise  ValueError(f"Unsplittable {key=} at {sep=}.")
+    return tuple(splits)
+
+
+def splitOnKey(key, *, sep=b'.'):
+    """
+    Returns list of pre and int on from key
+    Accepts either bytes or str key
+    ordinal number  appears in key in hex format
+    """
+    if isinstance(key, memoryview):
+        key = bytes(key)
+    top, on = splitKey(key, sep=sep)
+    on = int(on, 16)
+    return (top, on)
 
 
 _RECORDS_KEY = "__records__"
@@ -412,7 +469,7 @@ class WebDBer:
             ckey, cn = splitOnKey(ponkey, sep=sep)
             if ckey == key:
                 if cn >= MaxON:
-                    raise ValueError(f"Number part {cn=} for key part {key=}exceeds maximum size.")
+                    raise ValueError(f"Number part {cn=} for key part {key=} exceeds maximum size.")
                 on = cn + 1
             else:
                 on = 0

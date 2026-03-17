@@ -10,18 +10,40 @@ from typing import Any
 
 import pytest
 
-from keri.db import subing, koming
-from keri.db.dbing import onKey, splitOnKey
-from keri.db.webdbing import (
-    WebDBer,
-    _META_KEY,
-    _RECORDS_KEY,
-    _deserialize_meta,
-    _deserialize_records,
-    _serialize_meta,
-    _serialize_records,
-)
-from keri.db import webdbing as webdbing_module
+try:
+    from keri.db.webdbing import (
+        WebDBer,
+        _META_KEY,
+        _RECORDS_KEY,
+        _deserialize_meta,
+        _deserialize_records,
+        _serialize_meta,
+        _serialize_records,
+        onKey,
+        splitOnKey,
+    )
+    from keri.db import webdbing as webdbing_module
+except ImportError:
+    from webdbing import (  # standalone import for Pyodide
+        WebDBer,
+        _META_KEY,
+        _RECORDS_KEY,
+        _deserialize_meta,
+        _deserialize_records,
+        _serialize_meta,
+        _serialize_records,
+        onKey,
+        splitOnKey,
+    )
+    import webdbing as webdbing_module
+
+try:
+    from keri.db import subing, koming
+except ImportError:
+    subing = None
+    koming = None
+
+needskeri = pytest.mark.skipif(subing is None, reason="requires full keri (lmdb)")
 
 
 class FakeStorageHandle:
@@ -856,6 +878,7 @@ def test_webdber_core_contract():
     asyncio.run(_go())
 
 
+@needskeri
 def test_suber_contract():
     """Test Suber wrapper operating against WebDBer."""
     async def _go():
@@ -933,6 +956,7 @@ def test_suber_contract():
     asyncio.run(_go())
 
 
+@needskeri
 def test_on_suber_contract():
     """Test OnSuber wrapper operating against WebDBer."""
     async def _go():
@@ -1020,6 +1044,7 @@ def test_on_suber_contract():
     asyncio.run(_go())
 
 
+@needskeri
 def test_komer_contract():
     """Test Komer wrapper operating against WebDBer."""
     async def _go():
@@ -1087,6 +1112,7 @@ def test_komer_contract():
     asyncio.run(_go())
 
 
+@needskeri
 def test_komer_iter_and_trim():
     """Test Komer getTopItemIter and trim."""
     async def _go():
@@ -1131,6 +1157,7 @@ def test_komer_iter_and_trim():
     asyncio.run(_go())
 
 
+@needskeri
 def test_komer_serialization():
     """Test Komer klas validation and custom serializers."""
     async def _go():
