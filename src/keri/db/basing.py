@@ -724,40 +724,40 @@ class Baser(dbing.LMDBer):
             subkey 'maids.'
             Multiple values per key.
 
-        .ctyp is named subDB instance of Komer (schema=CacheTypeRecord) for
+        .kramCTYP is named subDB instance of Komer (schema=CacheTypeRecord) for
             KRAM cache type records. Maps expression string to drift and lag
             parameters.
             subkey 'ctyp.'
 
-        .msgc is named subDB instance of Komer (schema=MsgCacheRecord) for
+        .kramMSGC is named subDB instance of Komer (schema=MsgCacheRecord) for
             KRAM message cache. Maps (AID, MID) to message datetime, drift,
             and lag values.
             subkey 'msgc.'
 
-        .tmsc is named subDB instance of Komer (schema=TxnMsgCacheRecord) for
+        .kramTMSC is named subDB instance of Komer (schema=TxnMsgCacheRecord) for
             KRAM transactioned message cache. Maps (AID, XID, MID) to
             datetimes, drift, and lag values.
             subkey 'tmsc.'
 
-        .pmkm is named subDB instance of SerderSuber for KRAM partially signed
+        .kramPMKM is named subDB instance of SerderSuber for KRAM partially signed
             multi-key messages. Maps (AID, MID) key to the associated
             SerderKERI message.
             subkey 'pmkm.'
 
-        .pmks is named subDB instance of CesrIoSetSuber (klas=Siger) for
+        .kramPMKS is named subDB instance of CesrIoSetSuber (klas=Siger) for
             KRAM partially signed multi-key signatures. Maps (AID, MID) key
             to associated Siger instances.
             subkey 'pmks.'
             Multiple values per key.
 
-        .pmsk is named subDB instance of CatCesrSuber (klas=(Number, Diger))
+        .kramPMSK is named subDB instance of CatCesrSuber (klas=(Number, Diger))
             for KRAM partially signed multi-key sender key state records. Maps
             (AID, MID) key to (sn, event SAID) couple identifying the sender's
             key state.
             subkey 'pmsk.'
             Only one value per DB key is allowed.
 
-        .trqs is named subDB instance of CatCesrIoSetSuber for KRAM partially
+        .kramTRQS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key trans receipt quadruple attachments.
             subkey 'trqs.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
@@ -766,8 +766,9 @@ class Baser(dbing.LMDBer):
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
 
-        .tsgs is named subDB instance of CatCesrIoSetSuber for KRAM partially
-            signed multi-key trans last sig group attachments.
+        .kramTSGS is named subDB instance of CatCesrIoSetSuber for KRAM partially
+            signed multi-key trans last sig group attachments. Each group is
+            stored per-siger as a flat (Prefixer, Seqner, Saider, Siger) tuple.
             subkey 'tsgs.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
             Value is (Prefixer, Number, Diger, Siger) tuple. Sourced from
@@ -775,7 +776,7 @@ class Baser(dbing.LMDBer):
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
 
-        .sscs is named subDB instance of CatCesrIoSetSuber for KRAM partially
+        .kramSSCS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key first seen seal couple attachments from issuing or
             delegating events.
             subkey 'sscs.'
@@ -784,7 +785,7 @@ class Baser(dbing.LMDBer):
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
 
-        .ssts is named subDB instance of CatCesrIoSetSuber for KRAM partially
+        .kramSSTS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key source seal triple attachments from issued or
             delegated events.
             subkey 'ssts.'
@@ -794,7 +795,7 @@ class Baser(dbing.LMDBer):
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
 
-        .frcs is named subDB instance of CatCesrIoSetSuber for KRAM partially
+        .kramFRCS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key first seen replay couple attachments.
             subkey 'frcs.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
@@ -802,7 +803,7 @@ class Baser(dbing.LMDBer):
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
 
-        .tdcs is named subDB instance of CatCesrIoSetSuber for KRAM partially
+        .kramTDCS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key typed digest seal couple attachments.
             subkey 'tdcs.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
@@ -810,7 +811,7 @@ class Baser(dbing.LMDBer):
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
 
-        .ptds is named subDB instance of IoSetSuber for KRAM partially signed
+        .kramPTDS is named subDB instance of IoSetSuber for KRAM partially signed
             multi-key pathed stream attachments.
             subkey 'ptds.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
@@ -819,7 +820,7 @@ class Baser(dbing.LMDBer):
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
 
-        .bsqs is named subDB instance of CatCesrIoSetSuber for KRAM partially
+        .kramBSQS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key blind state quadruple attachments.
             subkey 'bsqs.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
@@ -828,7 +829,7 @@ class Baser(dbing.LMDBer):
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
 
-        .bsss is named subDB instance of CatCesrIoSetSuber for KRAM partially
+        .kramBSSS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key bound state sextuple attachments.
             subkey 'bsss.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
@@ -837,7 +838,7 @@ class Baser(dbing.LMDBer):
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
 
-        .tmqs is named subDB instance of CatCesrIoSetSuber for KRAM partially
+        .kramTMQS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key type media quadruple attachments.
             subkey 'tmqs.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
@@ -1241,73 +1242,73 @@ class Baser(dbing.LMDBer):
         self.maids = subing.CesrIoSetSuber(db=self, subkey="maids.", klas=coring.Prefixer)
 
         # KRAM cache type — key: expression string, value: drift and lag params
-        self.ctyp = koming.Komer(db=self, subkey='ctyp.',
+        self.kramCTYP = koming.Komer(db=self, subkey='kramCTYP.',
                                  klas=CacheTypeRecord)
 
         # KRAM message cache — key: (AID, MID), value: msg datetime, drift, lags
-        self.msgc = koming.Komer(db=self, subkey='msgc.',
+        self.kramMSGC = koming.Komer(db=self, subkey='kramMSGC.',
                                  klas=MsgCacheRecord)
 
         # KRAM transactioned message cache — key: (AID, XID, MID), value: datetimes, drift, lags
-        self.tmsc = koming.Komer(db=self, subkey='tmsc.',
+        self.kramTMSC = koming.Komer(db=self, subkey='kramTMSC.',
                                  klas=TxnMsgCacheRecord)
 
         # KRAM partially signed multi-key message key (AID.MID) mapped to associated message (SerderKERI)
-        self.pmkm = subing.SerderSuber(db=self, subkey='pmkm.')
+        self.kramPMKM = subing.SerderSuber(db=self, subkey='kramPMKM.')
 
         # KRAM partially signed multi-key signature key (AID.MID) mapped to associated signatures
-        self.pmks = subing.CesrIoSetSuber(db=self, subkey='pmks.', klas=indexing.Siger)
+        self.kramPMKS = subing.CesrIoSetSuber(db=self, subkey='kramPMKS.', klas=indexing.Siger)
 
         # KRAM partially signed multi-key sender key state key (AID.MID) mapped to SN and event SAID
-        self.pmsk = subing.CatCesrSuber(db=self, subkey='pmsk.', klas=(coring.Number, coring.Diger))
+        self.kramPMSK = subing.CatCesrSuber(db=self, subkey='kramPMSK.', klas=(coring.Number, coring.Diger))
 
         # KRAM partially signed multi-key non-authenticator attachments
 
         # trqs: trans receipt quadruples (prefixer, number, diger, siger)
-        self.trqs = subing.CatCesrIoSetSuber(db=self, subkey='trqs.',
-                                             klas=(coring.Prefixer, coring.Number,
-                                                   coring.Diger, indexing.Siger))
+        self.kramTRQS = subing.CatCesrIoSetSuber(db=self, subkey='trqs.',
+                                                  klas=(coring.Prefixer, coring.Number,
+                                                        coring.Diger, indexing.Siger))
 
-        # tsgs: trans last sig groups (prefixer, number, diger, siger)
-        self.tsgs = subing.CatCesrIoSetSuber(db=self, subkey='tsgs.',
-                                             klas=(coring.Prefixer, coring.Number,
-                                                   coring.Diger, indexing.Siger))
+        # tsgs: trans last sig groups (prefixer, number, diger, siger) — stored per-siger
+        self.kramTSGS = subing.CatCesrIoSetSuber(db=self, subkey='tsgs.',
+                                                  klas=(coring.Prefixer, coring.Number,
+                                                        coring.Diger, indexing.Siger))
 
         # sscs: first seen seal couples (number, diger) issuing or delegating
-        self.sscs = subing.CatCesrIoSetSuber(db=self, subkey='sscs.',
-                                             klas=(coring.Number, coring.Diger))
+        self.kramSSCS = subing.CatCesrIoSetSuber(db=self, subkey='sscs.',
+                                                  klas=(coring.Number, coring.Diger))
 
         # ssts: source seal triples (prefixer, number, diger) issued or delegated
-        self.ssts = subing.CatCesrIoSetSuber(db=self, subkey='ssts.',
-                                             klas=(coring.Prefixer, coring.Number,
-                                                   coring.Diger))
+        self.kramSSTS = subing.CatCesrIoSetSuber(db=self, subkey='ssts.',
+                                                  klas=(coring.Prefixer, coring.Number,
+                                                        coring.Diger))
 
         # frcs: first seen replay couples (number, dater)
-        self.frcs = subing.CatCesrIoSetSuber(db=self, subkey='frcs.',
-                                             klas=(coring.Number, coring.Dater))
+        self.kramFRCS = subing.CatCesrIoSetSuber(db=self, subkey='frcs.',
+                                                  klas=(coring.Number, coring.Dater))
 
         # tdcs: typed digest seal couples (verser, diger)
-        self.tdcs = subing.CatCesrIoSetSuber(db=self, subkey='tdcs.',
-                                             klas=(coring.Verser, coring.Diger))
+        self.kramTDCS = subing.CatCesrIoSetSuber(db=self, subkey='tdcs.',
+                                                  klas=(coring.Verser, coring.Diger))
 
         # ptds: pathed streams (raw bytes)
-        self.ptds = subing.IoSetSuber(db=self, subkey='ptds.')
+        self.kramPTDS = subing.IoSetSuber(db=self, subkey='ptds.')
 
         # bsqs: blind state quadruples (diger, noncer, noncer, labeler)
-        self.bsqs = subing.CatCesrIoSetSuber(db=self, subkey='bsqs.',
-                                             klas=(coring.Diger, coring.Noncer,
-                                                   coring.Noncer, coring.Labeler))
+        self.kramBSQS = subing.CatCesrIoSetSuber(db=self, subkey='bsqs.',
+                                                  klas=(coring.Diger, coring.Noncer,
+                                                        coring.Noncer, coring.Labeler))
 
         # bsss: bound state sextuples (diger, noncer, noncer, labeler, number, noncer)
-        self.bsss = subing.CatCesrIoSetSuber(db=self, subkey='bsss.',
-                                             klas=(coring.Diger, coring.Noncer,
-                                                   coring.Noncer, coring.Labeler,
-                                                   coring.Number, coring.Noncer))
+        self.kramBSSS = subing.CatCesrIoSetSuber(db=self, subkey='bsss.',
+                                                  klas=(coring.Diger, coring.Noncer,
+                                                        coring.Noncer, coring.Labeler,
+                                                        coring.Number, coring.Noncer))
 
         # tmqs: type media quadruples (diger, noncer, labeler, texter)
-        self.tmqs = subing.CatCesrIoSetSuber(db=self, subkey='tmqs.',
-                                             klas=(coring.Diger, coring.Noncer,
-                                                   coring.Labeler, coring.Texter))
+        self.kramTMQS = subing.CatCesrIoSetSuber(db=self, subkey='tmqs.',
+                                                  klas=(coring.Diger, coring.Noncer,
+                                                        coring.Labeler, coring.Texter))
 
         self.reload()
 
