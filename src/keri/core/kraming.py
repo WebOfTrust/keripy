@@ -1080,7 +1080,7 @@ class Kramer:
         Drift (d) is preserved for existing cache-types.
         """
 
-        old = self._ctypCf
+        old = self._kramCTYPCf
         config = newCf.get()
         new = config.get("kram", {}).get("caches", {})
 
@@ -1090,7 +1090,7 @@ class Kramer:
             if ctype not in old:
                 # New cache-type: write directly
                 rec = CacheTypeRecord(*map(int, newvals))
-                self.db.ctyp.pin(ctype, rec)
+                self.db.kramCTYP.pin(ctype, rec)
                 continue
 
             # Old values
@@ -1105,7 +1105,7 @@ class Kramer:
                     sl=sl_new, ll=ll_new, xl=xl_new,
                     psl=psl_new, pll=pll_new, pxl=pxl_new,
                 )
-                self.db.ctyp.pin(ctype, rec)
+                self.db.kramCTYP.pin(ctype, rec)
                 continue
 
             # Case 2: increases = prune immediately and accept staged
@@ -1143,9 +1143,9 @@ class Kramer:
                 sl=sl_cur, ll=ll_cur, xl=xl_cur,
                 psl=psl_cur, pll=pll_cur, pxl=pxl_cur,
             )
-            self.db.ctyp.pin(ctype, rec)
+            self.db.kramCTYP.pin(ctype, rec)
 
-        self._ctypCf = new
+        self._kramCTYPCf = new
         
     
     def reconcileConfig(self):
@@ -1159,12 +1159,12 @@ class Kramer:
         for ctype, pend in list(self._pending.items()):
             # Once delta expires, it is safe to change the accept window values
             if now - pend["start"] >= pend["delta"]:
-                rec = self.db.ctyp.get(ctype)
+                rec = self.db.kramCTYP.get(ctype)
 
                 # Update accept windows only
                 rec.sl = pend["sl_new"]
                 rec.ll = pend["ll_new"]
                 rec.xl = pend["xl_new"]
 
-                self.db.ctyp.pin(ctype, rec)
+                self.db.kramCTYP.pin(ctype, rec)
                 del self._pending[ctype]

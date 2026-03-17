@@ -2254,7 +2254,7 @@ def test_dynamic_cache_increase(fakeHelpingClock):
 
             kramer = Kramer(db=receiverHby.db, cf=cf)
 
-            rec = receiverHby.db.ctyp.get("~")
+            rec = receiverHby.db.kramCTYP.get("~")
             assert rec.d == 1000
             assert rec.sl == 1000
             assert rec.psl == 1000
@@ -2276,7 +2276,7 @@ def test_dynamic_cache_increase(fakeHelpingClock):
 
             kramer.changeConfig(cf)
 
-            rec = receiverHby.db.ctyp.get("~")
+            rec = receiverHby.db.kramCTYP.get("~")
 
             # Drift must remain unchanged
             assert rec.d == 1000
@@ -2306,7 +2306,7 @@ def test_dynamic_cache_increase(fakeHelpingClock):
 
             kramer.reconcileConfig()
 
-            rec = receiverHby.db.ctyp.get("~")
+            rec = receiverHby.db.kramCTYP.get("~")
             assert rec.sl == 1000
             assert rec.d == 1000
             assert "~" in kramer._pending
@@ -2317,7 +2317,7 @@ def test_dynamic_cache_increase(fakeHelpingClock):
             clock.advance(seconds=1)
             kramer.reconcileConfig()
 
-            rec = receiverHby.db.ctyp.get("~")
+            rec = receiverHby.db.kramCTYP.get("~")
 
             # Accept windows updated
             assert rec.sl == 5000
@@ -2374,7 +2374,7 @@ def test_dynamic_cache_decrease(fakeHelpingClock):
             
             kramer = Kramer(db=receiverHby.db, cf=cf)
 
-            rec = receiverHby.db.ctyp.get("~")
+            rec = receiverHby.db.kramCTYP.get("~")
             assert rec.d == 1000
             assert rec.sl == 5000
             assert rec.psl == 5000
@@ -2394,7 +2394,7 @@ def test_dynamic_cache_decrease(fakeHelpingClock):
             # 4. Apply dynamic update
             kramer.changeConfig(cf)
 
-            rec = receiverHby.db.ctyp.get("~")
+            rec = receiverHby.db.kramCTYP.get("~")
 
             # Drift preserved
             assert rec.d == 1000
@@ -2416,7 +2416,7 @@ def test_dynamic_cache_decrease(fakeHelpingClock):
             clock.advance(10000)
             kramer.reconcileConfig()
 
-            rec = receiverHby.db.ctyp.get("~")
+            rec = receiverHby.db.kramCTYP.get("~")
 
             # Still the decreased values
             assert rec.sl == 1000
@@ -2494,7 +2494,7 @@ def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
             kvy.processMsg(msg, **kwa)
 
             # Assert cache created
-            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             assert cache is not None
             assert cache.mdt == stamp
             assert cache.d == 1000   # drift from config
@@ -2517,7 +2517,7 @@ def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
             kramer.changeConfig(cf)
             
             # Verify existing caches DID NOT change
-            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             
             # Existing caches must remain unchanged
             assert cache.d == 1000
@@ -2527,7 +2527,7 @@ def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
             assert cache.pxl == 1000
             
             # Verify cache-type template DID change
-            ctyp = receiverHby.db.ctyp.get("~")
+            ctyp = receiverHby.db.kramCTYP.get("~")
 
             # Accept windows remain old (staged)
             assert ctyp.d == 1000
@@ -2544,14 +2544,14 @@ def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
             clock.advance(5000)
             kramer.reconcileConfig()
 
-            ctyp2 = receiverHby.db.ctyp.get("~")
+            ctyp2 = receiverHby.db.kramCTYP.get("~")
             # Accept windows updated
             assert ctyp2.sl == 5000
             assert ctyp2.ll == 5000
             assert ctyp2.xl == 5000
 
             # Existing cache STILL unchanged
-            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
 
             assert cache.d == 1000
             assert cache.ml == 1000
@@ -2576,7 +2576,7 @@ def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
 
             kvy.processMsg(msg, **kwa)
 
-            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
 
             # Assert the new cache uses the new values
             assert cache.mdt == stamp
