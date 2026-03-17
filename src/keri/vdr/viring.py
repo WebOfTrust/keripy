@@ -9,7 +9,7 @@ A special purpose Verifiable Data Registry (VDR)
 """
 
 from dataclasses import dataclass, field, asdict
-from  ordered_set import OrderedSet as oset
+from ordered_set import OrderedSet as oset
 
 from ..db import koming, subing, escrowing, dbing, dgKey, snKey
 
@@ -20,7 +20,8 @@ from ..core import (Counter, Number, Diger, Dater,
                     Prefixer, Verfer, Cigar, Saider,
                     Seqner, serdering, indexing,
                     counting, Codens)
-from ..vdr import eventing
+
+from .vdring import RegistryRecord, RegStateRecord
 
 
 class rbdict(dict):
@@ -31,11 +32,15 @@ class rbdict(dict):
     state in database when not found in memory as dict item.
     """
     __slots__ = ('db', 'reger')  # no .__dict__ just for db reference
+    TESKlas = None  # default Trans Event State class
 
     def __init__(self, *pa, **kwa):
         super(rbdict, self).__init__(*pa, **kwa)
         self.db = None
         self.reger = None
+
+        from .eventing import Tever  # dynmic impot to resolve circular import
+        self.TESKlas = Tever
 
     def __getitem__(self, k):
 
@@ -47,7 +52,7 @@ class rbdict(dict):
             if (rsr := self.reger.states.get(keys=k)) is None:
                 raise ex  # reraise KeyError
             try:
-                tever = eventing.Tever(rsr=rsr, db=self.db, reger=self.reger)
+                tever = self.TESKlas(rsr=rsr, db=self.db, reger=self.reger)
             except MissingEntryError:  # no kel event for keystate
                 raise ex  # reraise KeyError
             super(rbdict, self).__setitem__(k, tever)
@@ -86,78 +91,6 @@ class rbdict(dict):
             return default
         else:
             return self.__getitem__(k)
-
-
-@dataclass
-class RegistryRecord:
-    """ Registry Key keyed by Registry name
-    """
-    registryKey: str
-    prefix: str
-
-
-@dataclass
-class RegStateRecord(recording.RawRecord):  # reger.state
-    """
-    Registry Event Log (REL) State information
-
-    (see reger.state at 'stts' for database that holds these records  keyed by
-    Registry SAID, i field)
-
-    Attributes:
-        vn (list[int]): version number [major, minor]
-        i (str): registry SAID qb64 (registry inception event SAID)
-        s (str): sequence number of latest event in KEL as hex str
-        d (str): latest registry event digest qb64
-        ii (str): registry issuer identifier aid qb64
-        dt (str): datetime iso-8601 of registry state record update, usually now
-        et (str): event packet type (ilk)
-        bt (str): backer threshold hex num
-        b (list[str]): backer aids qb64
-        c (list[str]): config traits
-
-    Note: the seal anchor dict 'a' field is not included in the state notice
-    because it may be verbose and would impede the main purpose of a notice which
-    is to trigger the download of the latest events, which would include the
-    anchored seals.
-
-    rsr = viring.RegStateRecord(
-            vn=list(version), # version number as list [major, minor]
-            i=ri,  # qb64 registry SAID
-            s="{:x}".format(sn),  # lowercase hex string no leading zeros
-            d=said,
-            ii=pre,
-            dt=dts,
-            et=eilk,
-            bt="{:x}".format(toad),  # hex string no leading zeros lowercase
-            b=wits,  # list of qb64 may be empty
-            c=cnfg if cnfg is not None else [],
-            )
-
-    """
-    vn: list[int] = field(default_factory=list)  # version number [major, minor] round trip serializable
-    i: str = ''  # identifier prefix qb64
-    s: str = '0'  # sequence number of latest event in KEL as hex str
-    d: str = ''  # latest event digest qb64
-    ii: str = ''  # issuer identifier of registry aid qb64
-    dt: str = ''  # datetime of update of state record
-    et: str = ''  # TEL evt packet type (ilk)
-    bt: str = '0'  # backer threshold hex num str
-    b: list = field(default_factory=list)  # backer AID list qb64
-    c: list[str] = field(default_factory=list)  # config trait list
-
-
-@dataclass
-class VcStateRecord(recording.RawRecord):
-    vn: list[str] = field(default_factory=list)  # version number [major, minor] round trip serializable
-    i: str = ''  # identifier prefix qb64
-    s: str = '0'  # sequence number of latest event in KEL as hex str
-    d: str = ''  # latest event digest qb64
-    ri: str = ''  # registry identifier of registry aid qb64
-    ra: dict = field(default_factory=dict)  # registry anchor for registry with backers
-    a: dict = field(default_factory=dict)  # seal for anchor in KEL
-    dt: str = ''  # datetime of update of state record
-    et: str = ''  # TEL evt packet type (ilk)
 
 
 def openReger(name="test", **kwa):

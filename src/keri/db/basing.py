@@ -49,10 +49,7 @@ class komerdict(dict):
 
     add method that answers is a given pre a group hab pre .localGroup(pre)
 
-    ToDo XXXX change name of dbdict to stateDict since now have differen types
-    and can't subclass dict with init parameters.
-    but can change function by manually assigning attributes but that is ugly
-    need wrapper decorator to do that. So can update attributes with wrapper
+    Todo add wrapper decorator to update attributes
     on class that injects instance attributes when class is instanced
     one of the injected parameters is function that that maps returned Komer to
     object class

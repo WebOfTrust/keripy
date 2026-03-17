@@ -18,9 +18,8 @@ from hio.core import http, tcp
 from hio.core.tcp import serving
 from hio.help import decking
 
-from .. import Vrsn_1_0, Roles, Ilks, MissingEntryError
-from . import (GroupHab, directing, storing,
-               httping, forwarding, agenting, oobiing)
+from ..kering import Vrsn_1_0, Roles, Ilks, MissingEntryError
+from ..recording import TopicsRecord
 from ..core import (eventing, parsing, routing, coring, serdering,
                     Counter, Codens)
 from ..app import oobiing
@@ -28,8 +27,10 @@ from ..db import BaserDoer
 from ..end import ending
 from ..help import helping, ogler
 from ..peer import exchanging
-from ..vdr import Tevery, verifying, viring
-from ..recording import TopicsRecord
+
+from . import (GroupHab, directing, storing,
+               httping, forwarding, agenting, oobiing)
+
 
 logger = ogler.getLogger()
 
@@ -51,8 +52,10 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     if hab is None:
         hab = hby.makeHab(name=alias, transferable=False)
 
-    reger = viring.Reger(name=hab.name, db=hab.db, temp=False)
-    verfer = verifying.Verifier(hby=hby, reger=reger)
+    from ..vdr import Reger,Verifier  # dynamic import because of circular import
+
+    reger = Reger(name=hab.name, db=hab.db, temp=False)
+    verfer = Verifier(hby=hby, reger=reger)
 
     mbx = mbx if mbx is not None else storing.Mailboxer(name=alias, temp=hby.temp)
     forwarder = forwarding.ForwardHandler(hby=hby, mbx=mbx)
@@ -72,6 +75,8 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
                           rvy=rvy,
                           cues=cues)
     kvy.registerReplyRoutes(router=rvy.rtr)
+
+    from ..vdr import Tevery  # dynamic import because of circular import
 
     tvy = Tevery(reger=verfer.reger,
                  db=hby.db,
@@ -557,6 +562,8 @@ class MailboxDirector(doing.DoDoer):
         self.kvy.registerReplyRoutes(self.rtr)
 
         if self.verifier is not None:
+            from ..vdr import Tevery  # dynamic import because of circular import
+
             self.tvy = tvy if tvy is not None else Tevery(reger=self.verifier.reger,
                                                           db=self.hby.db, rvy=self.rvy,
                                                           lax=True, local=False, cues=self.cues)
@@ -1191,7 +1198,9 @@ class QueryEnd:
 
     def __init__(self, hab):
         self.hab = hab
-        self.reger = viring.Reger(name=hab.name, db=hab.db, temp=hab.temp)
+
+        from ..vdr import Reger  # dynamic import to avoid circular
+        self.reger = Reger(name=hab.name, db=hab.db, temp=hab.temp)
 
     def on_get(self, req, rep):
         """ Handles GET requests to query KEL or TEL events of a pre from a witness.

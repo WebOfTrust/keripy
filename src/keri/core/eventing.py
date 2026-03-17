@@ -6246,7 +6246,7 @@ class Kevery:
                         If successful then remove from escrow table
         """
         #for (pre, snh), (rdiger, wiger) in self.db.uwes.getTopItemIter():
-        for (pre, ), sn, (rdig, wig) in self.db.uwes.getOnTopItemIter():
+        for (pre, ), sn, (rdig, wig) in self.db.uwes.getTopItemIter():
             try:
                 #rdigerBytes = rdig.encode('utf-8')
                 # check date if expired then remove escrow.

@@ -149,9 +149,7 @@ class SuberBase():
         self.verify = True if verify else False
 
 
-
-    def _tokey(self, keys: str|bytes|memoryview|Iterable[str|bytes|memoryview],
-                topive: bool=False):
+    def _tokey(self, keys: str|bytes|memoryview|Iterable, topive: bool=False):
         """
         Converts keys to key bytes with proper separators and returns key bytes.
         If keys is already str or bytes or memoryview then returns key bytes.
@@ -165,8 +163,8 @@ class SuberBase():
                         last char of key is .sep
 
         Parameters:
-           keys (str | bytes | memoryview | Iterable[str | bytes]): db key or
-                        Iterable of (str | bytes) to form key.
+           keys (str|bytes|memoryview|Iterable[str|bytes|memoryview]): db key or
+                        Iterable of (str|bytes|memoryview) to form key.
            topive (bool): True means treat as partial key tuple from top branch of
                        key space given by partial keys. Resultant key ends in .sep
                        character.
@@ -188,7 +186,7 @@ class SuberBase():
                               for key in keys).encode())  # bytes(key) converts memoryview
 
 
-    def _tokeys(self, key: str | bytes | memoryview):
+    def _tokeys(self, key: str|bytes|memoryview):
         """
         Converts key bytes to keys tuple of strs by decoding and then splitting
         at separator .sep.
@@ -197,7 +195,7 @@ class SuberBase():
            keys (tuple[str]): makes tuple by splitting key at sep
 
         Parameters:
-           key (str | bytes | memoryview): db key.
+           key (str|bytes|memoryview): db key.
 
         """
         if isinstance(key, memoryview):  # memoryview of bytes
@@ -734,7 +732,7 @@ class OnSuberBase(SuberBase):
                                      sep=self.sep.encode()))
 
 
-    def getOnTopItemIter(self, keys: str|bytes|memoryview|Iterable=""):
+    def getTopItemIter(self, keys: str|bytes|memoryview|Iterable=""):
         """Iterates over top branch of all entries where each top key startwith
         key made from keys.
         Assumes every effective key in db has trailing on element,
@@ -760,7 +758,7 @@ class OnSuberBase(SuberBase):
                                                         sep=self.sep.encode())):
             yield (self._tokeys(key), on, self._des(val))
 
-    getOnItemIter = getOnTopItemIter  # alias for shadow super class method
+    #getOnTopItemIter = getTopItemIter  # alias for shadow super class method
 
 
     def getAllItemIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
@@ -2741,8 +2739,8 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
         super(OnIoDupSuber, self).__init__(*pa, **kwa)
 
 
-    def putOn(self, keys: str|bytes|memoryview|Iterable, on: int=0,
-            vals: str|bytes|memoryview|Iterable = b''):
+    def put(self, keys: str|bytes|memoryview|Iterable, on: int=0,
+            vals: str|bytes|memoryview|Iterable = b""):
         """Put all vals idempotently at key at key made from keys with on suffix
         in insertion order using hidden ordinal proem. Idempotently means do
         not put any val in vals that is already in dup vals at key. Does not overwrite.
@@ -2756,7 +2754,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
             result (bool): True If successful, False otherwise.
 
         """
-        if not isNonStringIterable(vals):  # not iterable
+        if not isNonStringIterable(vals):  # not NonStrIterable
             vals = (vals, ) if vals else ()  # make iterable
         return self.db.putOnIoDupVals(db=self.sdb,
                                       key=self._tokey(keys),
@@ -2764,7 +2762,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                                       vals=tuple(self._ser(val) for val in vals),
                                       sep=self.sep.encode())
 
-    #putOn = put  # refactoring alias
+    putOn = put  # refactoring alias
 
 
     def pinOn(self, keys: str|bytes|memoryview|Iterable, on: int=0,
@@ -2975,7 +2973,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
 
 
 
-    def getOnTopItemIter(self, keys: str|bytes|memoryview|Iterable=""):
+    def getTopItemIter(self, keys: str|bytes|memoryview|Iterable=""):
         """Iterates over top branch of all insertion ordered dup values where
         each key startwith top.
         Assumes every effective key in db has trailing on element,
@@ -3004,7 +3002,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                                                         sep=self.sep.encode())):
             yield (self._tokeys(keys), on, self._des(val))
 
-    getTopItemIter = getOnTopItemIter  # alias to shadow super class method
+    #getOnTopItemIter = getTopItemIter  # alias to shadow super class method
 
 
     def getAllItemIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):

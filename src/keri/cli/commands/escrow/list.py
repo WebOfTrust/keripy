@@ -15,7 +15,7 @@ from ...common.parsing import Parsery
 
 from .... import help, ConfigurationError
 from ....core import eventing
-from ....vdr import viring
+from ....vdr import Reger
 
 
 logger = help.ogler.getLogger()
@@ -47,7 +47,7 @@ def escrows(tymth, tock=0.0, **opts):
 
     try:
         with existing.existingHby(name=name, base=base, bran=bran) as hby:
-            reger = viring.Reger(name=hby.name, db=hby.db, temp=False)
+            reger = Reger(name=hby.name, db=hby.db, temp=False)
 
             escrows = dict()
             if (not escrow) or escrow == "out-of-order-events":

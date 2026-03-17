@@ -254,13 +254,7 @@ def test_on_suber():
         assert onsuber.cntOn(keys=("a",), on=2) == 2
         assert onsuber.cntOn(keys=("a",), on=4) == 0
 
-        items = [(keys, val) for keys, val in onsuber.getTopItemIter()]
-        assert items == [(('a', '00000000000000000000000000000000'), 'Blue dog'),
-                        (('a', '00000000000000000000000000000001'), 'Green tree'),
-                        (('a', '00000000000000000000000000000002'), 'Red apple'),
-                        (('a', '00000000000000000000000000000003'), 'White snow')]
-
-        items = [(keys, on, val) for keys, on, val in onsuber.getOnTopItemIter()]
+        items = [(keys, on, val) for keys, on, val in onsuber.getTopItemIter()]
         assert items == [
                             (('a',), 0, 'Blue dog'),
                             (('a',), 1, 'Green tree'),
@@ -311,17 +305,7 @@ def test_on_suber():
         assert onsuber.cntOnAll(keys=("ac",), on=2) == 0
         assert onsuber.cntOnAll(keys="") == 8
 
-        items = [(keys, val) for keys, val in onsuber.getTopItemIter()]
-        assert items == [(('a', '00000000000000000000000000000000'), 'Blue dog'),
-                        (('a', '00000000000000000000000000000001'), 'Green tree'),
-                        (('a', '00000000000000000000000000000002'), 'Red apple'),
-                        (('a', '00000000000000000000000000000003'), 'White snow'),
-                        (('ac', '00000000000000000000000000000000'), 'White snow'),
-                        (('b', '00000000000000000000000000000000'), 'Blue dog'),
-                        (('b', '00000000000000000000000000000001'), 'Green tree'),
-                        (('bc', '00000000000000000000000000000000'), 'Red apple')]
-
-        items = [(keys, on, val) for keys, on, val in onsuber.getOnTopItemIter()]
+        items = [(keys, on, val) for keys, on, val in onsuber.getTopItemIter()]
         assert items == [(('a',), 0, 'Blue dog'),
                         (('a',), 1, 'Green tree'),
                         (('a',), 2, 'Red apple'),
@@ -332,7 +316,7 @@ def test_on_suber():
                         (('bc',), 0, 'Red apple')]
 
 
-        items = [(keys, on, val) for keys, on, val in onsuber.getOnTopItemIter(keys="b")]  # top
+        items = [(keys, on, val) for keys, on, val in onsuber.getTopItemIter(keys="b")]  # top
         assert items == [(('b',), 0, 'Blue dog'),
                          (('b',), 1, 'Green tree'),
                          (('bc',), 0, 'Red apple')]
@@ -1150,7 +1134,7 @@ def test_on_iodup_suber():
         assert oidsuber.cntOnAll(keys=("a",), on=4) == 0
         assert oidsuber.cntOnAll() == 4
 
-        items = [(keys, on, val) for keys, on, val in oidsuber.getOnTopItemIter()]
+        items = [(keys, on, val) for keys, on, val in oidsuber.getTopItemIter()]
         assert items == \
         [
             (('a',), 0, 'Blue dog'),
@@ -1192,7 +1176,7 @@ def test_on_iodup_suber():
         assert oidsuber.cntOnAll(keys=("ac",), on=2) == 0
         assert oidsuber.cntOnAll(keys="") == 8
 
-        items = [(keys, on, val) for keys, on, val in oidsuber.getOnTopItemIter()]
+        items = [(keys, on, val) for keys, on, val in oidsuber.getTopItemIter()]
         assert items == \
         [
             (('a',), 0, 'Blue dog'),
@@ -1277,7 +1261,7 @@ def test_on_iodup_suber():
         assert oidsuber.cntOnAll(keys=("a",), on=2) == 4
         assert oidsuber.cntOnAll(keys=("a",), on=4) == 0
 
-        items = [(keys, on, val) for keys, on, val in oidsuber.getOnTopItemIter(keys=("a", ""))]
+        items = [(keys, on, val) for keys, on, val in oidsuber.getTopItemIter(keys=("a", ""))]
         assert items == \
         [
             (('a',), 0, 'Blue dog'),
@@ -1474,7 +1458,7 @@ def test_b64_oniodup_suber():
         assert oidbuber.cntOnAll(keys=(j,), on=2) == 2
         assert oidbuber.cntOnAll(keys=(j,), on=4) == 0
 
-        items = [(keys, on, val) for keys, on, val in oidbuber.getOnTopItemIter()]
+        items = [(keys, on, val) for keys, on, val in oidbuber.getTopItemIter()]
         assert items == \
         [
             (('b',), 0, ('Blue', 'dog')),
@@ -1511,7 +1495,7 @@ def test_b64_oniodup_suber():
         assert oidbuber.cntOnAll(keys=("bc",), on=2) == 0
         assert oidbuber.cntOnAll(keys="") == 8
 
-        items = [(keys, on, val) for keys, on, val in oidbuber.getOnTopItemIter()]
+        items = [(keys, on, val) for keys, on, val in oidbuber.getTopItemIter()]
         assert items == \
         [
             (('a',), 0, ('Blue', 'dog')),
@@ -1596,7 +1580,7 @@ def test_b64_oniodup_suber():
         assert oidbuber.cntOnAll(keys=(j,), on=2) == 4
         assert oidbuber.cntOnAll(keys=(j,), on=4) == 0
 
-        items = [(keys, on, val) for keys, on, val in oidbuber.getOnTopItemIter(keys=(j, ""))]
+        items = [(keys, on, val) for keys, on, val in oidbuber.getTopItemIter(keys=(j, ""))]
         assert items == \
         [
             (('b',), 0, ('Blue', 'dog')),
@@ -3861,11 +3845,11 @@ def test_cesr_on_suber():
         assert onsuber.cntOnAll(keys=("a",), on=2) == 2
         assert onsuber.cntOnAll(keys=("a",), on=4) == 0
 
-        items = [(keys, val.qb64) for keys, val in onsuber.getTopItemIter()]
-        assert items == [(('a', '00000000000000000000000000000000'), w.qb64),
-                        (('a', '00000000000000000000000000000001'), x.qb64),
-                        (('a', '00000000000000000000000000000002'), y.qb64),
-                        (('a', '00000000000000000000000000000003'), z.qb64)]
+        items = [(keys, on, val.qb64) for keys, on, val in onsuber.getTopItemIter()]
+        assert items == [(('a',), 0, w.qb64),
+                        (('a',), 1, x.qb64),
+                        (('a',), 2, y.qb64),
+                        (('a',), 3, z.qb64)]
 
         # test getOnItemIterAll
         items = [(keys, on, val.qb64) for keys, on, val in onsuber.getAllItemIter(keys='a')]
@@ -3888,15 +3872,15 @@ def test_cesr_on_suber():
         assert onsuber.cntOnAll(keys=("ac",), on=2) == 0
         assert onsuber.cntOnAll(keys="") == 8
 
-        items = [(keys, val.qb64) for keys, val in onsuber.getTopItemIter()]
-        assert items == [(('a', '00000000000000000000000000000000'), w.qb64),
-                        (('a', '00000000000000000000000000000001'), x.qb64),
-                        (('a', '00000000000000000000000000000002'), y.qb64),
-                        (('a', '00000000000000000000000000000003'), z.qb64),
-                        (('ac', '00000000000000000000000000000000'), z.qb64),
-                        (('b', '00000000000000000000000000000000'), w.qb64),
-                        (('b', '00000000000000000000000000000001'), x.qb64),
-                        (('bc', '00000000000000000000000000000000'), y.qb64)]
+        items = [(keys, on, val.qb64) for keys, on, val in onsuber.getTopItemIter()]
+        assert items == [(('a',), 0, w.qb64),
+                        (('a',), 1, x.qb64),
+                        (('a',), 2, y.qb64),
+                        (('a',), 3, z.qb64),
+                        (('ac',), 0, z.qb64),
+                        (('b',), 0, w.qb64),
+                        (('b', ), 1, x.qb64),
+                        (('bc',), 0, y.qb64)]
 
         # test getOnItemIterAll
         items = [(keys, on, val.qb64) for keys, on, val in onsuber.getAllItemIter(keys='b')]
