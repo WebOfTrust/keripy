@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-tests.vdr.viring module
+tests.vdr.eventing module tests of the old viring classes and functions.
 
 """
 
@@ -105,16 +105,16 @@ def test_issuer():
         assert issuer.tvts.rem(keys=key) is True
         assert issuer.tvts.get(keys=key) is None
 
-        telKey = snKey(regk, sn)
-        assert issuer.tels.get(keys=telKey) is None
-        assert issuer.tels.rem(keys=telKey) is False
-        assert issuer.tels.put(keys=telKey, val=vdig.qb64b)
-        assert issuer.tels.get(keys=telKey) == vdig.qb64
-        assert issuer.tels.put(keys=telKey, val=vdig.qb64b) is False
-        assert issuer.tels.pin(keys=telKey, val=vdig.qb64b) is True
-        assert issuer.tels.get(keys=telKey) == vdig.qb64
-        assert issuer.tels.rem(keys=telKey) is True
-        assert issuer.tels.get(keys=telKey) is None
+        #telKey = snKey(regk, sn)
+        assert issuer.tels.getOn(keys=regk, on=sn) is None  # default on =0
+        assert issuer.tels.remOn(keys=regk, on=sn) is False
+        assert issuer.tels.putOn(keys=regk, on=sn, val=vdig.qb64b)
+        assert issuer.tels.getOn(keys=regk, on=sn) == vdig.qb64
+        assert issuer.tels.putOn(keys=regk, on=sn, val=vdig.qb64b) is False
+        assert issuer.tels.pinOn(keys=regk, on=sn, val=vdig.qb64b) is True
+        assert issuer.tels.getOn(keys=regk, on=sn) == vdig.qb64
+        assert issuer.tels.remOn(keys=regk, on=sn) is True
+        assert issuer.tels.getOn(keys=regk, on=sn) is None
 
         # Tibs store Siger instances; use valid Siger bytes and distinct indices
         valid_tib_bytes = (b'AAAUr5RHYiDH8RU0ig-2Dp5h7rVKx89StH5M3CL60-cWEbgG-XmtW31pZlFicYgSPduJZUnD838_'
@@ -249,7 +249,7 @@ def test_issuer():
         assert issuer.tels.put(keys=snKey(vcdig, sn + 2), val=idig.qb64b) is True
         assert issuer.tels.put(keys=snKey(vcdig, sn + 3), val=rdig.qb64b) is True
 
-        result = [(sn, dig) for _, sn, dig in issuer.tels.getOnItemIterAll(keys=vcdig)]
+        result = [(sn, dig) for _, sn, dig in issuer.tels.getAllItemIter(keys=vcdig)]
         assert result == [(0, idig.qb64), (1, rdig.qb64), (2, idig.qb64), (3, rdig.qb64)]
 
         bak1 = b'BA1Q98kT0HRn9R62lY-LufjjKdbCeL1mqu9arTgOmbqI'

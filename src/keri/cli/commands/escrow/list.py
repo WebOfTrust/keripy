@@ -15,7 +15,7 @@ from ...common.parsing import Parsery
 
 from .... import help, ConfigurationError
 from ....core import eventing
-from ....vdr import viring
+from ....vdr import Reger
 
 
 logger = help.ogler.getLogger()
@@ -47,14 +47,14 @@ def escrows(tymth, tock=0.0, **opts):
 
     try:
         with existing.existingHby(name=name, base=base, bran=bran) as hby:
-            reger = viring.Reger(name=hby.name, db=hby.db, temp=False)
+            reger = Reger(name=hby.name, db=hby.db, temp=False)
 
             escrows = dict()
             if (not escrow) or escrow == "out-of-order-events":
                 oots = list()
                 key = ekey = b""  # both start same. when not same means escrows found
                 while True:
-                    for pre, sn, edig in hby.db.ooes.getOnItemIterAll(keys=key):
+                    for pre, sn, edig in hby.db.ooes.getAllItemIter(keys=key):
                         try:
                             oots.append(eventing.loadEvent(hby.db, pre, edig))
                         except ValueError as e:
@@ -72,7 +72,7 @@ def escrows(tymth, tock=0.0, **opts):
                 pwes = list()
                 key = ekey = b""  # both start same. when not same means escrows found
                 while True:  # break when done
-                    for pre, sn, edig in hby.db.pwes.getOnItemIterAll(keys=key):
+                    for pre, sn, edig in hby.db.pwes.getAllItemIter(keys=key):
                         try:
                             pwes.append(eventing.loadEvent(hby.db, pre, edig))
                         except ValueError as e:
@@ -90,7 +90,7 @@ def escrows(tymth, tock=0.0, **opts):
                 pses = list()
                 key = ekey = b""  # both start same. when not same means escrows found
                 while True:  # break when done
-                    for pre, sn, edig in hby.db.pses.getOnItemIterAll(keys=key):
+                    for pre, sn, edig in hby.db.pses.getAllItemIter(keys=key):
                         try:
                             pses.append(eventing.loadEvent(hby.db, pre, edig))
                         except ValueError as e:
@@ -106,7 +106,7 @@ def escrows(tymth, tock=0.0, **opts):
 
             if (not escrow) or escrow == "likely-duplicitous-events":
                 ldes = list()
-                for (pre,), sn, edig in hby.db.ldes.getOnItemIterAll(keys=b""):
+                for (pre,), sn, edig in hby.db.ldes.getAllItemIter(keys=b""):
                     if hasattr(edig, "encode"):
                         edig = edig.encode("utf-8")  # Suber returns str, loadEvent expects bytes
 
@@ -119,7 +119,7 @@ def escrows(tymth, tock=0.0, **opts):
 
             if (not escrow) or escrow == "partially-delegated-events":
                 pdes = list()
-                for pre, sn, edig in hby.db.pdes.getOnItemIterAll():
+                for pre, sn, edig in hby.db.pdes.getAllItemIter():
                     try:
                         pdes.append(eventing.loadEvent(hby.db, pre, edig))
                     except ValueError:
@@ -128,7 +128,7 @@ def escrows(tymth, tock=0.0, **opts):
 
             if (not escrow) or escrow == "query-not-found":
                 items = list()
-                for (pre, said), saidb in hby.db.qnfs.getItemIter():
+                for (pre, said), saidb in hby.db.qnfs.getTopItemIter():
                     try:
                         items.append(eventing.loadEvent(hby.db,
                                                         pre.encode("utf-8"),
@@ -139,7 +139,7 @@ def escrows(tymth, tock=0.0, **opts):
 
             if (not escrow) or escrow == "misfits":
                 items = list()
-                for (pre, snh), saidb in hby.db.misfits.getItemIter():
+                for (pre, snh), saidb in hby.db.misfits.getTopItemIter():
                     try:
                         items.append(eventing.loadEvent(hby.db,
                                                         pre.encode("utf-8"),
@@ -150,7 +150,7 @@ def escrows(tymth, tock=0.0, **opts):
 
             if (not escrow) or escrow == "missing-registry-escrow":
                 creds = list()
-                for (said,), dater in reger.mre.getItemIter():
+                for (said,), dater in reger.mre.getTopItemIter():
                     creder, *_ = reger.cloneCred(said)
                     creds.append(creder.sad)
 
@@ -158,7 +158,7 @@ def escrows(tymth, tock=0.0, **opts):
 
             if (not escrow) or escrow == "broken-chain-escrow":
                 creds = list()
-                for (said,), dater in reger.mce.getItemIter():
+                for (said,), dater in reger.mce.getTopItemIter():
                     creder, *_ = reger.cloneCred(said)
                     creds.append(creder.sad)
 
@@ -166,7 +166,7 @@ def escrows(tymth, tock=0.0, **opts):
 
             if (not escrow) or escrow == "missing-schema-escrow":
                 creds = list()
-                for (said,), dater in reger.mse.getItemIter():
+                for (said,), dater in reger.mse.getTopItemIter():
                     creder, *_ = reger.cloneCred(said)
                     creds.append(creder.sad)
 
@@ -174,7 +174,7 @@ def escrows(tymth, tock=0.0, **opts):
 
             if (not escrow) or escrow == "tel-partial-witness-escrow":
                 tpwes = list()
-                for (regk, snq), (prefixer, number, diger) in reger.tpwe.getItemIter():
+                for (regk, snq), (prefixer, number, diger) in reger.tpwe.getTopItemIter():
                     tpwes.append(dict(
                         registry=regk,
                         prefix=prefixer.qb64,
@@ -185,58 +185,58 @@ def escrows(tymth, tock=0.0, **opts):
 
             if (not escrow) or escrow == "group-partially-signed-events":
                 items = list()
-                for (pre,), (number, diger) in hby.db.gpse.getItemIter():
+                for (pre,), (number, diger) in hby.db.gpse.getTopItemIter():
                     items.append(dict(prefix=pre, sn=number.sn,
                                       digest=diger.qb64))
                 escrows["group-partially-signed-events"] = items
 
             if (not escrow) or escrow == "group-delegated-events":
                 items = list()
-                for (pre,), (number, diger) in hby.db.gdee.getItemIter():
+                for (pre,), (number, diger) in hby.db.gdee.getTopItemIter():
                     items.append(dict(prefix=pre, sn=number.sn,
                                       digest=diger.qb64))
                 escrows["group-delegated-events"] = items
 
             if (not escrow) or escrow == "group-partially-witnessed-events":
                 items = list()
-                for (pre,), (number, diger) in hby.db.gpwe.getItemIter():
+                for (pre,), (number, diger) in hby.db.gpwe.getTopItemIter():
                     items.append(dict(prefix=pre, sn=number.sn,
                                       digest=diger.qb64))
                 escrows["group-partially-witnessed-events"] = items
 
             if (not escrow) or escrow == "escrowed-partially-signed-exchange":
                 items = list()
-                for keys, serder in hby.db.epse.getItemIter():
+                for keys, serder in hby.db.epse.getTopItemIter():
                     items.append(serder.sad)
                 escrows["escrowed-partially-signed-exchange"] = items
 
             if (not escrow) or escrow == "escrowed-exchange-datetime":
                 items = list()
-                for (dig,), dater in hby.db.epsd.getItemIter():
+                for (dig,), dater in hby.db.epsd.getTopItemIter():
                     items.append(dict(said=dig, datetime=dater.dts))
                 escrows["escrowed-exchange-datetime"] = items
 
             if (not escrow) or escrow == "delegated-partially-witnessed-events":
                 items = list()
-                for keys, serder in hby.db.dpwe.getItemIter():
+                for keys, serder in hby.db.dpwe.getTopItemIter():
                     items.append(serder.sad)
                 escrows["delegated-partially-witnessed-events"] = items
 
             if (not escrow) or escrow == "delegated-unverified-events":
                 items = list()
-                for keys, serder in hby.db.dune.getItemIter():
+                for keys, serder in hby.db.dune.getTopItemIter():
                     items.append(serder.sad)
                 escrows["delegated-unverified-events"] = items
 
             if (not escrow) or escrow == "delegated-partially-unduplicated-backer":
                 items = list()
-                for keys, serder in hby.db.dpub.getItemIter():
+                for keys, serder in hby.db.dpub.getTopItemIter():
                     items.append(serder.sad)
                 escrows["delegated-partially-unduplicated-backer"] = items
 
             if (not escrow) or escrow == "reply-escrow":
                 items = list()
-                for (route,), diger in hby.db.rpes.getItemIter():
+                for (route,), diger in hby.db.rpes.getTopItemIter():
                     items.append(dict(route=route, said=diger.qb64))
                 escrows["reply-escrow"] = items
 

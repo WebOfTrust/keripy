@@ -3,15 +3,15 @@ from keri.core import coring
 from .. import koming, subing, dbing
 from keri.kering import ConfigurationError, Version
 from ...recording import KeyStateRecord, StateEERecord
-from keri.vdr import viring
+from keri.vdr import Reger, RegStateRecord
 
 logger = help.ogler.getLogger()
 
 def _check_if_needed(db):
     states = koming.Komer(db=db,
-                          schema=dict,
+                          klas=dict,
                           subkey='stts.')
-    first = next(states.getItemIter(), None)
+    first = next(states.getTopItemIter(), None)
     if first is None:
         return False
     keys, sad = first
@@ -45,13 +45,13 @@ def migrate(db):
     try:
         logger.debug(f"Migrating keystate and regstate dict to schema for {db.path}")
         states = koming.Komer(db=db,
-                              schema=dict,
+                              klas=dict,
                               subkey='stts.')
         nstates = koming.Komer(db=db,
-                               schema=KeyStateRecord,
+                               klas=KeyStateRecord,
                                subkey='stts.')
 
-        for keys, sad in states.getItemIter():
+        for keys, sad in states.getTopItemIter():
             ksr = KeyStateRecord(
                 vn=Version,  # version number as list [major, minor]
                 i=sad['i'],  # qb64 prefix
@@ -74,14 +74,14 @@ def migrate(db):
 
             nstates.pin(keys=keys, val=ksr)
 
-        rgy = viring.Reger(name=db.name, base=db.base, db=db, temp=db.temp, reopen=True)
+        rgy = Reger(name=db.name, base=db.base, db=db, temp=db.temp, reopen=True)
 
         rstates = koming.Komer(db=rgy,
-                               schema=dict,
+                               klas=dict,
                                subkey='stts.')
 
-        for _, sad in rstates.getItemIter():
-            rsr = viring.RegStateRecord(
+        for _, sad in rstates.getTopItemIter():
+            rsr = RegStateRecord(
                 vn=list(Version),  # version number as list [major, minor]
                 i=sad['i'],  # qb64 registry SAID
                 s=sad['s'],  # lowercase hex string no leading zeros
@@ -96,7 +96,7 @@ def migrate(db):
             # ksr = stateFromKever(kever)
             rgy.states.pin(sad['i'], val=rsr)
 
-        for (said,), _ in rgy.saved.getItemIter():
+        for (said,), _ in rgy.saved.getTopItemIter():
             snkey = dbing.snKey(said, 0)
             dig = rgy.tels.get(keys=snkey)
 

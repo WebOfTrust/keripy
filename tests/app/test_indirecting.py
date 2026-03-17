@@ -221,7 +221,7 @@ class QueryTestDoer(doing.Doer):
         # Test valid KEL query with 'pre'
         res = wesClient.simulate_get("/query", params={"typ": "kel", "pre": palHab.pre})
         assert res.status_code == 200
-        assert res.headers['Content-Type'] == "application/json+cesr"
+        assert res.headers['Content-Type'] == "application/cesr"
         assert bytearray(res.content) == bytearray(msg)
 
         # Test KEL query without 'pre'
@@ -233,7 +233,7 @@ class QueryTestDoer(doing.Doer):
         # Test KEL query with 'sn' parameter
         res = wesClient.simulate_get("/query", params={"typ": "kel", "pre": palHab.pre, "sn": 0})
         assert res.status_code == 200
-        assert res.headers['Content-Type'] == "application/json+cesr"
+        assert res.headers['Content-Type'] == "application/cesr"
 
         # Test KEL query with non-existant 'sn' parameter
         res = wesClient.simulate_get("/query", params={"typ": "kel", "pre": palHab.pre, "sn": 5})
@@ -244,12 +244,12 @@ class QueryTestDoer(doing.Doer):
         # Test valid TEL query with 'reg'
         res = wesClient.simulate_get("/query", params={"typ": "tel", "reg": "mock_reg"})
         assert res.status_code == 200
-        assert res.headers['Content-Type'] == "application/json+cesr"
+        assert res.headers['Content-Type'] == "application/cesr"
 
         # Test valid TEL query with 'vcid'
         res = wesClient.simulate_get("/query", params={"typ": "tel", "vcid": "mock_vcid"})
         assert res.status_code == 200
-        assert res.headers['Content-Type'] == "application/json+cesr"
+        assert res.headers['Content-Type'] == "application/cesr"
 
         # Test TEL query missing both 'reg' and 'vcid'
         res = wesClient.simulate_get("/query", params={"typ": "tel"})

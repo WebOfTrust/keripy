@@ -209,7 +209,7 @@ class Exchanger:
 
     def processEscrowPartialSigned(self):
         """ Process escrow of partially signed messages """
-        for (dig,), serder in self.hby.db.epse.getItemIter():
+        for (dig,), serder in self.hby.db.epse.getTopItemIter():
             try:
                 tsgs = []
                 klases = (coring.Prefixer, coring.Seqner, coring.Saider)
@@ -229,7 +229,7 @@ class Exchanger:
                                           f"at dig = {dig}.")
 
                 old = None  # empty keys
-                for keys, siger in self.hby.db.esigs.getItemIter(keys=(dig, "")):
+                for keys, siger in self.hby.db.esigs.getTopItemIter(keys=(dig, "")):
                     quad = keys[1:]
                     if quad != old:  # new tsg
                         if sigers:  # append tsg made for old and sigers
@@ -646,7 +646,7 @@ def verify(hby, serder):
     args = ("qb64", "snh", "qb64")
     sigers = []
     old = None  # empty keys
-    for keys, siger in hby.db.esigs.getItemIter(keys=(serder.said, "")):
+    for keys, siger in hby.db.esigs.getTopItemIter(keys=(serder.said, "")):
         quad = keys[1:]
         if quad != old:  # new tsg
             if sigers:  # append tsg made for old and sigers

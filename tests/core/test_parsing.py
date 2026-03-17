@@ -351,7 +351,7 @@ def test_parser_v1_basic():
 
         pre = kever.prefixer.qb64
 
-        db_digs = [val for val in kever.db.kels.getOnIterAll(keys=pre)]
+        db_digs = [val for val in kever.db.kels.getAllIter(keys=pre)]
         assert db_digs == event_digs
 
         kevery = Kevery(db=valDB)
@@ -382,7 +382,7 @@ def test_parser_v1_basic():
         assert vkever.verfers[0].qb64 == kever.verfers[0].qb64
         assert vkever.verfers[0].qb64 == signers[4].verfer.qb64
 
-        db_digs = [val for val in kevery.db.kels.getOnIterAll(keys=pre)]
+        db_digs = [val for val in kevery.db.kels.getAllIter(keys=pre)]
         assert db_digs == event_digs
 
         parser = Parser()  # default is V2 parser but stream is V1
@@ -2137,7 +2137,7 @@ def test_parser_v2_basic():
 
         assert pre == kever.prefixer.qb64
 
-        db_digs = [val for val in kever.db.kels.getOnIterAll(keys=pre)]
+        db_digs = [val for val in kever.db.kels.getAllIter(keys=pre)]
         assert db_digs == event_digs
 
         kevery = Kevery(db=valDB)
@@ -2168,7 +2168,7 @@ def test_parser_v2_basic():
         assert vkever.verfers[0].qb64 == kever.verfers[0].qb64
         assert vkever.verfers[0].qb64 == signers2[4].verfer.qb64
 
-        db_digs = [val for val in kevery.db.kels.getOnIterAll(keys=pre)]
+        db_digs = [val for val in kevery.db.kels.getAllIter(keys=pre)]
         assert db_digs == event_digs
 
 
@@ -2586,7 +2586,7 @@ def test_parser_v2_mix():
 
         assert pre == kever.prefixer.qb64
 
-        db_digs = [val for val in kever.db.kels.getOnIterAll(keys=pre)]
+        db_digs = [val for val in kever.db.kels.getAllIter(keys=pre)]
         assert db_digs == event_digs
 
         kevery = Kevery(db=valDB)
@@ -2617,7 +2617,7 @@ def test_parser_v2_mix():
         assert vkever.verfers[0].qb64 == kever.verfers[0].qb64
         assert vkever.verfers[0].qb64 == signers2[4].verfer.qb64
 
-        db_digs = [val for val in kevery.db.kels.getOnIterAll(keys=pre)]
+        db_digs = [val for val in kevery.db.kels.getAllIter(keys=pre)]
         assert db_digs == event_digs
 
 

@@ -821,6 +821,36 @@ def test_namespaced_habs():
     hby.cf.close(clear=True)
 
 
+def test_join_group_hab_persists_group_name_on_reload():
+    hby_name = "multisig-join"
+    group_name = "test_group_4"
+    group_pre = core.Salter(raw=b'fedcba9876543210').signer(transferable=False).verfer.qb64
+
+    with habbing.openHby(name=hby_name, base="test", temp=False, clear=True,
+                         salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby:
+        mhab = hby.makeHab(name="member1")
+        other = hby.makeHab(name="member2")
+
+        group = hby.joinGroupHab(pre=group_pre,
+                                 group=group_name,
+                                 mhab=mhab,
+                                 smids=[mhab.pre, other.pre])
+
+        assert group.name == group_name
+        assert hby.db.habs.get(keys=group_pre).name == group_name
+
+    with habbing.openHby(name=hby_name, base="test", temp=False,
+                         salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby:
+        found = hby.habByName(name=group_name)
+        assert found is not None
+        assert found.pre == group_pre
+        assert found.name == group_name
+        assert hby.db.habs.get(keys=group_pre).name == group_name
+
+    hby.close(clear=True)
+    hby.cf.close(clear=True)
+
+
 def test_make_other_event():
     with habbing.openHby(salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby:
         hab = hby.makeHab(name="test")

@@ -20,12 +20,12 @@ child class statement.
 * a super class is visited only after all sub classes have been visited
 * linearized graph is monotonic (a class is only visted once)
 
-
-
 Principally:
-
-Suber class provides put, pin, get, rem and getItemIter method for managing
-a serialized value in a sub db with an iterable set of keys defining the key space
+SuberBase class provides  trim, cnt, getTopItemIter, and getFullItemIter
+Suber subclass of SuberBase also provides, put, pin, get, and rem methods
+Suber is the simple class for managing a serialized value in a subdb with a
+set of keys as a tuple (iterable) that is converted to a .sep delimited key
+that defines the key space.
 
 CesrSuber class extends Suber for values that are serializations of CESR serializable
 object instances. Ducktyped subclasses of Matter, Indexer, and Counter or the like.
@@ -97,7 +97,7 @@ etc.
 from __future__ import annotations
 
 from typing import TYPE_CHECKING, Type, Union
-from collections.abc import Iterable, Iterator
+from collections.abc import Iterable
 
 from .. import help
 from ..help.helping import isNonStringIterable, Reb64
@@ -149,9 +149,7 @@ class SuberBase():
         self.verify = True if verify else False
 
 
-
-    def _tokey(self, keys: str|bytes|memoryview|Iterable[str|bytes|memoryview],
-                topive: bool=False):
+    def _tokey(self, keys: str|bytes|memoryview|Iterable, topive: bool=False):
         """
         Converts keys to key bytes with proper separators and returns key bytes.
         If keys is already str or bytes or memoryview then returns key bytes.
@@ -165,8 +163,8 @@ class SuberBase():
                         last char of key is .sep
 
         Parameters:
-           keys (str | bytes | memoryview | Iterable[str | bytes]): db key or
-                        Iterable of (str | bytes) to form key.
+           keys (str|bytes|memoryview|Iterable[str|bytes|memoryview]): db key or
+                        Iterable of (str|bytes|memoryview) to form key.
            topive (bool): True means treat as partial key tuple from top branch of
                        key space given by partial keys. Resultant key ends in .sep
                        character.
@@ -188,7 +186,7 @@ class SuberBase():
                               for key in keys).encode())  # bytes(key) converts memoryview
 
 
-    def _tokeys(self, key: str | bytes | memoryview):
+    def _tokeys(self, key: str|bytes|memoryview):
         """
         Converts key bytes to keys tuple of strs by decoding and then splitting
         at separator .sep.
@@ -197,7 +195,7 @@ class SuberBase():
            keys (tuple[str]): makes tuple by splitting key at sep
 
         Parameters:
-           key (str | bytes | memoryview): db key.
+           key (str|bytes|memoryview): db key.
 
         """
         if isinstance(key, memoryview):  # memoryview of bytes
@@ -230,77 +228,87 @@ class SuberBase():
 
 
     def trim(self, keys: str|bytes|memoryview|Iterable=b"", *, topive=False):
-        """Removes all entries whose keys startswith keys. Enables removal of whole
-        branches of db key space. To ensure that proper separation of a branch
-        include empty string as last key in keys. For example ("a","") deletes
-        'a.1'and 'a.2' but not 'ab'
+        """Removes all entries in top branch of db given by keys.
+        Enables removal of whole branches of db key space.
+
+        Returns:
+           result (bool): True if val at key exists so delete successful.
+                          False otherwise
 
         Parameters:
-            keys (Iteratabke[str | bytes | memoryview]): of key parts that may be
+            keys (str|bytes|memoryview|Iterable): of key parts that may be
                 a truncation of a full keys tuple in  in order to address all the
                 items from multiple branches of the key space.
                 If keys is empty then trims all items in database.
                 Either append "" to end of keys Iterable to ensure get properly
-                separated top branch key or use top=True.
+                separated top branch key or use topive=True.
 
-            topive (bool): True means treat as partial key tuple from top branch of
-                       key space given by partial keys. Resultant key ends in .sep
-                       character.
-                       False means treat as full branch in key space. Resultant key
-                       does not end in .sep character.
-                       When last item in keys is empty str then will treat as
-                       partial ending in sep regardless of top value
+            topive (bool): True means treat as partial key tuple from top branch
+                of key space given by partial keys. Resultant key ends in .sep
+                character.
+                False means treat as full branch in key space. Resultant key
+                does not end in .sep character.
+                When last item in keys is empty str then will treat as
+                partial ending in sep regardless of top value
 
-
-        Returns:
-           result (bool): True if val at key exists so delete successful. False otherwise
+        Uses python .startswith() to match keyspace since str.startswith('')
+        always returns True so empty str will match all keys in db.
         """
-        return(self.db.delTop(db=self.sdb, top=self._tokey(keys, topive=topive)))
+        return self.db.remTop(db=self.sdb, top=self._tokey(keys, topive=topive))
+
+    remTop = trim  # alias for convenience
 
 
-    def getFullItemIter(self, keys: str|bytes|memoryview|Iterable[str|bytes]="",
+    def cntTop(self, keys: str|bytes|memoryview|Iterable="",
                        *, topive=False):
-        """Iterator over items in .db that returns full items with subclass
-        specific special hidden parts shown for debugging or testing.
+        """Counts all entries in top branch of db given by keys.
+        When keys is empty then counts all entries in whole db.
 
         Returns:
-            items (Iterator[tuple[key,val]]): (key, val) tuples of each item
-            over the all the items in subdb whose key startswith key made from
-            keys. Keys may be keyspace prefix to return branches of key space.
-            When keys is empty then returns all items in subdb.
-            This is meant to return full parts of items in both keyspace and
-            valuespace which may be useful in debugging or testing.
+            cnt (int): count of all entries in top branch of sdb
 
         Parameters:
-            keys (str|bytes|memoryview|Iteratable[str | bytes | memoryview]):
-                of key parts that may be
-                a truncation of a full keys tuple in  in order to address all the
-                items from multiple branches of the key space.
+            keys (str|bytes|memoryview|Iterable): of key
+                parts that may be a truncation of a full keys tuple in
+                in order to address all the items from multiple branches of the
+                key space.
                 If keys is empty then gets all items in database.
                 Either append "" to end of keys Iterable to ensure get properly
-                separated top branch key or use top=True.
-                In Python str.startswith('') always returns True so if branch
-                key is empty string it matches all keys in db with startswith.
+                separated top branch key or use topive=True.
+
+            topive (bool): True means treat keys as delimited top of partial
+                branch in key space by forcing resultant key to end in .sep
+                character.
+                False means treat keys as undelimited partial or full branch in
+                key space by not forcing resultant key to ebd in .sep character.
+                When last item in keys is empty str then will treat as delimited
+                partial branch ending in .sep regardless of topive value.
+
+        Uses python .startswith() to match keyspace since str.startswith('')
+        always returns True so empty str will match all keys in db.
+        """
+        return self.db.cntTop(db=self.sdb, top=self._tokey(keys, topive=topive))
 
 
-            topive (bool): True means treat as partial key tuple from top branch of
-                       key space given by partial keys. Resultant key ends in .sep
-                       character.
-                       False means treat as full branch in key space. Resultant key
-                       does not end in .sep character.
-                       When last item in keys is empty str then will treat as
-                       partial ending in sep regardless of top value
+    def cntAll(self):
+        """Counts all the entries in subdb.
+        Should be overidden in subclasses with parameters to count more
+        specifically.
+
+        Returns:
+            cnt (int): count of all entries in sdb
 
         """
-        for key, val in self.db.getTopItemIter(db=self.sdb,
-                                               top=self._tokey(keys, topive=topive)):
-            yield (self._tokeys(key), self._des(val))
+        return self.db.cntAll(db=self.sdb)
+
+    cnt = cntAll  # migration alias for backward compt
 
 
-    def getItemIter(self, keys: str|bytes|memoryview|Iterable="",
+    def getTopItemIter(self, keys: str|bytes|memoryview|Iterable="",
                        *, topive=False):
         """Iterates over all the items in top branch defined by keys where
-        keys may be truncation of full branch.
+        keys may be a truncation of a full branch. The truncation format may be
+        modified by the topive parameter.
 
         Iterates over top branch of items in .db subclasses that do special
         hidden transforms on either the keyspace or valuespace.
@@ -318,16 +326,50 @@ class SuberBase():
             When keys is empty then returns all items in subdb
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable[str|bytes|memoryview]): of key
+            keys (str|bytes|memoryview|Iterable): of key
                 parts that may be a truncation of a full keys tuple in
                 in order to address all the items from multiple branches of the
                 key space.
                 If keys is empty then gets all items in database.
                 Either append "" to end of keys Iterable to ensure get properly
-                separated top branch key or use top=True.
-                In Python str.startswith('') always returns True so if branch
-                key is empty string it matches all keys in db with startswith.
+                separated top branch key or use topive=True.
 
+            topive (bool): True means treat keys as delimited top of partial
+                branch in key space by forcing resultant key to end in .sep
+                character.
+                False means treat keys as undelimited partial or full branch in
+                key space by not forcing resultant key to ebd in .sep character.
+                When last item in keys is empty str then will treat as delimited
+                partial branch ending in .sep regardless of topive value.
+
+        Uses python .startswith() to match keyspace since str.startswith('')
+        always returns True so empty str will match all keys in db.
+        """
+        for key, val in self.db.getTopItemIter(db=self.sdb,
+                                               top=self._tokey(keys, topive=topive)):
+            yield (self._tokeys(key), self._des(val))
+
+
+    def getFullItemIter(self, keys: str|bytes|memoryview|Iterable="",
+                       *, topive=False):
+        """Iterator over items in .db that returns full items with subclass
+        specific special hidden parts shown for debugging or testing.
+
+        Returns:
+            items (Iterator[tuple[key,val]]): (key, val) tuples of each item
+            over the all the items in subdb whose key startswith key made from
+            keys. Keys may be keyspace prefix to return branches of key space.
+            When keys is empty then returns all items in subdb.
+            This is meant to return full parts of items in both keyspace and
+            valuespace which may be useful in debugging or testing.
+
+        Parameters:
+            keys (str|bytes|memoryview|Iteratable): of key parts that may be
+                a truncation of a full keys tuple in  in order to address all the
+                items from multiple branches of the key space.
+                If keys is empty then gets all items in database.
+                Either append "" to end of keys Iterable to ensure get properly
+                separated top branch key or use topive=True.
 
             topive (bool): True means treat as partial key tuple from top branch of
                 key space given by partial keys. Resultant key ends in .sep
@@ -337,25 +379,12 @@ class SuberBase():
                 When last item in keys is empty str then will treat as
                 partial ending in sep regardless of top value
 
-        Uses python .startswith to match which always returns True if top is
-        empty string so empty will matches all keys in db.
+        Uses python .startswith() to match keyspace since str.startswith('')
+        always returns True so empty str will match all keys in db.
         """
         for key, val in self.db.getTopItemIter(db=self.sdb,
                                                top=self._tokey(keys, topive=topive)):
             yield (self._tokeys(key), self._des(val))
-
-    def cnt(self):
-        """Counts all the entries in subdb.
-        Should be overidden in subclasses with parameters to count more
-        specifically.
-
-        Returns:
-            cnt (int): count of all entries in sdb
-
-        """
-        return self.db.cntAll(db=self.sdb)
-
-    cntAll = cnt  # migration alias for backward compt
 
 
 class Suber(SuberBase):
@@ -366,7 +395,8 @@ class Suber(SuberBase):
     def __init__(self, db: dbing.LMDBer, *,
                        subkey: str = 'docs.',
                        dupsort: bool=False, **kwa):
-        """
+        """Initialze instance
+
         Inherited Parameters:
             db (dbing.LMDBer): base db
             subkey (str):  LMDB sub database key
@@ -386,8 +416,7 @@ class Suber(SuberBase):
 
 
     def put(self, keys: Union[str, Iterable], val: Union[bytes, str, any]):
-        """
-        Puts val at key made from keys. Does not overwrite
+        """Puts val at key made from keys. Does not overwrite
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -403,8 +432,7 @@ class Suber(SuberBase):
 
 
     def pin(self, keys: Union[str, Iterable], val: Union[bytes, str]):
-        """
-        Pins (sets) val at key made from keys. Overwrites.
+        """Pins (sets) val at key made from keys. Overwrites.
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -419,8 +447,7 @@ class Suber(SuberBase):
 
 
     def get(self, keys: Union[str, Iterable]):
-        """
-        Gets val at keys
+        """Gets val at keys
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
@@ -441,15 +468,31 @@ class Suber(SuberBase):
 
 
     def rem(self, keys: Union[str, Iterable]):
-        """Removes entry at keys
+        """Removes entry at keys. This safe if keys empty or missing then
 
         Parameters:
             keys (tuple): of key strs to be combined in order to form key
 
         Returns:
-           result (bool): True if key exists so delete successful. False otherwise
+            result (bool): True if key exists so delete successful.
+                          False if key empty or missing from db
+
+        Raises KeyError if key to big or otherwise bad
         """
-        return(self.db.delVal(db=self.sdb, key=self._tokey(keys)))
+        return(self.db.remVal(db=self.sdb, key=self._tokey(keys)))
+
+
+    def cnt(self):
+        """Counts all the entries in subdb.
+        Should be overidden in subclasses with parameters to count more
+        specifically.
+
+        Returns:
+            cnt (int): count of all entries in sdb
+
+        """
+        # for non-collective non-on subers cnt is cntAll
+        return self.db.cntAll(db=self.sdb)
 
 
 class OnSuberBase(SuberBase):
@@ -504,6 +547,8 @@ class OnSuberBase(SuberBase):
                                  val=self._ser(val),
                                  sep=self.sep.encode()))
 
+    #putOn = put  # refactoring alias
+
     def pinOn(self, keys: str|bytes|memoryview|Iterable, on: int=0,
                     val: str|bytes|memoryview|None=None):
         """
@@ -526,6 +571,8 @@ class OnSuberBase(SuberBase):
                                  val=self._ser(val),
                                  sep=self.sep.encode()))
 
+    #pinOn = pin  # refactoring alias
+
 
     def appendOn(self, keys: str|bytes|memoryview|Iterable,
                        val: str|bytes|memoryview):
@@ -546,6 +593,8 @@ class OnSuberBase(SuberBase):
                                        key=self._tokey(keys),
                                        val=self._ser(val),
                                        sep=self.sep.encode()))
+
+    #appendOn = append  # refactoring alias
 
 
     def getOnItem(self, keys: str|bytes|memoryview|Iterable, on: int=0):
@@ -683,7 +732,7 @@ class OnSuberBase(SuberBase):
                                      sep=self.sep.encode()))
 
 
-    def getOnTopItemIter(self, keys: str|bytes|memoryview|Iterable=""):
+    def getTopItemIter(self, keys: str|bytes|memoryview|Iterable=""):
         """Iterates over top branch of all entries where each top key startwith
         key made from keys.
         Assumes every effective key in db has trailing on element,
@@ -709,10 +758,10 @@ class OnSuberBase(SuberBase):
                                                         sep=self.sep.encode())):
             yield (self._tokeys(key), on, self._des(val))
 
-    getOnItemIter = getOnTopItemIter  # alias for shadow super class method
+    #getOnTopItemIter = getTopItemIter  # alias for shadow super class method
 
 
-    def getOnAllItemIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
+    def getAllItemIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Iterates over all entries in db for all onkey made from keys and on
         for all on >= on.
         When on==0 default then gets all on.
@@ -736,10 +785,8 @@ class OnSuberBase(SuberBase):
                                                        sep=self.sep.encode())):
             yield (self._tokeys(keys), on, self._des(val))
 
-    getOnItemIterAll = getOnAllItemIter  # migration alias for backwards compat
 
-
-    def getOnAllIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
+    def getAllIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """
         Returns:
             items (Iterator[bytes]): of val with same key but increments of
@@ -759,8 +806,6 @@ class OnSuberBase(SuberBase):
                                                        on=on,
                                                        sep=self.sep.encode())):
             yield (self._des(val))
-
-    getOnIterAll = getOnAllIter  # migration alias for backwards compat
 
 
 class OnSuber(OnSuberBase, Suber):
@@ -942,7 +987,6 @@ class B64Suber(B64SuberBase, Suber):
                            False means do not reverify. Default False
         """
         super(B64Suber, self).__init__(*pa, **kwa)
-
 
 
 class CesrSuberBase(SuberBase):
@@ -1376,8 +1420,7 @@ class IoSetSuber(SuberBase):
                                              sep=self.sep)]
 
 
-    # Todo XXXX need to refactor to use getItemIter for here not alias to getTopItemIter
-    def XgetItemIter(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
+    def getItemIter(self, keys: str|bytes|memoryview|Iterable, *, ion=0):
         """Iterates over set items at effecive key made from keys and hidden
         ordinal suffix ion starting at ion >= ion.
         When keys is empty or missing then returns empty iterator
@@ -1493,7 +1536,7 @@ class IoSetSuber(SuberBase):
                                    sep=self.sep)
 
 
-    def cnt(self, keys: str|bytes|memoryview|Iterable = "", *, ion=0):
+    def cnt(self, keys: str|bytes|memoryview|Iterable="", *, ion=0):
         """Counts entries at effective key made from keys and hidden ordinal
         suffix. Zero otherwise.
         When keys empty then counts all in db.
@@ -1556,8 +1599,6 @@ class IoSetSuber(SuberBase):
         for key, val in self.db.getTopIoSetItemIter(db=self.sdb,
                 top=self._tokey(keys, topive=topive), sep=self.sep.encode()):
             yield (self._tokeys(key), self._des(val))
-
-    getItemIter = getTopItemIter  # migration alias for backwards compat
 
 
     def getLastIter(self, keys: str|bytes|memoryview|Iterable = ""):
@@ -1684,7 +1725,6 @@ class CesrIoSetSuber(CesrSuberBase, IoSetSuber):
         super(CesrIoSetSuber, self).__init__(*pa, **kwa)
 
 
-
 class CatCesrIoSetSuber(CatCesrSuberBase, IoSetSuber):
     """
     Sub class of CatSuberBase and IoSetSuber where values stored in db are a
@@ -1737,7 +1777,6 @@ class CatCesrIoSetSuber(CatCesrSuberBase, IoSetSuber):
 
         """
         super(CatCesrIoSetSuber, self).__init__(*pa, **kwa)
-
 
 
 class SignerSuber(CesrSuber):
@@ -1797,7 +1836,7 @@ class SignerSuber(CesrSuber):
                 if val is not None else None)
 
 
-    def getItemIter(self, keys: str | bytes | memoryview | Iterable = "",
+    def getTopItemIter(self, keys: str | bytes | memoryview | Iterable = "",
                     *, topive=False):
         """Iterates over all the items in top branch defined by keys where
         keys may be truncation of full branch.
@@ -1927,8 +1966,7 @@ class CryptSignerSuber(SignerSuber):
         return (self.klas(qb64b=bytes(val), transferable=verfer.transferable))
 
 
-
-    def getItemIter(self, keys: str|bytes|memoryview|Iterable= "",
+    def getTopItemIter(self, keys: str|bytes|memoryview|Iterable= "",
                        decrypter: signing.Decrypter = None, *, topive=False):
         """Iterates over all the items in top branch defined by keys where
         keys may be truncation of full branch.
@@ -1969,6 +2007,7 @@ class CryptSignerSuber(SignerSuber):
             else:
                 yield (ikeys, self.klas(qb64b=bytes(val),
                                             transferable=verfer.transferable))
+
 
 class SerderSuberBase(SuberBase):
     """
@@ -2102,8 +2141,6 @@ class SerderIoSetSuber(SerderSuberBase, IoSetSuber):
         super(SerderIoSetSuber, self).__init__(*pa, **kwa)
 
 
-
-
 class SchemerSuber(SerderSuberBase, Suber):
     """
     Sub class of SerderSuberBase and Suber where data is serialized Schemer instance
@@ -2139,7 +2176,6 @@ class SchemerSuber(SerderSuberBase, Suber):
         if not issubclass(klas, scheming.Schemer):
             raise TypeError(f"Invalid {klas=}, not subclass of {scheming.Schemer}.")
         super(SchemerSuber, self).__init__(*pa, klas=klas, **kwa)
-
 
 
 class DupSuber(SuberBase):
@@ -2575,7 +2611,7 @@ class IoDupSuber(DupSuber):
         return (self.db.cntIoDups(db=self.sdb, key=self._tokey(keys)))
 
 
-    def getItemIter(self, keys: str | bytes | memoryview | Iterable = "",
+    def getTopItemIter(self, keys: str | bytes | memoryview | Iterable = "",
                     *, topive=False):
         """Iterates over all the items in top branch defined by keys where
         keys may be truncation of full branch.
@@ -2648,7 +2684,6 @@ class B64IoDupSuber(B64SuberBase, IoDupSuber):
         super(B64IoDupSuber, self).__init__(*pa, **kwa)
 
 
-
 class OnIoDupSuber(OnSuberBase, IoDupSuber):
     """
     Sub class of IoDupSuber and OnSuberBase that supports Insertion Ordering
@@ -2697,8 +2732,8 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
         super(OnIoDupSuber, self).__init__(*pa, **kwa)
 
 
-    def putOn(self, keys: str|bytes|memoryview|Iterable, on: int=0,
-            vals: str|bytes|memoryview|Iterable = b''):
+    def put(self, keys: str|bytes|memoryview|Iterable, on: int=0,
+            vals: str|bytes|memoryview|Iterable = b""):
         """Put all vals idempotently at key at key made from keys with on suffix
         in insertion order using hidden ordinal proem. Idempotently means do
         not put any val in vals that is already in dup vals at key. Does not overwrite.
@@ -2712,13 +2747,15 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
             result (bool): True If successful, False otherwise.
 
         """
-        if not isNonStringIterable(vals):  # not iterable
+        if not isNonStringIterable(vals):  # not NonStrIterable
             vals = (vals, ) if vals else ()  # make iterable
         return self.db.putOnIoDupVals(db=self.sdb,
                                       key=self._tokey(keys),
                                       on=on,
                                       vals=tuple(self._ser(val) for val in vals),
                                       sep=self.sep.encode())
+
+    putOn = put  # refactoring alias
 
 
     def pinOn(self, keys: str|bytes|memoryview|Iterable, on: int=0,
@@ -2751,6 +2788,8 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                                       vals=tuple(self._ser(val) for val in vals),
                                       sep=self.sep.encode())
 
+    #pinOn = pin  # refactoring alias
+
 
     def addOn(self, keys: str | bytes | memoryview | Iterable, on: int=0,
                   val: str | bytes | memoryview = ''):
@@ -2775,6 +2814,8 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                                     val=self._ser(val),
                                     sep=self.sep.encode()))
 
+    #add = addOn  # refactoring alias
+
 
 
     def appendOn(self, keys: str | bytes | memoryview,
@@ -2792,6 +2833,8 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                                        key=self._tokey(keys),
                                        val=self._ser(val),
                                        sep=self.sep.encode()))
+
+    #appendOn = append  # refactoring alias
 
 
     def getOn(self, keys: str|bytes|memoryview|Iterable, on: int = 0):
@@ -2812,6 +2855,28 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                                                   on=on,
                                                   sep=self.sep.encode())]
 
+    # ToDo create LMDBer getOnIoDupItemIter so can create this
+    #def getOnItemIter(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
+        #"""Iterates over dup items (key, on, val) at onkey made from keys and on
+        #in insertion order from from offset ion into set using hidden ordinal suffix.
+        #When onkey is empty or missing then returns empty iterator
+
+        #Returns:
+            #val (Iterator[str]):  deserialized val elements of set at onkey
+
+        #Parameters:
+            #keys (str|bytes|memoryview|Iterable): key(s) made into base key
+            #on (int): ordinal number tail used with onKey(pre,on) to form key.
+            #ion (int): starting insertion ordinal value, default 0
+        #"""
+        #for key, on, val in self.db.getOnIoDupItemIter(db=self.sdb,
+                                                  #key=self._tokey(keys),
+                                                  #on=on,
+                                                  #ion=ion,
+                                                  #sep=self.sep.encode()):
+
+            #yield (self._tokeys(key), on, self._des(val))
+
 
     def getOnIter(self, keys: str | bytes | memoryview | Iterable, on: int = 0):
         """Iterates over dup vals at key made from keys
@@ -2831,8 +2896,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
 
 
     def getOnLast(self, keys: str|bytes|memoryview|Iterable, on: int = 0):
-        """
-        Gets last val inserted at key made from keys in insertion order using
+        """Gets last val inserted at key made from keys in insertion order using
         hidden ordinal proem.
 
         Parameters:
@@ -2850,9 +2914,8 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
 
 
     def remOn(self, keys: str | bytes | memoryview | Iterable, on: int=0,
-                   val: str | bytes | memoryview = ''):
-        """
-        Removes entry at key made from keys and dup val that matches val if any,
+                   val: str|bytes|memoryview|None = None):
+        """Removes entry at key made from keys and dup val that matches val if any,
         notwithstanding hidden ordinal proem. Otherwise deletes all dup values
         at key if any.
 
@@ -2861,16 +2924,16 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                 combined with serialized on suffix and sep to form onkey
 
             on (int): ordinal number used with onKey(pre,on) to form key.
-            val (str):  value at key to delete. Subclass ._ser method may
+            val (str|bytes|memoryview|None):  value at key to delete. Subclass ._ser method may
                         accept different value types
-                        if val is empty then remove all values at key
+                        if val is None then remove all values at key
 
         Returns:
            result (bool): True if onkey with dup val exists so rem successful.
                            False otherwise
 
         """
-        if val:
+        if val is not None:
             return self.db.delOnIoDupVal(db=self.sdb,
                                        key=self._tokey(keys),
                                        on=on,
@@ -2902,12 +2965,46 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                                        on=on, sep=self.sep.encode()))
 
 
-    # ToDo XXXX: make getOnTopItemIter to mirrow for OnSuber and OnIoSetSuber
-    # getOnItemIter = getOnTopItemIter  # alias to shadow super class method
 
+    def getTopItemIter(self, keys: str|bytes|memoryview|Iterable=""):
+        """Iterates over top branch of all insertion ordered dup values where
+        each key startwith top.
+        Assumes every effective key in db has trailing on element,
+        onkey = key + sep + on, so can return on in item.
+        Also assumes every effective key includes hiddion isertion ordinal ion
+        suffix that is suffixed and unsuffixed transparently.
 
-    def getOnItemIterAll(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+        When top key is empty, gets all items in database.
+
+        Returns:
+            items (Iterator[(tuple, int, str)]): iterator of triples
+                (keys, on, val)
+                where keys forms base key, on is int, and val is entry value at
+                with insertion ordering suffix removed from effective key.
+
+        Parameters:
+            keys (str|bytes|memoryview|Iterable): keys as truncated top key,
+                to get a key space prefix to get all the items
+                from multiple branches of the key space.
+                If top key is empty then gets all items in database.
+            on (int): ordinal number used with onKey(pre,on) to form key.
+
         """
+        for keys, on, val in (self.db.getOnTopIoDupItemIter(db=self.sdb,
+                                                        top=self._tokey(keys),
+                                                        sep=self.sep.encode())):
+            yield (self._tokeys(keys), on, self._des(val))
+
+    #getOnTopItemIter = getTopItemIter  # alias to shadow super class method
+
+
+    def getAllItemIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+        """Iterates over all items of each dup set for all on >= on for key.
+        When on == 0, default, Iterates over alls items of each set for all on for key.
+        When key is empty then iterates over all items in whole db
+
+        Items are triples of (keys, on, val)
+
         Returns:
             items (Iterator[(top keys, on, val)]): triples of (onkeys, on int,
                   deserialized val)
@@ -2924,11 +3021,15 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
             yield (self._tokeys(keys), on, self._des(val))
 
 
-    def getOnIterAll(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
-        """
+    def getAllIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
+        """Iterates over all values of each dup set for all on >= on for key.
+        When on == 0, default, Iterates over alls values of each dup set for
+        all on for key.
+        When key is empty then iterates over all items in whole db
+
         Returns
-            val (Iterator[bytes]):  deserialized val of of each onkey  but
-            increments of on >= on i.e. all key.on beginning with on
+            vals (Iterator[bytes]):  iterator of dup vals at each onkey  but
+                increments of on >= on i.e. all key.on beginning with on
 
         Parameters:
             keys (str | bytes | memoryview | iterator): keys as prefix to be
@@ -2940,6 +3041,8 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
         for val in (self.db.getOnIoDupIterAll(db=self.sdb,
                         key=self._tokey(keys), on=on, sep=self.sep.encode())):
             yield (self._des(val))
+
+    #getAllIter = getAllIter  # alias for refactor
 
 
     def getOnLastIter(self, keys: str|bytes|memoryview|Iterable = "", on: int=0):
@@ -3115,14 +3218,14 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
     Set inclusion scales with O(1) whereas list inclusion scales with O(n).
     """
     def __init__(self, *pa, **kwa):
-        """
-        Inherited Parameters:
+        """Initialize instance
 
+        Inherited Parameters:
         """
         super(OnIoSetSuber, self).__init__(*pa, **kwa)
 
 
-    def putOn(self, keys: str|bytes|memoryview|Iterable,
+    def put(self, keys: str|bytes|memoryview|Iterable,
                     on: int=0,
                     vals: str|bytes|memoryview|Iterable|None=None):
         """Put all vals idempotently at key at key made from keys with exposed
@@ -3151,7 +3254,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                       sep=self.sep.encode())
 
 
-    def pinOn(self, keys: str|bytes|memoryview|Iterable,
+    def pin(self, keys: str|bytes|memoryview|Iterable,
                     on: int=0,
                     vals: str|bytes|memoryview|Iterable|None=None):
         """Pins (sets) vals at key  made from keys with exposed
@@ -3179,7 +3282,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                       sep=self.sep.encode())
 
 
-    def appendOn(self, keys: str|bytes|memoryview|Iterable,
+    def append(self, keys: str|bytes|memoryview|Iterable,
                        vals: str|bytes|memoryview|Iterable|None=None):
         """Appends vals to next highest unused exposed ordinal tail and returns the
         ordinal. If vals None or empty raises ValueError.
@@ -3201,7 +3304,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                          sep=self.sep.encode()))
 
 
-    def addOn(self, keys: str|bytes|memoryview|Iterable,
+    def add(self, keys: str|bytes|memoryview|Iterable,
                     on: int=0,
                     val: str|bytes|memoryview |None=None):
         """Add val idempotently at key made from keys with exposed on tail in
@@ -3226,7 +3329,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                       sep=self.sep.encode()))
 
 
-    def getOnItem(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
+    def getItem(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
         """Gets list of items (key, on, val) from set of entries at onkey
         made from keys and on starting at offset ion into set.
         When onkey missing or key empty or missing returns empty list.
@@ -3249,7 +3352,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                                sep=self.sep.encode())]
 
 
-    def getOn(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
+    def get(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
         """Gets set vals list at onkey made from keys and on in insertion order from
         from offset ion into set using hidden ordinal suffix.
         When onkey is empty or missing then returns empty list
@@ -3272,7 +3375,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                                sep=self.sep.encode())]
 
 
-    def getOnItemIter(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
+    def getItemIter(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
         """Iterates over set items (key, on, val) at onkey made from keys and on
         in insertion order from from offset ion into set using hidden ordinal suffix.
         When onkey is empty or missing then returns empty iterator
@@ -3294,7 +3397,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._tokeys(key), on, self._des(val))
 
 
-    def getOnIter(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
+    def getIter(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
         """Iterates over set vals at onkey made from keys and on in insertion order
         from from offset ion into set using hidden ordinal suffix.
         When onkey is empty or missing then returns empty iterator
@@ -3315,7 +3418,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._des(val))
 
 
-    def getOnLastItem(self, keys: str|bytes|memoryview|Iterable, on: int=0):
+    def getLastItem(self, keys: str|bytes|memoryview|Iterable, on: int=0):
         """Gets last item inserted at key made from keys in insertion order using
         hidden ordinal proem.
 
@@ -3338,7 +3441,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
 
 
-    def getOnLast(self, keys: str|bytes|memoryview|Iterable, on: int=0):
+    def getLast(self, keys: str|bytes|memoryview|Iterable, on: int=0):
         """Gets last val inserted at key made from keys in insertion order using
         hidden ordinal proem.
 
@@ -3359,7 +3462,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
         return None
 
 
-    def remOn(self, keys: str|bytes|memoryview|Iterable,
+    def rem(self, keys: str|bytes|memoryview|Iterable,
                     on: int=0,
                     val: str|bytes|memoryview|None=None):
         """Removes entry in set with val if any at key made and on in insertion order
@@ -3389,7 +3492,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
 
 
-    def remOnAll(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
+    def remAll(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Removes all entries for all sets for all on >= on at key.
         When on i==0, default, then removes all entries for all sets for all on at key.
         When key is empty then removes whole db.
@@ -3409,7 +3512,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                       sep=self.sep.encode())
 
 
-    def cntOn(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
+    def cnt(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
         """Counts all entries in set at onkey = keys + sep + on starting at
         offset suffix ion into set.
 
@@ -3428,7 +3531,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                      sep=self.sep.encode()))
 
 
-    def cntOnAll(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
+    def cntAll(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Counts all set entries for all on >= on at key.
         When on == 0, default, then count all set members for all on for key
         When key is empty then count all on for all key i.e. whole db
@@ -3448,13 +3551,14 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                       sep=self.sep.encode()))
 
 
-    def getOnTopItemIter(self, keys: str|bytes|memoryview|Iterable=""):
+    def getTopItemIter(self, keys: str|bytes|memoryview|Iterable=""):
         """Iterates over top branch of all insertion ordered set values where
         each key startwith top.
         Assumes every effective key in db has trailing on element,
         onkey = key + sep + on, so can return on in item.
         Also assumes every effective key includes hiddion isertion ordinal ion
         suffix that is suffixed and unsuffixed transparently.
+
         When top key is empty, gets all items in database.
 
         Returns:
@@ -3477,7 +3581,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._tokeys(keys), on, self._des(val))
 
 
-    def getOnAllItemIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
+    def getAllItemIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Iterates over all items of each set for all on >= on for key.
         When on ==0, default Iterates over alls items of each set for all on for key.
         When key is empty then iterates over all items in whole db
@@ -3505,7 +3609,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._tokeys(keys), on, self._des(val))
 
 
-    def getOnAllIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
+    def getAllIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Iterates over alls values of each set for all on >= on for key.
         When on ==0, default, Iterates over alls items of each set for all on for key.
         When key is empty then iterates over all items in whole db
@@ -3530,7 +3634,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._des(val))
 
 
-    def getOnAllLastItemIter(self, keys: str|bytes|memoryview|Iterable="",
+    def getAllLastItemIter(self, keys: str|bytes|memoryview|Iterable="",
                                    on: int=0):
         """Iterates over last items of each set for all on >= on at key.
         When on is None iterates over last items of each set for all on at key.
@@ -3555,7 +3659,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._tokeys(keys), on, self._des(val))
 
 
-    def getOnAllLastIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
+    def getAllLastIter(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
         """Iterates over last value of each set for all on >= on at key
         When on ==0, default, iterates over last value of each set for all on at key
         When key is empty iterates over last value of each set of all on for
@@ -3579,7 +3683,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
 
 
-    def getOnAllItemBackIter(self, keys: str|bytes|memoryview|Iterable="",
+    def getAllItemBackIter(self, keys: str|bytes|memoryview|Iterable="",
                                 on: int|None=None):
         """Iterates backwards over all set items for all on <= on at key.
         When on is None iterates backwards over all set items for all on at key.
@@ -3612,7 +3716,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._tokeys(keys), on, self._des(val))
 
 
-    def getOnAllBackIter(self, keys: str|bytes|memoryview|Iterable = "",
+    def getAllBackIter(self, keys: str|bytes|memoryview|Iterable = "",
                             on: int|None=None):
         """Iterates backwards over all set values for all on <= on at key.
         When on is None iterates backwards over all set values for all on at key.
@@ -3639,7 +3743,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._des(val))
 
 
-    def getOnAllLastItemBackIter(self, keys: str|bytes|memoryview|Iterable="",
+    def getAllLastItemBackIter(self, keys: str|bytes|memoryview|Iterable="",
                                 on: int|None=None):
         """Iterates backwards over last set items for all on <= on at key.
         When on is None iterates backwards over last set items for all on at key.
@@ -3671,7 +3775,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             yield (self._tokeys(keys), on, self._des(val))
 
 
-    def getOnAllLastBackIter(self, keys: str|bytes|memoryview|Iterable = "",
+    def getAllLastBackIter(self, keys: str|bytes|memoryview|Iterable = "",
                             on: int|None=None):
         """Iterates backwards over last set values for all on <= on at key.
         When on is None iterates backwards over last set values for all on at key.

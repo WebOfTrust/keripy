@@ -18,9 +18,8 @@ from hio.core import http, tcp
 from hio.core.tcp import serving
 from hio.help import decking
 
-from .. import Vrsn_1_0, Roles, Ilks, MissingEntryError
-from . import (GroupHab, directing, storing,
-               httping, forwarding, agenting, oobiing)
+from ..kering import Vrsn_1_0, Roles, Ilks, MissingEntryError
+from ..recording import TopicsRecord
 from ..core import (eventing, parsing, routing, coring, serdering,
                     Counter, Codens)
 from ..app import oobiing
@@ -28,8 +27,10 @@ from ..db import BaserDoer
 from ..end import ending
 from ..help import helping, ogler
 from ..peer import exchanging
-from ..vdr import Tevery, verifying, viring
-from ..recording import TopicsRecord
+
+from . import (GroupHab, directing, storing,
+               httping, forwarding, agenting, oobiing)
+
 
 logger = ogler.getLogger()
 
@@ -51,8 +52,10 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     if hab is None:
         hab = hby.makeHab(name=alias, transferable=False)
 
-    reger = viring.Reger(name=hab.name, db=hab.db, temp=False)
-    verfer = verifying.Verifier(hby=hby, reger=reger)
+    from ..vdr import Reger,Verifier  # dynamic import because of circular import
+
+    reger = Reger(name=hab.name, db=hab.db, temp=False)
+    verfer = Verifier(hby=hby, reger=reger)
 
     mbx = mbx if mbx is not None else storing.Mailboxer(name=alias, temp=hby.temp)
     forwarder = forwarding.ForwardHandler(hby=hby, mbx=mbx)
@@ -72,6 +75,8 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
                           rvy=rvy,
                           cues=cues)
     kvy.registerReplyRoutes(router=rvy.rtr)
+
+    from ..vdr import Tevery  # dynamic import because of circular import
 
     tvy = Tevery(reger=verfer.reger,
                  db=hby.db,
@@ -557,6 +562,8 @@ class MailboxDirector(doing.DoDoer):
         self.kvy.registerReplyRoutes(self.rtr)
 
         if self.verifier is not None:
+            from ..vdr import Tevery  # dynamic import because of circular import
+
             self.tvy = tvy if tvy is not None else Tevery(reger=self.verifier.reger,
                                                           db=self.hby.db, rvy=self.rvy,
                                                           lax=True, local=False, cues=self.cues)
@@ -622,7 +629,7 @@ class MailboxDirector(doing.DoDoer):
             hab (Hab): the Hab of the prefix
 
         """
-        for (_, erole, eid), end in hab.db.ends.getItemIter(keys=(hab.pre, Roles.mailbox)):
+        for (_, erole, eid), end in hab.db.ends.getTopItemIter(keys=(hab.pre, Roles.mailbox)):
             if end.allowed:
                 poller = Poller(hab=hab, topics=self.topics, witness=eid)
                 self.pollers.append(poller)
@@ -1096,7 +1103,7 @@ class ReceiptEnd(doing.DoDoer):
 
             self.psr.parseOne(bytes(rct))
 
-            rep.set_header('Content-Type', "application/json+cesr")
+            rep.set_header('Content-Type', httping.CESR_CONTENT_TYPE)
             rep.status = falcon.HTTP_200
             rep.data = rct
         else:
@@ -1147,7 +1154,7 @@ class ReceiptEnd(doing.DoDoer):
             for wiger in wigers:
                 rct.extend(wiger.qb64b)
 
-        rep.set_header('Content-Type', "application/json+cesr")
+        rep.set_header('Content-Type', httping.CESR_CONTENT_TYPE)
         rep.status = falcon.HTTP_200
         rep.data = rct
 
@@ -1191,7 +1198,9 @@ class QueryEnd:
 
     def __init__(self, hab):
         self.hab = hab
-        self.reger = viring.Reger(name=hab.name, db=hab.db, temp=hab.temp)
+
+        from ..vdr import Reger  # dynamic import to avoid circular
+        self.reger = Reger(name=hab.name, db=hab.db, temp=hab.temp)
 
     def on_get(self, req, rep):
         """ Handles GET requests to query KEL or TEL events of a pre from a witness.
@@ -1211,7 +1220,7 @@ class QueryEnd:
                 vcid (string, optional): For 'tel' queries, credential said. required if `reg` is not provided.
 
             Response:
-                - 200 OK: Returns event data in "application/json+cesr" format.
+                - 200 OK: Returns event data in "application/cesr" format.
                 - 400 Bad Request: Returned if required query parameters are missing or if an invalid `typ` is specified.
 
             Example:
@@ -1239,7 +1248,7 @@ class QueryEnd:
                 dig = self.hab.db.kels.getOnLast(keys=pre, on=sn)
                 if dig is None:
                     raise falcon.HTTPBadRequest(description=f"non-existant event at seq-num {sn}")
-                for dig in self.hab.db.kels.getOnIterAll(keys=pre, on=sn):
+                for dig in self.hab.db.kels.getAllIter(keys=pre, on=sn):
                     try:
                         dig = dig.encode("utf-8")
                         msg = self.hab.db.cloneEvtMsg(pre=pre, fn=0, dig=dig)
@@ -1251,7 +1260,7 @@ class QueryEnd:
                     evnts.extend(msg)
 
 
-            rep.set_header('Content-Type', "application/json+cesr")
+            rep.set_header('Content-Type', httping.CESR_CONTENT_TYPE)
             rep.status = falcon.HTTP_200
             rep.data = bytes(evnts)
 
@@ -1273,7 +1282,7 @@ class QueryEnd:
                 for msg in cloner:
                     evnts.extend(msg)
 
-            rep.set_header('Content-Type', "application/json+cesr")
+            rep.set_header('Content-Type', httping.CESR_CONTENT_TYPE)
             rep.status = falcon.HTTP_200
             rep.data = bytes(evnts)
 

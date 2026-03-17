@@ -10,22 +10,23 @@ from typing import Optional
 from hio.base import doing
 from hio.help import decking
 
-from . import viring
 from ..kering import (Vrsn_1_0, ClosedError,
                       ConfigurationError, MissingAnchorError,
                       ValidationError, LikelyDuplicitousError,
                       MissingRegistryError)
 from ..help import ogler
-from ..app import agenting
 from ..app.habbing import GroupHab
-from ..vdr import eventing
-from ..vdr.viring import Reger
+
+
 from ..core import (parsing, scheming, serdering,
                     Counter, Codens, MtrDex, NumDex,
                     Number, Diger, TraitDex,
                     Seqner, Saider, Prefixer)
 from ..db import snKey, dgKey
 from ..vc import proving
+
+from .vdring import RegistryRecord
+from . import eventing
 
 logger = ogler.getLogger()
 
@@ -55,7 +56,7 @@ class Regery:
         self.temp = temp
         self.cues = cues if cues is not None else decking.Deck()
 
-        self.reger = reger if reger is not None else Reger(name=self.name, base=base, db=self.hby.db, temp=temp,
+        self.reger = reger if reger is not None else eventing.Reger(name=self.name, base=base, db=self.hby.db, temp=temp,
                                                            reopen=True)
         self.tvy = eventing.Tevery(reger=self.reger, db=self.hby.db, local=True, lax=True)
         self.psr = parsing.Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy, version=Vrsn_1_0)
@@ -78,7 +79,7 @@ class Regery:
 
         """
 
-        for name, regord in self.reger.regs.getItemIter():
+        for name, regord in self.reger.regs.getTopItemIter():
             name, = name
             regk = regord.registryKey
             pre = regord.prefix
@@ -316,7 +317,7 @@ class Registry(BaseRegistry):
         self.regd = self.vcp.said
         self.registries.add(self.regk)
         self.reger.regs.put(keys=self.name,
-                            val=viring.RegistryRecord(registryKey=self.regk, prefix=pre))
+                            val=RegistryRecord(registryKey=self.regk, prefix=pre))
 
         self.processEvent(serder=self.vcp)
         self.inited = True
@@ -421,7 +422,7 @@ class SignifyRegistry(BaseRegistry):
         self.regd = regser.said
         self.registries.add(self.regk)
         self.reger.regs.put(keys=self.name,
-                            val=viring.RegistryRecord(registryKey=self.regk, prefix=pre))
+                            val=RegistryRecord(registryKey=self.regk, prefix=pre))
 
         try:
             self.processEvent(serder=regser)
@@ -522,8 +523,10 @@ class Registrar(doing.DoDoer):
         self.hby = hby
         self.rgy = rgy
         self.counselor = counselor
-        self.receiptor = agenting.Receiptor(hby=self.hby)
-        self.witPub = agenting.WitnessPublisher(hby=self.hby)
+
+        from ..app.agenting import Receiptor, WitnessPublisher
+        self.receiptor = Receiptor(hby=self.hby)
+        self.witPub = WitnessPublisher(hby=self.hby)
 
         doers = [self.receiptor, self.witPub, doing.doify(self.escrowDo)]
 
@@ -732,7 +735,7 @@ class Registrar(doing.DoDoer):
         from witnesses yet.  When receipting is complete, remove from escrow and cue up a message
         that the event is complete.
         """
-        for (regk, snq), (prefixer, number, diger) in self.rgy.reger.tpwe.getItemIter():  # partial witness escrow
+        for (regk, snq), (prefixer, number, diger) in self.rgy.reger.tpwe.getTopItemIter():  # partial witness escrow
             kever = self.hby.kevers[prefixer.qb64]
 
             # Load all the witness receipts we have so far
@@ -761,7 +764,7 @@ class Registrar(doing.DoDoer):
         from witnesses yet.  When receipting is complete, remove from escrow and cue up a message
         that the event is complete.
         """
-        for (regk, snq, regd), (prefixer, number, diger) in self.rgy.reger.tmse.getItemIter():  # multisig escrow 
+        for (regk, snq, regd), (prefixer, number, diger) in self.rgy.reger.tmse.getTopItemIter():  # multisig escrow
             try:
                 if not self.counselor.complete(prefixer, number, diger):
                     continue
@@ -785,7 +788,7 @@ class Registrar(doing.DoDoer):
         disseminated to witnesses.  This is a fire and forget mechanism where the WitnessPublisher
         handles sending events to the witnesses and collecting receipts.
         """
-        for (regk, snq), (prefixer, number, saider) in self.rgy.reger.tede.getItemIter():  # group multisig escrow
+        for (regk, snq), (prefixer, number, saider) in self.rgy.reger.tede.getTopItemIter():  # group multisig escrow
             rnum = Number(qb64=snq, code=NumDex.Huge)
             dig = self.rgy.reger.tels.get(keys=snKey(pre=regk, sn=rnum.sn))
             if dig is None:
@@ -923,7 +926,7 @@ class Credentialer(doing.DoDoer):
         Process credential events that are missing signatures. If the TEL event's underlying KEL
         event signing is complete then disseminate the event to the witnesses for receipting.
         """
-        for (said, snq), creder in self.rgy.reger.cmse.getItemIter():
+        for (said, snq), creder in self.rgy.reger.cmse.getTopItemIter():
             rseq = Seqner(qb64=snq)
             if not self.registrar.complete(pre=said, sn=rseq.sn):
                 continue
@@ -988,11 +991,6 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
         creder (Creder): the credential to pull artifacts for and send
         recp (str): qb64 prefix of the recipient to send the artifacts to
     """
-    if isinstance(hab, GroupHab):
-        sender = hab.mhab.pre
-    else:
-        sender = hab.pre
-
     sendArtifacts(hby, reger, postman, creder, recp)
 
     sources = reger.sources(hby.db, creder)
