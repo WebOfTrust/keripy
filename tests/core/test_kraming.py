@@ -2281,7 +2281,7 @@ def test_aid_allow_deny(mockHelpingNowUTC):
             kvy.processMsg(msg, **kwa)
 
             # Assert cache was not created
-            assert receiverHby.db.msgc.get(keys=(denyHab.pre, msg.said)) is None
+            assert receiverHby.db.kramMSGC.get(keys=(denyHab.pre, msg.said)) is None
 
             # Remove denyHab from deny list
             kvy.denyList.discard(denyHab.pre)
@@ -2304,7 +2304,7 @@ def test_aid_allow_deny(mockHelpingNowUTC):
             kvy.processMsg(msg, **kwa)
 
             # Assert cache was created
-            assert receiverHby.db.msgc.get(keys=(allowHab.pre, msg.said)) is not None
+            assert receiverHby.db.kramMSGC.get(keys=(allowHab.pre, msg.said)) is not None
 
             # Send another message with denyHab 
             msg = eventing.query(pre=denyHab.pre,
@@ -2323,7 +2323,7 @@ def test_aid_allow_deny(mockHelpingNowUTC):
 
             # Assert cache was not created because the allow list is active and denyHab is not 
             # in the allow list
-            assert receiverHby.db.msgc.get(keys=(denyHab.pre, msg.said)) is None
+            assert receiverHby.db.kramMSGC.get(keys=(denyHab.pre, msg.said)) is None
 
             # Add denyHab to the allow list
             kvy.allowList.add(denyHab.pre)
@@ -2332,4 +2332,4 @@ def test_aid_allow_deny(mockHelpingNowUTC):
             kvy.processMsg(msg, **kwa)
 
             # Assert cache was created
-            assert receiverHby.db.msgc.get(keys=(denyHab.pre, msg.said)) is not None
+            assert receiverHby.db.kramMSGC.get(keys=(denyHab.pre, msg.said)) is not None
