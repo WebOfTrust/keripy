@@ -90,11 +90,11 @@ setup(
                         'cryptography>=46.0.3',
                         'semver>=3.0.4',
                         'qrcode>=8.2',
+                        'sortedcontainers>=2.4.0',
                         'setuptools>=80.9.0',
                         'wheel>=0.45.1',
     ],
     extras_require={
-        'browser': ['sortedcontainers>=2.4.0'],
     },
     tests_require=[
                     'coverage>=7.13.1',

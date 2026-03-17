@@ -17,10 +17,7 @@ try:
 except ImportError:  # pragma: no cover
     storage = None
 
-try:
-    from sortedcontainers import SortedDict
-except ImportError:  # pragma: no cover
-    SortedDict = None
+from sortedcontainers import SortedDict
 
 from ..kering import MaxON
 from .dbing import onKey, splitOnKey
@@ -141,13 +138,8 @@ class WebDBer:
             A storage-backed `WebDBer` ready for sync CRUD and async `flush()`.
 
         Raises:
-            RuntimeError: If no storage opener is available or if
-                sortedcontainers is not installed.
+            RuntimeError: If no storage opener is available.
         """
-        if SortedDict is None:
-            raise RuntimeError(
-                "sortedcontainers is required for WebDBer but is not installed"
-            )
 
         opener = storageOpener if storageOpener is not None else storage
         if opener is None:
