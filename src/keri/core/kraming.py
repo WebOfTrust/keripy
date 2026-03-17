@@ -21,6 +21,8 @@ from ..core import Verser, coring, eventing, indexing
 from ..help import helping
 from ..recording import CacheTypeRecord, MsgCacheRecord, TxnMsgCacheRecord
 
+from hio.base import doing
+
 logger = help.ogler.getLogger()
 
 
@@ -948,11 +950,13 @@ class Kramer:
                     rdt = helping.fromIso8601(
                         helping.nowIso8601()).timestamp() * 1000  # ms
 
+                    # Timeliness window
                     if not (rdt - d - ml) <= mdt <= (rdt + d):
                         return None
 
                     xl = cacheTypeRecord.xl
 
+                    # Echange window
                     if not (xdt <= mdt <= xdt + xl):
                         return None
 
@@ -1071,3 +1075,92 @@ class Kramer:
                     return None  # message pending
                 else:
                     raise kering.KramError("Unexpected auth type while kraming.")
+
+    def _pruneMessages(self, rdt_ms):
+        """
+        Check message ID and prune expired cache entries and associated state.
+        rdt (Iso8601): receiver time 
+        pml (int): prune lag cache value in milliseconds
+        d (int): drift lag cache value in milliseconds
+        """
+        # Initialize a flag to track if pruned
+        pruned = False
+
+        # Iterate over all message cache entries 
+        for (aid, mid), cache in list(self.db.kramMSGC.getTopItemIter()):
+            
+            # Convert messsage time from cache to milliseconds Int for comparison 
+            mdt_ms = int(helping.fromIso8601(cache.mdt).timestamp() * 1000)
+
+            # Get the drift and prune lag values from the cache record
+            d = cache.d
+            pml = cache.pml
+
+            # Apply the comparison from the whitepaper
+            if not rdt_ms - d - pml <= mdt_ms <= rdt_ms + d:
+                self.db.kramMSGC.rem(keys=(aid, mid))
+                self.db.kramPMKM.rem(keys=(aid, mid))
+                self.db.kramPMKS.rem(keys=(aid, mid))
+                self.db.kramPMSK.rem(keys=(aid, mid))
+
+                # Remove non Auth Partials
+                self._remNonAuthAttachments((aid, mid))
+
+                pruned = True
+
+        return pruned
+    
+    def _pruneExchanges(self, rdt_ms):
+        """
+        Check exchanges ID and prune expired cache entries and associated state.
+        rdt (int): receiver time in milliseconds
+        pxl (int): prune lag cache value in milliseconds
+        """
+        # Initialize a flag to track if pruned
+        pruned = False
+
+        # Iterate over all message cache entries 
+        for (aid, xid, mid), cache in list(self.db.kramTMSC.getTopItemIter()):
+            
+            # Get the exchange time from the cache
+            xdt_ms = int(helping.fromIso8601(cache.xdt).timestamp() * 1000)
+
+            # Get the prune lag values from the cache record
+            pxl = cache.pxl
+
+            # Apply the comparison
+            if not xdt_ms <= rdt_ms <= xdt_ms + pxl:
+                self.db.kramTMSC.rem(keys=(aid, xid, mid))
+                self.db.kramPMKM.rem(keys=(aid, xid, mid))
+                self.db.kramPMKS.rem(keys=(aid, xid, mid))
+                self.db.kramPMSK.rem(keys=(aid, xid, mid))
+
+                # Remove non Auth Partials
+                self._remNonAuthAttachments((aid, mid))
+
+                pruned = True
+
+        return pruned
+
+
+class Pruner(doing.Doer):
+
+    def __init__(self, kramer, tock, period=1.0):
+        self.kramer = kramer
+        self.tock = tock
+        super().__init__(doers=[self.do], tock=period)
+
+    def do(self, tymth, tock=0.0, **opts):
+        self.wind(tymth)
+        self.tock = tock
+
+        while True:
+            # compute receiver time in ms
+            rdt_ms = int(helping.nowUTC().timestamp() * 1000)
+            
+            # check prune both messages and exchanges
+            self.kramer._pruneMessages(rdt_ms=rdt_ms)
+            self.kramer._pruneExchanges(rdt_ms=rdt_ms)
+
+            # yield back to Doist
+            yield self.tock
