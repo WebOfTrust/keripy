@@ -2061,9 +2061,9 @@ def test_stale_tsgs(mockHelpingNowUTC):
             # Fast path: threshold met on first delivery.
             # Cache created, no partials stored.
             partialKey = (senderHab.pre, msg.said)
-            cache = receiverHby.db.msgc.get(keys=partialKey)
+            cache = receiverHby.db.kramMSGC.get(keys=partialKey)
             assert cache is not None
-            assert receiverHby.db.pmkm.get(keys=partialKey) is None
+            assert receiverHby.db.kramPMKM.get(keys=partialKey) is None
 
             # stale tsg stored in db.tsgs alongside current-keystate tsgs
             # (merged into kwa['tsgs'] before _storeNonAuthAttachments — but
@@ -2101,7 +2101,7 @@ def test_stale_tsgs(mockHelpingNowUTC):
             kvy.processMsg(msg2, **kwa2)
 
             # Accepted via current-keystate sigs; bogus stale tsg silently ignored
-            cache2 = receiverHby.db.msgc.get(keys=(senderHab.pre, msg2.said))
+            cache2 = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg2.said))
             assert cache2 is not None
             kvy.cues.clear()
 
@@ -2137,13 +2137,13 @@ def test_stale_tsgs(mockHelpingNowUTC):
                                 [currentSigers3[0]])] + [staleTsg3])
             kvy.processMsg(msg3, **kwa3a)
 
-            assert receiverHby.db.pmkm.get(keys=partialKey3) is not None
-            pmks3 = receiverHby.db.pmks.get(keys=partialKey3)
+            assert receiverHby.db.kramPMKM.get(keys=partialKey3) is not None
+            pmks3 = receiverHby.db.kramPMKS.get(keys=partialKey3)
             assert len(pmks3) == 1  # only 1 current-keystate sig so far
 
             # db.tsgs should contain both the current-keystate tsg entry AND
             # the stale tsg entry (folded in via kwa['tsgs'] before store)
-            tsgs3 = receiverHby.db.tsgs.get(keys=partialKey3)
+            tsgs3 = receiverHby.db.kramTSGS.get(keys=partialKey3)
             assert len(tsgs3) == 2  # 1 current + 1 stale
 
             assert len(kvy.cues) == 0
@@ -2159,7 +2159,7 @@ def test_stale_tsgs(mockHelpingNowUTC):
             kvy.cues.clear()
 
             # db.tsgs still holds all entries including the stale one
-            tsgs3_after = receiverHby.db.tsgs.get(keys=partialKey3)
+            tsgs3_after = receiverHby.db.kramTSGS.get(keys=partialKey3)
             assert len(tsgs3_after) >= 2  # stale entry persists until pruner
 
     """Done Test"""
