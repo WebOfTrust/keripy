@@ -4856,8 +4856,6 @@ class Dicter:
     in the .raw property  Subclasses can add semantically appropriate properties
     that extract / add specific keys to the underlying dict .pad
 
-    ToDo: Needs unit tests
-
     """
     def __init__(self, raw=b'', pad=None, dicter=None, label=Saids.i):
         """ Create Dicter from either raw bytes, pad dict, or other dicter instance
