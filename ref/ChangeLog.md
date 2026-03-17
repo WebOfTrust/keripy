@@ -4,6 +4,13 @@
 ### Backwards breaking interface changes
 Changes to call signatures that will break dependent libraries
 
+#### keri.vdr subpackage
+combined viring into eventing to remove hard circular import now that its a
+subpackage using __init__.py
+moved dataclasses to vdring as shared imports across vdr.
+fixed circular imports with agenting and app subpackage using dynamic imports
+
+
 #### keri.db.subing
 SuberBase.getItemIter and subclasses is changed to .getTopItemIter this is to clearly indicate
 that it iterates over the top branch given by keys and uses the topive parameter.
