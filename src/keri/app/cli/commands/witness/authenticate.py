@@ -116,7 +116,7 @@ class AuthDoer(doing.DoDoer):
 
         client.request(
             method="POST",
-            path=f"{client.requester.path}/aids",
+            path=f"{client.requester.path.rstrip('/')}/aids",
             headers=headers,
             fargs=fargs
         )
