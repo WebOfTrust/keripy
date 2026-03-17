@@ -2697,6 +2697,118 @@ def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
             stamp = helping.nowIso8601()
             
             # Create an existing cache entry
+
+                        # Happy path, attachments pruned after threshold is met
+            stamp = helping.nowIso8601()
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+
+            msg = eventing.query(pre=senderHab.pre,
+                                 route="ksn",
+                                 query=dict(i=senderHab.pre, src=senderHab.pre),
+                                 stamp=stamp,
+                                 pvrsn=Vrsn_2_0)
+
+            # Sign with sender's keys
+            sigers = senderHab.mgr.sign(ser=msg.raw,
+                                        verfers=senderHab.kever.verfers,
+                                        indexed=True)
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+
+            kvy.processMsg(msg, **kwa)
+
+            # Assert cache created
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
+            assert cache is not None
+            assert cache.mdt == stamp
+            assert cache.d == 1000   # drift from config
+            assert cache.ml == 1000  # short lag (assk)
+            assert cache.pml == 1000  # prune short lag (assk)
+            
+            # New CF (increase accept + prune)
+            new_cfg = {
+                "kram": {
+                    "enabled": True,
+                    "caches": {
+                        "~": [1000, 5000, 5000, 5000, 5000, 5000, 5000],
+                    }
+                }
+            }
+            # Set the new config
+            cf.put(new_cfg)
+            
+            # Apply dynamic update
+            kramer.changeConfig(cf)
+            
+            # Verify existing caches DID NOT change
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
+            
+            # Existing caches must remain unchanged
+            assert cache.d == 1000
+            assert cache.ml == 1000
+            assert cache.pml == 1000
+            assert cache.xl == 1000
+            assert cache.pxl == 1000
+            
+            # Verify cache-type template DID change
+            ctyp = receiverHby.db.kramCTYP.get("~")
+
+            # Accept windows remain old (staged)
+            assert ctyp.d == 1000
+            assert ctyp.sl == 1000
+            assert ctyp.ll == 1000
+            assert ctyp.xl == 1000
+
+            # Prune windows updated immediately
+            assert ctyp.psl == 5000
+            assert ctyp.pll == 5000
+            assert ctyp.pxl == 5000
+            
+            # Advance time to complete staging
+            clock.advance(5000)
+            kramer.reconcileConfig()
+
+            ctyp2 = receiverHby.db.kramCTYP.get("~")
+            # Accept windows updated
+            assert ctyp2.sl == 5000
+            assert ctyp2.ll == 5000
+            assert ctyp2.xl == 5000
+
+            # Existing cache STILL unchanged
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
+
+            assert cache.d == 1000
+            assert cache.ml == 1000
+            assert cache.pml == 1000
+            assert cache.xl == 1000
+            assert cache.pxl == 1000
+
+            # Create a new message with the new cache values
+            stamp = helping.nowIso8601()
+            msg = eventing.query(pre=senderHab.pre,
+                                 route="ksn",
+                                 query=dict(i=senderHab.pre, src=senderHab.pre),
+                                 stamp=stamp,
+                                 pvrsn=Vrsn_2_0)
+
+            # Sign with sender's keys
+            sigers = senderHab.mgr.sign(ser=msg.raw,
+                                        verfers=senderHab.kever.verfers,
+                                        indexed=True)
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+
+            kvy.processMsg(msg, **kwa)
+
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
+
+            # Assert the new cache uses the new values
+            assert cache.mdt == stamp
+            assert cache.d == 1000
+            assert cache.ml == 5000
+            assert cache.pml == 5000
+            assert cache.xl == 5000
+            assert cache.pxl == 5000
             
 def test_pruning_messages_single_key(fakeHelpingClock):
     """
@@ -3074,108 +3186,6 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
                                  query=dict(i=senderHab.pre, src=senderHab.pre),
                                  stamp=stamp,
                                  pvrsn=Vrsn_2_0)
-
-            # Sign with sender's keys
-            sigers = senderHab.mgr.sign(ser=msg.raw,
-                                        verfers=senderHab.kever.verfers,
-                                        indexed=True)
-            prefixer = coring.Prefixer(qb64=senderHab.pre)
-            kwa = dict(ssgs=[(prefixer, sigers)])
-
-            kvy.processMsg(msg, **kwa)
-
-            # Assert cache created
-            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
-            assert cache is not None
-            assert cache.mdt == stamp
-            assert cache.d == 1000   # drift from config
-            assert cache.ml == 1000  # short lag (assk)
-            assert cache.pml == 1000  # prune short lag (assk)
-            
-            # New CF (increase accept + prune)
-            new_cfg = {
-                "kram": {
-                    "enabled": True,
-                    "caches": {
-                        "~": [1000, 5000, 5000, 5000, 5000, 5000, 5000],
-                    }
-                }
-            }
-            # Set the new config
-            cf.put(new_cfg)
-            
-            # Apply dynamic update
-            kramer.changeConfig(cf)
-            
-            # Verify existing caches DID NOT change
-            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
-            
-            # Existing caches must remain unchanged
-            assert cache.d == 1000
-            assert cache.ml == 1000
-            assert cache.pml == 1000
-            assert cache.xl == 1000
-            assert cache.pxl == 1000
-            
-            # Verify cache-type template DID change
-            ctyp = receiverHby.db.kramCTYP.get("~")
-
-            # Accept windows remain old (staged)
-            assert ctyp.d == 1000
-            assert ctyp.sl == 1000
-            assert ctyp.ll == 1000
-            assert ctyp.xl == 1000
-
-            # Prune windows updated immediately
-            assert ctyp.psl == 5000
-            assert ctyp.pll == 5000
-            assert ctyp.pxl == 5000
-            
-            # Advance time to complete staging
-            clock.advance(5000)
-            kramer.reconcileConfig()
-
-            ctyp2 = receiverHby.db.kramCTYP.get("~")
-            # Accept windows updated
-            assert ctyp2.sl == 5000
-            assert ctyp2.ll == 5000
-            assert ctyp2.xl == 5000
-
-            # Existing cache STILL unchanged
-            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
-
-            assert cache.d == 1000
-            assert cache.ml == 1000
-            assert cache.pml == 1000
-            assert cache.xl == 1000
-            assert cache.pxl == 1000
-
-            # Create a new message with the new cache values
-            stamp = helping.nowIso8601()
-            msg = eventing.query(pre=senderHab.pre,
-                                 route="ksn",
-                                 query=dict(i=senderHab.pre, src=senderHab.pre),
-                                 stamp=stamp,
-                                 pvrsn=Vrsn_2_0)
-
-            # Sign with sender's keys
-            sigers = senderHab.mgr.sign(ser=msg.raw,
-                                        verfers=senderHab.kever.verfers,
-                                        indexed=True)
-            prefixer = coring.Prefixer(qb64=senderHab.pre)
-            kwa = dict(ssgs=[(prefixer, sigers)])
-
-            kvy.processMsg(msg, **kwa)
-
-            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
-
-            # Assert the new cache uses the new values
-            assert cache.mdt == stamp
-            assert cache.d == 1000
-            assert cache.ml == 5000
-            assert cache.pml == 5000
-            assert cache.xl == 5000
-            assert cache.pxl == 5000
             allSigers = senderHab.mgr.sign(ser=msg.raw,
                                            verfers=senderHab.kever.verfers,
                                            indexed=True)
