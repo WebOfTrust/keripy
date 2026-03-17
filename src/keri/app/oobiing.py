@@ -497,7 +497,11 @@ class Oobiery:
                     obr.state = Result.failed
                     self.hby.db.roobi.put(keys=(url,), val=obr)
 
-                elif response["headers"]["Content-Type"] == "application/json+cesr":  # CESR Stream response to OOBI
+                elif response["headers"]["Content-Type"] in (
+                    httping.CESR_CONTENT_TYPE,
+                    "application/json+cesr",
+                    "application/cesr+json",
+                ):  # CESR Stream response to OOBI (canonical + legacy variants)
                     self.parser.parse(ims=bytearray(response["body"]))
                     if ending.OOBI_AID_HEADER in response["headers"]:
                         obr.cid = response["headers"][ending.OOBI_AID_HEADER]

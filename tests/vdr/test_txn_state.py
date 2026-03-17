@@ -4,7 +4,7 @@ from keri import Vrsn_1_0
 from keri.core import Salter, Kevery, SealEvent, routing, parsing, coring, serdering
 from keri.app import habbing
 from keri.vc import proving
-from keri.vdr import viring, credentialing, eventing
+from keri.vdr import Reger, credentialing, eventing
 
 
 def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
@@ -60,7 +60,7 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
 
         rpy = bobHab.reply(route="/tsn/registry/" + bobHab.pre, data=rsr._asdict())
 
-        bamReger = viring.Reger(name="bam", temp=True)
+        bamReger = Reger(name="bam", temp=True)
         bamTvy = eventing.Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
         bamTvy.registerReplyRoutes(router=bamRtr)
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
@@ -134,7 +134,7 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
 
         rpy = bobHab.reply(route="/tsn/registry/" + bobHab.pre, data=asdict(tsn))
 
-        bamReger = viring.Reger(name="bam", temp=True)
+        bamReger = Reger(name="bam", temp=True)
         bamTvy = eventing.Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
         bamTvy.registerReplyRoutes(router=bamRtr)
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)
@@ -227,7 +227,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         for msg in cloner:
             tmsgs.extend(msg)
 
-        wesReger = viring.Reger(name="wes", temp=True)
+        wesReger = Reger(name="wes", temp=True)
         wesRtr = routing.Router()
         wesRvy = routing.Revery(db=bamHby.db, rtr=wesRtr)
         wesTvy = eventing.Tevery(reger=wesReger, db=wesHby.db, lax=False, local=False, rvy=wesRvy)
@@ -255,7 +255,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         bamRtr = routing.Router()
         bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)
         bamKvy = Kevery(db=bamHby.db, lax=False, local=False, rvy=bamRvy)
-        bamReger = viring.Reger(name="bam", temp=True)
+        bamReger = Reger(name="bam", temp=True)
         bamTvy = eventing.Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
         bamTvy.registerReplyRoutes(router=bamRtr)
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy, local=True)
@@ -351,7 +351,7 @@ def test_tsn_from_no_one(mockHelpingNowUTC, mockCoringRandomNonce):
         for msg in cloner:
             tmsgs.extend(msg)
 
-        wesReger = viring.Reger(name="wes", temp=True)
+        wesReger = Reger(name="wes", temp=True)
         wesRtr = routing.Router()
         wesRvy = routing.Revery(db=bamHby.db, rtr=wesRtr)
         wesTvy = eventing.Tevery(reger=wesReger, db=wesHby.db, lax=False, local=False, rvy=wesRvy)
@@ -379,7 +379,7 @@ def test_tsn_from_no_one(mockHelpingNowUTC, mockCoringRandomNonce):
         bamRtr = routing.Router()
         bamRvy = routing.Revery(db=bamHby.db, rtr=bamRtr)
         bamKvy = Kevery(db=bamHby.db, lax=False, local=False, rvy=bamRvy)
-        bamReger = viring.Reger(name="bam", temp=True)
+        bamReger = Reger(name="bam", temp=True)
         bamTvy = eventing.Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
         bamTvy.registerReplyRoutes(router=bamRtr)
 
@@ -479,7 +479,7 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
 
         rpy = bobHab.reply(route="/tsn/credential/" + bobHab.pre, data=asdict(ctsn))
 
-        bamReger = viring.Reger(name="bam", temp=True)
+        bamReger = Reger(name="bam", temp=True)
         bamTvy = eventing.Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
         bamTvy.registerReplyRoutes(router=bamRtr)
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(rpy), tvy=bamTvy, rvy=bamRvy)

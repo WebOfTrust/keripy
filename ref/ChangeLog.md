@@ -4,6 +4,13 @@
 ### Backwards breaking interface changes
 Changes to call signatures that will break dependent libraries
 
+#### keri.vdr subpackage
+combined viring into eventing to remove hard circular import now that its a
+subpackage using __init__.py
+moved dataclasses to vdring as shared imports across vdr.
+fixed circular imports with agenting and app subpackage using dynamic imports
+
+
 #### keri.db.subing
 SuberBase.getItemIter and subclasses is changed to .getTopItemIter this is to clearly indicate
 that it iterates over the top branch given by keys and uses the topive parameter.
@@ -14,6 +21,15 @@ that it iterates over the top branch given by keys and uses the topive parameter
 
 #### keri.db.dbing
 Changed LMDBer.delval to LMDBer.remval
+
+#### keri.core.scheming.py
+Replaced deprecated `jsonschema.RefResolver` with `referencing.Registry` in
+`CacheResolver.resolver()`. The method now returns a `referencing.Registry`
+instance instead of a `jsonschema.RefResolver` instance.
+Requires `jsonschema >= 4.18.0` and the `referencing` package.
+Users on older versions of `jsonschema` must upgrade.
+`JSONSchema.verify_json()` now passes `registry=` instead of `resolver=` to
+`jsonschema.validate()`.
 
 #### keri.core.routing.py
 Changed `Router.dispatch(self, serder, saider, ...)` to `dispatch(self, serder, diger, ...)`.

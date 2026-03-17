@@ -825,6 +825,34 @@ def test_lmdber():
         assert dber.getOnIoDupLast(ldb, preB, on=1) == valsB1[3]
         assert dber.getOnIoDupLast(ldb, preB, on=2) == valsB2[2]
 
+        # test getOnTopIoDupItemIter
+        assert [(key, on, bytes(val)) for key, on, val in
+                dber.getOnTopIoDupItemIter(ldb, top=preA)] == \
+        [
+            (preA, 0, b'echo'),
+            (preA, 0, b'bravo'),
+            (preA, 1, b'sue'),
+            (preA, 1, b'bob'),
+            (preA, 1, b'val'),
+            (preA, 1, b'zoe'),
+            (preA, 2, b'fish'),
+            (preA, 2, b'bat'),
+            (preA, 2, b'snail')]
+
+        assert [(key, on, bytes(val)) for key, on, val in
+                dber.getOnTopIoDupItemIter(ldb, top=preB)] == \
+        [
+            (preB, 0, b'gamma'),
+            (preB, 0, b'beta'),
+            (preB, 1, b'mary'),
+            (preB, 1, b'peter'),
+            (preB, 1, b'john'),
+            (preB, 1, b'paul'),
+            (preB, 2, b'dog'),
+            (preB, 2, b'cat'),
+            (preB, 2, b'bird')
+        ]
+
 
         items = [(key, on, bytes(val)) for key, on, val in dber.getOnIoDupLastItemIter(ldb, preA)]
         lastitems = [itemsA0[-1], itemsA1[-1], itemsA2[-1]]
@@ -1073,6 +1101,8 @@ def test_lmdber():
                          (b'Y', 0, b's'),
                          (b'Y', 1, b't'),
                          (b'Y', 1, b'u')]
+
+
 
         assert dber.delOnIoDupVal(ldb, key, on=0, val=b's')
         assert dber.delOnIoDups(ldb, key, on=1)
