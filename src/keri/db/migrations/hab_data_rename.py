@@ -4,6 +4,7 @@ from typing import Optional
 from .. import koming
 
 
+
 @dataclass
 class HabitatRecordV0_6_7:  # baser.habs
     """
