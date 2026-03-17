@@ -1087,7 +1087,7 @@ class Kramer:
         pruned = False
 
         # Iterate over all message cache entries 
-        for (aid, mid), cache in list(self.db.msgc.getItemIter()):
+        for (aid, mid), cache in list(self.db.kramMSGC.getTopItemIter()):
             
             # Convert messsage time from cache to milliseconds Int for comparison 
             mdt_ms = int(helping.fromIso8601(cache.mdt).timestamp() * 1000)
@@ -1098,10 +1098,10 @@ class Kramer:
 
             # Apply the comparison from the whitepaper
             if not rdt_ms - d - pml <= mdt_ms <= rdt_ms + d:
-                self.db.msgc.rem(keys=(aid, mid))
-                self.db.pmkm.rem(keys=(aid, mid))
-                self.db.pmks.rem(keys=(aid, mid))
-                self.db.pmsk.rem(keys=(aid, mid))
+                self.db.kramMSGC.rem(keys=(aid, mid))
+                self.db.kramPMKM.rem(keys=(aid, mid))
+                self.db.kramPMKS.rem(keys=(aid, mid))
+                self.db.kramPMSK.rem(keys=(aid, mid))
 
                 # Remove non Auth Partials
                 self._remNonAuthAttachments((aid, mid))
@@ -1120,7 +1120,7 @@ class Kramer:
         pruned = False
 
         # Iterate over all message cache entries 
-        for (aid, xid, mid), cache in list(self.db.tmsc.getItemIter()):
+        for (aid, xid, mid), cache in list(self.db.kramTMSC.getTopItemIter()):
             
             # Get the exchange time from the cache
             xdt_ms = int(helping.fromIso8601(cache.xdt).timestamp() * 1000)
@@ -1130,10 +1130,10 @@ class Kramer:
 
             # Apply the comparison
             if not xdt_ms <= rdt_ms <= xdt_ms + pxl:
-                self.db.tmsc.rem(keys=(aid, xid, mid))
-                self.db.pmkm.rem(keys=(aid, xid, mid))
-                self.db.pmks.rem(keys=(aid, xid, mid))
-                self.db.pmsk.rem(keys=(aid, xid, mid))
+                self.db.kramTMSC.rem(keys=(aid, xid, mid))
+                self.db.kramPMKM.rem(keys=(aid, xid, mid))
+                self.db.kramPMKS.rem(keys=(aid, xid, mid))
+                self.db.kramPMSK.rem(keys=(aid, xid, mid))
 
                 # Remove non Auth Partials
                 self._remNonAuthAttachments((aid, mid))

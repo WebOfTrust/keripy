@@ -2307,7 +2307,7 @@ def test_pruning_messages_single_key(fakeHelpingClock):
             doist.recur(deeds=deeds)
 
             # Cache must exist
-            earlyCache = receiverHby.db.msgc.get(keys=(senderHab.pre, earlyMsg.said))
+            earlyCache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, earlyMsg.said))
             assert earlyCache is not None
             assert earlyCache.mdt == earlyStamp
             assert earlyCache.d == 1000   # drift = 1s
@@ -2342,7 +2342,7 @@ def test_pruning_messages_single_key(fakeHelpingClock):
             kvy.processMsg(laterMsg, **kwa)
 
             # Assert later message is cached with its own timestamp
-            laterCache = receiverHby.db.msgc.get(keys=(senderHab.pre, laterMsg.said))
+            laterCache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, laterMsg.said))
             assert laterCache is not None
             assert laterCache.mdt == rdtLater
 
@@ -2354,11 +2354,11 @@ def test_pruning_messages_single_key(fakeHelpingClock):
             doist.recur(deeds=deeds)
 
             # Both entries must still exist because both messages are still within their respective pruning windows.
-            earlyCache = receiverHby.db.msgc.get(keys=(senderHab.pre, earlyMsg.said))
+            earlyCache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, earlyMsg.said))
             assert earlyCache is not None
             assert earlyCache.mdt == earlyStamp
 
-            laterCache = receiverHby.db.msgc.get(keys=(senderHab.pre, laterMsg.said))
+            laterCache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, laterMsg.said))
             assert laterCache is not None
             assert laterCache.mdt == rdtLater
 
@@ -2372,10 +2372,10 @@ def test_pruning_messages_single_key(fakeHelpingClock):
             doist.recur(deeds=deeds)
 
             # First message must now be pruned
-            assert receiverHby.db.msgc.get(keys=(senderHab.pre, earlyMsg.said)) is None
+            assert receiverHby.db.kramMSGC.get(keys=(senderHab.pre, earlyMsg.said)) is None
 
             # Second message is still here because of its later timestamp
-            assert receiverHby.db.msgc.get(keys=(senderHab.pre, laterMsg.said)) is not None
+            assert receiverHby.db.kramMSGC.get(keys=(senderHab.pre, laterMsg.said)) is not None
 
             # Step 4: Advance time to prune the second message
             clock.advance(seconds=1)
@@ -2385,7 +2385,7 @@ def test_pruning_messages_single_key(fakeHelpingClock):
             doist.recur(deeds=deeds)
 
             # Second message must now be pruned
-            assert receiverHby.db.msgc.get(keys=(senderHab.pre, laterMsg.said)) is None
+            assert receiverHby.db.kramMSGC.get(keys=(senderHab.pre, laterMsg.said)) is None
 
             # Close doist
             doist.exit()
@@ -2528,7 +2528,7 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
             doist.recur(deeds=deeds)
 
             # Assert msgc cache created for partial sigs
-            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             assert cache is not None
             assert cache.mdt == stamp
             assert cache.d == 1000   # drift = 1s
@@ -2536,25 +2536,25 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
             assert cache.pml == 60000    # message long prune lag = 60s
 
             # Assert that partial DBs are populated
-            pmkm = receiverHby.db.pmkm.get(keys=(senderHab.pre, msg.said))
+            pmkm = receiverHby.db.kramPMKM.get(keys=(senderHab.pre, msg.said))
             assert pmkm is not None
-            pmks = receiverHby.db.pmks.get(keys=(senderHab.pre, msg.said))
+            pmks = receiverHby.db.kramPMKS.get(keys=(senderHab.pre, msg.said))
             assert pmks is not None
             assert len(pmks) == 1
-            pmsk = receiverHby.db.pmsk.get(keys=(senderHab.pre, msg.said))
+            pmsk = receiverHby.db.kramPMSK.get(keys=(senderHab.pre, msg.said))
             assert pmsk is not None
 
             # All non-auth attachment dbs populated
-            assert len(receiverHby.db.trqs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.tsgs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.sscs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.ssts.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.frcs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.tdcs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.ptds.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.bsqs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.bsss.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.tmqs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramSSCS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramSSTS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramFRCS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTDCS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramPTDS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramBSQS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramBSSS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTMQS.get(keys=partialKey)) == 1
 
             # No cue generated because threshold not met
             assert len(kvy.cues) == 0
@@ -2570,22 +2570,22 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
             doist.recur(deeds=deeds)
 
             # Assert cache and partials got cleaned up
-            assert receiverHby.db.msgc.get(keys=(senderHab.pre, msg.said)) is None
-            assert receiverHby.db.pmkm.get(keys=(senderHab.pre, msg.said)) is None
-            assert receiverHby.db.pmks.get(keys=(senderHab.pre, msg.said)) == []
-            assert receiverHby.db.pmsk.get(keys=(senderHab.pre, msg.said)) is None
+            assert receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said)) is None
+            assert receiverHby.db.kramPMKM.get(keys=(senderHab.pre, msg.said)) is None
+            assert receiverHby.db.kramPMKS.get(keys=(senderHab.pre, msg.said)) == []
+            assert receiverHby.db.kramPMSK.get(keys=(senderHab.pre, msg.said)) is None
 
             # Non auth attachments got cleaned up
-            assert receiverHby.db.trqs.get(keys=partialKey) == []
-            assert receiverHby.db.tsgs.get(keys=partialKey) == []
-            assert receiverHby.db.sscs.get(keys=partialKey) == []
-            assert receiverHby.db.ssts.get(keys=partialKey) == []
-            assert receiverHby.db.frcs.get(keys=partialKey) == []
-            assert receiverHby.db.tdcs.get(keys=partialKey) == []
-            assert receiverHby.db.ptds.get(keys=partialKey) == []
-            assert receiverHby.db.bsqs.get(keys=partialKey) == []
-            assert receiverHby.db.bsss.get(keys=partialKey) == []
-            assert receiverHby.db.tmqs.get(keys=partialKey) == []
+            assert receiverHby.db.kramTRQS.get(keys=partialKey) == []
+            assert receiverHby.db.kramTSGS.get(keys=partialKey) == []
+            assert receiverHby.db.kramSSCS.get(keys=partialKey) == []
+            assert receiverHby.db.kramSSTS.get(keys=partialKey) == []
+            assert receiverHby.db.kramFRCS.get(keys=partialKey) == []
+            assert receiverHby.db.kramTDCS.get(keys=partialKey) == []
+            assert receiverHby.db.kramPTDS.get(keys=partialKey) == []
+            assert receiverHby.db.kramBSQS.get(keys=partialKey) == []
+            assert receiverHby.db.kramBSSS.get(keys=partialKey) == []
+            assert receiverHby.db.kramTMQS.get(keys=partialKey) == []
 
             # Happy path, attachments pruned after threshold is met
             stamp = helping.nowIso8601()
@@ -2659,7 +2659,7 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
             kvy.processMsg(msg, **kwa)
 
             # Assert msgc cache created for partial sigs
-            cache = receiverHby.db.msgc.get(keys=(senderHab.pre, msg.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             assert cache is not None
             assert cache.mdt == stamp
             assert cache.d == 1000   # drift = 1s
@@ -2667,21 +2667,21 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
             assert cache.pml == 60000    # message long prune lag = 60s
 
             # Threshold not met, partials populated
-            assert receiverHby.db.pmkm.get(keys=partialKey) is not None
-            pmks = receiverHby.db.pmks.get(keys=partialKey)
+            assert receiverHby.db.kramPMKM.get(keys=partialKey) is not None
+            pmks = receiverHby.db.kramPMKS.get(keys=partialKey)
             assert len(pmks) == 1
 
             # All non-auth attachment dbs populated
-            assert len(receiverHby.db.trqs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.tsgs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.sscs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.ssts.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.frcs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.tdcs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.ptds.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.bsqs.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.bsss.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.tmqs.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramSSCS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramSSTS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramFRCS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTDCS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramPTDS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramBSQS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramBSSS.get(keys=partialKey)) == 1
+            assert len(receiverHby.db.kramTMQS.get(keys=partialKey)) == 1
 
             assert len(kvy.cues) == 0
 
@@ -2700,16 +2700,16 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
             assert cue["kin"] == "reply"
 
             # Non-auth attachments persist
-            assert len(receiverHby.db.trqs.get(keys=partialKey)) >= 1
-            assert len(receiverHby.db.tsgs.get(keys=partialKey)) >= 1
-            assert len(receiverHby.db.sscs.get(keys=partialKey)) >= 1
-            assert len(receiverHby.db.ssts.get(keys=partialKey)) >= 1
-            assert len(receiverHby.db.frcs.get(keys=partialKey)) >= 1
-            assert len(receiverHby.db.tdcs.get(keys=partialKey)) >= 1
-            assert len(receiverHby.db.ptds.get(keys=partialKey)) >= 1
-            assert len(receiverHby.db.bsqs.get(keys=partialKey)) >= 1
-            assert len(receiverHby.db.bsss.get(keys=partialKey)) >= 1
-            assert len(receiverHby.db.tmqs.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramSSCS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramSSTS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramFRCS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramTDCS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramPTDS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramBSQS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramBSSS.get(keys=partialKey)) >= 1
+            assert len(receiverHby.db.kramTMQS.get(keys=partialKey)) >= 1
 
             # Advance time past pruning window
             pml = cache.pml/1000 # convert pml to seconds
@@ -2720,16 +2720,16 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
             doist.recur(deeds=deeds)
 
             # Non auth attachments got cleaned up
-            assert receiverHby.db.trqs.get(keys=partialKey) == []
-            assert receiverHby.db.tsgs.get(keys=partialKey) == []
-            assert receiverHby.db.sscs.get(keys=partialKey) == []
-            assert receiverHby.db.ssts.get(keys=partialKey) == []
-            assert receiverHby.db.frcs.get(keys=partialKey) == []
-            assert receiverHby.db.tdcs.get(keys=partialKey) == []
-            assert receiverHby.db.ptds.get(keys=partialKey) == []
-            assert receiverHby.db.bsqs.get(keys=partialKey) == []
-            assert receiverHby.db.bsss.get(keys=partialKey) == []
-            assert receiverHby.db.tmqs.get(keys=partialKey) == []
+            assert receiverHby.db.kramTRQS.get(keys=partialKey) == []
+            assert receiverHby.db.kramTSGS.get(keys=partialKey) == []
+            assert receiverHby.db.kramSSCS.get(keys=partialKey) == []
+            assert receiverHby.db.kramSSTS.get(keys=partialKey) == []
+            assert receiverHby.db.kramFRCS.get(keys=partialKey) == []
+            assert receiverHby.db.kramTDCS.get(keys=partialKey) == []
+            assert receiverHby.db.kramPTDS.get(keys=partialKey) == []
+            assert receiverHby.db.kramBSQS.get(keys=partialKey) == []
+            assert receiverHby.db.kramBSSS.get(keys=partialKey) == []
+            assert receiverHby.db.kramTMQS.get(keys=partialKey) == []
 
 def test_pruning_exchanges(fakeHelpingClock):
     """
@@ -2813,7 +2813,7 @@ def test_pruning_exchanges(fakeHelpingClock):
             assert result is not None  # xip accepted
 
             # Assert: tmsc entry created, xip's exId is its own SAID
-            cache = receiverHby.db.tmsc.get(keys=(senderHab.pre, xip.said, xip.said))
+            cache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, xip.said))
             assert cache is not None
             assert cache.mdt == stamp
             assert cache.xdt == stamp  # xip's xdt == its own dt 
@@ -2839,7 +2839,7 @@ def test_pruning_exchanges(fakeHelpingClock):
                 kvy.processMsg(exn, **kwa)
 
             # Assert tmsc entry created for exn
-            firstCache = receiverHby.db.tmsc.get(keys=(senderHab.pre, xip.said, exn.said))
+            firstCache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn.said))
             assert firstCache is not None
             assert firstCache.mdt == firstStamp
             assert firstCache.xdt == stamp  # inherited from xip's xdt
@@ -2873,7 +2873,7 @@ def test_pruning_exchanges(fakeHelpingClock):
                 kvy.processMsg(exn2, **kwa)
             
             # Assert tmsc entry created for exn2
-            secondCache = receiverHby.db.tmsc.get(keys=(senderHab.pre, xip.said, exn2.said))
+            secondCache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn2.said))
             assert secondCache is not None
             assert secondCache.mdt == secondStamp
             assert secondCache.xdt == stamp  # inherited from xip's xdt
@@ -2888,8 +2888,8 @@ def test_pruning_exchanges(fakeHelpingClock):
             doist.recur(deeds=deeds)
 
             # Xip and First Cache is pruned
-            assert receiverHby.db.tmsc.get(keys=(senderHab.pre, xip.said, exn.said)) is None
-            assert receiverHby.db.tmsc.get(keys=(senderHab.pre, xip.said, xip.said)) is None
+            assert receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn.said)) is None
+            assert receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, xip.said)) is None
 
             # Second Cache is also pruned because it belongs to the same exchange
-            assert receiverHby.db.tmsc.get(keys=(senderHab.pre, xip.said, exn2.said)) is None
+            assert receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn2.said)) is None
