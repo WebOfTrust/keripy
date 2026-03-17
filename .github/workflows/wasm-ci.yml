@@ -28,6 +28,7 @@ jobs:
           to: dist
       - name: Install test dependencies
         run: |
+          python -m pip install --upgrade pip
           pip install pytest-pyodide playwright
           python -m playwright install --with-deps
       - name: Prepare test directory
@@ -36,6 +37,7 @@ jobs:
       - name: Run WebDBer WASM tests in Pyodide
         run: |
           pytest tests/wasm/test_webdbing_wasm.py \
+            --confcutdir=tests/wasm \
             --runtime ${{ matrix.runtime }} \
             --dist-dir=./dist/ \
             -v
