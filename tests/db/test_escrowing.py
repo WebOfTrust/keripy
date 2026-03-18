@@ -10,7 +10,7 @@ from keri.core import Salter, coring, eventing, serdering, SealEvent
 from keri.app import habbing
 from keri.db import escrowing, dbing, subing
 from keri.help import helping
-from keri.vdr import credentialing, viring
+from keri.vdr import credentialing, RegStateRecord
 
 
 def test_broker():
@@ -60,7 +60,7 @@ def test_broker_nontrans():
         aid = "EBWY7LU2xwp0d4IhCvz1etbuv2iwcgBEigKJWnd-0Whs"
 
         serder = serdering.SerderKERI(sad=ked)
-        rrsr = viring.RegStateRecord._fromdict(ked["a"])  # reply RegStateRecord
+        rrsr = RegStateRecord._fromdict(ked["a"])  # reply RegStateRecord
         #tserder = serdering.SerderKERI(sad=ked["a"])
 
         saider, _ = coring.Saider.saidify(sad=ked, kind=coring.Kinds.json, label=coring.Saids.d)
@@ -127,7 +127,7 @@ def test_broker_trans():
         pre = issuer.regk
         aid = "EwWY7LU2xwp0d4IhCvz1etbuv2iwcgBEigKJWnd-0Whs"
         serder = serdering.SerderKERI(sad=ked)
-        rrsr = viring.RegStateRecord._fromdict(ked["a"])  # reply RegStateRecord
+        rrsr = RegStateRecord._fromdict(ked["a"])  # reply RegStateRecord
         #tserder = serdering.SerderKERI(sad=ked["a"])
         saider, _ = coring.Saider.saidify(sad=ked, kind=coring.Kinds.json, label=coring.Saids.d)
         dater = coring.Dater(dts=dts)

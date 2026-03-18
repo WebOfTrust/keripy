@@ -123,7 +123,7 @@ def test_icemapdom():
     with pytest.raises(AttributeError):
         delattr(tmd, "gamma")
 
-    """End Test"""
+    """ Done Test"""
 
 
 def test_mapcodex():
@@ -177,7 +177,7 @@ def test_mapcodex():
     with pytest.raises(AttributeError):
         delattr(tmc, "gamma")
 
-    """End Test"""
+    """ Done Test"""
 
 
 def test_matter_class():
@@ -651,7 +651,6 @@ def test_matter_class():
     assert Matter._xtraSize(MtrDex.Ed25519) == 0
     assert not Matter._special(MtrDex.Ed25519)
     assert Matter._special(MtrDex.Tag3)
-
 
 
 def test_matter():
@@ -1901,6 +1900,7 @@ def test_matter():
 
     """ Done Test """
 
+
 def test_matter_special():
     """
     Test Matter instances using code with special soft values
@@ -2412,7 +2412,6 @@ def test_matter_special():
     """ Done Test """
 
 
-
 def test_seqner():
     """
     Test Seqner sequence number subclass Matter
@@ -2577,6 +2576,7 @@ def test_seqner():
     assert number.qb2 == snqb2
 
     """ Done Test """
+
 
 def test_number():
     """
@@ -3976,6 +3976,7 @@ def test_decimer():
 
     """Done Test"""
 
+
 def test_dater():
     """
     Test Dater date time subclass of Matter
@@ -4089,6 +4090,7 @@ def test_dater():
     assert dater4.datetime > dater3.datetime
 
     """ Done Test """
+
 
 def test_tagger():
     """
@@ -4266,7 +4268,7 @@ def test_ilker():
     with pytest.raises(InvalidCodeError):
         ilker = Ilker(soft='bady', code=MtrDex.Tag4)
 
-    """End Test"""
+    """ Done Test"""
 
 
 def test_traitor():
@@ -4360,7 +4362,7 @@ def test_traitor():
     with pytest.raises(InvalidSoftError):
         traitor = Traitor(soft='bady', code=MtrDex.Tag4)
 
-    """End Test"""
+    """ Done Test"""
 
 
 def test_verser():
@@ -4779,7 +4781,6 @@ def test_texter():
     assert texter.text == text
 
     """ Done Test """
-
 
 
 def test_bexter():
@@ -5860,7 +5861,6 @@ def test_cigar():
     """ Done Test """
 
 
-
 def test_diger():
     """
     Test the support functionality for Diger subclass of CryMat
@@ -6266,7 +6266,6 @@ def test_noncer():
     """ Done Test """
 
 
-
 def test_prefixer():
     """Test the support functionality for prefixer subclass of Matter"""
 
@@ -6344,7 +6343,6 @@ def test_prefixer():
 
 
     """ Done Test """
-
 
 
 def test_saider():
@@ -6598,8 +6596,6 @@ def test_saider():
     assert sad2["read"] is True
 
     """Done Test"""
-
-
 
 
 def test_tholder():
@@ -7114,6 +7110,110 @@ def test_tholder():
     """ Done Test """
 
 
+def test_dicter():
+    """Test Dicter base class"""
+    from keri.core import Dicter
+
+    # Test raises on empty init
+    with pytest.raises(ValueError):
+        d = Dicter()
+
+    # Test init from pad dict with label present
+    pad = {"i": "test_rid", "name": "Alice"}
+    d = Dicter(pad=pad)
+    assert d.pad == pad
+    assert d.rid == "test_rid"
+    assert d.raw == json.dumps(pad).encode("utf-8")
+
+    # Test init from pad dict without label — auto-generates rid
+    pad_no_id = {"name": "Bob"}
+    d2 = Dicter(pad=pad_no_id)
+    assert "i" in d2.pad
+    assert d2.rid != "" and d2.rid is not None
+    assert isinstance(d2.rid, str)
+    assert d2.raw == json.dumps(d2.pad).encode("utf-8")
+
+    # Test init from pad dict with empty label — auto-generates rid
+    pad_empty_id = {"i": "", "name": "Carol"}
+    d3 = Dicter(pad=pad_empty_id)
+    assert d3.rid != ""
+    assert d3.pad["i"] == d3.rid
+
+    # Test init from raw bytes
+    raw = json.dumps({"i": "raw_rid", "value": 42}).encode("utf-8")
+    d4 = Dicter(raw=raw)
+    assert d4.raw == raw
+    assert d4.rid == "raw_rid"
+    assert d4.pad == {"i": "raw_rid", "value": 42}
+
+    # Test init from raw bytes without label — auto-generates rid
+    raw_no_id = json.dumps({"value": 99}).encode("utf-8")
+    d5 = Dicter(raw=raw_no_id)
+    assert "i" in d5.pad
+    assert d5.rid != ""
+    assert d5.raw == raw_no_id  # raw setter stores original raw directly
+    # Note: rid is injected into pad but raw is NOT re-serialized — verify pad reflects it
+    assert d5.pad["i"] == d5.rid
+
+    # Test init from raw bytes with empty label — auto-generates rid
+    raw_empty_id = json.dumps({"i": "", "value": 7}).encode("utf-8")
+    d6 = Dicter(raw=raw_empty_id)
+    assert d6.rid != ""
+    assert d6.pad["i"] == d6.rid
+
+    # Test init from dicter (clone)
+    d7 = Dicter(dicter=d4)
+    assert d7.raw == d4.raw
+    assert d7.pad == d4.pad
+    assert d7.rid == d4.rid
+
+    # Test raw setter round-trip
+    new_raw = json.dumps({"i": "new_rid", "foo": "bar"}).encode("utf-8")
+    d4.raw = new_raw
+    assert d4.rid == "new_rid"
+    assert d4.pad["foo"] == "bar"
+
+    # Test pad setter round-trip
+    new_pad = {"i": "another_rid", "baz": True}
+    d4.pad = new_pad
+    assert d4.rid == "another_rid"
+    assert d4.raw == json.dumps(new_pad).encode("utf-8")
+
+    # Test pretty output is valid JSON substring
+    d8 = Dicter(pad={"i": "pretty_rid", "x": 1})
+    pretty = d8.pretty()
+    assert isinstance(pretty, str)
+    parsed = json.loads(pretty)
+    assert parsed["i"] == "pretty_rid"
+
+    # Test pretty size truncation
+    d9 = Dicter(pad={"i": "rid", "data": "a" * 2000})
+    truncated = d9.pretty(size=50)
+    assert len(truncated) <= 50
+
+    # Test pretty size=None returns full output
+    full = d9.pretty(size=None)
+    assert len(full) > 50
+
+    # Test custom label
+    pad_custom = {"id": "custom_rid", "val": "x"}
+    d10 = Dicter(pad=pad_custom, label="id")
+    assert d10.rid == "custom_rid"
+    assert d10.pad["id"] == "custom_rid"
+
+    # Test custom label auto-generates when missing
+    pad_custom_missing = {"val": "x"}
+    d11 = Dicter(pad=pad_custom_missing, label="id")
+    assert "id" in d11.pad
+    assert d11.rid == d11.pad["id"]
+
+    # Test rid is immutable via property (no setter)
+    with pytest.raises(AttributeError):
+        d10.rid = "tampered"
+
+    """ Done Test """
+
+
 if __name__ == "__main__":
     test_icemapdom()
     test_mapcodex()
@@ -7136,3 +7236,4 @@ if __name__ == "__main__":
     test_decimer()
     test_dater()
     test_tholder()
+    test_dicter()

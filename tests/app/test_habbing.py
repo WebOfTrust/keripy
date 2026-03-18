@@ -821,6 +821,36 @@ def test_namespaced_habs():
     hby.cf.close(clear=True)
 
 
+def test_join_group_hab_persists_group_name_on_reload():
+    hby_name = "multisig-join"
+    group_name = "test_group_4"
+    group_pre = core.Salter(raw=b'fedcba9876543210').signer(transferable=False).verfer.qb64
+
+    with habbing.openHby(name=hby_name, base="test", temp=False, clear=True,
+                         salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby:
+        mhab = hby.makeHab(name="member1")
+        other = hby.makeHab(name="member2")
+
+        group = hby.joinGroupHab(pre=group_pre,
+                                 group=group_name,
+                                 mhab=mhab,
+                                 smids=[mhab.pre, other.pre])
+
+        assert group.name == group_name
+        assert hby.db.habs.get(keys=group_pre).name == group_name
+
+    with habbing.openHby(name=hby_name, base="test", temp=False,
+                         salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby:
+        found = hby.habByName(name=group_name)
+        assert found is not None
+        assert found.pre == group_pre
+        assert found.name == group_name
+        assert hby.db.habs.get(keys=group_pre).name == group_name
+
+    hby.close(clear=True)
+    hby.cf.close(clear=True)
+
+
 def test_make_other_event():
     with habbing.openHby(salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby:
         hab = hby.makeHab(name="test")
@@ -1127,3 +1157,105 @@ def test_failed_rotation_rollback():
         # A subsequent valid rotation must still succeed
         hab.rotate()
         assert hab.kever.sn == 1
+
+
+def test_cues():
+    """
+    Test BaseHab.processCuesIter and GroupHab.processCuesIter cue handlers.
+
+    Covers all implemented kins:
+        receipt, replay, reply, witness, query,
+        notice, noticeBadCloneFN, keyStateSaved, stream, invalid,
+        remoteMemberedSig (GroupHab only)
+    """
+    with habbing.openHby(name="cam", temp=True,
+                         salt=core.Salter(raw=b'camcamcamcamcamc').qb64) as camHby, \
+         habbing.openHby(name="wes", temp=True,
+                         salt=core.Salter(raw=b'wesweswesweswesx').qb64) as wesHby, \
+         habbing.openHby(name="bob", temp=True,
+                         salt=core.Salter(raw=b'bobbobbobbobbobb').qb64) as bobHby:
+
+        # shared habs
+        wesHab = wesHby.makeHab(name='wes', isith="1", icount=1, transferable=False)
+        assert not wesHab.kever.prefixer.transferable
+
+        camHab = camHby.makeHab(name='cam', isith="1", icount=1,
+                                toad=1, wits=[wesHab.pre])
+        bobHab = bobHby.makeHab(name='bob', isith="1", icount=1)
+
+        wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
+        camKvy = eventing.Kevery(db=camHab.db, lax=False, local=False)
+
+        # parse cam's inception into wes so wes has cam's key state
+        icpMsg = camHab.makeOwnInception()
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(icpMsg),
+                                                kvy=wesKvy, local=True)
+        assert camHab.pre in wesKvy.kevers
+        assert wesHab.pre in wesKvy.kevers[camHab.pre].wits
+
+        # receipt
+        assert any(c["kin"] == "receipt" for c in wesKvy.cues)
+        rctMsg = wesHab.processCues(wesKvy.cues)
+        assert len(rctMsg) > 0
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(rctMsg),
+                                                kvy=camKvy, local=False)
+        assert wesHab.pre in camKvy.kevers
+
+        # replay
+        kvy = eventing.Kevery(db=camHab.db, lax=False, local=True)
+        replay_payload = bytearray(b"fake-replay-msgs")
+        kvy.cues.push(dict(kin="replay", msgs=replay_payload))
+        assert camHab.processCues(kvy.cues) == replay_payload
+
+        # reply
+        kvy.cues.push(dict(kin="reply",
+                           route="/end/role/add",
+                           data=dict(cid=camHab.pre,
+                                     role=kering.Roles.controller,
+                                     eid=camHab.pre)))
+        assert len(camHab.processCues(kvy.cues)) > 0
+
+        # witness
+        # drain incidental cues from parsing above, then push witness cue
+        while wesKvy.cues:
+            wesKvy.cues.pull()
+        wesKvy.cues.push(dict(kin="witness", serder=camHab.iserder))
+        assert len(wesHab.processCues(wesKvy.cues)) > 0
+
+        # query
+        kvy.cues.push(dict(kin="query", pre=bobHab.pre, src=camHab.pre))
+        assert len(camHab.processCues(kvy.cues)) > 0
+
+        # notice
+        kvy.cues.push(dict(kin="notice", serder=camHab.iserder))
+        assert camHab.processCues(kvy.cues) == b""
+        assert not kvy.cues
+
+        # noticeBadCloneFN
+        kvy.cues.push(dict(kin="noticeBadCloneFN",
+                           serder=camHab.iserder,
+                           fn=7,
+                           firner=coring.Seqner(sn=5),
+                           dater=coring.Dater()))
+        assert camHab.processCues(kvy.cues) == b""
+        assert not kvy.cues
+
+        # keyStateSaved
+        ksn = {"i": camHab.pre, "s": "0", "d": camHab.kever.serder.said}
+        kvy.cues.push(dict(kin="keyStateSaved", ksn=ksn))
+        assert camHab.processCues(kvy.cues) == b""
+        assert not kvy.cues
+
+        # stream
+        kvy.cues.push(dict(kin="stream",
+                           serder=camHab.iserder,
+                           pre=bobHab.pre,
+                           src=camHab.pre,
+                           topics={"/receipt": 0, "/replay": 0}))
+        assert camHab.processCues(kvy.cues) == b""
+        assert not kvy.cues
+
+        # invalid
+        kvy.cues.push(dict(kin="invalid", serder=camHab.iserder))
+        assert camHab.processCues(kvy.cues) == b""
+        assert not kvy.cues

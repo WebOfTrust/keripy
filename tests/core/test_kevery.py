@@ -212,7 +212,7 @@ def test_kevery():
 
         pre = kever.prefixer.qb64
 
-        db_digs = [val for val in kever.db.kels.getOnIterAll(keys=pre)]
+        db_digs = [val for val in kever.db.kels.getAllIter(keys=pre)]
         assert db_digs == event_digs
 
         kevery = Kevery(db=vallgr)
@@ -230,7 +230,7 @@ def test_kevery():
         assert vkever.verfers[0].qb64 == kever.verfers[0].qb64
         assert vkever.verfers[0].qb64 == signers[4].verfer.qb64
 
-        db_digs = [val for val in kevery.db.kels.getOnIterAll(keys=pre)]
+        db_digs = [val for val in kevery.db.kels.getAllIter(keys=pre)]
         assert db_digs == event_digs
 
     assert not os.path.exists(kevery.db.path)
