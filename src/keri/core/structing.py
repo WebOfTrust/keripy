@@ -9,9 +9,9 @@ from collections import namedtuple
 from collections.abc import Mapping
 from dataclasses import dataclass, astuple
 
-from .. import (Colds, ValidationError,
-                InvalidValueError, EmptyMaterialError)
-from ..help import isNonStringSequence
+from ..kering import (Colds, ValidationError,
+                      InvalidValueError, EmptyMaterialError)
+from ..help import helping
 
 from .coring import (IceMapDom, Diger, DigDex, Prefixer, Number, Verser,
                      Labeler, Noncer, NonceDex, Texter)
@@ -778,7 +778,7 @@ class Structor:
 
                         cast = clan(**cast)  # convert to clan
 
-                    elif isinstance(cast, isNonStringSequence):
+                    elif isinstance(cast, helping.isNonStringSequence):
                         cast = clan(*cast)  # convert to clan assumes elements in correct order
 
                     else:
@@ -815,7 +815,7 @@ class Structor:
 
                         crew = clan(**crew)  # convert to clan
 
-                    elif isinstance(crew, isNonStringSequence):
+                    elif isinstance(crew, helping.isNonStringSequence):
                         crew = clan(*crew)  # convert to clan assumes elements in correct order
 
                     else:

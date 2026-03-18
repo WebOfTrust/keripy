@@ -12,19 +12,18 @@ from urllib.parse import urlparse
 
 import falcon
 from hio.base import doing
-from hio.help import decking
+from hio.help import decking, ogler
 
-from . import httping
+from .httping import Clienter,CESR_CONTENT_TYPE
+from .organizing import Organizer
 from .. import (Vrsn_1_0, Roles, Schemes, Ilks,
                 ValidationError, UnverifiedReplyError,
                 ConfigurationError)
-from ..help import ogler, nowIso8601
-from ..app import organizing
-from ..core import (Prefixer, routing, eventing,
-                    parsing, scheming, serdering)
-from ..end import ending, OOBI_RE, DOOBI_RE
-from ..help import helping
-from ..peer import exchanging
+from ..help import nowIso8601, fromIso8601, toIso8601, nowUTC
+from ..core import (Prefixer, Router, Revery, Kevery,
+                    Parser, Schemer, SerderKERI)
+from ..end import OOBI_RE, DOOBI_RE, WOOBI_RE, OOBI_AID_HEADER
+from ..peer import exchange
 from ..recording import OobiRecord, WellKnownAuthN
 
 logger = ogler.getLogger()
@@ -184,7 +183,7 @@ class OobiResource:
         if "url" in body:
             oobi = body["url"]
 
-            obr = OobiRecord(date=helping.nowIso8601())
+            obr = OobiRecord(date=nowIso8601())
             if "oobialias" in body:
                 obr.oobialias = body["oobialias"]
 
@@ -236,7 +235,7 @@ class OobiRequestHandler:
             return
         oobi = pay["oobi"]
 
-        obr = OobiRecord(date=helping.nowIso8601())
+        obr = OobiRecord(date=nowIso8601())
         self.hby.db.oobis.pin(keys=(oobi,), val=obr)
 
         data = dict(
@@ -260,7 +259,7 @@ def oobiRequestExn(hab, dest, oobi):
     )
 
     # Create `exn` peer to peer message to notify other participants UI
-    exn, _ = exchanging.exchange(route=OobiRequestHandler.resource, modifiers=dict(),
+    exn, _ = exchange(route=OobiRequestHandler.resource, modifiers=dict(),
                                  payload=data, sender=hab.pre)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
@@ -289,15 +288,15 @@ class Oobiery:
         if self.rvy is not None:
             self.registerReplyRoutes(self.rvy.rtr)
 
-        self.clienter = clienter or httping.Clienter()
-        self.org = organizing.Organizer(hby=self.hby)
+        self.clienter = clienter or Clienter()
+        self.org = Organizer(hby=self.hby)
 
         # Set up a local parser for returned events from OOBI queries.
-        rtr = routing.Router()
-        rvy = routing.Revery(db=self.hby.db, rtr=rtr)
-        kvy = eventing.Kevery(db=self.hby.db, lax=True, local=False, rvy=rvy)
+        rtr = Router()
+        rvy = Revery(db=self.hby.db, rtr=rtr)
+        kvy = Kevery(db=self.hby.db, lax=True, local=False, rvy=rvy)
         kvy.registerReplyRoutes(router=rtr)
-        self.parser = parsing.Parser(framed=True, kvy=kvy, rvy=rvy, version=Vrsn_1_0)
+        self.parser = Parser(framed=True, kvy=kvy, rvy=rvy, version=Vrsn_1_0)
 
         self.cues = cues if cues is not None else decking.Deck()
         self.clients = dict()
@@ -457,7 +456,7 @@ class Oobiery:
                     obr.said = match.group("said")
                     self.request(url, obr)
 
-                elif (match := ending.WOOBI_RE.match(purl.path)) is not None:  # Well Known
+                elif (match := WOOBI_RE.match(purl.path)) is not None:  # Well Known
                     obr.cid = match.group("cid")
                     params = parse.parse_qs(purl.query)
 
@@ -498,13 +497,13 @@ class Oobiery:
                     self.hby.db.roobi.put(keys=(url,), val=obr)
 
                 elif response["headers"]["Content-Type"] in (
-                    httping.CESR_CONTENT_TYPE,
+                    CESR_CONTENT_TYPE,
                     "application/json+cesr",
                     "application/cesr+json",
                 ):  # CESR Stream response to OOBI (canonical + legacy variants)
                     self.parser.parse(ims=bytearray(response["body"]))
-                    if ending.OOBI_AID_HEADER in response["headers"]:
-                        obr.cid = response["headers"][ending.OOBI_AID_HEADER]
+                    if OOBI_AID_HEADER in response["headers"]:
+                        obr.cid = response["headers"][OOBI_AID_HEADER]
 
                     if obr.oobialias is not None and obr.cid:
                         self.org.update(pre=obr.cid, data=dict(alias=obr.oobialias, oobi=url))
@@ -515,7 +514,7 @@ class Oobiery:
 
                 elif response["headers"]["Content-Type"] == "application/schema+json":  # Schema response to data OOBI
                     try:
-                        schemer = scheming.Schemer(raw=bytearray(response["body"]))
+                        schemer = Schemer(raw=bytearray(response["body"]))
                         if schemer.said == obr.said:
                             self.hby.db.schema.pin(keys=(schemer.said,), val=schemer)
                             result = Result.resolved
@@ -532,7 +531,7 @@ class Oobiery:
                 elif response["headers"]["Content-Type"].startswith("application/json"):  # Unsigned rpy OOBI or Schema
 
                     try:
-                        schemer = scheming.Schemer(raw=bytearray(response["body"]))
+                        schemer = Schemer(raw=bytearray(response["body"]))
                         if schemer.said == obr.said:
                             self.hby.db.schema.pin(keys=(schemer.said,), val=schemer)
                             result = Result.resolved
@@ -548,7 +547,7 @@ class Oobiery:
                         pass
 
                     try:
-                        serder = serdering.SerderKERI(raw=bytearray(response["body"]))
+                        serder = SerderKERI(raw=bytearray(response["body"]))
                     except ValueError:
                         obr.state = Result.failed
                         self.hby.db.coobi.rem(keys=(url,))
@@ -601,10 +600,10 @@ class Oobiery:
 
         """
         for (url,), obr in self.hby.db.eoobi.getTopItemIter():
-            last = helping.fromIso8601(obr.date)
-            now = helping.nowUTC()
+            last = fromIso8601(obr.date)
+            now = nowUTC()
             if (now - last) > datetime.timedelta(seconds=self.RetryDelay):
-                obr.date = helping.toIso8601(now)
+                obr.date = toIso8601(now)
                 self.hby.db.eoobi.rem(keys=(url,))
                 self.hby.db.oobis.pin(keys=(url,), val=obr)
 
@@ -630,7 +629,7 @@ class Oobiery:
         mobr.urls = urls
 
         for murl in urls:
-            obr = OobiRecord(date=helping.nowIso8601())
+            obr = OobiRecord(date=nowIso8601())
             obr.oobialias = mobr.oobialias
             obr.cid = mobr.cid
             self.hby.db.oobis.put(keys=(murl,), val=obr)
@@ -649,7 +648,7 @@ class Authenticator:
             clienter (Clienter): DoDoer client provider responsible for managing HTTP client requests
         """
         self.hby = hby
-        self.clienter = clienter if clienter is not None else httping.Clienter()
+        self.clienter = clienter if clienter is not None else Clienter()
         self.clients = dict()
         self.doers = [self.clienter, doing.doify(self.authzDo)]
 
@@ -699,7 +698,7 @@ class Authenticator:
         for (wurl,), obr in self.hby.db.woobi.getTopItemIter():
             # Find any woobis that match and can be used to perform MFA for this resolved AID
             purl = urlparse(wurl)
-            if (match := ending.WOOBI_RE.match(purl.path)) is not None:
+            if (match := WOOBI_RE.match(purl.path)) is not None:
                 cid = match.group("cid")
                 # print(cid, cid in self.hby.kevers)
                 if cid in self.hby.kevers:

@@ -16,8 +16,8 @@ import msgpack
 
 from ordered_set import OrderedSet as oset
 
-from .. import (Colds, Kinds, EmptyMaterialError, InvalidValueError,
-                DeserializeError, SerializeError)
+from ..kering import (Colds, Kinds, EmptyMaterialError, InvalidValueError,
+                      DeserializeError, SerializeError)
 
 from ..help import isNonStringIterable
 

@@ -8,25 +8,26 @@ VC issuer support
 from typing import Optional
 
 from hio.base import doing
-from hio.help import decking
+from hio.help import decking, ogler
 
 from ..kering import (Vrsn_1_0, ClosedError,
                       ConfigurationError, MissingAnchorError,
                       ValidationError, LikelyDuplicitousError,
                       MissingRegistryError)
-from ..help import ogler
-from ..app.habbing import GroupHab
 
-
-from ..core import (parsing, scheming, serdering,
+from ..core import (Parser, Schemer, SerderKERI, SerderACDC,
                     Counter, Codens, MtrDex, NumDex,
                     Number, Diger, TraitDex,
                     Seqner, Saider, Prefixer)
 from ..db import snKey, dgKey
-from ..vc import proving
+from ..vc import credential
 
 from .vdring import RegistryRecord
-from . import eventing
+from .eventing import (Reger, Tevery, backerIssue, backerRevoke,
+                       rotate as rotateEvent,
+                       incept as inceptEvent,
+                       issue as issueEvent,
+                       revoke as revokeEvent)
 
 logger = ogler.getLogger()
 
@@ -56,10 +57,10 @@ class Regery:
         self.temp = temp
         self.cues = cues if cues is not None else decking.Deck()
 
-        self.reger = reger if reger is not None else eventing.Reger(name=self.name, base=base, db=self.hby.db, temp=temp,
+        self.reger = reger if reger is not None else Reger(name=self.name, base=base, db=self.hby.db, temp=temp,
                                                            reopen=True)
-        self.tvy = eventing.Tevery(reger=self.reger, db=self.hby.db, local=True, lax=True)
-        self.psr = parsing.Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy, version=Vrsn_1_0)
+        self.tvy = Tevery(reger=self.reger, db=self.hby.db, local=True, lax=True)
+        self.psr = Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy, version=Vrsn_1_0)
 
         self.regs = {}  # List of local registries
         self.inited = False
@@ -304,12 +305,12 @@ class Registry(BaseRegistry):
             if estOnly:
                 self.cnfg.append(TraitDex.EstOnly)
 
-            self.vcp = eventing.incept(pre,
-                                       baks=baks,
-                                       toad=toad,
-                                       nonce=nonce,
-                                       cnfg=self.cnfg,
-                                       code=MtrDex.Blake3_256)
+            self.vcp = inceptEvent(pre,
+                                    baks=baks,
+                                    toad=toad,
+                                    nonce=nonce,
+                                    cnfg=self.cnfg,
+                                    code=MtrDex.Blake3_256)
         else:
             self.vcp = vcp
 
@@ -336,13 +337,13 @@ class Registry(BaseRegistry):
         if self.noBackers:
             raise ValueError("Attempt to rotate registry {} that does not support backers".format(self.regk))
 
-        serder = eventing.rotate(dig=self.regser.said,
-                                 regk=self.regk,
-                                 sn=self.regi + 1,
-                                 toad=toad,
-                                 baks=self.baks,
-                                 adds=adds,
-                                 cuts=cuts)
+        serder = rotateEvent(dig=self.regser.said,
+                             regk=self.regk,
+                             sn=self.regi + 1,
+                             toad=toad,
+                             baks=self.baks,
+                             adds=adds,
+                             cuts=cuts)
 
         self.processEvent(serder=serder)
         return serder
@@ -358,9 +359,9 @@ class Registry(BaseRegistry):
             SerderKERI: The SerderKERI of the credential issuance event
         """
         if self.noBackers:
-            serder = eventing.issue(vcdig=said, regk=self.regk, dt=dt)
+            serder = issueEvent(vcdig=said, regk=self.regk, dt=dt)
         else:
-            serder = eventing.backerIssue(vcdig=said,
+            serder = backerIssue(vcdig=said,
                                           regk=self.regk,
                                           regsn=self.regi,
                                           regd=self.regser.said,
@@ -387,16 +388,16 @@ class Registry(BaseRegistry):
             raise ValidationError("Invalid revoke of {} that has not been issued "
                                          "pre={}.".format(vci, self.regk))
         ievt = self.reger.tvts.get(keys=dgKey(pre=vci, dig=vcser))
-        iserder = serdering.SerderKERI(raw=ievt.encode("utf-8"))
+        iserder = SerderKERI(raw=ievt.encode("utf-8"))
 
         if self.noBackers:
-            serder = eventing.revoke(vcdig=vci, regk=self.regk, dig=iserder.said, dt=dt)
+            serder = revokeEvent(vcdig=vci, regk=self.regk, dig=iserder.said, dt=dt)
         else:
-            serder = eventing.backerRevoke(vcdig=vci,
-                                           regk=self.regk,
-                                           regsn=self.regi,
-                                           regd=self.regser.said,
-                                           dig=iserder.said, dt=dt)
+            serder = backerRevoke(vcdig=vci,
+                                  regk=self.regk,
+                                  regsn=self.regi,
+                                  regd=self.regser.said,
+                                  dig=iserder.said, dt=dt)
 
         self.processEvent(serder=serder)
         return serder
@@ -460,9 +461,9 @@ class SignifyRegistry(BaseRegistry):
             SerderKERI: The SerderKERI of the credential issuance event
         """
         if self.noBackers:
-            serder = eventing.issue(vcdig=said, regk=self.regk, dt=dt)
+            serder = issueEvent(vcdig=said, regk=self.regk, dt=dt)
         else:
-            serder = eventing.backerIssue(vcdig=said, regk=self.regk, regsn=self.regi, regd=self.regser.said,
+            serder = backerIssue(vcdig=said, regk=self.regk, regsn=self.regi, regd=self.regser.said,
                                           dt=dt)
 
         self.processEvent(serder=serder)
@@ -486,13 +487,13 @@ class SignifyRegistry(BaseRegistry):
             raise ValidationError("Invalid revoke of {} that has not been issued "
                                          "pre={}.".format(vci, self.regk))
         ievt = self.reger.tvts.get(keys=dgKey(pre=vci, dig=vcser))
-        iserder = serdering.SerderACDC(raw=ievt.encode("utf-8"))
+        iserder = SerderACDC(raw=ievt.encode("utf-8"))
 
         if self.noBackers:
-            serder = eventing.revoke(vcdig=vci, regk=self.regk, dig=iserder.said, dt=dt)
+            serder = revokeEvent(vcdig=vci, regk=self.regk, dig=iserder.said, dt=dt)
         else:
-            serder = eventing.backerRevoke(vcdig=vci, regk=self.regk, regsn=self.regi, regd=self.regser.said,
-                                           dig=iserder.said, dt=dt)
+            serder = backerRevoke(vcdig=vci, regk=self.regk, regsn=self.regi, regd=self.regser.said,
+                                  dig=iserder.said, dt=dt)
 
         self.processEvent(serder=serder)
         return serder
@@ -540,6 +541,8 @@ class Registrar(doing.DoDoer):
             iserder (SerderKERI): Serder object of TEL iss event
             anc (SerderKERI): Serder object of anchoring event
         """
+        from ..app import GroupHab
+
         registry = self.rgy.regs[iserder.pre]
         hab = registry.hab
         rnum = Number(num=0, code=NumDex.Huge)
@@ -580,6 +583,8 @@ class Registrar(doing.DoDoer):
             anc (SerderKERI): Serder object of anchoring event
 
         """
+        from ..app import GroupHab
+
         regk = creder.regid
         registry = self.rgy.regs[regk]
         hab = registry.hab
@@ -622,6 +627,7 @@ class Registrar(doing.DoDoer):
         Returns:
             (str, str): (vcid, rseq.sn) of the registry identifier and TEL event sequence number
         """
+        from ..app import GroupHab
 
         regk = creder.regid
         registry = self.rgy.regs[regk]
@@ -667,7 +673,7 @@ class Registrar(doing.DoDoer):
             (bytearray, Prefixer, Seqner, Saider): tuple of ixn event, Hab pre, and seq. no. and SAID of the ixn event.
         """
         ixn = hab.interact(data=[rseal])
-        serder = serdering.SerderKERI(raw=bytes(ixn))
+        serder = SerderKERI(raw=bytes(ixn))
 
         sn = serder.sn
         said = serder.said
@@ -863,16 +869,16 @@ class Credentialer(doing.DoDoer):
             raise ConfigurationError("Credential registry {} does not exist.  It must be created before issuing "
                                             "credentials".format(regname))
 
-        creder = proving.credential(issuer=registry.hab.pre,
-                                    schema=schema,
-                                    recipient=recp,
-                                    data=data,
-                                    source=source,
-                                    private=private,
-                                    private_credential_nonce=private_credential_nonce,
-                                    private_subject_nonce=private_subject_nonce,
-                                    rules=rules,
-                                    status=registry.regk)
+        creder = credential(issuer=registry.hab.pre,
+                            schema=schema,
+                            recipient=recp,
+                            data=data,
+                            source=source,
+                            private=private,
+                            private_credential_nonce=private_credential_nonce,
+                            private_subject_nonce=private_subject_nonce,
+                            rules=rules,
+                            status=registry.regk)
         self.validate(creder)
         return creder
 
@@ -893,7 +899,7 @@ class Credentialer(doing.DoDoer):
             raise ConfigurationError("Credential schema {} not found.  It must be loaded with data oobi before "
                                             "issuing credentials".format(schema))
 
-        schemer = scheming.Schemer(raw=scraw)
+        schemer = Schemer(raw=scraw)
         try:
             schemer.verify(creder.raw)
         except ValidationError as ex:
@@ -1023,35 +1029,35 @@ def sendArtifacts(hby, reger, postman, creder, recp):
 
     ikever = hby.db.kevers[issr]
     for msg in hby.db.cloneDelegation(ikever):
-        serder = serdering.SerderKERI(raw=msg)
+        serder = SerderKERI(raw=msg)
         atc = msg[serder.size:]
         postman.send(serder=serder, attachment=atc)
 
     for msg in hby.db.clonePreIter(pre=issr):
-        serder = serdering.SerderKERI(raw=msg)
+        serder = SerderKERI(raw=msg)
         atc = msg[serder.size:]
         postman.send(serder=serder, attachment=atc)
 
     if isse is not None and isse != recp:
         ikever = hby.db.kevers[isse]
         for msg in hby.db.cloneDelegation(ikever):
-            serder = serdering.SerderKERI(raw=msg)
+            serder = SerderKERI(raw=msg)
             atc = msg[serder.size:]
             postman.send(serder=serder, attachment=atc)
 
         for msg in hby.db.clonePreIter(pre=isse):
-            serder = serdering.SerderKERI(raw=msg)
+            serder = SerderKERI(raw=msg)
             atc = msg[serder.size:]
             postman.send(serder=serder, attachment=atc)
 
     if regk is not None:
         for msg in reger.clonePreIter(pre=regk):
-            serder = serdering.SerderKERI(raw=msg)
+            serder = SerderKERI(raw=msg)
             atc = msg[serder.size:]
             postman.send(serder=serder, attachment=atc)
 
     for msg in reger.clonePreIter(pre=creder.said):
-        serder = serdering.SerderKERI(raw=msg)
+        serder = SerderKERI(raw=msg)
         atc = msg[serder.size:]
         postman.send(serder=serder, attachment=atc)
 
@@ -1075,16 +1081,16 @@ def sendRegistry(hby, reger, postman, creder, sender, recp):
 
     ikever = hby.db.kevers[issr]
     for msg in hby.db.cloneDelegation(ikever):
-        serder = serdering.SerderKERI(raw=msg)
+        serder = SerderKERI(raw=msg)
         atc = msg[serder.size:]
         postman.send(serder=serder, attachment=atc)
 
     for msg in hby.db.clonePreIter(pre=issr):
-        serder = serdering.SerderKERI(raw=msg)
+        serder = SerderKERI(raw=msg)
         atc = msg[serder.size:]
         postman.send(serder=serder, attachment=atc)
 
     for msg in reger.clonePreIter(pre=regk):
-        serder = serdering.SerderKERI(raw=msg)
+        serder = SerderKERI(raw=msg)
         atc = msg[serder.size:]
         postman.send(serder=serder, attachment=atc)

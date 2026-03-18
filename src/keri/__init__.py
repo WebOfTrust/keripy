@@ -38,3 +38,10 @@ from .kering import (Vrsn_1_0, Vrsn_2_0, Kinds, Protocols, Schemes, Rever,
                      FailedSchemaValidationError, UntrustedKeyStateSource, Versionage,
                      KramError, KramConfigurationError, MissingAuthAttachmentError,
                      MissingSenderKeyStateError)
+
+from .recording import (RawRecord, StateEERecord, KeyStateRecord,
+                        EventSourceRecord, HabitatRecord, TopicsRecord,
+                        OobiQueryRecord, OobiRecord, EndpointRecord, 
+                        EndAuthRecord, LocationRecord, ObservedRecord, 
+                        CacheTypeRecord, MsgCacheRecord, TxnMsgCacheRecord,
+                        WellKnownAuthN)

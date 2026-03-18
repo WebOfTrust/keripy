@@ -9,17 +9,27 @@ from math import ceil
 from urllib.parse import urlsplit
 
 from hio.base import doing
-from hio.help import hicting
+from hio.help import hicting, ogler
 
-from ..peer import exchanging
-from . import keeping, configing
+from .configing import Configer
+from .keeping import Keeper, Manager
+
+from ..peer import Exchanger, exchange
 from ..db import Baser, dgKey, fetchTsgs
-from ..help import ogler, fromIso8601, toIso8601
-from .. import (Vrsn_1_0, ClosedError, AuthError,
+from ..help import fromIso8601, toIso8601
+from ..kering import (Vrsn_1_0, Ilks, ClosedError, AuthError,
                 ConfigurationError, ValidationError, MissingEntryError,
                 KeriError, MissingSignatureError, Roles, Schemes)
-from ..core import (coring, eventing, parsing, routing,
-                    Counter, Salter, Codens)
+from ..core import (Tholder, Diger, Prefixer, Kevery, Parser, Revery,
+                    Router, Counter, Salter, SealEvent, SealLast,
+                    Codens, MtrDex, TraitDex, 
+                    deltate, messagize, delcept,
+                    rotate as rotateEvent,
+                    incept as inceptEvent,
+                    interact as interactEvent,
+                    query as queryEvent,
+                    receipt as receiptEvent,
+                    reply as replyEvent)
 from ..recording import HabitatRecord, OobiRecord
 
 
@@ -123,14 +133,14 @@ class Habery:
             temporary storage of databases and config file
             weak resources for stretch of salty key
 
-        ks (keeping.Keeper): lmdb key store
+        ks (Keeper): lmdb key store
         db (basing.Baser): lmdb data base for KEL etc
-        cf (configing.Configer): config file instance
-        mgr (keeping.Manager): creates and rotates keys in key store
-        rtr (routing.Router): routes reply 'rpy' messages
-        rvy (routing.Revery): factory that processes reply 'rpy' messages
-        kvy (eventing.Kevery): factory for local processing of local event msgs
-        psr (parsing.Parser):  parses local messages for .kvy .rvy
+        cf (Configer): config file instance
+        mgr (Manager): creates and rotates keys in key store
+        rtr (Router): routes reply 'rpy' messages
+        rvy (Revery): factory that processes reply 'rpy' messages
+        kvy (Kevery): factory for local processing of local event msgs
+        psr (Parser):  parses local messages for .kvy .rvy
 
         habs (dict): Hab instances keyed by prefix.
             To look up Hab by name use use .habByName
@@ -204,7 +214,7 @@ class Habery:
         self.base = base
         self.temp = temp
 
-        self.ks = ks if ks is not None else keeping.Keeper(name=self.name,
+        self.ks = ks if ks is not None else Keeper(name=self.name,
                                                            base=self.base,
                                                            temp=self.temp,
                                                            reopen=True,
@@ -216,19 +226,19 @@ class Habery:
                                                   reopen=True,
                                                   clear=clear,
                                                   headDirPath=headDirPath)
-        self.cf = cf if cf is not None else configing.Configer(name=self.name,
+        self.cf = cf if cf is not None else Configer(name=self.name,
                                                                base=self.base,
                                                                temp=self.temp,
                                                                reopen=True,
                                                                clear=clear)
 
         self.mgr = None  # wait to setup until after ks is known to be opened
-        self.rtr = routing.Router()
-        self.rvy = routing.Revery(db=self.db, rtr=self.rtr)
-        self.exc = exchanging.Exchanger(hby=self, handlers=[])
-        self.kvy = eventing.Kevery(db=self.db, lax=False, local=True, rvy=self.rvy)
+        self.rtr = Router()
+        self.rvy = Revery(db=self.db, rtr=self.rtr)
+        self.exc = Exchanger(hby=self, handlers=[])
+        self.kvy = Kevery(db=self.db, lax=False, local=True, rvy=self.rvy)
         self.kvy.registerReplyRoutes(router=self.rtr)
-        self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
+        self.psr = Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
                                   exc=self.exc, local=True, version=Vrsn_1_0)
         self.habs = {}  # empty .habs
         self._signator = None
@@ -292,7 +302,7 @@ class Habery:
         if bran and not seed:  # create seed from stretch of bran as salt
             if len(bran) < 21:
                 raise ValueError(f"Bran (passcode seed material) too short.")
-            bran = coring.MtrDex.Salt_128 + 'A' + bran[:21]  # qb64 salt for seed
+            bran = MtrDex.Salt_128 + 'A' + bran[:21]  # qb64 salt for seed
             signer = Salter(qb64=bran).signer(transferable=False,
                                                      tier=tier,
                                                      temp=temp)
@@ -306,7 +316,7 @@ class Habery:
             salt = Salter(qb64=salt).qb64
 
         try:
-            self.mgr = keeping.Manager(ks=self.ks, seed=seed, aeid=aeid, pidx=pidx,
+            self.mgr = Manager(ks=self.ks, seed=seed, aeid=aeid, pidx=pidx,
                                        algo=algo, salt=salt, tier=tier)
         except AuthError as ex:
             self.close()
@@ -386,7 +396,7 @@ class Habery:
             toad (Union[int,str]): int or str hex of witness threshold
             wits (list): of qb64 prefixes of witnesses
             delpre (str): qb64 of delegator identifier prefix
-            estOnly (str): eventing.TraitDex.EstOnly means only establishment
+            estOnly (str): TraitDex.EstOnly means only establishment
                 events allowed in KEL for this Hab
             data (list | None): seal dicts
         """
@@ -432,9 +442,9 @@ class Habery:
             toad (Union[int,str]): int or str hex of witness threshold
             wits (list): of qb64 prefixes of witnesses
             delpre (str): qb64 of delegator identifier prefix
-            estOnly (str): eventing.TraitDex.EstOnly means only establishment
+            estOnly (str): TraitDex.EstOnly means only establishment
                 events allowed in KEL for this Hab
-            DnD (bool): eventing.TraitDex.DnD means do allow delegated identifiers from this identifier
+            DnD (bool): TraitDex.DnD means do allow delegated identifiers from this identifier
 
         ToDo: NRR
         add midxs tuples for each group member or all in group multisig.
@@ -919,14 +929,14 @@ class BaseHab:
     configuration file as well as Kevery and key store Manager..
 
     Attributes: (Injected)
-        ks (keeping.Keeper): lmdb key store
+        ks (Keeper): lmdb key store
         db (basing.Baser): lmdb data base for KEL etc
-        cf (configing.Configer): config file instance
-        mgr (keeping.Manager): creates and rotates keys in key store
-        rtr (routing.Router): routes reply 'rpy' messages
-        rvy (routing.Revery): factory that processes reply 'rpy' messages
-        kvy (eventing.Kevery): factory for local processing of local event msgs
-        psr (parsing.Parser):  parses local messages for .kvy .rvy
+        cf (Configer): config file instance
+        mgr (Manager): creates and rotates keys in key store
+        rtr (Router): routes reply 'rpy' messages
+        rvy (Revery): factory that processes reply 'rpy' messages
+        kvy (Kevery): factory for local processing of local event msgs
+        psr (Parser):  parses local messages for .kvy .rvy
 
 
      Attributes:
@@ -957,14 +967,14 @@ class BaseHab:
         Initialize instance.
 
         Injected Parameters:  (injected dependencies)
-            ks (keeping.Keeper): lmdb key store
+            ks (Keeper): lmdb key store
             db (basing.Baser): lmdb data base for KEL etc
-            cf (configing.Configer): config file instance
-            mgr (keeping.Manager): creates and rotates keys in key store
-            rtr (routing.Router): routes reply 'rpy' messages
-            rvy (routing.Revery): factory that processes reply 'rpy' messages
-            kvy (eventing.Kevery): factory for local processing of local event msgs
-            psr (parsing.Parser):  parses local messages for .kvy .rvy
+            cf (Configer): config file instance
+            mgr (Manager): creates and rotates keys in key store
+            rtr (Router): routes reply 'rpy' messages
+            rvy (Revery): factory that processes reply 'rpy' messages
+            kvy (Kevery): factory for local processing of local event msgs
+            psr (Parser):  parses local messages for .kvy .rvy
 
 
         Parameters:
@@ -1011,10 +1021,10 @@ class BaseHab:
                 specified else compute default based on number of wits (backers)
             wits (list | None): qb64 prefixes of witnesses if any
             delpre (str | None): qb64 of delegator identifier prefix if any
-            estOnly (bool | None): True means add trait eventing.TraitDex.EstOnly
+            estOnly (bool | None): True means add trait TraitDex.EstOnly
                 which means only establishment events allowed in KEL for this Hab
                 False (default) means allows non-est events and no trait is added.
-            DnD (bool): True means add trait of eventing.TraitDex.DnD which
+            DnD (bool): True means add trait of TraitDex.DnD which
                     means do not allow delegated identifiers from this identifier
                     False (default) means do allow and no trait is added.
 
@@ -1027,17 +1037,17 @@ class BaseHab:
             isith = f"{max(1, ceil(icount / 2)):x}"
         if nsith is None:  # compute default
             nsith = f"{max(0, ceil(ncount / 2)):x}"
-        cst = coring.Tholder(sith=isith).sith  # current signing threshold
-        nst = coring.Tholder(sith=nsith).sith  # next signing threshold
+        cst = Tholder(sith=isith).sith  # current signing threshold
+        nst = Tholder(sith=nsith).sith  # next signing threshold
         cnfg = []
         if estOnly:
-            cnfg.append(eventing.TraitDex.EstOnly)
+            cnfg.append(TraitDex.EstOnly)
         if DnD:
-            cnfg.append(eventing.TraitDex.DoNotDelegate)
+            cnfg.append(TraitDex.DoNotDelegate)
         self.delpre = delpre
         keys = [verfer.qb64 for verfer in verfers]
         if self.delpre:
-            serder = eventing.delcept(keys=keys,
+            serder = delcept(keys=keys,
                                       delpre=self.delpre,
                                       isith=cst,
                                       nsith=nst,
@@ -1047,15 +1057,15 @@ class BaseHab:
                                       cnfg=cnfg,
                                       code=code)
         else:
-            serder = eventing.incept(keys=keys,
-                                     isith=cst,
-                                     nsith=nst,
-                                     ndigs=[diger.qb64 for diger in digers],
-                                     toad=toad,
-                                     wits=wits,
-                                     cnfg=cnfg,
-                                     code=code,
-                                     data=data)
+            serder = inceptEvent(keys=keys,
+                                 isith=cst,
+                                 nsith=nst,
+                                 ndigs=[diger.qb64 for diger in digers],
+                                 toad=toad,
+                                 wits=wits,
+                                 cnfg=cnfg,
+                                 code=code,
+                                 data=data)
         return serder
 
     def save(self, habord):
@@ -1211,14 +1221,14 @@ class BaseHab:
         if nsith is None:  # compute default from newly rotated digers above
             nsith = f"{max(0, ceil((len(digers) if digers is not None else 0) / 2)):x}"
 
-        cst = coring.Tholder(sith=isith).sith  # current signing threshold
-        nst = coring.Tholder(sith=nsith).sith  # next signing threshold
+        cst = Tholder(sith=isith).sith  # current signing threshold
+        nst = Tholder(sith=nsith).sith  # next signing threshold
 
         keys = [verfer.qb64 for verfer in verfers]
 
         indices = []
         for idx, diger in enumerate(kever.ndigers):
-            pdigs = [coring.Diger(ser=verfer.qb64b, code=diger.code).qb64 for verfer in verfers]
+            pdigs = [Diger(ser=verfer.qb64b, code=diger.code).qb64 for verfer in verfers]
             if diger.qb64 in pdigs:
                 indices.append(idx)
 
@@ -1226,7 +1236,7 @@ class BaseHab:
             raise ValidationError("invalid rotation, new key set unable to satisfy prior next signing threshold")
 
         if kever.delpre is not None:  # delegator only shows up in delcept
-            serder = eventing.deltate(pre=kever.prefixer.qb64,
+            serder = deltate(pre=kever.prefixer.qb64,
                                       keys=keys,
                                       dig=kever.serder.said,
                                       sn=kever.sner.num + 1,
@@ -1239,7 +1249,7 @@ class BaseHab:
                                       adds=adds,
                                       data=data)
         else:
-            serder = eventing.rotate(pre=kever.prefixer.qb64,
+            serder = rotateEvent(pre=kever.prefixer.qb64,
                                      keys=keys,
                                      dig=kever.serder.said,
                                      sn=kever.sner.num + 1,
@@ -1256,7 +1266,7 @@ class BaseHab:
         sigers = self.sign(ser=serder.raw, verfers=verfers, rotated=True)
 
         # update own key event verifier state
-        msg = eventing.messagize(serder, sigers=sigers)
+        msg = messagize(serder, sigers=sigers)
 
         try:
             self.kvy.processEvent(serder=serder, sigers=sigers)
@@ -1274,14 +1284,14 @@ class BaseHab:
         Returns: bytearray interaction message with attached signatures.
         """
         kever = self.kever
-        serder = eventing.interact(pre=kever.prefixer.qb64,
+        serder = interactEvent(pre=kever.prefixer.qb64,
                                    dig=kever.serder.said,
                                    sn=kever.sner.num + 1,
                                    data=data)
 
         sigers = self.sign(ser=serder.raw)
 
-        msg = eventing.messagize(serder, sigers=sigers)
+        msg = messagize(serder, sigers=sigers)
         try:
             # verify event, update kever state, and escrow if group
             self.kvy.processEvent(serder=serder, sigers=sigers)
@@ -1353,7 +1363,7 @@ class BaseHab:
             pre (str): qb64 identifier prefix being queried for
             src (str): qb64 identifier prefix of attester being queried
             query (dict): addition query modifiers to include in `q`
-            **kwa (dict): keyword arguments passed to eventing.query
+            **kwa (dict): keyword arguments passed to queryEvent
 
         Returns:
             bytearray: signed query event
@@ -1363,7 +1373,7 @@ class BaseHab:
         query = query if query is not None else dict()
         query['i'] = pre
         query["src"] = src
-        serder = eventing.query(query=query, **kwa)
+        serder = queryEvent(query=query, **kwa)
         return self.endorse(serder, last=True)
 
     def endorse(self, serder, last=False, pipelined=True):
@@ -1386,16 +1396,16 @@ class BaseHab:
             kever = self.kever
 
             if last:
-                seal = eventing.SealLast(i=kever.prefixer.qb64)
+                seal = SealLast(i=kever.prefixer.qb64)
             else:
-                seal = eventing.SealEvent(i=kever.prefixer.qb64,
+                seal = SealEvent(i=kever.prefixer.qb64,
                                           s="{:x}".format(kever.lastEst.s),
                                           d=kever.lastEst.d)
 
             sigers = self.sign(ser=serder.raw,
                                indexed=True)
 
-            msg = eventing.messagize(serder=serder,
+            msg = messagize(serder=serder,
                                      sigers=sigers,
                                      seal=seal,
                                      pipelined=pipelined)
@@ -1403,7 +1413,7 @@ class BaseHab:
         else:
             cigars = self.sign(ser=serder.raw,
                                indexed=False)
-            msg = eventing.messagize(serder=serder,
+            msg = messagize(serder=serder,
                                      cigars=cigars,
                                      pipelined=pipelined)
 
@@ -1425,21 +1435,21 @@ class BaseHab:
         """
         # sign serder event
 
-        serder, end = exchanging.exchange(route=route,
-                                          payload=payload,
-                                          sender=self.pre,
-                                          recipient=recipient,
-                                          date=date,
-                                          dig=dig,
-                                          modifiers=modifiers,
-                                          embeds=embeds)
+        serder, end = exchange(route=route,
+                               payload=payload,
+                               sender=self.pre,
+                               recipient=recipient,
+                               date=date,
+                               dig=dig,
+                               modifiers=modifiers,
+                               embeds=embeds)
 
         if self.kever.prefixer.transferable:
             msg = self.endorse(serder=serder, pipelined=False)
         else:
             cigars = self.sign(ser=serder.raw,
                                indexed=False)
-            msg = eventing.messagize(serder, cigars=cigars)
+            msg = messagize(serder, cigars=cigars)
 
         msg.extend(end)
 
@@ -1455,22 +1465,22 @@ class BaseHab:
         Builds msg and then processes it into own db to validate
         """
         ked = serder.ked
-        reserder = eventing.receipt(pre=ked["i"],
+        reserder = receiptEvent(pre=ked["i"],
                                     sn=int(ked["s"], 16),
                                     said=serder.said)
 
         # sign serder event
         if self.kever.prefixer.transferable:
-            seal = eventing.SealEvent(i=self.pre,
+            seal = SealEvent(i=self.pre,
                                       s="{:x}".format(self.kever.lastEst.s),
                                       d=self.kever.lastEst.d)
             sigers = self.sign(ser=serder.raw,
                                indexed=True)
-            msg = eventing.messagize(serder=reserder, sigers=sigers, seal=seal)
+            msg = messagize(serder=reserder, sigers=sigers, seal=seal)
         else:
             cigars = self.sign(ser=serder.raw,
                                indexed=False)
-            msg = eventing.messagize(reserder, cigars=cigars)
+            msg = messagize(reserder, cigars=cigars)
 
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
@@ -1504,7 +1514,7 @@ class BaseHab:
                                                kever.wits))
         index = kever.wits.index(self.pre)
 
-        reserder = eventing.receipt(pre=ked["i"],
+        reserder = receiptEvent(pre=ked["i"],
                                     sn=int(ked["s"], 16),
                                     said=serder.said)
 
@@ -1513,7 +1523,7 @@ class BaseHab:
                                pubs=[self.pre],
                                indices=[index])
 
-        msg = eventing.messagize(reserder, wigers=wigers, pipelined=True)
+        msg = messagize(reserder, wigers=wigers, pipelined=True)
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
 
@@ -1794,7 +1804,7 @@ class BaseHab:
             version is Version instance
             kind is serialization kind
         """
-        return self.endorse(eventing.reply(**kwa))
+        return self.endorse(replyEvent(**kwa))
 
 
     def makeEndRole(self, eid, role=Roles.controller, allow=True, stamp=None):
@@ -1833,14 +1843,14 @@ class BaseHab:
 
             if len(tsgs) > 0:
                 (prefixer, seqner, diger, sigers) = tsgs[0]
-                seal = eventing.SealEvent(i=prefixer.qb64,
+                seal = SealEvent(i=prefixer.qb64,
                                           s=seqner.snh,
                                           d=diger.qb64)
             else:
                 sigers = None
                 seal = None
 
-            msgs.extend(eventing.messagize(serder=serder,
+            msgs.extend(messagize(serder=serder,
                                            cigars=[cigar] if cigar else [],
                                            sigers=sigers,
                                            seal=seal,
@@ -1912,14 +1922,14 @@ class BaseHab:
 
             if len(tsgs) > 0:
                 (prefixer, seqner, diger, sigers) = tsgs[0]
-                seal = eventing.SealEvent(i=prefixer.qb64,
+                seal = SealEvent(i=prefixer.qb64,
                                           s=seqner.snh,
                                           d=diger.qb64)
             else:
                 sigers = None
                 seal = None
 
-            msgs.extend(eventing.messagize(serder=serder,
+            msgs.extend(messagize(serder=serder,
                                            cigars=[cigar] if cigar else [],
                                            sigers=sigers,
                                            seal=seal,
@@ -2113,12 +2123,12 @@ class BaseHab:
             if cueKin in ("receipt",):  # cue to receipt a received event from other pre
                 cuedSerder = cue["serder"]  # Serder of received event for other pre
                 cuedKed = cuedSerder.ked
-                cuedPrefixer = coring.Prefixer(qb64=cuedKed["i"])
+                cuedPrefixer = Prefixer(qb64=cuedKed["i"])
                 logger.info("%s got cue: kin=%s%s", self.pre, cueKin,
                             cuedSerder.said)
                 logger.debug(f"event=\n{cuedSerder.pretty()}\n")
 
-                if cuedKed["t"] == coring.Ilks.icp:
+                if cuedKed["t"] == Ilks.icp:
                     dgkey = dgKey(self.pre, self.iserder.said)
                     found = False
                     if cuedPrefixer.transferable:  # find if have rct from other pre for own icp
@@ -2217,14 +2227,14 @@ class Hab(BaseHab):
     configuration file as well as Kevery and key store Manager..
 
     Attributes: (Injected)
-        ks (keeping.Keeper): lmdb key store
+        ks (Keeper): lmdb key store
         db (basing.Baser): lmdb data base for KEL etc
-        cf (configing.Configer): config file instance
-        mgr (keeping.Manager): creates and rotates keys in key store
-        rtr (routing.Router): routes reply 'rpy' messages
-        rvy (routing.Revery): factory that processes reply 'rpy' messages
-        kvy (eventing.Kevery): factory for local processing of local event msgs
-        psr (parsing.Parser):  parses local messages for .kvy .rvy
+        cf (Configer): config file instance
+        mgr (Manager): creates and rotates keys in key store
+        rtr (Router): routes reply 'rpy' messages
+        rvy (Revery): factory that processes reply 'rpy' messages
+        kvy (Kevery): factory for local processing of local event msgs
+        psr (Parser):  parses local messages for .kvy .rvy
 
 
      Attributes:
@@ -2253,8 +2263,8 @@ class Hab(BaseHab):
     def __init__(self, **kwa):
         super(Hab, self).__init__(**kwa)
 
-    def make(self, *, secrecies=None, iridx=0, code=coring.MtrDex.Blake3_256, dcode=coring.MtrDex.Blake3_256,
-             icode=coring.MtrDex.Ed25519_Seed, transferable=True, isith=None, icount=1, nsith=None, ncount=None,
+    def make(self, *, secrecies=None, iridx=0, code=MtrDex.Blake3_256, dcode=MtrDex.Blake3_256,
+             icode=MtrDex.Ed25519_Seed, transferable=True, isith=None, icount=1, nsith=None, ncount=None,
              toad=None, wits=None, delpre=None, estOnly=False, DnD=False, hidden=False, data=None, algo=None,
              salt=None, tier=None):
         """
@@ -2281,10 +2291,10 @@ class Hab(BaseHab):
                 specified else compute default based on number of wits (backers)
             wits (list | None): qb64 prefixes of witnesses if any
             delpre (str | None): qb64 of delegator identifier prefix if any
-            estOnly (bool | None): True means add trait eventing.TraitDex.EstOnly
+            estOnly (bool | None): True means add trait TraitDex.EstOnly
                 which means only establishment events allowed in KEL for this Hab
                 False (default) means allows non-est events and no trait is added.
-            DnD (bool): True means add trait of eventing.TraitDex.DnD which
+            DnD (bool): True means add trait of TraitDex.DnD which
                     means do not allow delegated identifiers from this identifier
                     False (default) means do allow and no trait is added.
 
@@ -2306,7 +2316,7 @@ class Hab(BaseHab):
         if not transferable:
             ncount = 0  # next count
             nsith = '0'
-            code = coring.MtrDex.Ed25519N
+            code = MtrDex.Ed25519N
 
         stem = self.name if self.ns is None else f"{self.ns}{self.name}"
         if secrecies:  # replay
@@ -2500,7 +2510,7 @@ class SignifyHab(BaseHab):
             sigers (list[Siger]): Siger instances on next rotation event
 
         """
-        msg = eventing.messagize(serder, sigers=sigers)
+        msg = messagize(serder, sigers=sigers)
         self.processEvent(serder, sigers)
         return msg
 
@@ -2509,7 +2519,7 @@ class SignifyHab(BaseHab):
         Perform interaction operation. Register interaction in database.
         Returns: bytearray interaction message with attached signatures.
         """
-        msg = eventing.messagize(serder, sigers=sigers)
+        msg = messagize(serder, sigers=sigers)
         self.processEvent(serder, sigers)
         return msg
 
@@ -2520,7 +2530,7 @@ class SignifyHab(BaseHab):
         Builds msg and then processes it into own db to validate
         """
         # sign serder event
-        msg = eventing.messagize(serder=serder, sigers=sigers, seal=seal)
+        msg = messagize(serder=serder, sigers=sigers, seal=seal)
 
         if save:
             self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
@@ -2673,14 +2683,14 @@ class GroupHab(BaseHab):
     configuration file as well as Kevery and key store Manager.
 
     Attributes: (Injected)
-        ks (keeping.Keeper): lmdb key store
+        ks (Keeper): lmdb key store
         db (basing.Baser): lmdb data base for KEL etc
-        cf (configing.Configer): config file instance
-        mgr (keeping.Manager): creates and rotates keys in key store
-        rtr (routing.Router): routes reply 'rpy' messages
-        rvy (routing.Revery): factory that processes reply 'rpy' messages
-        kvy (eventing.Kevery): factory for local processing of local event msgs
-        psr (parsing.Parser):  parses local messages for .kvy .rvy
+        cf (Configer): config file instance
+        mgr (Manager): creates and rotates keys in key store
+        rtr (Router): routes reply 'rpy' messages
+        rvy (Revery): factory that processes reply 'rpy' messages
+        kvy (Kevery): factory for local processing of local event msgs
+        psr (Parser):  parses local messages for .kvy .rvy
 
 
      Attributes:
@@ -2716,14 +2726,14 @@ class GroupHab(BaseHab):
         Initialize instance.
 
         Injected Parameters:  (injected dependencies)
-            ks (keeping.Keeper): lmdb key store
+            ks (Keeper): lmdb key store
             db (basing.Baser): lmdb data base for KEL etc
-            cf (configing.Configer): config file instance
-            mgr (keeping.Manager): creates and rotates keys in key store
-            rtr (routing.Router): routes reply 'rpy' messages
-            rvy (routing.Revery): factory that processes reply 'rpy' messages
-            kvy (eventing.Kevery): factory for local processing of local event msgs
-            psr (parsing.Parser):  parses local messages for .kvy .rvy
+            cf (Configer): config file instance
+            mgr (Manager): creates and rotates keys in key store
+            rtr (Router): routes reply 'rpy' messages
+            rvy (Revery): factory that processes reply 'rpy' messages
+            kvy (Kevery): factory for local processing of local event msgs
+            psr (Parser):  parses local messages for .kvy .rvy
 
 
         Parameters:
@@ -2750,7 +2760,7 @@ class GroupHab(BaseHab):
 
         super(GroupHab, self).__init__(**kwa)
 
-    def make(self, *, code=coring.MtrDex.Blake3_256, transferable=True, isith=None, nsith=None,
+    def make(self, *, code=MtrDex.Blake3_256, transferable=True, isith=None, nsith=None,
              toad=None, wits=None, delpre=None, estOnly=False, DnD=False,
              merfers, migers=None, data=None):
         """
@@ -2771,10 +2781,10 @@ class GroupHab(BaseHab):
                 specified else compute default based on number of wits (backers)
             wits (list | None): qb64 prefixes of witnesses if any
             delpre (str | None): qb64 of delegator identifier prefix if any
-            estOnly (bool | None): True means add trait eventing.TraitDex.EstOnly
+            estOnly (bool | None): True means add trait TraitDex.EstOnly
                 which means only establishment events allowed in KEL for this Hab
                 False (default) means allows non-est events and no trait is added.
-            DnD (bool): True means add trait of eventing.TraitDex.DnD which
+            DnD (bool): True means add trait of TraitDex.DnD which
                     means do not allow delegated identifiers from this identifier
                     False (default) means do allow and no trait is added.
             merfers (list[Verfer] | None): group member Verfer instances of
@@ -2793,7 +2803,7 @@ class GroupHab(BaseHab):
             nsith = isith
         if not transferable:
             nsith = '0'
-            code = coring.MtrDex.Ed25519N
+            code = MtrDex.Ed25519N
 
         verfers = merfers
         digers = migers
@@ -2849,7 +2859,7 @@ class GroupHab(BaseHab):
         sigers = self.sign(ser=serder.raw, verfers=serder.verfers, rotated=True)
 
         # update own key event verifier state
-        msg = eventing.messagize(serder, sigers=sigers)
+        msg = messagize(serder, sigers=sigers)
 
         try:
             self.kvy.processEvent(serder=serder, sigers=sigers)
@@ -2966,7 +2976,7 @@ class GroupHab(BaseHab):
             pre (str): qb64 identifier prefix being queried for
             src (str): qb64 identifier prefix of attester being queried
             query (dict): addition query modifiers to include in `q`
-            **kwa (dict): keyword arguments passed to eventing.query
+            **kwa (dict): keyword arguments passed to queryEvent
 
         Returns:
             bytearray: signed query event
@@ -2976,7 +2986,7 @@ class GroupHab(BaseHab):
         query = query if query is not None else dict()
         query['i'] = pre
         query["src"] = src
-        serder = eventing.query(query=query, **kwa)
+        serder = queryEvent(query=query, **kwa)
 
         return self.mhab.endorse(serder, last=True)
 

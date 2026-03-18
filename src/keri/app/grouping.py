@@ -7,13 +7,19 @@ module for enveloping and forwarding KERI message
 """
 
 from hio.base import doing
+from hio.help import ogler
 
-from .. import ValidationError, Vrsn_1_0, help
-from . import delegating, agenting
-from ..core import Counter, coring, routing, eventing, parsing, serdering, Codens
-from ..peer import exchanging
+from ..kering import ValidationError, Vrsn_1_0, Ilks
+from ..core import (Counter, Number, Diger, Saider,
+                    Prefixer, Sadder, Kevery, Router,
+                    Revery, Parser, SerderKERI,
+                    Codens, NumDex)
+from ..peer import Exchanger, exchange, cloneMessage
 
-logger = help.ogler.getLogger()
+from .delegating import Anchorer
+from .agenting import Receiptor, WitnessInquisitor
+
+logger = ogler.getLogger()
 
 
 class Counselor(doing.DoDoer):
@@ -22,9 +28,9 @@ class Counselor(doing.DoDoer):
     Handles escrows for partially signed multisig events, delegation events, and witness receipts.
 
     Doers:
-        - swain (delegating.Anchorer): handles delegation anchoring
-        - witq (agenting.WitnessInquisitor): queries witnesses for receipts
-        - witDoer (agenting.Receiptor): sends witness receipts
+        - swain (Anchorer): handles delegation anchoring
+        - witq (WitnessInquisitor): queries witnesses for receipts
+        - witDoer (Receiptor): sends witness receipts
         - escrowDo: processes escrows of group multisig identifiers waiting to be completed.
     """
 
@@ -34,15 +40,15 @@ class Counselor(doing.DoDoer):
 
         Parameters:
             hby (Habery): database environment for local Habs
-            swain (delegating.Anchorer): optional Anchorer for delegation anchoring
+            swain (Anchorer): optional Anchorer for delegation anchoring
             proxy (Hab): optional proxy Hab to use for delegation anchoring if not using local Hab
         """
 
         self.hby = hby
-        self.swain = swain if swain is not None else delegating.Anchorer(hby=self.hby)
+        self.swain = swain if swain is not None else Anchorer(hby=self.hby)
         self.proxy = proxy
-        self.witDoer = agenting.Receiptor(hby=self.hby)
-        self.witq = agenting.WitnessInquisitor(hby=hby)
+        self.witDoer = Receiptor(hby=self.hby)
+        self.witq = WitnessInquisitor(hby=hby)
 
         doers = [self.swain, self.witq, self.witDoer, doing.doify(self.escrowDo)]
 
@@ -62,7 +68,7 @@ class Counselor(doing.DoDoer):
 
         """
         evt = ghab.makeOwnEvent(sn=number.sn, allowPartiallySigned=True)  # used just for the log message
-        serder = serdering.SerderKERI(raw=evt)                            # used just for the log message
+        serder = SerderKERI(raw=evt)                            # used just for the log message
         logger.info("Waiting for other signatures on %s for %s:%s...", serder.ilk, prefixer.qb64, number.sn)
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(number, diger))
 
@@ -142,7 +148,7 @@ class Counselor(doing.DoDoer):
                 # True if Elected to perform delegation and witnessing
                 witered = ghab.mhab.kever.verfers[0].qb64 == keys[windex]
 
-                if kever.delegated and kever.ilk in (coring.Ilks.dip, coring.Ilks.drt):
+                if kever.delegated and kever.ilk in (Ilks.dip, Ilks.drt):
                     # We are a delegated identifier, must wait for delegator approval for dip and drt
                     if witered:  # We are elected to perform delegation and witnessing messaging
                         logger.info("AID %s...%s: We are the witnesser, sending %s to delegator", pre[:4], pre[-4:], pre)
@@ -183,7 +189,7 @@ class Counselor(doing.DoDoer):
             witer = ghab.mhab.kever.verfers[0].qb64 == keys[0]  # We are elected to perform delegation and witnessing
 
             if witer:  # We are elected witnesser, We've already done out part in Boatswain, we are done.
-                if self.swain.complete(prefixer=kever.prefixer, number=coring.Number(num=kever.sn, code=coring.NumDex.Huge)):
+                if self.swain.complete(prefixer=kever.prefixer, number=Number(num=kever.sn, code=NumDex.Huge)):
                     self.hby.db.gdee.rem(keys=(pre,))
                     logger.info("AID %s...%s: Delegation approval for %s received.", pre[:4], pre[-4:], pre)
 
@@ -192,8 +198,8 @@ class Counselor(doing.DoDoer):
             else:  # Not witnesser, we need to look for the anchor and then wait for receipts
                 if serder := self.hby.db.fetchLastSealingEventByEventSeal(kever.delpre,
                                                                           seal=anchor):
-                    sner = coring.Number(num=serder.sn, code=coring.NumDex.Huge)
-                    adiger = coring.Diger(qb64b=serder.saidb)
+                    sner = Number(num=serder.sn, code=NumDex.Huge)
+                    adiger = Diger(qb64b=serder.saidb)
                     self.hby.db.aess.pin(keys=(pre, diger.qb64b),
                                          val=(sner, adiger))  # authorizer event seal (delegator/issuer)
                     self.hby.db.gdee.rem(keys=(pre,))
@@ -296,7 +302,7 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None):
 
     """
     rmids = rmids if rmids is not None else smids
-    serder = serdering.SerderKERI(raw=icp)
+    serder = SerderKERI(raw=icp)
     data = dict(
         gid=serder.pre,
         smids=smids,
@@ -311,8 +317,8 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None):
         data |= dict(delegator=delegator)
 
     # Create `exn` peer to peer message to notify other participants UI
-    exn, end = exchanging.exchange(route="/multisig/icp", modifiers=dict(),
-                                   payload=data, embeds=embeds, sender=hab.pre)
+    exn, end = exchange(route="/multisig/icp", modifiers=dict(),
+                        payload=data, embeds=embeds, sender=hab.pre)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
     ims.extend(end)
@@ -337,11 +343,12 @@ def multisigRotateExn(ghab, smids, rmids, rot):
         rot=rot,
     )
 
-    exn, end = exchanging.exchange(route="/multisig/rot", modifiers=dict(),
-                                   payload=dict(gid=ghab.pre,
-                                                smids=smids,
-                                                rmids=rmids), sender=ghab.mhab.pre,
-                                   embeds=embeds)
+    exn, end = exchange(route="/multisig/rot", modifiers=dict(),
+                        payload=dict(gid=ghab.pre,
+                                     smids=smids,
+                                     rmids=rmids),
+                        sender=ghab.mhab.pre,
+                        embeds=embeds)
     ims = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
     atc = bytearray(ims[exn.size:])
     atc.extend(end)
@@ -365,10 +372,11 @@ def multisigInteractExn(ghab, aids, ixn):
         ixn=ixn,
     )
 
-    exn, end = exchanging.exchange(route="/multisig/ixn", modifiers=dict(),
-                                   payload=dict(gid=ghab.pre,
-                                                smids=aids), sender=ghab.mhab.pre,
-                                   embeds=embeds)
+    exn, end = exchange(route="/multisig/ixn", modifiers=dict(),
+                        payload=dict(gid=ghab.pre,
+                                     smids=aids),
+                        sender=ghab.mhab.pre,
+                        embeds=embeds)
     ims = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
     atc = bytearray(ims[exn.size:])
     atc.extend(end)
@@ -397,8 +405,8 @@ def multisigRegistryInceptExn(ghab, usage, vcp, anc):
         anc=anc
     )
 
-    exn, end = exchanging.exchange(route="/multisig/vcp", payload={'gid': ghab.pre, 'usage': usage},
-                                   sender=ghab.mhab.pre, embeds=embeds)
+    exn, end = exchange(route="/multisig/vcp", payload={'gid': ghab.pre, 'usage': usage},
+                        sender=ghab.mhab.pre, embeds=embeds)
     evt = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
@@ -428,8 +436,8 @@ def multisigIssueExn(ghab, acdc, iss, anc):
         anc=anc
     )
 
-    exn, end = exchanging.exchange(route="/multisig/iss", payload={'gid': ghab.pre},
-                                   sender=ghab.mhab.pre, embeds=embeds)
+    exn, end = exchange(route="/multisig/iss", payload={'gid': ghab.pre},
+                        sender=ghab.mhab.pre, embeds=embeds)
     evt = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
@@ -458,8 +466,8 @@ def multisigRevokeExn(ghab, said, rev, anc):
         anc=anc
     )
 
-    exn, end = exchanging.exchange(route="/multisig/rev", payload={'gid': ghab.pre, 'said': said},
-                                   sender=ghab.mhab.pre, embeds=embeds)
+    exn, end = exchange(route="/multisig/rev", payload={'gid': ghab.pre, 'said': said},
+                        sender=ghab.mhab.pre, embeds=embeds)    
     evt = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
@@ -485,8 +493,8 @@ def multisigRpyExn(ghab, rpy):
         rpy=rpy
     )
 
-    exn, end = exchanging.exchange(route="/multisig/rpy", payload={'gid': ghab.pre},
-                                   sender=ghab.mhab.pre, embeds=embeds)
+    exn, end = exchange(route="/multisig/rpy", payload={'gid': ghab.pre},
+                        sender=ghab.mhab.pre, embeds=embeds)
     evt = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
@@ -511,8 +519,8 @@ def multisigExn(ghab, exn):
         exn=exn
     )
 
-    wexn, end = exchanging.exchange(route="/multisig/exn", payload={'gid': ghab.pre}, sender=ghab.mhab.pre,
-                                    embeds=embeds)
+    wexn, end = exchange(route="/multisig/exn", payload={'gid': ghab.pre}, sender=ghab.mhab.pre,
+                         embeds=embeds)
     evt = ghab.mhab.endorse(serder=wexn, last=False, pipelined=False)
     atc = bytearray(evt[wexn.size:])
     atc.extend(end)
@@ -556,11 +564,11 @@ class Multiplexor:
 
     Attributes:
         hby (habbing.Habery): database environment for local Habs
-        rtr (routing.Router): routes reply 'rpy' messages
-        rvy (routing.Revery): factory that processes reply 'rpy' messages
-        exc (exchanging.Exchanger): processor and router for peer-to-peer msgs
-        kvy (eventing.Kevery): factory for local processing of local event msgs
-        psr (parsing.Parser):  parses local messages for .kvy .rvy
+        rtr (Router): routes reply 'rpy' messages
+        rvy (Revery): factory that processes reply 'rpy' messages
+        exc (Exchanger): processor and router for peer-to-peer msgs
+        kvy (Kevery): factory for local processing of local event msgs
+        psr (Parser):  parses local messages for .kvy .rvy
         notifier (notifying.Notifier): stores notices for numan consumption
 
         Parameters:
@@ -579,12 +587,12 @@ class Multiplexor:
 
         """
         self.hby = hby
-        self.rtr = routing.Router()
-        self.rvy = routing.Revery(db=self.hby.db, rtr=self.rtr)
-        self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        self.kvy = eventing.Kevery(db=self.hby.db, lax=False, local=False, rvy=self.rvy)
+        self.rtr = Router()
+        self.rvy = Revery(db=self.hby.db, rtr=self.rtr)
+        self.exc = Exchanger(hby=self.hby, handlers=[])
+        self.kvy = Kevery(db=self.hby.db, lax=False, local=False, rvy=self.rvy)
         self.kvy.registerReplyRoutes(router=self.rtr)
-        self.psr = parsing.Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
+        self.psr = Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
                                   exc=self.exc, version=Vrsn_1_0)
 
         self.notifier = notifier
@@ -601,7 +609,7 @@ class Multiplexor:
         events so that any addition signatures can be processed.
 
         Parameters:
-            serder (serdering.SerderKERI): peer-to-peer exn "/multisig" message to coordinate from other participants
+            serder (SerderKERI): peer-to-peer exn "/multisig" message to coordinate from other participants
 
         Returns:
 
@@ -652,8 +660,8 @@ class Multiplexor:
 
                 self.notifier.add(attrs=data)
 
-        self.hby.db.meids.add(keys=(esaid,), val=coring.Saider(qb64=serder.said))
-        self.hby.db.maids.add(keys=(esaid,), val=coring.Prefixer(qb64=serder.pre))
+        self.hby.db.meids.add(keys=(esaid,), val=Saider(qb64=serder.said))
+        self.hby.db.maids.add(keys=(esaid,), val=Prefixer(qb64=serder.pre))
 
         submitters = self.hby.db.maids.get(keys=(esaid,))
         if sender not in self.hby.habs:  # We are not sending this one, need to parse if already approved
@@ -662,7 +670,7 @@ class Multiplexor:
             approved = any([True for sub in submitters if sub.qb64 in self.hby.kevers])
             if approved:
                 # Clone exn from database, ensuring it is stored with valid signatures
-                exn, paths = exchanging.cloneMessage(self.hby, said=serder.said)
+                exn, paths = cloneMessage(self.hby, said=serder.said)
                 e = exn.ked['e']
                 ims = bytearray()
 
@@ -671,7 +679,7 @@ class Multiplexor:
                     if not isinstance(val, dict):
                         continue
 
-                    sadder = coring.Sadder(ked=val)
+                    sadder = Sadder(ked=val)
                     ims.extend(sadder.raw)
                     if key in paths:
                         atc = paths[key]
@@ -696,7 +704,7 @@ class Multiplexor:
 
         exns = []
         for diger in digers:
-            exn, paths = exchanging.cloneMessage(hby=self.hby, said=diger.qb64)
+            exn, paths = cloneMessage(hby=self.hby, said=diger.qb64)
             exns.append(dict(
                 exn=exn.ked,
                 paths={k: path.decode("utf-8") for k, path in paths.items()},
