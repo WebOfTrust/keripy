@@ -1124,7 +1124,7 @@ class Tever:
         # have to compare with VC issuance serder
         vci = vcpre
 
-        dig = self.reger.tels.get(keys=snKey(pre=vci, sn=sn - 1))
+        dig = self.reger.tels.getOn(keys=vci, on=sn - 1)
         ievt = self.reger.tvts.get(keys=(vci, dig))
         if ievt is None:
             raise ValidationError("revoke without issue... probably have to escrow")
@@ -1264,7 +1264,7 @@ class Tever:
             self.reger.baks.put(key, [bak.encode("utf-8") for bak in baks])
         self.reger.tets.pin(keys=(pre.decode("utf-8"), dig.decode("utf-8")), val=Dater())
         self.reger.tvts.put(keys=key, val=serder.raw)
-        self.reger.tels.putOn(keys=pre, on=sn, val=dig)
+        self.reger.tels.put(keys=pre, on=sn, val=dig)
         logger.info("Tever: Added to TEL valid %s event %s said=%s reg=%.8s iss=%.8s",
                     serder.ilk, pre.decode(), serder.said, self.regk, self.pre)
         logger.debug("TEL Event Body=\n%s\n", serder.pretty())
@@ -1391,7 +1391,7 @@ class Tever:
         if bigers:
             self.reger.tibs.pin(keys=dgkey, vals=bigers)
         self.reger.tvts.put(keys=dgkey, val=serder.raw)
-        self.reger.twes.putOn(keys=serder.preb, on=serder.sn, vals=serder.saidb)
+        self.reger.twes.put(keys=serder.preb, on=serder.sn, vals=serder.saidb)
         logger.debug("Tever state: Escrowed partially witnessed "
                      "event = %s", serder.ked)
 
@@ -1423,7 +1423,7 @@ class Tever:
         self.reger.tvts.put(keys=key, val=serder.raw)
         logger.debug("Tever state: Escrowed anchorless event "
                      "event = %s", serder.ked)
-        return self.reger.taes.putOn(keys=serder.preb, on=serder.sn, vals=serder.saidb)
+        return self.reger.taes.put(keys=serder.preb, on=serder.sn, vals=serder.saidb)
 
     def getBackerState(self, ked):
         """ Calculate and return the current list of backers for event dict
@@ -1805,7 +1805,7 @@ class Tevery:
         if not accepted:
             raise UnverifiedReplyError(f"Unverified registry txn state reply.")
 
-        ldig = self.reger.tels.get(keys=snKey(pre=regk, sn=sn))  # retrieve dig of last event at sn.
+        ldig = self.reger.tels.getOn(keys=regk, on=sn)  # retrieve dig of last event at sn.
 
         # Only accept key state if for last seen version of event at sn
         if ldig is None:  # escrow because event does not yet exist in database
@@ -1945,7 +1945,7 @@ class Tevery:
         if not accepted:
             raise UnverifiedReplyError(f"Unverified credential state reply.")
 
-        ldig = self.reger.tels.get(keys=snKey(pre=vci, sn=sn))  # retrieve dig of last event at sn.
+        ldig = self.reger.tels.getOn(keys=vci, on=sn)  # retrieve dig of last event at sn.
 
         # Only accept key state if for last seen version of event at sn
         if ldig is None:  # escrow because event does not yet exist in database
@@ -2017,7 +2017,7 @@ class Tevery:
         number = Number(num=seqner.sn)
         diger = Diger(qb64=saider.qb64)
         self.reger.ancs.put(keys=key, val=(number, diger))
-        self.reger.oots.putOn(keys=serder.preb, on=serder.sn, vals=serder.saidb)
+        self.reger.oots.put(keys=serder.preb, on=serder.sn, vals=serder.saidb)
         logger.debug("Tever state: Escrowed our of order TEL event "
                      "event = %s", serder.ked)
 
@@ -2599,7 +2599,7 @@ class Reger(dbing.LMDBer):
 
     def cloneTvtAt(self, pre, sn=0):
         snkey = snKey(pre, sn)
-        dig = self.tels.get(keys=snkey)
+        dig = self.tels.getOn(keys=pre, on=sn)
         return self.cloneTvt(pre, dig)
 
     def cloneTvt(self, pre, dig):

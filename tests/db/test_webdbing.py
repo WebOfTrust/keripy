@@ -1018,21 +1018,21 @@ def test_on_suber_contract():
         assert onsuber.cntOnAll(keys=("a",)) == 2
         assert onsuber.cntOnAll() == 6
 
-        assert onsuber.putOn(keys="d", on=0, val="moon") is True
+        assert onsuber.put(keys="d", on=0, val="moon") is True
         assert onsuber.getOn(keys="d", on=0) == "moon"
         assert onsuber.getOnItem(keys="d", on=0) == (("d",), 0, "moon")
-        assert onsuber.putOn(keys="d", on=0, val="moon") is False
-        assert onsuber.pinOn(keys="d", on=0, val="sun") is True
+        assert onsuber.put(keys="d", on=0, val="moon") is False
+        assert onsuber.pin(keys="d", on=0, val="sun") is True
         assert onsuber.getOn(keys="d", on=0) == "sun"
         assert onsuber.remOn(keys="d", on=0) is True
         assert onsuber.getOn(keys="d", on=0) is None
 
-        assert onsuber.putOn(keys="d", on=0, val="moon") is True
-        assert onsuber.putOn(keys="d", on=1, val="sun") is True
-        assert onsuber.putOn(keys="d", on=2, val="stars") is True
-        assert onsuber.putOn(keys="e", on=0, val="stars") is True
-        assert onsuber.putOn(keys="e", on=1, val="moon") is True
-        assert onsuber.putOn(keys="e", on=2, val="sun") is True
+        assert onsuber.put(keys="d", on=0, val="moon") is True
+        assert onsuber.put(keys="d", on=1, val="sun") is True
+        assert onsuber.put(keys="d", on=2, val="stars") is True
+        assert onsuber.put(keys="e", on=0, val="stars") is True
+        assert onsuber.put(keys="e", on=1, val="moon") is True
+        assert onsuber.put(keys="e", on=2, val="sun") is True
 
         assert onsuber.remOnAll(keys="d", on=1) is True
         assert onsuber.cntOnAll(keys="d") == 1

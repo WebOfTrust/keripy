@@ -229,7 +229,7 @@ class Anchorer(doing.DoDoer):
             del self.publishers[pre]
 
             self.hby.db.dpub.rem(keys=(pre, said))
-            self.hby.db.cdel.putOn(keys=pre, on=serder.sn, val=coring.Diger(qb64=serder.said))
+            self.hby.db.cdel.put(keys=pre, on=serder.sn, val=coring.Diger(qb64=serder.said))
 
     def publishDelegator(self, pre):
         """Publish the delegation event to my witnesses."""

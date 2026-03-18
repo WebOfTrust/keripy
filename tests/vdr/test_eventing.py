@@ -405,7 +405,7 @@ def test_tever_escrow(mockCoringRandomNonce):
         number, diger = reg.ancs.get(keys=dgkey)
         assert number.num == seqner.sn
         assert diger.qb64 == rdiger.qb64
-        assert reg.tels.get(keys=snKey(pre=regk, sn=0)) is None
+        assert reg.tels.getOn(keys=regk, on=0) is None
         dig = reg.twes.getOn(keys=regk, on=0)
         dig = dig[0].encode("utf-8")
         assert bytes(dig) ==b'EBkUjPBzZuFeSTP-Quuz0Exr6jdUNd8VDa5hoNvnS1Jo'
@@ -450,7 +450,7 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         number, diger = reg.ancs.get(keys=dgkey)
         assert number.num == seqner.sn
         assert diger.qb64 == rdiger.qb64
-        assert reg.tels.get(keys=snKey(pre=regk, sn=0)).encode("utf-8") == b'EKWuqbpBPglFWnzZuD3f_DTCLwYd4ub1bWUZXdRB2g6C'
+        assert reg.tels.getOn(keys=regk, on=0).encode("utf-8") == b'EKWuqbpBPglFWnzZuD3f_DTCLwYd4ub1bWUZXdRB2g6C'
         assert reg.tibs.get(keys=(regk, vcp.said)) == []
         assert reg.twes.getOn(keys=regk, on=0) == []
 
@@ -555,7 +555,7 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         number, diger = reg.ancs.get(keys=dgkey)
         assert number.num == seqner.sn
         assert diger.qb64 == rdiger.qb64
-        assert reg.tels.get(keys=snKey(pre=regk, sn=0)).encode("utf-8") == b'ECfzJv1hIYAF68tEDDSelka5aPNKg_pmdcZOTs0aubF-'
+        assert reg.tels.getOn(keys=regk, on=0).encode("utf-8") == b'ECfzJv1hIYAF68tEDDSelka5aPNKg_pmdcZOTs0aubF-'
         assert [tib.qb64b for tib in reg.tibs.get(keys=(regk, vcp.said))] == [b'AAAUr5RHYiDH8RU0ig-2Dp5h7rVKx89StH5M3CL60-cWEbgG-XmtW31pZlFicYgSPduJZUnD838_'
                                            b'QLbASSQLAZcC']
         assert reg.twes.getOn(keys=regk,on=0) == []

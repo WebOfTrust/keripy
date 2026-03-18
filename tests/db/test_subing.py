@@ -370,11 +370,11 @@ def test_on_suber():
                          (('a',), 2, 'Red apple')]
 
         # test putOn and pinOn and getOn getOnItem
-        assert onsuber.putOn(keys='d', on=0, val='moon')
+        assert onsuber.put(keys='d', on=0, val='moon')
         assert onsuber.getOn(keys='d', on=0) == 'moon'
         assert onsuber.getOnItem(keys='d', on=0) == (("d", ), 0, "moon")
-        assert not onsuber.putOn(keys='d', on=0, val='moon')
-        assert onsuber.pinOn(keys='d', on=0, val='sun')
+        assert not onsuber.put(keys='d', on=0, val='moon')
+        assert onsuber.pin(keys='d', on=0, val='sun')
         assert onsuber.getOn(keys='d', on=0) == 'sun'
         assert onsuber.getOnItem(keys='d', on=0) == (("d", ), 0, "sun")
         assert onsuber.remOn(keys='d', on=0)
@@ -382,12 +382,12 @@ def test_on_suber():
         assert onsuber.getOnItem(keys='d', on=0) == None
 
         # test remOnAll
-        assert onsuber.putOn(keys='d', on=0, val='moon')
-        assert onsuber.putOn(keys='d', on=1, val='sun')
-        assert onsuber.putOn(keys='d', on=2, val='stars')
-        assert onsuber.putOn(keys='e', on=0, val='stars')
-        assert onsuber.putOn(keys='e', on=1, val='moon')
-        assert onsuber.putOn(keys='e', on=2, val='sun')
+        assert onsuber.put(keys='d', on=0, val='moon')
+        assert onsuber.put(keys='d', on=1, val='sun')
+        assert onsuber.put(keys='d', on=2, val='stars')
+        assert onsuber.put(keys='e', on=0, val='stars')
+        assert onsuber.put(keys='e', on=1, val='moon')
+        assert onsuber.put(keys='e', on=2, val='sun')
 
         assert onsuber.cntOnAll(keys='d') == 3
         assert onsuber.cntOnAll(keys='e') == 3
@@ -1378,13 +1378,13 @@ def test_on_iodup_suber():
         u = "moon"
         v = "sun"
 
-        assert oidsuber.putOn(keys='d', on=0, vals='stars')
+        assert oidsuber.put(keys='d', on=0, vals='stars')
         assert oidsuber.getOn(keys='d', on=0) == ['stars', ]
-        assert not oidsuber.putOn(keys='d', on=0, vals='stars')
-        assert oidsuber.putOn(keys='d', on=0, vals=('moon', 'sun'))
+        assert not oidsuber.put(keys='d', on=0, vals='stars')
+        assert oidsuber.put(keys='d', on=0, vals=('moon', 'sun'))
         assert oidsuber.getOn(keys='d', on=0) == ['stars', 'moon', 'sun']
-        assert not oidsuber.putOn(keys='d', on=0, vals=('sun', 'moon', 'stars'))
-        assert oidsuber.pinOn(keys='d', on=0, vals='sun')
+        assert not oidsuber.put(keys='d', on=0, vals=('sun', 'moon', 'stars'))
+        assert oidsuber.pin(keys='d', on=0, vals='sun')
         assert oidsuber.getOn(keys='d', on=0) == ['sun', ]
         assert oidsuber.remOn(keys='d', on=0)
         assert oidsuber.getOn(keys='d', on=0) == []
@@ -1693,20 +1693,20 @@ def test_b64_oniodup_suber():
         v = ("moon", ("stars", ))
 
 
-        assert oidbuber.putOn(keys='d', on=0, vals=q)
+        assert oidbuber.put(keys='d', on=0, vals=q)
         assert oidbuber.getOn(keys='d', on=0) == [("moon", "beam"), ]
         assert oidbuber.getOn(keys='d', on=0) == q
-        assert not oidbuber.putOn(keys='d', on=0, vals=q)
-        assert oidbuber.putOn(keys='d', on=0, vals=r)
-        assert oidbuber.putOn(keys='d', on=0, vals=s)
-        assert oidbuber.putOn(keys='d', on=0, vals=t)
+        assert not oidbuber.put(keys='d', on=0, vals=q)
+        assert oidbuber.put(keys='d', on=0, vals=r)
+        assert oidbuber.put(keys='d', on=0, vals=s)
+        assert oidbuber.put(keys='d', on=0, vals=t)
         assert oidbuber.getOn(keys='d', on=0) == [('moon', 'beam'), ('stars',), ('moon',), ('sun',)]
         assert oidbuber.getOn(keys='d', on=0) == [o, r, s, t]
-        assert not oidbuber.putOn(keys='d', on=0, vals=(o, r, s, t))
-        assert oidbuber.pinOn(keys='d', on=0, vals=u)
+        assert not oidbuber.put(keys='d', on=0, vals=(o, r, s, t))
+        assert oidbuber.pin(keys='d', on=0, vals=u)
         assert oidbuber.getOn(keys='d', on=0) == [('sun', 'spot'), ('sun',)]
         assert oidbuber.getOn(keys='d', on=0) == [p, t]
-        assert oidbuber.putOn(keys='d', on=0, vals=v)
+        assert oidbuber.put(keys='d', on=0, vals=v)
         assert oidbuber.getOn(keys='d', on=0) == [('sun', 'spot'), ('sun',), ('moon',), ('stars',)]
         assert oidbuber.getOn(keys='d', on=0) == [p, t, s, r]
         assert oidbuber.remOn(keys='d', on=0)
