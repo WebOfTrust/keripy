@@ -9,9 +9,8 @@ import sys
 import os
 import pytest
 
-RUN_IN_CI = os.environ.get('RUN_IN_CI') == 'true'
 
-if not RUN_IN_CI:
+if not (os.environ.get('RUN_IN_CI') == 'true'):
     pytest.skip("Not github WASM runner, skipping module", allow_module_level=True)
 
 
