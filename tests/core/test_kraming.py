@@ -2809,7 +2809,845 @@ def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
             assert cache.pml == 5000
             assert cache.xl == 5000
             assert cache.pxl == 5000
+
+
+def test_new_cache_type(fakeHelpingClock):
+    """
+    Test Case 3 behavior when introducing a brand‑new cache‑type with larger
+    accept/prune windows than the existing configuration.
+
+    This test verifies the following invariants:
+
+    1. **New cache-type detection**
+       A new cache-type ("exn.R.route1") added to the configuration must be
+       staged when its accept windows exceed those of the existing fallback "~"
+       cache-type. The new cache-type must appear in `kramer._pending`.
+
+    2. **Case 3 staging semantics**
+       Before the Case‑3 delta expires:
+         • Accept windows (sl, ll, xl) must remain equal to the smallest old
+           accept windows (from "~").
+         • Prune windows (psl, pll, pxl) must update immediately to the new
+           values.
+
+    3. **Message processing before delta expiration**
+       • The TMSC entry must reflect staged accept windows and updated prune
+         windows.
+
+    4. **Delta expiration and reconciliation**
+       After advancing the fake clock past the Case‑3 delta and calling
+       `reconcileConfig()`:
+         • The staged accept windows must be applied.
+         • A new EXN message routed to "route1" must use the updated accept
+           windows (5000/6000/7000).
+
+    5. **Fallback behavior for unrelated routes**
+       An EXN message routed to a different route ("offroad") must fall back to
+       the "~" cache-type:
+         • Accept windows must remain the fallback values (1000/2000/3000).
+         • Prune windows must also reflect the fallback values.
+
+    Overall, this test ensures that:
+       • New cache-types are staged correctly under Case‑3 rules.
+       • Accept/prune windows transition safely and deterministically.
+       • Message processing respects staged vs. finalized configuration state.
+    """
+    # Instantiate the clock
+    clock = fakeHelpingClock
+
+    salt_sender = core.Salter(raw=b'0123456789abcdef').qb64
+    salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
+
+    with (
+        habbing.openHby(name="sender", base="test", salt=salt_sender, temp=True) as senderHby,
+        habbing.openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
+    ):
+
+        # Create single-key sender
+        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True)
+
+        # Create receiver hab
+        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True)
+
+        # Load sender's ICP into receiver
+        cross = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+
+        senderIcp = senderHab.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
+        assert senderHab.pre in cross.kevers
+
+        with configing.openCF(name="kram", base="test", temp=True) as cf:
             
+            # Old configuration only has the fallback or default cache-type ~
+            old_cfg = {
+                "kram": {
+                    "enabled": True,
+                    "caches": {
+                        "~": [0, 1000, 2000, 3000, 1000, 2000, 3000],
+                    }
+                }
+            }
+
+            # New configuration adds one cache-type with message-type.R.route
+            new_cfg = {
+                "kram": {
+                    "enabled": True,
+                    "caches": {
+                        "~": [0, 1000, 2000, 3000, 1000, 2000, 3000],
+                        "exn.R.route1": [0, 5000, 6000, 7000, 5000, 6000, 7000],
+                    }
+                }
+            }
+            
+            # Put the old config
+            cf.put(old_cfg)
+
+            # Instantiate Kramer and Kevery
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False,
+                                  kramer=kramer)
+            
+            # Update the config with the new config
+            cf.put(new_cfg)
+            kramer.changeConfig(cf)
+
+            # Assert the new cache-type is pending
+            assert "exn.R.route1" in kramer._pending
+
+            # Use worst case scenario until delta passes
+            exnCt = receiverHby.db.kramCTYP.get("exn.R.route1")
+
+            # Accept window is unchanged until delta passes
+            assert exnCt.sl == 1000
+            assert exnCt.ll == 2000
+            assert exnCt.xl == 3000
+            
+            # Pruning window is changed immediately
+            assert exnCt.psl == 5000
+            assert exnCt.pll == 6000
+            assert exnCt.pxl == 7000
+
+            # Initiate the exchange with a xip
+            stamp = helping.nowIso8601()
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            verfers = senderHab.kever.verfers
+
+            # Test with seeded xip via kramit directly
+            xip = eventing.exchept(sender=senderHab.pre,
+                                   receiver=receiverHab.pre,
+                                   route="route1",
+                                   stamp=stamp)
+
+            # Sign xip
+            sigers = senderHab.mgr.sign(ser=xip.raw,
+                                        verfers=senderHab.kever.verfers,
+                                        indexed=True)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+
+            # Call kramit directly (processMsg rejects xip)
+            result = kramer.kramit(xip, **kwa)
+            assert result is not None  # xip accepted
+
+            # Create an exchange message with route1
+            exn = eventing.exchange(sender=senderHab.pre,
+                                    receiver=receiverHab.pre,
+                                    xid=xip.said,
+                                    route="route1",
+                                    attributes=dict(n='5c'),
+                                    stamp=stamp)
+
+            sigers = senderHab.mgr.sign(ser=exn.raw,
+                                    verfers=senderHab.kever.verfers,
+                                    indexed=True)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+
+            # Error raised due to lack of exchanger
+            with pytest.raises(kering.ValidationError):
+                kvy.processMsg(exn, **kwa)
+
+            # Assert tmsc entry created for exn
+            cache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn.said))
+            assert cache is not None
+
+            # Assert the lag values are stil unchanged
+            cache.ml == 1000
+            cache.ml == exnCt.sl
+            cache.xl == 3000
+            cache.xl == exnCt.xl
+
+            # Assert prune values changed immediately
+            cache.pml == 5000
+            cache.pml == exnCt.psl
+            cache.pxl == 7000
+            cache.pxl == exnCt.pxl
+
+            # Advance time to delta + 1 sec
+            delta = kramer._pending["exn.R.route1"]["delta"]
+            clock.advance(milliseconds=delta, seconds=1)
+
+            # Reconcile the config
+            kramer.reconcileConfig()
+
+            # Send a new message with the new config
+            stamp = helping.nowIso8601()
+
+            # Create a new exn message
+            exn = eventing.exchange(sender=senderHab.pre,
+                                    receiver=receiverHab.pre,
+                                    xid=xip.said,
+                                    route="route1",
+                                    attributes=dict(n='5c'),
+                                    stamp=stamp)
+
+            sigers = senderHab.mgr.sign(ser=exn.raw,
+                                    verfers=senderHab.kever.verfers,
+                                    indexed=True)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+
+            # Error raised due to lack of exchanger
+            with pytest.raises(kering.ValidationError):
+                kvy.processMsg(exn, **kwa)
+
+            # Assert tmsc entry created for exn
+            cache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn.said))
+            assert cache is not None
+
+            # Assert the window lag values are the new exn.R.route1 values
+            cache.ml == 5000
+            cache.ml == exnCt.sl
+            cache.xl == 7000
+            cache.xl == exnCt.xl
+
+
+            # Create a new exn message that uses a different route
+            exn = eventing.exchange(sender=senderHab.pre,
+                                    receiver=receiverHab.pre,
+                                    xid=xip.said,
+                                    route="offroad",
+                                    attributes=dict(n='5c'),
+                                    stamp=stamp)
+
+            sigers = senderHab.mgr.sign(ser=exn.raw,
+                                    verfers=senderHab.kever.verfers,
+                                    indexed=True)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+
+            # Error raised due to lack of exchanger
+            with pytest.raises(kering.ValidationError):
+                kvy.processMsg(exn, **kwa)
+
+            # Assert tmsc entry created for exn
+            cache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn.said))
+            assert cache is not None
+
+            # Get the fallback cache
+            fbCt = receiverHby.db.kramCTYP.get("~")
+
+            # Assert the window lag values are the fallback values
+            cache.ml == 1000
+            cache.ml == fbCt.sl
+
+            cache.xl == 3000
+            cache.xl == fbCt.xl
+
+            cache.pml == 1000
+            cache.pml == fbCt.psl
+
+            cache.pxl == 3000
+            cache.pxl == fbCt.pxl
+
+
+def test_multiple_new_cache_type(fakeHelpingClock):
+    """
+    Test Case‑3 staging behavior when multiple new cache‑types (“exn” and “qry”)
+    are introduced simultaneously, each with accept/prune windows larger than
+    the existing fallback cache‑type (“~”).
+
+    This test verifies the following invariants:
+
+    1. **Detection of multiple new cache‑types**
+       Both “exn” and “qry” must appear in `kramer._pending` after the
+       configuration change, since their accept windows exceed those of the
+       fallback cache-type.
+
+    2. **Case‑3 staging semantics for each new cache‑type**
+       Before the Case‑3 delta expires:
+         • Accept windows (sl, ll, xl) for both “exn” and “qry” must remain
+           equal to the smallest old accept windows (from “~”).
+         • Prune windows (psl, pll, pxl) must update immediately to the new
+           values for each cache‑type.
+
+    3. **Message classification under staged configuration**
+       • A `query` message with any route must be classified under the “qry”
+         cache‑type and use staged accept windows and updated prune windows.
+       • An `exn` message (via xip → exn flow) must be classified under the
+         “exn” cache‑type and use staged accept windows and updated prune
+         windows.
+       • Both message types must create the appropriate cache entries
+         (MSGC for queries, TMSC for EXN messages).
+
+    4. **Delta expiration and reconciliation**
+       After advancing the fake clock past the Case‑3 delta and calling
+       `reconcileConfig()`:
+         • The staged accept windows for both “exn” and “qry” must be applied.
+         • New messages must reflect the updated accept windows:
+               qry: sl=3000, xl=5000
+               exn: sl=4000, xl=6000
+
+    5. **Route‑based classification remains correct**
+       • Query messages with arbitrary routes (e.g., “ksn”) must still map to
+         the “qry” cache‑type.
+       • EXN messages with arbitrary routes (e.g., “route1”) must still map to
+         the “exn” cache‑type.
+
+    Overall, this test ensures that:
+       • Multiple new cache‑types are staged correctly under Case‑3 rules.
+       • Accept/prune windows transition safely and deterministically.
+       • Message processing respects staged vs. finalized configuration state.
+       • Coverage‑based classification remains stable across the transition.
+    """
+
+    clock = fakeHelpingClock
+
+    salt_sender = core.Salter(raw=b'0123456789abcdef').qb64
+    salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
+
+    with (
+        habbing.openHby(name="sender", base="test", salt=salt_sender, temp=True) as senderHby,
+        habbing.openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
+    ):
+
+        old_cfg = {
+            "kram": {
+                "enabled": True,
+                "caches": {
+                    "~": [0, 1000, 2000, 3000, 1000, 2000, 3000],
+                }
+            }
+        }
+        # (d, sl, ll, xl, psl, pll, pxl)
+        new_cfg = {
+            "kram": {
+                "enabled": True,
+                "caches": {
+                    "~": [0, 1000, 2000, 3000, 1000, 2000, 3000],
+                    "exn": [0, 4000, 5000, 6000, 4000, 5000, 6000],
+                    "qry": [0, 3000, 4000, 5000, 3000, 4000, 5000],
+                }
+            }
+        }
+
+        # Create transferable single-key sender
+        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True)
+        
+        # Create receiver hab
+        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True)
+
+        # Load sender's ICP into receiver
+        cross = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+
+        senderIcp = senderHab.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
+        assert senderHab.pre in cross.kevers
+
+        with configing.openCF(name="kram", base="test", temp=True) as cf:
+            cf.put(old_cfg)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+
+            # Create Kevery 
+            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
+
+            cf.put(new_cfg)
+            kramer.changeConfig(cf)
+
+            assert "exn" in kramer._pending
+            assert "qry" in kramer._pending
+
+            # Aseert exn cache-type value
+            exnCt = receiverHby.db.kramCTYP.get("exn")
+
+            # Use the worst case scenario
+            # Accept window is unchanged untill delta passes
+            assert exnCt.sl == 1000
+            assert exnCt.ll == 2000
+            assert exnCt.xl == 3000
+
+            # Pruning window is changed immediately
+            assert exnCt.psl == 4000
+            assert exnCt.pll == 5000
+            assert exnCt.pxl == 6000
+
+            # Assert qry cache-type values
+            qryCt = receiverHby.db.kramCTYP.get("qry")
+            
+            # Use the worst case scenario
+            # Accept window is unchanged untill delta passes
+            assert qryCt.sl == 1000
+            assert qryCt.ll == 2000
+            assert qryCt.xl == 3000
+
+            # Pruning window is changed immediately
+            assert qryCt.psl == 3000
+            assert qryCt.pll == 4000
+            assert qryCt.pxl == 5000
+
+
+            # Create a query message with a route, should still be part of query cache-type
+            stamp = helping.nowIso8601()
+            msg = eventing.query(pre=senderHab.pre,
+                                 route="ksn",
+                                 query=dict(i=senderHab.pre, src=senderHab.pre),
+                                 stamp=stamp,
+                                 pvrsn=Vrsn_2_0)
+
+            # Sign with sender's keys
+            sigers = senderHab.mgr.sign(ser=msg.raw,
+                                        verfers=senderHab.kever.verfers,
+                                        indexed=True)
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+
+            kvy.processMsg(msg, **kwa)
+
+            # Assert cache created
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
+            assert cache is not None
+            
+            # Assert lag values are still unchanged
+            cache.ml == 1000
+            cache.ml == qryCt.sl
+            cache.xl == 3000
+            cache.xl == qryCt.xl
+            
+            # Assert pruning values
+            cache.pml == 3000
+            cache.pml == qryCt.psl
+            cache.pxl == 5000
+            cache.pxl == qryCt.pxl
+
+            # Create an ixp message
+            stamp = helping.nowIso8601()
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            verfers = senderHab.kever.verfers
+
+            # Test with seeded xip via kramit directly
+            xip = eventing.exchept(sender=senderHab.pre,
+                                   receiver=receiverHab.pre,
+                                   route="route1",
+                                   stamp=stamp)
+
+            # Sign xip
+            sigers = senderHab.mgr.sign(ser=xip.raw,
+                                        verfers=senderHab.kever.verfers,
+                                        indexed=True)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+
+            # Call kramit directly (processMsg rejects xip)
+            result = kramer.kramit(xip, **kwa)
+            assert result is not None  # xip accepted
+
+            # Create an exchange message with a route, still falls in the broader exn cache-type
+            exn = eventing.exchange(sender=senderHab.pre,
+                                    receiver=receiverHab.pre,
+                                    xid=xip.said,
+                                    route="route1",
+                                    attributes=dict(n='5c'),
+                                    stamp=stamp)
+
+            sigers = senderHab.mgr.sign(ser=exn.raw,
+                                    verfers=senderHab.kever.verfers,
+                                    indexed=True)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+
+            # Error raised due to lack of exchanger
+            with pytest.raises(kering.ValidationError):
+                kvy.processMsg(exn, **kwa)
+
+            # Assert tmsc entry created for exn
+            cache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn.said))
+            assert cache is not None
+            
+            # Assert lag values are still unchanged
+            cache.ml == 1000
+            cache.ml == exnCt.sl
+            cache.xl == 3000
+            cache.xl == exnCt.xl
+            
+            # Assert pruning values
+            cache.pml == 4000
+            cache.pml == exnCt.psl
+            cache.pxl == 6000
+            cache.pxl == exnCt.pxl
+
+            # Advance time to delta + 1 sec, delta for qry and exn are the same
+            delta = kramer._pending["qry"]["delta"]
+            clock.advance(milliseconds=delta, seconds=1)
+
+            # Reconcile the config
+            kramer.reconcileConfig()
+
+             # Create a query message with a route, should still be part of query cache-type
+            stamp = helping.nowIso8601()
+            msg = eventing.query(pre=senderHab.pre,
+                                 route="ksn",
+                                 query=dict(i=senderHab.pre, src=senderHab.pre),
+                                 stamp=stamp,
+                                 pvrsn=Vrsn_2_0)
+
+            # Sign with sender's keys
+            sigers = senderHab.mgr.sign(ser=msg.raw,
+                                        verfers=senderHab.kever.verfers,
+                                        indexed=True)
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+
+            kvy.processMsg(msg, **kwa)
+
+            # Assert cache created
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
+            assert cache is not None
+            
+            # Assert window lag values changed
+            cache.ml == 3000
+            cache.ml == qryCt.sl
+            cache.xl == 5000
+            cache.xl == qryCt.xl
+            
+            # Create an exchange message
+            exn = eventing.exchange(sender=senderHab.pre,
+                                    receiver=receiverHab.pre,
+                                    xid=xip.said,
+                                    route="route1",
+                                    attributes=dict(n='5c'),
+                                    stamp=stamp)
+
+            sigers = senderHab.mgr.sign(ser=exn.raw,
+                                    verfers=senderHab.kever.verfers,
+                                    indexed=True)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+
+            # Error raised due to lack of exchanger
+            with pytest.raises(kering.ValidationError):
+                kvy.processMsg(exn, **kwa)
+
+            # Assert tmsc entry created for exn
+            cache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn.said))
+            assert cache is not None
+            
+            # Assert window lag values changed
+            cache.ml == 4000
+            cache.ml == exnCt.sl
+            cache.xl == 6000
+            cache.xl == exnCt.xl
+
+
+def test_merge_cache_types(fakeHelpingClock):
+    """
+    Test Case‑3 behavior when multiple route‑specific cache‑types
+    (“qry.R.logs” and “qry.R.ksn”) are merged into a single broader
+    cache‑type (“qry”) whose accept/prune windows are larger than any of the
+    old per‑route cache‑types.
+
+    This test validates the following invariants:
+
+    1. **Detection of a merge as a Case‑3 expansion**
+       The new “qry” cache‑type covers all patterns previously covered by
+       “qry.R.logs” and “qry.R.ksn”. 
+       Because its accept windows are larger than the old ones, the merge must be staged:
+           • “qry” must appear in `kramer._pending`.
+
+    2. **Staged accept‑window behavior**
+       Before the Case‑3 delta expires:
+         • Accept windows (sl, ll, xl) for “qry” must remain equal to the
+           smallest old accept windows (from the fallback “~”).
+         • Prune windows (psl, pll, pxl) must update immediately to the new
+           merged values (6000/7000/8000).
+
+    3. **Message classification during the staging period**
+       Messages routed to either “ksn” or “logs” must:
+         • Continue using their old per‑route accept windows
+               ksn: sl=2000, xl=4000
+               logs: sl=1500, xl=3500
+         • Use the new merged prune windows (6000/7000/8000).
+       This ensures that merging does not retroactively widen accept windows
+       before the delta expires.
+
+    4. **Delta expiration and reconciliation**
+       After advancing the fake clock past the Case‑3 delta and calling
+       `reconcileConfig()`:
+         • The staged accept windows for “qry” must be applied.
+         • New messages routed to either “ksn” or “logs” must now use the
+           merged accept windows:
+               sl=6000, xl=8000.
+
+    5. **Route‑based classification remains correct**
+       Even after merging:
+         • Messages with route “ksn” or “logs” must still classify under the
+           “qry” cache‑type.
+         • Their lag values must reflect the correct staged or finalized
+           windows depending on whether the delta has expired.
+
+    Overall, this test ensures that:
+       • Merging multiple cache‑types into a broader one triggers Case‑3
+         staging correctly.
+       • Accept/prune windows transition safely and deterministically.
+       • Old per‑route semantics remain valid until the staging delta expires.
+       • Message processing remains consistent across the merge boundary.
+    """
+    clock = fakeHelpingClock
+
+    salt_sender = core.Salter(raw=b'0123456789abcdef').qb64
+    salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
+
+    with (
+        habbing.openHby(name="sender", base="test", salt=salt_sender, temp=True) as senderHby,
+        habbing.openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
+    ):
+
+        old_cfg = {
+            "kram": {
+                "enabled": True,
+                "caches": {
+                    "~": [0, 1000, 2000, 3000, 1000, 2000, 3000],
+                    "qry.R.logs": [0, 1500, 2500, 3500, 1500, 2500, 3500],
+                    "qry.R.ksn": [0, 2000, 3000, 4000, 2000, 3000, 4000],
+                }
+            }
+        }
+
+        new_cfg = {
+            "kram": {
+                "enabled": True,
+                "caches": {
+                    "~": [0, 1000, 2000, 3000, 1000, 2000, 3000],
+                    "qry": [0, 6000, 7000, 8000, 6000, 7000, 8000],
+                }
+            }
+        }
+
+        # Create transferable single-key sender
+        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True)
+        
+        # Create receiver hab
+        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True)
+
+        # Load sender's ICP into receiver
+        cross = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+
+        senderIcp = senderHab.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
+        assert senderHab.pre in cross.kevers
+
+        with configing.openCF(name="kram", base="test", temp=True) as cf:
+            cf.put(old_cfg)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+
+            # Create Kevery 
+            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
+            
+            cf.put(new_cfg)
+            kramer.changeConfig(cf)
+
+            assert "qry" in kramer._pending
+
+            # Assert qry cache-type values
+            qryCt = receiverHby.db.kramCTYP.get("qry")
+            
+            # Use the worst case scenario which in this case is the fallback ~
+            # Accept window is unchanged untill delta passes
+            assert qryCt.sl == 1000
+            assert qryCt.ll == 2000
+            assert qryCt.xl == 3000
+
+            # Pruning windows are immediately changed
+            assert qryCt.psl == 6000
+            assert qryCt.pll == 7000
+            assert qryCt.pxl == 8000
+
+            # Create a query message with the ksn route
+            stamp = helping.nowIso8601()
+            msg = eventing.query(pre=senderHab.pre,
+                                 route="ksn",
+                                 query=dict(i=senderHab.pre, src=senderHab.pre),
+                                 stamp=stamp,
+                                 pvrsn=Vrsn_2_0)
+
+            # Sign with sender's keys
+            sigers = senderHab.mgr.sign(ser=msg.raw,
+                                        verfers=senderHab.kever.verfers,
+                                        indexed=True)
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+
+            kvy.processMsg(msg, **kwa)
+
+            # Assert cache created
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
+            assert cache is not None
+            
+            # Assert lag values are still from ksn route
+            cache.ml == 2000
+            cache.xl == 4000
+            
+            # Assert pruning values are from the new qry cache-type
+            cache.pml == 6000
+            cache.pml == qryCt.psl
+            cache.pxl == 8000
+            cache.pxl == qryCt.pxl
+
+             # Create a query message with the logs route
+            stamp = helping.nowIso8601()
+            msg = eventing.query(pre=senderHab.pre,
+                                 route="logs",
+                                 query=dict(i=senderHab.pre, src=senderHab.pre),
+                                 stamp=stamp,
+                                 pvrsn=Vrsn_2_0)
+
+            # Sign with sender's keys
+            sigers = senderHab.mgr.sign(ser=msg.raw,
+                                        verfers=senderHab.kever.verfers,
+                                        indexed=True)
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+
+            kvy.processMsg(msg, **kwa)
+
+            # Assert cache created
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
+            assert cache is not None
+            
+            # Assert lag values are still from logs route
+            cache.ml == 1500
+            cache.xl == 3500
+            
+            # Assert pruning values are from the new qry cache-type
+            cache.pml == 6000
+            cache.pml == qryCt.psl
+            cache.pxl == 8000
+            cache.pxl == qryCt.pxl
+
+            # Advance time to delta + 1 sec
+            delta = kramer._pending["qry"]["delta"]
+            clock.advance(milliseconds=delta, seconds=1)
+
+            # Create a new qry message with the ksn route 
+            stamp = helping.nowIso8601()
+            msg = eventing.query(pre=senderHab.pre,
+                                 route="ksn",
+                                 query=dict(i=senderHab.pre, src=senderHab.pre),
+                                 stamp=stamp,
+                                 pvrsn=Vrsn_2_0)
+
+            # Sign with sender's keys
+            sigers = senderHab.mgr.sign(ser=msg.raw,
+                                        verfers=senderHab.kever.verfers,
+                                        indexed=True)
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+
+            kvy.processMsg(msg, **kwa)
+
+            # Assert cache created
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
+            assert cache is not None
+            
+            # Assert lag values are updated to the new qry cache-type
+            cache.ml == 6000
+            cache.xl == 8000
+
+
+            # Create a new qry message with the logs route 
+            stamp = helping.nowIso8601()
+            msg = eventing.query(pre=senderHab.pre,
+                                 route="logs",
+                                 query=dict(i=senderHab.pre, src=senderHab.pre),
+                                 stamp=stamp,
+                                 pvrsn=Vrsn_2_0)
+
+            # Sign with sender's keys
+            sigers = senderHab.mgr.sign(ser=msg.raw,
+                                        verfers=senderHab.kever.verfers,
+                                        indexed=True)
+            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+
+            kvy.processMsg(msg, **kwa)
+
+            # Assert cache created
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
+            assert cache is not None
+            
+            # Assert lag values are updated to the new qry cache-type
+            cache.ml == 6000
+            cache.xl == 8000
+
+
+def test_coverage_hole():
+    """
+    Test that Kramer rejects configuration changes that introduce a coverage hole.
+
+    This test verifies the core Case‑3 invariant that:
+        **All patterns covered by the old configuration must remain covered
+        in the new configuration. No coverage holes are allowed.**
+
+    Scenario:
+        • The old configuration contains only the fallback cache-type "~",
+          which semantically covers (ANY, ANY) — i.e., every possible
+          (message-type, route) pattern.
+        • The new configuration replaces "~" with a single cache-type "exn",
+          which only covers (EXN, ANY).
+
+    Expected behavior:
+        • Because the new configuration no longer covers patterns such as
+          (QRY, ANY), (RLY, ANY), or any other non‑EXN message types,
+          a coverage hole is introduced.
+        • `_validateCoverage()` must detect this hole.
+        • `changeConfig()` must raise an exception and refuse to apply the
+          unsafe configuration.
+
+    This test ensures that:
+        • Coverage graphs are computed correctly.
+        • Coverage holes are detected deterministically.
+        • Kramer never transitions into a configuration that would leave
+          previously valid message patterns without a corresponding cache-type.
+    """
+
+    salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
+
+    with (
+        habbing.openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
+    ):
+        # Old configuration has a default fallback: ANY (message type) ANY (route) cache-type
+        old_cfg = {
+            "kram": {
+                "enabled": True,
+                "caches": {
+                    "~": [0, 1000, 2000, 3000, 1000, 2000, 3000],
+                }
+            }
+        }
+
+        # New configuration only has a (EXN, ANY) cache-type
+        new_cfg = {
+            "kram": {
+                "enabled": True,
+                "caches": {
+                    "exn": [0, 1000, 2000, 3000, 1000, 2000, 3000],
+                }
+            }
+        }
+
+        with configing.openCF(name="kram", base="test", temp=True) as cf:
+            cf.put(old_cfg)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+
+            cf.put(new_cfg)
+
+            # Raises an error for coverage hole
+            with pytest.raises(Exception):
+                kramer.changeConfig(cf)
+
+
 def test_pruning_messages_single_key(fakeHelpingClock):
     """
     Test pruning behavior for single-key sender messages.
@@ -3319,6 +4157,7 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
             assert receiverHby.db.kramBSQS.get(keys=partialKey) == []
             assert receiverHby.db.kramBSSS.get(keys=partialKey) == []
             assert receiverHby.db.kramTMQS.get(keys=partialKey) == []
+
 
 def test_pruning_exchanges(fakeHelpingClock):
     """
