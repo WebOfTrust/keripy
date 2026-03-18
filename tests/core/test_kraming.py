@@ -749,29 +749,42 @@ def test_asr(mockHelpingNowUTC):
     """Test processMsg with seal-based auth (asr auth type).
 
     Covers: valid seal via sscs, valid seal via ssts, non-matching ssts
-    fallback to sig auth, invalid seal (no matching digest), missing KEL event.
+    fallback to sig auth, invalid seal (no matching digest), missing KEL event,
+    missing KEL with sscs + ssgs falls back to assk, invalid seal + valid sigs
+    (multi-key) falls back to asmk, valid seal + valid sigs (sscs) resolves to
+    asr, invalid seal (wrong digest) + single-key sigs falls back to assk,
+    valid seal + invalid sigs resolves to asr (sigs irrelevant).
     """
 
     # Step 1: Setup
 
     salt1 = core.Salter(raw=b'0123456789abcdef').qb64
     salt2 = core.Salter(raw=b'0123456789abcdeg').qb64
+    salt3 = core.Salter(raw=b'0123456789abcdeh').qb64
 
     with (habbing.openHby(name="sender", base="test", salt=salt1) as senderHby,
-          habbing.openHby(name="receiver", base="test", salt=salt2) as receiverHby):
+          habbing.openHby(name="mkSender", base="test", salt=salt2) as mkHby,
+          habbing.openHby(name="receiver", base="test", salt=salt3) as receiverHby):
 
         # Create transferable single-key sender
         senderHab = senderHby.makeHab(name="sender", isith='1', icount=1,
                                       transferable=True)
+        # Create multi-key sender (2-of-3)
+        mkHab = mkHby.makeHab(name="mkSender", isith='2', icount=3,
+                              transferable=True)
         # Create receiver hab for db context
         receiverHby.makeHab(name="receiver", isith='1', icount=1,
                             transferable=True)
 
-        # Cross-feed sender ICP to receiver
+        # Cross-feed both senders to receiver
         crossKvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
         senderIcp = senderHab.makeOwnEvent(sn=0)
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
         assert senderHab.pre in crossKvy.kevers
+
+        mkIcp = mkHab.makeOwnEvent(sn=0)
+        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(mkIcp), kvy=crossKvy)
+        assert mkHab.pre in crossKvy.kevers
 
         # Create Kramer + Kevery
         with configing.openCF(name="kram", base="test") as cf:
@@ -782,6 +795,7 @@ def test_asr(mockHelpingNowUTC):
 
             stamp = helping.nowIso8601()
             prefixer = coring.Prefixer(qb64=senderHab.pre)
+            mkPrefixer = coring.Prefixer(qb64=mkHab.pre)
 
 
             # Step 2: Valid seal via sscs (pure seal path)
@@ -955,125 +969,66 @@ def test_asr(mockHelpingNowUTC):
             assert cache is not None  # accepted via sig fallback
             assert cache.ml == 5000  # short lag (assk)
 
-    """Done Test"""
 
+            # Step 8: Valid seal (sscs) + valid sigs resolves to asr (seal takes priority)
 
-
-def test_both_attached(mockHelpingNowUTC):
-    """Test processMsg with both seal refs and sigs present.
-
-    Tests _resolveAuthType fallback logic:
-    - valid seal + valid sigs -> resolves to asr
-    - invalid seal + valid sigs (single-key) -> falls back to assk
-    - invalid seal + valid sigs (multi-key) -> falls back to asmk
-    - valid seal + invalid sigs -> resolves to asr (sigs irrelevant)
-    """
-
-    # Step 1: Setup
-
-    salt1 = core.Salter(raw=b'0123456789abcdef').qb64
-    salt2 = core.Salter(raw=b'0123456789abcdeg').qb64
-    salt3 = core.Salter(raw=b'0123456789abcdeh').qb64
-
-    with (habbing.openHby(name="sender", base="test", salt=salt1) as skHby,
-          habbing.openHby(name="mkSender", base="test", salt=salt2) as mkHby,
-          habbing.openHby(name="receiver", base="test", salt=salt3) as receiverHby):
-
-        # Create single-key sender
-        skHab = skHby.makeHab(name="sender", isith='1', icount=1,
-                              transferable=True)
-        # Create multi-key sender (2-of-3)
-        mkHab = mkHby.makeHab(name="mkSender", isith='2', icount=3,
-                              transferable=True)
-        # Create receiver hab for db context
-        receiverHby.makeHab(name="receiver", isith='1', icount=1,
-                            transferable=True)
-
-        # Cross-feed both senders to receiver
-        crossKvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
-
-        skIcp = skHab.makeOwnEvent(sn=0)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(skIcp), kvy=crossKvy)
-        assert skHab.pre in crossKvy.kevers
-
-        mkIcp = mkHab.makeOwnEvent(sn=0)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(mkIcp), kvy=crossKvy)
-        assert mkHab.pre in crossKvy.kevers
-
-        # Create Kramer + Kevery
-        with configing.openCF(name="kram", base="test") as cf:
-            cf.put(KRAM_INTEGRATION_CONFIG)
-            kramer = Kramer(db=receiverHby.db, cf=cf)
-            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False,
-                                  kramer=kramer)
-
-            stamp = helping.nowIso8601()
-            skPrefixer = coring.Prefixer(qb64=skHab.pre)
-            mkPrefixer = coring.Prefixer(qb64=mkHab.pre)
-
-
-            # Step 2: Valid seal + valid sigs (single-key) resolves to asr
-
-            msg = eventing.query(pre=skHab.pre,
-                                 route="ksn",
-                                 query=dict(i=skHab.pre, src=skHab.pre, n='4b'),
-                                 stamp=stamp,
-                                 pvrsn=Vrsn_2_0)
+            msg7 = eventing.query(pre=senderHab.pre,
+                                  route="ksn",
+                                  query=dict(i=senderHab.pre, src=senderHab.pre, n='4b'),
+                                  stamp=stamp,
+                                  pvrsn=Vrsn_2_0)
 
             # Anchor SAID in sender's KEL
-            ixnMsg = skHab.interact(data=[dict(d=msg.said)])
+            ixnMsg = senderHab.interact(data=[dict(d=msg7.said)])
             parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(ixnMsg), kvy=crossKvy)
 
-            ixnSn = skHab.kever.sn
-            ixnSaid = skHab.kever.serder.said
+            ixnSn = senderHab.kever.sn
+            ixnSaid = senderHab.kever.serder.said
             sscs = [(coring.Seqner(sn=ixnSn), coring.Saider(qb64=ixnSaid))]
 
-            # Valid sigs too
-            sigers = skHab.mgr.sign(ser=msg.raw,
-                                    verfers=skHab.kever.verfers,
-                                    indexed=True)
+            sigers = senderHab.mgr.sign(ser=msg7.raw,
+                                        verfers=senderHab.kever.verfers,
+                                        indexed=True)
+            kwa = dict(sscs=sscs, ssgs=[(prefixer, sigers)])
+            kvy.processMsg(msg7, **kwa)
 
-            kwa = dict(sscs=sscs, ssgs=[(skPrefixer, sigers)])
-            kvy.processMsg(msg, **kwa)
-
-            # Assert: accepted via asr (seal takes priority), short lag
-            cache = receiverHby.db.kramMSGC.get(keys=(skHab.pre, msg.said))
+            # Seal valid -> asr, sigs irrelevant to auth type resolution
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg7.said))
             assert cache is not None
             assert cache.ml == 5000  # short lag (asr)
 
             kvy.cues.clear()
 
 
-            # Step 3: Invalid seal + valid sigs (single-key) falls back to assk
+            # Step 9: Invalid seal (wrong digest) + valid sigs (single-key) falls back to assk
 
-            msg2 = eventing.query(pre=skHab.pre,
+            msg8 = eventing.query(pre=senderHab.pre,
                                   route="ksn",
-                                  query=dict(i=skHab.pre, src=skHab.pre, n='4c'),
+                                  query=dict(i=senderHab.pre, src=senderHab.pre, n='4c'),
                                   stamp=stamp,
                                   pvrsn=Vrsn_2_0)
 
-            # Reference icp (sn=0), no seal for this msg
-            icpDig = receiverHby.db.kels.getOnLast(keys=skHab.pre.encode(), on=0)
+            # Reference icp (sn=0) which has no seal for msg8 — seal invalid
+            icpDig = receiverHby.db.kels.getOnLast(keys=senderHab.pre.encode(), on=0)
             sscs = [(coring.Seqner(sn=0), coring.Saider(qb64=icpDig))]
 
-            sigers = skHab.mgr.sign(ser=msg2.raw,
-                                    verfers=skHab.kever.verfers,
-                                    indexed=True)
-            kwa = dict(sscs=sscs, ssgs=[(skPrefixer, sigers)])
-
-            kvy.processMsg(msg2, **kwa)
+            sigers = senderHab.mgr.sign(ser=msg8.raw,
+                                        verfers=senderHab.kever.verfers,
+                                        indexed=True)
+            kwa = dict(sscs=sscs, ssgs=[(prefixer, sigers)])
+            kvy.processMsg(msg8, **kwa)
 
             # _resolveAuthType: seal fails -> single-key resolves to assk
-            cache = receiverHby.db.kramMSGC.get(keys=(skHab.pre, msg2.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg8.said))
             assert cache is not None
             assert cache.ml == 5000  # short lag (assk)
 
             kvy.cues.clear()
 
 
-            # Step 4: Invalid seal + valid sigs (multi-key) falls back to asmk
+            # Step 10: Invalid seal + valid sigs (multi-key) falls back to asmk
 
-            msg3 = eventing.query(pre=mkHab.pre,
+            msg7 = eventing.query(pre=mkHab.pre,
                                   route="ksn",
                                   query=dict(i=mkHab.pre, src=mkHab.pre, n='4d'),
                                   stamp=stamp,
@@ -1084,60 +1039,60 @@ def test_both_attached(mockHelpingNowUTC):
             sscs = [(coring.Seqner(sn=0), coring.Saider(qb64=mkIcpDig))]
 
             # Partial sigs (1 of 3)
-            allSigers = mkHab.mgr.sign(ser=msg3.raw,
+            allSigers = mkHab.mgr.sign(ser=msg7.raw,
                                        verfers=mkHab.kever.verfers,
                                        indexed=True)
             kwa = dict(sscs=sscs, ssgs=[(mkPrefixer, [allSigers[0]])])
 
-            kvy.processMsg(msg3, **kwa)
+            kvy.processMsg(msg7, **kwa)
 
             # _resolveAuthType: seal fails, resolves to asmk
-            cache = receiverHby.db.kramMSGC.get(keys=(mkHab.pre, msg3.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(mkHab.pre, msg7.said))
             assert cache is not None
             assert cache.ml == 60000  # long lag (asmk)
             # Partials populated, threshold not met
-            assert receiverHby.db.kramPMKM.get(keys=(mkHab.pre, msg3.said)) is not None
-            kramPMKS = receiverHby.db.kramPMKS.get(keys=(mkHab.pre, msg3.said))
+            assert receiverHby.db.kramPMKM.get(keys=(mkHab.pre, msg7.said)) is not None
+            kramPMKS = receiverHby.db.kramPMKS.get(keys=(mkHab.pre, msg7.said))
             assert len(kramPMKS) == 1
 
             # Send 2nd sig -> threshold met (2 of 3)
-            kvy.processMsg(msg3, **dict(sscs=sscs,
+            kvy.processMsg(msg7, **dict(sscs=sscs,
                                         ssgs=[(mkPrefixer, [allSigers[1]])]))
 
             # Partials persist until pruner cleans up (not deleted on threshold)
-            assert receiverHby.db.kramPMKM.get(keys=(mkHab.pre, msg3.said)) is not None
-            kramPMKS = receiverHby.db.kramPMKS.get(keys=(mkHab.pre, msg3.said))
+            assert receiverHby.db.kramPMKM.get(keys=(mkHab.pre, msg7.said)) is not None
+            kramPMKS = receiverHby.db.kramPMKS.get(keys=(mkHab.pre, msg7.said))
             assert len(kramPMKS) >= 2
 
             kvy.cues.clear()
 
 
-            # Step 5: Valid seal + invalid sigs resolves to asr (sigs irrelevant)
+            # Step 11: Valid seal + invalid sigs resolves to asr (sigs irrelevant)
 
-            msg4 = eventing.query(pre=skHab.pre,
+            msg8 = eventing.query(pre=senderHab.pre,
                                   route="ksn",
-                                  query=dict(i=skHab.pre, src=skHab.pre, n='4e'),
+                                  query=dict(i=senderHab.pre, src=senderHab.pre, n='4e'),
                                   stamp=stamp,
                                   pvrsn=Vrsn_2_0)
 
             # Anchor SAID in sender's KEL
-            ixnMsg = skHab.interact(data=[dict(d=msg4.said)])
+            ixnMsg = senderHab.interact(data=[dict(d=msg8.said)])
             parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(ixnMsg), kvy=crossKvy)
 
-            ixnSn = skHab.kever.sn
-            ixnSaid = skHab.kever.serder.said
+            ixnSn = senderHab.kever.sn
+            ixnSaid = senderHab.kever.serder.said
             sscs = [(coring.Seqner(sn=ixnSn), coring.Saider(qb64=ixnSaid))]
 
             # Create wrong sigs (sign different data)
-            wrongSigers = skHab.mgr.sign(ser=b'wrong data to sign',
-                                         verfers=skHab.kever.verfers,
-                                         indexed=True)
-            kwa = dict(sscs=sscs, ssgs=[(skPrefixer, wrongSigers)])
+            wrongSigers = senderHab.mgr.sign(ser=b'wrong data to sign',
+                                             verfers=senderHab.kever.verfers,
+                                             indexed=True)
+            kwa = dict(sscs=sscs, ssgs=[(prefixer, wrongSigers)])
 
-            kvy.processMsg(msg4, **kwa)
+            kvy.processMsg(msg8, **kwa)
 
             # _resolveAuthType: seal validates -> asr -> sigs never checked
-            cache = receiverHby.db.kramMSGC.get(keys=(skHab.pre, msg4.said))
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg8.said))
             assert cache is not None
             assert cache.ml == 5000  # short lag (asr)
 
@@ -2253,7 +2208,7 @@ def test_cue_ks_non_transactioned(mockHelpingNowUTC):
 
             # Multi-key missing KEL
 
-            MkPrefixer = coring.Prefixer(qb64=senderMkHab.pre)
+            mkPrefixer = coring.Prefixer(qb64=senderMkHab.pre)
 
             msg = eventing.query(pre=senderMkHab.pre,
                                             route="ksn",
@@ -2264,7 +2219,7 @@ def test_cue_ks_non_transactioned(mockHelpingNowUTC):
             sigers = senderMkHab.mgr.sign(ser=msg.raw,
                                                 verfers=senderMkHab.kever.verfers,
                                                 indexed=True)
-            kwa = dict(ssgs=[(MkPrefixer, sigers)])
+            kwa = dict(ssgs=[(mkPrefixer, sigers)])
 
             with pytest.raises(kering.MissingSenderKeyStateError):
                 kvy.processMsg(msg, **kwa)
@@ -2347,6 +2302,7 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
         # Cross for the known sender
         senderIcp = kownSenderHab.makeOwnEvent(sn=0)
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+        assert kownSenderHab.pre in crossKvy.kevers
 
         # Create Kramer + Kevery
         with configing.openCF(name="kram", base="test") as cf:

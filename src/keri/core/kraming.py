@@ -614,12 +614,12 @@ class Kramer:
                     self.cues.append({
                         "kin": "keystate",
                         "aid": senderId,
-                        "sn": kever.sn if kever else None,
+                        "sn": None,
                     })
                     logger.info(
                         "Cueing keystate retrieval: missing KEL for sender=%s, current_sn=%s, error=%s",
                         senderId,
-                        kever.sn if kever else None,
+                        None,
                     )
                     raise kering.MissingSenderKeyStateError(
                         f"Sender KEL unavailable for {senderId}")
@@ -706,12 +706,12 @@ class Kramer:
                     self.cues.append({
                         "kin": "keystate",
                         "aid": senderId,
-                        "sn": kever.sn if kever else None,
+                        "sn": None,
                     })
                     logger.info(
                         "Cueing keystate retrieval: missing KEL for sender=%s, current_sn=%s, error=%s",
                         senderId,
-                        kever.sn if kever else None,
+                        None,
                     )
                     raise kering.MissingSenderKeyStateError(
                         f"Sender KEL unavailable for {senderId}")
@@ -754,12 +754,12 @@ class Kramer:
                             self.cues.append({
                                 "kin": "keystate",
                                 "aid": senderId,
-                                "sn": kever.sn if kever else None,
+                                "sn": kever.sn,
                             })
                             logger.info(
                                 "Cueing keystate retrieval: missing key state in seal reference for sender=%s, current_sn=%s, error=%s",
                                 senderId,
-                                kever.sn if kever else None,
+                                kever.sn,
                             )
                             return None
                         if not sealValidated:
@@ -853,12 +853,12 @@ class Kramer:
                     self.cues.append({
                         "kin": "keystate",
                         "aid": senderId,
-                        "sn": kever.sn if kever else None,
+                        "sn": None,
                     })
                     logger.info(
                         "Cueing keystate retrieval: missing KEL for sender=%s, current_sn=%s, error=%s",
                         senderId,
-                        kever.sn if kever else None,
+                        None,
                     )
                     raise kering.MissingSenderKeyStateError(
                         f"Sender KEL unavailable for {senderId}")
@@ -946,12 +946,12 @@ class Kramer:
                     self.cues.append({
                         "kin": "keystate",
                         "aid": senderId,
-                        "sn": kever.sn if kever else None,
+                        "sn": None,
                     })
                     logger.info(
                         "Cueing keystate retrieval: missing KEL for sender=%s, current_sn=%s, error=%s",
                         senderId,
-                        kever.sn if kever else None,
+                        None,
                     )
                     raise kering.MissingSenderKeyStateError(
                         f"Sender KEL unavailable for {senderId}")
@@ -1015,12 +1015,12 @@ class Kramer:
                                 self.cues.append({
                                     "kin": "keystate",
                                     "aid": senderId,
-                                    "sn": kever.sn if kever else None,
+                                    "sn": kever.sn,
                                 })
                                 logger.info(
                                     "Cueing keystate retrieval: missing key state in seal reference for sender=%s, current_sn=%s, error=%s",
                                     senderId,
-                                    kever.sn if kever else None,
+                                    kever.sn,
                                 )
                                 return None
                             if not sealValidated:

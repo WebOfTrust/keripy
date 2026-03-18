@@ -1,0 +1,45 @@
+name: WASM Tests
+
+on:
+  push:
+    branches: ['main']
+  pull_request:
+  workflow_dispatch:
+
+jobs:
+  wasm-test:
+    runs-on: ubuntu-latest
+    strategy:
+      fail-fast: false
+      matrix:
+        runtime: [chrome, firefox, node]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - uses: pyodide/pyodide-actions/install-browser@v2
+        with:
+          runner: playwright
+          browser: ${{ matrix.runtime }}
+      - uses: pyodide/pyodide-actions/download-pyodide@v2
+        with:
+          version: 0.27.2
+          to: dist
+      - name: Install test dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install pytest-pyodide playwright
+          python -m playwright install --with-deps
+      - name: Prepare test directory
+        run: |
+          cp src/keri/db/webdbing.py ./webdbing.py
+      - name: Run WebDBer WASM tests in Pyodide
+        env:
+          RUN_IN_CI: "true" # Set a custom environment variable to detect CI
+        run: |
+          pytest tests/wasm/test_webdbing_wasm.py \
+            --confcutdir=tests/wasm \
+            --runtime ${{ matrix.runtime }} \
+            --dist-dir=./dist/ \
+            -v
