@@ -4322,6 +4322,7 @@ class Kevery:
 
         # Step 2: KRAM
         if self.kramer:
+            self.kramer.reconcileConfig()
             result = self.kramer.intake(serder, **kwa)
             if result is None:
                 return  # message dropped or pending in KRAM

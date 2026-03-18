@@ -2480,7 +2480,7 @@ def test_dynamic_cache_increase(fakeHelpingClock):
             clock.advance(seconds=3)
             assert helping.nowIso8601() == "2021-01-01T00:00:03.000000+00:00"
 
-            kramer.reconcileConfig()
+            # kramer.reconcileConfig()
 
             rec = receiverHby.db.kramCTYP.get("~")
             assert rec.sl == 1000
@@ -2491,6 +2491,8 @@ def test_dynamic_cache_increase(fakeHelpingClock):
             # 6. Advance time BEYOND delta → accept updates
 
             clock.advance(seconds=1)
+
+            # Reconciliation is called manually since there is no msg to process
             kramer.reconcileConfig()
 
             rec = receiverHby.db.kramCTYP.get("~")
@@ -2590,7 +2592,7 @@ def test_dynamic_cache_decrease(fakeHelpingClock):
 
             # Advance time — nothing should change
             clock.advance(10000)
-            kramer.reconcileConfig()
+            # kramer.reconcileConfig()
 
             rec = receiverHby.db.kramCTYP.get("~")
 
@@ -2722,13 +2724,7 @@ def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
             
             # Advance time to complete staging
             clock.advance(5000)
-            kramer.reconcileConfig()
-
-            ctyp2 = receiverHby.db.kramCTYP.get("~")
-            # Accept windows updated
-            assert ctyp2.sl == 5000
-            assert ctyp2.ll == 5000
-            assert ctyp2.xl == 5000
+            # kramer.reconcileConfig()
 
             # Existing cache STILL unchanged
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
@@ -2755,6 +2751,12 @@ def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             kvy.processMsg(msg, **kwa)
+
+            ctyp2 = receiverHby.db.kramCTYP.get("~")
+            # Accept windows updated
+            assert ctyp2.sl == 5000
+            assert ctyp2.ll == 5000
+            assert ctyp2.xl == 5000
 
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
 
@@ -2942,18 +2944,7 @@ def test_new_cache_type(fakeHelpingClock):
             clock.advance(milliseconds=delta, seconds=1)
 
             # Reconcile the config
-            kramer.reconcileConfig()
-
-            # Assert the new cache-type was processed and removed
-            assert "exn.R.route1" not in kramer._pending
-
-            # Assert new exn.R.route1 cache-type values
-            exnCt = receiverHby.db.kramCTYP.get("exn.R.route1")
-
-            # Assert values now reflect the new config
-            assert exnCt.sl == 5000
-            assert exnCt.ll == 6000
-            assert exnCt.xl == 7000
+            # kramer.reconcileConfig()
 
             # Send a new message with the new config
             stamp = helping.nowIso8601()
@@ -2974,6 +2965,17 @@ def test_new_cache_type(fakeHelpingClock):
             # Error raised due to lack of exchanger
             with pytest.raises(kering.ValidationError):
                 kvy.processMsg(exn, **kwa)
+
+             # Assert the new cache-type was processed and removed
+            assert "exn.R.route1" not in kramer._pending
+
+            # Assert new exn.R.route1 cache-type values
+            exnCt = receiverHby.db.kramCTYP.get("exn.R.route1")
+
+            # Assert values now reflect the new config
+            assert exnCt.sl == 5000
+            assert exnCt.ll == 6000
+            assert exnCt.xl == 7000
 
             # Assert tmsc entry created for exn
             cache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn.said))
@@ -3251,23 +3253,7 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             clock.advance(milliseconds=delta, seconds=1)
 
             # Reconcile the config
-            kramer.reconcileConfig()
-
-            # Assert new qry cache-type values
-            qryCt = receiverHby.db.kramCTYP.get("qry")
-            
-            # Assert values now reflect the new config
-            assert qryCt.sl == 3000
-            assert qryCt.ll == 4000
-            assert qryCt.xl == 5000
-
-            # Assert exn cache-type value
-            exnCt = receiverHby.db.kramCTYP.get("exn")
-
-            # Assert values now reflect the new config
-            assert exnCt.sl == 4000
-            assert exnCt.ll == 5000
-            assert exnCt.xl == 6000
+            # kramer.reconcileConfig()
 
             # Create a query message with a route, should still be part of query cache-type
             stamp = helping.nowIso8601()
@@ -3285,6 +3271,23 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             kvy.processMsg(msg, **kwa)
+
+            # Assert new qry cache-type values
+            qryCt = receiverHby.db.kramCTYP.get("qry")
+            
+            # Assert values now reflect the new config
+            assert qryCt.sl == 3000
+            assert qryCt.ll == 4000
+            assert qryCt.xl == 5000
+
+            # Assert exn cache-type value
+            exnCt = receiverHby.db.kramCTYP.get("exn")
+
+            # Assert values now reflect the new config
+            assert exnCt.sl == 4000
+            assert exnCt.ll == 5000
+            assert exnCt.xl == 6000
+
 
             # Assert cache created
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
@@ -3519,20 +3522,8 @@ def test_merge_cache_types(fakeHelpingClock):
             clock.advance(milliseconds=delta, seconds=1)
 
             # Reconcile config
-            kramer.reconcileConfig()
+            # kramer.reconcileConfig()
             
-            # Assert "qry" was processed and removed
-            assert "qry" not in kramer._pending
-
-            # Assert qry cache-type values
-            qryCt = receiverHby.db.kramCTYP.get("qry")
-            
-            # Assert accept window now reflects the new config
-            assert qryCt.sl == 6000
-            assert qryCt.ll == 7000
-            assert qryCt.xl == 8000
-
-
             # Create a new qry message with the ksn route 
             stamp = helping.nowIso8601()
             msg = eventing.query(pre=senderHab.pre,
@@ -3549,6 +3540,17 @@ def test_merge_cache_types(fakeHelpingClock):
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             kvy.processMsg(msg, **kwa)
+
+             # Assert "qry" was processed and removed
+            assert "qry" not in kramer._pending
+
+            # Assert qry cache-type values
+            qryCt = receiverHby.db.kramCTYP.get("qry")
+            
+            # Assert accept window now reflects the new config
+            assert qryCt.sl == 6000
+            assert qryCt.ll == 7000
+            assert qryCt.xl == 8000
 
             # Assert cache created
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
