@@ -8,11 +8,11 @@ The workflow copies webdbing.py into this directory before running.
 import sys
 import pytest
 
-if sys.platform != 'emscripten':
-    pytest.skip("Not github WASM runner, skipping module", allow_module_level=True)
+#if sys.platform != 'emscripten':
+    #pytest.skip("Not github WASM runner, skipping module", allow_module_level=True)
 
-pytestmark = pytest.mark.skipif("sys.platform != 'emscripten'",
-                        reason="These tests are only for github WASM runner")
+#pytestmark = pytest.mark.skipif("sys.platform != 'emscripten'",
+                        #reason="These tests are only for github WASM runner")
 
 pytest_pyodide = pytest.importorskip("pytest_pyodide")
 run_in_pyodide = pytest_pyodide.run_in_pyodide
