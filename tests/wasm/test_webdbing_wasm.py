@@ -14,7 +14,6 @@ import pytest
 def _wasm_runtime_requested() -> bool:
     if os.environ.get("RUN_IN_CI") == "true":
         return True
-
     args = sys.argv[1:]
     return any(
         arg in {"--runtime", "--rt", "--run-in-pyodide"}
