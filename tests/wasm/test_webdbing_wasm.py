@@ -14,8 +14,6 @@ RUN_IN_CI = os.environ.get('RUN_IN_CI') == 'true'
 if not RUN_IN_CI:
     pytest.skip("Not github WASM runner, skipping module", allow_module_level=True)
 
-pytestmark = pytest.mark.skipif("not RUN_IN_CI",
-                        reason="These tests are only for github WASM runner")
 
 pytest_pyodide = pytest.importorskip("pytest_pyodide")
 run_in_pyodide = pytest_pyodide.run_in_pyodide
