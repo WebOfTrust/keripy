@@ -1,5 +1,10 @@
 # Change Log for keripy
 
+## 2.0.0-dev6
+### WASM Support.
+Added keri.db.webdbing.py with support for IndexedDB in wasm pyodide pyscript.
+as a plugin replacement for LMDB  (see keri.db.webdbing.WebDBer)
+
 ## 2.0.0-dev5
 ### Backwards breaking interface changes
 Changes to call signatures that will break dependent libraries
