@@ -31,7 +31,7 @@ from os.path import splitext
 from setuptools import find_packages, setup
 setup(
     name='keri',
-    version='2.0.0-dev5',  # also change in src/keri/__init__.py
+    version='2.0.0-dev6',  # also change in src/keri/__init__.py
     license='Apache Software License 2.0',
     description='Key Event Receipt Infrastructure',
     long_description="KERI Decentralized Key Management Infrastructure",
@@ -99,7 +99,9 @@ setup(
     tests_require=[
                     'coverage>=7.13.1',
                     'pytest>=9.0.2',
-                    'pytest-shell>=0.3.2'
+                    'pytest-shell>=0.3.2',
+                    'pytest-pyodide>=0.59.0',
+                    'pytest-asyncio>=1.3.0',
                   ],
     setup_requires=[
     ],
