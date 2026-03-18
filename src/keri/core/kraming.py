@@ -1317,6 +1317,11 @@ class Kramer:
 
             # Update the cache record inside db
             self.db.kramCTYP.pin(ctype, rec)
+        
+        # Delete old cache type to prevent corruption due to specification
+        for ctype in list(old.keys()):
+            if ctype not in new:
+                self.db.kramCTYP.rem(ctype)
 
         self._kramCTYPCf = new
         

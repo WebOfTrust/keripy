@@ -2926,16 +2926,16 @@ def test_new_cache_type(fakeHelpingClock):
             assert cache is not None
 
             # Assert the lag values are stil unchanged
-            cache.ml == 1000
-            cache.ml == exnCt.sl
-            cache.xl == 3000
-            cache.xl == exnCt.xl
+            assert cache.ml == 1000
+            assert cache.ml == exnCt.sl
+            assert cache.xl == 3000
+            assert cache.xl == exnCt.xl
 
             # Assert prune values changed immediately
-            cache.pml == 5000
-            cache.pml == exnCt.psl
-            cache.pxl == 7000
-            cache.pxl == exnCt.pxl
+            assert cache.pml == 5000
+            assert cache.pml == exnCt.psl
+            assert cache.pxl == 7000
+            assert cache.pxl == exnCt.pxl
 
             # Advance time to delta + 1 sec
             delta = kramer._pending["exn.R.route1"]["delta"]
@@ -2943,6 +2943,17 @@ def test_new_cache_type(fakeHelpingClock):
 
             # Reconcile the config
             kramer.reconcileConfig()
+
+            # Assert the new cache-type was processed and removed
+            assert "exn.R.route1" not in kramer._pending
+
+            # Assert new exn.R.route1 cache-type values
+            exnCt = receiverHby.db.kramCTYP.get("exn.R.route1")
+
+            # Assert values now reflect the new config
+            assert exnCt.sl == 5000
+            assert exnCt.ll == 6000
+            assert exnCt.xl == 7000
 
             # Send a new message with the new config
             stamp = helping.nowIso8601()
@@ -2969,10 +2980,10 @@ def test_new_cache_type(fakeHelpingClock):
             assert cache is not None
 
             # Assert the window lag values are the new exn.R.route1 values
-            cache.ml == 5000
-            cache.ml == exnCt.sl
-            cache.xl == 7000
-            cache.xl == exnCt.xl
+            assert cache.ml == 5000
+            assert cache.ml == exnCt.sl
+            assert cache.xl == 7000
+            assert cache.xl == exnCt.xl
 
 
             # Create a new exn message that uses a different route
@@ -3000,17 +3011,17 @@ def test_new_cache_type(fakeHelpingClock):
             fbCt = receiverHby.db.kramCTYP.get("~")
 
             # Assert the window lag values are the fallback values
-            cache.ml == 1000
-            cache.ml == fbCt.sl
+            assert cache.ml == 1000
+            assert cache.ml == fbCt.sl
 
-            cache.xl == 3000
-            cache.xl == fbCt.xl
+            assert cache.xl == 3000
+            assert cache.xl == fbCt.xl
 
-            cache.pml == 1000
-            cache.pml == fbCt.psl
+            assert cache.pml == 1000
+            assert cache.pml == fbCt.psl
 
-            cache.pxl == 3000
-            cache.pxl == fbCt.pxl
+            assert cache.pxl == 3000
+            assert cache.pxl == fbCt.pxl
 
 
 def test_multiple_new_cache_type(fakeHelpingClock):
@@ -3119,7 +3130,7 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             assert "exn" in kramer._pending
             assert "qry" in kramer._pending
 
-            # Aseert exn cache-type value
+            # Assert exn cache-type value
             exnCt = receiverHby.db.kramCTYP.get("exn")
 
             # Use the worst case scenario
@@ -3170,16 +3181,16 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             assert cache is not None
             
             # Assert lag values are still unchanged
-            cache.ml == 1000
-            cache.ml == qryCt.sl
-            cache.xl == 3000
-            cache.xl == qryCt.xl
+            assert cache.ml == 1000
+            assert cache.ml == qryCt.sl
+            assert cache.xl == 3000
+            assert cache.xl == qryCt.xl
             
             # Assert pruning values
-            cache.pml == 3000
-            cache.pml == qryCt.psl
-            cache.pxl == 5000
-            cache.pxl == qryCt.pxl
+            assert cache.pml == 3000
+            assert cache.pml == qryCt.psl
+            assert cache.pxl == 5000
+            assert cache.pxl == qryCt.pxl
 
             # Create an ixp message
             stamp = helping.nowIso8601()
@@ -3224,16 +3235,16 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             assert cache is not None
             
             # Assert lag values are still unchanged
-            cache.ml == 1000
-            cache.ml == exnCt.sl
-            cache.xl == 3000
-            cache.xl == exnCt.xl
+            assert cache.ml == 1000
+            assert cache.ml == exnCt.sl
+            assert cache.xl == 3000
+            assert cache.xl == exnCt.xl
             
             # Assert pruning values
-            cache.pml == 4000
-            cache.pml == exnCt.psl
-            cache.pxl == 6000
-            cache.pxl == exnCt.pxl
+            assert cache.pml == 4000
+            assert cache.pml == exnCt.psl
+            assert cache.pxl == 6000
+            assert cache.pxl == exnCt.pxl
 
             # Advance time to delta + 1 sec, delta for qry and exn are the same
             delta = kramer._pending["qry"]["delta"]
@@ -3242,7 +3253,23 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             # Reconcile the config
             kramer.reconcileConfig()
 
-             # Create a query message with a route, should still be part of query cache-type
+            # Assert new qry cache-type values
+            qryCt = receiverHby.db.kramCTYP.get("qry")
+            
+            # Assert values now reflect the new config
+            assert qryCt.sl == 3000
+            assert qryCt.ll == 4000
+            assert qryCt.xl == 5000
+
+            # Assert exn cache-type value
+            exnCt = receiverHby.db.kramCTYP.get("exn")
+
+            # Assert values now reflect the new config
+            assert exnCt.sl == 4000
+            assert exnCt.ll == 5000
+            assert exnCt.xl == 6000
+
+            # Create a query message with a route, should still be part of query cache-type
             stamp = helping.nowIso8601()
             msg = eventing.query(pre=senderHab.pre,
                                  route="ksn",
@@ -3264,10 +3291,10 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             assert cache is not None
             
             # Assert window lag values changed
-            cache.ml == 3000
-            cache.ml == qryCt.sl
-            cache.xl == 5000
-            cache.xl == qryCt.xl
+            assert cache.ml == 3000
+            assert cache.ml == qryCt.sl
+            assert cache.xl == 5000
+            assert cache.xl == qryCt.xl
             
             # Create an exchange message
             exn = eventing.exchange(sender=senderHab.pre,
@@ -3291,10 +3318,10 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             assert cache is not None
             
             # Assert window lag values changed
-            cache.ml == 4000
-            cache.ml == exnCt.sl
-            cache.xl == 6000
-            cache.xl == exnCt.xl
+            assert cache.ml == 4000
+            assert cache.ml == exnCt.sl
+            assert cache.xl == 6000
+            assert cache.xl == exnCt.xl
 
 
 def test_merge_cache_types(fakeHelpingClock):
@@ -3397,13 +3424,18 @@ def test_merge_cache_types(fakeHelpingClock):
         with configing.openCF(name="kram", base="test", temp=True) as cf:
             cf.put(old_cfg)
             kramer = Kramer(db=receiverHby.db, cf=cf)
-
+            
             # Create Kevery 
             kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
             
             cf.put(new_cfg)
             kramer.changeConfig(cf)
 
+            # Assert old cache-type are removed
+            assert receiverHby.db.kramCTYP.get("qry.R.ksn") is None
+            assert receiverHby.db.kramCTYP.get("qry.R.logs") is None
+
+            # Assert new "qry" cache-type is in pending
             assert "qry" in kramer._pending
 
             # Assert qry cache-type values
@@ -3441,17 +3473,17 @@ def test_merge_cache_types(fakeHelpingClock):
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             assert cache is not None
             
-            # Assert lag values are still from ksn route
-            cache.ml == 2000
-            cache.xl == 4000
+            # Assert lag values are from the worst-case scenario
+            assert cache.ml == 1000
+            assert cache.xl == 3000
             
             # Assert pruning values are from the new qry cache-type
-            cache.pml == 6000
-            cache.pml == qryCt.psl
-            cache.pxl == 8000
-            cache.pxl == qryCt.pxl
+            assert cache.pml == 6000
+            assert cache.pml == qryCt.psl
+            assert cache.pxl == 8000
+            assert cache.pxl == qryCt.pxl
 
-             # Create a query message with the logs route
+            # Create a query message with the logs route
             stamp = helping.nowIso8601()
             msg = eventing.query(pre=senderHab.pre,
                                  route="logs",
@@ -3472,19 +3504,34 @@ def test_merge_cache_types(fakeHelpingClock):
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             assert cache is not None
             
-            # Assert lag values are still from logs route
-            cache.ml == 1500
-            cache.xl == 3500
+            # Assert lag values are from the worst-case scenario
+            assert cache.ml == 1000
+            assert cache.xl == 3000
             
             # Assert pruning values are from the new qry cache-type
-            cache.pml == 6000
-            cache.pml == qryCt.psl
-            cache.pxl == 8000
-            cache.pxl == qryCt.pxl
+            assert cache.pml == 6000
+            assert cache.pml == qryCt.psl
+            assert cache.pxl == 8000
+            assert cache.pxl == qryCt.pxl
 
             # Advance time to delta + 1 sec
             delta = kramer._pending["qry"]["delta"]
             clock.advance(milliseconds=delta, seconds=1)
+
+            # Reconcile config
+            kramer.reconcileConfig()
+            
+            # Assert "qry" was processed and removed
+            assert "qry" not in kramer._pending
+
+            # Assert qry cache-type values
+            qryCt = receiverHby.db.kramCTYP.get("qry")
+            
+            # Assert accept window now reflects the new config
+            assert qryCt.sl == 6000
+            assert qryCt.ll == 7000
+            assert qryCt.xl == 8000
+
 
             # Create a new qry message with the ksn route 
             stamp = helping.nowIso8601()
@@ -3508,8 +3555,10 @@ def test_merge_cache_types(fakeHelpingClock):
             assert cache is not None
             
             # Assert lag values are updated to the new qry cache-type
-            cache.ml == 6000
-            cache.xl == 8000
+            assert cache.ml == 6000
+            assert cache.ml == qryCt.sl
+            assert cache.xl == 8000
+            assert cache.xl == qryCt.xl
 
 
             # Create a new qry message with the logs route 
@@ -3534,8 +3583,10 @@ def test_merge_cache_types(fakeHelpingClock):
             assert cache is not None
             
             # Assert lag values are updated to the new qry cache-type
-            cache.ml == 6000
-            cache.xl == 8000
+            assert cache.ml == 6000
+            assert cache.ml == qryCt.sl
+            assert cache.xl == 8000
+            assert cache.xl == qryCt.xl
 
 
 def test_coverage_hole():
