@@ -17,6 +17,7 @@ from ..kering import (Colds, sniff, Vrsn_2_0, Version, Ilks,
                       QueryNotFoundError, ExtractionError, ShortageError,
                       ColdStartError, InvalidVersionError,
                       SizedGroupError, TopLevelStreamError)
+
 from .coring import (Seqner, Cigar, Diger, Noncer, Labeler, Number, Verser,
                      Dater, Verfer, Prefixer, Saider, Texter)
 from .counting import Counter, Codens, CtrDex_1_0, CtrDex_2_0, GenDex
