@@ -523,7 +523,7 @@ class OnSuberBase(SuberBase):
         super(OnSuberBase, self).__init__(*pa, **kwa)
 
 
-    def putOn(self, keys: str|bytes|memoryview|Iterable, on: int=0,
+    def put(self, keys: str|bytes|memoryview|Iterable, on: int=0,
                     val: str|bytes|memoryview|None=None):
         """
         Returns
@@ -547,7 +547,7 @@ class OnSuberBase(SuberBase):
                                  val=self._ser(val),
                                  sep=self.sep.encode()))
 
-    #putOn = put  # refactoring alias
+    putOn = put  # refactoring alias
 
     def pinOn(self, keys: str|bytes|memoryview|Iterable, on: int=0,
                     val: str|bytes|memoryview|None=None):

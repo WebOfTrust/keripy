@@ -1264,7 +1264,7 @@ class Tever:
             self.reger.baks.put(key, [bak.encode("utf-8") for bak in baks])
         self.reger.tets.pin(keys=(pre.decode("utf-8"), dig.decode("utf-8")), val=Dater())
         self.reger.tvts.put(keys=key, val=serder.raw)
-        self.reger.tels.put(keys=snKey(pre, sn), val=dig)
+        self.reger.tels.putOn(keys=pre, on=sn, val=dig)
         logger.info("Tever: Added to TEL valid %s event %s said=%s reg=%.8s iss=%.8s",
                     serder.ilk, pre.decode(), serder.said, self.regk, self.pre)
         logger.debug("TEL Event Body=\n%s\n", serder.pretty())

@@ -228,9 +228,9 @@ def test_issuer():
         telKey = snKey(vcdig, sn)
         assert issuer.tels.get(keys=telKey) is None
         assert issuer.tels.rem(keys=telKey) is False
-        assert issuer.tels.put(keys=telKey, val=idig.qb64b)
+        assert issuer.tels.putOn(keys=vcdig, on=sn, val=idig.qb64b)
         assert issuer.tels.get(keys=telKey) == idig.qb64
-        assert issuer.tels.put(keys=telKey, val=idig.qb64b) is False
+        assert issuer.tels.putOn(keys=vcdig, on=sn, val=idig.qb64b) is False
         assert issuer.tels.pin(keys=telKey, val=idig.qb64b) is True
         assert issuer.tels.get(keys=telKey) == idig.qb64
         assert issuer.tels.rem(keys=telKey) is True
@@ -244,10 +244,10 @@ def test_issuer():
         assert revb == b'{"v":"KERI10JSON000014_","i":"EAvR3p8V95W8J7Ui4-mEzZ79S-A1esAnJo1Kmzq80Jkc","s":"1","t":"rev"}'
         rdig = Diger(raw=revb)
 
-        assert issuer.tels.put(keys=snKey(vcdig, sn), val=idig.qb64b) is True
-        assert issuer.tels.put(keys=snKey(vcdig, sn + 1), val=rdig.qb64b) is True
-        assert issuer.tels.put(keys=snKey(vcdig, sn + 2), val=idig.qb64b) is True
-        assert issuer.tels.put(keys=snKey(vcdig, sn + 3), val=rdig.qb64b) is True
+        assert issuer.tels.putOn(keys=vcdig, on=sn, val=idig.qb64b) is True
+        assert issuer.tels.putOn(keys=vcdig, on=sn + 1, val=rdig.qb64b) is True
+        assert issuer.tels.putOn(keys=vcdig, on=sn + 2, val=idig.qb64b) is True
+        assert issuer.tels.putOn(keys=vcdig, on=sn + 3, val=rdig.qb64b) is True
 
         result = [(sn, dig) for _, sn, dig in issuer.tels.getAllItemIter(keys=vcdig)]
         assert result == [(0, idig.qb64), (1, rdig.qb64), (2, idig.qb64), (3, rdig.qb64)]
@@ -329,21 +329,21 @@ def test_clone():
         dgkey = dgKey(regk, vdig.qb64b)
         snkey = snKey(regk, sn)
         assert issuer.tvts.put(keys=dgkey, val=vcpb) is True
-        assert issuer.tels.put(keys=snkey, val=vdig.qb64b)
+        assert issuer.tels.putOn(keys=regk, on=sn, val=vdig.qb64b)
         assert issuer.ancs.put(keys=dgkey, val=(number01, diger01)) is True
         assert issuer.tibs.pin(keys=(regk, vdig.qb64b), vals=[indexing.Siger(qb64b=tib01)]) is True
 
         dgkey = dgKey(regk, r1dig.qb64b)
         snkey = snKey(regk, sn + 1)
         assert issuer.tvts.put(keys=dgkey, val=rot1b) is True
-        assert issuer.tels.put(keys=snkey, val=r1dig.qb64b)
+        assert issuer.tels.putOn(keys=regk, on=sn + 1, val=r1dig.qb64b)
         assert issuer.ancs.put(keys=dgkey, val=(number02, diger02)) is True
         assert issuer.tibs.pin(keys=(regk, r1dig.qb64b), vals=[indexing.Siger(qb64b=tib02)]) is True
 
         dgkey = dgKey(regk, r2dig.qb64b)
         snkey = snKey(regk, sn + 2)
         assert issuer.tvts.put(keys=dgkey, val=rot2b) is True
-        assert issuer.tels.put(keys=snkey, val=r2dig.qb64b)
+        assert issuer.tels.putOn(keys=regk, on=sn + 2, val=r2dig.qb64b)
         assert issuer.ancs.put(keys=dgkey, val=(number03, diger03)) is True
         assert issuer.tibs.pin(keys=(regk, r2dig.qb64b), vals=[indexing.Siger(qb64b=tib03)]) is True
 
