@@ -100,8 +100,6 @@ setup(
                     'coverage>=7.13.1',
                     'pytest>=9.0.2',
                     'pytest-shell>=0.3.2',
-                    'pytest-pyodide>=0.59.0',
-                    'pytest-asyncio>=1.3.0',
                   ],
     setup_requires=[
     ],
