@@ -5,14 +5,31 @@ tests.wasm.test_webdbing_wasm module
 WASM smoke tests for WebDBer — runs inside Pyodide via pytest-pyodide.
 The workflow copies webdbing.py into this directory before running.
 """
-import sys
 import os
+import sys
+
 import pytest
 
 
-if not (os.environ.get('RUN_IN_CI') == 'true'):
-    pytest.skip("Not github WASM runner, skipping module", allow_module_level=True)
+def _wasm_runtime_requested() -> bool:
+    if os.environ.get("RUN_IN_CI") == "true":
+        return True
 
+    args = sys.argv[1:]
+    return any(
+        arg in {"--runtime", "--rt", "--run-in-pyodide"}
+        or arg.startswith("--runtime=")
+        or arg.startswith("--rt=")
+        or arg.startswith("--run-in-pyodide=")
+        for arg in args
+    )
+
+
+if not _wasm_runtime_requested():
+    pytest.skip(
+        "WASM tests require CI or explicit pytest-pyodide runtime selection",
+        allow_module_level=True,
+    )
 
 pytest_pyodide = pytest.importorskip("pytest_pyodide")
 run_in_pyodide = pytest_pyodide.run_in_pyodide
