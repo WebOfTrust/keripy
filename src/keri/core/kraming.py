@@ -1386,6 +1386,7 @@ class Kramer:
                 # Remove from pending
                 del self._pending[ctype]
 
+
     def _buildCoverageGraph(self, cf):
         """
         Construct the semantic coverage graph from a cache-type configuration.
@@ -1439,6 +1440,7 @@ class Kramer:
                 graph[ctype].add((ctype, "ANY"))
 
         return graph
+
 
     def _computeCoverageDiff(self, oldGraph, newGraph):
         """
@@ -1517,6 +1519,7 @@ class Kramer:
                 diff.append((pattern, oldCtypes, newCtypes))
 
         return diff
+
 
     def _computeWorstCaseDelta(self, diff, old, new):
         """
