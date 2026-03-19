@@ -3007,54 +3007,6 @@ class LMDBer(filing.Filer):
         return
 
 
-    #def getOnIoDupValsIter(self, db, key, on=0, sep=b'.'):
-        #"""Returns iterator of all dup IoVals at onkey = key + sep + on in db where
-        #on is serialized. This provides ordinal ordering of keys and inserion
-        #ordering of dups.
-
-        #Assumes DB opened with dupsort=True
-        #Return iterator of all duplicate values at key in db in insertion order
-        #Raises StopIteration Error when no remaining dup items = empty.
-        #Removes prepended proem ordinal from each val before returning
-        #Assumes DB opened with dupsort=True
-
-        #Duplicates at a given key preserve insertion order of duplicate.
-        #Because lmdb is lexocographic an insertion ordering proem is prepended to
-        #all values that makes lexocographic order that same as insertion order.
-
-        #Duplicates are ordered as a pair of key plus value so prepending proem
-        #to each value changes duplicate ordering. Proem is 33 characters long.
-        #With 32 character hex string followed by '.' for essentiall unlimited
-        #number of values which will be limited by memory.
-
-        #With prepended proem ordinal must explicity check for duplicate values
-        #before insertion. Uses a python set for the duplicate inclusion test.
-        #Set inclusion scales with O(1) whereas list inclusion scales with O(n).
-
-
-        #Parameters:
-            #db is opened named sub db with dupsort=True
-            #key is bytes of key within sub db's keyspace
-            #on (int): ordinal number at which to retrieve
-            #sep (bytes): separator character for split
-        #"""
-        #with self.env.begin(db=db, write=False, buffers=True) as txn:
-            #cursor = txn.cursor()
-            #if not key: # empty key so no dups
-                #return
-            #onkey = onKey(key, on, sep=sep)
-            #try:
-                #if cursor.set_key(onkey):  # moves to first_dup
-                    #for ckey, cval in cursor.iternext():  # get key, val at cursor
-                        #if not ckey == onkey:
-                            #break
-                        #yield cval[33:]  # slice off io proem
-                        ## ckey, cn = splitOnKey(ckey, sep=sep)
-            #except lmdb.BadValsizeError as ex:
-                #raise KeyError(f"Key: `{onkey}` is either empty, too big (for lmdb),"
-                                   #" or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
-
-
     def getOnIoDupLast(self, db, key, on: int = 0, *, sep=b'.'):
         """Get last added dup value at onkey = key + sep + on in db in insertion order
         Returns None no entry at key

@@ -114,7 +114,7 @@ async def test_webdber_ordinals(selenium):
     assert dber.appendOnVal(sdb, b"evt", b"third") == 2
     assert dber.getOnVal(sdb, b"evt", on=0) == b"first"
     assert dber.getOnVal(sdb, b"evt", on=1) == b"second"
-    assert dber.cntAll(sdb, b"evt") == 3
+    assert dber.cntOnAll(sdb, b"evt") == 3
 
 
 @copy_files_to_pyodide(file_list=[("webdbing.py", "/home/pyodide/webdbing.py")])
