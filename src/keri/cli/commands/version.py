@@ -7,9 +7,10 @@ import argparse
 
 from hio.base import doing
 
+from keri import __version__
+
 from ..common import Parsery, existingHby
 
-from ...kering import __version__
 
 parser = argparse.ArgumentParser(description='Print version of KLI', parents=[Parsery.keystore(required=False)])
 parser.set_defaults(handler=lambda args: handler(args))

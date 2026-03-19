@@ -10,9 +10,10 @@ import logging
 
 from hio.help import ogler
 
+from keri import __version__
+
 from ...common import Parsery, setupHby
 
-from ....kering import __version__
 from ....app import (Habery, HaberyDoer, Keeper, Configer,
                      runController, setupWitness)
 
