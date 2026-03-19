@@ -3631,6 +3631,7 @@ def test_modify_cache_types(fakeHelpingClock):
             }
         }
 
+        # New configuration increases logs route lag values and decreases ksn route values
         new_cfg = {
             "kram": {
                 "enabled": True,
