@@ -8,7 +8,7 @@ Browser-safe plain-value DBer backed by PyScript storage.
 from __future__ import annotations
 
 import json
-from collections.abc import Awaitable, Callable, Iterator
+from collections.abc import Awaitable, Callable, Iterable, Iterator
 from dataclasses import dataclass, field
 from typing import Any
 
@@ -17,6 +17,7 @@ try:
 except ImportError:  # pragma: no cover
     storage = None
 
+from ordered_set import OrderedSet as oset
 from sortedcontainers import SortedDict
 
 # The following are necessary to define in this file 
@@ -78,6 +79,64 @@ def splitOnKey(key, *, sep=b'.'):
     top, on = splitKey(key, sep=sep)
     on = int(on, 16)
     return (top, on)
+
+
+def suffix(key: Union[bytes, str, memoryview], ion: int, *, sep: Union[bytes, str]=b'.'):
+    """
+    Returns:
+       iokey (bytes): actual DB key after concatenating suffix as hex version
+       of insertion ordering ordinal int ion using separator sep.
+
+    Parameters:
+        key (Union[bytes, str]): apparent effective database key (unsuffixed)
+        ion (int)): insertion ordering ordinal for set of vals
+        sep (bytes): separator character(s) for concatenating suffix
+    """
+    if isinstance(key, memoryview):
+        key = bytes(key)
+    elif hasattr(key, "encode"):
+        key = key.encode("utf-8")  # encode str to bytes
+    if hasattr(sep, "encode"):
+        sep = sep.encode("utf-8")
+    ion =  b"%032x" % ion
+    return sep.join((key, ion))
+
+
+def unsuffix(iokey: Union[bytes, str, memoryview], *, sep: Union[bytes, str]=b'.'):
+    """
+    Returns:
+       result (tuple): (key, ion) by splitting iokey at rightmost separator sep
+            strip off suffix, where key is bytes apparent effective DB key and
+            ion is the insertion ordering int converted from stripped of hex
+            suffix
+
+    Parameters:
+        iokey (Union[bytes, str]): apparent effective database key (unsuffixed)
+        sep (bytes): separator character(s) for concatenating suffix
+    """
+    if isinstance(iokey, memoryview):
+        iokey = bytes(iokey)
+    elif hasattr(iokey, "encode"):
+        iokey = iokey.encode("utf-8")  # encode str to bytes
+    if hasattr(sep, "encode"):
+        sep = sep.encode("utf-8")
+    key, ion = iokey.rsplit(sep=sep, maxsplit=1)
+    ion = int(ion, 16)
+    return (key, ion)
+
+
+def isNonStringIterable(obj):
+    """
+    Returns:
+        (bool): True if obj is non-string iterable, False otherwise
+
+    Future proof way that is compatible with both Python3 and Python2 to check
+    for non string iterables.
+
+    Faster way that is less future proof
+    return (hasattr(x, '__iter__') and not isinstance(x, (str, bytes)))
+    """
+    return (not isinstance(obj, (str, bytes)) and isinstance(obj, Iterable))
 
 
 _RECORDS_KEY = "__records__"
@@ -813,6 +872,744 @@ class WebDBer:
             Total number of stored entries.
         """
         return len(db.items)
+
+
+    def putIoSetVals(self, db, key, vals, *, sep=b'.'):
+        """Add each val in vals to insertion ordered set of values all with the
+        same apparent effective key for each val that is not already in set of
+        vals at key.
+        Uses hidden ordinal key suffix for insertion ordering.
+        The suffix is appended and stripped transparently.
+
+        Returns:
+            result (bool): True if any val in vals is added to set.
+                          False otherwise including key not in db, empty or None
+                          or vals empty or None
+
+        Parameters:
+            db (SubDb): instance of named sub db with dupsort==False
+            key (bytes|None): Apparent effective key
+            vals (NonStrIterable|None): serialized values to add to set of vals at key
+            sep (bytes): separator character for split
+
+        """
+        raise NotImplementedError("putIoSetVals")
+
+    def pinIoSetVals(self, db, key, vals, *, sep=b'.'):
+        """Replace all vals at key with vals as insertion ordered set of
+        values all with the same apparent effective key. Does not replace if
+        key is empty or None or vals is empty or None
+
+        Uses hidden ordinal key suffix for insertion ordering.
+        The suffix is appended and stripped transparently.
+
+        Returns:
+           result (bool): True if vals replaced set.
+                          False otherwise including key not in db, empty or None
+                          or vals empty or None
+
+        Parameters:
+            db (SubDb): instance of named sub db with dupsort==False
+            key (bytes|None): Apparent effective key
+            vals (NonStrIterable|None): serialized values to add to set of vals at key
+            sep (bytes): separator character for split
+        """
+        raise NotImplementedError("pinIoSetVals")
+
+    def addIoSetVal(self, db, key, val, *, sep=b'.'):
+        """Add val to insertion ordered set of values all with the
+        same apparent effective key if val not already in set of vals at key.
+        When val None returns False
+
+        Uses hidden ordinal key suffix for insertion ordering.
+        The suffix is appended and stripped transparently.
+
+        Returns:
+           result (bool): True if val added to set.
+                          False if already in set or key is empty or None or val
+                          is None
+
+        Parameters:
+            db (SubDb): instance of named sub db with dupsort==False
+            key (bytes|None): Apparent effective key
+            val (bytes|None): serialized value to add
+            sep (bytes): separator character for split
+
+        """
+        raise NotImplementedError("addIoSetVal")
+
+    def getIoSetItemIter(self, db, key, *, ion=0, sep=b'.'):
+        """Get iterator over items in IoSet at effecive key.
+        When key is empty then returns empty iterator
+
+        Raises StopIterationError when done.
+
+        Uses hidden ordinal key suffix for insertion ordering.
+            The suffix is suffixed and unsuffixed transparently.
+
+        Returns:
+            items (Iterator): iterator over insertion ordered set
+                              items at same apparent effective key.
+                              Empty iterator when key is empty
+
+        Parameters:
+            db (SubDb): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key. raises StopIterationError when
+                         key is empty
+            ion (int): starting ordinal value, default 0
+            sep (bytes): separator character for split
+        """
+        raise NotImplementedError("getIoSetItemIter")
+
+    def getIoSetLastItem(self, db, key, *, sep=b'.'):
+        """Gets last added ioset entry item at effective key if any else empty
+        tuple.
+
+        Uses hidden ordinal key suffix for insertion ordering.
+            The suffix is suffixed and unsuffixed transparently.
+
+        Returns:
+            last ((bytes, bytes)): last added entry item at apparent
+                effective key if any, otherwise empty tuple if no entry at key
+                or if key empty
+
+        Parameters:
+            db (SubDb): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key (unsuffixed)
+            sep (bytes): separator character for split
+        """
+        raise NotImplementedError("getIoSetLastItem")
+
+    def remIoSet(self, db, key, *, sep=b'.'):
+        """Removes all set values at apparent effective key.
+        When key is empty or None or missing returns False.
+
+        Uses hidden ordinal key suffix for insertion ordering.
+            The suffix is suffixed and unsuffixed transparently.
+
+        Returns:
+            result (bool): True if values were deleted at key.
+                           False otherwise including key empty or None
+
+        Parameters:
+            db (SubDb): instance of named sub db with dupsort==False
+            key (bytes|None): Apparent effective key
+            sep (bytes): separator character for split
+        """
+        raise NotImplementedError("remIoSet")
+
+    def remIoSetVal(self, db, key, val=None, *, sep=b'.'):
+        """Removes val if any as member of set at key if any.
+        When value is None then removes all set members at key
+        When key is empty or missing returns False.
+        Uses hidden ordinal key suffix for insertion ordering.
+           The suffix is suffixed and unsuffixed transparently.
+
+        Because the insertion order of val is not provided must perform a linear
+        search over set of values.
+
+        Another problem is that vals may get added and deleted in any order so
+        the max suffix ion may creep up over time. The suffix ordinal max > 2**16
+        is an impossibly large number, however, so the suffix will not max out
+        practically.But its not the most elegant solution.
+
+        In some cases a better approach would be to use getIoSetItemsIter which
+        returns the actual iokey not the apparent effective key so can delete
+        using the iokey without searching for the value. This is most applicable
+        when processing escrows where all the escrowed items are processed linearly
+        and one needs to delete some of them in stride with their processing.
+
+        Returns:
+            result (bool): True if val at key removed when val not None
+                           or all entries at key removed when val None.
+                           False otherwise if no values at key or key is empty
+                           or val not found.
+
+        Parameters:
+            db (SubDb): instance of named sub db with dupsort==False
+            key (bytes): val(int|None): value to remove if any.
+                           None means remove all entries at onkey
+            val (bytes|None): value to delete
+            sep (bytes): separator character for split
+        """
+        raise NotImplementedError("remIoSetVal")
+
+    def cntIoSet(self, db, key, *, ion=0, sep=b'.'):
+        """Count set entries at onkey = key + sep + on for ion >= ion.
+        Count beginning with entry at insertion offset ion.
+        Count is zero if key not in db or ion greater than whats in set.
+
+        Uses hidden ordinal key suffix for insertion ordering.
+            The suffix is suffixed and unsuffixed transparently.
+
+        Returns:
+            count (int): count values in set at apparent effective key
+
+        Parameters:
+            db (SubDb): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key
+            ion (int): starting ordinal value, default 0
+            sep (bytes): separator character for split
+        """
+        raise NotImplementedError("cntIoSet")
+
+    def getTopIoSetItemIter(self, db, top=b'', *, sep=b'.'):
+        """Iterates over top branch of all insertion ordered set values where each
+        effective key has hidden suffix of serialization of insertion
+        ordering ordinal ion. When top is empty then iterates over whole db.
+
+        Uses hidden ordinal key suffix for insertion ordering.
+            The suffix is suffixed and unsuffixed transparently.
+
+        Returns:
+            items (Iterator[(key,val)]): iterator of tuples (key, val) where
+                                         key is apparent key with hidden
+                                         insertion ordering suffixe removed
+                                         from effective key.
+
+        Parameters:
+            db (SubDb): instance of named sub db with dupsort==False
+            top (bytes): truncated top key, a key space prefix to get all the items
+                        from multiple branches of the key space. If top key is
+                        empty then gets all items in database.
+            sep (bytes): sep character for attached io suffix
+
+        Uses python .startswith to match which always returns True if top is
+        empty string so empty will matches all keys in db.
+        """
+        for iokey, val in self.getTopItemIter(db=db, top=top):
+            key, ion = unsuffix(iokey, sep=sep)
+            yield (key, val)
+
+    
+    def getIoSetLastItemIterAll(self, db, key=b'', *, sep=b'.'):
+        """Iterates over every last added ioset entry at every effective key
+        starting at key greater or equal to key.
+        When key is empty then iterates over whole db.
+
+        Raises StopIterationError when done.
+
+        Uses hidden ordinal key suffix for insertion ordering.
+            The suffix is suffixed and unsuffixed transparently.
+
+        Returns:
+            last (Iterator): last added entry item at tuple (key, val)
+                             at apparent effective key for all
+                             key >= key. When key empty then iterates
+                             over all keys in db
+
+        Parameters:
+            db (SubDb): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key
+            sep (bytes): separator character for split
+        """
+        raise NotImplementedError("getIoSetLastItemIterAll")
+
+    def getIoSetLastIterAll(self, db, key=b'', *, sep=b'.'):
+        """Iterates over every last added ioset entry at every effective key
+        starting at key greater or equal to key.
+        When key is empty then iterates over whole db.
+
+        Raises StopIterationError when done.
+
+        Uses hidden ordinal key suffix for insertion ordering.
+            The suffix is suffixed and unsuffixed transparently.
+
+        Returns:
+            last (Iterator): last added entry val at apparent effective
+                        key for all key >= key. When key empty then iterates
+                        over all keys in db
+
+        Parameters:
+            db (SubDb): instance of named sub db with dupsort==False
+            key (bytes): Apparent effective key
+            sep (bytes): separator character for split
+        """
+        for key, val in self.getIoSetLastItemIterAll(db=db, key=key, sep=sep):
+            yield val
+
+
+    # methods for OnIoSet that adds IoSet key suffix after On ordinal numbered
+    # tail to support external ordinal order key space with hidden insertion ordered
+    # sets of values at each effective key.
+
+    # this is so we do the suffix add/strip here not in some higher level class
+    # like suber
+
+    def putOnIoSetVals(self, db, key, *, on=0, vals=None, sep=b'.'):
+        """Add idempotently each val from list of bytes vals to set of entries
+        at onkey = key + sep + on.  Does not add if key is empty or None
+        Each unique entry in set at each on is serialized in db in insertion order
+        using hidden IO suffix for each onkey.
+
+        Returns:
+            result (bool): True if any val in vals is added to set.
+                           False otherwise including key not in db, empty or None
+                           or vals empty or None
+
+        Parameters:
+            db (SubDb): instance of named sub db with dupsort==False
+            key (bytes|None): base key
+            on (int): ordinal number to add to key form onkey
+            vals (NonStrIterable|None): serialized values to add to set of vals at
+                                    effective key if any. None returns False
+            sep (bytes): separator character for split
+
+        Set of values at a given effective key preserve insertion order.
+        Because lmdb is lexocographic an insertion ordering suffix is appended to
+        all keys that makes lexocographic order the same as insertion order.
+
+        Suffix is 33 characters long consisting of sep '.' followed by 32 char
+        hex string for essentially unlimited number of values in each set
+        only limited by memory.
+
+        With appended suffix ordinal must explicity check for duplicate values
+        in set before insertion. Uses a python set for the duplicate inclusion test.
+        Set inclusion scales with O(1) whereas list inclusion scales with O(n).
+
+        Uses hidden ordinal key suffix for insertion ordering which is
+        transparently suffixed and unsuffixed
+        Assumes DB opened with dupsort=False
+        """
+        if not key:
+            return False
+        return self.putIoSetVals(db=db,
+                                 key=onKey(key, on, sep=sep),
+                                 vals=vals, sep=sep)
+
+
+    def pinOnIoSetVals(self, db, key, *, on=0, vals=None, sep=b'.'):
+        """Replace all vals if any at onkey = key + sep + one with vals as
+        insertion ordered set of values all with the same onkey.
+        Does not replace if key is empty or None or vals is empty or None
+
+        Returns:
+           result (bool): True if vals replaced set.
+                          False otherwise including key not in db, empty or None
+                          or vals empty or None
+
+        Parameters:
+            db (SubDb): instance of named sub db with dupsort==False
+            key (bytes|None): base key
+            vals (NonStrIterable|None): serialized values to replace vals at key
+            on (int): ordinal number to add to key form onkey
+            sep (bytes): separator character for split
+
+        Assumes DB opened with dupsort=False
+
+        Set of values at a given effective key preserve insertion order.
+        Because lmdb is lexocographic an insertion ordering suffix is appended to
+        all keys that makes lexocographic order the same as insertion order.
+
+        Suffix is 33 characters long consisting of sep '.' followed by 32 char
+        hex string for essentially unlimited number of values in each set
+        only limited by memory.
+
+        With appended suffix ordinal must explicity check for duplicate values
+        in set before insertion. Uses a python set for the duplicate inclusion test.
+        Set inclusion scales with O(1) whereas list inclusion scales with O(n).
+
+        Uses hidden ordinal key suffix for insertion ordering which is
+        transparently suffixed and unsuffixed
+        Assumes DB opened with dupsort=False
+        """
+        if not key:
+            return False
+        return self.pinIoSetVals(db=db, key=onKey(key, on, sep=sep), vals=vals, sep=sep)
+
+
+    def appendOnIoSetVals(self, db, key, vals, *, sep=b'.'):
+        """Appends set vals in order after last previous onkey = key + sep + on
+        as new entry at at new onkey. New on for new onkey is one greater than
+        last prior on for given key in db.
+        The onkey of the appended entry is one greater than last prior on for
+        key in db.
+
+        Returns:
+            on (int): ordinal number of new onkey for newly appended set of vals.
+                    Raises ValueError when unsuccessful append including when
+                    key is empty or None or vals is empty or None
+
+        Parameters:
+            db (SubDb): named sub db
+            key (bytes): key within sub db's keyspace plus trailing part on
+            vals (NonStrIterable): values to append as set at new on
+            sep (bytes): separator character for split
+
+        Starts at onkey = key + MaxOn and then walks backwards to find last
+        prior entry at key. Then increments on and appends new entry with val
+        Otherwise create new zeroth on entry at key.
+
+        Uses hidden ordinal key suffix for insertion ordering which is
+        transparently suffixed and unsuffixed
+        Assumes DB opened with dupsort=False
+        """
+        raise NotImplementedError("appendOnIoSetVals")
+
+    def addOnIoSetVal(self, db, key, *, on=0, val=None, sep=b'.'):
+        """Add val to insertion ordered set of values at onkey = key + on,
+        when val not already in set of vals at key and key is not empty or None
+        and val is not None.
+
+        Returns:
+           result (bool): True if val added to set.
+                          False if already in set or key is empty or None or val
+                          is None
+
+        Parameters:
+            db (SubDb): instance of named sub db with dupsort==False
+            key (bytes|None): base key
+            on (int): ordinal number at which to add to key form effective key
+            val (bytes|None): serialized value to add
+            sep (bytes): separator character for split
+
+        With appended suffix ordinal must explicity check for duplicate values
+        in set before insertion. Uses a python set for the duplicate inclusion test.
+        Set inclusion scales with O(1) whereas list inclusion scales with O(n).
+
+        Uses hidden ordinal key suffix for insertion ordering which is
+        transparently suffixed and unsuffixed
+        Assumes DB opened with dupsort=False
+        """
+        # val of None will return False
+        return self.addIoSetVal(db=db, key=onKey(key, on, sep=sep), val=val, sep=sep)
+
+
+    def getOnIoSetItemIter(self, db, key, *, on=0, ion=0, sep=b'.'):
+        """Get iterator of all set vals at onkey = key + sep + on in db starting
+        at insertion order ion within set This provides ordinal ordering of
+        keys and inserion ordering of set vals.
+        When key is empty then returns empty iterator
+
+        Returns:
+            ioset (Iterator): iterator over insertion ordered set of values
+                             at same apparent effective key made from key + on.
+                             Uses hidden ordinal key suffix for insertion ordering.
+                             The suffix is appended and stripped transparently.
+                             When key is empty then returns empty iterator
+
+        Raises StopIteration Error when empty.
+
+        Parameters:
+            db (SubDb): instance of named sub db with dupsort==False
+            key (bytes): base key. When key is empty then returns empty iterator
+            on (int): ordinal number at which to add to key form effective key
+            ion (int): starting insertion ordinal value, default 0
+            sep (bytes): separator character for split
+
+        Uses hidden ordinal key suffix for insertion ordering which is
+        transparently suffixed and unsuffixed
+        Assumes DB opened with dupsort=False
+        """
+        for onkey, val in self.getIoSetItemIter(db=db,
+                                         key=onKey(key, on, sep=sep),
+                                         ion=ion,
+                                         sep=sep):
+            k, o = splitOnKey(onkey, sep=sep)
+            yield (k, o, val)
+
+
+    def getOnIoSetLastItem(self, db, key, on=0, *, sep=b'.'):
+        """Gets item (key, val) of last member of the insertion ordered set
+        at key + sep + on
+
+        Returns:
+            last (tuple[tuple, int, str]): last set item triple at onkey
+                 (keys, on, val)
+                 Empty tuple () if onkey not in db or key empty.
+
+        Parameters:
+            db (SubDb): named sub db
+            key (bytes): key within sub db's keyspace plus trailing part on
+                when key is empty then retrieves whole db
+            on (int): ordinal number at which to initiate retrieval
+            sep (bytes): separator character for split
+
+        Uses hidden ordinal key suffix for insertion ordering which is
+        transparently suffixed and unsuffixed
+        Assumes DB opened with dupsort=False
+        """
+        if last := self.getIoSetLastItem(db=db,
+                                         key=onKey(key, on, sep=sep),
+                                         sep=sep):
+            onkey, val = last
+            key, on = splitOnKey(onkey, sep=sep)
+            return (key, on, val)
+        return ()
+
+
+    def remOnIoSetVal(self, db, key, *, on=0, val=None, sep=b'.'):
+        """Removes val if any as member of set at onkey = key + sep + on.
+        When val is None then removes all set members at onkey.
+        When key is empty or None or missing returns False.
+
+        Uses hidden ordinal key suffix for insertion ordering.
+        The suffix is suffixed and unsuffixed transparently.
+
+        Because the insertion order of val is not provided must perform a linear
+        search over set of values.
+
+        Another problem is that vals may get added and deleted in any order so
+        the max suffix ion may creep up over time. The suffix ordinal max > 2**16
+        is an impossibly large number, however, so the suffix will not max out
+        practically.But its not the most elegant solution.
+
+        In some cases a better approach would be to use getIoSetItemsIter which
+        returns the actual iokey not the apparent effective key so can delete
+        using the iokey without searching for the value. This is most applicable
+        when processing escrows where all the escrowed items are processed linearly
+        and one needs to delete some of them in stride with their processing.
+
+        Returns:
+            result (bool): True if val at onkey removed when val not None
+                           or all entries at onkey removed when val None.
+                           False otherwise if no values at onkey or key is empty
+                           or val not found.
+
+        Parameters:
+            db (SubDb): instance of named sub db with dupsort==False
+            key (bytes): base key. When key is empty returns False
+            on (int): ordinal number at which to add to key form effective key
+            val(int|None): value to remove if any.
+                           None means remove all entries at onkey
+            sep (bytes): separator character for split
+
+        Uses hidden ordinal key suffix for insertion ordering which is
+        transparently suffixed and unsuffixed
+        Assumes DB opened with dupsort=False
+        """
+        return self.remIoSetVal(db, key=onKey(key, on, sep=sep), val=val, sep=sep)
+
+
+    def remOnAllIoSet(self, db, key=b"", on=0, *, sep=b'.'):
+        """Removes all set members at onkey for all on >= on where for each on,
+        onkey = key + sep + on
+        When on is 0, default, then deletes all on at key.
+        When key is empty then deletes whole db.
+
+        Returns:
+           result (bool): True if any entries deleted
+                          False otherwise
+
+        Parameters:
+            db (SubDb): instance of named sub db with dupsort==False
+            key (bytes): base key
+            on (int): ordinal number at which to add to key form effective key
+                      0 means to delete all on
+            sep (bytes): separator character for split
+
+        Uses hidden ordinal key suffix for insertion ordering which is
+        transparently suffixed and unsuffixed
+        Assumes DB opened with dupsort=False
+        """
+        raise NotImplementedError("remOnAllIoSet")
+
+    def cntOnIoSet(self, db, key, *, on=0, ion=0, sep=b'.'):
+        """Count set values at onkey made from onkey = key + on starting at
+        ion offset within set at onkey.
+        Count = 0 if onkey not in db.
+
+        Returns:
+            count (int): count values in set at effective onkey
+
+        Parameters:
+            db (SubDb): instance of named sub db with dupsort==False
+            key (bytes): base key
+            on (int|None): ordinal number at which to add to key form onkey
+            ion (int): starting ordinal value, default 0
+            sep (bytes): separator character for split
+
+        Uses hidden ordinal key suffix for insertion ordering which is
+        transparently suffixed and unsuffixed
+        Assumes DB opened with dupsort=False
+        """
+        return self.cntIoSet(db=db, key=onKey(key, on, sep=sep), ion=ion, sep=sep)
+
+
+    def cntOnAllIoSet(self, db, key=b"", *, on=0, sep=b'.'):
+        """Counts all entries of each set at each onkey for all on >= on
+        where for each on, onkey = key + sep + on.
+        Count includes all set members at all matching onkeys.
+        When on = 0, default, then count all set members for all on for key
+        When key is empty then count all on for all key i.e. whole db
+
+        Returns:
+            count (int): count of set members for onkey for on >= on. When on is
+                         None then count of all on for key. When key is empty
+                         then count of all on for all key for whole db.
+
+        Parameters:
+            db (SubDb): instance of named sub db with dupsort==False
+            key (bytes): base key
+            on (int): ordinal number at which to add to key form onkey
+            sep (bytes): separator character for split
+
+        Uses hidden ordinal key suffix for insertion ordering which is
+        transparently suffixed and unsuffixed
+        """
+        raise NotImplementedError("cntOnAllIoSet")
+
+    def getOnTopIoSetItemIter(self, db, top=b'', *, sep=b'.'):
+        """Iterates over top branch of all insertion ordered set values where
+        each key startwith top. When top is empty then iterates over whole db.
+        Assumes every effective key in db has trailing on element,
+        onkey = key + sep + on, so can return on in item.
+        Also assumes every effective key includes hiddion insertion ordinal ion
+        suffix that is suffixed and unsuffixed transparently.
+
+        Items are triples of (keys, on, val)
+
+        Returns:
+            items (Iterator[(str, int, bytes)]): iterator of triples (key, on, val)
+                where key base key, on is int, and val is entry value of
+                with insertion ordering suffix removed from effective key.
+
+        Parameters:
+            db (SubDb): instance of named sub db with dupsort==False
+            top (bytes): truncated top key, a key space prefix to get all the items
+                        from multiple branches of the key space. If top key is
+                        empty then gets all items in database.
+            key (bytes): base key
+            sep (bytes): separator character for split
+
+        Uses python .startswith to match which always returns True if top is
+        empty string so empty will matches all keys in db.
+
+        Uses hidden ordinal key suffix for insertion ordering which is
+        transparently suffixed and unsuffixed
+        Assumes DB opened with dupsort=False
+        """
+        for onkey, val in self.getTopIoSetItemIter(db=db, top=top, sep=sep):
+            key, on = splitOnKey(onkey, sep=sep)
+            yield (key, on, val)
+
+            
+    def getOnAllIoSetItemIter(self, db, key=b'', on=0, *, sep=b'.'):
+        """Iterates over each item of each set for all on >= on for key.
+        When on == 0, default, then iterates over all items for all on for key.
+        When key is empty then iterates over all items for whole db.
+
+        Each effecive onkey = key + sep + on.
+        Items are triples of (key, on, val)
+
+        Entries are sorted by onKey(key, on) where on
+        is ordinal number int and key is prefix sans on.
+
+        The set at each entry is sorted internally by hidden suffixed insertion
+        ordering ordinal
+
+        Raises StopIteration Error when done.
+
+        Returns:
+            items (Iterator[(key, int, bytes)]): iterator of triples
+                (key, on, val)
+                where key forms base key, on is int, and val is entry value at
+                with insertion ordering suffix removed from effective key.
+
+        Parameters:
+            db (SubDb): named sub db
+            key (bytes): key within sub db's keyspace plus trailing part on
+                when key is empty then retrieves whole db
+            on (int): ordinal number at which to initiate retrieval
+            sep (bytes): separator character for split
+
+        Uses hidden ordinal key suffix for insertion ordering which is
+        transparently suffixed and unsuffixed
+        Assumes DB opened with dupsort=False
+        """
+        raise NotImplementedError("getOnAllIoSetItemIter")
+
+    def getOnAllIoSetLastItemIter(self, db, key=b'', on=0, *, sep=b'.'):
+        """Iterates over last items of each set for all on >= on at key
+        When on ==0, default, iterates over last items of each set for all on at key
+        When key is empty then iterates over last items of all sets  in whole db
+
+        Each effecive onkey = key + sep + on.
+        Items are triples of (key, on, val)
+
+        Entries are sorted by onKey(key, on) where on
+        is ordinal number int and key is prefix sans on.
+
+        The set at each entry is sorted internally by hidden suffixed insertion
+        ordering ordinal
+
+        Raises StopIteration Error when done.
+
+        Returns:
+            last (Iterator[(bytes, int, bytes)]): triples of (key, on, val)
+
+        Parameters:
+            db (SubDb): named sub db
+            key (bytes): base key, empty defaults to whole database
+            on (int): ordinal number at which to initiate retrieval
+            sep (bytes): separator character for split
+
+        Uses hidden ordinal key suffix for insertion ordering which is
+        transparently suffixed and unsuffixed
+        Assumes DB opened with dupsort=False
+        """
+        raise NotImplementedError("getOnAllIoSetLastItemIter")
+
+    def getOnAllIoSetItemBackIter(self, db, key=b"", on=None, *, sep=b'.'):
+        """Iterates backwards over all set items for all on <= on for key.
+        When on is None, iterates backwards over all set items for all on for key
+        When key is empty then iterates backwards over whole db
+
+        Returned items are triples of (key, on, val)
+
+        Raises StopIterationError when done or when key empty or None
+
+        Backwards means decreasing numerical value of ion, for each on and
+        decreasing numerical value on for each key and decreasing lexocographic
+        order of each key.
+
+        Returns:
+            items (Iterator[(bytes, int, bytes)]): triples of (key, on, val)
+
+        Parameters:
+            db (SubDb): named sub db
+            key (bytes): base key. When empty then whole db
+            on (int|None): ordinal number at which to initiate retrieval
+                           when on is None then all on starting at greatest
+            sep (bytes): separator character for split
+
+        Uses hidden ordinal key suffix for insertion ordering which is
+        transparently suffixed and unsuffixed
+        Assumes DB opened with dupsort=False
+        """
+        raise NotImplementedError("getOnAllIoSetItemBackIter")
+
+    def getOnAllIoSetLastItemBackIter(self, db, key=b"", on=None, *, sep=b'.'):
+        """Iterates backwards over last set items for all on <= on for key.
+        When on is None iterates backwards over last set items for all on for key
+        When key is empty then iterates backwards over last set items for whole db
+        starting at last item in db
+
+        Returned items are triples of (key, on, val)
+
+        Raises StopIterationError when done or when key empty or None
+
+        Backwards means decreasing numerical value of each ion, for each on and
+        decreasing numerical value of each on for each key and decreasing lexocographic
+        value of each key.
+
+        Returns:
+            items (Iterator[(bytes, int, bytes)]): triples of (key, on, val)
+
+        Parameters:
+            db (SubDb): named sub db
+            key (bytes): base key. When empty then whole db
+            on (int|None): ordinal number at which to initiate retrieval
+                           when on is None then all on starting at greatest
+            sep (bytes): separator character for split
+
+        Uses hidden ordinal key suffix for insertion ordering which is
+        transparently suffixed and unsuffixed
+        Assumes DB opened with dupsort=False
+        """
+        raise NotImplementedError("getOnAllIoSetLastItemBackIter")
+
+    #  End OnIoSet support methods
 
 
 def _serialize_records(records: dict | Any) -> str:
