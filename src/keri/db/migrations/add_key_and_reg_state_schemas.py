@@ -98,7 +98,7 @@ def migrate(db):
 
         for (said,), _ in rgy.saved.getTopItemIter():
             snkey = dbing.snKey(said, 0)
-            dig = rgy.tels.getOn(keys=said, on=0)
+            dig = rgy.tels.get(keys=said, on=0)
 
             prefixer = coring.Prefixer(qb64=said)
             number = coring.Number(sn=0)

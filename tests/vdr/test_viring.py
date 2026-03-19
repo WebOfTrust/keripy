@@ -106,15 +106,15 @@ def test_issuer():
         assert issuer.tvts.get(keys=key) is None
 
         #telKey = snKey(regk, sn)
-        assert issuer.tels.getOn(keys=regk, on=sn) is None  # default on =0
-        assert issuer.tels.remOn(keys=regk, on=sn) is False
+        assert issuer.tels.get(keys=regk, on=sn) is None  # default on =0
+        assert issuer.tels.rem(keys=regk, on=sn) is False
         assert issuer.tels.put(keys=regk, on=sn, val=vdig.qb64b)
-        assert issuer.tels.getOn(keys=regk, on=sn) == vdig.qb64
+        assert issuer.tels.get(keys=regk, on=sn) == vdig.qb64
         assert issuer.tels.put(keys=regk, on=sn, val=vdig.qb64b) is False
         assert issuer.tels.pin(keys=regk, on=sn, val=vdig.qb64b) is True
-        assert issuer.tels.getOn(keys=regk, on=sn) == vdig.qb64
-        assert issuer.tels.remOn(keys=regk, on=sn) is True
-        assert issuer.tels.getOn(keys=regk, on=sn) is None
+        assert issuer.tels.get(keys=regk, on=sn) == vdig.qb64
+        assert issuer.tels.rem(keys=regk, on=sn) is True
+        assert issuer.tels.get(keys=regk, on=sn) is None
 
         # Tibs store Siger instances; use valid Siger bytes and distinct indices
         valid_tib_bytes = (b'AAAUr5RHYiDH8RU0ig-2Dp5h7rVKx89StH5M3CL60-cWEbgG-XmtW31pZlFicYgSPduJZUnD838_'
@@ -148,25 +148,25 @@ def test_issuer():
             assert issuer.tibs.rem(keys=(regk, vdig.qb64b), val=c) is True
         assert issuer.tibs.get(keys=(regk, vdig.qb64b)) == []
 
-        assert issuer.twes.getOn(keys=regk, on=sn) == []
-        assert issuer.twes.remOn(keys=regk, on=sn) is False
+        assert issuer.twes.get(keys=regk, on=sn) == []
+        assert issuer.twes.rem(keys=regk, on=sn) is False
         assert issuer.twes.put(keys=regk, on=sn, vals=vdig.qb64b)
-        assert issuer.twes.getOn(keys=regk, on=sn)[0].encode("utf-8") == vdig.qb64b
+        assert issuer.twes.get(keys=regk, on=sn)[0].encode("utf-8") == vdig.qb64b
         assert issuer.twes.put(keys=regk, on=sn, vals=vdig.qb64b) is False
         assert issuer.twes.pin(keys=regk, on=sn, vals=vdig.qb64b) is True
-        assert issuer.twes.getOn(keys=regk, on=sn)[0].encode("utf-8") == vdig.qb64b
-        assert issuer.twes.remOn(keys=regk, on=sn) is True
-        assert issuer.twes.getOn(keys=regk, on=sn) == []
+        assert issuer.twes.get(keys=regk, on=sn)[0].encode("utf-8") == vdig.qb64b
+        assert issuer.twes.rem(keys=regk, on=sn) is True
+        assert issuer.twes.get(keys=regk, on=sn) == []
 
-        assert issuer.oots.getOn(keys=regk, on=sn) == []
-        assert issuer.oots.remOn(keys=regk, on=sn) is False
+        assert issuer.oots.get(keys=regk, on=sn) == []
+        assert issuer.oots.rem(keys=regk, on=sn) is False
         assert issuer.oots.put(keys=regk, on=sn, vals=vdig.qb64b)
-        assert issuer.oots.getOn(keys=regk, on=sn)[0].encode("utf-8") == vdig.qb64b
+        assert issuer.oots.get(keys=regk, on=sn)[0].encode("utf-8") == vdig.qb64b
         assert issuer.oots.put(keys=regk, on=sn, vals=vdig.qb64b) is False
         assert issuer.oots.pin(keys=regk, on=sn, vals=vdig.qb64b) is True
-        assert issuer.oots.getOn(keys=regk, on=sn)[0].encode("utf-8") == vdig.qb64b
-        assert issuer.oots.remOn(keys=regk, on=sn) is True
-        assert issuer.oots.getOn(keys=regk, on=sn) == []
+        assert issuer.oots.get(keys=regk, on=sn)[0].encode("utf-8") == vdig.qb64b
+        assert issuer.oots.rem(keys=regk, on=sn) is True
+        assert issuer.oots.get(keys=regk, on=sn) == []
 
         key = dgKey(regk, vdig.qb64b)
         number = Number(num=0)
@@ -226,15 +226,15 @@ def test_issuer():
         assert issuer.tvts.get(keys=key) is None
 
         telKey = snKey(vcdig, sn)
-        assert issuer.tels.getOn(keys=vcdig, on=sn) is None
-        assert issuer.tels.remOn(keys=vcdig, on=sn) is False
+        assert issuer.tels.get(keys=vcdig, on=sn) is None
+        assert issuer.tels.rem(keys=vcdig, on=sn) is False
         assert issuer.tels.put(keys=vcdig, on=sn, val=idig.qb64b)
-        assert issuer.tels.getOn(keys=vcdig, on=sn) == idig.qb64
+        assert issuer.tels.get(keys=vcdig, on=sn) == idig.qb64
         assert issuer.tels.put(keys=vcdig, on=sn, val=idig.qb64b) is False
         assert issuer.tels.pin(keys=vcdig, on=sn, val=idig.qb64b) is True
-        assert issuer.tels.getOn(keys=vcdig, on=sn) == idig.qb64
-        assert issuer.tels.remOn(keys=vcdig, on=sn) is True
-        assert issuer.tels.getOn(keys=vcdig, on=sn) is None
+        assert issuer.tels.get(keys=vcdig, on=sn) == idig.qb64
+        assert issuer.tels.rem(keys=vcdig, on=sn) is True
+        assert issuer.tels.get(keys=vcdig, on=sn) is None
 
         rev = dict(v=vs, i=vcdig.decode("utf-8"),
                    s="{:x}".format(sn + 1),

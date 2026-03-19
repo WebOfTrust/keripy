@@ -1130,7 +1130,7 @@ class ReceiptEnd(doing.DoDoer):
             raise falcon.HTTPBadRequest(description="either 'sn' or 'said' query param is required")
 
         if sn is not None:
-            said = self.hab.db.kels.getOnLast(keys=preb, on=sn)
+            said = self.hab.db.kels.getLast(keys=preb, on=sn)
         if said is None:
             raise falcon.HTTPNotFound(description=f"event for {pre} at {sn} ({said}) not found")
         said = said.encode("utf-8")
@@ -1245,7 +1245,7 @@ class QueryEnd:
 
             sn = req.get_param_as_int("sn")
             if sn is not None: ## query for event with seq-num >= sn
-                dig = self.hab.db.kels.getOnLast(keys=pre, on=sn)
+                dig = self.hab.db.kels.getLast(keys=pre, on=sn)
                 if dig is None:
                     raise falcon.HTTPBadRequest(description=f"non-existant event at seq-num {sn}")
                 for dig in self.hab.db.kels.getAllIter(keys=pre, on=sn):

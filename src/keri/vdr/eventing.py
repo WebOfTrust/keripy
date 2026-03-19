@@ -1124,7 +1124,7 @@ class Tever:
         # have to compare with VC issuance serder
         vci = vcpre
 
-        dig = self.reger.tels.getOn(keys=vci, on=sn - 1)
+        dig = self.reger.tels.get(keys=vci, on=sn - 1)
         ievt = self.reger.tvts.get(keys=(vci, dig))
         if ievt is None:
             raise ValidationError("revoke without issue... probably have to escrow")
@@ -1231,7 +1231,7 @@ class Tever:
             int: current TEL sequence number of credential or None if not found
 
         """
-        cnt = self.reger.tels.cntOnAll(keys=vci)
+        cnt = self.reger.tels.cntAll(keys=vci)
 
         return None if cnt == 0 else cnt - 1
 
@@ -1346,7 +1346,7 @@ class Tever:
         if seqner is None or saider is None:
             return False
 
-        dig = self.db.kels.getOnLast(keys=self.pre, on=seqner.sn)
+        dig = self.db.kels.getLast(keys=self.pre, on=seqner.sn)
         if not dig:
             return False
         else:
@@ -1805,7 +1805,7 @@ class Tevery:
         if not accepted:
             raise UnverifiedReplyError(f"Unverified registry txn state reply.")
 
-        ldig = self.reger.tels.getOn(keys=regk, on=sn)  # retrieve dig of last event at sn.
+        ldig = self.reger.tels.get(keys=regk, on=sn)  # retrieve dig of last event at sn.
 
         # Only accept key state if for last seen version of event at sn
         if ldig is None:  # escrow because event does not yet exist in database
@@ -1945,7 +1945,7 @@ class Tevery:
         if not accepted:
             raise UnverifiedReplyError(f"Unverified credential state reply.")
 
-        ldig = self.reger.tels.getOn(keys=vci, on=sn)  # retrieve dig of last event at sn.
+        ldig = self.reger.tels.get(keys=vci, on=sn)  # retrieve dig of last event at sn.
 
         # Only accept key state if for last seen version of event at sn
         if ldig is None:  # escrow because event does not yet exist in database
@@ -2089,7 +2089,7 @@ class Tevery:
 
             except Exception as ex:  # log diagnostics errors etc
                 # error other than out of order so remove from OO escrow
-                self.reger.oots.remOn(keys=pre, on=sn)  # removes one escrow at key val
+                self.reger.oots.rem(keys=pre, on=sn)  # removes one escrow at key val
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Tevery OOO unescrowed: %s", ex.args[0])
                 else:
@@ -2099,7 +2099,7 @@ class Tevery:
                 # We don't remove all escrows at pre,sn because some might be
                 # duplicitous so we process remaining escrows in spite of found
                 # valid event escrow.
-                self.reger.oots.remOn(keys=pre, on=sn)  # removes from escrow
+                self.reger.oots.rem(keys=pre, on=sn)  # removes from escrow
                 logger.info("Tevery OOO unescrow succeeded in valid event: said=%s", tserder.said)
                 logger.debug("Event=\n%s\n", tserder.pretty())
 
@@ -2149,7 +2149,7 @@ class Tevery:
 
             except Exception as ex:  # log diagnostics errors etc
                 # error other than out of order so remove from OO escrow
-                self.reger.taes.remOn(keys=pre, on=sn)  # removes one escrow at key val
+                self.reger.taes.rem(keys=pre, on=sn)  # removes one escrow at key val
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Tevery ANC unescrowed: %s", ex.args[0])
                 else:
@@ -2159,7 +2159,7 @@ class Tevery:
                 # We don't remove all escrows at pre,sn because some might be
                 # duplicitous so we process remaining escrows in spite of found
                 # valid event escrow.
-                self.reger.taes.remOn(keys=pre, on=sn)  # removes from escrow
+                self.reger.taes.rem(keys=pre, on=sn)  # removes from escrow
                 logger.info("Tevery ANC unescrow succeeded in valid event: said=%s", tserder.said)
                 logger.debug("event=\n%s\n", tserder.pretty())
 
@@ -2599,7 +2599,7 @@ class Reger(dbing.LMDBer):
 
     def cloneTvtAt(self, pre, sn=0):
         snkey = snKey(pre, sn)
-        dig = self.tels.getOn(keys=pre, on=sn)
+        dig = self.tels.get(keys=pre, on=sn)
         return self.cloneTvt(pre, dig)
 
     def cloneTvt(self, pre, dig):

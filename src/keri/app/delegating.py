@@ -91,7 +91,7 @@ class Anchorer(doing.DoDoer):
         Returns:
             bool: True if delegation protocol is complete, False otherwise
         """
-        cdiger = self.hby.db.cdel.getOn(keys=prefixer.qb64b, on=number.sn)
+        cdiger = self.hby.db.cdel.get(keys=prefixer.qb64b, on=number.sn)
         if not cdiger:
             return False
         else:
