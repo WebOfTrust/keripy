@@ -3,19 +3,26 @@ import json
 from typing import Optional
 
 from hio.base import doing
+from hio.help import ogler
 
 from ...common import existing
 from ...common.parsing import Parsery
 
-from .... import core, help, kering
-from ....app import indirecting, habbing, grouping, organizing, forwarding, signing, notifying
-from ....core import coring, eventing, serdering
+from ....kering import ConfigurationError
+
+from ....app import (MailboxDirector, HaberyDoer, GroupHab, Counselor,
+                     Multiplexor, Organizer, Poster, Notifier,
+                     serialize, loadHandlers, multisigIssueExn)
+
+from ....core import (Prefixer, Number, Diger, SealEvent,
+                      SerderKERI, SerderACDC, NumDex)
+
 from ....help import helping
-from ....peer import exchanging
-from ....vdr import credentialing, verifying
+from ....peer import Exchanger
+from ....vdr import Regery, Registrar, Credentialer, Verifier
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Issue a verifiable credential',
                                  parents=[Parsery.keystore()])
@@ -57,7 +64,7 @@ def issueCredential(args):
             else:
                 data = json.loads(args.data)
         except json.JSONDecodeError:
-            raise kering.ConfigurationError("data supplied must be value JSON to issue in a credential")
+            raise ConfigurationError("data supplied must be value JSON to issue in a credential")
 
         if args.edges is not None:
             try:
@@ -67,7 +74,7 @@ def issueCredential(args):
                 else:
                     edges = json.loads(args.edges)
             except json.JSONDecodeError:
-                raise kering.ConfigurationError("edges supplied must be value JSON to issue in a credential")
+                raise ConfigurationError("edges supplied must be value JSON to issue in a credential")
         if args.rules is not None:
             try:
                 if args.rules.startswith("@"):
@@ -76,7 +83,7 @@ def issueCredential(args):
                 else:
                     rules = json.loads(args.rules)
             except json.JSONDecodeError:
-                raise kering.ConfigurationError("rules supplied must be value JSON to issue in a credential")
+                raise ConfigurationError("rules supplied must be value JSON to issue in a credential")
     elif args.credential is not None:
         try:
             if args.credential.startswith("@"):
@@ -85,9 +92,9 @@ def issueCredential(args):
             else:
                 credential = json.loads(args.credential)
         except json.JSONDecodeError:
-            raise kering.ConfigurationError("data supplied must be value JSON to issue in a credential")
+            raise ConfigurationError("data supplied must be value JSON to issue in a credential")
     else:
-        raise kering.ConfigurationError("credential or data supplied must be value JSON to issue in a credential")
+        raise ConfigurationError("credential or data supplied must be value JSON to issue in a credential")
 
     issueDoer = CredentialIssuer(name=name,
                                  alias=args.alias,
@@ -136,7 +143,7 @@ class CredentialIssuer(doing.DoDoer):
 
         """
         if schema is not None and schema == "":
-            raise kering.ConfigurationError("--schema value must not be empty.  Provide a valid qb64 SAID.")
+            raise ConfigurationError("--schema value must not be empty.  Provide a valid qb64 SAID.")
 
         self.name = name
         self.registryName = registryName
@@ -146,21 +153,21 @@ class CredentialIssuer(doing.DoDoer):
         if self.hab is None:
             raise ValueError(f"invalid alias {alias}")
 
-        self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
-        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        self.counselor = grouping.Counselor(hby=self.hby)
-        self.registrar = credentialing.Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)
-        self.org = organizing.Organizer(hby=self.hby)
-        self.postman = forwarding.Poster(hby=self.hby)
-        notifier = notifying.Notifier(self.hby)
-        mux = grouping.Multiplexor(self.hby, notifier=notifier)
-        exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        grouping.loadHandlers(exc, mux)
+        self.rgy = Regery(hby=self.hby, name=name, base=base)
+        self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
+        self.counselor = Counselor(hby=self.hby)
+        self.registrar = Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)
+        self.org = Organizer(hby=self.hby)
+        self.postman = Poster(hby=self.hby)
+        notifier = Notifier(self.hby)
+        mux = Multiplexor(self.hby, notifier=notifier)
+        exc = Exchanger(hby=self.hby, handlers=[])
+        loadHandlers(exc, mux)
 
-        self.verifier = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
-        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/credential"],
-                                          verifier=self.verifier, exc=exc)
-        self.credentialer = credentialing.Credentialer(hby=self.hby, rgy=self.rgy, registrar=self.registrar,
+        self.verifier = Verifier(hby=self.hby, reger=self.rgy.reger)
+        mbx = MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/credential"],
+                              verifier=self.verifier, exc=exc)
+        self.credentialer = Credentialer(hby=self.hby, rgy=self.rgy, registrar=self.registrar,
                                                        verifier=self.verifier)
 
         try:
@@ -190,10 +197,10 @@ class CredentialIssuer(doing.DoDoer):
                                                        private_credential_nonce=private_credential_nonce,
                                                        private_subject_nonce=private_subject_nonce)
             else:
-                self.creder = serdering.SerderACDC(sad=credential) # proving.Creder(ked=credential)
+                self.creder = SerderACDC(sad=credential) # proving.Creder(ked=credential)
                 self.credentialer.validate(creder=self.creder)
 
-        except kering.ConfigurationError as e:
+        except ConfigurationError as e:
             print(f"error issuing credential {e}")
             return
 
@@ -222,9 +229,7 @@ class CredentialIssuer(doing.DoDoer):
         dt = self.creder.attrib["dt"] if "dt" in self.creder.attrib else helping.nowIso8601()
         iserder = registry.issue(said=self.creder.said, dt=dt)
 
-        #vcid = iserder.ked["i"]
-        #rseq = coring.Seqner(snh=iserder.ked["s"])
-        rseal = eventing.SealEvent(iserder.pre, iserder.snh, iserder.said)
+        rseal = SealEvent(iserder.pre, iserder.snh, iserder.said)
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
         if registry.estOnly:
@@ -233,20 +238,20 @@ class CredentialIssuer(doing.DoDoer):
         else:
             anc = hab.interact(data=[rseal])
 
-        aserder = serdering.SerderKERI(raw=anc)
+        aserder = SerderKERI(raw=anc)
         self.credentialer.issue(self.creder, iserder)
         self.registrar.issue(self.creder, iserder, aserder)
 
-        acdc = signing.serialize(self.creder, coring.Prefixer(qb64=iserder.pre),
-                                 core.Number(num=iserder.sn, code=core.NumDex.Huge),
-                                 coring.Diger(qb64=iserder.said))
+        acdc = serialize(self.creder, Prefixer(qb64=iserder.pre),
+                         Number(num=iserder.sn, code=NumDex.Huge),
+                         Diger(qb64=iserder.said))
 
-        if isinstance(self.hab, habbing.GroupHab):
+        if isinstance(self.hab, GroupHab):
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
             smids.remove(self.hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = grouping.multisigIssueExn(ghab=self.hab, acdc=acdc, iss=iserder.raw, anc=anc)
+                exn, atc = multisigIssueExn(ghab=self.hab, acdc=acdc, iss=iserder.raw, anc=anc)
                 self.postman.send(src=self.hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",

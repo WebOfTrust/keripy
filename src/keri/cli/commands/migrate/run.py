@@ -6,14 +6,14 @@ keri.kli.commands.migrate.run module
 import argparse
 
 from hio.base import doing
-from .... import DatabaseError, help
-from ...common import Parsery
+from hio.help import ogler
 
-from .... import help
 from ....kering import DatabaseError
+
+from ...common import Parsery
 from ....db import Baser
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 def handler(args):

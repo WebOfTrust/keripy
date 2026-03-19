@@ -7,14 +7,15 @@ keri.kli.commands.contacts.rename module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
+from ...common import existingHby
 
-from .... import help, ConfigurationError
-from ....app import organizing as connecting
+from ....kering import ConfigurationError
+from ....app import Organizer
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Rename a contact alias')
 parser.set_defaults(handler=lambda args: handler(args),
@@ -52,8 +53,8 @@ def rename(tymth, tock=0.0, **opts):
         return -1
 
     try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
-            org = connecting.Organizer(hby=hby)
+        with existingHby(name=name, base=base, bran=bran) as hby:
+            org = Organizer(hby=hby)
 
             contact = None
             pre = None

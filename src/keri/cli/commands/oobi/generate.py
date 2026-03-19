@@ -7,14 +7,14 @@ import argparse
 
 import sys
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
-from ...common.parsing import Parsery
+from ...common import Parsery, existingHby, aliasInput
 
-from .... import help, kering
+from ....kering import ConfigurationError, Roles, Schemes
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Generate and print role OOBIs for the AID of the provide alias.',
                                  parents=[Parsery.keystore()])
@@ -47,41 +47,41 @@ def generate(tymth, tock=0.0, **opts):
     bran = args.bran
     role = args.role
 
-    with existing.existingHby(name=name, base=base, bran=bran) as hby:
+    with existingHby(name=name, base=base, bran=bran) as hby:
         if alias is None:
-            alias = existing.aliasInput(hby)
+            alias = aliasInput(hby)
 
         hab = hby.habByName(name=alias)
-        if role in (kering.Roles.witness,):
+        if role in (Roles.witness,):
             if not hab.kever.wits:
                 print(f"{alias} identifier {hab.pre} does not have any witnesses.")
                 sys.exit(-1)
 
             for wit in hab.kever.wits:
-                urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) \
-                       or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
+                urls = hab.fetchUrls(eid=wit, scheme=Schemes.http) \
+                       or hab.fetchUrls(eid=wit, scheme=Schemes.https)
                 if not urls:
-                    raise kering.ConfigurationError(f"unable to query witness {wit}, no http endpoint")
+                    raise ConfigurationError(f"unable to query witness {wit}, no http endpoint")
 
-                url = urls[kering.Schemes.https] if kering.Schemes.https in urls else urls[kering.Schemes.http]
+                url = urls[Schemes.https] if Schemes.https in urls else urls[Schemes.http]
                 print(f"{url.rstrip("/")}/oobi/{hab.pre}/witness")
-        elif role in (kering.Roles.controller,):
-            urls = hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.http) \
-                   or hab.fetchUrls(eid=hab.pre, scheme=kering.Schemes.https)
+        elif role in (Roles.controller,):
+            urls = hab.fetchUrls(eid=hab.pre, scheme=Schemes.http) \
+                   or hab.fetchUrls(eid=hab.pre, scheme=Schemes.https)
             if not urls:
                 print(f"{alias} identifier {hab.pre} does not have any controller endpoints")
                 return
-            url = urls[kering.Schemes.https] if kering.Schemes.https in urls else urls[kering.Schemes.http]
+            url = urls[Schemes.https] if Schemes.https in urls else urls[Schemes.http]
             print(f"{url.rstrip("/")}/oobi/{hab.pre}/controller")
-        elif role in (kering.Roles.mailbox,):
-            for (_, _, eid), end in hab.db.ends.getTopItemIter(keys=(hab.pre, kering.Roles.mailbox, )):
+        elif role in (Roles.mailbox,):
+            for (_, _, eid), end in hab.db.ends.getTopItemIter(keys=(hab.pre, Roles.mailbox, )):
                 if not (end.allowed and end.enabled is not False):
                     continue
 
-                urls = hab.fetchUrls(eid=eid, scheme=kering.Schemes.http) or hab.fetchUrls(eid=eid,
-                                                                                           scheme=kering.Schemes.https)
+                urls = hab.fetchUrls(eid=eid, scheme=Schemes.http) or hab.fetchUrls(eid=eid,
+                                                                                           scheme=Schemes.https)
                 if not urls:
                     print(f"{alias} identifier {hab.pre} does not have any mailbox endpoints")
                     return
-                url = urls[kering.Schemes.https] if kering.Schemes.https in urls else urls[kering.Schemes.http]
+                url = urls[Schemes.https] if Schemes.https in urls else urls[Schemes.http]
                 print(f"{url.rstrip("/")}/oobi/{hab.pre}/mailbox/{eid}")

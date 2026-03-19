@@ -7,16 +7,16 @@ keri.kli.commands module
 import argparse
 
 from hio.base import doing
-from hio.help import Hict
+from hio.help import Hict, ogler
 
-from ...common import Parsery, existing
+from ...common import Parsery, setupHby
 
-from .... import Roles, help
-from ....app import organizing, habbing
-from ....app.agenting import httpClient, WitnessPublisher
+from ....kering import Roles
+from ....app import (Organizer, GroupHab,
+                     WitnessPublisher, httpClient)
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Add mailbox role',
                                  parents=[Parsery.keystore()])
@@ -45,9 +45,9 @@ def add(args):
 class AddDoer(doing.DoDoer):
 
     def __init__(self, name, alias, base, bran, mailbox):
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
-        self.org = organizing.Organizer(hby=self.hby)
+        self.org = Organizer(hby=self.hby)
         self.witpub = WitnessPublisher(hby=self.hby)
 
         if mailbox in self.hby.kevers:
@@ -85,7 +85,7 @@ class AddDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        if isinstance(self.hab, habbing.GroupHab):
+        if isinstance(self.hab, GroupHab):
             raise ValueError("watchers for multisig AIDs not currently supported")
 
         kel = self.hab.replay()

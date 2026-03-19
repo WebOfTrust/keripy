@@ -7,11 +7,10 @@ import argparse
 
 from hio.base import doing
 
-from ..common import existing
-from ..common.parsing import Parsery
+from ..common import Parsery, setupHby
 
-from ...core import serdering
-from ...app import habbing, organizing, forwarding
+from ...core import SerderKERI
+from ...app import HaberyDoer, Organizer, Poster
 
 
 parser = argparse.ArgumentParser(description='Send an rpy /introduce message to recipient with OOBI',
@@ -64,10 +63,10 @@ class IntroduceDoer(doing.DoDoer):
         self.recipient = recipient
         self.role = role
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        self.org = organizing.Organizer(hby=self.hby)
-        self.postman = forwarding.Poster(hby=self.hby)
+        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
+        self.org = Organizer(hby=self.hby)
+        self.postman = Poster(hby=self.hby)
         doers = [self.hbyDoer, self.postman, doing.doify(self.introduceDo)]
 
         super(IntroduceDoer, self).__init__(doers=doers)
@@ -120,7 +119,7 @@ class IntroduceDoer(doing.DoDoer):
             oobi=oobi
         ))
 
-        serder = serdering.SerderKERI(raw=msg)
+        serder = SerderKERI(raw=msg)
         atc = msg[serder.size:]
         self.postman.send(src=hab.pre, dest=recp, topic="credential", serder=serder,
                           attachment=atc)

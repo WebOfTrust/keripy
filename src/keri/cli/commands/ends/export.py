@@ -7,15 +7,15 @@ keri.kli.commands module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
-from ...common.parsing import Parsery
+from ...common import setupHby, Parsery
 
-from .... import help, Schemes
-from ....core import eventing
+from ....kering import Schemes
+from ....core import messagize
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Export end points', 
                                  parents=[Parsery.keystore()])
@@ -40,7 +40,7 @@ class ExportDoer(doing.DoDoer):
     def __init__(self, name, base, bran, aid):
         self.aid = aid
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran)
 
         doers = [doing.doify(self.exportDo)]
 
@@ -75,9 +75,9 @@ class ExportDoer(doing.DoDoer):
                     cigar.verfer = verfer
                 else:
                     cigar = None
-                print(eventing.messagize(serder=serder,
-                                         cigars=[cigar],
-                                         sigers=sigers,
-                                         pipelined=True))
+                print(messagize(serder=serder,
+                                cigars=[cigar],
+                                sigers=sigers,
+                                pipelined=True))
 
         return True

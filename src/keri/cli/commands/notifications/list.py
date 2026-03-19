@@ -8,15 +8,14 @@ import argparse
 import json
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
+from ...common import Parsery, setupHby
 
-from .... import help
-from ....app import habbing, notifying
-from ...common.parsing import Parsery
+from ....app import HaberyDoer, Notifier
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Display notifications for an identifier',
                                  parents=[Parsery.keystore()])
@@ -48,12 +47,12 @@ def handler(args):
 class NotesDoer(doing.DoDoer):
     def __init__(self, name, base, alias, bran, verbose):
 
-        hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
+        hby = setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = HaberyDoer(habery=hby)  # setup doer
         self.alias = alias
         self.hby = hby
         self.verbose = verbose
-        self.notifier = notifying.Notifier(hby=self.hby)
+        self.notifier = Notifier(hby=self.hby)
 
         doers = [self.hbyDoer, doing.doify(self.readDo)]
 

@@ -9,20 +9,21 @@ from urllib.parse import urlparse
 
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import Parsery, existing
+from ...common import Parsery, setupHby
 
-from .... import help, ConfigurationError, Vrsn_1_0
+from .... import ConfigurationError, Vrsn_1_0
 
-from ....app import habbing, grouping, indirecting, forwarding
-from ....app.agenting import WitnessPublisher
-from ....app.notifying import Notifier
+from ....app import (GroupHab, Multiplexor, indirecting,
+                     forwarding, WitnessPublisher, Notifier,
+                     loadHandlers, multisigRpyExn)
 
-from ....core import parsing
-from ....peer import exchanging
+from ....core import Parser
+from ....peer import Exchanger
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Add new endpoint location record.', 
                                  parents=[Parsery.keystore()])
@@ -56,14 +57,14 @@ class LocationDoer(doing.DoDoer):
         self.eid = eid
         self.timestamp = timestamp
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
         self.witpub = WitnessPublisher(hby=self.hby)
         self.postman = forwarding.Poster(hby=self.hby)
         notifier = Notifier(self.hby)
-        mux = grouping.Multiplexor(self.hby, notifier=notifier)
-        exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        grouping.loadHandlers(exc, mux)
+        mux = Multiplexor(self.hby, notifier=notifier)
+        exc = Exchanger(hby=self.hby, handlers=[])
+        loadHandlers(exc, mux)
 
         mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc)
 
@@ -94,14 +95,14 @@ class LocationDoer(doing.DoDoer):
         eid = self.eid if self.eid is not None else self.hab.pre
 
         msg = self.hab.makeLocScheme(url=self.url, eid=eid, scheme=up.scheme)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytes(msg), kvy=self.hab.kvy, rvy=self.hab.rvy)
+        Parser(version=Vrsn_1_0).parse(ims=bytes(msg), kvy=self.hab.kvy, rvy=self.hab.rvy)
 
-        if isinstance(self.hab, habbing.GroupHab):
+        if isinstance(self.hab, GroupHab):
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
             smids.remove(self.hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = grouping.multisigRpyExn(ghab=self.hab, rpy=msg)
+                exn, atc = multisigRpyExn(ghab=self.hab, rpy=msg)
                 self.postman.send(src=self.hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",

@@ -7,19 +7,20 @@ keri.kli.commands module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
-from ...common.parsing import Parsery
+from ...common import setupHby, Parsery
 
-from .... import help, Vrsn_1_0, ConfigurationError
-from ....app import habbing, grouping, indirecting, forwarding
-from ....app.agenting import WitnessPublisher
-from ....app.notifying import Notifier
-from ....core import parsing
-from ....peer import exchanging
+from ....kering import Vrsn_1_0, ConfigurationError
+from ....app import (GroupHab, Multiplexor, MailboxDirector,
+                     Poster, WitnessPublisher, Notifier,
+                     loadHandlers, multisigRpyExn)
+
+from ....core import Parser
+from ....peer import Exchanger
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Add new endpoint role authorization.', 
                                  parents=[Parsery.keystore()])
@@ -54,16 +55,16 @@ class RoleDoer(doing.DoDoer):
         self.eid = eid
         self.timestamp = timestamp
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
         self.witpub = WitnessPublisher(hby=self.hby)
-        self.postman = forwarding.Poster(hby=self.hby)
+        self.postman = Poster(hby=self.hby)
         notifier = Notifier(self.hby)
-        mux = grouping.Multiplexor(self.hby, notifier=notifier)
-        exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        grouping.loadHandlers(exc, mux)
+        mux = Multiplexor(self.hby, notifier=notifier)
+        exc = Exchanger(hby=self.hby, handlers=[])
+        loadHandlers(exc, mux)
 
-        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc)
+        mbx = MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc)
 
         if self.hab is None:
             raise ConfigurationError(f"unknown alias={alias}")
@@ -93,14 +94,14 @@ class RoleDoer(doing.DoDoer):
         route = "/end/role/add"
         msg = self.hab.reply(route=route, data=data, stamp=self.timestamp)
 
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytes(msg), kvy=self.hab.kvy, rvy=self.hab.rvy)
+        Parser(version=Vrsn_1_0).parse(ims=bytes(msg), kvy=self.hab.kvy, rvy=self.hab.rvy)
 
-        if isinstance(self.hab, habbing.GroupHab):
+        if isinstance(self.hab, GroupHab):
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
             smids.remove(self.hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = grouping.multisigRpyExn(ghab=self.hab, rpy=msg)
+                exn, atc = multisigRpyExn(ghab=self.hab, rpy=msg)
                 self.postman.send(src=self.hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",

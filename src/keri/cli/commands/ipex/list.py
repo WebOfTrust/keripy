@@ -12,16 +12,18 @@ import json
 import sys
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import Parsery, existing, terming
+from ...common import (Parsery, Colors, Symbols,
+                       setupHby, aliasInput)
 
-from .... import ConfigurationError
-from ....app import indirecting, notifying, organizing
-from ....core import scheming
-from ....help import helping, ogler
-from ....peer import exchanging
-from ....vc import protocoling, Ipex
-from ....vdr import credentialing, verifying
+from ....kering import ConfigurationError
+from ....app import MailboxDirector, Notifier, Organizer
+from ....core import Schemer
+from ....help import helping
+from ....peer import Exchanger, cloneMessage
+from ....vc import loadHandlers, Ipex
+from ....vdr import Regery, Verifier
 
 
 logger = ogler.getLogger()
@@ -67,18 +69,18 @@ class ListDoer(doing.DoDoer):
         self.sent = sent
         self.notes = []
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran)
         if alias is None:
-            alias = existing.aliasInput(self.hby)
+            alias = aliasInput(self.hby)
 
         self.hab = self.hby.habByName(alias)
-        self.notifier = notifying.Notifier(hby=self.hby)
-        self.org = organizing.Organizer(hby=self.hby)
-        self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
-        self.vry = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
-        self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        protocoling.loadHandlers(self.hby, self.exc, self.notifier)
-        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/replay', '/reply', '/credential'],
+        self.notifier = Notifier(hby=self.hby)
+        self.org = Organizer(hby=self.hby)
+        self.rgy = Regery(hby=self.hby, name=name, base=base)
+        self.vry = Verifier(hby=self.hby, reger=self.rgy.reger)
+        self.exc = Exchanger(hby=self.hby, handlers=[])
+        loadHandlers(self.hby, self.exc, self.notifier)
+        self.mbx = MailboxDirector(hby=self.hby, topics=['/replay', '/reply', '/credential'],
                                                exc=self.exc, verifier=self.vry)
 
         self.doers = [self.mbx]
@@ -133,7 +135,7 @@ class ListDoer(doing.DoDoer):
         for note in self.notes:
             attrs = note.attrs
             said = attrs['d']
-            exn, pathed = exchanging.cloneMessage(self.hby, said)
+            exn, pathed = cloneMessage(self.hby, said)
             if exn is None:
                 continue
 
@@ -174,21 +176,21 @@ class ListDoer(doing.DoDoer):
         if not scraw:
             raise ConfigurationError("Credential schema {} not found".format(schema))
 
-        schemer = scheming.Schemer(raw=scraw)
+        schemer = Schemer(raw=scraw)
         response = self.hby.db.erpy.get(keys=(exn.said,))
 
         if response is None:
-            accepted = f"No {terming.Colors.FAIL}{terming.Symbols.FAILED}{terming.Colors.ENDC}"
+            accepted = f"No {Colors.FAIL}{Symbols.FAILED}{Colors.ENDC}"
             responseType = None
         else:
-            accepted = f"Yes {terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK}{terming.Colors.ENDC}"
-            rexn, _ = exchanging.cloneMessage(self.hby, response.qb64)
+            accepted = f"Yes {Colors.OKGREEN}{Symbols.CHECKMARK}{Colors.ENDC}"
+            rexn, _ = cloneMessage(self.hby, response.qb64)
             responseType = humanResponse(rexn.ked['r'])
 
         print(f"Credential {sad['d']}:")
         print(f"    Type: {schemer.sed['title']}")
         print(
-            f"    Status: Issued {terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK}{terming.Colors.ENDC}")
+            f"    Status: Issued {Colors.OKGREEN}{Symbols.CHECKMARK}{Colors.ENDC}")
         print(f"    Issued by {sad['i']}")
         print(f"    Issued on {iss['dt']}")
         print(f"    Already responded? {accepted}")
@@ -213,7 +215,7 @@ class ListDoer(doing.DoDoer):
     def spurn(self, note, exn, pathed):
         print(f"SPURN - SAID: {exn.said}")
         dig = exn.ked['p']
-        spurned, _ = exchanging.cloneMessage(self.hby, said=dig)
+        spurned, _ = cloneMessage(self.hby, said=dig)
 
         sroute = spurned.ked['r']
         sverb = os.path.basename(os.path.normpath(sroute))
@@ -229,7 +231,7 @@ class ListDoer(doing.DoDoer):
             if not scraw:
                 raise ConfigurationError("Credential schema {} not found".format(schema))
 
-            schemer = scheming.Schemer(raw=scraw)
+            schemer = Schemer(raw=scraw)
             print(f"Spurned Credential {sad['d']}:")
             print(f"    Type: {schemer.sed['title']}")
 
@@ -237,7 +239,7 @@ class ListDoer(doing.DoDoer):
         print(f"ADMIT - SAID: {exn.said}")
         dig = exn.ked['p']
 
-        admitted, _ = exchanging.cloneMessage(self.hby, said=dig)
+        admitted, _ = cloneMessage(self.hby, said=dig)
         sad = admitted.ked['e']["acdc"]
 
         schema = sad['s']
@@ -245,13 +247,13 @@ class ListDoer(doing.DoDoer):
         if not scraw:
             raise ConfigurationError("Credential schema {} not found".format(schema))
 
-        schemer = scheming.Schemer(raw=scraw)
+        schemer = Schemer(raw=scraw)
 
         print(f"Admitted message SAID: {admitted.said}")
 
         print(f"Credential {sad['d']}:")
         print(f"    Type: {schemer.sed['title']}")
-        print(f"    Status: Accepted {terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK}{terming.Colors.ENDC}")
+        print(f"    Status: Accepted {Colors.OKGREEN}{Symbols.CHECKMARK}{Colors.ENDC}")
 
     def deleteNote(self, keys):
         yn = input(f"\n Delete the notification [Y|n]?")
@@ -263,7 +265,7 @@ def humanResponse(route):
     verb = os.path.basename(os.path.normpath(route))
     match verb:
         case "admit":
-            return f"{terming.Colors.OKGREEN}Admit{terming.Colors.ENDC}"
+            return f"{Colors.OKGREEN}Admit{Colors.ENDC}"
         case "spurn":
-            return f"{terming.Colors.FAIL}Spurn{terming.Colors.ENDC}"
+            return f"{Colors.FAIL}Spurn{Colors.ENDC}"
     return verb.capitalize()
