@@ -1243,7 +1243,7 @@ class Kramer:
                     # Populate the new Cache record, note that pruning values are immediately updated
                     # while we use the smallest accept-window values determined earlier
                     rec = CacheTypeRecord(
-                        d=d_old, # Drift is unchanged
+                        d=d_new,
                         sl=min_sl, ll=min_ll, xl=min_xl,
                         psl=max(psl_new, sl_new),
                         pll=max(pll_new, ll_new),
