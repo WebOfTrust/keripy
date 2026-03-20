@@ -1262,3 +1262,927 @@ def test_komer_serialization():
         assert reloaded.get(keys=custom_keys) == custom_jim
 
     asyncio.run(_go())
+
+
+def test_putIoSetVals():
+    """
+    Comprehensive tests for WebDBer.putIoSetVals.
+
+    This test exercises all LMDB‑equivalent invariants that
+    putIoSetVals must preserve when emulating insertion‑ordered
+    set semantics using ordinal‑suffixed keys inside a SortedDict.
+
+    1. Insert into an empty store:
+       - First insertion under an apparent key must allocate
+         ordinals starting at 0 and preserve input order.
+
+    2. Skip existing values and append only new ones:
+       - Existing values must not be duplicated.
+       - New values must be appended at the next available ordinal.
+
+    3. No‑op when all values already exist:
+       - No new ordinal keys may be created.
+       - The SubDb must not be marked dirty.
+
+    4. Ordinal gap handling:
+       - Missing ordinals (e.g. .1) must not be reused.
+       - New values must always append after the maximum existing
+         ordinal, matching LMDB cursor.set_range() behavior.
+
+    5. Prefix isolation:
+       - putIoSetVals must only operate on keys sharing the same
+         apparent prefix; other keyspaces must remain untouched.
+
+    6. Input order preservation:
+       - When inserting multiple new values, their relative order
+         must be preserved in the ordinal‑suffixed keyspace.
+
+    7. Dirty‑flag correctness:
+       - The SubDb must be marked dirty only when a mutation occurs,
+         and must remain clean on no‑op calls.
+    """
+
+    async def _go():
+        # Fresh DB
+        dber, _ = await _open_fake_dber(
+            name="putio-all",
+            stores=["vals."],
+            clear=True,
+        )
+        db = dber.env.open_db("vals.")
+
+        # 1. Insert into empty store
+        
+        result = dber.putIoSetVals(db, b"alpha", [b"v1", b"v2"])
+        assert result is True
+        assert db.items == {
+            b"alpha.0": b"v1",
+            b"alpha.1": b"v2",
+        }
+        assert db.dirty is True
+
+        # Reset dirty for next scenario
+        db.dirty = False
+
+
+        # 2. Skip existing values, append new ones        
+        result = dber.putIoSetVals(db, b"alpha", [b"v2", b"v3"])
+        assert result is True
+        assert db.items == {
+            b"alpha.0": b"v1",
+            b"alpha.1": b"v2",
+            b"alpha.2": b"v3",
+        }
+
+        # Reset dirty
+        db.dirty = False
+
+
+        # 3. All existing so no-op
+        result = dber.putIoSetVals(db, b"alpha", [b"v1", b"v2", b"v3"])
+        assert result is False
+        assert db.items == {
+            b"alpha.0": b"v1",
+            b"alpha.1": b"v2",
+            b"alpha.2": b"v3",
+        }
+        assert db.dirty is False
+
+
+        # 4. Handle gaps
+        # Create a gap by deleting alpha.1
+        del db.items[b"alpha.1"]
+        db.dirty = False
+
+        # Now items are: alpha.0, alpha.2
+        result = dber.putIoSetVals(db, b"alpha", [b"v4"])
+        assert result is True
+        assert db.items == {
+            b"alpha.0": b"v1",
+            b"alpha.2": b"v3",
+            b"alpha.3": b"v4",
+        }
+
+        # Reset dirty
+        db.dirty = False
+
+
+        # 5. Prefix isolation
+        db.items[b"beta.0"] = b"b1"
+        db.dirty = False
+
+        dber.putIoSetVals(db, b"alpha", [b"v5"])
+        assert db.items == {
+            b"alpha.0": b"v1",
+            b"alpha.2": b"v3",
+            b"alpha.3": b"v4",
+            b"alpha.4": b"v5",
+            b"beta.0": b"b1",
+        }
+
+
+        # Reset dirty
+        db.dirty = False
+
+        # 6. Input order preserved
+        dber.putIoSetVals(db, b"gamma", [b"v3", b"v1", b"v2"])
+        assert list(db.items.values())[-3:] == [b"v3", b"v1", b"v2"]
+
+        # Reset dirty
+        db.dirty = False
+
+
+        # 7. Dirty flag correctness
+        assert dber.putIoSetVals(db, b"delta", [b"x"]) is True
+        assert db.dirty is True
+
+        db.dirty = False
+        assert dber.putIoSetVals(db, b"delta", [b"x"]) is False
+        assert db.dirty is False
+
+    asyncio.run(_go())
+
+
+def test_addIoSetVal():
+    """
+    Contract test for WebDBer.addIoSetVal validating all LMDB‑equivalent
+    insertion‑ordered set semantics in a single end‑to‑end scenario.
+
+    This test exercises the following behaviors:
+
+    1. Insert into an empty store:
+       The first value under an apparent key must be stored at ordinal 0.
+
+    2. Skip existing value (no‑op):
+       If the value is already present under the apparent key, no new
+       ordinal key may be created and the SubDb must remain clean.
+
+    3. Append new value at max ordinal + 1:
+       New values must always be appended after the highest existing
+       ordinal, preserving insertion order.
+
+    4. Handle ordinal gaps:
+       Missing ordinals (e.g., .1) must not be reused. The next value
+       must always be inserted at max_ordinal + 1, matching LMDB cursor
+       behavior.
+
+    5. Prefix isolation:
+       Only keys sharing the same apparent prefix may be modified.
+       Values stored under other prefixes must remain untouched.
+
+    6. No‑op on empty key or None value:
+       Empty keys or missing values must not mutate the store.
+
+    7. Dirty‑flag correctness:
+       The SubDb must be marked dirty only when a new ordinal key is
+       inserted, and must remain clean on no‑op calls.
+    """
+
+    async def _go():
+        dber, _ = await _open_fake_dber(
+            name="addio-all",
+            stores=["vals."],
+            clear=True,
+        )
+        db = dber.env.open_db("vals.")
+
+        # 1. Insert into empty store
+        result = dber.addIoSetVal(db, b"alpha", b"v1")
+        assert result is True
+        assert db.items == {b"alpha.0": b"v1"}
+        assert db.dirty is True
+
+        db.dirty = False
+
+        # 2. Skip existing value (no‑op)
+        result = dber.addIoSetVal(db, b"alpha", b"v1")
+        assert result is False
+        assert db.items == {b"alpha.0": b"v1"}
+        assert db.dirty is False
+
+        # 3. Append new value at next ordinal
+        result = dber.addIoSetVal(db, b"alpha", b"v2")
+        assert result is True
+        assert db.items == {
+            b"alpha.0": b"v1",
+            b"alpha.1": b"v2",
+        }
+
+        db.dirty = False
+
+        # 4. Handle gaps: missing ordinal .1 should NOT be reused
+        del db.items[b"alpha.1"]
+        db.items[b"alpha.3"] = b"v3"
+        db.dirty = False
+
+        result = dber.addIoSetVal(db, b"alpha", b"v4")
+        assert result is True
+        assert db.items == {
+            b"alpha.0": b"v1",
+            b"alpha.3": b"v3",
+            b"alpha.4": b"v4",
+        }
+
+        db.dirty = False
+
+        # 5. Prefix isolation
+        db.items[b"beta.0"] = b"b1"
+        db.dirty = False
+
+        dber.addIoSetVal(db, b"alpha", b"v5")
+        assert db.items == {
+            b"alpha.0": b"v1",
+            b"alpha.3": b"v3",
+            b"alpha.4": b"v4",
+            b"alpha.5": b"v5",
+            b"beta.0": b"b1",
+        }
+
+        db.dirty = False
+
+        # 6. No‑op on empty key or None value
+        assert dber.addIoSetVal(db, b"", b"x") is False
+        assert dber.addIoSetVal(db, None, b"x") is False
+        assert dber.addIoSetVal(db, b"alpha", None) is False
+        assert db.dirty is False
+
+        # 7. Dirty flag correctness
+        assert dber.addIoSetVal(db, b"gamma", b"g1") is True
+        assert db.dirty is True
+
+        db.dirty = False
+        assert dber.addIoSetVal(db, b"gamma", b"g1") is False
+        assert db.dirty is False
+
+    asyncio.run(_go())
+
+
+def test_pinIoSetVals():
+    """
+    Contract test for WebDBer.pinIoSetVals validating LMDB‑equivalent
+    replacement semantics for insertion‑ordered sets.
+
+    This test exercises the following behaviors:
+
+    1. Replace values in an empty store:
+       pinIoSetVals must insert the provided values at ordinals 0..N‑1.
+
+    2. Replace existing values:
+       All existing key.* entries must be removed before inserting the new set.
+
+    3. Input order preserved:
+       Values must be stored in the exact order provided.
+
+    4. Prefix isolation:
+       Only entries with the given apparent key prefix may be removed or replaced.
+
+    5. No‑op on empty key or empty/None vals:
+       The store must remain unchanged and the SubDb must remain clean.
+
+    6. Dirty‑flag correctness:
+       The SubDb must be marked dirty only when replacement actually occurs.
+    """
+    async def _go():
+        dber, _ = await _open_fake_dber(
+            name="pinio-all",
+            stores=["vals."],
+            clear=True,
+        )
+        db = dber.env.open_db("vals.")
+
+        # 1. Replace values in an empty store
+        result = dber.pinIoSetVals(db, b"alpha", [b"v1", b"v2"])
+        assert result is True
+        assert db.items == {
+            b"alpha.0": b"v1",
+            b"alpha.1": b"v2",
+        }
+        assert db.dirty is True
+
+        db.dirty = False
+
+        # 2. Replace existing values
+        result = dber.pinIoSetVals(db, b"alpha", [b"x", b"y", b"z"])
+        assert result is True
+        assert db.items == {
+            b"alpha.0": b"x",
+            b"alpha.1": b"y",
+            b"alpha.2": b"z",
+        }
+        assert db.dirty is True
+
+        db.dirty = False
+
+        # 3. Input order preserved
+        result = dber.pinIoSetVals(db, b"alpha", [b"c", b"a", b"b"])
+        assert result is True
+        assert db.items == {
+            b"alpha.0": b"c",
+            b"alpha.1": b"a",
+            b"alpha.2": b"b",
+        }
+
+        db.dirty = False
+
+        # 4. Prefix isolation
+        db.items[b"beta.0"] = b"b1"
+        db.items[b"beta.1"] = b"b2"
+        db.dirty = False
+
+        result = dber.pinIoSetVals(db, b"alpha", [b"m"])
+        assert result is True
+        assert db.items == {
+            b"alpha.0": b"m",
+            b"beta.0": b"b1",
+            b"beta.1": b"b2",
+        }
+
+        db.dirty = False
+
+        # 5. No‑op on empty key or empty/None vals
+        assert dber.pinIoSetVals(db, b"", [b"x"]) is False
+        assert dber.pinIoSetVals(db, None, [b"x"]) is False
+        assert dber.pinIoSetVals(db, b"alpha", []) is False
+        assert dber.pinIoSetVals(db, b"alpha", None) is False
+        assert db.dirty is False
+
+        # 6. Dirty‑flag correctness
+        assert dber.pinIoSetVals(db, b"gamma", [b"g1"]) is True
+        assert db.dirty is True
+
+        db.dirty = False
+        assert dber.pinIoSetVals(db, b"gamma", [b"g1"]) is True
+        # Replacement still counts as mutation even if values are identical
+        assert db.dirty is True
+
+    asyncio.run(_go())
+
+
+def test_remIoSet():
+    """
+    Contract test for WebDBer.remIoSet validating LMDB‑equivalent
+    deletion semantics for removing all values under an apparent key.
+
+    This test checks the following behaviors:
+
+    1. Remove all values under a key:
+       All key.* entries must be deleted.
+
+    2. No‑op when key does not exist:
+       The store must remain unchanged and the SubDb must remain clean.
+
+    3. Prefix isolation:
+       Only entries with the given apparent key prefix may be removed.
+
+    4. Handle gaps:
+       All matching key.* entries must be removed regardless of ordinal gaps.
+
+    5. No‑op on empty key:
+       Empty keys must not mutate the store.
+
+    6. Dirty‑flag correctness:
+       Dirty must be set only when deletions actually occur.
+    """
+    async def _go():
+        dber, _ = await _open_fake_dber(
+            name="remio-all",
+            stores=["vals."],
+            clear=True,
+        )
+        db = dber.env.open_db("vals.")
+
+        # Initial population
+        db.items[b"alpha.0"] = b"v1"
+        db.items[b"alpha.1"] = b"v2"
+        db.items[b"alpha.2"] = b"v3"
+        db.dirty = False
+
+        # 1. Remove all values under a key
+        result = dber.remIoSet(db, b"alpha")
+        assert result is True
+        assert db.items == {}
+        assert db.dirty is True
+
+        db.dirty = False
+
+        # Rebuild for next scenarios
+        db.items[b"alpha.0"] = b"a1"
+        db.items[b"alpha.2"] = b"a2"   # gap at .1
+        db.items[b"beta.0"] = b"b1"
+        db.dirty = False
+
+        # 2. No‑op when key does not exist
+        result = dber.remIoSet(db, b"gamma")
+        assert result is False
+        assert db.items == {
+            b"alpha.0": b"a1",
+            b"alpha.2": b"a2",
+            b"beta.0": b"b1",
+        }
+        assert db.dirty is False
+
+        # 3. Prefix isolation
+        result = dber.remIoSet(db, b"alpha")
+        assert result is True
+        assert db.items == {
+            b"beta.0": b"b1",
+        }
+        assert db.dirty is True
+
+        db.dirty = False
+
+        # Rebuild for gap test
+        db.items[b"alpha.0"] = b"x"
+        db.items[b"alpha.5"] = b"y"   # large gap
+        db.items[b"alpha.9"] = b"z"
+        db.dirty = False
+
+        # 4. Handle gaps
+        result = dber.remIoSet(db, b"alpha")
+        assert result is True
+        assert db.items == {
+            b"beta.0": b"b1",
+        }
+        assert db.dirty is True
+
+        db.dirty = False
+
+        # 5. No‑op on empty key
+        assert dber.remIoSet(db, b"") is False
+        assert db.dirty is False
+
+        # 6. Dirty‑flag correctness
+        assert dber.remIoSet(db, b"beta") is True
+        assert db.dirty is True
+
+        db.dirty = False
+        assert dber.remIoSet(db, b"beta") is False
+        assert db.dirty is False
+
+    asyncio.run(_go())
+
+
+def test_remIoSetVal():
+    """
+    Contract test for WebDBer.remIoSetVal validating LMDB‑equivalent
+    deletion semantics for insertion‑ordered sets.
+
+    This test checks the following behaviors:
+
+    1. Remove a specific value:
+       Only the matching value under the apparent key must be deleted.
+
+    2. Remove all values when val=None:
+       All key.* entries must be removed, but other prefixes must remain.
+
+    3. No‑op when value does not exist:
+       The store must remain unchanged and the SubDb must remain clean.
+
+    4. Prefix isolation:
+       Only entries with the given apparent key prefix may be removed.
+
+    5. Handle gaps:
+       Deleting a value must not affect unrelated ordinals.
+
+    6. No‑op on empty key:
+       Empty keys must not mutate the store.
+
+    7. Dirty‑flag correctness:
+       Dirty must be set only when a deletion actually occurs.
+    """
+    async def _go():
+        dber, _ = await _open_fake_dber(
+            name="remio-all",
+            stores=["vals."],
+            clear=True,
+        )
+        db = dber.env.open_db("vals.")
+
+        # Initial population
+        db.items[b"alpha.0"] = b"v1"
+        db.items[b"alpha.1"] = b"v2"
+        db.items[b"alpha.2"] = b"v3"
+        db.dirty = False
+
+        # 1. Remove a specific value
+        result = dber.remIoSetVal(db, b"alpha", b"v2")
+        assert result is True
+        assert db.items == {
+            b"alpha.0": b"v1",
+            b"alpha.2": b"v3",
+        }
+        assert db.dirty is True
+
+        db.dirty = False
+
+        # 2. Remove all values when val=None
+        result = dber.remIoSetVal(db, b"alpha", None)
+        assert result is True
+        assert db.items == {}
+        assert db.dirty is True
+
+        db.dirty = False
+
+        # Rebuild for next scenarios
+        db.items[b"alpha.0"] = b"a1"
+        db.items[b"alpha.1"] = b"a2"
+        db.items[b"beta.0"] = b"b1"
+        db.dirty = False
+
+        # 3. No‑op when value does not exist
+        result = dber.remIoSetVal(db, b"alpha", b"zzz")
+        assert result is False
+        assert db.items == {
+            b"alpha.0": b"a1",
+            b"alpha.1": b"a2",
+            b"beta.0": b"b1",
+        }
+        assert db.dirty is False
+
+        # 4. Prefix isolation
+        result = dber.remIoSetVal(db, b"alpha", b"a1")
+        assert result is True
+        assert db.items == {
+            b"alpha.1": b"a2",
+            b"beta.0": b"b1",
+        }
+        assert db.dirty is True
+
+        db.dirty = False
+
+        # 5. Handle gaps
+        db.items[b"alpha.3"] = b"a3"   # create a gap at .2
+        db.dirty = False
+
+        result = dber.remIoSetVal(db, b"alpha", b"a3")
+        assert result is True
+        assert db.items == {
+            b"alpha.1": b"a2",
+            b"beta.0": b"b1",
+        }
+
+        db.dirty = False
+
+        # 6. No‑op on empty key
+        assert dber.remIoSetVal(db, b"", b"a2") is False
+        assert db.dirty is False
+
+        # 7. Dirty‑flag correctness
+        assert dber.remIoSetVal(db, b"alpha", b"a2") is True
+        assert db.dirty is True
+
+        db.dirty = False
+        assert dber.remIoSetVal(db, b"alpha", b"a2") is False
+        assert db.dirty is False
+
+    asyncio.run(_go())
+
+
+def test_cntIoSet():
+    """
+    Tests for WebDBer.cntIoSet validating LMDB‑equivalent
+    counting semantics for insertion‑ordered sets.
+
+    This test checks the following behaviors:
+
+    1. Count all values under a key:
+       cntIoSet(key) must return the number of key.* entries.
+
+    2. Count starting at a non‑zero ordinal:
+       Counting must begin at the specified ordinal, skipping earlier ones.
+
+    3. Handle gaps:
+       Ordinal gaps must not affect counting; only prefix matches matter.
+
+    4. Prefix isolation:
+       Only entries with the given apparent key prefix may be counted.
+
+    5. No‑op on empty key:
+       Empty keys must return 0.
+
+    6. No‑op when key does not exist:
+       Nonexistent keys must return 0.
+
+    7. Dirty‑flag correctness:
+       Counting must never mutate the store.
+    """
+    async def _go():
+        dber, _ = await _open_fake_dber(
+            name="cntio-all",
+            stores=["vals."],
+            clear=True,
+        )
+        db = dber.env.open_db("vals.")
+
+        # Initial population
+        db.items[b"alpha.0"] = b"v1"
+        db.items[b"alpha.1"] = b"v2"
+        db.items[b"alpha.2"] = b"v3"
+        db.items[b"beta.0"] = b"b1"
+        db.dirty = False
+
+        # 1. Count all values under a key
+        assert dber.cntIoSet(db, b"alpha") == 3
+        assert db.dirty is False
+
+        # 2. Count starting at a non‑zero ordinal
+        assert dber.cntIoSet(db, b"alpha", ion=0) == 3
+        assert dber.cntIoSet(db, b"alpha", ion=1) == 2
+        assert dber.cntIoSet(db, b"alpha", ion=2) == 1
+        assert dber.cntIoSet(db, b"alpha", ion=3) == 0
+        assert db.dirty is False
+
+        # 3. Handle gaps
+        del db.items[b"alpha.1"]   # gap at .1
+        db.items[b"alpha.5"] = b"v5"
+        assert dber.cntIoSet(db, b"alpha") == 3   # .0, .2, .5
+        assert dber.cntIoSet(db, b"alpha", ion=2) == 2
+        assert dber.cntIoSet(db, b"alpha", ion=4) == 1
+        assert dber.cntIoSet(db, b"alpha", ion=6) == 0
+        assert db.dirty is False
+
+        # 4. Prefix isolation
+        assert dber.cntIoSet(db, b"beta") == 1
+        assert dber.cntIoSet(db, b"gamma") == 0
+        assert db.dirty is False
+
+        # 5. No‑op on empty key
+        assert dber.cntIoSet(db, b"") == 0
+        assert db.dirty is False
+
+        # 6. No‑op when key does not exist
+        assert dber.cntIoSet(db, b"zzz") == 0
+        assert db.dirty is False
+
+        # 7. Dirty‑flag correctness
+        before = dict(db.items)
+        _ = dber.cntIoSet(db, b"alpha")
+        assert db.items == before
+        assert db.dirty is False
+
+    asyncio.run(_go())
+
+
+def test_getIoSetItemIter():
+    """
+    Contract test for WebDBer.getIoSetItemIter validating LMDB‑equivalent
+    iteration semantics for insertion‑ordered sets.
+
+    This test checks the following behaviors:
+
+    1. Iterate all values under a key:
+       getIoSetItemIter must yield (iokey, value) in ordinal order.
+
+    2. Start iteration at a non‑zero ordinal:
+       Iteration must begin at the specified insertion ordinal.
+
+    3. Handle gaps:
+       Ordinal gaps must not break iteration; only prefix matches matter.
+
+    4. Prefix isolation:
+       Only entries with the given apparent key prefix may be returned.
+
+    5. Empty key returns empty iterator:
+       No iteration must occur when key is empty.
+
+    6. Dirty‑flag correctness:
+       Iteration must never mutate the store.
+    """
+    async def _go():
+        dber, _ = await _open_fake_dber(
+            name="getio-all",
+            stores=["vals."],
+            clear=True,
+        )
+        db = dber.env.open_db("vals.")
+
+        # Populate alpha.* set
+        db.items[b"alpha.0"] = b"v0"
+        db.items[b"alpha.1"] = b"v1"
+        db.items[b"alpha.2"] = b"v2"
+
+        # Add unrelated prefixes
+        db.items[b"beta.0"] = b"b0"
+        db.items[b"alphaX.0"] = b"x0"
+        db.dirty = False
+
+        # 1. Iterate all values under alpha
+        out = list(dber.getIoSetItemIter(db, b"alpha"))
+        assert out == [
+            (b"alpha.0", b"v0"),
+            (b"alpha.1", b"v1"),
+            (b"alpha.2", b"v2"),
+        ]
+        assert db.dirty is False
+
+        # 2. Start iteration at non‑zero ordinal
+        out = list(dber.getIoSetItemIter(db, b"alpha", ion=1))
+        assert out == [
+            (b"alpha.1", b"v1"),
+            (b"alpha.2", b"v2"),
+        ]
+        assert db.dirty is False
+
+        # 3. Handle gaps
+        del db.items[b"alpha.1"]
+        db.items[b"alpha.5"] = b"v5"
+        out = list(dber.getIoSetItemIter(db, b"alpha"))
+        assert out == [
+            (b"alpha.0", b"v0"),
+            (b"alpha.2", b"v2"),
+            (b"alpha.5", b"v5"),
+        ]
+        assert db.dirty is False
+
+        # 4. Prefix isolation
+        out = list(dber.getIoSetItemIter(db, b"alpha"))
+        assert all(iokey.startswith(b"alpha.") for (iokey, _) in out)
+        assert db.dirty is False
+
+        # 5. Empty key returns empty iterator
+        out = list(dber.getIoSetItemIter(db, b""))
+        assert out == []
+        assert db.dirty is False
+
+        # 6. Dirty‑flag correctness
+        before = dict(db.items)
+        _ = list(dber.getIoSetItemIter(db, b"alpha"))
+        assert db.items == before
+        assert db.dirty is False
+
+    asyncio.run(_go())
+
+
+def test_getIoSetLastItem():
+    """
+    Contract test for WebDBer.getIoSetLastItem validating LMDB‑equivalent
+    semantics for retrieving the last (highest‑ordinal) IoSet entry.
+
+    This test checks the following behaviors:
+
+    1. Return the last item under a key:
+       getIoSetLastItem must return (key, value) for the highest ordinal.
+
+    2. Handle gaps:
+       Ordinal gaps must not affect correctness; the highest existing ordinal
+       determines the last item.
+
+    3. Prefix isolation:
+       Only entries with the given apparent key prefix may be considered.
+
+    4. No entries under key:
+       Must return empty tuple.
+
+    5. Empty key:
+       Must return empty tuple.
+
+    6. Dirty‑flag correctness:
+       Reading must never mutate the store.
+    """
+    async def _go():
+        dber, _ = await _open_fake_dber(
+            name="getlastio-all",
+            stores=["vals."],
+            clear=True,
+        )
+        db = dber.env.open_db("vals.")
+
+        # Populate alpha.* set
+        db.items[b"alpha.0"] = b"v0"
+        db.items[b"alpha.1"] = b"v1"
+        db.items[b"alpha.2"] = b"v2"
+
+        # Add unrelated prefixes
+        db.items[b"beta.0"] = b"b0"
+        db.items[b"alphaX.0"] = b"x0"
+        db.dirty = False
+
+        # 1. Return the last item under alpha
+        out = dber.getIoSetLastItem(db, b"alpha")
+        assert out == (b"alpha", b"v2")
+        assert db.dirty is False
+
+        # 2. Handle gaps
+        del db.items[b"alpha.2"]
+        db.items[b"alpha.7"] = b"v7"
+        out = dber.getIoSetLastItem(db, b"alpha")
+        assert out == (b"alpha", b"v7")
+        assert db.dirty is False
+
+        # 3. Prefix isolation
+        # Only alpha.* entries should be considered
+        out = dber.getIoSetLastItem(db, b"alpha")
+        assert out[0] == b"alpha"
+        assert db.dirty is False
+
+        # 4. No entries under key
+        del db.items[b"alpha.0"]
+        del db.items[b"alpha.1"]
+        del db.items[b"alpha.7"]
+        out = dber.getIoSetLastItem(db, b"alpha")
+        assert out == ()
+        assert db.dirty is False
+
+        # 5. Empty key returns empty tuple
+        out = dber.getIoSetLastItem(db, b"")
+        assert out == ()
+        assert db.dirty is False
+
+        # 6. Dirty‑flag correctness
+        before = dict(db.items)
+        _ = dber.getIoSetLastItem(db, b"beta")
+        assert db.items == before
+        assert db.dirty is False
+
+    asyncio.run(_go())
+
+
+def test_getIoSetLastItemIterAll_all_behaviors():
+    """
+    Contract test for WebDBer.getIoSetLastItemIterAll validating LMDB‑equivalent
+    semantics for retrieving the last IoSet entry for every effective key.
+
+    This test checks the following behaviors:
+
+    1. Iterate all effective keys:
+       Must yield exactly one (key, value) per apparent key.
+
+    2. Handle gaps:
+       Highest ordinal determines the last item, even with missing ordinals.
+
+    3. Prefix isolation:
+       Starting from a given key must skip all earlier keys.
+
+    4. Empty key:
+       Must iterate over the entire DB.
+
+    5. Empty DB:
+       Must yield nothing.
+
+    6. Dirty‑flag correctness:
+       Iteration must never mutate the store.
+    """
+    async def _go():
+        dber, _ = await _open_fake_dber(
+            name="getlastallio",
+            stores=["vals."],
+            clear=True,
+        )
+        db = dber.env.open_db("vals.")
+
+        # Populate multiple IoSets
+        db.items[b"alpha.0"] = b"a0"
+        db.items[b"alpha.2"] = b"a2"   # gap at .1
+        db.items[b"beta.0"]  = b"b0"
+        db.items[b"beta.5"]  = b"b5"   # gap at .1–.4
+        db.items[b"gamma.1"] = b"g1"
+        db.items[b"gamma.9"] = b"g9"
+        db.dirty = False
+
+        # 1. Iterate all effective keys (empty key returns the full DB)
+        out = list(dber.getIoSetLastItemIterAll(db))
+        assert out == [
+            (b"alpha", b"a2"),
+            (b"beta",  b"b5"),
+            (b"gamma", b"g9"),
+        ]
+        assert db.dirty is False
+
+        # 2. Handle gaps (already validated above)
+        # alpha last = a2, beta last = b5, gamma last = g9
+
+        # 3. Prefix isolation: start at "beta"
+        out = list(dber.getIoSetLastItemIterAll(db, b"beta"))
+        assert out == [
+            (b"beta",  b"b5"),
+            (b"gamma", b"g9"),
+        ]
+        assert db.dirty is False
+
+        # 4. Starting at "gamma"
+        out = list(dber.getIoSetLastItemIterAll(db, b"gamma"))
+        assert out == [
+            (b"gamma", b"g9"),
+        ]
+        assert db.dirty is False
+
+        # 5. Starting past all keys → empty
+        out = list(dber.getIoSetLastItemIterAll(db, b"zzz"))
+        assert out == []
+        assert db.dirty is False
+
+        # 6. Empty DB → empty iterator
+        db.items.clear()
+        out = list(dber.getIoSetLastItemIterAll(db))
+        assert out == []
+        assert db.dirty is False
+
+        # 7. Dirty‑flag correctness
+        db.items[b"alpha.0"] = b"x"
+        db.dirty = False
+        before = dict(db.items)
+        _ = list(dber.getIoSetLastItemIterAll(db))
+        assert db.items == before
+        assert db.dirty is False
+
+    asyncio.run(_go())

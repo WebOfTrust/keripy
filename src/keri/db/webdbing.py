@@ -893,7 +893,52 @@ class WebDBer:
             sep (bytes): separator character for split
 
         """
-        raise NotImplementedError("putIoSetVals")
+        # 1. Empty key or empty vals → no-op
+        if not key or not vals:
+            return False
+
+        # Normalize to insertion-ordered set
+        vals = list(dict.fromkeys(vals))  # preserves order, removes duplicates
+
+        # 2. Prepare prefix and initial ordinal key
+        prefix = key + sep
+        prefix_len = len(prefix)
+
+        # 3. Scan existing entries
+        existing_vals = set()
+        max_ion = -1
+
+        # SortedDict allows efficient range iteration
+        for iokey in db.items.irange(prefix, prefix + b"\xff"):
+            if not iokey.startswith(prefix):
+                break
+
+            # Extract ordinal
+            try:
+                ion = int(iokey[prefix_len:])
+            except ValueError:
+                continue  # malformed key; LMDB would never produce this
+
+            val = db.items[iokey]
+            existing_vals.add(val)
+            if ion > max_ion:
+                max_ion = ion
+
+        # 4. Remove already-present values
+        new_vals = [v for v in vals if v not in existing_vals]
+        if not new_vals:
+            return False
+
+        # 5. Insert new values at sequential ordinals
+        start = max_ion + 1
+        for offset, val in enumerate(new_vals):
+            ion = start + offset
+            iokey = prefix + str(ion).encode("utf-8")
+            db.items[iokey] = val
+
+        db.dirty = True
+        return True
+
 
     def pinIoSetVals(self, db, key, vals, *, sep=b'.'):
         """Replace all vals at key with vals as insertion ordered set of
@@ -914,7 +959,42 @@ class WebDBer:
             vals (NonStrIterable|None): serialized values to add to set of vals at key
             sep (bytes): separator character for split
         """
-        raise NotImplementedError("pinIoSetVals")
+        # 1. No-op if key or vals are empty
+        if not key or not vals:
+            return False
+
+        # Normalize to insertion-ordered unique list
+        vals = list(dict.fromkeys(vals))
+        if not vals:
+            return False
+
+        prefix = key + sep
+        prefix_len = len(prefix)
+
+        # 2. Remove all existing entries for this key
+        removed_any = False
+        to_delete = []
+
+        for iokey in db.items.irange(prefix, prefix + b"\xff"):
+            if not iokey.startswith(prefix):
+                break
+            to_delete.append(iokey)
+
+        for iokey in to_delete:
+            del db.items[iokey]
+            removed_any = True
+
+        # 3. Insert new values
+        for ion, val in enumerate(vals):
+            iokey = prefix + str(ion).encode("utf-8")
+            db.items[iokey] = val
+
+        # 4. Mark dirty only if something changed
+        if removed_any or vals:
+            db.dirty = True
+
+        return True
+
 
     def addIoSetVal(self, db, key, val, *, sep=b'.'):
         """Add val to insertion ordered set of values all with the
@@ -936,7 +1016,44 @@ class WebDBer:
             sep (bytes): separator character for split
 
         """
-        raise NotImplementedError("addIoSetVal")
+        # 1. Exit on empty key or missing value 
+        if not key or val is None:
+            return False
+
+        prefix = key + sep
+        prefix_len = len(prefix)
+
+        # 2. Scan existing entries
+        existing_vals = set()
+        max_ion = -1
+
+        for iokey in db.items.irange(prefix, prefix + b"\xff"):
+            if not iokey.startswith(prefix):
+                break
+
+            try:
+                ion = int(iokey[prefix_len:])
+            except ValueError:
+                continue
+
+            cval = db.items[iokey]
+            existing_vals.add(cval)
+
+            if ion > max_ion:
+                max_ion = ion
+
+        # 3. If value already present then no-op
+        if val in existing_vals:
+            return False
+
+        # 4. Insert at next ordinal
+        ion = max_ion + 1
+        iokey = prefix + str(ion).encode("utf-8")
+
+        db.items[iokey] = val
+        db.dirty = True
+        return True
+
 
     def getIoSetItemIter(self, db, key, *, ion=0, sep=b'.'):
         """Get iterator over items in IoSet at effecive key.
@@ -959,7 +1076,17 @@ class WebDBer:
             ion (int): starting ordinal value, default 0
             sep (bytes): separator character for split
         """
-        raise NotImplementedError("getIoSetItemIter")
+        if not key:
+            return iter(())
+
+        prefix = key + sep
+        start_key = prefix + str(ion).encode("utf-8")
+
+        for iokey in db.items.irange(start_key, prefix + b"\xff"):
+            if not iokey.startswith(prefix):
+                break
+            yield (iokey, db.items[iokey])
+
 
     def getIoSetLastItem(self, db, key, *, sep=b'.'):
         """Gets last added ioset entry item at effective key if any else empty
@@ -978,7 +1105,20 @@ class WebDBer:
             key (bytes): Apparent effective key (unsuffixed)
             sep (bytes): separator character for split
         """
-        raise NotImplementedError("getIoSetLastItem")
+        if not key:
+            return ()
+
+        prefix = key + sep
+        last = ()
+
+        # Iterate forward and keep the last matching entry
+        for iokey in db.items.irange(prefix, prefix + b"\xff"):
+            if not iokey.startswith(prefix):
+                break
+            last = (key, db.items[iokey])
+
+        return last
+
 
     def remIoSet(self, db, key, *, sep=b'.'):
         """Removes all set values at apparent effective key.
@@ -996,7 +1136,30 @@ class WebDBer:
             key (bytes|None): Apparent effective key
             sep (bytes): separator character for split
         """
-        raise NotImplementedError("remIoSet")
+        if not key:
+            return False
+
+        prefix = key + sep
+        prefix_len = len(prefix)
+
+        to_delete = []
+
+        # Collect all matching keys
+        for iokey in db.items.irange(prefix, prefix + b"\xff"):
+            if not iokey.startswith(prefix):
+                break
+            to_delete.append(iokey)
+
+        if not to_delete:
+            return False
+
+        # Delete them
+        for iokey in to_delete:
+            del db.items[iokey]
+
+        db.dirty = True
+        return True
+
 
     def remIoSetVal(self, db, key, val=None, *, sep=b'.'):
         """Removes val if any as member of set at key if any.
@@ -1032,7 +1195,29 @@ class WebDBer:
             val (bytes|None): value to delete
             sep (bytes): separator character for split
         """
-        raise NotImplementedError("remIoSetVal")
+        if val is None:
+            return self.remIoSet(db=db, key=key, sep=sep)
+
+        # No-op on empty key
+        if not key:
+            return False
+
+        prefix = key + sep
+        prefix_len = len(prefix)
+
+        # Linear scan for matching value
+        for iokey in db.items.irange(prefix, prefix + b"\xff"):
+            if not iokey.startswith(prefix):
+                break
+
+            cval = db.items[iokey]
+            if cval == val:
+                del db.items[iokey]
+                db.dirty = True
+                return True
+
+        return False
+
 
     def cntIoSet(self, db, key, *, ion=0, sep=b'.'):
         """Count set entries at onkey = key + sep + on for ion >= ion.
@@ -1051,7 +1236,25 @@ class WebDBer:
             ion (int): starting ordinal value, default 0
             sep (bytes): separator character for split
         """
-        raise NotImplementedError("cntIoSet")
+        if not key:
+            return 0
+
+        prefix = key + sep
+        prefix_len = len(prefix)
+
+        # Construct starting key: key.sep.ion
+        start_key = prefix + str(ion).encode("utf-8")
+
+        count = 0
+
+        # Iterate over all keys in prefix range
+        for iokey in db.items.irange(start_key, prefix + b"\xff"):
+            if not iokey.startswith(prefix):
+                break
+            count += 1
+
+        return count
+
 
     def getTopIoSetItemIter(self, db, top=b'', *, sep=b'.'):
         """Iterates over top branch of all insertion ordered set values where each
@@ -1103,7 +1306,47 @@ class WebDBer:
             key (bytes): Apparent effective key
             sep (bytes): separator character for split
         """
-        raise NotImplementedError("getIoSetLastItemIterAll")
+        items = db.items
+
+        # Determine starting point
+        if not key:
+            # Start at the first key in the DB
+            try:
+                first_key = next(iter(items))
+            except StopIteration:
+                return iter(())  # empty DB
+            start_key = first_key
+        else:
+            # Start at key.sep.0
+            start_key = key + sep + b"0"
+
+        # State for tracking last item per apparent key
+        last = None
+        current_key = None
+
+        # Iterate forward through the DB
+        for iokey in items.irange(start_key, None):
+            # Split into (apparent_key, ordinal)
+            try:
+                apparent, _ = iokey.split(sep, 1)
+            except ValueError:
+                # malformed key, skip
+                continue
+
+            # If we moved to a new apparent key, yield the previous one
+            if current_key is not None and apparent != current_key:
+                if last is not None:
+                    yield last
+                last = None
+
+            # Update tracking
+            current_key = apparent
+            last = (apparent, items[iokey])
+
+        # Yield the final group
+        if last is not None:
+            yield last
+
 
     def getIoSetLastIterAll(self, db, key=b'', *, sep=b'.'):
         """Iterates over every last added ioset entry at every effective key
