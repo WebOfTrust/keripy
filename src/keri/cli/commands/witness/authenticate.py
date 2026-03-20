@@ -9,21 +9,16 @@ import json
 
 import qrcode
 from hio.base import doing
-from hio.help import Hict
+from hio.help import Hict, ogler
 
-from ...common import existing
-from ...common.parsing import Parsery
+from ...common import Parsery, setupHby
 
-from .... import help
+from ....app import Clienter, Organizer, httpClient, CESR_DESTINATION_HEADER
 
-from ....app import httping, organizing
-from ....app.agenting import httpClient
-from ....app.httping import CESR_DESTINATION_HEADER
-
-from ....core import coring
+from ....core import Matter
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Perform authentication against an witness to get a OTP code',
                                  parents=[Parsery.keystore()])
@@ -55,9 +50,9 @@ def auth(args):
 class AuthDoer(doing.DoDoer):
 
     def __init__(self, name, alias, base, bran, witness, urlOnly):
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
-        self.org = organizing.Organizer(hby=self.hby)
+        self.org = Organizer(hby=self.hby)
         self.urlOnly = urlOnly
 
         if witness in self.hby.kevers:
@@ -74,7 +69,7 @@ class AuthDoer(doing.DoDoer):
             raise ValueError(f"unknown witness {witness}")
 
         self.witness = wit
-        self.clienter = httping.Clienter()
+        self.clienter = Clienter()
         doers = [doing.doify(self.authDo), self.clienter]
 
         super(AuthDoer, self).__init__(doers=doers)
@@ -130,8 +125,8 @@ class AuthDoer(doing.DoDoer):
             data = json.loads(rep.body)
 
             totp = data["totp"]
-            m = coring.Matter(qb64=totp)  # refactor this to use cipher
-            d = coring.Matter(qb64=self.hab.decrypt(ser=m.raw))
+            m = Matter(qb64=totp)  # refactor this to use cipher
+            d = Matter(qb64=self.hab.decrypt(ser=m.raw))
             otpurl = f"otpauth://totp/KERIpy:{self.witness}?secret={d.raw.decode('utf-8')}&issuer=KERIpy"
 
             if not self.urlOnly:

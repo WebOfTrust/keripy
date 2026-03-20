@@ -7,15 +7,15 @@ keri.kli.commands module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
-from ...common.parsing import Parsery
+from ...common import Parsery, existingHby, aliasInput
 
-from .... import help, ConfigurationError, Roles
-from ....app import organizing
+from .... import ConfigurationError, Roles
+from ....app import Organizer
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='List current watchers',
                                  parents=[Parsery.keystore()])
@@ -48,10 +48,10 @@ def listWatchers(tymth, tock=0.0, **opts):
     bran = args.bran
 
     try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
-            org = organizing.Organizer(hby=hby)
+        with existingHby(name=name, base=base, bran=bran) as hby:
+            org = Organizer(hby=hby)
             if alias is None:
-                alias = existing.aliasInput(hby)
+                alias = aliasInput(hby)
 
             hab = hby.habByName(alias)
 

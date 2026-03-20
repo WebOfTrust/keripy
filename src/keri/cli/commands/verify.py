@@ -7,11 +7,10 @@ import argparse
 
 from hio.base import doing
 
-from ..common import existing
-from ..common.parsing import Parsery
+from ..common import Parsery, existingHby
 
-from ... import kering
-from ...core import indexing
+from ...kering import ConfigurationError, ValidationError
+from ...core import Siger
 
 parser = argparse.ArgumentParser(description='Verify signature(s) on arbitrary data', 
                                  parents=[Parsery.keystore()])
@@ -44,10 +43,10 @@ def verify(tymth, tock=0.0, **opts):
     base = args.base
     bran = args.bran
 
-    sigers = [indexing.Siger(qb64=sig) for sig in args.signature]
+    sigers = [Siger(qb64=sig) for sig in args.signature]
 
     try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
+        with existingHby(name=name, base=base, bran=bran) as hby:
 
             kever = hby.kevers[args.prefix]
 
@@ -62,15 +61,15 @@ def verify(tymth, tock=0.0, **opts):
             verfers = kever.verfers
             for siger in sigers:
                 if siger.index >= len(verfers):
-                    raise kering.ValidationError("Index = {} to large for keys."
+                    raise ValidationError("Index = {} to large for keys."
                                                  "".format(siger.index))
                 siger.verfer = verfers[siger.index]  # assign verfer
                 if siger.verfer.verify(siger.raw, ser):  # verify each sig
                     print("Signature {} is valid.".format(siger.index+1))
                 else:
-                    raise kering.ValidationError("Signature {} is invalid.".format(siger.index+1))
+                    raise ValidationError("Signature {} is invalid.".format(siger.index+1))
 
-    except kering.ConfigurationError:
+    except ConfigurationError:
         print(f"prefix for {name} does not exist, incept must be run first", )
     except FileNotFoundError:
         print("unable to open file", args.text[1:])

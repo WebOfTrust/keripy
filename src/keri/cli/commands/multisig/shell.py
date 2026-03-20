@@ -6,10 +6,10 @@ import os
 
 from hio.base import doing
 
-from ...common import Parsery, existing
+from ...common import Parsery, existingHby
 
-from ....app import organizing
-from ....core import coring
+from ....app import Organizer
+from ....core import Prefixer
 
 
 parser = argparse.ArgumentParser(description='Initialize a prefix', 
@@ -38,8 +38,8 @@ def kims(tymth, tock=0.0, **opts):
     bran = args.bran
     static = args.static
 
-    with existing.existingHby(name=name, base=base, bran=bran) as hby:
-        org = organizing.Organizer(hby=hby)
+    with existingHby(name=name, base=base, bran=bran) as hby:
+        org = Organizer(hby=hby)
         contacts = org.list()
         MultiSigShell(hby, contacts, static).cmdloop()
         return True
@@ -59,7 +59,7 @@ class MultiSigShell(cmd.Cmd):
         self.transferable = []
         self.nontrans = []
         for contact in contacts:
-            prefixer = coring.Prefixer(qb64=contact["id"])
+            prefixer = Prefixer(qb64=contact["id"])
             if prefixer.transferable:
                 self.transferable.append(contact)
             else:

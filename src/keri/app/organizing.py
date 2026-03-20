@@ -8,7 +8,7 @@ import json
 
 from ordered_set import OrderedSet as oset
 
-from .. import kering
+from ..kering import ValidationError
 
 
 class BaseOrganizer:
@@ -121,7 +121,7 @@ class BaseOrganizer:
         cigar = self.cigsdb.get(keys=(pre,))
 
         if not self.hby.signator.verify(ser=raw.encode("utf-8"), cigar=cigar):
-            raise kering.ValidationError(f"failed signature on {pre} contact data")
+            raise ValidationError(f"failed signature on {pre} contact data")
 
         data = json.loads(raw)
         if data is None:

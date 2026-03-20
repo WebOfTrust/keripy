@@ -50,7 +50,6 @@ import platform
 import shutil
 import stat
 import tempfile
-from collections import abc
 from contextlib import contextmanager
 from typing import Union
 
@@ -61,7 +60,6 @@ from hio.base import filing
 import keri
 from ..kering import MaxON  # maximum ordinal number for seqence or first seen
 from ..help import helping
-from ..help.helping import isNonStringIterable
 
 ProemSize = 32  # does not include trailing separator
 MaxProem = int("f"*(ProemSize), 16)
@@ -459,6 +457,14 @@ class LMDBer(filing.Filer):
         if readonly is not None:
             self.readonly = readonly
 
+        # close self.env if open
+        if self.env:
+            try:
+                self.env.close()
+            except:
+                pass
+
+        self.env = None
         # open lmdb major database instance
         # creates files data.mdb and lock.mdb in .dbDirPath
         self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs, map_size=self.MapSize,
@@ -1250,7 +1256,7 @@ class LMDBer(filing.Filer):
 
 
     def getIoSetItemIter(self, db, key, *, ion=0, sep=b'.'):
-        """Get iterator over items in IoSet at effecive key.
+        """Get iterator over items in IoSet at effecive key for ion >= ion.
         When key is empty then returns empty iterator
 
         Raises StopIterationError when done.
@@ -1272,7 +1278,7 @@ class LMDBer(filing.Filer):
         """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             if not key:  # empty key
-                return
+                return  # raises StopIterationError
             iokey = suffix(key, ion, sep=sep)  # start ion th value for key zeroth default
             cursor = txn.cursor()
             if cursor.set_range(iokey):  # move to val at key >= iokey if any
@@ -1650,7 +1656,7 @@ class LMDBer(filing.Filer):
         transparently suffixed and unsuffixed
         Assumes DB opened with dupsort=False
         """
-        if not key or not vals or not isNonStringIterable(vals):
+        if not key or not vals or not helping.isNonStringIterable(vals):
             raise ValueError(f"Bad append parameter: {key=} or {vals=}")
 
         with self.env.begin(db=db, write=True, buffers=True) as txn:
@@ -2528,25 +2534,31 @@ class LMDBer(filing.Filer):
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort=True
             key (bytes): within sub db's keyspace
-        """
 
+        """
         with self.env.begin(db=db, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
             vals = []  # list
+            if not key:
+                return vals
+            cursor = txn.cursor()
             try:
                 if cursor.set_key(key):  # moves to first_dup
                     # slice off prepended ordering proem
                     vals = [val[33:] for val in cursor.iternext_dup()]
                 return vals
             except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
-                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
+                raise KeyError(f"Key: `{key}` is either too big (for lmdb),"
+                               " or wrong DUPFIXED size.")
 
 
-    def getIoDupValsIter(self, db, key):
-        """Get iterator of all duplicate values at key in db in insertion order
-        Raises StopIteration Error when no remaining dup items = empty.
-        Removes prepended proem ordinal from each val before returning
+    def getIoDupItemIter(self, db, key, *, ion=0):
+        """Get iterator of all duplicate items at key in db in insertion order
+        for insertion ordering ordinal ion >= ion.
+        When key is empty then returns empty iterator
+
+        Raises StopIterationError when done.
+
+        Removes prepended proem ion ordinal from each val before returning
         Assumes DB opened with dupsort=True
 
         Duplicates at a given key preserve insertion order of duplicate.
@@ -2568,17 +2580,24 @@ class LMDBer(filing.Filer):
         Parameters:
             db (lmdb._Database): instance of named sub db with dupsort=True
             key (bytes): within sub db's keyspace
+            ion (int): starting ordinal value, default 0
         """
 
         with self.env.begin(db=db, write=False, buffers=True) as txn:
+            if not key:  # empty key
+                return  # raise StopIterationError
+
             cursor = txn.cursor()
             try:
                 if cursor.set_key(key):  # moves to first_dup
-                    for val in cursor.iternext_dup():
-                        yield val[33:]  # slice off prepended ordering proem
+                    for cval in cursor.iternext_dup():
+                        cion = int(bytes(cval[:32]), 16) # convert proem to int
+                        val = cval[33:]  # slice off prepended ordering proem
+                        if cion >= ion:
+                            yield (key, val)
             except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
-                               " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
+                raise KeyError(f"Key: `{key}` is either too big (for lmdb),"
+                               " or wrong DUPFIXED size")
 
 
     def getIoDupValLast(self, db, key):
@@ -2959,10 +2978,8 @@ class LMDBer(filing.Filer):
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
-    def getOnIoDupValsIter(self, db, key, on=0, sep=b'.'):
-        """Returns iterator of all dup IoVals at onkey = key + sep + on in db where
-        on is serialized. This provides ordinal ordering of keys and inserion
-        ordering of dups.
+    def getOnIoDupItemIter(self, db, key, on=0, ion=0, sep=b'.'):
+        """Iterates over all dup items at onkey = key + sep + on in db.
 
         Assumes DB opened with dupsort=True
         Return iterator of all duplicate values at key in db in insertion order
@@ -2983,28 +3000,28 @@ class LMDBer(filing.Filer):
         before insertion. Uses a python set for the duplicate inclusion test.
         Set inclusion scales with O(1) whereas list inclusion scales with O(n).
 
+        iodups (Iterator): iterator over insertion ordered set of entries
+                         at same apparent effective key made from key + sep + on.
+                         Uses hidden ordinal value proem for insertion ordering.
+                         The proem is appended and stripped transparently.
+                         When key is empty then returns empty iterator
+
+        Raises StopIteration Error when empty.
 
         Parameters:
-            db is opened named sub db with dupsort=True
-            key is bytes of key within sub db's keyspace
-            on (int): ordinal number at which to retrieve
+            db (lmdb._Database): instance of named sub db with dupsort==True
+            key (bytes): base key. When key is empty then returns empty iterator
+            on (int): ordinal number at which to add to key form effective key
+            ion (int): starting insertion ordinal value, default 0
             sep (bytes): separator character for split
+
         """
-        with self.env.begin(db=db, write=False, buffers=True) as txn:
-            cursor = txn.cursor()
-            if not key: # empty key so no dups
-                return
-            onkey = onKey(key, on, sep=sep)
-            try:
-                if cursor.set_key(onkey):  # moves to first_dup
-                    for ckey, cval in cursor.iternext():  # get key, val at cursor
-                        if not ckey == onkey:
-                            break
-                        yield cval[33:]  # slice off io proem
-                        # ckey, cn = splitOnKey(ckey, sep=sep)
-            except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{onkey}` is either empty, too big (for lmdb),"
-                                   " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
+        for onkey, val in self.getIoDupItemIter(db=db,
+                                                key=onKey(key, on, sep=sep),
+                                                ion=ion):
+            k, o = splitOnKey(onkey, sep=sep)
+            yield (k, o, val)
+        return
 
 
     def getOnIoDupLast(self, db, key, on: int = 0, *, sep=b'.'):

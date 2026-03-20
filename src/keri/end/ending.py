@@ -18,11 +18,12 @@ from collections.abc import Mapping
 import falcon
 from hio import base
 from hio.core import http, wiring
+from hio.help import ogler
 
-from .. import kering
-from ..app import habbing
-from ..core import coring, indexing
-from ..help import helping, ogler
+from ..kering import Roles, Schemes
+from ..app.habbing import Habery, HaberyDoer
+from ..core import Cigar, Siger
+from ..help import helping
 
 logger = ogler.getLogger()
 
@@ -81,13 +82,13 @@ def signature(signages):
             where:
                 markers (Union[list, dict]): When dict each item (key, val) has
                     key as str identifier of marker and has val as instance of
-                    either indexing.Siger or coring.Cigar.
-                    When list each item is instance of either indexing.Siger or
-                    coring.Cigar.
+                    either Siger or Cigar.
+                    When list each item is instance of either Siger or
+                    Cigar.
                     All markers must be of same class
                 indexed (bool): True means marker values are indexed signatures
-                    using indexing.Siger. False means marker values are unindexed
-                    signatures using coring.Cigar. None means auto detect from
+                    using Siger. False means marker values are unindexed
+                    signatures using Cigar. None means auto detect from
                     first marker value class. All markers must be of same class.
                 signer (str): optional identifier of signage. May be a
                     multi-sig group identifier. Default is None. When None or
@@ -187,13 +188,13 @@ def designature(value):
             where:
                 markers (Union[list, dict]): When dict each item (key, val) has
                     key as str identifier of marker and has val as instance of
-                    either indexing.Siger or coring.Cigar.
-                    When list each item is instance of either indexing.Siger or
-                    coring.Cigar.
+                    either Siger or Cigar.
+                    When list each item is instance of either Siger or
+                    Cigar.
                     All markers must be of same class
                 indexed (bool): True means marker values are indexed signatures
-                    using indexing.Siger. False means marker values are unindexed
-                    signatures using coring.Cigar. None means auto detect from
+                    using Siger. False means marker values are unindexed
+                    signatures using Cigar. None means auto detect from
                     first marker value class. All markers must be of same class.
                 signer (str): optional identifier of signage. May be a
                     multi-sig group identifier. Default is None. When None or
@@ -249,9 +250,9 @@ def designature(value):
         if kind == "CESR":  # convert to Siger or Cigar instances
             for key, val in items.items():
                 if indexed:
-                    items[key] = indexing.Siger(qb64=val)
+                    items[key] = Siger(qb64=val)
                 else:
-                    items[key] = coring.Cigar(qb64=val)
+                    items[key] = Cigar(qb64=val)
 
         signages.append(Signage(markers=items, indexed=indexed, signer=signer,
                                 ordinal=ordinal, digest=digest, kind=kind))
@@ -431,7 +432,7 @@ class PointEnd(base.Tymee):
                                    title='JSON Error',
                                    description='Malformed JSON.')
 
-        if role not in kering.Roles:
+        if role not in Roles:
             raise falcon.HTTPError(falcon.HTTP_400,
                                    title='Malformed JSON',
                                    description='Invalid role.')
@@ -442,7 +443,7 @@ class PointEnd(base.Tymee):
                                        title='Malformed JSON',
                                        description='Missing label.')
         scheme = data["scheme"]
-        if scheme not in kering.Schemes:
+        if scheme not in Schemes:
             raise falcon.HTTPError(falcon.HTTP_400,
                                    title='Malformed JSON',
                                    description='Invalid scheme.')
@@ -537,7 +538,7 @@ class OOBIEnd:
 
     """
 
-    def __init__(self, hby: habbing.Habery, default=None):
+    def __init__(self, hby: Habery, default=None):
         """  End point for responding to OOBIs
 
         Parameters:
@@ -596,7 +597,7 @@ class OOBIEnd:
 
         msgs = hab.replyToOobi(aid=aid, role=role, eids=eids)
         if not msgs and role is None:
-            msgs = hab.replyToOobi(aid=aid, role=kering.Roles.witness, eids=eids)
+            msgs = hab.replyToOobi(aid=aid, role=Roles.witness, eids=eids)
             msgs.extend(hab.replay(aid))
 
         if msgs:
@@ -656,8 +657,8 @@ def setup(name="who", temp=False, tymth=None, isith=None, count=1,
     Setup and return doers list to run controller
     """
     # setup habery with resources
-    hby = habbing.Habery(name=name, base="endo", temp=True, free=True)
-    hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
+    hby = Habery(name=name, base="endo", temp=True, free=True)
+    hbyDoer = HaberyDoer(habery=hby)  # setup doer
 
     # make hab
     hab = hby.makeHab(name=name, isith=isith, icount=count)

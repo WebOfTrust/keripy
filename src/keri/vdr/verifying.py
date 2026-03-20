@@ -9,14 +9,14 @@ import datetime
 import logging
 from typing import Type
 
-from hio.help import decking
+from hio.help import decking, ogler
 
-from ..kering import (Vrsn_1_0, MissingChainError,
+from ..kering import (Vrsn_1_0, Ilks, MissingChainError,
                       MissingRegistryError, MissingSchemaError,
                       ValidationError, FailedSchemaValidationError,
                       MissingChainError, RevokedChainError)
-from ..core import parsing, coring, scheming
-from ..help import helping, ogler
+from ..core import Dater, Saider, Parser, CacheResolver, Schemer
+from ..help import helping
 
 from .eventing import Tevery, Reger, query
 
@@ -65,9 +65,9 @@ class Verifier:
 
         """
         self.tvy = Tevery(reger=self.reger, db=self.hby.db, local=False)
-        self.psr = parsing.Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy,
+        self.psr = Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy,
                                   version=Vrsn_1_0)
-        self.resolver = scheming.CacheResolver(db=self.hby.db)
+        self.resolver = CacheResolver(db=self.hby.db)
 
         self.inited = True
 
@@ -126,7 +126,7 @@ class Verifier:
             if self.escrowMRE(creder, prefixer, seqner, saider):
                 self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid)))
             raise MissingRegistryError("credential identifier {} is out of date".format(vcid))
-        elif state.et in (coring.Ilks.rev, coring.Ilks.brv):  # no escrow, credential has been revoked
+        elif state.et in (Ilks.rev, Ilks.brv):  # no escrow, credential has been revoked
             logger.error("credential {} in registrying is not in issued state".format(vcid, regk))
             # Log this and continue instead of the previous exception so we save a revoked credential.
             # raise InvalidCredentialStateError("..."))
@@ -138,7 +138,7 @@ class Verifier:
                 self.cues.append(dict(kin="query", q=dict(r="schema", said=schema)))
             raise MissingSchemaError("schema {} not in cache".format(schema))
 
-        schemer = scheming.Schemer(raw=scraw)
+        schemer = Schemer(raw=scraw)
         try:
             schemer.verify(creder.raw)
         except ValidationError as ex:
@@ -175,7 +175,7 @@ class Verifier:
                     self.cues.append(dict(kin="query", q=dict(r="tels", pre=nodeSaid)))
                     raise MissingChainError("Failure to verify credential {} chain {}({})"
                                                    .format(creder.said, label, nodeSaid))
-                elif state.et in (coring.Ilks.rev, coring.Ilks.brv):
+                elif state.et in (Ilks.rev, Ilks.brv):
                     raise RevokedChainError("Failure to verify credential {} chain {}({})"
                                                    .format(creder.said, label, nodeSaid))
                 else:  # VcStatus == VcStates.Issued
@@ -214,7 +214,7 @@ class Verifier:
         key = creder.said
 
         self.reger.logCred(creder, prefixer, seqner, saider)
-        return self.reger.mre.put(keys=key, val=coring.Dater())
+        return self.reger.mre.put(keys=key, val=Dater())
 
     def escrowMCE(self, creder, prefixer, seqner, saider):
         """ Missing Chain Escrow
@@ -229,7 +229,7 @@ class Verifier:
         key = creder.said
 
         self.reger.logCred(creder, prefixer, seqner, saider)
-        return self.reger.mce.put(keys=key, val=coring.Dater())
+        return self.reger.mce.put(keys=key, val=Dater())
 
     def escrowMSE(self, creder, prefixer, seqner, saider):
         """
@@ -246,7 +246,7 @@ class Verifier:
         key = creder.said
 
         self.reger.logCred(creder, prefixer, seqner, saider)
-        return self.reger.mse.put(keys=key, val=coring.Dater())
+        return self.reger.mse.put(keys=key, val=Dater())
 
     def processEscrows(self):
         """ Process all escrows once each
@@ -315,7 +315,7 @@ class Verifier:
         issuer = creder.issuer.encode("utf-8")
 
         # Look up indicies
-        saider = coring.Saider(qb64=creder.said)
+        saider = Saider(qb64=creder.said)
         self.reger.saved.pin(keys=saider.qb64b, val=saider)
         self.reger.issus.add(keys=issuer, val=saider)
         self.reger.schms.add(keys=schema, val=saider)

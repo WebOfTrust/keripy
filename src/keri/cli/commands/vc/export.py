@@ -8,17 +8,16 @@ import argparse
 import sys
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
-from ...common.parsing import Parsery
+from ...common import Parsery, setupHby
 
-from .... import help
-from ....app import signing
-from ....core import serdering
-from ....vdr import credentialing
+from ....app import serialize
+from ....core import SerderKERI
+from ....vdr import Regery
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Export credential from store and any related material',
                                  parents=[Parsery.keystore()])
@@ -67,9 +66,9 @@ class ExportDoer(doing.DoDoer):
         self.chains = chains
         self.files = files
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
-        self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
+        self.rgy = Regery(hby=self.hby, name=name, base=base)
 
         doers = [doing.doify(self.exportDo)]
 
@@ -128,10 +127,10 @@ class ExportDoer(doing.DoDoer):
         (prefixer, number, diger) = self.rgy.reger.cancs.get(keys=(creder.said,))
         if self.files:
             f = open(f"{creder.diger}-acdc.cesr", 'w')
-            f.write(signing.serialize(creder, prefixer, number, diger))
+            f.write(serialize(creder, prefixer, number, diger))
             f.close()
         else:
-            sys.stdout.write(signing.serialize(creder, prefixer, number, diger).decode("utf-8"))
+            sys.stdout.write(serialize(creder, prefixer, number, diger).decode("utf-8"))
             sys.stdout.flush()
 
     def outputTEL(self, regk):
@@ -143,7 +142,7 @@ class ExportDoer(doing.DoDoer):
             if f is not None:
                 f.write(msg.decode("utf-8"))
             else:
-                serder = serdering.SerderKERI(raw=msg)
+                serder = SerderKERI(raw=msg)
                 atc = msg[serder.size:]
                 sys.stdout.write(serder.raw.decode("utf-8"))
                 sys.stdout.write(atc.decode("utf-8"))
@@ -160,7 +159,7 @@ class ExportDoer(doing.DoDoer):
             if f is not None:
                 f.write(msg.decode("utf-8"))
             else:
-                serder = serdering.SerderKERI(raw=msg)
+                serder = SerderKERI(raw=msg)
                 atc = msg[serder.size:]
                 sys.stdout.write(serder.raw.decode("utf-8"))
                 sys.stdout.write(atc.decode("utf-8"))

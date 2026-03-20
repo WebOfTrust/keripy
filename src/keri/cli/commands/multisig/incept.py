@@ -12,15 +12,17 @@ from ordered_set import OrderedSet as oset
 
 import sys
 from hio.base import doing
+from hio.help import ogler
 
-from .... import ConfigurationError, help
-from ....app import (Notifier, indirecting, grouping,
-                  habbing, forwarding)
-from ...common import Parsery, existing, displaying
-from ....core import coring
-from ....peer import exchanging
+from ....kering import ConfigurationError
+from ....app import (Notifier, MailboxDirector, Multiplexor,
+                     Counselor, HaberyDoer, Poster,
+                     loadHandlers, multisigInceptExn)
+from ...common import Parsery, setupHby, printIdentifier
+from ....core import Prefixer, Number, Diger
+from ....peer import Exchanger
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Initialize a group identifier prefix', 
                                  parents=[Parsery.keystore()])
@@ -73,8 +75,8 @@ class GroupMultisigIncept(doing.DoDoer):
 
     def __init__(self, name, base, alias, bran, group, wait, **kwa):
         self.name = name
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
+        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
 
         self.alias = alias
         self.inits = kwa
@@ -86,13 +88,13 @@ class GroupMultisigIncept(doing.DoDoer):
             topics.append('/delegate')
 
         notifier = Notifier(self.hby)
-        mux = grouping.Multiplexor(self.hby, notifier=notifier)
-        exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        grouping.loadHandlers(exc, mux)
+        mux = Multiplexor(self.hby, notifier=notifier)
+        exc = Exchanger(hby=self.hby, handlers=[])
+        loadHandlers(exc, mux)
 
-        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=topics, exc=exc)
-        self.counselor = grouping.Counselor(hby=self.hby)
-        self.postman = forwarding.Poster(hby=self.hby)
+        self.mbx = MailboxDirector(hby=self.hby, topics=topics, exc=exc)
+        self.counselor = Counselor(hby=self.hby)
+        self.postman = Poster(hby=self.hby)
 
         doers = [self.hbyDoer, self.mbx, self.counselor, self.postman]
         self.toRemove = list(doers)
@@ -137,10 +139,10 @@ class GroupMultisigIncept(doing.DoDoer):
             icp = ghab.makeOwnInception(allowPartiallySigned=True)
 
             # Create a notification EXN message to send to the other agents
-            exn, ims = grouping.multisigInceptExn(ghab.mhab,
-                                                  smids=ghab.smids,
-                                                  rmids=ghab.rmids,
-                                                  icp=icp)
+            exn, ims = multisigInceptExn(ghab.mhab,
+                                         smids=ghab.smids,
+                                         rmids=ghab.rmids,
+                                         icp=icp)
             others = list(oset(smids + (rmids or [])))
 
             others.remove(ghab.mhab.pre)
@@ -153,15 +155,15 @@ class GroupMultisigIncept(doing.DoDoer):
                                   attachment=ims)
 
             logger.info(f"Group identifier inception initialized for {ghab.pre}")
-            prefixer = coring.Prefixer(qb64=ghab.pre)
-            number = coring.Number(sn=0)
-            diger = coring.Diger(qb64=prefixer.qb64)
+            prefixer = Prefixer(qb64=ghab.pre)
+            number = Number(sn=0)
+            diger = Diger(qb64=prefixer.qb64)
             self.counselor.start(prefixer=prefixer, number=number, diger=diger,
                                  ghab=ghab)
 
         else:
-            prefixer = coring.Prefixer(ghab.pre)
-            number = coring.Number(sn=0)
+            prefixer = Prefixer(ghab.pre)
+            number = Number(sn=0)
 
         while True:
             saider = self.hby.db.cgms.get(keys=(prefixer.qb64, number.qb64))
@@ -174,6 +176,6 @@ class GroupMultisigIncept(doing.DoDoer):
             yield from self.postman.sendEventToDelegator(hab=ghab, sender=ghab.mhab, fn=ghab.kever.sn)
 
         print()
-        displaying.printIdentifier(self.hby, ghab.pre)
+        printIdentifier(self.hby, ghab.pre)
         self.remove(self.toRemove)
 

@@ -7,16 +7,16 @@ keri.kli.commands module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
-from ...common.parsing import Parsery
+from ...common import Parsery, setupHby
 
-from .... import help, Roles
-from ....app import organizing, habbing, forwarding
-from ....core import serdering
+from ....kering import Roles
+from ....app import Organizer, GroupHab, StreamPoster
+from ....core import SerderKERI
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Add AID or Alias to list of AIDs for a watcher to watch',
                                  parents=[Parsery.keystore()])
@@ -47,9 +47,9 @@ def add(args):
 class AddDoer(doing.DoDoer):
 
     def __init__(self, name, alias, base, bran, watcher, watched):
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
-        self.org = organizing.Organizer(hby=self.hby)
+        self.org = Organizer(hby=self.hby)
 
         wat = None
         if watcher in self.hby.kevers:
@@ -104,7 +104,7 @@ class AddDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        if isinstance(self.hab, habbing.GroupHab):
+        if isinstance(self.hab, GroupHab):
             raise ValueError("watchers for multisig AIDs not currently supported")
 
         ender = self.hab.db.ends.get(keys=(self.hab.pre, Roles.watcher, self.watcher))
@@ -113,13 +113,13 @@ class AddDoer(doing.DoDoer):
                                  data=dict(cid=self.hab.pre, role=Roles.watcher, eid=self.watcher))
             self.hab.psr.parseOne(ims=msg)
 
-        postman = forwarding.StreamPoster(hby=self.hby, hab=self.hab, recp=self.watcher, topic="reply")
+        postman = StreamPoster(hby=self.hby, hab=self.hab, recp=self.watcher, topic="reply")
         for msg in self.hab.db.cloneDelegation(self.hab.kever):
-            serder = serdering.SerderKERI(raw=msg)
+            serder = SerderKERI(raw=msg)
             postman.send(serder=serder, attachment=msg[serder.size:])
 
         for msg in self.hab.db.clonePreIter(pre=self.hab.pre):
-            serder = serdering.SerderKERI(raw=msg)
+            serder = SerderKERI(raw=msg)
             postman.send(serder=serder, attachment=msg[serder.size:])
 
         data = dict(cid=self.hab.pre,
@@ -129,7 +129,7 @@ class AddDoer(doing.DoDoer):
         route = f"/watcher/{self.watcher}/add"
         msg = self.hab.reply(route=route, data=data)
         self.hab.psr.parseOne(ims=bytes(msg))
-        rpy = serdering.SerderKERI(raw=msg)
+        rpy = SerderKERI(raw=msg)
         postman.send(serder=rpy, attachment=msg[rpy.size:])
 
         doer = doing.DoDoer(doers=postman.deliver())

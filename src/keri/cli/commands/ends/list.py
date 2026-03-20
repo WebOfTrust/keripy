@@ -8,14 +8,14 @@ import argparse
 import json
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
-from ...common.parsing import Parsery
+from ...common import setupHby, Parsery
 
-from .... import help, ConfigurationError
+from ....kering import ConfigurationError
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Add new endpoint role authorization.', 
                                  parents=[Parsery.keystore()])
@@ -40,7 +40,7 @@ def add_end(args):
 class RoleDoer(doing.DoDoer):
 
     def __init__(self, name, base, alias, bran, aid):
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
         if self.hab is None:
             raise ConfigurationError(f"unknown alias={alias}")

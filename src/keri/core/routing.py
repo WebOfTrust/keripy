@@ -8,11 +8,11 @@ import datetime
 import logging
 import re
 
-from hio.help import decking
+from hio.help import decking, ogler
 
 from ..db import fetchTsgs
-from ..help import helping, ogler
-from .. import ConfigurationError, UnverifiedReplyError, ValidationError
+from ..help import helping
+from ..kering import ConfigurationError, UnverifiedReplyError, ValidationError
 from .coring import Dater, Diger, Ilks
 from .eventing import validateSigs
 
@@ -362,7 +362,7 @@ class Revery:
                                 continue  # skip if not later
 
             # retrieve sdig of last event at sn of signer.
-            sdig = self.db.kels.getOnLast(keys=spre, on=seqner.sn)
+            sdig = self.db.kels.getLast(keys=spre, on=seqner.sn)
             if sdig is None:
                 # create cue here to request key state for sprefixer signer
                 # signer's est event not yet in signer's KEL

@@ -7,12 +7,11 @@ import argparse
 import json
 
 from hio.base import doing
+from hio.help import ogler
 from mnemonic import mnemonic
 
-from .... import help
 
-
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Generate a cryptographically random challenge phrase')
 parser.set_defaults(handler=lambda args: handler(args),

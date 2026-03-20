@@ -8,7 +8,7 @@ from dataclasses import dataclass, asdict
 from json import JSONDecodeError
 from typing import Optional, List
 
-from ... import kering
+from ...kering import ConfigurationError
 
 
 @dataclass
@@ -51,7 +51,7 @@ def parseData(data_path):
         else:
             data = json.loads(data_path)
     except json.JSONDecodeError:
-        raise kering.ConfigurationError("data supplied to anchor in a seal must be valid JSON")
+        raise ConfigurationError("data supplied to anchor in a seal must be valid JSON")
 
     if not isinstance(data, list):
         data = [data]

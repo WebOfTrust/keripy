@@ -6,13 +6,14 @@ keri.kli.commands module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import Parsery, existing
+from ...common import Parsery, existingHby
 
-from .... import ConfigurationError, help
+from ....kering import ConfigurationError
 from ....recording import TopicsRecord
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Update the index for a given topic for a witness', 
                                  parents=[Parsery.keystore()])
@@ -49,7 +50,7 @@ def update(tymth, tock=0.0, **opts):
     idx = int(args.index)
 
     try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
+        with existingHby(name=name, base=base, bran=bran) as hby:
             hab = hby.habByName(name=alias)
 
             if topic[0] != "/":

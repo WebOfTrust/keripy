@@ -22,6 +22,8 @@ from keri.recording import EndpointRecord, LocationRecord
 
 from keri.cli import commands
 
+import datetime
+
 WitnessUrls = {
     "wan:tcp": "tcp://127.0.0.1:5632/",
     "wan:http": "http://127.0.0.1:5642/",
