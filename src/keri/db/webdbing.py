@@ -902,7 +902,6 @@ class WebDBer:
 
         # 2. Prepare prefix and initial ordinal key
         prefix = key + sep
-        prefixLength = len(prefix)
 
         # 3. Scan existing entries
         pvals = oset()
@@ -1022,7 +1021,6 @@ class WebDBer:
             return False
 
         prefix = key + sep
-        prefixLength = len(prefix)
 
         # 2. Scan existing entries
         pvals = set()
