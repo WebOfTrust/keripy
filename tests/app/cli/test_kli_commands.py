@@ -3,7 +3,6 @@ import os
 
 import multicommand
 import pytest
-import gc
 
 
 from keri import core, ValidationError
@@ -238,8 +237,6 @@ def test_standalone_kli_commands(helpers, capsys):
                             '\t2. DE_VNJqg4b_7xP-xVNNg0NmttptGVrkTw7SNKtVSNJJg\n'
                             '\t3. DEMwUl3u8mJ-cWxSnReA0rQesIgZ8SFoHp0U2WyiZjRt\n'
                             '\n')
-
-    gc.collect()  # Force cleanup of dangling LMDB environments (required on Python 3.14+)
 
     args = parser.parse_args(["escrow", "list", "--name", "test"])
     assert args.handler is not None
