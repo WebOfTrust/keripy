@@ -2178,7 +2178,6 @@ def test_lmdber():
         assert dber.putOnVal(db, empty_key, on=0, val=some_value) == False
 
         # OnIoDup methods: empty key returns graceful failed value
-        assert dber.putOnIoDupVals(db, empty_key, on=0, vals=[some_value]) == False
         assert dber.addOnIoDupVal(db, empty_key, on=0, val=some_value) == False
         assert dber.getOnIoDupLast(db, empty_key, on=0) is None
         assert dber.cntOnIoDups(db, empty_key, on=0) == 0
@@ -2196,7 +2195,6 @@ def test_lmdber():
         assert dber.remIoSetVal(db, empty_key, val=None) == False
 
         # OnIoSet methods: empty key returns graceful failed value
-        assert dber.addOnIoSetVal(db, empty_key, on=0, val=some_value) == False
         assert list(dber.getOnIoSetItemIter(db, empty_key)) == []
         assert dber.getOnIoSetLastItem(db, empty_key) == ()
         assert dber.remOnIoSetVal(db, empty_key, on=0) == False

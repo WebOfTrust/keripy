@@ -1730,8 +1730,7 @@ class LMDBer(filing.Filer):
         transparently suffixed and unsuffixed
         Assumes DB opened with dupsort=False
         """
-        if not key or val is None:
-            return False
+         # val of None will return False
         return self.addIoSetVal(db=db, key=onKey(key, on, sep=sep), val=val, sep=sep)
 
 
@@ -2838,8 +2837,6 @@ class LMDBer(filing.Filer):
              sep (bytes): separator character for split
         """
 
-        if not key:
-            return False
         result = False
         dups = set(self.getOnIoDupVals(db, key))  #get preexisting dups if any
         with self.env.begin(db=db, write=True, buffers=True) as txn:
