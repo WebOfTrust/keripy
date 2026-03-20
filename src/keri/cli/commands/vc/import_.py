@@ -6,17 +6,17 @@ keri.kli.commands module
 """
 import argparse
 
-from hio import help
+from hio.help import ogler
 from hio.base import doing
 
-from ...common import existing
+from ...common import setupHby
 
-from ....app import habbing
-from ....core import parsing
-from ....vdr import eventing as teventing, verifying, credentialing
+from ....app import HaberyDoer
+from ....core import Parser
+from ....vdr import Tevery, Verifier, Regery
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Import an ACDC credential in CESR stream format')
 parser.set_defaults(handler=lambda args: imprt(args),
@@ -49,12 +49,12 @@ class ImportDoer(doing.DoDoer):
         self.file = file
         self.said = said
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
-        self.tvy = teventing.Tevery(db=self.hby.db, reger=self.rgy.reger)
-        self.vry = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
+        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.rgy = Regery(hby=self.hby, name=name, base=base)
+        self.tvy = Tevery(db=self.hby.db, reger=self.rgy.reger)
+        self.vry = Verifier(hby=self.hby, reger=self.rgy.reger)
 
-        doers = [doing.doify(self.importDo), habbing.HaberyDoer(self.hby)]
+        doers = [doing.doify(self.importDo), HaberyDoer(self.hby)]
 
         super(ImportDoer, self).__init__(doers=doers)
 
@@ -77,7 +77,7 @@ class ImportDoer(doing.DoDoer):
         with open(self.file, 'rb') as f:
             ims = f.read()
 
-            parsing.Parser(kvy=self.hby.kvy, tvy=self.tvy, vry=self.vry, local=False).parse(ims=ims)
+            Parser(kvy=self.hby.kvy, tvy=self.tvy, vry=self.vry, local=False).parse(ims=ims)
             self.tvy.processEscrows()
             self.vry.processEscrows()
             self.hby.kvy.processEscrows()

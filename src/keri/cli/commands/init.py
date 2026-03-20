@@ -7,18 +7,18 @@ import argparse
 import getpass
 
 from hio.base import doing
+from hio.help import ogler
 
-from ..common.parsing import Parsery
+from ..common import Parsery
 
-from ... import help
-from ...app import habbing, configing, oobiing
-from ...app.keeping import Algos
+from ...app import (Habery, Configer, Oobiery,
+                    Authenticator, Result, Algos)
 
 from ...kering import ConfigurationError
-from ...vdr import credentialing
+from ...vdr import Regery
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 def handler(args):
@@ -98,15 +98,15 @@ class InitDoer(doing.DoDoer):
 
         cf = None
         if configFile is not None:
-            cf = configing.Configer(name=configFile,
-                                    base="",
-                                    headDirPath=configDir,
-                                    temp=False,
-                                    reopen=True,
-                                    clear=False)
+            cf = Configer(name=configFile,
+                          base="",
+                          headDirPath=configDir,
+                          temp=False,
+                          reopen=True,
+                          clear=False)
 
-        hby = habbing.Habery(name=name, base=base, temp=temp, cf=cf, **kwa)
-        rgy = credentialing.Regery(hby=hby, name=name, base=base, temp=temp)
+        hby = Habery(name=name, base=base, temp=temp, cf=cf, **kwa)
+        rgy = Regery(hby=hby, name=name, base=base, temp=temp)
 
         print("KERI Keystore created at:", hby.ks.path)
         print("KERI Database created at:", hby.db.path)
@@ -118,16 +118,16 @@ class InitDoer(doing.DoDoer):
         if oc:
             print(f"\nLoading {oc} OOBIs...")
 
-            obi = oobiing.Oobiery(hby=hby)
+            obi = Oobiery(hby=hby)
             self.extend(obi.doers)
 
             while oc > hby.db.roobi.cnt():
                 yield 0.25
 
             for (oobi,), obr in hby.db.roobi.getTopItemIter():
-                if obr.state in (oobiing.Result.resolved,):
+                if obr.state in (Result.resolved,):
                     print(oobi, "succeeded")
-                if obr in (oobiing.Result.failed,):
+                if obr in (Result.failed,):
                     print(oobi, "failed")
 
             self.remove(obi.doers)
@@ -135,7 +135,7 @@ class InitDoer(doing.DoDoer):
         wc = [oobi for (oobi,), _ in hby.db.woobi.getTopItemIter()]
         if len(wc) > 0:
             print(f"\nAuthenticating Well-Knowns...")
-            authn = oobiing.Authenticator(hby=hby)
+            authn = Authenticator(hby=hby)
             self.extend(authn.doers)
 
             while True:

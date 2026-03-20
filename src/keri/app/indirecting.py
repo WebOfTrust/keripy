@@ -16,21 +16,26 @@ from ordered_set import OrderedSet as oset
 from hio.base import doing
 from hio.core import http, tcp
 from hio.core.tcp import serving
-from hio.help import decking
+from hio.help import decking, ogler
 
-from ..kering import Vrsn_1_0, Roles, Ilks, MissingEntryError
+from ..kering import (Vrsn_1_0, Roles, Ilks, Kinds,
+                      MissingEntryError)
 from ..recording import TopicsRecord
-from ..core import (eventing, parsing, routing, coring, serdering,
-                    Counter, Codens)
-from ..app import oobiing
+from ..core import (Kevery, parsing, routing, coring, serdering,
+                    Counter, receipt, Codens)
 from ..db import BaserDoer
-from ..end import ending
-from ..help import helping, ogler
-from ..peer import exchanging
+from ..end import loadEnds as loadEndsEnding
+from ..help import nowUTC
+from ..peer import Exchanger
 
-from . import (GroupHab, directing, storing,
-               httping, forwarding, agenting, oobiing)
-
+from .habbing import GroupHab
+from .directing import Directant
+from .storing import Mailboxer, Respondant
+from .httping import Clienter, createCESRRequest, parseCesrHttpRequest, CESR_CONTENT_TYPE
+from .forwarding import ForwardHandler
+from .agenting import httpClient
+from .oobiing import (Oobiery,
+                      loadEnds as loadEndsOobiing)
 
 logger = ogler.getLogger()
 
@@ -57,23 +62,23 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     reger = Reger(name=hab.name, db=hab.db, temp=False)
     verfer = Verifier(hby=hby, reger=reger)
 
-    mbx = mbx if mbx is not None else storing.Mailboxer(name=alias, temp=hby.temp)
-    forwarder = forwarding.ForwardHandler(hby=hby, mbx=mbx)
-    exchanger = exchanging.Exchanger(hby=hby, handlers=[forwarder])
-    clienter = httping.Clienter()
-    oobiery = oobiing.Oobiery(hby=hby, clienter=clienter)
+    mbx = mbx if mbx is not None else Mailboxer(name=alias, temp=hby.temp)
+    forwarder = ForwardHandler(hby=hby, mbx=mbx)
+    exchanger = Exchanger(hby=hby, handlers=[forwarder])
+    clienter = Clienter()
+    oobiery = Oobiery(hby=hby, clienter=clienter)
 
     app = falcon.App(cors_enable=True)
-    ending.loadEnds(app=app, hby=hby, default=hab.pre)
-    oobiing.loadEnds(app=app, hby=hby, prefix="/ext")
-    rep = storing.Respondant(hby=hby, mbx=mbx, aids=aids)
+    loadEndsEnding(app=app, hby=hby, default=hab.pre)
+    loadEndsOobiing(app=app, hby=hby, prefix="/ext")
+    rep = Respondant(hby=hby, mbx=mbx, aids=aids)
 
     rvy = routing.Revery(db=hby.db, cues=cues)
-    kvy = eventing.Kevery(db=hby.db,
-                          lax=True,
-                          local=False,
-                          rvy=rvy,
-                          cues=cues)
+    kvy = Kevery(db=hby.db,
+                lax=True,
+                local=False,
+                rvy=rvy,
+                cues=cues)
     kvy.registerReplyRoutes(router=rvy.rtr)
 
     from ..vdr import Tevery  # dynamic import because of circular import
@@ -112,7 +117,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
             raise RuntimeError(f"cannot create tcp server on port {tcpPort}")
         serverDoer = serving.ServerDoer(server=server)
 
-        directant = directing.Directant(hab=hab, server=server, verifier=verfer)
+        directant = Directant(hab=hab, server=server, verifier=verfer)
         doers.extend([directant, serverDoer])
 
     witStart = WitnessStart(hab=hab, parser=parser, cues=receiptEnd.outbound,
@@ -344,11 +349,11 @@ class Indirector(doing.DoDoer):
         self.hab = hab
         self.client = client  # use client for both rx and tx
         self.direct = True if direct else False
-        self.kevery = eventing.Kevery(db=self.hab.db,
-                                      lax=False,
-                                      local=False,
-                                      cloned=not self.direct,
-                                      direct=self.direct)
+        self.kevery = Kevery(db=self.hab.db,
+                            lax=False,
+                            local=False,
+                            cloned=not self.direct,
+                            direct=self.direct)
         self.parser = parsing.Parser(ims=self.client.rxbs,
                                      framed=True,
                                      kvy=self.kevery,
@@ -553,12 +558,12 @@ class MailboxDirector(doing.DoDoer):
                                                               lax=True, local=False)
 
         #  needs unique kevery with ims per remoter connnection
-        self.kvy = kvy if kvy is not None else eventing.Kevery(db=self.hby.db,
-                                                               cues=self.cues,
-                                                               rvy=self.rvy,
-                                                               lax=True,
-                                                               local=False,
-                                                               direct=False)
+        self.kvy = kvy if kvy is not None else Kevery(db=self.hby.db,
+                                                        cues=self.cues,
+                                                        rvy=self.rvy,
+                                                        lax=True,
+                                                        local=False,
+                                                        direct=False)
         self.kvy.registerReplyRoutes(self.rtr)
 
         if self.verifier is not None:
@@ -783,7 +788,7 @@ class Poller(doing.DoDoer):
 
         while self.retry > 0:
             try:
-                client, clientDoer = agenting.httpClient(self.hab, self.witness)
+                client, clientDoer = httpClient(self.hab, self.witness)
             except MissingEntryError as e:
                 traceback.print_exception(e, file=sys.stderr)  # logging
                 yield self.tock
@@ -804,15 +809,15 @@ class Poller(doing.DoDoer):
             else:
                 msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
 
-            httping.createCESRRequest(msg, client, dest=self.witness)
+            createCESRRequest(msg, client, dest=self.witness)
 
             while client.requests:
                 yield self.tock
 
-            created = helping.nowUTC()
+            created = nowUTC()
             while True:
 
-                now = helping.nowUTC()
+                now = nowUTC()
                 if now - created > datetime.timedelta(seconds=30):
                     self.remove([clientDoer])
                     break
@@ -836,7 +841,7 @@ class Poller(doing.DoDoer):
                     yield self.tock
 
                     witrec.topics[tpc] = int(idx)
-                    self.times[tpc] = helping.nowUTC()
+                    self.times[tpc] = nowUTC()
                     self.hab.db.tops.pin((self.pre, self.witness), witrec)
 
                 yield 0.25
@@ -904,8 +909,8 @@ class HttpEnd:
         rep.set_header('Cache-Control', "no-cache")
         rep.set_header('connection', "close")
 
-        cr = httping.parseCesrHttpRequest(req=req)
-        sadder = coring.Sadder(ked=cr.payload, kind=eventing.Kinds.json)
+        cr = parseCesrHttpRequest(req=req)
+        sadder = coring.Sadder(ked=cr.payload, kind=Kinds.json)
         msg = bytearray(sadder.raw)
         msg.extend(cr.attachments.encode("utf-8"))
 
@@ -1075,8 +1080,8 @@ class ReceiptEnd(doing.DoDoer):
         rep.set_header('Cache-Control', "no-cache")
         rep.set_header('connection', "close")
 
-        cr = httping.parseCesrHttpRequest(req=req)
-        serder = serdering.SerderKERI(sad=cr.payload, kind=eventing.Kinds.json)
+        cr = parseCesrHttpRequest(req=req)
+        serder = serdering.SerderKERI(sad=cr.payload, kind=Kinds.json)
 
         pre = serder.ked["i"]
         if self.aids is not None and pre not in self.aids:
@@ -1103,7 +1108,7 @@ class ReceiptEnd(doing.DoDoer):
 
             self.psr.parseOne(bytes(rct))
 
-            rep.set_header('Content-Type', httping.CESR_CONTENT_TYPE)
+            rep.set_header('Content-Type', CESR_CONTENT_TYPE)
             rep.status = falcon.HTTP_200
             rep.data = rct
         else:
@@ -1144,9 +1149,9 @@ class ReceiptEnd(doing.DoDoer):
         if self.hab.pre not in wits:
             raise falcon.HTTPBadRequest(description=f"{self.hab.pre} is not a valid witness for {pre} event at "
                                                     f"{serder.sn}, {wits}")
-        rserder = eventing.receipt(pre=pre,
-                                   sn=sn,
-                                   said=said.decode("utf-8"))
+        rserder = receipt(pre=pre,
+                          sn=sn,
+                          said=said.decode("utf-8"))
         rct = bytearray(rserder.raw)
         if wigers := self.hab.db.wigs.get(keys=(preb, said)):
             rct.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
@@ -1154,7 +1159,7 @@ class ReceiptEnd(doing.DoDoer):
             for wiger in wigers:
                 rct.extend(wiger.qb64b)
 
-        rep.set_header('Content-Type', httping.CESR_CONTENT_TYPE)
+        rep.set_header('Content-Type', CESR_CONTENT_TYPE)
         rep.status = falcon.HTTP_200
         rep.data = rct
 
@@ -1260,7 +1265,7 @@ class QueryEnd:
                     evnts.extend(msg)
 
 
-            rep.set_header('Content-Type', httping.CESR_CONTENT_TYPE)
+            rep.set_header('Content-Type', CESR_CONTENT_TYPE)
             rep.status = falcon.HTTP_200
             rep.data = bytes(evnts)
 
@@ -1282,7 +1287,7 @@ class QueryEnd:
                 for msg in cloner:
                     evnts.extend(msg)
 
-            rep.set_header('Content-Type', httping.CESR_CONTENT_TYPE)
+            rep.set_header('Content-Type', CESR_CONTENT_TYPE)
             rep.status = falcon.HTTP_200
             rep.data = bytes(evnts)
 

@@ -6,16 +6,15 @@ keri.kli.commands module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing, displaying
-from ...common.parsing import Parsery
+from ...common import Parsery, setupHby, printIdentifier
 
-from .... import help
-from ....app import habbing, agenting, indirecting
+from ....app import HaberyDoer, Receiptor, WitnessReceiptor, MailboxDirector
 from ....help import helping
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Submit current event to witnesses for receipting', 
                                  parents=[Parsery.keystore()])
@@ -62,9 +61,9 @@ class SubmitDoer(doing.DoDoer):
 
     def __init__(self, name, base, alias, bran, force, endpoint=False, authenticate=False):
 
-        hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
-        self.mbx = indirecting.MailboxDirector(hby=hby, topics=['/receipt', "/replay", "/reply"])
+        hby = setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = HaberyDoer(habery=hby)  # setup doer
+        self.mbx = MailboxDirector(hby=hby, topics=['/receipt', "/replay", "/reply"])
         self.alias = alias
         self.hby = hby
         self.force = force
@@ -97,14 +96,14 @@ class SubmitDoer(doing.DoDoer):
                 auths[wit] = f"{code}#{helping.nowIso8601()}"
 
         if self.endpoint:
-            receiptor = agenting.Receiptor(hby=self.hby)
+            receiptor = Receiptor(hby=self.hby)
             self.extend([receiptor])
 
             yield from receiptor.receipt(hab.pre, sn=hab.kever.sn, auths=auths)
             self.remove([receiptor])
 
         else:
-            witDoer = agenting.WitnessReceiptor(hby=self.hby, force=self.force, auths=auths)
+            witDoer = WitnessReceiptor(hby=self.hby, force=self.force, auths=auths)
             self.extend([witDoer])
 
             if hab.kever.wits:
@@ -115,7 +114,7 @@ class SubmitDoer(doing.DoDoer):
 
             self.remove([witDoer])
 
-        displaying.printIdentifier(self.hby, hab.pre)
+        printIdentifier(self.hby, hab.pre)
 
         toRemove = [self.hbyDoer, self.mbx]
         self.remove(toRemove)

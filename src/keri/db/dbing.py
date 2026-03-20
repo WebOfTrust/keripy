@@ -50,7 +50,6 @@ import platform
 import shutil
 import stat
 import tempfile
-from collections import abc
 from contextlib import contextmanager
 from typing import Union
 
@@ -61,7 +60,6 @@ from hio.base import filing
 import keri
 from ..kering import MaxON  # maximum ordinal number for seqence or first seen
 from ..help import helping
-from ..help.helping import isNonStringIterable
 
 ProemSize = 32  # does not include trailing separator
 MaxProem = int("f"*(ProemSize), 16)
@@ -1652,7 +1650,7 @@ class LMDBer(filing.Filer):
         transparently suffixed and unsuffixed
         Assumes DB opened with dupsort=False
         """
-        if not key or not vals or not isNonStringIterable(vals):
+        if not key or not vals or not helping.isNonStringIterable(vals):
             raise ValueError(f"Bad append parameter: {key=} or {vals=}")
 
         with self.env.begin(db=db, write=True, buffers=True) as txn:

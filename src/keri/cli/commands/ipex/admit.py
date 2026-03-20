@@ -10,11 +10,17 @@ from hio.base import doing
 from ...common import existing, Parsery
 
 from .... import Vrsn_1_0
-from ....app import Notifier, organizing, habbing, grouping, indirecting, agenting, forwarding
-from ....core import parsing, coring, eventing
-from ....peer import exchanging
-from ....vc import protocoling
-from ....vdr import credentialing, verifying, Tevery
+from ....app import (Notifier, Organizer, GroupHab,
+                     Multiplexor, MailboxDirector,
+                     WitnessInquisitor, StreamPoster, multisigExn)
+
+from ....app.grouping import loadHandlers as loadHandlersGrouping
+
+from ....core import Parser, Sadder, Kevery
+from ....peer import Exchanger, cloneMessage, serializeMessage
+from ....vc import ipexAdmitExn
+from ....vc.protocoling import loadHandlers as loadHandlersProtocoling
+from ....vdr import Regery, Verifier, Tevery
 
 
 parser = argparse.ArgumentParser(description='Accept a credential being issued or presented in response to an IPEX '
@@ -49,26 +55,26 @@ class AdmitDoer(doing.DoDoer):
         self.timestamp = timestamp
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
-        self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
-        self.org = organizing.Organizer(hby=self.hby)
-        self.witq = agenting.WitnessInquisitor(hby=self.hby)
+        self.rgy = Regery(hby=self.hby, name=name, base=base)
+        self.org = Organizer(hby=self.hby)
+        self.witq = WitnessInquisitor(hby=self.hby)
 
-        self.kvy = eventing.Kevery(db=self.hby.db)
+        self.kvy = Kevery(db=self.hby.db)
         self.tvy = Tevery(db=self.hby.db, reger=self.rgy.reger)
-        self.vry = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
+        self.vry = Verifier(hby=self.hby, reger=self.rgy.reger)
 
-        self.psr = parsing.Parser(kvy=self.kvy, tvy=self.tvy, vry=self.vry, version=Vrsn_1_0)
+        self.psr = Parser(kvy=self.kvy, tvy=self.tvy, vry=self.vry, version=Vrsn_1_0)
 
         notifier = Notifier(self.hby)
-        mux = grouping.Multiplexor(self.hby, notifier=notifier)
+        mux = Multiplexor(self.hby, notifier=notifier)
 
-        self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        grouping.loadHandlers(self.exc, mux)
-        protocoling.loadHandlers(self.hby, exc=self.exc, notifier=notifier)
+        self.exc = Exchanger(hby=self.hby, handlers=[])
+        loadHandlersGrouping(self.exc, mux)
+        loadHandlersProtocoling(self.hby, exc=self.exc, notifier=notifier)
 
-        mbx = indirecting.MailboxDirector(hby=self.hby,
-                                          topics=["/receipt", "/multisig", "/replay", "/credential"],
-                                          exc=self.exc, kvy=self.kvy, tvy=self.tvy, verifier=self.vry)
+        mbx = MailboxDirector(hby=self.hby,
+                              topics=["/receipt", "/multisig", "/replay", "/credential"],
+                              exc=self.exc, kvy=self.kvy, tvy=self.tvy, verifier=self.vry)
 
         self.toRemove = [mbx, self.witq]
         super(AdmitDoer, self).__init__(doers=self.toRemove + [doing.doify(self.admitDo)])
@@ -89,7 +95,7 @@ class AdmitDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        grant, pathed = exchanging.cloneMessage(self.hby, self.said)
+        grant, pathed = cloneMessage(self.hby, self.said)
         if grant is None:
             raise ValueError(f"exn message said={self.said} not found")
 
@@ -108,7 +114,7 @@ class AdmitDoer(doing.DoDoer):
 
         for label in ("anc", "iss", "acdc"):
             ked = embeds[label]
-            sadder = coring.Sadder(ked=ked)
+            sadder = Sadder(ked=ked)
             ims = bytearray(sadder.raw) + pathed[label]
             self.psr.parseOne(ims=ims)
 
@@ -117,22 +123,22 @@ class AdmitDoer(doing.DoDoer):
             yield self.tock
 
         recp = grant.ked['i']
-        exn, atc = protocoling.ipexAdmitExn(hab=self.hab, message=self.message, grant=grant, dt=self.timestamp)
+        exn, atc = ipexAdmitExn(hab=self.hab, message=self.message, grant=grant, dt=self.timestamp)
         msg = bytearray(exn.raw)
         msg.extend(atc)
 
-        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytes(msg), exc=self.exc)
+        Parser(version=Vrsn_1_0).parseOne(ims=bytes(msg), exc=self.exc)
 
         sender = self.hab
-        if isinstance(self.hab, habbing.GroupHab):
+        if isinstance(self.hab, GroupHab):
             sender = self.hab.mhab
-            wexn, watc = grouping.multisigExn(self.hab, exn=msg)
+            wexn, watc = multisigExn(self.hab, exn=msg)
 
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
             smids.remove(self.hab.mhab.pre)
 
             for part in smids:  # this goes to other participants only as a signaling mechanism
-                postman = forwarding.StreamPoster(hby=self.hby, hab=self.hab.mhab, recp=part, topic="multisig")
+                postman = StreamPoster(hby=self.hby, hab=self.hab.mhab, recp=part, topic="multisig")
                 postman.send(serder=wexn,
                              attachment=watc)
                 doer = doing.DoDoer(doers=postman.deliver())
@@ -143,9 +149,9 @@ class AdmitDoer(doing.DoDoer):
 
         if self.exc.lead(self.hab, said=exn.said):
             print(f"Sending admit message to {recp}")
-            postman = forwarding.StreamPoster(hby=self.hby, hab=sender, recp=recp, topic="credential")
+            postman = StreamPoster(hby=self.hby, hab=sender, recp=recp, topic="credential")
 
-            atc = exchanging.serializeMessage(self.hby, exn.said)
+            atc = serializeMessage(self.hby, exn.said)
             del atc[:exn.size]
             postman.send(serder=exn,
                          attachment=atc)

@@ -14,12 +14,10 @@ from typing import List
 
 from hio.base import doing
 
-from ...common import existing
-from ...common.parsing import Parsery, parseDataItems
+from ...common import Parsery, setupHby, parseDataItems
 
-from ....app import habbing, forwarding, organizing
-from ....app.habbing import GroupHab
-from ....peer import exchanging
+from ....app import HaberyDoer, Poster, Organizer, GroupHab
+from ....peer import exchange
 
 
 parser = argparse.ArgumentParser(
@@ -67,7 +65,7 @@ def send(args):
     return [doer]
 
 
-def resolveRecipient(org: organizing.Organizer, hby, recipient: str) -> str:
+def resolveRecipient(org: Organizer, hby, recipient: str) -> str:
     """
     recipient may be:
       - AID (already in kevers)
@@ -86,7 +84,7 @@ def resolveRecipient(org: organizing.Organizer, hby, recipient: str) -> str:
 
 class SendDoer(doing.DoDoer):
     """
-    Generic sender for EXN messages (exchanging.exchange + endorse)
+    Generic sender for EXN messages (exchange + endorse)
     """
 
     def __init__(
@@ -106,10 +104,10 @@ class SendDoer(doing.DoDoer):
         self.topic = topic if topic else route.strip("/").split("/")[0]
         self.data_items = data_items
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)
-        self.org = organizing.Organizer(hby=self.hby)
-        self.postman = forwarding.Poster(hby=self.hby)
+        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = HaberyDoer(habery=self.hby)
+        self.org = Organizer(hby=self.hby)
+        self.postman = Poster(hby=self.hby)
 
         doers = [self.hbyDoer, self.postman, doing.doify(self.sendDo)]
         super(SendDoer, self).__init__(doers=doers)
@@ -129,7 +127,7 @@ class SendDoer(doing.DoDoer):
         senderHab = hab.mhab if isinstance(hab, GroupHab) else hab
 
         payload = dict(data)
-        exn, _ = exchanging.exchange(
+        exn, _ = exchange(
             route=self.route, payload=payload, sender=senderHab.pre
         )
         ims = hab.endorse(serder=exn, last=False, pipelined=False)

@@ -14,6 +14,8 @@ import cbor2 as cbor
 import msgpack
 from  ordered_set import OrderedSet as oset
 
+from hio.help import ogler
+
 
 from ..kering import (ValidationError,  MissingFieldError, ExtraFieldError,
                       AlternateFieldError, InvalidValueError,
@@ -23,7 +25,7 @@ from ..kering import (ValidationError,  MissingFieldError, ExtraFieldError,
                       Smellage, Colds, Protocols, Kinds, Ilks,
                       smell, sniff, versify, deversify)
 
-from ..help import helping, NonStringIterable, ogler
+from ..help import isNonStringIterable, NonStringIterable
 from .coring import (DigDex, PreDex, NonTransDex, PreNonDigDex, Saids,
                      Matter, Verfer, Prefixer, Diger, Number, Tholder,
                      Ilker, Traitor, Verser, Dater, Pather, Noncer, Labeler)
@@ -995,7 +997,7 @@ class Serder:
         for label in oreqs:
             if label not in sad:
                 value = alls[label]
-                if helping.isNonStringIterable(value):
+                if isNonStringIterable(value):
                     value = copy.copy(value)  # copy iterable defaults
                 sad[label] = value
 

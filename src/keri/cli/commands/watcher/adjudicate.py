@@ -10,16 +10,17 @@ import random
 import sys
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
-from ...common.parsing import Parsery
+from ...common import Parsery, setupHby, aliasInput
 
-from .... import help, ConfigurationError
-from ....app import organizing, indirecting, querying, watching
+from ....kering import ConfigurationError
+from ....app import (Organizer, MailboxDirector, SeqNoQuerier,
+                     Adjudicator, AdjudicationDoer)
 from ....help import helping
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Perform key event adjudication on any new key state from watchers.',
                                  parents=[Parsery.keystore()])
@@ -58,8 +59,8 @@ class AdjudicationDoer(doing.DoDoer):
         self.poll = args.poll
         self.toad = args.toad
 
-        self.hby = existing.setupHby(name=self.name, base=base, bran=bran)
-        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/reply', '/replay'])
+        self.hby = setupHby(name=self.name, base=base, bran=bran)
+        self.mbx = MailboxDirector(hby=self.hby, topics=['/reply', '/replay'])
         doers = [doing.doify(self.adjudicate, **kwa), self.mbx]
 
         super(AdjudicationDoer, self).__init__(**kwa, doers=doers)
@@ -71,7 +72,7 @@ class AdjudicationDoer(doing.DoDoer):
         _ = (yield tock)
 
         try:
-            org = organizing.Organizer(hby=self.hby)
+            org = Organizer(hby=self.hby)
 
             if self.poll:
                 end = helping.nowUTC() + datetime.timedelta(seconds=5)
@@ -97,14 +98,14 @@ class AdjudicationDoer(doing.DoDoer):
                 raise ValueError(f"unknown watched {self.watched}")
 
             if self.alias is None:
-                self.alias = existing.aliasInput(self.hby)
+                self.alias = aliasInput(self.hby)
 
             hab = self.hby.habByName(self.alias)
             if hab is None:
                 raise ValueError(f"unknown alias {self.alias}")
 
-            adj = watching.Adjudicator(hby=self.hby, hab=hab)
-            adjDoer = watching.AdjudicationDoer(adj)
+            adj = Adjudicator(hby=self.hby, hab=hab)
+            adjDoer = AdjudicationDoer(adj)
             self.extend([adjDoer])
 
             adj.msgs.append(dict(oid=self.watched, toad=self.toad))
@@ -138,7 +139,7 @@ class AdjudicationDoer(doing.DoDoer):
 
                     print("Submitting query to update local copy of latest events.")
                     state = random.choice(ahds)
-                    querier = querying.SeqNoQuerier(hby=self.hby, hab=hab, pre=self.watched, sn=state.sn,
+                    querier = SeqNoQuerier(hby=self.hby, hab=hab, pre=self.watched, sn=state.sn,
                                                     wits=[state.wit])
                     self.extend([querier])
 

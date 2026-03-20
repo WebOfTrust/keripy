@@ -1,23 +1,20 @@
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ....common import existing
-from ....common.parsing import Parsery
+from ....common import Parsery, setupHby
 
-from ..... import help
+from .....app import (GroupHab, Notifier, MailboxDirector,
+                      HaberyDoer, Multiplexor, Counselor,
+                      Poster, loadHandlers, multisigRegistryInceptExn)
 
-from .....app import indirecting, habbing, grouping, forwarding
-from .....app.habbing import GroupHab
-from .....app.notifying import Notifier
-
-from .....core import serdering
-from .....core.eventing import SealEvent
-from .....peer import exchanging
-from .....vdr import credentialing
+from .....core import SerderKERI, SealEvent
+from .....peer import Exchanger
+from .....vdr import Regery, Registrar
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Initialize a new credential registry', 
                                  parents=[Parsery.keystore()])
@@ -97,19 +94,19 @@ class RegistryInceptor(doing.DoDoer):
         self.usage = usage
         self.toad = toad
         self.vcp = vcp
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
-        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        counselor = grouping.Counselor(hby=self.hby)
-        self.postman = forwarding.Poster(hby=self.hby)
+        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.rgy = Regery(hby=self.hby, name=name, base=base)
+        self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
+        counselor = Counselor(hby=self.hby)
+        self.postman = Poster(hby=self.hby)
 
         notifier = Notifier(self.hby)
-        mux = grouping.Multiplexor(self.hby, notifier=notifier)
-        exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        grouping.loadHandlers(exc, mux)
+        mux = Multiplexor(self.hby, notifier=notifier)
+        exc = Exchanger(hby=self.hby, handlers=[])
+        loadHandlers(exc, mux)
 
-        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc)
-        self.registrar = credentialing.Registrar(hby=self.hby, rgy=self.rgy, counselor=counselor)
+        mbx = MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc)
+        self.registrar = Registrar(hby=self.hby, rgy=self.rgy, counselor=counselor)
         doers = [self.hbyDoer, counselor, self.registrar, self.postman, mbx]
         self.toRemove = list(doers)
 
@@ -152,7 +149,7 @@ class RegistryInceptor(doing.DoDoer):
         else:
             anc = hab.interact(data=[rseal])
 
-        aserder = serdering.SerderKERI(raw=bytes(anc))
+        aserder = SerderKERI(raw=bytes(anc))
         self.registrar.incept(iserder=registry.vcp, anc=aserder)
 
         if isinstance(hab, GroupHab):
@@ -164,7 +161,7 @@ class RegistryInceptor(doing.DoDoer):
             smids.remove(hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = grouping.multisigRegistryInceptExn(ghab=hab, vcp=registry.vcp.raw, anc=anc, usage=usage)
+                exn, atc = multisigRegistryInceptExn(ghab=hab, vcp=registry.vcp.raw, anc=anc, usage=usage)
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",

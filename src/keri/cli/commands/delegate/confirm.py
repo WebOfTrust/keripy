@@ -8,21 +8,23 @@ import argparse
 from ordered_set import OrderedSet as oset
 
 from hio.base import doing
+from hio.help import ogler
 
 
-from ...common import existing
-from ...common.parsing import Parsery
+from ...common import setupHby, Parsery
 
-from .... import help, core
-from ....app import habbing, indirecting, agenting, grouping, forwarding, delegating, notifying
-from ....app.habbing import GroupHab
+from ....app import (GroupHab, HaberyDoer, MailboxDirector,
+                     WitnessInquisitor, WitnessReceiptor,
+                     Counselor, Multiplexor, Notifier,
+                     Poster, grouping, delegating)
+from ....kering import Ilks
 
-from ....core import coring, serdering
+from ....core import Number, Diger, Saider, Prefixer, SerderKERI, NumDex
 from ....help import helping
-from ....peer import exchanging
+from ....peer import Exchanger
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Confirm success delegate event (icp or rot) and gather and '
                                              'propagate witness receipts.',
@@ -66,22 +68,22 @@ def confirm(args):
 class ConfirmDoer(doing.DoDoer):
     def __init__(self, name, base, alias, bran, interact=False, auto=False, authenticate=False, codes=None,
                  codeTime=None):
-        hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
-        self.witq = agenting.WitnessInquisitor(hby=hby)
-        self.postman = forwarding.Poster(hby=hby)
-        self.counselor = grouping.Counselor(hby=hby)
-        self.notifier = notifying.Notifier(hby=hby)
-        self.mux = grouping.Multiplexor(hby=hby, notifier=self.notifier)
+        hby = setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = HaberyDoer(habery=hby)  # setup doer
+        self.witq = WitnessInquisitor(hby=hby)
+        self.postman = Poster(hby=hby)
+        self.counselor = Counselor(hby=hby)
+        self.notifier = Notifier(hby=hby)
+        self.mux = Multiplexor(hby=hby, notifier=self.notifier)
         self.authenticate = authenticate
         self.codes = codes if codes is not None else []
         self.codeTime = codeTime
 
-        exc = exchanging.Exchanger(hby=hby, handlers=[])
+        exc = Exchanger(hby=hby, handlers=[])
         delegating.loadHandlers(hby=hby, exc=exc, notifier=self.notifier)
         grouping.loadHandlers(exc=exc, mux=self.mux)
 
-        self.mbx = indirecting.MailboxDirector(hby=hby, topics=['/receipt', '/multisig', '/replay', '/delegate'],
+        self.mbx = MailboxDirector(hby=hby, topics=['/receipt', '/multisig', '/replay', '/delegate'],
                                                exc=exc)
         doers = [self.hbyDoer, self.witq, self.postman, self.counselor, self.mbx]
         self.toRemove = list(doers)
@@ -95,16 +97,16 @@ class ConfirmDoer(doing.DoDoer):
 
     def _addAuthorizerSeal(self, pre, edig, anchorSn, anchorSaid):
         """Save the authorizer (delegator) event seal of the anchoring IXN event for an approved delegation."""
-        sner = core.Number(num=anchorSn, code=core.NumDex.Huge)
-        diger = coring.Diger(qb64=anchorSaid)
+        sner = Number(num=anchorSn, code=NumDex.Huge)
+        diger = Diger(qb64=anchorSaid)
         self.hby.db.aess.pin(keys=(pre, edig), val=(sner, diger))
 
     def _processEvent(self, pre, edig, eserder, anchorSn, anchorSaid):
         """Process the DIP or DRT event so it appears in the delegator's hby.kevers."""
         sigers = self.hby.db.sigs.get(keys=(pre, edig))
         wigers = self.hby.db.wigs.get(keys=(pre, bytes(edig)))
-        sner = core.Number(num=anchorSn, code=core.NumDex.Huge)
-        saider = coring.Saider(qb64=anchorSaid)
+        sner = Number(num=anchorSn, code=NumDex.Huge)
+        saider = Saider(qb64=anchorSaid)
         self.hby.kvy.processEvent(serder=eserder, sigers=sigers, wigers=wigers, delseqner=sner,
                                       delsaider=saider, local=True)
 
@@ -129,11 +131,11 @@ class ConfirmDoer(doing.DoDoer):
                     continue
 
                 ilk = eserder.sad["t"]
-                if ilk in (coring.Ilks.dip,):
+                if ilk in (Ilks.dip,):
                     typ = "inception"
                     delpre = eserder.sad["di"]
 
-                elif ilk in (coring.Ilks.drt,):
+                elif ilk in (Ilks.drt,):
                     typ = "rotation"
                     dkever = self.hby.kevers[eserder.pre]
                     delpre = dkever.delpre
@@ -163,7 +165,7 @@ class ConfirmDoer(doing.DoDoer):
                             print("Confirm does not support rotation for delegation approval with group multisig")
                             continue
 
-                        serder = serdering.SerderKERI(raw=msg)
+                        serder = SerderKERI(raw=msg)
                         exn, atc = grouping.multisigInteractExn(ghab=hab, aids=aids, ixn=bytearray(msg))
                         others = list(oset(hab.smids + (hab.rmids or [])))
                         others.remove(hab.mhab.pre)
@@ -172,9 +174,9 @@ class ConfirmDoer(doing.DoDoer):
                             self.postman.send(src=hab.mhab.pre, dest=recpt, topic="multisig", serder=exn,
                                               attachment=atc)
 
-                        prefixer = coring.Prefixer(qb64=hab.pre)
-                        sner = core.Number(num=serder.sn, code=core.NumDex.Huge)  # maybe serder.sner instead so not Huge
-                        diger = coring.Diger(qb64b=serder.saidb)
+                        prefixer = Prefixer(qb64=hab.pre)
+                        sner = Number(num=serder.sn, code=NumDex.Huge)  # maybe serder.sner instead so not Huge
+                        diger = Diger(qb64b=serder.saidb)
                         self.counselor.start(ghab=hab, prefixer=prefixer, number=sner, diger=diger)
 
                         while True:
@@ -217,7 +219,7 @@ class ConfirmDoer(doing.DoDoer):
                                 code = input(f"Entire code for {wit}: ")
                                 auths[wit] = f"{code}#{helping.nowIso8601()}"
 
-                        witDoer = agenting.WitnessReceiptor(hby=self.hby, auths=auths)
+                        witDoer = WitnessReceiptor(hby=self.hby, auths=auths)
                         self.extend(doers=[witDoer])
                         self.toRemove.append(witDoer)
                         yield self.tock

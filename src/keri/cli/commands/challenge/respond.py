@@ -7,11 +7,10 @@ import argparse
 
 from hio.base import doing
 
-from ...common import existing
-from ...common.parsing import Parsery
-from ....app import habbing, forwarding, organizing
-from ....app.habbing import GroupHab
-from ....peer import exchanging
+from ...common import Parsery, setupHby, aliasInput
+
+from ....app import Poster, Organizer, GroupHab, HaberyDoer
+from ....peer import exchange
 
 
 parser = argparse.ArgumentParser(description='Respond to a list of challenge words by signing and sending an EXN '
@@ -73,10 +72,10 @@ class RespondDoer(doing.DoDoer):
         self.words = words
         self.recp = recp
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.postman = forwarding.Poster(hby=self.hby)
-        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        self.org = organizing.Organizer(hby=self.hby)
+        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.postman = Poster(hby=self.hby)
+        self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
+        self.org = Organizer(hby=self.hby)
         doers = [self.hbyDoer, self.postman, doing.doify(self.respondDo)]
 
         super(RespondDoer, self).__init__(doers=doers)
@@ -92,7 +91,7 @@ class RespondDoer(doing.DoDoer):
         _ = (yield self.tock)
 
         if self.alias is None:
-            self.alias = existing.aliasInput(self.hby)
+            self.alias = aliasInput(self.hby)
 
         hab = self.hby.habByName(name=self.alias)
         if hab is None:
@@ -107,7 +106,7 @@ class RespondDoer(doing.DoDoer):
         recp = recp[0]['id']
 
         payload = dict(i=hab.pre, words=self.words)
-        exn, _ = exchanging.exchange(route="/challenge/response", payload=payload, sender=hab.pre)
+        exn, _ = exchange(route="/challenge/response", payload=payload, sender=hab.pre)
         ims = hab.endorse(serder=exn, last=False, pipelined=False)
         del ims[:exn.size]
 

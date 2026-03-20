@@ -9,17 +9,18 @@ import datetime
 import sys
 
 from hio.base import doing
+from hio.help import ogler
 
-from .... import help
-from ....app import indirecting, challenging, organizing, signaling
-from .generate import generateWords
-from ...common import existing
-from ...common.parsing import Parsery
+from ....app import (MailboxDirector, Organizer, Signaler,
+                     loadHandlers)
 from ....help import helping
-from ....peer import exchanging
+from ....peer import Exchanger
+
+from ...common import setupHby, Parsery
+from .generate import generateWords
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Check mailbox for EXN challenge response messages and verify their '
                                              'signatures and data against provided words and signer',
@@ -65,14 +66,14 @@ class VerifyDoer(doing.DoDoer):
         self.strength = strength
         self.out = out
         self.signer = signer
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        self.org = organizing.Organizer(hby=self.hby)
-        signaler = signaling.Signaler()
+        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.exc = Exchanger(hby=self.hby, handlers=[])
+        self.org = Organizer(hby=self.hby)
+        signaler = Signaler()
 
-        challenging.loadHandlers(db=self.hby.db, signaler=signaler, exc=self.exc)
+        loadHandlers(db=self.hby.db, signaler=signaler, exc=self.exc)
 
-        self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/challenge'], exc=self.exc)
+        self.mbd = MailboxDirector(hby=self.hby, topics=['/challenge'], exc=self.exc)
 
         doers = [self.mbd, doing.doify(self.verifyDo)]
 

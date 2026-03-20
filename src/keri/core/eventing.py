@@ -10,7 +10,7 @@ from dataclasses import asdict
 from urllib.parse import urlsplit
 from math import ceil
 from ordered_set import OrderedSet as oset
-from hio.help import decking
+from hio.help import decking, ogler
 
 
 from ..kering import (MissingEntryError, UntrustedKeyStateSource,
@@ -21,17 +21,17 @@ from ..kering import (MissingEntryError, UntrustedKeyStateSource,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError,
                       QueryNotFoundError, MisfitEventSourceError,
                       MissingDelegableApprovalError, Version, Versionage,
-                      TraitDex, Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Ilks)
+                      TraitDex, Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Ilks,
+                      versify, Kinds)
 
-from ..help import helping, ogler, nowIso8601
+from ..help import helping
 
-from .coring import (versify, Kinds, PreDex, DigDex, Kinds,
-                     NonTransDex, NumDex, Prefixer, Seqner, Diger,
-                     Number, Seqner, Cigar, Dater, Noncer,
+from .coring import (PreDex, DigDex, NonTransDex, NumDex, Prefixer,
+                     Diger, Number, Seqner, Cigar, Dater, Noncer,
                      Verfer, Diger, Prefixer, Tholder)
 
 from .counting import Counter, Codens
-from .structing import (SealEvent, SealLast, StateEstEvent)
+from .structing import SealEvent, SealLast, StateEstEvent
 from .indexing import Siger
 from .serdering import SerderKERI
 
@@ -3858,6 +3858,8 @@ class Kevery:
         self.kramer = kramer    # Kramer instance for KRAM processing
         if self.kramer is not None:
             self.kramer.cues = self.cues
+        self.allowList = set()
+        self.denyList = set()
         self.lax = True if lax else False  # promiscuous mode
         self.local = True if local else False  # local vs nonlocal default
         self.cloned = True if cloned else False  # process as cloned
@@ -4319,7 +4321,32 @@ class Kevery:
         tvy = kwa.pop('tvy', None) or self.tvy
 
         # Step 1: AID-based allow/deny (TBD - placeholder for future consolidation)
+        
+        sender = None
 
+        # Determine sender AID deterministically
+
+        if kwa.get("ssgs"):
+            sender = kwa["ssgs"][-1][0].qb64  # (pre, sigers)
+        elif kwa.get("cigars"):
+            sender = kwa["cigars"][-1].verfer.qb64
+        elif kwa.get("tsgs"):
+            sender = kwa["tsgs"][-1][0].qb64
+        # Apply allow/deny rules
+        if sender is not None:
+            # Denylist always wins
+            if sender in self.denyList:
+                logger.info(f"Message dropped from {sender} (in denylist)")
+                return  # drop silently
+
+            # Allowlist only restricts when non-empty
+            if self.allowList and sender not in self.allowList:
+                logger.info(
+                f"Message dropped from {sender} "
+                f"(not in allowlist; allowlist active)"
+                )
+                return  # drop silently
+                
         # Step 2: KRAM
         if self.kramer:
             self.kramer.reconcileConfig()
@@ -5078,7 +5105,7 @@ class Kevery:
             raise UnverifiedReplyError(f"Unverified watcher add reply. {serder.ked}")
 
         if oobi:
-            self.db.oobis.pin(keys=(oobi,), val=OobiRecord(date=nowIso8601()))
+            self.db.oobis.pin(keys=(oobi,), val=OobiRecord(date=helping.nowIso8601()))
         self.updateWatched(keys=keys, saider=diger, enabled=enabled)
 
     def updateWatched(self, keys, saider, enabled=None):

@@ -8,17 +8,21 @@ Join multisig ipex messages
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
+from ...common import setupHby
 
-from .... import help, Vrsn_1_0
-from ....app import habbing, indirecting, agenting, notifying, grouping, organizing, forwarding
-from ....core import parsing, routing, serdering, coring
-from ....peer import exchanging
-from ....vdr import verifying, credentialing
+from .... import Vrsn_1_0
+from ....app import (HaberyDoer, MailboxDirector, WitnessInquisitor,
+                     Notifier, Multiplexor, Organizer,
+                     Counselor, Poster, loadHandlers, multisigExn)
+
+from ....core import Parser, Revery, SerderKERI, Sadder
+from ....peer import Exchanger, cloneMessage, serializeMessage
+from ....vdr import Verifier, Regery, Registrar, Credentialer
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Join group multisig ipex events')
 parser.set_defaults(handler=lambda args: join(args))
@@ -57,31 +61,31 @@ class JoinDoer(doing.DoDoer):
             bran (str): passcode to unlock keystore
 
         """
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
-        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        self.witq = agenting.WitnessInquisitor(hby=self.hby)
-        self.org = organizing.Organizer(hby=self.hby)
-        self.notifier = notifying.Notifier(hby=self.hby)
-        self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        self.verifier = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
-        self.rvy = routing.Revery(db=self.hby.db,  lax=True)
+        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.rgy = Regery(hby=self.hby, name=name, base=base)
+        self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
+        self.witq = WitnessInquisitor(hby=self.hby)
+        self.org = Organizer(hby=self.hby)
+        self.notifier = Notifier(hby=self.hby)
+        self.exc = Exchanger(hby=self.hby, handlers=[])
+        self.verifier = Verifier(hby=self.hby, reger=self.rgy.reger)
+        self.rvy = Revery(db=self.hby.db,  lax=True)
         self.hby.kvy.registerReplyRoutes(self.rvy.rtr)
-        self.psr = parsing.Parser(kvy=self.hby.kvy, tvy=self.rgy.tvy,
+        self.psr = Parser(kvy=self.hby.kvy, tvy=self.rgy.tvy,
                                   rvy=self.rvy, vry=self.verifier, exc=self.exc,
                                   version=Vrsn_1_0)
 
-        mux = grouping.Multiplexor(hby=self.hby, notifier=self.notifier)
-        grouping.loadHandlers(exc=self.exc, mux=mux)
-        self.counselor = grouping.Counselor(hby=self.hby)
+        mux = Multiplexor(hby=self.hby, notifier=self.notifier)
+        loadHandlers(exc=self.exc, mux=mux)
+        self.counselor = Counselor(hby=self.hby)
 
-        self.registrar = credentialing.Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)
-        self.credentialer = credentialing.Credentialer(hby=self.hby, rgy=self.rgy, registrar=self.registrar,
+        self.registrar = Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)
+        self.credentialer = Credentialer(hby=self.hby, rgy=self.rgy, registrar=self.registrar,
                                                        verifier=self.verifier)
 
-        self.mbx = indirecting.MailboxDirector(hby=self.hby, exc=self.exc, topics=['/receipt', '/multisig', '/replay',
+        self.mbx = MailboxDirector(hby=self.hby, exc=self.exc, topics=['/receipt', '/multisig', '/replay',
                                                                                    '/delegate'])
-        self.postman = forwarding.Poster(hby=self.hby)
+        self.postman = Poster(hby=self.hby)
 
         doers = [self.hbyDoer, self.witq,  self.mbx, self.counselor, self.registrar, self.credentialer, self.postman]
         self.toRemove = list(doers)
@@ -114,7 +118,7 @@ class JoinDoer(doing.DoDoer):
 
                 if route == '/multisig/exn':
                     said = attrs["d"]
-                    exn, pathed = exchanging.cloneMessage(self.hby, said=said)
+                    exn, pathed = cloneMessage(self.hby, said=said)
                     embeds = exn.ked['e']
 
                     if embeds['exn']['r'].startswith("/ipex"):
@@ -195,7 +199,7 @@ class JoinDoer(doing.DoDoer):
             approve = yn in ('', 'y', 'Y')
 
         if approve:
-            eserder = serdering.SerderKERI(sad=eexn)
+            eserder = SerderKERI(sad=eexn)
             anc = bytearray(eserder.raw) + pathed["exn"]
             self.psr.parseOne(ims=bytes(anc))
 
@@ -207,7 +211,7 @@ class JoinDoer(doing.DoDoer):
             smids.remove(hab.mhab.pre)
 
             for smid in smids:  # this goes to other participants only as a signaling mechanism
-                rexn, atc = grouping.multisigExn(ghab=hab, exn=msg)
+                rexn, atc = multisigExn(ghab=hab, exn=msg)
                 self.postman.send(src=hab.mhab.pre,
                                   dest=smid,
                                   topic="multisig",
@@ -222,7 +226,7 @@ class JoinDoer(doing.DoDoer):
 
             if self.exc.lead(hab, said=exn.said):
                 print(f"Sending message {eserder.said} to {recp}")
-                atc = exchanging.serializeMessage(self.hby, eserder.said)
+                atc = serializeMessage(self.hby, eserder.said)
                 del atc[:eserder.size]
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recp,
@@ -240,7 +244,7 @@ class JoinDoer(doing.DoDoer):
         return False
 
     def getAdmitRecp(self, exn):
-        grant, pathed = exchanging.cloneMessage(self.hby, exn['p'])
+        grant, pathed = cloneMessage(self.hby, exn['p'])
         if grant is None:
             raise ValueError(f"exn message said={exn['p']} not found")
 
@@ -248,7 +252,7 @@ class JoinDoer(doing.DoDoer):
         acdc = embeds["acdc"]
         for label in ("anc", "iss", "acdc"):
             ked = embeds[label]
-            sadder = coring.Sadder(ked=ked)
+            sadder = Sadder(ked=ked)
             ims = bytearray(sadder.raw) + pathed[label]
             self.psr.parseOne(ims=ims)
 

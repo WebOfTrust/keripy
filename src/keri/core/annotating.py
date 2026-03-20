@@ -6,6 +6,7 @@ Provides support for Annotater
 """
 from ..kering import (sniff, Colds, Ilks, IlkError,
                       ExtractionError, ColdStartError)
+
 from .coring import (Verser, Ilker, Diger, Prefixer, Number, Tholder,
                      Verfer, Traitor)
 from .counting import Counter

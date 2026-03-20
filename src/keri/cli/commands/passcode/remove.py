@@ -6,14 +6,14 @@ keri.kli.common.passcode.remove module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
-from ...common.parsing import Parsery
+from ...common import Parsery, existingHby
 
-from .... import help, ConfigurationError
+from ....kering import ConfigurationError
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Initialize a prefix', 
                                  parents=[Parsery.keystore()])
@@ -39,7 +39,7 @@ def remove(tymth, tock=0.0, **opts):
     bran = args.bran
 
     try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
+        with existingHby(name=name, base=base, bran=bran) as hby:
             hby.mgr.updateAeid(None, None)
             print("Passcode removed and keystore unencrypted.")
 

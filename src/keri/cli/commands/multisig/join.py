@@ -9,18 +9,28 @@ import json
 from ordered_set import OrderedSet as oset
 
 from hio.base import doing
+from hio.help import ogler
 from prettytable import PrettyTable
 
-from ...common import Parsery, existing, displaying
+from ...common import Parsery, setupHby, printIdentifier
 
-from .... import TraitCodex, ConfigurationError, MissingAnchorError, Vrsn_1_0, help
-from ....app import habbing, indirecting, agenting, notifying, grouping, organizing, forwarding
-from ....core import coring, eventing, scheming, parsing, routing, serdering
-from ....peer import exchanging
-from ....vdr import verifying, credentialing
+from ....kering import (TraitCodex, ConfigurationError,
+                        MissingAnchorError, Vrsn_1_0)
+from ....app import (HaberyDoer, MailboxDirector, WitnessInquisitor,
+                     Notifier, Multiplexor, Counselor, Organizer, Poster,
+                     multisigInceptExn, multisigInteractExn, multisigRotateExn,
+                     multisigRpyExn, multisigRegistryInceptExn, multisigIssueExn,
+                     multisigRevokeExn, loadHandlers)
+
+from ....core import (Prefixer, Number, Diger, Tholder,
+                      Schemer, Parser, Revery, SerderKERI,
+                      SerderACDC, TraitDex, messagize)
+
+from ....peer import Exchanger, cloneMessage
+from ....vdr import Verifier, Regery, Credentialer, Registrar
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Join group multisig inception, rotation or interaction event.',
                                  parents=[Parsery.keystore()])
@@ -64,31 +74,31 @@ class JoinDoer(doing.DoDoer):
                          while using the default group of "default-group"
         """
         self.group = group
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
-        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        self.witq = agenting.WitnessInquisitor(hby=self.hby)
-        self.org = organizing.Organizer(hby=self.hby)
-        self.notifier = notifying.Notifier(hby=self.hby)
-        self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        self.verifier = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
-        self.rvy = routing.Revery(db=self.hby.db,  lax=True)
+        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.rgy = Regery(hby=self.hby, name=name, base=base)
+        self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
+        self.witq = WitnessInquisitor(hby=self.hby)
+        self.org = Organizer(hby=self.hby)
+        self.notifier = Notifier(hby=self.hby)
+        self.exc = Exchanger(hby=self.hby, handlers=[])
+        self.verifier = Verifier(hby=self.hby, reger=self.rgy.reger)
+        self.rvy = Revery(db=self.hby.db,  lax=True)
         self.hby.kvy.registerReplyRoutes(self.rvy.rtr)
-        self.psr = parsing.Parser(kvy=self.hby.kvy, tvy=self.rgy.tvy,
-                                  rvy=self.rvy, vry=self.verifier, exc=self.exc,
-                                  version=Vrsn_1_0)
+        self.psr = Parser(kvy=self.hby.kvy, tvy=self.rgy.tvy,
+                          rvy=self.rvy, vry=self.verifier, exc=self.exc,
+                          version=Vrsn_1_0)
 
-        mux = grouping.Multiplexor(hby=self.hby, notifier=self.notifier)
-        grouping.loadHandlers(exc=self.exc, mux=mux)
-        self.counselor = grouping.Counselor(hby=self.hby)
+        mux = Multiplexor(hby=self.hby, notifier=self.notifier)
+        loadHandlers(exc=self.exc, mux=mux)
+        self.counselor = Counselor(hby=self.hby)
 
-        self.registrar = credentialing.Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)
-        self.credentialer = credentialing.Credentialer(hby=self.hby, rgy=self.rgy, registrar=self.registrar,
-                                                       verifier=self.verifier)
+        self.registrar = Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)
+        self.credentialer = Credentialer(hby=self.hby, rgy=self.rgy, registrar=self.registrar,
+                                         verifier=self.verifier)
 
-        self.mbx = indirecting.MailboxDirector(hby=self.hby, exc=self.exc, topics=['/receipt', '/multisig', '/replay',
+        self.mbx = MailboxDirector(hby=self.hby, exc=self.exc, topics=['/receipt', '/multisig', '/replay',
                                                                                    '/delegate'])
-        self.postman = forwarding.Poster(hby=self.hby)
+        self.postman = Poster(hby=self.hby)
 
         doers = [self.hbyDoer, self.witq,  self.mbx, self.counselor, self.registrar, self.credentialer, self.postman]
         self.toRemove = list(doers)
@@ -154,7 +164,7 @@ class JoinDoer(doing.DoDoer):
 
         """
         said = attrs["d"]
-        exn, pathed = exchanging.cloneMessage(self.hby, said=said)
+        exn, pathed = cloneMessage(self.hby, said=said)
         payload = exn.ked['a']
 
         smids = payload["smids"]
@@ -175,7 +185,7 @@ class JoinDoer(doing.DoDoer):
 
         #original icp
         embeds = exn.ked['e']
-        oicp = serdering.SerderKERI(sad=embeds["icp"])
+        oicp = SerderKERI(sad=embeds["icp"])
 
         inits["isith"] = oicp.ked["kt"]
         inits["nsith"] = oicp.ked["nt"]
@@ -219,10 +229,10 @@ class JoinDoer(doing.DoDoer):
 
             icp = ghab.makeOwnInception(allowPartiallySigned=True)
 
-            exn, ims = grouping.multisigInceptExn(ghab.mhab,
-                                                  smids=ghab.smids,
-                                                  rmids=ghab.rmids,
-                                                  icp=icp)
+            exn, ims = multisigInceptExn(ghab.mhab,
+                                         smids=ghab.smids,
+                                         rmids=ghab.rmids,
+                                         icp=icp)
             others = list(oset(smids + (rmids or [])))
 
             others.remove(ghab.mhab.pre)
@@ -239,19 +249,19 @@ class JoinDoer(doing.DoDoer):
 
                 self.postman.cues.clear()
 
-            prefixer = coring.Prefixer(qb64=ghab.pre)
-            number = coring.Number(sn=0)
-            diger = coring.Diger(qb64=prefixer.qb64)
+            prefixer = Prefixer(qb64=ghab.pre)
+            number = Number(sn=0)
+            diger = Diger(qb64=prefixer.qb64)
             yield from self.startCounselor(ghab, prefixer, number, diger)
 
             print()
-            displaying.printIdentifier(self.hby, ghab.pre)
+            printIdentifier(self.hby, ghab.pre)
 
             return True
 
     def interact(self, attrs):
         said = attrs["d"]
-        exn, pathed = exchanging.cloneMessage(self.hby, said=said)
+        exn, pathed = cloneMessage(self.hby, said=said)
         payload = exn.ked['a']
 
         pre = payload["gid"]
@@ -260,7 +270,7 @@ class JoinDoer(doing.DoDoer):
 
         embeds = exn.ked['e']
         # original ixn
-        oixn = serdering.SerderKERI(sad=embeds["ixn"])
+        oixn = SerderKERI(sad=embeds["ixn"])
         data = oixn.ked['a']
 
         if pre not in self.hby.habs:
@@ -287,11 +297,11 @@ class JoinDoer(doing.DoDoer):
 
         if approve:
             ixn = ghab.interact(data=data)
-            serder = serdering.SerderKERI(raw=ixn)
+            serder = SerderKERI(raw=ixn)
 
             ixn = ghab.makeOwnEvent(allowPartiallySigned=True, sn=oixn.sn)
 
-            exn, ims = grouping.multisigInteractExn(ghab, aids=ghab.smids, ixn=ixn)
+            exn, ims = multisigInteractExn(ghab, aids=ghab.smids, ixn=ixn)
             others = list(oset(smids + (rmids or [])))
 
             others.remove(ghab.mhab.pre)
@@ -308,13 +318,13 @@ class JoinDoer(doing.DoDoer):
 
                 self.postman.cues.clear()
 
-            prefixer = coring.Prefixer(qb64=ghab.pre)
-            number = coring.Number(sn=serder.sn)
-            diger = coring.Diger(qb64b=serder.saidb)
+            prefixer = Prefixer(qb64=ghab.pre)
+            number = Number(sn=serder.sn)
+            diger = Diger(qb64b=serder.saidb)
             yield from self.startCounselor(ghab, prefixer, number, diger)
 
             print()
-            displaying.printIdentifier(self.hby, ghab.pre)
+            printIdentifier(self.hby, ghab.pre)
 
             return True
 
@@ -331,7 +341,7 @@ class JoinDoer(doing.DoDoer):
     def showEvent(self, hab, mids, ked):
         print("Participants:")
 
-        thold = coring.Tholder(sith=ked["kt"])
+        thold = Tholder(sith=ked["kt"])
         self.printMemberTable(mids, hab, thold)
 
         print()
@@ -349,8 +359,8 @@ class JoinDoer(doing.DoDoer):
         if not thold.weighted:
             tab.add_row(["Signature Threshold", thold.num])
 
-        tab.add_row(["Establishment Only", eventing.TraitDex.EstOnly in ked["c"]])
-        tab.add_row(["Do Not Delegate", eventing.TraitDex.DoNotDelegate in ked["c"]])
+        tab.add_row(["Establishment Only", TraitDex.EstOnly in ked["c"]])
+        tab.add_row(["Do Not Delegate", TraitDex.DoNotDelegate in ked["c"]])
         tab.add_row(["Witness Threshold", ked["bt"]])
         tab.add_row(["Witnesses", "\n".join(ked["b"])])
 
@@ -361,7 +371,7 @@ class JoinDoer(doing.DoDoer):
 
         """
         said = attrs["d"]
-        exn, pathed = exchanging.cloneMessage(self.hby, said=said)
+        exn, pathed = cloneMessage(self.hby, said=said)
 
         payload = exn.ked['a']
         smids = payload["smids"]
@@ -369,7 +379,7 @@ class JoinDoer(doing.DoDoer):
         ked = exn.ked
 
         embeds = ked['e']
-        orot = serdering.SerderKERI(sad=embeds["rot"])
+        orot = SerderKERI(sad=embeds["rot"])
 
         both = list(set(smids + (rmids or [])))
 
@@ -420,10 +430,10 @@ class JoinDoer(doing.DoDoer):
 
             rot = ghab.makeOwnEvent(allowPartiallySigned=True, sn=orot.sn)
 
-            exn, ims = grouping.multisigRotateExn(ghab,
-                                                  smids=ghab.smids,
-                                                  rmids=ghab.rmids,
-                                                  rot=rot)
+            exn, ims = multisigRotateExn(ghab,
+                                         smids=ghab.smids,
+                                         rmids=ghab.rmids,
+                                         rot=rot)
             others = list(oset(smids + (rmids or [])))
 
             others.remove(ghab.mhab.pre)
@@ -440,26 +450,26 @@ class JoinDoer(doing.DoDoer):
 
                 self.postman.cues.clear()
 
-            serder = serdering.SerderKERI(raw=rot)
-            prefixer = coring.Prefixer(qb64=ghab.pre)
-            number = coring.Number(sn=serder.sn)
+            serder = SerderKERI(raw=rot)
+            prefixer = Prefixer(qb64=ghab.pre)
+            number = Number(sn=serder.sn)
 
-            yield from self.startCounselor(ghab, prefixer, number, coring.Diger(qb64=serder.said))
+            yield from self.startCounselor(ghab, prefixer, number, Diger(qb64=serder.said))
 
             print()
-            displaying.printIdentifier(self.hby, ghab.pre)
+            printIdentifier(self.hby, ghab.pre)
 
             return True
 
     def showRotation(self, hab, smids, rmids, ked):
         print()
         print("Signing Members")
-        thold = coring.Tholder(sith=ked["kt"])
+        thold = Tholder(sith=ked["kt"])
         self.printMemberTable(smids, hab, thold)
 
         print()
         print("Rotation Members")
-        nthold = coring.Tholder(sith=ked["nt"])
+        nthold = Tholder(sith=ked["nt"])
         self.printMemberTable(rmids, hab, nthold)
 
         print()
@@ -522,7 +532,7 @@ class JoinDoer(doing.DoDoer):
 
         """
         said = attrs["d"]
-        exn, pathed = exchanging.cloneMessage(self.hby, said=said)
+        exn, pathed = cloneMessage(self.hby, said=said)
 
         sender = exn.ked['i']
         payload = exn.ked['a']
@@ -564,7 +574,7 @@ class JoinDoer(doing.DoDoer):
 
         if approve:
             # Create and parse the event with "their" signatures
-            rserder = serdering.SerderKERI(sad=rpy)
+            rserder = SerderKERI(sad=rpy)
             anc = bytearray(rserder.raw) + pathed["rpy"]
             self.psr.parseOne(ims=bytes(anc))
 
@@ -576,7 +586,7 @@ class JoinDoer(doing.DoDoer):
             smids.remove(hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = grouping.multisigRpyExn(ghab=hab, rpy=anc)
+                exn, atc = multisigRpyExn(ghab=hab, rpy=anc)
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",
@@ -603,7 +613,7 @@ class JoinDoer(doing.DoDoer):
 
         """
         said = attrs["d"]
-        exn, pathed = exchanging.cloneMessage(self.hby, said=said)
+        exn, pathed = cloneMessage(self.hby, said=said)
 
         sender = exn.ked['i']
         payload = exn.ked['a']
@@ -630,17 +640,17 @@ class JoinDoer(doing.DoDoer):
             # Create and parse the event with "their" signatures
             registryName = input("Name for Registry: ")
             anc = embeds["anc"]
-            aserder = serdering.SerderKERI(sad=anc)
+            aserder = SerderKERI(sad=anc)
             anc = bytearray(aserder.raw) + pathed["anc"]
             self.psr.parseOne(ims=bytes(anc))
 
             # Now sign the event and parse it with our signatures
             sigers = hab.sign(aserder.raw)
-            anc = eventing.messagize(serder=aserder, sigers=sigers)
+            anc = messagize(serder=aserder, sigers=sigers)
             self.psr.parseOne(ims=bytes(anc))
 
             vcp = embeds["vcp"]
-            vserder = serdering.SerderKERI(sad=vcp)
+            vserder = SerderKERI(sad=vcp)
             try:
                 self.rgy.tvy.processEvent(serder=vserder)
             except MissingAnchorError:
@@ -653,7 +663,7 @@ class JoinDoer(doing.DoDoer):
             smids.remove(hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = grouping.multisigRegistryInceptExn(ghab=hab, vcp=vserder.raw, anc=anc, usage=usage)
+                exn, atc = multisigRegistryInceptExn(ghab=hab, vcp=vserder.raw, anc=anc, usage=usage)
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",
@@ -680,7 +690,7 @@ class JoinDoer(doing.DoDoer):
 
         """
         said = attrs["d"]
-        exn, pathed = exchanging.cloneMessage(self.hby, said=said)
+        exn, pathed = cloneMessage(self.hby, said=said)
 
         sender = exn.ked['i']
 
@@ -694,7 +704,7 @@ class JoinDoer(doing.DoDoer):
         if not scraw:
             raise ConfigurationError("Credential schema {} not found".format(schema))
 
-        schemer = scheming.Schemer(raw=scraw)
+        schemer = Schemer(raw=scraw)
 
         issr = acdc["i"]
         hab = self.hby.habs[issr] if issr in self.hby.habs else None
@@ -728,24 +738,24 @@ class JoinDoer(doing.DoDoer):
         if approve:
             # Create and parse the event with "their" signatures
             anc = embeds["anc"]
-            aserder = serdering.SerderKERI(sad=anc)
+            aserder = SerderKERI(sad=anc)
             anc = bytearray(aserder.raw) + pathed["anc"]
             self.psr.parseOne(ims=bytes(anc))
 
             # Now sign the event and parse it with our signatures
             sigers = hab.sign(aserder.raw)
-            anc = eventing.messagize(serder=aserder, sigers=sigers)
+            anc = messagize(serder=aserder, sigers=sigers)
             self.psr.parseOne(ims=bytes(anc))
 
             iss = embeds["iss"]
-            iserder = serdering.SerderKERI(sad=iss)
+            iserder = SerderKERI(sad=iss)
             try:
                 self.rgy.tvy.processEvent(serder=iserder)
             except MissingAnchorError:
                 pass
 
             acdc = embeds["acdc"]
-            creder = serdering.SerderACDC(sad=acdc)
+            creder = SerderACDC(sad=acdc)
             acdc = bytearray(creder.raw) + pathed["acdc"]
             self.psr.parseOne(ims=bytes(acdc))
 
@@ -756,7 +766,7 @@ class JoinDoer(doing.DoDoer):
             smids.remove(hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = grouping.multisigIssueExn(ghab=hab, acdc=acdc, iss=iserder.raw, anc=anc)
+                exn, atc = multisigIssueExn(ghab=hab, acdc=acdc, iss=iserder.raw, anc=anc)
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",
@@ -783,7 +793,7 @@ class JoinDoer(doing.DoDoer):
 
         """
         said = attrs["d"]
-        exn, pathed = exchanging.cloneMessage(self.hby, said=said)
+        exn, pathed = cloneMessage(self.hby, said=said)
 
         sender = exn.ked['i']
         payload = exn.ked['a']
@@ -802,7 +812,7 @@ class JoinDoer(doing.DoDoer):
         if not scraw:
             raise ConfigurationError("Credential schema {} not found".format(creder.schema))
 
-        schemer = scheming.Schemer(raw=scraw)
+        schemer = Schemer(raw=scraw)
 
         hab = self.hby.habs[creder.issuer]
         if hab is None:
@@ -830,17 +840,17 @@ class JoinDoer(doing.DoDoer):
         if approve:
             # Create and parse the event with "their" signatures
             anc = embeds["anc"]
-            aserder = serdering.SerderKERI(sad=anc)
+            aserder = SerderKERI(sad=anc)
             anc = bytearray(aserder.raw) + pathed["anc"]
             self.psr.parseOne(ims=bytes(anc))
 
             # Now sign the event and parse it with our signatures
             sigers = hab.sign(aserder.raw)
-            anc = eventing.messagize(serder=aserder, sigers=sigers)
+            anc = messagize(serder=aserder, sigers=sigers)
             self.psr.parseOne(ims=bytes(anc))
 
             rev = embeds["rev"]
-            rserder = serdering.SerderKERI(sad=rev)
+            rserder = SerderKERI(sad=rev)
             try:
                 self.rgy.tvy.processEvent(serder=rserder)
             except MissingAnchorError:
@@ -852,7 +862,7 @@ class JoinDoer(doing.DoDoer):
             smids.remove(hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = grouping.multisigRevokeExn(ghab=hab, said=creder.said, rev=rserder.raw, anc=anc)
+                exn, atc = multisigRevokeExn(ghab=hab, said=creder.said, rev=rserder.raw, anc=anc)
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",
@@ -868,11 +878,11 @@ class JoinDoer(doing.DoDoer):
                 recp = creder.attrib['i']
                 msgs = []
                 for msg in self.hby.db.clonePreIter(pre=creder.issuer):
-                    serder = serdering.SerderKERI(raw=msg)
+                    serder = SerderKERI(raw=msg)
                     atc = msg[serder.size:]
                     msgs.append((serder, atc))
                 for msg in self.rgy.reger.clonePreIter(pre=creder.said):
-                    serder = serdering.SerderKERI(raw=msg)
+                    serder = SerderKERI(raw=msg)
                     atc = msg[serder.size:]
                     msgs.append((serder, atc))
 

@@ -1,17 +1,16 @@
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ....common import existing
-from ....common.parsing import Parsery
+from ....common import Parsery, setupHby
 
-from ..... import help
-from .....app import indirecting, habbing, grouping
-from .....core import serdering
-from .....vdr import credentialing
+from .....app import MailboxDirector, HaberyDoer, Counselor
+from .....core import SerderKERI
+from .....vdr import Regery
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Checks the status of a credential registry', 
                                  parents=[Parsery.keystore()])
@@ -47,12 +46,12 @@ class RegistryStatusor(doing.DoDoer):
         self.name = name
         self.registryName = registryName
         self.verbose = verbose
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
-        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        counselor = grouping.Counselor(hby=self.hby)
+        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.rgy = Regery(hby=self.hby, name=name, base=base)
+        self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
+        counselor = Counselor(hby=self.hby)
 
-        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"])
+        mbx = MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"])
         doers = [self.hbyDoer, counselor, mbx]
         self.toRemove = list(doers)
 
@@ -96,7 +95,7 @@ class RegistryStatusor(doing.DoDoer):
         if self.verbose:
             cloner = reg.reger.clonePreIter(pre=reg.regk, fn=0)  # create iterator at 0
             for msg in cloner:
-                srdr = serdering.SerderKERI(raw=msg)
+                srdr = SerderKERI(raw=msg)
                 print(srdr.pretty())
                 print()
 

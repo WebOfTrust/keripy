@@ -8,17 +8,22 @@ import argparse
 from ordered_set import OrderedSet as oset
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import Parsery, rotating, existing, displaying, config
+from ...common import (Parsery, config, addRotationArgs,
+                       setupHby, printIdentifier)
 
-from .... import ConfigurationError, help
-from ....app import Notifier, grouping, indirecting, habbing, forwarding
-from ....core import coring, serdering
+from ....kering import ConfigurationError
+from ....app import (Notifier, Multiplexor, Counselor,
+                     MailboxDirector, HaberyDoer, Poster,
+                     loadHandlers, multisigRotateExn)
+
+from ....core import Prefixer, Number, Diger, SerderKERI
 from ....db import dgKey
-from ....peer import exchanging
+from ....peer import Exchanger
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Begin or join a rotation of a group identifier',
                                  parents=[Parsery.keystore()])
@@ -31,7 +36,7 @@ parser.add_argument("--rmids", help="List of other participant qb64 identifiers 
                                     "event",
                     action="append", required=False, default=None)
 
-rotating.addRotationArgs(parser)
+addRotationArgs(parser)
 
 
 def rotateGroupIdentifier(args):
@@ -48,7 +53,7 @@ def rotateGroupIdentifier(args):
     """
 
     data = config.parseData(args.data) if args.data is not None else None
-    hby = existing.setupHby(name=args.name, base=args.base, bran=args.bran)
+    hby = setupHby(name=args.name, base=args.base, bran=args.bran)
     rotDoer = GroupMultisigRotate(hby=hby, alias=args.alias, smids=args.smids, rmids=args.rmids,
                                   wits=args.witnesses, cuts=args.cuts, adds=args.witness_add,
                                   isith=args.isith, nsith=args.nsith, toad=args.toad, data=data)
@@ -81,15 +86,15 @@ class GroupMultisigRotate(doing.DoDoer):
         self.cuts = cuts if cuts is not None else []
         self.adds = adds if adds is not None else []
 
-        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
+        self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
         notifier = Notifier(self.hby)
-        mux = grouping.Multiplexor(self.hby, notifier=notifier)
-        exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        grouping.loadHandlers(exc, mux)
+        mux = Multiplexor(self.hby, notifier=notifier)
+        exc = Exchanger(hby=self.hby, handlers=[])
+        loadHandlers(exc, mux)
 
-        mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig', '/replay'], exc=exc)
-        self.counselor = grouping.Counselor(hby=self.hby)
-        self.postman = forwarding.Poster(hby=self.hby)
+        mbd = MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig', '/replay'], exc=exc)
+        self.counselor = Counselor(hby=self.hby)
+        self.postman = Poster(hby=self.hby)
 
         doers = [mbd, self.hbyDoer, self.counselor, self.postman]
         self.toRemove = list(doers)
@@ -192,18 +197,18 @@ class GroupMultisigRotate(doing.DoDoer):
         if ghab.mhab.pre not in smids:
             raise ConfigurationError(f"{ghab.mhab.pre} not in signing members {smids} for this event")
 
-        prefixer = coring.Prefixer(qb64=ghab.pre)
-        number = coring.Number(sn=ghab.kever.sn+1)
+        prefixer = Prefixer(qb64=ghab.pre)
+        number = Number(sn=ghab.kever.sn+1)
         rot = ghab.rotate(isith=self.isith, nsith=self.nsith,
                           toad=self.toad, cuts=list(self.cuts), adds=list(self.adds), data=self.data,
                           verfers=merfers, digers=migers)
 
-        rserder = serdering.SerderKERI(raw=rot)
+        rserder = SerderKERI(raw=rot)
         # Create a notification EXN message to send to the other agents
-        exn, ims = grouping.multisigRotateExn(ghab=ghab,
-                                              smids=smids,
-                                              rmids=rmids,
-                                              rot=bytearray(rot))
+        exn, ims = multisigRotateExn(ghab=ghab,
+                                     smids=smids,
+                                     rmids=rmids,
+                                     rot=bytearray(rot))
         others = list(oset(smids + (rmids or [])))
 
         others.remove(ghab.mhab.pre)
@@ -215,7 +220,7 @@ class GroupMultisigRotate(doing.DoDoer):
                               serder=exn,
                               attachment=bytearray(ims))
 
-        self.counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=coring.Diger(qb64=rserder.said))
+        self.counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=Diger(qb64=rserder.said))
 
         while True:
             saider = self.hby.db.cgms.get(keys=(ghab.pre, number.qb64))
@@ -228,5 +233,5 @@ class GroupMultisigRotate(doing.DoDoer):
             yield from self.postman.sendEventToDelegator(hab=ghab, sender=ghab.mhab, fn=ghab.kever.sn)
 
         print()
-        displaying.printIdentifier(self.hby, ghab.pre)
+        printIdentifier(self.hby, ghab.pre)
         self.remove(self.toRemove)

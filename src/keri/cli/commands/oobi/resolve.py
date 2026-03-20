@@ -6,16 +6,15 @@ keri.kli.commands.oobi module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
-from ...common.parsing import Parsery
+from ...common import Parsery, setupHby
 
-from .... import help
-from ....app import habbing, oobiing
+from ....app import HaberyDoer, Authenticator, Oobiery
 from ....help import helping
 from ....recording import OobiRecord
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description="Resolve the provided OOBI", 
                                  parents=[Parsery.keystore()])
@@ -55,8 +54,8 @@ class OobiDoer(doing.DoDoer):
         self.processed = 0
         self.oobi = oobi
         self.force = force
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)
+        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = HaberyDoer(habery=self.hby)
 
         obr = OobiRecord(date=helping.nowIso8601())
         if oobiAlias is not None:
@@ -64,8 +63,8 @@ class OobiDoer(doing.DoDoer):
 
         self.hby.db.oobis.put(keys=(oobi,), val=obr)
 
-        self.obi = oobiing.Oobiery(hby=self.hby)
-        self.authn = oobiing.Authenticator(hby=self.hby)
+        self.obi = Oobiery(hby=self.hby)
+        self.authn = Authenticator(hby=self.hby)
         doers = [self.hbyDoer, doing.doify(self.waitDo)]
 
         super(OobiDoer, self).__init__(doers=doers)

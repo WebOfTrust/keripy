@@ -224,19 +224,19 @@ def test_standalone_kli_commands(helpers, capsys):
     directing.runController(doers=doers)
     capsigs = capsys.readouterr()
     assert capsigs.out == ('Alias: \ttrans\n'
-                           'Identifier: EF0bnfg4smFm9Q_OKlKUYRRQctGhTBWUU3rXf7zuA9GU\n'
-                           'Seq No:\t5\n'
-                           '\n'
-                           'Witnesses:\n'
-                           'Count:\t\t0\n'
-                           'Receipts:\t0\n'
-                           'Threshold:\t0\n'
-                           '\n'
-                           'Public Keys:\t\n'
-                           '\t1. DCaZp7iampWSfsIA2cyZJvWO7CmSkIvXmonu7j3E11Y8\n'
-                           '\t2. DE_VNJqg4b_7xP-xVNNg0NmttptGVrkTw7SNKtVSNJJg\n'
-                           '\t3. DEMwUl3u8mJ-cWxSnReA0rQesIgZ8SFoHp0U2WyiZjRt\n'
-                           '\n')
+                            'Identifier: EF0bnfg4smFm9Q_OKlKUYRRQctGhTBWUU3rXf7zuA9GU\n'
+                            'Seq No:\t5\n'
+                            '\n'
+                            'Witnesses:\n'
+                            'Count:\t\t0\n'
+                            'Receipts:\t0\n'
+                            'Threshold:\t0\n'
+                            '\n'
+                            'Public Keys:\t\n'
+                            '\t1. DCaZp7iampWSfsIA2cyZJvWO7CmSkIvXmonu7j3E11Y8\n'
+                            '\t2. DE_VNJqg4b_7xP-xVNNg0NmttptGVrkTw7SNKtVSNJJg\n'
+                            '\t3. DEMwUl3u8mJ-cWxSnReA0rQesIgZ8SFoHp0U2WyiZjRt\n'
+                            '\n')
 
     args = parser.parse_args(["escrow", "list", "--name", "test"])
     assert args.handler is not None

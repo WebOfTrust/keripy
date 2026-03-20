@@ -8,15 +8,14 @@ import argparse
 import sys
 
 from hio.base import doing
+from hio.help import ogler
 
-from ..common import existing
-from ..common.parsing import Parsery
+from ..common import Parsery, setupHby
 
-from ... import help
-from ...core import serdering
+from ...core import SerderKERI
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Export key events in CESR stream format', 
                                  parents=[Parsery.keystore()])
@@ -48,7 +47,7 @@ class ExportDoer(doing.DoDoer):
         self.files = files
         self.ends = ends
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
 
         doers = [doing.doify(self.exportDo)]
@@ -90,7 +89,7 @@ class ExportDoer(doing.DoDoer):
             if f is not None:
                 f.write(msg.decode("utf-8"))
             else:
-                serder = serdering.SerderKERI(raw=msg)
+                serder = SerderKERI(raw=msg)
                 atc = msg[serder.size:]
                 sys.stdout.write(serder.raw.decode("utf-8"))
                 sys.stdout.write(atc.decode("utf-8"))

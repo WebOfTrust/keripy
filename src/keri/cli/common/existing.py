@@ -8,8 +8,8 @@ import getpass
 import sys
 from contextlib import contextmanager
 
-from ... import kering
-from ...app import habbing, keeping
+from ...kering import AuthError
+from ...app import Habery, Keeper
 
 
 def setupHby(name, base="", bran=None, cf=None, temp=False):
@@ -26,11 +26,11 @@ def setupHby(name, base="", bran=None, cf=None, temp=False):
           Habery:  the configured habery
 
     """
-    ks = keeping.Keeper(name=name,
-                        base=base,
-                        temp=temp,
-                        cf=cf,
-                        reopen=True)
+    ks = Keeper(name=name,
+                base=base,
+                temp=temp,
+                cf=cf,
+                reopen=True)
     aeid = ks.gbls.get('aeid')
     if aeid is None:
         print("Keystore must already exist, exiting")
@@ -45,12 +45,12 @@ def setupHby(name, base="", bran=None, cf=None, temp=False):
                 bran = bran.replace("-", "")
 
             retries += 1
-            hby = habbing.Habery(name=name, base=base, bran=bran, cf=cf, free=True)
+            hby = Habery(name=name, base=base, bran=bran, cf=cf, free=True)
             break
-        except (kering.AuthError, ValueError) as e:
+        except (AuthError, ValueError) as e:
             print(e)
             if retries >= 3:
-                raise kering.AuthError("too many attempts")
+                raise AuthError("too many attempts")
             print("Valid passcode required, try again...")
             bran = getpass.getpass("Passcode: ")
     return hby
