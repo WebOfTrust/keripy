@@ -1316,8 +1316,8 @@ def test_putIoSetVals():
         result = dber.putIoSetVals(db, b"alpha", [b"v1", b"v2"])
         assert result is True
         assert db.items == {
-            b"alpha.0": b"v1",
-            b"alpha.1": b"v2",
+            b"alpha.00000000000000000000000000000000": b"v1",
+            b"alpha.00000000000000000000000000000001": b"v2",
         }
         assert db.dirty is True
 
@@ -1329,9 +1329,9 @@ def test_putIoSetVals():
         result = dber.putIoSetVals(db, b"alpha", [b"v2", b"v3"])
         assert result is True
         assert db.items == {
-            b"alpha.0": b"v1",
-            b"alpha.1": b"v2",
-            b"alpha.2": b"v3",
+            b"alpha.00000000000000000000000000000000": b"v1",
+            b"alpha.00000000000000000000000000000001": b"v2",
+            b"alpha.00000000000000000000000000000002": b"v3",
         }
 
         # Reset dirty
@@ -1342,25 +1342,25 @@ def test_putIoSetVals():
         result = dber.putIoSetVals(db, b"alpha", [b"v1", b"v2", b"v3"])
         assert result is False
         assert db.items == {
-            b"alpha.0": b"v1",
-            b"alpha.1": b"v2",
-            b"alpha.2": b"v3",
+            b"alpha.00000000000000000000000000000000": b"v1",
+            b"alpha.00000000000000000000000000000001": b"v2",
+            b"alpha.00000000000000000000000000000002": b"v3",
         }
         assert db.dirty is False
 
 
         # 4. Handle gaps
         # Create a gap by deleting alpha.1
-        del db.items[b"alpha.1"]
+        del db.items[b"alpha.00000000000000000000000000000001"]
         db.dirty = False
 
         # Now items are: alpha.0, alpha.2
         result = dber.putIoSetVals(db, b"alpha", [b"v4"])
         assert result is True
         assert db.items == {
-            b"alpha.0": b"v1",
-            b"alpha.2": b"v3",
-            b"alpha.3": b"v4",
+            b"alpha.00000000000000000000000000000000": b"v1",
+            b"alpha.00000000000000000000000000000002": b"v3",
+            b"alpha.00000000000000000000000000000003": b"v4",
         }
 
         # Reset dirty
@@ -1368,16 +1368,16 @@ def test_putIoSetVals():
 
 
         # 5. Prefix isolation
-        db.items[b"beta.0"] = b"b1"
+        db.items[b"beta.00000000000000000000000000000000"] = b"b1"
         db.dirty = False
 
         dber.putIoSetVals(db, b"alpha", [b"v5"])
         assert db.items == {
-            b"alpha.0": b"v1",
-            b"alpha.2": b"v3",
-            b"alpha.3": b"v4",
-            b"alpha.4": b"v5",
-            b"beta.0": b"b1",
+            b"alpha.00000000000000000000000000000000": b"v1",
+            b"alpha.00000000000000000000000000000002": b"v3",
+            b"alpha.00000000000000000000000000000003": b"v4",
+            b"alpha.00000000000000000000000000000004": b"v5",
+            b"beta.00000000000000000000000000000000": b"b1",
         }
 
 
@@ -1449,7 +1449,7 @@ def test_addIoSetVal():
         # 1. Insert into empty store
         result = dber.addIoSetVal(db, b"alpha", b"v1")
         assert result is True
-        assert db.items == {b"alpha.0": b"v1"}
+        assert db.items == {b"alpha.00000000000000000000000000000000": b"v1"}
         assert db.dirty is True
 
         db.dirty = False
@@ -1457,45 +1457,45 @@ def test_addIoSetVal():
         # 2. Skip existing value (no‑op)
         result = dber.addIoSetVal(db, b"alpha", b"v1")
         assert result is False
-        assert db.items == {b"alpha.0": b"v1"}
+        assert db.items == {b"alpha.00000000000000000000000000000000": b"v1"}
         assert db.dirty is False
 
         # 3. Append new value at next ordinal
         result = dber.addIoSetVal(db, b"alpha", b"v2")
         assert result is True
         assert db.items == {
-            b"alpha.0": b"v1",
-            b"alpha.1": b"v2",
+            b"alpha.00000000000000000000000000000000": b"v1",
+            b"alpha.00000000000000000000000000000001": b"v2",
         }
 
         db.dirty = False
 
         # 4. Handle gaps: missing ordinal .1 should NOT be reused
-        del db.items[b"alpha.1"]
-        db.items[b"alpha.3"] = b"v3"
+        del db.items[b"alpha.00000000000000000000000000000001"]
+        db.items[b"alpha.00000000000000000000000000000003"] = b"v3"
         db.dirty = False
 
         result = dber.addIoSetVal(db, b"alpha", b"v4")
         assert result is True
         assert db.items == {
-            b"alpha.0": b"v1",
-            b"alpha.3": b"v3",
-            b"alpha.4": b"v4",
+            b"alpha.00000000000000000000000000000000": b"v1",
+            b"alpha.00000000000000000000000000000003": b"v3",
+            b"alpha.00000000000000000000000000000004": b"v4",
         }
 
         db.dirty = False
 
         # 5. Prefix isolation
-        db.items[b"beta.0"] = b"b1"
+        db.items[b"beta.00000000000000000000000000000000"] = b"b1"
         db.dirty = False
 
         dber.addIoSetVal(db, b"alpha", b"v5")
         assert db.items == {
-            b"alpha.0": b"v1",
-            b"alpha.3": b"v3",
-            b"alpha.4": b"v4",
-            b"alpha.5": b"v5",
-            b"beta.0": b"b1",
+            b"alpha.00000000000000000000000000000000": b"v1",
+            b"alpha.00000000000000000000000000000003": b"v3",
+            b"alpha.00000000000000000000000000000004": b"v4",
+            b"alpha.00000000000000000000000000000005": b"v5",
+            b"beta.00000000000000000000000000000000": b"b1",
         }
 
         db.dirty = False
@@ -1554,8 +1554,8 @@ def test_pinIoSetVals():
         result = dber.pinIoSetVals(db, b"alpha", [b"v1", b"v2"])
         assert result is True
         assert db.items == {
-            b"alpha.0": b"v1",
-            b"alpha.1": b"v2",
+            b"alpha.00000000000000000000000000000000": b"v1",
+            b"alpha.00000000000000000000000000000001": b"v2",
         }
         assert db.dirty is True
 
@@ -1565,9 +1565,9 @@ def test_pinIoSetVals():
         result = dber.pinIoSetVals(db, b"alpha", [b"x", b"y", b"z"])
         assert result is True
         assert db.items == {
-            b"alpha.0": b"x",
-            b"alpha.1": b"y",
-            b"alpha.2": b"z",
+            b"alpha.00000000000000000000000000000000": b"x",
+            b"alpha.00000000000000000000000000000001": b"y",
+            b"alpha.00000000000000000000000000000002": b"z",
         }
         assert db.dirty is True
 
@@ -1577,24 +1577,24 @@ def test_pinIoSetVals():
         result = dber.pinIoSetVals(db, b"alpha", [b"c", b"a", b"b"])
         assert result is True
         assert db.items == {
-            b"alpha.0": b"c",
-            b"alpha.1": b"a",
-            b"alpha.2": b"b",
+            b"alpha.00000000000000000000000000000000": b"c",
+            b"alpha.00000000000000000000000000000001": b"a",
+            b"alpha.00000000000000000000000000000002": b"b",
         }
 
         db.dirty = False
 
         # 4. Prefix isolation
-        db.items[b"beta.0"] = b"b1"
-        db.items[b"beta.1"] = b"b2"
+        db.items[b"beta.00000000000000000000000000000000"] = b"b1"
+        db.items[b"beta.00000000000000000000000000000001"] = b"b2"
         db.dirty = False
 
         result = dber.pinIoSetVals(db, b"alpha", [b"m"])
         assert result is True
         assert db.items == {
-            b"alpha.0": b"m",
-            b"beta.0": b"b1",
-            b"beta.1": b"b2",
+            b"alpha.00000000000000000000000000000000": b"m",
+            b"beta.00000000000000000000000000000000": b"b1",
+            b"beta.00000000000000000000000000000001": b"b2",
         }
 
         db.dirty = False
@@ -1652,9 +1652,9 @@ def test_remIoSet():
         db = dber.env.open_db("vals.")
 
         # Initial population
-        db.items[b"alpha.0"] = b"v1"
-        db.items[b"alpha.1"] = b"v2"
-        db.items[b"alpha.2"] = b"v3"
+        db.items[b"alpha.00000000000000000000000000000000"] = b"v1"
+        db.items[b"alpha.00000000000000000000000000000001"] = b"v2"
+        db.items[b"alpha.00000000000000000000000000000002"] = b"v3"
         db.dirty = False
 
         # 1. Remove all values under a key
@@ -1666,18 +1666,18 @@ def test_remIoSet():
         db.dirty = False
 
         # Rebuild for next scenarios
-        db.items[b"alpha.0"] = b"a1"
-        db.items[b"alpha.2"] = b"a2"   # gap at .1
-        db.items[b"beta.0"] = b"b1"
+        db.items[b"alpha.00000000000000000000000000000000"] = b"a1"
+        db.items[b"alpha.00000000000000000000000000000002"] = b"a2"   # gap at .1
+        db.items[b"beta.00000000000000000000000000000000"] = b"b1"
         db.dirty = False
 
         # 2. No‑op when key does not exist
         result = dber.remIoSet(db, b"gamma")
         assert result is False
         assert db.items == {
-            b"alpha.0": b"a1",
-            b"alpha.2": b"a2",
-            b"beta.0": b"b1",
+            b"alpha.00000000000000000000000000000000": b"a1",
+            b"alpha.00000000000000000000000000000002": b"a2",
+            b"beta.00000000000000000000000000000000": b"b1",
         }
         assert db.dirty is False
 
@@ -1685,23 +1685,23 @@ def test_remIoSet():
         result = dber.remIoSet(db, b"alpha")
         assert result is True
         assert db.items == {
-            b"beta.0": b"b1",
+            b"beta.00000000000000000000000000000000": b"b1",
         }
         assert db.dirty is True
 
         db.dirty = False
 
         # Rebuild for gap test
-        db.items[b"alpha.0"] = b"x"
-        db.items[b"alpha.5"] = b"y"   # large gap
-        db.items[b"alpha.9"] = b"z"
+        db.items[b"alpha.00000000000000000000000000000000"] = b"x"
+        db.items[b"alpha.00000000000000000000000000000005"] = b"y"   # large gap
+        db.items[b"alpha.00000000000000000000000000000009"] = b"z"
         db.dirty = False
 
         # 4. Handle gaps
         result = dber.remIoSet(db, b"alpha")
         assert result is True
         assert db.items == {
-            b"beta.0": b"b1",
+            b"beta.00000000000000000000000000000000": b"b1",
         }
         assert db.dirty is True
 
@@ -1759,17 +1759,17 @@ def test_remIoSetVal():
         db = dber.env.open_db("vals.")
 
         # Initial population
-        db.items[b"alpha.0"] = b"v1"
-        db.items[b"alpha.1"] = b"v2"
-        db.items[b"alpha.2"] = b"v3"
+        db.items[b"alpha.00000000000000000000000000000000"] = b"v1"
+        db.items[b"alpha.00000000000000000000000000000001"] = b"v2"
+        db.items[b"alpha.00000000000000000000000000000002"] = b"v3"
         db.dirty = False
 
         # 1. Remove a specific value
         result = dber.remIoSetVal(db, b"alpha", b"v2")
         assert result is True
         assert db.items == {
-            b"alpha.0": b"v1",
-            b"alpha.2": b"v3",
+            b"alpha.00000000000000000000000000000000": b"v1",
+            b"alpha.00000000000000000000000000000002": b"v3",
         }
         assert db.dirty is True
 
@@ -1784,18 +1784,18 @@ def test_remIoSetVal():
         db.dirty = False
 
         # Rebuild for next scenarios
-        db.items[b"alpha.0"] = b"a1"
-        db.items[b"alpha.1"] = b"a2"
-        db.items[b"beta.0"] = b"b1"
+        db.items[b"alpha.00000000000000000000000000000000"] = b"a1"
+        db.items[b"alpha.00000000000000000000000000000001"] = b"a2"
+        db.items[b"beta.00000000000000000000000000000000"] = b"b1"
         db.dirty = False
 
         # 3. No‑op when value does not exist
         result = dber.remIoSetVal(db, b"alpha", b"zzz")
         assert result is False
         assert db.items == {
-            b"alpha.0": b"a1",
-            b"alpha.1": b"a2",
-            b"beta.0": b"b1",
+            b"alpha.00000000000000000000000000000000": b"a1",
+            b"alpha.00000000000000000000000000000001": b"a2",
+            b"beta.00000000000000000000000000000000": b"b1",
         }
         assert db.dirty is False
 
@@ -1803,22 +1803,22 @@ def test_remIoSetVal():
         result = dber.remIoSetVal(db, b"alpha", b"a1")
         assert result is True
         assert db.items == {
-            b"alpha.1": b"a2",
-            b"beta.0": b"b1",
+            b"alpha.00000000000000000000000000000001": b"a2",
+            b"beta.00000000000000000000000000000000": b"b1",
         }
         assert db.dirty is True
 
         db.dirty = False
 
         # 5. Handle gaps
-        db.items[b"alpha.3"] = b"a3"   # create a gap at .2
+        db.items[b"alpha.00000000000000000000000000000003"] = b"a3"   # create a gap at .2
         db.dirty = False
 
         result = dber.remIoSetVal(db, b"alpha", b"a3")
         assert result is True
         assert db.items == {
-            b"alpha.1": b"a2",
-            b"beta.0": b"b1",
+            b"alpha.00000000000000000000000000000001": b"a2",
+            b"beta.00000000000000000000000000000000": b"b1",
         }
 
         db.dirty = False
@@ -1875,10 +1875,10 @@ def test_cntIoSet():
         db = dber.env.open_db("vals.")
 
         # Initial population
-        db.items[b"alpha.0"] = b"v1"
-        db.items[b"alpha.1"] = b"v2"
-        db.items[b"alpha.2"] = b"v3"
-        db.items[b"beta.0"] = b"b1"
+        db.items[b"alpha.00000000000000000000000000000000"] = b"v1"
+        db.items[b"alpha.00000000000000000000000000000001"] = b"v2"
+        db.items[b"alpha.00000000000000000000000000000002"] = b"v3"
+        db.items[b"beta.00000000000000000000000000000000"] = b"b1"
         db.dirty = False
 
         # 1. Count all values under a key
@@ -1893,8 +1893,8 @@ def test_cntIoSet():
         assert db.dirty is False
 
         # 3. Handle gaps
-        del db.items[b"alpha.1"]   # gap at .1
-        db.items[b"alpha.5"] = b"v5"
+        del db.items[b"alpha.00000000000000000000000000000001"]  # gap at .1
+        db.items[b"alpha.00000000000000000000000000000005"] = b"v5"
         assert dber.cntIoSet(db, b"alpha") == 3   # .0, .2, .5
         assert dber.cntIoSet(db, b"alpha", ion=2) == 2
         assert dber.cntIoSet(db, b"alpha", ion=4) == 1
@@ -1957,46 +1957,46 @@ def test_getIoSetItemIter():
         db = dber.env.open_db("vals.")
 
         # Populate alpha.* set
-        db.items[b"alpha.0"] = b"v0"
-        db.items[b"alpha.1"] = b"v1"
-        db.items[b"alpha.2"] = b"v2"
+        db.items[b"alpha.00000000000000000000000000000000"] = b"v0"
+        db.items[b"alpha.00000000000000000000000000000001"] = b"v1"
+        db.items[b"alpha.00000000000000000000000000000002"] = b"v2"
 
         # Add unrelated prefixes
-        db.items[b"beta.0"] = b"b0"
-        db.items[b"alphaX.0"] = b"x0"
+        db.items[b"beta.00000000000000000000000000000000"] = b"b0"
+        db.items[b"alphaX.00000000000000000000000000000000"] = b"x0"
         db.dirty = False
 
         # 1. Iterate all values under alpha
         out = list(dber.getIoSetItemIter(db, b"alpha"))
         assert out == [
-            (b"alpha.0", b"v0"),
-            (b"alpha.1", b"v1"),
-            (b"alpha.2", b"v2"),
+            (b"alpha", 0, b"v0"),
+            (b"alpha", 1, b"v1"),
+            (b"alpha", 2, b"v2"),
         ]
         assert db.dirty is False
 
         # 2. Start iteration at non‑zero ordinal
         out = list(dber.getIoSetItemIter(db, b"alpha", ion=1))
         assert out == [
-            (b"alpha.1", b"v1"),
-            (b"alpha.2", b"v2"),
+            (b"alpha", 1, b"v1"),
+            (b"alpha", 2, b"v2"),
         ]
         assert db.dirty is False
 
         # 3. Handle gaps
-        del db.items[b"alpha.1"]
-        db.items[b"alpha.5"] = b"v5"
+        del db.items[b"alpha.00000000000000000000000000000001"]
+        db.items[b"alpha.00000000000000000000000000000005"] = b"v5"
         out = list(dber.getIoSetItemIter(db, b"alpha"))
         assert out == [
-            (b"alpha.0", b"v0"),
-            (b"alpha.2", b"v2"),
-            (b"alpha.5", b"v5"),
+            (b"alpha", 0, b"v0"),
+            (b"alpha", 2, b"v2"),
+            (b"alpha", 5, b"v5"),
         ]
         assert db.dirty is False
 
         # 4. Prefix isolation
         out = list(dber.getIoSetItemIter(db, b"alpha"))
-        assert all(iokey.startswith(b"alpha.") for (iokey, _) in out)
+        assert all(base == b"alpha" for (base, _, _) in out)
         assert db.dirty is False
 
         # 5. Empty key returns empty iterator
@@ -2048,13 +2048,13 @@ def test_getIoSetLastItem():
         db = dber.env.open_db("vals.")
 
         # Populate alpha.* set
-        db.items[b"alpha.0"] = b"v0"
-        db.items[b"alpha.1"] = b"v1"
-        db.items[b"alpha.2"] = b"v2"
+        db.items[b"alpha.00000000000000000000000000000000"] = b"v0"
+        db.items[b"alpha.00000000000000000000000000000001"] = b"v1"
+        db.items[b"alpha.00000000000000000000000000000002"] = b"v2"
 
         # Add unrelated prefixes
-        db.items[b"beta.0"] = b"b0"
-        db.items[b"alphaX.0"] = b"x0"
+        db.items[b"beta.00000000000000000000000000000000"] = b"b0"
+        db.items[b"alphaX.00000000000000000000000000000000"] = b"x0"
         db.dirty = False
 
         # 1. Return the last item under alpha
@@ -2063,8 +2063,8 @@ def test_getIoSetLastItem():
         assert db.dirty is False
 
         # 2. Handle gaps
-        del db.items[b"alpha.2"]
-        db.items[b"alpha.7"] = b"v7"
+        del db.items[b"alpha.00000000000000000000000000000002"]
+        db.items[b"alpha.00000000000000000000000000000007"] = b"v7"
         out = dber.getIoSetLastItem(db, b"alpha")
         assert out == (b"alpha", b"v7")
         assert db.dirty is False
@@ -2076,9 +2076,9 @@ def test_getIoSetLastItem():
         assert db.dirty is False
 
         # 4. No entries under key
-        del db.items[b"alpha.0"]
-        del db.items[b"alpha.1"]
-        del db.items[b"alpha.7"]
+        del db.items[b"alpha.00000000000000000000000000000000"]
+        del db.items[b"alpha.00000000000000000000000000000001"]
+        del db.items[b"alpha.00000000000000000000000000000007"]
         out = dber.getIoSetLastItem(db, b"alpha")
         assert out == ()
         assert db.dirty is False
@@ -2131,12 +2131,15 @@ def test_getIoSetLastItemIterAll():
         db = dber.env.open_db("vals.")
 
         # Populate multiple IoSets
-        db.items[b"alpha.0"] = b"a0"
-        db.items[b"alpha.2"] = b"a2"   # gap at .1
-        db.items[b"beta.0"]  = b"b0"
-        db.items[b"beta.5"]  = b"b5"   # gap at .1–.4
-        db.items[b"gamma.1"] = b"g1"
-        db.items[b"gamma.9"] = b"g9"
+        db.items[b"alpha.00000000000000000000000000000000"] = b"a0"
+        db.items[b"alpha.00000000000000000000000000000002"] = b"a2"   # gap at .1
+
+        db.items[b"beta.00000000000000000000000000000000"] = b"b0"
+        db.items[b"beta.00000000000000000000000000000005"] = b"b5"   # gap at .1–.4
+
+        db.items[b"gamma.00000000000000000000000000000001"] = b"g1"
+        db.items[b"gamma.00000000000000000000000000000009"] = b"g9"
+
         db.dirty = False
 
         # 1. Iterate all effective keys (empty key returns the full DB)
@@ -2178,7 +2181,7 @@ def test_getIoSetLastItemIterAll():
         assert db.dirty is False
 
         # 7. Dirty‑flag correctness
-        db.items[b"alpha.0"] = b"x"
+        db.items[b"alpha.00000000000000000000000000000000"] = b"x"
         db.dirty = False
         before = dict(db.items)
         _ = list(dber.getIoSetLastItemIterAll(db))

@@ -1034,7 +1034,7 @@ class WebDBer:
 
             ckey, cion = unsuffix(iokey, sep=sep)
             if ckey != key:
-            break
+                break
 
             cval = db.items[iokey]
             pvals.add(cval)
