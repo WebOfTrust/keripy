@@ -17,7 +17,7 @@ from keri.kering import (KramConfigurationError, MissingAuthAttachmentError,
 from keri.core import (Kramer, SerderKERI, Kevery, Pruner, Salter,
                        Parser, Seqner, Saider, Prefixer, Diger,
                        Dater, Noncer, Number, Verser, Labeler, Texter,
-                       AuthTypes, exchange, exchept, reply, query, versify)
+                       AuthTypes, exchange, exchept, reply, query)
 
 from keri.app import openHby, openCF
 from keri.db import openDB
