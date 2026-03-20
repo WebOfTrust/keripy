@@ -10,7 +10,7 @@ from keri.kering import Ilks
 from keri.app import openKS
 from keri.core import SealEvent, Seqner, Diger
 from keri.db import openDB
-from keri.vc import credential
+from keri.vc import credential as provingCredential
 from keri.vdr import Regery
 
 from tests.vdr import buildHab
@@ -31,7 +31,7 @@ def credential(hab, regk):
         LEI="254900OPPU84GM83MG36",
     )
 
-    creder = credential(issuer=hab.pre,
+    creder = provingCredential(issuer=hab.pre,
                         schema="E7brwlefuH-F_KU_FPWAZR78A3pmSVDlnfJUqnm8Lhr4",
                         data=credSubject,
                         status=regk)

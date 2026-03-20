@@ -11,12 +11,12 @@ from hio.core import http
 from keri.kering import Vrsn_1_0, Roles, Schemes
 from keri.app import (Notifier, Oobiery, Authenticator,
                       Result, openHab, openHby,
-                      loadHandlers, oobiRequestExn, loadEnds)
+                      loadOobiingHandlers, oobiRequestExn, loadOobiingEnds)
 
 from keri.core import (SerderKERI, Kevery, Parser,
                        Salter, Router, Revery)
 
-from keri.end import loadEnds as loadEndsEnding
+from keri.end import loadEndingEnds
 from keri.help import helping
 from keri.peer import Exchanger
 from keri.recording import OobiRecord
@@ -29,7 +29,7 @@ def test_oobi_share(mockHelpingNowUTC):
         exc = Exchanger(hby=hby, handlers=[])
         notifier = Notifier(hby=hby)
 
-        loadHandlers(hby=hby, exc=exc, notifier=notifier)
+        loadOobiingHandlers(hby=hby, exc=exc, notifier=notifier)
 
         assert "/oobis" in exc.routes
         handler = exc.routes["/oobis"]
@@ -107,7 +107,7 @@ def test_oobiery():
         hby.db.oobis.pin(keys=(murl,), val=obr)
 
         app = falcon.App()  # falcon.App instances are callable WSGI apps
-        loadEndsEnding(app, hby=hby)
+        loadEndingEnds(app, hby=hby)
         moobi = MOOBIEnd(hab=hab, url=curl)
         app.add_route(f"/.well-known/keri/oobi/{hab.pre}", moobi)
 
@@ -236,7 +236,7 @@ def test_authenticator(mockHelpingNowUTC):
         hby.db.woobi.pin(keys=(url,), val=obr)
 
         app = falcon.App()  # falcon.App instances are callable WSGI apps
-        loadEnds(app, hby=hby)
+        loadOobiingEnds(app, hby=hby)
 
         limit = 2.0
         tock = 0.03125

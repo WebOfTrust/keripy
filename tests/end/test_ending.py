@@ -19,7 +19,7 @@ from keri.help import helping
 from keri.core import Salter, SerderKERI, dumps
 from keri.app import openHby, openHab
 from keri.end import (Signage, Mimes, KeriMimes,
-                      signature, designature, loadEnds,
+                      signature, designature, loadEndingEnds,
                       desiginput, normalize, setup)
 from keri.end.ending import siginput as sigInputEnding
 
@@ -234,7 +234,7 @@ def test_get_static_sink():
     tymist = tyming.Tymist(tyme=0.0)
 
     myapp = falcon.App()  # falcon.App instances are callable WSGI apps
-    loadEnds(myapp, hby=None, tymth=tymist.tymen(), static=True)
+    loadEndingEnds(myapp, hby=None, tymth=tymist.tymen(), static=True)
 
     client = testing.TestClient(app=myapp)
 
@@ -334,7 +334,7 @@ def test_seid_api():
         tymist = tyming.Tymist(tyme=0.0)
 
         app = falcon.App()  # falcon.App instances are callable WSGI apps
-        loadEnds(app, tymth=tymist.tymen(), hby=hby)
+        loadEndingEnds(app, tymth=tymist.tymen(), hby=hby)
 
         client = testing.TestClient(app=app)
 
@@ -404,7 +404,7 @@ def test_get_admin():
     tymist = tyming.Tymist(tyme=0.0)
 
     myapp = falcon.App()  # falcon.App instances are callable WSGI apps
-    loadEnds(myapp, tymth=tymist.tymen(), hby=hby)
+    loadEndingEnds(myapp, tymth=tymist.tymen(), hby=hby)
 
     client = testing.TestClient(app=myapp)
 
@@ -438,7 +438,7 @@ def test_get_oobi():
         tymist = tyming.Tymist(tyme=0.0)
 
         app = falcon.App()  # falcon.App instances are callable WSGI apps
-        loadEnds(app, tymth=tymist.tymen(), hby=hby, default=hab.pre)
+        loadEndingEnds(app, tymth=tymist.tymen(), hby=hby, default=hab.pre)
 
         client = testing.TestClient(app=app)
 
@@ -470,7 +470,7 @@ def test_get_oobi():
         tymist = tyming.Tymist(tyme=0.0)
 
         app = falcon.App()  # falcon.App instances are callable WSGI apps
-        loadEnds(app, tymth=tymist.tymen(), hby=hby, default=hab.pre)
+        loadEndingEnds(app, tymth=tymist.tymen(), hby=hby, default=hab.pre)
 
         client = testing.TestClient(app=app)
 
@@ -528,7 +528,7 @@ def test_siginput(mockHelpingNowUTC):
                                                     'iKDIrg-vIyge6mBl2QV8dDjI3";alg="ed25519"'}
 
         siginput = headers["Signature-Input"]
-        signature = headers["Signature"]
+        sig_value = headers["Signature"]
 
         inputs = desiginput(siginput.encode("utf-8"))
         assert len(inputs) == 1
@@ -576,7 +576,7 @@ def test_siginput(mockHelpingNowUTC):
         items.append(f'"@signature-params: {params}"')
         ser = "\n".join(items).encode("utf-8")
 
-        signages = designature(signature)
+        signages = designature(sig_value)
         assert len(signages) == 1
         assert signages[0].indexed is False
         assert "sig0" in signages[0].markers

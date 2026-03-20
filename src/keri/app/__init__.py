@@ -15,7 +15,7 @@ from .configing import openCF, Configer, ConfigerDoer
 from .delegating import Anchorer, DelegateRequestHandler, delegateRequestExn
 from .directing import Director, Reactor, Directant, Reactant, runController
 from .forwarding import Poster, StreamPoster, ForwardHandler, introduce
-from .grouping import (Counselor, MultisigNotificationHandler, multisigInceptExn,
+from .grouping import (Counselor, MultisigNotificationHandler, multisigInceptExn, loadGroupingHandlers,
                        multisigRotateExn, multisigInteractExn, multisigRegistryInceptExn,
                        multisigIssueExn, multisigRevokeExn, multisigRpyExn,
                        multisigExn, getEscrowedEvent, Multiplexor)
@@ -31,12 +31,12 @@ from .keeping import (PubLot, PreSit, PrePrm, PubSet, riKey, openKS, Keeper,
                       KeeperDoer, Creator, RandyCreator, SaltyCreator,
                       Creatory, Initage, Manager, ManagerDoer, Algos)
 from .notifying import notice, Notice, DicterSuber, Noter, Notifier
-from .oobiing import (loadEnds, loadHandlers, OobiResource, OobiRequestHandler,
+from .oobiing import (loadOobiingEnds, loadOobiingHandlers, OobiResource, OobiRequestHandler,
                       oobiRequestExn, Oobiery, Authenticator, Result)
 from .organizing import BaseOrganizer, Organizer, IdentifierOrganizer
 from .querying import (QueryDoer, KeyStateNoticer, LogQuerier,
                        SeqNoQuerier, AnchorQuerier)
-from .signaling import (signal, Signal, Signaler, loadEnds,
+from .signaling import (signal, Signal, Signaler, loadSignalingEnds,
                         SignalsEnd, SignalIterable)
 from .signing import serialize, signPaths, transSeal
 from .specing import SpecResource
