@@ -70,7 +70,7 @@ class Mailboxer(LMDBer):
                              exists in database so removed
                           False otherwise (not removed)
         """
-        return self.tpcs.remOn(keys=key, on=on)
+        return self.tpcs.rem(keys=key, on=on)
 
     def appendToTopic(self, topic, val):
         """Appends val to end of db entries with same topic but with on
@@ -84,7 +84,7 @@ class Mailboxer(LMDBer):
             topic (bytes):  topic identifier for message
             val (bytes): msg digest
         """
-        return self.tpcs.appendOn(key=topic, val=val)
+        return self.tpcs.append(key=topic, val=val)
 
 
     def getTopicMsgs(self, topic, fn=0):
@@ -126,7 +126,7 @@ class Mailboxer(LMDBer):
             msg = msg.encode("utf-8")
 
         digb = Diger(ser=msg, code=MtrDex.Blake3_256).qb64b
-        on = self.tpcs.appendOn(keys=topic, val=digb)
+        on = self.tpcs.append(keys=topic, val=digb)
         return self.msgs.pin(keys=digb, val=msg)
 
 

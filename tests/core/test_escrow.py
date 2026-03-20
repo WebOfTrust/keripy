@@ -65,7 +65,7 @@ def test_partial_signed_escrow():
         psr.parse(ims=bytearray(msg), kvy=kvy)
         # kvy.process(ims=bytearray(msg))  # process local copy of msg
         assert pre not in kvy.kevers  # event not accepted
-        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 1
         assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
 
@@ -73,7 +73,7 @@ def test_partial_signed_escrow():
         psr.parse(ims=bytearray(msg), kvy=kvy)
         # kvy.process(ims=bytearray(msg))  # process local copy of msg
         assert pre not in kvy.kevers  # event not accepted
-        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 1
         assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
 
@@ -82,7 +82,7 @@ def test_partial_signed_escrow():
         # assuming not stale but nothing else has changed
         kvy.processEscrowPartialSigs()
         assert pre not in kvy.kevers  # event not accepted
-        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 1
         assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
 
@@ -96,7 +96,7 @@ def test_partial_signed_escrow():
         psr.parse(ims=bytearray(msg), kvy=kvy)
         # kvy.process(ims=bytearray(msg))  # process local copy of msg
         assert pre in kvy.kevers  # event accepted
-        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 1
         assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
         sigers = kvy.db.sigs.get(keys=(pre, srdr.said))  #  but sigs is more
@@ -114,7 +114,7 @@ def test_partial_signed_escrow():
         assert kvr.prefixer.qb64 == pre
         assert kvr.serder.said == srdr.said  # key state updated so event was validated
         # escrows now empty
-        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 0
 
         # get DTS set by first seen event acceptance date time stamp
@@ -135,7 +135,7 @@ def test_partial_signed_escrow():
         # kvy.process(ims=bytearray(msg))  # process local copy of msg
         sigers = kvy.db.sigs.get(keys=(pre, srdr.said))
         assert len(sigers) == 3
-        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 0  # escrow stays gone
 
         # get DTS after partial last sig should not change dts from first accepted
@@ -143,7 +143,7 @@ def test_partial_signed_escrow():
         assert pdater.dts == adater.dts
 
         # get first seen
-        fsdig = kvy.db.fels.getOn(keys=pre, on=0)
+        fsdig = kvy.db.fels.get(keys=pre, on=0)
         assert fsdig == srdr.saidb.decode("utf-8")
 
         # create interaction event for
@@ -163,7 +163,7 @@ def test_partial_signed_escrow():
         psr.parse(ims=bytearray(msg), kvy=kvy)
         # kvy.process(ims=bytearray(msg))  # process local copy of msg
         assert kvr.sn == 0  # key state not updated
-        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 1
         assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
 
@@ -177,7 +177,7 @@ def test_partial_signed_escrow():
         psr.parse(ims=bytearray(msg), kvy=kvy)
         # kvy.process(ims=bytearray(msg))  # process local copy of msg
         assert kvr.sn == 0  # key state not updated
-        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 1
         assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
         sigers = kvy.db.sigs.get(keys=(pre, srdr.said))  #  but sigs is more
@@ -189,7 +189,7 @@ def test_partial_signed_escrow():
         kvy.processEscrowPartialSigs()
         assert kvr.sn == 0  # key state not updated
         # escrows now empty
-        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 0
 
         # Now reset timeout so not zero
@@ -205,7 +205,7 @@ def test_partial_signed_escrow():
         psr.parse(ims=bytearray(msg), kvy=kvy)
         # kvy.process(ims=bytearray(msg))  # process local copy of msg
         assert kvr.sn == 0  # key state not updated
-        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 1
         assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
 
@@ -219,7 +219,7 @@ def test_partial_signed_escrow():
         psr.parse(ims=bytearray(msg), kvy=kvy)
         # kvy.process(ims=bytearray(msg))  # process local copy of msg
         assert kvr.sn == 0  # key state not updated
-        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 1
         assert escrows[0].encode("utf-8") == srdr.saidb  #  escrow entry for event
 
@@ -231,7 +231,7 @@ def test_partial_signed_escrow():
         kvy.processEscrowPartialSigs()
         assert kvr.serder.said == srdr.said  # key state updated so event was validated
         assert kvr.sn == 1  # key state successfully updated
-        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 0  # escrow gone
 
         # get DTS set by first seen event acceptance date time stamp
@@ -248,7 +248,7 @@ def test_partial_signed_escrow():
         # kvy.process(ims=bytearray(msg))  # process local copy of msg
         sigers = kvy.db.sigs.get(keys=(pre, srdr.said))  #  but sigs is more
         assert len(sigers) == 2
-        escrows = kvy.db.pses.getOn(keys=pre, on=int(srdr.ked["s"], 16))
+        escrows = kvy.db.pses.get(keys=pre, on=int(srdr.ked["s"], 16))
         assert len(escrows) == 0  # escrow stays gone
 
         # get DTS after partial last sig should not change dts from first accepted
@@ -256,7 +256,7 @@ def test_partial_signed_escrow():
         assert pdater.dts == adater.dts
 
         # get first seen
-        fsdig = kvy.db.fels.getOn(keys=pre, on=1)
+        fsdig = kvy.db.fels.get(keys=pre, on=1)
         assert fsdig == srdr.saidb.decode("utf-8")
 
         # Create rotation event
@@ -348,7 +348,7 @@ def test_partial_signed_escrow():
         assert (adater.datetime - edater.datetime) > datetime.timedelta()
 
         # get first seen
-        fsdig = kvy.db.fels.getOn(keys=pre, on=3)
+        fsdig = kvy.db.fels.get(keys=pre, on=3)
         assert fsdig == srdr.saidb.decode("utf-8")
 
     assert not os.path.exists(ks.path)
@@ -540,7 +540,7 @@ def test_missing_delegator_escrow():
         psr.parse(ims=bytearray(delIcpMsg), kvy=watKvy, local=False)
         assert not bobPre in watKvy.kevers
         assert not delPre in watKvy.kevers
-        escrows = watKvy.db.pdes.getOn(keys=delPre, on=delSrdr.sn)
+        escrows = watKvy.db.pdes.get(keys=delPre, on=delSrdr.sn)
         assert len(escrows) == 1
         assert escrows[0] == delSrdr.said  # escrow entry for event
 
@@ -551,14 +551,14 @@ def test_missing_delegator_escrow():
         assert watBobK.sn == 0
         watKvy.processEscrows()
         assert not delPre in watKvy.kevers
-        escrows = watKvy.db.pdes.getOn(keys=delPre, on=delSrdr.sn)
+        escrows = watKvy.db.pdes.get(keys=delPre, on=delSrdr.sn)
         assert len(escrows) == 1
         assert escrows[0] == delSrdr.said  # escrow entry for event
 
         # Now apply Bob's ixn to wat's kvy and process escrow
         psr.parse(ims=bytearray(bobIxnMsg1), kvy=watKvy, local=False)
         watKvy.processEscrows()
-        escrows = watKvy.db.pdes.getOn(keys=delPre, on=delSrdr.sn)
+        escrows = watKvy.db.pdes.get(keys=delPre, on=delSrdr.sn)
         assert len(escrows) == 0
         assert watBobK.sn == 1
 
@@ -1044,7 +1044,7 @@ def test_delegated_partial_signed_escrow_udes():
         dgkey = dgKey(dip_srdr.preb, dip_srdr.saidb)
 
         # PSE index contains the event SAID
-        escrows = db.pses.getOn(keys=dip_srdr.pre, on=dip_srdr.sn)
+        escrows = db.pses.get(keys=dip_srdr.pre, on=dip_srdr.sn)
         assert len(escrows) == 1
         assert escrows[0].encode("utf-8") == dip_srdr.saidb
 
@@ -1148,7 +1148,7 @@ def test_out_of_order_escrow():
         psr.parse(ims=bytearray(rotmsg), kvy=kvy)
         # kvy.process(ims=bytearray(rotmsg))  # process local copy of msg
         assert pre not in kvy.kevers  # event not accepted
-        escrows = kvy.db.ooes.getOn(keys=pre, on=2)
+        escrows = kvy.db.ooes.get(keys=pre, on=2)
         assert len(escrows) == 1
         assert escrows[0] == rotdig  #  escrow entry for event
 
@@ -1156,7 +1156,7 @@ def test_out_of_order_escrow():
         psr.parse(ims=bytearray(rotmsg), kvy=kvy)
         # kvy.process(ims=bytearray(rotmsg))  # process local copy of msg
         assert pre not in kvy.kevers  # event not accepted
-        escrows = kvy.db.ooes.getOn(keys=pre, on=2)
+        escrows = kvy.db.ooes.get(keys=pre, on=2)
         assert len(escrows) == 1
         assert escrows[0] == rotdig #  escrow entry for event
 
@@ -1164,7 +1164,7 @@ def test_out_of_order_escrow():
         # assuming not stale but nothing else has changed
         kvy.processEscrowOutOfOrders()
         assert pre not in kvy.kevers  # event not accepted
-        escrows = kvy.db.ooes.getOn(keys=pre, on=2)
+        escrows = kvy.db.ooes.get(keys=pre, on=2)
         assert len(escrows) == 1
         assert escrows[0] == rotdig   #  escrow entry for event
 
@@ -1172,7 +1172,7 @@ def test_out_of_order_escrow():
         psr.parse(ims=bytearray(ixnmsg), kvy=kvy)
         # kvy.process(ims=bytearray(ixnmsg))  # process local copy of msg
         assert pre not in kvy.kevers  # event not accepted
-        escrows = kvy.db.ooes.getOn(keys=pre, on=1)
+        escrows = kvy.db.ooes.get(keys=pre, on=1)
         # assert len(escrows) == 1
         assert escrows[0] == ixndig   #  escrow entry for event
 
@@ -1180,15 +1180,15 @@ def test_out_of_order_escrow():
         psr.parse(ims=bytearray(ixnmsg), kvy=kvy)
         # kvy.process(ims=bytearray(ixnmsg))  # process local copy of msg
         assert pre not in kvy.kevers  # event not accepted
-        escrows = kvy.db.ooes.getOn(keys=pre, on=1)
-        assert len(escrows) == 1     
+        escrows = kvy.db.ooes.get(keys=pre, on=1)
+        assert len(escrows) == 1
         assert escrows[0] == ixndig #  escrow entry for event
 
         # verify Kevery process out of order escrow is idempotent to previously escrowed events
         # assuming not stale but nothing else has changed
         kvy.processEscrowOutOfOrders()
         assert pre not in kvy.kevers  # event not accepted
-        escrows = kvy.db.ooes.getOn(keys=pre, on=1)
+        escrows = kvy.db.ooes.get(keys=pre, on=1)
         assert len(escrows) == 1
         assert escrows[0] == ixndig    #  escrow entry for event
 
@@ -1197,19 +1197,19 @@ def test_out_of_order_escrow():
         time.sleep(0.001)
         kvy.processEscrowOutOfOrders()
         assert pre not in kvy.kevers  # key state not updated
-        escrows = kvy.db.ooes.getOn(keys=pre, on=1)
+        escrows = kvy.db.ooes.get(keys=pre, on=1)
         assert len(escrows) == 0  # escrow gone
-        escrows = kvy.db.ooes.getOn(keys=pre, on=2)
+        escrows = kvy.db.ooes.get(keys=pre, on=2)
         assert len(escrows) == 0
 
         # Now reset timeout so not zero and rsend events to reload escrow
         kvy.TimeoutOOE = 3600
-        
+
         # re-apply rotation msg to Kevery to process
         psr.parse(ims=bytearray(rotmsg), kvy=kvy)
         # kvy.process(ims=bytearray(rotmsg))  # process local copy of msg
         assert pre not in kvy.kevers  # event not accepted
-        escrows = kvy.db.ooes.getOn(keys=pre, on=2)
+        escrows = kvy.db.ooes.get(keys=pre, on=2)
         assert len(escrows) == 1
         assert escrows[0] == rotdig  #  escrow entry for event
 
@@ -1217,7 +1217,7 @@ def test_out_of_order_escrow():
         psr.parse(ims=bytearray(ixnmsg), kvy=kvy)
         # kvy.process(ims=bytearray(ixnmsg))  # process local copy of msg
         assert pre not in kvy.kevers  # event not accepted
-        escrows = kvy.db.ooes.getOn(keys=pre, on=1)
+        escrows = kvy.db.ooes.get(keys=pre, on=1)
         assert len(escrows) == 1
         assert escrows[0] == ixndig  #  escrow entry for event
         # re-apply inception msg to Kevery to process
@@ -1228,10 +1228,10 @@ def test_out_of_order_escrow():
         assert kvr.serder.said == icpdig  # key state updated so event was validated
         assert kvr.sn == 0  # key state successfully updated
         # verify escrows not changed
-        escrows = kvy.db.ooes.getOn(keys=pre, on=2)
+        escrows = kvy.db.ooes.get(keys=pre, on=2)
         assert len(escrows) == 1
         assert escrows[0] == rotdig  #  escrow entry for event
-        escrows = kvy.db.ooes.getOn(keys=pre, on=1)
+        escrows = kvy.db.ooes.get(keys=pre, on=1)
         assert len(escrows) == 1
         assert escrows[0] == ixndig  #  escrow entry for event
 
@@ -1240,9 +1240,9 @@ def test_out_of_order_escrow():
         kvy.processEscrowOutOfOrders()
         assert kvr.serder.said == rotdig  # key state updated so event was validated
         assert kvr.sn == 2  # key state successfully updated
-        escrows = kvy.db.ooes.getOn(keys=pre, on=1)
+        escrows = kvy.db.ooes.get(keys=pre, on=1)
         assert len(escrows) == 0  # escrow gone
-        escrows = kvy.db.ooes.getOn(keys=pre, on=2)
+        escrows = kvy.db.ooes.get(keys=pre, on=2)
         assert len(escrows) == 0
 
 
@@ -1255,7 +1255,7 @@ def test_out_of_order_escrow():
 def test_ooes_missing_db_entries_escrow_cleanup():
     """
     Test missing records (evt, sigs, dts) of out of
-    order escrow cleanup 
+    order escrow cleanup
     """
 
     salt = Salter(raw=b'0123456789abcdef').qb64
@@ -1265,7 +1265,7 @@ def test_ooes_missing_db_entries_escrow_cleanup():
         mgr = keeping.Manager(ks=ks, salt=salt)
         kvy = eventing.Kevery(db=db)
 
-        # create a simple 1-key inception 
+        # create a simple 1-key inception
         verfers, digers = mgr.incept(icount=1, ncount=1, stem='A', temp=True)
 
         icp = eventing.incept(
@@ -1301,9 +1301,9 @@ def test_ooes_missing_db_entries_escrow_cleanup():
             msg.extend(siger.qb64b)
         ixnmsg = msg
 
-        # apply interaction first → goes to OOES 
+        # apply interaction first → goes to OOES
         psr.parse(ims=bytearray(ixnmsg), kvy=kvy)
-        assert db.ooes.getOn(keys=pre, on=1) == [ixndig]
+        assert db.ooes.get(keys=pre, on=1) == [ixndig]
 
         # find dgkey for this escrowed event
         dgkey = dgKey(pre, ixndig)
@@ -1311,29 +1311,29 @@ def test_ooes_missing_db_entries_escrow_cleanup():
         # missing DTS → OOES must remove entry
         db.dtss.rem(keys=dgkey)
         kvy.processEscrowOutOfOrders()
-        assert db.ooes.getOn(keys=pre, on=1) == []  # cleaned up
+        assert db.ooes.get(keys=pre, on=1) == []  # cleaned up
 
         # reload interaction event into OOES
         psr.parse(ims=bytearray(ixnmsg), kvy=kvy)
-        assert db.ooes.getOn(keys=pre, on=1) == [ixndig]
+        assert db.ooes.get(keys=pre, on=1) == [ixndig]
 
         # missing EVT → OOES must remove entry
         assert db.evts.rem(keys=(pre, ixndig)) == True
         kvy.processEscrowOutOfOrders()
-        assert db.ooes.getOn(keys=pre, on=1) == []  # cleaned up
+        assert db.ooes.get(keys=pre, on=1) == []  # cleaned up
 
         # reload interaction event into OOES
         psr.parse(ims=bytearray(ixnmsg), kvy=kvy)
-        assert db.ooes.getOn(keys=pre, on=1) == [ixndig]
+        assert db.ooes.get(keys=pre, on=1) == [ixndig]
 
         # missing SIGS → OOES must remove entry
         db.sigs.rem(keys=dgkey)
         kvy.processEscrowOutOfOrders()
-        assert db.ooes.getOn(keys=pre, on=1) == []  # cleaned up
+        assert db.ooes.get(keys=pre, on=1) == []  # cleaned up
 
         # reload interaction event into OOES
         psr.parse(ims=bytearray(ixnmsg), kvy=kvy)
-        assert db.ooes.getOn(keys=pre, on=1) == [ixndig]
+        assert db.ooes.get(keys=pre, on=1) == [ixndig]
 
         # apply inception msg
         psr.parse(ims=bytearray(icpmsg), kvy=kvy)
@@ -1346,7 +1346,7 @@ def test_ooes_missing_db_entries_escrow_cleanup():
         kvy.processEscrowOutOfOrders()
         assert kvr.serder.said == ixndig  # key state updated so event was validated
         assert kvr.sn == 1  # key state successfully updated
-        escrows = db.ooes.getOn(keys=pre, on=1)
+        escrows = db.ooes.get(keys=pre, on=1)
         assert len(escrows) == 0
 
     """End Test"""
@@ -1621,14 +1621,14 @@ def test_unverified_receipt_escrow():
         assert rctPrefixer0.qb64 == wit0pre
         rctPrefixer1, rctCigar1 = receipts[1]
         assert rctPrefixer1.qb64 == wit1pre
-        
+
         receipts = kvy.db.rcts.get(keys=dgKey(pre, ixndig))
         assert len(receipts) == 2
         rctPrefixer0, rctCigar0 = receipts[0]
         assert rctPrefixer0.qb64 == wit0pre
         rctPrefixer1, rctCigar1 = receipts[1]
         assert rctPrefixer1.qb64 == wit1pre
-        
+
         receipts = kvy.db.rcts.get(keys=dgKey(pre, rotdig))
         assert len(receipts) == 2
         rctPrefixer0, rctCigar0 = receipts[0]

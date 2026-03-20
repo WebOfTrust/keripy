@@ -362,7 +362,7 @@ class Revery:
                                 continue  # skip if not later
 
             # retrieve sdig of last event at sn of signer.
-            sdig = self.db.kels.getOnLast(keys=spre, on=seqner.sn)
+            sdig = self.db.kels.getLast(keys=spre, on=seqner.sn)
             if sdig is None:
                 # create cue here to request key state for sprefixer signer
                 # signer's est event not yet in signer's KEL
