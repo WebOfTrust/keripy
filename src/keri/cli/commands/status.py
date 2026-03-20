@@ -7,15 +7,15 @@ keri.kli.commands module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ..common import displaying, existing
-from ..common.parsing import Parsery
+from ..common import Parsery, printIdentifier, aliasInput, existingHby
 
-from ... import help, ConfigurationError
-from ...core import serdering
+from ...kering import ConfigurationError
+from ...core import SerderKERI
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='View status of a local AID', 
                                  parents=[Parsery.keystore()])
@@ -41,12 +41,12 @@ def status(tymth, tock=0.0, **opts):
     bran = args.bran
 
     try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
+        with existingHby(name=name, base=base, bran=bran) as hby:
             if alias is None:
-                alias = existing.aliasInput(hby)
+                alias = aliasInput(hby)
 
             hab = hby.habByName(alias)
-            displaying.printIdentifier(hby, hab.pre)
+            printIdentifier(hby, hab.pre)
 
             if args.verbose:
                 print("\nWitnesses:\t")
@@ -56,7 +56,7 @@ def status(tymth, tock=0.0, **opts):
 
                 cloner = hab.db.clonePreIter(pre=hab.pre, fn=0)  # create iterator at 0
                 for msg in cloner:
-                    srdr = serdering.SerderKERI(raw=msg)
+                    srdr = SerderKERI(raw=msg)
                     print(srdr.pretty(size=10000))
                     print()
 

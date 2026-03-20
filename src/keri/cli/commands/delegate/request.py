@@ -5,20 +5,18 @@ keri.kli.commands.delegate module
 
 """
 import argparse
-from ordered_set import OrderedSet as oset
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
-from ...common.parsing import Parsery
+from ...common import setupHby, Parsery
 
-from .... import help
-from ....app import habbing, agenting, grouping, forwarding, delegating
-from ....app.habbing import GroupHab
-from ....core import serdering
+from ....app import (GroupHab, HaberyDoer, WitnessInquisitor,
+                     Counselor, Poster, delegateRequestExn)
+from ....core import SerderKERI
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Resend a delegation request message to a delegator that has not '
                                              'approved a previous delegation.',
@@ -46,11 +44,11 @@ def request(args):
 
 class RequestDoer(doing.DoDoer):
     def __init__(self, name, base, alias, bran):
-        hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
-        self.witq = agenting.WitnessInquisitor(hby=hby)
-        self.postman = forwarding.Poster(hby=hby)
-        self.counselor = grouping.Counselor(hby=hby)
+        hby = setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = HaberyDoer(habery=hby)  # setup doer
+        self.witq = WitnessInquisitor(hby=hby)
+        self.postman = Poster(hby=hby)
+        self.counselor = Counselor(hby=hby)
         doers = [self.hbyDoer, self.postman]
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.requestDo)])
@@ -91,10 +89,10 @@ class RequestDoer(doing.DoDoer):
         else:
             phab = self.hby.habByName(f"{self.alias}-proxy")
 
-        exn, atc = delegating.delegateRequestExn(hab.mhab, delpre=delpre, evt=bytes(evt), aids=hab.smids)
+        exn, atc = delegateRequestExn(hab.mhab, delpre=delpre, evt=bytes(evt), aids=hab.smids)
 
         # delegate AID ICP and exn of delegation request EXN
-        srdr = serdering.SerderKERI(raw=evt)
+        srdr = SerderKERI(raw=evt)
         del evt[:srdr.size]
         self.postman.send(src=phab.pre, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
         self.postman.send(src=phab.pre, dest=hab.kever.delpre, topic="delegate", serder=exn, attachment=atc)

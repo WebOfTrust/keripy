@@ -22,7 +22,8 @@ from .grouping import (Counselor, MultisigNotificationHandler, multisigInceptExn
 from .habbing import (openHby, openHab, Habery, Signator, HaberyDoer, SIGNER,
                       BaseHab, Hab, SignifyHab, SignifyGroupHab, GroupHab)
 from .httping import (SignatureValidationComponent, CesrRequest, CESR_CONTENT_TYPE,
-                      parseCesrHttpRequest, createCESRRequest, streamCESRRequests, Clienter)
+                      parseCesrHttpRequest, createCESRRequest, streamCESRRequests,
+                      Clienter, CESR_DESTINATION_HEADER)
 from .indirecting import (setupWitness, createHttpServer, WitnessStart,
                           Indirector, MailboxDirector, Poller, HttpEnd,
                           QryRpyMailboxIterable, MailboxIterable, ReceiptEnd,

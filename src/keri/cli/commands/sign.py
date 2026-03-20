@@ -8,8 +8,8 @@ import argparse
 
 from hio.base import doing
 
-from ... import kering
-from ..common import Parsery, existing
+from ...kering import ConfigurationError
+from ..common import Parsery, existingHab
 
 
 parser = argparse.ArgumentParser(description='Sign an arbitrary string', 
@@ -43,7 +43,7 @@ def sign(tymth, tock=0.0, **opts):
     bran = args.bran
 
     try:
-        with existing.existingHab(name=name, alias=alias, base=base, bran=bran) as (_, hab):
+        with existingHab(name=name, alias=alias, base=base, bran=bran) as (_, hab):
 
             txt = args.text
             if txt.startswith("@"):
@@ -59,7 +59,7 @@ def sign(tymth, tock=0.0, **opts):
             for idx, siger in enumerate(sigers):
                 print("{}. {}".format(idx+1, siger.qb64))
 
-    except kering.ConfigurationError:
+    except ConfigurationError:
         print(f"prefix for {name} does not exist, incept must be run first", )
     except FileNotFoundError:
         print("unable to open file", args.text[1:])

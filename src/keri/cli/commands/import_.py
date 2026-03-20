@@ -9,12 +9,11 @@ import argparse
 from hio import help
 from hio.base import doing
 
-from ..common import existing
-from ..common.parsing import Parsery
+from ..common import Parsery, setupHby
 
 from ...kering import Vrsn_1_0, Vrsn_2_0
-from ...app import habbing
-from ...core import parsing
+from ...app import HaberyDoer
+from ...core import Parser
 
 
 logger = help.ogler.getLogger()
@@ -42,9 +41,9 @@ class ImportDoer(doing.DoDoer):
     def __init__(self, name, base, bran, file):
         self.file = file
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran)
 
-        doers = [doing.doify(self.exportDo), habbing.HaberyDoer(self.hby)]
+        doers = [doing.doify(self.exportDo), HaberyDoer(self.hby)]
 
         super(ImportDoer, self).__init__(doers=doers)
 
@@ -66,8 +65,8 @@ class ImportDoer(doing.DoDoer):
 
         with open(self.file, 'rb') as f:
             ims = f.read()
-            parsing.Parser(kvy=self.hby.kvy, rvy=self.hby.rvy, local=False,
-                           version=Vrsn_1_0).parse(ims=ims)
+            Parser(kvy=self.hby.kvy, rvy=self.hby.rvy, local=False,
+                   version=Vrsn_1_0).parse(ims=ims)
             self.hby.kvy.processEscrows()
 
         self.exit()

@@ -8,13 +8,15 @@ import argparse
 import json
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
-from .... import help, ValidationError, ConfigurationError
-from ....app import organizing as connecting
+from ...common import existingHby
+
+from ....kering import ValidationError, ConfigurationError
+from ....app import Organizer
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Get a single contact')
 parser.set_defaults(handler=lambda args: handler(args),
@@ -50,8 +52,8 @@ def get(tymth, tock=0.0, **opts):
         return -1
 
     try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
-            org = connecting.Organizer(hby=hby)
+        with existingHby(name=name, base=base, bran=bran) as hby:
+            org = Organizer(hby=hby)
 
             contact = None
             pre = None

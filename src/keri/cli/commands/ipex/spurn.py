@@ -8,14 +8,20 @@ import os
 
 from hio.base import doing
 
-from ...common import Parsery, existing
+from ...common import Parsery, setupHby
 
-from .... import Vrsn_1_0
-from ....app import Notifier, forwarding, organizing, habbing, grouping, indirecting
-from ....core import parsing, eventing
-from ....peer import exchanging
-from ....vc import protocoling, Ipex
-from ....vdr import credentialing, verifying, Tevery
+from ....kering import Vrsn_1_0
+from ....app import (Notifier, StreamPoster, Organizer,
+                     GroupHab, Multiplexor, MailboxDirector,
+                     multisigExn)
+
+from ....app.grouping import loadHandlers as loadHandlersGrouping
+
+from ....core import Kevery, Parser
+from ....peer import Exchanger, cloneMessage
+from ....vc import Ipex, ipexSpurnExn
+from ....vc.protocoling import loadHandlers as loadHandlersProtocoling
+from ....vdr import Regery, Verifier, Tevery
 
 
 parser = argparse.ArgumentParser(description='Reject an IPEX apply, offer, agree or grant message', 
@@ -44,27 +50,27 @@ class SpurnDoer(doing.DoDoer):
     def __init__(self, name, alias, base, bran, said, message):
         self.said = said
         self.message = message
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
-        self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
-        self.org = organizing.Organizer(hby=self.hby)
+        self.rgy = Regery(hby=self.hby, name=name, base=base)
+        self.org = Organizer(hby=self.hby)
 
-        kvy = eventing.Kevery(db=self.hby.db)
+        kvy = Kevery(db=self.hby.db)
         tvy = Tevery(db=self.hby.db, reger=self.rgy.reger)
-        vry = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
+        vry = Verifier(hby=self.hby, reger=self.rgy.reger)
 
-        self.psr = parsing.Parser(kvy=kvy, tvy=tvy, vry=vry, version=Vrsn_1_0)
+        self.psr = Parser(kvy=kvy, tvy=tvy, vry=vry, version=Vrsn_1_0)
 
         notifier = Notifier(self.hby)
-        mux = grouping.Multiplexor(self.hby, notifier=notifier)
+        mux = Multiplexor(self.hby, notifier=notifier)
 
-        self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        grouping.loadHandlers(self.exc, mux)
-        protocoling.loadHandlers(self.hby, exc=self.exc, notifier=notifier)
+        self.exc = Exchanger(hby=self.hby, handlers=[])
+        loadHandlersGrouping(self.exc, mux)
+        loadHandlersProtocoling(self.hby, exc=self.exc, notifier=notifier)
 
-        mbx = indirecting.MailboxDirector(hby=self.hby,
-                                          topics=["/receipt", "/multisig", "/replay", "/credential"],
-                                          exc=self.exc)
+        mbx = MailboxDirector(hby=self.hby,
+                              topics=["/receipt", "/multisig", "/replay", "/credential"],
+                              exc=self.exc)
 
         self.toRemove = [mbx]
         super(SpurnDoer, self).__init__(doers=self.toRemove + [doing.doify(self.spurnDo)])
@@ -85,7 +91,7 @@ class SpurnDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        ipex, pathed = exchanging.cloneMessage(self.hby, self.said)
+        ipex, pathed = cloneMessage(self.hby, self.said)
         if ipex is None:
             raise ValueError(f"exn message said={self.said} not found")
 
@@ -96,24 +102,24 @@ class SpurnDoer(doing.DoDoer):
             raise ValueError(f"exn said={self.said} is not a spurnable message, route={route}")
 
         recp = ipex.ked['i']
-        exn, atc = protocoling.ipexSpurnExn(hab=self.hab, message=self.message, spurned=ipex)
+        exn, atc = ipexSpurnExn(hab=self.hab, message=self.message, spurned=ipex)
         msg = bytearray(exn.raw)
         msg.extend(atc)
 
-        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytes(msg), exc=self.exc)
+        Parser(version=Vrsn_1_0).parseOne(ims=bytes(msg), exc=self.exc)
 
-        spurn, _ = exchanging.cloneMessage(self.hby, exn.said)
+        spurn, _ = cloneMessage(self.hby, exn.said)
         if spurn is None:
             raise ValueError(f"Invalid spurn evt={exn.ked}, not saved")
 
-        if isinstance(self.hab, habbing.GroupHab):
-            wexn, watc = grouping.multisigExn(self.hab, exn=msg)
+        if isinstance(self.hab, GroupHab):
+            wexn, watc = multisigExn(self.hab, exn=msg)
 
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
             smids.remove(self.hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                postman = forwarding.StreamPoster(hby=self.hby, hab=self.hab.mhab, recp=recp, topic="multisig")
+                postman = StreamPoster(hby=self.hby, hab=self.hab.mhab, recp=recp, topic="multisig")
                 postman.send(serder=wexn,
                              attachment=watc)
                 doer = doing.DoDoer(doers=postman.deliver())
@@ -124,7 +130,7 @@ class SpurnDoer(doing.DoDoer):
 
         if self.exc.lead(self.hab, said=exn.said):
             print("Sending spurn message...")
-            postman = forwarding.StreamPoster(hby=self.hby, hab=self.hab, recp=recp, topic="credential")
+            postman = StreamPoster(hby=self.hby, hab=self.hab, recp=recp, topic="credential")
             postman.send(serder=exn,
                          attachment=atc)
 

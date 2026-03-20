@@ -8,14 +8,15 @@ import argparse
 import sys
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
-from ...common.parsing import Parsery
-from .... import help, ConfigurationError
+from ...common import existingHby, Parsery
+
+from ....kering import ConfigurationError
 from ....app import organizing
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 # Could be expanded to provide arbitrary data if desired
 parser = argparse.ArgumentParser(description='Replace contact information for identifier prefix with alias information', 
@@ -43,7 +44,7 @@ def replace(tymth, tock=0.0, **opts):
     alias = args.alias
 
     try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
+        with existingHby(name=name, base=base, bran=bran) as hby:
             org = organizing.Organizer(hby=hby)
 
             if prefix not in hby.kevers:

@@ -7,15 +7,15 @@ import argparse
 import getpass
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
-from ...common.parsing import Parsery
+from ...common import Parsery, existingHby
 
-from .... import help, ConfigurationError
-from ....core import Salter, coring
+from ....kering import ConfigurationError
+from ....core import Salter, MtrDex
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Initialize a prefix', 
                                  parents=[Parsery.keystore()])
@@ -44,7 +44,7 @@ def set_passcode(tymth, tock=0.0, **opts):
     newpasscode = args.new
 
     try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
+        with existingHby(name=name, base=base, bran=bran) as hby:
 
             if newpasscode is None:
                 print("Re-encrypting keystore, please enter the new 21 character passcode:")
@@ -57,7 +57,7 @@ def set_passcode(tymth, tock=0.0, **opts):
                     else:
                         break
 
-            bran = coring.MtrDex.Salt_128 + newpasscode[:22]  # qb64 salt for seed
+            bran = MtrDex.Salt_128 + newpasscode[:22]  # qb64 salt for seed
             signer = Salter(qb64=bran).signer(transferable=False,
                                                      temp=False)
             seed = signer.qb64

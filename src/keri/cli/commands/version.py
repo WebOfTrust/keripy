@@ -7,10 +7,9 @@ import argparse
 
 from hio.base import doing
 
-from ..common import existing
-from ..common.parsing import Parsery
+from keri import __version__
 
-import keri
+from ..common import Parsery, existingHby
 
 
 parser = argparse.ArgumentParser(description='Print version of KLI', parents=[Parsery.keystore(required=False)])
@@ -31,8 +30,8 @@ def version(tymth, tock=0.0, **opts):
     base = args.base
     bran = args.bran
 
-    print(f"Library version: {keri.__version__}")
+    print(f"Library version: {__version__}")
 
     if name is not None:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
+        with existingHby(name=name, base=base, bran=bran) as hby:
             print(f"Database version: {hby.db.version}")

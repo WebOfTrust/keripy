@@ -8,12 +8,11 @@ import json
 
 from hio.base import doing
 
-from ..common import existing
-from ..common.parsing import Parsery
+from ..common import Parsery, setupHby
 
-from ... import kering
+from ...kering import ConfigurationError
 from ...help import helping
-from ...app import habbing, agenting, indirecting
+from ...app import HaberyDoer, Receiptor, WitnessReceiptor, MailboxDirector
 
 parser = argparse.ArgumentParser(description='Create and publish an interaction event', 
                                  parents=[Parsery.keystore()])
@@ -49,7 +48,7 @@ def interact(args):
             else:
                 data = json.loads(args.data)
         except json.JSONDecodeError:
-            raise kering.ConfigurationError("data supplied must be value JSON to anchor in a seal")
+            raise ConfigurationError("data supplied must be value JSON to anchor in a seal")
 
         if not isinstance(data, list):
             data = [data]
@@ -87,9 +86,9 @@ class InteractDoer(doing.DoDoer):
         self.codes = codes if codes is not None else []
         self.codeTime = codeTime
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
+        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
+        self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
         doers = [self.hbyDoer, self.mbx, doing.doify(self.interactDo)]
 
         super(InteractDoer, self).__init__(doers=doers)
@@ -121,7 +120,7 @@ class InteractDoer(doing.DoDoer):
                 auths[wit] = f"{code}#{helping.nowIso8601()}"
 
         if self.endpoint:
-            receiptor = agenting.Receiptor(hby=self.hby)
+            receiptor = Receiptor(hby=self.hby)
             self.extend([receiptor])
 
             yield from receiptor.receipt(hab.pre, sn=hab.kever.sn, auths=auths)
@@ -129,7 +128,7 @@ class InteractDoer(doing.DoDoer):
 
         else:
 
-            witDoer = agenting.WitnessReceiptor(hby=self.hby, auths=auths)
+            witDoer = WitnessReceiptor(hby=self.hby, auths=auths)
             self.extend(doers=[witDoer])
 
             if hab.kever.wits:
