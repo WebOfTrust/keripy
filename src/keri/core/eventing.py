@@ -3858,6 +3858,8 @@ class Kevery:
         self.kramer = kramer    # Kramer instance for KRAM processing
         if self.kramer is not None:
             self.kramer.cues = self.cues
+        self.allowList = set()
+        self.denyList = set()
         self.lax = True if lax else False  # promiscuous mode
         self.local = True if local else False  # local vs nonlocal default
         self.cloned = True if cloned else False  # process as cloned
@@ -4319,9 +4321,35 @@ class Kevery:
         tvy = kwa.pop('tvy', None) or self.tvy
 
         # Step 1: AID-based allow/deny (TBD - placeholder for future consolidation)
+        
+        sender = None
 
+        # Determine sender AID deterministically
+
+        if kwa.get("ssgs"):
+            sender = kwa["ssgs"][-1][0].qb64  # (pre, sigers)
+        elif kwa.get("cigars"):
+            sender = kwa["cigars"][-1].verfer.qb64
+        elif kwa.get("tsgs"):
+            sender = kwa["tsgs"][-1][0].qb64
+        # Apply allow/deny rules
+        if sender is not None:
+            # Denylist always wins
+            if sender in self.denyList:
+                logger.info(f"Message dropped from {sender} (in denylist)")
+                return  # drop silently
+
+            # Allowlist only restricts when non-empty
+            if self.allowList and sender not in self.allowList:
+                logger.info(
+                f"Message dropped from {sender} "
+                f"(not in allowlist; allowlist active)"
+                )
+                return  # drop silently
+                
         # Step 2: KRAM
         if self.kramer:
+            self.kramer.reconcileConfig()
             result = self.kramer.intake(serder, **kwa)
             if result is None:
                 return  # message dropped or pending in KRAM
