@@ -457,6 +457,14 @@ class LMDBer(filing.Filer):
         if readonly is not None:
             self.readonly = readonly
 
+        # close self.env if open
+        if self.env:
+            try:
+                self.env.close()
+            except:
+                pass
+
+        self.env = None
         # open lmdb major database instance
         # creates files data.mdb and lock.mdb in .dbDirPath
         self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs, map_size=self.MapSize,

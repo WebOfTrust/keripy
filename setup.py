@@ -70,7 +70,7 @@ setup(
     ],
     python_requires='>=3.14.0',
     install_requires=[
-                        'lmdb>=1.7.5',
+                        'lmdb>=2.1.1',
                         'pysodium>=0.7.18',
                         'blake3>=1.0.8',
                         'msgpack>=1.1.2',
