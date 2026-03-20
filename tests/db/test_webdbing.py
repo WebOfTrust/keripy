@@ -2097,7 +2097,7 @@ def test_getIoSetLastItem():
     asyncio.run(_go())
 
 
-def test_getIoSetLastItemIterAll_all_behaviors():
+def test_getIoSetLastItemIterAll():
     """
     Contract test for WebDBer.getIoSetLastItemIterAll validating LMDB‑equivalent
     semantics for retrieving the last IoSet entry for every effective key.

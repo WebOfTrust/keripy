@@ -893,7 +893,7 @@ class WebDBer:
             sep (bytes): separator character for split
 
         """
-        # 1. Empty key or empty vals → no-op
+        # 1. Empty key or empty vals so no-op
         if not key or not vals:
             return False
 
@@ -902,36 +902,39 @@ class WebDBer:
 
         # 2. Prepare prefix and initial ordinal key
         prefix = key + sep
-        prefix_len = len(prefix)
+        prefixLength = len(prefix)
 
         # 3. Scan existing entries
-        existing_vals = set()
-        max_ion = -1
+        pvals = set()
+        maxIon = -1
 
-        # SortedDict allows efficient range iteration
+        # Iterate through all values per prefix and add them to pvals
         for iokey in db.items.irange(prefix, prefix + b"\xff"):
             if not iokey.startswith(prefix):
                 break
 
             # Extract ordinal
             try:
-                ion = int(iokey[prefix_len:])
+                ion = int(iokey[prefixLength:])
             except ValueError:
-                continue  # malformed key; LMDB would never produce this
+                continue  # malformed key
 
             val = db.items[iokey]
-            existing_vals.add(val)
-            if ion > max_ion:
-                max_ion = ion
+            pvals.add(val)
+            if ion > maxIon:
+                maxIon = ion
 
         # 4. Remove already-present values
-        new_vals = [v for v in vals if v not in existing_vals]
-        if not new_vals:
+        newVals = [v for v in vals if v not in pvals]
+        
+        # If no new values return False
+        if not newVals:
             return False
 
         # 5. Insert new values at sequential ordinals
-        start = max_ion + 1
-        for offset, val in enumerate(new_vals):
+        # Append-only behavior, new values are always appended at the next ordinal 
+        start = maxIon + 1
+        for offset, val in enumerate(newVals):
             ion = start + offset
             iokey = prefix + str(ion).encode("utf-8")
             db.items[iokey] = val
@@ -969,20 +972,19 @@ class WebDBer:
             return False
 
         prefix = key + sep
-        prefix_len = len(prefix)
 
         # 2. Remove all existing entries for this key
-        removed_any = False
-        to_delete = []
+        removedFlag = False
+        delVals = []
 
         for iokey in db.items.irange(prefix, prefix + b"\xff"):
             if not iokey.startswith(prefix):
                 break
-            to_delete.append(iokey)
+            delVals.append(iokey)
 
-        for iokey in to_delete:
+        for iokey in delVals:
             del db.items[iokey]
-            removed_any = True
+            removedFlag = True
 
         # 3. Insert new values
         for ion, val in enumerate(vals):
@@ -990,7 +992,7 @@ class WebDBer:
             db.items[iokey] = val
 
         # 4. Mark dirty only if something changed
-        if removed_any or vals:
+        if removedFlag or vals:
             db.dirty = True
 
         return True
@@ -1021,33 +1023,33 @@ class WebDBer:
             return False
 
         prefix = key + sep
-        prefix_len = len(prefix)
+        prefixLength = len(prefix)
 
         # 2. Scan existing entries
-        existing_vals = set()
-        max_ion = -1
+        pvals = set()
+        maxIon = -1
 
         for iokey in db.items.irange(prefix, prefix + b"\xff"):
             if not iokey.startswith(prefix):
                 break
 
             try:
-                ion = int(iokey[prefix_len:])
+                ion = int(iokey[prefixLength:])
             except ValueError:
                 continue
 
             cval = db.items[iokey]
-            existing_vals.add(cval)
+            pvals.add(cval)
 
-            if ion > max_ion:
-                max_ion = ion
+            if ion > maxIon:
+                maxIon = ion
 
         # 3. If value already present then no-op
-        if val in existing_vals:
+        if val in pvals:
             return False
 
         # 4. Insert at next ordinal
-        ion = max_ion + 1
+        ion = maxIon + 1
         iokey = prefix + str(ion).encode("utf-8")
 
         db.items[iokey] = val
@@ -1076,13 +1078,16 @@ class WebDBer:
             ion (int): starting ordinal value, default 0
             sep (bytes): separator character for split
         """
+        # If empty returns empty iterator
         if not key:
             return iter(())
 
+        # Get the prefix and the starting key
         prefix = key + sep
-        start_key = prefix + str(ion).encode("utf-8")
+        startKey = prefix + str(ion).encode("utf-8")
 
-        for iokey in db.items.irange(start_key, prefix + b"\xff"):
+        # Iterate through items from the starting key
+        for iokey in db.items.irange(startKey, prefix + b"\xff"):
             if not iokey.startswith(prefix):
                 break
             yield (iokey, db.items[iokey])
@@ -1105,9 +1110,11 @@ class WebDBer:
             key (bytes): Apparent effective key (unsuffixed)
             sep (bytes): separator character for split
         """
+        # No key, return empty tuple
         if not key:
             return ()
 
+        # Get the prefix and initialize last
         prefix = key + sep
         last = ()
 
@@ -1136,25 +1143,28 @@ class WebDBer:
             key (bytes|None): Apparent effective key
             sep (bytes): separator character for split
         """
+        # If no key return false
         if not key:
             return False
 
+        # Get the prefix and prefix length
         prefix = key + sep
-        prefix_len = len(prefix)
-
-        to_delete = []
+        
+        # Initialize a list for values to delete
+        delVals = []
 
         # Collect all matching keys
         for iokey in db.items.irange(prefix, prefix + b"\xff"):
             if not iokey.startswith(prefix):
                 break
-            to_delete.append(iokey)
+            delVals.append(iokey)
 
-        if not to_delete:
+        # It no values are found return False
+        if not delVals:
             return False
 
         # Delete them
-        for iokey in to_delete:
+        for iokey in delVals:
             del db.items[iokey]
 
         db.dirty = True
@@ -1195,6 +1205,7 @@ class WebDBer:
             val (bytes|None): value to delete
             sep (bytes): separator character for split
         """
+        # If val None remove all entries at key
         if val is None:
             return self.remIoSet(db=db, key=key, sep=sep)
 
@@ -1202,10 +1213,10 @@ class WebDBer:
         if not key:
             return False
 
+        # Get prefix and prefix length
         prefix = key + sep
-        prefix_len = len(prefix)
 
-        # Linear scan for matching value
+        # Iterate for matching value
         for iokey in db.items.irange(prefix, prefix + b"\xff"):
             if not iokey.startswith(prefix):
                 break
@@ -1240,15 +1251,14 @@ class WebDBer:
             return 0
 
         prefix = key + sep
-        prefix_len = len(prefix)
 
         # Construct starting key: key.sep.ion
-        start_key = prefix + str(ion).encode("utf-8")
+        startKey = prefix + str(ion).encode("utf-8")
 
         count = 0
 
         # Iterate over all keys in prefix range
-        for iokey in db.items.irange(start_key, prefix + b"\xff"):
+        for iokey in db.items.irange(startKey, prefix + b"\xff"):
             if not iokey.startswith(prefix):
                 break
             count += 1
@@ -1315,17 +1325,17 @@ class WebDBer:
                 first_key = next(iter(items))
             except StopIteration:
                 return iter(())  # empty DB
-            start_key = first_key
+            startKey = first_key
         else:
             # Start at key.sep.0
-            start_key = key + sep + b"0"
+            startKey = key + sep + b"0"
 
         # State for tracking last item per apparent key
         last = None
         current_key = None
 
         # Iterate forward through the DB
-        for iokey in items.irange(start_key, None):
+        for iokey in items.irange(startKey, None):
             # Split into (apparent_key, ordinal)
             try:
                 apparent, _ = iokey.split(sep, 1)
