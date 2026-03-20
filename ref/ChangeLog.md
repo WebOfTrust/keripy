@@ -1,6 +1,11 @@
 # Change Log for keripy
 
 ## 2.0.0-dev6
+
+### OnSuber and OnIoDupSuber remap of method names
+change method names to shadow super class methods to avoid confusion and reduce
+potential errors
+
 ### WASM Support.
 Added keri.db.webdbing.py with support for IndexedDB in wasm pyodide pyscript.
 as a plugin replacement for LMDB  (see keri.db.webdbing.WebDBer)

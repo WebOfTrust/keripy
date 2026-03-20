@@ -1136,7 +1136,7 @@ class BaseHab:
         """
         Return serder of inception event
         """
-        if (dig := self.db.kels.getOnLast(keys=self.pre, on=0)) is None:
+        if (dig := self.db.kels.getLast(keys=self.pre, on=0)) is None:
             raise ConfigurationError("Missing inception event in KEL for "
                                             "Habitat pre={}.".format(self.pre))
         dig = dig.encode("utf-8")
@@ -1570,7 +1570,7 @@ class BaseHab:
             return None
 
         msg = bytearray()
-        dig = self.db.kels.getOnLast(keys=pre, on=sn)
+        dig = self.db.kels.getLast(keys=pre, on=sn)
         if dig is None:
             raise MissingEntryError("Missing event for pre={} at sn={}."
                                            "".format(pre, sn))
@@ -2029,10 +2029,10 @@ class BaseHab:
             sn (int): is int sequence number of event
             allowPartiallySigned(bool): True means attempt to load from partial signed escrow
         """
-        dig = self.db.kels.getOnLast(keys=self.pre, on=sn)
+        dig = self.db.kels.getLast(keys=self.pre, on=sn)
         dig = dig.encode("utf-8") if dig else None
         if dig is None and allowPartiallySigned:
-            vals = self.db.pses.getOnLast(keys=self.pre, on=sn)
+            vals = self.db.pses.getLast(keys=self.pre, on=sn)
             dig = vals.encode("utf-8") if vals else None
 
         if dig is None:
