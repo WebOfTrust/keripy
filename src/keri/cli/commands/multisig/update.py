@@ -7,15 +7,16 @@ import argparse
 import time
 
 from hio.base import doing
-from hio.help import decking
+from hio.help import decking, ogler
 
-from ...common import Parsery, displaying, existing
+from ...common import Parsery, setupHby, printIdentifier
 
-from .... import ConfigurationError, help
-from ....app import GroupHab, agenting, indirecting, habbing
+from ....kering import ConfigurationError
+from ....app import (GroupHab, WitnessInquisitor,
+                     MailboxDirector, HaberyDoer, messenger)
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Request KEL for local multisig AID from witness', 
                                  parents=[Parsery.keystore()])
@@ -42,8 +43,8 @@ class UpdateDoer(doing.DoDoer):
 
     def __init__(self, name, alias, base, bran, wit, sn, said, **kwa):
         doers = []
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
+        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
         hab = self.hby.habByName(alias)
 
         if not isinstance(hab, GroupHab):
@@ -56,8 +57,8 @@ class UpdateDoer(doing.DoDoer):
         self.said = said
         self.cues = decking.Deck()
 
-        self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"])
-        self.witq = agenting.WitnessInquisitor(hby=self.hby)
+        self.mbd = MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"])
+        self.witq = WitnessInquisitor(hby=self.hby)
         doers.extend([self.hbyDoer, self.mbd, self.witq])
 
         self.toRemove = list(doers)
@@ -85,7 +86,7 @@ class UpdateDoer(doing.DoDoer):
             self.hab.db.ksns.rem((saider.qb64,))
             self.hab.db.ksns.rem((saider.qb64,))
 
-        witer = agenting.messenger(self.hab, self.wit)
+        witer = messenger(self.hab, self.wit)
         self.extend([witer])
 
         msg = self.hab.query(pre=self.hab.pre, src=self.wit, route="ksn")
@@ -129,7 +130,7 @@ class UpdateDoer(doing.DoDoer):
                 break
 
         print("")
-        displaying.printIdentifier(self.hby, self.hab.pre)
+        printIdentifier(self.hby, self.hab.pre)
 
         self.remove(self.toRemove)
 

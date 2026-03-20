@@ -6,14 +6,12 @@ keri.kli.commands module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ..common import existing
-from ..common.parsing import Parsery
-
-from ... import help
+from ..common import Parsery, setupHby
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 def handler(args):
@@ -39,8 +37,8 @@ class CleanDoer(doing.Doer):
         super(CleanDoer, self).__init__()
 
     def recur(self, tyme):
-        hby = existing.setupHby(name=self.args.name, base=self.args.base,
-                                bran=self.args.bran, temp=self.args.temp)
+        hby = setupHby(name=self.args.name, base=self.args.base,
+                       bran=self.args.bran, temp=self.args.temp)
 
         print("Clearing escrows...")
         hby.db.clearEscrows()
@@ -50,8 +48,8 @@ class CleanDoer(doing.Doer):
         hby.db.migrate()
         print("Finished")
 
-        hby = existing.setupHby(name=self.args.name, base=self.args.base,
-                                bran=self.args.bran, temp=self.args.temp)
+        hby = setupHby(name=self.args.name, base=self.args.base,
+                       bran=self.args.bran, temp=self.args.temp)
 
         print("Database open, performing clean...")
         hby.db.clean()

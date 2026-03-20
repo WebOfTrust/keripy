@@ -7,14 +7,15 @@ keri.kli.commands module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import Parsery, existing, displaying
+from ...common import Parsery, setupHby, printIdentifier
 
-from .... import help
-from ....app import GroupHab, indirecting, grouping, agenting
+from ....app import (GroupHab, MailboxDirector,
+                     Counselor, WitnessInquisitor)
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Process any incoming events that will progress local pending multisig '
                                              'events.',
@@ -32,13 +33,13 @@ class ContinueDoer(doing.DoDoer):
     """ DoDoer running the doers for recovering pending multisig events. """
 
     def __init__(self, name, base, bran, alias):
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran)
         self.alias = alias
-        self.counselor = grouping.Counselor(hby=self.hby)
-        self.witq = agenting.WitnessInquisitor(hby=self.hby)
-        self.mbx = indirecting.MailboxDirector(hby=self.hby,
-                                               topics=["/receipt", "/replay", "/multisig", "/credential", "/delegate",
-                                                       "/challenge", "/oobi"])
+        self.counselor = Counselor(hby=self.hby)
+        self.witq = WitnessInquisitor(hby=self.hby)
+        self.mbx = MailboxDirector(hby=self.hby,
+                                   topics=["/receipt", "/replay", "/multisig", "/credential", "/delegate",
+                                           "/challenge", "/oobi"])
         doers = [self.mbx, self.counselor, self.witq, doing.doify(self.recover)]
         super(ContinueDoer, self).__init__(doers=doers)
 
@@ -68,7 +69,7 @@ class ContinueDoer(doing.DoDoer):
             yield 1.0
 
         print()
-        displaying.printIdentifier(self.hby, hab.pre)
+        printIdentifier(self.hby, hab.pre)
 
         self.remove([self.mbx, self.counselor, self.witq])
         return True

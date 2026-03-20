@@ -8,13 +8,15 @@ import argparse
 import json
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
-from .... import help, ConfigurationError
-from ....app import organizing as connecting
+from ...common import existingHby
+
+from ....kering import ConfigurationError
+from ....app import Organizer
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Find contacts by field value')
 parser.set_defaults(handler=lambda args: handler(args),
@@ -46,8 +48,8 @@ def find(tymth, tock=0.0, **opts):
     value = args.value
 
     try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
-            org = connecting.Organizer(hby=hby)
+        with existingHby(name=name, base=base, bran=bran) as hby:
+            org = Organizer(hby=hby)
 
             contacts = org.find(field, value)
 

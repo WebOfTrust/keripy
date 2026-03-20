@@ -7,13 +7,13 @@ keri.kli.commands module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from .... import help, ConfigurationError
-from ...common import existing
-from ...common.parsing import Parsery
+from ....kering import ConfigurationError
+from ...common import Parsery, existingHby, aliasInput
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='List AIDs of witness for the provided AID', 
                                  parents=[Parsery.keystore()])
@@ -38,9 +38,9 @@ def listWitnesses(tymth, tock=0.0, **opts):
     bran = args.bran
 
     try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
+        with existingHby(name=name, base=base, bran=bran) as hby:
             if alias is None:
-                alias = existing.aliasInput(hby)
+                alias = aliasInput(hby)
 
             hab = hby.habByName(alias)
             for idx, wit in enumerate(hab.kever.wits):

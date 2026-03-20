@@ -7,15 +7,14 @@ keri.kli.commands module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
-from ...common.parsing import Parsery
+from ...common import Parsery, setupHby
 
-from .... import help
-from ....app import habbing, notifying
+from ....app import HaberyDoer, Notifier
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Display notifications for an identifier', 
                                  parents=[Parsery.keystore()])
@@ -49,11 +48,11 @@ def handler(args):
 class MarkDoer(doing.DoDoer):
     def __init__(self, name, base, alias, bran, rid, all):
 
-        hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
+        hby = setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = HaberyDoer(habery=hby)  # setup doer
         self.alias = alias
         self.hby = hby
-        self.notifier = notifying.Notifier(hby=self.hby)
+        self.notifier = Notifier(hby=self.hby)
         self.rid = rid
         self.all = all
 

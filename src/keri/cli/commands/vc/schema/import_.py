@@ -8,12 +8,13 @@ import argparse
 import json
 
 from hio.base import doing
+from hio.help import ogler
 
-from ..... import help, kering
-from ....common import existing
-from .....core import scheming
+from .....kering import ConfigurationError, ValidationError
+from ....common import setupHby
+from .....core import Schemer
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Import ACDC JSON schema file into the schema database')
 parser.set_defaults(handler=lambda args: import_schema(args))
@@ -40,7 +41,7 @@ class ImportDoer(doing.DoDoer):
 
     def __init__(self, name, base, bran, schema):
         self.schemaPath = schema
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran)
 
         doers = [doing.doify(self.importDo)]
 
@@ -68,7 +69,7 @@ class ImportDoer(doing.DoDoer):
                 raw = f.read()
 
             # Create Schemer instance which validates the schema
-            schemer = scheming.Schemer(raw=raw)
+            schemer = Schemer(raw=raw)
 
             # Store the schema in the database
             self.hby.db.schema.pin(keys=(schemer.said,), val=schemer)
@@ -76,10 +77,10 @@ class ImportDoer(doing.DoDoer):
             print(f"Schema successfully imported with SAID: {schemer.said}")
 
         except FileNotFoundError:
-            raise kering.ConfigurationError(f"Schema file not found: {self.schemaPath}")
+            raise ConfigurationError(f"Schema file not found: {self.schemaPath}")
         except json.JSONDecodeError as e:
-            raise kering.ConfigurationError(f"Invalid JSON in schema file: {e}")
-        except kering.ValidationError as e:
-            raise kering.ConfigurationError(f"Schema validation failed: {e}")
+            raise ConfigurationError(f"Invalid JSON in schema file: {e}")
+        except ValidationError as e:
+            raise ConfigurationError(f"Schema validation failed: {e}")
         except Exception as e:
-            raise kering.ConfigurationError(f"Error importing schema: {e}")
+            raise ConfigurationError(f"Error importing schema: {e}")

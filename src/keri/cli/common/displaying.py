@@ -5,9 +5,9 @@ keri.app.cli.common.displaying module
 """
 import sys
 
-from ..common import terming
+from .terming import Colors, Symbols
 
-from ...app.habbing import GroupHab
+from ...app import GroupHab
 
 
 def printIdentifier(hby, pre, label="Identifier"):
@@ -34,18 +34,18 @@ def printIdentifier(hby, pre, label="Identifier"):
             print("Delegated Identifier")
             sys.stdout.write(f"    Delegator:  {kever.delpre} ")
             if seal:
-                print(f"{terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK} Anchored{terming.Colors.ENDC}")
+                print(f"{Colors.OKGREEN}{Symbols.CHECKMARK} Anchored{Colors.ENDC}")
             else:
-                print(f"{terming.Colors.FAIL}{terming.Symbols.FAILED} Not Anchored{terming.Colors.ENDC}")
+                print(f"{Colors.FAIL}{Symbols.FAILED} Not Anchored{Colors.ENDC}")
             print()
 
         if isinstance(hab, GroupHab):
             print("Group Identifier")
             sys.stdout.write(f"    Local Indentifier:  {hab.mhab.pre} ")
             if hab.accepted:
-                print(f"{terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK} Fully Signed{terming.Colors.ENDC}")
+                print(f"{Colors.OKGREEN}{Symbols.CHECKMARK} Fully Signed{Colors.ENDC}")
             else:
-                print(f"{terming.Colors.FAIL}{terming.Symbols.FAILED} Not Fully Signed{terming.Colors.ENDC}")
+                print(f"{Colors.FAIL}{Symbols.FAILED} Not Fully Signed{Colors.ENDC}")
 
         print("\nWitnesses:")
         print("Count:\t\t{}".format(len(kever.wits)))
@@ -63,9 +63,9 @@ def printIdentifier(hby, pre, label="Identifier"):
             print("Group Identifier")
             sys.stdout.write(f"    Local Indentifier:  {hab.mhab.pre} ")
             if hab.accepted:
-                print(f"{terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK} Anchored{terming.Colors.ENDC}")
+                print(f"{Colors.OKGREEN}{Symbols.CHECKMARK} Anchored{Colors.ENDC}")
             else:
-                print(f"{terming.Colors.FAIL}{terming.Symbols.FAILED} Not Anchored{terming.Colors.ENDC}")
+                print(f"{Colors.FAIL}{Symbols.FAILED} Not Anchored{Colors.ENDC}")
 
         print()
 
@@ -91,9 +91,9 @@ def printExternal(hby, pre, label="Identifier"):
         print("Delegated Identifier")
         sys.stdout.write(f"    Delegator:  {kever.delpre} ")
         if anchor:
-            print(f"{terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK} Anchored{terming.Colors.ENDC}")
+            print(f"{Colors.OKGREEN}{Symbols.CHECKMARK} Anchored{Colors.ENDC}")
         else:
-            print(f"{terming.Colors.FAIL}{terming.Symbols.FAILED} Not Anchored{terming.Colors.ENDC}")
+            print(f"{Colors.FAIL}{Symbols.FAILED} Not Anchored{Colors.ENDC}")
         print()
 
 

@@ -9,14 +9,14 @@ import json
 import sys
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
-from ...common.parsing import Parsery
-from .... import help, ValidationError, ConfigurationError
-from ....app import organizing
+from ...common import existingHby, Parsery
+from ....kering import ValidationError, ConfigurationError
+from ....app import Organizer
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='List existing contacts', 
                                  parents=[Parsery.keystore()])
@@ -38,8 +38,8 @@ def list(tymth, tock=0.0, **opts):
     bran = args.bran
 
     try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
-            org = organizing.Organizer(hby=hby)
+        with existingHby(name=name, base=base, bran=bran) as hby:
+            org = Organizer(hby=hby)
             for c in org.list():
 
                 aid = c['id']

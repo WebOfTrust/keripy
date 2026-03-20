@@ -8,17 +8,15 @@ import argparse
 import json
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
+from ...common import setupHby
 
-from .... import help
 from ....help import helping
-
-from ....app import oobiing
-from ....app import organizing as connecting, habbing, oobiing
+from ....app import Oobiery, Authenticator, Organizer, HaberyDoer
 from ....recording import OobiRecord
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Add a contact via OOBI resolution')
 parser.set_defaults(handler=lambda args: handler(args),
@@ -56,8 +54,8 @@ class ContactAddDoer(doing.DoDoer):
     """ DoDoer for adding a contact via OOBI resolution """
 
     def __init__(self, name, base, bran, oobi, alias, fields):
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)
+        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = HaberyDoer(habery=self.hby)
         self.oobi = oobi
         self.alias = alias
         self.fields = fields
@@ -85,8 +83,8 @@ class ContactAddDoer(doing.DoDoer):
 
         self.hby.db.oobis.put(keys=(self.oobi,), val=obr)
 
-        obi = oobiing.Oobiery(hby=self.hby)
-        authn = oobiing.Authenticator(hby=self.hby)
+        obi = Oobiery(hby=self.hby)
+        authn = Authenticator(hby=self.hby)
         self.extend(obi.doers)
         self.extend(authn.doers)
 
@@ -97,7 +95,7 @@ class ContactAddDoer(doing.DoDoer):
         resolved = self.hby.db.roobi.get(keys=(self.oobi,))
         cid = resolved.cid
 
-        org = connecting.Organizer(hby=self.hby)
+        org = Organizer(hby=self.hby)
 
         data = {}
         if self.alias:

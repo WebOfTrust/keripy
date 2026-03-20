@@ -7,15 +7,15 @@ keri.kli.commands module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ....common import existing
-from ....common.parsing import Parsery
+from ....common import Parsery, existingHby
 
-from ..... import help, ConfigurationError
-from .....vdr import credentialing
+from .....kering import ConfigurationError
+from .....vdr import Regery
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='List credential registry names and identifiers', 
                                  parents=[Parsery.keystore()])
@@ -40,8 +40,8 @@ def registries(tymth, tock=0.0, **opts):
     bran = args.bran
 
     try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
-            rgy = credentialing.Regery(hby=hby, name=name, base=base)
+        with existingHby(name=name, base=base, bran=bran) as hby:
+            rgy = Regery(hby=hby, name=name, base=base)
             for registry in rgy.regs.values():
                 print(registry.name, ":", registry.regk, ":", registry.hab.pre)
 

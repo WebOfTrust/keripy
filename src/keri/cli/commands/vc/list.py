@@ -10,18 +10,19 @@ import json
 import sys
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing, terming
-from ...common.parsing import Parsery
+from ...common import (Parsery, Colors, Symbols,
+                       setupHby, aliasInput)
 
-from .... import help, kering
-from ....app import indirecting
-from ....core import scheming
+from ....kering import ConfigurationError
+from ....app import MailboxDirector
+from ....core import Schemer
 from ....help import helping
-from ....vdr import credentialing, verifying
+from ....vdr import Regery, Verifier
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='List credentials and check mailboxes for any newly issued credentials',
                                  parents=[Parsery.keystore()])
@@ -63,18 +64,18 @@ class ListDoer(doing.DoDoer):
         self.issued = issued
 
         if schema is not None and schema == "":
-            raise kering.ConfigurationError("--schema value must not be empty.  Provide a valid qb64 SAID.")
+            raise ConfigurationError("--schema value must not be empty.  Provide a valid qb64 SAID.")
 
         self.schema = schema
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran)
         if alias is None:
-            alias = existing.aliasInput(self.hby)
+            alias = aliasInput(self.hby)
 
         self.hab = self.hby.habByName(alias)
-        self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
-        self.vry = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
-        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/credential'], verifier=self.vry)
+        self.rgy = Regery(hby=self.hby, name=name, base=base)
+        self.vry = Verifier(hby=self.hby, reger=self.rgy.reger)
+        self.mbx = MailboxDirector(hby=self.hby, topics=['/credential'], verifier=self.vry)
 
         doers = [self.mbx, doing.doify(self.listDo)]
 
@@ -130,15 +131,15 @@ class ListDoer(doing.DoDoer):
                 schema = sad['s']
                 scraw = self.mbx.verifier.resolver.resolve(schema)
                 if not scraw:
-                    raise kering.ConfigurationError("Credential schema {} not found".format(schema))
+                    raise ConfigurationError("Credential schema {} not found".format(schema))
 
-                schemer = scheming.Schemer(raw=scraw)
+                schemer = Schemer(raw=scraw)
                 print(f"Credential #{idx+1}: {sad['d']}")
                 print(f"    Type: {schemer.sed['title']}")
                 if status['et'] == 'iss' or status['et'] == 'bis':
-                    print(f"    Status: Issued {terming.Colors.OKGREEN}{terming.Symbols.CHECKMARK}{terming.Colors.ENDC}")
+                    print(f"    Status: Issued {Colors.OKGREEN}{Symbols.CHECKMARK}{Colors.ENDC}")
                 elif status['et'] == 'rev' or status['et'] == 'brv':
-                    print(f"    Status: Revoked {terming.Colors.FAIL}{terming.Symbols.FAILED}{terming.Colors.ENDC}")
+                    print(f"    Status: Revoked {Colors.FAIL}{Symbols.FAILED}{Colors.ENDC}")
                 else:
                     print(f"    Status: Unknown")
                 print(f"    Issued by {sad['i']}")

@@ -8,13 +8,13 @@ from dataclasses import dataclass
 
 from hio.base import doing
 
-from ..common import rotating, existing, config
-from ..common.parsing import Parsery
+from ..common import Parsery, config, addRotationArgs, setupHby
 
-from ... import kering
-from ...core import coring
+from ...kering import ConfigurationError
+from ...core import Number, NumDex
 from ...help import helping
-from ...app import habbing, agenting, indirecting, delegating, forwarding
+from ...app import (HaberyDoer, Receiptor, WitnessReceiptor,
+                    MailboxDirector, Anchorer, Poster)
 
 
 parser = argparse.ArgumentParser(description='Rotate keys', 
@@ -34,7 +34,7 @@ parser.add_argument('--code-time', help='Time the witness codes were captured.',
 
 parser.add_argument("--proxy", help="alias for delegation communication proxy", default=None)
 
-rotating.addRotationArgs(parser)
+addRotationArgs(parser)
 
 
 @dataclass
@@ -155,13 +155,13 @@ class RotateDoer(doing.DoDoer):
         self.cuts = cuts if cuts is not None else []
         self.adds = adds if adds is not None else []
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
+        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
 
         self.proxy = self.hby.habByName(proxy) if proxy is not None else None
-        self.swain = delegating.Anchorer(hby=self.hby, proxy=self.proxy)
-        self.postman = forwarding.Poster(hby=self.hby)
-        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
+        self.swain = Anchorer(hby=self.hby, proxy=self.proxy)
+        self.postman = Poster(hby=self.hby)
+        self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
         doers = [self.hbyDoer, self.mbx, self.swain, self.postman, doing.doify(self.rotateDo)]
 
         super(RotateDoer, self).__init__(doers=doers)
@@ -178,14 +178,14 @@ class RotateDoer(doing.DoDoer):
 
         hab = self.hby.habByName(name=self.alias)
         if hab is None:
-            raise kering.ConfigurationError(f"Alias {self.alias} is invalid")
+            raise ConfigurationError(f"Alias {self.alias} is invalid")
 
-        receiptor = agenting.Receiptor(hby=self.hby)
+        receiptor = Receiptor(hby=self.hby)
         self.extend([receiptor])
 
         if self.wits:
             if self.adds or self.cuts:
-                raise kering.ConfigurationError("you can only specify witnesses or cuts and add")
+                raise ConfigurationError("you can only specify witnesses or cuts and add")
             ewits = hab.kever.wits
 
             # wits= [a,b,c]  wits=[b, z]
@@ -215,7 +215,7 @@ class RotateDoer(doing.DoDoer):
         if hab.kever.delpre:
             self.swain.delegation(pre=hab.pre, sn=hab.kever.sn, auths=auths, proxy=self.proxy)
             print("Waiting for delegation approval...")
-            while not self.swain.complete(hab.kever.prefixer, coring.Number(num=hab.kever.sn, code=coring.NumDex.Huge)):
+            while not self.swain.complete(hab.kever.prefixer, Number(num=hab.kever.sn, code=NumDex.Huge)):
                 yield self.tock
 
         elif hab.kever.wits:
@@ -226,7 +226,7 @@ class RotateDoer(doing.DoDoer):
                     self.mbx.addPoller(hab, witness=wit)
 
                 print("Waiting for witness receipts...")
-                witDoer = agenting.WitnessReceiptor(hby=self.hby, auths=auths)
+                witDoer = WitnessReceiptor(hby=self.hby, auths=auths)
                 self.extend(doers=[witDoer])
                 yield self.tock
 

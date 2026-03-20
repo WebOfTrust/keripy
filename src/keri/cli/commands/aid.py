@@ -7,14 +7,14 @@ keri.kli.commands module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ..common import existing 
-from ..common.parsing import Parsery
+from ..common import Parsery, existingHby, aliasInput
 
-from ... import help, ConfigurationError
+from ...kering import ConfigurationError
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Print the AID for a given alias', parents=[Parsery.keystore()]) 
 parser.set_defaults(handler=lambda args: handler(args))
@@ -40,9 +40,9 @@ def status(tymth, tock=0.0, **opts):
     bran = args.bran
 
     try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
+        with existingHby(name=name, base=base, bran=bran) as hby:
             if alias is None:
-                alias = existing.aliasInput(hby)
+                alias = aliasInput(hby)
 
             hab = hby.habByName(alias)
             if hab is None:

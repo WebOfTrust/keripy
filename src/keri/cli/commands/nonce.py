@@ -7,7 +7,7 @@ import argparse
 
 from hio.base import doing
 
-from ...core import signing
+from ...core import Salter
 
 
 parser = argparse.ArgumentParser(description='Print a new random nonce')
@@ -23,4 +23,4 @@ def nonce(tymth, tock=0.0, **kwa):
     """
     _ = (yield tock)
 
-    print(signing.Salter().qb64)
+    print(Salter().qb64)
