@@ -1969,17 +1969,17 @@ def test_getIoSetItemIter():
         # 1. Iterate all values under alpha
         out = list(dber.getIoSetItemIter(db, b"alpha"))
         assert out == [
-            (b"alpha", 0, b"v0"),
-            (b"alpha", 1, b"v1"),
-            (b"alpha", 2, b"v2"),
+            (b"alpha", b"v0"),
+            (b"alpha", b"v1"),
+            (b"alpha", b"v2"),
         ]
         assert db.dirty is False
 
         # 2. Start iteration at non‑zero ordinal
         out = list(dber.getIoSetItemIter(db, b"alpha", ion=1))
         assert out == [
-            (b"alpha", 1, b"v1"),
-            (b"alpha", 2, b"v2"),
+            (b"alpha", b"v1"),
+            (b"alpha", b"v2"),
         ]
         assert db.dirty is False
 
@@ -1988,15 +1988,15 @@ def test_getIoSetItemIter():
         db.items[b"alpha.00000000000000000000000000000005"] = b"v5"
         out = list(dber.getIoSetItemIter(db, b"alpha"))
         assert out == [
-            (b"alpha", 0, b"v0"),
-            (b"alpha", 2, b"v2"),
-            (b"alpha", 5, b"v5"),
+            (b"alpha", b"v0"),
+            (b"alpha", b"v2"),
+            (b"alpha", b"v5"),
         ]
         assert db.dirty is False
 
         # 4. Prefix isolation
         out = list(dber.getIoSetItemIter(db, b"alpha"))
-        assert all(base == b"alpha" for (base, _, _) in out)
+        assert all(base == b"alpha" for (base, _) in out)
         assert db.dirty is False
 
         # 5. Empty key returns empty iterator
@@ -2187,5 +2187,458 @@ def test_getIoSetLastItemIterAll():
         _ = list(dber.getIoSetLastItemIterAll(db))
         assert db.items == before
         assert db.dirty is False
+
+    asyncio.run(_go())
+
+
+@needskeri
+def test_ioset_suber_contract():
+    """Test IoSetSuber wrapper operating against WebDBer."""
+    async def _go():
+        dber, _ = await _open_fake_dber(
+            name="ioset-suber-contract",
+            stores=["vals."],
+            clear=True,
+        )
+
+        ios = subing.IoSetSuber(db=dber, subkey="vals.")
+        assert ios.sdb.flags()["dupsort"] is False
+
+        # Basic append semantics
+        a0 = "red"
+        a1 = "green"
+        a2 = "blue"
+        a3 = "yellow"
+
+        assert ios.add(keys=b"alpha", val=a0) == True
+        assert ios.add(keys=b"alpha", val=a1) == True
+        assert ios.add(keys=b"alpha", val=a2) == True
+        assert ios.add(keys=b"alpha", val=a3) == True
+
+        assert ios.cnt(keys=b"alpha") == 4
+        assert ios.cnt(keys=b"alpha", ion=2) == 2
+        assert ios.cnt(keys=b"alpha", ion=4) == 0
+
+        # Iteration semantics
+        assert list(ios.getItemIter(keys=b"alpha")) == [
+            (("alpha",), a0),
+            (("alpha",), a1),
+            (("alpha",), a2),
+            (("alpha",), a3),
+        ]
+
+        assert list(ios.getItemIter(keys=b"alpha", ion=2)) == [
+            (("alpha",), a2),
+            (("alpha",), a3),
+        ]
+
+        # Last item
+        assert ios.getLastItem(keys=b"alpha") == (('alpha',), a3)
+
+        # put — append only missing values
+        assert ios.put(keys=b"alpha", vals=[a3, b"cyan"]) is True
+        assert list(ios.getItemIter(keys=b"alpha")) == [
+            (('alpha',), a0),
+            (('alpha',), a1),
+            (('alpha',), a2),
+            (('alpha',), a3),
+            (('alpha',), "cyan"),
+        ]
+
+        # pin — replace entire set
+        assert ios.pin(keys=b"alpha", vals=[b"x", b"y"]) is True
+        assert list(ios.getItemIter(keys=b"alpha")) == [
+            (("alpha",), "x"),
+            (("alpha",), "y"),
+        ]
+
+        # rem — remove a specific value
+        assert ios.rem(keys=b"alpha", val=b"x") is True
+        assert list(ios.getItemIter(keys=b"alpha")) == [
+            (("alpha",), "y"),
+        ]
+
+        # No‑op when value missing
+        assert ios.rem(keys=b"alpha", val=b"zzz") is False
+
+        # rem — remove all values under keys
+        assert ios.rem(keys=b"alpha") is True
+        assert list(ios.getItemIter(keys=b"alpha")) == []
+
+        # No‑op when keys missing
+        assert ios.rem(keys=b"alpha") is False
+
+        # Multi‑key scenario for last‑item‑iter‑all
+        db = ios.sdb  # convenience
+        db.items.clear()
+
+        db.items[b"alpha.00000000000000000000000000000000"] = b"a0"
+        db.items[b"alpha.00000000000000000000000000000002"] = b"a2"
+        db.items[b"beta.00000000000000000000000000000000"] = b"b0"
+        db.items[b"beta.00000000000000000000000000000005"] = b"b5"
+        db.items[b"gamma.00000000000000000000000000000001"] = b"g1"
+        db.items[b"gamma.00000000000000000000000000000009"] = b"g9"
+        db.dirty = False
+
+        assert list(ios.getLastItemIter()) == [
+            (("alpha",), "a2"),
+            (("beta",),  "b5"),
+            (("gamma",), "g9"),
+        ]
+
+        assert list(ios.getLastItemIter(keys=b"beta")) == [
+            (("beta",), "b5"),
+            (("gamma",), "g9"),
+        ]
+
+        assert list(ios.getLastItemIter(keys=b"zzz")) == []
+
+        # Dirty‑flag correctness across all operations
+        before = dict(db.items)
+        _ = list(ios.getItemIter(keys=b"alpha"))
+        _ = ios.cnt(keys=b"alpha")
+        _ = ios.getLastItem(keys=b"alpha")
+        _ = list(ios.getLastItemIter())
+        assert db.items == before
+        assert db.dirty is False
+
+        db.items.clear()
+
+        # Test suite taken from test_ioset_suber in test_subing.py 
+        # test empty keys
+        assert ios.cntAll() == 0
+        assert ios.cnt(keys="") == 0
+        assert ios.get(keys="") == []
+        assert [val for val in ios.getIter(keys="")] == []
+        assert ios.getLastItem(keys=()) == ()
+        assert ios.getLast(keys=()) == None
+        assert ios.getLastItem(keys="") == ()
+        assert ios.getLast(keys="") == None
+
+        sue = "Hello sailer!"
+        sal = "Not my type."
+        sam = "A real charmer!"
+        zoe = "See ya later."
+        zia = "Hey gorgeous!"
+        zul = "get lost"
+        bob = "Shove off!"
+
+        keys0 = ("test_key", "0001")
+        keys1 = ("test_key", "0002")
+        keys2 = "keystr"
+
+        vals0 = [sue, sal, sam]
+        vals1 = [zoe, zia, zul]
+
+        # fill database
+        assert ios.put(keys=keys0, vals=vals0)
+        assert ios.put(keys=keys1, vals=vals1)
+
+        assert ios.cntAll() == 6
+        assert ios.cnt(keys="") == 6
+
+        assert ios.cnt(keys=keys0) == 3
+        assert ios.cnt(keys=keys1) == 3
+
+        # keys0
+        # ion default 0
+        assert [val for val in ios.getIter(keys=keys0)] == vals0
+        assert [(key, val) for key, val in ios.getItemIter(keys=keys0)] == \
+        [
+            (('test_key', '0001'), 'Hello sailer!'),
+            (('test_key', '0001'), 'Not my type.'),
+            (('test_key', '0001'), 'A real charmer!')
+        ]
+        assert ios.get(keys=keys0) == vals0
+        assert ios.cnt(keys=keys0) == 3
+        assert ios.getLastItem(keys=keys0) == (keys0, sam)
+        assert ios.getLast(keys=keys0) == sam
+
+        # ion = 0
+        assert [val for val in ios.getIter(keys=keys0, ion=0)] == [sue, sal, sam]
+        assert [(key, val) for key, val in ios.getItemIter(keys=keys0, ion=0)] == \
+        [
+            (('test_key', '0001'), 'Hello sailer!'),
+            (('test_key', '0001'), 'Not my type.'),
+            (('test_key', '0001'), 'A real charmer!')
+        ]
+        assert ios.get(keys=keys0, ion=0) == [sue, sal, sam]
+        assert ios.cnt(keys=keys0, ion=0) == 3
+
+        # ion = 1
+        assert [val for val in ios.getIter(keys=keys0, ion=1)] == [sal, sam]
+        assert [(key, val) for key, val in ios.getItemIter(keys=keys0, ion=1)] == \
+        [
+            (('test_key', '0001'), 'Not my type.'),
+            (('test_key', '0001'), 'A real charmer!')
+        ]
+        assert ios.get(keys=keys0, ion=1) == [sal, sam]
+        assert ios.cnt(keys=keys0, ion=1) == 2
+
+        # ion = 2
+        assert [val for val in ios.getIter(keys=keys0, ion=2)] == [sam]
+        assert ios.get(keys=keys0, ion=2) == [sam]
+        assert ios.cnt(keys=keys0, ion=2) == 1
+
+        # ion = 3  past end of keys0 set
+        assert [val for val in ios.getIter(keys=keys0, ion=3)] == []
+        assert [(key, val) for key, val in ios.getItemIter(keys=keys0, ion=3)] == []
+        assert ios.get(keys=keys0, ion=3) == []
+        assert ios.cnt(keys=keys0, ion=3) == 0
+
+        # keys1
+        # ion default 0
+        assert [val for val in ios.getIter(keys=keys1)] == vals1
+        assert ios.get(keys=keys1) == vals1
+        assert ios.cnt(keys=keys1) == 3
+        assert ios.getLastItem(keys=keys1) == (keys1, zul)
+        assert ios.getLast(keys=keys1) == zul
+
+        # ion = 0
+        assert [val for val in ios.getIter(keys=keys1, ion=0)] == [zoe, zia, zul]
+        assert ios.get(keys=keys1, ion=0) == [zoe, zia, zul]
+        assert ios.cnt(keys=keys1, ion=0) == 3
+
+        # ion = 1
+        assert [val for val in ios.getIter(keys=keys1, ion=1)] == [zia, zul]
+        assert ios.get(keys=keys1, ion=1) == [zia, zul]
+        assert ios.cnt(keys=keys1, ion=1) == 2
+
+        # ion = 2
+        assert [val for val in ios.getIter(keys=keys1, ion=2)] == [zul]
+        assert ios.get(keys=keys1, ion=2) == [zul]
+        assert ios.cnt(keys=keys1, ion=2) == 1
+
+        # ion = 3  past end of keys1 set
+        assert [val for val in ios.getIter(keys=keys1, ion=3)] == []
+        assert ios.get(keys=keys0, ion=3) == []
+        assert ios.cnt(keys=keys0, ion=3) == 0
+
+        # keys0 make gap keys0
+        assert ios.rem(keys=keys0, val=sal)
+
+        # ion default 0
+        assert [val for val in ios.getIter(keys=keys0)] == [sue, sam]
+        assert ios.get(keys=keys0) == [sue, sam]
+        assert ios.cnt(keys=keys0) == 2
+        assert ios.getLastItem(keys=keys0) == (keys0, sam)
+        assert ios.getLast(keys=keys0) == sam
+
+        # ion = 0
+        assert [val for val in ios.getIter(keys=keys0, ion=0)] == [sue, sam]
+        assert ios.get(keys=keys0, ion=0) == [sue, sam]
+        assert ios.cnt(keys=keys0, ion=0) == 2
+
+        # ion = 1
+        assert [val for val in ios.getIter(keys=keys0, ion=1)] == [ sam]
+        assert ios.get(keys=keys0, ion=1) == [sam]
+        assert ios.cnt(keys=keys0, ion=1) == 1
+
+        # ion = 2
+        assert [val for val in ios.getIter(keys=keys0, ion=2)] == [sam]
+        assert ios.get(keys=keys0, ion=2) == [sam]
+        assert ios.cnt(keys=keys0, ion=2) == 1
+
+        # ion = 3  past end of keys0 set
+        assert [val for val in ios.getIter(keys=keys0, ion=3)] == []
+        assert ios.get(keys=keys0, ion=3) == []
+        assert ios.cnt(keys=keys0, ion=3) == 0
+
+        # keys1 make gap keys1
+        assert ios.rem(keys=keys1, val=zoe)
+
+        # ion default 0
+        assert [val for val in ios.getIter(keys=keys1)] == [zia, zul]
+        assert ios.get(keys=keys1) == [zia, zul]
+        assert ios.cnt(keys=keys1) == 2
+        assert ios.getLastItem(keys=keys1) == (keys1, zul)
+        assert ios.getLast(keys=keys1) == zul
+
+        # ion = 0
+        assert [val for val in ios.getIter(keys=keys1, ion=0)] == [zia, zul]
+        assert ios.get(keys=keys1, ion=0) == [zia, zul]
+        assert ios.cnt(keys=keys1, ion=0) == 2
+
+        # ion = 1
+        assert [val for val in ios.getIter(keys=keys1, ion=1)] == [zia, zul]
+        assert ios.get(keys=keys1, ion=1) == [zia, zul]
+        assert ios.cnt(keys=keys1, ion=1) == 2
+
+        # ion = 2
+        assert [val for val in ios.getIter(keys=keys1, ion=2)] == [zul]
+        assert ios.get(keys=keys1, ion=2) == [zul]
+        assert ios.cnt(keys=keys1, ion=2) == 1
+
+        # ion = 3  past end of keys1 set
+        assert [val for val in ios.getIter(keys=keys1, ion=3)] == []
+        assert ios.get(keys=keys1, ion=3) == []
+        assert ios.cnt(keys=keys1, ion=3) == 0
+
+        # clear db
+        assert ios.rem(keys=keys0)
+        assert ios.rem(keys=keys1)
+        assert ios.cntAll() == 0
+        assert ios.cnt() == 0
+
+
+        # more tests
+        assert ios.put(keys=keys0, vals=[sal, sue])
+        assert ios.get(keys=keys0) == [sal, sue]  # insertion order not lexicographic
+        assert ios.cnt(keys0) == 2
+        assert ios.getLastItem(keys=keys0) == (keys0, sue)
+        assert ios.getLast(keys=keys0) == sue
+
+        assert ios.rem(keys0)
+        assert ios.get(keys=keys0) == []
+        assert ios.cnt(keys0) == 0
+
+        assert ios.put(keys=keys0, vals=[sue, sal])
+        actuals = ios.get(keys=keys0)
+        assert actuals == [sue, sal]  # insertion order
+        assert ios.getLastItem(keys=keys0) == (keys0, sal)
+        assert ios.getLast(keys=keys0) == sal
+
+        result = ios.add(keys=keys0, val=sam)
+        assert result
+        actuals = ios.get(keys=keys0)
+        assert actuals == [sue, sal, sam]   # insertion order
+
+        result = ios.pin(keys=keys0, vals=[zoe, zia])
+        assert result
+        actuals = ios.get(keys=keys0)
+        assert actuals == [zoe, zia]  # insertion order
+
+        assert ios.put(keys=keys1, vals=[sal, sue, sam])
+        actuals = ios.get(keys=keys1)
+        assert actuals == [sal, sue, sam]
+
+        for i, val in enumerate(ios.getIter(keys=keys1)):
+            assert val == actuals[i]
+
+        items = [(keys, val) for keys, val in ios.getTopItemIter()]
+        assert items == [(('test_key', '0001'), 'See ya later.'),
+                        (('test_key', '0001'), 'Hey gorgeous!'),
+                        (('test_key', '0002'), 'Not my type.'),
+                        (('test_key', '0002'), 'Hello sailer!'),
+                        (('test_key', '0002'), 'A real charmer!')]
+
+        items = [(keys, val) for keys, val in ios.getLastItemIter()]
+        assert items == [(('test_key', '0001'), 'Hey gorgeous!'),
+                         (('test_key', '0002'), 'A real charmer!')]
+
+        lasts = [val for val in ios.getLastIter()]
+        assert lasts == ['Hey gorgeous!', 'A real charmer!']
+
+        items = list(ios.getFullItemIter())
+        assert items ==  [(('test_key', '0001', '00000000000000000000000000000000'), 'See ya later.'),
+                        (('test_key', '0001', '00000000000000000000000000000001'), 'Hey gorgeous!'),
+                        (('test_key', '0002', '00000000000000000000000000000000'), 'Not my type.'),
+                        (('test_key', '0002', '00000000000000000000000000000001'), 'Hello sailer!'),
+                        (('test_key', '0002', '00000000000000000000000000000002'), 'A real charmer!')]
+
+
+        items = [(keys, val) for keys,  val in  ios.getTopItemIter(keys=keys0)]
+        assert items == [(('test_key', '0001'), 'See ya later.'),
+                         (('test_key', '0001'), 'Hey gorgeous!')]
+
+        items = [(keys, val) for keys, val in ios.getLastItemIter(keys=keys0)]
+        assert items == [(('test_key', '0001'), 'Hey gorgeous!'),
+                         (('test_key', '0002'), 'A real charmer!')]
+
+        lasts = [val for val in ios.getLastIter(keys=keys0)]
+        assert lasts == ['Hey gorgeous!', 'A real charmer!']
+
+        items = [(keys, val) for keys,  val in ios.getTopItemIter(keys=keys1)]
+        assert items == [(('test_key', '0002'), 'Not my type.'),
+                        (('test_key', '0002'), 'Hello sailer!'),
+                        (('test_key', '0002'), 'A real charmer!')]
+
+        items = [(keys, val) for keys, val in ios.getLastItemIter(keys=keys1)]
+        assert items == [(('test_key', '0002'), 'A real charmer!')]
+
+        lasts = [val for val in ios.getLastIter(keys=keys1)]
+        assert lasts == ['A real charmer!']
+
+
+        # Test with top keys
+        assert ios.put(keys=("test", "pop"), vals=[sal, sue, sam])
+        topkeys = ("test", "")
+        items = [(keys, val) for keys, val in ios.getTopItemIter(keys=topkeys)]
+        assert items == [(('test', 'pop'), 'Not my type.'),
+                         (('test', 'pop'), 'Hello sailer!'),
+                         (('test', 'pop'), 'A real charmer!')]
+
+        # test with top parameter
+        keys = ("test", )
+        items = [(keys, val) for keys, val in ios.getTopItemIter(keys=keys, topive=True)]
+        assert items == [(('test', 'pop'), 'Not my type.'),
+                         (('test', 'pop'), 'Hello sailer!'),
+                         (('test', 'pop'), 'A real charmer!')]
+
+        # IoItems
+        items = list(ios.getFullItemIter(keys=topkeys))
+        assert items == [(('test', 'pop', '00000000000000000000000000000000'), 'Not my type.'),
+                         (('test', 'pop', '00000000000000000000000000000001'), 'Hello sailer!'),
+                         (('test', 'pop', '00000000000000000000000000000002'), 'A real charmer!')]
+
+        # test remove with a specific val
+        assert ios.rem(keys=("test_key", "0002"), val=sue)
+        items = [(keys, val) for keys, val in ios.getTopItemIter()]
+        assert items == [(('test', 'pop'), 'Not my type.'),
+                        (('test', 'pop'), 'Hello sailer!'),
+                        (('test', 'pop'), 'A real charmer!'),
+                        (('test_key', '0001'), 'See ya later.'),
+                        (('test_key', '0001'), 'Hey gorgeous!'),
+                        (('test_key', '0002'), 'Not my type.'),
+                        (('test_key', '0002'), 'A real charmer!')]
+
+        assert ios.trim(keys=("test", ""))
+        items = [(keys, val) for keys, val in ios.getTopItemIter()]
+        assert items == [(('test_key', '0001'), 'See ya later.'),
+                        (('test_key', '0001'), 'Hey gorgeous!'),
+                        (('test_key', '0002'), 'Not my type.'),
+                        (('test_key', '0002'), 'A real charmer!')]
+
+        assert ios.put(keys=keys0, vals=vals0)
+        assert ios.put(keys=keys1, vals=vals1)
+        assert ios.cnt() == 10
+        assert ios.cnt(keys=keys0) == 5
+        assert ios.cnt(keys=keys1) == 5
+        assert ios.rem(keys=keys0)
+        assert ios.cnt(keys=keys0) == 0
+        assert ios.trim()  # removes whole db
+        assert ios.cnt() == 0
+
+
+        # test with keys as string not tuple
+        keys2 = "keystr"
+        bob = "Shove off!"
+        assert ios.put(keys=keys2, vals=[bob])
+        actuals = ios.get(keys=keys2)
+        assert actuals == [bob]
+        assert ios.cnt(keys2) == 1
+        assert ios.rem(keys2)
+        actuals = ios.get(keys=keys2)
+        assert actuals == []
+        assert ios.cnt(keys2) == 0
+
+        assert ios.put(keys=keys2, vals=[bob])
+        actuals = ios.get(keys=keys2)
+        assert actuals == [bob]
+
+        bil = "Go away."
+        assert ios.pin(keys=keys2, vals=[bil])
+        actuals = ios.get(keys=keys2)
+        assert actuals == [bil]
+
+        assert ios.add(keys=keys2, val=bob)
+        actuals = ios.get(keys=keys2)
+        assert actuals == [bil, bob]
+
+        # Test trim and append
+        assert ios.trim()  # default trims whole database
+        assert ios.put(keys=keys1, vals=[bob, bil])
+        assert ios.get(keys=keys1) == [bob, bil]
+
 
     asyncio.run(_go())

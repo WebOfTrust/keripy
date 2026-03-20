@@ -901,18 +901,15 @@ class WebDBer:
         vals = oset(vals)  # preserves order, removes duplicates
 
         # 2. Prepare prefix and initial ordinal key
-        prefix = key + sep
+        iokey = suffix(key, 0, sep=sep)
 
         # 3. Scan existing entries
         pvals = oset()
         maxIon = -1
 
         # Iterate through all values per prefix and add them to pvals
-        for iokey in db.items.irange(prefix, prefix + b"\xff"):
-            if not iokey.startswith(prefix):
-                break
+        for iokey in db.items.irange(minimum=iokey):
 
-            # Extract ordinal
             ckey, cion = unsuffix(iokey, sep=sep)
             if ckey != key:
                 break
@@ -969,29 +966,16 @@ class WebDBer:
         if not vals:
             return False
 
-        prefix = key + sep
-
         # 2. Remove all existing entries for this key
-        removedFlag = False
-        delVals = []
-
-        for iokey in db.items.irange(prefix, prefix + b"\xff"):
-            if not iokey.startswith(prefix):
-                break
-            delVals.append(iokey)
-
-        for iokey in delVals:
-            del db.items[iokey]
-            removedFlag = True
+        self.remIoSet(db=db, key=key, sep=sep)
 
         # 3. Insert new values
         for ion, val in enumerate(vals):
             iokey = suffix(key, ion, sep=sep)
             db.items[iokey] = val
 
-        # 4. Mark dirty only if something changed
-        if removedFlag or vals:
-            db.dirty = True
+        # 4. Mark dirty
+        db.dirty = True
 
         return True
 
@@ -1019,16 +1003,14 @@ class WebDBer:
         # 1. Exit on empty key or missing value 
         if not key or val is None:
             return False
-
-        prefix = key + sep
+        
+        iokey = suffix(key, 0, sep=sep)
 
         # 2. Scan existing entries
         pvals = set()
         maxIon = -1
 
-        for iokey in db.items.irange(prefix, prefix + b"\xff"):
-            if not iokey.startswith(prefix):
-                break
+        for iokey in db.items.irange(minimum=iokey):
 
             ckey, cion = unsuffix(iokey, sep=sep)
             if ckey != key:
@@ -1078,17 +1060,17 @@ class WebDBer:
         if not key:
             return iter(())
 
-        # Get the prefix and the starting key
-        prefix = key + sep
-        startKey = suffix(key, ion, sep=sep)
+        # Get the prefix 
+        iokey = suffix(key, ion, sep=sep)
 
         # Iterate through items from the starting key
-        for iokey in db.items.irange(startKey, prefix + b"\xff"):
-            if not iokey.startswith(prefix):
+        for iokey in db.items.irange(minimum=iokey):
+            ckey, cion = unsuffix(iokey, sep=sep)
+            # Stop when we leave this IoSet
+            if ckey != key:
                 break
             
-            baseKey, on = unsuffix(iokey, sep=sep)
-            yield (baseKey, on, db.items[iokey])
+            yield (ckey, db.items[iokey])
 
 
     def getIoSetLastItem(self, db, key, *, sep=b'.'):
@@ -1113,13 +1095,11 @@ class WebDBer:
             return ()
 
         # Get the prefix and initialize last
-        prefix = key + sep
+        iokey = suffix(key, 0, sep=sep)
         last = ()
 
         # Iterate forward and keep the last matching entry
-        for iokey in db.items.irange(prefix, prefix + b"\xff"):
-            if not iokey.startswith(prefix):
-                break
+        for iokey in db.items.irange(minimum=iokey):
             
             baseKey, ion = unsuffix(iokey, sep=sep)
             if baseKey != key:
@@ -1150,19 +1130,22 @@ class WebDBer:
         if not key:
             return False
 
-        # Get the prefix and prefix length
-        prefix = key + sep
+        # Get the prefix
+        iokey = suffix(key, 0, sep=sep)
         
         # Initialize a list for values to delete
         delVals = []
 
         # Collect all matching keys
-        for iokey in db.items.irange(prefix, prefix + b"\xff"):
-            if not iokey.startswith(prefix):
+        for iokey in db.items.irange(minimum=iokey):
+            ckey, cion = unsuffix(iokey, sep=sep)
+            # Stop when we leave this IoSet
+            if ckey != key:
                 break
+
             delVals.append(iokey)
 
-        # It no values are found return False
+        # If no values are found return False
         if not delVals:
             return False
 
@@ -1217,11 +1200,13 @@ class WebDBer:
             return False
 
         # Get prefix and prefix length
-        prefix = key + sep
+        iokey = suffix(key, 0, sep=sep)
 
         # Iterate for matching value
-        for iokey in db.items.irange(prefix, prefix + b"\xff"):
-            if not iokey.startswith(prefix):
+        for iokey in db.items.irange(minimum=iokey):
+            ckey, cion = unsuffix(iokey, sep=sep)
+            # Stop when we leave this IoSet
+            if ckey != key:
                 break
 
             cval = db.items[iokey]
@@ -1253,17 +1238,20 @@ class WebDBer:
         if not key:
             return 0
 
-        prefix = key + sep
-
-        # Construct starting key: key.sep.ion
-        startKey = suffix(key, ion, sep=sep)
+        iokey = suffix(key, ion, sep=sep)
 
         count = 0
 
         # Iterate over all keys in prefix range
-        for iokey in db.items.irange(startKey, prefix + b"\xff"):
-            if not iokey.startswith(prefix):
+        for iokey in db.items.irange(minimum=iokey):
+
+            ckey, cion = unsuffix(iokey, sep=sep)
+
+            # Stop when leaving this IoSet
+            if ckey != key:
                 break
+
+            # Only count ordinals >= ion
             count += 1
 
         return count
@@ -1340,11 +1328,7 @@ class WebDBer:
         # Iterate forward through the DB
         for iokey in items.irange(startKey, None):
             # Split into (apparent_key, ordinal)
-            try:
-                apparent, ion = unsuffix(iokey, sep=sep)
-            except Exception:
-                # malformed key, skip
-                continue
+            apparent, ion = unsuffix(iokey, sep=sep)
 
             # If we moved to a new apparent key, yield the previous one
             if currKey is not None and apparent != currKey:
