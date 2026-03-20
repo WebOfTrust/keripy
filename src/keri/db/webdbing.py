@@ -898,14 +898,14 @@ class WebDBer:
             return False
 
         # Normalize to insertion-ordered set
-        vals = list(dict.fromkeys(vals))  # preserves order, removes duplicates
+        vals = oset(vals)  # preserves order, removes duplicates
 
         # 2. Prepare prefix and initial ordinal key
         prefix = key + sep
         prefixLength = len(prefix)
 
         # 3. Scan existing entries
-        pvals = set()
+        pvals = oset()
         maxIon = -1
 
         # Iterate through all values per prefix and add them to pvals
@@ -914,15 +914,14 @@ class WebDBer:
                 break
 
             # Extract ordinal
-            try:
-                ion = int(iokey[prefixLength:])
-            except ValueError:
-                continue  # malformed key
+            ckey, cion = unsuffix(iokey, sep=sep)
+            if ckey != key:
+                break
 
             val = db.items[iokey]
             pvals.add(val)
-            if ion > maxIon:
-                maxIon = ion
+            if cion > maxIon:
+                maxIon = cion
 
         # 4. Remove already-present values
         newVals = [v for v in vals if v not in pvals]
@@ -936,7 +935,7 @@ class WebDBer:
         start = maxIon + 1
         for offset, val in enumerate(newVals):
             ion = start + offset
-            iokey = prefix + str(ion).encode("utf-8")
+            iokey = suffix(key, ion, sep=sep)
             db.items[iokey] = val
 
         db.dirty = True
@@ -967,7 +966,7 @@ class WebDBer:
             return False
 
         # Normalize to insertion-ordered unique list
-        vals = list(dict.fromkeys(vals))
+        vals = oset(vals)
         if not vals:
             return False
 
@@ -988,7 +987,7 @@ class WebDBer:
 
         # 3. Insert new values
         for ion, val in enumerate(vals):
-            iokey = prefix + str(ion).encode("utf-8")
+            iokey = suffix(key, ion, sep=sep)
             db.items[iokey] = val
 
         # 4. Mark dirty only if something changed
@@ -1033,16 +1032,15 @@ class WebDBer:
             if not iokey.startswith(prefix):
                 break
 
-            try:
-                ion = int(iokey[prefixLength:])
-            except ValueError:
-                continue
+            ckey, cion = unsuffix(iokey, sep=sep)
+            if ckey != key:
+            break
 
             cval = db.items[iokey]
             pvals.add(cval)
 
-            if ion > maxIon:
-                maxIon = ion
+            if cion > maxIon:
+                maxIon = cion
 
         # 3. If value already present then no-op
         if val in pvals:
@@ -1050,7 +1048,7 @@ class WebDBer:
 
         # 4. Insert at next ordinal
         ion = maxIon + 1
-        iokey = prefix + str(ion).encode("utf-8")
+        iokey = suffix(key, ion, sep=sep)
 
         db.items[iokey] = val
         db.dirty = True
@@ -1084,13 +1082,15 @@ class WebDBer:
 
         # Get the prefix and the starting key
         prefix = key + sep
-        startKey = prefix + str(ion).encode("utf-8")
+        startKey = suffix(key, ion, sep=sep)
 
         # Iterate through items from the starting key
         for iokey in db.items.irange(startKey, prefix + b"\xff"):
             if not iokey.startswith(prefix):
                 break
-            yield (iokey, db.items[iokey])
+            
+            base_key, on = unsuffix(iokey, sep=sep)
+            yield (base_key, on, db.items[iokey])
 
 
     def getIoSetLastItem(self, db, key, *, sep=b'.'):
