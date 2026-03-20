@@ -10,7 +10,7 @@ from dataclasses import asdict
 from urllib.parse import urlsplit
 from math import ceil
 from ordered_set import OrderedSet as oset
-from hio.help import decking
+from hio.help import decking, ogler
 
 
 from ..kering import (MissingEntryError, UntrustedKeyStateSource,
@@ -21,17 +21,17 @@ from ..kering import (MissingEntryError, UntrustedKeyStateSource,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError,
                       QueryNotFoundError, MisfitEventSourceError,
                       MissingDelegableApprovalError, Version, Versionage,
-                      TraitDex, Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Ilks)
+                      TraitDex, Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Ilks,
+                      versify, Kinds)
 
-from ..help import helping, ogler, nowIso8601
+from ..help import helping
 
-from .coring import (versify, Kinds, PreDex, DigDex, Kinds,
-                     NonTransDex, NumDex, Prefixer, Seqner, Diger,
-                     Number, Seqner, Cigar, Dater, Noncer,
+from .coring import (PreDex, DigDex, NonTransDex, NumDex, Prefixer,
+                     Diger, Number, Seqner, Cigar, Dater, Noncer,
                      Verfer, Diger, Prefixer, Tholder)
 
 from .counting import Counter, Codens
-from .structing import (SealEvent, SealLast, StateEstEvent)
+from .structing import SealEvent, SealLast, StateEstEvent
 from .indexing import Siger
 from .serdering import SerderKERI
 
@@ -5077,7 +5077,7 @@ class Kevery:
             raise UnverifiedReplyError(f"Unverified watcher add reply. {serder.ked}")
 
         if oobi:
-            self.db.oobis.pin(keys=(oobi,), val=OobiRecord(date=nowIso8601()))
+            self.db.oobis.pin(keys=(oobi,), val=OobiRecord(date=helping.nowIso8601()))
         self.updateWatched(keys=keys, saider=diger, enabled=enabled)
 
     def updateWatched(self, keys, saider, enabled=None):

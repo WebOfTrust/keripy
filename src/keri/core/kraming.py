@@ -16,14 +16,22 @@ from dataclasses import dataclass, astuple
 
 from ordered_set import OrderedSet as oset
 
-from .. import help, kering
-from ..core import Verser, coring, eventing, indexing
+from hio.base import doing
+from hio.help import ogler
+
+
+from .coring import Verser, Prefixer, Diger
+from .indexing import Siger
+from .eventing import verifySigs
+
+from ..kering import (KramConfigurationError, KramError,
+                      MissingSenderKeyStateError, MissingAuthAttachmentError,
+                      Ilks, Vrsn_2_0)    
 from ..help import helping
 from ..recording import CacheTypeRecord, MsgCacheRecord, TxnMsgCacheRecord
 
-from hio.base import doing
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 @dataclass(frozen=True)
@@ -87,7 +95,7 @@ class Kramer:
                 record = CacheTypeRecord(*map(int, val))
                 self.db.kramCTYP.pin(key, record)
             except Exception as e:
-                raise kering.KramConfigurationError(f"Invalid cache configuration for {key}, {val}: {e}")
+                raise KramConfigurationError(f"Invalid cache configuration for {key}, {val}: {e}")
 
 
     @staticmethod
@@ -121,7 +129,7 @@ class Kramer:
                     parts.append(route)
                 compact.append(".".join(parts) + ("" if route else "."))
             except Exception as e:
-                raise kering.KramConfigurationError(f"Invalid denial for {denial}: {e}")
+                raise KramConfigurationError(f"Invalid denial for {denial}: {e}")
         return compact
 
     @property
@@ -193,7 +201,7 @@ class Kramer:
         if rec is not None:
             return rec
 
-        raise kering.KramError(f"No cache-type entry found for "
+        raise KramError(f"No cache-type entry found for "
                                f"msgType={msgType}, route={route}")
 
 
@@ -298,7 +306,7 @@ class Kramer:
             try:
                 sealValid = self._validateSenderSeal(
                     msg, senderId, **kwa)
-            except kering.MissingSenderKeyStateError:
+            except MissingSenderKeyStateError:
                 sealValid = False
 
             if sealValid:
@@ -376,7 +384,7 @@ class Kramer:
                 if sdig is not None and sdig == sdiger.qb64:
                     evtSerder = self.db.evts.get(keys=(senderId, sdiger.qb64))
                     if evtSerder is not None:
-                        vsigers, _ = eventing.verifySigs(
+                        vsigers, _ = verifySigs(
                             raw=msg.raw, sigers=list(sigers),
                             verfers=evtSerder.verfers)
                         if vsigers:
@@ -389,8 +397,8 @@ class Kramer:
         if not pool:
             return SigVerifyResult(verified=False, sigers=[], stale_tsgs=stale_tsgs)
 
-        poolSigers = [indexing.Siger(qb64=q) for q in pool]
-        vsigers, _ = eventing.verifySigs(
+        poolSigers = [Siger(qb64=q) for q in pool]
+        vsigers, _ = verifySigs(
             raw=msg.raw, sigers=poolSigers, verfers=kever.verfers)
 
         return SigVerifyResult(
@@ -440,11 +448,11 @@ class Kramer:
         number, diger = candidates[-1]
 
         # Look up event digest at (senderId, sn) in sender's KEL
-        prefixer = coring.Prefixer(qb64=senderId)
+        prefixer = Prefixer(qb64=senderId)
         sdig = self.db.kels.getLast(keys=prefixer.qb64b, on=number.sn)
 
         if sdig is None:
-            raise kering.MissingSenderKeyStateError(
+            raise MissingSenderKeyStateError(
                 f"Event at sn={number.sn} not in KEL for sender {senderId}")
 
         # Verify the event SAID matches the seal reference
@@ -454,7 +462,7 @@ class Kramer:
         # Fetch the actual event
         evtSerder = self.db.evts.get(keys=(prefixer.qb64b, bytes(sdig, "utf-8")))
         if evtSerder is None:
-            raise kering.MissingSenderKeyStateError(
+            raise MissingSenderKeyStateError(
                 f"Event data missing for sender {senderId} at sn={number.sn}")
 
         # Search event's seal list for a seal whose 'd' field matches msg SAID
@@ -577,17 +585,17 @@ class Kramer:
         hasSigs = self._hasSigs(senderId, **kwa)
 
         if not hasSealRef and not hasSigs:
-            raise kering.MissingAuthAttachmentError(
+            raise MissingAuthAttachmentError(
                 f"No authentication attachments for "
                 f"message {msgType} with SAID={msgId}")
 
         exId = None
 
         match msgType:
-            case kering.Ilks.xip:
+            case Ilks.xip:
                 exId = msgId
-            case kering.Ilks.exn:
-                if msg.pvrsn >= kering.Vrsn_2_0:
+            case Ilks.exn:
+                if msg.pvrsn >= Vrsn_2_0:
                     exId = msg.ked.get('x', None)
             case _:
                 pass
@@ -620,7 +628,7 @@ class Kramer:
                         senderId,
                         None,
                     )
-                    raise kering.MissingSenderKeyStateError(
+                    raise MissingSenderKeyStateError(
                         f"Sender KEL unavailable for {senderId}")
 
                 # "Both attached" case, try seal validation first
@@ -649,7 +657,7 @@ class Kramer:
                 # Key state change detection:
                 # Compare stored key state ref against current kever state
                 currentKeyState = (kever.sner,
-                                   coring.Diger(qb64=kever.serder.said))
+                                   Diger(qb64=kever.serder.said))
                 storedKeyState = self.db.kramPMSK.get(key)
                 if storedKeyState:
                     storedSn, storedSaid = storedKeyState
@@ -712,7 +720,7 @@ class Kramer:
                         senderId,
                         None,
                     )
-                    raise kering.MissingSenderKeyStateError(
+                    raise MissingSenderKeyStateError(
                         f"Sender KEL unavailable for {senderId}")
 
                 # Resolve auth type before timeliness check per spec.
@@ -746,7 +754,7 @@ class Kramer:
                         try:
                             sealValidated = self._validateSenderSeal(
                                 msg, senderId, **kwa)
-                        except kering.MissingSenderKeyStateError as e:
+                        except MissingSenderKeyStateError as e:
                             logger.info("Missing sender key state for "
                                         "%s: %s", senderId, e)
                             # Append the cue for the keystate retrieval notification including the senderID and the sn
@@ -813,7 +821,7 @@ class Kramer:
 
                     # Threshold not met, store partials for accumulation
                     currentKeyState = (kever.sner,
-                                       coring.Diger(qb64=kever.serder.said))
+                                       Diger(qb64=kever.serder.said))
                     self.db.kramPMKM.put(key, msg)
                     for sig in sigResult.sigers:
                         self.db.kramPMKS.add(key, sig)
@@ -859,7 +867,7 @@ class Kramer:
                         senderId,
                         None,
                     )
-                    raise kering.MissingSenderKeyStateError(
+                    raise MissingSenderKeyStateError(
                         f"Sender KEL unavailable for {senderId}")
 
                 # "Both attached" case, try seal validation first
@@ -889,7 +897,7 @@ class Kramer:
                 # Compare stored key state ref against current kever state.
                 # Partial dbs use (AID.MID) key per spec, not (AID.XID.MID).
                 currentKeyState = (kever.sner,
-                                   coring.Diger(qb64=kever.serder.said))
+                                   Diger(qb64=kever.serder.said))
                 storedKeyState = self.db.kramPMSK.get(partialKey)
                 if storedKeyState:
                     storedSn, storedSaid = storedKeyState
@@ -952,7 +960,7 @@ class Kramer:
                         senderId,
                         None,
                     )
-                    raise kering.MissingSenderKeyStateError(
+                    raise MissingSenderKeyStateError(
                         f"Sender KEL unavailable for {senderId}")
 
                 # Resolve auth type before timeliness check per spec.
@@ -969,9 +977,9 @@ class Kramer:
 
                 if authType == AuthTypes.AttachedSealReference or authType == AuthTypes.AttachedSignatureSingleKey:
                     match msgType:
-                        case kering.Ilks.xip:
+                        case Ilks.xip:
                             xdts = msg.ked.get('dt', None)
-                        case kering.Ilks.exn:
+                        case Ilks.exn:
                             # x field value to fetch any existing cache entry with a matching AID.XID and copy its xdt
                             # value. When no existing cache entry is found, then drop the event and exit.
                             existingCache = next(self.db.kramTMSC.getTopItemIter((senderId, exId)), None)
@@ -984,7 +992,7 @@ class Kramer:
                                 return None
                         case _:
                             # Should never be reaching this case
-                            raise kering.KramError("Unexpected transactioned message type while kraming.")
+                            raise KramError("Unexpected transactioned message type while kraming.")
 
                     xdt = helping.fromIso8601(xdts).timestamp() * 1000  # ms
                     rdt = helping.fromIso8601(
@@ -1007,7 +1015,7 @@ class Kramer:
                             try:
                                 sealValidated = self._validateSenderSeal(
                                     msg, senderId, **kwa)
-                            except kering.MissingSenderKeyStateError as e:
+                            except MissingSenderKeyStateError as e:
                                 logger.info("Missing sender key state for "
                                             "%s: %s", senderId, e)
                                 # Append the cue for the keystate retrieval notification including the senderID and the sn
@@ -1057,9 +1065,9 @@ class Kramer:
 
                     # Resolve xdt after mdt check
                     match msgType:
-                        case kering.Ilks.xip:
+                        case Ilks.xip:
                             xdts = msg.ked.get('dt', None)
-                        case kering.Ilks.exn:
+                        case Ilks.exn:
                             existingCache = next(
                                 self.db.kramTMSC.getTopItemIter((senderId, exId)),
                                 None)
@@ -1069,7 +1077,7 @@ class Kramer:
                             else:
                                 return None  # no existing cache, drop
                         case _:
-                            raise kering.KramError(
+                            raise KramError(
                                 "Unexpected transactioned message type "
                                 "while kraming.")
 
@@ -1106,7 +1114,7 @@ class Kramer:
                     # Threshold not met, store partials for accumulation.
                     # Partial dbs use (AID.MID) key per spec, not (AID.XID.MID).
                     currentKeyState = (kever.sner,
-                                       coring.Diger(qb64=kever.serder.said))
+                                       Diger(qb64=kever.serder.said))
                     self.db.kramPMKM.put(partialKey, msg)
                     for sig in sigResult.sigers:
                         self.db.kramPMKS.add(partialKey, sig)
@@ -1123,7 +1131,7 @@ class Kramer:
 
                     return None  # message pending
                 else:
-                    raise kering.KramError("Unexpected auth type while kraming.")
+                    raise KramError("Unexpected auth type while kraming.")
 
     def _pruneMessages(self, rdt_ms):
         """

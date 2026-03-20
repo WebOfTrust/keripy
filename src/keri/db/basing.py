@@ -13,12 +13,13 @@ import semver
 from ordered_set import OrderedSet as oset
 
 from hio.base import doing
+from hio.help import ogler
 
 import keri
-from . import dbing
-from .dbing import dgKey
-from .. import kering
-from ..kering import Vrsn_1_0, Vrsn_2_0
+from .dbing import LMDBer, dgKey, openLMDB
+from ..kering import (MissingEntryError, DatabaseError,
+                      ConfigurationError, ValidationError,
+                      Vrsn_1_0, Vrsn_2_0)
 from ..recording import (KeyStateRecord, EventSourceRecord,
                          HabitatRecord, TopicsRecord,
                          OobiRecord, EndpointRecord,
@@ -26,10 +27,8 @@ from ..recording import (KeyStateRecord, EventSourceRecord,
                          CacheTypeRecord, TxnMsgCacheRecord,
                          MsgCacheRecord, WellKnownAuthN)
 
-from .. import help
 
-
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 def _strip_prerelease(version_str):
@@ -96,7 +95,7 @@ class statedict(dict):
             try:
                 from ..core.eventing import Kever
                 kever = Kever(state=ksr, db=self.db)
-            except kering.MissingEntryError:  # no kel event for keystate
+            except MissingEntryError:  # no kel event for keystate
                 raise ex  # reraise KeyError
             self.__setitem__(k, kever)
             return kever
@@ -134,7 +133,7 @@ def openDB(*, cls=None, name="test", **kwa):
     """
     if cls == None:  # can't reference class before its defined below
         cls = Baser
-    return dbing.openLMDB(cls=cls, name=name, **kwa)
+    return openLMDB(cls=cls, name=name, **kwa)
 
 
 @contextmanager
@@ -164,7 +163,7 @@ def reopenDB(db, clear=False, **kwa):
 KERIBaserMapSizeKey = "KERI_BASER_MAP_SIZE"
 
 
-class Baser(dbing.LMDBer):
+class Baser(LMDBer):
     """
     Baser sets up named sub databases with Keri Event Logs within main database
 
@@ -1320,7 +1319,7 @@ class Baser(dbing.LMDBer):
         """
         # Check migrations to see if this database is up to date.  Error otherwise
         if not self.current:
-            raise kering.DatabaseError(f"Database migrations must be run. DB version {self.version}; current {keri.__version__}")
+            raise DatabaseError(f"Database migrations must be run. DB version {self.version}; current {keri.__version__}")
 
         removes = []
         for keys, data in self.habs.getTopItemIter():
@@ -1330,7 +1329,7 @@ class Baser(dbing.LMDBer):
                     kever = Kever(state=ksr,
                                            db=self,
                                            local=True)
-                except kering.MissingEntryError as ex:  # no kel event for keystate
+                except MissingEntryError as ex:  # no kel event for keystate
                     removes.append(keys)  # remove from .habs
                     continue
                 self.kevers[kever.prefixer.qb64] = kever
@@ -1455,7 +1454,7 @@ class Baser(dbing.LMDBer):
         ver_no_prerelease = semver.Version(ver.major, ver.minor, ver.patch)
         # Strip prerelease from DB version to avoid lexicographic comparison bugs (#820)
         if self.version is not None and semver.compare(_strip_prerelease(self.version), str(ver_no_prerelease)) == 1:
-            raise kering.ConfigurationError(
+            raise ConfigurationError(
                 f"Database version={self.version} is ahead of library version={keri.__version__}")
 
         last = MIGRATIONS[-1]
@@ -1684,21 +1683,21 @@ class Baser(dbing.LMDBer):
         atc = bytearray()  # attachments
         dgkey = dgKey(pre, dig)  # get message
         if not (serder := self.evts.get(keys=(pre, dig))):
-            raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
+            raise MissingEntryError("Missing event for dig={}.".format(dig))
         msg.extend(serder.raw)
 
         # add indexed signatures to attachments
         if not (sigers := self.sigs.get(keys=dgkey)):
-            raise kering.MissingEntryError("Missing sigs for dig={}.".format(dig))
+            raise MissingEntryError("Missing sigs for dig={}.".format(dig))
         atc.extend(Counter(code=Codens.ControllerIdxSigs,
-                           count=len(sigers), version=kering.Vrsn_1_0).qb64b)
+                           count=len(sigers), version=Vrsn_1_0).qb64b)
         for siger in sigers:
             atc.extend(siger.qb64b)
 
         # add indexed witness signatures to attachments
         if wigers := self.wigs.get(keys=dgkey):
             atc.extend(Counter(code=Codens.WitnessIdxSigs,
-                               count=len(wigers), version=kering.Vrsn_1_0).qb64b)
+                               count=len(wigers), version=Vrsn_1_0).qb64b)
             for wiger in wigers:
                 atc.extend(wiger.qb64b)
 
@@ -1706,14 +1705,14 @@ class Baser(dbing.LMDBer):
         if (duple := self.aess.get(keys=(pre, dig))) is not None:
             number, diger = duple
             atc.extend(Counter(code=Codens.SealSourceCouples,
-                               count=1, version=kering.Vrsn_1_0).qb64b)
+                               count=1, version=Vrsn_1_0).qb64b)
             atc.extend(number.qb64b + diger.qb64b)
 
         # add trans endorsement quadruples to attachments not controller
         # may have been originally key event attachments or receipted endorsements
         if quads := self.vrcs.get(keys=dgkey):
             atc.extend(Counter(code=Codens.TransReceiptQuadruples,
-                               count=len(quads), version=kering.Vrsn_1_0).qb64b)
+                               count=len(quads), version=Vrsn_1_0).qb64b)
             for pre, snu, diger, siger in quads:    # adapt to CESR
                 atc.extend(pre.qb64b)
                 atc.extend(snu.qb64b)
@@ -1724,16 +1723,16 @@ class Baser(dbing.LMDBer):
         # may have been originally key event attachments or receipted endorsements
         if coups := self.rcts.get(keys=dgkey):
             atc.extend(Counter(code=Codens.NonTransReceiptCouples,
-                               count=len(coups), version=kering.Vrsn_1_0).qb64b)
+                               count=len(coups), version=Vrsn_1_0).qb64b)
             for prefixer, cigar in coups:
                 atc.extend(prefixer.qb64b)
                 atc.extend(cigar.qb64b)
 
         # add first seen replay couple to attachments
         if not (dater := self.dtss.get(keys=dgkey)):
-            raise kering.MissingEntryError("Missing datetime for dig={}.".format(dig))
+            raise MissingEntryError("Missing datetime for dig={}.".format(dig))
         atc.extend(Counter(code=Codens.FirstSeenReplayCouples,
-                           count=1, version=kering.Vrsn_1_0).qb64b)
+                           count=1, version=Vrsn_1_0).qb64b)
         atc.extend(coring.Number(num=fn, code=coring.NumDex.Huge).qb64b)  # may not need to be Huge
         atc.extend(dater.qb64b)
 
@@ -1742,7 +1741,7 @@ class Baser(dbing.LMDBer):
             raise ValueError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
         pcnt = Counter(code=Codens.AttachmentGroup,
-                       count=(len(atc) // 4), version=kering.Vrsn_1_0).qb64b
+                       count=(len(atc) // 4), version=Vrsn_1_0).qb64b
         msg.extend(pcnt)
         msg.extend(atc)
         return msg
@@ -1933,14 +1932,14 @@ class Baser(dbing.LMDBer):
             sdig = self.kels.getLast(keys=prefixer.qb64b, on=sn)
             if sdig is None:
                 # receipter's est event not yet in receipters's KEL
-                raise kering.ValidationError("key event sn {} for pre {} is not yet in KEL"
+                raise ValidationError("key event sn {} for pre {} is not yet in KEL"
                                              "".format(sn, pre))
             sdig = sdig.encode("utf-8")
             # retrieve last event itself of receipter est evt from sdig
             sserder = self.evts.get(keys=(prefixer.qb64b, bytes(sdig)))
             # assumes db ensures that sserder must not be none because sdig was in KE
             if dig is not None and not sserder.compare(said=dig):  # endorser's dig not match event
-                raise kering.ValidationError("Bad proof sig group at sn = {}"
+                raise ValidationError("Bad proof sig group at sn = {}"
                                              " for ksn = {}."
                                              "".format(sn, sserder.sad))
 
@@ -1970,7 +1969,7 @@ class Baser(dbing.LMDBer):
         for dig in self.kels.getAllIter(keys=pre, on=sn):
             try:
                 if not (serder := self.evts.get(keys=(pre, dig))):
-                    raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
+                    raise MissingEntryError("Missing event for dig={}.".format(dig))
 
             except Exception:
                 continue  # skip this event
@@ -1996,7 +1995,7 @@ class Baser(dbing.LMDBer):
             try:
 
                 if not (serder := self.evts.get(keys=(pre, dig) )):
-                    raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
+                    raise MissingEntryError("Missing event for dig={}.".format(dig))
 
             except Exception:
                 continue  # skip this event

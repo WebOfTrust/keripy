@@ -7,14 +7,17 @@ module for enveloping and forwarding KERI message
 """
 
 from hio.base import doing
+from hio.help import ogler
 
-from . import agenting, forwarding
+from .agenting import WitnessInquisitor, Receiptor, WitnessPublisher
+from .forwarding import Poster
 from .habbing import GroupHab
-from .. import help, ValidationError
-from ..core import coring, serdering
-from ..peer import exchanging
 
-logger = help.ogler.getLogger()
+from ..kering import ValidationError
+from ..core import Number, Diger, Seqner, SerderKERI, NumDex
+from ..peer import exchange
+
+logger = ogler.getLogger()
 
 
 class Anchorer(doing.DoDoer):
@@ -36,9 +39,9 @@ class Anchorer(doing.DoDoer):
             auths (list[str]): TOTP authentication codes to send to witnesses to authorize event receipting
         """
         self.hby = hby
-        self.postman = forwarding.Poster(hby=hby)
-        self.witq = agenting.WitnessInquisitor(hby=hby)
-        self.witDoer = agenting.Receiptor(hby=self.hby)
+        self.postman = Poster(hby=hby)
+        self.witq = WitnessInquisitor(hby=hby)
+        self.witDoer = Receiptor(hby=self.hby)
         self.publishers = dict()
         self.proxy = proxy
         self.auths = auths
@@ -62,7 +65,7 @@ class Anchorer(doing.DoDoer):
         if proxy is not None:
             self.proxy = proxy
 
-        self.publishers[pre] = agenting.WitnessPublisher(hby=self.hby)
+        self.publishers[pre] = WitnessPublisher(hby=self.hby)
         # load the hab of the delegated identifier to anchor
         hab = self.hby.habs[pre]
         delpre = hab.kever.delpre  # get the delegator identifier
@@ -76,7 +79,7 @@ class Anchorer(doing.DoDoer):
         evt = hab.makeOwnEvent(sn=sn)
 
         # Send exn message for notification purposes
-        srdr = serdering.SerderKERI(raw=evt)
+        srdr = SerderKERI(raw=evt)
         self.witDoer.msgs.append(dict(pre=pre, sn=srdr.sn, auths=self.auths))
         self.hby.db.dpwe.pin(keys=(srdr.pre, srdr.said), val=srdr)
 
@@ -142,8 +145,8 @@ class Anchorer(doing.DoDoer):
 
             seal = dict(i=serder.pre, s=serder.snh, d=serder.said)
             if dserder := self.hby.db.fetchLastSealingEventByEventSeal(dkever.prefixer.qb64, seal=seal):
-                sner = coring.Number(num=dserder.sn, code=coring.NumDex.Huge)
-                diger = coring.Diger(qb64b=dserder.saidb)
+                sner = Number(num=dserder.sn, code=NumDex.Huge)
+                diger = Diger(qb64b=dserder.saidb)
                 self.hby.db.aess.pin(keys=(kever.prefixer.qb64b, kever.serder.saidb),
                                      val=(sner, diger))  # authorizer event seal (delegator/issuer)
 
@@ -162,7 +165,7 @@ class Anchorer(doing.DoDoer):
         """
         for (pre, said), serder in self.hby.db.dpwe.getTopItemIter():  # group partial witness escrow
             kever = self.hby.kevers[pre]
-            seqner = coring.Seqner(sn=serder.sn)
+            seqner = Seqner(sn=serder.sn)
 
             # Load all the witness receipts we have so far
             wigers = self.hby.db.wigs.get(keys=(pre, serder.said))
@@ -192,7 +195,7 @@ class Anchorer(doing.DoDoer):
                     raise ValidationError("no proxy to send messages for delegation")
 
                 evt = hab.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
-                srdr = serdering.SerderKERI(raw=evt)
+                srdr = SerderKERI(raw=evt)
                 exn, atc = delegateRequestExn(phab, delpre=delpre, evt=bytes(evt), aids=smids)
 
                 logger.info(
@@ -229,7 +232,7 @@ class Anchorer(doing.DoDoer):
             del self.publishers[pre]
 
             self.hby.db.dpub.rem(keys=(pre, said))
-            self.hby.db.cdel.put(keys=pre, on=serder.sn, val=coring.Diger(qb64=serder.said))
+            self.hby.db.cdel.put(keys=pre, on=serder.sn, val=Diger(qb64=serder.said))
 
     def publishDelegator(self, pre):
         """Publish the delegation event to my witnesses."""
@@ -328,7 +331,7 @@ def delegateRequestExn(hab, delpre, evt, aids=None):
         data["aids"] = aids
 
     # Create `exn` peer to peer message to notify other participants UI
-    exn, _ = exchanging.exchange(route=DelegateRequestHandler.resource, modifiers=dict(),
+    exn, _ = exchange(route=DelegateRequestHandler.resource, modifiers=dict(),
                                  payload=data, sender=hab.pre, embeds=embeds)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]

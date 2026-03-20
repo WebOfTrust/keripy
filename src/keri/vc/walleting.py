@@ -4,10 +4,9 @@ keri.vc.walleting module
 
 """
 from hio.base import doing
+from hio.help import ogler
 
-from .. import help
-
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 class Wallet:
@@ -70,7 +69,7 @@ class WalletDoer(doing.DoDoer):
         doers = [doing.doify(self.escrowDo)]
         from ..app import WitnessInquisitor, TCPMessenger  # dynamic to avoid circular
 
-        self.witq = WitnessInquisitor(hby=hby, klas=agenting.TCPMessenger)
+        self.witq = WitnessInquisitor(hby=hby, klas=TCPMessenger)
 
         super(WalletDoer, self).__init__(doers=doers, **kwa)
 

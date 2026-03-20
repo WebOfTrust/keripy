@@ -11,7 +11,7 @@ from hio.base import doing
 from hio.help import decking
 
 from ..core import Dicter
-from ..help import helping
+from ..help import fromIso8601, nowIso8601, nowUTC
 
 
 def signal(attrs, topic, ckey=None, dt=None):
@@ -27,7 +27,7 @@ def signal(attrs, topic, ckey=None, dt=None):
         Notice:  Notice instance
 
     """
-    dt = dt if dt is not None else helping.nowIso8601()
+    dt = dt if dt is not None else nowIso8601()
 
     if hasattr(dt, "isoformat"):
         dt = dt.isoformat()
@@ -56,7 +56,7 @@ class Signal(Dicter):
         self._ckey = ckey
 
         if 'dt' not in self.pad:
-            self.pad['dt'] = helping.nowIso8601()
+            self.pad['dt'] = nowIso8601()
 
     @property
     def topic(self):
@@ -117,7 +117,7 @@ class Signaler(doing.DoDoer):
         Returns:
 
         """
-        dt = dt if dt is not None else helping.nowIso8601()
+        dt = dt if dt is not None else nowIso8601()
         sig = signal(attrs=attrs, topic=topic, ckey=ckey, dt=dt)
 
         if sig.ckey is not None:
@@ -146,10 +146,10 @@ class Signaler(doing.DoDoer):
         _ = (yield self.tock)
 
         while True:  # loop checking for expired messages
-            now = helping.nowUTC()
+            now = nowUTC()
             toRemove = []
             for sig in self.signals:
-                if now - helping.fromIso8601(sig.dt) > self.SignalTimeout:  # Expire messages that are too old
+                if now - fromIso8601(sig.dt) > self.SignalTimeout:  # Expire messages that are too old
                     toRemove.append(sig)
                 yield self.tock
 

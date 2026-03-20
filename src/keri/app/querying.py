@@ -4,7 +4,8 @@ keri.app.storing module
 
 """
 from hio.base import doing
-from . import agenting
+
+from .agenting import WitnessInquisitor
 
 
 class QueryDoer(doing.DoDoer):
@@ -26,7 +27,7 @@ class KeyStateNoticer(doing.DoDoer):
         self.hab = hab
         self.pre = pre
         self.cues = cues
-        self.witq = agenting.WitnessInquisitor(hby=self.hby)
+        self.witq = WitnessInquisitor(hby=self.hby)
         self.witq.query(src=self.hab.pre, pre=self.pre, r="ksn")
 
         super(KeyStateNoticer, self).__init__(doers=[self.witq], **opts)
@@ -68,7 +69,7 @@ class LogQuerier(doing.DoDoer):
         self.hby = hby
         self.hab = hab
         self.ksn = ksn
-        self.witq = agenting.WitnessInquisitor(hby=self.hby)
+        self.witq = WitnessInquisitor(hby=self.hby)
         self.witq.query(src=self.hab.pre, pre=self.ksn["i"])
         super(LogQuerier, self).__init__(doers=[self.witq], **opts)
 
@@ -94,7 +95,7 @@ class SeqNoQuerier(doing.DoDoer):
         self.pre = pre
         self.sn = sn
         self.fn = fn if fn is not None else 0
-        self.witq = agenting.WitnessInquisitor(hby=self.hby)
+        self.witq = WitnessInquisitor(hby=self.hby)
         self.witq.query(src=self.hab.pre, pre=self.pre,
                         sn="{:x}".format(self.sn),
                         fn="{:x}".format(self.fn),
@@ -125,7 +126,7 @@ class AnchorQuerier(doing.DoDoer):
         self.hab = hab
         self.pre = pre
         self.anchor = anchor
-        self.witq = agenting.WitnessInquisitor(hby=self.hby)
+        self.witq = WitnessInquisitor(hby=self.hby)
         self.witq.query(src=self.hab.pre, pre=self.pre, anchor=anchor)
         super(AnchorQuerier, self).__init__(doers=[self.witq], **opts)
 
