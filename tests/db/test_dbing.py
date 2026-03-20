@@ -609,7 +609,15 @@ def test_lmdber():
         assert dber.addIoDupVal(db, key, val=b'b') == True
         assert dber.addIoDupVal(db, key, val=b'a') == False
         assert dber.getIoDupVals(db, key) == [b"z", b"m", b"x", b"a", b"b"]
-        assert [val for val in dber.getIoDupValsIter(db, key)] == [b"z", b"m", b"x", b"a", b'b']
+        assert [(key, bytes(val)) for key, val in dber.getIoDupItemIter(db, key)] == \
+               [(b'A', b'z'), (b'A', b'm'), (b'A', b'x'), (b'A', b'a'), (b'A', b'b')]
+        assert [(key, bytes(val)) for key, val in dber.getIoDupItemIter(db, key, ion=2)] == \
+               [(b'A', b'x'), (b'A', b'a'), (b'A', b'b')]
+        assert [(key, bytes(val)) for key, val in dber.getIoDupItemIter(db, key, ion=4)] == \
+               [(b'A', b'b')]
+        assert [(key, bytes(val)) for key, val in dber.getIoDupItemIter(db, key, ion=5)] == \
+               []
+
         assert dber.delIoDupVals(db, key) == True
         assert dber.getIoDupVals(db, key) == []
         assert dber.putIoDupVals(db, key, vals) == True
@@ -1035,10 +1043,18 @@ def test_lmdber():
         vals = [bytes(val) for val in dber.getOnIoDupVals(ldb, key=key, on=2)]
         assert vals == [b'm']
 
-        vals = [bytes(val) for val in dber.getOnIoDupValsIter(ldb, key=key)]  # default on=0
-        assert vals == [b'k']
+        items = [(key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemIter(ldb, key=key)]  # default on=0
+        assert items == [(b'Z', 0, b'k')]
 
-        vals = [bytes(val) for val in dber.getOnIoDupValsIter(ldb, key=key, on=2)]
+        items = [(key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemIter(ldb, key=key, on=2)]
+        assert items == [(b'Z', 2, b'm')]
+
+        items = [(key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemIter(ldb, key=key, on=3)]
+        assert items == [(b'Z', 3, b'n')]
+
+        items = [(key, on, bytes(val)) for key, on, val in dber.getOnIoDupItemIter(ldb, key=key, on=4)]
+        assert items == []
+
         assert vals == [b'm']
 
         vals = [ bytes(val) for val in dber.getOnIoDupIterAll(ldb, key=key, on=2)]
@@ -2146,10 +2162,6 @@ def test_lmdber():
             dber.putIoDupVals(db, empty_key, [some_value])
         with pytest.raises(KeyError):
             dber.addIoDupVal(db, empty_key, some_value)
-        with pytest.raises(KeyError):
-            dber.getIoDupVals(db, empty_key)
-        with pytest.raises(KeyError):
-            [_ for _ in dber.getIoDupValsIter(db, empty_key)]
         with pytest.raises(KeyError):
             dber.getIoDupValLast(db, empty_key)
         with pytest.raises(KeyError):

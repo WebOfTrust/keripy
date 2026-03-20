@@ -382,7 +382,7 @@ class Registry(BaseRegistry):
             SerderKERI: The SerderKERI of the credential revocation event
         """
         vci = said
-        vcser = self.reger.tels.get(keys=snKey(pre=vci, sn=0))
+        vcser = self.reger.tels.get(keys=vci, on=0)
         if vcser is None:
             raise ValidationError("Invalid revoke of {} that has not been issued "
                                          "pre={}.".format(vci, self.regk))
@@ -481,7 +481,7 @@ class SignifyRegistry(BaseRegistry):
             SerderKERI: The SerderKERI of the credential revocation event
         """
         vci = said
-        vcser = self.reger.tels.get(keys=snKey(pre=vci, sn=0))
+        vcser = self.reger.tels.get(keys=vci, on=0)
         if vcser is None:
             raise ValidationError("Invalid revoke of {} that has not been issued "
                                          "pre={}.".format(vci, self.regk))
@@ -790,7 +790,7 @@ class Registrar(doing.DoDoer):
         """
         for (regk, snq), (prefixer, number, saider) in self.rgy.reger.tede.getTopItemIter():  # group multisig escrow
             rnum = Number(qb64=snq, code=NumDex.Huge)
-            dig = self.rgy.reger.tels.get(keys=snKey(pre=regk, sn=rnum.sn))
+            dig = self.rgy.reger.tels.get(keys=regk, on=rnum.sn)
             if dig is None:
                 continue
 
