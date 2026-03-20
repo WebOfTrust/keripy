@@ -972,17 +972,17 @@ def test_on_suber_contract():
         y = "Red apple"
         z = "White snow"
 
-        assert onsuber.appendOn(keys=("a",), val=w) == 0
-        assert onsuber.appendOn(keys=("a",), val=x) == 1
-        assert onsuber.appendOn(keys=("a",), val=y) == 2
-        assert onsuber.appendOn(keys=("a",), val=z) == 3
+        assert onsuber.append(keys=("a",), val=w) == 0
+        assert onsuber.append(keys=("a",), val=x) == 1
+        assert onsuber.append(keys=("a",), val=y) == 2
+        assert onsuber.append(keys=("a",), val=z) == 3
 
-        assert onsuber.cntOnAll(keys=("a",)) == 4
-        assert onsuber.cntOnAll(keys=("a",), on=2) == 2
-        assert onsuber.cntOnAll(keys=("a",), on=4) == 0
-        assert onsuber.cntOnAll() == 4
-        assert onsuber.cntOn() == 0
-        assert onsuber.cntOn(keys="a") == 4
+        assert onsuber.cntAll(keys=("a",)) == 4
+        assert onsuber.cntAll(keys=("a",), on=2) == 2
+        assert onsuber.cntAll(keys=("a",), on=4) == 0
+        assert onsuber.cntAll() == 4
+        assert onsuber.cnt() == 0
+        assert onsuber.cnt(keys="a") == 4
 
         assert list(onsuber.getTopItemIter()) == [
             (("a",), 0, w), (("a",), 1, x), (("a",), 2, y), (("a",), 3, z),
@@ -996,13 +996,13 @@ def test_on_suber_contract():
         assert list(onsuber.getAllIter()) == [w, x, y, z]
         assert list(onsuber.getAllIter(keys="a", on=2)) == [y, z]
 
-        assert onsuber.appendOn(keys=("b",), val=w) == 0
-        assert onsuber.appendOn(keys=("b",), val=x) == 1
-        assert onsuber.appendOn(keys=("bc",), val=y) == 0
-        assert onsuber.appendOn(keys=("ac",), val=z) == 0
+        assert onsuber.append(keys=("b",), val=w) == 0
+        assert onsuber.append(keys=("b",), val=x) == 1
+        assert onsuber.append(keys=("bc",), val=y) == 0
+        assert onsuber.append(keys=("ac",), val=z) == 0
 
-        assert onsuber.cntOnAll(keys=("b",)) == 2
-        assert onsuber.cntOnAll(keys="") == 8
+        assert onsuber.cntAll(keys=("b",)) == 2
+        assert onsuber.cntAll(keys="") == 8
 
         assert list(onsuber.getTopItemIter(keys="b")) == [
             (("b",), 0, w), (("b",), 1, x), (("bc",), 0, y),
@@ -1012,34 +1012,34 @@ def test_on_suber_contract():
         ]
         assert list(onsuber.getAllItemIter(keys=("b", ""))) == []
 
-        assert onsuber.remOn(keys="a", on=1) is True
-        assert onsuber.remOn(keys="a", on=1) is False
-        assert onsuber.remOn(keys="a", on=3) is True
-        assert onsuber.cntOnAll(keys=("a",)) == 2
-        assert onsuber.cntOnAll() == 6
+        assert onsuber.rem(keys="a", on=1) is True
+        assert onsuber.rem(keys="a", on=1) is False
+        assert onsuber.rem(keys="a", on=3) is True
+        assert onsuber.cntAll(keys=("a",)) == 2
+        assert onsuber.cntAll() == 6
 
-        assert onsuber.putOn(keys="d", on=0, val="moon") is True
-        assert onsuber.getOn(keys="d", on=0) == "moon"
-        assert onsuber.getOnItem(keys="d", on=0) == (("d",), 0, "moon")
-        assert onsuber.putOn(keys="d", on=0, val="moon") is False
-        assert onsuber.pinOn(keys="d", on=0, val="sun") is True
-        assert onsuber.getOn(keys="d", on=0) == "sun"
-        assert onsuber.remOn(keys="d", on=0) is True
-        assert onsuber.getOn(keys="d", on=0) is None
+        assert onsuber.put(keys="d", on=0, val="moon") is True
+        assert onsuber.get(keys="d", on=0) == "moon"
+        assert onsuber.getItem(keys="d", on=0) == (("d",), 0, "moon")
+        assert onsuber.put(keys="d", on=0, val="moon") is False
+        assert onsuber.pin(keys="d", on=0, val="sun") is True
+        assert onsuber.get(keys="d", on=0) == "sun"
+        assert onsuber.rem(keys="d", on=0) is True
+        assert onsuber.get(keys="d", on=0) is None
 
-        assert onsuber.putOn(keys="d", on=0, val="moon") is True
-        assert onsuber.putOn(keys="d", on=1, val="sun") is True
-        assert onsuber.putOn(keys="d", on=2, val="stars") is True
-        assert onsuber.putOn(keys="e", on=0, val="stars") is True
-        assert onsuber.putOn(keys="e", on=1, val="moon") is True
-        assert onsuber.putOn(keys="e", on=2, val="sun") is True
+        assert onsuber.put(keys="d", on=0, val="moon") is True
+        assert onsuber.put(keys="d", on=1, val="sun") is True
+        assert onsuber.put(keys="d", on=2, val="stars") is True
+        assert onsuber.put(keys="e", on=0, val="stars") is True
+        assert onsuber.put(keys="e", on=1, val="moon") is True
+        assert onsuber.put(keys="e", on=2, val="sun") is True
 
-        assert onsuber.remOnAll(keys="d", on=1) is True
-        assert onsuber.cntOnAll(keys="d") == 1
-        assert onsuber.remOnAll(keys="d") is True
-        assert onsuber.cntOnAll(keys="d") == 0
-        assert onsuber.remOnAll() is True
-        assert onsuber.cntOnAll() == 0
+        assert onsuber.remAll(keys="d", on=1) is True
+        assert onsuber.cntAll(keys="d") == 1
+        assert onsuber.remAll(keys="d") is True
+        assert onsuber.cntAll(keys="d") == 0
+        assert onsuber.remAll() is True
+        assert onsuber.cntAll() == 0
 
     asyncio.run(_go())
 

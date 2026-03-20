@@ -466,7 +466,7 @@ def test_replay():
         camDebFelMsgs = camHab.replay(pre=debHab.pre)
         bevDebFelMsgs = bevHab.replay(pre=debHab.pre)
 
-        assert len(bevDebFelMsgs) == len(camDebFelMsgs) == len(debFelMsgs) == 9638  
+        assert len(bevDebFelMsgs) == len(camDebFelMsgs) == len(debFelMsgs) == 9638
 
         # create non-local kevery for Art to process conjoint replay msgs from Deb
         artKevery = Kevery(db=artHab.db,
@@ -487,7 +487,7 @@ def test_replay():
         assert len(artKevery.cues) == 8
         # Explicit receipt+firner path: clone replay receipt processing uses
         # fels.getOn(keys=pre, on=firner.sn) to look up the event digest.
-        assert artHab.db.fels.getOn(keys=debHab.pre, on=0) == debHab.iserder.said
+        assert artHab.db.fels.get(keys=debHab.pre, on=0) == debHab.iserder.said
         artDebFelMsgs = artHab.replay(pre=debHab.pre)
         assert len(artDebFelMsgs) == 9638
 
@@ -637,7 +637,7 @@ def test_replay_all():
         assert artKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
         assert len(artKevery.cues) == 10
         # Explicit receipt+firner path: fels.getOn(keys=pre, on=firner.sn) in clone replay
-        assert artHab.db.fels.getOn(keys=debHab.pre, on=0) == debHab.iserder.said
+        assert artHab.db.fels.get(keys=debHab.pre, on=0) == debHab.iserder.said
         artAllFelMsgs = artHab.replayAll()
         assert len(artAllFelMsgs) == 12717 #12113
 
