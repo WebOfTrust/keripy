@@ -11,8 +11,24 @@ SCRIPT_TIMEOUT="${KERI_SCRIPT_TIMEOUT:-300}"
 # Max retry attempts per script. Override with KERI_SCRIPT_RETRIES env var.
 MAX_RETRIES="${KERI_SCRIPT_RETRIES:-3}"
 
-# Launch witnesses in background
-kli witness demo &
+clean_temp_state() {
+    local base="${KERI_TEMP_DIR}"
+
+    rm -rf \
+        "/usr/local/var/keri/db/${base}" \
+        "/usr/local/var/keri/ks/${base}" \
+        "/usr/local/var/keri/reg/${base}" \
+        "/usr/local/var/keri/cf/${base}" \
+        "/usr/local/var/keri/cf/${base}.json" \
+        "$HOME/.keri/db/${base}" \
+        "$HOME/.keri/ks/${base}" \
+        "$HOME/.keri/reg/${base}" \
+        "$HOME/.keri/cf/${base}" \
+        "$HOME/.keri/cf/${base}.json"
+}
+
+# Launch witnesses in background using the same isolated base as the demo scripts.
+kli witness demo --base "${KERI_TEMP_DIR}" &
 wits=$!
 sleep 3
 
@@ -36,6 +52,8 @@ run_with_retry() {
             printf "Running %s\n" "$name"
         fi
         printf "************************************\n"
+
+        clean_temp_state
 
         if timeout "$t" "$script"; then
             return 0
