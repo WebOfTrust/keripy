@@ -1089,8 +1089,8 @@ class WebDBer:
             if not iokey.startswith(prefix):
                 break
             
-            base_key, on = unsuffix(iokey, sep=sep)
-            yield (base_key, on, db.items[iokey])
+            baseKey, on = unsuffix(iokey, sep=sep)
+            yield (baseKey, on, db.items[iokey])
 
 
     def getIoSetLastItem(self, db, key, *, sep=b'.'):
@@ -1122,7 +1122,12 @@ class WebDBer:
         for iokey in db.items.irange(prefix, prefix + b"\xff"):
             if not iokey.startswith(prefix):
                 break
-            last = (key, db.items[iokey])
+            
+            baseKey, ion = unsuffix(iokey, sep=sep)
+            if baseKey != key:
+                break
+
+            last = (baseKey, db.items[iokey])
 
         return last
 
@@ -1253,7 +1258,7 @@ class WebDBer:
         prefix = key + sep
 
         # Construct starting key: key.sep.ion
-        startKey = prefix + str(ion).encode("utf-8")
+        startKey = suffix(key, ion, sep=sep)
 
         count = 0
 
@@ -1328,29 +1333,29 @@ class WebDBer:
             startKey = first_key
         else:
             # Start at key.sep.0
-            startKey = key + sep + b"0"
+            startKey = suffix(key, 0, sep=sep)
 
         # State for tracking last item per apparent key
         last = None
-        current_key = None
+        currKey = None
 
         # Iterate forward through the DB
         for iokey in items.irange(startKey, None):
             # Split into (apparent_key, ordinal)
             try:
-                apparent, _ = iokey.split(sep, 1)
-            except ValueError:
+                apparent, ion = unsuffix(iokey, sep=sep)
+            except Exception:
                 # malformed key, skip
                 continue
 
             # If we moved to a new apparent key, yield the previous one
-            if current_key is not None and apparent != current_key:
+            if currKey is not None and apparent != currKey:
                 if last is not None:
                     yield last
                 last = None
 
             # Update tracking
-            current_key = apparent
+            currKey = apparent
             last = (apparent, items[iokey])
 
         # Yield the final group
