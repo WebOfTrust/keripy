@@ -1158,9 +1158,9 @@ def test_transactioned(mockHelpingNowUTC):
             # Step 2: Test with seeded xip via kramit directly
 
             xip = exchept(sender=skHab.pre,
-                                   receiver=receiverHab.pre,
-                                   route="/test/exchange",
-                                   stamp=stamp)
+                          receiver=receiverHab.pre,
+                          route="/test/exchange",
+                          stamp=stamp)
 
             # Sign xip
             sigers = skHab.mgr.sign(ser=xip.raw,
@@ -1182,11 +1182,11 @@ def test_transactioned(mockHelpingNowUTC):
             # Step 3: exn with exchange ID via processMsg
 
             exn = exchange(sender=skHab.pre,
-                                    receiver=receiverHab.pre,
-                                    xid=xip.said,
-                                    route="/test/exchange",
-                                    attributes=dict(n='5c'),
-                                    stamp=stamp)
+                           receiver=receiverHab.pre,
+                           xid=xip.said,
+                           route="/test/exchange",
+                           attributes=dict(n='5c'),
+                           stamp=stamp)
 
             sigers = skHab.mgr.sign(ser=exn.raw,
                                     verfers=skHab.kever.verfers,
@@ -1208,11 +1208,11 @@ def test_transactioned(mockHelpingNowUTC):
 
             fakeXid = "E" + "B" * 43  # fabricated xip SAID with no kramTMSC entry
             msg3 = exchange(sender=skHab.pre,
-                                     receiver=receiverHab.pre,
-                                     xid=fakeXid,
-                                     route="/test/exchange",
-                                     attributes=dict(n='5d'),
-                                     stamp=stamp)
+                            receiver=receiverHab.pre,
+                            xid=fakeXid,
+                            route="/test/exchange",
+                            attributes=dict(n='5d'),
+                            stamp=stamp)
 
             sigers = skHab.mgr.sign(ser=msg3.raw,
                                     verfers=skHab.kever.verfers,
@@ -1241,11 +1241,11 @@ def test_transactioned(mockHelpingNowUTC):
                                     val=seedRecord)
 
             msg4 = exchange(sender=skHab.pre,
-                                     receiver=receiverHab.pre,
-                                     xid=oldXipSaid,
-                                     route="/test/exchange",
-                                     attributes=dict(n='5e'),
-                                     stamp=stamp)
+                            receiver=receiverHab.pre,
+                            xid=oldXipSaid,
+                            route="/test/exchange",
+                            attributes=dict(n='5e'),
+                            stamp=stamp)
 
             sigers = skHab.mgr.sign(ser=msg4.raw,
                                     verfers=skHab.kever.verfers,
@@ -1265,9 +1265,9 @@ def test_transactioned(mockHelpingNowUTC):
             # Step 6: Seed xip for multi-key sender
 
             mkXip = exchept(sender=mkHab.pre,
-                                     receiver=receiverHab.pre,
-                                     route="/test/exchange",
-                                     stamp=stamp)
+                            receiver=receiverHab.pre,
+                            route="/test/exchange",
+                            stamp=stamp)
 
             sigers = mkHab.mgr.sign(ser=mkXip.raw,
                                     verfers=mkHab.kever.verfers,
@@ -1284,11 +1284,11 @@ def test_transactioned(mockHelpingNowUTC):
             # Step 7: Multi-key accumulation in transactioned path
 
             mkExn = exchange(sender=mkHab.pre,
-                                      receiver=receiverHab.pre,
-                                      xid=mkXip.said,
-                                      route="/test/exchange",
-                                      attributes=dict(n='5f'),
-                                      stamp=stamp)
+                             receiver=receiverHab.pre,
+                             xid=mkXip.said,
+                             route="/test/exchange",
+                             attributes=dict(n='5f'),
+                             stamp=stamp)
 
             allSigers = mkHab.mgr.sign(ser=mkExn.raw,
                                        verfers=mkHab.kever.verfers,
@@ -1332,20 +1332,20 @@ def test_transactioned(mockHelpingNowUTC):
 
             # Seed a fresh xip via kramit directly (processMsg rejects xip ilk)
             xip8 = exchept(sender=skHab.pre,
-                                    receiver=receiverHab.pre,
-                                    route="/test/exchange",
-                                    stamp=stamp)
+                           receiver=receiverHab.pre,
+                           route="/test/exchange",
+                           stamp=stamp)
             sigers8 = skHab.mgr.sign(ser=xip8.raw,
                                      verfers=skHab.kever.verfers,
                                      indexed=True)
             assert kramer.kramit(xip8, **dict(ssgs=[(skPrefixer, sigers8)])) is not None
 
             exn8 = exchange(sender=skHab.pre,
-                                     receiver=receiverHab.pre,
-                                     xid=xip8.said,
-                                     route="/test/exchange",
-                                     attributes=dict(n='5h'),
-                                     stamp=stamp)
+                            receiver=receiverHab.pre,
+                            xid=xip8.said,
+                            route="/test/exchange",
+                            attributes=dict(n='5h'),
+                            stamp=stamp)
 
             # Sign exn8 for both KRAM (ssgs) and downstream exn handler (tsgs)
             sigers8 = skHab.mgr.sign(ser=exn8.raw,
@@ -1375,20 +1375,20 @@ def test_transactioned(mockHelpingNowUTC):
 
             # Seed a fresh xip via kramit directly (processMsg rejects xip ilk)
             xip8 = exchept(sender=skHab.pre,
-                                    receiver=receiverHab.pre,
-                                    route="/test/exchange",
-                                    stamp=stamp)
+                           receiver=receiverHab.pre,
+                           route="/test/exchange",
+                           stamp=stamp)
             sigers8 = skHab.mgr.sign(ser=xip8.raw,
                                      verfers=skHab.kever.verfers,
                                      indexed=True)
             assert kramer.kramit(xip8, **dict(ssgs=[(skPrefixer, sigers8)])) is not None
 
             exn8 = exchange(sender=skHab.pre,
-                                     receiver=receiverHab.pre,
-                                     xid=xip8.said,
-                                     route="/test/exchange",
-                                     attributes=dict(n='5h'),
-                                     stamp=stamp)
+                            receiver=receiverHab.pre,
+                            xid=xip8.said,
+                            route="/test/exchange",
+                            attributes=dict(n='5h'),
+                            stamp=stamp)
 
             # Sign exn8 for both KRAM (ssgs) and downstream exn handler (tsgs)
             sigers8 = skHab.mgr.sign(ser=exn8.raw,
@@ -1538,9 +1538,9 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
 
             # First seed a v2 xip so kramTMSC has an entry for the exchange ID
             v2Xip = exchept(sender=senderHab.pre,
-                                     receiver=receiverHab.pre,
-                                     route="/test/exchange",
-                                     stamp=stamp)
+                            receiver=receiverHab.pre,
+                            route="/test/exchange",
+                            stamp=stamp)
 
             xipSigers = senderHab.mgr.sign(ser=v2Xip.raw,
                                             verfers=senderHab.kever.verfers,
@@ -1549,11 +1549,11 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
             assert xipResult is not None  # xip accepted
 
             v2Exn = exchange(sender=senderHab.pre,
-                                      receiver=receiverHab.pre,
-                                      xid=v2Xip.said,
-                                      route="/test/exchange",
-                                      attributes=dict(n='v2x'),
-                                      stamp=stamp)
+                             receiver=receiverHab.pre,
+                             xid=v2Xip.said,
+                             route="/test/exchange",
+                             attributes=dict(n='v2x'),
+                             stamp=stamp)
 
             # Confirm x field present in v2 ked
             assert v2Exn.ked.get('x', None) is not None
@@ -2324,9 +2324,9 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
 
             # Create the exchange start event
             xip = exchept(sender=senderSkHab.pre,
-                                   receiver=receiverHab.pre,
-                                   route="/test/exchange",
-                                   stamp=stamp)
+                          receiver=receiverHab.pre,
+                          route="/test/exchange",
+                          stamp=stamp)
 
             # Sign xip
             sigers = senderSkHab.mgr.sign(ser=xip.raw,
@@ -2351,9 +2351,9 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
             mkPrefixer = Prefixer(qb64=senderMkHab.pre)
 
             xip = exchept(sender=senderMkHab.pre,
-                                   receiver=receiverHab.pre,
-                                   route="/test/exchange",
-                                   stamp=stamp)
+                          receiver=receiverHab.pre,
+                          route="/test/exchange",
+                          stamp=stamp)
 
             # Sign xip
             sigers = senderMkHab.mgr.sign(ser=xip.raw,
@@ -2376,9 +2376,9 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
             # Seal reference missing KEL event
 
             xip = exchept(sender=kownSenderHab.pre,
-                        receiver=receiverHab.pre,
-                        route="/test/exchange",
-                        stamp=stamp)
+                          receiver=receiverHab.pre,
+                          route="/test/exchange",
+                          stamp=stamp)
 
             # Build sscs referencing the ixn event
             ixnSaid = kownSenderHab.kever.serder.said
@@ -2404,13 +2404,13 @@ def test_aid_allow_deny(mockHelpingNowUTC):
     """
     # Step 1: Setup
     
-    salt1 = core.Salter(raw=b'0123456789abcdef').qb64
-    salt2 = core.Salter(raw=b'0123456789abcdeg').qb64
-    salt3 = core.Salter(raw=b'0123456789abcdeh').qb64
+    salt1 = Salter(raw=b'0123456789abcdef').qb64
+    salt2 = Salter(raw=b'0123456789abcdeg').qb64
+    salt3 = Salter(raw=b'0123456789abcdeh').qb64
 
-    with (habbing.openHby(name="sender", base="test", salt=salt1) as allowSenderHby,
-          habbing.openHby(name="senderNT", base="test", salt=salt2) as denySenderHby,
-          habbing.openHby(name="receiver", base="test", salt=salt3) as receiverHby):
+    with (openHby(name="sender", base="test", salt=salt1) as allowSenderHby,
+          openHby(name="senderNT", base="test", salt=salt2) as denySenderHby,
+          openHby(name="receiver", base="test", salt=salt3) as receiverHby):
 
         # Create single-key sender
         allowHab = allowSenderHby.makeHab(name="sender", isith='1', icount=1,
@@ -2423,23 +2423,23 @@ def test_aid_allow_deny(mockHelpingNowUTC):
                                           transferable=True)
 
         # Parse sender ICPs into receiver's db via a cross-feed Kevery.
-        crossKvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+        crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
 
         allowSenderIcp = allowHab.makeOwnEvent(sn=0)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(allowSenderIcp), kvy=crossKvy)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(allowSenderIcp), kvy=crossKvy)
         assert allowHab.pre in crossKvy.kevers
 
         denySenderIcp = denyHab.makeOwnEvent(sn=0)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(denySenderIcp), kvy=crossKvy)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(denySenderIcp), kvy=crossKvy)
         assert denyHab.pre in crossKvy.kevers
 
         # Create Kramer with config
-        with configing.openCF(name="kram", base="test") as cf:
+        with openCF(name="kram", base="test") as cf:
             cf.put(KRAM_INTEGRATION_CONFIG)
             kramer = Kramer(db=receiverHby.db, cf=cf)
             assert kramer.enabled
             # Create Kevery with kramer for KRAM testing
-            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False,
+            kvy = Kevery(db=receiverHby.db, lax=False, local=False,
                                   kramer=kramer)
  
             # Put AID in Deny list of Kevery
@@ -2447,17 +2447,17 @@ def test_aid_allow_deny(mockHelpingNowUTC):
 
             # Build qry message with mocked timestamp
             stamp = helping.nowIso8601()
-            msg = eventing.query(pre=denyHab.pre,
-                                 route="ksn",
-                                 query=dict(i=denyHab.pre, src=denyHab.pre),
-                                 stamp=stamp,
-                                 pvrsn=Vrsn_2_0)
+            msg = query(pre=denyHab.pre,
+                        route="ksn",
+                        query=dict(i=denyHab.pre, src=denyHab.pre),
+                        stamp=stamp,
+                        pvrsn=Vrsn_2_0)
 
             # Sign with sender's keys
             sigers = denyHab.mgr.sign(ser=msg.raw,
                                         verfers=denyHab.kever.verfers,
                                         indexed=True)
-            prefixer = coring.Prefixer(qb64=denyHab.pre)
+            prefixer = Prefixer(qb64=denyHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
             kvy.processMsg(msg, **kwa)
 
@@ -2470,17 +2470,17 @@ def test_aid_allow_deny(mockHelpingNowUTC):
             # Add allowHab to allow list           
             kvy.allowList.add(allowHab.pre)
 
-            msg = eventing.query(pre=allowHab.pre,
-                                 route="ksn",
-                                 query=dict(i=allowHab.pre, src=allowHab.pre),
-                                 stamp=stamp,
-                                 pvrsn=Vrsn_2_0)
+            msg = query(pre=allowHab.pre,
+                        route="ksn",
+                        query=dict(i=allowHab.pre, src=allowHab.pre),
+                        stamp=stamp,
+                        pvrsn=Vrsn_2_0)
 
             # Sign with sender's keys
             sigers = allowHab.mgr.sign(ser=msg.raw,
                                         verfers=allowHab.kever.verfers,
                                         indexed=True)
-            prefixer = coring.Prefixer(qb64=allowHab.pre)
+            prefixer = Prefixer(qb64=allowHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
             kvy.processMsg(msg, **kwa)
 
@@ -2488,17 +2488,17 @@ def test_aid_allow_deny(mockHelpingNowUTC):
             assert receiverHby.db.kramMSGC.get(keys=(allowHab.pre, msg.said)) is not None
 
             # Send another message with denyHab 
-            msg = eventing.query(pre=denyHab.pre,
-                                 route="ksn",
-                                 query=dict(i=denyHab.pre, src=denyHab.pre),
-                                 stamp=stamp,
-                                 pvrsn=Vrsn_2_0)
+            msg = query(pre=denyHab.pre,
+                        route="ksn",
+                        query=dict(i=denyHab.pre, src=denyHab.pre),
+                        stamp=stamp,
+                        pvrsn=Vrsn_2_0)
 
             # Sign with sender's keys
             sigers = denyHab.mgr.sign(ser=msg.raw,
                                         verfers=denyHab.kever.verfers,
                                         indexed=True)
-            prefixer = coring.Prefixer(qb64=denyHab.pre)
+            prefixer = Prefixer(qb64=denyHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
             kvy.processMsg(msg, **kwa)
 
@@ -2529,12 +2529,12 @@ def test_dynamic_cache_increase(fakeHelpingClock):
     clock = fakeHelpingClock
     assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
 
-    salt_sender = core.Salter(raw=b'0123456789abcdef').qb64
-    salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
+    salt_sender = Salter(raw=b'0123456789abcdef').qb64
+    salt_receiver = Salter(raw=b'0123456789abcdeg').qb64
 
     with (
-        habbing.openHby(name="sender", base="test", salt=salt_sender, temp=True) as senderHby,
-        habbing.openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
+        openHby(name="sender", base="test", salt=salt_sender, temp=True) as senderHby,
+        openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
     ):
 
         # 1. Initial CF (old config)
@@ -2547,7 +2547,7 @@ def test_dynamic_cache_increase(fakeHelpingClock):
             }
         }
 
-        with configing.openCF(name="kram", base="test", temp=True) as cf:
+        with openCF(name="kram", base="test", temp=True) as cf:
             cf.put(old_cfg)
 
 
@@ -2651,12 +2651,12 @@ def test_dynamic_cache_decrease(fakeHelpingClock):
     clock = fakeHelpingClock
     assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
 
-    salt_sender = core.Salter(raw=b'0123456789abcdef').qb64
-    salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
+    salt_sender = Salter(raw=b'0123456789abcdef').qb64
+    salt_receiver = Salter(raw=b'0123456789abcdeg').qb64
 
     with (
-        habbing.openHby(name="sender", base="test", salt=salt_sender, temp=True) as senderHby,
-        habbing.openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
+        openHby(name="sender", base="test", salt=salt_sender, temp=True) as senderHby,
+        openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
     ):
 
         # 1. Initial CF (old config)
@@ -2669,7 +2669,7 @@ def test_dynamic_cache_decrease(fakeHelpingClock):
             }
         }
 
-        with configing.openCF(name="kram", base="test", temp=True) as cf:
+        with openCF(name="kram", base="test", temp=True) as cf:
             cf.put(old_cfg)
 
             
@@ -2736,12 +2736,12 @@ def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
     clock = fakeHelpingClock
     assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
 
-    salt_sender = core.Salter(raw=b'0123456789abcdef').qb64
-    salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
+    salt_sender = Salter(raw=b'0123456789abcdef').qb64
+    salt_receiver = Salter(raw=b'0123456789abcdeg').qb64
 
     with (
-        habbing.openHby(name="sender", base="test", salt=salt_sender, temp=True) as senderHby,
-        habbing.openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
+        openHby(name="sender", base="test", salt=salt_sender, temp=True) as senderHby,
+        openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
     ):
 
         # Initial CF (old config)
@@ -2763,17 +2763,17 @@ def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
                                           transferable=True)
 
         # Parse sender ICPs into receiver's db via a cross-feed Kevery.
-        crossKvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+        crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
 
         senderIcp = senderHab.makeOwnEvent(sn=0)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
         assert senderHab.pre in crossKvy.kevers
 
-        with configing.openCF(name="kram", base="test", temp=True) as cf:
+        with openCF(name="kram", base="test", temp=True) as cf:
             # Set the initial config
             cf.put(old_cfg)
             kramer = Kramer(db=receiverHby.db, cf=cf)
-            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False,
+            kvy = Kevery(db=receiverHby.db, lax=False, local=False,
                                   kramer=kramer)
 
             # Stamp for events            
@@ -2783,19 +2783,19 @@ def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
 
                         # Happy path, attachments pruned after threshold is met
             stamp = helping.nowIso8601()
-            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            prefixer = Prefixer(qb64=senderHab.pre)
 
-            msg = eventing.query(pre=senderHab.pre,
-                                 route="ksn",
-                                 query=dict(i=senderHab.pre, src=senderHab.pre),
-                                 stamp=stamp,
-                                 pvrsn=Vrsn_2_0)
+            msg = query(pre=senderHab.pre,
+                        route="ksn",
+                        query=dict(i=senderHab.pre, src=senderHab.pre),
+                        stamp=stamp,
+                        pvrsn=Vrsn_2_0)
 
             # Sign with sender's keys
             sigers = senderHab.mgr.sign(ser=msg.raw,
                                         verfers=senderHab.kever.verfers,
                                         indexed=True)
-            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             kvy.processMsg(msg, **kwa)
@@ -2862,17 +2862,17 @@ def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
 
             # Create a new message with the new cache values
             stamp = helping.nowIso8601()
-            msg = eventing.query(pre=senderHab.pre,
-                                 route="ksn",
-                                 query=dict(i=senderHab.pre, src=senderHab.pre),
-                                 stamp=stamp,
-                                 pvrsn=Vrsn_2_0)
+            msg = query(pre=senderHab.pre,
+                        route="ksn",
+                        query=dict(i=senderHab.pre, src=senderHab.pre),
+                        stamp=stamp,
+                        pvrsn=Vrsn_2_0)
 
             # Sign with sender's keys
             sigers = senderHab.mgr.sign(ser=msg.raw,
                                         verfers=senderHab.kever.verfers,
                                         indexed=True)
-            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             kvy.processMsg(msg, **kwa)
@@ -2938,12 +2938,12 @@ def test_new_cache_type(fakeHelpingClock):
     # Instantiate the clock
     clock = fakeHelpingClock
 
-    salt_sender = core.Salter(raw=b'0123456789abcdef').qb64
-    salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
+    salt_sender = Salter(raw=b'0123456789abcdef').qb64
+    salt_receiver = Salter(raw=b'0123456789abcdeg').qb64
 
     with (
-        habbing.openHby(name="sender", base="test", salt=salt_sender, temp=True) as senderHby,
-        habbing.openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
+        openHby(name="sender", base="test", salt=salt_sender, temp=True) as senderHby,
+        openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
     ):
 
         # Create single-key sender
@@ -2953,13 +2953,13 @@ def test_new_cache_type(fakeHelpingClock):
         receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True)
 
         # Load sender's ICP into receiver
-        cross = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+        cross = Kevery(db=receiverHby.db, lax=False, local=False)
 
         senderIcp = senderHab.makeOwnEvent(sn=0)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
         assert senderHab.pre in cross.kevers
 
-        with configing.openCF(name="kram", base="test", temp=True) as cf:
+        with openCF(name="kram", base="test", temp=True) as cf:
             
             # Old configuration only has the fallback or default cache-type ~
             old_cfg = {
@@ -2987,7 +2987,7 @@ def test_new_cache_type(fakeHelpingClock):
 
             # Instantiate Kramer and Kevery
             kramer = Kramer(db=receiverHby.db, cf=cf)
-            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False,
+            kvy = Kevery(db=receiverHby.db, lax=False, local=False,
                                   kramer=kramer)
             
             # Update the config with the new config
@@ -3012,14 +3012,14 @@ def test_new_cache_type(fakeHelpingClock):
 
             # Initiate the exchange with a xip
             stamp = helping.nowIso8601()
-            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            prefixer = Prefixer(qb64=senderHab.pre)
             verfers = senderHab.kever.verfers
 
             # Test with seeded xip via kramit directly
-            xip = eventing.exchept(sender=senderHab.pre,
-                                   receiver=receiverHab.pre,
-                                   route="route1",
-                                   stamp=stamp)
+            xip = exchept(sender=senderHab.pre,
+                          receiver=receiverHab.pre,
+                          route="route1",
+                          stamp=stamp)
 
             # Sign xip
             sigers = senderHab.mgr.sign(ser=xip.raw,
@@ -3032,12 +3032,12 @@ def test_new_cache_type(fakeHelpingClock):
             assert result is not None  # xip accepted
 
             # Create an exchange message with route1
-            exn = eventing.exchange(sender=senderHab.pre,
-                                    receiver=receiverHab.pre,
-                                    xid=xip.said,
-                                    route="route1",
-                                    attributes=dict(n='5c'),
-                                    stamp=stamp)
+            exn = exchange(sender=senderHab.pre,
+                           receiver=receiverHab.pre,
+                           xid=xip.said,
+                           route="route1",
+                           attributes=dict(n='5c'),
+                           stamp=stamp)
 
             sigers = senderHab.mgr.sign(ser=exn.raw,
                                     verfers=senderHab.kever.verfers,
@@ -3045,7 +3045,7 @@ def test_new_cache_type(fakeHelpingClock):
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             # Error raised due to lack of exchanger
-            with pytest.raises(kering.ValidationError):
+            with pytest.raises(ValidationError):
                 kvy.processMsg(exn, **kwa)
 
             # Assert tmsc entry created for exn
@@ -3075,12 +3075,12 @@ def test_new_cache_type(fakeHelpingClock):
             stamp = helping.nowIso8601()
 
             # Create a new exn message
-            exn = eventing.exchange(sender=senderHab.pre,
-                                    receiver=receiverHab.pre,
-                                    xid=xip.said,
-                                    route="route1",
-                                    attributes=dict(n='5c'),
-                                    stamp=stamp)
+            exn = exchange(sender=senderHab.pre,
+                           receiver=receiverHab.pre,
+                           xid=xip.said,
+                           route="route1",
+                           attributes=dict(n='5c'),
+                           stamp=stamp)
 
             sigers = senderHab.mgr.sign(ser=exn.raw,
                                     verfers=senderHab.kever.verfers,
@@ -3088,7 +3088,7 @@ def test_new_cache_type(fakeHelpingClock):
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             # Error raised due to lack of exchanger
-            with pytest.raises(kering.ValidationError):
+            with pytest.raises(ValidationError):
                 kvy.processMsg(exn, **kwa)
 
              # Assert the new cache-type was processed and removed
@@ -3114,7 +3114,7 @@ def test_new_cache_type(fakeHelpingClock):
 
 
             # Create a new exn message that uses a different route
-            exn = eventing.exchange(sender=senderHab.pre,
+            exn = exchange(sender=senderHab.pre,
                                     receiver=receiverHab.pre,
                                     xid=xip.said,
                                     route="offroad",
@@ -3127,7 +3127,7 @@ def test_new_cache_type(fakeHelpingClock):
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             # Error raised due to lack of exchanger
-            with pytest.raises(kering.ValidationError):
+            with pytest.raises(ValidationError):
                 kvy.processMsg(exn, **kwa)
 
             # Assert tmsc entry created for exn
@@ -3203,12 +3203,12 @@ def test_multiple_new_cache_type(fakeHelpingClock):
 
     clock = fakeHelpingClock
 
-    salt_sender = core.Salter(raw=b'0123456789abcdef').qb64
-    salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
+    salt_sender = Salter(raw=b'0123456789abcdef').qb64
+    salt_receiver = Salter(raw=b'0123456789abcdeg').qb64
 
     with (
-        habbing.openHby(name="sender", base="test", salt=salt_sender, temp=True) as senderHby,
-        habbing.openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
+        openHby(name="sender", base="test", salt=salt_sender, temp=True) as senderHby,
+        openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
     ):
 
         old_cfg = {
@@ -3238,18 +3238,18 @@ def test_multiple_new_cache_type(fakeHelpingClock):
         receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True)
 
         # Load sender's ICP into receiver
-        cross = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+        cross = Kevery(db=receiverHby.db, lax=False, local=False)
 
         senderIcp = senderHab.makeOwnEvent(sn=0)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
         assert senderHab.pre in cross.kevers
 
-        with configing.openCF(name="kram", base="test", temp=True) as cf:
+        with openCF(name="kram", base="test", temp=True) as cf:
             cf.put(old_cfg)
             kramer = Kramer(db=receiverHby.db, cf=cf)
 
             # Create Kevery 
-            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
+            kvy = Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
 
             cf.put(new_cfg)
             kramer.changeConfig(cf)
@@ -3288,17 +3288,17 @@ def test_multiple_new_cache_type(fakeHelpingClock):
 
             # Create a query message with a route, should still be part of query cache-type
             stamp = helping.nowIso8601()
-            msg = eventing.query(pre=senderHab.pre,
-                                 route="ksn",
-                                 query=dict(i=senderHab.pre, src=senderHab.pre),
-                                 stamp=stamp,
-                                 pvrsn=Vrsn_2_0)
+            msg = query(pre=senderHab.pre,
+                        route="ksn",
+                        query=dict(i=senderHab.pre, src=senderHab.pre),
+                        stamp=stamp,
+                        pvrsn=Vrsn_2_0)
 
             # Sign with sender's keys
             sigers = senderHab.mgr.sign(ser=msg.raw,
                                         verfers=senderHab.kever.verfers,
                                         indexed=True)
-            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             kvy.processMsg(msg, **kwa)
@@ -3321,14 +3321,14 @@ def test_multiple_new_cache_type(fakeHelpingClock):
 
             # Create an ixp message
             stamp = helping.nowIso8601()
-            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            prefixer = Prefixer(qb64=senderHab.pre)
             verfers = senderHab.kever.verfers
 
             # Test with seeded xip via kramit directly
-            xip = eventing.exchept(sender=senderHab.pre,
-                                   receiver=receiverHab.pre,
-                                   route="route1",
-                                   stamp=stamp)
+            xip = exchept(sender=senderHab.pre,
+                          receiver=receiverHab.pre,
+                          route="route1",
+                          stamp=stamp)
 
             # Sign xip
             sigers = senderHab.mgr.sign(ser=xip.raw,
@@ -3341,12 +3341,12 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             assert result is not None  # xip accepted
 
             # Create an exchange message with a route, still falls in the broader exn cache-type
-            exn = eventing.exchange(sender=senderHab.pre,
-                                    receiver=receiverHab.pre,
-                                    xid=xip.said,
-                                    route="route1",
-                                    attributes=dict(n='5c'),
-                                    stamp=stamp)
+            exn = exchange(sender=senderHab.pre,
+                           receiver=receiverHab.pre,
+                           xid=xip.said,
+                           route="route1",
+                           attributes=dict(n='5c'),
+                           stamp=stamp)
 
             sigers = senderHab.mgr.sign(ser=exn.raw,
                                     verfers=senderHab.kever.verfers,
@@ -3354,7 +3354,7 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             # Error raised due to lack of exchanger
-            with pytest.raises(kering.ValidationError):
+            with pytest.raises(ValidationError):
                 kvy.processMsg(exn, **kwa)
 
             # Assert tmsc entry created for exn
@@ -3382,17 +3382,17 @@ def test_multiple_new_cache_type(fakeHelpingClock):
 
             # Create a query message with a route, should still be part of query cache-type
             stamp = helping.nowIso8601()
-            msg = eventing.query(pre=senderHab.pre,
-                                 route="ksn",
-                                 query=dict(i=senderHab.pre, src=senderHab.pre),
-                                 stamp=stamp,
-                                 pvrsn=Vrsn_2_0)
+            msg = query(pre=senderHab.pre,
+                        route="ksn",
+                        query=dict(i=senderHab.pre, src=senderHab.pre),
+                        stamp=stamp,
+                        pvrsn=Vrsn_2_0)
 
             # Sign with sender's keys
             sigers = senderHab.mgr.sign(ser=msg.raw,
                                         verfers=senderHab.kever.verfers,
                                         indexed=True)
-            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             kvy.processMsg(msg, **kwa)
@@ -3425,12 +3425,12 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             assert cache.xl == qryCt.xl
             
             # Create an exchange message
-            exn = eventing.exchange(sender=senderHab.pre,
-                                    receiver=receiverHab.pre,
-                                    xid=xip.said,
-                                    route="route1",
-                                    attributes=dict(n='5c'),
-                                    stamp=stamp)
+            exn = exchange(sender=senderHab.pre,
+                           receiver=receiverHab.pre,
+                           xid=xip.said,
+                           route="route1",
+                           attributes=dict(n='5c'),
+                           stamp=stamp)
 
             sigers = senderHab.mgr.sign(ser=exn.raw,
                                     verfers=senderHab.kever.verfers,
@@ -3438,7 +3438,7 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             # Error raised due to lack of exchanger
-            with pytest.raises(kering.ValidationError):
+            with pytest.raises(ValidationError):
                 kvy.processMsg(exn, **kwa)
 
             # Assert tmsc entry created for exn
@@ -3507,12 +3507,12 @@ def test_merge_cache_types(fakeHelpingClock):
     """
     clock = fakeHelpingClock
 
-    salt_sender = core.Salter(raw=b'0123456789abcdef').qb64
-    salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
+    salt_sender = Salter(raw=b'0123456789abcdef').qb64
+    salt_receiver = Salter(raw=b'0123456789abcdeg').qb64
 
     with (
-        habbing.openHby(name="sender", base="test", salt=salt_sender, temp=True) as senderHby,
-        habbing.openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
+        openHby(name="sender", base="test", salt=salt_sender, temp=True) as senderHby,
+        openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
     ):
 
         old_cfg = {
@@ -3543,18 +3543,18 @@ def test_merge_cache_types(fakeHelpingClock):
         receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True)
 
         # Load sender's ICP into receiver
-        cross = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+        cross = Kevery(db=receiverHby.db, lax=False, local=False)
 
         senderIcp = senderHab.makeOwnEvent(sn=0)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
         assert senderHab.pre in cross.kevers
 
-        with configing.openCF(name="kram", base="test", temp=True) as cf:
+        with openCF(name="kram", base="test", temp=True) as cf:
             cf.put(old_cfg)
             kramer = Kramer(db=receiverHby.db, cf=cf)
             
             # Create Kevery 
-            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
+            kvy = Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
             
             cf.put(new_cfg)
             kramer.changeConfig(cf)
@@ -3582,17 +3582,17 @@ def test_merge_cache_types(fakeHelpingClock):
 
             # Create a query message with the ksn route
             stamp = helping.nowIso8601()
-            msg = eventing.query(pre=senderHab.pre,
-                                 route="ksn",
-                                 query=dict(i=senderHab.pre, src=senderHab.pre),
-                                 stamp=stamp,
-                                 pvrsn=Vrsn_2_0)
+            msg = query(pre=senderHab.pre,
+                        route="ksn",
+                        query=dict(i=senderHab.pre, src=senderHab.pre),
+                        stamp=stamp,
+                        pvrsn=Vrsn_2_0)
 
             # Sign with sender's keys
             sigers = senderHab.mgr.sign(ser=msg.raw,
                                         verfers=senderHab.kever.verfers,
                                         indexed=True)
-            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             kvy.processMsg(msg, **kwa)
@@ -3613,17 +3613,17 @@ def test_merge_cache_types(fakeHelpingClock):
 
             # Create a query message with the logs route
             stamp = helping.nowIso8601()
-            msg = eventing.query(pre=senderHab.pre,
-                                 route="logs",
-                                 query=dict(i=senderHab.pre, src=senderHab.pre),
-                                 stamp=stamp,
-                                 pvrsn=Vrsn_2_0)
+            msg = query(pre=senderHab.pre,
+                        route="logs",
+                        query=dict(i=senderHab.pre, src=senderHab.pre),
+                        stamp=stamp,
+                        pvrsn=Vrsn_2_0)
 
             # Sign with sender's keys
             sigers = senderHab.mgr.sign(ser=msg.raw,
                                         verfers=senderHab.kever.verfers,
                                         indexed=True)
-            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             kvy.processMsg(msg, **kwa)
@@ -3651,17 +3651,17 @@ def test_merge_cache_types(fakeHelpingClock):
             
             # Create a new qry message with the ksn route 
             stamp = helping.nowIso8601()
-            msg = eventing.query(pre=senderHab.pre,
-                                 route="ksn",
-                                 query=dict(i=senderHab.pre, src=senderHab.pre),
-                                 stamp=stamp,
-                                 pvrsn=Vrsn_2_0)
+            msg = query(pre=senderHab.pre,
+                        route="ksn",
+                        query=dict(i=senderHab.pre, src=senderHab.pre),
+                        stamp=stamp,
+                        pvrsn=Vrsn_2_0)
 
             # Sign with sender's keys
             sigers = senderHab.mgr.sign(ser=msg.raw,
                                         verfers=senderHab.kever.verfers,
                                         indexed=True)
-            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             kvy.processMsg(msg, **kwa)
@@ -3690,17 +3690,17 @@ def test_merge_cache_types(fakeHelpingClock):
 
             # Create a new qry message with the logs route 
             stamp = helping.nowIso8601()
-            msg = eventing.query(pre=senderHab.pre,
-                                 route="logs",
-                                 query=dict(i=senderHab.pre, src=senderHab.pre),
-                                 stamp=stamp,
-                                 pvrsn=Vrsn_2_0)
+            msg = query(pre=senderHab.pre,
+                        route="logs",
+                        query=dict(i=senderHab.pre, src=senderHab.pre),
+                        stamp=stamp,
+                        pvrsn=Vrsn_2_0)
 
             # Sign with sender's keys
             sigers = senderHab.mgr.sign(ser=msg.raw,
                                         verfers=senderHab.kever.verfers,
                                         indexed=True)
-            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             kvy.processMsg(msg, **kwa)
@@ -3737,12 +3737,12 @@ def test_modify_cache_types(fakeHelpingClock):
 
     clock = fakeHelpingClock
 
-    salt_sender = core.Salter(raw=b'0123456789abcdef').qb64
-    salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
+    salt_sender = Salter(raw=b'0123456789abcdef').qb64
+    salt_receiver = Salter(raw=b'0123456789abcdeg').qb64
 
     with (
-        habbing.openHby(name="sender", base="test", salt=salt_sender, temp=True) as senderHby,
-        habbing.openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
+        openHby(name="sender", base="test", salt=salt_sender, temp=True) as senderHby,
+        openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
     ):
 
         old_cfg = {
@@ -3775,18 +3775,18 @@ def test_modify_cache_types(fakeHelpingClock):
         receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True)
 
         # Load sender's ICP into receiver
-        cross = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
+        cross = Kevery(db=receiverHby.db, lax=False, local=False)
 
         senderIcp = senderHab.makeOwnEvent(sn=0)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
         assert senderHab.pre in cross.kevers
 
-        with configing.openCF(name="kram", base="test", temp=True) as cf:
+        with openCF(name="kram", base="test", temp=True) as cf:
             cf.put(old_cfg)
             kramer = Kramer(db=receiverHby.db, cf=cf)
             
             # Create Kevery 
-            kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
+            kvy = Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
             
             cf.put(new_cfg)
             kramer.changeConfig(cf)
@@ -3800,17 +3800,17 @@ def test_modify_cache_types(fakeHelpingClock):
 
             # Create a query message with the ksn route
             stamp = helping.nowIso8601()
-            msg = eventing.query(pre=senderHab.pre,
-                                 route="ksn",
-                                 query=dict(i=senderHab.pre, src=senderHab.pre),
-                                 stamp=stamp,
-                                 pvrsn=Vrsn_2_0)
+            msg = query(pre=senderHab.pre,
+                        route="ksn",
+                        query=dict(i=senderHab.pre, src=senderHab.pre),
+                        stamp=stamp,
+                        pvrsn=Vrsn_2_0)
 
             # Sign with sender's keys
             sigers = senderHab.mgr.sign(ser=msg.raw,
                                         verfers=senderHab.kever.verfers,
                                         indexed=True)
-            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             kvy.processMsg(msg, **kwa)
@@ -3859,17 +3859,17 @@ def test_modify_cache_types(fakeHelpingClock):
 
             # Create a query message with the logs route
             stamp = helping.nowIso8601()
-            msg = eventing.query(pre=senderHab.pre,
-                                 route="logs",
-                                 query=dict(i=senderHab.pre, src=senderHab.pre),
-                                 stamp=stamp,
-                                 pvrsn=Vrsn_2_0)
+            msg = query(pre=senderHab.pre,
+                        route="logs",
+                        query=dict(i=senderHab.pre, src=senderHab.pre),
+                        stamp=stamp,
+                        pvrsn=Vrsn_2_0)
 
             # Sign with sender's keys
             sigers = senderHab.mgr.sign(ser=msg.raw,
                                         verfers=senderHab.kever.verfers,
                                         indexed=True)
-            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             kvy.processMsg(msg, **kwa)
@@ -3917,17 +3917,17 @@ def test_modify_cache_types(fakeHelpingClock):
             
             # Create a new qry message with the logs route
             stamp = helping.nowIso8601()
-            msg = eventing.query(pre=senderHab.pre,
-                                 route="logs",
-                                 query=dict(i=senderHab.pre, src=senderHab.pre),
-                                 stamp=stamp,
-                                 pvrsn=Vrsn_2_0)
+            msg = query(pre=senderHab.pre,
+                        route="logs",
+                        query=dict(i=senderHab.pre, src=senderHab.pre),
+                        stamp=stamp,
+                        pvrsn=Vrsn_2_0)
 
             # Sign with sender's keys
             sigers = senderHab.mgr.sign(ser=msg.raw,
                                         verfers=senderHab.kever.verfers,
                                         indexed=True)
-            prefixer = coring.Prefixer(qb64=senderHab.pre)
+            prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             kvy.processMsg(msg, **kwa)
@@ -3984,10 +3984,10 @@ def test_coverage_hole():
           previously valid message patterns without a corresponding cache-type.
     """
 
-    salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
+    salt_receiver = Salter(raw=b'0123456789abcdeg').qb64
 
     with (
-        habbing.openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
+        openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby
     ):
         # Old configuration has a default fallback: ANY (message type) ANY (route) cache-type
         old_cfg = {
@@ -4009,7 +4009,7 @@ def test_coverage_hole():
             }
         }
 
-        with configing.openCF(name="kram", base="test", temp=True) as cf:
+        with openCF(name="kram", base="test", temp=True) as cf:
             cf.put(old_cfg)
             kramer = Kramer(db=receiverHby.db, cf=cf)
 
@@ -4598,9 +4598,9 @@ def test_pruning_exchanges(fakeHelpingClock):
             # Test with seeded xip via kramit directly
 
             xip = exchept(sender=senderHab.pre,
-                                   receiver=receiverHab.pre,
-                                   route="/test/exchange",
-                                   stamp=stamp)
+                          receiver=receiverHab.pre,
+                          route="/test/exchange",
+                          stamp=stamp)
 
             # Sign xip
             sigers = senderHab.mgr.sign(ser=xip.raw,
@@ -4623,11 +4623,11 @@ def test_pruning_exchanges(fakeHelpingClock):
             assert firstStamp == "2021-01-01T00:00:00.000000+00:00"
 
             exn = exchange(sender=senderHab.pre,
-                                    receiver=receiverHab.pre,
-                                    xid=xip.said,
-                                    route="/test/exchange",
-                                    attributes=dict(n='5c'),
-                                    stamp=firstStamp)
+                           receiver=receiverHab.pre,
+                           xid=xip.said,
+                           route="/test/exchange",
+                           attributes=dict(n='5c'),
+                           stamp=firstStamp)
 
             sigers = senderHab.mgr.sign(ser=exn.raw,
                                     verfers=senderHab.kever.verfers,
@@ -4657,11 +4657,11 @@ def test_pruning_exchanges(fakeHelpingClock):
             assert secondStamp == "2021-01-01T00:00:01.000000+00:00"
 
             exn2 = exchange(sender=senderHab.pre,
-                                    receiver=receiverHab.pre,
-                                    xid=xip.said,
-                                    route="/test/exchange",
-                                    attributes=dict(n='5c'),
-                                    stamp=secondStamp)
+                            receiver=receiverHab.pre,
+                            xid=xip.said,
+                            route="/test/exchange",
+                            attributes=dict(n='5c'),
+                            stamp=secondStamp)
 
             sigers = senderHab.mgr.sign(ser=exn2.raw,
                                     verfers=senderHab.kever.verfers,
