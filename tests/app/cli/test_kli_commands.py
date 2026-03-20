@@ -5,13 +5,13 @@ import multicommand
 import pytest
 
 
-from keri import core, ValidationError
-from keri.core import coring
+from keri.kering import Ilks, ValidationError
+from keri.core import Salter
 
-from keri.app import directing
+from keri.app import runController
 
 from keri.cli import commands
-from keri.cli.common import existing
+from keri.cli.common import existingHab, existingHby
 
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -22,14 +22,14 @@ def test_standalone_kli_commands(helpers, capsys):
     assert os.path.isdir("/usr/local/var/keri/ks/test") is False
 
     parser = multicommand.create_parser(commands)
-    salt = core.Salter(raw=b'0123456789abcdef').qb64
+    salt = Salter(raw=b'0123456789abcdef').qb64
     args = parser.parse_args(["init", "--name", "test", "--nopasscode", "--salt", salt])
     assert args.handler is not None
     doers = args.handler(args)
 
-    directing.runController(doers=doers)
+    runController(doers=doers)
 
-    with existing.existingHby("test") as hby:
+    with existingHby("test") as hby:
         assert os.path.isdir(hby.db.path) is True
 
     args = parser.parse_args(["incept", "--name", "test", "--alias", "non-trans", "--file",
@@ -37,10 +37,10 @@ def test_standalone_kli_commands(helpers, capsys):
     assert args.handler is not None
     doers = args.handler(args)
 
-    directing.runController(doers=doers)
+    runController(doers=doers)
 
     # Create non-transferable identifier
-    with existing.existingHab(name="test", alias="non-trans") as (hby, hab):
+    with existingHab(name="test", alias="non-trans") as (hby, hab):
         assert hab.pre == 'BI81UmEUu6Vrii26PxQagwdkWJzJm3Q6PERtUw1c_y9K'
 
     args = parser.parse_args(["rotate", "--name", "test", "--alias", "non-trans"])
@@ -49,7 +49,7 @@ def test_standalone_kli_commands(helpers, capsys):
 
     # Attempt to rotate a non-transferable identifier
     with pytest.raises(ValueError):
-        directing.runController(doers=doers)
+        runController(doers=doers)
 
     # Create transferable identifier
     args = parser.parse_args(["incept", "--name", "test", "--alias", "trans", "--transferable", "--file",
@@ -57,18 +57,18 @@ def test_standalone_kli_commands(helpers, capsys):
     assert args.handler is not None
     doers = args.handler(args)
 
-    directing.runController(doers=doers)
+    runController(doers=doers)
 
     xpre = 'EF0bnfg4smFm9Q_OKlKUYRRQctGhTBWUU3rXf7zuA9GU'  # 'EORLw1VyVyBqNCHMUTYctinMDCba9o6Ut-34YFpiLBFK'
-    with existing.existingHab(name="test", alias="trans") as (hby, hab):
+    with existingHab(name="test", alias="trans") as (hby, hab):
         assert hab.pre == xpre
 
     args = parser.parse_args(["rotate", "--name", "test", "--alias", "trans"])
     assert args.handler is not None
     doers = args.handler(args)
 
-    directing.runController(doers=doers)
-    with existing.existingHab(name="test", alias="trans") as (hby, hab):
+    runController(doers=doers)
+    with existingHab(name="test", alias="trans") as (hby, hab):
         assert hab.pre == xpre
         assert hab.kever.sn == 1
 
@@ -77,11 +77,11 @@ def test_standalone_kli_commands(helpers, capsys):
     assert args.handler is not None
     doers = args.handler(args)
 
-    directing.runController(doers=doers)
-    with existing.existingHab(name="test", alias="trans") as (hby, hab):
+    runController(doers=doers)
+    with existingHab(name="test", alias="trans") as (hby, hab):
         assert hab.pre == xpre
         assert hab.kever.sn == 2
-        assert hab.kever.ilk == coring.Ilks.rot
+        assert hab.kever.ilk == Ilks.rot
         anchor = hab.kever.serder.ked["a"]
         assert anchor == [
             {'i': 'EAXJtG-Ek349v43ztpFdRXozyP7YnALdB0DdCEanlHmg',
@@ -95,11 +95,11 @@ def test_standalone_kli_commands(helpers, capsys):
     assert args.handler is not None
     doers = args.handler(args)
 
-    directing.runController(doers=doers)
-    with existing.existingHab(name="test", alias="trans") as (hby, hab):
+    runController(doers=doers)
+    with existingHab(name="test", alias="trans") as (hby, hab):
         assert hab.pre == xpre
         assert hab.kever.sn == 3
-        assert hab.kever.ilk == coring.Ilks.ixn
+        assert hab.kever.ilk == Ilks.ixn
         anchor = hab.kever.serder.ked["a"]
         assert anchor == [
             {'i': 'EAXJtG-Ek349v43ztpFdRXozyP7YnALdB0DdCEanlHmg',
@@ -113,24 +113,24 @@ def test_standalone_kli_commands(helpers, capsys):
     assert args.handler is not None
     doers = args.handler(args)
 
-    directing.runController(doers=doers)
+    runController(doers=doers)
 
-    with existing.existingHab(name="test", alias="trans") as (hby, hab):
+    with existingHab(name="test", alias="trans") as (hby, hab):
         assert hab.pre == xpre
         assert hab.kever.sn == 4
-        assert hab.kever.ilk == coring.Ilks.rot
+        assert hab.kever.ilk == Ilks.rot
         assert hab.kever.tholder.sith == "1"
 
     args = parser.parse_args(rotate_args)
     assert args.handler is not None
     doers = args.handler(args)
 
-    directing.runController(doers=doers)
+    runController(doers=doers)
 
-    with existing.existingHab(name="test", alias="trans") as (hby, hab):
+    with existingHab(name="test", alias="trans") as (hby, hab):
         assert hab.pre == xpre
         assert hab.kever.sn == 5
-        assert hab.kever.ilk == coring.Ilks.rot
+        assert hab.kever.ilk == Ilks.rot
         assert hab.kever.tholder.sith == "2"
         assert [verfer.qb64 for verfer in hab.kever.verfers] == ['DCaZp7iampWSfsIA2cyZJvWO7CmSkIvXmonu7j3E11Y8',
                                                                  'DE_VNJqg4b_7xP-xVNNg0NmttptGVrkTw7SNKtVSNJJg',
@@ -144,10 +144,10 @@ def test_standalone_kli_commands(helpers, capsys):
     assert args.handler is not None
     doers = args.handler(args)
 
-    directing.runController(doers=doers)
+    runController(doers=doers)
 
     epre = 'EMZ09JgN6Kr_rZH4Q7SovW-bxYXjiQX2XdSIQYpZnHsJ'
-    with existing.existingHab(name="test", alias="est-only") as (hby, hab):
+    with existingHab(name="test", alias="est-only") as (hby, hab):
         assert hab.pre == epre
         assert hab.kever.sn == 0
 
@@ -157,27 +157,27 @@ def test_standalone_kli_commands(helpers, capsys):
     doers = args.handler(args)
 
     with pytest.raises(ValidationError):
-        directing.runController(doers=doers)
+        runController(doers=doers)
 
     args = parser.parse_args(["rotate", "--name", "test", "--alias", "est-only"])
     assert args.handler is not None
     doers = args.handler(args)
 
-    directing.runController(doers=doers)
-    with existing.existingHab(name="test", alias="est-only") as (hby, hab):
+    runController(doers=doers)
+    with existingHab(name="test", alias="est-only") as (hby, hab):
         assert hab.pre == epre
         assert hab.kever.sn == 1
-        assert hab.kever.ilk == coring.Ilks.rot
+        assert hab.kever.ilk == Ilks.rot
 
     args = parser.parse_args(["rotate", "--name", "test", "--alias", "est-only", "--data",
                               "@" + os.path.join(TEST_DIR, "anchor.json")])
     assert args.handler is not None
     doers = args.handler(args)
-    directing.runController(doers=doers)
-    with existing.existingHab(name="test", alias="est-only") as (hby, hab):
+    runController(doers=doers)
+    with existingHab(name="test", alias="est-only") as (hby, hab):
         assert hab.pre == epre
         assert hab.kever.sn == 2
-        assert hab.kever.ilk == coring.Ilks.rot
+        assert hab.kever.ilk == Ilks.rot
         anchor = hab.kever.serder.ked["a"]
         assert anchor == [
             {'i': 'EAXJtG-Ek349v43ztpFdRXozyP7YnALdB0DdCEanlHmg',
@@ -191,7 +191,7 @@ def test_standalone_kli_commands(helpers, capsys):
     args = parser.parse_args(["sign", "--name", "test", "--alias", "trans", "--text", "this is test data to sign"])
     assert args.handler is not None
     doers = args.handler(args)
-    directing.runController(doers=doers)
+    runController(doers=doers)
 
     #"ErzV_sZ8iC-mKOFN7dknxnXSISU3hvlUZr7TMcJs7JsY"
 
@@ -213,7 +213,7 @@ def test_standalone_kli_commands(helpers, capsys):
                               ])
     assert args.handler is not None
     doers = args.handler(args)
-    directing.runController(doers=doers)
+    runController(doers=doers)
 
     capsigs = capsys.readouterr()
     assert capsigs.out == 'Signature 1 is valid.\n'
@@ -221,7 +221,7 @@ def test_standalone_kli_commands(helpers, capsys):
     args = parser.parse_args(["status", "--name", "test", "--alias", "trans"])
     assert args.handler is not None
     doers = args.handler(args)
-    directing.runController(doers=doers)
+    runController(doers=doers)
     capsigs = capsys.readouterr()
     assert capsigs.out == ('Alias: \ttrans\n'
                            'Identifier: EF0bnfg4smFm9Q_OKlKUYRRQctGhTBWUU3rXf7zuA9GU\n'
@@ -241,7 +241,7 @@ def test_standalone_kli_commands(helpers, capsys):
     args = parser.parse_args(["escrow", "list", "--name", "test"])
     assert args.handler is not None
     doers = args.handler(args)
-    directing.runController(doers=doers)
+    runController(doers=doers)
     capesc = capsys.readouterr()
     result = json.loads(capesc.out)
     assert result["out-of-order-events"] == []
@@ -280,14 +280,14 @@ def test_incept_and_rotate_opts(helpers, capsys):
     assert os.path.isdir("/usr/local/var/keri/ks/test-opts") is False
 
     parser = multicommand.create_parser(commands)
-    salt = core.Salter(raw=b'0123456789abcdef').qb64
+    salt = Salter(raw=b'0123456789abcdef').qb64
     args = parser.parse_args(["init", "--name", "test-opts", "--nopasscode", "--salt", salt])
     assert args.handler is not None
     doers = args.handler(args)
 
-    directing.runController(doers=doers)
+    runController(doers=doers)
 
-    with existing.existingHby("test-opts") as hby:
+    with existingHby("test-opts") as hby:
         assert os.path.isdir(hby.db.path) is True
 
     args = parser.parse_args(["incept", "--name", "test-opts", "--alias", "trans-args", "--transferable"])
@@ -302,7 +302,7 @@ def test_incept_and_rotate_opts(helpers, capsys):
     assert args.handler is not None
     doers = args.handler(args)
 
-    directing.runController(doers=doers)
+    runController(doers=doers)
 
     # Rotate with file
     args = parser.parse_args(["rotate", "--name", "test-opts", "--alias", "trans-args",
@@ -311,4 +311,4 @@ def test_incept_and_rotate_opts(helpers, capsys):
     assert args.handler is not None
     doers = args.handler(args)
 
-    directing.runController(doers=doers)
+    runController(doers=doers)

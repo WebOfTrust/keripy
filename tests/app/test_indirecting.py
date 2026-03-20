@@ -16,15 +16,17 @@ from hio.core import http
 from hio.base import doing
 from hio.help import decking
 
-from keri import kering
-from keri import core
-from keri.app import indirecting, storing, habbing, agenting
+from keri.kering import Schemes
+from keri.core import SerderKERI, Salter
+from keri.app import (MailboxIterable, QryRpyMailboxIterable,
+                      QueryEnd, Mailboxer, Receiptor,
+                      setupWitness, createHttpServer, openHab, openHby)
 
 
 def test_mailbox_iter():
     pre = "EA3mbE6upuYnFlx68GmLYCQd7cCcwG_AtHM6dW_GT068"
-    mbx = storing.Mailboxer(temp=True)
-    mb = indirecting.MailboxIterable(mbx=mbx, pre=pre, topics={"/receipt": 0, "/challenge": 1, "/multisig": 0},
+    mbx = Mailboxer(temp=True)
+    mb = MailboxIterable(mbx=mbx, pre=pre, topics={"/receipt": 0, "/challenge": 1, "/multisig": 0},
                                      retry=1000)
 
     mbi = iter(mb)
@@ -79,10 +81,10 @@ def test_mailbox_iter():
 def test_mailbox_multiple_iter():
     pre = "EA3mbE6upuYnFlx68GmLYCQd7cCcwG_AtHM6dW_GT068"
     msg = dict(words=["abc", "def"])
-    mbx = storing.Mailboxer(temp=True)
+    mbx = Mailboxer(temp=True)
     mbx.storeMsg(topic=f"{pre}/challenge", msg=json.dumps(msg).encode("utf-8"))
 
-    mb = indirecting.MailboxIterable(mbx=mbx, pre=pre, topics={"/receipt": 0, "/challenge": 0, "/multisig": 0},
+    mb = MailboxIterable(mbx=mbx, pre=pre, topics={"/receipt": 0, "/challenge": 0, "/multisig": 0},
                                      retry=1000)
     mbi = iter(mb)
 
@@ -107,16 +109,16 @@ def test_mailbox_multiple_iter():
 
 
 def test_qrymailbox_iter():
-    with habbing.openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
+    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
         assert hab.pre == 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
         icp = hab.makeOwnInception()
-        icpSrdr = core.serdering.SerderKERI(raw=icp)
+        icpSrdr = SerderKERI(raw=icp)
         qry = hab.query(pre=hab.pre, src=hab.pre, route="/mbx")
-        srdr = core.serdering.SerderKERI(raw=qry)
+        srdr = SerderKERI(raw=qry)
 
         cues = decking.Deck()
-        mbx = storing.Mailboxer(temp=True)
-        mb = indirecting.QryRpyMailboxIterable(mbx=mbx, cues=cues, said=srdr.said, retry=1000)
+        mbx = Mailboxer(temp=True)
+        mb = QryRpyMailboxIterable(mbx=mbx, cues=cues, said=srdr.said, retry=1000)
 
         mbi = iter(mb)
         assert mb.iter is None
@@ -159,16 +161,16 @@ def test_qrymailbox_iter():
 
 
 def test_wit_query_ends(seeder):
-    with habbing.openHby(name="wes", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
-            habbing.openHby(name="pal", salt=core.Salter(raw=b'0123456789abcdef').qb64) as palHby:
-        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
-        witDoer = agenting.Receiptor(hby=palHby)
+    with openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64) as wesHby, \
+            openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64) as palHby:
+        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
+        witDoer = Receiptor(hby=palHby)
 
         wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[kering.Schemes.http])
+        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[Schemes.http])
 
         app = falcon.App()
-        query_endpoint = indirecting.QueryEnd(wesHab)
+        query_endpoint = QueryEnd(wesHab)
         app.add_route("/query", query_endpoint)
 
         wesClient = testing.TestClient(app)
@@ -282,13 +284,13 @@ def test_createHttpServer(monkeypatch):
         host = "127.0.0.1"
     port = 5632
     app = falcon.App()
-    server = indirecting.createHttpServer(host, port, app)
+    server = createHttpServer(host, port, app)
     assert isinstance(server, http.Server)
 
     monkeypatch.setattr(hio.core.tcp, 'ServerTls', MockServerTls)
     monkeypatch.setattr(hio.core.http, 'Server', MockHttpServer)
 
-    server = indirecting.createHttpServer(host, port, app, keypath='keypath', certpath='certpath', cafilepath='cafilepath')
+    server = createHttpServer(host, port, app, keypath='keypath', certpath='certpath', cafilepath='cafilepath')
 
     assert isinstance(server, MockHttpServer)
     assert isinstance(server.servant, MockServerTls)

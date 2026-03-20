@@ -7,10 +7,10 @@ import os
 
 import lmdb
 
-from keri.app import keeping, Mailboxer
-from keri.core import coring, serdering
-from keri.db import dbing, basing, subing
-from keri.peer import exchanging
+from keri.app import Mailboxer, openKS
+from keri.core import Prefixer, SerderKERI
+from keri.db import OnSuber, openLMDB, openDB
+from keri.peer import exchange
 
 
 def test_mailboxing():
@@ -29,7 +29,7 @@ def test_mailboxing():
     assert os.path.exists(mber.path)
 
     #assert isinstance(mber.tpcs, lmdb._Database)
-    assert isinstance(mber.tpcs, subing.OnSuber)
+    assert isinstance(mber.tpcs, OnSuber)
 
     mber.close(clear=True)
     assert not os.path.exists(mber.path)
@@ -56,7 +56,7 @@ def test_mailboxing():
     assert not os.path.exists(mber.path)
     assert not mber.opened
 
-    with dbing.openLMDB(cls=Mailboxer) as mber:
+    with openLMDB(cls=Mailboxer) as mber:
         assert isinstance(mber, Mailboxer)
 
         msg = (
@@ -65,7 +65,7 @@ def test_mailboxing():
             b'"b":123}}-HABE4YPqsEOaPNaZxVIbY-Gx2bJgP-c7AH_K7pEE-YfcI9E'
             b'-AABAAMKEkKlqSYcAbOHfNXQ_D0Rbj9bQD5FqhFqckAlDnOFozRKOIPrCWaszRzSUN20UBj80tO5ozN35KrQp9m7Z1AA')
 
-        dest = coring.Prefixer(qb64="EAD919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I")
+        dest = Prefixer(qb64="EAD919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I")
         saved = mber.storeMsg(topic=dest.qb64b, msg=msg)
         assert saved is True
 
@@ -74,16 +74,16 @@ def test_mailboxing():
 
     assert not os.path.exists(mber.path)
 
-    with dbing.openLMDB(cls=Mailboxer) as mber, \
-            basing.openDB(name="test") as db, \
-            keeping.openKS(name="test") as ks:
+    with openLMDB(cls=Mailboxer) as mber, \
+            openDB(name="test") as db, \
+            openKS(name="test") as ks:
 
         for idx in range(10):
             d = dict(a="b", b=idx)
-            dest = coring.Prefixer(qb64="EAD919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I")
+            dest = Prefixer(qb64="EAD919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I")
 
-            exn, _ = exchanging.exchange("/credential/issue", payload=d,
-                                      date="2021-07-15T13:01:37.624492+00:00", sender=dest.qb64)
+            exn, _ = exchange("/credential/issue", payload=d,
+                              date="2021-07-15T13:01:37.624492+00:00", sender=dest.qb64)
             mber.storeMsg(topic=dest.qb64b, msg=exn.raw)
 
         msgs = []
@@ -93,7 +93,7 @@ def test_mailboxing():
         assert(len(msgs)) == 10
 
         for idx, msg in msgs:
-            exn = serdering.SerderKERI(raw=msg)
+            exn = SerderKERI(raw=msg)
             d = exn.ked["a"]
             assert d["b"] == idx
 

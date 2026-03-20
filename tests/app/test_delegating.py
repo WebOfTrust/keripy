@@ -6,26 +6,26 @@ tests.app.delegating module
 import time
 from hio.base import doing, tyming
 
-from keri import kering
-from keri.kering import Vrsn_1_0
-from keri import core
-from keri.core import eventing, parsing, coring
+from keri.kering import Schemes, Vrsn_1_0
+from keri.core import Salter, Kevery, Parser, Seqner, Diger, delcept
 
-from keri.app import habbing, delegating, indirecting, agenting, notifying
+from keri.app import (Anchorer, DelegateRequestHandler, Receiptor,
+                      Notifier, setupWitness, openHby,
+                      openHab, delegateRequestExn)
 
 
 def test_anchorer(seeder):
-    with habbing.openHby(name="wes", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
-            habbing.openHby(name="pal", salt=core.Salter(raw=b'0123456789abcdef').qb64) as palHby, \
-            habbing.openHby(name="del", salt=core.Salter(raw=b'0123456789ghijkl').qb64) as delHby:
+    with openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64) as wesHby, \
+            openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64) as palHby, \
+            openHby(name="del", salt=Salter(raw=b'0123456789ghijkl').qb64) as delHby:
 
-        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
-        witDoer = agenting.Receiptor(hby=palHby)
-        bts = delegating.Anchorer(hby=delHby)
+        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
+        witDoer = Receiptor(hby=palHby)
+        bts = Anchorer(hby=delHby)
 
         wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[kering.Schemes.http])
-        seeder.seedWitEnds(delHby.db, witHabs=[wesHab], protocols=[kering.Schemes.http])
+        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[Schemes.http])
+        seeder.seedWitEnds(delHby.db, witHabs=[wesHab], protocols=[Schemes.http])
 
         opts = dict(
             wesHab=wesHab,
@@ -56,8 +56,8 @@ def test_anchorer(seeder):
         palHab = palHby.habByName("pal")
         delHab = delHby.habByName("del")
         # Get the value of the seal created when delegation is anchored
-        seqner = coring.Seqner(sn=palHab.kever.sn)
-        diger = coring.Diger(qb64b=palHab.kever.serder.saidb)
+        seqner = Seqner(sn=palHab.kever.sn)
+        diger = Diger(qb64b=palHab.kever.serder.saidb)
         couple = seqner.qb64b + diger.qb64b
         result = delHby.db.aess.get(keys=(delHab.kever.prefixer.qb64b, delHab.kever.serder.saidb))
         assert result is not None
@@ -84,8 +84,8 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
 
     witDoer.cues.popleft()
     msg = next(wesHab.db.clonePreIter(pre=palHab.pre))
-    kvy = eventing.Kevery(db=delHby.db, local=True)
-    parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(msg), kvy=kvy, local=True)
+    kvy = Kevery(db=delHby.db, local=True)
+    Parser(version=Vrsn_1_0).parseOne(ims=bytearray(msg), kvy=kvy, local=True)
 
     while palHab.pre not in delHby.kevers:
         yield tock
@@ -107,15 +107,15 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
     witDoer.cues.popleft()
 
     # Get the value of the seal created when delegation is anchored
-    couple = coring.Seqner(sn=palHab.kever.sn).qb64b + palHab.kever.serder.saidb
+    couple = Seqner(sn=palHab.kever.sn).qb64b + palHab.kever.serder.saidb
 
     msg = next(wesHab.db.clonePreIter(pre=palHab.pre, fn=1))
-    kvy = eventing.Kevery(db=delHby.db, local=True)
-    parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(msg), kvy=kvy, local=True)
+    kvy = Kevery(db=delHby.db, local=True)
+    Parser(version=Vrsn_1_0).parseOne(ims=bytearray(msg), kvy=kvy, local=True)
 
     # Wait for the anchor.  If we timeout before that happens, assertion in test will fail
-    seqner = coring.Seqner(sn=palHab.kever.sn)
-    diger = coring.Diger(qb64b=palHab.kever.serder.saidb)
+    seqner = Seqner(sn=palHab.kever.sn)
+    diger = Diger(qb64b=palHab.kever.serder.saidb)
     couple = seqner.qb64b + diger.qb64b
 
     while result := delHby.db.aess.get(keys=(delHab.kever.prefixer.qb64b, delHab.kever.serder.saidb)):
@@ -126,13 +126,13 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
 
 
 def test_delegation_request(mockHelpingNowUTC):
-    with habbing.openHab(name="test", temp=True, salt=b'0123456789abcdef') as (hby, hab):
+    with openHab(name="test", temp=True, salt=b'0123456789abcdef') as (hby, hab):
 
         delpre = "EArzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"
-        serder = eventing.delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=delpre,
+        serder = delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=delpre,
                                   ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
         evt = hab.endorse(serder=serder)
-        exn, atc = delegating.delegateRequestExn(hab=hab, delpre=delpre, evt=evt)
+        exn, atc = delegateRequestExn(hab=hab, delpre=delpre, evt=evt)
 
         assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAA'
                        b'AAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACzeUyP'
@@ -152,15 +152,15 @@ def test_delegation_request(mockHelpingNowUTC):
 
 
 def test_delegation_request_handler(mockHelpingNowUTC):
-    with habbing.openHab(name="test", temp=True) as (hby, hab):
+    with openHab(name="test", temp=True) as (hby, hab):
 
-        serder = eventing.delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=hab.pre,
+        serder = delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=hab.pre,
                                   ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
 
         evt = hab.endorse(serder=serder)
-        notifier = notifying.Notifier(hby=hby)
-        handler = delegating.DelegateRequestHandler(hby=hby, notifier=notifier)
-        exn, _ = delegating.delegateRequestExn(hab, hab.pre, evt=evt)
+        notifier = Notifier(hby=hby)
+        handler = DelegateRequestHandler(hby=hby, notifier=notifier)
+        exn, _ = delegateRequestExn(hab, hab.pre, evt=evt)
 
         handler.handle(serder=exn)
 

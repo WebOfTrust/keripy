@@ -6,13 +6,14 @@ Test bare message
 routes:
 
 """
-from keri import kering
+from hio.help import ogler
 
-from keri import help, core
-from keri.core import MtrDex, Diger, SealEvent, messagize, bare
+from keri.kering import Roles
+
+from keri.core import Salter, Diger, SealEvent, MtrDex, messagize, bare
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 def test_bare():
@@ -42,7 +43,7 @@ def test_bare():
     # use same salter for all but different path
     # raw = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    salter = core.Salter(raw=raw)
+    salter = Salter(raw=raw)
 
     # create transferable key pair for controller of service endpoint designation
     signerC = salter.signer(path="C", temp=True)
@@ -80,7 +81,7 @@ def test_bare():
     wits = [preW1, preW2, preW3]
     toad = 2
 
-    role = kering.Roles.watcher
+    role = Roles.watcher
 
     data = dict( cid=preC,
                  role=role,

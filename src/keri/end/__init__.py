@@ -11,4 +11,4 @@ from .ending import (Signage, Inputage, signature,
                      designature, normalize, siginput,
                      desiginput, PointEnd, LocationEnd,
                      AdminEnd, OOBIEnd, loadEnds, setup,
-                     OOBI_RE, DOOBI_RE)
+                     OOBI_RE, DOOBI_RE, Mimes, KeriMimes)

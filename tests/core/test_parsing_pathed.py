@@ -4,15 +4,15 @@ tests.core.test_eventing module
 
 """
 
-from hio.help import decking
+from hio.help import decking, ogler
 
-from keri import help, Vrsn_1_0
-from keri.core import Salter, parsing, coring
-from keri.peer import exchanging
-from keri.app import habbing
+from keri.kering import Vrsn_1_0, Ilks
+from keri.core import Salter, Parser
+from keri.peer import Exchanger, exchange
+from keri.app import openHby
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 def test_pathed_material(mockHelpingNowUTC):
@@ -28,22 +28,22 @@ def test_pathed_material(mockHelpingNowUTC):
             self.msgs.append(serder)
             self.atcs.append(attachments)
 
-    with (habbing.openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64) as hby,
-          habbing.openHby(name="deb", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as debHby):
+    with (openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64) as hby,
+          openHby(name="deb", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as debHby):
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
         palHab = hby.makeHab(name="pal")
         debHab = debHby.makeHab(name="deb", isith=sith, icount=3)
         # Create series of events
         debMsgs = dict(icp=debHab.makeOwnInception(), ixn0=debHab.interact(), rot=debHab.rotate(),
                        ixn1=debHab.interact())
-        fwd, end = exchanging.exchange(route='/fwd',
-                                       modifiers=dict(pre=palHab.pre, topic="replay"), payload={}, embeds=debMsgs,
-                                       sender=debHab.pre)
+        fwd, end = exchange(route='/fwd',
+                            modifiers=dict(pre=palHab.pre, topic="replay"), payload={}, embeds=debMsgs,
+                            sender=debHab.pre)
         fwd = debHab.endorse(fwd, last=False, pipelined=False)
         fwd.extend(end)
         handler = MockHandler()
-        exc = exchanging.Exchanger(hby=debHby, handlers=[handler])
-        parser = parsing.Parser(exc=exc, version=Vrsn_1_0)
+        exc = Exchanger(hby=debHby, handlers=[handler])
+        parser = Parser(exc=exc, version=Vrsn_1_0)
 
         parser.parseOne(ims=fwd)
         assert len(handler.msgs) == 1
@@ -51,10 +51,10 @@ def test_pathed_material(mockHelpingNowUTC):
 
         embeds = serder.ked['e']
         assert len(embeds) == 5
-        assert embeds["icp"]["t"] == coring.Ilks.icp
-        assert embeds["ixn0"]["t"] == coring.Ilks.ixn
-        assert embeds["rot"]["t"] == coring.Ilks.rot
-        assert embeds["ixn1"]["t"] == coring.Ilks.ixn
+        assert embeds["icp"]["t"] == Ilks.icp
+        assert embeds["ixn0"]["t"] == Ilks.ixn
+        assert embeds["rot"]["t"] == Ilks.rot
+        assert embeds["ixn1"]["t"] == Ilks.ixn
         assert len(handler.atcs) == 1
         attachments = handler.atcs.popleft()
         assert len(attachments) == 4

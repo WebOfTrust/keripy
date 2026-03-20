@@ -7,19 +7,19 @@ import os
 
 import pytest
 
+from hio.help import ogler
+
+
 from keri.kering import ValidationError, Vrsn_1_0, Vrsn_2_0, Kinds
 
-from keri import help
-
-from keri.core import coring
-from keri.core import (Counter, GenDex, Codens, Seqner, Dater, Texter, Pather,
+from keri.core import (Counter, Diger, GenDex, Codens, Seqner, Dater, Texter, Pather,
                        Blinder, Mediar, TypeMedia, Sealer, SealKind, Verser,
                        Salter, Parser, Kever, Kevery, incept, rotate, interact)
 
 from keri.db import openDB
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 def test_parser_v1_basic():
@@ -68,7 +68,7 @@ def test_parser_v1_basic():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers[0].verfer.qb64],
-                        ndigs=[coring.Diger(ser=signers[1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64])
         event_digs.append(serder.said)
         # extend key event stream with msg
         msgs.extend(serder.raw)
@@ -196,7 +196,7 @@ def test_parser_v1_basic():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[1].verfer.qb64],
                         dig=kever.serder.said,
-                        ndigs=[coring.Diger(ser=signers[2].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[2].verfer.qb64b).qb64],
                         sn=1)
         event_digs.append(serder.said)
         # create sig counter
@@ -214,7 +214,7 @@ def test_parser_v1_basic():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[2].verfer.qb64],
                         dig=kever.serder.said,
-                        ndigs=[coring.Diger(ser=signers[3].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[3].verfer.qb64b).qb64],
                         sn=2)
         event_digs.append(serder.said)
         # create sig counter
@@ -264,7 +264,7 @@ def test_parser_v1_basic():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[3].verfer.qb64],
                         dig=kever.serder.said,
-                        ndigs=[coring.Diger(ser=signers[4].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[4].verfer.qb64b).qb64],
                         sn=5)
         event_digs.append(serder.said)
         # create sig counter
@@ -332,7 +332,7 @@ def test_parser_v1_basic():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[4].verfer.qb64],
                         dig=kever.serder.said,
-                        ndigs=[coring.Diger(ser=signers[5].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[5].verfer.qb64b).qb64],
                         sn=8)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -443,7 +443,7 @@ def test_parser_v1_version():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers1[0].verfer.qb64],
-                        ndigs=[coring.Diger(ser=signers1[1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=signers1[1].verfer.qb64b).qb64])
         pre = serder.pre
         event_digs.append(serder.said)
         # extend key event stream with msg
@@ -622,7 +622,7 @@ def test_parser_v1_enclosed_attachments():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers[0].verfer.qb64],
-                        ndigs=[coring.Diger(ser=signers[1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64])
         pre = serder.pre
         # extend key event stream with msg
         msgs.extend(serder.raw)
@@ -760,7 +760,7 @@ def test_parser_v1_enclosed_attachments():
         serder = rotate(pre=pre,
                         keys=[signers[1].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers[2].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[2].verfer.qb64b).qb64],
                         sn=1)
 
         # create sig counter
@@ -777,7 +777,7 @@ def test_parser_v1_enclosed_attachments():
         serder = rotate(pre=pre,
                         keys=[signers[2].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers[3].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[3].verfer.qb64b).qb64],
                         sn=2)
 
         # create sig counter
@@ -824,7 +824,7 @@ def test_parser_v1_enclosed_attachments():
         serder = rotate(pre=pre,
                         keys=[signers[3].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers[4].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[4].verfer.qb64b).qb64],
                         sn=5)
 
         # create sig counter
@@ -887,7 +887,7 @@ def test_parser_v1_enclosed_attachments():
         serder = rotate(pre=pre,
                         keys=[signers[4].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers[5].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[5].verfer.qb64b).qb64],
                         sn=8)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -969,7 +969,7 @@ def test_parser_v1_enclosed_message():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers[0].verfer.qb64],
-                        ndigs=[coring.Diger(ser=signers[1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64])
         pre = serder.pre
         assert serder.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EIcca2-uqsicYK7-q5gxlZXu'
                         b'zOkqrNSL3JIaLflSOOgF","i":"DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIW'
@@ -1105,7 +1105,7 @@ def test_parser_v1_enclosed_message():
         serder = rotate(pre=pre,
                         keys=[signers[1].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers[2].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[2].verfer.qb64b).qb64],
                         sn=1)
 
         # since enclosed in group must convert serder to texter so aligned on
@@ -1138,7 +1138,7 @@ def test_parser_v1_enclosed_message():
         serder = rotate(pre=pre,
                         keys=[signers[2].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers[3].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[3].verfer.qb64b).qb64],
                         sn=2)
 
         # since enclosed in group must convert serder to texter so aligned on
@@ -1237,7 +1237,7 @@ def test_parser_v1_enclosed_message():
         serder = rotate(pre=pre,
                         keys=[signers[3].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers[4].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[4].verfer.qb64b).qb64],
                         sn=5)
 
         # create sig counter
@@ -1300,7 +1300,7 @@ def test_parser_v1_enclosed_message():
         serder = rotate(pre=pre,
                         keys=[signers[4].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers[5].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[5].verfer.qb64b).qb64],
                         sn=8)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -1378,7 +1378,7 @@ def test_parser_v1_non_native_message():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers[0].verfer.qb64],
-                        ndigs=[coring.Diger(ser=signers[1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64])
         pre = serder.pre
         assert serder.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EIcca2-uqsicYK7-q5gxlZXu'
                         b'zOkqrNSL3JIaLflSOOgF","i":"DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIW'
@@ -1509,7 +1509,7 @@ def test_parser_v1_non_native_message():
         serder = rotate(pre=pre,
                         keys=[signers[1].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers[2].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[2].verfer.qb64b).qb64],
                         sn=1)
 
         # since enclosed in group must convert serder to texter so aligned on
@@ -1542,7 +1542,7 @@ def test_parser_v1_non_native_message():
         serder = rotate(pre=pre,
                         keys=[signers[2].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers[3].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[3].verfer.qb64b).qb64],
                         sn=2)
 
         # create sig counter
@@ -1589,7 +1589,7 @@ def test_parser_v1_non_native_message():
         serder = rotate(pre=pre,
                         keys=[signers[3].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers[4].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[4].verfer.qb64b).qb64],
                         sn=5)
 
         # create sig counter
@@ -1652,7 +1652,7 @@ def test_parser_v1_non_native_message():
         serder = rotate(pre=pre,
                         keys=[signers[4].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers[5].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[5].verfer.qb64b).qb64],
                         sn=8)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -1757,7 +1757,7 @@ def test_parser_v2_basic():
         # Start stream
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers2[0].verfer.qb64],
-                        ndigs=[coring.Diger(ser=signers2[1].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64],
                         version=Vrsn_2_0)
 
         pre = serder.pre
@@ -1974,7 +1974,7 @@ def test_parser_v2_basic():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers2[1].verfer.qb64],
                         dig=kever.serder.said,
-                        ndigs=[coring.Diger(ser=signers2[2].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[2].verfer.qb64b).qb64],
                         sn=1,
                         version=Vrsn_2_0)
         event_digs.append(serder.said)
@@ -1993,7 +1993,7 @@ def test_parser_v2_basic():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers2[2].verfer.qb64],
                         dig=kever.serder.said,
-                        ndigs=[coring.Diger(ser=signers2[3].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[3].verfer.qb64b).qb64],
                         sn=2,
                         version=Vrsn_2_0)
         event_digs.append(serder.said)
@@ -2044,7 +2044,7 @@ def test_parser_v2_basic():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers2[3].verfer.qb64],
                         dig=kever.serder.said,
-                        ndigs=[coring.Diger(ser=signers2[4].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[4].verfer.qb64b).qb64],
                         sn=5,
                         version=Vrsn_2_0)
         event_digs.append(serder.said)
@@ -2116,7 +2116,7 @@ def test_parser_v2_basic():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers2[4].verfer.qb64],
                         dig=kever.serder.said,
-                        ndigs=[coring.Diger(ser=signers2[5].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[5].verfer.qb64b).qb64],
                         sn=8,
                         version=Vrsn_2_0)
         #event_digs.append(serder.said)  # bad event so don't append
@@ -2241,7 +2241,7 @@ def test_parser_v2_mix():
         # Start stream
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers2[0].verfer.qb64],
-                        ndigs=[coring.Diger(ser=signers2[1].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64],
                         version=Vrsn_2_0)
 
         pre = serder.pre
@@ -2406,7 +2406,7 @@ def test_parser_v2_mix():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers2[1].verfer.qb64],
                         dig=kever.serder.said,
-                        ndigs=[coring.Diger(ser=signers2[2].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[2].verfer.qb64b).qb64],
                         sn=1)
         event_digs.append(serder.said)
         # create sig counter
@@ -2426,7 +2426,7 @@ def test_parser_v2_mix():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers2[2].verfer.qb64],
                         dig=kever.serder.said,
-                        ndigs=[coring.Diger(ser=signers2[3].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[3].verfer.qb64b).qb64],
                         sn=2,
                         version=Vrsn_2_0)
         event_digs.append(serder.said)
@@ -2480,7 +2480,7 @@ def test_parser_v2_mix():
         serder = rotate(pre=kever.prefixer.qb64,
                     keys=[signers2[3].verfer.qb64],
                     dig=kever.serder.said,
-                    ndigs=[coring.Diger(ser=signers2[4].verfer.qb64b).qb64],
+                    ndigs=[Diger(ser=signers2[4].verfer.qb64b).qb64],
                     sn=5,
                     version=Vrsn_2_0)
         event_digs.append(serder.said)
@@ -2567,7 +2567,7 @@ def test_parser_v2_mix():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers2[4].verfer.qb64],
                         dig=kever.serder.said,
-                        ndigs=[coring.Diger(ser=signers2[5].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[5].verfer.qb64b).qb64],
                         sn=8)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -2669,7 +2669,7 @@ def test_parser_v2_enclosed_attachments():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers2[0].verfer.qb64],
-                        ndigs=[coring.Diger(ser=signers2[1].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64],
                         version=Vrsn_2_0)
 
         pre = serder.pre
@@ -2816,7 +2816,7 @@ def test_parser_v2_enclosed_attachments():
         serder = rotate(pre=pre,
                         keys=[signers2[1].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers2[2].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[2].verfer.qb64b).qb64],
                         sn=1,
                         version=Vrsn_2_0)
         msgs.extend(serder.raw)  # extend key event stream
@@ -2836,7 +2836,7 @@ def test_parser_v2_enclosed_attachments():
         serder = rotate(pre=pre,
                         keys=[signers2[2].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers2[3].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[3].verfer.qb64b).qb64],
                         sn=2,
                         version=Vrsn_2_0)
         msgs.extend(serder.raw)  # extend key event stream
@@ -2890,7 +2890,7 @@ def test_parser_v2_enclosed_attachments():
         serder = rotate(pre=pre,
                         keys=[signers2[3].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers2[4].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[4].verfer.qb64b).qb64],
                         sn=5,
                         version=Vrsn_2_0)
         msgs.extend(serder.raw)  # extend key event stream
@@ -2964,7 +2964,7 @@ def test_parser_v2_enclosed_attachments():
         serder = rotate(pre=pre,
                         keys=[signers2[4].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers2[5].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[5].verfer.qb64b).qb64],
                         sn=8,
                         version=Vrsn_2_0)
 
@@ -3061,7 +3061,7 @@ def test_parser_v2_enclosed_message():
         emas.extend(gvc2.qb64b)  # add genus-version code at front of message+attach group
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers2[0].verfer.qb64],
-                        ndigs=[coring.Diger(ser=signers2[1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64])
         pre = serder.pre
         assert serder.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EIcca2-uqsicYK7-q5gxlZXu'
                         b'zOkqrNSL3JIaLflSOOgF","i":"DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIW'
@@ -3204,7 +3204,7 @@ def test_parser_v2_enclosed_message():
         serder = rotate(pre=pre,
                         keys=[signers2[1].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers2[2].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[2].verfer.qb64b).qb64],
                         sn=1,
                         version=Vrsn_2_0)
 
@@ -3232,7 +3232,7 @@ def test_parser_v2_enclosed_message():
         serder = rotate(pre=pre,
                         keys=[signers2[2].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers2[3].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[3].verfer.qb64b).qb64],
                         sn=2,
                         version=Vrsn_1_0)
         texter = Texter(raw=serder.raw)
@@ -3309,7 +3309,7 @@ def test_parser_v2_enclosed_message():
         serder = rotate(pre=pre,
                         keys=[signers2[3].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers2[4].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[4].verfer.qb64b).qb64],
                         sn=5,
                         version=Vrsn_2_0)
         texter = Texter(raw=serder.raw)
@@ -3408,7 +3408,7 @@ def test_parser_v2_enclosed_message():
         serder = rotate(pre=pre,
                         keys=[signers2[4].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers2[5].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[5].verfer.qb64b).qb64],
                         sn=8,
                         version=Vrsn_2_0)
 
@@ -3505,7 +3505,7 @@ def test_parse_generic_group():
         emas.extend(gvc2.qb64b)  # add genus-version code at front of message+attach group
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers2[0].verfer.qb64],
-                        ndigs=[coring.Diger(ser=signers2[1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64])
         pre = serder.pre
         assert serder.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EIcca2-uqsicYK7-q5gxlZXu'
                         b'zOkqrNSL3JIaLflSOOgF","i":"DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIW'
@@ -3650,7 +3650,7 @@ def test_parse_generic_group():
         serder = rotate(pre=pre,
                         keys=[signers2[1].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers2[2].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[2].verfer.qb64b).qb64],
                         sn=1,
                         version=Vrsn_2_0)
 
@@ -3678,7 +3678,7 @@ def test_parse_generic_group():
         serder = rotate(pre=pre,
                         keys=[signers2[2].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers2[3].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[3].verfer.qb64b).qb64],
                         sn=2,
                         version=Vrsn_1_0)
         texter = Texter(raw=serder.raw)
@@ -3758,7 +3758,7 @@ def test_parse_generic_group():
         serder = rotate(pre=pre,
                         keys=[signers2[3].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers2[4].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[4].verfer.qb64b).qb64],
                         sn=5,
                         version=Vrsn_2_0)
         texter = Texter(raw=serder.raw)
@@ -3855,7 +3855,7 @@ def test_parse_generic_group():
         serder = rotate(pre=pre,
                         keys=[signers2[4].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers2[5].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[5].verfer.qb64b).qb64],
                         sn=8,
                         version=Vrsn_2_0)
 
@@ -3955,7 +3955,7 @@ def test_group_parsator():
         emas.extend(gvc2.qb64b)  # add genus-version code at front of message+attach group
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers2[0].verfer.qb64],
-                        ndigs=[coring.Diger(ser=signers2[1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64])
         pre = serder.pre
         assert serder.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EIcca2-uqsicYK7-q5gxlZXu'
                         b'zOkqrNSL3JIaLflSOOgF","i":"DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIW'
@@ -4100,7 +4100,7 @@ def test_group_parsator():
         serder = rotate(pre=pre,
                         keys=[signers2[1].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers2[2].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[2].verfer.qb64b).qb64],
                         sn=1,
                         version=Vrsn_2_0)
 
@@ -4128,7 +4128,7 @@ def test_group_parsator():
         serder = rotate(pre=pre,
                         keys=[signers2[2].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers2[3].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[3].verfer.qb64b).qb64],
                         sn=2,
                         version=Vrsn_1_0)
         texter = Texter(raw=serder.raw)
@@ -4208,7 +4208,7 @@ def test_group_parsator():
         serder = rotate(pre=pre,
                         keys=[signers2[3].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers2[4].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[4].verfer.qb64b).qb64],
                         sn=5,
                         version=Vrsn_2_0)
         texter = Texter(raw=serder.raw)
@@ -4305,7 +4305,7 @@ def test_group_parsator():
         serder = rotate(pre=pre,
                         keys=[signers2[4].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers2[5].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[5].verfer.qb64b).qb64],
                         sn=8,
                         version=Vrsn_2_0)
 
@@ -4438,7 +4438,7 @@ def test_parse_native_cesr_fixed_field():
         emas.extend(gvc2.qb64b)  # add genus-version code at front of message+attach group
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers2[0].verfer.qb64],
-                        ndigs=[coring.Diger(ser=signers2[1].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64],
                         version=Vrsn_2_0, kind=Kinds.cesr)
         pre = serder.pre
 
@@ -4581,7 +4581,7 @@ def test_parse_native_cesr_fixed_field():
         serder = rotate(pre=pre,
                         keys=[signers2[1].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers2[2].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[2].verfer.qb64b).qb64],
                         sn=1,
                         version=Vrsn_2_0,
                         kind=Kinds.cesr)
@@ -4608,7 +4608,7 @@ def test_parse_native_cesr_fixed_field():
         serder = rotate(pre=pre,
                         keys=[signers2[2].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers2[3].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[3].verfer.qb64b).qb64],
                         sn=2,
                         version=Vrsn_2_0,
                         kind=Kinds.cesr)
@@ -4686,7 +4686,7 @@ def test_parse_native_cesr_fixed_field():
         serder = rotate(pre=pre,
                         keys=[signers2[3].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers2[4].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[4].verfer.qb64b).qb64],
                         sn=5,
                         version=Vrsn_2_0,
                         kind=Kinds.cesr)
@@ -4779,7 +4779,7 @@ def test_parse_native_cesr_fixed_field():
         serder = rotate(pre=pre,
                         keys=[signers2[4].verfer.qb64],
                         dig=serder.said,
-                        ndigs=[coring.Diger(ser=signers2[5].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers2[5].verfer.qb64b).qb64],
                         sn=8,
                         version=Vrsn_2_0,
                         kind=Kinds.cesr)

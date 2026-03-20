@@ -3,10 +3,8 @@
 import os
 
 from keri.kering import Vrsn_1_0, Vrsn_2_0
-from keri import core
-from keri.core import  eventing, parsing
-from keri.core import (MtrDex, incept, rotate, interact, messagize,
-                       SealEvent, receipt)
+from keri.core import (Kevery, Salter, SealEvent, Parser, MtrDex,
+                       incept, rotate, interact, messagize, receipt)
 
 from keri.app import Manager, openKS
 
@@ -26,10 +24,10 @@ def test_direct_mode_with_manager():
     # but goes both ways once initiated.
 
     # set of secrets  (seeds for private keys)
-    coeSalt = core.Salter(raw=b'0123456789abcdea').qb64
+    coeSalt = Salter(raw=b'0123456789abcdea').qb64
 
     # set of secrets (seeds for private keys)
-    valSalt = core.Salter(raw=b'1123456789abcdea').qb64
+    valSalt = Salter(raw=b'1123456789abcdea').qb64
 
 
     with openDB(name="controller") as coeLogger, openDB(name="validator") as valLogger, \
@@ -39,8 +37,8 @@ def test_direct_mode_with_manager():
         coeVerfers, coeDigers = coeMgr.incept(icount=1, ncount=1)
 
         #  init Keverys
-        coeKevery = eventing.Kevery(db=coeLogger)
-        valKevery = eventing.Kevery(db=valLogger)
+        coeKevery = Kevery(db=coeLogger)
+        valKevery = Kevery(db=valLogger)
 
         coe_event_digs = []  # list of controller's own event log digs to verify against database
         val_event_digs = []  # list of validator's own event log digs to verify against database
@@ -65,7 +63,7 @@ def test_direct_mode_with_manager():
         cmsg = messagize(coeSerder, sigers=sigers)
 
         # create own Controller Kever in  Controller's Kevery
-        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
+        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # send copy of cmsg
         coeKever = coeKevery.kevers[coepre]
         assert coeKever.prefixer.qb64 == coepre
@@ -91,13 +89,13 @@ def test_direct_mode_with_manager():
         vmsg = messagize(valSerder, sigers=sigers)
 
         # create own Validator Kever in  Validator's Kevery
-        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
+        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
         # valKevery.processOne(ims=bytearray(vmsg))  # send copy of vmsg
         valKever = valKevery.kevers[valpre]
         assert valKever.prefixer.qb64 == valpre
 
         # simulate sending of controller's inception message to validator
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(cmsg), kvy=valKevery)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(cmsg), kvy=valKevery)
         # valKevery.process(ims=bytearray(cmsg))  # make copy of msg
         assert coepre in valKevery.kevers  # creates Kever for controller in validator's .kevers
 
@@ -129,7 +127,7 @@ def test_direct_mode_with_manager():
 
         # process own validator receipt in validator's Kevery so have copy in own log
         # also server to validate receipt
-        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(rmsg), kvy=valKevery)
+        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(rmsg), kvy=valKevery)
 
         # attach receipt message to existing message with validators inception message
         # simulate streaming. validator first sends it's inception event, then
@@ -138,7 +136,7 @@ def test_direct_mode_with_manager():
 
         # Simulate sending validator's inception event and receipt of
         # controller's inception message to controller
-        parsing.Parser(version=Vrsn_1_0).parse(ims=vmsg, kvy=coeKevery)
+        Parser(version=Vrsn_1_0).parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  # controller process validator's inception and receipt
 
         # check if validator's Kever in controller's .kevers
@@ -164,7 +162,7 @@ def test_direct_mode_with_manager():
         # create receipt message
         vmsg = messagize(reserder, sigers=sigers, seal=seal)
 
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(vmsg), kvy=coeKevery)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(vmsg), kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  # controller process the escrow receipt from validator
         #  check if receipt quadruple in escrow database
         result = coeKevery.db.vres.get(keys=snKey(pre=coeKever.prefixer.qb64,
@@ -198,11 +196,11 @@ def test_direct_mode_with_manager():
         # create receipt message
         cmsg = messagize(reserder, sigers=sigers, seal=seal)
         # controller process own receipt in own Kevery so have copy in own log
-        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
+        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # make copy
 
         # Simulate sending controller's receipt of validator's inception message to validator
-        parsing.Parser(version=Vrsn_1_0).parse(ims=cmsg, kvy=valKevery)
+        Parser(version=Vrsn_1_0).parse(ims=cmsg, kvy=valKevery)
         # valKevery.process(ims=cmsg)  # controller process validator's inception and receipt
 
         #  check if receipt quadruple from controller in validator's receipt database
@@ -234,14 +232,14 @@ def test_direct_mode_with_manager():
         cmsg = messagize(coeSerder, sigers=sigers)
 
         # update controller's key event verifier state
-        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
+        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # make copy
         # verify controller's copy of controller's event stream is updated
         assert coeKever.sn == csn
         assert coeKever.serder.said == coeSerder.said
 
         # simulate send message from controller to validator
-        parsing.Parser(version=Vrsn_1_0).parse(ims=cmsg, kvy=valKevery)
+        Parser(version=Vrsn_1_0).parse(ims=cmsg, kvy=valKevery)
         # valKevery.process(ims=cmsg)
         # verify validator's copy of controller's event stream is updated
         assert coeK.sn == csn
@@ -267,11 +265,11 @@ def test_direct_mode_with_manager():
         vmsg = messagize(reserder, sigers=sigers, seal=seal)
 
         # validator process own receipt in own kevery so have copy in own log
-        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
+        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
         # valKevery.processOne(ims=bytearray(vmsg))  # make copy
 
         # Simulate send to controller of validator's receipt of controller's rotation message
-        parsing.Parser(version=Vrsn_1_0).parse(ims=vmsg, kvy=coeKevery)
+        Parser(version=Vrsn_1_0).parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  # controller process validator's incept and receipt
 
         # check if receipt quadruple from validator in receipt database
@@ -300,14 +298,14 @@ def test_direct_mode_with_manager():
         cmsg = messagize(coeSerder, sigers=sigers)
 
         # update controller's key event verifier state
-        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
+        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # make copy
         # verify controller's copy of controller's event stream is updated
         assert coeKever.sn == csn
         assert coeKever.serder.said == coeSerder.said
 
         # simulate send message from controller to validator
-        parsing.Parser(version=Vrsn_1_0).parse(ims=cmsg, kvy=valKevery)
+        Parser(version=Vrsn_1_0).parse(ims=cmsg, kvy=valKevery)
         # valKevery.process(ims=cmsg)
         # verify validator's copy of controller's event stream is updated
         assert coeK.sn == csn
@@ -333,11 +331,11 @@ def test_direct_mode_with_manager():
         vmsg = messagize(reserder, sigers=sigers, seal=seal)
 
         # validator process own receipt in own kevery so have copy in own log
-        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
+        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
         # valKevery.processOne(ims=bytearray(vmsg))  # make copy
 
         # Simulate send to controller of validator's receipt of controller's rotation message
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(vmsg), kvy=coeKevery)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(vmsg), kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  # controller process validator's incept and receipt
 
         #  check if receipt quadruple from validator in receipt database
