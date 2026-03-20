@@ -5,11 +5,11 @@ keri.vc.handling module
 """
 import os
 from collections import namedtuple
+from hio.help import ogler
 
-from .. import help
-from ..peer import exchanging
+from ..peer import cloneMessage, exchange
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 Ipexage = namedtuple("Ipexage", 'apply offer agree grant admit spurn')
 Ipex = Ipexage(apply="apply", offer="offer", agree="agree", grant="grant", admit="admit", spurn="spurn")
@@ -63,7 +63,7 @@ class IpexHandler:
                 if not dig:  # This is an offer, agree or grant opening an IPEX exchange, no prior
                     return True
 
-                pserder, _ = exchanging.cloneMessage(self.hby, said=dig)
+                pserder, _ = cloneMessage(self.hby, said=dig)
                 if pserder is None:  # previous reference message does not exist
                     return False
 
@@ -80,7 +80,7 @@ class IpexHandler:
                 if not dig:  # Admit and Spurn messages can NOT start an IPEX exchange
                     return False
 
-                pserder, _ = exchanging.cloneMessage(self.hby, said=dig)
+                pserder, _ = cloneMessage(self.hby, said=dig)
                 if pserder is None:  # previous reference message does not exist
                     return False
 
@@ -106,7 +106,7 @@ class IpexHandler:
         """
         saider = self.hby.db.erpy.get(keys=(serder.said,))
         if saider:
-            rserder, _ = exchanging.cloneMessage(self.hby, saider.qb64)  # Clone previous so we reverify the sigs
+            rserder, _ = cloneMessage(self.hby, saider.qb64)  # Clone previous so we reverify the sigs
             return rserder
 
         return None
@@ -152,7 +152,7 @@ def ipexApplyExn(hab, recp, message, schema, attrs):
         i=recp
     )
 
-    exn, end = exchanging.exchange(route="/ipex/apply", payload=data, sender=hab.pre)
+    exn, end = exchange(route="/ipex/apply", payload=data, sender=hab.pre)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
     ims.extend(end)
@@ -186,7 +186,7 @@ def ipexOfferExn(hab, message, acdc, apply=None):
     if apply is not None:
         kwa["dig"] = apply.said
 
-    exn, end = exchanging.exchange(route="/ipex/offer", payload=data, sender=hab.pre, embeds=embeds, **kwa)
+    exn, end = exchange(route="/ipex/offer", payload=data, sender=hab.pre, embeds=embeds, **kwa)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
     ims.extend(end)
@@ -211,7 +211,7 @@ def ipexAgreeExn(hab, message, offer):
         m=message
     )
 
-    exn, end = exchanging.exchange(route="/ipex/agree", payload=data, sender=hab.pre, dig=offer.said)
+    exn, end = exchange(route="/ipex/agree", payload=data, sender=hab.pre, dig=offer.said)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
     ims.extend(end)
@@ -256,7 +256,7 @@ def ipexGrantExn(hab, recp, message, acdc, iss=None, anc=None, agree=None, dt=No
     if agree is not None:
         kwa['dig'] = agree.said
 
-    exn, end = exchanging.exchange(route="/ipex/grant", payload=data, sender=hab.pre, embeds=embeds, date=dt, **kwa)
+    exn, end = exchange(route="/ipex/grant", payload=data, sender=hab.pre, embeds=embeds, date=dt, **kwa)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
     ims.extend(end)
@@ -282,7 +282,7 @@ def ipexAdmitExn(hab, message, grant, dt=None):
         m=message,
     )
 
-    exn, end = exchanging.exchange(route="/ipex/admit", payload=data, sender=hab.pre, dig=grant.said, date=dt)
+    exn, end = exchange(route="/ipex/admit", payload=data, sender=hab.pre, dig=grant.said, date=dt)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
     ims.extend(end)
@@ -307,7 +307,7 @@ def ipexSpurnExn(hab, message, spurned):
         m=message
     )
 
-    exn, end = exchanging.exchange(route="/ipex/spurn", payload=data, sender=hab.pre, dig=spurned.said)
+    exn, end = exchange(route="/ipex/spurn", payload=data, sender=hab.pre, dig=spurned.said)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
     ims.extend(end)

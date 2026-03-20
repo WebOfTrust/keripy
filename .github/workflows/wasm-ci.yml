@@ -36,7 +36,7 @@ jobs:
           cp src/keri/db/webdbing.py ./webdbing.py
       - name: Run WebDBer WASM tests in Pyodide
         env:
-          RUN_IN_CI: "true" # Set a custom environment variable to detect CI
+          RUN_WASM_TESTS: "true"
         run: |
           pytest tests/wasm/test_webdbing_wasm.py \
             --confcutdir=tests/wasm \

@@ -11,12 +11,13 @@ from urllib import parse
 import falcon
 from hio.base import doing
 from hio.core import http
-from hio.help import Hict
+from hio.help import Hict, ogler
 
-from .. import ShortageError, ExtractionError, ColdStartError, sniff
-from ..core import coring, parsing, serdering
-from ..end import ending
-from ..help import helping, ogler
+from ..kering import (ShortageError, ExtractionError,
+                      ColdStartError, sniff, Colds)
+from ..core import Sadder, SerderKERI
+from ..end import designature
+from ..help import nowUTC
 
 
 logger = ogler.getLogger()
@@ -50,7 +51,7 @@ class SignatureValidationComponent(object):
             return
 
     def validate(self, sig, ser):
-        signages = ending.designature(sig)
+        signages = designature(sig)
         markers = signages[0].markers
 
         if self.pre not in self.hby.kevers:
@@ -125,7 +126,7 @@ def createCESRRequest(msg, client, dest, path=None):
     path = path if path is not None else "/"
 
     try:
-        serder = serdering.SerderKERI(raw=msg)
+        serder = SerderKERI(raw=msg)
     except ShortageError as ex:  # need more bytes
         raise ExtractionError("unable to extract a valid message to send as HTTP")
     else:  # extracted successfully
@@ -168,7 +169,7 @@ def streamCESRRequests(client, ims, dest, path=None, headers=None):
     path = parse.urljoin(client.requester.path, path)
 
     cold = sniff(ims)  # check for spurious counters at front of stream
-    if cold in (parsing.Colds.txt, parsing.Colds.bny):  # not message error out to flush stream
+    if cold in (Colds.txt, Colds.bny):  # not message error out to flush stream
         # replace with pipelining here once CESR message format supported.
         raise ColdStartError("Expecting message counter tritet={}"
                                     "".format(cold))
@@ -177,7 +178,7 @@ def streamCESRRequests(client, ims, dest, path=None, headers=None):
     cnt = 0
     while ims:  # extract and deserialize message from ims
         try:
-            serder = coring.Sadder(raw=ims)
+            serder = Sadder(raw=ims)
         except ShortageError as ex:  # need more bytes
             raise ExtractionError("unable to extract a valid message to send as HTTP")
         else:  # extracted successfully
@@ -273,7 +274,7 @@ class Clienter(doing.DoDoer):
 
         clientDoer = http.clienting.ClientDoer(client=client)
         self.extend([clientDoer])
-        self.clients.append((client, clientDoer, helping.nowUTC()))
+        self.clients.append((client, clientDoer, nowUTC()))
 
         return client
 
@@ -312,7 +313,7 @@ class Clienter(doing.DoDoer):
             toRemove = []
             for (client, doer, dt) in self.clients:
                 if client.responses:
-                    now = helping.nowUTC()
+                    now = nowUTC()
                     if (now - dt) > datetime.timedelta(seconds=self.TimeoutClient):
                         toRemove.append(client)
 

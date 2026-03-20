@@ -13,9 +13,10 @@ import referencing
 import referencing.exceptions
 import referencing.jsonschema
 
+from hio.help import ogler
+
 from .coring import MtrDex, Kinds, Saider, Saids, dumps
-from ..help import ogler
-from .. import ValidationError, DeserializeError
+from ..kering import ValidationError, DeserializeError
 
 logger = ogler.getLogger()
 

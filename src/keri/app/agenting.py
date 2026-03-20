@@ -10,14 +10,15 @@ from urllib.parse import urlparse, urljoin
 from hio.base import doing
 from hio.core import http
 from hio.core.tcp import clienting
-from hio.help import decking, Hict
+from hio.help import decking, Hict, ogler
 
 from socket import gaierror
 
-from . import httping, forwarding
-from ..help import ogler
-from .. import (Schemes, Roles, Vrsn_1_0,
-                MissingEntryError, ConfigurationError, MissingEntryError)
+from .httping import Clienter, streamCESRRequests, CESR_DESTINATION_HEADER
+
+from ..kering import (Schemes, Roles, Vrsn_1_0,
+                      MissingEntryError, ConfigurationError,
+                      MissingEntryError)
 from ..core import Counter, eventing, parsing, coring, serdering, Codens
 
 
@@ -45,7 +46,7 @@ class Receiptor(doing.DoDoer):
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.gets = gets if gets is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
-        self.clienter = httping.Clienter()
+        self.clienter = Clienter()
 
         doers = [self.clienter, doing.doify(self.witDo), doing.doify(self.gitDo)]
         self.hby = hby
@@ -105,7 +106,7 @@ class Receiptor(doing.DoDoer):
             if wit in auths:
                 headers["Authorization"] = auths[wit]
 
-            httping.streamCESRRequests(client=client, dest=wit, ims=bytearray(msg), path="/receipts", headers=headers)
+            streamCESRRequests(client=client, dest=wit, ims=bytearray(msg), path="/receipts", headers=headers)
             while not client.responses:
                 yield self.tock
 
@@ -145,7 +146,7 @@ class Receiptor(doing.DoDoer):
 
             client = clients[wit]
 
-            sent = httping.streamCESRRequests(client=client, dest=wit, ims=bytearray(msg))
+            sent = streamCESRRequests(client=client, dest=wit, ims=bytearray(msg))
             while len(client.responses) < sent:
                 yield self.tock
 
@@ -215,7 +216,7 @@ class Receiptor(doing.DoDoer):
         self.extend([clientDoer])
 
         for fmsg in hab.db.clonePreIter(pre=pre):
-            httping.streamCESRRequests(client=client, dest=wit, ims=bytearray(fmsg))
+            streamCESRRequests(client=client, dest=wit, ims=bytearray(fmsg))
             while not client.responses:
                 yield self.tock
 
@@ -483,6 +484,8 @@ class WitnessInquisitor(doing.DoDoer):
         Usage:
             add result of doify on this method to doers list
         """
+        from .forwarding import introduce
+        
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -538,7 +541,7 @@ class WitnessInquisitor(doing.DoDoer):
 
             msg = hab.query(target, src=witer.wit, route=r, query=q)  # Query for remote pre Event
 
-            kel = forwarding.introduce(hab, witer.wit)
+            kel = introduce(hab, witer.wit)
             if kel:
                 witer.msgs.append(bytearray(kel))
 
@@ -881,7 +884,7 @@ class HTTPMessenger(doing.DoDoer):
             if self.auth is not None:
                 headers["Authorization"] = self.auth
 
-            self.posted += httping.streamCESRRequests(client=self.client, dest=self.wit, ims=msg, headers=headers)
+            self.posted += streamCESRRequests(client=self.client, dest=self.wit, ims=msg, headers=headers)
             while self.client.requests:
                 yield self.tock
 
@@ -933,7 +936,7 @@ class HTTPStreamMessenger(doing.DoDoer):
         headers = Hict([
             ("Content-Type", "application/cesr"),
             ("Content-Length", len(msg)),
-            (httping.CESR_DESTINATION_HEADER, self.wit),
+            (CESR_DESTINATION_HEADER, self.wit),
         ] + list(headers.items()))
 
         self.client.request(

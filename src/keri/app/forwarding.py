@@ -12,12 +12,15 @@ from ordered_set import OrderedSet as oset
 from hio.base import doing
 from hio.help import decking, ogler
 
-from .. import Roles, Vrsn_1_0, ConfigurationError, ValidationError
-from . import agenting
-from ..core import coring, eventing, serdering, MtrDex, Counter, Codens
+from ..kering import (Roles, Vrsn_1_0, Kinds,
+                      ConfigurationError, ValidationError)
+from .agenting import messengerFrom, streamMessengerFrom
+from ..core import (Bexter, Prefixer, Verfer, Texter, Diger,
+                    Sadder, Counter, SerderKERI,
+                    MtrDex, Codens, NonTransDex)
 from ..db import dgKey
-from ..peer import exchanging
-from ..spac import payloading
+from ..peer import exchange
+from ..spac import PayloadTyper, PayloadTypes
 
 logger = ogler.getLogger()
 
@@ -139,7 +142,7 @@ class Poster(doing.DoDoer):
         """ Returns generator for sending event and waiting until send is complete """
         # Send KEL event for processing
         icp = self.hby.db.cloneEvtMsg(pre=hab.pre, fn=fn, dig=hab.kever.serder.saidb)
-        ser = serdering.SerderKERI(raw=icp)
+        ser = SerderKERI(raw=icp)
         del icp[:ser.size]
 
         self.send(src=sender.pre, dest=hab.kever.delpre, topic="delegate", serder=ser, attachment=icp)
@@ -154,7 +157,7 @@ class Poster(doing.DoDoer):
 
     def sendDirect(self, hab, ends, serder, atc):
         for ctrl, locs in ends.items():
-            witer = agenting.messengerFrom(hab=hab, pre=ctrl, urls=locs)
+            witer = messengerFrom(hab=hab, pre=ctrl, urls=locs)
 
             msg = bytearray(serder.raw)
             if atc is not None:
@@ -186,12 +189,12 @@ class Poster(doing.DoDoer):
 
         evt = bytearray(serder.raw)
         evt.extend(atc)
-        fwd, atc = exchanging.exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
-                                       payload={}, embeds=dict(evt=evt), sender=hab.pre)
+        fwd, atc = exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
+                            payload={}, embeds=dict(evt=evt), sender=hab.pre)
         ims = hab.endorse(serder=fwd, last=False, pipelined=False)
 
         # Transpose the signatures to point to the new location
-        witer = agenting.messengerFrom(hab=hab, pre=mbx, urls=mailbox)
+        witer = messengerFrom(hab=hab, pre=mbx, urls=mailbox)
         msg.extend(ims)
         msg.extend(atc)
 
@@ -219,12 +222,12 @@ class Poster(doing.DoDoer):
 
         evt = bytearray(serder.raw)
         evt.extend(atc)
-        fwd, atc = exchanging.exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
-                                       payload={}, embeds=dict(evt=evt), sender=hab.pre)
+        fwd, atc = exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
+                            payload={}, embeds=dict(evt=evt), sender=hab.pre)
         ims = hab.endorse(serder=fwd, last=False, pipelined=False)
 
         # Transpose the signatures to point to the new location
-        witer = agenting.messengerFrom(hab=hab, pre=mbx, urls=mailbox)
+        witer = messengerFrom(hab=hab, pre=mbx, urls=mailbox)
         msg.extend(ims)
         msg.extend(atc)
 
@@ -280,11 +283,11 @@ class StreamPoster:
         msg = bytearray()
 
         if self.essr:
-            msg.extend(payloading.PayloadTyper(type=payloading.PayloadTypes.SCS).qb64b)
+            msg.extend(PayloadTyper(type=PayloadTypes.SCS).qb64b)
             msg.extend(self.hab.kever.prefixer.qb64b)
 
             # bext field can be randomized to reduce correlation based on packet size, empty for now
-            msg.extend(coring.Bexter(bext="").qb64b)
+            msg.extend(Bexter(bext="").qb64b)
 
         while self.evts:
             evt = self.evts.popleft()
@@ -364,15 +367,15 @@ class StreamPoster:
     def sendDirect(self, hab, ends, msg):
         for ctrl, locs in ends.items():
             ims = self._essrWrapper(hab, msg, ctrl) if self.essr else msg
-            self.messagers.append(agenting.streamMessengerFrom(hab=hab, pre=ctrl, urls=locs, msg=ims,
+            self.messagers.append(streamMessengerFrom(hab=hab, pre=ctrl, urls=locs, msg=ims,
                                                                headers=self.headers))
 
         return self.messagers
 
     def _essrWrapper(self, hab, msg, ctrl):
-        prefixer = coring.Prefixer(qb64=ctrl)
-        if prefixer.code in coring.NonTransDex:  # e.g. witness mbx
-            verfer = coring.Verfer(qb64=ctrl)
+        prefixer = Prefixer(qb64=ctrl)
+        if prefixer.code in NonTransDex:  # e.g. witness mbx
+            verfer = Verfer(qb64=ctrl)
         else:
             rkever = self.hby.kevers[ctrl]
             verfer = rkever.verfers[0]
@@ -380,10 +383,10 @@ class StreamPoster:
         pubkey = pysodium.crypto_sign_pk_to_box_pk(verfer.raw)
         raw = pysodium.crypto_box_seal(bytes(msg), pubkey)
 
-        texter = coring.Texter(raw=raw)
-        diger = coring.Diger(ser=raw, code=MtrDex.Blake3_256)
-        essr, _ = exchanging.exchange(route='/essr/req', sender=hab.pre, diger=diger,
-                                      modifiers=dict(src=hab.pre, dest=ctrl))
+        texter = Texter(raw=raw)
+        diger = Diger(ser=raw, code=MtrDex.Blake3_256)
+        essr, _ = exchange(route='/essr/req', sender=hab.pre, diger=diger,
+                           modifiers=dict(src=hab.pre, dest=ctrl))
         ims = hab.endorse(serder=essr, pipelined=False)
         ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
                            gvrsn=Vrsn_1_0).qb64b)
@@ -403,8 +406,8 @@ class StreamPoster:
         # Its not us, randomly select a mailbox and forward it on
         evt = bytearray(serder.raw)
         evt.extend(atc)
-        fwd, atc = exchanging.exchange(route='/fwd', modifiers=dict(pre=self.recp, topic=topic),
-                                       payload={}, embeds=dict(evt=evt), sender=hab.pre)
+        fwd, atc = exchange(route='/fwd', modifiers=dict(pre=self.recp, topic=topic),
+                            payload={}, embeds=dict(evt=evt), sender=hab.pre)
         ims = hab.endorse(serder=fwd, last=False, pipelined=False)
         return fwd, ims + atc
 
@@ -414,9 +417,9 @@ class StreamPoster:
         if self.mbx and owits.intersection(hab.prefixes):
             # Remove again if ESSR mode
             if self.essr:
-                _tag = self.hby.psr.extract(msg, payloading.PayloadTyper)
-                _pre = self.hby.psr.extract(msg, coring.Prefixer)
-                _pad = self.hby.psr.extract(msg, coring.Bexter)
+                _tag = self.hby.psr.extract(msg, PayloadTyper)
+                _pre = self.hby.psr.extract(msg, Prefixer)
+                _pad = self.hby.psr.extract(msg, Bexter)
             self.mbx.storeMsg(topic=f"{self.recp}/{topic}".encode("utf-8"), msg=msg)
             return []
 
@@ -430,7 +433,7 @@ class StreamPoster:
         ims.extend(introduce(hab, mbx))
         ims.extend(msg)
 
-        self.messagers.append(agenting.streamMessengerFrom(hab=hab, pre=mbx, urls=mailbox, msg=bytes(ims)))
+        self.messagers.append(streamMessengerFrom(hab=hab, pre=mbx, urls=mailbox, msg=bytes(ims)))
         return self.messagers
 
 
@@ -500,7 +503,7 @@ class ForwardHandler:
         pevt = bytearray()
         for pather, atc in attachments:
             ked = pather.resolve(embeds)
-            sadder = coring.Sadder(ked=ked, kind=eventing.Kinds.json)
+            sadder = Sadder(ked=ked, kind=Kinds.json)
             pevt.extend(sadder.raw)
             pevt.extend(atc)
 
@@ -531,7 +534,7 @@ def introduce(hab, wit):
         return msgs
 
     iserder = hab.kever.serder
-    witPrefixer = coring.Prefixer(qb64=wit)
+    witPrefixer = Prefixer(qb64=wit)
     dgkey = dgKey(wit, iserder.said)
     found = False
     if witPrefixer.transferable:  # find if have rct from other pre for own icp

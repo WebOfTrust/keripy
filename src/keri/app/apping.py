@@ -7,11 +7,11 @@ keri.app.apping module
 
 from hio.base import doing
 from hio.core.serial import serialing
+from hio.help import ogler
 
-from .. import help
 from ..db import Baser
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 class Consoler(doing.Doer):

@@ -99,14 +99,15 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Type, Union
 from collections.abc import Iterable
 
-from .. import help
-from ..help.helping import isNonStringIterable, Reb64
-from . import dbing
+from hio.help import ogler
+
+from ..help import helping
+from .dbing import LMDBer
 
 if TYPE_CHECKING:
     from ..core import coring, scheming, serdering, signing
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 class SuberBase():
@@ -116,7 +117,7 @@ class SuberBase():
     Do not instantiate but use a subclass
 
     Attributes:
-        db (dbing.LMDBer): base LMDB db
+        db (LMDBer): base LMDB db
         sdb (lmdb._Database): instance of lmdb named sub db for this Suber
         sep (str): separator for combining keys tuple of strs into key bytes
         verify (bool): True means reverify when ._des from db when applicable
@@ -124,7 +125,7 @@ class SuberBase():
     """
     Sep = '.'  # separator for combining key iterables
 
-    def __init__(self, db: dbing.LMDBer, *,
+    def __init__(self, db: LMDBer, *,
                        subkey: str='docs.',
                        dupsort: bool=False,
                        sep: str=None,
@@ -132,7 +133,7 @@ class SuberBase():
                        **kwa):
         """
         Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -392,13 +393,13 @@ class Suber(SuberBase):
     Subclass of SuberBase with no LMDB duplicates (i.e. multiple values at same key).
     """
 
-    def __init__(self, db: dbing.LMDBer, *,
+    def __init__(self, db: LMDBer, *,
                        subkey: str = 'docs.',
                        dupsort: bool=False, **kwa):
         """Initialze instance
 
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -409,7 +410,7 @@ class Suber(SuberBase):
                            False means do not reverify. Default False
 
         Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
         """
         super(Suber, self).__init__(db=db, subkey=subkey, dupsort=False, **kwa)
@@ -510,7 +511,7 @@ class OnSuberBase(SuberBase):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -813,7 +814,7 @@ class OnSuber(OnSuberBase, Suber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -835,7 +836,7 @@ class B64SuberBase(SuberBase):
     Automatically joins and splits along separator to Iterable (tuple) of Base64
 
      Attributes:
-        db (dbing.LMDBer): base LMDB db
+        db (LMDBer): base LMDB db
         sdb (lmdb._Database): instance of lmdb named sub db for this Suber
         sep (str): separator for combining keys tuple of strs into key bytes
             for db key and also used to convert val iterator to val bytes
@@ -847,7 +848,7 @@ class B64SuberBase(SuberBase):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -860,7 +861,7 @@ class B64SuberBase(SuberBase):
 
         """
         super(B64SuberBase, self).__init__(*pa, **kwa)
-        if Reb64.match(self.sep.encode()):
+        if helping.Reb64.match(self.sep.encode()):
             raise ValueError("Invalid sep={self.sep}, must not be Base64 char.")
 
 
@@ -881,22 +882,22 @@ class B64SuberBase(SuberBase):
         """
         if hasattr(vals, "encode"):  # str
             val = vals.encode("utf-8")
-            if not (Reb64.match(val)):
+            if not (helping.Reb64.match(val)):
                 raise ValueError(f"Non Base64 {val=}.")
             return val
         if isinstance(vals, memoryview):  # memoryview of bytes
             val = bytes(vals)  # return bytes
-            if not (Reb64.match(val)):
+            if not (helping.Reb64.match(val)):
                 raise ValueError(f"Non Base64 {val=}.")
             return val
         elif hasattr(vals, "decode"): # bytes
             val = vals
-            if not (Reb64.match(val)):
+            if not (helping.Reb64.match(val)):
                 raise ValueError(f"Non Base64 {val=}.")
             return val
         vals = tuple(v.encode() if hasattr(v, "encode") else v for v in vals)  # make bytes
         for val in vals:
-            if not (Reb64.match(val)):
+            if not (helping.Reb64.match(val)):
                 raise ValueError(f"Non Base64 {val=}.")
         return (self.sep.encode().join(vals))
 
@@ -932,7 +933,7 @@ class B64SuberBase(SuberBase):
            val (Union[Iterable, bytes]): of Base64 bytes
 
         """
-        if not isNonStringIterable(val):  # not iterable
+        if not helping.isNonStringIterable(val):  # not iterable
             val = (val, )  # make iterable
         return (self._toval(val))
 
@@ -966,7 +967,7 @@ class B64Suber(B64SuberBase, Suber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -997,7 +998,7 @@ class CesrSuberBase(SuberBase):
                  **kwa):
         """
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -1066,7 +1067,7 @@ class CesrSuber(CesrSuberBase, Suber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -1095,7 +1096,7 @@ class CesrOnSuber(CesrSuberBase, OnSuberBase, Suber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -1117,7 +1118,7 @@ class CatCesrSuberBase(CesrSuberBase):
     ._ser override .put .set input value to be instance that is serialized
 
      Attributes:
-        db (dbing.LMDBer): base LMDB db
+        db (LMDBer): base LMDB db
         sdb (lmdb._Database): instance of lmdb named sub db for this Suber
         sep (str): separator for combining keys tuple of strs into key bytes
         klas (Iterable): of Class references to subclasses of CESR compatible
@@ -1131,7 +1132,7 @@ class CatCesrSuberBase(CesrSuberBase):
                  **kwa):
         """
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -1152,7 +1153,7 @@ class CatCesrSuberBase(CesrSuberBase):
         if klas is None:
             from ..core import coring
             klas = (coring.Matter, )  # set default to tuple of single Matter
-        if not isNonStringIterable(klas):  # not iterable
+        if not helping.isNonStringIterable(klas):  # not iterable
             klas = (klas, )  # make it so
         super(CatCesrSuberBase, self).__init__(*pa,
                                                klas=klas,
@@ -1179,7 +1180,7 @@ class CatCesrSuberBase(CesrSuberBase):
            TypeError: wrong slot class when strict.
 
         """
-        if not isNonStringIterable(val):  # not iterable
+        if not helping.isNonStringIterable(val):  # not iterable
             val = (val, )  # make iterable
 
         vals = tuple(val) if self.strict else val
@@ -1216,7 +1217,7 @@ class CatCesrSuber(CatCesrSuberBase, Suber):
     Automatically serializes and deserializes from qb64b to/from CESR instances
 
     Attributes:
-        db (dbing.LMDBer): base LMDB db
+        db (LMDBer): base LMDB db
         sdb (lmdb._Database): instance of lmdb named sub db for this Suber
         sep (str): separator for combining keys tuple of strs into key bytes
         klas (Iterable): of Class references to subclasses of CESR compatible
@@ -1226,7 +1227,7 @@ class CatCesrSuber(CatCesrSuberBase, Suber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -1263,17 +1264,17 @@ class IoSetSuber(SuberBase):
     of the set elements.
 
     Attributes:
-        db (dbing.LMDBer): base LMDB db
+        db (LMDBer): base LMDB db
         sdb (lmdb._Database): instance of lmdb named sub db for this Suber
         sep (str): separator for combining keys tuple of strs into key bytes
     """
-    def __init__(self, db: dbing.LMDBer, *,
+    def __init__(self, db: LMDBer, *,
                        subkey: str='docs.',
                        dupsort: bool=False, **kwa):
         """Initialize instance
 
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -1304,7 +1305,7 @@ class IoSetSuber(SuberBase):
             result (bool): True If successful, False otherwise.
 
         """
-        if not isNonStringIterable(vals):  # not iterable
+        if not helping.isNonStringIterable(vals):  # not iterable
             vals = (vals, ) if vals else ()  # make iterable
         return (self.db.putIoSetVals(db=self.sdb,
                                      key=self._tokey(keys),
@@ -1329,7 +1330,7 @@ class IoSetSuber(SuberBase):
             result (bool): True If successful, False otherwise.
 
         """
-        if not isNonStringIterable(vals):  # not iterable
+        if not helping.isNonStringIterable(vals):  # not iterable
             vals = (vals, ) if vals else ()  # make iterable
         return (self.db.pinIoSetVals(db=self.sdb,
                                      key=self._tokey(keys),
@@ -1654,7 +1655,7 @@ class B64IoSetSuber(B64SuberBase, IoSetSuber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -1693,7 +1694,7 @@ class CesrIoSetSuber(CesrSuberBase, IoSetSuber):
     includes the ordinal suffix.
 
      Attributes:
-        db (dbing.LMDBer): base LMDB db
+        db (LMDBer): base LMDB db
         sdb (lmdb._Database): instance of lmdb named sub db for this Suber
         sep (str): separator for combining keys tuple of strs into key bytes
         klas (Iterable): of Class references to subclasses of CESR compatible
@@ -1703,7 +1704,7 @@ class CesrIoSetSuber(CesrSuberBase, IoSetSuber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -1743,7 +1744,7 @@ class CatCesrIoSetSuber(CatCesrSuberBase, IoSetSuber):
     includes the ordinal suffix.
 
     Attributes:
-        db (dbing.LMDBer): base LMDB db
+        db (LMDBer): base LMDB db
         sdb (lmdb._Database): instance of lmdb named sub db for this Suber
         sep (str): separator for combining keys tuple of strs into key bytes
         klas (Iterable): of Class references to subclasses of Matter, each
@@ -1754,7 +1755,7 @@ class CatCesrIoSetSuber(CatCesrSuberBase, IoSetSuber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -1786,7 +1787,7 @@ class SignerSuber(CesrSuber):
     def __init__(self, *pa, klas: Type[signing.Signer] | None = None, **kwa):
         """
         Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             klas (Type[coring.Matter]): Class reference to subclass of Matter
         """
@@ -2015,7 +2016,7 @@ class SerderSuberBase(SuberBase):
                  **kwa):
         """
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -2068,7 +2069,7 @@ class SerderSuber(SerderSuberBase, Suber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -2109,7 +2110,7 @@ class SerderIoSetSuber(SerderSuberBase, IoSetSuber):
     includes the ordinal suffix.
 
      Attributes:
-        db (dbing.LMDBer): base LMDB db
+        db (LMDBer): base LMDB db
         sdb (lmdb._Database): instance of lmdb named sub db for this Suber
         sep (str): separator for combining keys tuple of strs into key bytes
         klas (Iterable): of Class references to subclasses of CESR compatible
@@ -2120,7 +2121,7 @@ class SerderIoSetSuber(SerderSuberBase, IoSetSuber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -2147,7 +2148,7 @@ class SchemerSuber(SerderSuberBase, Suber):
                  **kwa):
         """
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -2181,13 +2182,13 @@ class DupSuber(SuberBase):
     This is a limitation of dupsort==True sub dbs in LMDB
     """
 
-    def __init__(self, db: Type[dbing.LMDBer], *,
+    def __init__(self, db: Type[LMDBer], *,
                        subkey: str='docs.',
                        dupsort: bool=True,
                        **kwa):
         """
         Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True (forced default) means enable duplicates at each key
                             False  means do not enable duplicates at each key
@@ -2216,7 +2217,7 @@ class DupSuber(SuberBase):
         Apparently always returns True (how .put works with dupsort=True)
 
         """
-        if not isNonStringIterable(vals):  # not iterable
+        if not helping.isNonStringIterable(vals):  # not iterable
             vals = (vals, )  # make iterable
         return (self.db.putVals(db=self.sdb,
                                 key=self._tokey(keys),
@@ -2240,7 +2241,7 @@ class DupSuber(SuberBase):
         """
         key = self._tokey(keys)
         self.db.delVals(db=self.sdb, key=key)  # delete all values
-        if not isNonStringIterable(vals):  # not iterable
+        if not helping.isNonStringIterable(vals):  # not iterable
             vals = (vals, )  # make iterable
         return (self.db.putVals(db=self.sdb,
                                 key=key,
@@ -2392,7 +2393,7 @@ class CatCesrDupSuber(CatCesrSuberBase, DupSuber):
         """Initialize Instance
 
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True (forced default) means enable duplicates at each key
                             False  means do not enable duplicates at each key
@@ -2461,7 +2462,7 @@ class IoDupSuber(DupSuber):
             result (bool): True If successful, False otherwise.
 
         """
-        if not isNonStringIterable(vals):  # not iterable
+        if not helping.isNonStringIterable(vals):  # not iterable
             vals = (vals, )  # make iterable
         return (self.db.putIoDupVals(db=self.sdb,
                                      key=self._tokey(keys),
@@ -2484,7 +2485,7 @@ class IoDupSuber(DupSuber):
         """
         key = self._tokey(keys)
         self.db.delIoDupVals(db=self.sdb, key=key)  # delete all values
-        if not isNonStringIterable(vals):  # not iterable
+        if not helping.isNonStringIterable(vals):  # not iterable
             vals = (vals, )  # make iterable
         return self.db.putIoDupVals(db=self.sdb,
                                      key=key,
@@ -2688,7 +2689,7 @@ class B64IoDupSuber(B64SuberBase, IoDupSuber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -2766,7 +2767,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
             result (bool): True If successful, False otherwise.
 
         """
-        if not isNonStringIterable(vals):  # not NonStrIterable
+        if not helping.isNonStringIterable(vals):  # not NonStrIterable
             vals = (vals, ) if vals else ()  # make iterable
         return self.db.putOnIoDupVals(db=self.sdb,
                                       key=self._tokey(keys),
@@ -2797,7 +2798,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                                on=on,
                                sep=self.sep.encode())
 
-        if not isNonStringIterable(vals):  # not iterable
+        if not helping.isNonStringIterable(vals):  # not iterable
             vals = (vals, ) if vals else ()  # make iterable
         return self.db.putOnIoDupVals(db=self.sdb,
                                       key=key,
@@ -3152,7 +3153,7 @@ class B64OnIoDupSuber(B64SuberBase, OnIoDupSuber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
@@ -3257,7 +3258,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                 Empty iterable or None returns False
 
         """
-        if not isNonStringIterable(vals):  # not iterable
+        if not helping.isNonStringIterable(vals):  # not iterable
             vals = (vals, ) if vals else ()  # make iterable
         return self.db.putOnIoSetVals(db=self.sdb,
                                       key=self._tokey(keys),
@@ -3285,7 +3286,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                         When not NonStrIterable converts to iterable.
                                         Empty iterable returns False
         """
-        if not isNonStringIterable(vals):  # not iterable
+        if not helping.isNonStringIterable(vals):  # not iterable
             vals = (vals, ) if vals else ()  # make iterable
         return self.db.pinOnIoSetVals(db=self.sdb,
                                       key=self._tokey(keys),
@@ -3308,7 +3309,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                         None means empty iterable.
                                         Empty iterable raises ValueError
         """
-        if not isNonStringIterable(vals):  # not iterable
+        if not helping.isNonStringIterable(vals):  # not iterable
             vals = (vals, ) if vals else ()  # make iterable
         return (self.db.appendOnIoSetVals(db=self.sdb,
                                          key=self._tokey(keys),
@@ -3835,7 +3836,7 @@ class B64OnIoSetSuber(B64SuberBase, OnIoSetSuber):
     def __init__(self, *pa, **kwa):
         """
         Inherited Parameters:
-            db (dbing.LMDBer): base db
+            db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
