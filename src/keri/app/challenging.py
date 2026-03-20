@@ -7,7 +7,7 @@ keri.vc.challenging module
 from ..core import Diger
 
 
-def loadHandlers(db, signaler, exc):
+def loadChallengingHandlers(db, signaler, exc):
     """ Load handlers for the peer-to-peer challenge response protocol
 
     Parameters:

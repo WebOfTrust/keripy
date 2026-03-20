@@ -10,7 +10,7 @@ from .agenting import (Receiptor, WitnessReceiptor, WitnessInquisitor,
                        messenger, messengerFrom, streamMessengerFrom,
                        httpClient, schemes)
 from .apping import Consoler
-from .challenging import ChallengeHandler
+from .challenging import ChallengeHandler, loadChallengingHandlers
 from .configing import openCF, Configer, ConfigerDoer
 from .delegating import Anchorer, DelegateRequestHandler, delegateRequestExn
 from .directing import Director, Reactor, Directant, Reactant, runController
