@@ -372,7 +372,7 @@ class Kramer:
                 continue
             if (number.sn != kever.sner.num or
                     sdiger.qb64 != kever.serder.said):
-                sdig = self.db.kels.getOnLast(keys=senderId, on=number.sn)
+                sdig = self.db.kels.getLast(keys=senderId, on=number.sn)
                 if sdig is not None and sdig == sdiger.qb64:
                     evtSerder = self.db.evts.get(keys=(senderId, sdiger.qb64))
                     if evtSerder is not None:
@@ -441,7 +441,7 @@ class Kramer:
 
         # Look up event digest at (senderId, sn) in sender's KEL
         prefixer = coring.Prefixer(qb64=senderId)
-        sdig = self.db.kels.getOnLast(keys=prefixer.qb64b, on=number.sn)
+        sdig = self.db.kels.getLast(keys=prefixer.qb64b, on=number.sn)
 
         if sdig is None:
             raise kering.MissingSenderKeyStateError(
@@ -613,12 +613,12 @@ class Kramer:
                     self.cues.append({
                         "kin": "keystate",
                         "aid": senderId,
-                        "sn": kever.sn if kever else None,
+                        "sn": None,
                     })
                     logger.info(
                         "Cueing keystate retrieval: missing KEL for sender=%s, current_sn=%s, error=%s",
                         senderId,
-                        kever.sn if kever else None,
+                        None,
                     )
                     raise kering.MissingSenderKeyStateError(
                         f"Sender KEL unavailable for {senderId}")
@@ -705,12 +705,12 @@ class Kramer:
                     self.cues.append({
                         "kin": "keystate",
                         "aid": senderId,
-                        "sn": kever.sn if kever else None,
+                        "sn": None,
                     })
                     logger.info(
                         "Cueing keystate retrieval: missing KEL for sender=%s, current_sn=%s, error=%s",
                         senderId,
-                        kever.sn if kever else None,
+                        None,
                     )
                     raise kering.MissingSenderKeyStateError(
                         f"Sender KEL unavailable for {senderId}")
@@ -753,12 +753,12 @@ class Kramer:
                             self.cues.append({
                                 "kin": "keystate",
                                 "aid": senderId,
-                                "sn": kever.sn if kever else None,
+                                "sn": kever.sn,
                             })
                             logger.info(
                                 "Cueing keystate retrieval: missing key state in seal reference for sender=%s, current_sn=%s, error=%s",
                                 senderId,
-                                kever.sn if kever else None,
+                                kever.sn,
                             )
                             return None
                         if not sealValidated:
@@ -852,12 +852,12 @@ class Kramer:
                     self.cues.append({
                         "kin": "keystate",
                         "aid": senderId,
-                        "sn": kever.sn if kever else None,
+                        "sn": None,
                     })
                     logger.info(
                         "Cueing keystate retrieval: missing KEL for sender=%s, current_sn=%s, error=%s",
                         senderId,
-                        kever.sn if kever else None,
+                        None,
                     )
                     raise kering.MissingSenderKeyStateError(
                         f"Sender KEL unavailable for {senderId}")
@@ -945,12 +945,12 @@ class Kramer:
                     self.cues.append({
                         "kin": "keystate",
                         "aid": senderId,
-                        "sn": kever.sn if kever else None,
+                        "sn": None,
                     })
                     logger.info(
                         "Cueing keystate retrieval: missing KEL for sender=%s, current_sn=%s, error=%s",
                         senderId,
-                        kever.sn if kever else None,
+                        None,
                     )
                     raise kering.MissingSenderKeyStateError(
                         f"Sender KEL unavailable for {senderId}")
@@ -1014,12 +1014,12 @@ class Kramer:
                                 self.cues.append({
                                     "kin": "keystate",
                                     "aid": senderId,
-                                    "sn": kever.sn if kever else None,
+                                    "sn": kever.sn,
                                 })
                                 logger.info(
                                     "Cueing keystate retrieval: missing key state in seal reference for sender=%s, current_sn=%s, error=%s",
                                     senderId,
-                                    kever.sn if kever else None,
+                                    kever.sn,
                                 )
                                 return None
                             if not sealValidated:
@@ -1128,17 +1128,17 @@ class Kramer:
     def _pruneMessages(self, rdt_ms):
         """
         Check message ID and prune expired cache entries and associated state.
-        rdt (Iso8601): receiver time 
+        rdt (Iso8601): receiver time
         pml (int): prune lag cache value in milliseconds
         d (int): drift lag cache value in milliseconds
         """
         # Initialize a flag to track if pruned
         pruned = False
 
-        # Iterate over all message cache entries 
+        # Iterate over all message cache entries
         for (aid, mid), cache in list(self.db.kramMSGC.getTopItemIter()):
-            
-            # Convert messsage time from cache to milliseconds Int for comparison 
+
+            # Convert messsage time from cache to milliseconds Int for comparison
             mdt_ms = int(helping.fromIso8601(cache.mdt).timestamp() * 1000)
 
             # Get the drift and prune lag values from the cache record
@@ -1158,7 +1158,7 @@ class Kramer:
                 pruned = True
 
         return pruned
-    
+
     def _pruneExchanges(self, rdt_ms):
         """
         Check exchanges ID and prune expired cache entries and associated state.
@@ -1168,9 +1168,9 @@ class Kramer:
         # Initialize a flag to track if pruned
         pruned = False
 
-        # Iterate over all message cache entries 
+        # Iterate over all message cache entries
         for (aid, xid, mid), cache in list(self.db.kramTMSC.getTopItemIter()):
-            
+
             # Get the exchange time from the cache
             xdt_ms = int(helping.fromIso8601(cache.xdt).timestamp() * 1000)
 
@@ -1206,7 +1206,7 @@ class Pruner(doing.Doer):
         while True:
             # compute receiver time in ms
             rdt_ms = int(helping.nowUTC().timestamp() * 1000)
-            
+
             # check prune both messages and exchanges
             self.kramer._pruneMessages(rdt_ms=rdt_ms)
             self.kramer._pruneExchanges(rdt_ms=rdt_ms)
