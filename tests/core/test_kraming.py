@@ -493,8 +493,8 @@ def test_assk(mockHelpingNowUTC):
 
             with pytest.raises(kering.MissingSenderKeyStateError):
                 kvy.processMsg(unknownMsg, **unknownKwa)
-            
-            # Assert cue key state retrieval notification 
+
+            # Assert cue key state retrieval notification
             cue = kvy.cues.popleft()
             assert cue['kin'] == 'keystate'
             assert cue['aid'] == unknownHab.pre
@@ -908,7 +908,7 @@ def test_asr(mockHelpingNowUTC):
                                   pvrsn=Vrsn_2_0)
 
             # Reference sender's icp (sn=0) icp has no seals matching msg4.said
-            icpDig = receiverHby.db.kels.getOnLast(keys=senderHab.pre.encode(), on=0)
+            icpDig = receiverHby.db.kels.getLast(keys=senderHab.pre.encode(), on=0)
 
             sscs = [(coring.Seqner(sn=0), coring.Saider(qb64=icpDig))]
             kwa = dict(sscs=sscs)  # pure sscs, no sigs
@@ -1009,7 +1009,7 @@ def test_asr(mockHelpingNowUTC):
                                   pvrsn=Vrsn_2_0)
 
             # Reference icp (sn=0) which has no seal for msg8 — seal invalid
-            icpDig = receiverHby.db.kels.getOnLast(keys=senderHab.pre.encode(), on=0)
+            icpDig = receiverHby.db.kels.getLast(keys=senderHab.pre.encode(), on=0)
             sscs = [(coring.Seqner(sn=0), coring.Saider(qb64=icpDig))]
 
             sigers = senderHab.mgr.sign(ser=msg8.raw,
@@ -1035,7 +1035,7 @@ def test_asr(mockHelpingNowUTC):
                                   pvrsn=Vrsn_2_0)
 
             # Reference mk sender's icp (sn=0), no seal for this msg
-            mkIcpDig = receiverHby.db.kels.getOnLast(keys=mkHab.pre.encode(), on=0)
+            mkIcpDig = receiverHby.db.kels.getLast(keys=mkHab.pre.encode(), on=0)
             sscs = [(coring.Seqner(sn=0), coring.Saider(qb64=mkIcpDig))]
 
             # Partial sigs (1 of 3)
@@ -2128,8 +2128,8 @@ def test_stale_tsgs(mockHelpingNowUTC):
 def test_cue_ks_non_transactioned(mockHelpingNowUTC):
     """
     Test cue key state retrieval for non transactional messages
-    
-    Covers: new cache for single-key, multi-key and reference seal 
+
+    Covers: new cache for single-key, multi-key and reference seal
     """
     # Step 1: Setup
 
@@ -2156,7 +2156,7 @@ def test_cue_ks_non_transactioned(mockHelpingNowUTC):
         # Create receiver hab (needed for receiver db context)
         receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1,
                                           transferable=True)
-        
+
         # Do not cross-feed senders ICP to receiver so they remain unknown to sender
         crossKvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
 
@@ -2177,7 +2177,7 @@ def test_cue_ks_non_transactioned(mockHelpingNowUTC):
             kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False,
                                   kramer=kramer)
 
-            # Stamp for events            
+            # Stamp for events
             stamp = helping.nowIso8601()
 
             # Single-key Missing KEL
@@ -2197,8 +2197,8 @@ def test_cue_ks_non_transactioned(mockHelpingNowUTC):
 
             with pytest.raises(kering.MissingSenderKeyStateError):
                 kvy.processMsg(msg, **kwa)
-            
-            # Assert cue key state retrieval notification 
+
+            # Assert cue key state retrieval notification
             cue = kvy.cues.popleft()
             assert cue['kin'] == 'keystate'
             assert cue['aid'] == senderSkHab.pre
@@ -2223,8 +2223,8 @@ def test_cue_ks_non_transactioned(mockHelpingNowUTC):
 
             with pytest.raises(kering.MissingSenderKeyStateError):
                 kvy.processMsg(msg, **kwa)
-            
-            # Assert cue key state retrieval notification 
+
+            # Assert cue key state retrieval notification
             cue = kvy.cues.popleft()
             assert cue['kin'] == 'keystate'
             assert cue['aid'] == senderMkHab.pre
@@ -2262,8 +2262,8 @@ def test_cue_ks_non_transactioned(mockHelpingNowUTC):
 def test_cue_ks_transactioned(mockHelpingNowUTC):
     """
     Test cue key state retrieval for transactional exchange messages
-    
-    Covers: new cache for single-key, multi-key and reference seal 
+
+    Covers: new cache for single-key, multi-key and reference seal
     """
     # Step 1: Setup
 
@@ -2290,7 +2290,7 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
         # Create receiver hab (needed for receiver db context)
         receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1,
                                           transferable=True)
-        
+
         # Do not cross-feed senders ICP to receiver so they remain unknown to sender
         crossKvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False)
 
@@ -2315,7 +2315,7 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
 
             # Get the prefix for the single-key sender
             skPrefixer = coring.Prefixer(qb64=senderSkHab.pre)
-            
+
             # Create the exchange start event
             xip = eventing.exchept(sender=senderSkHab.pre,
                                    receiver=receiverHab.pre,
@@ -2332,7 +2332,7 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
             with pytest.raises(kering.MissingSenderKeyStateError):
                 result = kramer.kramit(xip, **kwa)
 
-            # Assert cue key state retrieval notification 
+            # Assert cue key state retrieval notification
             cue = kvy.cues.popleft()
             assert cue['kin'] == 'keystate'
             assert cue['aid'] == senderSkHab.pre
@@ -2359,7 +2359,7 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
             with pytest.raises(kering.MissingSenderKeyStateError):
                 result = kramer.kramit(xip, **kwa)
 
-            # Assert cue key state retrieval notification 
+            # Assert cue key state retrieval notification
             cue = kvy.cues.popleft()
             assert cue['kin'] == 'keystate'
             assert cue['aid'] == senderMkHab.pre
@@ -2394,8 +2394,8 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
 def test_pruning_messages_single_key(fakeHelpingClock):
     """
     Test pruning behavior for single-key sender messages.
-    
-    Covers: pruning of messages with different timestamps, ensuring pruning is 
+
+    Covers: pruning of messages with different timestamps, ensuring pruning is
     based on each message's own timestamp and not affected by other messages from the same sender.
 
     Steps:
@@ -2404,7 +2404,7 @@ def test_pruning_messages_single_key(fakeHelpingClock):
     - Advance time to trigger pruning for the 1st message, assert 2nd message is still cached
     - Advance time to trigger pruning for the 2nd message
     """
-    
+
     # Instantiate Clock
     clock = fakeHelpingClock
 
@@ -2420,7 +2420,7 @@ def test_pruning_messages_single_key(fakeHelpingClock):
 
         # Create transferable single-key sender
         senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True)
-        
+
         # Create receiver hab
         receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True)
 
@@ -2437,7 +2437,7 @@ def test_pruning_messages_single_key(fakeHelpingClock):
             kramer = Kramer(db=receiverHby.db, cf=cf)
             assert kramer.enabled
 
-            # Create Kevery 
+            # Create Kevery
             kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
 
             # Setup Doist with PruneDoer
@@ -2450,7 +2450,7 @@ def test_pruning_messages_single_key(fakeHelpingClock):
             doist = doing.Doist(tock=tock, limit=limit)
             deeds = doist.enter(doers=[pruneDoer])
 
-            # Step 1: Accept a fresh message 
+            # Step 1: Accept a fresh message
             earlyStamp = helping.nowIso8601()
             assert earlyStamp == "2021-01-01T00:00:00.000000+00:00"
 
@@ -2485,7 +2485,7 @@ def test_pruning_messages_single_key(fakeHelpingClock):
             assert earlyCache.ml == 5000     # short lag = 5s
             assert earlyCache.pml == 5000    # short prune lag = 5s
 
-            # Step 2: send another message at a later time 
+            # Step 2: send another message at a later time
             # The timeliness window allows 1s drift (d = 1000ms) so 1s after is still inside
             # Advance time by 1s
             clock.advance(seconds=1)
@@ -2520,7 +2520,7 @@ def test_pruning_messages_single_key(fakeHelpingClock):
             # Advance time
             clock.advance(seconds=4)
             assert helping.nowIso8601() == "2021-01-01T00:00:05.000000+00:00"
-            
+
             # Run doist
             doist.recur(deeds=deeds)
 
@@ -2551,7 +2551,7 @@ def test_pruning_messages_single_key(fakeHelpingClock):
             # Step 4: Advance time to prune the second message
             clock.advance(seconds=1)
             assert helping.nowIso8601() == "2021-01-01T00:00:07.100000+00:00"
-            
+
             # Run doist
             doist.recur(deeds=deeds)
 
@@ -2617,7 +2617,7 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
 
             # Create PruneDoer
             pruneDoer = Pruner(kramer, tock)
-            
+
             # Create Doist
             doist = doing.Doist(tock=tock, limit=limit, real=True)
             deeds = doist.enter(doers=[pruneDoer])
@@ -2905,15 +2905,15 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
 def test_pruning_exchanges(fakeHelpingClock):
     """
     Test pruning behavior for exchanges.
-    
-    Covers: pruning of exchanges with different timestamps, ensuring pruning is 
+
+    Covers: pruning of exchanges with different timestamps, ensuring pruning is
     done for all messages belonging to the exchange.
 
     Steps:
     - create xip and seed it directly
     - accept an exn
     - accept an exn from the same sender with a later timestamp
-    - Advance time to trigger pruning, since the exchange is outside the window, 
+    - Advance time to trigger pruning, since the exchange is outside the window,
       all messsages are deleted
     """
 
@@ -2922,7 +2922,7 @@ def test_pruning_exchanges(fakeHelpingClock):
 
     # Check the clock
     assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
-    
+
     # Setup sender/receiver
     salt_sender = core.Salter(raw=b'0123456789abcdef').qb64
     salt_receiver = core.Salter(raw=b'0123456789abcdeg').qb64
@@ -2949,7 +2949,7 @@ def test_pruning_exchanges(fakeHelpingClock):
             kramer = Kramer(db=receiverHby.db, cf=cf)
             assert kramer.enabled
 
-            # Create Kevery 
+            # Create Kevery
             kvy = eventing.Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
 
             # Setup Doist with PruneDoer
@@ -2987,7 +2987,7 @@ def test_pruning_exchanges(fakeHelpingClock):
             cache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, xip.said))
             assert cache is not None
             assert cache.mdt == stamp
-            assert cache.xdt == stamp  # xip's xdt == its own dt 
+            assert cache.xdt == stamp  # xip's xdt == its own dt
 
             # Send first exn with exchange ID via processMsg
             firstStamp = helping.nowIso8601()
@@ -3015,7 +3015,7 @@ def test_pruning_exchanges(fakeHelpingClock):
             assert firstCache.mdt == firstStamp
             assert firstCache.xdt == stamp  # inherited from xip's xdt
             assert firstCache.mdt == firstCache.xdt
-            
+
             # Run pruner, shouldn't prune anything
             doist.recur(deeds=deeds)
 
@@ -3042,7 +3042,7 @@ def test_pruning_exchanges(fakeHelpingClock):
             # Error raised due to lack of exchanger
             with pytest.raises(kering.ValidationError):
                 kvy.processMsg(exn2, **kwa)
-            
+
             # Assert tmsc entry created for exn2
             secondCache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn2.said))
             assert secondCache is not None
@@ -3052,7 +3052,7 @@ def test_pruning_exchanges(fakeHelpingClock):
 
             # Delete or archive any cache entries (all messages associated with the exchange) where [xdt, xdt+xl] is not true.
             # Advance time to prune the exchange using pxl (pruning exchange lag)
-            delta = (firstCache.pxl/1000) 
+            delta = (firstCache.pxl/1000)
             clock.advance(seconds=delta)
             assert helping.nowIso8601() == "2021-01-01T00:05:01.000000+00:00"
 

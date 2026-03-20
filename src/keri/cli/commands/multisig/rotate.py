@@ -25,7 +25,7 @@ from ....peer import Exchanger
 
 logger = ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Begin or join a rotation of a group identifier', 
+parser = argparse.ArgumentParser(description='Begin or join a rotation of a group identifier',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: rotateGroupIdentifier(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the local identifier prefix', required=True)
@@ -152,7 +152,7 @@ class GroupMultisigRotate(doing.DoDoer):
                     if mid not in self.hby.kevers:
                         raise ConfigurationError(f"unknown signing member {mid}")
 
-                    dig = self.hby.db.kels.getOnLast(keys=mid, on=int(sn))
+                    dig = self.hby.db.kels.getLast(keys=mid, on=int(sn))
                     if dig is None:
                         raise ConfigurationError(f"non-existant event {sn} for signing member {mid}")
                     dig = dig.encode("utf-8")  # convert it from str to bytes because we're calling bytes(dig)
@@ -181,7 +181,7 @@ class GroupMultisigRotate(doing.DoDoer):
                     if mid not in self.hby.kevers:
                         raise ConfigurationError(f"unknown rotation member {mid}")
 
-                    dig = self.hby.db.kels.getOnLast(keys=mid, on=int(sn))
+                    dig = self.hby.db.kels.getLast(keys=mid, on=int(sn))
                     if dig is None:
                         raise ConfigurationError(f"non-existant event {sn} for rotation member {mid}")
                     dig = dig.encode("utf-8")

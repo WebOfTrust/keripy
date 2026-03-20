@@ -20,7 +20,7 @@ from ...recording import KeyStateRecord
 
 logger = ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Revert an unpublished interaction event at the end of a local KEL', 
+parser = argparse.ArgumentParser(description='Revert an unpublished interaction event at the end of a local KEL',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', default=None)
@@ -61,7 +61,7 @@ def rollback(tymth, tock=0.0, **opts):
                                              f"{len(wigers)} witnesses, unable to rollback.")
 
             ked = hby.db.states.getDict(keys=serder.pre)
-            pdig = hby.db.kels.getOnLast(keys=serder.preb, on=serder.sn - 1)
+            pdig = hby.db.kels.getLast(keys=serder.preb, on=serder.sn - 1)
             pdig = pdig.encode("utf-8")
 
             pserder = hby.db.evts.get(keys=(serder.preb, bytes(pdig)))
@@ -72,7 +72,7 @@ def rollback(tymth, tock=0.0, **opts):
             hby.db.wits.rem(keys=(serder.preb, serder.saidb))
             hby.db.sigs.rem(keys=(serder.preb, serder.saidb))  # idempotent
             hby.db.dtss.rem(keys=dgkey)  # idempotent
-            hby.db.kels.remOn(keys=serder.preb, on=serder.sn)
+            hby.db.kels.rem(keys=serder.preb, on=serder.sn)
 
             seqner = Number(num=serder.sn - 1)
             fner = Number(numh=ked['f'])
