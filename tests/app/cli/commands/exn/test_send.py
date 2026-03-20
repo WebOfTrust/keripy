@@ -6,7 +6,6 @@ from hio.base import doing
 
 from keri.app import openHby, runController
 from keri.cli.commands.exn import send as send_cmd
-from keri.app import forwarding
 
 
 def patch_poster(monkeypatch):
@@ -30,7 +29,7 @@ def patch_poster(monkeypatch):
             )
             cues.append({"dest": dest, "topic": topic, "said": serder.said})
 
-    monkeypatch.setattr(forwarding, "Poster", PosterStub)
+    monkeypatch.setattr(send_cmd, "Poster", PosterStub)
     return calls, cues
 
 
