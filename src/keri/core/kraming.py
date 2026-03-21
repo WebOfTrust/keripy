@@ -26,7 +26,7 @@ from .eventing import verifySigs
 
 from ..kering import (KramConfigurationError, KramError,
                       MissingSenderKeyStateError, MissingAuthAttachmentError,
-                      Ilks, Vrsn_2_0)    
+                      Ilks, Vrsn_2_0)
 from ..help import helping
 from ..recording import CacheTypeRecord, MsgCacheRecord, TxnMsgCacheRecord
 
@@ -71,6 +71,26 @@ and kever.tholder.
 
 
 class Kramer:
+    """KRAM (KERI Request Authentication Mechanism) processor.
+
+    Implements Full KRAM timeliness cache for replay attack prevention in KERI.
+    Manages authentication of messages via attached seals and signatures, enforcing
+    strictly monotonic ordering and sliding time windows.
+
+    The Kramer processes incoming messages through denial lists and cache logic,
+    validating authentication attachments (seal references or signatures) and
+    enforcing timeliness constraints based on configurable cache types. Supports
+    both non-transactioned (message-ID-based) and transactioned (exchange-ID-based)
+    message flows.
+
+    Attributes:
+        db: Database instance providing KRAM cache tables
+        cf: Configuration provider for KRAM settings
+        cues (list): Output queue for keystate retrieval notifications
+        enabled (bool): Whether KRAM is enabled
+        denials (list): Compacted denial strings for exempted messages
+        fullDenials (list): Raw denial configurations
+    """
     def __init__(self, db, cf=None, cues=None):
         self.db = db
         self.cf = cf if cf else None
@@ -88,16 +108,67 @@ class Kramer:
         self._denials = self._compactDenials(self._fullDenials)
 
         self._kramCTYPCf = kram.get('caches', {})
-        # Prepopulate kramCTYP cache with configured values
-        kramCTYPCf = self._kramCTYPCf
-        for key, val in kramCTYPCf.items():
-            try:
-                record = CacheTypeRecord(*map(int, val))
-                self.db.kramCTYP.pin(key, record)
-            except Exception as e:
-                raise KramConfigurationError(f"Invalid cache configuration for {key}, {val}: {e}")
+        self._populateCtyp(self._kramCTYPCf)
 
+        # Staged accept-window increases (see changeConfig, reconcileConfig)
         self._pending = {}
+
+    def _parseValidateCtyp(self, key, val):
+        """Parse and validate one cache-type tuple from config.
+
+        Parameters:
+            key (str): cache-type key expression
+            val (list|tuple): (d, sl, ll, xl, psl, pll, pxl)
+
+        Returns:
+            CacheTypeRecord: validated cache-type record
+
+        Raises:
+            KramConfigurationError: if tuple cannot be parsed or violates constraints
+        """
+        try:
+            record = CacheTypeRecord(*map(int, val))
+        except Exception as e:
+            raise KramConfigurationError(
+                f"Invalid cache configuration for {key}, {val}: {e}")
+
+        if record.d < 0:
+            raise KramConfigurationError(
+                f"Cache type {key}: d must be >= 0, got {record.d}")
+        if not (record.sl > 0 and record.sl <= record.ll <= record.xl):
+            raise KramConfigurationError(
+                f"Cache type {key}: require 0 < sl <= ll <= xl, "
+                f"got sl={record.sl} ll={record.ll} xl={record.xl}")
+        if record.psl < record.sl:
+            raise KramConfigurationError(
+                f"Cache type {key}: psl must be >= sl, got psl={record.psl} sl={record.sl}")
+        if record.pll < record.ll:
+            raise KramConfigurationError(
+                f"Cache type {key}: pll must be >= ll, got pll={record.pll} ll={record.ll}")
+        if record.pxl < record.xl:
+            raise KramConfigurationError(
+                f"Cache type {key}: pxl must be >= xl, got pxl={record.pxl} xl={record.xl}")
+
+        return record
+
+    def _validateCtypConfig(self, ctypCf):
+        """Validate all cache-type tuples and return parsed records."""
+        records = {}
+        for key, val in ctypCf.items():
+            records[key] = self._parseValidateCtyp(key, val)
+        return records
+
+    def _populateCtyp(self, ctypCf):
+        """Prepopulate ctyp cache with configured values.
+
+        Validates each cache-type tuple against KRAM spec constraints before pinning.
+        Raises KramConfigurationError if any constraint is violated.
+
+        Parameters:
+            ctypCf (dict): cache-type config key -> list of (d, sl, ll, xl, psl, pll, pxl)
+        """
+        for key, record in self._validateCtypConfig(ctypCf).items():
+            self.db.kramCTYP.pin(key, record)
 
     @staticmethod
     def _compactDenials(fullDenials):
@@ -1183,7 +1254,7 @@ class Kramer:
                 – Safe to apply immediately
 
             • Case 2 (increases):
-                – Pruning windows update immediately  
+                – Pruning windows update immediately
                 – Accept windows are staged
                 – Staging delta = max(Case‑2 delta, Case‑3 delta)
         """
@@ -1193,6 +1264,7 @@ class Kramer:
         # Get the new config
         config = newCf.get()
         new = config.get("kram", {}).get("caches", {})
+        newRecords = self._validateCtypConfig(new)
 
         # Case 3 coverage aware logic
         # Build the semantic coverage graphs used to detect holes, and compute deltas
@@ -1208,7 +1280,7 @@ class Kramer:
         # Compute worst-case delta across coverage
         deltaCase3 = self._computeWorstCaseDelta(coverageDiff, old, new)
 
-        # Get the smallest old accept windows so that it cannot accept 
+        # Get the smallest old accept windows so that it cannot accept
         # messages earlier than any existing cache‑type
         if old:
             min_sl = min(int(vals[1]) for vals in old.values())
@@ -1218,20 +1290,26 @@ class Kramer:
             # No old cache-types, new config is first-time initialization
             min_sl = min_ll = min_xl = 0
 
-
         # Iterate through the new config against the old config
         for ctype, newvals in new.items():
-            d_new, sl_new, ll_new, xl_new, psl_new, pll_new, pxl_new = map(int, newvals)
+            newrec = newRecords[ctype]
+            d_new = newrec.d
+            sl_new = newrec.sl
+            ll_new = newrec.ll
+            xl_new = newrec.xl
+            psl_new = newrec.psl
+            pll_new = newrec.pll
+            pxl_new = newrec.pxl
 
             # Newly introduced cache
             if ctype not in old:
-                
+
                 # No expansion detected in the coverage graph
                 if deltaCase3 == 0:
                     # Safe to apply immediately
-                    rec = CacheTypeRecord(*map(int, newvals))
+                    rec = newrec
                     self.db.kramCTYP.pin(ctype, rec)
-                
+
                 # Pattern in the coverage graph expanded, accept-window increases must be staged
                 else:
                     # Stage accept windows using Case 3 delta
@@ -1293,7 +1371,7 @@ class Kramer:
             psl_cur = max(psl_new, sl_new)
             pll_cur = max(pll_new, ll_new)
             pxl_cur = max(pxl_new, xl_new)
-            
+
             # Check accept window accross all 3 and get delta from the highest
             d_sl = max(0, sl_new - sl_old)
             d_ll = max(0, ll_new - ll_old)
@@ -1325,15 +1403,15 @@ class Kramer:
 
             # Update the cache record inside db
             self.db.kramCTYP.pin(ctype, rec)
-        
+
         # Delete old cache type to prevent corruption due to specification
         for ctype in list(old.keys()):
             if ctype not in new:
                 self.db.kramCTYP.rem(ctype)
 
         self._kramCTYPCf = new
-        
-    
+
+
     def reconcileConfig(self):
         """
         Finalize staged accept‑window updates whose required delta time has elapsed.
@@ -1368,7 +1446,7 @@ class Kramer:
                 – Remove the entry from `_pending`.
         """
 
-        
+
         # Return if pending is empty
         if not self._pending.items():
             return
@@ -1432,11 +1510,11 @@ class Kramer:
 
         # Iterate through each cache-type defined in the configuration
         for ctype in cf:
-            
+
             # Assign the default fallback "~" to be (ANY,ANY)
             if ctype == "~":
                 graph["~"].add(("ANY", "ANY"))
-            
+
             # If message-type and route is provided (ie "exn.R.test"), assign it to be ("msgType","route")
             elif ".R." in ctype:
                 msgType, _, route = ctype.partition(".R.")
@@ -1475,7 +1553,7 @@ class Kramer:
                     (pattern, oldCtypes, newCtypes)
                 where coverage changed or the pattern is newly introduced.
         """
-        
+
         # Initialize diff
         diff = []
 
@@ -1490,11 +1568,11 @@ class Kramer:
             for ct, pats in oldGraph.items():
                 for old_pat in pats:
                     old_msg, old_route = old_pat
-                    
-                    # Check what message-type the old pattern covered 
+
+                    # Check what message-type the old pattern covered
                     msg_ok = (old_msg == "ANY") or (old_msg == pat_msg)
-                    
-                    # Check what route the old pattern covered 
+
+                    # Check what route the old pattern covered
                     route_ok = (old_route == "ANY") or (old_route == pat_route)
 
                     # If both are correct, add it to the oldCtypes for later computation
@@ -1509,7 +1587,7 @@ class Kramer:
 
                     # Check what message-type the new pattern covers
                     msg_ok = (new_msg == "ANY") or (new_msg == pat_msg)
-                    
+
                     # Check what route the new pattern covers
                     route_ok = (new_route == "ANY") or (new_route == pat_route)
 
@@ -1566,26 +1644,26 @@ class Kramer:
         """
         # Initialize deltas
         deltas = []
-        
+
         # Iterate over each changed pattern from the coverage diff
         for pattern, oldCtypes, newCtypes in diff:
-            
+
             # New pattern
             if not oldCtypes:
                 # A newly covered pattern had no accept window before, so its effective old accept window is 0
                 oldAccept = 0
-            
+
             else:
-                # Choose the smallest accept window from old  
+                # Choose the smallest accept window from old
                 oldAccept = min(int(old[ct][1]) for ct in oldCtypes)
-            
+
             # Choose the smallest accept window from new
             newAccept = min(int(new[ct][1]) for ct in newCtypes)
-            
+
             # Compute delta: if new > old = expansion, changes must be staged
             # if new < old = shrink, no staging needed, delta = 0
             deltas.append(max(0, newAccept - oldAccept))
-        
+
         # Return the worst-case delta
         return max(deltas) if deltas else 0
 
@@ -1650,7 +1728,7 @@ class Kramer:
                         break
                 if covered:
                     break
-            # If after going through all of the new patterns, an old pattern is still not being covered, 
+            # If after going through all of the new patterns, an old pattern is still not being covered,
             # the new configuration introduces a coverage hole and must be rejected
             if not covered:
                 logger.info(

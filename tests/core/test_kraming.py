@@ -163,6 +163,110 @@ def test_configuration():
                 Kramer(db, cf)
 
 
+def test_cache_type_constraints_valid():
+    """Kramer init succeeds when cache-type tuple satisfies spec constraints."""
+    validCf = {
+        "kram": {
+            "enabled": False,
+            "denials": [],
+            "caches": {
+                "~": [100, 2000, 7200000, 172800000, 2000, 7200000, 172800000],
+            },
+        }
+    }
+    with configing.openCF(name="kram", base="test") as cf:
+        cf.put(validCf)
+        with basing.openDB(name="test_config_constraints_valid", temp=True) as db:
+            Kramer(db, cf)
+            rec = db.kramCTYP.get("~")
+            assert rec is not None
+            assert rec.d == 100
+            assert rec.sl == 2000
+            assert rec.ll == 7200000
+            assert rec.xl == 172800000
+            assert rec.psl == 2000
+            assert rec.pll == 7200000
+            assert rec.pxl == 172800000
+
+
+@pytest.mark.parametrize(
+    "caches",
+    [
+        pytest.param({"~": [-1, 2000, 7200000, 172800000, 2000, 7200000, 172800000]}, id="d_negative"),
+        pytest.param({"~": [100, 8000000, 2000, 172800000, 2000, 7200000, 172800000]}, id="sl_ll_xl_order"),
+        pytest.param({"~": [100, 2000, 7200000, 172800000, 1000, 7200000, 172800000]}, id="psl_sl"),
+        pytest.param({"~": [100, 2000, 7200000, 172800000, 2000, 5000000, 172800000]}, id="pll_ll"),
+        pytest.param({"~": [100, 2000, 7200000, 172800000, 2000, 7200000, 100000000]}, id="pxl_xl"),
+    ],
+)
+def test_cache_type_constraints_invalid(request, caches):
+    """
+    Tests the behavior of cache type constraints within the Kramer configuration.
+
+    This parameterized test suite is designed to validate that invalid combinations of cache
+    parameters raise the appropriate `KramConfigurationError` based on KRAM spec which requires 
+    the following constraints:
+    0 <= d
+    0 < sl <= ll <= xl
+    0 < sl <= psl
+    0 < ll <= pll
+    0 < xl <= pxl
+    """
+    cfg = {
+        "kram": {
+            "enabled": False,
+            "denials": [],
+            "caches": caches,
+        }
+    }
+    db_name = f"test_cache_ctyp_{request.node.callspec.id}"
+    with configing.openCF(name="kram", base="test") as cf:
+        cf.put(cfg)
+        with basing.openDB(name=db_name, temp=True) as db:
+            with pytest.raises(kering.KramConfigurationError):
+                Kramer(db, cf)
+
+
+def test_change_config_rejects_invalid_cache_constraints():
+    """Kramer.changeConfig raises when new cache tuple violates constraints."""
+    old_cfg = {
+        "kram": {
+            "enabled": True,
+            "denials": [],
+            "caches": {
+                "~": [100, 2000, 3000, 4000, 2000, 3000, 4000],
+            }
+        }
+    }
+
+    # Invalid: sl <= 0 and ordering violation
+    bad_cfg = {
+        "kram": {
+            "enabled": True,
+            "denials": [],
+            "caches": {
+                "~": [100, 0, 3000, 4000, 2000, 3000, 4000],
+            }
+        }
+    }
+
+    with configing.openCF(name="kram", base="test", temp=True) as cf:
+        cf.put(old_cfg)
+        with basing.openDB(name="test_change_config_rejects_invalid", temp=True) as db:
+            kramer = Kramer(db, cf)
+            rec_before = db.kramCTYP.get("~")
+            assert rec_before.sl == 2000
+
+            cf.put(bad_cfg)
+            with pytest.raises(kering.KramConfigurationError):
+                kramer.changeConfig(cf)
+
+            # Existing config/cache record remains unchanged after failed update
+            rec_after = db.kramCTYP.get("~")
+            assert rec_after.sl == 2000
+            assert kramer._kramCTYPCf == old_cfg["kram"]["caches"]
+
+
 _testSigner = core.Salter(raw=b'0123456789abcdef').signer(transferable=True)
 TEST_PRE = _testSigner.verfer.qb64
 
