@@ -92,7 +92,6 @@ class Kramer:
         fullDenials (list): Raw denial configurations
     """
     def __init__(self, db, cf=None, cues=None):
-
         self.db = db
         self.cf = cf if cf else None
 
@@ -1290,7 +1289,6 @@ class Kramer:
         else:
             # No old cache-types, new config is first-time initialization
             min_sl = min_ll = min_xl = 0
-
 
         # Iterate through the new config against the old config
         for ctype, newvals in new.items():
