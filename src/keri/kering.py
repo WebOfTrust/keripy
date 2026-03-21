@@ -6,7 +6,7 @@ import re
 from collections import namedtuple
 from dataclasses import dataclass, astuple
 
-from .help.helping import intToB64, b64ToInt
+from .help import helping
 
 
 MaxON = int("f"*32, 16)  # 256 ** 16 - 1 maximum ordinal number, sequence or first seen etc
@@ -97,18 +97,18 @@ def rematch(match):
         proto = proto.decode()
         if proto not in Protocols:
             raise ProtocolError(f"Invalid protocol={proto}.")
-        pvrsn = Versionage(major=b64ToInt(pmajor), minor=b64ToInt(pminor))
+        pvrsn = Versionage(major=helping.b64ToInt(pmajor), minor=helping.b64ToInt(pminor))
         if pvrsn.major != 2:  # version2 vs but major != 2
             raise VersionError(f"Incompatible {pvrsn=} with version string.")
 
-        gvrsn = Versionage(major=b64ToInt(gmajor), minor=b64ToInt(gminor))
+        gvrsn = Versionage(major=helping.b64ToInt(gmajor), minor=helping.b64ToInt(gminor))
         if gvrsn.major != 2:  # version2 vs but major != 2
             raise VersionError(f"Incompatible {gvrsn=} with version string.")
 
         kind = kind.decode()
         if kind not in Kinds:
             raise KindError(f"Invalid serialization kind = {kind}.")
-        size = b64ToInt(size)
+        size = helping.b64ToInt(size)
 
     elif len(full) == VER1FULLSPAN and full[-1] == ord(VER1TERM):
         proto, major, minor, kind, size = match.group("proto1",
@@ -168,9 +168,9 @@ def versify(proto=Protocols.keri, pvrsn=Version, kind=Kinds.json, size=0, gvrsn=
         gvrsn = gvrsn if gvrsn is not None else pvrsn
         if gvrsn.major != 2:  # version2 vs but major < 2
             raise VersionError(f"Incompatible {gvrsn=} with version string.")
-        return (f"{proto}{intToB64(pvrsn.major)}{intToB64(pvrsn.minor, l=2)}"
-                f"{intToB64(gvrsn.major)}{intToB64(gvrsn.minor, l=2)}"
-                f"{kind}{intToB64(size, l=4)}.")
+        return (f"{proto}{helping.intToB64(pvrsn.major)}{helping.intToB64(pvrsn.minor, l=2)}"
+                f"{helping.intToB64(gvrsn.major)}{helping.intToB64(gvrsn.minor, l=2)}"
+                f"{kind}{helping.intToB64(size, l=4)}.")
 
     else:
         raise VersionError("Invalid message protocol major version={pvrsn.major}")

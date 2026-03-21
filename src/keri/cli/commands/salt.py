@@ -8,7 +8,7 @@ import argparse
 import pysodium
 from hio.base import doing
 
-from ... import core
+from ...core import Salter
 
 
 parser = argparse.ArgumentParser(description='Print a new random passcode')
@@ -24,4 +24,4 @@ def passcode(tymth, tock=0.0, **kwa):
     """
     _ = (yield tock)
 
-    print(core.Salter(raw=pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)).qb64)
+    print(Salter(raw=pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)).qb64)

@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 
-__version__ = '2.0.0-dev5'  # also change in setup.py
+__version__ = '2.0.0-dev6'  # also change in setup.py
 
 from .kering import (Vrsn_1_0, Vrsn_2_0, Kinds, Protocols, Schemes, Rever,
                      Colds, Ilks, ColdDex, Roles, TraitDex, Version, MaxON,
@@ -25,7 +25,7 @@ from .kering import (Vrsn_1_0, Vrsn_2_0, Kinds, Protocols, Schemes, Rever,
                      UnverifiedReplyError, EmptyListError, MissingAnchorError,
                      MissingRegistryError, MissingIssuerError,
                      InvalidCredentialStateError, UnverifiedProofError,
-                     OutOfOrderKeyStateError, OutOfOrderTxnStateError, 
+                     OutOfOrderKeyStateError, OutOfOrderTxnStateError,
                      MisfitEventSourceError, MissingDelegableApprovalError,
                      ExtractionError, ShortageError, ColdStartError, ElementError,
                      SizedGroupError, TopLevelStreamError, VersionError,
@@ -38,3 +38,10 @@ from .kering import (Vrsn_1_0, Vrsn_2_0, Kinds, Protocols, Schemes, Rever,
                      FailedSchemaValidationError, UntrustedKeyStateSource, Versionage,
                      KramError, KramConfigurationError, MissingAuthAttachmentError,
                      MissingSenderKeyStateError)
+
+from .recording import (RawRecord, StateEERecord, KeyStateRecord,
+                        EventSourceRecord, HabitatRecord, TopicsRecord,
+                        OobiQueryRecord, OobiRecord, EndpointRecord, 
+                        EndAuthRecord, LocationRecord, ObservedRecord, 
+                        CacheTypeRecord, MsgCacheRecord, TxnMsgCacheRecord,
+                        WellKnownAuthN)

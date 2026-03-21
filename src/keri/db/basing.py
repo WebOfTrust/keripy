@@ -13,12 +13,13 @@ import semver
 from ordered_set import OrderedSet as oset
 
 from hio.base import doing
+from hio.help import ogler
 
 import keri
-from . import dbing
-from .dbing import dgKey
-from .. import kering
-from ..kering import Vrsn_1_0, Vrsn_2_0
+from .dbing import LMDBer, dgKey, openLMDB
+from ..kering import (MissingEntryError, DatabaseError,
+                      ConfigurationError, ValidationError,
+                      Vrsn_1_0, Vrsn_2_0)
 from ..recording import (KeyStateRecord, EventSourceRecord,
                          HabitatRecord, TopicsRecord,
                          OobiRecord, EndpointRecord,
@@ -26,10 +27,20 @@ from ..recording import (KeyStateRecord, EventSourceRecord,
                          CacheTypeRecord, TxnMsgCacheRecord,
                          MsgCacheRecord, WellKnownAuthN)
 
-from .. import help
+
+logger = ogler.getLogger()
 
 
-logger = help.ogler.getLogger()
+def _strip_prerelease(version_str):
+    """Strip prerelease and build metadata from a semver string.
+
+    Semver compares alphanumeric prerelease identifiers lexicographically,
+    so 'dev4' > 'dev10' (because '4' > '1'). Stripping prerelease ensures
+    dev releases within the same version cycle compare as equal.
+    See: https://github.com/WebOfTrust/keripy/issues/820
+    """
+    ver = semver.VersionInfo.parse(version_str)
+    return str(semver.Version(ver.major, ver.minor, ver.patch))
 
 
 MIGRATIONS = [
@@ -84,7 +95,7 @@ class statedict(dict):
             try:
                 from ..core.eventing import Kever
                 kever = Kever(state=ksr, db=self.db)
-            except kering.MissingEntryError:  # no kel event for keystate
+            except MissingEntryError:  # no kel event for keystate
                 raise ex  # reraise KeyError
             self.__setitem__(k, kever)
             return kever
@@ -122,7 +133,7 @@ def openDB(*, cls=None, name="test", **kwa):
     """
     if cls == None:  # can't reference class before its defined below
         cls = Baser
-    return dbing.openLMDB(cls=cls, name=name, **kwa)
+    return openLMDB(cls=cls, name=name, **kwa)
 
 
 @contextmanager
@@ -152,7 +163,7 @@ def reopenDB(db, clear=False, **kwa):
 KERIBaserMapSizeKey = "KERI_BASER_MAP_SIZE"
 
 
-class Baser(dbing.LMDBer):
+class Baser(LMDBer):
     """
     Baser sets up named sub databases with Keri Event Logs within main database
 
@@ -712,40 +723,40 @@ class Baser(dbing.LMDBer):
             subkey 'maids.'
             Multiple values per key.
 
-        .ctyp is named subDB instance of Komer (schema=CacheTypeRecord) for
+        .kramCTYP is named subDB instance of Komer (schema=CacheTypeRecord) for
             KRAM cache type records. Maps expression string to drift and lag
             parameters.
             subkey 'ctyp.'
 
-        .msgc is named subDB instance of Komer (schema=MsgCacheRecord) for
+        .kramMSGC is named subDB instance of Komer (schema=MsgCacheRecord) for
             KRAM message cache. Maps (AID, MID) to message datetime, drift,
             and lag values.
             subkey 'msgc.'
 
-        .tmsc is named subDB instance of Komer (schema=TxnMsgCacheRecord) for
+        .kramTMSC is named subDB instance of Komer (schema=TxnMsgCacheRecord) for
             KRAM transactioned message cache. Maps (AID, XID, MID) to
             datetimes, drift, and lag values.
             subkey 'tmsc.'
 
-        .pmkm is named subDB instance of SerderSuber for KRAM partially signed
+        .kramPMKM is named subDB instance of SerderSuber for KRAM partially signed
             multi-key messages. Maps (AID, MID) key to the associated
             SerderKERI message.
             subkey 'pmkm.'
 
-        .pmks is named subDB instance of CesrIoSetSuber (klas=Siger) for
+        .kramPMKS is named subDB instance of CesrIoSetSuber (klas=Siger) for
             KRAM partially signed multi-key signatures. Maps (AID, MID) key
             to associated Siger instances.
             subkey 'pmks.'
             Multiple values per key.
 
-        .pmsk is named subDB instance of CatCesrSuber (klas=(Number, Diger))
+        .kramPMSK is named subDB instance of CatCesrSuber (klas=(Number, Diger))
             for KRAM partially signed multi-key sender key state records. Maps
             (AID, MID) key to (sn, event SAID) couple identifying the sender's
             key state.
             subkey 'pmsk.'
             Only one value per DB key is allowed.
 
-        .trqs is named subDB instance of CatCesrIoSetSuber for KRAM partially
+        .kramTRQS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key trans receipt quadruple attachments.
             subkey 'trqs.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
@@ -754,8 +765,9 @@ class Baser(dbing.LMDBer):
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
 
-        .tsgs is named subDB instance of CatCesrIoSetSuber for KRAM partially
-            signed multi-key trans last sig group attachments.
+        .kramTSGS is named subDB instance of CatCesrIoSetSuber for KRAM partially
+            signed multi-key trans last sig group attachments. Each group is
+            stored per-siger as a flat (Prefixer, Seqner, Saider, Siger) tuple.
             subkey 'tsgs.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
             Value is (Prefixer, Number, Diger, Siger) tuple. Sourced from
@@ -763,7 +775,7 @@ class Baser(dbing.LMDBer):
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
 
-        .sscs is named subDB instance of CatCesrIoSetSuber for KRAM partially
+        .kramSSCS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key first seen seal couple attachments from issuing or
             delegating events.
             subkey 'sscs.'
@@ -772,7 +784,7 @@ class Baser(dbing.LMDBer):
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
 
-        .ssts is named subDB instance of CatCesrIoSetSuber for KRAM partially
+        .kramSSTS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key source seal triple attachments from issued or
             delegated events.
             subkey 'ssts.'
@@ -782,7 +794,7 @@ class Baser(dbing.LMDBer):
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
 
-        .frcs is named subDB instance of CatCesrIoSetSuber for KRAM partially
+        .kramFRCS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key first seen replay couple attachments.
             subkey 'frcs.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
@@ -790,7 +802,7 @@ class Baser(dbing.LMDBer):
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
 
-        .tdcs is named subDB instance of CatCesrIoSetSuber for KRAM partially
+        .kramTDCS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key typed digest seal couple attachments.
             subkey 'tdcs.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
@@ -798,7 +810,7 @@ class Baser(dbing.LMDBer):
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
 
-        .ptds is named subDB instance of IoSetSuber for KRAM partially signed
+        .kramPTDS is named subDB instance of IoSetSuber for KRAM partially signed
             multi-key pathed stream attachments.
             subkey 'ptds.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
@@ -807,7 +819,7 @@ class Baser(dbing.LMDBer):
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
 
-        .bsqs is named subDB instance of CatCesrIoSetSuber for KRAM partially
+        .kramBSQS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key blind state quadruple attachments.
             subkey 'bsqs.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
@@ -816,7 +828,7 @@ class Baser(dbing.LMDBer):
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
 
-        .bsss is named subDB instance of CatCesrIoSetSuber for KRAM partially
+        .kramBSSS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key bound state sextuple attachments.
             subkey 'bsss.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
@@ -825,7 +837,7 @@ class Baser(dbing.LMDBer):
             Multiple values per key stored as ordered set (duplicates ignored).
             Entries persist until removed by the KRAM pruner.
 
-        .tmqs is named subDB instance of CatCesrIoSetSuber for KRAM partially
+        .kramTMQS is named subDB instance of CatCesrIoSetSuber for KRAM partially
             signed multi-key type media quadruple attachments.
             subkey 'tmqs.'
             DB is keyed by (AID, MID): sender identifier prefix plus message SAID
@@ -925,7 +937,6 @@ class Baser(dbing.LMDBer):
         self.pdes = subing.OnIoDupSuber(db=self, subkey='pdes.')
         self.udes = subing.CatCesrSuber(db=self, subkey='udes.', klas=(coring.Number, coring.Diger))
         self.uwes = subing.B64OnIoDupSuber(db=self, subkey='uwes.')
-        self.ooes = subing.OnIoDupSuber(db=self, subkey='ooes.')
         self.ooes = subing.OnIoDupSuber(db=self, subkey='ooes.')
         self.dels = subing.OnIoDupSuber(db=self, subkey='dels.')
         self.ldes = subing.OnIoDupSuber(db=self, subkey='ldes.')
@@ -1229,73 +1240,73 @@ class Baser(dbing.LMDBer):
         self.maids = subing.CesrIoSetSuber(db=self, subkey="maids.", klas=coring.Prefixer)
 
         # KRAM cache type — key: expression string, value: drift and lag params
-        self.ctyp = koming.Komer(db=self, subkey='ctyp.',
+        self.kramCTYP = koming.Komer(db=self, subkey='kramCTYP.',
                                  klas=CacheTypeRecord)
 
         # KRAM message cache — key: (AID, MID), value: msg datetime, drift, lags
-        self.msgc = koming.Komer(db=self, subkey='msgc.',
+        self.kramMSGC = koming.Komer(db=self, subkey='kramMSGC.',
                                  klas=MsgCacheRecord)
 
         # KRAM transactioned message cache — key: (AID, XID, MID), value: datetimes, drift, lags
-        self.tmsc = koming.Komer(db=self, subkey='tmsc.',
+        self.kramTMSC = koming.Komer(db=self, subkey='kramTMSC.',
                                  klas=TxnMsgCacheRecord)
 
         # KRAM partially signed multi-key message key (AID.MID) mapped to associated message (SerderKERI)
-        self.pmkm = subing.SerderSuber(db=self, subkey='pmkm.')
+        self.kramPMKM = subing.SerderSuber(db=self, subkey='kramPMKM.')
 
         # KRAM partially signed multi-key signature key (AID.MID) mapped to associated signatures
-        self.pmks = subing.CesrIoSetSuber(db=self, subkey='pmks.', klas=indexing.Siger)
+        self.kramPMKS = subing.CesrIoSetSuber(db=self, subkey='kramPMKS.', klas=indexing.Siger)
 
         # KRAM partially signed multi-key sender key state key (AID.MID) mapped to SN and event SAID
-        self.pmsk = subing.CatCesrSuber(db=self, subkey='pmsk.', klas=(coring.Number, coring.Diger))
+        self.kramPMSK = subing.CatCesrSuber(db=self, subkey='kramPMSK.', klas=(coring.Number, coring.Diger))
 
         # KRAM partially signed multi-key non-authenticator attachments
 
         # trqs: trans receipt quadruples (prefixer, number, diger, siger)
-        self.trqs = subing.CatCesrIoSetSuber(db=self, subkey='trqs.',
-                                             klas=(coring.Prefixer, coring.Number,
-                                                   coring.Diger, indexing.Siger))
+        self.kramTRQS = subing.CatCesrIoSetSuber(db=self, subkey='trqs.',
+                                                  klas=(coring.Prefixer, coring.Number,
+                                                        coring.Diger, indexing.Siger))
 
-        # tsgs: trans last sig groups (prefixer, number, diger, siger)
-        self.tsgs = subing.CatCesrIoSetSuber(db=self, subkey='tsgs.',
-                                             klas=(coring.Prefixer, coring.Number,
-                                                   coring.Diger, indexing.Siger))
+        # tsgs: trans last sig groups (prefixer, number, diger, siger) — stored per-siger
+        self.kramTSGS = subing.CatCesrIoSetSuber(db=self, subkey='tsgs.',
+                                                  klas=(coring.Prefixer, coring.Number,
+                                                        coring.Diger, indexing.Siger))
 
         # sscs: first seen seal couples (number, diger) issuing or delegating
-        self.sscs = subing.CatCesrIoSetSuber(db=self, subkey='sscs.',
-                                             klas=(coring.Number, coring.Diger))
+        self.kramSSCS = subing.CatCesrIoSetSuber(db=self, subkey='sscs.',
+                                                  klas=(coring.Number, coring.Diger))
 
         # ssts: source seal triples (prefixer, number, diger) issued or delegated
-        self.ssts = subing.CatCesrIoSetSuber(db=self, subkey='ssts.',
-                                             klas=(coring.Prefixer, coring.Number,
-                                                   coring.Diger))
+        self.kramSSTS = subing.CatCesrIoSetSuber(db=self, subkey='ssts.',
+                                                  klas=(coring.Prefixer, coring.Number,
+                                                        coring.Diger))
 
         # frcs: first seen replay couples (number, dater)
-        self.frcs = subing.CatCesrIoSetSuber(db=self, subkey='frcs.',
-                                             klas=(coring.Number, coring.Dater))
+        self.kramFRCS = subing.CatCesrIoSetSuber(db=self, subkey='frcs.',
+                                                  klas=(coring.Number, coring.Dater))
 
         # tdcs: typed digest seal couples (verser, diger)
-        self.tdcs = subing.CatCesrIoSetSuber(db=self, subkey='tdcs.',
-                                             klas=(coring.Verser, coring.Diger))
+        self.kramTDCS = subing.CatCesrIoSetSuber(db=self, subkey='tdcs.',
+                                                  klas=(coring.Verser, coring.Diger))
 
         # ptds: pathed streams (raw bytes)
-        self.ptds = subing.IoSetSuber(db=self, subkey='ptds.')
+        self.kramPTDS = subing.IoSetSuber(db=self, subkey='ptds.')
 
         # bsqs: blind state quadruples (diger, noncer, noncer, labeler)
-        self.bsqs = subing.CatCesrIoSetSuber(db=self, subkey='bsqs.',
-                                             klas=(coring.Diger, coring.Noncer,
-                                                   coring.Noncer, coring.Labeler))
+        self.kramBSQS = subing.CatCesrIoSetSuber(db=self, subkey='bsqs.',
+                                                  klas=(coring.Diger, coring.Noncer,
+                                                        coring.Noncer, coring.Labeler))
 
         # bsss: bound state sextuples (diger, noncer, noncer, labeler, number, noncer)
-        self.bsss = subing.CatCesrIoSetSuber(db=self, subkey='bsss.',
-                                             klas=(coring.Diger, coring.Noncer,
-                                                   coring.Noncer, coring.Labeler,
-                                                   coring.Number, coring.Noncer))
+        self.kramBSSS = subing.CatCesrIoSetSuber(db=self, subkey='bsss.',
+                                                  klas=(coring.Diger, coring.Noncer,
+                                                        coring.Noncer, coring.Labeler,
+                                                        coring.Number, coring.Noncer))
 
         # tmqs: type media quadruples (diger, noncer, labeler, texter)
-        self.tmqs = subing.CatCesrIoSetSuber(db=self, subkey='tmqs.',
-                                             klas=(coring.Diger, coring.Noncer,
-                                                   coring.Labeler, coring.Texter))
+        self.kramTMQS = subing.CatCesrIoSetSuber(db=self, subkey='tmqs.',
+                                                  klas=(coring.Diger, coring.Noncer,
+                                                        coring.Labeler, coring.Texter))
 
         self.reload()
 
@@ -1308,7 +1319,7 @@ class Baser(dbing.LMDBer):
         """
         # Check migrations to see if this database is up to date.  Error otherwise
         if not self.current:
-            raise kering.DatabaseError(f"Database migrations must be run. DB version {self.version}; current {keri.__version__}")
+            raise DatabaseError(f"Database migrations must be run. DB version {self.version}; current {keri.__version__}")
 
         removes = []
         for keys, data in self.habs.getTopItemIter():
@@ -1318,7 +1329,7 @@ class Baser(dbing.LMDBer):
                     kever = Kever(state=ksr,
                                            db=self,
                                            local=True)
-                except kering.MissingEntryError as ex:  # no kel event for keystate
+                except MissingEntryError as ex:  # no kel event for keystate
                     removes.append(keys)  # remove from .habs
                     continue
                 self.kevers[kever.prefixer.qb64] = kever
@@ -1355,7 +1366,8 @@ class Baser(dbing.LMDBer):
                     f"Skipping migration {version} as higher than the current KERI version {keri.__version__}")
                 continue
             # Skip migrations already run - where version less than (-1) or equal to (0) database version
-            if self.version is not None and semver.compare(version, self.version) != 1:
+            # Strip prerelease from DB version to avoid lexicographic comparison bugs (#820)
+            if self.version is not None and semver.compare(version, _strip_prerelease(self.version)) != 1:
                 continue
 
             # Clear all escrows before first migration to prevent old key
@@ -1440,8 +1452,9 @@ class Baser(dbing.LMDBer):
 
         ver = semver.VersionInfo.parse(keri.__version__)
         ver_no_prerelease = semver.Version(ver.major, ver.minor, ver.patch)
-        if self.version is not None and semver.compare(self.version, str(ver_no_prerelease)) == 1:
-            raise kering.ConfigurationError(
+        # Strip prerelease from DB version to avoid lexicographic comparison bugs (#820)
+        if self.version is not None and semver.compare(_strip_prerelease(self.version), str(ver_no_prerelease)) == 1:
+            raise ConfigurationError(
                 f"Database version={self.version} is ahead of library version={keri.__version__}")
 
         last = MIGRATIONS[-1]
@@ -1467,7 +1480,8 @@ class Baser(dbing.LMDBer):
         if not name:
             for version, migs in MIGRATIONS:
                 # Print entries only for migrations that have been run
-                if self.version is not None and semver.compare(version, self.version) <= 0:
+                # Strip prerelease from DB version to avoid lexicographic comparison bugs (#820)
+                if self.version is not None and semver.compare(version, _strip_prerelease(self.version)) <= 0:
                     for mig in migs:
                         dater = self.migs.get(keys=(mig,))
                         migrations.append((mig, dater))
@@ -1669,21 +1683,21 @@ class Baser(dbing.LMDBer):
         atc = bytearray()  # attachments
         dgkey = dgKey(pre, dig)  # get message
         if not (serder := self.evts.get(keys=(pre, dig))):
-            raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
+            raise MissingEntryError("Missing event for dig={}.".format(dig))
         msg.extend(serder.raw)
 
         # add indexed signatures to attachments
         if not (sigers := self.sigs.get(keys=dgkey)):
-            raise kering.MissingEntryError("Missing sigs for dig={}.".format(dig))
+            raise MissingEntryError("Missing sigs for dig={}.".format(dig))
         atc.extend(Counter(code=Codens.ControllerIdxSigs,
-                           count=len(sigers), version=kering.Vrsn_1_0).qb64b)
+                           count=len(sigers), version=Vrsn_1_0).qb64b)
         for siger in sigers:
             atc.extend(siger.qb64b)
 
         # add indexed witness signatures to attachments
         if wigers := self.wigs.get(keys=dgkey):
             atc.extend(Counter(code=Codens.WitnessIdxSigs,
-                               count=len(wigers), version=kering.Vrsn_1_0).qb64b)
+                               count=len(wigers), version=Vrsn_1_0).qb64b)
             for wiger in wigers:
                 atc.extend(wiger.qb64b)
 
@@ -1691,14 +1705,14 @@ class Baser(dbing.LMDBer):
         if (duple := self.aess.get(keys=(pre, dig))) is not None:
             number, diger = duple
             atc.extend(Counter(code=Codens.SealSourceCouples,
-                               count=1, version=kering.Vrsn_1_0).qb64b)
+                               count=1, version=Vrsn_1_0).qb64b)
             atc.extend(number.qb64b + diger.qb64b)
 
         # add trans endorsement quadruples to attachments not controller
         # may have been originally key event attachments or receipted endorsements
         if quads := self.vrcs.get(keys=dgkey):
             atc.extend(Counter(code=Codens.TransReceiptQuadruples,
-                               count=len(quads), version=kering.Vrsn_1_0).qb64b)
+                               count=len(quads), version=Vrsn_1_0).qb64b)
             for pre, snu, diger, siger in quads:    # adapt to CESR
                 atc.extend(pre.qb64b)
                 atc.extend(snu.qb64b)
@@ -1709,16 +1723,16 @@ class Baser(dbing.LMDBer):
         # may have been originally key event attachments or receipted endorsements
         if coups := self.rcts.get(keys=dgkey):
             atc.extend(Counter(code=Codens.NonTransReceiptCouples,
-                               count=len(coups), version=kering.Vrsn_1_0).qb64b)
+                               count=len(coups), version=Vrsn_1_0).qb64b)
             for prefixer, cigar in coups:
                 atc.extend(prefixer.qb64b)
                 atc.extend(cigar.qb64b)
 
         # add first seen replay couple to attachments
         if not (dater := self.dtss.get(keys=dgkey)):
-            raise kering.MissingEntryError("Missing datetime for dig={}.".format(dig))
+            raise MissingEntryError("Missing datetime for dig={}.".format(dig))
         atc.extend(Counter(code=Codens.FirstSeenReplayCouples,
-                           count=1, version=kering.Vrsn_1_0).qb64b)
+                           count=1, version=Vrsn_1_0).qb64b)
         atc.extend(coring.Number(num=fn, code=coring.NumDex.Huge).qb64b)  # may not need to be Huge
         atc.extend(dater.qb64b)
 
@@ -1727,7 +1741,7 @@ class Baser(dbing.LMDBer):
             raise ValueError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
         pcnt = Counter(code=Codens.AttachmentGroup,
-                       count=(len(atc) // 4), version=kering.Vrsn_1_0).qb64b
+                       count=(len(atc) // 4), version=Vrsn_1_0).qb64b
         msg.extend(pcnt)
         msg.extend(atc)
         return msg
@@ -1915,17 +1929,17 @@ class Baser(dbing.LMDBer):
         if prefixer.transferable:
             # receipted event and receipter in database so get receipter est evt
             # retrieve dig of last event at sn of est evt of receipter.
-            sdig = self.kels.getOnLast(keys=prefixer.qb64b, on=sn)
+            sdig = self.kels.getLast(keys=prefixer.qb64b, on=sn)
             if sdig is None:
                 # receipter's est event not yet in receipters's KEL
-                raise kering.ValidationError("key event sn {} for pre {} is not yet in KEL"
+                raise ValidationError("key event sn {} for pre {} is not yet in KEL"
                                              "".format(sn, pre))
             sdig = sdig.encode("utf-8")
             # retrieve last event itself of receipter est evt from sdig
             sserder = self.evts.get(keys=(prefixer.qb64b, bytes(sdig)))
             # assumes db ensures that sserder must not be none because sdig was in KE
             if dig is not None and not sserder.compare(said=dig):  # endorser's dig not match event
-                raise kering.ValidationError("Bad proof sig group at sn = {}"
+                raise ValidationError("Bad proof sig group at sn = {}"
                                              " for ksn = {}."
                                              "".format(sn, sserder.sad))
 
@@ -1955,7 +1969,7 @@ class Baser(dbing.LMDBer):
         for dig in self.kels.getAllIter(keys=pre, on=sn):
             try:
                 if not (serder := self.evts.get(keys=(pre, dig))):
-                    raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
+                    raise MissingEntryError("Missing event for dig={}.".format(dig))
 
             except Exception:
                 continue  # skip this event
@@ -1977,11 +1991,11 @@ class Baser(dbing.LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
-        for dig in self.kels.getOnLastIter(keys=pre, on=sn):
+        for dig in self.kels.getLastIter(keys=pre, on=sn):
             try:
 
                 if not (serder := self.evts.get(keys=(pre, dig) )):
-                    raise kering.MissingEntryError("Missing event for dig={}.".format(dig))
+                    raise MissingEntryError("Missing event for dig={}.".format(dig))
 
             except Exception:
                 continue  # skip this event

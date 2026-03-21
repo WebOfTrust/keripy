@@ -9,16 +9,15 @@ import sys
 import time
 
 from hio.base import doing
-from hio.help import decking
+from hio.help import decking, ogler
 
-from ...common import Parsery, existing, terming
+from ...common import Parsery, Colors, setupHby
 
-from .... import help
-from ....app import agenting, indirecting, habbing, forwarding
-from ....app.habbing import GroupHab
-from ....app.watching import States, diffState
+from ....app import (MailboxDirector, HaberyDoer,
+                     GroupHab, Poster, States, 
+                     messenger, diffState)
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Perform a one time watch of all current local AIDs', 
                                  parents=[Parsery.keystore()])
@@ -35,12 +34,12 @@ class WatchDoer(doing.DoDoer):
 
     def __init__(self, name, base, bran, **kwa):
         doers = []
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
+        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
         self.cues = decking.Deck()
 
-        self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"])
-        self.postman = forwarding.Poster(hby=self.hby)
+        self.mbd = MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"])
+        self.postman = Poster(hby=self.hby)
         doers.extend([self.hbyDoer, self.mbd, self.postman, doing.doify(self.cueDo)])
 
         self.toRemove = list(doers)
@@ -77,7 +76,7 @@ class WatchDoer(doing.DoDoer):
                     hab.db.ksns.rem((saider.qb64,))
                     hab.db.ksns.rem((saider.qb64,))
 
-                witer = agenting.messenger(hab, wit)
+                witer = messenger(hab, wit)
                 self.extend([witer])
 
                 msg = hab.query(pre=hab.pre, src=wit, route="ksn")
@@ -101,7 +100,7 @@ class WatchDoer(doing.DoDoer):
 
                     end = time.perf_counter()
                     if end - start > 10:
-                        sys.stdout.write(f"{terming.Colors.FAIL} no response received{terming.Colors.ENDC}")
+                        sys.stdout.write(f"{Colors.FAIL} no response received{Colors.ENDC}")
                         sys.stdout.flush()
                         skip = True
                         break

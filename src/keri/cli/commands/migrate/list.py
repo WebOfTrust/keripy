@@ -6,13 +6,13 @@ keri.kli.commands.migrate.list module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 from prettytable import PrettyTable
 
-from ...common import Parsery, existing
-from .... import help
+from ...common import Parsery, setupHby
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 def handler(args):
@@ -43,7 +43,7 @@ class ListDoer(doing.Doer):
         tab.field_names = ["Num", "Name", "Date Completed"]
         tab.align["Name"] = "l"
 
-        hby = existing.setupHby(name=self.args.name, base=self.args.base,
+        hby = setupHby(name=self.args.name, base=self.args.base,
                                 bran=self.args.bran, temp=self.args.temp)
 
         for idx, (name, dater) in enumerate(hby.db.complete()):

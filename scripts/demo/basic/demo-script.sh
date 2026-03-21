@@ -1,3 +1,5 @@
+#!/bin/bash
+
 # GETTING STARTED
 function isSuccess() {
     ret=$?

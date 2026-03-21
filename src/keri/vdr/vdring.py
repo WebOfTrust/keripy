@@ -9,9 +9,9 @@ VDR Verifiable Data Registry
 
 """
 
-from dataclasses import dataclass, field, asdict
+from dataclasses import dataclass, field
 
-from .. import recording
+from ..recording import RawRecord
 
 @dataclass
 class RegistryRecord:
@@ -22,7 +22,7 @@ class RegistryRecord:
 
 
 @dataclass
-class RegStateRecord(recording.RawRecord):  # reger.state
+class RegStateRecord(RawRecord):  # reger.state
     """
     Registry Event Log (REL) State information
 
@@ -73,7 +73,7 @@ class RegStateRecord(recording.RawRecord):  # reger.state
 
 
 @dataclass
-class VcStateRecord(recording.RawRecord):
+class VcStateRecord(RawRecord):
     vn: list[str] = field(default_factory=list)  # version number [major, minor] round trip serializable
     i: str = ''  # identifier prefix qb64
     s: str = '0'  # sequence number of latest event in KEL as hex str

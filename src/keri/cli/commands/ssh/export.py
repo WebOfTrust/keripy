@@ -12,14 +12,14 @@ from pathlib import Path
 from cryptography.hazmat.primitives import serialization
 from cryptography.hazmat.primitives.asymmetric import ed25519
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
-from ...common.parsing import Parsery
+from ...common import Parsery, existingHby, aliasInput
 
-from .... import help, ConfigurationError
+from .... import ConfigurationError
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Export keys of specified identifier for use with SSH', 
                                  parents=[Parsery.keystore()])
@@ -49,9 +49,9 @@ def export(tymth, tock=0.0, **opts):
     home = str(Path.home())
 
     try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
+        with existingHby(name=name, base=base, bran=bran) as hby:
             if alias is None:
-                alias = existing.aliasInput(hby)
+                alias = aliasInput(hby)
 
             hab = hby.habByName(alias)
             if private:

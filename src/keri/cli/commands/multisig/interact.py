@@ -8,16 +8,20 @@ import argparse
 from ordered_set import OrderedSet as oset
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import Parsery, existing, displaying, config
+from ...common import Parsery, config, setupHby, printIdentifier
 
-from .... import ConfigurationError, help
-from ....app import Notifier, grouping, indirecting, habbing, forwarding
-from ....core import coring, serdering
-from ....peer import exchanging
+from ....kering import ConfigurationError
+from ....app import (Notifier, Multiplexor, Counselor,
+                     MailboxDirector, HaberyDoer, Poster,
+                     loadHandlers, multisigInteractExn)
+
+from ....core import Prefixer, Number, Diger, SerderKERI
+from ....peer import Exchanger
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Begin or join a rotation of a group identifier', 
                                  parents=[Parsery.keystore()])
@@ -68,17 +72,17 @@ class GroupMultisigInteract(doing.DoDoer):
         self.aids = aids
         self.data = data
 
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        self.postman = forwarding.Poster(hby=self.hby)
+        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
+        self.postman = Poster(hby=self.hby)
 
         notifier = Notifier(self.hby)
-        mux = grouping.Multiplexor(self.hby, notifier=notifier)
-        exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        grouping.loadHandlers(exc, mux)
+        mux = Multiplexor(self.hby, notifier=notifier)
+        exc = Exchanger(hby=self.hby, handlers=[])
+        loadHandlers(exc, mux)
 
-        mbd = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'], exc=exc)
-        self.counselor = grouping.Counselor(hby=self.hby)
+        mbd = MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'], exc=exc)
+        self.counselor = Counselor(hby=self.hby)
 
         doers = [self.hbyDoer, self.postman, mbd, self.counselor]
         self.toRemove = list(doers)
@@ -108,18 +112,18 @@ class GroupMultisigInteract(doing.DoDoer):
         aids = self.aids if self.aids is not None else ghab.smids
 
         ixn = ghab.interact(data=self.data)
-        serder = serdering.SerderKERI(raw=ixn)
+        serder = SerderKERI(raw=ixn)
 
-        exn, ims = grouping.multisigInteractExn(ghab=ghab, aids=aids, ixn=ixn)
+        exn, ims = multisigInteractExn(ghab=ghab, aids=aids, ixn=ixn)
         others = list(oset(ghab.smids + (ghab.rmids or [])))
         others.remove(ghab.mhab.pre)
 
         for recpt in others:  # send notification to other participants as a signalling mechanism
             self.postman.send(src=ghab.mhab.pre, dest=recpt, topic="multisig", serder=exn, attachment=ims)
 
-        prefixer = coring.Prefixer(qb64=ghab.pre)
-        number = coring.Number(sn=serder.sn)
-        diger = coring.Diger(qb64b=serder.saidb)
+        prefixer = Prefixer(qb64=ghab.pre)
+        number = Number(sn=serder.sn)
+        diger = Diger(qb64b=serder.saidb)
         self.counselor.start(prefixer=prefixer, number=number, diger=diger, ghab=ghab)
 
         while True:
@@ -130,5 +134,5 @@ class GroupMultisigInteract(doing.DoDoer):
             yield self.tock
 
         print()
-        displaying.printIdentifier(self.hby, ghab.pre)
+        printIdentifier(self.hby, ghab.pre)
         self.remove(self.toRemove)

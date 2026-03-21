@@ -92,7 +92,7 @@ def test_create_cesr_request(mockHelpingNowUTC):
         assert serder.ked["r"] == "tels"
 
         headers = args["headers"]
-        assert headers["Content-Type"] == "application/cesr+json"
+        assert headers["Content-Type"] == "application/cesr"
         assert headers["Content-Length"] == 254
         assert len(headers["CESR-ATTACHMENT"]) == 144
 
@@ -110,7 +110,7 @@ def test_create_cesr_request(mockHelpingNowUTC):
                                 b'_AmvhLg4lqcC_9WYX90k03q-R_Ydo"}}')
 
         headers = args["headers"]
-        assert headers["Content-Type"] == "application/cesr+json"
+        assert headers["Content-Type"] == "application/cesr"
         assert headers["Content-Length"] == 260
         assert headers["CESR-ATTACHMENT"] == bytearray(
             b'-VAj-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAAB6P97k'
@@ -140,7 +140,7 @@ def test_stream_cesr_request(mockHelpingNowUTC):
         assert serder.ked["r"] == "tels"
 
         headers = args["headers"]
-        assert headers["Content-Type"] == "application/cesr+json"
+        assert headers["Content-Type"] == "application/cesr"
         assert headers["Content-Length"] == 254
         assert len(headers["CESR-ATTACHMENT"]) == 144
 
@@ -158,7 +158,7 @@ def test_stream_cesr_request(mockHelpingNowUTC):
                                 b'_AmvhLg4lqcC_9WYX90k03q-R_Ydo"}}')
 
         headers = args["headers"]
-        assert headers["Content-Type"] == "application/cesr+json"
+        assert headers["Content-Type"] == "application/cesr"
         assert headers["Content-Length"] == 260
         assert headers["CESR-ATTACHMENT"] == (b'-VAj-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAAB6P97k'
                                               b'Z3al3V3z3VstRtHRPeOrotuqZZUgBl2yHzgpGyOjAXYGinVqWLAMhdmQ089FTSAz'
@@ -180,7 +180,7 @@ def test_stream_cesr_request(mockHelpingNowUTC):
                                 b'0e5p7LVB6JwLDIcgqsISktnfe5m60O_I2zZO6N"],"bt":"0","b":[],"c":[],"a":[]}')
         headers = args["headers"]
         assert headers['Content-Length'] == 299
-        assert headers['Content-Type'] == 'application/cesr+json'
+        assert headers['Content-Type'] == 'application/cesr'
         assert headers['CESR-ATTACHMENT'] == (b'-AABAACihaKoLnoXxRoxGbFfOy67YSh6UxtgjT2oxupnLDz2FlhevGJKTMObbdex'
                                               b'9f0Hqob6uTavSJvsXf5RzitskkkC')
 
@@ -194,7 +194,7 @@ def test_stream_cesr_request(mockHelpingNowUTC):
                                 b'z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"}}')
         headers = args["headers"]
         assert headers['Content-Length'] == 261
-        assert headers['Content-Type'] == 'application/cesr+json'
+        assert headers['Content-Type'] == 'application/cesr'
         assert headers['CESR-ATTACHMENT'] == (b'-VAj-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAAA9IV9O'
                                               b'7nlInObE0V8E6xphJcv9u_53mP7YFOzESF3RsZOyN_LguuC-ZBBxY_-yjlh-YKeX'
                                               b'jIu5ZwJILbL2bcID')

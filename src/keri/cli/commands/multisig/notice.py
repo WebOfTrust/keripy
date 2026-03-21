@@ -7,15 +7,18 @@ import argparse
 from ordered_set import OrderedSet as oset
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import Parsery, existing
+from ...common import Parsery, setupHby
 
-from .... import Ilks, help
-from ....app import habbing, forwarding, grouping
-from ....core import serdering
+from ....kering import Ilks
+from ....app import (HaberyDoer, Poster, multisigRotateExn,
+                     multisigInceptExn, multisigInteractExn)
+
+from ....core import SerderKERI
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Notify other participants of the last event in a group multisig AID', 
                                  parents=[Parsery.keystore()])
@@ -50,12 +53,12 @@ class NoticeDoer(doing.DoDoer):
 
     def __init__(self, name, base, alias, bran):
 
-        hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
+        hby = setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = HaberyDoer(habery=hby)  # setup doer
         self.alias = alias
         self.hby = hby
 
-        self.postman = forwarding.Postman(hby=self.hby)
+        self.postman = Poster(hby=self.hby)
         doers = [self.hbyDoer, self.postman, doing.doify(self.noticeDo)]
 
         super(NoticeDoer, self).__init__(doers=doers)
@@ -80,7 +83,7 @@ class NoticeDoer(doing.DoDoer):
             (smids, rmids) = hab.members()
             serder = hab.kever.serder
             rot = hab.makeOwnEvent(sn=hab.kever.sn)
-            eserder = serdering.SerderKERI(raw=rot)
+            eserder = SerderKERI(raw=rot)
             del rot[:eserder.size]
 
             ilk = serder.ked['t']
@@ -89,19 +92,19 @@ class NoticeDoer(doing.DoDoer):
 
             if ilk in (Ilks.rot,):
                 print(f"Sending rot event to {len(others)} participants.")
-                exn, ims = grouping.multisigRotateExn(hab,
+                exn, ims = multisigRotateExn(hab,
                                                       aids=smids,
                                                       smids=smids,
                                                       rmids=rmids,
                                                       ked=serder.ked)
             elif ilk in (Ilks.icp,):
                 print(f"Sending icp event to {len(others)} participants.")
-                exn, ims = grouping.multisigInceptExn(hab,
+                exn, ims = multisigInceptExn(hab,
                                                       aids=smids,
                                                       ked=serder.ked)
             elif ilk in (Ilks.ixn,):
                 print(f"Sending ixn event to {len(others)} participants.")
-                exn, ims = grouping.multisigInteractExn(hab,
+                exn, ims = multisigInteractExn(hab,
                                                         aids=smids,
                                                         sn=serder.sn,
                                                         data=serder.ked["a"])

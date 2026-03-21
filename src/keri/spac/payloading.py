@@ -6,8 +6,8 @@ keri.spac.payloading module
 
 from collections import namedtuple
 
-from .. import InvalidSoftError, InvalidCodeError
-from ..core import coring, MtrDex
+from ..kering import InvalidSoftError, InvalidCodeError
+from ..core import Tagger, MtrDex
 
 
 PayloadTypage = namedtuple("PayloadTypage", 'HOP RFI RFA RFD SCS')
@@ -15,7 +15,7 @@ PayloadTypage = namedtuple("PayloadTypage", 'HOP RFI RFA RFD SCS')
 PayloadTypes = PayloadTypage(HOP='HOP', RFI='RFI', RFA='RFA', RFD='RFD', SCS='SCS')
 
 
-class PayloadTyper(coring.Tagger):
+class PayloadTyper(Tagger):
     """
     PayloadTyper is subclass of Tagger, cryptographic material, for formatted
     message types (PayloadTypes) in Base64. Leverages Tagger support compact special

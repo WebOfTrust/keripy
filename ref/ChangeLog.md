@@ -1,5 +1,15 @@
 # Change Log for keripy
 
+## 2.0.0-dev6
+
+### OnSuber and OnIoDupSuber remap of method names
+change method names to shadow super class methods to avoid confusion and reduce
+potential errors
+
+### WASM Support.
+Added keri.db.webdbing.py with support for IndexedDB in wasm pyodide pyscript.
+as a plugin replacement for LMDB  (see keri.db.webdbing.WebDBer)
+
 ## 2.0.0-dev5
 ### Backwards breaking interface changes
 Changes to call signatures that will break dependent libraries
@@ -21,6 +31,15 @@ that it iterates over the top branch given by keys and uses the topive parameter
 
 #### keri.db.dbing
 Changed LMDBer.delval to LMDBer.remval
+
+#### keri.core.scheming.py
+Replaced deprecated `jsonschema.RefResolver` with `referencing.Registry` in
+`CacheResolver.resolver()`. The method now returns a `referencing.Registry`
+instance instead of a `jsonschema.RefResolver` instance.
+Requires `jsonschema >= 4.18.0` and the `referencing` package.
+Users on older versions of `jsonschema` must upgrade.
+`JSONSchema.verify_json()` now passes `registry=` instead of `resolver=` to
+`jsonschema.validate()`.
 
 #### keri.core.routing.py
 Changed `Router.dispatch(self, serder, saider, ...)` to `dispatch(self, serder, diger, ...)`.

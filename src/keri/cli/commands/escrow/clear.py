@@ -6,14 +6,13 @@ keri.kli.commands.escrow module
 """
 import argparse
 
-from ...common import existing
-from ...common.parsing import Parsery
-
 from hio.base import doing
-from .... import help
+from hio.help import ogler
+
+from ...common import existingHby, Parsery
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Clear escrows', 
                                  parents=[Parsery.keystore()])
@@ -46,5 +45,5 @@ def clear(tymth, tock=0.0, **opts):
     base = args.base
     bran = args.bran
 
-    with existing.existingHby(name=name, base=base, bran=bran) as hby:
+    with existingHby(name=name, base=base, bran=bran) as hby:
         hby.db.clearEscrows()

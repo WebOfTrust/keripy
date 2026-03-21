@@ -7,18 +7,22 @@ import datetime
 import logging
 from datetime import timedelta
 
-from hio.help import decking
+from hio.help import decking, ogler
 
-from .. import (help, Vrsn_1_0, Vrsn_2_0, Ilks, versify,
-                ValidationError, MissingSignatureError)
-from ..app import habbing
-from ..core import (Counter, eventing, coring, serdering,
-                    Codens)
+from ..kering import (Vrsn_1_0, Vrsn_2_0, Ilks,
+                      Kinds, Version, versify,
+                      ValidationError, MissingSignatureError)
+from ..core import (Counter, Pather, Dater, Diger,
+                    Prefixer, Seqner, Saider,
+                    Noncer, Sadder, SerderKERI, 
+                    NonTransDex, Saids, Codens,
+                    verifySigs)
+from ..db import fetchTsgs
 from ..help import helping
 
 ExchangeMessageTimeWindow = timedelta(seconds=300)
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 class Exchanger:
@@ -100,7 +104,7 @@ class Exchanger:
 
                 # Verify the signatures are valid and that the signature threshold as of the signing event is met
                 tholder, verfers = self.hby.db.resolveVerifiers(pre=prefixer.qb64, sn=seqner.sn, dig=ssaider.qb64)
-                _, indices = eventing.verifySigs(serder.raw, sigers, verfers)
+                _, indices = verifySigs(serder.raw, sigers, verfers)
 
                 if not tholder.satisfy(indices):  # We still don't have all the sigers, need to escrow
                     if self.escrowPSEvent(serder=serder, tsgs=tsgs, pathed=ptds):
@@ -135,13 +139,13 @@ class Exchanger:
             logger.debug("Exchange message body=\n%s\n", serder.pretty())
             raise MissingSignatureError(msg)
 
-        e = coring.Pather(parts=["e"])
+        e = Pather(parts=["e"])
 
         kwa = dict()
         attachments = []
         for p in ptds:
             pattach = bytearray(p)
-            pather = coring.Pather(qb64b=pattach, strip=True)
+            pather = Pather(qb64b=pattach, strip=True)
             if pather.startswith(e):
                 np = pather.strip(e)
                 attachments.append((np, pattach))
@@ -156,7 +160,7 @@ class Exchanger:
 
             essr = kwa['essr']
             dig = serder.seals
-            diger = coring.Diger(qb64=dig)
+            diger = Diger(qb64=dig)
             if not diger.verify(ser=essr):
                 raise ValidationError(f"essr diger={diger.qb64} is invalid against content")
 
@@ -203,7 +207,7 @@ class Exchanger:
             for siger in sigers:
                 self.hby.db.esigs.add(keys=quadkeys, val=siger)
 
-        self.hby.db.epsd.put(keys=(dig,), val=coring.Dater())
+        self.hby.db.epsd.put(keys=(dig,), val=Dater())
         self.hby.db.epath.pin(keys=(dig,), vals=[bytes(p) for p in pathed])
         return self.hby.db.epse.put(keys=(dig,), val=serder)
 
@@ -212,7 +216,7 @@ class Exchanger:
         for (dig,), serder in self.hby.db.epse.getTopItemIter():
             try:
                 tsgs = []
-                klases = (coring.Prefixer, coring.Seqner, coring.Saider)
+                klases = (Prefixer, Seqner, Saider)
                 args = ("qb64", "snh", "qb64")
                 sigers = []
 
@@ -281,7 +285,7 @@ class Exchanger:
         for cigar in cigars:
             self.hby.db.ecigs.add(keys=(dig,), val=(cigar.verfer, cigar))
 
-        diger = coring.Diger(qb64=serder.said)
+        diger = Diger(qb64=serder.said)
         self.hby.db.epath.pin(keys=(dig,), vals=[bytes(p) for p in pathed])
         for texter in essrs:
             self.hby.db.essrs.add(keys=(dig,), val=texter)
@@ -303,11 +307,13 @@ class Exchanger:
             bool: True means hab is the lead
 
         """
-        if not isinstance(hab, habbing.GroupHab):
+        from ..app import GroupHab
+
+        if not isinstance(hab, GroupHab):
             return True
 
         keys = [verfer.qb64 for verfer in hab.kever.verfers]
-        tsgs = eventing.fetchTsgs(self.hby.db.esigs, coring.Diger(qb64=said))
+        tsgs = fetchTsgs(self.hby.db.esigs, Diger(qb64=said))
         if not tsgs:  # otherwise it contains a list of sigs
             return False
 
@@ -345,7 +351,7 @@ def exincept(sender="",
             stamp=None,
             pvrsn=Vrsn_2_0,
             gvrsn=None,
-            kind=coring.Kinds.json):
+            kind=Kinds.json):
     """Utility function to automate creation of exchange incept, 'xip', messages.
     Xincept 'xip' message is a SAD item with an associated derived SAID in its
     'd' field.  Only defined for KERI v2.
@@ -400,7 +406,7 @@ def exincept(sender="",
     sad = dict(v=vs,  # version string
                t=ilk, # message type
                d="",  # message said
-               u=nonce if nonce is not None else coring.Noncer(),
+               u=nonce if nonce is not None else Noncer(),
                i=sender,  # sender aid qb64
                ri=receiver,  # receiver aid qb64
                dt=stamp if stamp is not None else helping.nowIso8601(),
@@ -409,7 +415,7 @@ def exincept(sender="",
                a=attributes if attributes is not None else {},  # attributes
                )
 
-    serder = serdering.SerderKERI(sad=sad, makify=True)
+    serder = SerderKERI(sad=sad, makify=True)
     return serder
 
 
@@ -423,10 +429,10 @@ def exchange(route,
              xid="",
              modifiers=None,
              embeds=None,
-             version=coring.Version,
+             version=Version,
              pvrsn=None,
              gvrsn=None,
-             kind=coring.Kinds.json):
+             kind=Kinds.json):
     """ Create an `exn` message with the specified route and payload
 
     Parameters:
@@ -448,9 +454,9 @@ def exchange(route,
 
     """
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = coring.versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
 
-    ilk = eventing.Ilks.exn
+    ilk = Ilks.exn
     dt = date if date is not None else helping.nowIso8601()
     xid = xid if xid is not None else ""
     p = dig if dig is not None else ""
@@ -460,14 +466,14 @@ def exchange(route,
     e = dict()
     end = bytearray()
     for label, msg in embeds.items():
-        serder = coring.Sadder(raw=msg)
+        serder = Sadder(raw=msg)
         e[label] = serder.ked
         atc = bytes(msg[serder.size:])
         if not atc:
             continue
 
         pathed = bytearray()
-        pather = coring.Pather(parts=["e", label])
+        pather = Pather(parts=["e", label])
         pathed.extend(pather.qb64b)
         pathed.extend(atc)
         if len(pathed) // 4 < 4096:
@@ -482,7 +488,7 @@ def exchange(route,
 
     if e:
         e["d"] = ""
-        _, e = coring.Saider.saidify(sad=e, label=coring.Saids.d)
+        _, e = Saider.saidify(sad=e, label=Saids.d)
 
     modifiers = modifiers if modifiers is not None else {}
 
@@ -530,7 +536,7 @@ def exchange(route,
                    q=modifiers if modifiers is not None else {},  # q field required
                    a=attrs)
 
-    return serdering.SerderKERI(sad=sad, makify=True), end  # return serialized ked
+    return SerderKERI(sad=sad, makify=True), end  # return serialized ked
 
 
 def cloneMessage(hby, said):
@@ -551,10 +557,10 @@ def cloneMessage(hby, said):
     verify(hby=hby, serder=exn)
 
     pathed = dict()
-    e = coring.Pather(parts=["e"])
+    e = Pather(parts=["e"])
     for p in hby.db.epath.get(keys=(exn.said,)):
         pb = bytearray(p.encode("utf-8"))
-        pather = coring.Pather(qb64b=pb, strip=True)
+        pather = Pather(qb64b=pb, strip=True)
         if pather.startswith(e):
             np = pather.strip(e)
             nesting(np.rparts, pathed, pb)  # no unit test for this
@@ -590,7 +596,7 @@ def serializeMessage(hby, said, pipelined=False):
         atc.extend(Counter(Codens.NonTransReceiptCouples,
                                 count=len(cigars), version=Vrsn_1_0).qb64b)
         for cigar in cigars:
-            if cigar.verfer.code not in coring.NonTransDex:
+            if cigar.verfer.code not in NonTransDex:
                 raise ValueError("Attempt to use tranferable prefix={} for "
                                  "receipt.".format(cigar.verfer.qb64))
             atc.extend(cigar.verfer.qb64b)
@@ -642,7 +648,7 @@ def verify(hby, serder):
 
     """
     tsgs = []
-    klases = (coring.Prefixer, coring.Seqner, coring.Saider)
+    klases = (Prefixer, Seqner, Saider)
     args = ("qb64", "snh", "qb64")
     sigers = []
     old = None  # empty keys
@@ -670,7 +676,7 @@ def verify(hby, serder):
 
         # Verify the signatures are valid and that the signature threshold as of the signing event is met
         tholder, verfers = hby.db.resolveVerifiers(pre=prefixer.qb64, sn=seqner.sn, dig=ssaider.qb64)
-        _, indices = eventing.verifySigs(serder.raw, sigers, verfers)
+        _, indices = verifySigs(serder.raw, sigers, verfers)
 
         if not tholder.satisfy(indices):  # We still don't have all the sigers, need to escrow
             msg = f"Not enough signatures in idx={indices} for evt = {serder.said}"

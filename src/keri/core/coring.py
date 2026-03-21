@@ -21,15 +21,15 @@ from cryptography import exceptions
 from cryptography.hazmat.primitives import hashes
 from cryptography.hazmat.primitives.asymmetric import ec, utils
 
-from .. import (EmptyMaterialError, RawMaterialError, SoftMaterialError,
-                InvalidCodeError, InvalidSoftError, InvalidCodeSizeError,
-                InvalidVarRawSizeError, ConversionError, InvalidValueError,
-                ValidationError, VersionError, ShortageError,
-                UnexpectedCodeError, DeserializeError, Versionage,
-                UnexpectedCountCodeError, UnexpectedOpCodeError,
-                versify, deversify, smell, MAXVERFULLSPAN,
-                Version, Vrsn_2_0, Rever, MaxON,
-                Kinds, Protocols,Ilks, TraitDex)
+from ..kering import (EmptyMaterialError, RawMaterialError, SoftMaterialError,
+                      InvalidCodeError, InvalidSoftError, InvalidCodeSizeError,
+                      InvalidVarRawSizeError, ConversionError, InvalidValueError,
+                      ValidationError, VersionError, ShortageError,
+                      UnexpectedCodeError, DeserializeError, Versionage,
+                      UnexpectedCountCodeError, UnexpectedOpCodeError,
+                      versify, deversify, smell, MAXVERFULLSPAN,
+                      Version, Vrsn_2_0, Rever, MaxON,
+                      Kinds, Protocols, Ilks, TraitDex)
 
 from ..help import (sceil, isNonStringIterable, isNonStringSequence,
                     intToB64, b64ToInt, codeB64ToB2, nabSextets,
@@ -4855,8 +4855,6 @@ class Dicter:
     Dicter classes can be initialized by a dict and then expose bytes of JSON
     in the .raw property  Subclasses can add semantically appropriate properties
     that extract / add specific keys to the underlying dict .pad
-
-    ToDo: Needs unit tests
 
     """
     def __init__(self, raw=b'', pad=None, dicter=None, label=Saids.i):

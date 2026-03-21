@@ -6,13 +6,15 @@ keri.vc.proving module
 
 from typing import Optional, Union
 
-from .. import help, versify, Protocols, Kinds, Version
-from ..core import Salter, Saider, serdering, Saids
+from hio.help import ogler
+
+from ..kering import versify, Protocols, Kinds, Version
+from ..core import Salter, Saider, SerderACDC, Saids
 from ..help import helping
 
 KERI_REGISTRY_TYPE = "KERICredentialRegistry"
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 def credential(schema:str,
@@ -45,7 +47,7 @@ def credential(schema:str,
         kind (Kinds): serialization kind
 
     Returns:
-        serdering.SerderACDC: credential instance
+        SerderACDC: credential instance
 
     """
     vs = versify(proto=Protocols.acdc, pvrsn=version, kind=kind, size=0)
@@ -91,4 +93,4 @@ def credential(schema:str,
     _, sad = Saider.saidify(sad=subject, kind=kind, label=Saids.d)
     vc["a"] = sad
 
-    return serdering.SerderACDC(sad=vc, makify=True)
+    return SerderACDC(sad=vc, makify=True)

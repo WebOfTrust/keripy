@@ -7,12 +7,13 @@ simple direct mode demo support classes
 """
 import itertools
 from hio.base import doing
+from hio.help import ogler
 
-from .. import help, Vrsn_1_0
-from ..core import eventing, routing, parsing
-from ..vdr.eventing import Tevery
+from .. import Vrsn_1_0
+from ..core import Kevery, Revery, Parser
+from ..vdr import Tevery
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 class Director(doing.Doer):
@@ -174,7 +175,7 @@ class Reactor(doing.DoDoer):
                       doing.doify(self.escrowDo),
                       doing.doify(self.cueDo)])
 
-        self.kevery = eventing.Kevery(db=self.hab.db,
+        self.kevery = Kevery(db=self.hab.db,
                                       lax=False,
                                       local=False,
                                       direct=self.direct)
@@ -186,12 +187,12 @@ class Reactor(doing.DoDoer):
         else:
             self.tvy = None
 
-        self.parser = parsing.Parser(ims=self.client.rxbs,
-                                     framed=True,
-                                     kvy=self.kevery,
-                                     tvy=self.tvy,
-                                     exc=self.exc,
-                                     version=Vrsn_1_0)
+        self.parser = Parser(ims=self.client.rxbs,
+                             framed=True,
+                             kvy=self.kevery,
+                             tvy=self.tvy,
+                             exc=self.exc,
+                             version=Vrsn_1_0)
 
 
         super(Reactor, self).__init__(doers=doers, **kwa)
@@ -525,8 +526,8 @@ class Reactant(doing.DoDoer):
                       doing.doify(self.escrowDo)])
 
         #  needs unique kevery with ims per remoter connnection
-        rvy = routing.Revery(db=hab.db)
-        self.kevery = eventing.Kevery(db=self.hab.db,
+        rvy = Revery(db=hab.db)
+        self.kevery = Kevery(db=self.hab.db,
                                       lax=False,
                                       local=False,
                                       rvy=rvy)
@@ -541,13 +542,13 @@ class Reactant(doing.DoDoer):
 
         self.kevery.registerReplyRoutes(router=rvy.rtr)
 
-        self.parser = parsing.Parser(ims=self.remoter.rxbs,
-                                     framed=True,
-                                     kvy=self.kevery,
-                                     tvy=self.tevery,
-                                     exc=self.exchanger,
-                                     rvy=rvy,
-                                     version=Vrsn_1_0)
+        self.parser = Parser(ims=self.remoter.rxbs,
+                             framed=True,
+                             kvy=self.kevery,
+                             tvy=self.tevery,
+                             exc=self.exchanger,
+                             rvy=rvy,
+                             version=Vrsn_1_0)
 
         super(Reactant, self).__init__(doers=doers, **kwa)
         if self.tymth:

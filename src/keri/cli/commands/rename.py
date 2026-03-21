@@ -7,14 +7,14 @@ keri.kli.commands module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ..common import existing
-from ..common.parsing import Parsery
+from ..common import Parsery, existingHab
 
-from ... import help, ConfigurationError
+from ...kering import ConfigurationError
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Change the alias for a local identifier', 
                                  parents=[Parsery.keystore()])
@@ -41,7 +41,7 @@ def rename(tymth, tock=0.0, **opts):
     newAlias = args.new
 
     try:
-        with existing.existingHab(name=name, alias=alias, base=base, bran=bran) as (hby, hab):
+        with existingHab(name=name, alias=alias, base=base, bran=bran) as (hby, hab):
             if hby.habByName(newAlias) is not None:
                 print(f"{newAlias} is already in use")
 
