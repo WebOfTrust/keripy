@@ -87,8 +87,53 @@ class Kramer:
         self._fullDenials = kram.get('denials', [])
         self._denials = self._compactDenials(self._fullDenials)
 
-        self._ctypCf = kram.get('caches', {})
-        self._populateCtyp(self._ctypCf)
+        self._kramCTYPCf = kram.get('caches', {})
+        self._populateCtyp(self._kramCTYPCf)
+
+    def _parseValidateCtyp(self, key, val):
+        """Parse and validate one cache-type tuple from config.
+
+        Parameters:
+            key (str): cache-type key expression
+            val (list|tuple): (d, sl, ll, xl, psl, pll, pxl)
+
+        Returns:
+            CacheTypeRecord: validated cache-type record
+
+        Raises:
+            KramConfigurationError: if tuple cannot be parsed or violates constraints
+        """
+        try:
+            record = CacheTypeRecord(*map(int, val))
+        except Exception as e:
+            raise KramConfigurationError(
+                f"Invalid cache configuration for {key}, {val}: {e}")
+
+        if record.d < 0:
+            raise KramConfigurationError(
+                f"Cache type {key}: d must be >= 0, got {record.d}")
+        if not (record.sl > 0 and record.sl <= record.ll <= record.xl):
+            raise KramConfigurationError(
+                f"Cache type {key}: require 0 < sl <= ll <= xl, "
+                f"got sl={record.sl} ll={record.ll} xl={record.xl}")
+        if record.psl < record.sl:
+            raise KramConfigurationError(
+                f"Cache type {key}: psl must be >= sl, got psl={record.psl} sl={record.sl}")
+        if record.pll < record.ll:
+            raise KramConfigurationError(
+                f"Cache type {key}: pll must be >= ll, got pll={record.pll} ll={record.ll}")
+        if record.pxl < record.xl:
+            raise KramConfigurationError(
+                f"Cache type {key}: pxl must be >= xl, got pxl={record.pxl} xl={record.xl}")
+
+        return record
+
+    def _validateCtypConfig(self, ctypCf):
+        """Validate all cache-type tuples and return parsed records."""
+        records = {}
+        for key, val in ctypCf.items():
+            records[key] = self._parseValidateCtyp(key, val)
+        return records
 
     def _populateCtyp(self, ctypCf):
         """Prepopulate ctyp cache with configured values.
@@ -99,31 +144,8 @@ class Kramer:
         Parameters:
             ctypCf (dict): cache-type config key -> list of (d, sl, ll, xl, psl, pll, pxl)
         """
-        for key, val in ctypCf.items():
-            try:
-                record = CacheTypeRecord(*map(int, val))
-            except Exception as e:
-                raise KramConfigurationError(
-                    f"Invalid cache configuration for {key}, {val}: {e}")
-
-            if record.d < 0:
-                raise KramConfigurationError(
-                    f"Cache type {key}: d must be >= 0, got {record.d}")
-            if not (record.sl > 0 and record.sl <= record.ll <= record.xl):
-                raise KramConfigurationError(
-                    f"Cache type {key}: require 0 < sl <= ll <= xl, "
-                    f"got sl={record.sl} ll={record.ll} xl={record.xl}")
-            if record.psl < record.sl:
-                raise KramConfigurationError(
-                    f"Cache type {key}: psl must be >= sl, got psl={record.psl} sl={record.sl}")
-            if record.pll < record.ll:
-                raise KramConfigurationError(
-                    f"Cache type {key}: pll must be >= ll, got pll={record.pll} ll={record.ll}")
-            if record.pxl < record.xl:
-                raise KramConfigurationError(
-                    f"Cache type {key}: pxl must be >= xl, got pxl={record.pxl} xl={record.xl}")
-
-            self.db.ctyp.pin(key, record)
+        for key, record in self._validateCtypConfig(ctypCf).items():
+            self.db.kramCTYP.pin(key, record)
 
     @staticmethod
     def _compactDenials(fullDenials):
@@ -1219,6 +1241,7 @@ class Kramer:
         # Get the new config
         config = newCf.get()
         new = config.get("kram", {}).get("caches", {})
+        newRecords = self._validateCtypConfig(new)
 
         # Case 3 coverage aware logic
         # Build the semantic coverage graphs used to detect holes, and compute deltas
@@ -1247,7 +1270,14 @@ class Kramer:
 
         # Iterate through the new config against the old config
         for ctype, newvals in new.items():
-            d_new, sl_new, ll_new, xl_new, psl_new, pll_new, pxl_new = map(int, newvals)
+            newrec = newRecords[ctype]
+            d_new = newrec.d
+            sl_new = newrec.sl
+            ll_new = newrec.ll
+            xl_new = newrec.xl
+            psl_new = newrec.psl
+            pll_new = newrec.pll
+            pxl_new = newrec.pxl
 
             # Newly introduced cache
             if ctype not in old:
@@ -1255,7 +1285,7 @@ class Kramer:
                 # No expansion detected in the coverage graph
                 if deltaCase3 == 0:
                     # Safe to apply immediately
-                    rec = CacheTypeRecord(*map(int, newvals))
+                    rec = newrec
                     self.db.kramCTYP.pin(ctype, rec)
 
                 # Pattern in the coverage graph expanded, accept-window increases must be staged

@@ -178,7 +178,7 @@ def test_cache_type_constraints_valid():
         cf.put(validCf)
         with basing.openDB(name="test_config_constraints_valid", temp=True) as db:
             Kramer(db, cf)
-            rec = db.ctyp.get("~")
+            rec = db.kramCTYP.get("~")
             assert rec is not None
             assert rec.d == 100
             assert rec.sl == 2000
@@ -272,6 +272,47 @@ def test_cache_type_constraint_pxl_xl():
             with pytest.raises(kering.KramConfigurationError) as exc_info:
                 Kramer(db, cf_handle)
             assert "pxl must be >= xl" in str(exc_info.value)
+
+
+def test_change_config_rejects_invalid_cache_constraints():
+    """Kramer.changeConfig raises when new cache tuple violates constraints."""
+    old_cfg = {
+        "kram": {
+            "enabled": True,
+            "denials": [],
+            "caches": {
+                "~": [100, 2000, 3000, 4000, 2000, 3000, 4000],
+            }
+        }
+    }
+
+    # Invalid: sl <= 0 and ordering violation
+    bad_cfg = {
+        "kram": {
+            "enabled": True,
+            "denials": [],
+            "caches": {
+                "~": [100, 0, 3000, 4000, 2000, 3000, 4000],
+            }
+        }
+    }
+
+    with configing.openCF(name="kram", base="test", temp=True) as cf:
+        cf.put(old_cfg)
+        with basing.openDB(name="test_change_config_rejects_invalid", temp=True) as db:
+            kramer = Kramer(db, cf)
+            rec_before = db.kramCTYP.get("~")
+            assert rec_before.sl == 2000
+
+            cf.put(bad_cfg)
+            with pytest.raises(kering.KramConfigurationError) as exc_info:
+                kramer.changeConfig(cf)
+            assert "require 0 < sl <= ll <= xl" in str(exc_info.value)
+
+            # Existing config/cache record remains unchanged after failed update
+            rec_after = db.kramCTYP.get("~")
+            assert rec_after.sl == 2000
+            assert kramer._kramCTYPCf == old_cfg["kram"]["caches"]
 
 
 _testSigner = core.Salter(raw=b'0123456789abcdef').signer(transferable=True)
