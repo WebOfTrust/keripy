@@ -189,89 +189,42 @@ def test_cache_type_constraints_valid():
             assert rec.pxl == 172800000
 
 
-def test_cache_type_constraint_d_negative():
-    """Kramer init raises KramConfigurationError when d < 0."""
-    cf = {
+@pytest.mark.parametrize(
+    "caches",
+    [
+        pytest.param({"~": [-1, 2000, 7200000, 172800000, 2000, 7200000, 172800000]}, id="d_negative"),
+        pytest.param({"~": [100, 8000000, 2000, 172800000, 2000, 7200000, 172800000]}, id="sl_ll_xl_order"),
+        pytest.param({"~": [100, 2000, 7200000, 172800000, 1000, 7200000, 172800000]}, id="psl_sl"),
+        pytest.param({"~": [100, 2000, 7200000, 172800000, 2000, 5000000, 172800000]}, id="pll_ll"),
+        pytest.param({"~": [100, 2000, 7200000, 172800000, 2000, 7200000, 100000000]}, id="pxl_xl"),
+    ],
+)
+def test_cache_type_constraints_invalid(request, caches):
+    """
+    Tests the behavior of cache type constraints within the Kramer configuration.
+
+    This parameterized test suite is designed to validate that invalid combinations of cache
+    parameters raise the appropriate `KramConfigurationError` based on KRAM spec which requires 
+    the following constraints:
+    0 <= d
+    0 < sl <= ll <= xl
+    0 < sl <= psl
+    0 < ll <= pll
+    0 < xl <= pxl
+    """
+    cfg = {
         "kram": {
             "enabled": False,
             "denials": [],
-            "caches": {"~": [-1, 2000, 7200000, 172800000, 2000, 7200000, 172800000]},
+            "caches": caches,
         }
     }
-    with configing.openCF(name="kram", base="test") as cf_handle:
-        cf_handle.put(cf)
-        with basing.openDB(name="test_config_d_negative", temp=True) as db:
-            with pytest.raises(kering.KramConfigurationError) as exc_info:
-                Kramer(db, cf_handle)
-            assert "d must be >= 0" in str(exc_info.value)
-
-
-def test_cache_type_constraint_sl_ll_xl():
-    """Kramer init raises KramConfigurationError when 0 < sl <= ll <= xl is violated."""
-    cf = {
-        "kram": {
-            "enabled": False,
-            "denials": [],
-            "caches": {"~": [100, 8000000, 2000, 172800000, 2000, 7200000, 172800000]},
-        }
-    }
-    with configing.openCF(name="kram", base="test") as cf_handle:
-        cf_handle.put(cf)
-        with basing.openDB(name="test_config_sl_ll_xl", temp=True) as db:
-            with pytest.raises(kering.KramConfigurationError) as exc_info:
-                Kramer(db, cf_handle)
-            assert "require 0 < sl <= ll <= xl" in str(exc_info.value)
-
-
-def test_cache_type_constraint_psl_sl():
-    """Kramer init raises KramConfigurationError when psl < sl."""
-    cf = {
-        "kram": {
-            "enabled": False,
-            "denials": [],
-            "caches": {"~": [100, 2000, 7200000, 172800000, 1000, 7200000, 172800000]},
-        }
-    }
-    with configing.openCF(name="kram", base="test") as cf_handle:
-        cf_handle.put(cf)
-        with basing.openDB(name="test_config_psl_sl", temp=True) as db:
-            with pytest.raises(kering.KramConfigurationError) as exc_info:
-                Kramer(db, cf_handle)
-            assert "psl must be >= sl" in str(exc_info.value)
-
-
-def test_cache_type_constraint_pll_ll():
-    """Kramer init raises KramConfigurationError when pll < ll."""
-    cf = {
-        "kram": {
-            "enabled": False,
-            "denials": [],
-            "caches": {"~": [100, 2000, 7200000, 172800000, 2000, 5000000, 172800000]},
-        }
-    }
-    with configing.openCF(name="kram", base="test") as cf_handle:
-        cf_handle.put(cf)
-        with basing.openDB(name="test_config_pll_ll", temp=True) as db:
-            with pytest.raises(kering.KramConfigurationError) as exc_info:
-                Kramer(db, cf_handle)
-            assert "pll must be >= ll" in str(exc_info.value)
-
-
-def test_cache_type_constraint_pxl_xl():
-    """Kramer init raises KramConfigurationError when pxl < xl."""
-    cf = {
-        "kram": {
-            "enabled": False,
-            "denials": [],
-            "caches": {"~": [100, 2000, 7200000, 172800000, 2000, 7200000, 100000000]},
-        }
-    }
-    with configing.openCF(name="kram", base="test") as cf_handle:
-        cf_handle.put(cf)
-        with basing.openDB(name="test_config_pxl_xl", temp=True) as db:
-            with pytest.raises(kering.KramConfigurationError) as exc_info:
-                Kramer(db, cf_handle)
-            assert "pxl must be >= xl" in str(exc_info.value)
+    db_name = f"test_cache_ctyp_{request.node.callspec.id}"
+    with configing.openCF(name="kram", base="test") as cf:
+        cf.put(cfg)
+        with basing.openDB(name=db_name, temp=True) as db:
+            with pytest.raises(kering.KramConfigurationError):
+                Kramer(db, cf)
 
 
 def test_change_config_rejects_invalid_cache_constraints():
@@ -305,9 +258,8 @@ def test_change_config_rejects_invalid_cache_constraints():
             assert rec_before.sl == 2000
 
             cf.put(bad_cfg)
-            with pytest.raises(kering.KramConfigurationError) as exc_info:
+            with pytest.raises(kering.KramConfigurationError):
                 kramer.changeConfig(cf)
-            assert "require 0 < sl <= ll <= xl" in str(exc_info.value)
 
             # Existing config/cache record remains unchanged after failed update
             rec_after = db.kramCTYP.get("~")

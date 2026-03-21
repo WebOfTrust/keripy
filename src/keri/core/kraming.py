@@ -71,7 +71,28 @@ and kever.tholder.
 
 
 class Kramer:
+    """KRAM (KERI Request Authentication Mechanism) processor.
+
+    Implements Full KRAM timeliness cache for replay attack prevention in KERI.
+    Manages authentication of messages via attached seals and signatures, enforcing
+    strictly monotonic ordering and sliding time windows.
+
+    The Kramer processes incoming messages through denial lists and cache logic,
+    validating authentication attachments (seal references or signatures) and
+    enforcing timeliness constraints based on configurable cache types. Supports
+    both non-transactioned (message-ID-based) and transactioned (exchange-ID-based)
+    message flows.
+
+    Attributes:
+        db: Database instance providing KRAM cache tables
+        cf: Configuration provider for KRAM settings
+        cues (list): Output queue for keystate retrieval notifications
+        enabled (bool): Whether KRAM is enabled
+        denials (list): Compacted denial strings for exempted messages
+        fullDenials (list): Raw denial configurations
+    """
     def __init__(self, db, cf=None, cues=None):
+
         self.db = db
         self.cf = cf if cf else None
 
@@ -89,6 +110,9 @@ class Kramer:
 
         self._kramCTYPCf = kram.get('caches', {})
         self._populateCtyp(self._kramCTYPCf)
+
+        # Staged accept-window increases (see changeConfig, reconcileConfig)
+        self._pending = {}
 
     def _parseValidateCtyp(self, key, val):
         """Parse and validate one cache-type tuple from config.
