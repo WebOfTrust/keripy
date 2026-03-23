@@ -8,19 +8,34 @@ Browser-safe plain-value DBer backed by PyScript storage.
 from __future__ import annotations
 
 import json
+import semver
+import importlib
+from collections import namedtuple
 from collections.abc import Awaitable, Callable, Iterable, Iterator
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Union
+
+from hio.help import ogler
 
 try:
     from pyscript import storage
+    import js 
 except ImportError:  # pragma: no cover
     storage = None
+    js = None
 
 from ordered_set import OrderedSet as oset
 from sortedcontainers import SortedDict
 
+from keri import __version__
+
 from ..recording import (KeyStateRecord, EventSourceRecord, HabitatRecord)
+from ..kering import (MissingEntryError, ValidationError, ConfigurationError, Vrsn_1_0)
+
+from .dbing import dgKey
+from .basing import MIGRATIONS, _strip_prerelease
+
+logger = ogler.getLogger()
 
 # The following are necessary to define in this file 
 # to prevent non wasm compatible imports (importing from dbing)
@@ -1073,7 +1088,7 @@ class WebDBer:
         if not key:
             return iter(())
 
-        # Get the prefix 
+        # Get the prefix
         iokey = suffix(key, ion, sep=sep)
 
         try:
@@ -2495,11 +2510,11 @@ class WebBaser(WebDBer):
 
         for (version, migrations) in MIGRATIONS:
             # Only run migration if current source code version is at or below the migration version
-            ver = semver.VersionInfo.parse(keri.__version__)
+            ver = semver.VersionInfo.parse(__version__)
             ver_no_prerelease = semver.Version(ver.major, ver.minor, ver.patch)
             if self.version is not None and semver.compare(version, str(ver_no_prerelease)) > 0:
                 print(
-                    f"Skipping migration {version} as higher than the current KERI version {keri.__version__}")
+                    f"Skipping migration {version} as higher than the current KERI version {__version__}")
                 continue
             # Skip migrations already run - where version less than (-1) or equal to (0) database version
             # Strip prerelease from DB version to avoid lexicographic comparison bugs (#820)
@@ -2532,7 +2547,7 @@ class WebBaser(WebDBer):
             # update database version after successful migration
             self.version = version
 
-        self.version = keri.__version__
+        self.version = __version__
 
     
     def _trimAllEscrows(self):
@@ -2584,15 +2599,15 @@ class WebBaser(WebDBer):
          If the current database version is ahead of the current library version, raise exception
 
          """
-        if self.version == keri.__version__:
+        if self.version == __version__:
             return True
 
-        ver = semver.VersionInfo.parse(keri.__version__)
+        ver = semver.VersionInfo.parse(__version__)
         ver_no_prerelease = semver.Version(ver.major, ver.minor, ver.patch)
         # Strip prerelease from DB version to avoid lexicographic comparison bugs (#820)
         if self.version is not None and semver.compare(_strip_prerelease(self.version), str(ver_no_prerelease)) == 1:
             raise ConfigurationError(
-                f"Database version={self.version} is ahead of library version={keri.__version__}")
+                f"Database version={self.version} is ahead of library version={__version__}")
 
         last = MIGRATIONS[-1]
         # If we aren't at latest version, but there are no outstanding migrations,
@@ -2650,7 +2665,7 @@ class WebBaser(WebDBer):
 
         # 2. Delete the old IndexedDB database
         #    Equivalent to LMDB's: rm -rf old
-        delete_req = indexedDB.deleteDatabase(old_name)
+        delete_req = js.indexedDB.deleteDatabase(old_name)
         await delete_req
 
         # 3. Rename clean DB to original name
@@ -2658,11 +2673,11 @@ class WebBaser(WebDBer):
         #    - open clean DB under old_name
         #    - copy all object stores
         #    - delete the clean DB
-        open_req = indexedDB.open(new_name)
+        open_req = js.indexedDB.open(new_name)
         clean_db = await open_req
 
         # Create new DB under old_name
-        open_req2 = indexedDB.open(old_name)
+        open_req2 = js.indexedDB.open(old_name)
         new_db = await open_req2
 
         # Copy all object stores from clean_db → new_db
@@ -2670,7 +2685,7 @@ class WebBaser(WebDBer):
             if store_name not in new_db.objectStoreNames:
                 version = new_db.version + 1
                 new_db.close()
-                upgrade_req = indexedDB.open(old_name, version)
+                upgrade_req = js.indexedDB.open(old_name, version)
                 new_db = await upgrade_req
                 new_db.createObjectStore(store_name)
 
@@ -2694,7 +2709,7 @@ class WebBaser(WebDBer):
         clean_db.close()
 
         # Delete the temporary clean DB
-        delete_clean_req = indexedDB.deleteDatabase(new_name)
+        delete_clean_req = js.indexedDB.deleteDatabase(new_name)
         await delete_clean_req
 
         # 4. Reopen this WebBaser using the new DB

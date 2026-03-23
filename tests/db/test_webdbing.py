@@ -26,7 +26,7 @@ try:
     )
     from keri.db import webdbing as webdbing_module
 except ImportError:
-    from webdbing import (  # standalone import for Pyodide
+    from keri.db.webdbing import (  # standalone import for Pyodide
         WebDBer,
         _META_KEY,
         _RECORDS_KEY,
@@ -37,7 +37,7 @@ except ImportError:
         onKey,
         splitOnKey,
     )
-    import webdbing as webdbing_module
+    import keri.db.webdbing as webdbing_module
 
 try:
     from keri.db import subing, koming, dgKey, snKey
@@ -52,7 +52,7 @@ try:
     from keri import core
 except ImportError:
     # Pyodide fallback
-    import serdering
+    from keri.core import serdering
 
 needskeri = pytest.mark.skipif(subing is None, reason="requires full keri (lmdb)")
 
