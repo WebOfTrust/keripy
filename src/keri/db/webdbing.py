@@ -1497,14 +1497,12 @@ class WebDBer:
 
         # irange with maximum gives us all keys <= maxIokey
         # The last of those is the LMDB cursor.last() equivalent.
-        candidates = list(items.irange(maximum=maxIokey))
+        lastIokey = next(items.irange(maximum=maxIokey, reverse=True), None)
 
-        if not candidates:
-            # Database empty so ON = 0
+        if lastIokey is None:
+            # No entries at all → ON = 0
             on = 0
         else:
-            # Last key in DB up to maxIokey
-            lastIokey = candidates[-1]
             lastOnkey, _ = unsuffix(lastIokey, sep=sep)
             lastKey, lastOn = splitOnKey(lastOnkey, sep=sep)
 
@@ -1993,7 +1991,7 @@ class WebDBer:
 
         # Case 1: key empty so iterate whole DB backwards
         if not key:
-            for ciokey in reversed(list(items.keys())):
+            for ciokey in items.irange(reverse=True):
                 conkey, cion = unsuffix(ciokey, sep=sep)
                 ckey, con = splitOnKey(conkey, sep=sep)
                 yield (ckey, con, items[ciokey])
@@ -2011,7 +2009,7 @@ class WebDBer:
 
         # Collect all matching entries up to this bound
         candidates = []
-        for ciokey in items.irange(maximum=iokey):
+        for ciokey in items.irange(maximum=iokey, reverse=True):
             conkey, cion = unsuffix(ciokey, sep=sep)
             ckey, con = splitOnKey(conkey, sep=sep)
 
@@ -2023,10 +2021,6 @@ class WebDBer:
             if con > on:
                 continue
 
-            candidates.append((ciokey, conkey, cion, ckey, con))
-
-        # Now walk backwards to simulate cursor.iterprev()
-        for ciokey, conkey, cion, ckey, con in reversed(candidates):
             yield (ckey, con, items[ciokey])
 
 
@@ -2075,7 +2069,7 @@ class WebDBer:
             lkey = None
             lon = None
 
-            for ciokey in reversed(list(items.keys())):
+            for ciokey in items.irange(reverse=True):
                 conkey, cion = unsuffix(ciokey, sep=sep)
                 ckey, con = splitOnKey(conkey, sep=sep)
                 cval = items[ciokey]
@@ -2122,9 +2116,11 @@ class WebDBer:
         onkey = onKey(key, on, sep=sep)
         iokey = suffix(onkey, ion=MaxON, sep=sep)
 
+        lcon = None
+        lval = None
+
         # Collect all matching entries up to this bound
-        candidates = []
-        for ciokey in items.irange(maximum=iokey):
+        for ciokey in items.irange(maximum=iokey, reverse=True):
             conkey, cion = unsuffix(ciokey, sep=sep)
             ckey, con = splitOnKey(conkey, sep=sep)
 
@@ -2136,43 +2132,21 @@ class WebDBer:
             if con > on:
                 continue
 
-            candidates.append((ciokey, conkey, cion, ckey, con, items[ciokey]))
+            cval = items[ciokey]
 
-        # No entries for this key
-        if not candidates:
-            return
-
-        # Walk backwards to simulate LMDB cursor positioning
-
-        # Start at last entry
-        ciokey, conkey, cion, ckey, con, cval = candidates[-1]
-
-        # Yield last item of this ON-group
-        yield (ckey, con, cval)
-
-        lkey = ckey
-        lon = con
-
-        # Iterate backwards over remaining candidates 
-
-        for ciokey, conkey, cion, ckey, con, cval in reversed(candidates[:-1]):
-
-            # If key mismatch then done
-            if ckey != key:
-                return
-
-            # New key so yield last of that key
-            if ckey != lkey:
-                yield (ckey, con, cval)
-                lkey = ckey
-                lon = con
+            if lcon is None:
+                # First matching ON-group
+                lcon, lval = con, cval
                 continue
 
-            # Same key, new ON then yield last of that ON-group
-            if con != lon:
-                yield (ckey, con, cval)
-                lkey = ckey
-                lon = con
+            # New ON-group so yield previous ON-group's last item
+            if con != lcon:
+                yield (key, lcon, lval)
+                lcon, lval = con, cval
+                continue
+        
+        if lcon is not None:
+            yield (key, lcon, lval)
 
 
     #  End OnIoSet support methods
