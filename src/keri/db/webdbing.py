@@ -1484,7 +1484,55 @@ class WebDBer:
         transparently suffixed and unsuffixed
         Assumes DB opened with dupsort=False
         """
-        raise NotImplementedError("appendOnIoSetVals")
+        if not key or not vals or not isNonStringIterable(vals):
+            raise ValueError(f"Bad append parameter: {key=} or {vals=}")
+
+        # Compute the maximum ON prefix for this key
+        maxOnkey = onKey(key, on=MaxON, sep=sep)
+        maxIokey = suffix(maxOnkey, ion=MaxON, sep=sep)
+
+        items = db.items
+
+        # 1. Find the last key <= maxIokey
+
+        # irange with maximum gives us all keys <= maxIokey
+        # The last of those is the LMDB cursor.last() equivalent.
+        candidates = list(items.irange(maximum=maxIokey))
+
+        if not candidates:
+            # Database empty so ON = 0
+            on = 0
+        else:
+            # Last key in DB up to maxIokey
+            lastIokey = candidates[-1]
+            lastOnkey, _ = unsuffix(lastIokey, sep=sep)
+            lastKey, lastOn = splitOnKey(lastOnkey, sep=sep)
+
+            if lastKey == key:
+                # Same logical key
+                if lastOn == MaxON:
+                    raise ValueError(
+                        f"Failed append entry to {key=}, would exceed max on at {MaxON=}"
+                    )
+                on = lastOn + 1
+            else:
+                # Last key belongs to a different logical key -> ON = 0
+                on = 0
+
+        # 2. Insert new ON-group 
+
+        onkey = onKey(key, on, sep=sep)
+
+        for ion, val in enumerate(vals):
+            iokey = suffix(onkey, ion=ion, sep=sep)
+            if iokey in items:
+                raise ValueError(
+                    f"Failed appending {val=} at {key=} {on=} offset {ion=}."
+                )
+            items[iokey] = val
+
+        return on
+
 
     def addOnIoSetVal(self, db, key, *, on=0, val=None, sep=b'.'):
         """Add val to insertion ordered set of values at onkey = key + on,
@@ -1642,7 +1690,39 @@ class WebDBer:
         transparently suffixed and unsuffixed
         Assumes DB opened with dupsort=False
         """
-        raise NotImplementedError("remOnAllIoSet")
+        items = db.items
+
+        # If key empty then delete whole DB
+        if not key:
+            return self.remTop(db=db, top=b'')
+
+        # Compute starting ON-key
+        startOnkey = onKey(key, on, sep=sep)
+
+        # We need to scan from the first ON >= on
+        # That means: all keys >= startOnkey
+        toDelete = []
+
+        for iokey in items.irange(minimum=startOnkey):
+            # Extract (key, on, ion)
+            onkey, ion = unsuffix(iokey, sep=sep)
+            ckey, con = splitOnKey(onkey, sep=sep)
+
+            # Stop when we leave this logical key
+            if ckey != key:
+                break
+
+            # This ON >= requested ON so add it to delete
+            toDelete.append(iokey)
+
+        # Perform deletions
+        result = False
+        for iokey in toDelete:
+            del items[iokey]
+            result = True
+
+        return result
+
 
     def cntOnIoSet(self, db, key, *, on=0, ion=0, sep=b'.'):
         """Count set values at onkey made from onkey = key + on starting at
@@ -1687,7 +1767,31 @@ class WebDBer:
         Uses hidden ordinal key suffix for insertion ordering which is
         transparently suffixed and unsuffixed
         """
-        raise NotImplementedError("cntOnAllIoSet")
+        items = db.items
+
+        # If key empty so count whole DB
+        if not key:
+            return self.cntAll(db)
+
+        # Compute starting ON-key
+        startOnkey = onKey(key, on, sep=sep)
+
+        count = 0
+
+        # Iterate from first ON >= on
+        for iokey in items.irange(minimum=startOnkey):
+            # Extract (key, on, ion)
+            onkey, ion = unsuffix(iokey, sep=sep)
+            ckey, con = splitOnKey(onkey, sep=sep)
+
+            # Stop when we leave this logical key
+            if ckey != key:
+                break
+
+            count += 1
+
+        return count
+
 
     def getOnTopIoSetItemIter(self, db, top=b'', *, sep=b'.'):
         """Iterates over top branch of all insertion ordered set values where
@@ -1757,7 +1861,31 @@ class WebDBer:
         transparently suffixed and unsuffixed
         Assumes DB opened with dupsort=False
         """
-        raise NotImplementedError("getOnAllIoSetItemIter")
+        items = db.items
+
+        # Case 1: key empty so iterate whole DB
+        if not key:
+            yield from self.getOnTopIoSetItemIter(db=db, top=b'', sep=sep)
+            return
+
+        # Case 2: iterate ON >= requested ON for this key
+        startOnkey = onKey(key, on, sep=sep)
+        startIokey = suffix(startOnkey, ion=0, sep=sep)
+
+        for iokey in items.irange(minimum=startIokey):
+            # Extract (onkey, ion)
+            onkey, ion = unsuffix(iokey, sep=sep)
+
+            # Extract (ckey, con)
+            ckey, con = splitOnKey(onkey, sep=sep)
+
+            # Stop when we leave this logical key
+            if ckey != key:
+                break
+
+            # Yield LMDB‑accurate triple
+            yield (ckey, con, items[iokey])
+
 
     def getOnAllIoSetLastItemIter(self, db, key=b'', on=0, *, sep=b'.'):
         """Iterates over last items of each set for all on >= on at key
@@ -1788,7 +1916,46 @@ class WebDBer:
         transparently suffixed and unsuffixed
         Assumes DB opened with dupsort=False
         """
-        raise NotImplementedError("getOnAllIoSetLastItemIter")
+        items = db.items
+
+        # Case 1: key empty so delegate to top-level iterator
+        if not key:
+            for onkey, val in self.getIoSetLastItemIterAll(db=db, key=b'', sep=sep):
+                key, on = splitOnKey(onkey, sep=sep)
+                yield (key, on, val)
+            return
+
+        # Case 2: iterate ON >= requested ON for this key
+        startOnkey = onKey(key, on, sep=sep)
+        startIokey = suffix(startOnkey, ion=0, sep=sep)
+
+        last = None
+        currentOn = None
+
+        for iokey in items.irange(minimum=startIokey):
+            # Extract (conkey, cion)
+            conkey, cion = unsuffix(iokey, sep=sep)
+
+            # Extract (ckey, con)
+            ckey, con = splitOnKey(conkey, sep=sep)
+
+            # Stop when we leave this logical key
+            if ckey != key:
+                break
+
+            # If ON changes, yield the last item of the previous ON
+            if currentOn is not None and con != currentOn:
+                yield last
+                last = None
+
+            # Update tracking
+            currentOn = con
+            last = (ckey, con, items[iokey])
+
+        # After iteration, yield the last ON-group's last item
+        if last:
+            yield last
+
 
     def getOnAllIoSetItemBackIter(self, db, key=b"", on=None, *, sep=b'.'):
         """Iterates backwards over all set items for all on <= on for key.
@@ -1817,7 +1984,51 @@ class WebDBer:
         transparently suffixed and unsuffixed
         Assumes DB opened with dupsort=False
         """
-        raise NotImplementedError("getOnAllIoSetItemBackIter")
+        items = db.items
+
+        # Empty DB so nothing
+        if not items:
+            return
+            yield  # make generator
+
+        # Case 1: key empty so iterate whole DB backwards
+        if not key:
+            for ciokey in reversed(list(items.keys())):
+                conkey, cion = unsuffix(ciokey, sep=sep)
+                ckey, con = splitOnKey(conkey, sep=sep)
+                yield (ckey, con, items[ciokey])
+            return
+
+        # Case 2: key non-empty
+
+        # Determine starting ON
+        if on is None:
+            on = MaxON
+
+        # Build upper-bound search key
+        onkey = onKey(key, on, sep=sep)
+        iokey = suffix(onkey, ion=MaxON, sep=sep)
+
+        # Collect all matching entries up to this bound
+        candidates = []
+        for ciokey in items.irange(maximum=iokey):
+            conkey, cion = unsuffix(ciokey, sep=sep)
+            ckey, con = splitOnKey(conkey, sep=sep)
+
+            # Must match logical key
+            if ckey != key:
+                continue
+
+            # Must satisfy ON <= requested ON
+            if con > on:
+                continue
+
+            candidates.append((ciokey, conkey, cion, ckey, con))
+
+        # Now walk backwards to simulate cursor.iterprev()
+        for ciokey, conkey, cion, ckey, con in reversed(candidates):
+            yield (ckey, con, items[ciokey])
+
 
     def getOnAllIoSetLastItemBackIter(self, db, key=b"", on=None, *, sep=b'.'):
         """Iterates backwards over last set items for all on <= on for key.
@@ -1847,7 +2058,122 @@ class WebDBer:
         transparently suffixed and unsuffixed
         Assumes DB opened with dupsort=False
         """
-        raise NotImplementedError("getOnAllIoSetLastItemBackIter")
+        items = db.items
+
+        # Empty DB do nothing
+        if not items:
+            return
+            yield  # make generator
+
+        # Case 1: key empty do whole DB backwards 
+        if not key:
+            # We must yield the *last item of each ON-group* for all keys, backwards.
+            #   1. Walk all items backwards
+            #   2. Detect ON-group boundaries
+            #   3. Yield only the last item of each ON-group
+            last = None
+            lkey = None
+            lon = None
+
+            for ciokey in reversed(list(items.keys())):
+                conkey, cion = unsuffix(ciokey, sep=sep)
+                ckey, con = splitOnKey(conkey, sep=sep)
+                cval = items[ciokey]
+
+                if last is None:
+                    # First item encountered (largest key/on/ion)
+                    last = (ckey, con, cval)
+                    lkey = ckey
+                    lon = con
+                    continue
+
+                # New key so yield previous ON-group's last item
+                if ckey != lkey:
+                    yield last
+                    last = (ckey, con, cval)
+                    lkey = ckey
+                    lon = con
+                    continue
+
+                # Same key, new ON so yield previous ON-group's last item
+                if con != lon:
+                    yield last
+                    last = (ckey, con, cval)
+                    lkey = ckey
+                    lon = con
+                    continue
+
+                # Same key, same ON so keep scanning backward
+
+            # Yield final group
+            if last:
+                yield last
+
+            return
+
+
+        # Case 2: key non-empty 
+
+        # Determine starting ON
+        if on is None:
+            on = MaxON
+
+        # Build upper-bound search key
+        onkey = onKey(key, on, sep=sep)
+        iokey = suffix(onkey, ion=MaxON, sep=sep)
+
+        # Collect all matching entries up to this bound
+        candidates = []
+        for ciokey in items.irange(maximum=iokey):
+            conkey, cion = unsuffix(ciokey, sep=sep)
+            ckey, con = splitOnKey(conkey, sep=sep)
+
+            # Must match logical key
+            if ckey != key:
+                continue
+
+            # Must satisfy ON <= requested ON
+            if con > on:
+                continue
+
+            candidates.append((ciokey, conkey, cion, ckey, con, items[ciokey]))
+
+        # No entries for this key
+        if not candidates:
+            return
+
+        # Walk backwards to simulate LMDB cursor positioning
+
+        # Start at last entry
+        ciokey, conkey, cion, ckey, con, cval = candidates[-1]
+
+        # Yield last item of this ON-group
+        yield (ckey, con, cval)
+
+        lkey = ckey
+        lon = con
+
+        # Iterate backwards over remaining candidates 
+
+        for ciokey, conkey, cion, ckey, con, cval in reversed(candidates[:-1]):
+
+            # If key mismatch then done
+            if ckey != key:
+                return
+
+            # New key so yield last of that key
+            if ckey != lkey:
+                yield (ckey, con, cval)
+                lkey = ckey
+                lon = con
+                continue
+
+            # Same key, new ON then yield last of that ON-group
+            if con != lon:
+                yield (ckey, con, cval)
+                lkey = ckey
+                lon = con
+
 
     #  End OnIoSet support methods
 

@@ -2642,3 +2642,473 @@ def test_ioset_suber_contract():
 
 
     asyncio.run(_go())
+
+
+@needskeri
+def test_on_ioset_suber_contract():
+    """Test IoSetSuber wrapper operating against WebDBer."""
+    async def _go():
+        dber, _ = await _open_fake_dber(
+            name="ioset-suber-contract",
+            stores=["vals."],
+            clear=True,
+        )
+
+        onios = subing.OnIoSetSuber(db=dber, subkey="vals.")
+        assert onios.sdb.flags()["dupsort"] is False
+
+        # test empty keys
+        assert onios.cntAll() == 0
+        assert onios.cnt(keys="") == 0
+        assert onios.cntAll(keys="") == 0
+        assert onios.get(keys="") == []
+        assert [val for val in onios.getIter(keys="")] == []
+        assert onios.getLastItem(keys=()) == ()
+        assert onios.getLast(keys=()) == None
+        assert onios.getLastItem(keys="") == ()
+        assert onios.getLast(keys="") == None
+
+        keys0 = ('A', 'B')
+        keys1 = ('B', 'C')
+        keys2 = ('C', 'D')
+        keys3 = ('E', 'F')
+        keys4 = ('Z', 'Z')
+        keys5 = ('A', 'A')
+
+        vals0 = ["z", "m", "x", "a"]
+        vals1 = ["w", "n", "y", "d"]
+        vals2 = ["p", "o", "h", "f"]
+        vals3 = ["k", "j", "l"]
+
+        # fill database
+        assert onios.put(keys=keys0, vals=vals0)  # default on = 0
+        assert onios.put(keys=keys1, vals=vals1)  # default on = 0
+        assert onios.put(keys=keys2, vals=vals2)  # default on = 0
+
+        assert onios.cntAll() == 12
+        assert onios.cntAll(keys="") == 12
+        assert onios.cntAll(keys1) == 4
+        assert onios.cntAll(keys1, on=2) == 0
+        assert onios.cnt(keys='') == 0
+        assert onios.cnt(keys=keys0) == 4
+        assert onios.cnt(keys=keys0, on=0, ion=2) == 2
+        assert onios.cnt(keys=keys1) == 4
+        assert onios.cnt(keys=keys2) == 4
+
+        # keys0
+        # ion default 0
+        assert [val for val in onios.getIter(keys=keys0)] == vals0
+        assert onios.get(keys=keys0) == vals0
+        assert onios.getItem(keys=keys0) == \
+        [
+            (('A', 'B'), 0, 'z'),
+            (('A', 'B'), 0, 'm'),
+            (('A', 'B'), 0, 'x'),
+            (('A', 'B'), 0, 'a')
+        ]
+        assert onios.cnt(keys=keys0) == 4
+        assert onios.getLastItem(keys=keys0) == (keys0, 0, "a")
+        assert onios.getLast(keys=keys0) == "a"
+
+        # ion = 0
+        assert [val for val in onios.getIter(keys=keys0, ion=0)] == vals0
+        assert onios.get(keys=keys0, ion=0) == vals0
+        assert onios.getItem(keys=keys0, ion=0) == \
+        [
+            (('A', 'B'), 0, 'z'),
+            (('A', 'B'), 0, 'm'),
+            (('A', 'B'), 0, 'x'),
+            (('A', 'B'), 0, 'a')
+        ]
+        assert onios.cnt(keys=keys0, ion=0) == 4
+
+        # ion = 1
+        assert [val for val in onios.getIter(keys=keys0, ion=1)] == ["m", "x", "a"]
+        assert onios.get(keys=keys0, ion=1) == ["m", "x", "a"]
+        assert onios.getItem(keys=keys0, ion=1) == \
+        [
+            (('A', 'B'), 0, 'm'),
+            (('A', 'B'), 0, 'x'),
+            (('A', 'B'), 0, 'a')
+        ]
+        assert onios.cnt(keys=keys0, ion=1) == 3
+
+        # ion = 2
+        assert [val for val in onios.getIter(keys=keys0, ion=2)] == ["x", "a"]
+        assert onios.get(keys=keys0, ion=2) == ["x", "a"]
+        assert onios.cnt(keys=keys0, ion=2) == 2
+
+        # ion = 3
+        assert [val for val in onios.getIter(keys=keys0, ion=3)] == ["a"]
+        assert onios.get(keys=keys0, ion=3) == ["a"]
+        assert onios.cnt(keys=keys0, ion=3) == 1
+
+        # ion = 4  past end of keys0 set
+        assert [val for val in onios.getIter(keys=keys0, ion=4)] == []
+        assert onios.get(keys=keys0, ion=4) == []
+        assert onios.cnt(keys=keys0, ion=4) == 0
+
+        # keys1
+        # ion default 0
+        assert [val for val in onios.getIter(keys=keys1)] == vals1
+        assert onios.get(keys=keys1) == vals1
+        assert onios.cnt(keys=keys1) == 4
+        assert onios.getLastItem(keys=keys1) == (keys1, 0, "d")
+        assert onios.getLast(keys=keys1) == "d"
+
+        # ion = 2
+        assert [val for val in onios.getIter(keys=keys1, ion=2)] == ["y", "d"]
+        assert onios.get(keys=keys1, ion=2) == ["y", "d"]
+        assert onios.cnt(keys=keys1, ion=2) == 2
+
+        # keys0 make gap keys0
+        assert onios.rem(keys=keys0, val="m")
+
+        # ion default 0, on default 0
+        assert [val for val in onios.getIter(keys=keys0)] == ["z", "x", "a"]
+        assert onios.get(keys=keys0) == ["z", "x", "a"]
+        assert onios.cnt(keys=keys0) == 3
+        assert onios.getLastItem(keys=keys0) == (keys0, 0, "a")
+        assert onios.getLast(keys=keys0) == "a"
+
+        # ion = 1
+        assert [val for val in onios.getIter(keys=keys0, on=0, ion=1)] == ["x", "a"]
+        assert onios.get(keys=keys0,on=0, ion=1) == ["x", "a"]
+        assert onios.cnt(keys=keys0, on=0, ion=1) == 2
+
+        # clear keys0 and keys1
+        assert onios.rem(keys=keys0) # default on = 0
+        assert onios.rem(keys=keys1, on=0)
+        assert onios.cnt(keys=keys0) == 0
+        assert onios.cnt(keys=keys1) == 0
+
+        # restore key0, keys1 using add
+        for val in vals0:
+            assert onios.add(keys0, val=val)  # default on=0
+        assert onios.get(keys0, on=0) == vals0
+
+        for val in vals1:
+            assert onios.add(keys1, on=0, val=val)
+        assert onios.get(keys1, on=0) == vals1
+
+        # test pinOn and appendOn
+        assert not onios.get(keys3, on=0)
+        assert onios.put(keys3, vals=vals3)  # default on = 0
+        assert onios.get(keys3, on=0) == vals3
+        assert not onios.add(keys3, val='k')  # idempotent wont add if already there
+        assert onios.get(keys3, on=0) == vals3
+        assert onios.add(keys3, on=0, val='g')
+        assert onios.get(keys3, on=0) == ['k', 'j', 'l', 'g']
+        assert onios.pin(keys3, vals=vals3)  # default on=0
+        assert onios.get(keys3, on=0) == vals3
+
+        assert onios.add(keys3, on=1, val='z')
+        assert onios.add(keys3, on=1, val='y')
+        assert onios.put(keys3, on=2, vals=["x", "w"])
+        assert onios.append(keys3, vals=["v", "u"]) == 3  # on = 3
+        assert onios.append(keys3, vals="t") == 4  # on = 4
+
+        assert onios.cntAll(keys3, on=0) == 10
+        assert onios.cntAll(keys3, on=2) == 5
+
+        assert [item for item in onios.getAllItemIter(keys3)] == \
+        [
+            (('E', 'F'), 0, 'k'),
+            (('E', 'F'), 0, 'j'),
+            (('E', 'F'), 0, 'l'),
+            (('E', 'F'), 1, 'z'),
+            (('E', 'F'), 1, 'y'),
+            (('E', 'F'), 2, 'x'),
+            (('E', 'F'), 2, 'w'),
+            (('E', 'F'), 3, 'v'),
+            (('E', 'F'), 3, 'u'),
+            (('E', 'F'), 4, 't')
+        ]
+
+        assert [item for item in onios.getAllItemIter(keys3, on=3)] == \
+        [
+            (('E', 'F'), 3, 'v'),
+            (('E', 'F'), 3, 'u'),
+            (('E', 'F'), 4, 't')
+        ]
+
+        # getOnItemIter
+        with pytest.raises(TypeError):
+            [item for item in onios.getItemIter()]
+
+        assert [item for item in onios.getItemIter(keys3)] == \
+        [
+            (('E', 'F'), 0, 'k'),
+            (('E', 'F'), 0, 'j'),
+            (('E', 'F'), 0, 'l'),
+        ]
+
+        assert [item for item in onios.getItemIter(keys3, on=3)] == \
+        [
+            (('E', 'F'), 3, 'v'),
+            (('E', 'F'), 3, 'u'),
+        ]
+
+        assert onios.remAll(keys3, on=2)
+
+        assert [item for item in onios.getItemIter(keys3)] == \
+        [
+            (('E', 'F'), 0, 'k'),
+            (('E', 'F'), 0, 'j'),
+            (('E', 'F'), 0, 'l'),
+        ]
+
+        assert onios.remAll(keys3, on=0)
+        assert [item for item in onios.getAllItemIter(keys3)] == []
+
+        assert onios.put(keys3, vals=vals3)  # default on = 0
+        assert onios.put(keys3, on=1, vals=['z', 'y'])
+        assert onios.put(keys3, on=2, vals=["x", "w"])
+        assert onios.append(keys3, vals=["v", "u"]) == 3  # on = 3
+        assert onios.append(keys3, vals="t") == 4  # on = 4
+
+        assert [item for item in onios.getAllItemIter()] == \
+        [
+            (('A', 'B'), 0, 'z'),
+            (('A', 'B'), 0, 'm'),
+            (('A', 'B'), 0, 'x'),
+            (('A', 'B'), 0, 'a'),
+            (('B', 'C'), 0, 'w'),
+            (('B', 'C'), 0, 'n'),
+            (('B', 'C'), 0, 'y'),
+            (('B', 'C'), 0, 'd'),
+            (('C', 'D'), 0, 'p'),
+            (('C', 'D'), 0, 'o'),
+            (('C', 'D'), 0, 'h'),
+            (('C', 'D'), 0, 'f'),
+            (('E', 'F'), 0, 'k'),
+            (('E', 'F'), 0, 'j'),
+            (('E', 'F'), 0, 'l'),
+            (('E', 'F'), 1, 'z'),
+            (('E', 'F'), 1, 'y'),
+            (('E', 'F'), 2, 'x'),
+            (('E', 'F'), 2, 'w'),
+            (('E', 'F'), 3, 'v'),
+            (('E', 'F'), 3, 'u'),
+            (('E', 'F'), 4, 't')
+        ]
+
+        assert [val for val in onios.getAllIter()] == \
+        ['z','m','x','a','w','n','y','d','p','o','h','f','k','j','l','z','y','x','w','v','u','t']
+
+        assert [item for item in onios.getAllItemIter(keys3)] == \
+        [
+            (('E', 'F'), 0, 'k'),
+            (('E', 'F'), 0, 'j'),
+            (('E', 'F'), 0, 'l'),
+            (('E', 'F'), 1, 'z'),
+            (('E', 'F'), 1, 'y'),
+            (('E', 'F'), 2, 'x'),
+            (('E', 'F'), 2, 'w'),
+            (('E', 'F'), 3, 'v'),
+            (('E', 'F'), 3, 'u'),
+            (('E', 'F'), 4, 't')
+        ]
+
+        assert [val for val in onios.getAllIter(keys3)] == \
+        ['k', 'j', 'l', 'z', 'y', 'x', 'w', 'v', 'u', 't']
+
+        assert [item for item in onios.getAllItemIter(keys3, on=2)] == \
+        [
+            (('E', 'F'), 2, 'x'),
+            (('E', 'F'), 2, 'w'),
+            (('E', 'F'), 3, 'v'),
+            (('E', 'F'), 3, 'u'),
+            (('E', 'F'), 4, 't')
+        ]
+
+        assert [val for val in onios.getAllIter(keys3, on=2)] == \
+        ['x', 'w', 'v', 'u', 't']
+
+
+        assert [item for item in onios.getTopItemIter()] == \
+        [
+            (('A', 'B'), 0, 'z'),
+            (('A', 'B'), 0, 'm'),
+            (('A', 'B'), 0, 'x'),
+            (('A', 'B'), 0, 'a'),
+            (('B', 'C'), 0, 'w'),
+            (('B', 'C'), 0, 'n'),
+            (('B', 'C'), 0, 'y'),
+            (('B', 'C'), 0, 'd'),
+            (('C', 'D'), 0, 'p'),
+            (('C', 'D'), 0, 'o'),
+            (('C', 'D'), 0, 'h'),
+            (('C', 'D'), 0, 'f'),
+            (('E', 'F'), 0, 'k'),
+            (('E', 'F'), 0, 'j'),
+            (('E', 'F'), 0, 'l'),
+            (('E', 'F'), 1, 'z'),
+            (('E', 'F'), 1, 'y'),
+            (('E', 'F'), 2, 'x'),
+            (('E', 'F'), 2, 'w'),
+            (('E', 'F'), 3, 'v'),
+            (('E', 'F'), 3, 'u'),
+            (('E', 'F'), 4, 't')
+        ]
+
+        assert [item for item in onios.getTopItemIter(keys=("A", ))] == \
+        [
+            (('A', 'B'), 0, 'z'),
+            (('A', 'B'), 0, 'm'),
+            (('A', 'B'), 0, 'x'),
+            (('A', 'B'), 0, 'a')
+        ]
+
+        # Test last iter   getOnAllLastItemIter
+        # whole db
+        assert [item for item in onios.getAllLastItemIter()] == \
+        [
+            (('A', 'B'), 0, 'a'),
+            (('B', 'C'), 0, 'd'),
+            (('C', 'D'), 0, 'f'),
+            (('E', 'F'), 0, 'l'),
+            (('E', 'F'), 1, 'y'),
+            (('E', 'F'), 2, 'w'),
+            (('E', 'F'), 3, 'u'),
+            (('E', 'F'), 4, 't')
+        ]
+
+        assert [val for val in onios.getAllLastIter()] == \
+        ['a', 'd', 'f', 'l', 'y', 'w', 'u', 't']
+
+        # all on for keys3
+        assert [item for item in onios.getAllLastItemIter(keys3)] == \
+        [
+            (('E', 'F'), 0, 'l'),
+            (('E', 'F'), 1, 'y'),
+            (('E', 'F'), 2, 'w'),
+            (('E', 'F'), 3, 'u'),
+            (('E', 'F'), 4, 't')
+        ]
+
+        assert [val for val in onios.getAllLastIter(keys3)] == \
+        ['l', 'y', 'w', 'u', 't']
+
+        # all on>=2 for keys3
+        assert [item for item in onios.getAllLastItemIter(keys3, on=2)] == \
+        [
+            (('E', 'F'), 2, 'w'),
+            (('E', 'F'), 3, 'u'),
+            (('E', 'F'), 4, 't')
+        ]
+
+        assert [val for val in onios.getAllLastIter(keys3, on=2)] == \
+        ['w', 'u', 't']
+
+
+        # Test back iter
+        # whole db
+        assert [item for item in onios.getAllItemBackIter()] == \
+        [
+            (('E', 'F'), 4, 't'),
+            (('E', 'F'), 3, 'u'),
+            (('E', 'F'), 3, 'v'),
+            (('E', 'F'), 2, 'w'),
+            (('E', 'F'), 2, 'x'),
+            (('E', 'F'), 1, 'y'),
+            (('E', 'F'), 1, 'z'),
+            (('E', 'F'), 0, 'l'),
+            (('E', 'F'), 0, 'j'),
+            (('E', 'F'), 0, 'k'),
+            (('C', 'D'), 0, 'f'),
+            (('C', 'D'), 0, 'h'),
+            (('C', 'D'), 0, 'o'),
+            (('C', 'D'), 0, 'p'),
+            (('B', 'C'), 0, 'd'),
+            (('B', 'C'), 0, 'y'),
+            (('B', 'C'), 0, 'n'),
+            (('B', 'C'), 0, 'w'),
+            (('A', 'B'), 0, 'a'),
+            (('A', 'B'), 0, 'x'),
+            (('A', 'B'), 0, 'm'),
+            (('A', 'B'), 0, 'z')
+        ]
+
+        assert [val for val in onios.getAllBackIter()] == \
+        ['t','u','v','w','x','y','z','l','j','k','f','h','o','p','d','y','n','w','a','x','m','z']
+
+        # keys3  all on
+        assert [item for item in onios.getAllItemBackIter(keys3)] == \
+        [
+            (('E', 'F'), 4, 't'),
+            (('E', 'F'), 3, 'u'),
+            (('E', 'F'), 3, 'v'),
+            (('E', 'F'), 2, 'w'),
+            (('E', 'F'), 2, 'x'),
+            (('E', 'F'), 1, 'y'),
+            (('E', 'F'), 1, 'z'),
+            (('E', 'F'), 0, 'l'),
+            (('E', 'F'), 0, 'j'),
+            (('E', 'F'), 0, 'k'),
+        ]
+
+        assert [val for val in onios.getAllBackIter(keys3)] == \
+        ['t','u','v','w','x','y','z','l','j','k']
+
+        # keys3  on <= 2
+        assert [item for item in onios.getAllItemBackIter(keys3, on=2)] == \
+        [
+            (('E', 'F'), 2, 'w'),
+            (('E', 'F'), 2, 'x'),
+            (('E', 'F'), 1, 'y'),
+            (('E', 'F'), 1, 'z'),
+            (('E', 'F'), 0, 'l'),
+            (('E', 'F'), 0, 'j'),
+            (('E', 'F'), 0, 'k'),
+        ]
+
+        assert [val for val in onios.getAllBackIter(keys3, on=2)] == \
+        ['w','x','y','z','l','j','k']
+
+
+        # Test last back iter
+        # whole db
+        assert [item for item in onios.getAllLastItemBackIter()] == \
+        [
+            (('E', 'F'), 4, 't'),
+            (('E', 'F'), 3, 'u'),
+            (('E', 'F'), 2, 'w'),
+            (('E', 'F'), 1, 'y'),
+            (('E', 'F'), 0, 'l'),
+            (('C', 'D'), 0, 'f'),
+            (('B', 'C'), 0, 'd'),
+            (('A', 'B'), 0, 'a')
+        ]
+
+        assert [val for val in onios.getAllLastBackIter()] == \
+        ['t', 'u', 'w', 'y', 'l', 'f', 'd', 'a']
+
+        # keys3  all on
+        assert [item for item in onios.getAllLastItemBackIter(keys3)] == \
+        [
+            (('E', 'F'), 4, 't'),
+            (('E', 'F'), 3, 'u'),
+            (('E', 'F'), 2, 'w'),
+            (('E', 'F'), 1, 'y'),
+            (('E', 'F'), 0, 'l')
+        ]
+
+        assert [val for val in onios.getAllLastBackIter(keys3)] == \
+        ['t', 'u', 'w', 'y', 'l']
+
+        # keys3  on <= 2
+        assert [item for item in onios.getAllLastItemBackIter(keys3, on=2)] == \
+        [
+            (('E', 'F'), 2, 'w'),
+            (('E', 'F'), 1, 'y'),
+            (('E', 'F'), 0, 'l')
+        ]
+
+        assert [val for val in onios.getAllLastBackIter(keys3, on=2)] == \
+        ['w', 'y', 'l']
+
+
+        """Done Test"""
+    
+    asyncio.run(_go())
