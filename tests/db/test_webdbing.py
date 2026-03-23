@@ -49,6 +49,7 @@ try:
     from keri.core import serdering, coring, signing, indexing
     from keri import versify, Kinds
     from keri.recording import EventSourceRecord
+    from keri import core
 except ImportError:
     # Pyodide fallback
     import serdering
@@ -3520,5 +3521,543 @@ def test_webdb_baser():
         assert baser.sigs.get(keys=key) == []
         assert baser.sigs.put(keys=key, vals=[siger0, siger1]) == True
 
+        # test .wigs sub db methods (witness indexed sigs)
+        key = dgKey(preb, digb)
+        assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
+
+        # Create valid test signatures
+        signer0 = signing.Signer(transferable=False, seed=b'0123456789abcdef0123456789abcdef')
+        signer1 = signing.Signer(transferable=False, seed=b'fedcba9876543210fedcba9876543210')
+
+        test_data = b"test witness signatures"
+        cigar0 = signer0.sign(ser=test_data)
+        cigar1 = signer1.sign(ser=test_data)
+
+        siger0 = indexing.Siger(raw=cigar0.raw, code=indexing.IdrDex.Ed25519_Sig, index=0)
+        siger1 = indexing.Siger(raw=cigar1.raw, code=indexing.IdrDex.Ed25519_Sig, index=1)
+
+        # Use siger objects for testing
+        wig0 = siger0
+        wig1 = siger1
+
+        # Test empty state
+        assert baser.wigs.get(keys=key) == []
+        assert baser.wigs.cnt(keys=key) == 0
+        assert baser.wigs.rem(keys=key) == False
+
+        # Test pin with multiple values
+        assert baser.wigs.pin(keys=key, vals=[wig1, wig0]) == True
+        result = baser.wigs.get(keys=key)
+        assert len(result) == 2
+        # Just verify both are present (don't test exact order)
+        result_bytes = set(w.qb64b for w in result)
+        assert result_bytes == {wig0.qb64b, wig1.qb64b}
+        assert baser.wigs.cnt(keys=key) == 2
+
+        # Test pin overwrites
+        assert baser.wigs.pin(keys=key, vals=[wig0]) == True
+        result = baser.wigs.get(keys=key)
+        assert len(result) == 1
+        assert result[0].qb64b == wig0.qb64b
+
+        # Reset to both
+        assert baser.wigs.pin(keys=key, vals=[wig1, wig0]) == True
+        assert baser.wigs.cnt(keys=key) == 2
+
+        # Test add, duplicate should return False
+        assert baser.wigs.add(keys=key, val=wig0) == False  # duplicate
+        assert baser.wigs.add(keys=key, val=wig1) == False  # duplicate
+        assert baser.wigs.cnt(keys=key) == 2
+
+        # Test getIter, returns just values
+        result_list = list(baser.wigs.getIter(keys=key))
+        assert len(result_list) == 2
+        assert set(w.qb64b for w in result_list) == {wig0.qb64b, wig1.qb64b}
+
+        # Test remove all
+        assert baser.wigs.rem(keys=key) == True
+        assert baser.wigs.get(keys=key) == []
+        assert baser.wigs.cnt(keys=key) == 0
+
+        # Test individual removal by value
+        vals = [wig0, wig1]
+        assert baser.wigs.pin(keys=key, vals=vals) == True
+        for val in vals:
+            assert baser.wigs.rem(keys=key, val=val) == True
+        assert baser.wigs.get(keys=key) == []
+
+        # Test removal while iterating
+        assert baser.wigs.pin(keys=key, vals=vals) == True
+        for val in baser.wigs.getIter(keys=key):
+            assert baser.wigs.rem(keys=key, val=val) == True
+        assert baser.wigs.get(keys=key) == []
+
+        # Test sequence with individual pins
+        assert baser.wigs.pin(keys=key, vals=[wig0]) == True
+        result = baser.wigs.get(keys=key)
+        assert len(result) == 1
+        assert result[0].qb64b == wig0.qb64b
+
+        assert baser.wigs.pin(keys=key, vals=[wig1]) == True
+        result = baser.wigs.get(keys=key)
+        assert len(result) == 1
+        assert result[0].qb64b == wig1.qb64b
+
+        assert baser.wigs.pin(keys=key, vals=[wig1, wig0]) == True
+        result = baser.wigs.get(keys=key)
+        assert len(result) == 2
+        assert set(w.qb64b for w in result) == {wig0.qb64b, wig1.qb64b}
+
+        assert baser.wigs.rem(keys=key) == True
+        assert baser.wigs.get(keys=key) == []
+
+        # test .rcts
+
+        # Create test prefixes and cigars
+        wit0 = coring.Prefixer(qb64=wit0b.decode('utf-8'))  # Convert from qb64 string
+        wit1 = coring.Prefixer(qb64=wit1b.decode('utf-8'))
+
+        # Create cigars (non-indexed signatures)
+        cigar0 = coring.Cigar(qb64=wsig0b.decode('utf-8'))
+        cigar1 = coring.Cigar(qb64=wsig1b.decode('utf-8'))
+
+        # Test with CESR tuples (insertion order)
+        assert baser.rcts.put(key, vals=[(wit0, cigar0), (wit1, cigar1)]) == True
+        result = baser.rcts.get(key)
+        assert len(result) == 2
+        # Check insertion order: wit0 inserted first, wit1 second
+        assert result[0][0].qb64 == wit0.qb64
+        assert result[0][1].qb64 == cigar0.qb64
+        assert result[1][0].qb64 == wit1.qb64
+        assert result[1][1].qb64 == cigar1.qb64
+
+        # Test duplicate (should not add)
+        assert baser.rcts.put(key, vals=[(wit0, cigar0)]) == False
+        result = baser.rcts.get(key)
+        assert len(result) == 2
+        assert result[0][0].qb64 == wit0.qb64
+        assert result[0][1].qb64 == cigar0.qb64
+        assert result[1][0].qb64 == wit1.qb64
+        assert result[1][1].qb64 == cigar1.qb64
+
+        # Test adding new item
+        wit2 = coring.Prefixer(qb64='BNewTestPrefix000000000000000000000000000000')
+        cigar2 = coring.Cigar(qb64='BNewTestSignature00000000000000000000000000000000000000000000000000000000000000000000000')
+        assert baser.rcts.add(key, (wit2, cigar2)) == True
+        result = baser.rcts.get(key)
+        assert len(result) == 3
+        # Insertion order: wit0, wit1, wit2
+        assert result[0][0].qb64 == wit0.qb64
+        assert result[0][1].qb64 == cigar0.qb64
+        assert result[1][0].qb64 == wit1.qb64
+        assert result[1][1].qb64 == cigar1.qb64
+        assert result[2][0].qb64 == wit2.qb64
+        assert result[2][1].qb64 == cigar2.qb64
+
+        # Test duplicate add returns False
+        assert baser.rcts.add(key, (wit0, cigar0)) == False
+
+        # Test getIter maintains insertion order
+        iter_result = [val for val in baser.rcts.getIter(key)]
+        assert len(iter_result) == 3
+        assert iter_result[0][0].qb64 == wit0.qb64
+        assert iter_result[0][1].qb64 == cigar0.qb64
+        assert iter_result[1][0].qb64 == wit1.qb64
+        assert iter_result[1][1].qb64 == cigar1.qb64
+        assert iter_result[2][0].qb64 == wit2.qb64
+        assert iter_result[2][1].qb64 == cigar2.qb64
+
+        # Test removal
+        assert baser.rcts.rem(key) == True
+        assert baser.rcts.get(key) == []
+
+        # Test insertion order preserved when inserting in different order
+        vals = [(wit1, cigar1), (wit0, cigar0)]
+        assert baser.rcts.put(key, vals) == True
+        result = baser.rcts.get(key)
+        assert len(result) == 2
+        # Should maintain insertion order: wit1 first, wit0 second
+        assert result[0][0].qb64 == wit1.qb64
+        assert result[0][1].qb64 == cigar1.qb64
+        assert result[1][0].qb64 == wit0.qb64
+        assert result[1][1].qb64 == cigar0.qb64
+
+        # Test individual removal
+        assert baser.rcts.rem(key, (wit1, cigar1)) == True
+        result = baser.rcts.get(key)
+        assert len(result) == 1
+        assert result[0][0].qb64 == wit0.qb64
+        assert result[0][1].qb64 == cigar0.qb64
+
+        assert baser.rcts.rem(key) == True
+        assert baser.rcts.get(key) == []
+
+        # Unverified Receipt Escrows
+        # test .ures insertion order dup methods.  dup vals are insertion order
+
+        # Setup CESR test values
+        diger0 = coring.Diger(ser=b"event0")
+        diger1 = coring.Diger(ser=b"event1")
+        diger2 = coring.Diger(ser=b"event2")
+        diger3 = coring.Diger(ser=b"event3")
+        diger4 = coring.Diger(ser=b"event4")
+
+        pre0 = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+
+        signer0 = signing.Signer(transferable=False, seed=b'0123456789abcdef0123456789abcdef')
+        signer1 = signing.Signer(transferable=False, seed=b'abcdef0123456789abcdef0123456789')
+        signer2 = signing.Signer(transferable=False, seed=b'fedcba9876543210fedcba9876543210')
+        signer3 = signing.Signer(transferable=False, seed=b'0011223344556677889900112233445566')
+        signer4 = signing.Signer(transferable=False, seed=b'ffeeddccbbaa99887766554433221100')
+
+        test_data = b"test witness signatures"
+        cigar0 = signer0.sign(ser=test_data)
+        cigar1 = signer1.sign(ser=test_data)
+        cigar2 = signer2.sign(ser=test_data)
+        cigar3 = signer3.sign(ser=test_data)
+        cigar4 = signer4.sign(ser=test_data)
+
+        pre1 = coring.Prefixer(qb64=signer0.verfer.qb64)
+        pre2 = coring.Prefixer(qb64=signer1.verfer.qb64)
+        pre3 = coring.Prefixer(qb64=signer2.verfer.qb64)
+        pre4 = coring.Prefixer(qb64=signer3.verfer.qb64)
+
+        key = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", coring.Seqner(sn=0).qb64)
+
+        cesrVal = (diger0, pre0, cigar0)
+        cesrVals = [cesrVal]
+
+        assert baser.ures.get(key) == []
+        assert baser.ures.getLast(keys=key) is None
+        assert baser.ures.cnt(key) == 0
+        assert baser.ures.rem(key) == False
+
+        assert baser.ures.put(keys=key, vals=cesrVals) == True
+        stored = baser.ures.get(key)
+        assert len(stored) == 1
+        diger_s, pre_s, cigar_s = stored[0]
+        assert diger_s.qb64 == diger0.qb64
+        assert pre_s.qb64 == pre0.qb64
+        assert cigar_s.qb64b == cigar0.qb64b
+
+        result = baser.ures.getLast(keys=key)
+        assert result is not None
+        diger_l, pre_l, cigar_l = result
+        assert diger_l.qb64 == diger0.qb64
+        assert pre_l.qb64 == pre0.qb64
+        assert cigar_l.qb64b == cigar0.qb64b
+
+        assert baser.ures.put(keys=key, vals=[(diger0, pre0, cigar0)]) == False  # duplicate, no change
+        result = baser.ures.get(key)
+        assert len(result) == 1
+        d, p, c = result[0]
+        assert d.qb64 == diger0.qb64
+        assert p.qb64 == pre0.qb64
+        assert c.qb64b == cigar0.qb64b
+
+        assert baser.ures.add(key, (diger0, pre0, cigar0)) == False   # duplicate
+        assert baser.ures.add(key, (diger1, pre1, cigar1)) == True
+
+        result = baser.ures.get(key)
+        assert len(result) == 2
+        d0, p0, c0 = result[0]
+        assert d0.qb64 == diger0.qb64
+        assert p0.qb64 == pre0.qb64
+        assert c0.qb64b == cigar0.qb64b
+        d1, p1, c1 = result[1]
+        assert d1.qb64 == diger1.qb64
+        assert p1.qb64 == pre1.qb64
+        assert c1.qb64b == cigar1.qb64b
+
+        result_iter = [val for val in baser.ures.getIter(key)]
+        assert len(result_iter) == 2
+        d0, p0, c0 = result_iter[0]
+        assert d0.qb64 == diger0.qb64
+        assert p0.qb64 == pre0.qb64
+        assert c0.qb64b == cigar0.qb64b
+        d1, p1, c1 = result_iter[1]
+        assert d1.qb64 == diger1.qb64
+        assert p1.qb64 == pre1.qb64
+        assert c1.qb64b == cigar1.qb64b
+
+        assert baser.ures.rem(key) == True
+        assert baser.ures.get(key) == []
+
+        # Setup multi-key tests for getTopItemIter
+        aKey = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", coring.Seqner(sn=1).qb64)
+        aVals = [(diger0, pre0, cigar0), (diger1, pre1, cigar1), (diger2, pre2, cigar2)]
+        bKey = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", coring.Seqner(sn=2).qb64)
+        bVals = [(diger1, pre1, cigar1), (diger2, pre2, cigar2), (diger3, pre3, cigar3)]
+        cKey = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", coring.Seqner(sn=4).qb64)
+        cVals = [(diger2, pre2, cigar2), (diger3, pre3, cigar3)]
+        dKey = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", coring.Seqner(sn=7).qb64)
+        dVals = [(diger3, pre3, cigar3), (diger4, pre4, cigar4)]
+
+        assert baser.ures.put(keys=aKey, vals=aVals)
+        assert baser.ures.put(keys=bKey, vals=bVals)
+        assert baser.ures.put(keys=cKey, vals=cVals)
+        assert baser.ures.put(keys=dKey, vals=dVals)
+
+        # Test getTopItemIter with no key
+        items = [(keys, val) for keys, val in baser.ures.getTopItemIter()]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert ikey == aKey
+        # Verify total count
+        assert len(items) == len(aVals) + len(bVals) + len(cVals) + len(dVals)
+
+        # aVals — iterate at aKey only
+        items = [(keys, val) for keys, val in baser.ures.getTopItemIter(keys=aKey)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert ikey == aKey
+        assert len(items) == len(aVals)  # only aKey items
+
+        # bVals — iterate at bKey, remove each
+        items = [(keys, val) for keys, val in baser.ures.getTopItemIter(keys=bKey)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert ikey == bKey
+        assert len(items) == len(bVals)  # only bKey items
+        for ikeys, val in baser.ures.getTopItemIter(keys=bKey):
+            assert baser.ures.rem(bKey, val) == True
+
+        # cVals — iterate at cKey, remove each
+        items = [(keys, val) for keys, val in baser.ures.getTopItemIter(keys=cKey)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert ikey == cKey
+        assert len(items) == len(cVals)  # only cKey items
+        for ikeys, val in baser.ures.getTopItemIter(keys=cKey):
+            assert baser.ures.rem(cKey, val) == True
+
+        # dVals — iterate at dKey, remove each
+        items = [(keys, val) for keys, val in baser.ures.getTopItemIter(keys=dKey)]
+        assert items  # not empty
+        ikey = items[0][0]
+        assert ikey == dKey
+        assert len(items) == len(dVals)
+        for ikeys, val in baser.ures.getTopItemIter(keys=dKey):
+            assert baser.ures.rem(dKey, val) == True
+
+        # aVals should still be intact, others removed
+        result_a = baser.ures.get(aKey)
+        assert len(result_a) == len(aVals)
+        for i, (d_expected, p_expected, c_expected) in enumerate(aVals):
+            d, p, c = result_a[i]
+            assert d.qb64 == d_expected.qb64
+            assert p.qb64 == p_expected.qb64
+            assert c.qb64b == c_expected.qb64b
+
+        assert baser.ures.get(bKey) == []
+        assert baser.ures.get(cKey) == []
+        assert baser.ures.get(dKey) == []
+
+
+        # Validator (transferable) Receipts
+        # test .vrcs sub db methods dgkey
+        key = dgKey(preb, digb)
+        assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
+
+        p1 = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")  # fake prefix
+        n1 = core.Number(num=1)
+        e1 = coring.Diger(ser=b"est1")    # digest of est event
+        s1 = core.Siger(raw=b"\x00" * 64)  # 64‑byte fake signature
+
+        cesrVal = (p1, n1, e1, s1)
+        cesrVal = [cesrVal]
+
+        assert baser.vrcs.get(key) == []
+        assert baser.vrcs.cnt(key) == 0
+        assert baser.vrcs.rem(key) == False
+
+        assert baser.vrcs.put(key, cesrVal) is True
+
+        stored = baser.vrcs.get(key)
+        assert len(stored) == 1
+        sp1, sn1, se1, ss1 = stored[0]
+
+        assert sp1.qb64 == p1.qb64
+        assert sn1.num == n1.num
+        assert se1.qb64 == e1.qb64
+        assert ss1.raw == s1.raw
+
+        assert baser.vrcs.rem(key) == True
+
+        # # dup vals are lexocographic
+        # Build several distinct typed CESR quadruples
+        pA = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        pB = coring.Prefixer(qb64="BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
+        pC = coring.Prefixer(qb64="BCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")
+        pD = coring.Prefixer(qb64="BDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
+
+        nA = core.Number(num=1)
+        nB = core.Number(num=2)
+        nC = core.Number(num=3)
+        nD = core.Number(num=4)
+
+        eA = coring.Diger(ser=b"estA")
+        eB = coring.Diger(ser=b"estB")
+        eC = coring.Diger(ser=b"estC")
+        eD = coring.Diger(ser=b"estD")
+
+        sA = core.Siger(raw=b"\x00" * 64)
+        sB = core.Siger(raw=b"\x01" * 64)
+        sC = core.Siger(raw=b"\x02" * 64)
+        sD = core.Siger(raw=b"\x03" * 64)
+
+        quadA = (pA, nA, eA, sA)
+        quadB = (pB, nB, eB, sB)
+        quadC = (pC, nC, eC, sC)
+        quadD = (pD, nD, eD, sD)
+
+        vals = [quadD, quadB, quadC, quadA]   # intentionally out of order
+
+        # Initially empty
+        assert baser.vrcs.get(key) == []
+        assert baser.vrcs.cnt(key) == 0
+
+        # Insert multiple typed tuples
+        assert baser.vrcs.put(key, vals) is True
+
+        # Insertion order is preserved
+        stored = baser.vrcs.get(key)
+        assert len(stored) == len(vals)
+        for (sp, sn, se, ss), (ep, en, ee, es) in zip(stored, vals):
+            assert sp.qb64 == ep.qb64
+            assert sn.num == en.num
+            assert se.qb64 == ee.qb64
+            assert ss.raw == es.raw
+
+        assert baser.vrcs.cnt(key) == 4
+
+        # Duplicate insertion should not add new entries
+        assert baser.vrcs.put(key, [quadA]) == False
+        assert baser.vrcs.put(key, [quadB]) == False   # quadB already present → no change
+        assert baser.vrcs.put(key, [quadD]) == False   # quadD already present → no change
+        assert baser.vrcs.put(key, [quadC]) == False   # quadC already present → no change
+
+        # Iteration returns the same tuples in insertion order
+        itered = list(baser.vrcs.getIter(key))
+        for (sp, sn, se, ss), (ep, en, ee, es) in zip(itered, vals):
+            assert sp.qb64 == ep.qb64
+            assert sn.num == en.num
+            assert se.qb64 == ee.qb64
+            assert ss.raw == es.raw
+
+        # Remove individual tuples
+        for quad in vals:
+            assert baser.vrcs.rem(key, quad) == True
+
+        assert baser.vrcs.get(key) == []
+        assert baser.vrcs.cnt(key) == 0
+
+         # Unverified Validator (transferable) Receipt Escrows
+        # test .vres insertion order dup methods.  dup vals are insertion order
+        key = b'A'
+        vals = [b"z", b"m", b"x", b"a"]
+
+        d1 = coring.Diger(ser=b"event1")  # digest of event
+        p1 = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")  # fake prefix
+        n1 = core.Number(num=1)
+        e1 = coring.Diger(ser=b"est1")    # digest of est event
+        s1 = core.Siger(raw=b"\x00" * 64)  # 64‑byte fake signature
+
+        cesrVal = (d1, p1, n1, e1, s1)
+        cesrVal = [cesrVal]
+
+        assert baser.vres.get(key) == []
+        assert baser.vres.getLast(keys=key) == None
+        assert baser.vres.cnt(key) == 0
+        assert baser.vres.rem(key) == False
+
+        assert baser.vres.put(keys=key, vals=cesrVal) is True
+
+        stored = baser.vres.get(key)
+        assert len(stored) == 1
+        sd1, sp1, sn1, se1, ss1 = stored[0]
+
+        assert sd1.qb64 == d1.qb64
+        assert sp1.qb64 == p1.qb64
+        assert sn1.num == n1.num
+        assert se1.qb64 == e1.qb64
+        assert ss1.raw == s1.raw
+
+
+        # assert baser.putVres(key, vals) == True
+        # assert baser.vres.get(key) == vals  # preserved insertion order
+        # assert baser.cntVres(key) == len(vals) == 4
+        # assert baser.getVreLast(key) == vals[-1]
+        # assert baser.putVres(key, vals=[b'a']) == False   # duplicate
+        # assert baser.vres.get(key) == vals  #  no change
+        # assert baser.addVre(key, b'a') == False   # duplicate
+        # assert baser.addVre(key, b'b') == True
+        # assert baser.vres.get(key) == [b"z", b"m", b"x", b"a", b"b"]
+        # assert [val for val in baser.vres.getIter(key)] == [b"z", b"m", b"x", b"a", b"b"]
+        # assert baser.delVres(key) == True
+        # assert baser.vres.get(key) == []
+
+        # # Setup Tests for getVresNext and getVresNextIter
+        # aKey = snKey(pre=b'A', sn=1)
+        # aVals = [b"z", b"m", b"x"]
+        # bKey = snKey(pre=b'A', sn=2)
+        # bVals = [b"o", b"r", b"z"]
+        # cKey = snKey(pre=b'A', sn=4)
+        # cVals = [b"h", b"n"]
+        # dKey = snKey(pre=b'A', sn=7)
+        # dVals = [b"k", b"b"]
+
+        # assert baser.putVres(key=aKey, vals=aVals)
+        # assert baser.putVres(key=bKey, vals=bVals)
+        # assert baser.putVres(key=cKey, vals=cVals)
+        # assert baser.putVres(key=dKey, vals=dVals)
+
+
+        # # Test getVreItemsNextIter(key=b"")
+        # #  get dups at first key in database
+        # # aVals
+        # items = [item for item in baser.getVreItemIter()]
+        # assert items  # not empty
+        # ikey = items[0][0]
+        # assert  ikey == aKey
+        # vals = [val for  key, val in items]
+        # assert vals == aVals + bVals + cVals + dVals
+
+        # items = [item for item in baser.getVreItemIter(key=aKey)]
+        # assert items  # not empty
+        # ikey = items[0][0]
+        # assert  ikey == aKey
+        # vals = [val for  key, val in items]
+        # assert vals == aVals
+
+        # # bVals
+        # items = [item for item in baser.getVreItemIter(key=bKey)]
+        # assert items  # not empty
+        # ikey = items[0][0]
+        # assert  ikey == bKey
+        # vals = [val for key, val in items]
+        # assert vals == bVals
+        # for key, val in items:
+        #     assert baser.delVre(ikey, val) == True
+
+        # # cVals
+        # items = [item for item in baser.getVreItemIter(key=cKey)]
+        # assert items  # not empty
+        # ikey = items[0][0]
+        # assert  ikey == cKey
+        # vals = [val for key, val in items]
+        # assert vals == cVals
+        # for key, val in items:
+        #     assert baser.delVre(ikey, val) == True
+
+        # # dVals
+        # items = [item for item in baser.getVreItemIter(key=dKey)]
+        # assert items  # not empty
+        # ikey = items[0][0]
+        # assert  ikey == dKey
+        # vals = [val for key, val in items]
+        # assert vals == dVals
+        # for key, val in items:
+        #     assert baser.delVre(ikey, val) == True
 
     asyncio.run(_go())

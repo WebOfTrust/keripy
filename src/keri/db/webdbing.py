@@ -803,7 +803,18 @@ class WebDBer:
                 yield key, val
             return
 
-        for key in db.items.irange(minimum=prefix):
+        try:
+            raw = db.items.irange(minimum=prefix)
+        except IndexError:
+            return iter(())
+
+        try:
+            keys = list(raw)
+        except IndexError:
+            return iter(())
+
+
+        for key in keys:
             if not key.startswith(prefix):
                 break
             yield key, db.items[key]
@@ -1065,8 +1076,19 @@ class WebDBer:
         # Get the prefix 
         iokey = suffix(key, ion, sep=sep)
 
+        try:
+            raw = db.items.irange(minimum=iokey)
+        except IndexError:
+            return iter(())
+
+        try:
+            keys = list(raw)
+        except IndexError:
+            return iter(())
+
+
         # Iterate through items from the starting key
-        for iokey in db.items.irange(minimum=iokey):
+        for iokey in keys:
             ckey, cion = unsuffix(iokey, sep=sep)
             # Stop when we leave this IoSet
             if ckey != key:
@@ -2322,7 +2344,7 @@ class WebBaser(WebDBer):
 
         """
         SubDbNames = [
-            "evts.", "sigs.", "wigs.", "dtss.", "aess.", "rcts.", "vrcs.",
+            "evts.", "sigs.", "wigs.", "dtss.", "aess.", "rcts.", "vrcs.", "vres.",
             "kels.", "fels.", "ooes.", "pses.", "dels.", "ldes.",
             "ures.", "esrs.", "states.", "habs.", "names.",
             "imgs.", "iimgs.",
@@ -2406,13 +2428,15 @@ class WebBaser(WebDBer):
 
         self.evts = subing.SerderSuber(db=self, subkey='evts.')
         self.sigs = subing.CesrIoSetSuber(db=self, subkey='sigs.', klas=(indexing.Siger))
-        self.wigs = subing.CesrIoSetSuber(db=self, subkey='wigs.', klas=(indexing.Siger,))
+        self.wigs = subing.CesrIoSetSuber(db=self, subkey='wigs.', klas=(indexing.Siger))
         self.dtss = subing.CesrSuber(db=self, subkey='dtss.', klas=coring.Dater)
         self.aess = subing.CatCesrSuber(db=self, subkey='aess.', klas=(coring.Number, coring.Diger))
         self.rcts = subing.CatCesrIoSetSuber(db=self, subkey='rcts.',
                                             klas=(coring.Prefixer, coring.Cigar))
         self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.',
                                             klas=(coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
+        self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.',
+                        klas=(coring.Diger, coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
         self.kels = subing.OnIoSetSuber(db=self, subkey='kels.')
         self.fels = subing.OnSuber(db=self, subkey='fels.')
         self.ooes = subing.OnIoSetSuber(db=self, subkey='ooes.')
