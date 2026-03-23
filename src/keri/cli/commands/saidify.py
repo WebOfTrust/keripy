@@ -7,12 +7,12 @@ import argparse
 import json
 
 from hio.base import doing
+from hio.help import ogler
 
-from ... import help
-from ...core import coring
+from ...core import Saider
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Saidify a JSON file.')
 parser.set_defaults(handler=lambda args: handler(args),
@@ -39,7 +39,7 @@ def saidify(tock=0.0, **opts):
 
     with open(args.file, 'r') as f:
         sad = json.load(f)
-        _, out = coring.Saider.saidify(sad=sad, label=args.label)
+        _, out = Saider.saidify(sad=sad, label=args.label)
 
     with open(args.file, 'w') as f:
         json.dump(out, f)

@@ -7,15 +7,16 @@ import argparse
 
 from hio.base import doing
 
-from ...common import Parsery, existing
+from ...common import Parsery, setupHby
 
-from .... import kering
-from ....app import indirecting, habbing, grouping, forwarding, organizing, notifying
-from ....app.habbing import GroupHab
+from ....kering import ValidationError, Ilks
+from ....app import (MailboxDirector, HaberyDoer, Counselor,
+                     Multiplexor, Poster, Organizer, Notifier,
+                     GroupHab, multisigRevokeExn, loadHandlers)
 
-from ....core import SealEvent, coring, serdering
-from ....peer import exchanging
-from ....vdr import credentialing, verifying
+from ....core import SealEvent, Seqner, SerderKERI
+from ....peer import Exchanger
+from ....vdr import Regery, Registrar, Verifier
 
 
 parser = argparse.ArgumentParser(description='Revoke a verifiable credential',
@@ -47,22 +48,22 @@ class RevokeDoer(doing.DoDoer):
         self.send = send
         self.timestamp = timestamp
         self.registryName = registryName
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
-        self.org = organizing.Organizer(hby=self.hby)
-        self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
-        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        self.counselor = grouping.Counselor(hby=self.hby)
-        self.registrar = credentialing.Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)
-        self.verifier = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
-        self.postman = forwarding.Poster(hby=self.hby)
-        notifier = notifying.Notifier(self.hby)
-        mux = grouping.Multiplexor(self.hby, notifier=notifier)
-        exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        grouping.loadHandlers(exc, mux)
+        self.org = Organizer(hby=self.hby)
+        self.rgy = Regery(hby=self.hby, name=name, base=base)
+        self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
+        self.counselor = Counselor(hby=self.hby)
+        self.registrar = Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)
+        self.verifier = Verifier(hby=self.hby, reger=self.rgy.reger)
+        self.postman = Poster(hby=self.hby)
+        notifier = Notifier(self.hby)
+        mux = Multiplexor(self.hby, notifier=notifier)
+        exc = Exchanger(hby=self.hby, handlers=[])
+        loadHandlers(exc, mux)
 
-        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/credential"],
-                                          verifier=self.verifier, exc=exc)
+        mbx = MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/credential"],
+                              verifier=self.verifier, exc=exc)
 
         doers = [self.hbyDoer, mbx, self.counselor, self.registrar, self.postman]
         self.toRemove = list(doers)
@@ -102,13 +103,13 @@ class RevokeDoer(doing.DoDoer):
             hab = registry.hab
 
             state = registry.tever.vcState(vci=creder.said)
-            if state is None or state.et not in (coring.Ilks.iss, coring.Ilks.rev):
-                raise kering.ValidationError(f"credential {creder.said} not is correct state for revocation")
+            if state is None or state.et not in (Ilks.iss, Ilks.rev):
+                raise ValidationError(f"credential {creder.said} not is correct state for revocation")
 
             rserder = registry.revoke(said=creder.said, **kwargs)
 
             vcid = rserder.ked["i"]
-            rseq = coring.Seqner(snh=rserder.ked["s"])
+            rseq = Seqner(snh=rserder.ked["s"])
             rseal = SealEvent(vcid, rseq.snh, rserder.said)
             rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
@@ -117,7 +118,7 @@ class RevokeDoer(doing.DoDoer):
             else:
                 anc = hab.interact(data=[rseal])
 
-            aserder = serdering.SerderKERI(raw=bytes(anc))
+            aserder = SerderKERI(raw=bytes(anc))
             self.registrar.revoke(creder, rserder, aserder)
 
             if isinstance(self.hab, GroupHab):
@@ -125,7 +126,7 @@ class RevokeDoer(doing.DoDoer):
                 smids.remove(self.hab.mhab.pre)
 
                 for recp in smids:  # this goes to other participants only as a signaling mechanism
-                    exn, atc = grouping.multisigRevokeExn(ghab=self.hab, said=creder.said, rev=rserder.raw, anc=anc)
+                    exn, atc = multisigRevokeExn(ghab=self.hab, said=creder.said, rev=rserder.raw, anc=anc)
                     self.postman.send(src=self.hab.mhab.pre,
                                       dest=recp,
                                       topic="multisig",
@@ -144,11 +145,11 @@ class RevokeDoer(doing.DoDoer):
             if len(recps) > 0:
                 msgs = []
                 for msg in self.hby.db.clonePreIter(pre=creder.issuer):
-                    serder = serdering.SerderKERI(raw=msg)
+                    serder = SerderKERI(raw=msg)
                     atc = msg[serder.size:]
                     msgs.append((serder, atc))
                 for msg in self.rgy.reger.clonePreIter(pre=creder.said):
-                    serder = serdering.SerderKERI(raw=msg)
+                    serder = SerderKERI(raw=msg)
                     atc = msg[serder.size:]
                     msgs.append((serder, atc))
 
@@ -171,7 +172,7 @@ class RevokeDoer(doing.DoDoer):
                 while not len(self.postman.cues) == sent:
                     yield self.tock
 
-        except kering.ValidationError as ex:
+        except ValidationError as ex:
             raise ex
 
         self.remove(self.toRemove)

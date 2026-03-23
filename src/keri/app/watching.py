@@ -9,11 +9,9 @@ from collections import namedtuple
 from dataclasses import dataclass
 
 from hio.base import doing
-from hio.help import decking
+from hio.help import decking, ogler
 
-from .. import help
-
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 Stateage = namedtuple("Stateage", 'even ahead behind duplicitous')
 

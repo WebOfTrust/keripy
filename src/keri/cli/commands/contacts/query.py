@@ -9,14 +9,15 @@ import datetime
 import json
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing, displaying
-from .... import help
-from ....app import organizing as connecting, habbing, indirecting, querying
+from ...common import setupHby, printExternal
+
+from ....app import Organizer, HaberyDoer, MailboxDirector, QueryDoer
 from ....help import helping
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Query witnesses for latest key state of a contact')
 parser.set_defaults(handler=lambda args: handler(args),
@@ -60,13 +61,13 @@ class ContactQueryDoer(doing.DoDoer):
     """ DoDoer for querying contact key state from witnesses """
 
     def __init__(self, name, base, bran, alias, contact_aid, contact_alias):
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)
+        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = HaberyDoer(habery=self.hby)
         self.alias = alias
         self.contact_aid = contact_aid
         self.contact_alias = contact_alias
 
-        self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"])
+        self.mbd = MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"])
 
         doers = [self.hbyDoer, self.mbd, doing.doify(self.queryDo)]
         super(ContactQueryDoer, self).__init__(doers=doers)
@@ -91,7 +92,7 @@ class ContactQueryDoer(doing.DoDoer):
             self.remove([self.hbyDoer, self.mbd])
             return
 
-        org = connecting.Organizer(hby=self.hby)
+        org = Organizer(hby=self.hby)
 
         pre = None
         if self.contact_aid:
@@ -115,7 +116,7 @@ class ContactQueryDoer(doing.DoDoer):
             self.remove([self.hbyDoer, self.mbd])
             return
 
-        doer = querying.QueryDoer(hby=self.hby, hab=hab, pre=pre, kvy=self.mbd.kvy)
+        doer = QueryDoer(hby=self.hby, hab=hab, pre=pre, kvy=self.mbd.kvy)
         self.extend([doer])
 
         end = helping.nowUTC() + datetime.timedelta(seconds=10)
@@ -126,7 +127,7 @@ class ContactQueryDoer(doing.DoDoer):
 
         self.remove([doer])
 
-        displaying.printExternal(self.hby, pre)
+        printExternal(self.hby, pre)
 
         contact = org.get(pre)
         if contact:

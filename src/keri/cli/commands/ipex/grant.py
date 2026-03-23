@@ -7,13 +7,21 @@ import argparse
 
 from hio.base import doing
 
-from ...common import Parsery, existing
+from ...common import Parsery, setupHby
 
-from .... import Vrsn_1_0
-from ....app import Notifier, forwarding, organizing, habbing, grouping, indirecting, signing
+from ....kering import Vrsn_1_0
+from ....app import (Notifier, StreamPoster, Organizer,
+                     GroupHab, Multiplexor, MailboxDirector,
+                     serialize, multisigExn)
+
+from ....app.grouping import loadHandlers as loadHandlersGrouping
+
 from ....core import coring, parsing, serdering
 from ....peer import exchanging
-from ....vc import protocoling
+
+from ....vc import ipexGrantExn
+from ....vc.protocoling import loadHandlers as loadHandlersProtocoling
+
 from ....vdr import credentialing
 
 
@@ -51,20 +59,20 @@ class GrantDoer(doing.DoDoer):
         self.recp = recp
         self.message = message
         self.timestamp = timestamp
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
-        self.org = organizing.Organizer(hby=self.hby)
+        self.org = Organizer(hby=self.hby)
         notifier = Notifier(self.hby)
-        mux = grouping.Multiplexor(self.hby, notifier=notifier)
+        mux = Multiplexor(self.hby, notifier=notifier)
 
         self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        grouping.loadHandlers(self.exc, mux)
-        protocoling.loadHandlers(self.hby, exc=self.exc, notifier=notifier)
+        loadHandlersGrouping(self.exc, mux)
+        loadHandlersProtocoling(self.hby, exc=self.exc, notifier=notifier)
 
-        mbx = indirecting.MailboxDirector(hby=self.hby,
-                                          topics=["/receipt", "/multisig", "/replay", "/credential"],
-                                          exc=self.exc)
+        mbx = MailboxDirector(hby=self.hby,
+                              topics=["/receipt", "/multisig", "/replay", "/credential"],
+                              exc=self.exc)
 
         self.toRemove = [mbx]
         super(GrantDoer, self).__init__(doers=self.toRemove + [doing.doify(self.grantDo)])
@@ -89,7 +97,7 @@ class GrantDoer(doing.DoDoer):
         if creder is None:
             raise ValueError(f"invalid credential SAID to grant={self.said}")
 
-        acdc = signing.serialize(creder, prefixer, seqner, saider)
+        acdc = serialize(creder, prefixer, seqner, saider)
 
         if self.recp is None:
             recp = creder.attrib['i'] if 'i' in creder.attrib else None
@@ -115,23 +123,23 @@ class GrantDoer(doing.DoDoer):
                                                               seal=dict(i=iserder.pre, s=seqner.snh, d=iserder.said))
         anc = self.hby.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
 
-        exn, atc = protocoling.ipexGrantExn(hab=self.hab, recp=recp, message=self.message, acdc=acdc, iss=iss, anc=anc,
-                                            dt=self.timestamp)
+        exn, atc = ipexGrantExn(hab=self.hab, recp=recp, message=self.message, acdc=acdc, iss=iss, anc=anc,
+                                dt=self.timestamp)
         msg = bytearray(exn.raw)
         msg.extend(atc)
 
         parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytes(msg), exc=self.exc)
 
         sender = self.hab
-        if isinstance(self.hab, habbing.GroupHab):
+        if isinstance(self.hab, GroupHab):
             sender = self.hab.mhab
-            wexn, watc = grouping.multisigExn(self.hab, exn=msg)
+            wexn, watc = multisigExn(self.hab, exn=msg)
 
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
             smids.remove(self.hab.mhab.pre)
 
             for part in smids:  # this goes to other participants
-                postman = forwarding.StreamPoster(hby=self.hby, hab=self.hab.mhab, recp=part, topic="multisig")
+                postman = StreamPoster(hby=self.hby, hab=self.hab.mhab, recp=part, topic="multisig")
                 postman.send(serder=wexn,
                              attachment=watc)
                 doer = doing.DoDoer(doers=postman.deliver())
@@ -142,7 +150,7 @@ class GrantDoer(doing.DoDoer):
 
         if self.exc.lead(self.hab, said=exn.said):
             print(f"Sending message {exn.said} to {recp}")
-            postman = forwarding.StreamPoster(hby=self.hby, hab=sender, recp=recp, topic="credential")
+            postman = StreamPoster(hby=self.hby, hab=sender, recp=recp, topic="credential")
 
             sources = self.rgy.reger.sources(self.hby.db, creder)
             credentialing.sendArtifacts(self.hby, self.rgy.reger, postman, creder, recp)

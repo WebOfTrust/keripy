@@ -8,11 +8,14 @@ Witness command line interface
 import argparse
 import logging
 
-from ...common import existing
-from ...common.parsing import Parsery
+from hio.help import ogler
 
-from .... import __version__, help
-from ....app import directing, indirecting, habbing, keeping, configing
+from keri import __version__
+
+from ...common import Parsery, setupHby
+
+from ....app import (Habery, HaberyDoer, Keeper, Configer,
+                     runController, setupWitness)
 
 
 d = "Runs KERI witness controller.\n"
@@ -52,11 +55,11 @@ parser.add_argument("--logfile", action="store", required=False, default=None,
 
 
 def launch(args):
-    help.ogler.level = logging.getLevelName(args.loglevel)
+    ogler.level = logging.getLevelName(args.loglevel)
     if args.logfile is not None:
-        help.ogler.headDirPath = args.logfile
-        help.ogler.reopen(name=args.name, temp=False, clear=True)
-    logger = help.ogler.getLogger()
+        ogler.headDirPath = args.logfile
+        ogler.reopen(name=args.name, temp=False, clear=True)
+    logger = ogler.getLogger()
 
     logger.info("\n******* Starting Witness for %s listening: http/%s, tcp/%s "
                 ".******\n\n", args.name, args.http, args.tcp)
@@ -83,31 +86,31 @@ def runWitness(name="witness", base="", alias="witness", bran="", tcp=5631, http
     Setup and run one witness
     """
 
-    ks = keeping.Keeper(name=name,
-                        base=base,
-                        temp=False,
-                        reopen=True)
+    ks = Keeper(name=name,
+                base=base,
+                temp=False,
+                reopen=True)
 
     aeid = ks.gbls.get('aeid')
 
     cf = None
     if configFile is not None:
-        cf = configing.Configer(name=configFile, headDirPath=configDir, temp=False, reopen=True, clear=False)
+        cf = Configer(name=configFile, headDirPath=configDir, temp=False, reopen=True, clear=False)
 
     if aeid is None:
-        hby = habbing.Habery(name=name, base=base, bran=bran, cf=cf)
+        hby = Habery(name=name, base=base, bran=bran, cf=cf)
     else:
-        hby = existing.setupHby(name=name, base=base, bran=bran, cf=cf)
+        hby = setupHby(name=name, base=base, bran=bran, cf=cf)
 
-    hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
+    hbyDoer = HaberyDoer(habery=hby)  # setup doer
     doers = [hbyDoer]
 
-    doers.extend(indirecting.setupWitness(alias=alias,
-                                          hby=hby,
-                                          tcpPort=tcp,
-                                          httpPort=http,
-                                          keypath=keypath,
-                                          certpath=certpath,
-                                          cafilepath=cafilepath))
+    doers.extend(setupWitness(alias=alias,
+                              hby=hby,
+                              tcpPort=tcp,
+                              httpPort=http,
+                              keypath=keypath,
+                              certpath=certpath,
+                              cafilepath=cafilepath))
 
-    directing.runController(doers=doers, expire=expire)
+    runController(doers=doers, expire=expire)

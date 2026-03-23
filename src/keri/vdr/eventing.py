@@ -6,12 +6,12 @@ keri.vdr.eventing module
 VC TEL  support
 """
 import logging
-from dataclasses import dataclass, field, asdict
+from dataclasses import asdict
 from ordered_set import OrderedSet as oset
 from math import ceil
 from  ordered_set import OrderedSet as oset
 
-from hio.help import decking
+from hio.help import decking, ogler
 
 from ..kering import (Kinds, Ilks, versify,
                     Version,  Vrsn_1_0,
@@ -23,19 +23,23 @@ from ..kering import (Kinds, Ilks, versify,
 
 from ..core import (SerderKERI, Salter, Prefixer, Verfer,
                     Number, Saider, Seqner,
-                    Diger, Dater, eventing, SealEvent,
-                    TraitDex, MtrDex, ample, verifySigs)
+                    Diger, Dater, SealEvent,
+                    TraitDex, MtrDex, ample, verifySigs,
+                    query as queryCore)
 
-from ..db import Baser, dgKey, snKey, koming, subing, escrowing, dbing, dgKey, snKey
+from ..db import (Baser, Broker, Komer, LMDBer,
+                  Suber, OnSuber, CatCesrSuber, IoDupSuber,
+                  CesrDupSuber, OnIoDupSuber, SerderSuber,
+                  CesrIoSetSuber, CatCesrIoSetSuber, CesrSuber,
+                  openLMDB, dgKey, snKey, dgKey, snKey)
 
 
-from ..app import signing
 from ..core import (Counter, Number, Diger, Dater,
                     Prefixer, Verfer, Cigar, Saider,
-                    Seqner, serdering, indexing,
-                    counting, Codens)
+                    Seqner, SerderACDC, SerderKERI,
+                    Siger, CtrDex_1_0, Codens)
 
-from ..help import helping, ogler
+from ..help import helping
 
 from .vdring import RegistryRecord, RegStateRecord, VcStateRecord
 
@@ -633,7 +637,7 @@ def query(regk,
     if dtb is not None:
         qry["dtb"] = dt
 
-    return eventing.query(route=route,
+    return queryCore(route=route,
                           replyRoute=replyRoute,
                           query=qry,
                           stamp=stamp,
@@ -1124,7 +1128,7 @@ class Tever:
         # have to compare with VC issuance serder
         vci = vcpre
 
-        dig = self.reger.tels.get(keys=snKey(pre=vci, sn=sn - 1))
+        dig = self.reger.tels.get(keys=vci, on=sn - 1)
         ievt = self.reger.tvts.get(keys=(vci, dig))
         if ievt is None:
             raise ValidationError("revoke without issue... probably have to escrow")
@@ -1231,7 +1235,7 @@ class Tever:
             int: current TEL sequence number of credential or None if not found
 
         """
-        cnt = self.reger.tels.cntOnAll(keys=vci)
+        cnt = self.reger.tels.cntAll(keys=vci)
 
         return None if cnt == 0 else cnt - 1
 
@@ -1264,7 +1268,7 @@ class Tever:
             self.reger.baks.put(key, [bak.encode("utf-8") for bak in baks])
         self.reger.tets.pin(keys=(pre.decode("utf-8"), dig.decode("utf-8")), val=Dater())
         self.reger.tvts.put(keys=key, val=serder.raw)
-        self.reger.tels.put(keys=snKey(pre, sn), val=dig)
+        self.reger.tels.put(keys=pre, on=sn, val=dig)
         logger.info("Tever: Added to TEL valid %s event %s said=%s reg=%.8s iss=%.8s",
                     serder.ilk, pre.decode(), serder.said, self.regk, self.pre)
         logger.debug("TEL Event Body=\n%s\n", serder.pretty())
@@ -1346,7 +1350,7 @@ class Tever:
         if seqner is None or saider is None:
             return False
 
-        dig = self.db.kels.getOnLast(keys=self.pre, on=seqner.sn)
+        dig = self.db.kels.getLast(keys=self.pre, on=seqner.sn)
         if not dig:
             return False
         else:
@@ -1391,7 +1395,7 @@ class Tever:
         if bigers:
             self.reger.tibs.pin(keys=dgkey, vals=bigers)
         self.reger.tvts.put(keys=dgkey, val=serder.raw)
-        self.reger.twes.putOn(keys=serder.preb, on=serder.sn, vals=serder.saidb)
+        self.reger.twes.put(keys=serder.preb, on=serder.sn, vals=serder.saidb)
         logger.debug("Tever state: Escrowed partially witnessed "
                      "event = %s", serder.ked)
 
@@ -1423,7 +1427,7 @@ class Tever:
         self.reger.tvts.put(keys=key, val=serder.raw)
         logger.debug("Tever state: Escrowed anchorless event "
                      "event = %s", serder.ked)
-        return self.reger.taes.putOn(keys=serder.preb, on=serder.sn, vals=serder.saidb)
+        return self.reger.taes.put(keys=serder.preb, on=serder.sn, vals=serder.saidb)
 
     def getBackerState(self, ked):
         """ Calculate and return the current list of backers for event dict
@@ -1805,7 +1809,7 @@ class Tevery:
         if not accepted:
             raise UnverifiedReplyError(f"Unverified registry txn state reply.")
 
-        ldig = self.reger.tels.get(keys=snKey(pre=regk, sn=sn))  # retrieve dig of last event at sn.
+        ldig = self.reger.tels.get(keys=regk, on=sn)  # retrieve dig of last event at sn.
 
         # Only accept key state if for last seen version of event at sn
         if ldig is None:  # escrow because event does not yet exist in database
@@ -1945,7 +1949,7 @@ class Tevery:
         if not accepted:
             raise UnverifiedReplyError(f"Unverified credential state reply.")
 
-        ldig = self.reger.tels.get(keys=snKey(pre=vci, sn=sn))  # retrieve dig of last event at sn.
+        ldig = self.reger.tels.get(keys=vci, on=sn)  # retrieve dig of last event at sn.
 
         # Only accept key state if for last seen version of event at sn
         if ldig is None:  # escrow because event does not yet exist in database
@@ -2017,7 +2021,7 @@ class Tevery:
         number = Number(num=seqner.sn)
         diger = Diger(qb64=saider.qb64)
         self.reger.ancs.put(keys=key, val=(number, diger))
-        self.reger.oots.putOn(keys=serder.preb, on=serder.sn, vals=serder.saidb)
+        self.reger.oots.put(keys=serder.preb, on=serder.sn, vals=serder.saidb)
         logger.debug("Tever state: Escrowed our of order TEL event "
                      "event = %s", serder.ked)
 
@@ -2089,7 +2093,7 @@ class Tevery:
 
             except Exception as ex:  # log diagnostics errors etc
                 # error other than out of order so remove from OO escrow
-                self.reger.oots.remOn(keys=pre, on=sn)  # removes one escrow at key val
+                self.reger.oots.rem(keys=pre, on=sn)  # removes one escrow at key val
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Tevery OOO unescrowed: %s", ex.args[0])
                 else:
@@ -2099,7 +2103,7 @@ class Tevery:
                 # We don't remove all escrows at pre,sn because some might be
                 # duplicitous so we process remaining escrows in spite of found
                 # valid event escrow.
-                self.reger.oots.remOn(keys=pre, on=sn)  # removes from escrow
+                self.reger.oots.rem(keys=pre, on=sn)  # removes from escrow
                 logger.info("Tevery OOO unescrow succeeded in valid event: said=%s", tserder.said)
                 logger.debug("Event=\n%s\n", tserder.pretty())
 
@@ -2149,7 +2153,7 @@ class Tevery:
 
             except Exception as ex:  # log diagnostics errors etc
                 # error other than out of order so remove from OO escrow
-                self.reger.taes.remOn(keys=pre, on=sn)  # removes one escrow at key val
+                self.reger.taes.rem(keys=pre, on=sn)  # removes one escrow at key val
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Tevery ANC unescrowed: %s", ex.args[0])
                 else:
@@ -2159,7 +2163,7 @@ class Tevery:
                 # We don't remove all escrows at pre,sn because some might be
                 # duplicitous so we process remaining escrows in spite of found
                 # valid event escrow.
-                self.reger.taes.remOn(keys=pre, on=sn)  # removes from escrow
+                self.reger.taes.rem(keys=pre, on=sn)  # removes from escrow
                 logger.info("Tevery ANC unescrow succeeded in valid event: said=%s", tserder.said)
                 logger.debug("event=\n%s\n", tserder.pretty())
 
@@ -2238,10 +2242,10 @@ def openReger(name="test", **kwa):
         **kwa (dict) keyword arguments to pass to LMDB
 
     """
-    return dbing.openLMDB(cls=Reger, name=name, **kwa)
+    return openLMDB(cls=Reger, name=name, **kwa)
 
 
-class Reger(dbing.LMDBer):
+class Reger(LMDBer):
     """ Reger sets up named sub databases for TEL registry
 
     Attributes:
@@ -2258,7 +2262,7 @@ class Reger(dbing.LMDBer):
             Values are digests used to lookup event in .tvts sub DB
             DB is keyed by identifier prefix plus sequence number of tel event
             Only one value per DB key is allowed
-        .tibs is named sub DB implemented as CesrDupSuber with klas=indexing.Siger
+        .tibs is named sub DB implemented as CesrDupSuber with klas=Siger
             for indexed backer signatures of event.
             Backers always have nontransferable identifier prefixes.
             The index is the offset of the backer into the backer list
@@ -2364,87 +2368,87 @@ class Reger(dbing.LMDBer):
         # Names end with "." as sub DB name must include a non Base64 character
         # to avoid namespace collisions with Base64 identifier prefixes.
 
-        self.tvts = subing.Suber(db=self, subkey='tvts.')
-        self.tels = subing.OnSuber(db=self, subkey='tels.')
-        self.ancs = subing.CatCesrSuber(db=self, subkey='ancs.',
+        self.tvts = Suber(db=self, subkey='tvts.')
+        self.tels = OnSuber(db=self, subkey='tels.')
+        self.ancs = CatCesrSuber(db=self, subkey='ancs.',
                         klas=(Number, Diger))
-        self.baks = subing.IoDupSuber(db=self, subkey='baks.')
-        self.tibs = subing.CesrDupSuber(db=self, subkey='tibs.', klas=indexing.Siger)
-        self.oots = subing.OnIoDupSuber(db=self, subkey='oots')
-        self.twes = subing.OnIoDupSuber(db=self, subkey='twes')
-        self.taes = subing.OnIoDupSuber(db=self, subkey='taes')
-        self.tets = subing.CesrSuber(db=self, subkey='tets.', klas=Dater)
+        self.baks = IoDupSuber(db=self, subkey='baks.')
+        self.tibs = CesrDupSuber(db=self, subkey='tibs.', klas=Siger)
+        self.oots = OnIoDupSuber(db=self, subkey='oots')
+        self.twes = OnIoDupSuber(db=self, subkey='twes')
+        self.taes = OnIoDupSuber(db=self, subkey='taes')
+        self.tets = CesrSuber(db=self, subkey='tets.', klas=Dater)
 
         # Registry state made of RegStateRecord.
         # Each registry has registry event log keyed by registry identifier
-        self.states = koming.Komer(db=self,
+        self.states = Komer(db=self,
                                    klas=RegStateRecord,
                                    subkey='stts.')
-        #self.states = subing.SerderSuber(db=self, subkey='stts.')  # registry event state
+        #self.states = SerderSuber(db=self, subkey='stts.')  # registry event state
 
         # Holds the credential
-        self.creds = subing.SerderSuber(db=self, subkey="creds.", klas=serdering.SerderACDC)
+        self.creds = SerderSuber(db=self, subkey="creds.", klas=SerderACDC)
 
         # database of anchors to credentials.  prefix is either AID with direct credential
         # anchor or TEL event AID (same as credential SAID) when credential uses revocation registry
-        self.cancs = subing.CatCesrSuber(db=self, subkey='cancs.',
+        self.cancs = CatCesrSuber(db=self, subkey='cancs.',
                                          klas=(Prefixer, Number, Diger))
 
         # all sad path ssgs (sad pathed indexed signature serializations) maps SAD quinkeys
         # given by quintuple (saider.qb64, path, prefixer.qb64, number.qb64, diger.qb64)
         # of credential and trans signer's key state est evt to val Siger for each
         # signature.
-        self.spsgs = subing.CesrIoSetSuber(db=self, subkey='ssgs.', klas=indexing.Siger)
+        self.spsgs = CesrIoSetSuber(db=self, subkey='ssgs.', klas=Siger)
 
         # all sad path scgs  (sad pathed non-indexed signature serializations) maps
         # couple (SAD SAID, path) to couple (Verfer, Cigar) of nontrans signer of signature in Cigar
         # nontrans qb64 of Prefixer is same as Verfer
-        self.spcgs = subing.CatCesrIoSetSuber(db=self, subkey='scgs.',
+        self.spcgs = CatCesrIoSetSuber(db=self, subkey='scgs.',
                                               klas=(Verfer, Cigar))
 
         # Index of credentials processed and saved.  Indicates fully verified (even if revoked)
-        self.saved = subing.CesrSuber(db=self, subkey='saved.', klas=Saider)
+        self.saved = CesrSuber(db=self, subkey='saved.', klas=Saider)
         # Index of credentials by issuer.  My credentials issued, key == hab.pre
-        self.issus = subing.CesrDupSuber(db=self, subkey='issus.', klas=Saider)
+        self.issus = CesrDupSuber(db=self, subkey='issus.', klas=Saider)
         # Index of credentials by subject.  My credentials received, key == hab.pre
-        self.subjs = subing.CesrDupSuber(db=self, subkey='subjs.', klas=Saider)
+        self.subjs = CesrDupSuber(db=self, subkey='subjs.', klas=Saider)
         # Index of credentials by schema
-        self.schms = subing.CesrDupSuber(db=self, subkey='schms.', klas=Saider)
+        self.schms = CesrDupSuber(db=self, subkey='schms.', klas=Saider)
 
         # Missing reegistry escrow
-        self.mre = subing.CesrSuber(db=self, subkey='mre.', klas=Dater)
+        self.mre = CesrSuber(db=self, subkey='mre.', klas=Dater)
         # Broken chain escrow
-        self.mce = subing.CesrSuber(db=self, subkey='mce.', klas=Dater)
+        self.mce = CesrSuber(db=self, subkey='mce.', klas=Dater)
         # Missing schema escrow
-        self.mse = subing.CesrSuber(db=self, subkey='mse.', klas=Dater)
+        self.mse = CesrSuber(db=self, subkey='mse.', klas=Dater)
 
         # Collection of sub-dbs for persisting Registry Txn State Notices
-        self.txnsb = escrowing.Broker(db=self, subkey="txn.")
+        self.txnsb = Broker(db=self, subkey="txn.")
 
         # registry keys keyed by Registry name
-        self.regs = koming.Komer(db=self,
+        self.regs = Komer(db=self,
                                  subkey='regs.',
                                  klas=RegistryRecord, )
 
         # TEL partial witness escrow
-        self.tpwe = subing.CatCesrIoSetSuber(db=self, subkey='tpwe.',
+        self.tpwe = CatCesrIoSetSuber(db=self, subkey='tpwe.',
                                              klas=(Prefixer, Number, Diger))
         # TEL multisig anchor escrow
-        self.tmse = subing.CatCesrIoSetSuber(db=self, subkey='tmse.',
+        self.tmse = CatCesrIoSetSuber(db=self, subkey='tmse.',
                                              klas=(Prefixer, Number, Diger))
         # TEL event dissemination escrow
-        self.tede = subing.CatCesrIoSetSuber(db=self, subkey='tede.',
+        self.tede = CatCesrIoSetSuber(db=self, subkey='tede.',
                                              klas=(Prefixer, Number, Saider))
 
         # Completed TEL event
-        self.ctel = subing.CesrSuber(db=self, subkey='ctel.',
+        self.ctel = CesrSuber(db=self, subkey='ctel.',
                                      klas=Saider)
 
         # Credential Missing Signature Escrow
-        self.cmse = subing.SerderSuber(db=self, subkey="cmse.", klas=serdering.SerderACDC)
+        self.cmse = SerderSuber(db=self, subkey="cmse.", klas=SerderACDC)
 
         # Completed Credentials
-        self.ccrd = subing.SerderSuber(db=self, subkey="ccrd.", klas=serdering.SerderACDC)
+        self.ccrd = SerderSuber(db=self, subkey="ccrd.", klas=SerderACDC)
 
         return self.env
 
@@ -2459,11 +2463,12 @@ class Reger(dbing.LMDBer):
             list: fully hydrated credentials with full chains provided
 
         """
+        from ..app import serialize
         creds = []
         for saider in saids:
             key = saider.qb64
             creder, prefixer, number, asaider = self.cloneCred(said=key)
-            atc = bytearray(signing.serialize(creder, prefixer, number, saider))
+            atc = bytearray(serialize(creder, prefixer, number, saider))
             del atc[0:creder.size]
 
             regk = creder.regid
@@ -2471,12 +2476,12 @@ class Reger(dbing.LMDBer):
             schemer = db.schema.get(creder.schema)
 
             iss = bytearray(self.cloneTvtAt(creder.said, sn=0))
-            iserder = serdering.SerderKERI(raw=iss)
+            iserder = SerderKERI(raw=iss)
             issatc = bytes(iss[iserder.size:])
             del iss[0:iserder.size]
             if status.et in [Ilks.rev, Ilks.brv]:
                 rev = bytearray(self.cloneTvtAt(creder.said, sn=1))
-                rserder = serdering.SerderKERI(raw=rev)
+                rserder = SerderKERI(raw=rev)
                 revatc = bytes(rev[rserder.size:])
                 del rev[0:rserder.size]
 
@@ -2510,30 +2515,30 @@ class Reger(dbing.LMDBer):
             )
 
             ctr = Counter(qb64b=iss, strip=True, version=Vrsn_1_0)
-            if ctr.code == counting.CtrDex_1_0.AttachmentGroup:
+            if ctr.code == CtrDex_1_0.AttachmentGroup:
                 ctr = Counter(qb64b=iss, strip=True, version=Vrsn_1_0)
 
-            if ctr.code == counting.CtrDex_1_0.SealSourceCouples:
+            if ctr.code == CtrDex_1_0.SealSourceCouples:
                 Number(qb64b=iss, strip=True)
                 saider = Saider(qb64b=iss)
 
                 anc = db.cloneEvtMsg(pre=creder.issuer, fn=0, dig=saider.qb64b)
-                aserder = serdering.SerderKERI(raw=anc)
+                aserder = SerderKERI(raw=anc)
                 ancatc = bytes(anc[aserder.size:])
                 cred['anc'] = aserder.sad
                 cred['ancatc'] = ancatc.decode("utf-8"),
 
             if status.et in [Ilks.rev, Ilks.brv]:
                 ctr = Counter(qb64b=rev, strip=True, version=Vrsn_1_0)
-                if ctr.code == counting.CtrDex_1_0.AttachmentGroup:
+                if ctr.code == CtrDex_1_0.AttachmentGroup:
                     ctr = Counter(qb64b=rev, strip=True, version=Vrsn_1_0)
 
-                if ctr.code == counting.CtrDex_1_0.SealSourceCouples:
+                if ctr.code == CtrDex_1_0.SealSourceCouples:
                     Number(qb64b=rev, strip=True)
                     saider = Saider(qb64b=rev)
 
                     anc = db.cloneEvtMsg(pre=creder.issuer, fn=0, dig=saider.qb64b)
-                    aserder = serdering.SerderKERI(raw=anc)
+                    aserder = SerderKERI(raw=anc)
                     ancatc = bytes(anc[aserder.size:])
                     cred['revanc'] = aserder.sad
                     cred['revancatc'] = ancatc.decode("utf-8"),
@@ -2599,7 +2604,7 @@ class Reger(dbing.LMDBer):
 
     def cloneTvtAt(self, pre, sn=0):
         snkey = snKey(pre, sn)
-        dig = self.tels.get(keys=snkey)
+        dig = self.tels.get(keys=pre, on=sn)
         return self.cloneTvt(pre, dig)
 
     def cloneTvt(self, pre, dig):

@@ -7,14 +7,12 @@ keri.kli.commands module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import existing
-from ...common.parsing import Parsery
-
-from .... import help
+from ...common import Parsery, existingHby
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Display OOBIs waiting for resolution and allow for clean up',
                                  parents=[Parsery.keystore()])
@@ -37,7 +35,7 @@ def oobis(tymth, tock=0.0, **opts):
     bran = args.bran
 
 
-    with existing.existingHby(name=name, base=base, bran=bran) as hby:
+    with existingHby(name=name, base=base, bran=bran) as hby:
         oobis = []
         for (oobi,), _ in hby.db.oobis.getTopItemIter():
             oobis.append(oobi)

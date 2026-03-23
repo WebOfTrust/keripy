@@ -7,16 +7,17 @@ keri.kli.commands module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import Parsery, existing
+from ...common import Parsery, setupHby
 
-from .... import MissingEntryError, help
+from ....kering import MissingEntryError
 
-from ....app import agenting, habbing, httping
-from ....app.habbing import GroupHab
+from ....app import (HaberyDoer, GroupHab,
+                     httpClient, createCESRRequest)
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Display mailbox status for an identifier and witness', 
                                  parents=[Parsery.keystore()])
@@ -53,8 +54,8 @@ class ReadDoer(doing.DoDoer):
 
     def __init__(self, name, base, alias, bran, witness, verbose):
 
-        hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
+        hby = setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = HaberyDoer(habery=hby)  # setup doer
         self.alias = alias
         self.hby = hby
         self.witness = witness
@@ -82,7 +83,7 @@ class ReadDoer(doing.DoDoer):
         topics = {"/receipt": 0, "/replay": 0, "/multisig": 0, "/credential": 0, "/delegate": 0, "/challenge": 0,
                   "/oobi": 0, "/reply": 0}
         try:
-            client, clientDoer = agenting.httpClient(hab, self.witness)
+            client, clientDoer = httpClient(hab, self.witness)
         except MissingEntryError as e:
             raise ValueError(f"error connecting to witness {self.witness}: {e}")
 
@@ -103,7 +104,7 @@ class ReadDoer(doing.DoDoer):
         else:
             msg = hab.query(pre=hab.pre, src=self.witness, route="mbx", query=q)
 
-        httping.createCESRRequest(msg, client, dest=self.witness)
+        createCESRRequest(msg, client, dest=self.witness)
 
         while client.requests or (not client.events and not client.requests):
             yield self.tock

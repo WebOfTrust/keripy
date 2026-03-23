@@ -29,11 +29,14 @@ from dataclasses import dataclass, asdict, field
 import pysodium
 from hio.base import doing
 
-from .. import ClosedError, AuthError, DecryptError
-from ..core import (coring, Cipher, Signer, Salter,
+from ..kering import ClosedError, AuthError, DecryptError
+from ..core import (Prefixer, Number, Diger, Tholder,
+                    Cipher, Signer, Salter,
                     Encrypter, Decrypter, Tiers, MtrDex)
-from ..db import dbing, subing, koming
-from ..help import helping
+from ..db import (openLMDB, LMDBer, Suber,
+                  CryptSignerSuber, CesrSuber,
+                  CatCesrIoSetSuber, Komer)
+from ..help import nowIso8601
 
 Algoage = namedtuple("Algoage", 'randy salty group extern')
 Algos = Algoage(randy='randy', salty='salty', group="group", extern="extern")  # randy is rerandomize, salty is use salt
@@ -127,10 +130,10 @@ def openKS(name="test", **kwa):
         temp is Boolean, True means open in temporary directory, clear on close
             Otherwise open in persistent directory, do not clear on close
     """
-    return dbing.openLMDB(cls=Keeper, name=name, **kwa)
+    return openLMDB(cls=Keeper, name=name, **kwa)
 
 
-class Keeper(dbing.LMDBer):
+class Keeper(LMDBer):
     """
     Keeper sets up named sub databases for key pair storage (KS).
     Methods provide key pair creation, storage, and data signing.
@@ -153,7 +156,7 @@ class Keeper(dbing.LMDBer):
         readonly (bool): True means open LMDB env as readonly
 
     Attributes:
-        gbls (subing.Suber): named sub DB whose values are global parameters
+        gbls (Suber): named sub DB whose values are global parameters
             for all prefixes
             Key is parameter labels
             Value is parameter
@@ -169,15 +172,15 @@ class Keeper(dbing.LMDBer):
                    salt (bytes): root salt for generating key pairs
                    tier (bytes): default root security tier for root salt
 
-        pris (subing.CryptSignerSuber): named sub DB whose keys are public key
+        pris (CryptSignerSuber): named sub DB whose keys are public key
             from key pair and values are private keys from key pair
             Key is public key (fully qualified qb64)
             Value is private key (fully qualified qb64)
-        pres (subing.CesrSuber): named sub DB whose values are prefixes or first
+        pres (CesrSuber): named sub DB whose values are prefixes or first
             public keys
             Key is first public key in key sequence for a prefix (fully qualified qb64)
             Value is prefix or first public key (temporary) (fully qualified qb64
-        prms (koming.Komer): named sub DB whose values are serialized dicts of
+        prms (Komer): named sub DB whose values are serialized dicts of
             PrePrm instance
             Key is identifier prefix (fully qualified qb64)
             Value is  serialized parameter dict of public key parameters
@@ -188,7 +191,7 @@ class Keeper(dbing.LMDBer):
                 stem: ,
                 tier: ,
             }
-        sits (koming.Komer): named sub DB whose values are serialized dicts of
+        sits (Komer): named sub DB whose values are serialized dicts of
             PreSit instance
             Key is identifier prefix (fully qualified qb64)
             Value is  serialized parameter dict of public key situation
@@ -197,7 +200,7 @@ class Keeper(dbing.LMDBer):
                   new: { pubs: ridx:, kidx:, dt:},
                   nxt: { pubs: ridx:, kidx:, dt:}
                 }
-        .pubs (koming.Komer): named sub DB whose values are serialized lists of
+        .pubs (Komer): named sub DB whose values are serialized lists of
             public keys
             Enables lookup of public keys from prefix and ridx for replay of
             public keys by prefix in establishment event order.
@@ -264,30 +267,30 @@ class Keeper(dbing.LMDBer):
         # Names end with "." as sub DB name must include a non Base64 character
         # to avoid namespace collisions with Base64 identifier prefixes.
 
-        self.gbls = subing.Suber(db=self, subkey='gbls.')
-        self.pris = subing.CryptSignerSuber(db=self, subkey='pris.')
-        self.prxs = subing.CesrSuber(db=self,
+        self.gbls = Suber(db=self, subkey='gbls.')
+        self.pris = CryptSignerSuber(db=self, subkey='pris.')
+        self.prxs = CesrSuber(db=self,
                                      subkey='prxs.',
                                      klas=Cipher)
-        self.nxts = subing.CesrSuber(db=self,
+        self.nxts = CesrSuber(db=self,
                                      subkey='nxts.',
                                      klas=Cipher)
-        self.smids = subing.CatCesrIoSetSuber(db=self,
+        self.smids = CatCesrIoSetSuber(db=self,
                                               subkey='smids.',
-                                              klas=(coring.Prefixer, coring.Number))
-        self.rmids = subing.CatCesrIoSetSuber(db=self,
+                                              klas=(Prefixer, Number))
+        self.rmids = CatCesrIoSetSuber(db=self,
                                               subkey='rmids.',
-                                              klas=(coring.Prefixer, coring.Number))
-        self.pres = subing.CesrSuber(db=self,
+                                              klas=(Prefixer, Number))
+        self.pres = CesrSuber(db=self,
                                      subkey='pres.',
-                                     klas=coring.Prefixer)
-        self.prms = koming.Komer(db=self,
+                                     klas=Prefixer)
+        self.prms = Komer(db=self,
                                  subkey='prms.',
                                  klas=PrePrm,)  # New Prefix Parameters
-        self.sits = koming.Komer(db=self,
+        self.sits = Komer(db=self,
                                  subkey='sits.',
                                  klas=PreSit,)  # Prefix Situation
-        self.pubs = koming.Komer(db=self,
+        self.pubs = Komer(db=self,
                                  subkey='pubs.',
                                  klas=PubSet,)  # public key set at pre.ridx
         return self.opened
@@ -429,7 +432,7 @@ class RandyCreator(Creator):
         """
         super(RandyCreator, self).__init__(**kwa)
 
-    def create(self, codes=None, count=1, code=coring.MtrDex.Ed25519_Seed,
+    def create(self, codes=None, count=1, code=MtrDex.Ed25519_Seed,
                transferable=True, **kwa):
         """
         Returns list of signers one per kidx in kidxs
@@ -502,7 +505,7 @@ class SaltyCreator(Creator):
         """
         return self.salter.tier
 
-    def create(self, codes=None, count=1, code=coring.MtrDex.Ed25519_Seed,
+    def create(self, codes=None, count=1, code=MtrDex.Ed25519_Seed,
                pidx=0, ridx=0, kidx=0, transferable=True, temp=False, **kwa):
         """
         Returns list of signers one per kidx in kidxs
@@ -925,9 +928,9 @@ class Manager:
         self.ks.gbls.pin('tier', tier)
 
 
-    def incept(self, icodes=None, icount=1, icode=coring.MtrDex.Ed25519_Seed,
-                     ncodes=None, ncount=1, ncode=coring.MtrDex.Ed25519_Seed,
-                     dcode=coring.MtrDex.Blake3_256,
+    def incept(self, icodes=None, icount=1, icode=MtrDex.Ed25519_Seed,
+                     ncodes=None, ncount=1, ncode=MtrDex.Ed25519_Seed,
+                     dcode=MtrDex.Blake3_256,
                      algo=None, salt=None, stem=None, tier=None, rooted=True,
                      transferable=True, temp=False):
         """
@@ -1010,7 +1013,7 @@ class Manager:
         nsigners = creator.create(codes=ncodes, count=0,
                                   pidx=pidx, ridx=ridx+1, kidx=kidx+len(icodes),
                                   transferable=transferable, temp=temp)
-        digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in nsigners]
+        digers = [Diger(ser=signer.verfer.qb64b, code=dcode) for signer in nsigners]
 
         # Secret to encrypt here
         pp = PrePrm(pidx=pidx,
@@ -1023,7 +1026,7 @@ class Manager:
                        else self.encrypter.encrypt(ser=creator.salt,
                                     code=MtrDex.X25519_Cipher_Salt).qb64)
 
-        dt = helping.nowIso8601()
+        dt = nowIso8601()
         ps = PreSit(
                     new=PubLot(pubs=[verfer.qb64 for verfer in verfers],
                                    ridx=ridx, kidx=kidx, dt=dt),
@@ -1031,7 +1034,7 @@ class Manager:
                                    ridx=ridx+1, kidx=kidx+len(icodes), dt=dt))
 
         pre = verfers[0].qb64b
-        if not self.ks.pres.put(pre, val=coring.Prefixer(qb64=pre)):
+        if not self.ks.pres.put(pre, val=Prefixer(qb64=pre)):
             raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
         if not self.ks.prms.put(pre, val=pp):
@@ -1110,17 +1113,17 @@ class Manager:
             i += 1
 
         # assign old
-        if not self.ks.pres.pin(old, val=coring.Prefixer(qb64=new)):
+        if not self.ks.pres.pin(old, val=Prefixer(qb64=new)):
             raise ValueError("Failed assiging new pre={} to old pre={}.".format(new, old))
 
         # make new so that if move again we reserve each one
-        if not self.ks.pres.put(new, val=coring.Prefixer(qb64=new)):
+        if not self.ks.pres.put(new, val=Prefixer(qb64=new)):
             raise ValueError("Failed assiging new pre={}.".format(new))
 
 
     def rotate(self, pre, ncodes=None, ncount=1,
-                     ncode=coring.MtrDex.Ed25519_Seed,
-                     dcode=coring.MtrDex.Blake3_256,
+                     ncode=MtrDex.Ed25519_Seed,
+                     dcode=MtrDex.Blake3_256,
                      transferable=True, temp=False, erase=True):
         """
         Returns tuple (verfers, digers) for rotation event of keys for pre where
@@ -1204,9 +1207,9 @@ class Manager:
         signers = creator.create(codes=ncodes, count=0,
                                  pidx=pidx, ridx=ridx, kidx=kidx,
                                  transferable=transferable, temp=temp)
-        digers = [coring.Diger(ser=signer.verfer.qb64b, code=dcode) for signer in signers]
+        digers = [Diger(ser=signer.verfer.qb64b, code=dcode) for signer in signers]
 
-        dt = helping.nowIso8601()
+        dt = nowIso8601()
         ps.nxt = PubLot(pubs=[signer.verfer.qb64 for signer in signers],
                               ridx=ridx, kidx=kidx, dt=dt)
 
@@ -1452,8 +1455,8 @@ class Manager:
         return plain
 
 
-    def ingest(self, secrecies, iridx=0, ncount=1, ncode=coring.MtrDex.Ed25519_Seed,
-                     dcode=coring.MtrDex.Blake3_256,
+    def ingest(self, secrecies, iridx=0, ncount=1, ncode=MtrDex.Ed25519_Seed,
+                     dcode=MtrDex.Blake3_256,
                      algo=Algos.salty, salt=None, stem=None, tier=None,
                      rooted=True, transferable=True, temp=False):
         """
@@ -1555,7 +1558,7 @@ class Manager:
                             tier=creator.tier)
                 pre = csigners[0].verfer.qb64b
                 ipre = csigners[0].verfer.qb64
-                if not self.ks.pres.put(pre, val=coring.Prefixer(qb64=pre)):
+                if not self.ks.pres.put(pre, val=Prefixer(qb64=pre)):
                     raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
 
                 if not self.ks.prms.put(pre, val=pp):
@@ -1571,14 +1574,14 @@ class Manager:
             pubs = [signer.verfer.qb64 for signer in csigners]
             self.ks.pubs.put(riKey(pre, ri=ridx), val=PubSet(pubs=pubs))
 
-            dt = helping.nowIso8601()
+            dt = nowIso8601()
             if ridx == max(iridx - 1, 0):  # setup ps.old at this ridx
                 if iridx == 0:
                     old = PubLot()  # defaults ok
                 else:
                     osigners = csigners
                     osith = "{:x}".format(max(1, math.ceil(len(osigners) / 2)))
-                    ost = coring.Tholder(sith=osith).sith
+                    ost = Tholder(sith=osith).sith
                     old=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, dt=dt)
                 ps = PreSit(old=old)  # .new and .nxt are default
                 if not self.ks.sits.pin(pre, val=ps):
@@ -1617,7 +1620,7 @@ class Manager:
         self.ks.pubs.put(riKey(pre, ri=ridx), val=PubSet(pubs=pubs))
 
         if ridx == iridx + 1:  # want to set up ps.next at this ridx
-            dt = helping.nowIso8601()
+            dt = nowIso8601()
             if (ps := self.ks.sits.get(pre)) is None:
                 raise ValueError("Attempt to rotate nonexistent pre={}.".format(pre))
             nxt=PubLot(pubs=pubs, ridx=ridx, kidx=kidx, dt=dt)
@@ -1628,7 +1631,7 @@ class Manager:
         return (ipre, verferies) #
 
 
-    def replay(self, pre, dcode=coring.MtrDex.Blake3_256, advance=True, erase=True):
+    def replay(self, pre, dcode=MtrDex.Blake3_256, advance=True, erase=True):
         """
         Returns duple (verfers, digers) associated with public key set from
         the key sequence for identifier prefix pre at rotation index ridx stored
@@ -1678,7 +1681,7 @@ class Manager:
                 raise IndexError(f"Invalid replay attempt of pre={pre} at "
                                  f"ridx={ridx}.")
             pubs = pubset.pubs  # create nxt from pubs
-            dt = helping.nowIso8601()
+            dt = nowIso8601()
             nxt=PubLot(pubs=pubs, ridx=ridx+1, kidx=kidx+csize, dt=dt)
             ps.nxt = nxt
 
@@ -1694,7 +1697,7 @@ class Manager:
                 raise ValueError("Missing prikey in db for pubkey={}".format(pub))
             verfers.append(signer.verfer)
 
-        digers = [coring.Diger(ser=pub.encode("utf-8"), code=dcode)
+        digers = [Diger(ser=pub.encode("utf-8"), code=dcode)
                     for pub in ps.nxt.pubs]
 
         if advance:

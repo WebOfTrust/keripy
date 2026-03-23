@@ -7,10 +7,9 @@ import argparse
 
 from hio.base import doing
 
-from ..common import existing
-from ..common.parsing import Parsery
+from ..common import Parsery, existingHab
 
-from ... import ConfigurationError
+from ...kering import ConfigurationError
 from ...core import Matter
 
 
@@ -45,7 +44,7 @@ def decrypt(tymth, tock=0.0, **opts):
     bran = args.bran
 
     try:
-        with existing.existingHab(name=name, alias=alias, base=base, bran=bran) as (_, hab):
+        with existingHab(name=name, alias=alias, base=base, bran=bran) as (_, hab):
 
             data = args.data
             if data.startswith("@"):

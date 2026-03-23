@@ -7,14 +7,15 @@ keri.kli.commands module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import Parsery, existing
+from ...common import Parsery, existingHby, aliasInput
 
-from .... import ConfigurationError, Roles, help
-from ....app import organizing
+from ....kering import ConfigurationError, Roles
+from ....app import Organizer
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='List current mailboxes',
                                  parents=[Parsery.keystore()])
@@ -47,10 +48,10 @@ def listMailboxes(tymth, tock=0.0, **opts):
     bran = args.bran
 
     try:
-        with existing.existingHby(name=name, base=base, bran=bran) as hby:
-            org = organizing.Organizer(hby=hby)
+        with existingHby(name=name, base=base, bran=bran) as hby:
+            org = Organizer(hby=hby)
             if alias is None:
-                alias = existing.aliasInput(hby)
+                alias = aliasInput(hby)
 
             hab = hby.habByName(alias)
 

@@ -4,7 +4,7 @@ import pytest
 
 from hio.base import doing
 
-from keri.app import habbing, directing
+from keri.app import openHby, runController
 from keri.cli.commands.exn import send as send_cmd
 
 
@@ -29,7 +29,7 @@ def patch_poster(monkeypatch):
             )
             cues.append({"dest": dest, "topic": topic, "said": serder.said})
 
-    monkeypatch.setattr(send_cmd.forwarding, "Poster", PosterStub)
+    monkeypatch.setattr(send_cmd, "Poster", PosterStub)
     return calls, cues
 
 
@@ -38,7 +38,7 @@ def test_exn_send_with_json_obj(monkeypatch, capsys, helpers):
 
     name = f"test-exn-send-{os.urandom(4).hex()}"
 
-    with habbing.openHby(name=name, temp=False) as hby:
+    with openHby(name=name, temp=False) as hby:
         alice = hby.makeHab(name="alice")
         bob = hby.makeHab(name="bob")
         alice_pre = alice.pre
@@ -64,7 +64,7 @@ def test_exn_send_with_json_obj(monkeypatch, capsys, helpers):
     assert len(doers) == 1
 
     try:
-        directing.runController(doers=doers)
+        runController(doers=doers)
 
         assert len(calls) == 1
         call = calls[0]
@@ -88,7 +88,7 @@ def test_exn_send_with_data_items(monkeypatch, capsys, helpers):
 
     name = f"test-exn-send-{os.urandom(4).hex()}"
 
-    with habbing.openHby(name=name, temp=False) as hby:
+    with openHby(name=name, temp=False) as hby:
         alice = hby.makeHab(name="alice")
         bob = hby.makeHab(name="bob")
         alice_pre = alice.pre
@@ -116,7 +116,7 @@ def test_exn_send_with_data_items(monkeypatch, capsys, helpers):
     assert len(doers) == 1
 
     try:
-        directing.runController(doers=doers)
+        runController(doers=doers)
 
         assert len(calls) == 1
         call = calls[0]
@@ -140,7 +140,7 @@ def test_exn_send_invalid_sender(monkeypatch, helpers):
 
     name = f"test-exn-send-{os.urandom(4).hex()}"
 
-    with habbing.openHby(name=name, temp=False) as hby:
+    with openHby(name=name, temp=False) as hby:
         bob = hby.makeHab(name="bob")
         bob_pre = bob.pre
 
@@ -165,7 +165,7 @@ def test_exn_send_invalid_sender(monkeypatch, helpers):
 
     try:
         with pytest.raises(ValueError, match="invalid sender alias"):
-            directing.runController(doers=doers)
+            runController(doers=doers)
     finally:
         helpers.remove_test_dirs(name)
 
@@ -175,7 +175,7 @@ def test_exn_send_invalid_recipient(monkeypatch, capsys, helpers):
 
     name = f"test-exn-send-{os.urandom(4).hex()}"
 
-    with habbing.openHby(name=name, temp=False) as hby:
+    with openHby(name=name, temp=False) as hby:
         hby.makeHab(name="alice")
 
     args = send_cmd.parser.parse_args(
@@ -199,6 +199,6 @@ def test_exn_send_invalid_recipient(monkeypatch, capsys, helpers):
 
     try:
         with pytest.raises(ValueError, match="no contact found with alias"):
-            directing.runController(doers=doers)
+            runController(doers=doers)
     finally:
         helpers.remove_test_dirs(name)

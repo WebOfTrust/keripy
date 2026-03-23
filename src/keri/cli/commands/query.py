@@ -8,17 +8,15 @@ import datetime
 import json
 
 from hio.base import doing
-from hio.help import decking
+from hio.help import decking, ogler
 
-from ..common import displaying, existing
-from ..common.parsing import Parsery
+from ..common import Parsery, printExternal, setupHby
 
-from ... import help
-from ...app import indirecting, habbing, querying
+from ...app import MailboxDirector, HaberyDoer, QueryDoer, AnchorQuerier
 from ...help import helping
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Request KEL from Witness', 
                                  parents=[Parsery.keystore()])
@@ -40,8 +38,8 @@ class LaunchDoer(doing.DoDoer):
 
     def __init__(self, name, alias, base, bran, pre, anchor, **kwa):
         doers = []
-        self.hby = existing.setupHby(name=name, base=base, bran=bran)
-        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
+        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
         hab = self.hby.habByName(alias)
 
         self.hab = hab
@@ -51,7 +49,7 @@ class LaunchDoer(doing.DoDoer):
         self.anchor = anchor
         self.loaded = False
 
-        self.mbd = indirecting.MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"])
+        self.mbd = MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"])
         doers.extend([self.hbyDoer, self.mbd])
 
         self.toRemove = list(doers)
@@ -75,10 +73,10 @@ class LaunchDoer(doing.DoDoer):
             f = open(self.anchor)
             anchor = json.load(f)
             print(f"Checking for anchor {anchor}...")
-            doer = querying.AnchorQuerier(hby=self.hby, hab=self.hab, pre=self.pre, anchor=anchor)
+            doer = AnchorQuerier(hby=self.hby, hab=self.hab, pre=self.pre, anchor=anchor)
         else:
             print(f"Checking for updates...")
-            doer = querying.QueryDoer(hby=self.hby, hab=self.hab, pre=self.pre, kvy=self.mbd.kvy)
+            doer = QueryDoer(hby=self.hby, hab=self.hab, pre=self.pre, kvy=self.mbd.kvy)
 
         self.extend([doer])
 
@@ -90,7 +88,7 @@ class LaunchDoer(doing.DoDoer):
         self.remove([doer])
         print("\n")
 
-        displaying.printExternal(self.hby, self.pre)
+        printExternal(self.hby, self.pre)
 
         self.remove(self.toRemove)
 

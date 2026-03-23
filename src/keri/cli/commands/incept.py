@@ -7,16 +7,17 @@ import argparse
 from dataclasses import dataclass
 
 from hio.base import doing
+from hio.help import ogler
 
-from ..common import existing, config
-from ..common.parsing import Parsery
+from ..common import Parsery, config, setupHby
 
-from keri import help
-from ...app import habbing, agenting, indirecting, configing, delegating, forwarding
-from ...core import coring
+from ...app import (HaberyDoer, WitnessReceiptor, Receiptor,
+                    MailboxDirector, Configer, Anchorer, Poster)
+
+from ...core import Number, NumDex
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 parser = argparse.ArgumentParser(description='Initialize a prefix', 
                                  parents=[Parsery.keystore()])
@@ -148,19 +149,19 @@ class InceptDoer(doing.DoDoer):
 
         cf = None
         if config is not None:
-            cf = configing.Configer(name=name,
-                                    base="",
-                                    headDirPath=cnfg,
-                                    temp=False,
-                                    reopen=True,
-                                    clear=False)
+            cf = Configer(name=name,
+                          base="",
+                          headDirPath=cnfg,
+                          temp=False,
+                          reopen=True,
+                          clear=False)
         self.endpoint = endpoint
-        self.hby = existing.setupHby(name=name, base=base, bran=bran, cf=cf)
+        self.hby = setupHby(name=name, base=base, bran=bran, cf=cf)
         self.proxy = self.hby.habByName(proxy) if proxy is not None else None
-        self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        self.swain = delegating.Anchorer(hby=self.hby, proxy=self.proxy)
-        self.postman = forwarding.Poster(hby=self.hby)
-        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
+        self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
+        self.swain = Anchorer(hby=self.hby, proxy=self.proxy)
+        self.postman = Poster(hby=self.hby)
+        self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
         doers = [self.hbyDoer, self.postman, self.mbx, self.swain, doing.doify(self.inceptDo)]
 
         self.inits = kwa
@@ -182,14 +183,14 @@ class InceptDoer(doing.DoDoer):
         _ = (yield self.tock)
 
         hab = self.hby.makeHab(name=self.alias, **self.inits)
-        witDoer = agenting.WitnessReceiptor(hby=self.hby)
-        receiptor = agenting.Receiptor(hby=self.hby)
+        witDoer = WitnessReceiptor(hby=self.hby)
+        receiptor = Receiptor(hby=self.hby)
         self.extend([witDoer, receiptor])
 
         if hab.kever.delpre:
             self.swain.delegation(pre=hab.pre, sn=0)
             print("Waiting for delegation approval...")
-            while not self.swain.complete(hab.kever.prefixer, coring.Number(num=hab.kever.sn, code=coring.NumDex.Huge)):
+            while not self.swain.complete(hab.kever.prefixer, Number(num=hab.kever.sn, code=NumDex.Huge)):
                 yield self.tock
 
         elif hab.kever.wits:

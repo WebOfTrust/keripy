@@ -6,12 +6,12 @@ keri.kli.commands module
 import argparse
 
 from hio.base import doing
+from hio.help import ogler
 
-from ...common import Parsery, existing
-from .... import help
+from ...common import Parsery, setupHby
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 def handler(args):
@@ -38,8 +38,8 @@ class CleanDoer(doing.Doer):
         super(CleanDoer, self).__init__()
 
     def recur(self, tyme):
-        hby = existing.setupHby(name=self.args.name, base=self.args.base,
-                                bran=self.args.bran, temp=self.args.temp)
+        hby = setupHby(name=self.args.name, base=self.args.base,
+                       bran=self.args.bran, temp=self.args.temp)
 
         [(name, dater)] = hby.db.complete(name=self.args.migration)
         date = dater.datetime.strftime("%Y-%m-%d %H:%M") if dater is not None else "Not Run"
