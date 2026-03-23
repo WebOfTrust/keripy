@@ -7,6 +7,7 @@ tests.db.test_webdbing module
 import asyncio
 from dataclasses import asdict, dataclass
 from typing import Any
+import json
 
 import pytest
 
@@ -21,6 +22,7 @@ try:
         _serialize_records,
         onKey,
         splitOnKey,
+        WebBaser,
     )
     from keri.db import webdbing as webdbing_module
 except ImportError:
@@ -38,10 +40,18 @@ except ImportError:
     import webdbing as webdbing_module
 
 try:
-    from keri.db import subing, koming
+    from keri.db import subing, koming, dgKey, snKey
 except ImportError:
     subing = None
     koming = None
+
+try:
+    from keri.core import serdering, coring, signing, indexing
+    from keri import versify, Kinds
+    from keri.recording import EventSourceRecord
+except ImportError:
+    # Pyodide fallback
+    import serdering
 
 needskeri = pytest.mark.skipif(subing is None, reason="requires full keri (lmdb)")
 
@@ -62,6 +72,10 @@ class FakeStorageHandle:
 
     def __setitem__(self, key, value):
         self._local[key] = value
+
+    def clear(self):
+        """Remove all keys from the local storage buffer."""
+        self._local.clear()
 
     async def sync(self):
         self.backend.persisted[self.namespace] = dict(self._local)
@@ -3111,4 +3125,400 @@ def test_on_ioset_suber_contract():
 
         """Done Test"""
     
+    asyncio.run(_go())
+
+
+@needskeri
+def test_webdb_baser():
+    """Test WebBaser class."""
+    async def _go():
+        backend = FakeStorageBackend()
+        baser = WebBaser()
+
+        await baser.reopen(storageOpener=backend.open)
+
+        assert baser.opened
+        assert baser.name == "main"
+
+        assert isinstance(baser.evts, subing.SerderSuber)
+        assert isinstance(baser.sigs, subing.CesrIoSetSuber)
+        assert isinstance(baser.dtss, subing.CesrSuber)
+        assert isinstance(baser.rcts, subing.CatCesrIoSetSuber)
+        assert isinstance(baser.ures, subing.CatCesrIoSetSuber)
+        assert isinstance(baser.kels, subing.OnIoSetSuber)
+        assert isinstance(baser.ooes, subing.OnIoSetSuber)
+        assert isinstance(baser.pses, subing.OnIoSetSuber)
+        assert isinstance(baser.dels, subing.OnIoSetSuber)
+        assert isinstance(baser.ldes, subing.OnIoSetSuber)
+        assert isinstance(baser.ures, subing.CatCesrIoSetSuber)
+        assert isinstance(baser.esrs, koming.Komer)
+        assert isinstance(baser.states, koming.Komer)
+        assert isinstance(baser.habs, koming.Komer)
+        assert isinstance(baser.names, subing.Suber)
+        assert isinstance(baser.imgs, subing.CesrSuber)
+        assert isinstance(baser.iimgs, subing.CesrSuber)
+
+        await baser.close(clear=True)
+        assert not baser.opened
+
+        # test not opened on init
+        baser = WebBaser(reopen=False)
+        assert isinstance(baser, WebBaser)
+        assert baser.name == "main"
+        assert baser.opened == False
+
+        await baser.reopen(storageOpener=backend.open)
+        assert baser.opened
+
+        assert isinstance(baser.evts, subing.SerderSuber)
+        assert isinstance(baser.sigs, subing.CesrIoSetSuber)
+        assert isinstance(baser.dtss, subing.CesrSuber)
+        assert isinstance(baser.rcts, subing.CatCesrIoSetSuber)
+        assert isinstance(baser.ures, subing.CatCesrIoSetSuber)
+        assert isinstance(baser.kels, subing.OnIoSetSuber)
+        assert isinstance(baser.ooes, subing.OnIoSetSuber)
+        assert isinstance(baser.pses, subing.OnIoSetSuber)
+        assert isinstance(baser.dels, subing.OnIoSetSuber)
+        assert isinstance(baser.ldes, subing.OnIoSetSuber)
+        assert isinstance(baser.ures, subing.CatCesrIoSetSuber)
+        assert isinstance(baser.esrs, koming.Komer)
+        assert isinstance(baser.states, koming.Komer)
+        assert isinstance(baser.habs, koming.Komer)
+        assert isinstance(baser.names, subing.Suber)
+        assert isinstance(baser.imgs, subing.CesrSuber)
+        assert isinstance(baser.iimgs, subing.CesrSuber)
+
+        await baser.close(clear=True)
+        assert not baser.opened
+
+        backend = FakeStorageBackend()
+        baser = WebBaser(name="test")
+
+        # Open WebBaser using the fake async storage backend
+        await baser.reopen(storageOpener=backend.open)
+
+        # Basic identity checks
+        assert baser.opened is True
+        assert baser.env is not None
+
+        # Subdb type checks (WebDB-safe versions)
+        assert isinstance(baser.evts, subing.SerderSuber)
+        assert isinstance(baser.sigs, subing.CesrIoSetSuber)
+        assert isinstance(baser.dtss, subing.CesrSuber)
+        assert isinstance(baser.rcts, subing.CatCesrIoSetSuber)
+        assert isinstance(baser.ures, subing.CatCesrIoSetSuber)
+
+        # All dupsort subdbs become IoSet/OnIoSet
+        assert isinstance(baser.ooes, subing.OnIoSetSuber)
+        assert isinstance(baser.pses, subing.OnIoSetSuber)
+        assert isinstance(baser.dels, subing.OnIoSetSuber)
+        assert isinstance(baser.ldes, subing.OnIoSetSuber)
+
+        # Komers
+        assert isinstance(baser.esrs, koming.Komer)
+        assert isinstance(baser.states, koming.Komer)
+        assert isinstance(baser.habs, koming.Komer)
+
+        # ---- Begin functional tests ----
+
+        preb = 'DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8")
+        digb = 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'.encode("utf-8")
+        sn = 3
+
+        ked = dict(v=versify(kind=Kinds.json, size=0), t="rot", d=digb.decode("utf-8"),
+               i=preb.decode("utf-8"), s="{:x}".format(sn), p=preb.decode("utf-8"),
+               kt="0", k=[], nt="0", n=[], bt="0", br=[], ba=[], a=[])
+        skedb = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+
+        while True:
+            ked["v"] = versify(kind=Kinds.json, size=len(skedb))
+            next_skedb = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+            if len(next_skedb) == len(skedb):
+                skedb = next_skedb
+                break
+            skedb = next_skedb
+
+        sig0b = 'ABz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQ'.encode("utf-8")
+        sig1b = 'AA_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z'.encode("utf-8")
+
+        wit0b = 'BBuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gzQPYGGwT'.encode("utf-8")
+        wit1b = 'BAhccWzwEHHzq7K0gzmuupUhPx5_yZ-Wk1x4eQPYGGwT'.encode("utf-8")
+        wsig0b = '0BATimrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ9'.encode("utf-8")
+        wsig1b = '0BBIRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5Az_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2zJ91Timrykocna6Z'.encode("utf-8")
+
+        valb = 'EAzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhccWzwEH'.encode("utf-8")
+        vdigb = 'EBiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4GAPkzNZMtX-'.encode("utf-8")
+        vsig0b = 'AAKAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe81Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQz1yQJmiu5AzJ9'.encode("utf-8")
+        vsig1b = 'ABAKAV2zJ91Timrykocna6Z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5Az_pQBl2gt59I_F6BsSwFbIOG1TDQz'.encode("utf-8")
+
+
+        key = dgKey(preb, digb)
+        assert key == f"{preb.decode()}.{digb.decode()}".encode()
+
+        # Build minimal Serder
+        sked = serdering.SerderKERI(raw=skedb, verify=False)
+
+        # .evts tests
+        assert baser.evts.get(keys=(preb, digb)) is None
+        assert baser.evts.rem(keys=(preb, digb)) is False
+
+        assert baser.evts.put(keys=(preb, digb), val=sked) is True
+        assert baser.evts.get(keys=(preb, digb)).raw == skedb
+
+        # put again should not overwrite
+        assert baser.evts.put(keys=(preb, digb), val=sked) is False
+
+        # pin should overwrite
+        assert baser.evts.pin(keys=(preb, digb), val=sked) is True
+        assert baser.evts.get(keys=(preb, digb)).raw == skedb
+
+        # remove
+        assert baser.evts.rem(keys=(preb, digb)) is True
+        assert baser.evts.get(keys=(preb, digb)) is None
+
+        # ---- EventSourceRecord tests ----
+
+        record = EventSourceRecord()
+
+        assert baser.esrs.get(key) is None
+        assert baser.esrs.put(key, record) is True
+
+        actual = baser.esrs.get(key)
+        assert actual == record
+
+        # modify record, ensure put does not overwrite
+        record.local = False
+        assert baser.esrs.put(key, record) is False
+
+        actual = baser.esrs.get(key)
+        assert actual.local != record.local
+        assert actual != record
+
+        # pin overwrites
+        assert baser.esrs.pin(key, record) is True
+        actual = baser.esrs.get(key)
+        assert actual.local == record.local
+        assert actual == record
+
+        # test first seen event log .fels sub db
+        preA = b'BAKY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
+        preB = b'EH7Oq9oxCgYa-nnNLvwhp9sFZpALILlRYyB-6n4WDi7w'
+        preC = b'EIDA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg'
+
+        digA = b'EA73b7reENuBahMJsMTLbeyyNPsfTRzKRWtJ3ytmInvw'
+        digU = b'EB73b7reENuBahMJsMTLbeyyNPsfTRzKRWtJ3ytmInvw'
+        digV = b'EC4vCeJswIBJlO3RqE-wsE72Vt3wAceJ_LzqKvbDtBSY'
+        digW = b'EDAyl33W9ja_wLX85UrzRnL4KNzlsIKIA7CrD04nVX1w'
+        digX = b'EEnwxEm5Bg5s5aTLsgQCNpubIYzwlvMwZIzdOM0Z3u7o'
+        digY = b'EFrq74_Q11S2vHx1gpK_46Ik5Q7Yy9K1zZ5BavqGDKnk'
+
+        digC = b'EG5RimdY_OWoreR-Z-Q5G81-I4tjASJCaP_MqkBbtM2w'
+
+        assert baser.fels.get(keys=preA, on=0) is None
+        assert baser.fels.rem(keys=preA, on=0) == False
+        assert baser.fels.put(keys=preA, on=0, val=digA) == True
+        assert baser.fels.get(keys=preA, on=0) == digA.decode("utf-8")
+        assert baser.fels.put(keys=preA, on=0, val=digA) == False
+        assert baser.fels.pin(keys=preA, on=0, val=digA) == True
+        assert baser.fels.get(keys=preA, on=0) == digA.decode("utf-8")
+        assert baser.fels.rem(keys=preA, on=0) == True
+        assert baser.fels.get(keys=preA, on=0) is None
+
+        # test appendOn
+        # empty database
+        assert baser.fels.get(keys=preB, on=0) is None
+        on = baser.fels.append(keys=preB, val=digU)
+        assert on == 0
+        assert baser.fels.get(keys=preB, on=0) == digU.decode("utf-8")
+        assert baser.fels.rem(keys=preB, on=0) == True
+        assert baser.fels.get(keys=preB, on=0) is None
+
+        # earlier pre in database only
+        assert baser.fels.put(keys=preA, on=0, val=digA) == True
+        on = baser.fels.append(keys=preB, val=digU)
+        assert on == 0
+        assert baser.fels.get(keys=preB, on=0) == digU.decode("utf-8")
+        assert baser.fels.rem(keys=preB, on=0) == True
+        assert baser.fels.get(keys=preB, on=0) is None
+
+        # earlier and later pre in baser but not same pre
+        assert baser.fels.get(keys=preA, on=0) == digA.decode("utf-8")
+        assert baser.fels.put(keys=preC, on=0, val=digC) == True
+        on = baser.fels.append(keys=preB, val=digU)
+        assert on == 0
+        assert baser.fels.get(keys=preB, on=0) == digU.decode("utf-8")
+        assert baser.fels.rem(keys=preB, on=0) == True
+        assert baser.fels.get(keys=preB, on=0) is None
+
+        # later pre only
+        assert baser.fels.rem(keys=preA, on=0) == True
+        assert baser.fels.get(keys=preA, on=0) is None
+        assert baser.fels.get(keys=preC, on=0) == digC.decode("utf-8")
+        on = baser.fels.append(keys=preB, val=digU)
+        assert on == 0
+        assert baser.fels.get(keys=preB, on=0) == digU.decode("utf-8")
+
+        # earlier pre and later pre and earlier entry for same pre
+        assert baser.fels.put(keys=preA, on=0, val=digA) == True
+        on = baser.fels.append(keys=preB, val=digV)
+        assert on == 1
+        assert baser.fels.get(keys=preB, on=1) == digV.decode("utf-8")
+
+        # earlier entry for same pre but only same pre
+        assert baser.fels.rem(keys=preA, on=0) == True
+        assert baser.fels.get(keys=preA, on=0) is None
+        assert baser.fels.rem(keys=preC, on=0) == True
+        assert baser.fels.get(keys=preC, on=0) is None
+        # another value for preB
+        on = baser.fels.append(keys=preB, val=digW)
+        assert on == 2
+        assert baser.fels.get(keys=preB, on=2) == digW.decode("utf-8")
+        # yet another value for preB
+        on = baser.fels.append(keys=preB, val=digX)
+        assert on == 3
+        assert baser.fels.get(keys=preB, on=3) == digX.decode("utf-8")
+        # yet another value for preB
+        on = baser.fels.append(keys=preB, val=digY)
+        assert on == 4
+        assert baser.fels.get(keys=preB, on=4) == digY.decode("utf-8")
+
+         # replay preB events in database
+        _pre = lambda k: k[0].encode() if isinstance(k[0], str) else k[0]
+        items = [(_pre(keys), on, val) for keys, on, val in baser.fels.getAllItemIter(keys=preB)]
+        assert items == [(preB, 0, digU.decode("utf-8")), (preB, 1, digV.decode("utf-8")), (preB, 2, digW.decode("utf-8")), (preB, 3, digX.decode("utf-8")), (preB, 4, digY.decode("utf-8"))]
+
+        # resume replay preB events at on = 3
+        items = [(_pre(keys), on, val) for keys, on, val in baser.fels.getAllItemIter(keys=preB, on=3)]
+        assert items == [(preB, 3, digX.decode("utf-8")), (preB, 4, digY.decode("utf-8"))]
+
+        # resume replay preB events at on = 5
+        items = [(_pre(keys), on, val) for keys, on, val in baser.fels.getAllItemIter(keys=preB, on=5)]
+        assert items == []
+
+        # replay all events in database with pre events before and after
+        assert baser.fels.put(keys=preA, on=0, val=digA) == True
+        assert baser.fels.put(keys=preC, on=0, val=digC) == True
+
+        # replay all pres in first-seen order (keys=b'', on=0)
+        items = [(_pre(keys), on, val) for keys, on, val in baser.fels.getAllItemIter(keys=b'', on=0)]
+        assert items == [
+            (preA, 0, digA.decode("utf-8")),
+            (preB, 0, digU.decode("utf-8")),
+            (preB, 1, digV.decode("utf-8")),
+            (preB, 2, digW.decode("utf-8")),
+            (preB, 3, digX.decode("utf-8")),
+            (preB, 4, digY.decode("utf-8")),
+            (preC, 0, digC.decode("utf-8")),
+        ]
+
+        # Test .dtss datetime stamps
+        key = dgKey(preb, digb)
+        assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
+
+        # test .dtss sub db methods - now returns Dater objects
+        dater1 = coring.Dater(dts='2020-08-22T17:50:09.988921+00:00')
+        dater2 = coring.Dater(dts='2020-08-22T17:50:10.000000+00:00')
+
+        assert baser.dtss.get(keys=key) is None
+        assert baser.dtss.rem(keys=key) == False
+        assert baser.dtss.put(keys=key, val=dater1) == True
+        result = baser.dtss.get(keys=key)
+        assert isinstance(result, coring.Dater)
+        assert result.dts == dater1.dts
+        assert baser.dtss.put(keys=key, val=dater2) == False  # idempotent
+        result = baser.dtss.get(keys=key)
+        assert result.dts == dater1.dts  # still original
+        assert baser.dtss.pin(keys=key, val=dater2) == True  # overwrites
+        result = baser.dtss.get(keys=key)
+        assert result.dts == dater2.dts
+        assert baser.dtss.rem(keys=key) == True
+        assert baser.dtss.get(keys=key) is None
+
+        
+        # Test .aess authorizing event source seal couples
+        # test .aess sub db methods
+        ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAAAB'
+        sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+        ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAAAC'
+        sdig2 = b'EBYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
+        number1 = coring.Number(qb64b=ssnu1)
+        diger1 = coring.Diger(qb64b=sdig1)
+        number2 = coring.Number(qb64b=ssnu2)
+        diger2 = coring.Diger(qb64b=sdig2)
+        val1 = (number1, diger1)
+        val2 = (number2, diger2)
+
+        assert baser.aess.get(keys=(preb, digb)) == None
+        assert baser.aess.rem(keys=(preb, digb)) == False
+        assert baser.aess.put(keys=(preb, digb), val=val1) == True
+        result = baser.aess.get(keys=(preb, digb))
+        assert result is not None
+        rnumber1, rdiger1 = result
+        assert rnumber1.qb64b == number1.qb64b
+        assert rdiger1.qb64b == diger1.qb64b
+        assert baser.aess.put(keys=(preb, digb), val=val2) == False
+        result = baser.aess.get(keys=(preb, digb))
+        assert result is not None
+        rnumber1, rdiger1 = result
+        assert rnumber1.qb64b == number1.qb64b
+        assert rdiger1.qb64b == diger1.qb64b
+        assert baser.aess.pin(keys=(preb, digb), val=val2) == True
+        result = baser.aess.get(keys=(preb, digb))
+        assert result is not None
+        rnumber2, rdiger2 = result
+        assert rnumber2.qb64b == number2.qb64b
+        assert rdiger2.qb64b == diger2.qb64b
+        assert baser.aess.rem(keys=(preb, digb)) == True
+        assert baser.aess.get(keys=(preb, digb)) == None
+        
+        # test .sigs sub db methods
+        key = dgKey(preb, digb)
+        assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
+
+        assert baser.sigs.get(keys=key) == []
+        assert baser.sigs.cnt(keys=key) == 0
+        assert baser.sigs.rem(keys=key) == False
+
+        # Create valid test signatures
+        signer0 = signing.Signer(transferable=False, seed=b'0123456789abcdef0123456789abcdef')
+        signer1 = signing.Signer(transferable=False, seed=b'fedcba9876543210fedcba9876543210')
+
+        test_data = b"test witness signatures"
+        cigar0 = signer0.sign(ser=test_data)
+        cigar1 = signer1.sign(ser=test_data)
+
+        siger0 = indexing.Siger(raw=cigar0.raw, code=indexing.IdrDex.Ed25519_Sig, index=0)
+        siger1 = indexing.Siger(raw=cigar1.raw, code=indexing.IdrDex.Ed25519_Sig, index=1)
+
+        assert baser.sigs.put(keys=key, vals=[siger0]) == True
+        assert [s.qb64b for s in baser.sigs.get(keys=key)] == [siger0.qb64b]
+        assert baser.sigs.cnt(keys=key) == 1
+        assert baser.sigs.put(keys=key, vals=[siger0]) == False  # duplicate, idempotent
+        assert [s.qb64b for s in baser.sigs.get(keys=key)] == [siger0.qb64b]
+        assert baser.sigs.add(keys=key, val=siger1) == True
+        assert [s.qb64b for s in baser.sigs.get(keys=key)] == [siger0.qb64b, siger1.qb64b]
+        assert [val.qb64b for val in baser.sigs.getIter(keys=key)] == [siger0.qb64b, siger1.qb64b]
+        assert baser.sigs.rem(keys=key) == True
+        assert baser.sigs.get(keys=key) == []
+        assert baser.sigs.put(keys=key, vals=[siger0, siger1]) == True
+        for val in [siger0, siger1]:
+            assert baser.sigs.rem(keys=key, val=val) == True
+        assert baser.sigs.get(keys=key) == []
+        assert baser.sigs.put(keys=key, vals=[siger0, siger1]) == True
+        for val in baser.sigs.getIter(keys=key):
+            assert baser.sigs.rem(keys=key, val=val) == True
+        assert baser.sigs.get(keys=key) == []
+
+        assert baser.sigs.put(keys=key, vals=[siger0]) == True
+        assert [s.qb64b for s in baser.sigs.get(keys=key)] == [siger0.qb64b]
+        assert baser.sigs.put(keys=key, vals=[siger1]) == True
+        assert [s.qb64b for s in baser.sigs.get(keys=key)] == [siger0.qb64b, siger1.qb64b]
+        assert baser.sigs.rem(keys=key) == True
+        assert baser.sigs.put(keys=key, vals=[siger1, siger0]) == True
+        assert [s.qb64b for s in baser.sigs.get(keys=key)] == [siger1.qb64b, siger0.qb64b]
+        assert baser.sigs.rem(keys=key) == True
+        assert baser.sigs.get(keys=key) == []
+        assert baser.sigs.put(keys=key, vals=[siger0, siger1]) == True
+
+
     asyncio.run(_go())
