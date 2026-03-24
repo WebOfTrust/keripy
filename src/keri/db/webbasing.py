@@ -63,8 +63,8 @@ class WebBaser(WebDBer):
         SubDbNames = [
             "evts.", "sigs.", "wigs.", "dtss.", "aess.", "rcts.", "vrcs.", "vres.",
             "kels.", "fels.", "ooes.", "pses.", "dels.", "ldes.", "pdes.", "pwes.",
-            "ures.", "esrs.", "states.", "habs.", "names.", "udes.",
-            "imgs.", "iimgs.",
+            "ures.", "esrs.", "states.", "habs.", "names.", "udes.", "uwes.", "ooes.",
+            "imgs.", "iimgs.", "gpse.",
         ]
         self.SubDbNames = SubDbNames
 
@@ -161,6 +161,8 @@ class WebBaser(WebDBer):
         self.pwes = subing.OnIoSetSuber(db=self, subkey='pwes.')
         self.pdes = subing.OnIoSetSuber(db=self, subkey='pdes.')
         self.udes = subing.CatCesrSuber(db=self, subkey='udes.', klas=(coring.Number, coring.Diger))
+        self.uwes = subing.B64OnIoSetSuber(db=self, subkey='uwes.')
+        self.ooes = subing.OnIoSetSuber(db=self, subkey='ooes.')
         self.dels = subing.OnIoSetSuber(db=self, subkey='dels.')
         self.ldes = subing.OnIoSetSuber(db=self, subkey='ldes.')
         self.ures = subing.CatCesrIoSetSuber(db=self, subkey='ures.',
@@ -171,9 +173,14 @@ class WebBaser(WebDBer):
         self.habs = koming.Komer(db=self, subkey='habs.', klas=HabitatRecord)
         self.names = subing.Suber(db=self, subkey='names.', sep="^")
 
-        self.imgs = subing.CesrSuber(db=self, subkey='imgs.')
-        self.iimgs = subing.CesrSuber(db=self, subkey='iimgs.')
+        self.imgs = subing.CatCesrSuber(db=self, subkey='imgs.',
+                                         klas=(coring.Noncer, coring.Noncer,
+                                               coring.Labeler, coring.Texter))
+        self.iimgs = subing.CatCesrSuber(db=self, subkey='iimgs.',
+                                          klas=(coring.Noncer, coring.Noncer,
+                                                coring.Labeler, coring.Texter))
 
+        self.gpse = subing.CatCesrIoSetSuber(db=self, subkey='gpse.', klas=(coring.Number, coring.Diger))
 
     def reload(self):
         self.prefixes.clear()

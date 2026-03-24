@@ -18,7 +18,8 @@ except ImportError:
     koming = None
 
 try:
-    from keri.core import serdering, coring, signing, indexing
+    from keri.core import (serdering, coring, signing, Noncer, Labeler,
+                        indexing, Number, Diger, Seqner, Saider, Texter)
     from keri import versify, Kinds
     from keri.recording import EventSourceRecord
     from keri import core
@@ -91,8 +92,8 @@ def test_webdb_baser():
         assert isinstance(baser.states, koming.Komer)
         assert isinstance(baser.habs, koming.Komer)
         assert isinstance(baser.names, subing.Suber)
-        assert isinstance(baser.imgs, subing.CesrSuber)
-        assert isinstance(baser.iimgs, subing.CesrSuber)
+        assert isinstance(baser.imgs, subing.CatCesrSuber)
+        assert isinstance(baser.iimgs, subing.CatCesrSuber)
 
         await baser.close(clear=True)
         assert not baser.opened
@@ -121,8 +122,8 @@ def test_webdb_baser():
         assert isinstance(baser.states, koming.Komer)
         assert isinstance(baser.habs, koming.Komer)
         assert isinstance(baser.names, subing.Suber)
-        assert isinstance(baser.imgs, subing.CesrSuber)
-        assert isinstance(baser.iimgs, subing.CesrSuber)
+        assert isinstance(baser.imgs, subing.CatCesrSuber)
+        assert isinstance(baser.iimgs, subing.CatCesrSuber)
 
         await baser.close(clear=True)
         assert not baser.opened
@@ -1223,5 +1224,549 @@ def test_webdb_baser():
         assert num.qb64b + diger.qb64b == val2
         assert baser.udes.rem(keys=key) == True
         assert baser.udes.get(keys=key) == None
+
+
+        # Partially Witnessed Escrow Events
+        # test .pwes insertion order dup methods.  dup vals are insertion order
+        key = b'A'
+        vals = [b"z", b"m", b"x", b"a"]
+        deserializedVals = ["z", "m", "x", "a"]
+
+        assert baser.pwes.get(key) == []
+        assert baser.pwes.cntAll(key) == 0
+        assert baser.pwes.rem(key) == False
+        assert baser.pwes.put(keys=key, vals=vals) == True
+        assert baser.pwes.get(key) == deserializedVals  # preserved insertion order
+        assert baser.pwes.cntAll(key) == len(vals) == 4
+        assert list(baser.pwes.getLastIter(key))[0] == deserializedVals[-1]
+        assert baser.pwes.put(key, vals=[b'a']) == False   # duplicate
+        assert baser.pwes.get(key) == deserializedVals  #  no change
+        assert baser.pwes.add(keys=key, val=b"a") == False   # duplicate
+        assert baser.pwes.add(keys=key, val=b"b") == True
+        assert baser.pwes.get(key) == deserializedVals + ['b']
+        assert [val for val in baser.pwes.getIter(key)] == deserializedVals + ['b']
+        assert baser.pwes.rem(key) == True
+        assert baser.pwes.get(key) == []
+
+        # Setup Tests for getPwesNext and getPwesNextIter
+        pre = b"A"
+        aSn = 1
+        aKey = snKey(pre=pre, sn=aSn)
+        aVals = [b"z", b"m", b"x"]
+        bSn = 2
+        bKey = snKey(pre=pre, sn=bSn)
+        bVals = [b"o", b"r", b"z"]
+        cSn = 4
+        cKey = snKey(pre=pre, sn=cSn)
+        cVals = [b"h", b"n"]
+        dSn = 7
+        dKey = snKey(pre=pre, sn=dSn)
+        dVals = [b"k", b"b"]
+
+        assert baser.pwes.put(keys=pre, on=aSn, vals=aVals)
+        assert baser.pwes.put(keys=pre, on=bSn, vals=bVals)
+        assert baser.pwes.put(keys=pre, on=cSn, vals=cVals)
+        assert baser.pwes.put(keys=pre, on=dSn, vals=dVals)
+
+
+        # Test getOnItemIterAll()
+        #  get dups at first key in database
+        # aVals
+        items = [item for item in baser.pwes.getAllItemIter()]
+        assert items  # not empty
+        ikey = snKey(items[0][0][0], items[0][1])
+        assert  ikey == aKey
+        vals = [baser.pwes._ser(val) for  key, sn, val in items]
+        assert vals ==  aVals + bVals + cVals + dVals
+
+        items = [item for item in baser.pwes.getTopItemIter()]
+        assert items == \
+        [
+            (('A',), 1, 'z'),
+            (('A',), 1, 'm'),
+            (('A',), 1, 'x'),
+            (('A',), 2, 'o'),
+            (('A',), 2, 'r'),
+            (('A',), 2, 'z'),
+            (('A',), 4, 'h'),
+            (('A',), 4, 'n'),
+            (('A',), 7, 'k'),
+            (('A',), 7, 'b')
+        ]
+
+        # avals
+        items = [item for item in baser.pwes.getTopItemIter(keys=aKey)]
+        assert items == [(('A',), 1, 'z'), (('A',), 1, 'm'), (('A',), 1, 'x')]
+
+        # bVals
+        items = [item for item in baser.pwes.getTopItemIter(keys=bKey)]
+        assert items  == [(('A',), 2, 'o'), (('A',), 2, 'r'), (('A',), 2, 'z')]
+        for keys, on, val in items:
+            assert baser.pwes.rem(keys=keys, on=on, val=val) == True
+
+        # cVals
+        items = [item for item in baser.pwes.getTopItemIter(keys=cKey)]
+        assert items == [(('A',), 4, 'h'), (('A',), 4, 'n')]
+        for keys, on, val in items:
+            assert baser.pwes.rem(keys=keys, on=on, val=val) == True
+
+        # dVals
+        items = [item for item in baser.pwes.getTopItemIter(keys=dKey)]
+        assert items == [(('A',), 7, 'k'), (('A',), 7, 'b')]
+        for keys, on, val in items:
+            assert baser.pwes.rem(keys=keys, on=on, val=val) == True
+
+        
+         # Unverified Witness Receipt Escrows
+        # test .uwes insertion order dup methods.  dup vals are insertion order
+        key = b'A'
+        vals = [('z',), ('m',), ('x',), ('a',)]
+
+        assert baser.uwes.get(key) == []  # default on = 0
+        assert baser.uwes.getLast(key) == None
+        assert baser.uwes.cnt(key) == 0
+        assert baser.uwes.rem(key) == False
+        assert baser.uwes.put(key, on=0, vals=vals) == True
+        assert baser.uwes.get(key, 0) == vals # preserved insertion order
+        assert baser.uwes.cnt(key, 0) == len(vals) == 4
+        assert baser.uwes.getLast(key, 0) == vals[-1]
+        assert baser.uwes.put(key, 0, vals=[b'a']) == False   # duplicate
+        assert baser.uwes.get(key, 0) == vals  #  no change
+        assert baser.uwes.add(key, 0, b'a') == False   # duplicate
+        assert baser.uwes.add(key, 0, b'b') == True
+        assert baser.uwes.get(key, 0) == [('z',), ('m',), ('x',), ('a',), ('b',)]
+        assert [val for key, on, val in baser.uwes.getTopItemIter(key)] == \
+        [('z',), ('m',), ('x',), ('a',), ('b',)]
+        assert baser.uwes.rem(key, 0) == True
+        assert baser.uwes.get(key, 0) == []
+
+        # Setup Tests
+        keys = ("A", )
+        assert baser.uwes.put(keys=keys, on=1, vals=aVals)
+        assert baser.uwes.put(keys=keys, on=2, vals=bVals)
+        assert baser.uwes.put(keys=keys, on=4, vals=cVals)
+        assert baser.uwes.put(keys=keys, on=7, vals=dVals)
+
+        items = [item for item in baser.uwes.getTopItemIter()]
+        assert items == \
+        [
+            (('A',), 1, ('z',)),
+            (('A',), 1, ('m',)),
+            (('A',), 1, ('x',)),
+            (('A',), 2, ('o',)),
+            (('A',), 2, ('r',)),
+            (('A',), 2, ('z',)),
+            (('A',), 4, ('h',)),
+            (('A',), 4, ('n',)),
+            (('A',), 7, ('k',)),
+            (('A',), 7, ('b',))
+        ]
+
+
+         # Ooes tests
+        # test .ooes insertion behavior methods.
+        pre = 'A'
+        sn = 0
+        key = snKey(pre, sn)
+        vals = [b"z", b"m", b"x", b"a"]
+        deserialized_vals = [baser.ooes._des(val) for val in vals] # deserialize for assertion
+
+        # core insertion
+        assert baser.ooes.get(keys=key) == []
+        assert baser.ooes.cntAll(key) == 0
+        assert baser.ooes.rem(key) == False
+
+        # initial insertion
+        assert baser.ooes.put(keys=key, vals=vals) == True
+        assert baser.ooes.get(key) == deserialized_vals    #sanity check
+
+        # duplication insertion behavior
+        assert baser.ooes.put(keys=key,vals=[b'd', b'k']) == True
+        assert baser.ooes.put(keys=key,vals=[b'd']) == False  # duplicate
+        assert baser.ooes.put(keys=key,vals=[b'k']) == False  # duplicate
+        assert baser.ooes.put(keys=key,vals=[b'k',b'd',b'k']) == False
+        assert baser.ooes.add(keys=key, val=b'd') == False  # duplicate
+        assert baser.ooes.add(keys=key, val=b'k') == False
+        assert baser.ooes.get(keys=key) == deserialized_vals + ['d', 'k']
+
+        # mixed insertion behavior
+        assert baser.ooes.put(keys=key,vals=[b'k', b'c']) == True  # True because 'c' is new
+        assert baser.ooes.get(keys=key) == deserialized_vals + ['d', 'k', 'c']
+
+        # insertion after deletion
+        assert baser.ooes.rem(keys=key, val=b'd') == True   # remove a specific val
+        assert baser.ooes.get(keys=key) == deserialized_vals + ['k', 'c']   # d removed
+        assert baser.ooes.add(keys=key,val=b'd') == True   # add d back
+        assert baser.ooes.get(keys=key) == deserialized_vals + ['k', 'c', 'd']   # d added back
+
+        # empty insertion
+        assert baser.ooes.put(keys=key, vals=[]) == False # no vals to add
+        assert baser.ooes.get(keys=key) == deserialized_vals + ['k', 'c', 'd'] # no change
+
+        assert baser.ooes.add(keys=key, val=b'') == True  # empty val is allowed
+        assert baser.ooes.get(keys=key) == deserialized_vals + ['k', 'c', 'd',''] # empty val added
+
+        # clean up
+        assert baser.ooes.rem(key) == True
+        assert baser.ooes.get(keys=key) == []
+
+        # different key types insertion
+        assert baser.ooes.put(keys='B', vals=[b'1', b'2']) == True   # key as str
+        assert baser.ooes.add(keys='B', val=b'3') == True
+        assert baser.ooes.put(['B'], vals=b'4') == True  # key as list
+        assert baser.ooes.add(keys=['B'], val=b'5') == True
+        assert baser.ooes.put(("B"), vals=b'6') == True # key as tuple
+        assert baser.ooes.add(keys=("B"), val=b'7') == True
+        assert baser.ooes.put(memoryview(b'B'),vals= b'8') == True  # key as memoryview
+        assert baser.ooes.add(keys=memoryview(b'B'), val=b'9') == True
+        assert baser.ooes.get(keys=b'B') == ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+        # clean up
+        assert baser.ooes.rem(b'B') == True
+        assert baser.ooes.get(keys=b'B') == []
+
+        # edge case: add different types of vals
+        assert baser.ooes.put(key,vals=[b'a','a']) == True
+        assert baser.ooes.get(keys=key) == ['a'] # only 1 value added
+
+        assert baser.ooes.rem(key) == True
+        assert baser.ooes.get(keys=key) == []
+
+
+        # test .ooes retrieval behavior methods
+        # insertion order preserved
+        assert baser.ooes.put(keys=pre,on=sn, vals=vals) == True
+        assert baser.ooes.get(keys=pre,on=sn) == deserialized_vals
+        assert list(baser.ooes.getAllIter(pre,on=sn)) == deserialized_vals
+        assert baser.ooes.getLast(keys=pre, on=sn) == deserialized_vals[-1]
+        assert baser.ooes.cntAll(pre,on=sn) == len(vals) == 4
+
+        # retrieval on empty list
+        assert baser.ooes.get(keys=b'X') == []
+        assert list(baser.ooes.getAllIter(b'X')) == []
+        assert baser.ooes.getLast(keys=b'X') == None
+        assert baser.ooes.cntAll(b'X') == 0
+        items = baser.ooes.getAllItemIter(keys=b'X')
+        assert list(items) == []
+
+        # getTopItemIter retrieval of (key, val) pairs in lexicographic key order
+        items = list(baser.ooes.getAllItemIter())
+        assert items == [(('A',), 0, 'z'), (('A',), 0, 'm'), (('A',), 0, 'x'), (('A',), 0, 'a')]  # Insertion order preserved for vals
+        assert baser.ooes.put(keys=[b'B', b'C'], vals=[b'1', b'2', b'3']) == True
+        items = list(baser.ooes.getAllItemIter(keys=key))
+        assert all(k[0] == 'A' for k, sn, v in items)
+
+        # retrieval with different key types, A is the key used above where key = b'A'
+        assert baser.ooes.get(keys=b'A') == deserialized_vals  # key as bytes
+        assert baser.ooes.get(keys='A') == deserialized_vals  # key as str
+        assert baser.ooes.get(keys=['A']) == deserialized_vals  # key as list
+        assert baser.ooes.get(keys=('A',)) == deserialized_vals  # key as tuple
+        assert baser.ooes.get(keys=memoryview(b'A')) == deserialized_vals  # key as memoryview
+
+        # retrieval afterd deletion of specific val
+        assert baser.ooes.getLast(keys=pre, on=sn) == 'a'              # vals = [b"z", b"m", b"x", b"a"]
+        assert baser.ooes.rem(keys=pre,on=sn, val=b'a') == True           # vals = [b"z", b"m", b"x"]
+        assert baser.ooes.get(keys=pre,on=sn,) == ['z', 'm', 'x']
+        assert baser.ooes.getLast(keys=pre, on=sn) == 'x'
+        assert baser.ooes.cntAll(pre,on=sn) == 3
+
+        # clean up
+        assert baser.ooes.rem(pre,on=sn) == True
+
+
+        # test .ooes pinning behavior method
+        # start clean
+        assert baser.ooes.get(keys=key) == []
+        assert baser.ooes.put(keys=key, vals=vals) == True
+        assert baser.ooes.get(keys=key) == deserialized_vals
+        assert baser.ooes.pin(keys=key, vals=[b'a', b'b', b'c']) == True
+        assert baser.ooes.get(keys=key) == ['a', 'b', 'c']  # exact overwrite
+
+        # pin with a different list
+        assert baser.ooes.pin(keys=key, vals=[b'x', b'y']) == True
+        assert baser.ooes.get(keys=key) == ['x', 'y']  # previous values removed
+
+        # pin with empty list (valid use case)
+        assert baser.ooes.pin(keys=key, vals=[]) == False  # nothing to pin
+        assert baser.ooes.get(keys=key) == ['x', 'y']  # previous values are still here
+        assert baser.ooes.rem(key) == True
+
+        # pin after normal insertion
+        assert baser.ooes.put(keys=key, vals=[b'1', b'2']) == True
+        assert baser.ooes.get(keys=key) == ['1', '2']
+        assert baser.ooes.pin(keys=key, vals=[b'Q']) == True
+        assert baser.ooes.get(keys=key) == ['Q']  # overwritten
+
+        # edge case: pin with mixed types
+        assert baser.ooes.pin(keys=key, vals=[b'A', 'A', memoryview(b'A')]) == True
+        assert baser.ooes.get(keys=key) == ['A'] # Only 1 value added
+
+        # cleanup
+        assert baser.ooes.rem(key) == True
+        assert baser.ooes.get(keys=key) == []
+
+
+        # test .ooes deletion methods
+        # delete specific val
+        assert baser.ooes.put(key, vals=vals) == True
+        assert baser.ooes.rem(key, val=b'm') == True
+        assert baser.ooes.get(keys=key) == ['z', 'x', 'a']
+
+        # delete non existing val
+        assert baser.ooes.rem(key, val=b'y') == False
+        assert baser.ooes.get(keys=key) == ['z', 'x', 'a']
+
+        # delete all vals
+        assert baser.ooes.rem(key) == True
+        assert baser.ooes.get(keys=key) == []
+        assert baser.ooes.cntAll(key) == 0 # all vals deleted
+
+        # delete non existing key
+        assert baser.ooes.rem(b'X') == False
+
+        # insert other keys to ensure only specified key is deleted
+        assert baser.ooes.put(b'A', vals=[b'1']) == True
+        assert baser.ooes.put(b'B', vals=[b'2']) == True
+        assert baser.ooes.rem(b'A') == True
+        assert baser.ooes.get(keys=b'B') == ['2']
+
+        # clean up all entries
+        for k, sn, v in list(baser.ooes.getAllItemIter()):
+            assert baser.ooes.rem(keys=k, on=sn, val=v) == True
+
+
+        # Setup Tests for getOoeItemsNext and getOoeItemsNextIter
+        # vals are in bytes, assertion is done after serializing
+        pre = b"A"
+        aSn = 1
+        aKey = snKey(pre=pre, sn=aSn)
+        aVals = [b"z", b"m", b"x"]
+        bSn = 2
+        bKey = snKey(pre=pre, sn=bSn)
+        bVals = [b"o", b"r", b"z"]
+        cSn = 4
+        cKey = snKey(pre=pre, sn=cSn)
+        cVals = [b"h", b"n"]
+        dSn = 7
+        dKey = snKey(pre=pre, sn=dSn)
+        dVals = [b"k", b"b"]
+
+        assert baser.ooes.put(keys=pre, on=1, vals=aVals)
+        assert baser.ooes.put(keys=pre, on=2, vals=bVals)
+        assert baser.ooes.put(keys=pre, on=4, vals=cVals)
+        assert baser.ooes.put(keys=pre, on=7, vals=dVals)
+
+
+
+        # avals
+        items = [item for item in baser.ooes.getTopItemIter(keys=aKey)]
+        assert items == [(('A',), 1, 'z'), (('A',), 1, 'm'), (('A',), 1, 'x')]
+
+        # bVals
+        items = [item for item in baser.ooes.getTopItemIter(keys=bKey)]
+        assert items  == [(('A',), 2, 'o'), (('A',), 2, 'r'), (('A',), 2, 'z')]
+        for keys, on, val in items:
+            assert baser.ooes.rem(keys=keys, on=on, val=val) == True
+
+        # cVals
+        items = [item for item in baser.ooes.getTopItemIter(keys=cKey)]
+        assert items == [(('A',), 4, 'h'), (('A',), 4, 'n')]
+        for keys, on, val in items:
+            assert baser.ooes.rem(keys=keys, on=on, val=val) == True
+
+        # dVals
+        items = [item for item in baser.ooes.getTopItemIter(keys=dKey)]
+        assert items == [(('A',), 7, 'k'), (('A',), 7, 'b')]
+        for keys, on, val in items:
+            assert baser.ooes.rem(keys=keys, on=on, val=val) == True
+
+        # clean up all entries
+        for k, sn, v in list(baser.pses.getAllItemIter()):
+            baser.ooes.rem(keys=k)
+
+        # test _tokey and _tokeys
+        t = baser.ooes._tokey(aKey)
+        assert baser.ooes._tokeys(t) == ("A", "00000000000000000000000000000001")
+
+
+         # test .dels insertion order dup methods.  dup vals are insertion order
+        keys = b'A'
+        on = 0
+        vals = ["z", "m", "x", "a"]
+
+        assert baser.dels.get(keys=keys, on=on) == []
+        result = baser.dels.get(keys=keys, on=on)
+        assert (result[-1] if result else None) == None
+        assert len(baser.dels.get(keys=keys, on=on)) == 0
+        assert baser.dels.rem(keys=keys, on=on) == False
+        for val in vals:
+            baser.dels.add(keys=keys, on=on, val=val)
+        assert baser.dels.get(keys=keys, on=on) == vals  # preserved insertion order
+        assert len(baser.dels.get(keys=keys, on=on)) == len(vals) == 4
+        result = baser.dels.get(keys=keys, on=on)
+        assert result[-1] == vals[-1]
+        assert baser.dels.add(keys=keys, on=on, val='a') == False   # duplicate
+        assert baser.dels.get(keys=keys, on=on) == vals  #  no change
+        assert baser.dels.add(keys=keys, on=on, val='a') == False   # duplicate
+        assert baser.dels.add(keys=keys, on=on, val='b') == True
+        assert baser.dels.get(keys=keys, on=on) == ["z", "m", "x", "a", "b"]
+        assert baser.dels.rem(keys=keys, on=on) == True
+        assert baser.dels.get(keys=keys, on=on) == []
+
+
+        # test .ldes insertion order dup methods.  dup vals are insertion order
+        key = b'A'
+        vals = [b"z", b"m", b"x", b"a"]
+
+        assert baser.ldes.get(keys=key) == []
+        assert baser.ldes.getLast(keys=key) == None
+        assert baser.ldes.cnt(keys=key) == 0
+        assert baser.ldes.rem(keys=key) == False
+        # put is not fully compatible with putLdes because putLdes took list of vals
+        # and IoDupSuber.put takes iterable of vals.
+        assert baser.ldes.put(keys=key, on=0, vals=vals) == True
+        # OnIoDupSuber decodes bytes to utf-8 strings
+        assert baser.ldes.get(keys=key) == [v.decode("utf-8") for v in vals]
+        assert baser.ldes.cnt(keys=key) == len(vals) == 4
+        assert baser.ldes.getLast(keys=key) == vals[-1].decode("utf-8")
+        assert baser.ldes.put(keys=key, on=0, vals=[b'a']) == False   # duplicate
+        assert baser.ldes.get(keys=key) == [v.decode("utf-8") for v in vals] #  no change
+        assert baser.ldes.rem(keys=key) == True
+        assert baser.ldes.get(keys=key) == []
+
+        # Setup Tests for getOnItemIter with proper OnIoDupSuber API
+        # Use addOn with explicit ordinal instead of snKey
+        aVals = [b"z", b"m", b"x"]
+        bVals = [b"o", b"r", b"z"]
+        cVals = [b"h", b"n"]
+        dVals = [b"k", b"b"]
+
+        for val in aVals:
+            assert baser.ldes.add(keys=b'A', on=1, val=val) == True
+        for val in bVals:
+            assert baser.ldes.add(keys=b'A', on=2, val=val) == True
+        for val in cVals:
+            assert baser.ldes.add(keys=b'A', on=4, val=val) == True
+        for val in dVals:
+            assert baser.ldes.add(keys=b'A', on=7, val=val) == True
+
+        # Test getOnItemIterAll - iterate all items for prefix b'A'
+        items = [item for item in baser.ldes.getAllItemIter(keys=b'A')]
+        assert items  # not empty
+        # item is (keys, on, val)
+        vals = [val for pre, sn, val in items]
+        allVals = aVals + bVals + cVals + dVals
+        assert vals == [v.decode("utf-8") for v in allVals]
+
+        # Iterate starting from specific ordinal (sn=1)
+        items = [item for item in baser.ldes.getAllItemIter(keys=b'A', on=1)]
+        assert items
+        pre, sn, val = items[0]
+        assert sn == 1
+        assert val == aVals[0].decode("utf-8")
+
+        # Verify vals at sn=1
+        vals = [val for p, s, val in items if s == 1]
+        assert vals == [v.decode("utf-8") for v in aVals]
+
+        # bVals at sn=2
+        items = [item for item in baser.ldes.getAllItemIter(keys=b'A', on=2)]
+        vals = [val for p, s, val in items if s == 2]
+        assert vals == [v.decode("utf-8") for v in bVals]
+        # Remove bVals using remOn
+        for p, s, val in items:
+            if s == 2:
+                assert baser.ldes.rem(keys=b'A', on=s, val=val) == True
+
+        # cVals at sn=4
+        items = [item for item in baser.ldes.getAllItemIter(keys=b'A', on=4)]
+        vals = [val for p, s, val in items if s == 4]
+        assert vals == [v.decode("utf-8") for v in cVals]
+        for p, s, val in items:
+            if s == 4:
+                assert baser.ldes.rem(keys=b'A', on=s, val=val) == True
+
+        # dVals at sn=7
+        items = [item for item in baser.ldes.getAllItemIter(keys=b'A', on=7)]
+        vals = [val for p, s, val in items if s == 7]
+        assert vals == [v.decode("utf-8") for v in dVals]
+        for p, s, val in items:
+            if s == 7:
+                assert baser.ldes.rem(keys=b'A', on=s, val=val) == True
+
+
+        # Test for gpse
+        key = b'a'
+        sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+        number = Number(num=0)
+        diger = Diger(qb64=sdig1)
+
+        assert baser.gpse.get(key) == []   # gpse is empty
+        assert baser.gpse.add(keys=key, val=(number, diger)) == True   # add new entry with val as a tuple of number and diger
+
+        val = baser.gpse.get(key)  # returns Cesr tuple of (number, diger)
+        num, dig = val[0]
+        assert isinstance(num, Number)
+        assert isinstance(dig, Diger)
+        assert num.num == number.num
+        assert dig.qb64 == diger.qb64
+
+        assert baser.gpse.rem(key) == True
+        assert baser.gpse.get(key) == []   # gpse is empty again
+
+
+         # Saider and Seqner instead of Diger and Number
+        seqner = Seqner(num=0)
+        saider = Saider(qb64=sdig1)
+        assert baser.gpse.add(keys=key, val=(seqner, saider)) == True # val is not using Number and Diger type
+        val = baser.gpse.get(key)                                     # but it still gets validated
+        assert val is not None
+        seq, dig = val[0]   # returns Cesr tuple of (number, diger)
+
+        assert isinstance(seq, Number) # Seqner gets converted to Number on read
+        assert isinstance(dig, Diger)   # Saider gets converted to Diger on read
+        assert seq.num == seqner.sn
+        assert dig.qb64 == saider.qb64
+
+        # test .imgs  CatCesrSuber with TypeMedia (Noncer, Noncer, Labeler, Texter)
+        said_nonce = Noncer()  # random SAID nonce
+        uuid_nonce = Noncer()  # random UUID blinding nonce
+        mime_label = Labeler(label="image_png")  # MIME type label
+        img_data = Texter(text="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk")
+
+        img_key = "BIFKYlgMQk78iSSYjE5CWVeLj9UKgBfdfQRos5PK38Yp"
+        assert baser.imgs.get(keys=img_key) is None  # empty
+        assert baser.imgs.put(keys=img_key, val=(said_nonce, uuid_nonce, mime_label, img_data)) == True
+        result = baser.imgs.get(keys=img_key)
+        assert result is not None
+        rsaid, ruuid, rmime, rdata = result
+        assert isinstance(rsaid, Noncer)
+        assert isinstance(ruuid, Noncer)
+        assert isinstance(rmime, Labeler)
+        assert isinstance(rdata, Texter)
+        assert rsaid.qb64 == said_nonce.qb64
+        assert ruuid.qb64 == uuid_nonce.qb64
+        assert rdata.text == img_data.text
+
+        # overwrite with pin
+        new_data = Texter(text="newdata")
+        assert baser.imgs.pin(keys=img_key, val=(said_nonce, uuid_nonce, mime_label, new_data)) == True
+        result = baser.imgs.get(keys=img_key)
+        _, _, _, rdata2 = result
+        assert rdata2.text == "newdata"
+
+        assert baser.imgs.rem(keys=img_key) == True
+        assert baser.imgs.get(keys=img_key) is None
+
+        # test .iimgs  same format for local identifiers
+        assert baser.iimgs.put(keys=img_key, val=(said_nonce, uuid_nonce, mime_label, img_data)) == True
+        result = baser.iimgs.get(keys=img_key)
+        assert result is not None
+        rsaid, ruuid, rmime, rdata = result
+        assert isinstance(rsaid, Noncer)
+        assert isinstance(rdata, Texter)
+        assert baser.iimgs.rem(keys=img_key) == True
+        assert baser.iimgs.get(keys=img_key) is None
+
 
     asyncio.run(_go())
