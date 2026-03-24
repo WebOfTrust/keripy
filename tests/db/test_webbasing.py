@@ -12,7 +12,7 @@ import pytest
 from keri.db.webbasing import WebBaser
 
 try:
-    from keri.db import subing, koming, dgKey
+    from keri.db import subing, koming, dgKey, snKey
 except ImportError:
     subing = None
     koming = None
@@ -917,5 +917,311 @@ def test_webdb_baser():
         assert sn1.num == n1.num
         assert se1.qb64 == e1.qb64
         assert ss1.raw == s1.raw
+
+        # test .kels insertion order dup methods.  dup vals are insertion order
+        key = snKey(preb, 0)
+        vals = [b"z", b"m", b"x", b"a"]
+        deserializedVals = ["z", "m", "x", "a"]
+
+        assert baser.kels.get(keys=key) == []
+        assert baser.kels.getLast(keys=key)== None
+        assert baser.kels.cntAll(keys=key) == 0
+        assert baser.kels.rem(key) == False
+        assert baser.kels.put(keys=key, vals=vals) == True
+        assert baser.kels.get(keys=key) == deserializedVals  # preserved insertion order
+        assert baser.kels.cntAll(keys=key) == len(vals) == 4
+        assert baser.kels.getLast(keys=key) == deserializedVals[-1]
+        assert baser.kels.put(keys=key, vals=[b'a']) == False   # duplicate
+        assert baser.kels.get(keys=key) == deserializedVals  #  no change
+        assert baser.kels.add(keys=key, val=b'a') == False   # duplicate
+        assert baser.kels.add(keys=key, val=b'b') == True
+        assert baser.kels.get(keys=key) == deserializedVals + ['b']
+        assert baser.kels.rem(key) == True
+        assert baser.kels.get(keys=key) == []
+
+         # Partially Signed Escrow Events
+        # test .pses insertion order dup methods.  dup vals are insertion order
+        pre = b'A'
+        sn = 0
+        key = snKey(pre, sn)
+        vals = [b"z", b"m", b"x", b"a"]
+        deserialized_vals = [baser.pses._des(val) for val in vals] # deserialize for assertion
+
+        # core insertion
+        assert baser.pses.get(keys=key) == []
+        assert baser.pses.getLast(keys=pre, on=sn) == None
+        assert baser.pses.cntAll(keys=key) == 0
+        assert baser.pses.rem(keys=key) == False
+
+        # initial insertion
+        assert baser.pses.put(keys=key, vals=vals) == True
+        assert baser.pses.get(keys=key) == deserialized_vals    #sanity check
+
+        # duplication insertion behavior
+        assert baser.pses.put(keys=key, vals=[b'd', b'k']) == True
+        assert baser.pses.put(keys=key, vals=[b'd']) == False  # duplicate
+        assert baser.pses.put(keys=key, vals=[b'k']) == False  # duplicate
+        assert baser.pses.put(keys=key, vals=[b'k',b'd',b'k']) == False
+        assert baser.pses.add(keys=key, val=b'd') == False  # duplicate
+        assert baser.pses.add(keys=key, val=b'k') == False
+        assert baser.pses.get(keys=key) == deserialized_vals + ['d', 'k']
+
+        # mixed insertion behavior
+        assert baser.pses.put(keys=key, vals=[b'k', b'c']) == True  # True because 'c' is new
+        assert baser.pses.get(keys=key) == deserialized_vals + ['d', 'k', 'c']
+
+        # insertion after deletion
+        assert baser.pses.rem(keys=key, val=b'd') == True   # remove a specific val
+        assert baser.pses.get(keys=key) == deserialized_vals + ['k', 'c']   # d removed
+        assert baser.pses.add(keys=key, val=b'd') == True   # add d back
+        assert baser.pses.get(keys=key) == deserialized_vals + ['k', 'c', 'd']   # d added back
+
+        # empty insertion
+        assert baser.pses.put(keys=key, vals=[]) == False # no vals to add
+        assert baser.pses.get(keys=key) == deserialized_vals + ['k', 'c', 'd'] # no change
+
+        assert baser.pses.add(keys=key, val=b'') == True  # empty val is allowed
+        assert baser.pses.get(key) == deserialized_vals + ['k', 'c', 'd',''] # empty val added
+
+        # clean up
+        assert baser.pses.rem(keys=key) == True
+        assert baser.pses.get(keys=key) == []
+
+        # different key types insertion
+        assert baser.pses.put(keys='B', vals=[b'1', b'2']) == True   # key as str
+        assert baser.pses.add(keys='B', val=b'3') == True
+        assert baser.pses.put(keys=['B'], vals=b'4') == True  # key as list
+        assert baser.pses.add(keys=['B'], val=b'5') == True
+        assert baser.pses.put(keys=("B"), vals=b'6') == True # key as tuple
+        assert baser.pses.add(keys=("B"), val=b'7') == True
+        assert baser.pses.put(keys=memoryview(b'B'), vals=b'8') == True  # key as memoryview
+        assert baser.pses.add(keys=memoryview(b'B'), val=b'9') == True
+        assert baser.pses.get(keys=b'B') == ['1', '2', '3', '4', '5', '6', '7', '8', '9']
+
+        # clean up
+        assert baser.pses.rem(keys=b'B') == True
+        assert baser.pses.get(keys=b'B') == []
+
+        # edge case: add different types of vals
+        assert baser.pses.put(keys=key, vals=[b'a','a']) == True
+        assert baser.pses.get(keys=key) == ['a'] # only 1 value added
+
+        assert baser.pses.rem(keys=key) == True
+        assert baser.pses.get(keys=key) == []
+
+
+        # test .pses retrieval behavior methods
+        # insertion order preserved
+        assert baser.pses.put(keys=pre, on=sn, vals=vals) == True
+        assert baser.pses.get(keys=pre, on=sn) == deserialized_vals
+        assert list(baser.pses.getIter(keys=pre, on=sn)) == deserialized_vals
+        assert baser.pses.getLast(keys=pre, on=sn) == deserialized_vals[-1]
+        assert baser.pses.cntAll(keys=pre, on=sn) == len(vals) == 4
+
+        # retrieval on empty list
+        assert baser.pses.get(keys=b'X') == []
+        assert list(baser.pses.getIter(b'X')) == []
+        assert baser.pses.getLast(keys=b'X') == None
+        assert baser.pses.cntAll(keys=b'X') == 0
+        items = baser.pses.getTopItemIter(keys=b'X')
+        assert list(items) == []
+
+        # getTopItemIter retrieval of (key, val) pairs in lexicographic key order
+        items = list(baser.pses.getAllItemIter())
+        assert items == [(('A',), 0, 'z'), (('A',), 0, 'm'), (('A',), 0, 'x'), (('A',), 0, 'a')]  # Insertion order preserved for vals
+        items = list(baser.pses.getTopItemIter(keys=key))
+        assert items == [(('A',), 0, 'z'), (('A',), 0, 'm'), (('A',), 0, 'x'), (('A',), 0, 'a')]
+        keysB = (b'B', b'C')
+        assert baser.pses.put(keys=keysB, vals=[b'1', b'2', b'3']) == True
+        items = list(baser.pses.getTopItemIter(keys=keysB))
+        assert items == [(('B', 'C'), 0, '1'), (('B', 'C'), 0, '2'), (('B', 'C'), 0, '3')]
+        items = list(baser.pses.getTopItemIter(keys=keysB[0]))  # top key first element
+        assert items == [(('B', 'C'), 0, '1'), (('B', 'C'), 0, '2'), (('B', 'C'), 0, '3')]
+
+
+        # retrieval with different key types, A is the key used above where key = b'A'
+        assert baser.pses.get(keys=b'A') == deserialized_vals  # key as bytes
+        assert baser.pses.get(keys='A') == deserialized_vals  # key as str
+        assert baser.pses.get(keys=['A']) == deserialized_vals  # key as list
+        assert baser.pses.get(keys=('A',)) == deserialized_vals  # key as tuple
+        assert baser.pses.get(keys=memoryview(b'A')) == deserialized_vals  # key as memoryview
+
+        # retrieval afterd deletion of specific val
+        assert baser.pses.getLast(keys=pre, on=sn) == 'a'              # vals = [b"z", b"m", b"x", b"a"]
+        assert baser.pses.rem(keys=pre, on=sn, val=b'a') == True           # vals = [b"z", b"m", b"x"]
+        assert baser.pses.get(keys=pre, on=sn) == ['z', 'm', 'x']
+        assert baser.pses.getLast(keys=pre, on=sn) == 'x'
+        assert baser.pses.cntAll(keys=pre, on=sn) == 3
+
+        # clean up
+        assert baser.pses.rem(keys=pre, on=sn) == True
+
+
+        # test .pses pinning behavior method
+        # start clean
+        assert baser.pses.get(keys=key) == []
+        assert baser.pses.put(keys=key, vals=vals) == True
+        assert baser.pses.get(keys=key) == deserialized_vals
+        assert baser.pses.pin(keys=key, vals=[b'a', b'b', b'c']) == True
+        assert baser.pses.get(keys=key) == ['a', 'b', 'c']  # exact overwrite
+
+        # pin with a different list
+        assert baser.pses.pin(keys=key, vals=[b'x', b'y']) == True
+        assert baser.pses.get(keys=key) == ['x', 'y']  # previous values removed
+
+        # pin with empty list (valid use case)
+        assert baser.pses.pin(keys=key, vals=[]) == False  # nothing to pin
+        assert baser.pses.get(keys=key) == ['x', 'y']  # previous values are still here
+        assert baser.pses.rem(keys=key) == True
+
+        # pin after normal insertion
+        assert baser.pses.put(keys=key, vals=[b'1', b'2']) == True
+        assert baser.pses.get(keys=key) == ['1', '2']
+        assert baser.pses.pin(keys=key, vals=[b'Q']) == True
+        assert baser.pses.get(keys=key) == ['Q']  # overwritten
+
+        # edge case: pin with mixed types
+        assert baser.pses.pin(keys=key, vals=[b'A', 'A', memoryview(b'A')]) == True
+        assert baser.pses.get(keys=key) == ['A'] # only one value gets added
+
+        # cleanup
+        assert baser.pses.rem(keys=key) == True
+        assert baser.pses.get(keys=key) == []
+
+
+        # test .pses deletion methods
+        # delete specific val
+        assert baser.pses.put(keys=key, vals=vals) == True
+        assert baser.pses.rem(keys=key, val=b'm') == True
+        assert baser.pses.get(keys=key) == ['z', 'x', 'a']
+
+        # delete non existing val
+        assert baser.pses.rem(keys=key, val=b'y') == False
+        assert baser.pses.get(keys=key) == ['z', 'x', 'a']
+
+        # delete all vals
+        assert baser.pses.rem(keys=key) == True
+        assert baser.pses.get(keys=key) == []
+        assert baser.pses.cntAll(keys=key) == 0 # all vals deleted
+
+        # delete non existing key
+        assert baser.pses.rem(keys=b'X') == False
+
+        # insert other keys to ensure only specified key is deleted
+        assert baser.pses.put(keys=b'A', vals=[b'1']) == True
+        assert baser.pses.put(keys=b'B', vals=[b'2']) == True
+        assert baser.pses.rem(keys=b'A') == True
+        assert baser.pses.get(keys=b'B') == ['2']
+
+        # clean up all entries
+        for k, sn, v in list(baser.pses.getAllItemIter()):
+            assert baser.pses.rem(keys=k, on=sn, val=v) == True
+
+        # Setup Tests for getPsesNext and getPsesNextIter
+        pre = b"A"
+        aSn = 1
+        aKey = snKey(pre=pre, sn=aSn)
+        aVals = [b"z", b"m", b"x"]
+        bSn = 2
+        bKey = snKey(pre=pre, sn=bSn)
+        bVals = [b"o", b"r", b"z"]
+        cSn = 4
+        cKey = snKey(pre=pre, sn=cSn)
+        cVals = [b"h", b"n"]
+        dSn = 7
+        dKey = snKey(pre=pre, sn=dSn)
+        dVals = [b"k", b"b"]
+
+        assert baser.pses.put(keys=pre, on=1, vals=aVals)
+        assert baser.pses.put(keys=pre, on=2, vals=bVals)
+        assert baser.pses.put(keys=pre, on=4, vals=cVals)
+        assert baser.pses.put(keys=pre, on=7, vals=dVals)
+
+        # Test getPseItemsNextIter(key=b"")
+        # vals are in bytes, assertion is done after serializing
+
+        # aVals
+        items = [item for item in baser.pses.getTopItemIter()]
+        assert items == \
+        [
+            (('A',), 1, 'z'),
+            (('A',), 1, 'm'),
+            (('A',), 1, 'x'),
+            (('A',), 2, 'o'),
+            (('A',), 2, 'r'),
+            (('A',), 2, 'z'),
+            (('A',), 4, 'h'),
+            (('A',), 4, 'n'),
+            (('A',), 7, 'k'),
+            (('A',), 7, 'b')
+        ]
+
+        # avals
+        items = [item for item in baser.pses.getTopItemIter(keys=aKey)]
+        assert items == [(('A',), 1, 'z'), (('A',), 1, 'm'), (('A',), 1, 'x')]
+
+        # bVals
+        items = [item for item in baser.pses.getTopItemIter(keys=bKey)]
+        assert items  == [(('A',), 2, 'o'), (('A',), 2, 'r'), (('A',), 2, 'z')]
+        for keys, on, val in items:
+            assert baser.pses.rem(keys=keys, on=on, val=val) == True
+
+        # cVals
+        items = [item for item in baser.pses.getTopItemIter(keys=cKey)]
+        assert items == [(('A',), 4, 'h'), (('A',), 4, 'n')]
+        for keys, on, val in items:
+            assert baser.pses.rem(keys=keys, on=on, val=val) == True
+
+        # dVals
+        items = [item for item in baser.pses.getTopItemIter(keys=dKey)]
+        assert items == [(('A',), 7, 'k'), (('A',), 7, 'b')]
+        for keys, on, val in items:
+            assert baser.pses.rem(keys=keys, on=on, val=val) == True
+
+        # clean up all entries
+        for k, sn, v in list(baser.pses.getAllItemIter()):
+            baser.pses.rem(keys=k)
+
+        # test _tokey and _tokeys
+        t = baser.ooes._tokey(aKey)
+        assert baser.ooes._tokeys(t) == ("A", "00000000000000000000000000000001")
+
+
+        # Test .udes partial delegated escrow seal source couples
+        key = dgKey(preb, digb)
+        assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
+
+        # test .pdes methods
+        assert isinstance(baser.pdes, subing.OnIoSetSuber)
+
+
+        # test .udes CatCesrSuber sub baser methods
+        assert isinstance(baser.udes, subing.CatCesrSuber)
+        assert baser.udes.klas == (core.Number, coring.Diger)
+
+        ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAAAB'
+        sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+        ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAAAC'
+        sdig2 = b'EBYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
+        val1 = ssnu1 + sdig1
+        num1 = coring.Number(qb64b=ssnu1)
+        val2 = ssnu2 + sdig2
+        num2 = coring.Number(qb64b=ssnu2)
+        diger1 = coring.Diger(qb64b=sdig1)
+        diger2 = coring.Diger(qb64b=sdig2)
+
+        assert baser.udes.get(keys=key) == None
+        assert baser.udes.rem(keys=key) == False
+        assert baser.udes.put(keys=key, val=(num1, diger1)) == True
+        num, diger = baser.udes.get(keys=key)
+        assert num.qb64b + diger.qb64b == val1
+        assert baser.udes.put(keys=key, val=(num2, diger2)) == False
+        num, diger = baser.udes.get(keys=key)
+        assert num.qb64b + diger.qb64b == val1
+        assert baser.udes.pin(keys=key, val=(num2, diger2)) == True
+        num, diger = baser.udes.get(keys=key)
+        assert num.qb64b + diger.qb64b == val2
+        assert baser.udes.rem(keys=key) == True
+        assert baser.udes.get(keys=key) == None
 
     asyncio.run(_go())

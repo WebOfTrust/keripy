@@ -62,8 +62,8 @@ class WebBaser(WebDBer):
         """
         SubDbNames = [
             "evts.", "sigs.", "wigs.", "dtss.", "aess.", "rcts.", "vrcs.", "vres.",
-            "kels.", "fels.", "ooes.", "pses.", "dels.", "ldes.",
-            "ures.", "esrs.", "states.", "habs.", "names.",
+            "kels.", "fels.", "ooes.", "pses.", "dels.", "ldes.", "pdes.", "pwes.",
+            "ures.", "esrs.", "states.", "habs.", "names.", "udes.",
             "imgs.", "iimgs.",
         ]
         self.SubDbNames = SubDbNames
@@ -158,6 +158,9 @@ class WebBaser(WebDBer):
         self.fels = subing.OnSuber(db=self, subkey='fels.')
         self.ooes = subing.OnIoSetSuber(db=self, subkey='ooes.')
         self.pses = subing.OnIoSetSuber(db=self, subkey='pses.')
+        self.pwes = subing.OnIoSetSuber(db=self, subkey='pwes.')
+        self.pdes = subing.OnIoSetSuber(db=self, subkey='pdes.')
+        self.udes = subing.CatCesrSuber(db=self, subkey='udes.', klas=(coring.Number, coring.Diger))
         self.dels = subing.OnIoSetSuber(db=self, subkey='dels.')
         self.ldes = subing.OnIoSetSuber(db=self, subkey='ldes.')
         self.ures = subing.CatCesrIoSetSuber(db=self, subkey='ures.',
