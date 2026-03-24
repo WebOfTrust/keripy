@@ -15,7 +15,7 @@ from ...common import Parsery, config, setupHby, printIdentifier
 from ....kering import ConfigurationError
 from ....app import (Notifier, Multiplexor, Counselor,
                      MailboxDirector, HaberyDoer, Poster,
-                     loadHandlers, multisigInteractExn)
+                     loadGroupingHandlers, multisigInteractExn)
 
 from ....core import Prefixer, Number, Diger, SerderKERI
 from ....peer import Exchanger
@@ -79,7 +79,7 @@ class GroupMultisigInteract(doing.DoDoer):
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
         exc = Exchanger(hby=self.hby, handlers=[])
-        loadHandlers(exc, mux)
+        loadGroupingHandlers(exc, mux)
 
         mbd = MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'], exc=exc)
         self.counselor = Counselor(hby=self.hby)

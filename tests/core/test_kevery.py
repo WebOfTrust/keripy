@@ -2,16 +2,17 @@ import os
 
 import pytest
 
+from hio.help import ogler
 
-from keri import help, Vrsn_1_0, ValidationError
-from keri.core import (Salter, parsing, eventing, coring, serdering,
+from keri.kering import Vrsn_1_0, ValidationError
+from keri.core import (Salter, Parser, Diger, SerderKERI,
                        Counter, Kever, Kevery, Codens,
                        incept, rotate, interact)
-from keri.app import habbing
+from keri.app import openHby
 from keri.db import openDB
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 def test_kevery():
@@ -33,7 +34,7 @@ def test_kevery():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers[0].verfer.qb64],
-                        ndigs=[coring.Diger(ser=signers[1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64])
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -58,7 +59,7 @@ def test_kevery():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[1].verfer.qb64],
                         dig=kever.serder.said,
-                        ndigs=[coring.Diger(ser=signers[2].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[2].verfer.qb64b).qb64],
                         sn=1)
         event_digs.append(serder.said)
         # create sig counter
@@ -76,7 +77,7 @@ def test_kevery():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[2].verfer.qb64],
                         dig=kever.serder.said,
-                        ndigs=[coring.Diger(ser=signers[3].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[3].verfer.qb64b).qb64],
                         sn=2)
         event_digs.append(serder.said)
         # create sig counter
@@ -126,7 +127,7 @@ def test_kevery():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[3].verfer.qb64],
                         dig=kever.serder.said,
-                        ndigs=[coring.Diger(ser=signers[4].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[4].verfer.qb64b).qb64],
                         sn=5)
         event_digs.append(serder.said)
         # create sig counter
@@ -194,7 +195,7 @@ def test_kevery():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[4].verfer.qb64],
                         dig=kever.serder.said,
-                        ndigs=[coring.Diger(ser=signers[5].verfer.qb64b).qb64],
+                        ndigs=[Diger(ser=signers[5].verfer.qb64b).qb64],
                         sn=8)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -221,7 +222,7 @@ def test_kevery():
         # kevery.process(ims=kes[:20])
         # assert pre not in kevery.kevers  # shortage so gives up
 
-        parsing.Parser(version=Vrsn_1_0).parse(ims=msgs, kvy=kevery)
+        Parser(version=Vrsn_1_0).parse(ims=msgs, kvy=kevery)
         # kevery.process(ims=msgs)
 
         assert pre in kevery.kevers
@@ -244,7 +245,7 @@ def test_witness_state():
     """
 
     # with basing.openDB(name="controller") as bobDB, keeping.openKS(name="controller") as bobKS:
-    with habbing.openHby(name="controller", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+    with openHby(name="controller", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
 
         wits = [
             "BAMUu4hpUYY4FKd4LtsvpMN6claZKF2AUmXIgXiAI9ZQ",
@@ -334,11 +335,11 @@ def test_stale_event_receipts():
     Bam is verifying the key events with receipts from Bob
     """
     # openHby default temp=True
-    with (habbing.openHby(name="bob", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as bobHby,
-            habbing.openHby(name="bam", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as bamHby,
-            habbing.openHby(name="wes", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as wesHby,
-            habbing.openHby(name="wan", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as wanHby,
-            habbing.openHby(name="wil", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as wilHby):
+    with (openHby(name="bob", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as bobHby,
+            openHby(name="bam", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as bamHby,
+            openHby(name="wes", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as wesHby,
+            openHby(name="wan", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as wanHby,
+            openHby(name="wil", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as wilHby):
 
         # setup Wes's habitat nontrans
         wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False,)
@@ -358,64 +359,64 @@ def test_stale_event_receipts():
                                 wits=[wesHab.pre, wilHab.pre, wanHab.pre], toad=2,)
         assert bobHab.pre == 'EEM3_Vvu1R__sWolUiPQ8Mk97GQ1xsGbC9kqEfsFL1aO'
 
-        bamKvy = eventing.Kevery(db=bamHby.db, lax=False, local=False)
+        bamKvy = Kevery(db=bamHby.db, lax=False, local=False)
 
         # Pass incept to witnesses, receipted event to bam
         bobIcp = bobHab.makeOwnEvent(sn=0)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=bamKvy, local=True)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=bamKvy, local=True)
         assert bobHab.pre not in bamKvy.kevers
 
         for witHab in awits:
-            kvy = eventing.Kevery(db=witHab.db, lax=False, local=False)
-            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=kvy, local=True)
+            kvy = Kevery(db=witHab.db, lax=False, local=False)
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=kvy, local=True)
             assert bobHab.pre in witHab.kevers
-            iserder = serdering.SerderKERI(raw=bytearray(bobIcp))
+            iserder = SerderKERI(raw=bytearray(bobIcp))
             msg = witHab.receipt(serder=iserder)
-            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         bamKvy.processEscrows()
         assert bobHab.pre in bamKvy.kevers
 
         # Rotate, pass to witnesses, send receipts from Wes and Wan to Bam
         rot0 = bobHab.rotate(toad=2)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(rot0), kvy=bamKvy, local=True)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(rot0), kvy=bamKvy, local=True)
 
         for witHab in [wesHab, wanHab]:
-            kvy = eventing.Kevery(db=witHab.db, lax=False, local=False)
-            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(rot0), kvy=kvy, local=True)
-            iserder = serdering.SerderKERI(raw=bytearray(rot0))
+            kvy = Kevery(db=witHab.db, lax=False, local=False)
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(rot0), kvy=kvy, local=True)
+            iserder = SerderKERI(raw=bytearray(rot0))
             msg = witHab.receipt(serder=iserder)
-            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         bamKvy.processEscrows()
         assert bamKvy.kevers[bobHab.pre].sn == 1
 
         # Validate that bam has 2 receipts in DB for event 1
-        ser = serdering.SerderKERI(raw=rot0)
+        ser = SerderKERI(raw=rot0)
         wigers = bamHby.db.wigs.get(keys=(ser.preb, ser.saidb))
         assert len(wigers) == 2
 
         # Rotate out Wil, pass to witnesses, receipted event to bam.
         rot1 = bobHab.rotate(cuts=[wilHab.pre], toad=2)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(rot1), kvy=bamKvy, local=True)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(rot1), kvy=bamKvy, local=True)
 
         for witHab in [wesHab, wanHab]:
-            kvy = eventing.Kevery(db=witHab.db)
-            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(rot1), kvy=kvy, local=True)
-            iserder = serdering.SerderKERI(raw=bytearray(rot1))
+            kvy = Kevery(db=witHab.db)
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(rot1), kvy=kvy, local=True)
+            iserder = SerderKERI(raw=bytearray(rot1))
             msg = witHab.receipt(serder=iserder)
-            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         bamKvy.processEscrows()
         assert bamKvy.kevers[bobHab.pre].sn == 2
         assert bamKvy.kevers[bobHab.pre].wits == [wesHab.pre, wanHab.pre]
 
         # Pass receipts from Wil for event 1 to Bam
-        kvy = eventing.Kevery(db=wilHab.db)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(rot0), kvy=kvy, local=True)
-        iserder = serdering.SerderKERI(raw=bytearray(rot0))
+        kvy = Kevery(db=wilHab.db)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(rot0), kvy=kvy, local=True)
+        iserder = SerderKERI(raw=bytearray(rot0))
         msg = wilHab.receipt(serder=iserder)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         # Validate that bam has 3 receipts in DB for event 1
         wigers = bamHby.db.wigs.get(keys=(ser.preb, ser.saidb))

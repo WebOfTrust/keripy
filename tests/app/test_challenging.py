@@ -4,18 +4,18 @@ tests.app.challenging module
 
 """
 
-from keri.app import habbing, challenging, signaling
-from keri.peer import exchanging
+from keri.app import ChallengeHandler, Signaler, openHab
+from keri.peer import exchange
 
 
 def test_challenge_handler():
-    with habbing.openHab(name="test", temp=True) as (hby, hab):
+    with openHab(name="test", temp=True) as (hby, hab):
 
-        signaler = signaling.Signaler()
-        handler = challenging.ChallengeHandler(db=hab.db, signaler=signaler)
+        signaler = Signaler()
+        handler = ChallengeHandler(db=hab.db, signaler=signaler)
 
         payload = dict(i=hab.pre, words=["the", "test", "words", "that", "are", "not", "sufficient"])
-        exn, _ = exchanging.exchange(route="/challenge/response", payload=payload, sender=hab.pre)
+        exn, _ = exchange(route="/challenge/response", payload=payload, sender=hab.pre)
 
         handler.handle(serder=exn)
 

@@ -7,13 +7,14 @@ import json
 
 import pysodium
 
-from keri import kering, Vrsn_1_0
-from keri.core import (Salter, Counter, coring, serdering,
-                       MtrDex, parsing, Codens)
+from keri import Vrsn_1_0
+from keri.core import (Salter, Counter, Texter,
+                       Diger, SerderKERI, Parser,
+                       MtrDex, Codens, MtrDex)
 
-from keri.app import habbing
+from keri.app import openHab, openHby
 
-from keri.peer import exchanging
+from keri.peer import Exchanger, nesting, exchange
 from keri.vdr import incept
 
 
@@ -22,7 +23,7 @@ def test_nesting():
     val = "-JAbccDefg"
     pathed = dict()
 
-    np = exchanging.nesting(paths, pathed, val)
+    np = nesting(paths, pathed, val)
     assert np == pathed
     assert pathed == {'a': '-JAbccDefg'}
 
@@ -30,7 +31,7 @@ def test_nesting():
     val = "-JAbccDefg"
     pathed = dict()
 
-    np = exchanging.nesting(paths, pathed, val)
+    np = nesting(paths, pathed, val)
     assert np == pathed
     assert pathed == {'a': {'b': '-JAbccDefg'}}
 
@@ -38,7 +39,7 @@ def test_nesting():
     val = "-JAbccDefg"
     pathed = dict()
 
-    np = exchanging.nesting(paths, pathed, val)
+    np = nesting(paths, pathed, val)
     assert np == pathed
     assert pathed == {'a': {'b': {'c': {'d': {'e': '-JAbccDefg'}}}}}
 
@@ -46,37 +47,37 @@ def test_nesting():
     val = "-JAbccDefg"
     pathed = dict()
 
-    np = exchanging.nesting(paths, pathed, val)
+    np = nesting(paths, pathed, val)
     assert np == val
     assert pathed == {}
 
 
 def test_essrs():
-    with habbing.openHab(name="sid", base="test", salt=b'0123456789abcdef') as (hby, hab), \
-            habbing.openHab(name="rec", base="test", salt=b'0123456789abcdef') as (recHby, recHab):
+    with openHab(name="sid", base="test", salt=b'0123456789abcdef') as (hby, hab), \
+            openHab(name="rec", base="test", salt=b'0123456789abcdef') as (recHby, recHab):
 
         ims = hab.makeOwnInception()
-        parsing.Parser(version=Vrsn_1_0).parse(ims=ims, kvy=recHby.kvy)
+        Parser(version=Vrsn_1_0).parse(ims=ims, kvy=recHby.kvy)
         # create the test message with essr attachment
         msg = dict(msg="This is a test message that must be secured", i=hab.pre)
         rkever = recHab.kever
         pubkey = pysodium.crypto_sign_pk_to_box_pk(rkever.verfers[0].raw)
         raw = pysodium.crypto_box_seal(json.dumps(msg).encode("utf-8"), pubkey)
 
-        texter = coring.Texter(raw=raw)
-        diger = coring.Diger(ser=raw, code=MtrDex.Blake3_256)
-        essr, _ = exchanging.exchange(route='/essr/req', sender=hab.pre, diger=diger,
+        texter = Texter(raw=raw)
+        diger = Diger(ser=raw, code=MtrDex.Blake3_256)
+        essr, _ = exchange(route='/essr/req', sender=hab.pre, diger=diger,
                                       modifiers=dict(src=hab.pre, dest=recHab.pre))
         ims = hab.endorse(serder=essr, pipelined=False)
         ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
-                                version=kering.Vrsn_1_0).qb64b)
+                                version=Vrsn_1_0).qb64b)
         ims.extend(texter.qb64b)
 
-        exc = exchanging.Exchanger(hby=recHby, handlers=[])
-        parsing.Parser(version=Vrsn_1_0).parse(ims=ims,
+        exc = Exchanger(hby=recHby, handlers=[])
+        Parser(version=Vrsn_1_0).parse(ims=ims,
                                kvy=recHby.kvy,
                                exc=exc,
-                               version=kering.Vrsn_1_0)  # parser does not support version2 count codes
+                               version=Vrsn_1_0)  # parser does not support version2 count codes
 
         # Pull the logged exn and verify the attributes digest matches the attachment
         serder = recHby.db.exns.get(keys=(essr.said,))
@@ -88,21 +89,21 @@ def test_essrs():
         assert json.loads(raw.decode("utf-8")) == msg
 
         # Test with invalid diger
-        diger = coring.Diger(qb64="EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o")
-        essr, _ = exchanging.exchange(route='/essr/req', sender=hab.pre, diger=diger,
+        diger = Diger(qb64="EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o")
+        essr, _ = exchange(route='/essr/req', sender=hab.pre, diger=diger,
                                       modifiers=dict(src=hab.pre, dest=recHab.pre))
         ims = hab.endorse(serder=essr, pipelined=False)
         ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
-                                version=kering.Vrsn_1_0).qb64b)
+                                version=Vrsn_1_0).qb64b)
         ims.extend(texter[0].qb64b)
 
-        parsing.Parser(version=Vrsn_1_0).parse(ims=ims, kvy=recHby.kvy, exc=exc)
+        Parser(version=Vrsn_1_0).parse(ims=ims, kvy=recHby.kvy, exc=exc)
         assert recHby.db.exns.get(keys=(essr.said,)) is None
 
 
 
 def test_hab_exchange(mockHelpingNowUTC):
-    with habbing.openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
         hab = hby.makeHab(name="test")
         assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
 
@@ -112,7 +113,7 @@ def test_hab_exchange(mockHelpingNowUTC):
                         toad=0,
                         cnfg=[],
                         nonce=nonce,
-                        code=coring.MtrDex.Blake3_256)
+                        code=MtrDex.Blake3_256)
         seal = dict(i=regser.pre, s=regser.sn, d=regser.said)
         msg = hab.interact(data=[seal])
 
@@ -145,7 +146,7 @@ def test_hab_exchange(mockHelpingNowUTC):
                        b'-AABAADprTWp4llIzVzBM7VVsDOgXVJdoiVXutsWJEbDJ2pMdjXjNi1xKALBSZ1Z'
                        b'gRoUsD--LgUQkXIdjLoQ19XPvJMJ')
 
-        exn = serdering.SerderKERI(raw=msg)
+        exn = SerderKERI(raw=msg)
 
         hab2 = hby.makeHab(name="respondant")
         regser = incept(hab2.pre,
@@ -153,7 +154,7 @@ def test_hab_exchange(mockHelpingNowUTC):
                         toad=0,
                         cnfg=[],
                         nonce=nonce,
-                        code=coring.MtrDex.Blake3_256)
+                        code=MtrDex.Blake3_256)
 
         seal = dict(i=regser.pre, s=regser.sn, d=regser.said)
         msg = hab2.interact(data=[seal])

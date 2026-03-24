@@ -32,13 +32,13 @@ Resultage = namedtuple("Resultage", 'resolved failed')  # stream cold start stat
 Result = Resultage(resolved='resolved', failed='failed')
 
 
-def loadEnds(app, *, hby, prefix=""):
+def loadOobiingEnds(app, *, hby, prefix=""):
     oobiEnd = OobiResource(hby=hby)
     app.add_route(prefix + "/oobi", oobiEnd)
     return []
 
 
-def loadHandlers(hby, exc, notifier):
+def loadOobiingHandlers(hby, exc, notifier):
     """ Load handlers for the peer-to-peer delegation protocols
 
     Parameters:

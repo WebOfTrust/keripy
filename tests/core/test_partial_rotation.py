@@ -7,7 +7,7 @@ import pytest
 
 from keri import MissingSignatureError
 
-from keri.core import Salter, coring, eventing
+from keri.core import Salter, Diger, Kever, MtrDex, incept, rotate
 
 from keri.db import openDB
 
@@ -21,33 +21,33 @@ def test_partial_rotation():
     # partial rotation with numeric thresholds
     with openDB(name="controller") as db:
 
-        ndigs = [coring.Diger(ser=signers[1].verfer.qb64b).qb64]
+        ndigs = [Diger(ser=signers[1].verfer.qb64b).qb64]
 
         # raises ValueError because nsith 2 is invalud for 1 nkey
         with pytest.raises(ValueError):
-            _ = eventing.incept(keys=[signers[0].verfer.qb64],
+            _ = incept(keys=[signers[0].verfer.qb64],
                                 nsith='2',
                                 ndigs=ndigs,
-                                code=coring.MtrDex.Blake3_256)
+                                code=MtrDex.Blake3_256)
 
         # 5 keys for the next rotation
         ndigs = [
-            coring.Diger(ser=signers[1].verfer.qb64b).qb64,
-            coring.Diger(ser=signers[2].verfer.qb64b).qb64,
-            coring.Diger(ser=signers[3].verfer.qb64b).qb64,
-            coring.Diger(ser=signers[4].verfer.qb64b).qb64,
-            coring.Diger(ser=signers[5].verfer.qb64b).qb64,
+            Diger(ser=signers[1].verfer.qb64b).qb64,
+            Diger(ser=signers[2].verfer.qb64b).qb64,
+            Diger(ser=signers[3].verfer.qb64b).qb64,
+            Diger(ser=signers[4].verfer.qb64b).qb64,
+            Diger(ser=signers[5].verfer.qb64b).qb64,
         ]
 
-        serder = eventing.incept(keys=[signers[0].verfer.qb64],
+        serder = incept(keys=[signers[0].verfer.qb64],
                                  nsith='2',  # next signed event must satisfy this along with the new `kt`
                                  ndigs=ndigs,
-                                 code=coring.MtrDex.Blake3_256)
+                                 code=MtrDex.Blake3_256)
 
         siger = signers[0].sign(serder.raw, index=0)  # return siger
 
         # create key event verifier state
-        kever = eventing.Kever(serder=serder, sigers=[siger], db=db)
+        kever = Kever(serder=serder, sigers=[siger], db=db)
 
         assert kever.prefixer.qb64 == 'ELOoOFim_fwYEySZxhcg0r1XTXzFACzasBR3WvglN8Dn'
 
@@ -58,13 +58,13 @@ def test_partial_rotation():
             signers[5].verfer.qb64
         ]
         ndigs = [
-            coring.Diger(ser=signers[6].verfer.qb64b).qb64,
-            coring.Diger(ser=signers[7].verfer.qb64b).qb64,
-            coring.Diger(ser=signers[8].verfer.qb64b).qb64,
-            coring.Diger(ser=signers[9].verfer.qb64b).qb64,
-            coring.Diger(ser=signers[10].verfer.qb64b).qb64
+            Diger(ser=signers[6].verfer.qb64b).qb64,
+            Diger(ser=signers[7].verfer.qb64b).qb64,
+            Diger(ser=signers[8].verfer.qb64b).qb64,
+            Diger(ser=signers[9].verfer.qb64b).qb64,
+            Diger(ser=signers[10].verfer.qb64b).qb64
         ]
-        rotser = eventing.rotate(pre=kever.prefixer.qb64,
+        rotser = rotate(pre=kever.prefixer.qb64,
                                  isith='3',
                                  keys=keys,
                                  dig=kever.serder.said,
@@ -93,13 +93,13 @@ def test_partial_rotation():
             signers[8].verfer.qb64
         ]
         ndigs = [
-            coring.Diger(ser=signers[11].verfer.qb64b).qb64,
-            coring.Diger(ser=signers[12].verfer.qb64b).qb64,
-            coring.Diger(ser=signers[13].verfer.qb64b).qb64,
-            coring.Diger(ser=signers[14].verfer.qb64b).qb64,
-            coring.Diger(ser=signers[15].verfer.qb64b).qb64
+            Diger(ser=signers[11].verfer.qb64b).qb64,
+            Diger(ser=signers[12].verfer.qb64b).qb64,
+            Diger(ser=signers[13].verfer.qb64b).qb64,
+            Diger(ser=signers[14].verfer.qb64b).qb64,
+            Diger(ser=signers[15].verfer.qb64b).qb64
         ]
-        rotser = eventing.rotate(pre=kever.prefixer.qb64,
+        rotser = rotate(pre=kever.prefixer.qb64,
                                  isith='3',
                                  keys=keys,
                                  dig=kever.serder.said,
@@ -121,22 +121,22 @@ def test_partial_rotation():
 
         # 5 keys for the next rotation
         ndigs = [
-            coring.Diger(ser=signers[1].verfer.qb64b).qb64,
-            coring.Diger(ser=signers[2].verfer.qb64b).qb64,
-            coring.Diger(ser=signers[3].verfer.qb64b).qb64,
-            coring.Diger(ser=signers[4].verfer.qb64b).qb64,
-            coring.Diger(ser=signers[5].verfer.qb64b).qb64,
+            Diger(ser=signers[1].verfer.qb64b).qb64,
+            Diger(ser=signers[2].verfer.qb64b).qb64,
+            Diger(ser=signers[3].verfer.qb64b).qb64,
+            Diger(ser=signers[4].verfer.qb64b).qb64,
+            Diger(ser=signers[5].verfer.qb64b).qb64,
         ]
 
-        serder = eventing.incept(keys=[signers[0].verfer.qb64],
+        serder = incept(keys=[signers[0].verfer.qb64],
                                  nsith=["1/2", "1/2", "1/3", "1/3", "1/3"],
                                  ndigs=ndigs,
-                                 code=coring.MtrDex.Blake3_256)
+                                 code=MtrDex.Blake3_256)
 
         siger = signers[0].sign(serder.raw, index=0)  # return siger
 
         # create key event verifier state
-        kever = eventing.Kever(serder=serder, sigers=[siger], db=db)
+        kever = Kever(serder=serder, sigers=[siger], db=db)
 
         assert kever.prefixer.qb64 == 'EPdegTY8sPauiS2mT2F1r_NzzJpOD6CnqZqz7JF4mr9F'
 
@@ -147,13 +147,13 @@ def test_partial_rotation():
             signers[5].verfer.qb64
         ]
         ndigs = [
-            coring.Diger(ser=signers[11].verfer.qb64b).qb64,
-            coring.Diger(ser=signers[12].verfer.qb64b).qb64,
-            coring.Diger(ser=signers[13].verfer.qb64b).qb64,
-            coring.Diger(ser=signers[14].verfer.qb64b).qb64,
-            coring.Diger(ser=signers[15].verfer.qb64b).qb64
+            Diger(ser=signers[11].verfer.qb64b).qb64,
+            Diger(ser=signers[12].verfer.qb64b).qb64,
+            Diger(ser=signers[13].verfer.qb64b).qb64,
+            Diger(ser=signers[14].verfer.qb64b).qb64,
+            Diger(ser=signers[15].verfer.qb64b).qb64
         ]
-        rotser = eventing.rotate(pre=kever.prefixer.qb64,
+        rotser = rotate(pre=kever.prefixer.qb64,
                                  isith=["1/2", "1/2", "1/3"],
                                  keys=keys,
                                  dig=kever.serder.said,
@@ -181,7 +181,7 @@ def test_partial_rotation():
             signers[14].verfer.qb64,
         ]
         ndigs = []
-        rotser = eventing.rotate(pre=kever.prefixer.qb64,
+        rotser = rotate(pre=kever.prefixer.qb64,
                                  isith='2',
                                  keys=keys,
                                  dig=kever.serder.said,

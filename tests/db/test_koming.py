@@ -11,7 +11,8 @@ from dataclasses import dataclass, asdict
 import pytest
 
 from keri import Kinds
-from keri.db import dbing, koming
+from keri.db import (IoSetKomer, DupKomer, Komer,
+                     LMDBer, openLMDB)
 from keri.help import helping
 
 
@@ -43,13 +44,13 @@ def test_kom_happy_path():
     jim = helping.datify(Record, json.loads(bytes(jimser).decode("utf-8")))
     assert isinstance(jim, Record)
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        mydb = koming.Komer(db=db, klas=Record, subkey='records.')
-        assert isinstance(mydb, koming.Komer)
+        mydb = Komer(db=db, klas=Record, subkey='records.')
+        assert isinstance(mydb, Komer)
         assert not mydb.sdb.flags()["dupsort"]
 
         sue = Record(first="Susan",
@@ -157,13 +158,13 @@ def test_kom_get_item_iter():
     z = Stuff(a="Eat", b="White")
 
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        mydb = koming.Komer(db=db, klas=Stuff, subkey='recs.')
-        assert isinstance(mydb, koming.Komer)
+        mydb = Komer(db=db, klas=Stuff, subkey='recs.')
+        assert isinstance(mydb, Komer)
 
 
         mydb.put(keys=("a","1"), val=w)
@@ -230,8 +231,8 @@ def test_put_invalid_dataclass():
     class AnotherClass:
         age: int
 
-    with dbing.openLMDB() as db:
-        mydb = koming.Komer(db=db, klas=AnotherClass, subkey='records.')
+    with openLMDB() as db:
+        mydb = Komer(db=db, klas=AnotherClass, subkey='records.')
         sue = Record(first="Susan")
         keys = ("test_key", "0001")
 
@@ -251,13 +252,13 @@ def test_get_invalid_dataclass():
     class AnotherClass:
         age: int
 
-    with dbing.openLMDB() as db:
-        mydb = koming.Komer(db=db, klas=Record, subkey='records.')
+    with openLMDB() as db:
+        mydb = Komer(db=db, klas=Record, subkey='records.')
         sue = Record(first="Susan")
         keys = ("test_key", "0001")
         mydb.put(keys=keys, val=sue)
 
-        mydb = koming.Komer(db=db, klas=AnotherClass, subkey='records.')
+        mydb = Komer(db=db, klas=AnotherClass, subkey='records.')
         with pytest.raises(ValueError):
             mydb.get(keys)
 
@@ -270,8 +271,8 @@ def test_not_found_entity():
         def __iter__(self):
             return iter(asdict(self))
 
-    with dbing.openLMDB() as db:
-        mydb = koming.Komer(db=db, klas=Record, subkey='records.')
+    with openLMDB() as db:
+        mydb = Komer(db=db, klas=Record, subkey='records.')
         sue = Record(first="Susan")
         keys = ("test_key", "0001")
 
@@ -297,8 +298,8 @@ def test_serialization():
                  state="UT",
                  zip=84058)
 
-    with dbing.openLMDB() as db:
-        k = koming.Komer(db=db, klas=Record, subkey='records.')
+    with openLMDB() as db:
+        k = Komer(db=db, klas=Record, subkey='records.')
         srl = k._serializer(Kinds.mgpk)
 
         expected = b'\x86\xa5first\xa3Jim\xa4last\xa5Black\xa6street\xaf100 Main Street\xa4city\xa8Riverton\xa5state\xa2UT\xa3zip\xce\x00\x01HZ'
@@ -354,8 +355,8 @@ def test_custom_serialization():
                  state="UT",
                  zip=84058)
 
-    with dbing.openLMDB() as db:
-        mydb = koming.Komer(db=db, klas=Record, subkey='records.')
+    with openLMDB() as db:
+        mydb = Komer(db=db, klas=Record, subkey='records.')
 
         keys = ("test_key", "0001")
         mydb.put(keys=keys, val=jim)
@@ -386,8 +387,8 @@ def test_deserialization():
     cbor = b'\xa6efirstcJimdlasteBlackfstreeto100 Main StreetdcityhRivertonestatebUTczip\x1a\x00\x01HZ'
     json = b'{"first": "Jim", "last": "Black", "street": "100 Main Street", "city": "Riverton", "state": "UT", "zip": 84058}'
 
-    with dbing.openLMDB() as db:
-        k = koming.Komer(db=db, klas=Record, subkey='records.')
+    with openLMDB() as db:
+        k = Komer(db=db, klas=Record, subkey='records.')
 
         desrl = k._deserializer(Kinds.mgpk)
         actual = helping.datify(Record, desrl(msgp))
@@ -509,18 +510,18 @@ def test_dup_komer():
     eids = [wit0, wit1, wit2]
     locs = [wit0loc, wit1loc, wit2loc]
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        endDB = koming.DupKomer(db=db, klas=Endpoint, subkey='ends.')
-        assert isinstance(endDB, koming.DupKomer)
+        endDB = DupKomer(db=db, klas=Endpoint, subkey='ends.')
+        assert isinstance(endDB, DupKomer)
         assert endDB.sdb.flags()["dupsort"]
         assert endDB.sep == endDB.Sep == "."
 
-        locDB = koming.Komer(db=db, klas=Location, subkey='locs.')
-        assert isinstance(locDB, koming.Komer)
+        locDB = Komer(db=db, klas=Location, subkey='locs.')
+        assert isinstance(locDB, Komer)
         assert not locDB.sdb.flags()["dupsort"]
         assert locDB.sep == locDB.Sep == "."
 
@@ -693,18 +694,18 @@ def test_ioset_komer():
     eids = [wit0, wit1, wit2]
     locs = [wit0loc, wit1loc, wit2loc]
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        endDB = koming.IoSetKomer(db=db, klas=Endpoint, subkey='ends.')
-        assert isinstance(endDB, koming.IoSetKomer)
+        endDB = IoSetKomer(db=db, klas=Endpoint, subkey='ends.')
+        assert isinstance(endDB, IoSetKomer)
         assert not endDB.sdb.flags()["dupsort"]
         assert endDB.sep == endDB.Sep == "."
 
-        locDB = koming.Komer(db=db, klas=Location, subkey='locs.')
-        assert isinstance(locDB, koming.Komer)
+        locDB = Komer(db=db, klas=Location, subkey='locs.')
+        assert isinstance(locDB, Komer)
         assert not locDB.sdb.flags()["dupsort"]
         assert locDB.sep == locDB.Sep == "."
 

@@ -3,27 +3,29 @@
 tests.db.escrowing module
 
 """
-from keri import kering
+from keri.kering import OutOfOrderError, Kinds
 
-from keri.core import Salter, coring, eventing, serdering, SealEvent
+from keri.core import (Salter, Seqner, Diger, Saider, Dater,
+                       SerderKERI, SealEvent, Saids, reply)
 
-from keri.app import habbing
-from keri.db import escrowing, dbing, subing
+from keri.app import openHby, openHab
+from keri.db import (Broker, CesrIoSetSuber, CesrSuber,
+                     SerderSuber, CatCesrIoSetSuber, openLMDB)
 from keri.help import helping
-from keri.vdr import credentialing, RegStateRecord
+from keri.vdr import RegStateRecord, Regery
 
 
 def test_broker():
-    with dbing.openLMDB() as db:
-        bork = escrowing.Broker(db=db, subkey="test")
+    with openLMDB() as db:
+        bork = Broker(db=db, subkey="test")
 
-        assert isinstance(bork.escrowdb, subing.CesrIoSetSuber)
-        assert isinstance(bork.daterdb, subing.CesrSuber)
-        assert isinstance(bork.serderdb, subing.SerderSuber)
-        assert isinstance(bork.tigerdb, subing.CesrIoSetSuber)
-        assert isinstance(bork.cigardb, subing.CatCesrIoSetSuber)
-        assert isinstance(bork.escrowdb, subing.CesrIoSetSuber)
-        assert isinstance(bork.saiderdb, subing.CesrSuber)
+        assert isinstance(bork.escrowdb, CesrIoSetSuber)
+        assert isinstance(bork.daterdb, CesrSuber)
+        assert isinstance(bork.serderdb, SerderSuber)
+        assert isinstance(bork.tigerdb, CesrIoSetSuber)
+        assert isinstance(bork.cigardb, CatCesrIoSetSuber)
+        assert isinstance(bork.escrowdb, CesrIoSetSuber)
+
 
 
 def test_broker_nontrans():
@@ -32,25 +34,25 @@ def test_broker_nontrans():
     salt = salter.qb64
     assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
 
-    with dbing.openLMDB() as brokerdb, \
-         habbing.openHby(name="wes", base="test", salt=salt) as wesHby, \
-         habbing.openHab(name="pal") as (hby, hab):
+    with openLMDB() as brokerdb, \
+         openHby(name="wes", base="test", salt=salt) as wesHby, \
+         openHab(name="pal") as (hby, hab):
 
-        regery = credentialing.Regery(hby=hby, name=hab.name, temp=True)
+        regery = Regery(hby=hby, name=hab.name, temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name=hab.name)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         hab.interact(data=[rseal])
-        seqner = coring.Seqner(sn=hab.kever.sn)
+        seqner = Seqner(sn=hab.kever.sn)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
                          seqner=seqner,
-                         saider=coring.Diger(qb64=hab.kever.serder.said))
+                         saider=Diger(qb64=hab.kever.serder.said))
         regery.processEscrows()
         rsr = issuer.tever.state()  # registry state RegStateRecord
-        rpy = eventing.reply(route="/tsn/registry/" + issuer.regk, data=rsr._asdict())
+        rpy = reply(route="/tsn/registry/" + issuer.regk, data=rsr._asdict())
 
         wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False)
-        bork = escrowing.Broker(db=brokerdb, subkey="test")
+        bork = Broker(db=brokerdb, subkey="test")
 
         dts = helping.nowIso8601()
         typ = "test"
@@ -59,12 +61,12 @@ def test_broker_nontrans():
         pre = ked['a']['i']
         aid = "EBWY7LU2xwp0d4IhCvz1etbuv2iwcgBEigKJWnd-0Whs"
 
-        serder = serdering.SerderKERI(sad=ked)
+        serder = SerderKERI(sad=ked)
         rrsr = RegStateRecord._fromdict(ked["a"])  # reply RegStateRecord
-        #tserder = serdering.SerderKERI(sad=ked["a"])
+        #tserder = SerderKERI(sad=ked["a"])
 
-        saider, _ = coring.Saider.saidify(sad=ked, kind=coring.Kinds.json, label=coring.Saids.d)
-        dater = coring.Dater(dts=dts)
+        saider, _ = Saider.saidify(sad=ked, kind=Kinds.json, label=Saids.d)
+        dater = Dater(dts=dts)
 
         cigars = wesHab.sign(ser=serder.raw,
                              verfers=wesHab.kever.verfers,
@@ -92,7 +94,7 @@ def test_broker_nontrans():
             #tser = coring.Serder(ked=kwargs["serder"].ked["a"])
             bork.updateReply(aid=aid, serder=serder, diger=kwargs["diger"], dater=dater)
 
-        bork.processEscrowState(typ=typ, processReply=process, extype=kering.OutOfOrderError)
+        bork.processEscrowState(typ=typ, processReply=process, extype=OutOfOrderError)
 
         assert bork.escrowdb.get(keys=("test", saider.qb64, aid)) == []
         assert bork.serderdb.get(keys=(saider.qb64,)).raw == serder.raw
@@ -101,43 +103,43 @@ def test_broker_nontrans():
 
 def test_broker_trans():
 
-    with dbing.openLMDB() as brokerdb, \
-         habbing.openHby(name="bob", base="test") as bobHby, \
-         habbing.openHab(name="pal") as (hby, hab):
+    with openLMDB() as brokerdb, \
+         openHby(name="bob", base="test") as bobHby, \
+         openHab(name="pal") as (hby, hab):
 
-        regery = credentialing.Regery(hby=hby, name=hab.name, temp=True)
+        regery = Regery(hby=hby, name=hab.name, temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name=hab.name)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         hab.interact(data=[rseal])
-        seqner = coring.Seqner(sn=hab.kever.sn)
+        seqner = Seqner(sn=hab.kever.sn)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
                          seqner=seqner,
-                         saider=coring.Diger(qb64=hab.kever.serder.said))
+                         saider=Diger(qb64=hab.kever.serder.said))
         regery.processEscrows()
         rsr = issuer.tever.state() # registry state RegStateRecord
-        rpy = eventing.reply(route="/tsn/registry/" + issuer.regk, data=rsr._asdict())
+        rpy = reply(route="/tsn/registry/" + issuer.regk, data=rsr._asdict())
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True)
 
-        bork = escrowing.Broker(db=brokerdb, subkey="test")
+        bork = Broker(db=brokerdb, subkey="test")
         dts = helping.nowIso8601()
         typ = "test"
         ked = rpy.ked
 
         pre = issuer.regk
         aid = "EwWY7LU2xwp0d4IhCvz1etbuv2iwcgBEigKJWnd-0Whs"
-        serder = serdering.SerderKERI(sad=ked)
+        serder = SerderKERI(sad=ked)
         rrsr = RegStateRecord._fromdict(ked["a"])  # reply RegStateRecord
-        #tserder = serdering.SerderKERI(sad=ked["a"])
-        saider, _ = coring.Saider.saidify(sad=ked, kind=coring.Kinds.json, label=coring.Saids.d)
-        dater = coring.Dater(dts=dts)
+        #tserder = SerderKERI(sad=ked["a"])
+        saider, _ = Saider.saidify(sad=ked, kind=Kinds.json, label=Saids.d)
+        dater = Dater(dts=dts)
 
         sigers = bobHab.sign(ser=serder.raw,
                              verfers=bobHab.kever.verfers,
                              indexed=True)
 
-        tsgs = [(bobHab.kever.prefixer, coring.Seqner(sn=bobHab.kever.lastEst.s),
-                coring.Diger(qb64=bobHab.kever.lastEst.d), sigers)]
+        tsgs = [(bobHab.kever.prefixer, Seqner(sn=bobHab.kever.lastEst.s),
+                Diger(qb64=bobHab.kever.lastEst.d), sigers)]
         bork.escrowStateNotice(typ=typ,
                                pre=saider.qb64,
                                aid=aid,
@@ -163,7 +165,7 @@ def test_broker_trans():
             #tser = coring.Serder(ked=kwargs["serder"].ked["a"])
             bork.updateReply(aid=aid, serder=serder, diger=kwargs["diger"], dater=dater)
 
-        bork.processEscrowState(typ=typ, processReply=process, extype=kering.OutOfOrderError)
+        bork.processEscrowState(typ=typ, processReply=process, extype=OutOfOrderError)
 
         assert bork.escrowdb.get(keys=("test", saider.qb64, aid)) == []
         assert bork.serderdb.get(keys=(saider.qb64,)).raw == serder.raw
