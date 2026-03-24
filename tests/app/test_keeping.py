@@ -16,10 +16,16 @@ import lmdb
 
 from hio.base import doing
 
-from keri import kering, core
+from keri import core
+from keri.kering import ConversionError
 from keri.help import helping
-from keri.core import coring, indexing, IdrDex
-from keri.app import keeping
+from keri.core import (Prefixer, Signer, Cigar, Siger,
+                       Salter, Decrypter, Encrypter,
+                       Tiers, IdrDex, NonTransDex, MtrDex)
+from keri.app import (PubLot, PrePrm, PreSit, PubSet,
+                      Keeper, Creator, RandyCreator,
+                      SaltyCreator, Creatory, Manager,
+                      KeeperDoer, Algos, riKey, openKS)
 
 
 def test_dataclasses():
@@ -31,8 +37,8 @@ def test_dataclasses():
     pri = b'AAOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4M' # b'AaOa6eOCJQcgEozYb1GgV9zE2yPgBXiP6h_J2cZeCy4M'
     seed = '0ABxWJGkCkpDcHuVG4GM1KVw'
 
-    pl = keeping.PubLot()
-    assert isinstance(pl, keeping.PubLot)
+    pl = PubLot()
+    assert isinstance(pl, PubLot)
     assert pl.pubs == []
     assert pl.ridx == 0
     assert pl.kidx == 0
@@ -40,7 +46,7 @@ def test_dataclasses():
     assert asdict(pl) == dict(pubs=[], ridx=0, kidx=0, dt='')
 
 
-    pl = helping.datify(keeping.PubLot, dict(pubs=[], ridx=0, kidx=0, dt=''))
+    pl = helping.datify(PubLot, dict(pubs=[], ridx=0, kidx=0, dt=''))
     assert pl.pubs == []
     assert pl.ridx == 0
     assert pl.kidx == 0
@@ -49,51 +55,51 @@ def test_dataclasses():
 
     # dt = helping.nowIso8601()
     dt = '2020-11-16T22:30:34.812526+00:00'
-    pl = keeping.PubLot(pubs=[], ridx=1, kidx=3, dt=dt)
+    pl = PubLot(pubs=[], ridx=1, kidx=3, dt=dt)
     assert pl.pubs == []
     assert pl.ridx == 1
     assert pl.kidx == 3
     assert pl.dt == dt == '2020-11-16T22:30:34.812526+00:00'
 
-    pp = keeping.PrePrm()
-    assert isinstance(pp, keeping.PrePrm)
+    pp = PrePrm()
+    assert isinstance(pp, PrePrm)
     assert pp.pidx == 0
-    assert pp.algo == keeping.Algos.salty == 'salty'
+    assert pp.algo == Algos.salty == 'salty'
     assert pp.stem == ''
     assert pp.salt == ''
     assert pp.tier == ''
     assert asdict(pp) == dict(pidx=0,
-                              algo=keeping.Algos.salty,
+                              algo=Algos.salty,
                               salt='',
                               stem='',
                               tier='',
                               )
-    pp = helping.datify(keeping.PrePrm, dict(pidx=0,
-                                             algo=keeping.Algos.salty,
+    pp = helping.datify(PrePrm, dict(pidx=0,
+                                             algo=Algos.salty,
                                              salt='',
                                              stem='',
                                              tier='',
                                           ))
 
-    assert isinstance(pp, keeping.PrePrm)
+    assert isinstance(pp, PrePrm)
     assert pp.pidx == 0
-    assert pp.algo == keeping.Algos.salty == 'salty'
+    assert pp.algo == Algos.salty == 'salty'
     assert pp.stem == ''
     assert pp.salt == ''
     assert pp.tier == ''
 
-    pp = keeping.PrePrm(pidx=1, algo=keeping.Algos.randy)
+    pp = PrePrm(pidx=1, algo=Algos.randy)
     assert pp.pidx == 1
-    assert pp.algo == keeping.Algos.randy
+    assert pp.algo == Algos.randy
     assert pp.salt == ''
     assert pp.stem == ''
     assert pp.tier == ''
 
-    ps = keeping.PreSit()
-    assert isinstance(ps, keeping.PreSit)
-    assert isinstance(ps.old, keeping.PubLot)
-    assert isinstance(ps.new, keeping.PubLot)
-    assert isinstance(ps.nxt, keeping.PubLot)
+    ps = PreSit()
+    assert isinstance(ps, PreSit)
+    assert isinstance(ps.old, PubLot)
+    assert isinstance(ps.new, PubLot)
+    assert isinstance(ps.nxt, PubLot)
     assert ps.old.pubs == []
     assert ps.old.ridx ==  0
     assert ps.old.kidx == 0
@@ -109,16 +115,16 @@ def test_dataclasses():
     assert asdict(ps) == {'old': {'pubs': [], 'ridx': 0, 'kidx': 0, 'dt': ''},
                           'new': {'pubs': [], 'ridx': 0, 'kidx': 0, 'dt': ''},
                           'nxt': {'pubs': [], 'ridx': 0, 'kidx': 0, 'dt': ''}}
-    ps = helping.datify(keeping.PreSit, dict(
+    ps = helping.datify(PreSit, dict(
                                              old=dict(pubs=[], ridx=0, kidx=0, dt=''),
                                              new=dict(pubs=[], ridx=0, kidx=0, dt=''),
                                              nxt=dict(pubs=[], ridx=0, kidx=0, dt=''),
                                           ))
 
-    assert isinstance(ps, keeping.PreSit)
-    assert isinstance(ps.old, keeping.PubLot)
-    assert isinstance(ps.new, keeping.PubLot)
-    assert isinstance(ps.nxt, keeping.PubLot)
+    assert isinstance(ps, PreSit)
+    assert isinstance(ps.old, PubLot)
+    assert isinstance(ps.new, PubLot)
+    assert isinstance(ps.nxt, PubLot)
     assert ps.old.pubs == []
     assert ps.old.ridx ==  0
     assert ps.old.kidx == 0
@@ -132,11 +138,11 @@ def test_dataclasses():
     assert ps.nxt.kidx == 0
     assert ps.nxt.dt == ''
 
-    old = keeping.PubLot(ridx=0, kidx=0)
-    new = keeping.PubLot(ridx=1, kidx=3)
-    nxt = keeping.PubLot(ridx=2, kidx=6)
+    old = PubLot(ridx=0, kidx=0)
+    new = PubLot(ridx=1, kidx=3)
+    nxt = PubLot(ridx=2, kidx=6)
 
-    ps = keeping.PreSit(old=old, new=new, nxt=nxt)
+    ps = PreSit(old=old, new=new, nxt=nxt)
     assert ps.old.ridx == 0
     assert ps.old.kidx == 0
     assert ps.new.ridx == 1
@@ -144,11 +150,11 @@ def test_dataclasses():
     assert ps.nxt.ridx == 2
     assert ps.nxt.kidx == 6
 
-    pt = keeping.PubSet(pubs=[pre, pub])
+    pt = PubSet(pubs=[pre, pub])
     assert pt.pubs == [pre, pub]
     assert asdict(pt) == {"pubs": [pre, pub],}
-    ptd = helping.datify(keeping.PubSet, {"pubs": [pre, pub],})
-    assert isinstance(ptd, keeping.PubSet)
+    ptd = helping.datify(PubSet, {"pubs": [pre, pub],})
+    assert isinstance(ptd, PubSet)
 
 
     """End Test"""
@@ -162,12 +168,12 @@ def test_key_funcs():
     preb = pre.encode("utf-8")
     ri = 3
 
-    assert keeping.riKey(pre, ri) == (b'BAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
+    assert riKey(pre, ri) == (b'BAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'
                                       b'.00000000000000000000000000000003')
-    assert keeping.riKey(preb, ri) == keeping.riKey(pre, ri)
+    assert riKey(preb, ri) == riKey(pre, ri)
 
     with pytest.raises(TypeError):
-        keeping.riKey(pre, sn='3')
+        riKey(pre, sn='3')
 
     """Done Test"""
 
@@ -177,8 +183,8 @@ def test_openkeeper():
     test contextmanager decorator for test Keeper databases
     """
     tempDirPath = os.path.join(os.path.sep, "tmp") if platform.system() == "Darwin" else tempfile.gettempdir()
-    with keeping.openKS() as ks:
-        assert isinstance(ks, keeping.Keeper)
+    with openKS() as ks:
+        assert isinstance(ks, Keeper)
         assert ks.name == "test"
         assert isinstance(ks.env, lmdb.Environment)
         assert ks.path.startswith(os.path.join(tempDirPath, "keri_ks_"))
@@ -190,8 +196,8 @@ def test_openkeeper():
     assert not os.path.exists(ks.path)
     assert not ks.opened
 
-    with keeping.openKS(name="blue") as ks:
-        assert isinstance(ks, keeping.Keeper)
+    with openKS(name="blue") as ks:
+        assert isinstance(ks, Keeper)
         assert ks.name == "blue"
         assert isinstance(ks.env, lmdb.Environment)
         assert ks.path.startswith(os.path.join(tempDirPath, "keri_ks_"))
@@ -203,14 +209,14 @@ def test_openkeeper():
     assert not os.path.exists(ks.path)
     assert not ks.opened
 
-    with keeping.openKS(name="red") as red, keeping.openKS(name="tan") as tan:
-        assert isinstance(red, keeping.Keeper)
+    with openKS(name="red") as red, openKS(name="tan") as tan:
+        assert isinstance(red, Keeper)
         assert red.name == "red"
         assert red.env.path() == red.path
         assert os.path.exists(red.path)
         assert red.opened
 
-        assert isinstance(tan, keeping.Keeper)
+        assert isinstance(tan, Keeper)
         assert tan.name == "tan"
         assert tan.env.path() == tan.path
         assert os.path.exists(tan.path)
@@ -243,8 +249,8 @@ def test_keeper():
     assert perm == 0o1700
 
     # set mode to sticky bit plus rwx only for owner/user
-    keeper = keeping.Keeper(reopen=True)
-    assert isinstance(keeper, keeping.Keeper)
+    keeper = Keeper(reopen=True)
+    assert isinstance(keeper, Keeper)
     assert keeper.name == "main"
     assert keeper.temp == False
     assert isinstance(keeper.env, lmdb.Environment)
@@ -267,8 +273,8 @@ def test_keeper():
     assert not keeper.opened
 
     # set to unrestricted mode
-    keeper = keeping.Keeper(perm=0o775, reopen=True)
-    assert isinstance(keeper, keeping.Keeper)
+    keeper = Keeper(perm=0o775, reopen=True)
+    assert isinstance(keeper, Keeper)
     assert keeper.name == "main"
     assert keeper.temp == False
     assert isinstance(keeper.env, lmdb.Environment)
@@ -289,8 +295,8 @@ def test_keeper():
     assert not keeper.opened
 
     # test not opened on init
-    keeper = keeping.Keeper(reopen=False)
-    assert isinstance(keeper, keeping.Keeper)
+    keeper = Keeper(reopen=False)
+    assert isinstance(keeper, Keeper)
     assert keeper.name == "main"
     assert keeper.temp == False
     assert keeper.opened == False
@@ -313,8 +319,8 @@ def test_keeper():
     assert not keeper.opened
 
     # Test using context manager
-    with keeping.openKS() as keeper:
-        assert isinstance(keeper, keeping.Keeper)
+    with openKS() as keeper:
+        assert isinstance(keeper, Keeper)
         assert keeper.name == "test"
         assert keeper.temp == True
         assert isinstance(keeper.env, lmdb.Environment)
@@ -369,8 +375,8 @@ def test_keeper():
         assert keeper.gbls.get(key) == None
 
         key = b'algo'
-        algoa = keeping.Algos.salty
-        algob = keeping.Algos.randy
+        algoa = Algos.salty
+        algob = Algos.randy
         assert keeper.gbls.get(key) == None
         assert keeper.gbls.rem(key) == False
         assert keeper.gbls.put(key, val=algoa) == True
@@ -397,20 +403,20 @@ def test_keeper():
         key = b'tier'
         assert keeper.gbls.get(key) == None
         assert keeper.gbls.rem(key) == False
-        assert keeper.gbls.put(key, val=core.Tiers.low) == True
-        assert keeper.gbls.get(key) == core.Tiers.low
-        assert keeper.gbls.put(key, val=core.Tiers.med) == False
-        assert keeper.gbls.get(key) == core.Tiers.low
-        assert keeper.gbls.pin(key, val=core.Tiers.med) == True
-        assert keeper.gbls.get(key) == core.Tiers.med
+        assert keeper.gbls.put(key, val=Tiers.low) == True
+        assert keeper.gbls.get(key) == Tiers.low
+        assert keeper.gbls.put(key, val=Tiers.med) == False
+        assert keeper.gbls.get(key) == Tiers.low
+        assert keeper.gbls.pin(key, val=Tiers.med) == True
+        assert keeper.gbls.get(key) == Tiers.med
         assert keeper.gbls.rem(key) == True
         assert keeper.gbls.get(key) == None
 
         #  test .pris sub db methods
         key = puba
-        signera = core.Signer(qb64b=pria)
+        signera = Signer(qb64b=pria)
         assert signera.qb64b == pria
-        signerb = core.Signer(qb64b=prib)
+        signerb = Signer(qb64b=prib)
         assert signerb.qb64b == prib
         assert keeper.pris.get(key) == None
         assert keeper.pris.rem(key) == False
@@ -425,8 +431,8 @@ def test_keeper():
 
         #  test .pres sub db methods
         key = puba
-        prefixera = coring.Prefixer(qb64=prea)
-        prefixerb = coring.Prefixer(qb64=preb)
+        prefixera = Prefixer(qb64=prea)
+        prefixerb = Prefixer(qb64=preb)
         assert keeper.pres.get(key) == None
         assert keeper.pres.rem(key) == False
         assert keeper.pres.put(key, val=prefixera) == True
@@ -440,13 +446,13 @@ def test_keeper():
 
         #  test .prms sub db methods
         key = prea
-        prma = keeping.PrePrm(pidx=0,
+        prma = PrePrm(pidx=0,
                               algo='salty',
                               salt=salta,
                               stem='',
                               tier='low')
 
-        prmb = keeping.PrePrm(pidx=1,
+        prmb = PrePrm(pidx=1,
                               algo='randy',
                               salt='',
                               stem='',
@@ -465,31 +471,31 @@ def test_keeper():
 
         #  test .sits sub db methods with pubs
         key = prea
-        sita = keeping.PreSit(
-                               old=keeping.PubLot(pubs=[],
+        sita = PreSit(
+                               old=PubLot(pubs=[],
                                                   ridx=0,
                                                   kidx=0,
                                                   dt=''),
-                               new=keeping.PubLot(pubs=[puba.decode("utf-8")],
+                               new=PubLot(pubs=[puba.decode("utf-8")],
                                                   ridx=1,
                                                   kidx=1,
                                                   dt=helping.nowIso8601()),
-                               nxt=keeping.PubLot(pubs=[pubb.decode("utf-8")],
+                               nxt=PubLot(pubs=[pubb.decode("utf-8")],
                                                   ridx=2,
                                                   kidx=2,
                                                   dt=helping.nowIso8601()),
                              )
 
-        sitb = keeping.PreSit(
-                               old=keeping.PubLot(pubs=[puba.decode("utf-8")],
+        sitb = PreSit(
+                               old=PubLot(pubs=[puba.decode("utf-8")],
                                                   ridx=0,
                                                   kidx=0,
                                                   dt=helping.nowIso8601()),
-                               new=keeping.PubLot(pubs=[puba.decode("utf-8")],
+                               new=PubLot(pubs=[puba.decode("utf-8")],
                                                   ridx=1,
                                                   kidx=1,
                                                   dt=helping.nowIso8601()),
-                               nxt=keeping.PubLot(pubs=[pubb.decode("utf-8")],
+                               nxt=PubLot(pubs=[pubb.decode("utf-8")],
                                                   ridx=2,
                                                   kidx=2,
                                                   dt=helping.nowIso8601()),
@@ -507,11 +513,11 @@ def test_keeper():
         assert keeper.sits.get(key) == None
 
         #  test .pubs sub db methods
-        key0 = keeping.riKey(prea, 0)
+        key0 = riKey(prea, 0)
         pubs1 = [puba.decode("utf-8"), pubb.decode("utf-8")]
         pubs2 = [pubc.decode("utf-8")]
-        pt1 = keeping.PubSet(pubs=pubs1)
-        pt2 = keeping.PubSet(pubs=pubs2)
+        pt1 = PubSet(pubs=pubs1)
+        pt2 = PubSet(pubs=pubs2)
 
         assert keeper.pubs.get(key0) == None
         assert keeper.pubs.rem(key0) == False
@@ -533,21 +539,21 @@ def test_keeperdoer():
     """
     KeeperDoer
     """
-    keep0 = keeping.Keeper(name='test0', temp=True, reopen=False)
+    keep0 = Keeper(name='test0', temp=True, reopen=False)
     assert keep0.opened == False
     assert keep0.path == None
     assert keep0.env == None
 
-    kpDoer0 = keeping.KeeperDoer(keeper=keep0)
+    kpDoer0 = KeeperDoer(keeper=keep0)
     assert kpDoer0.keeper == keep0
     assert kpDoer0.keeper.opened == False
 
-    keep1 = keeping.Keeper(name='test1', temp=True, reopen=False)
+    keep1 = Keeper(name='test1', temp=True, reopen=False)
     assert keep1.opened == False
     assert keep1.path == None
     assert keep1.env == None
 
-    kpDoer1 = keeping.KeeperDoer(keeper=keep1)
+    kpDoer1 = KeeperDoer(keeper=keep1)
     assert kpDoer1.keeper == keep1
     assert kpDoer1.keeper.opened == False
 
@@ -593,95 +599,95 @@ def test_creator():
     """
     test Creator and Creatory classes
     """
-    creator = keeping.Creator()
-    assert isinstance(creator, keeping.Creator)
+    creator = Creator()
+    assert isinstance(creator, Creator)
     assert creator.create() == []
     assert creator.salt == ''
     assert creator.stem == ''
     assert creator.tier == ''
 
-    creator = keeping.RandyCreator()
-    assert isinstance(creator, keeping.RandyCreator)
-    assert isinstance(creator, keeping.Creator)
+    creator = RandyCreator()
+    assert isinstance(creator, RandyCreator)
+    assert isinstance(creator, Creator)
     assert creator.salt == ''
     assert creator.stem == ''
     assert creator.tier == ''
     signers = creator.create()
     assert len(signers) == 1
     signer = signers[0]
-    assert isinstance(signer, core.Signer)
-    assert signer.code == coring.MtrDex.Ed25519_Seed
-    assert signer.verfer.code == coring.MtrDex.Ed25519
-    assert signer.verfer.code not in coring.NonTransDex
+    assert isinstance(signer, Signer)
+    assert signer.code == MtrDex.Ed25519_Seed
+    assert signer.verfer.code == MtrDex.Ed25519
+    assert signer.verfer.code not in NonTransDex
 
     signers = creator.create(count=2, transferable=False)
     assert len(signers) == 2
     for signer in signers:
-        assert isinstance(signer, core.Signer)
-        assert signer.code == coring.MtrDex.Ed25519_Seed
-        assert signer.verfer.code == coring.MtrDex.Ed25519N
-        assert signer.verfer.code in coring.NonTransDex
+        assert isinstance(signer, Signer)
+        assert signer.code == MtrDex.Ed25519_Seed
+        assert signer.verfer.code == MtrDex.Ed25519N
+        assert signer.verfer.code in NonTransDex
 
-    creator = keeping.SaltyCreator()
-    assert isinstance(creator, keeping.SaltyCreator)
-    assert isinstance(creator, keeping.Creator)
-    assert isinstance(creator.salter, core.Salter)
-    assert creator.salter.code == coring.MtrDex.Salt_128
+    creator = SaltyCreator()
+    assert isinstance(creator, SaltyCreator)
+    assert isinstance(creator, Creator)
+    assert isinstance(creator.salter, Salter)
+    assert creator.salter.code == MtrDex.Salt_128
     assert creator.salt == creator.salter.qb64
     assert creator.stem == ''
     assert creator.tier == creator.salter.tier
     signers = creator.create()
     assert len(signers) == 1
     signer = signers[0]
-    assert isinstance(signer, core.Signer)
-    assert signer.code == coring.MtrDex.Ed25519_Seed
-    assert signer.verfer.code == coring.MtrDex.Ed25519
-    assert signer.verfer.code not in coring.NonTransDex
+    assert isinstance(signer, Signer)
+    assert signer.code == MtrDex.Ed25519_Seed
+    assert signer.verfer.code == MtrDex.Ed25519
+    assert signer.verfer.code not in NonTransDex
 
     signers = creator.create(count=2, transferable=False)
     assert len(signers) == 2
     for signer in signers:
-        assert isinstance(signer, core.Signer)
-        assert signer.code == coring.MtrDex.Ed25519_Seed
-        assert signer.verfer.code == coring.MtrDex.Ed25519N
-        assert signer.verfer.code in coring.NonTransDex
+        assert isinstance(signer, Signer)
+        assert signer.code == MtrDex.Ed25519_Seed
+        assert signer.verfer.code == MtrDex.Ed25519N
+        assert signer.verfer.code in NonTransDex
 
     raw = b'0123456789abcdef'
-    salt = core.Salter(raw=raw).qb64
+    salt = Salter(raw=raw).qb64
     assert salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
-    creator = keeping.SaltyCreator(salt=salt)
-    assert isinstance(creator, keeping.SaltyCreator)
-    assert isinstance(creator, keeping.Creator)
-    assert isinstance(creator.salter, core.Salter)
-    assert creator.salter.code == coring.MtrDex.Salt_128
+    creator = SaltyCreator(salt=salt)
+    assert isinstance(creator, SaltyCreator)
+    assert isinstance(creator, Creator)
+    assert isinstance(creator.salter, Salter)
+    assert creator.salter.code == MtrDex.Salt_128
     assert creator.salter.raw == raw
     assert creator.salter.qb64 == salt
     signers = creator.create()
     assert len(signers) == 1
     signer = signers[0]
-    assert isinstance(signer, core.Signer)
-    assert signer.code == coring.MtrDex.Ed25519_Seed
+    assert isinstance(signer, Signer)
+    assert signer.code == MtrDex.Ed25519_Seed
     assert signer.qb64 == 'APMJe0lwOpwnX9PkvX1mh26vlzGYl6RWgWGclc8CAQJ9'
-    assert signer.verfer.code == coring.MtrDex.Ed25519
-    assert signer.verfer.code not in coring.NonTransDex
+    assert signer.verfer.code == MtrDex.Ed25519
+    assert signer.verfer.code not in NonTransDex
     assert signer.verfer.qb64 == 'DMZy6qbgnKzvCE594tQ4SPs6pIECXTYQBH7BkC4hNY3E'
 
     signers = creator.create(count=1, transferable=False, temp=True)
     assert len(signers) == 1
     signer = signers[0]
-    assert isinstance(signer, core.Signer)
-    assert signer.code == coring.MtrDex.Ed25519_Seed
+    assert isinstance(signer, Signer)
+    assert signer.code == MtrDex.Ed25519_Seed
     assert signer.qb64 == 'AMGrAM0noxLpRteO9mxGT-yzYSrKFwJMuNI4KlmSk26e'
-    assert signer.verfer.code == coring.MtrDex.Ed25519N
-    assert signer.verfer.code in coring.NonTransDex
+    assert signer.verfer.code == MtrDex.Ed25519N
+    assert signer.verfer.code in NonTransDex
     assert signer.verfer.qb64 == 'BFRtyHAjSuJaRX6TDPva35GN11VHAruaOXMc79ZYDKsT'
 
-    creator = keeping.Creatory(algo=keeping.Algos.salty).make(salt=salt)
-    assert isinstance(creator, keeping.SaltyCreator)
+    creator = Creatory(algo=Algos.salty).make(salt=salt)
+    assert isinstance(creator, SaltyCreator)
     assert creator.salter.qb64 == salt
 
-    creator = keeping.Creatory(algo=keeping.Algos.randy).make()
-    assert isinstance(creator, keeping.RandyCreator)
+    creator = Creatory(algo=Algos.randy).make()
+    assert isinstance(creator, RandyCreator)
     """End Test"""
 
 
@@ -689,9 +695,9 @@ def test_manager():
     """
     test Manager class
     """
-    manager = keeping.Manager()  # ks not provided so creates and opens ks
-    assert isinstance(manager, keeping.Manager)
-    assert isinstance(manager.ks, keeping.Keeper)
+    manager = Manager()  # ks not provided so creates and opens ks
+    assert isinstance(manager, Manager)
+    assert isinstance(manager.ks, Keeper)
     assert manager.ks.opened
     assert manager.inited
 
@@ -700,7 +706,7 @@ def test_manager():
     assert not manager.ks.opened
 
     raw = b'0123456789abcdef'
-    salt = core.Salter(raw=raw).qb64
+    salt = Salter(raw=raw).qb64
     stem = "red"
 
     assert salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
@@ -714,16 +720,16 @@ def test_manager():
                     b'ApYcYd1cppVg7Inh2YCslWKhUwh59TrPpIoqWxN2A38NCbTljvmBPBjSGIFDBNOv'
                     b'VjHpdZlty3Hgk6ilF8pVpAQ')
 
-    with keeping.openKS() as keeper:
+    with openKS() as keeper:
 
-        with pytest.raises(kering.ConversionError):
+        with pytest.raises(ConversionError):
             #test invalid qb64 of Salt
-            manager = keeping.Manager(ks=keeper, salt='0AzwMTIzNDU2Nzg5YWJjZGVm')
+            manager = Manager(ks=keeper, salt='0AzwMTIzNDU2Nzg5YWJjZGVm')
 
-        manager = keeping.Manager(ks=keeper, salt=salt)
+        manager = Manager(ks=keeper, salt=salt)
         assert manager.ks.opened
         assert manager.pidx == 0
-        assert manager.tier == core.Tiers.low
+        assert manager.tier == Tiers.low
         assert manager.salt == salt
         assert manager.aeid == ""
         assert manager.seed == ""
@@ -741,10 +747,10 @@ def test_manager():
 
         pp = manager.ks.prms.get(spre)
         assert pp.pidx == 0
-        assert pp.algo == keeping.Algos.salty
+        assert pp.algo == Algos.salty
         assert pp.salt == salt
         assert pp.stem == ''
-        assert pp.tier == core.Tiers.low
+        assert pp.tier == Tiers.low
 
         ps = manager.ks.sits.get(spre)
         assert ps.old.pubs == []
@@ -761,9 +767,9 @@ def test_manager():
         assert keys == ps.new.pubs
 
         # test .pubs db
-        pl = manager.ks.pubs.get(keeping.riKey(spre, ps.new.ridx))
+        pl = manager.ks.pubs.get(riKey(spre, ps.new.ridx))
         assert pl.pubs == ps.new.pubs
-        pl = manager.ks.pubs.get(keeping.riKey(spre, ps.nxt.ridx))
+        pl = manager.ks.pubs.get(riKey(spre, ps.nxt.ridx))
         assert pl.pubs == ps.nxt.pubs
 
         digs = [diger.qb64 for diger in  digers]
@@ -774,14 +780,14 @@ def test_manager():
         manager.move(old=oldspre, new=spre)
 
         # test .pubs db after move
-        pl = manager.ks.pubs.get(keeping.riKey(spre, ps.new.ridx))
+        pl = manager.ks.pubs.get(riKey(spre, ps.new.ridx))
         assert pl.pubs == ps.new.pubs
-        pl = manager.ks.pubs.get(keeping.riKey(spre, ps.nxt.ridx))
+        pl = manager.ks.pubs.get(riKey(spre, ps.nxt.ridx))
         assert pl.pubs == ps.nxt.pubs
 
         psigers = manager.sign(ser=ser, pubs=ps.new.pubs)
         for siger in psigers:
-            assert isinstance(siger, indexing.Siger)
+            assert isinstance(siger, Siger)
         vsigers = manager.sign(ser=ser, verfers=verfers)
         psigs = [siger.qb64 for siger in psigers]
         vsigs = [siger.qb64 for siger in vsigers]
@@ -794,7 +800,7 @@ def test_manager():
         # Test with pubs list
         psigers = manager.sign(ser=ser, pubs=ps.new.pubs, indices=indices)
         for siger in psigers:
-            assert isinstance(siger, indexing.Siger)
+            assert isinstance(siger, Siger)
         assert psigers[0].index == indices[0]
         psigs = [siger.qb64 for siger in psigers]
         assert psigs == ['ADAa70b4QnTOtGOsMqcezMtVzCFuRJHGeIMkWYHZ5ZxGIXM0XDVAzkYdCeadfPfzlKC6dkfiwuJ0IzLOElaanUgH']
@@ -802,14 +808,14 @@ def test_manager():
         # Test with verfers list
         vsigers = manager.sign(ser=ser, verfers=verfers, indices=indices)
         for siger in vsigers:
-            assert isinstance(siger, indexing.Siger)
+            assert isinstance(siger, Siger)
         assert psigers[0].index == indices[0]
         vsigs = [siger.qb64 for siger in vsigers]
         assert vsigs == psigs
 
         pcigars = manager.sign(ser=ser, pubs=ps.new.pubs, indexed=False)
         for cigar in pcigars:
-            assert isinstance(cigar, coring.Cigar)
+            assert isinstance(cigar, Cigar)
         vcigars = manager.sign(ser=ser, verfers=verfers, indexed=False)
         psigs = [cigar.qb64 for cigar in pcigars]
         vsigs = [cigar.qb64 for cigar in vcigars]
@@ -824,10 +830,10 @@ def test_manager():
 
         pp = manager.ks.prms.get(spre)
         assert pp.pidx == 0
-        assert pp.algo == keeping.Algos.salty
+        assert pp.algo == Algos.salty
         assert pp.salt == salt
         assert pp.stem == ''
-        assert pp.tier == core.Tiers.low
+        assert pp.tier == Tiers.low
 
         ps = manager.ks.sits.get(spre)
         assert ps.old.pubs == ['DFRtyHAjSuJaRX6TDPva35GN11VHAruaOXMc79ZYDKsT']
@@ -865,10 +871,10 @@ def test_manager():
             assert not manager.ks.pris.get(pub.encode("utf-8"))
 
         # test .pubs db
-        pl = manager.ks.pubs.get(keeping.riKey(spre, ps.new.ridx))
+        pl = manager.ks.pubs.get(riKey(spre, ps.new.ridx))
         assert pl.pubs == ps.new.pubs
 
-        pl = manager.ks.pubs.get(keeping.riKey(spre, ps.nxt.ridx))
+        pl = manager.ks.pubs.get(riKey(spre, ps.nxt.ridx))
         assert pl.pubs == ps.nxt.pubs
 
         # salty algorithm rotate to null
@@ -886,7 +892,7 @@ def test_manager():
         assert ex.value.args[0].startswith('Attempt to rotate nontransferable ')
 
         # randy algo incept
-        verfers, digers = manager.incept(algo=keeping.Algos.randy)
+        verfers, digers = manager.incept(algo=Algos.randy)
         assert len(verfers) == 1
         assert len(digers) == 1
         assert manager.pidx == 2
@@ -894,7 +900,7 @@ def test_manager():
 
         pp = manager.ks.prms.get(rpre)
         assert pp.pidx == 1
-        assert pp.algo == keeping.Algos.randy
+        assert pp.algo == Algos.randy
         assert pp.salt == ''
         assert pp.stem == ''
         assert pp.tier == ''
@@ -931,7 +937,7 @@ def test_manager():
         assert oldpubs == ps.old.pubs
 
         # randy algo incept with null nxt
-        verfers, digers = manager.incept(algo=keeping.Algos.randy, ncount=0)
+        verfers, digers = manager.incept(algo=Algos.randy, ncount=0)
         assert manager.pidx == 3
         rpre = verfers[0].qb64b
 
@@ -957,10 +963,10 @@ def test_manager():
 
         pp = manager.ks.prms.get(spre)
         assert pp.pidx == 3
-        assert pp.algo == keeping.Algos.salty
+        assert pp.algo == Algos.salty
         assert pp.salt == salt
         assert pp.stem == stem == 'red'
-        assert pp.tier == core.Tiers.low
+        assert pp.tier == Tiers.low
 
         ps = manager.ks.sits.get(spre)
         assert ps.old.pubs == []
@@ -999,14 +1005,14 @@ def test_manager():
                                          transferable=False, temp=True)
         wit0pre = verfers[0].qb64
         assert verfers[0].qb64 == 'BOTNI4RzN706NecNdqTlGEcMSTWiFUvesEqmxWR_op8n'
-        assert verfers[0].code == coring.MtrDex.Ed25519N
+        assert verfers[0].code == MtrDex.Ed25519N
         assert not digers
 
         verfers, digers = manager.incept(ncount=0, salt=salt, stem="wit1",
                                          transferable=False, temp=True)
         wit1pre = verfers[0].qb64
         assert verfers[0].qb64 == 'BAB_5xNXH4hoxDCtAHPFPDedZ6YwTo8mbdw_v0AOHOMt'
-        assert verfers[0].code == coring.MtrDex.Ed25519N
+        assert verfers[0].code == MtrDex.Ed25519N
         assert not digers
 
         assert wit0pre != wit1pre
@@ -1027,7 +1033,7 @@ def test_manager():
         assert manager.aeid == ''
         assert manager.pidx == 6
         assert manager.salt == salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
-        assert manager.tier == core.Tiers.low
+        assert manager.tier == Tiers.low
         iridx =  0
         ipre, verferies = manager.ingest(secrecies=secrecies)  # use default iridx
         assert ipre == 'DNsGfyf7JArtQgioD7BdVwRulGAsQk5REIKSTjFJqE0a'
@@ -1063,11 +1069,11 @@ def test_manager():
 
         # test .pubs db
         for i, pubs in enumerate(publicies):
-            pl = manager.ks.pubs.get(keeping.riKey(ipre, i))
+            pl = manager.ks.pubs.get(riKey(ipre, i))
             assert pl.pubs == pubs
 
         # nxt pubs
-        pl = manager.ks.pubs.get(keeping.riKey(ipre, i+1))
+        pl = manager.ks.pubs.get(riKey(ipre, i+1))
         assert pl
 
         # test replay as incept i.e. advance == False
@@ -1101,7 +1107,7 @@ def test_manager():
         assert manager.aeid == ''
         assert manager.pidx == 7
         assert manager.salt == salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
-        assert manager.tier == core.Tiers.low
+        assert manager.tier == Tiers.low
 
         iridx = 3
         ipre, verferies = manager.ingest(secrecies=secrecies, iridx=iridx)
@@ -1138,11 +1144,11 @@ def test_manager():
 
         # test .pubs db
         for i, pubs in enumerate(publicies):
-            pl = manager.ks.pubs.get(keeping.riKey(ipre, i))
+            pl = manager.ks.pubs.get(riKey(ipre, i))
             assert pl.pubs == pubs
 
         # nxt pubs
-        pl = manager.ks.pubs.get(keeping.riKey(ipre, i+1))
+        pl = manager.ks.pubs.get(riKey(ipre, i+1))
         assert pl
 
         # test replay as incept i.e. advance == False
@@ -1175,7 +1181,7 @@ def test_manager():
         assert manager.aeid == ''
         assert manager.pidx == 8
         assert manager.salt == salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
-        assert manager.tier == core.Tiers.low
+        assert manager.tier == Tiers.low
 
         iridx = 7
         ipre, verferies = manager.ingest(secrecies=secrecies, iridx=iridx)
@@ -1212,11 +1218,11 @@ def test_manager():
 
         # test .pubs db
         for i, pubs in enumerate(publicies):
-            pl = manager.ks.pubs.get(keeping.riKey(ipre, i))
+            pl = manager.ks.pubs.get(riKey(ipre, i))
             assert pl.pubs == pubs
 
         # nxt pubs
-        pl = manager.ks.pubs.get(keeping.riKey(ipre, i+1))
+        pl = manager.ks.pubs.get(riKey(ipre, i+1))
         assert pl
 
         # test replay as incept i.e. advance == False
@@ -1257,7 +1263,7 @@ def test_manager():
         assert manager.aeid == ''
         assert manager.pidx == 9
         assert manager.salt == salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
-        assert manager.tier == core.Tiers.low
+        assert manager.tier == Tiers.low
 
         iridx = 0
         ipre, verferies = manager.ingest(secrecies=secrecies, ncount=3)  # default iridx
@@ -1305,11 +1311,11 @@ def test_manager():
 
         # test .pubs db
         for i, pubs in enumerate(publicies):
-            pl = manager.ks.pubs.get(keeping.riKey(ipre, i))
+            pl = manager.ks.pubs.get(riKey(ipre, i))
             assert pl.pubs == pubs
 
         #  nxt pubs
-        pl = manager.ks.pubs.get(keeping.riKey(ipre, i+1))
+        pl = manager.ks.pubs.get(riKey(ipre, i+1))
         assert pl
 
         # test replay as incept i.e. advance == False
@@ -1351,7 +1357,7 @@ def test_manager():
         assert manager.aeid == ''
         assert manager.pidx == 10
         assert manager.salt == salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
-        assert manager.tier == core.Tiers.low
+        assert manager.tier == Tiers.low
         iridx = 1
         ipre, verferies = manager.ingest(secrecies=secrecies, iridx=iridx, ncount=3)
         assert ipre == 'DHc6ZvVpAjLq_digYYZMhq0OlEnnbCrgSvcxPJQY_oAE'
@@ -1398,11 +1404,11 @@ def test_manager():
 
         # test .pubs db
         for i, pubs in enumerate(publicies):
-            pl = manager.ks.pubs.get(keeping.riKey(ipre, i))
+            pl = manager.ks.pubs.get(riKey(ipre, i))
             assert pl.pubs == pubs
 
         #  nxt pubs
-        pl = manager.ks.pubs.get(keeping.riKey(ipre, i+1))
+        pl = manager.ks.pubs.get(riKey(ipre, i+1))
         assert pl
 
         # test replay as incept i.e. advance == False
@@ -1444,7 +1450,7 @@ def test_manager():
         assert manager.aeid == ''
         assert manager.pidx == 11
         assert manager.salt == salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
-        assert manager.tier == core.Tiers.low
+        assert manager.tier == Tiers.low
         iridx =  3
         ipre, verferies = manager.ingest(secrecies=secrecies, iridx=iridx, ncount=3)
         assert ipre == 'DO1mU48dTzyFtHjqH744gl0QoEIMxphSC4qbgMoEuyq7'
@@ -1491,11 +1497,11 @@ def test_manager():
 
         # test .pubs db
         for i, pubs in enumerate(publicies):
-            pl = manager.ks.pubs.get(keeping.riKey(ipre, i))
+            pl = manager.ks.pubs.get(riKey(ipre, i))
             assert pl.pubs == pubs
 
         #  nxt pubs
-        pl = manager.ks.pubs.get(keeping.riKey(ipre, i+1))
+        pl = manager.ks.pubs.get(riKey(ipre, i+1))
         assert pl
 
         # test replay as incept i.e. advance == False
@@ -1524,7 +1530,7 @@ def test_manager_with_aeid():
     """
     # rawsalt =pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     rawsalt = b'0123456789abcdef'
-    salter = core.Salter(raw=rawsalt)
+    salter = Salter(raw=rawsalt)
     salt = salter.qb64
     assert salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
     stem = "blue"
@@ -1532,25 +1538,25 @@ def test_manager_with_aeid():
 
     # cryptseed0 = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     cryptseed0 = b'h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf'
-    cryptsigner0 = core.Signer(raw=cryptseed0, code=coring.MtrDex.Ed25519_Seed,
+    cryptsigner0 = Signer(raw=cryptseed0, code=MtrDex.Ed25519_Seed,
                            transferable=False)
     seed0 = cryptsigner0.qb64
     aeid0 = cryptsigner0.verfer.qb64
     assert aeid0 == 'BCa7mK96FwxkU0TdF54Yqg3qBDXUWpOhQ_Mtr7E77yZB'
-    decrypter0 = core.Decrypter(seed=seed0)
-    encrypter0 = core.Encrypter(verkey=aeid0)
+    decrypter0 = Decrypter(seed=seed0)
+    encrypter0 = Encrypter(verkey=aeid0)
     assert encrypter0.verifySeed(seed=seed0)
 
     # cryptseed1 = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     cryptseed1 = (b"\x89\xfe{\xd9'\xa7\xb3\x89#\x19\xbec\xee\xed\xc0\xf9\x97\xd0\x8f9\x1dyNI"
                b'I\x98\xbd\xa4\xf6\xfe\xbb\x03')
-    cryptsigner1 = core.Signer(raw=cryptseed1, code=coring.MtrDex.Ed25519_Seed,
+    cryptsigner1 = Signer(raw=cryptseed1, code=MtrDex.Ed25519_Seed,
                            transferable=False)
     seed1 = cryptsigner1.qb64
     aeid1 = cryptsigner1.verfer.qb64
     assert aeid1 == 'BEcOrMrG_7r_NWaLl6h8UJapwIfQWIkjrIPXkCZm2fFM'
-    decrypter1 = core.Decrypter(seed=seed1)
-    encrypter1 = core.Encrypter(verkey=aeid1)
+    decrypter1 = Decrypter(seed=seed1)
+    encrypter1 = Encrypter(verkey=aeid1)
     assert encrypter1.verifySeed(seed=seed1)
 
     # something to sign doesn't matter what for testing purposes
@@ -1561,9 +1567,9 @@ def test_manager_with_aeid():
                     b'ApYcYd1cppVg7Inh2YCslWKhUwh59TrPpIoqWxN2A38NCbTljvmBPBjSGIFDBNOv'
                     b'VjHpdZlty3Hgk6ilF8pVpAQ')
 
-    with keeping.openKS() as keeper:
+    with openKS() as keeper:
         # Create manager with encryption decryption due to aeid and seed
-        manager = keeping.Manager(ks=keeper, seed=seed0, salt=salt, aeid=aeid0, )
+        manager = Manager(ks=keeper, seed=seed0, salt=salt, aeid=aeid0, )
         assert manager.ks.opened
         assert manager.inited
         assert manager._inits == {'salt': '0AAwMTIzNDU2Nzg5YWJjZGVm',
@@ -1575,10 +1581,10 @@ def test_manager_with_aeid():
         assert manager.seed == seed0  # in memory only
         assert manager.aeid == aeid0  # on disk only
 
-        assert manager.algo == keeping.Algos.salty
+        assert manager.algo == Algos.salty
         assert manager.salt == salt  # encrypted on disk but property decrypts if seed
         assert manager.pidx == 0
-        assert manager.tier == core.Tiers.low
+        assert manager.tier == Tiers.low
         saltCipher0 = core.Cipher(qb64=manager.ks.gbls.get('salt'))
         assert saltCipher0.decrypt(seed=seed0).qb64 == salt
 
@@ -1593,10 +1599,10 @@ def test_manager_with_aeid():
 
         pp = manager.ks.prms.get(spre)
         assert pp.pidx == 0
-        assert pp.algo == keeping.Algos.salty
+        assert pp.algo == Algos.salty
         assert manager.decrypter.decrypt(qb64=pp.salt).qb64 == salt
         assert pp.stem == ''
-        assert pp.tier == core.Tiers.low
+        assert pp.tier == Tiers.low
 
         ps = manager.ks.sits.get(spre)
         assert ps.old.pubs == []
@@ -1613,9 +1619,9 @@ def test_manager_with_aeid():
         assert keys == ps.new.pubs
 
         # test .pubs db
-        pl = manager.ks.pubs.get(keeping.riKey(spre, ps.new.ridx))
+        pl = manager.ks.pubs.get(riKey(spre, ps.new.ridx))
         assert pl.pubs == ps.new.pubs
-        pl = manager.ks.pubs.get(keeping.riKey(spre, ps.nxt.ridx))
+        pl = manager.ks.pubs.get(riKey(spre, ps.nxt.ridx))
         assert pl.pubs == ps.nxt.pubs
 
         digs = [diger.qb64 for diger in  digers]
@@ -1626,14 +1632,14 @@ def test_manager_with_aeid():
         manager.move(old=oldspre, new=spre)
 
         # test .pubs db after move
-        pl = manager.ks.pubs.get(keeping.riKey(spre, ps.new.ridx))
+        pl = manager.ks.pubs.get(riKey(spre, ps.new.ridx))
         assert pl.pubs == ps.new.pubs
-        pl = manager.ks.pubs.get(keeping.riKey(spre, ps.nxt.ridx))
+        pl = manager.ks.pubs.get(riKey(spre, ps.nxt.ridx))
         assert pl.pubs == ps.nxt.pubs
 
         psigers = manager.sign(ser=ser, pubs=ps.new.pubs)
         for siger in psigers:
-            assert isinstance(siger, indexing.Siger)
+            assert isinstance(siger, Siger)
         vsigers = manager.sign(ser=ser, verfers=verfers)
         psigs = [siger.qb64 for siger in psigers]
         vsigs = [siger.qb64 for siger in vsigers]
@@ -1646,7 +1652,7 @@ def test_manager_with_aeid():
         # Test with pubs list
         psigers = manager.sign(ser=ser, pubs=ps.new.pubs, indices=indices)
         for siger in psigers:
-            assert isinstance(siger, indexing.Siger)
+            assert isinstance(siger, Siger)
         assert psigers[0].index == indices[0]
         psigs = [siger.qb64 for siger in psigers]
         assert psigs == ['ADAa70b4QnTOtGOsMqcezMtVzCFuRJHGeIMkWYHZ5ZxGIXM0XDVAzkYdCeadfPfzlKC6dkfiwuJ0IzLOElaanUgH']
@@ -1654,14 +1660,14 @@ def test_manager_with_aeid():
         # Test with verfers list
         vsigers = manager.sign(ser=ser, verfers=verfers, indices=indices)
         for siger in vsigers:
-            assert isinstance(siger, indexing.Siger)
+            assert isinstance(siger, Siger)
         assert psigers[0].index == indices[0]
         vsigs = [siger.qb64 for siger in vsigers]
         assert vsigs == psigs
 
         pcigars = manager.sign(ser=ser, pubs=ps.new.pubs, indexed=False)
         for cigar in pcigars:
-            assert isinstance(cigar, coring.Cigar)
+            assert isinstance(cigar, Cigar)
         vcigars = manager.sign(ser=ser, verfers=verfers, indexed=False)
         psigs = [cigar.qb64 for cigar in pcigars]
         vsigs = [cigar.qb64 for cigar in vcigars]
@@ -1676,10 +1682,10 @@ def test_manager_with_aeid():
 
         pp = manager.ks.prms.get(spre)
         assert pp.pidx == 0
-        assert pp.algo == keeping.Algos.salty
+        assert pp.algo == Algos.salty
         assert manager.decrypter.decrypt(qb64=pp.salt).qb64 == salt
         assert pp.stem == ''
-        assert pp.tier == core.Tiers.low
+        assert pp.tier == Tiers.low
 
         ps = manager.ks.sits.get(spre)
         assert ps.old.pubs == ['DFRtyHAjSuJaRX6TDPva35GN11VHAruaOXMc79ZYDKsT']
@@ -1706,10 +1712,10 @@ def test_manager_with_aeid():
         assert manager.decrypter.qb64 == decrypter1.qb64  # aeid and seed provided
         assert manager.seed == seed1  # in memory only
         assert manager.aeid == aeid1
-        assert manager.algo == keeping.Algos.salty
+        assert manager.algo == Algos.salty
         assert manager.salt == salt
         assert manager.pidx == 1
-        assert manager.tier == core.Tiers.low
+        assert manager.tier == Tiers.low
         saltCipher1 = core.Cipher(qb64=manager.ks.gbls.get('salt'))
         assert saltCipher1.decrypt(seed=seed1).qb64 == salt
         assert not saltCipher0.qb64 == saltCipher1.qb64  # old cipher different
@@ -1731,10 +1737,10 @@ def test_manager_with_aeid():
             assert not manager.ks.pris.get(pub.encode("utf-8"))
 
         # test .pubs db
-        pl = manager.ks.pubs.get(keeping.riKey(spre, ps.new.ridx))
+        pl = manager.ks.pubs.get(riKey(spre, ps.new.ridx))
         assert pl.pubs == ps.new.pubs
 
-        pl = manager.ks.pubs.get(keeping.riKey(spre, ps.nxt.ridx))
+        pl = manager.ks.pubs.get(riKey(spre, ps.nxt.ridx))
         assert pl.pubs == ps.nxt.pubs
 
         # salty algorithm rotate to null
@@ -1808,7 +1814,7 @@ def test_manager_sign_dual_indices():
             When  ondices is not provided then all sigers .ondex is None.
     """
     raw = b'0123456789abcdef'
-    salt = core.Salter(raw=raw).qb64
+    salt = Salter(raw=raw).qb64
 
     # the particular serialization does not matter for test purposes
     ser = (b"See ya later Alligator. In a while Crocodile. "
@@ -1816,11 +1822,11 @@ def test_manager_sign_dual_indices():
            b"As you wish Jellyfish. Have a nice day Bluejay.")
 
 
-    with keeping.openKS() as keeper:
-        manager = keeping.Manager(ks=keeper, salt=salt)
+    with openKS() as keeper:
+        manager = Manager(ks=keeper, salt=salt)
         assert manager.ks.opened
         assert manager.pidx == 0
-        assert manager.tier == core.Tiers.low
+        assert manager.tier == Tiers.low
         assert manager.salt == salt
         assert manager.aeid == ""
         assert manager.seed == ""
@@ -1845,10 +1851,10 @@ def test_manager_sign_dual_indices():
         pre = verfers[0].qb64  # Key sequence parameters lookup by pre
         pp = manager.ks.prms.get(pre)
         assert pp.pidx == 0
-        assert pp.algo == keeping.Algos.salty
+        assert pp.algo == Algos.salty
         assert pp.salt == salt
         assert pp.stem == stem
-        assert pp.tier == core.Tiers.low
+        assert pp.tier == Tiers.low
 
         ps = manager.ks.sits.get(pre)
         assert len(ps.old.pubs) == 0
@@ -1954,10 +1960,10 @@ def test_manager_sign_dual_indices():
         # Key sequence parameters lookup by pre
         pp = manager.ks.prms.get(pre)
         assert pp.pidx == 0  # same sequence
-        assert pp.algo == keeping.Algos.salty
+        assert pp.algo == Algos.salty
         assert pp.salt == salt
         assert pp.stem == stem
-        assert pp.tier == core.Tiers.low
+        assert pp.tier == Tiers.low
 
         ps = manager.ks.sits.get(pre)
         assert len(ps.old.pubs) == ocount

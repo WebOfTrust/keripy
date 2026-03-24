@@ -7,7 +7,7 @@ Tests for KLI contacts commands: get, add, rename, delete
 
 import multicommand
 
-from keri.app import habbing, organizing as connecting
+from keri.app import Organizer, openHby
 from keri.cli import commands
 
 
@@ -16,8 +16,8 @@ def test_contacts_get_by_aid(capsys):
     joe = "EtyPSuUjLyLdXAtGMrsTt0-ELyWeU8fJcymHiGOfuaSA"
     joed = dict(first="Joe", last="Jury", alias="joe", company="HCF")
 
-    with habbing.openHby(name="test-get-aid", temp=True) as hby:
-        org = connecting.Organizer(hby=hby)
+    with openHby(name="test-get-aid", temp=True) as hby:
+        org = Organizer(hby=hby)
         org.replace(pre=joe, data=joed)
 
         # Test the get logic directly
@@ -40,8 +40,8 @@ def test_contacts_get_by_alias(capsys):
     bob = "EuEQX8At31X96iDVpigv-rTdOKvFiWFunbJ1aDfq89IQ"
     bobd = dict(first="Bob", last="Burns", alias="bob", company="HCF")
 
-    with habbing.openHby(name="test-get-alias", temp=True) as hby:
-        org = connecting.Organizer(hby=hby)
+    with openHby(name="test-get-alias", temp=True) as hby:
+        org = Organizer(hby=hby)
         org.replace(pre=bob, data=bobd)
 
         # Test the find/get logic directly
@@ -62,8 +62,8 @@ def test_contacts_get_by_alias(capsys):
 
 def test_contacts_get_not_found():
     """Test getting a non-existent contact"""
-    with habbing.openHby(name="test-get-notfound", temp=True) as hby:
-        org = connecting.Organizer(hby=hby)
+    with openHby(name="test-get-notfound", temp=True) as hby:
+        org = Organizer(hby=hby)
 
         contact = org.get("ENonExistent123456789012345678901234567890123")
         assert contact is None
@@ -73,8 +73,8 @@ def test_contacts_add_new():
     """Test adding a new contact"""
     ken = "EFC7f_MEPE5dboc_E4yG15fnpMD34YaU3ue6vnDLodJU"
 
-    with habbing.openHby(name="test-add-new", temp=True) as hby:
-        org = connecting.Organizer(hby=hby)
+    with openHby(name="test-add-new", temp=True) as hby:
+        org = Organizer(hby=hby)
 
         # Test the add logic directly (using update)
         data = {'alias': 'ken', 'company': 'GLEIF', 'city': 'Frankfurt'}
@@ -103,8 +103,8 @@ def test_contacts_add_update():
     jen = "ED61oxVwVNf_olqR5wAhAjvuK59xuBOJXnJPGhwWDYoc"
     jend = dict(first="Jen", last="Jones", alias="jen", company="GLEIF")
 
-    with habbing.openHby(name="test-add-update", temp=True) as hby:
-        org = connecting.Organizer(hby=hby)
+    with openHby(name="test-add-update", temp=True) as hby:
+        org = Organizer(hby=hby)
         org.replace(pre=jen, data=jend)
 
         # Test the update logic - preserves existing fields
@@ -141,8 +141,8 @@ def test_contacts_rename():
     sal = "Eo60ITGA69z4jNBU4RsvbgsjfAHFcTM2HVEXea1SvnXk"
     sald = dict(first="Sally", last="Smith", alias="sally", company="GLEIF")
 
-    with habbing.openHby(name="test-rename", temp=True) as hby:
-        org = connecting.Organizer(hby=hby)
+    with openHby(name="test-rename", temp=True) as hby:
+        org = Organizer(hby=hby)
         org.replace(pre=sal, data=sald)
 
         # Test the rename logic directly
@@ -165,8 +165,8 @@ def test_contacts_rename_by_aid():
     joe = "EtyPSuUjLyLdXAtGMrsTt0-ELyWeU8fJcymHiGOfuaSA"
     joed = dict(first="Joe", alias="joe")
 
-    with habbing.openHby(name="test-rename-aid", temp=True) as hby:
-        org = connecting.Organizer(hby=hby)
+    with openHby(name="test-rename-aid", temp=True) as hby:
+        org = Organizer(hby=hby)
         org.replace(pre=joe, data=joed)
 
         org.set(joe, 'alias', 'joseph')
@@ -184,8 +184,8 @@ def test_contacts_rename_by_aid():
 
 def test_contacts_rename_not_found():
     """Test finding a non-existent contact for rename"""
-    with habbing.openHby(name="test-rename-notfound", temp=True) as hby:
-        org = connecting.Organizer(hby=hby)
+    with openHby(name="test-rename-notfound", temp=True) as hby:
+        org = Organizer(hby=hby)
 
         contacts = org.find('alias', f"^nonexistent$")
         assert len(contacts) == 0
@@ -196,8 +196,8 @@ def test_contacts_delete():
     bob = "EuEQX8At31X96iDVpigv-rTdOKvFiWFunbJ1aDfq89IQ"
     bobd = dict(first="Bob", last="Burns", alias="bob", company="HCF")
 
-    with habbing.openHby(name="test-delete", temp=True) as hby:
-        org = connecting.Organizer(hby=hby)
+    with openHby(name="test-delete", temp=True) as hby:
+        org = Organizer(hby=hby)
         org.replace(pre=bob, data=bobd)
 
         # Verify contact exists
@@ -230,8 +230,8 @@ def test_contacts_delete_parser():
 
 def test_contacts_delete_not_found():
     """Test deleting a non-existent contact"""
-    with habbing.openHby(name="test-delete-notfound", temp=True) as hby:
-        org = connecting.Organizer(hby=hby)
+    with openHby(name="test-delete-notfound", temp=True) as hby:
+        org = Organizer(hby=hby)
 
         contacts = org.find('alias', f"^nonexistent$")
         assert len(contacts) == 0
@@ -269,8 +269,8 @@ def test_contacts_workflow():
     """Test complete contact workflow: add, rename, get, delete"""
     wil = "EPzeu5_C80nzPc_BGUHVBkXXfNmlS55Ayl7Rd1I0gWFE"
 
-    with habbing.openHby(name="test-workflow", temp=True) as hby:
-        org = connecting.Organizer(hby=hby)
+    with openHby(name="test-workflow", temp=True) as hby:
+        org = Organizer(hby=hby)
 
         # 1. Add contact
         org.update(wil, {'alias': 'will', 'first': 'Will', 'company': 'GLEIF'})
@@ -321,8 +321,8 @@ def test_contacts_find():
     aid2 = "EuEQX8At31X96iDVpigv-rTdOKvFiWFunbJ1aDfq89IQ"
     aid3 = "EFC7f_MEPE5dboc_E4yG15fnpMD34YaU3ue6vnDLodJU"
 
-    with habbing.openHby(name="test-find", temp=True) as hby:
-        org = connecting.Organizer(hby=hby)
+    with openHby(name="test-find", temp=True) as hby:
+        org = Organizer(hby=hby)
         org.replace(pre=aid1, data={'alias': 'yuan.cfca', 'company': 'CFCA'})
         org.replace(pre=aid2, data={'alias': 'li.cfca', 'company': 'CFCA'})
         org.replace(pre=aid3, data={'alias': 'bob.gleif', 'company': 'GLEIF'})
@@ -348,8 +348,8 @@ def test_contacts_multiple_alias_match():
     joe1 = "EtyPSuUjLyLdXAtGMrsTt0-ELyWeU8fJcymHiGOfuaSA"
     joe2 = "EuEQX8At31X96iDVpigv-rTdOKvFiWFunbJ1aDfq89IQ"
 
-    with habbing.openHby(name="test-multi", temp=True) as hby:
-        org = connecting.Organizer(hby=hby)
+    with openHby(name="test-multi", temp=True) as hby:
+        org = Organizer(hby=hby)
         org.replace(pre=joe1, data={'alias': 'joe'})
         org.replace(pre=joe2, data={'alias': 'joey'})
 

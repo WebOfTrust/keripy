@@ -14,13 +14,21 @@ import pytest
 import lmdb
 from hio.base import doing
 
-from keri import core, Kinds, versify
-from keri.app import habbing
-from keri.core import (Seqner, Diger, Number, Kever, Serder, Signer,
-                       coring, eventing, serdering, signing, indexing,
-                       incept, rotate, interact)
-from keri.db import (Baser, basing, subing,
-                     openDB, dgKey, snKey, openLMDB)
+from keri.kering import Kinds, Ilks, versify
+from keri.app import openHby
+from keri.core import (Seqner, Diger, Number, Kever, Serder,
+                       Signer, Siger, Salter, Dater, Prefixer,
+                       Cigar, Seqner, Saider, Noncer, Labeler,
+                       Texter, SerderKERI, StateEstEvent,
+                       IdrDex, MtrDex, NumDex,
+                       incept, rotate, interact, rotate)
+
+from keri.core import state as eventState
+from keri.db import (Baser, BaserDoer, Baser, SerderSuber,
+                     CesrIoSetSuber, CesrSuber, CatCesrIoSetSuber,
+                     OnIoDupSuber, IoDupSuber, CatCesrSuber, statedict,
+                     openDB, dgKey, snKey, openLMDB, openDB, reopenDB)
+
 from keri.help import datify, dictify
 from keri.recording import (EventSourceRecord, KeyStateRecord,
                             OobiRecord, RawRecord, StateEERecord)
@@ -45,16 +53,16 @@ def test_baser():
     assert baser.env.path() == baser.path
     assert os.path.exists(baser.path)
 
-    assert isinstance(baser.evts, subing.SerderSuber)
-    assert isinstance(baser.sigs, subing.CesrIoSetSuber)
-    assert isinstance(baser.dtss, subing.CesrSuber)
-    assert isinstance(baser.rcts, subing.CatCesrIoSetSuber)
-    assert isinstance(baser.ures, subing.CatCesrIoSetSuber)
-    assert isinstance(baser.kels, subing.OnIoDupSuber)
-    assert isinstance(baser.ooes, subing.IoDupSuber)
-    assert isinstance(baser.pses, subing.IoDupSuber)
-    assert isinstance(baser.dels, subing.OnIoDupSuber)
-    assert isinstance(baser.ldes, subing.OnIoDupSuber)
+    assert isinstance(baser.evts, SerderSuber)
+    assert isinstance(baser.sigs, CesrIoSetSuber)
+    assert isinstance(baser.dtss, CesrSuber)
+    assert isinstance(baser.rcts, CatCesrIoSetSuber)
+    assert isinstance(baser.ures, CatCesrIoSetSuber)
+    assert isinstance(baser.kels, OnIoDupSuber)
+    assert isinstance(baser.ooes, IoDupSuber)
+    assert isinstance(baser.pses, IoDupSuber)
+    assert isinstance(baser.dels, OnIoDupSuber)
+    assert isinstance(baser.ldes, OnIoDupSuber)
 
     baser.close(clear=True)
     assert not os.path.exists(baser.path)
@@ -76,15 +84,15 @@ def test_baser():
     assert baser.env.path() == baser.path
     assert os.path.exists(baser.path)
 
-    assert isinstance(baser.evts, subing.SerderSuber)
-    assert isinstance(baser.sigs, subing.CesrIoSetSuber)
-    assert isinstance(baser.dtss, subing.CesrSuber)
-    assert isinstance(baser.rcts, subing.CatCesrIoSetSuber)
-    assert isinstance(baser.ures, subing.CatCesrIoSetSuber)
-    assert isinstance(baser.ooes, subing.IoDupSuber)
-    assert isinstance(baser.pses, subing.IoDupSuber)
-    assert isinstance(baser.dels, subing.OnIoDupSuber)
-    assert isinstance(baser.ldes, subing.OnIoDupSuber)
+    assert isinstance(baser.evts, SerderSuber)
+    assert isinstance(baser.sigs, CesrIoSetSuber)
+    assert isinstance(baser.dtss, CesrSuber)
+    assert isinstance(baser.rcts, CatCesrIoSetSuber)
+    assert isinstance(baser.ures, CatCesrIoSetSuber)
+    assert isinstance(baser.ooes, IoDupSuber)
+    assert isinstance(baser.pses, IoDupSuber)
+    assert isinstance(baser.dels, OnIoDupSuber)
+    assert isinstance(baser.ldes, OnIoDupSuber)
 
     baser.close(clear=True)
     assert not os.path.exists(baser.path)
@@ -103,15 +111,15 @@ def test_baser():
         assert baser.env.path() == baser.path
         assert os.path.exists(baser.path)
 
-        assert isinstance(baser.evts, subing.SerderSuber)
-        assert isinstance(baser.sigs, subing.CesrIoSetSuber)
-        assert isinstance(baser.dtss, subing.CesrSuber)
-        assert isinstance(baser.rcts, subing.CatCesrIoSetSuber)
-        assert isinstance(baser.ures, subing.CatCesrIoSetSuber)
-        assert isinstance(baser.ooes, subing.IoDupSuber)
-        assert isinstance(baser.pses, subing.IoDupSuber)
-        assert isinstance(baser.dels, subing.OnIoDupSuber)
-        assert isinstance(baser.ldes, subing.OnIoDupSuber)
+        assert isinstance(baser.evts, SerderSuber)
+        assert isinstance(baser.sigs, CesrIoSetSuber)
+        assert isinstance(baser.dtss, CesrSuber)
+        assert isinstance(baser.rcts, CatCesrIoSetSuber)
+        assert isinstance(baser.ures, CatCesrIoSetSuber)
+        assert isinstance(baser.ooes, IoDupSuber)
+        assert isinstance(baser.pses, IoDupSuber)
+        assert isinstance(baser.dels, OnIoDupSuber)
+        assert isinstance(baser.ldes, OnIoDupSuber)
 
 
     assert not os.path.exists(baser.path)
@@ -152,7 +160,7 @@ def test_baser():
         assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
         #  test .evts sub db methods (verify=False for minimal test event)
-        sked = serdering.SerderKERI(raw=skedb, verify=False)
+        sked = SerderKERI(raw=skedb, verify=False)
         assert db.evts.get(keys=(preb, digb)) is None
         assert db.evts.rem(keys=(preb, digb)) is False
         assert db.evts.put(keys=(preb, digb), val=sked) is True
@@ -297,14 +305,14 @@ def test_baser():
         assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
         # test .dtss sub db methods - now returns Dater objects
-        dater1 = coring.Dater(dts='2020-08-22T17:50:09.988921+00:00')
-        dater2 = coring.Dater(dts='2020-08-22T17:50:10.000000+00:00')
+        dater1 = Dater(dts='2020-08-22T17:50:09.988921+00:00')
+        dater2 = Dater(dts='2020-08-22T17:50:10.000000+00:00')
 
         assert db.dtss.get(keys=key) is None
         assert db.dtss.rem(keys=key) == False
         assert db.dtss.put(keys=key, val=dater1) == True
         result = db.dtss.get(keys=key)
-        assert isinstance(result, coring.Dater)
+        assert isinstance(result, Dater)
         assert result.dts == dater1.dts
         assert db.dtss.put(keys=key, val=dater2) == False  # idempotent
         result = db.dtss.get(keys=key)
@@ -321,10 +329,10 @@ def test_baser():
         sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
         ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAAAC'
         sdig2 = b'EBYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
-        number1 = coring.Number(qb64b=ssnu1)
-        diger1 = coring.Diger(qb64b=sdig1)
-        number2 = coring.Number(qb64b=ssnu2)
-        diger2 = coring.Diger(qb64b=sdig2)
+        number1 = Number(qb64b=ssnu1)
+        diger1 = Diger(qb64b=sdig1)
+        number2 = Number(qb64b=ssnu2)
+        diger2 = Diger(qb64b=sdig2)
         val1 = (number1, diger1)
         val2 = (number2, diger2)
 
@@ -360,15 +368,15 @@ def test_baser():
         assert db.sigs.rem(keys=key) == False
 
         # Create valid test signatures
-        signer0 = signing.Signer(transferable=False, seed=b'0123456789abcdef0123456789abcdef')
-        signer1 = signing.Signer(transferable=False, seed=b'fedcba9876543210fedcba9876543210')
+        signer0 = Signer(transferable=False, seed=b'0123456789abcdef0123456789abcdef')
+        signer1 = Signer(transferable=False, seed=b'fedcba9876543210fedcba9876543210')
 
         test_data = b"test witness signatures"
         cigar0 = signer0.sign(ser=test_data)
         cigar1 = signer1.sign(ser=test_data)
 
-        siger0 = indexing.Siger(raw=cigar0.raw, code=indexing.IdrDex.Ed25519_Sig, index=0)
-        siger1 = indexing.Siger(raw=cigar1.raw, code=indexing.IdrDex.Ed25519_Sig, index=1)
+        siger0 = Siger(raw=cigar0.raw, code=IdrDex.Ed25519_Sig, index=0)
+        siger1 = Siger(raw=cigar1.raw, code=IdrDex.Ed25519_Sig, index=1)
 
         assert db.sigs.put(keys=key, vals=[siger0]) == True
         assert [s.qb64b for s in db.sigs.get(keys=key)] == [siger0.qb64b]
@@ -405,15 +413,15 @@ def test_baser():
         assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
         # Create valid test signatures
-        signer0 = signing.Signer(transferable=False, seed=b'0123456789abcdef0123456789abcdef')
-        signer1 = signing.Signer(transferable=False, seed=b'fedcba9876543210fedcba9876543210')
+        signer0 = Signer(transferable=False, seed=b'0123456789abcdef0123456789abcdef')
+        signer1 = Signer(transferable=False, seed=b'fedcba9876543210fedcba9876543210')
 
         test_data = b"test witness signatures"
         cigar0 = signer0.sign(ser=test_data)
         cigar1 = signer1.sign(ser=test_data)
 
-        siger0 = indexing.Siger(raw=cigar0.raw, code=indexing.IdrDex.Ed25519_Sig, index=0)
-        siger1 = indexing.Siger(raw=cigar1.raw, code=indexing.IdrDex.Ed25519_Sig, index=1)
+        siger0 = Siger(raw=cigar0.raw, code=IdrDex.Ed25519_Sig, index=0)
+        siger1 = Siger(raw=cigar1.raw, code=IdrDex.Ed25519_Sig, index=1)
 
         # Use siger objects for testing
         wig0 = siger0
@@ -493,12 +501,12 @@ def test_baser():
         # test .rcts
 
         # Create test prefixes and cigars
-        wit0 = coring.Prefixer(qb64=wit0b.decode('utf-8'))  # Convert from qb64 string
-        wit1 = coring.Prefixer(qb64=wit1b.decode('utf-8'))
+        wit0 = Prefixer(qb64=wit0b.decode('utf-8'))  # Convert from qb64 string
+        wit1 = Prefixer(qb64=wit1b.decode('utf-8'))
 
         # Create cigars (non-indexed signatures)
-        cigar0 = coring.Cigar(qb64=wsig0b.decode('utf-8'))
-        cigar1 = coring.Cigar(qb64=wsig1b.decode('utf-8'))
+        cigar0 = Cigar(qb64=wsig0b.decode('utf-8'))
+        cigar1 = Cigar(qb64=wsig1b.decode('utf-8'))
 
         # Test with CESR tuples (insertion order)
         assert db.rcts.put(key, vals=[(wit0, cigar0), (wit1, cigar1)]) == True
@@ -520,8 +528,8 @@ def test_baser():
         assert result[1][1].qb64 == cigar1.qb64
 
         # Test adding new item
-        wit2 = coring.Prefixer(qb64='BNewTestPrefix000000000000000000000000000000')
-        cigar2 = coring.Cigar(qb64='BNewTestSignature00000000000000000000000000000000000000000000000000000000000000000000000')
+        wit2 = Prefixer(qb64='BNewTestPrefix000000000000000000000000000000')
+        cigar2 = Cigar(qb64='BNewTestSignature00000000000000000000000000000000000000000000000000000000000000000000000')
         assert db.rcts.add(key, (wit2, cigar2)) == True
         result = db.rcts.get(key)
         assert len(result) == 3
@@ -575,19 +583,19 @@ def test_baser():
         # test .ures insertion order dup methods.  dup vals are insertion order
 
         # Setup CESR test values
-        diger0 = coring.Diger(ser=b"event0")
-        diger1 = coring.Diger(ser=b"event1")
-        diger2 = coring.Diger(ser=b"event2")
-        diger3 = coring.Diger(ser=b"event3")
-        diger4 = coring.Diger(ser=b"event4")
+        diger0 = Diger(ser=b"event0")
+        diger1 = Diger(ser=b"event1")
+        diger2 = Diger(ser=b"event2")
+        diger3 = Diger(ser=b"event3")
+        diger4 = Diger(ser=b"event4")
 
-        pre0 = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        pre0 = Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
 
-        signer0 = signing.Signer(transferable=False, seed=b'0123456789abcdef0123456789abcdef')
-        signer1 = signing.Signer(transferable=False, seed=b'abcdef0123456789abcdef0123456789')
-        signer2 = signing.Signer(transferable=False, seed=b'fedcba9876543210fedcba9876543210')
-        signer3 = signing.Signer(transferable=False, seed=b'0011223344556677889900112233445566')
-        signer4 = signing.Signer(transferable=False, seed=b'ffeeddccbbaa99887766554433221100')
+        signer0 = Signer(transferable=False, seed=b'0123456789abcdef0123456789abcdef')
+        signer1 = Signer(transferable=False, seed=b'abcdef0123456789abcdef0123456789')
+        signer2 = Signer(transferable=False, seed=b'fedcba9876543210fedcba9876543210')
+        signer3 = Signer(transferable=False, seed=b'0011223344556677889900112233445566')
+        signer4 = Signer(transferable=False, seed=b'ffeeddccbbaa99887766554433221100')
 
         test_data = b"test witness signatures"
         cigar0 = signer0.sign(ser=test_data)
@@ -596,12 +604,12 @@ def test_baser():
         cigar3 = signer3.sign(ser=test_data)
         cigar4 = signer4.sign(ser=test_data)
 
-        pre1 = coring.Prefixer(qb64=signer0.verfer.qb64)
-        pre2 = coring.Prefixer(qb64=signer1.verfer.qb64)
-        pre3 = coring.Prefixer(qb64=signer2.verfer.qb64)
-        pre4 = coring.Prefixer(qb64=signer3.verfer.qb64)
+        pre1 = Prefixer(qb64=signer0.verfer.qb64)
+        pre2 = Prefixer(qb64=signer1.verfer.qb64)
+        pre3 = Prefixer(qb64=signer2.verfer.qb64)
+        pre4 = Prefixer(qb64=signer3.verfer.qb64)
 
-        key = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", coring.Seqner(sn=0).qb64)
+        key = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", Seqner(sn=0).qb64)
 
         cesrVal = (diger0, pre0, cigar0)
         cesrVals = [cesrVal]
@@ -663,13 +671,13 @@ def test_baser():
         assert db.ures.get(key) == []
 
         # Setup multi-key tests for getTopItemIter
-        aKey = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", coring.Seqner(sn=1).qb64)
+        aKey = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", Seqner(sn=1).qb64)
         aVals = [(diger0, pre0, cigar0), (diger1, pre1, cigar1), (diger2, pre2, cigar2)]
-        bKey = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", coring.Seqner(sn=2).qb64)
+        bKey = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", Seqner(sn=2).qb64)
         bVals = [(diger1, pre1, cigar1), (diger2, pre2, cigar2), (diger3, pre3, cigar3)]
-        cKey = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", coring.Seqner(sn=4).qb64)
+        cKey = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", Seqner(sn=4).qb64)
         cVals = [(diger2, pre2, cigar2), (diger3, pre3, cigar3)]
-        dKey = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", coring.Seqner(sn=7).qb64)
+        dKey = ("BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA", Seqner(sn=7).qb64)
         dVals = [(diger3, pre3, cigar3), (diger4, pre4, cigar4)]
 
         assert db.ures.put(keys=aKey, vals=aVals)
@@ -737,10 +745,10 @@ def test_baser():
         key = dgKey(preb, digb)
         assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
-        p1 = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")  # fake prefix
-        n1 = core.Number(num=1)
-        e1 = coring.Diger(ser=b"est1")    # digest of est event
-        s1 = core.Siger(raw=b"\x00" * 64)  # 64‑byte fake signature
+        p1 = Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")  # fake prefix
+        n1 = Number(num=1)
+        e1 = Diger(ser=b"est1")    # digest of est event
+        s1 = Siger(raw=b"\x00" * 64)  # 64‑byte fake signature
 
         cesrVal = (p1, n1, e1, s1)
         cesrVal = [cesrVal]
@@ -764,25 +772,25 @@ def test_baser():
 
         # # dup vals are lexocographic
         # Build several distinct typed CESR quadruples
-        pA = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-        pB = coring.Prefixer(qb64="BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
-        pC = coring.Prefixer(qb64="BCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")
-        pD = coring.Prefixer(qb64="BDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
+        pA = Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        pB = Prefixer(qb64="BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
+        pC = Prefixer(qb64="BCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")
+        pD = Prefixer(qb64="BDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
 
-        nA = core.Number(num=1)
-        nB = core.Number(num=2)
-        nC = core.Number(num=3)
-        nD = core.Number(num=4)
+        nA = Number(num=1)
+        nB = Number(num=2)
+        nC = Number(num=3)
+        nD = Number(num=4)
 
-        eA = coring.Diger(ser=b"estA")
-        eB = coring.Diger(ser=b"estB")
-        eC = coring.Diger(ser=b"estC")
-        eD = coring.Diger(ser=b"estD")
+        eA = Diger(ser=b"estA")
+        eB = Diger(ser=b"estB")
+        eC = Diger(ser=b"estC")
+        eD = Diger(ser=b"estD")
 
-        sA = core.Siger(raw=b"\x00" * 64)
-        sB = core.Siger(raw=b"\x01" * 64)
-        sC = core.Siger(raw=b"\x02" * 64)
-        sD = core.Siger(raw=b"\x03" * 64)
+        sA = Siger(raw=b"\x00" * 64)
+        sB = Siger(raw=b"\x01" * 64)
+        sC = Siger(raw=b"\x02" * 64)
+        sD = Siger(raw=b"\x03" * 64)
 
         quadA = (pA, nA, eA, sA)
         quadB = (pB, nB, eB, sB)
@@ -836,11 +844,11 @@ def test_baser():
         key = b'A'
         vals = [b"z", b"m", b"x", b"a"]
 
-        d1 = coring.Diger(ser=b"event1")  # digest of event
-        p1 = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")  # fake prefix
-        n1 = core.Number(num=1)
-        e1 = coring.Diger(ser=b"est1")    # digest of est event
-        s1 = core.Siger(raw=b"\x00" * 64)  # 64‑byte fake signature
+        d1 = Diger(ser=b"event1")  # digest of event
+        p1 = Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")  # fake prefix
+        n1 = Number(num=1)
+        e1 = Diger(ser=b"est1")    # digest of est event
+        s1 = Siger(raw=b"\x00" * 64)  # 64‑byte fake signature
 
         cesrVal = (d1, p1, n1, e1, s1)
         cesrVal = [cesrVal]
@@ -1214,23 +1222,23 @@ def test_baser():
         assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
         # test .pdes methods
-        assert isinstance(db.pdes, subing.OnIoDupSuber)
+        assert isinstance(db.pdes, OnIoDupSuber)
 
 
         # test .udes CatCesrSuber sub db methods
-        assert isinstance(db.udes, subing.CatCesrSuber)
-        assert db.udes.klas == (core.Number, coring.Diger)
+        assert isinstance(db.udes, CatCesrSuber)
+        assert db.udes.klas == (Number, Diger)
 
         ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAAAB'
         sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
         ssnu2 = b'0AAAAAAAAAAAAAAAAAAAAAAC'
         sdig2 = b'EBYYJRCCpAGO7WjjsLhtHVR37Pawv67kveIFUPvt38x0'
         val1 = ssnu1 + sdig1
-        num1 = coring.Number(qb64b=ssnu1)
+        num1 = Number(qb64b=ssnu1)
         val2 = ssnu2 + sdig2
-        num2 = coring.Number(qb64b=ssnu2)
-        diger1 = coring.Diger(qb64b=sdig1)
-        diger2 = coring.Diger(qb64b=sdig2)
+        num2 = Number(qb64b=ssnu2)
+        diger1 = Diger(qb64b=sdig1)
+        diger2 = Diger(qb64b=sdig2)
 
         assert db.udes.get(keys=key) == None
         assert db.udes.rem(keys=key) == False
@@ -1719,16 +1727,16 @@ def test_baser():
         # Test for gpse
         key = b'a'
         sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
-        number = coring.Number(num=0)
-        diger = coring.Diger(qb64=sdig1)
+        number = Number(num=0)
+        diger = Diger(qb64=sdig1)
 
         assert db.gpse.get(key) == []   # gpse is empty
         assert db.gpse.add(keys=key, val=(number, diger)) == True   # add new entry with val as a tuple of number and diger
 
         val = db.gpse.get(key)  # returns Cesr tuple of (number, diger)
         num, dig = val[0]
-        assert isinstance(num, coring.Number)
-        assert isinstance(dig, coring.Diger)
+        assert isinstance(num, Number)
+        assert isinstance(dig, Diger)
         assert num.num == number.num
         assert dig.qb64 == diger.qb64
 
@@ -1736,23 +1744,23 @@ def test_baser():
         assert db.gpse.get(key) == []   # gpse is empty again
 
         # Saider and Seqner instead of Diger and Number
-        seqner = coring.Seqner(num=0)
-        saider = coring.Saider(qb64=sdig1)
+        seqner = Seqner(num=0)
+        saider = Saider(qb64=sdig1)
         assert db.gpse.add(keys=key, val=(seqner, saider)) == True # val is not using Number and Diger type
         val = db.gpse.get(key)                                     # but it still gets validated
         assert val is not None
         seq, dig = val[0]   # returns Cesr tuple of (number, diger)
 
-        assert isinstance(seq, coring.Number) # Seqner gets converted to Number on read
-        assert isinstance(dig, coring.Diger)   # Saider gets converted to Diger on read
+        assert isinstance(seq, Number) # Seqner gets converted to Number on read
+        assert isinstance(dig, Diger)   # Saider gets converted to Diger on read
         assert seq.num == seqner.sn
         assert dig.qb64 == saider.qb64
 
         # test .imgs  CatCesrSuber with TypeMedia (Noncer, Noncer, Labeler, Texter)
-        said_nonce = coring.Noncer()  # random SAID nonce
-        uuid_nonce = coring.Noncer()  # random UUID blinding nonce
-        mime_label = coring.Labeler(label="image_png")  # MIME type label
-        img_data = coring.Texter(text="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk")
+        said_nonce = Noncer()  # random SAID nonce
+        uuid_nonce = Noncer()  # random UUID blinding nonce
+        mime_label = Labeler(label="image_png")  # MIME type label
+        img_data = Texter(text="iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk")
 
         img_key = "BIFKYlgMQk78iSSYjE5CWVeLj9UKgBfdfQRos5PK38Yp"
         assert db.imgs.get(keys=img_key) is None  # empty
@@ -1760,16 +1768,16 @@ def test_baser():
         result = db.imgs.get(keys=img_key)
         assert result is not None
         rsaid, ruuid, rmime, rdata = result
-        assert isinstance(rsaid, coring.Noncer)
-        assert isinstance(ruuid, coring.Noncer)
-        assert isinstance(rmime, coring.Labeler)
-        assert isinstance(rdata, coring.Texter)
+        assert isinstance(rsaid, Noncer)
+        assert isinstance(ruuid, Noncer)
+        assert isinstance(rmime, Labeler)
+        assert isinstance(rdata, Texter)
         assert rsaid.qb64 == said_nonce.qb64
         assert ruuid.qb64 == uuid_nonce.qb64
         assert rdata.text == img_data.text
 
         # overwrite with pin
-        new_data = coring.Texter(text="newdata")
+        new_data = Texter(text="newdata")
         assert db.imgs.pin(keys=img_key, val=(said_nonce, uuid_nonce, mime_label, new_data)) == True
         result = db.imgs.get(keys=img_key)
         _, _, _, rdata2 = result
@@ -1783,8 +1791,8 @@ def test_baser():
         result = db.iimgs.get(keys=img_key)
         assert result is not None
         rsaid, ruuid, rmime, rdata = result
-        assert isinstance(rsaid, coring.Noncer)
-        assert isinstance(rdata, coring.Texter)
+        assert isinstance(rsaid, Noncer)
+        assert isinstance(rdata, Texter)
         assert db.iimgs.rem(keys=img_key) == True
         assert db.iimgs.get(keys=img_key) is None
 
@@ -1798,7 +1806,7 @@ def test_baser_clone_all_pre_iter():
     Test cloneAllPreIter yields first-seen event messages for all identifier
     prefixes in the database (fels getOnItemIterAll(keys=b'', on=0) path).
     """
-    with habbing.openHby(name="test", base="test", temp=True) as hby:
+    with openHby(name="test", base="test", temp=True) as hby:
         hab1 = hby.makeHab(name="alice", isith="1", icount=1)
         hab2 = hby.makeHab(name="bob", isith="1", icount=1)
         # Single shared db now has fels (and evts, sigs) for both identifiers
@@ -1806,7 +1814,7 @@ def test_baser_clone_all_pre_iter():
         assert len(msgs) >= 2
         pres = set()
         for msg in msgs:
-            serder = serdering.SerderKERI(raw=bytes(msg))
+            serder = SerderKERI(raw=bytes(msg))
             pres.add(serder.pre)
         assert hab1.pre in pres
         assert hab2.pre in pres
@@ -1817,8 +1825,8 @@ def test_clean_baser():
     Test Baser db clean clone method
     """
     name = "nat"
-    # with basing.openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
-    with habbing.openHby(name=name, salt=core.Salter(raw=b'0123456789abcdef').qb64) as hby:  # default is temp=True
+    # with openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
+    with openHby(name=name, salt=Salter(raw=b'0123456789abcdef').qb64) as hby:  # default is temp=True
         natHab = hby.makeHab(name=name, isith='2', icount=3)  # default Hab
         # setup Nat's habitat using default salt multisig already incepts
         #natHab = habbing.Habitat(name='nat', ks=natKS, db=natDB,
@@ -1856,7 +1864,7 @@ def test_clean_baser():
         assert natHab.db.env.stat()['entries'] <= 101 #68
 
         # test reopenDB with reuse  (because temp)
-        with basing.reopenDB(db=natHab.db, reuse=True):
+        with reopenDB(db=natHab.db, reuse=True):
             assert natHab.db.path == path
             ldig = natHab.db.kels.getLast(keys=natHab.pre, on=natHab.kever.sn)
             ldig = ldig.encode("utf-8")
@@ -1870,12 +1878,12 @@ def test_clean_baser():
             assert data.hid == natHab.pre
 
             # add garbage event to corrupt database
-            badsrdr = eventing.rotate(pre=natHab.pre,
-                                      keys=[verfer.qb64 for verfer in natHab.kever.verfers],
-                                      dig=natHab.kever.serder.said,
-                                      sn=natHab.kever.sn+1,
-                                      isith='2',
-                                      ndigs=[diger.qb64 for diger in natHab.kever.ndigers])
+            badsrdr = rotate(pre=natHab.pre,
+                             keys=[verfer.qb64 for verfer in natHab.kever.verfers],
+                             dig=natHab.kever.serder.said,
+                             sn=natHab.kever.sn+1,
+                             isith='2',
+                             ndigs=[diger.qb64 for diger in natHab.kever.ndigers])
             fn, dts = natHab.kever.logEvent(serder=badsrdr, first=True)
             natHab.db.states.pin(keys=natHab.pre,
                                  val=datify(KeyStateRecord,
@@ -1888,7 +1896,7 @@ def test_clean_baser():
 
 
         # test openDB copy db with clean
-        with basing.openDB(name=natHab.db.name,
+        with openDB(name=natHab.db.name,
                           temp=natHab.db.temp,
                           headDirPath=natHab.db.headDirPath,
                           perm=natHab.db.perm,
@@ -1909,7 +1917,7 @@ def test_clean_baser():
         assert natHab.pre in natHab.kevers
 
         # see if database is back where it belongs
-        with basing.reopenDB(db=natHab.db, reuse=True):
+        with reopenDB(db=natHab.db, reuse=True):
             assert natHab.db.path == path
             ldig = natHab.db.kels.getLast(keys=natHab.pre, on=natHab.kever.sn)
             ldig = ldig.encode("utf-8")
@@ -2041,7 +2049,7 @@ def test_usebaser():
     Test using Baser
     """
     raw = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
-    salter = core.Salter(raw=raw)
+    salter = Salter(raw=raw)
 
     #  create coe's signers
     signers = salter.signers(count=8, path='db', temp=True)
@@ -2053,11 +2061,11 @@ def test_usebaser():
         count = len(keys)
         nxtkeys = [signers[3].verfer.qb64b, signers[4].verfer.qb64b, signers[5].verfer.qb64b]
         sith = "2"
-        code = core.MtrDex.Blake3_256  # Blake3 digest of incepting data
+        code = MtrDex.Blake3_256  # Blake3 digest of incepting data
         serder = incept(keys=keys,
                         code=code,
                         isith=sith,
-                        ndigs=[coring.Diger(ser=key).qb64 for key in nxtkeys])
+                        ndigs=[Diger(ser=key).qb64 for key in nxtkeys])
 
 
         # sign serialization
@@ -2072,7 +2080,7 @@ def test_usebaser():
                         keys=keys,
                         isith=sith,
                         dig=kever.serder.said,
-                        ndigs=[coring.Diger(ser=key).qb64 for key in nxtkeys],
+                        ndigs=[Diger(ser=key).qb64 for key in nxtkeys],
                         sn=1)
 
         # sign serialization
@@ -2233,7 +2241,7 @@ def test_statedict():
     """
     Test custom statedict subclass of dict
     """
-    dbd = basing.statedict(a=1, b=2, c=3)  # init in memory so never acesses db
+    dbd = statedict(a=1, b=2, c=3)  # init in memory so never acesses db
     assert dbd.db == None
     assert 'a' in dbd
     assert 'b' in dbd
@@ -2248,7 +2256,7 @@ def test_statedict():
     dbd.clear()
     assert not dbd
 
-    with basing.openDB(name="nat") as db:
+    with openDB(name="nat") as db:
         dbd.db = db
         assert dbd.db == db
         assert not dbd
@@ -2273,24 +2281,19 @@ def test_statedict():
 
         assert pre not in dbd
         dig = 'EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30'
-        serder = eventing.interact(pre=pre,
-                                   dig=dig,
-                                   sn=4)
+        serder = interact(pre=pre, dig=dig, sn=4)
 
-        eevt = eventing.StateEstEvent(s='3',
-                                      d=dig,
-                                      br=[],
-                                      ba=[])
+        eevt = StateEstEvent(s='3', d=dig, br=[], ba=[])
 
-        state = eventing.state(pre=pre,
-                               sn=4,
-                               pig=dig,
-                               dig=serder.said,
-                               fn=4,
-                               eilk=coring.Ilks.ixn,
-                               keys=[pre],
-                               eevt=eevt,
-                               )
+        state = eventState(pre=pre,
+                           sn=4,
+                           pig=dig,
+                           dig=serder.said,
+                           fn=4,
+                           eilk=Ilks.ixn,
+                           keys=[pre],
+                           eevt=eevt,
+                           )
 
         db.evts.put(keys=(pre, serder.said), val=serder)
         assert db.evts.get(keys=(pre, serder.said)) is not None
@@ -2300,7 +2303,7 @@ def test_statedict():
         assert dbstate is not None
         assert dbstate == state
 
-        kever = eventing.Kever(state=state, db=db)
+        kever = Kever(state=state, db=db)
         assert kever.state() == state
 
         dkever = dbd[pre]  # read through cache works here
@@ -2334,21 +2337,21 @@ def test_baserdoer():
 
 
     """
-    db0 = basing.Baser(name='test0', temp=True, reopen=False)
+    db0 = Baser(name='test0', temp=True, reopen=False)
     assert db0.opened == False
     assert db0.path == None
     assert db0.env == None
 
-    dbDoer0 = basing.BaserDoer(baser=db0)
+    dbDoer0 = BaserDoer(baser=db0)
     assert dbDoer0.baser == db0
     assert dbDoer0.baser.opened == False
 
-    db1 = basing.Baser(name='test1', temp=True, reopen=False)
+    db1 = Baser(name='test1', temp=True, reopen=False)
     assert db1.opened == False
     assert db1.path == None
     assert db1.env == None
 
-    dbDoer1 = basing.BaserDoer(baser=db1)
+    dbDoer1 = BaserDoer(baser=db1)
     assert dbDoer1.baser == db1
     assert dbDoer1.baser.opened == False
 
@@ -2454,11 +2457,11 @@ def test_clear_escrows():
     with openDB() as db:
         key = b'A'
         vals = [b"z", b"m", b"x", b"a"]
-        d1 = coring.Diger(ser=b"event1")                     # event digest
-        p1 = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-        n1 = core.Number(num=1)
-        e1 = coring.Diger(ser=b"est1")                       # est event digest
-        s1 = core.Siger(raw=b"\x00" * 64)                    # fake sig
+        d1 = Diger(ser=b"event1")                     # event digest
+        p1 = Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        n1 = Number(num=1)
+        e1 = Diger(ser=b"est1")                       # est event digest
+        s1 = Siger(raw=b"\x00" * 64)                    # fake sig
         res_vals = [(d1, p1, n1, e1, s1)]
 
         db.ures.put(keys=key, vals=res_vals)
@@ -2493,15 +2496,15 @@ def test_clear_escrows():
 
         udesKey = ('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8"),
                     'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'.encode("utf-8"))
-        db.udes.put(keys=udesKey, val=(coring.Number(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'),
-                                   coring.Diger(qb64b=b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E')))
+        db.udes.put(keys=udesKey, val=(Number(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'),
+                                   Diger(qb64b=b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E')))
         assert db.udes.get(keys=udesKey) is not None
 
-        diger = coring.Diger(qb64b='EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+        diger = Diger(qb64b='EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
         db.rpes.put(keys=('route',), vals=[diger])
         assert db.rpes.cnt(keys=('route',)) == 1
 
-        db.epsd.put(keys=('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc',), val=coring.Dater())
+        db.epsd.put(keys=('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc',), val=Dater())
         assert db.epsd.get(keys=('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc',)) is not None
 
         db.eoobi.pin(keys=('url',), val=OobiRecord())
@@ -2511,16 +2514,16 @@ def test_clear_escrows():
         db.dpub.put(keys=(pre, 'said'), val=serder)
         assert db.dpub.get(keys=(pre, 'said')) is not None
 
-        db.gpwe.add(keys=(pre,), val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), diger))
+        db.gpwe.add(keys=(pre,), val=(Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), diger))
         assert db.gpwe.cnt(keys=(pre,)) == 1
 
-        db.gdee.add(keys=(pre,), val=(coring.Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), diger))
+        db.gdee.add(keys=(pre,), val=(Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), diger))
         assert db.gdee.cnt(keys=(pre,)) == 1
 
         db.dpwe.pin(keys=(pre, 'said'), val=serder)
         assert db.dpwe.get(keys=(pre, 'said')) is not None
 
-        db.gpse.add(keys=('qb64',), val=(coring.Number(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), diger))
+        db.gpse.add(keys=('qb64',), val=(Number(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), diger))
         assert db.gpse.cnt(keys=('qb64',)) == 1
 
         db.epse.put(keys=('dig',), val=serder)
@@ -2652,26 +2655,26 @@ def test_db_keyspace_end_to_end_migration():
         for sn in sns:
             old_key = Seqner(sn=sn).qb64
             dig = Diger(raw=b"\x00" * 32)     # valid 32-byte raw
-            val = (dig, coring.Prefixer(qb64=pre), cigar)
+            val = (dig, Prefixer(qb64=pre), cigar)
             db.ures.add(keys=("OLD", old_key), val=val)
 
         # new encoding (Number with Huge code)
         for sn in sns:
-            new_key = Number(num=sn, code=coring.NumDex.Huge).qb64
+            new_key = Number(num=sn, code=NumDex.Huge).qb64
             dig = Diger(raw=b"\x01" * 32)     # distinguishable but valid
-            val = (dig, coring.Prefixer(qb64=pre), cigar)
+            val = (dig, Prefixer(qb64=pre), cigar)
             db.ures.add(keys=("NEW", new_key), val=val)
 
         # round-trip correctness for Number with Huge code
         for sn in sns:
-            enc = Number(num=sn, code=coring.NumDex.Huge).qb64
+            enc = Number(num=sn, code=NumDex.Huge).qb64
             parsed = Number(qb64=enc)
             assert parsed.num == sn
 
         # read back old and new keys (existence + type)
         for sn in sns:
             old_key = Seqner(sn=sn).qb64
-            new_key = Number(num=sn, code=coring.NumDex.Huge).qb64
+            new_key = Number(num=sn, code=NumDex.Huge).qb64
 
             old_vals = db.ures.get(keys=("OLD", old_key))
             new_vals = db.ures.get(keys=("NEW", new_key))
@@ -2683,10 +2686,10 @@ def test_db_keyspace_end_to_end_migration():
             ndig, npre, ncig = new_vals[0]
 
             assert isinstance(odig, Diger)
-            assert isinstance(opre, coring.Prefixer)
+            assert isinstance(opre, Prefixer)
             assert isinstance(ncig, type(cigar))
             assert isinstance(ndig, Diger)
-            assert isinstance(npre, coring.Prefixer)
+            assert isinstance(npre, Prefixer)
 
         # lexicographic ordering must match numeric ordering for NEW keys
         ordered_sns = []

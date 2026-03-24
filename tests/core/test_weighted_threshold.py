@@ -8,7 +8,9 @@ import os
 from keri import help
 
 from keri.kering import Vrsn_1_0
-from keri.core import Salter, Counter, coring, eventing, parsing, Codens
+from keri.core import (Salter, Counter, Kevery, Parser,
+                       Codens, MtrDex,
+                       incept, interact, rotate)
 
 from keri.db import basing
 from keri.app import keeping
@@ -30,7 +32,7 @@ def test_weighted():
         wesMgr = keeping.Manager(ks=wesKS, salt=wesSalt)
 
         # Init Kevery with event DB
-        wesKvy = eventing.Kevery(db=wesDB)
+        wesKvy = Kevery(db=wesDB)
 
         # create inception event for Wes with 3 keys each in incept and next sets
         # defaults are algo salty and rooted
@@ -38,11 +40,11 @@ def test_weighted():
         nxtsith = ["1/2", "1/2", "1/2"]
         verfers, digers = wesMgr.incept(icount=3, ncount=3, stem='wes', temp=True)
 
-        wesSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
-                                  isith=sith,
-                                  nsith=nxtsith,
-                                  ndigs=[diger.qb64 for diger in digers],
-                                  code=coring.MtrDex.Blake3_256)
+        wesSrdr = incept(keys=[verfer.qb64 for verfer in verfers],
+                         isith=sith,
+                         nsith=nxtsith,
+                         ndigs=[diger.qb64 for diger in digers],
+                         code=MtrDex.Blake3_256)
 
         wesPre = wesSrdr.ked["i"]
 
@@ -72,17 +74,17 @@ def test_weighted():
                     b'DP4xXVfChR-lFd2npUG')
 
         # apply msg to Wes's Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=wesKvy)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         wesK = wesKvy.kevers[wesPre]  # kever created so event was validated
         assert wesK.prefixer.qb64 == wesPre
         assert wesK.serder.said == wesSrdr.said  # key state updated so event was validated
 
         # create interaction event for Wes
-        wesSrdr = eventing.interact(pre=wesK.prefixer.qb64,
-                                    dig=wesK.serder.said,
-                                    sn=wesK.sn + 1,
-                                    data=[])
+        wesSrdr = interact(pre=wesK.prefixer.qb64,
+                           dig=wesK.serder.said,
+                           sn=wesK.sn + 1,
+                           data=[])
 
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=wesK.verfers)
 
@@ -103,7 +105,7 @@ def test_weighted():
                     b'0kViHlHI7WkFVS5q8k1SfgI')
 
         # apply msg to wes's Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=wesKvy)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.said == wesSrdr.said  # key state updated so event was validated
 
@@ -112,7 +114,7 @@ def test_weighted():
         nxtsith = ["1/2", "1/2", "1/2"]  # 2 of 3 but with weighted threshold
         verfers, digers = wesMgr.rotate(pre=wesPre, ncount=3, temp=True)
 
-        wesSrdr = eventing.rotate(pre=wesK.prefixer.qb64,
+        wesSrdr = rotate(pre=wesK.prefixer.qb64,
                                   keys=[verfer.qb64 for verfer in verfers],
                                   isith=sith,
                                   dig=wesK.serder.said,
@@ -147,7 +149,7 @@ def test_weighted():
 
 
         # apply msg to Wes's Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=wesKvy)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.said == wesSrdr.said  # key state updated so event was validated
 
@@ -158,7 +160,7 @@ def test_weighted():
         nxtsith = [["1/2", "1/2", "1/2"], ["1", "1"]]
         verfers, digers = wesMgr.rotate(pre=wesPre, ncount=5, temp=True)
 
-        wesSrdr = eventing.rotate(pre=wesK.prefixer.qb64,
+        wesSrdr = rotate(pre=wesK.prefixer.qb64,
                                   keys=[verfer.qb64 for verfer in verfers],
                                   isith=sith,
                                   dig=wesK.serder.said,
@@ -193,7 +195,7 @@ def test_weighted():
                     b'1-U9J1xb55jG4z-1Ddyx8mLW6_O53boaFobaitvO13z3u5OswF')
 
         # apply msg to Wes's Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=wesKvy)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.said == wesSrdr.said  # key state updated so event was validated
 
@@ -204,7 +206,7 @@ def test_weighted():
         nxtsith = [["1/2", "1/2", "1/2"], ["1/1", "1/1"]]
         verfers, digers = wesMgr.rotate(pre=wesPre, ncount=5, temp=True)
 
-        wesSrdr = eventing.rotate(pre=wesK.prefixer.qb64,
+        wesSrdr = rotate(pre=wesK.prefixer.qb64,
                                   keys=[verfer.qb64 for verfer in verfers],
                                   isith=sith,
                                   dig=wesK.serder.said,
@@ -244,7 +246,7 @@ def test_weighted():
                     b'l-pVBvUHEIIN')
 
         # apply msg to Wes's Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=wesKvy)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=wesKvy)
         # wesKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert wesK.serder.said == wesSrdr.said  # key state updated so event was validated
 

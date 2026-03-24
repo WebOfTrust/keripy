@@ -10,12 +10,12 @@ import falcon
 from falcon import testing
 from hio.base import doing, tyming
 
-from keri.app import signaling
+from keri.app import Signal, Signaler, SignalIterable, loadSignalingEnds, signal
 from keri.help import helping
 
 
 def test_signal():
-    sig = signaling.signal(attrs=dict(a=1), topic="/multisig", ckey="/multisig")
+    sig = signal(attrs=dict(a=1), topic="/multisig", ckey="/multisig")
 
     assert sig is not None
     assert sig.rid is not None
@@ -23,14 +23,14 @@ def test_signal():
     assert sig.attrs == dict(a=1)
     assert sig.ckey == "/multisig"
 
-    sig = signaling.signal(dict(b=1), topic="/delegation", dt="2022-07-08T15:01:05.453632")
+    sig = signal(dict(b=1), topic="/delegation", dt="2022-07-08T15:01:05.453632")
     assert sig.rid is not None
     assert sig.topic == "/delegation"
     assert sig.attrs == dict(b=1)
     assert sig.ckey is None
     assert sig.dt == "2022-07-08T15:01:05.453632"
 
-    sig = signaling.Signal(pad=dict(c=1), ckey="/notification")
+    sig = Signal(pad=dict(c=1), ckey="/notification")
     assert sig.rid is not None
     assert sig.attrs is None
     assert sig.ckey == "/notification"
@@ -39,7 +39,7 @@ def test_signal():
 
     now = helping.nowUTC()
     payload = dict(name="John", email="john@example.com", msg="test")
-    sig = signaling.signal(payload, topic="/d", dt=now)
+    sig = signal(payload, topic="/d", dt=now)
     assert sig.dt == now.isoformat()
 
     now = helping.nowUTC()
@@ -48,7 +48,7 @@ def test_signal():
 
 
 def test_signaler():
-    signaler = signaling.Signaler()
+    signaler = Signaler()
 
     assert signaler.signals is not None
 
@@ -102,10 +102,10 @@ def test_signaler():
 
 def test_signal_ends():
     app = falcon.App()
-    signaler = signaling.Signaler()
+    signaler = Signaler()
 
     # change the default timeout so our requests return
-    signaling.SignalIterable.TimeoutMBX = 1
+    SignalIterable.TimeoutMBX = 1
     signaler.push(attrs=dict(a=1), topic="/m", dt=helping.fromIso8601("2022-08-11T08:10:05.164948"))
     signaler.push(attrs=dict(a=2), topic="/m", ckey="abc", dt=helping.fromIso8601("2022-08-11T08:10:05.165089"))
     assert len(signaler.signals) == 2
@@ -113,7 +113,7 @@ def test_signal_ends():
     rid0 = signaler.signals[0].rid
     rid1 = signaler.signals[1].rid
 
-    _ = signaling.loadEnds(app, signals=signaler.signals)
+    _ = loadSignalingEnds(app, signals=signaler.signals)
 
     client = testing.TestClient(app)
     result = client.simulate_get(path="/mbx")

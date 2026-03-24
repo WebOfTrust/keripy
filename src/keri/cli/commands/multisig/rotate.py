@@ -16,7 +16,7 @@ from ...common import (Parsery, config, addRotationArgs,
 from ....kering import ConfigurationError
 from ....app import (Notifier, Multiplexor, Counselor,
                      MailboxDirector, HaberyDoer, Poster,
-                     loadHandlers, multisigRotateExn)
+                     loadGroupingHandlers, multisigRotateExn)
 
 from ....core import Prefixer, Number, Diger, SerderKERI
 from ....db import dgKey
@@ -90,7 +90,7 @@ class GroupMultisigRotate(doing.DoDoer):
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
         exc = Exchanger(hby=self.hby, handlers=[])
-        loadHandlers(exc, mux)
+        loadGroupingHandlers(exc, mux)
 
         mbd = MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig', '/replay'], exc=exc)
         self.counselor = Counselor(hby=self.hby)

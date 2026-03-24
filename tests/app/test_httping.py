@@ -8,50 +8,53 @@ import falcon
 import pytest
 from falcon.testing import helpers
 
-from keri.app import habbing, httping
-from keri.core import coring, serdering
-from keri.vdr import credentialing, verifying
+from keri.app import (openHab, parseCesrHttpRequest,
+                      createCESRRequest, streamCESRRequests,
+                      CESR_CONTENT_TYPE)
+from keri.kering import Ilks
+from keri.core import SerderKERI
+from keri.vdr import Regery, Verifier
 
 
 def test_parse_cesr_request():
     req = helpers.create_req()
     with pytest.raises(falcon.HTTPError):
-        httping.parseCesrHttpRequest(req=req)
+        parseCesrHttpRequest(req=req)
 
     req = helpers.create_req(headers=dict(
-        Content_Type=httping.CESR_CONTENT_TYPE,
+        Content_Type=CESR_CONTENT_TYPE,
     ))
     with pytest.raises(falcon.HTTPError):
-        httping.parseCesrHttpRequest(req=req)
+        parseCesrHttpRequest(req=req)
 
     req = helpers.create_req(headers=dict(
-        Content_Type=httping.CESR_CONTENT_TYPE,
+        Content_Type=CESR_CONTENT_TYPE,
         CESR_DATE_HEADER="2021-06-27T21:26:21.233257+00:00",
     ))
     with pytest.raises(falcon.HTTPError):
-        httping.parseCesrHttpRequest(req=req)
+        parseCesrHttpRequest(req=req)
 
     req = helpers.create_req(
         headers=dict(
-            Content_Type=httping.CESR_CONTENT_TYPE,
+            Content_Type=CESR_CONTENT_TYPE,
             CESR_DATE="2021-06-27T21:26:21.233257+00:00",
         ),
         body='{}',
     )
     with pytest.raises(falcon.HTTPError):
-        httping.parseCesrHttpRequest(req=req)
+        parseCesrHttpRequest(req=req)
 
     req = helpers.create_req(
         path="/credential/issue",
         headers=dict(
-            Content_Type=httping.CESR_CONTENT_TYPE,
+            Content_Type=CESR_CONTENT_TYPE,
             CESR_DATE="2021-06-27T21:26:21.233257+00:00",
             CESR_ATTACHMENT="-H000000000"
         ),
         body='{"i": 1234}',
     )
 
-    cr = httping.parseCesrHttpRequest(req=req)
+    cr = parseCesrHttpRequest(req=req)
     assert cr.payload == dict(i=1234)
     assert cr.attachments == "-H000000000"
 
@@ -71,24 +74,24 @@ class MockClient:
 
 
 def test_create_cesr_request(mockHelpingNowUTC):
-    with habbing.openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
+    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
         wit = "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"
-        regery = credentialing.Regery(hby=hby, name="test", temp=True)
+        regery = Regery(hby=hby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="test")
 
-        verfer = verifying.Verifier(hby=hby)
+        verfer = Verifier(hby=hby)
         msg = verfer.query(hab.pre, issuer.regk,
                            "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
                            route="tels")
         client = MockClient()
 
-        httping.createCESRRequest(msg, client, dest=wit, path="/qry/tels")
+        createCESRRequest(msg, client, dest=wit, path="/qry/tels")
 
         args = client.args.pop()
         assert args["method"] == "POST"
         assert args["path"] == "/qry/tels"
-        serder = serdering.SerderKERI(raw=args['body'])
-        assert serder.ked["t"] == coring.Ilks.qry
+        serder = SerderKERI(raw=args['body'])
+        assert serder.ked["t"] == Ilks.qry
         assert serder.ked["r"] == "tels"
 
         headers = args["headers"]
@@ -99,7 +102,7 @@ def test_create_cesr_request(mockHelpingNowUTC):
         msg = hab.query(pre=hab.pre, src=wit, route="mbx", query=dict(s=0))
         client = MockClient()
 
-        httping.createCESRRequest(msg, client, dest=wit, path="/qry/mbx")
+        createCESRRequest(msg, client, dest=wit, path="/qry/mbx")
 
         args = client.args.pop()
         assert args["method"] == "POST"
@@ -119,24 +122,24 @@ def test_create_cesr_request(mockHelpingNowUTC):
 
 
 def test_stream_cesr_request(mockHelpingNowUTC):
-    with habbing.openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
+    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
         wit = "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"
-        regery = credentialing.Regery(hby=hby, name="test", temp=True)
+        regery = Regery(hby=hby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="test")
 
-        verfer = verifying.Verifier(hby=hby)
+        verfer = Verifier(hby=hby)
         msg = verfer.query(hab.pre, issuer.regk,
                            "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
                            route="tels")
         client = MockClient()
 
-        httping.streamCESRRequests(client, msg, dest=wit, path="/qry/tels")
+        streamCESRRequests(client, msg, dest=wit, path="/qry/tels")
 
         args = client.args.pop()
         assert args["method"] == "POST"
         assert args["path"] == "/qry/tels"
-        serder = serdering.SerderKERI(raw=args['body'])
-        assert serder.ked["t"] == coring.Ilks.qry
+        serder = SerderKERI(raw=args['body'])
+        assert serder.ked["t"] == Ilks.qry
         assert serder.ked["r"] == "tels"
 
         headers = args["headers"]
@@ -147,7 +150,7 @@ def test_stream_cesr_request(mockHelpingNowUTC):
         msg = hab.query(pre=hab.pre, src=wit, route="mbx", query=dict(s=0))
         client = MockClient()
 
-        httping.streamCESRRequests(client, msg, dest=wit, path="/qry/mbx")
+        streamCESRRequests(client, msg, dest=wit, path="/qry/mbx")
 
         args = client.args.pop()
         assert args["method"] == "POST"
@@ -168,7 +171,7 @@ def test_stream_cesr_request(mockHelpingNowUTC):
         msgs.extend(hab.makeOwnEvent(sn=0))
 
         client = MockClient()
-        httping.streamCESRRequests(client, msgs, dest=wit)
+        streamCESRRequests(client, msgs, dest=wit)
         assert len(client.args) == 2
         args = client.args.pop()
         assert args["method"] == "POST"

@@ -7,25 +7,27 @@ import time
 
 from hio.base import doing, tyming
 
-from keri import kering, core
-from keri.app import habbing, indirecting, agenting, directing
+from keri.kering import Schemes
+from keri.core import Salter
+from keri.app import (WitnessReceiptor, WitnessPublisher, WitnessInquisitor,
+                      runController, openHby, setupWitness)
 from keri.help import nowIso8601
 
 
 def test_withness_receiptor(seeder):
-    with habbing.openHby(name="wan1", salt=core.Salter(raw=b'wann-the-witness').qb64) as wanHby, \
-            habbing.openHby(name="wil1", salt=core.Salter(raw=b'will-the-witness').qb64) as wilHby, \
-            habbing.openHby(name="wes1", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
-            habbing.openHby(name="pal1", salt=core.Salter(raw=b'0123456789abcdef').qb64) as palHby:
+    with openHby(name="wan1", salt=Salter(raw=b'wann-the-witness').qb64) as wanHby, \
+            openHby(name="wil1", salt=Salter(raw=b'will-the-witness').qb64) as wilHby, \
+            openHby(name="wes1", salt=Salter(raw=b'wess-the-witness').qb64) as wesHby, \
+            openHby(name="pal1", salt=Salter(raw=b'0123456789abcdef').qb64) as palHby:
 
-        wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
-        wilDoers = indirecting.setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
-        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
+        wanDoers = setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
+        wilDoers = setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
+        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
 
         wanHab = wanHby.habByName(name="wan")
         wilHab = wilHby.habByName(name="wil")
         wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[kering.Schemes.tcp])
+        seeder.seedWitEnds(palHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[Schemes.tcp])
 
         rctDoer = ReceiptDoer(hby=palHby, wanHab=wanHab, wilHab=wilHab, wesHab=wesHab)
 
@@ -65,7 +67,7 @@ class ReceiptDoer(doing.DoDoer):
 
         palHab = self.hby.makeHab(name="pal", wits=[self.wanHab.pre, self.wilHab.pre], transferable=True)
 
-        witDoer = agenting.WitnessReceiptor(hby=self.hby)
+        witDoer = WitnessReceiptor(hby=self.hby)
         witDoer.msgs.append(dict(pre=palHab.pre))
         self.extend([witDoer])
 
@@ -80,10 +82,10 @@ class ReceiptDoer(doing.DoDoer):
             yield self.tock
 
         # Controller should send endpoints between witnesses.  Check for Endpoints for each other:
-        keys = (self.wanHab.pre, kering.Schemes.tcp)
+        keys = (self.wanHab.pre, Schemes.tcp)
         said = self.wilHab.db.lans.get(keys=keys)
         assert said is not None
-        keys = (self.wilHab.pre, kering.Schemes.tcp)
+        keys = (self.wilHab.pre, Schemes.tcp)
         said = self.wanHab.db.lans.get(keys=keys)
         assert said is not None
 
@@ -107,32 +109,32 @@ class ReceiptDoer(doing.DoDoer):
 
 
 def test_witness_sender(seeder):
-    with habbing.openHby(name="wan2", salt=core.Salter(raw=b'wann-the-witness').qb64) as wanHby, \
-            habbing.openHby(name="wil2", salt=core.Salter(raw=b'will-the-witness').qb64) as wilHby, \
-            habbing.openHby(name="wes2", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
-            habbing.openHby(name="pal2", salt=core.Salter(raw=b'0123456789abcdef').qb64) as palHby:
+    with openHby(name="wan2", salt=Salter(raw=b'wann-the-witness').qb64) as wanHby, \
+            openHby(name="wil2", salt=Salter(raw=b'will-the-witness').qb64) as wilHby, \
+            openHby(name="wes2", salt=Salter(raw=b'wess-the-witness').qb64) as wesHby, \
+            openHby(name="pal2", salt=Salter(raw=b'0123456789abcdef').qb64) as palHby:
 
         # looks like bad magic value in seeder is causing this to fail
         pdoer = PublishDoer(wanHby, wilHby, wesHby, palHby, seeder)
-        directing.runController(doers=[pdoer], expire=15.0)
+        runController(doers=[pdoer], expire=15.0)
         assert pdoer.done is True
 
 
 class PublishDoer(doing.DoDoer):
 
     def __init__(self, wanHby, wilHby, wesHby, palHby, seeder):
-        wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
-        wilDoers = indirecting.setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
-        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
+        wanDoers = setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
+        wilDoers = setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
+        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
 
         self.wanHab = wanHby.habByName(name="wan")
         self.wilHab = wilHby.habByName(name="wil")
         self.wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[self.wanHab, self.wilHab, self.wesHab], protocols=[kering.Schemes.tcp])
+        seeder.seedWitEnds(palHby.db, witHabs=[self.wanHab, self.wilHab, self.wesHab], protocols=[Schemes.tcp])
 
         self.palHab = palHby.makeHab(name="pal", wits=[self.wanHab.pre, self.wilHab.pre, self.wesHab.pre], transferable=True)
 
-        self.witDoer = agenting.WitnessPublisher(hby=palHby)
+        self.witDoer = WitnessPublisher(hby=palHby)
         doers = wanDoers + wilDoers + wesDoers + [self.witDoer]
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.testDo)])
@@ -159,27 +161,27 @@ class PublishDoer(doing.DoDoer):
 
 
 def test_witness_inquisitor(mockHelpingNowUTC, seeder):
-    with habbing.openHby(name="wan3", salt=core.Salter(raw=b'wann-the-witness').qb64) as wanHby, \
-            habbing.openHby(name="wil3", salt=core.Salter(raw=b'will-the-witness').qb64) as wilHby, \
-            habbing.openHby(name="wes3", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
-            habbing.openHby(name="pal3", salt=core.Salter(raw=b'0123456789abcdef').qb64) as palHby, \
-            habbing.openHby(name="qin3", salt=core.Salter(raw=b'abcdef0123456789').qb64) as qinHby:
-        wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
-        wilDoers = indirecting.setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
-        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
+    with openHby(name="wan3", salt=Salter(raw=b'wann-the-witness').qb64) as wanHby, \
+            openHby(name="wil3", salt=Salter(raw=b'will-the-witness').qb64) as wilHby, \
+            openHby(name="wes3", salt=Salter(raw=b'wess-the-witness').qb64) as wesHby, \
+            openHby(name="pal3", salt=Salter(raw=b'0123456789abcdef').qb64) as palHby, \
+            openHby(name="qin3", salt=Salter(raw=b'abcdef0123456789').qb64) as qinHby:
+        wanDoers = setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
+        wilDoers = setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
+        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
 
         wanHab = wanHby.habByName(name="wan")
         wilHab = wilHby.habByName(name="wil")
         wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[kering.Schemes.tcp])
-        seeder.seedWitEnds(qinHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[kering.Schemes.tcp])
+        seeder.seedWitEnds(palHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[Schemes.tcp])
+        seeder.seedWitEnds(qinHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[Schemes.tcp])
 
         palHab = palHby.makeHab(name="pal", wits=[wanHab.pre, wilHab.pre, wesHab.pre], transferable=True)
         qinHab = qinHby.makeHab(name="qin", wits=[wanHab.pre, wilHab.pre, wesHab.pre], transferable=True)
 
-        palWitDoer = agenting.WitnessReceiptor(hby=palHby)
+        palWitDoer = WitnessReceiptor(hby=palHby)
         palWitDoer.msgs.append(dict(pre=palHab.pre))
-        qinWitDoer = agenting.WitnessReceiptor(hby=qinHby)
+        qinWitDoer = WitnessReceiptor(hby=qinHby)
         qinWitDoer.msgs.append(dict(pre=qinHab.pre))
 
         doers = wanDoers + wilDoers + wesDoers + [palWitDoer, qinWitDoer]
@@ -211,11 +213,11 @@ def test_witness_inquisitor(mockHelpingNowUTC, seeder):
         wigers = wesHab.db.wigs.get(keys=(ser.preb, ser.saidb))
         assert len(wigers) == 3
 
-        qinWitq = agenting.WitnessInquisitor(hby=qinHby)
+        qinWitq = WitnessInquisitor(hby=qinHby)
         stamp = nowIso8601()
         qinWitq.query(src=qinHab.pre, pre=palHab.pre, stamp=stamp, wits=palHab.kever.wits)
 
-        palWitq = agenting.WitnessInquisitor(hby=palHby)
+        palWitq = WitnessInquisitor(hby=palHby)
         palWitq.query(src=palHab.pre, pre=qinHab.pre, stamp=stamp, wits=qinHab.kever.wits)
 
         doist.extend([qinWitq, palWitq])
@@ -243,8 +245,8 @@ def test_messenger_prefers_https():
 
     # Both HTTP and HTTPS available
     urls = {
-        kering.Schemes.http: "http://example.com:5632",
-        kering.Schemes.https: "https://example.com:5643",
+        Schemes.http: "http://example.com:5632",
+        Schemes.https: "https://example.com:5643",
     }
 
     with patch("keri.app.agenting.HTTPMessenger") as MockHTTP:
@@ -260,7 +262,7 @@ def test_messenger_prefers_https():
         assert call_url == "https://example.com:5643", f"Expected HTTPS URL, got {call_url}"
 
     # Only HTTP available - should still work
-    http_only = {kering.Schemes.http: "http://example.com:5632"}
+    http_only = {Schemes.http: "http://example.com:5632"}
 
     with patch("keri.app.agenting.HTTPMessenger") as MockHTTP:
         messengerFrom(hab, pre, http_only)
@@ -268,7 +270,7 @@ def test_messenger_prefers_https():
         assert call_url == "http://example.com:5632"
 
     # Only HTTPS available - should still work
-    https_only = {kering.Schemes.https: "https://example.com:5643"}
+    https_only = {Schemes.https: "https://example.com:5643"}
 
     with patch("keri.app.agenting.HTTPStreamMessenger") as MockStream:
         streamMessengerFrom(hab, pre, https_only, msg=b"test")
@@ -286,9 +288,9 @@ def test_telquery_uses_pre_not_wits():
     When pre is provided, WitnessInquisitor.msgDo resolves endpoints via
     hab.endsFor(pre=pre) which works for issuers with or without witnesses.
     """
-    with habbing.openHby(name="test", temp=True) as hby:
+    with openHby(name="test", temp=True) as hby:
         hab = hby.makeHab(name="test")
-        witq = agenting.WitnessInquisitor(hby=hby)
+        witq = WitnessInquisitor(hby=hby)
 
         issr_pre = hab.pre  # use hab's own prefix as a stand-in issuer
         ri = "EAbcdefghijklmnopqrstuvwxyz012345678901234567"

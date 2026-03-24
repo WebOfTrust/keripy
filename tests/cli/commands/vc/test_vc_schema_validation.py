@@ -5,7 +5,7 @@ Tests for kli vc list and kli vc create empty schema validation (issue #1058).
 
 import pytest
 
-from keri import kering
+from keri.kering import ConfigurationError
 from keri.cli.commands.vc import list as list_cmd
 from keri.cli.commands.vc import create as create_cmd
 
@@ -27,7 +27,7 @@ class TestEmptySchemaValidation:
             "--name", "test",
             "--schema", "",
         ])
-        with pytest.raises(kering.ConfigurationError, match="schema.*must not be empty"):
+        with pytest.raises(ConfigurationError, match="schema.*must not be empty"):
             list_cmd.ListDoer(
                 name=args.name,
                 alias="test",
@@ -38,7 +38,7 @@ class TestEmptySchemaValidation:
 
     def test_create_empty_schema_raises(self):
         """Passing --schema '' to kli vc create should raise ConfigurationError."""
-        with pytest.raises(kering.ConfigurationError, match="schema.*must not be empty"):
+        with pytest.raises(ConfigurationError, match="schema.*must not be empty"):
             create_cmd.CredentialIssuer(
                 name="test",
                 alias="test",

@@ -616,7 +616,7 @@ WEB_DIR_PATH = os.path.dirname(
 STATIC_DIR_PATH = os.path.join(WEB_DIR_PATH, 'static')
 
 
-def loadEnds(app, hby, *, tymth=None, default=None, static=False):
+def loadEndingEnds(app, hby, *, tymth=None, default=None, static=False):
     """
     Load endpoints for app with shared resource dependencies
     This function provides the endpoint resource instances
@@ -677,7 +677,7 @@ def setup(name="who", temp=False, tymth=None, isith=None, count=1,
 
     # must do it here to inject into Falcon endpoint resource instances
     myapp = falcon.App(cors_enable=True)  # falcon.App instances are callable WSGI apps
-    loadEnds(myapp, tymth=tymth, hby=hby)
+    loadEndingEnds(myapp, tymth=tymth, hby=hby)
 
     webServer = http.Server(name="keri.wsgi.server", app=myapp, port=webPort, wl=wl)
     webServerDoer = http.ServerDoer(server=webServer)
