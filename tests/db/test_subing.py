@@ -2589,7 +2589,8 @@ def test_on_ioset_suber():
         assert niosuber.cntAll(keys="") == 12
         assert niosuber.cntAll(keys1) == 4
         assert niosuber.cntAll(keys1, on=2) == 0
-        assert niosuber.cnt(keys='') == 0
+        assert niosuber.cnt(keys='') == 12  # whole db count via cntAll
+        assert niosuber.cnt() == 12  # no-arg form
         assert niosuber.cnt(keys=keys0) == 4
         assert niosuber.cnt(keys=keys0, on=0, ion=2) == 2
         assert niosuber.cnt(keys=keys1) == 4
