@@ -3535,10 +3535,11 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key.
-                When empty counts whole db.
             on (int): ordinal number used with onKey(pre,on) to form key.
             ion (int): starting insertion ordinal offset into set, default 0.
         """
+        if not keys:
+            return self.db.cntAll(db=self.sdb)
         return (self.db.cntOnIoSet(db=self.sdb,
                                    key=self._tokey(keys),
                                    on=on,
