@@ -309,7 +309,7 @@ class Baser(LMDBer):
             dgKey (prefix + digest)
             Only one value per DB key is allowed.
 
-        .uwes is named subDB instance of B64OnIoDupSuber for unverified event
+        .uwes is named subDB instance of B64OnIoSetSuber for unverified event
             indexed escrowed couples from witness signers. Each couple is
             (edig, wig) where edig is receipted event digest and wig is the
             indexed witness signature derived from the witness nontrans prefix
@@ -936,7 +936,7 @@ class Baser(LMDBer):
         self.pwes = subing.OnIoDupSuber(db=self, subkey='pwes.')
         self.pdes = subing.OnIoDupSuber(db=self, subkey='pdes.')
         self.udes = subing.CatCesrSuber(db=self, subkey='udes.', klas=(coring.Number, coring.Diger))
-        self.uwes = subing.B64OnIoDupSuber(db=self, subkey='uwes.')
+        self.uwes = subing.B64OnIoSetSuber(db=self, subkey='uwes.')
         self.ooes = subing.OnIoDupSuber(db=self, subkey='ooes.')
         self.dels = subing.OnIoDupSuber(db=self, subkey='dels.')
         self.ldes = subing.OnIoDupSuber(db=self, subkey='ldes.')
