@@ -18,7 +18,11 @@ from ordered_set import OrderedSet as oset
 from keri import __version__
 
 from ..recording import (KeyStateRecord, EventSourceRecord,
-                         HabitatRecord, OobiRecord)
+                         HabitatRecord, OobiRecord, EndpointRecord,
+                         LocationRecord, ObservedRecord,
+                         CacheTypeRecord, TxnMsgCacheRecord,
+                         MsgCacheRecord, WellKnownAuthN,
+                         TopicsRecord)
 
 from ..kering import (MissingEntryError, ValidationError,
                       ConfigurationError, Vrsn_1_0)
@@ -60,12 +64,19 @@ class WebBaser(WebDBer):
 
 
         """
-        SubDbNames = [
-            "evts.", "sigs.", "wigs.", "dtss.", "aess.", "rcts.", "vrcs.", "vres.",
-            "kels.", "fels.", "ooes.", "pses.", "dels.", "ldes.", "pdes.", "pwes.",
-            "ures.", "esrs.", "states.", "habs.", "names.", "udes.", "uwes.", "ooes.",
-            "imgs.", "iimgs.", "gpse.", "fons.", "qnfs.", "mfes.", "dees.", "rpes.", "epsd.",
-            "eoobi.", "dpub.", "gdwe.", "gdee.", "dpwe.", "epsd.", "epse.", "dune."
+        SubDbNames = ["aess.", "bsss.", "bsqs.", "ccigs.", "cdel.", "cfld.", "chas.",
+            "cgms.", "coobi.", "cons.", "ctyp.", "dees.", "dels.", "dpwe.", "dpub.",
+            "dtss.", "dune.", "eans.", "ecigs.", "ends.", "eoobi.", ".epath", "epse.",
+            "epsd.", "erpy.", "esigs.", "esrs.", ".essrs", "exns.", "evts.", "fels.", "fons.",
+            "frcs.", "gdee.", "gdwe.", "gpse.", "habs.", "hbys.", "iimgs.", "icigs.",
+            "ifld.", "imgs.", "kels.", "kdts.", "knas.", "ksns.", "lans.", "ldes.",
+            "locs.", "maids.", "meids.", "mfes.", "mfa.", "migs.", "moobi.", "msgc.",
+            "names.", "obvs.", "oobis.", "ooes.", "pdes.", "pmkm.", "pmks.", "pmsk.",
+            "pses.", "ptds.", "pwes.", "qnfs.", "rcts.", "reps.", "rpes.", "rmfa.",
+            "roobi.", "rpys.", "scgs.", "schema.", "sdts.", "sids.", "sigs.", "sscs.",
+            "ssgs.", "ssts.", "stts.", "tdcs.", "tmsc.", "tmqs.", "trqs.", "tsgs.", "udes.",
+            "ures.", "uwes.", "vrcs.", "vres.", "vers.", "wigs.", "wits.", "wkas.",
+            "witm.", "woobi.", "wwas."
         ]
         self.SubDbNames = SubDbNames
 
@@ -145,19 +156,22 @@ class WebBaser(WebDBer):
         from ..core import coring, indexing
 
         self.evts = subing.SerderSuber(db=self, subkey='evts.')
-        self.sigs = subing.CesrIoSetSuber(db=self, subkey='sigs.', klas=(indexing.Siger))
-        self.wigs = subing.CesrIoSetSuber(db=self, subkey='wigs.', klas=(indexing.Siger))
-        self.dtss = subing.CesrSuber(db=self, subkey='dtss.', klas=coring.Dater)
-        self.aess = subing.CatCesrSuber(db=self, subkey='aess.', klas=(coring.Number, coring.Diger))
-        self.rcts = subing.CatCesrIoSetSuber(db=self, subkey='rcts.',
-                                            klas=(coring.Prefixer, coring.Cigar))
-        self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.',
-                                            klas=(coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
-        self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.',
-                        klas=(coring.Diger, coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
-        self.kels = subing.OnIoSetSuber(db=self, subkey='kels.')
         self.fels = subing.OnSuber(db=self, subkey='fels.')
-        self.ooes = subing.OnIoSetSuber(db=self, subkey='ooes.')
+        self.kels = subing.OnIoSetSuber(db=self, subkey='kels.')
+        self.dtss = subing.CesrSuber(db=self, subkey='dtss.', klas=coring.Dater)
+        self.aess = subing.CatCesrSuber(db=self, subkey='aess.',
+                                        klas=(coring.Number, coring.Diger))
+        self.sigs = subing.CesrIoSetSuber(db=self, subkey='sigs.',
+                                        klas=(indexing.Siger))
+        self.wigs = subing.CesrIoSetSuber(db=self, subkey='wigs.', klas=indexing.Siger)
+        self.rcts = subing.CatCesrIoSetSuber(db=self, subkey="rcts.",
+                                             klas=(coring.Prefixer, coring.Cigar))
+        self.ures = subing.CatCesrIoSetSuber(db=self, subkey='ures.',
+                                             klas=(coring.Diger, coring.Prefixer, coring.Cigar))
+        self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.',
+                             klas=(coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
+        self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.',
+                             klas=(coring.Diger, coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
         self.pses = subing.OnIoSetSuber(db=self, subkey='pses.')
         self.pwes = subing.OnIoSetSuber(db=self, subkey='pwes.')
         self.pdes = subing.OnIoSetSuber(db=self, subkey='pdes.')
@@ -167,36 +181,341 @@ class WebBaser(WebDBer):
         self.dels = subing.OnIoSetSuber(db=self, subkey='dels.')
         self.ldes = subing.OnIoSetSuber(db=self, subkey='ldes.')
         self.qnfs = subing.IoSetSuber(db=self, subkey="qnfs.")
-        self.ures = subing.CatCesrIoSetSuber(db=self, subkey='ures.',
-                                            klas=(coring.Diger, coring.Prefixer, coring.Cigar))
 
-        self.esrs = koming.Komer(db=self, subkey='esrs.', klas=EventSourceRecord)
-        self.states = koming.Komer(db=self, subkey='states.', klas=KeyStateRecord)
-        self.habs = koming.Komer(db=self, subkey='habs.', klas=HabitatRecord)
+        # events as ordered by first seen ordinals
+        self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Number)
+
+        self.migs = subing.CesrSuber(db=self, subkey="migs.", klas=coring.Dater)
+        self.vers = subing.Suber(db=self, subkey="vers.")
+
+        # event source local (protected) or non-local (remote not protected)
+        self.esrs = koming.Komer(db=self,
+                                   klas=EventSourceRecord,
+                                   subkey='esrs.')
+
+        # misfit escrows whose processing may change the .esrs event source record
+        self.misfits = subing.IoSetSuber(db=self, subkey='mfes.')
+
+        # delegable events escrows. events with local delegator that need approval
+        self.delegables = subing.IoSetSuber(db=self, subkey='dees.')
+
+        # Kever state made of KeyStateRecord key states
+        self.states = koming.Komer(db=self,
+                                   klas=KeyStateRecord,
+                                   subkey='stts.')
+
+        self.wits = subing.CesrIoSetSuber(db=self, subkey="wits.", klas=coring.Prefixer)
+
+        # habitat application state keyed by habitat name, includes prefix
+        self.habs = koming.Komer(db=self,
+                                 subkey='habs.',
+                                 klas=HabitatRecord, )
+        # habitat name database mapping (domain,name) as key to Prefixer
         self.names = subing.Suber(db=self, subkey='names.', sep="^")
 
+        # SAD support datetime stamps and signatures indexed and not-indexed
+        # all sad  sdts (sad datetime serializations) maps said to date-time
+        self.sdts = subing.CesrSuber(db=self, subkey='sdts.', klas=coring.Dater)
+
+        # all sad ssgs (sad indexed signature serializations) maps SAD quadkeys
+        # given by quadruple (diger.qb64, prefixer.qb64, seqner.q64, diger.qb64)
+        #  of reply and trans signer's key state est evt to val Siger for each
+        # signature.
+        self.ssgs = subing.CesrIoSetSuber(db=self, subkey='ssgs.', klas=indexing.Siger)
+
+        # all sad scgs  (sad non-indexed signature serializations) maps SAD SAID
+        # to couple (Verfer, Cigar) of nontrans signer of signature in Cigar
+        # nontrans qb64 of Prefixer is same as Verfer
+        self.scgs = subing.CatCesrIoSetSuber(db=self, subkey='scgs.',
+                                             klas=(coring.Verfer, coring.Cigar))
+
+        # all reply messages. Maps reply said to serialization. Replys are
+        # versioned sads ( with version string) so use Serder to deserialize and
+        # use  .sdts, .ssgs, and .scgs for datetimes and signatures
+        # TODO: clean
+        self.rpys = subing.SerderSuber(db=self, subkey='rpys.')
+
+        # all reply escrows indices of partially signed reply messages. Maps
+        # route in reply to single (Diger,)  of escrowed reply.
+        # Routes such as /end/role  /loc/schema
+        self.rpes = subing.CesrIoSetSuber(db=self, subkey='rpes.',
+                                          klas=coring.Diger)
+
+        # auth AuthN/AuthZ by controller at cid of endpoint provider at eid
+        # maps key=cid.role.eid to val=diger of end reply
+        self.eans = subing.CesrSuber(db=self, subkey='eans.', klas=coring.Diger)
+
+        # auth AuthN/AuthZ by endpoint provider at eid of location at scheme url
+        # maps key=cid.role.eid to val=diger of end reply
+        self.lans = subing.CesrSuber(db=self, subkey='lans.', klas=coring.Diger)
+
+        # service endpoint identifier (eid) auths keyed by controller cid.role.eid
+        # data extracted from reply /end/role/add or /end/role/cut
+        self.ends = koming.Komer(db=self, subkey='ends.',
+                                 klas=EndpointRecord, )
+
+        # service endpoint locations keyed by eid.scheme  (endpoint identifier)
+        # data extracted from reply loc
+        self.locs = koming.Komer(db=self,
+                                 subkey='locs.',
+                                 klas=LocationRecord, )
+        # observed oids by watcher by cid.aid.oid  (endpoint identifier)
+        # data extracted from reply loc
+        self.obvs = koming.Komer(db=self,
+                                 subkey='obvs.',
+                                 klas=ObservedRecord, )
+
+        # index of last retrieved message from witness mailbox
+        self.tops = koming.Komer(db=self,
+                                 subkey='witm.',
+                                 klas=TopicsRecord, )
+
+        # group partial signature escrow
+        self.gpse = subing.CatCesrIoSetSuber(db=self, subkey='gpse.',
+                                             klas=(coring.Number, coring.Diger))
+
+        # group delegate escrow
+        self.gdee = subing.CatCesrIoSetSuber(db=self, subkey='gdee.',
+                                             klas=(coring.Number, coring.Diger))
+
+        # group partial witness escrow
+        self.gpwe = subing.CatCesrIoSetSuber(db=self, subkey='gdwe.',
+                                             klas=(coring.Number, coring.Diger))
+
+        # completed group multisig
+        self.cgms = subing.CesrSuber(db=self, subkey='cgms.',
+                                     klas=coring.Diger)
+
+        # exchange message partial signature escrow
+        self.epse = subing.SerderSuber(db=self, subkey="epse.")
+
+        # exchange message PS escrow date time of message
+        self.epsd = subing.CesrSuber(db=self, subkey="epsd.",
+                                     klas=coring.Dater)
+
+        # exchange messages
+        self.exns = subing.SerderSuber(db=self, subkey="exns.")
+
+        # Forward pointer to a provided reply message
+        self.erpy = subing.CesrSuber(db=self, subkey="erpy.", klas=coring.Saider)
+
+        # exchange message signatures
+        self.esigs = subing.CesrIoSetSuber(db=self, subkey='esigs.', klas=indexing.Siger)
+
+        # exchange message signatures
+        self.ecigs = subing.CatCesrIoSetSuber(db=self, subkey='ecigs.',
+                                              klas=(coring.Verfer, coring.Cigar))
+
+        # exchange pathed attachments
+        self.epath = subing.IoSetSuber(db=self, subkey=".epath")
+
+        self.essrs = subing.CesrIoSetSuber(db=self, subkey=".essrs", klas=coring.Texter)
+
+        # accepted signed 12-word challenge response exn messages keys by prefix of signer
+        self.chas = subing.CesrIoSetSuber(db=self, subkey='chas.', klas=coring.Diger)
+
+        # successfull signed 12-word challenge response exn messages keys by prefix of signer
+        self.reps = subing.CesrIoSetSuber(db=self, subkey='reps.', klas=coring.Diger)
+
+        # authorzied well known OOBIs
+        self.wkas = koming.IoSetKomer(db=self, subkey='wkas.', klas=WellKnownAuthN)
+
+        # KSN support datetime stamps and signatures indexed and not-indexed
+        # all ksn  kdts (key state datetime serializations) maps said to date-time
+        self.kdts = subing.CesrSuber(db=self, subkey='kdts.', klas=coring.Dater)
+
+        # all key state messages. Maps key state said to serialization. ksns are
+        # KeyStateRecords so use ._asdict or ._asjson as appropriate
+        # use  .kdts, .ksgs, and .kcgs for datetimes and signatures
+        self.ksns = koming.Komer(db=self,
+                                klas=KeyStateRecord,
+                                subkey='ksns.')
+
+        # key state SAID database for successfully saved key state notices
+        # maps key=(prefix, aid) to val=said of key state
+        self.knas = subing.CesrSuber(db=self, subkey='knas.', klas=coring.Diger)
+
+        # Watcher watched SAID database for successfully saved watched AIDs for a watcher
+        # maps key=(cid, aid, oid) to val=said of rpy message
+        self.wwas = subing.CesrSuber(db=self, subkey='wwas.', klas=coring.Diger)
+
+        # config loaded oobis to be processed asynchronously, keyed by oobi URL
+        self.oobis = koming.Komer(db=self,
+                                  subkey='oobis.',
+                                  klas=OobiRecord,
+                                  sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
+
+        # escrow OOBIs that failed to load, retriable, keyed by oobi URL
+        self.eoobi = koming.Komer(db=self,
+                                  subkey='eoobi.',
+                                  klas=OobiRecord,
+                                  sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
+
+        # OOBIs with outstand client requests.
+        self.coobi = koming.Komer(db=self,
+                                  subkey='coobi.',
+                                  klas=OobiRecord,
+                                  sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
+
+        # Resolved OOBIs (those that have been processed successfully for this database.
+        self.roobi = koming.Komer(db=self,
+                                  subkey='roobi.',
+                                  klas=OobiRecord,
+                                  sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
+
+        # Well known OOBIs that are to be used for mfa against a resolved OOBI.
+        self.woobi = koming.Komer(db=self,
+                                  subkey='woobi.',
+                                  klas=OobiRecord,
+                                  sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
+
+        # Well known OOBIs that are to be used for mfa against a resolved OOBI.
+        self.moobi = koming.Komer(db=self,
+                                  subkey='moobi.',
+                                  klas=OobiRecord,
+                                  sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
+
+        # Multifactor well known OOBI auth records to process.  Keys by controller URL
+        self.mfa = koming.Komer(db=self,
+                                subkey='mfa.',
+                                klas=OobiRecord,
+                                sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
+
+        # Resolved multifactor well known OOBI auth records.  Keys by controller URL
+        self.rmfa = koming.Komer(db=self,
+                                 subkey='rmfa.',
+                                 klas=OobiRecord,
+                                 sep=">")  # Use seperator not allowed in URLs so no splitting occurs.
+
+        # JSON schema SADs keys by the SAID
+        self.schema = subing.SchemerSuber(db=self,
+                                          subkey='schema.')
+
+        # Field values for contact information for remote identifiers.  Keyed by prefix/field
+        self.cfld = subing.Suber(db=self,
+                                 subkey="cfld.")
+
+        # Global settings for the Habery environment
+        self.hbys = subing.Suber(db=self, subkey='hbys.')
+
+        # Signed contact data, keys by prefix
+        self.cons = subing.Suber(db=self,
+                                 subkey="cons.")
+
+        # Transferable signatures on contact data
+        self.ccigs = subing.CesrSuber(db=self, subkey='ccigs.', klas=coring.Cigar)
+
+        # Blinded media for contact information for remote identifiers.
+        # CatCesrSuber with TypeMedia format: (Noncer=SAID, Noncer=UUID, Labeler=MIME, Texter=data)
         self.imgs = subing.CatCesrSuber(db=self, subkey='imgs.',
                                          klas=(coring.Noncer, coring.Noncer,
                                                coring.Labeler, coring.Texter))
+
+        # Field values for identifier information for local identifiers. Keyed by prefix/field
+        self.ifld = subing.Suber(db=self,
+                                 subkey="ifld.")
+
+        # Signed identifier data, keys by prefix
+        self.sids = subing.Suber(db=self,
+                                  subkey="sids.")
+
+        # Transferable signatures on identifier data
+        self.icigs = subing.CesrSuber(db=self, subkey='icigs.', klas=coring.Cigar)
+
+        # Blinded media for identifier information for local identifiers.
+        # CatCesrSuber with TypeMedia format: (Noncer=SAID, Noncer=UUID, Labeler=MIME, Texter=data)
         self.iimgs = subing.CatCesrSuber(db=self, subkey='iimgs.',
                                           klas=(coring.Noncer, coring.Noncer,
                                                 coring.Labeler, coring.Texter))
 
-        self.gpse = subing.CatCesrIoSetSuber(db=self, subkey='gpse.', klas=(coring.Number, coring.Diger))
-        self.gdee = subing.CatCesrIoSetSuber(db=self, subkey='gdee.', klas=(coring.Number, coring.Diger))
-        self.gpwe = subing.CatCesrIoSetSuber(db=self, subkey='gdwe.', klas=(coring.Number, coring.Diger))
-        self.misfits = subing.OnIoSetSuber(db=self, subkey='mfes.')
-        self.delegables = subing.IoSetSuber(db=self, subkey='dees.')
-        self.rpes = subing.CesrIoSetSuber(db=self, subkey='rpes.', klas=coring.Diger)
-        self.epsd = subing.CesrSuber(db=self, subkey="epsd.", klas=coring.Dater)
-        self.eoobi = koming.Komer(db=self, subkey='eoobi.', klas=OobiRecord, sep=">")
-        self.dpub = subing.SerderSuber(db=self, subkey='dpub.')
-        self.epsd = subing.CesrSuber(db=self, subkey="epsd.", klas=coring.Dater)
-        self.epse = subing.SerderSuber(db=self, subkey="epse.")
-        self.dune = subing.SerderSuber(db=self, subkey='dune.')
+        # Delegation escrow dbs #
+        # delegated partial witness escrow
         self.dpwe = subing.SerderSuber(db=self, subkey='dpwe.')
 
-        self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Number)
+        # delegated unanchored escrow
+        self.dune = subing.SerderSuber(db=self, subkey='dune.')
+
+        # delegate publication escrow for sending delegator info to my witnesses
+        self.dpub = subing.SerderSuber(db=self, subkey='dpub.')
+
+        # completed group delegated AIDs
+        self.cdel = subing.CesrOnSuber(db=self, subkey='cdel.',
+                                     klas=coring.Diger)
+
+        # multisig sig embed payload SAID mapped to containing exn messages across group multisig participants
+        self.meids = subing.CesrIoSetSuber(db=self, subkey="meids.", klas=coring.Diger)
+
+        # multisig sig embed payload SAID mapped to group multisig participants AIDs
+        self.maids = subing.CesrIoSetSuber(db=self, subkey="maids.", klas=coring.Prefixer)
+
+        # KRAM cache type — key: expression string, value: drift and lag params
+        self.kramCTYP = koming.Komer(db=self, subkey='ctyp.',
+                                 klas=CacheTypeRecord)
+
+        # KRAM message cache — key: (AID, MID), value: msg datetime, drift, lags
+        self.kramMSGC = koming.Komer(db=self, subkey='msgc.',
+                                 klas=MsgCacheRecord)
+
+        # KRAM transactioned message cache — key: (AID, XID, MID), value: datetimes, drift, lags
+        self.kramTMSC = koming.Komer(db=self, subkey='tmsc.',
+                                 klas=TxnMsgCacheRecord)
+
+        # KRAM partially signed multi-key message key (AID.MID) mapped to associated message (SerderKERI)
+        self.kramPMKM = subing.SerderSuber(db=self, subkey='pmkm.')
+
+        # KRAM partially signed multi-key signature key (AID.MID) mapped to associated signatures
+        self.kramPMKS = subing.CesrIoSetSuber(db=self, subkey='pmks.', klas=indexing.Siger)
+
+        # KRAM partially signed multi-key sender key state key (AID.MID) mapped to SN and event SAID
+        self.kramPMSK = subing.CatCesrSuber(db=self, subkey='pmsk.', klas=(coring.Number, coring.Diger))
+
+        # KRAM partially signed multi-key non-authenticator attachments
+
+        # trqs: trans receipt quadruples (prefixer, number, diger, siger)
+        self.kramTRQS = subing.CatCesrIoSetSuber(db=self, subkey='trqs.',
+                                                  klas=(coring.Prefixer, coring.Number,
+                                                        coring.Diger, indexing.Siger))
+
+        # tsgs: trans last sig groups (prefixer, number, diger, siger) — stored per-siger
+        self.kramTSGS = subing.CatCesrIoSetSuber(db=self, subkey='tsgs.',
+                                                  klas=(coring.Prefixer, coring.Number,
+                                                        coring.Diger, indexing.Siger))
+
+        # sscs: first seen seal couples (number, diger) issuing or delegating
+        self.kramSSCS = subing.CatCesrIoSetSuber(db=self, subkey='sscs.',
+                                                  klas=(coring.Number, coring.Diger))
+
+        # ssts: source seal triples (prefixer, number, diger) issued or delegated
+        self.kramSSTS = subing.CatCesrIoSetSuber(db=self, subkey='ssts.',
+                                                  klas=(coring.Prefixer, coring.Number,
+                                                        coring.Diger))
+
+        # frcs: first seen replay couples (number, dater)
+        self.kramFRCS = subing.CatCesrIoSetSuber(db=self, subkey='frcs.',
+                                                  klas=(coring.Number, coring.Dater))
+
+        # tdcs: typed digest seal couples (verser, diger)
+        self.kramTDCS = subing.CatCesrIoSetSuber(db=self, subkey='tdcs.',
+                                                  klas=(coring.Verser, coring.Diger))
+
+        # ptds: pathed streams (raw bytes)
+        self.kramPTDS = subing.IoSetSuber(db=self, subkey='ptds.')
+
+        # bsqs: blind state quadruples (diger, noncer, noncer, labeler)
+        self.kramBSQS = subing.CatCesrIoSetSuber(db=self, subkey='bsqs.',
+                                                  klas=(coring.Diger, coring.Noncer,
+                                                        coring.Noncer, coring.Labeler))
+
+        # bsss: bound state sextuples (diger, noncer, noncer, labeler, number, noncer)
+        self.kramBSSS = subing.CatCesrIoSetSuber(db=self, subkey='bsss.',
+                                                  klas=(coring.Diger, coring.Noncer,
+                                                        coring.Noncer, coring.Labeler,
+                                                        coring.Number, coring.Noncer))
+
+        # tmqs: type media quadruples (diger, noncer, labeler, texter)
+        self.kramTMQS = subing.CatCesrIoSetSuber(db=self, subkey='tmqs.',
+                                                  klas=(coring.Diger, coring.Noncer,
+                                                        coring.Labeler, coring.Texter))
 
     def reload(self):
         self.prefixes.clear()
