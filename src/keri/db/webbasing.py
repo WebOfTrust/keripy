@@ -39,12 +39,6 @@ except ImportError:  # pragma: no cover
 
 logger = ogler.getLogger()
 
-# The following are necessary to define in this file 
-# to prevent non wasm compatible imports (importing from dbing)
-# MaxON, onKey, splitKey, splitOnKey
-
-MaxON = int("f"*32, 16)  # max ordinal number, same as kering.MaxON
-
 class WebBaser(WebDBer):
     def __init__(self, name="main", reopen=False, **kwa):
         """
@@ -594,6 +588,7 @@ class WebBaser(WebDBer):
                                                   klas=(coring.Diger, coring.Noncer,
                                                         coring.Labeler, coring.Texter))
 
+
     def reload(self):
         """
         Rebuild in‑memory Kever state from persisted habitat and key state records.
@@ -646,7 +641,6 @@ class WebBaser(WebDBer):
 
             if hab.mid:
                 self.groups.add(hab.hid)
-
 
     
     def migrate(self):
@@ -728,6 +722,7 @@ class WebBaser(WebDBer):
                 total += count
         if total > 0:
             print(f"Cleared {total} escrow entries before migration")
+
 
     def clearEscrows(self):
         """
@@ -882,7 +877,7 @@ class WebBaser(WebDBer):
 
         # 1. Create a fresh empty WebBaser clone
         clean_name = f"{self.name}_clean"
-        copy = WebBaser(name=clean_name, headDirPath=self.headDirPath)
+        copy = WebBaser(name=clean_name)
 
         # 2. Replay all events into the clean DB
         kvy = Kevery(db=copy)
@@ -1091,6 +1086,7 @@ class WebBaser(WebDBer):
         msg.extend(atc)
         return msg
 
+
     def cloneDelegation(self, kever):
         """
         Recursively clone delegation chain from AID of Kever if one exits.
@@ -1105,6 +1101,7 @@ class WebBaser(WebDBer):
 
             for dmsg in self.clonePreIter(pre=kever.delpre, fn=0):
                 yield dmsg
+
 
     def fetchAllSealingEventByEventSeal(self, pre, seal, sn=0):
         """
@@ -1178,7 +1175,6 @@ class WebBaser(WebDBer):
         return None
 
 
-
     def fetchLastSealingEventBySeal(self, pre, seal, sn=0):
         """Only searches last event at any sn therefore does not search
         any disputed or superseded events.
@@ -1206,6 +1202,7 @@ class WebBaser(WebDBer):
                         return srdr
         return None
 
+
     def signingMembers(self, pre: str):
         """ Find signing members of a multisig group aid.
 
@@ -1223,6 +1220,7 @@ class WebBaser(WebDBer):
 
         return habord.smids
 
+
     def rotationMembers(self, pre: str):
         """ Find rotation members of a multisig group aid.
 
@@ -1238,6 +1236,7 @@ class WebBaser(WebDBer):
             return None
 
         return habord.rmids
+
 
     def fullyWitnessed(self, serder):
         """ Verify the witness threshold on the event
@@ -1256,6 +1255,7 @@ class WebBaser(WebDBer):
         toad = kever.toader.num
 
         return not len(wigers) < toad
+
 
     def resolveVerifiers(self, pre=None, sn=0, dig=None):
         """
@@ -1296,6 +1296,7 @@ class WebBaser(WebDBer):
             tholder = coring.Tholder(sith="1")
 
         return tholder, verfers
+
 
     def getEvtPreIter(self, pre, sn=0):
         """
