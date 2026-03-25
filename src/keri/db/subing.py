@@ -3525,23 +3525,25 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
                                       sep=self.sep.encode())
 
 
-    def cnt(self, keys: str|bytes|memoryview|Iterable, on: int=0, ion: int=0):
+    def cnt(self, keys: str|bytes|memoryview|Iterable="", on: int=0, ion: int=0):
         """Counts all entries in set at onkey = keys + sep + on starting at
         offset suffix ion into set.
 
         Returns:
             count (int): count values in set at effective onkey from insertion
-                         ordering offset ion.
+                        ordering offset ion.
 
         Parameters:
-            keys (str|bytes|memoryview|Iterable): key(s) made into base key
+            keys (str|bytes|memoryview|Iterable): key(s) made into base key.
+                When empty counts whole db.
             on (int): ordinal number used with onKey(pre,on) to form key.
+            ion (int): starting insertion ordinal offset into set, default 0.
         """
         return (self.db.cntOnIoSet(db=self.sdb,
-                                     key=self._tokey(keys),
-                                     on=on,
-                                     ion=ion,
-                                     sep=self.sep.encode()))
+                                   key=self._tokey(keys),
+                                   on=on,
+                                   ion=ion,
+                                   sep=self.sep.encode()))
 
 
     def cntAll(self, keys: str|bytes|memoryview|Iterable="", on: int=0):
