@@ -1415,7 +1415,7 @@ class Baser(LMDBer):
         ]
         total = 0
         for escrow in escrows:
-            count = escrow.cnt()
+            count = escrow.cntAll()
             if count > 0:
                 escrow.trim()
                 total += count
