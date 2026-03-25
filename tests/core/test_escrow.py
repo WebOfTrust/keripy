@@ -9,16 +9,20 @@ import datetime
 
 import pytest
 
-from keri import Vrsn_1_0, help, MisfitEventSourceError
+from hio.help import ogler
 
-from keri.core import (Seqner, Counter, Salter, coring, eventing, parsing,
-                       MtrDex, Codens, Number, Diger)
+from keri.kering import Vrsn_1_0, MisfitEventSourceError
+
+from keri.core import (Seqner, Counter, Salter, Saider,
+                       Number, Diger, Kevery, eventing, parsing,
+                       MtrDex, Codens, NumDex,
+                       incept, interact, rotate, delcept)
 
 from keri.db import dgKey, snKey, openDB
 from keri.app import keeping
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 def test_partial_signed_escrow():
@@ -35,7 +39,7 @@ def test_partial_signed_escrow():
         mgr = keeping.Manager(ks=ks, salt=salt)
 
         # Init Kevery with event DB
-        kvy = eventing.Kevery(db=db)
+        kvy = Kevery(db=db)
 
         # create inception event with 3 keys each in incept and next sets
         # defaults are algo salty and rooted
@@ -43,7 +47,7 @@ def test_partial_signed_escrow():
         nxtsith = ["1/2", "1/2", "1/2"]
         verfers, digers = mgr.incept(icount=3, ncount=3, stem='wes', temp=True)
 
-        srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+        srdr = incept(keys=[verfer.qb64 for verfer in verfers],
                                isith=sith,
                                nsith=nxtsith,
                                ndigs=[diger.qb64 for diger in digers],
@@ -147,7 +151,7 @@ def test_partial_signed_escrow():
         assert fsdig == srdr.saidb.decode("utf-8")
 
         # create interaction event for
-        srdr = eventing.interact(pre=kvr.prefixer.qb64,
+        srdr = interact(pre=kvr.prefixer.qb64,
                                  dig=kvr.serder.said,
                                  sn=kvr.sn+1,
                                  data=[])
@@ -266,7 +270,7 @@ def test_partial_signed_escrow():
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
         verfers, digers = mgr.rotate(pre=pre, ncount=5, temp=True)
 
-        srdr = eventing.rotate(pre=kvr.prefixer.qb64,
+        srdr = rotate(pre=kvr.prefixer.qb64,
                                keys=[verfer.qb64 for verfer in verfers],
                                isith=sith,
                                dig=kvr.serder.said,
@@ -296,7 +300,7 @@ def test_partial_signed_escrow():
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
         verfers, digers = mgr.rotate(pre=pre, ncount=5, temp=True)
 
-        srdr = eventing.rotate(pre=kvr.prefixer.qb64,
+        srdr = rotate(pre=kvr.prefixer.qb64,
                                keys=[verfer.qb64 for verfer in verfers],
                                isith=sith,
                                dig=kvr.serder.said,
@@ -385,14 +389,14 @@ def test_missing_delegator_escrow():
         watMgr = keeping.Manager(ks=watKS, salt=watSalt)
 
         # Init Keverys
-        bobKvy = eventing.Kevery(db=bobDB)
-        delKvy = eventing.Kevery(db=delDB)
-        watKvy = eventing.Kevery(db=watDB)
+        bobKvy = Kevery(db=bobDB)
+        delKvy = Kevery(db=delDB)
+        watKvy = Kevery(db=watDB)
 
         # Setup Wat with own inception event
         verfers, digers = watMgr.incept(stem='wat', temp=True)  # algo default salty and rooted
 
-        watSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+        watSrdr = incept(keys=[verfer.qb64 for verfer in verfers],
                                   ndigs=[diger.qb64 for diger in digers],
                                   code=MtrDex.Blake3_256)
 
@@ -419,7 +423,7 @@ def test_missing_delegator_escrow():
 
         # Setup Bob with own inception event
         verfers, digers = bobMgr.incept(stem='bob', temp=True) # algo default salty and rooted
-        bobSrdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+        bobSrdr = incept(keys=[verfer.qb64 for verfer in verfers],
                                   ndigs=[diger.qb64 for diger in digers],
                                   code=MtrDex.Blake3_256)
 
@@ -456,7 +460,7 @@ def test_missing_delegator_escrow():
         # Setup Del's inception event assuming that Bob's next event will be
         # an ixn delegating event
         verfers, digers = delMgr.incept(stem='del', temp=True)  # algo default salty and rooted
-        delSrdr = eventing.delcept(keys=[verfer.qb64 for verfer in verfers],
+        delSrdr = delcept(keys=[verfer.qb64 for verfer in verfers],
                                    delpre=bobPre,
                                    ndigs=[diger.qb64 for diger in digers])
 
@@ -470,7 +474,7 @@ def test_missing_delegator_escrow():
         seal = eventing.SealEvent(i=delPre,
                                   s=delSrdr.ked["s"],
                                   d=delSrdr.said)
-        bobSrdr = eventing.interact(pre=bobK.prefixer.qb64,
+        bobSrdr = interact(pre=bobK.prefixer.qb64,
                                     dig=bobK.serder.said,
                                     sn=bobK.sn+1,
                                     data=[seal._asdict()])
@@ -586,7 +590,7 @@ def test_missing_delegator_escrow():
         seal = eventing.SealEvent(i=bobDelK.prefixer.qb64,
                                   s=delSrdr.ked["s"],
                                   d=delSrdr.said)
-        bobSrdr = eventing.interact(pre=bobK.prefixer.qb64,
+        bobSrdr = interact(pre=bobK.prefixer.qb64,
                                     dig=bobK.serder.said,
                                     sn=bobK.sn+1,
                                     data=[seal._asdict()])
@@ -684,11 +688,11 @@ def test_misfit_escrow():
         mgr = keeping.Manager(ks=ks, salt=salt)
 
         # Init Kevery with event DB
-        kvy = eventing.Kevery(db=db)
+        kvy = Kevery(db=db)
 
         # Create inception event for a locally owned AID
         verfers, digers = mgr.incept(stem='mis', temp=True)
-        srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+        srdr = incept(keys=[verfer.qb64 for verfer in verfers],
                                ndigs=[diger.qb64 for diger in digers],
                                code=MtrDex.Blake3_256)
 
@@ -713,7 +717,7 @@ def test_misfit_escrow():
         kever = kvy.kevers[pre]
 
         # Build a valid interaction event for the same AID
-        srdr2 = eventing.interact(pre=kever.prefixer.qb64,
+        srdr2 = interact(pre=kever.prefixer.qb64,
                                   dig=kever.serder.said,
                                   sn=kever.sn + 1,
                                   data=[])
@@ -768,11 +772,11 @@ def test_misfit_escrow_delegated():
 
     with openDB(name="misfit-del", temp=True) as db, keeping.openKS(name="misfit-del") as ks:
         mgr = keeping.Manager(ks=ks, salt=salt)
-        kvy = eventing.Kevery(db=db)
+        kvy = Kevery(db=db)
 
         # Create a local delegator AID and mark it as local
         delg_verfers, delg_digers = mgr.incept(stem='delg', temp=True)
-        delg_srdr = eventing.incept(keys=[verfer.qb64 for verfer in delg_verfers],
+        delg_srdr = incept(keys=[verfer.qb64 for verfer in delg_verfers],
                                     ndigs=[diger.qb64 for diger in delg_digers],
                                     code=MtrDex.Blake3_256)
         delg_pre = delg_srdr.pre
@@ -782,7 +786,7 @@ def test_misfit_escrow_delegated():
 
         # Create delegated inception event (dip) for a new delegatee AID
         del_verfers, del_digers = mgr.incept(stem='del', temp=True)
-        dip_srdr = eventing.delcept(keys=[verfer.qb64 for verfer in del_verfers],
+        dip_srdr = delcept(keys=[verfer.qb64 for verfer in del_verfers],
                                     delpre=delg_pre,
                                     ndigs=[diger.qb64 for diger in del_digers])
         del_pre = dip_srdr.pre
@@ -799,7 +803,7 @@ def test_misfit_escrow_delegated():
 
         # Attach a SealSourceCouples group for the delegator event
         seqner = Seqner(sn=0)
-        saider = coring.Saider(qb64=delg_srdr.said)
+        saider = Saider(qb64=delg_srdr.said)
         counter = Counter(Codens.SealSourceCouples,
                                count=1, version=Vrsn_1_0)
         msg.extend(counter.qb64b)
@@ -829,7 +833,7 @@ def test_misfit_escrow_delegated():
         uval = db.udes.get(keys=dgkey)
         assert uval is not None
         num, src = uval
-        assert isinstance(num, coring.Number)
+        assert isinstance(num, Number)
         assert num.num == seqner.sn
         assert src.qb64 == delg_srdr.said
 
@@ -845,11 +849,11 @@ def test_misfit_escrow_valSigsWigsDel():
 
     with openDB(name="misfit-unit", temp=True) as db, keeping.openKS(name="misfit-unit") as ks:
         mgr = keeping.Manager(ks=ks, salt=salt)
-        kvy = eventing.Kevery(db=db)
+        kvy = Kevery(db=db)
 
         # Create and accept a local inception event
         verfers, digers = mgr.incept(stem='unit', temp=True)
-        srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+        srdr = incept(keys=[verfer.qb64 for verfer in verfers],
                                ndigs=[diger.qb64 for diger in digers],
                                code=MtrDex.Blake3_256)
         pre = srdr.pre
@@ -871,7 +875,7 @@ def test_misfit_escrow_valSigsWigsDel():
         kever = kvy.kevers[pre]
 
         # Build a valid interaction event and its signatures
-        ixn = eventing.interact(pre=kever.prefixer.qb64,
+        ixn = interact(pre=kever.prefixer.qb64,
                                 dig=kever.serder.said,
                                 sn=kever.sn + 1,
                                 data=[])
@@ -918,19 +922,19 @@ def test_misfit_escrow_kevery():
 
     with openDB(name="misfit-kvy", temp=True) as db, keeping.openKS(name="misfit-kvy") as ks:
         mgr = keeping.Manager(ks=ks, salt=salt)
-        kvy = eventing.Kevery(db=db)
+        kvy = Kevery(db=db)
 
         # Create a simple inception event and its signatures
         verfers, digers = mgr.incept(stem='kvy', temp=True)
-        srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+        srdr = incept(keys=[verfer.qb64 for verfer in verfers],
                                ndigs=[diger.qb64 for diger in digers],
                                code=MtrDex.Blake3_256)
 
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
         # Delegation-like seal metadata for .udes: use sn=0 and the event's own digest
-        delnum = coring.Number(num=0)
-        diger = coring.Diger(qb64=srdr.said)
+        delnum = Number(num=0)
+        diger = Diger(qb64=srdr.said)
 
         # Call Kevery.escrowMFEvent directly with local=False to simulate a misfit
         kvy.escrowMFEvent(serder=srdr,
@@ -967,7 +971,7 @@ def test_misfit_escrow_kevery():
         uval = db.udes.get(keys=dgkey)
         assert uval is not None
         num, src = uval
-        assert isinstance(num, coring.Number)
+        assert isinstance(num, Number)
         assert num.num == delnum.num
         assert src.qb64 == diger.qb64
 
@@ -985,11 +989,11 @@ def test_delegated_partial_signed_escrow_udes():
 
     with openDB(name="pse-del", temp=True) as db, keeping.openKS(name="pse-del") as ks:
         mgr = keeping.Manager(ks=ks, salt=salt)
-        kvy = eventing.Kevery(db=db)
+        kvy = Kevery(db=db)
 
         # Create a local delegator AID and mark it as local
         delg_verfers, delg_digers = mgr.incept(stem='pse-delg', temp=True)
-        delg_srdr = eventing.incept(keys=[verfer.qb64 for verfer in delg_verfers],
+        delg_srdr = incept(keys=[verfer.qb64 for verfer in delg_verfers],
                                     ndigs=[diger.qb64 for diger in delg_digers],
                                     code=MtrDex.Blake3_256)
         delg_pre = delg_srdr.pre
@@ -1011,7 +1015,7 @@ def test_delegated_partial_signed_escrow_udes():
 
         # Create delegated inception event (dip) for a new delegatee AID, with multi-sig threshold
         del_verfers, del_digers = mgr.incept(icount=2, ncount=2, stem='pse-del', temp=True)
-        dip_srdr = eventing.delcept(keys=[verfer.qb64 for verfer in del_verfers],
+        dip_srdr = delcept(keys=[verfer.qb64 for verfer in del_verfers],
                                     delpre=delg_pre,
                                     isith='2',
                                     nsith='2',
@@ -1030,7 +1034,7 @@ def test_delegated_partial_signed_escrow_udes():
 
         # Attach a SealSourceCouples group for the delegator event
         seqner = Seqner(sn=delg_kever.sn)
-        saider = coring.Saider(qb64=delg_srdr.said)
+        saider = Saider(qb64=delg_srdr.said)
         counter = Counter(Codens.SealSourceCouples,
                                count=1, version=Vrsn_1_0)
         msg.extend(counter.qb64b)
@@ -1052,7 +1056,7 @@ def test_delegated_partial_signed_escrow_udes():
         uval = db.udes.get(keys=dgkey)
         assert uval is not None
         num, src = uval
-        assert isinstance(num, coring.Number)
+        assert isinstance(num, Number)
         assert num.num == seqner.sn
         assert src.qb64 == delg_srdr.said
 
@@ -1071,7 +1075,7 @@ def test_out_of_order_escrow():
         mgr = keeping.Manager(ks=ks, salt=salt)
 
         # Init Kevery with event DB
-        kvy = eventing.Kevery(db=db)
+        kvy = Kevery(db=db)
 
         # create inception event with 3 keys each in incept and next sets
         # defaults are algo salty and rooted
@@ -1079,7 +1083,7 @@ def test_out_of_order_escrow():
         nxtsith = ["1/2", "1/2", "1/2"]
         verfers, digers = mgr.incept(icount=3, ncount=3, stem='wes', temp=True)
 
-        srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+        srdr = incept(keys=[verfer.qb64 for verfer in verfers],
                                isith=sith,
                                nsith=nxtsith,
                                ndigs=[diger.qb64 for diger in digers],
@@ -1102,7 +1106,7 @@ def test_out_of_order_escrow():
         icpmsg = bytearray(msg)  # save copy for later
 
         # create interaction event
-        srdr = eventing.interact(pre=pre, dig=icpdig, sn=1, data=[])
+        srdr = interact(pre=pre, dig=icpdig, sn=1, data=[])
         ixndig = srdr.said
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
@@ -1122,7 +1126,7 @@ def test_out_of_order_escrow():
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
         verfers, digers = mgr.rotate(pre=pre, ncount=5, temp=True)
 
-        srdr = eventing.rotate(pre=pre,
+        srdr = rotate(pre=pre,
                                keys=[verfer.qb64 for verfer in verfers],
                                isith=sith,
                                dig=ixndig,
@@ -1263,12 +1267,12 @@ def test_ooes_missing_db_entries_escrow_cleanup():
 
     with openDB(name="edy") as db, keeping.openKS(name="edy") as ks:
         mgr = keeping.Manager(ks=ks, salt=salt)
-        kvy = eventing.Kevery(db=db)
+        kvy = Kevery(db=db)
 
         # create a simple 1-key inception
         verfers, digers = mgr.incept(icount=1, ncount=1, stem='A', temp=True)
 
-        icp = eventing.incept(
+        icp = incept(
             keys=[verfers[0].qb64],
             isith="1",
             nsith="1",
@@ -1289,7 +1293,7 @@ def test_ooes_missing_db_entries_escrow_cleanup():
         icpmsg = msg
 
         # valid interaction event
-        ixn = eventing.interact(pre=pre, dig=icpdig, sn=1, data=[])
+        ixn = interact(pre=pre, dig=icpdig, sn=1, data=[])
         ixndig = ixn.said
 
         sigers = mgr.sign(ser=ixn.raw, verfers=verfers)
@@ -1366,7 +1370,7 @@ def test_unverified_receipt_escrow():
         mgr = keeping.Manager(ks=ks, salt=salt)
 
         # Init Kevery with event DB
-        kvy = eventing.Kevery(db=db)
+        kvy = Kevery(db=db)
 
         # create witness identifiers
         verfers, digers = mgr.incept(ncount=0, stem="wit0",
@@ -1388,7 +1392,7 @@ def test_unverified_receipt_escrow():
         nxtsith = ["1/2", "1/2", "1/2"]
         verfers, digers = mgr.incept(icount=3, ncount=3, stem='edy', temp=True)
 
-        srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+        srdr = incept(keys=[verfer.qb64 for verfer in verfers],
                                isith=sith,
                                nsith=nxtsith,
                                ndigs=[diger.qb64 for diger in digers],
@@ -1433,7 +1437,7 @@ def test_unverified_receipt_escrow():
         psr.parse(ims=bytearray(rcticpmsg), kvy=kvy)
         # kvy.process(ims=bytearray(rcticpmsg))  # process local copy of msg
         assert pre not in kvy.kevers  # no events yet for pre
-        escrows = kvy.db.ures.get(keys=(pre, coring.Number(num=0, code=coring.NumDex.Huge).qb64))  # so escrowed receipts
+        escrows = kvy.db.ures.get(keys=(pre, Number(num=0, code=NumDex.Huge).qb64))  # so escrowed receipts
         assert len(escrows) == 2
         diger, prefixer, cigar = escrows[0]
         assert diger.qb64 == srdr.said
@@ -1445,7 +1449,7 @@ def test_unverified_receipt_escrow():
         assert cigar.qb64 == wit1Cigar.qb64
 
         # create interaction event
-        srdr = eventing.interact(pre=pre, dig=icpdig, sn=1, data=[])
+        srdr = interact(pre=pre, dig=icpdig, sn=1, data=[])
         ixndig = srdr.said
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
@@ -1481,7 +1485,7 @@ def test_unverified_receipt_escrow():
         psr.parse(ims=bytearray(rctixnmsg), kvy=kvy)
         # kvy.process(ims=bytearray(rctixnmsg))  # process local copy of msg
         assert pre not in kvy.kevers  # no events yet for pre
-        escrows = kvy.db.ures.get(keys=(pre, coring.Number(num=1, code=coring.NumDex.Huge).qb64))  # so escrowed receipts
+        escrows = kvy.db.ures.get(keys=(pre, Number(num=1, code=NumDex.Huge).qb64))  # so escrowed receipts
         assert len(escrows) == 2
         diger, prefixer, cigar = escrows[0]
         assert diger.qb64 == srdr.said
@@ -1499,7 +1503,7 @@ def test_unverified_receipt_escrow():
         #  2 of first 3 and 1 of last 2
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
 
-        srdr = eventing.rotate(pre=pre,
+        srdr = rotate(pre=pre,
                                keys=[verfer.qb64 for verfer in verfers],
                                isith=sith,
                                dig=ixndig,
@@ -1543,7 +1547,7 @@ def test_unverified_receipt_escrow():
         # Process receipt by kvy
         psr.parse(ims=bytearray(rctrotmsg), kvy=kvy)
         assert pre not in kvy.kevers  # no events yet for pre
-        escrows = kvy.db.ures.get(keys=(pre, coring.Number(num=2, code=coring.NumDex.Huge).qb64))  # so escrowed receipts
+        escrows = kvy.db.ures.get(keys=(pre, Number(num=2, code=NumDex.Huge).qb64))  # so escrowed receipts
         assert len(escrows) == 2
         diger, prefixer, cigar = escrows[0]
         assert diger.qb64 == srdr.said
@@ -1560,9 +1564,9 @@ def test_unverified_receipt_escrow():
         kvy.processEscrowUnverNonTrans()
         assert pre not in kvy.kevers  # key state not updated
         # check escrows removed
-        kvy.db.ures.get(keys=(pre, coring.Number(num=0, code=coring.NumDex.Huge).qb64))
-        kvy.db.ures.get(keys=(pre, coring.Number(num=1, code=coring.NumDex.Huge).qb64))
-        kvy.db.ures.get(keys=(pre, coring.Number(num=2, code=coring.NumDex.Huge).qb64))
+        kvy.db.ures.get(keys=(pre, Number(num=0, code=NumDex.Huge).qb64))
+        kvy.db.ures.get(keys=(pre, Number(num=1, code=NumDex.Huge).qb64))
+        kvy.db.ures.get(keys=(pre, Number(num=2, code=NumDex.Huge).qb64))
 
         # Now reset timeout so not zero and resend receipts to reload escrow
         kvy.TimeoutURE = 3600
@@ -1576,9 +1580,9 @@ def test_unverified_receipt_escrow():
         # kvy.process(ims=bytearray(rctrotmsg))  # process local copy of msg
         assert pre not in kvy.kevers  # no events yet for pre
         # assert Ure escrows are back
-        kvy.db.ures.get(keys=(pre, coring.Number(num=0, code=coring.NumDex.Huge).qb64))
-        kvy.db.ures.get(keys=(pre, coring.Number(num=1, code=coring.NumDex.Huge).qb64))
-        kvy.db.ures.get(keys=(pre, coring.Number(num=2, code=coring.NumDex.Huge).qb64))
+        kvy.db.ures.get(keys=(pre, Number(num=0, code=NumDex.Huge).qb64))
+        kvy.db.ures.get(keys=(pre, Number(num=1, code=NumDex.Huge).qb64))
+        kvy.db.ures.get(keys=(pre, Number(num=2, code=NumDex.Huge).qb64))
 
         # apply inception msg to Kevery to process
         psr.parse(ims=bytearray(icpmsg), kvy=kvy)
@@ -1601,17 +1605,17 @@ def test_unverified_receipt_escrow():
         assert kvr.sn == 2  # key state successfully updated
 
         # assert Ure escrows have not changed
-        assert len(kvy.db.ures.get(keys=(pre, coring.Number(num=0, code=coring.NumDex.Huge).qb64))) == 2
-        assert len(kvy.db.ures.get(keys=(pre, coring.Number(num=1, code=coring.NumDex.Huge).qb64))) == 2
-        assert len(kvy.db.ures.get(keys=(pre, coring.Number(num=2, code=coring.NumDex.Huge).qb64))) == 2
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=0, code=NumDex.Huge).qb64))) == 2
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=1, code=NumDex.Huge).qb64))) == 2
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=2, code=NumDex.Huge).qb64))) == 2
 
         # verify Kevery process unverified receipt escrow i
         # assuming not stale but nothing else has changed
         kvy.processEscrowUnverNonTrans()
         # check escrows removed
-        assert len(kvy.db.ures.get(keys=(pre, coring.Number(num=0, code=coring.NumDex.Huge).qb64))) == 0
-        assert len(kvy.db.ures.get(keys=(pre, coring.Number(num=1, code=coring.NumDex.Huge).qb64))) == 0
-        assert len(kvy.db.ures.get(keys=(pre, coring.Number(num=2, code=coring.NumDex.Huge).qb64))) == 0
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=0, code=NumDex.Huge).qb64))) == 0
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=1, code=NumDex.Huge).qb64))) == 0
+        assert len(kvy.db.ures.get(keys=(pre, Number(num=2, code=NumDex.Huge).qb64))) == 0
 
         # verify receipts from db in insertion order
         receipts = kvy.db.rcts.get(keys=dgKey(pre, icpdig))
@@ -1656,7 +1660,7 @@ def test_unverified_trans_receipt_escrow():
         mgr = keeping.Manager(ks=ks, salt=salt)
 
         # Init Kevery with event DB
-        kvy = eventing.Kevery(db=db)
+        kvy = Kevery(db=db)
 
 
         # create inception event with 3 keys each in incept and next sets
@@ -1665,7 +1669,7 @@ def test_unverified_trans_receipt_escrow():
         nxtsith = ["1/2", "1/2", "1/2"]
         verfers, digers = mgr.incept(icount=3, ncount=3, stem='edy', temp=True)
 
-        srdr = eventing.incept(keys=[verfer.qb64 for verfer in verfers],
+        srdr = incept(keys=[verfer.qb64 for verfer in verfers],
                                isith=sith,
                                nsith=nxtsith,
                                ndigs=[diger.qb64 for diger in digers],
@@ -1692,7 +1696,7 @@ def test_unverified_trans_receipt_escrow():
         rsith = '2'
 
         # create recepter's inception event
-        rsrdr = eventing.incept(keys=[verfer.qb64 for verfer in rverfers],
+        rsrdr = incept(keys=[verfer.qb64 for verfer in rverfers],
                                 isith=rsith,
                                 nsith=rsith,
                                 ndigs=[diger.qb64 for diger in rdigers],
@@ -1741,7 +1745,7 @@ def test_unverified_trans_receipt_escrow():
 
 
         # create interaction event
-        srdr = eventing.interact(pre=pre, dig=icpdig, sn=1, data=[])
+        srdr = interact(pre=pre, dig=icpdig, sn=1, data=[])
         ixndig = srdr.said
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
@@ -1758,7 +1762,7 @@ def test_unverified_trans_receipt_escrow():
         # get current keys as verfers and next digests as digers
         rverfers, rdigers = mgr.rotate(pre=rpre, ncount=3, temp=True)
 
-        rsrdr = eventing.rotate(pre=rpre,
+        rsrdr = rotate(pre=rpre,
                                 keys=[verfer.qb64 for verfer in rverfers],
                                 isith=rsith,
                                 dig=ricpdig,
@@ -1812,7 +1816,7 @@ def test_unverified_trans_receipt_escrow():
         nxtsith = [["1/2", "1/2", "1/2"],["1/1", "1/1"]]
         verfers, digers = mgr.rotate(pre=pre, ncount=5, temp=True)
 
-        srdr = eventing.rotate(pre=pre,
+        srdr = rotate(pre=pre,
                                keys=[verfer.qb64 for verfer in verfers],
                                isith=sith,
                                dig=ixndig,

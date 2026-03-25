@@ -3,24 +3,22 @@
 tests.app.signing module
 
 """
-from keri import core
-
-from keri.core import coring, eventing
-from keri.app import habbing, keeping
-from keri.db import basing
+from keri.core import Kevery, Salter, Cigar, Verfer
+from keri.app import Signator, Manager, SIGNER, openHab, openKS
+from keri.db import openDB
 
 
 def test_signatory():
-    salt = core.Salter(raw=b'0123456789abcdef')  # init sig Salter
+    salt = Salter(raw=b'0123456789abcdef')  # init sig Salter
 
-    with basing.openDB(name="sig") as db, keeping.openKS(name="sig") as ks, \
-            habbing.openHab(name="sig", salt=salt.raw) as (sigHby, sigHab):
+    with openDB(name="sig") as db, openKS(name="sig") as ks, \
+        openHab(name="sig", salt=salt.raw) as (sigHby, sigHab):
         # Init signatory
         signer = sigHby.signator
 
         assert signer.pre == 'BN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zR'
         assert signer._hab.kever.verfers[0].qb64b == b'BN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zR'
-        spre = signer.db.hbys.get(habbing.SIGNER)
+        spre = signer.db.hbys.get(SIGNER)
         assert spre == signer.pre
 
         raw = b'this is the raw data'
@@ -32,16 +30,16 @@ def test_signatory():
         assert signer.verify(ser=raw, cigar=cig) is True
 
         bad = b'0BAh1y8Dq7Pj7xbEj6Ja-ew9nzu-bX5_wQKu5Yw3472-ghptsrEFDyD6o4Lk0L7Ym9oWCuGj_UAc-ltI9p7F9999'
-        badcig = coring.Cigar(qb64b=bad)
+        badcig = Cigar(qb64b=bad)
         assert signer.verify(ser=raw, cigar=badcig) is False
 
-        verfer = coring.Verfer(qb64=spre)
+        verfer = Verfer(qb64=spre)
         assert verfer.verify(cig.raw, raw) is True
 
         # Create a second, should have the same key
-        mgr = keeping.Manager(ks=ks, salt=salt.qb64)
-        kvy = eventing.Kevery(db=db)
-        sig2 = habbing.Signator(db=db, temp=True, ks=ks, mgr=mgr, cf=sigHab.cf, rtr=None,
+        mgr = Manager(ks=ks, salt=salt.qb64)
+        kvy = Kevery(db=db)
+        sig2 = Signator(db=db, temp=True, ks=ks, mgr=mgr, cf=sigHab.cf, rtr=None,
                                 rvy=None, kvy=kvy, psr=None)
         assert sig2._hab.pre == spre
         assert sig2._hab.kever.verfers[0].qb64b == spre.encode("utf-8")

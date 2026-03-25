@@ -8,19 +8,21 @@ import pytest
 
 from keri import (MissingRegistryError, MissingEntryError, 
                   MissingChainError, RevokedChainError, Vrsn_1_0)
-from keri.app import habbing
-from keri.core import Saider, Kevery, Seqner, Diger, parsing, MtrDex, Saids, SealEvent
+from keri.app import openHab
+from keri.core import (Saider, Kevery, Seqner,
+                       Diger, Parser, SealEvent,
+                       MtrDex, Saids)
 from keri.help import helping
-from keri.vc import proving
-from keri.vdr import verifying, credentialing, eventing
+from keri.vc import credential
+from keri.vdr import Verifier, Regery, Tevery
 
 
 def test_verifier_query(mockHelpingNowUTC, mockCoringRandomNonce):
-    with habbing.openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
-        regery = credentialing.Regery(hby=hby, name="test", temp=True)
+    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
+        regery = Regery(hby=hby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="test")
 
-        verfer = verifying.Verifier(hby=hby)
+        verfer = Verifier(hby=hby)
         msg = verfer.query(hab.pre, issuer.regk,
                            "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
                            route="tels")
@@ -34,13 +36,13 @@ def test_verifier_query(mockHelpingNowUTC, mockCoringRandomNonce):
 
 
 def test_verifier(seeder):
-    with (habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab),
-          habbing.openHab(name="recp", transferable=True, temp=True) as (recpHby, recp)):
+    with (openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab),
+          openHab(name="recp", transferable=True, temp=True) as (recpHby, recp)):
         seeder.seedSchema(db=hby.db)
         seeder.seedSchema(db=recpHby.db)
         assert hab.pre == "EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o"
 
-        regery = credentialing.Regery(hby=hby, name="test", temp=True)
+        regery = Regery(hby=hby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="test")
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         hab.interact(data=[rseal])
@@ -52,7 +54,7 @@ def test_verifier(seeder):
                          saider=diger)
         regery.processEscrows()
 
-        verifier = verifying.Verifier(hby=hby, reger=regery.reger)
+        verifier = Verifier(hby=hby, reger=regery.reger)
 
         credSubject = dict(
             d="",
@@ -62,10 +64,10 @@ def test_verifier(seeder):
         )
         _, d = Saider.saidify(sad=credSubject, code=MtrDex.Blake3_256, label=Saids.d)
 
-        creder = proving.credential(issuer=hab.pre,
-                                    schema="EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC",
-                                    data=d,
-                                    status=issuer.regk)
+        creder = credential(issuer=hab.pre,
+                            schema="EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC",
+                            data=d,
+                            status=issuer.regk)
         missing = False
         try:
             # Specify an anchor directly in the KEL
@@ -129,10 +131,10 @@ def test_verifier_chained_credential(seeder):
     vLeiSchema = "ED892b40P_GcESs3wOcc2zFvL_GVi2Ybzp9isNTZKqP0"
     optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
 
-    with habbing.openHab(name="ron", temp=True, salt=b'0123456789abcdef') as (ronHby, ron), \
-            habbing.openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian), \
-            habbing.openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef') as (hanHby, han), \
-            habbing.openHab(name="vic", transferable=True, temp=True, salt=b'0123456789abcdef') as (vicHby, vic):
+    with openHab(name="ron", temp=True, salt=b'0123456789abcdef') as (ronHby, ron), \
+            openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef') as (hanHby, han), \
+            openHab(name="vic", transferable=True, temp=True, salt=b'0123456789abcdef') as (vicHby, vic):
         seeder.seedSchema(db=ronHby.db)
         seeder.seedSchema(db=ianHby.db)
         seeder.seedSchema(db=hanHby.db)
@@ -143,9 +145,9 @@ def test_verifier_chained_credential(seeder):
         assert han.pre == "EBwEKSIMG_3tp7kVCLWJ9c-tPdwtDXIeLlfdm5-IMTZv"
         assert vic.pre == "EGPhh6seaUvJy-nXFkiEdsfwekEhSm3lCVrP-tcoeL0H"
 
-        ronreg = credentialing.Regery(hby=ronHby, name="ron", temp=True)
-        ianreg = credentialing.Regery(hby=ianHby, name="ian", temp=True)
-        vicreg = credentialing.Regery(hby=vicHby, name="vic", temp=True)
+        ronreg = Regery(hby=ronHby, name="ron", temp=True)
+        ianreg = Regery(hby=ianHby, name="ian", temp=True)
+        vicreg = Regery(hby=vicHby, name="vic", temp=True)
         roniss = ronreg.makeRegistry(prefix=ron.pre, name="test")
         rseal = SealEvent(roniss.regk, "0", roniss.regd)._asdict()
         ron.interact(data=[rseal])
@@ -157,7 +159,7 @@ def test_verifier_chained_credential(seeder):
                          saider=diger)
         ronreg.processEscrows()
 
-        ronverfer = verifying.Verifier(hby=ronHby, reger=ronreg.reger)
+        ronverfer = Verifier(hby=ronHby, reger=ronreg.reger)
 
         credSubject = dict(
             d="",
@@ -167,10 +169,10 @@ def test_verifier_chained_credential(seeder):
         )
         _, d = Saider.saidify(sad=credSubject, code=MtrDex.Blake3_256, label=Saids.d)
 
-        creder = proving.credential(issuer=ron.pre,
-                                    schema=qviSchema,
-                                    data=d,
-                                    status=roniss.regk)
+        creder = credential(issuer=ron.pre,
+                            schema=qviSchema,
+                            data=d,
+                            status=roniss.regk)
 
         missing = False
         try:
@@ -226,7 +228,7 @@ def test_verifier_chained_credential(seeder):
                          saider=diger)
         ianreg.processEscrows()
 
-        ianverfer = verifying.Verifier(hby=ianHby, reger=ianreg.reger)
+        ianverfer = Verifier(hby=ianHby, reger=ianreg.reger)
 
         leiCredSubject = dict(
             d="",
@@ -243,10 +245,10 @@ def test_verifier_chained_credential(seeder):
             ),
         )
 
-        vLeiCreder = proving.credential(issuer=ian.pre,
-                                        schema=vLeiSchema,
-                                        data=d,
-                                        status=ianiss.regk,
+        vLeiCreder = credential(issuer=ian.pre,
+                                schema=vLeiSchema,
+                                data=d,
+                                status=ianiss.regk,
                                         source=chain,
                                         rules=[dict(
                                             usageDisclaimer="Use carefully."
@@ -292,16 +294,16 @@ def test_verifier_chained_credential(seeder):
 
         # Now lets get Ron's credential into Ian's Tevers and Database
         iankvy = Kevery(db=ian.db, lax=False, local=False)
-        iantvy = eventing.Tevery(reger=ianreg.reger, db=ian.db, local=False)
-        ianverfer = verifying.Verifier(hby=ianHby, reger=ianreg.reger)
+        iantvy = Tevery(reger=ianreg.reger, db=ian.db, local=False)
+        ianverfer = Verifier(hby=ianHby, reger=ianreg.reger)
 
         # Now process all the events that Ron's issuer has generated so far
         for msg in ron.db.clonePreIter(pre=ron.pre):
-            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
         for msg in ronverfer.reger.clonePreIter(pre=roniss.regk):
-            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
         for msg in ronverfer.reger.clonePreIter(pre=creder.said):
-            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
 
         ianverfer.processCredential(creder, prefixer=ron.kever.prefixer, seqner=seqner,
                                     saider=Diger(qb64=ron.kever.serder.said))
@@ -334,10 +336,10 @@ def test_verifier_chained_credential(seeder):
         )
         _, chain = Saider.saidify(sad=chainSad, code=MtrDex.Blake3_256, label=Saids.d)
 
-        untargetedCreder = proving.credential(issuer=ian.pre,
-                                              schema=optionalIssueeSchema,
-                                              data=d,
-                                              status=ianiss.regk,
+        untargetedCreder = credential(issuer=ian.pre,
+                                        schema=optionalIssueeSchema,
+                                        data=d,
+                                        status=ianiss.regk,
                                               source=chain,
                                               rules={})
 
@@ -384,10 +386,10 @@ def test_verifier_chained_credential(seeder):
         )
         _, chain = Saider.saidify(sad=chainSad, code=MtrDex.Blake3_256, label=Saids.d)
 
-        chainedCreder = proving.credential(issuer=ian.pre,
-                                           schema=optionalIssueeSchema,
-                                           data=d,
-                                           status=ianiss.regk,
+        chainedCreder = credential(issuer=ian.pre,
+                                    schema=optionalIssueeSchema,
+                                    data=d,
+                                    status=ianiss.regk,
                                            source=chain,
                                            rules={})
 
@@ -424,15 +426,15 @@ def test_verifier_chained_credential(seeder):
 
         # Now lets get Ron's credential into Vic's Tevers and Database
         vickvy = Kevery(db=vic.db, lax=False, local=False)
-        victvy = eventing.Tevery(reger=vicreg.reger, db=vic.db, local=False)
-        vicverfer = verifying.Verifier(hby=vicHby, reger=vicreg.reger)
+        victvy = Tevery(reger=vicreg.reger, db=vic.db, local=False)
+        vicverfer = Verifier(hby=vicHby, reger=vicreg.reger)
 
         for msg in ron.db.clonePreIter(pre=ron.pre):
-            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
         for msg in ronverfer.reger.clonePreIter(pre=roniss.regk):
-            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
         for msg in ronverfer.reger.clonePreIter(pre=creder.said):
-            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
         vicverfer.processCredential(creder, prefixer=ian.kever.prefixer, seqner=seqner,
                                     saider=Diger(qb64=ian.kever.serder.said))
@@ -444,11 +446,11 @@ def test_verifier_chained_credential(seeder):
         # Vic should be able to verify Han's credential
         # Get Ian's icp into Vic's db
         for msg in ian.db.clonePreIter(pre=ian.pre):
-            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
         for msg in ianverfer.reger.clonePreIter(pre=ianiss.regk):
-            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
         for msg in ianverfer.reger.clonePreIter(pre=vLeiCreder.said):
-            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
         # And now verify the credential:
         vicverfer.processCredential(vLeiCreder, prefixer=ian.kever.prefixer, seqner=seqner,
@@ -474,11 +476,11 @@ def test_verifier_chained_credential(seeder):
         ronreg.processEscrows()
 
         for msg in ron.db.clonePreIter(pre=ron.pre):
-            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
         for msg in ronverfer.reger.clonePreIter(pre=roniss.regk):
-            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
         for msg in ronverfer.reger.clonePreIter(pre=creder.said):
-            parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
         with pytest.raises(RevokedChainError):
             vicverfer.processCredential(vLeiCreder, prefixer=ian.kever.prefixer, seqner=seqner,

@@ -10,67 +10,69 @@ import time
 import pytest
 import os
 
-from keri.app import notifying, habbing
-from keri.core import coring
-from keri.db import dbing
+from keri.app import (Notice, DicterSuber, Noter, Notifier,
+                      notice, openHby)
+
+from keri.core import Cigar, Saider
+from keri.db import openLMDB
 from keri.help import helping
 
 
 def test_notice():
     payload = dict(name="John", email="john@example.com", msg="test")
 
-    note = notifying.notice(attrs=payload)
+    note = notice(attrs=payload)
     assert note.attrs == payload
     assert note.datetime is not None
     assert note.rid is not None
 
-    note = notifying.notice(attrs=payload, dt="2022-07-08T15:01:05.453632")
+    note = notice(attrs=payload, dt="2022-07-08T15:01:05.453632")
     assert note.rid is not None
     assert note.datetime == "2022-07-08T15:01:05.453632"
     assert note.attrs == payload
 
-    note = notifying.Notice(raw=note.raw)
+    note = Notice(raw=note.raw)
     assert note.rid is not None
     assert note.datetime == "2022-07-08T15:01:05.453632"
     assert note.attrs == payload
 
-    note = notifying.Notice(pad=note.pad)
+    note = Notice(pad=note.pad)
     assert note.rid is not None
     assert note.datetime == "2022-07-08T15:01:05.453632"
     assert note.attrs == payload
 
-    note = notifying.Notice(note=note)
+    note = Notice(note=note)
     assert note.rid is not None
     assert note.datetime == "2022-07-08T15:01:05.453632"
     assert note.attrs == payload
 
-    note = notifying.Notice(pad=note.pad)
+    note = Notice(pad=note.pad)
     assert note.rid is not None
 
     with pytest.raises(ValueError):
-        _ = notifying.Notice(pad=dict())
+        _ = Notice(pad=dict())
 
-    _, pad = coring.Saider.saidify(dict(d="", x=1))
+    _, pad = Saider.saidify(dict(d="", x=1))
     with pytest.raises(ValueError):
-        _ = notifying.Notice(pad=pad)
+        _ = Notice(pad=pad)
 
     pad = dict(d="", a={"a": 1})
-    _, pad = coring.Saider.saidify(pad)
-    note = notifying.Notice(pad=pad)
+    _, pad = Saider.saidify(pad)
+    note = Notice(pad=pad)
     assert note.pad['dt'] is not None
 
     now = helping.nowUTC()
     payload = dict(name="John", email="john@example.com", msg="test")
-    note = notifying.notice(attrs=payload, dt=now)
+    note = notice(attrs=payload, dt=now)
     assert note.datetime == now.isoformat()
 
 
 def test_dictersuber():
-    with dbing.openLMDB() as db:
+    with openLMDB() as db:
         payload = dict(name="John", email="john@example.com", msg="test")
 
-        dsub = notifying.DicterSuber(db=db, subkey='nots.', sep='/', klas=notifying.Notice)
-        note = notifying.notice(attrs=payload, dt="2022-07-08T15:01:05.453632")
+        dsub = DicterSuber(db=db, subkey='nots.', sep='/', klas=Notice)
+        note = notice(attrs=payload, dt="2022-07-08T15:01:05.453632")
         dt = note.datetime
         said = note.rid
         assert dsub.put(keys=(dt, said), val=note) is True
@@ -92,13 +94,13 @@ def test_dictersuber():
         assert n3 is None
 
         # Add a small delay to ensure timestamps are different
-        note = notifying.notice(attrs=dict(a=1))
+        note = notice(attrs=dict(a=1))
         time.sleep(0.001)
         assert dsub.put(keys=(note.datetime, note.rid), val=note) is True
-        note = notifying.notice(attrs=dict(a=2))
+        note = notice(attrs=dict(a=2))
         time.sleep(0.001)
         assert dsub.put(keys=(note.datetime, note.rid), val=note) is True
-        note = notifying.notice(attrs=dict(a=3))
+        note = notice(attrs=dict(a=3))
         time.sleep(0.001)
         assert dsub.put(keys=(note.datetime, note.rid), val=note) is True
 
@@ -113,19 +115,19 @@ def test_dictersuber():
 
 
 def test_noter(mockHelpingNowUTC):
-    noter = notifying.Noter()
+    noter = Noter()
     assert noter.path.endswith(os.path.join(os.path.sep, "not", "not"))
     noter.reopen()
     noter.close(clear=True)
 
-    noter = notifying.Noter(temp=True)
+    noter = Noter(temp=True)
     tempDirPath = os.path.join(os.path.sep, "tmp") if platform.system() == "Darwin" else tempfile.gettempdir()
     assert noter.path.startswith(tempDirPath)
 
     payload = dict(name="John", email="john@example.com", msg="test")
     dt = helping.fromIso8601("2022-07-08T15:01:05.453632")
-    cig = coring.Cigar(qb64="AABr1EJXI1sTuI51TXo4F1JjxIJzwPeCxa-Cfbboi7F4Y4GatPEvK629M7G_5c86_Ssvwg8POZWNMV-WreVqBECw")
-    note = notifying.notice(attrs=payload, dt=dt)
+    cig = Cigar(qb64="AABr1EJXI1sTuI51TXo4F1JjxIJzwPeCxa-Cfbboi7F4Y4GatPEvK629M7G_5c86_Ssvwg8POZWNMV-WreVqBECw")
+    note = notice(attrs=payload, dt=dt)
     assert noter.add(note, cig) is True
 
     notes = noter.getNotes(start=0)
@@ -145,13 +147,13 @@ def test_noter(mockHelpingNowUTC):
     notes = noter.getNotes(start=0)
     assert len(notes) == 0
 
-    note = notifying.notice(attrs=dict(a=1),
+    note = notice(attrs=dict(a=1),
                             dt=helping.fromIso8601("2022-07-08T15:01:05.453632"))
     assert noter.add(note, cig) is True
-    note = notifying.notice(attrs=dict(a=2),
+    note = notice(attrs=dict(a=2),
                             dt=helping.fromIso8601("2022-07-08T15:01:06.453632"))
     assert noter.add(note, cig) is True
-    note = notifying.notice(attrs=dict(a=3),
+    note = notice(attrs=dict(a=3),
                             dt=helping.fromIso8601("2022-07-08T15:01:07.453632"))
     assert noter.add(note, cig) is True
 
@@ -166,7 +168,7 @@ def test_noter(mockHelpingNowUTC):
 
     # test paginated iteration
     for i in range(10):
-        note = notifying.notice(attrs=dict(a=i))
+        note = notice(attrs=dict(a=i))
         assert noter.add(note, cig) is True
 
     res = []
@@ -181,8 +183,8 @@ def test_noter(mockHelpingNowUTC):
 
 
 def test_notifier(mockHelpingNowUTC):
-    with habbing.openHby(name="test") as hby:
-        notifier = notifying.Notifier(hby=hby)
+    with openHby(name="test") as hby:
+        notifier = Notifier(hby=hby)
         assert notifier.signaler is not None
         assert notifier.noter is not None
 
@@ -223,8 +225,8 @@ def test_notifier(mockHelpingNowUTC):
 
     payload = dict(a=1, b=2, c=3)
     dt = helping.fromIso8601("2022-07-08T15:01:05.453632")
-    cig = coring.Cigar(qb64="AABr1EJXI1sTuI51TXo4F1JjxIJzwPeCxa-Cfbboi7F4Y4GatPEvK629M7G_5c86_Ssvwg8POZWNMV-WreVqBECw")
-    note = notifying.notice(attrs=payload, dt=dt)
+    cig = Cigar(qb64="AABr1EJXI1sTuI51TXo4F1JjxIJzwPeCxa-Cfbboi7F4Y4GatPEvK629M7G_5c86_Ssvwg8POZWNMV-WreVqBECw")
+    note = notice(attrs=payload, dt=dt)
     assert notifier.noter.add(note, cig) is True
 
     assert notifier.mar(note.rid) is False

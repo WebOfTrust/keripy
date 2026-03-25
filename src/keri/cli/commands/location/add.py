@@ -17,7 +17,7 @@ from .... import ConfigurationError, Vrsn_1_0
 
 from ....app import (GroupHab, Multiplexor, indirecting,
                      forwarding, WitnessPublisher, Notifier,
-                     loadHandlers, multisigRpyExn)
+                     loadGroupingHandlers, multisigRpyExn)
 
 from ....core import Parser
 from ....peer import Exchanger
@@ -64,7 +64,7 @@ class LocationDoer(doing.DoDoer):
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
         exc = Exchanger(hby=self.hby, handlers=[])
-        loadHandlers(exc, mux)
+        loadGroupingHandlers(exc, mux)
 
         mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc)
 

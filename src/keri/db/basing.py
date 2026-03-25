@@ -1240,25 +1240,25 @@ class Baser(LMDBer):
         self.maids = subing.CesrIoSetSuber(db=self, subkey="maids.", klas=coring.Prefixer)
 
         # KRAM cache type — key: expression string, value: drift and lag params
-        self.kramCTYP = koming.Komer(db=self, subkey='kramCTYP.',
+        self.kramCTYP = koming.Komer(db=self, subkey='ctyp.',
                                  klas=CacheTypeRecord)
 
         # KRAM message cache — key: (AID, MID), value: msg datetime, drift, lags
-        self.kramMSGC = koming.Komer(db=self, subkey='kramMSGC.',
+        self.kramMSGC = koming.Komer(db=self, subkey='msgc.',
                                  klas=MsgCacheRecord)
 
         # KRAM transactioned message cache — key: (AID, XID, MID), value: datetimes, drift, lags
-        self.kramTMSC = koming.Komer(db=self, subkey='kramTMSC.',
+        self.kramTMSC = koming.Komer(db=self, subkey='tmsc.',
                                  klas=TxnMsgCacheRecord)
 
         # KRAM partially signed multi-key message key (AID.MID) mapped to associated message (SerderKERI)
-        self.kramPMKM = subing.SerderSuber(db=self, subkey='kramPMKM.')
+        self.kramPMKM = subing.SerderSuber(db=self, subkey='pmkm.')
 
         # KRAM partially signed multi-key signature key (AID.MID) mapped to associated signatures
-        self.kramPMKS = subing.CesrIoSetSuber(db=self, subkey='kramPMKS.', klas=indexing.Siger)
+        self.kramPMKS = subing.CesrIoSetSuber(db=self, subkey='pmks.', klas=indexing.Siger)
 
         # KRAM partially signed multi-key sender key state key (AID.MID) mapped to SN and event SAID
-        self.kramPMSK = subing.CatCesrSuber(db=self, subkey='kramPMSK.', klas=(coring.Number, coring.Diger))
+        self.kramPMSK = subing.CatCesrSuber(db=self, subkey='pmsk.', klas=(coring.Number, coring.Diger))
 
         # KRAM partially signed multi-key non-authenticator attachments
 

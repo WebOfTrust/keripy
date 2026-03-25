@@ -5,7 +5,7 @@ tests.test_kering module
 """
 import re
 import json
-from dataclasses import asdict, astuple
+from dataclasses import asdict
 
 import cbor2 as cbor
 import msgpack

@@ -3,4 +3,4 @@
 KERI
 keri.spac Package
 """
-from .payloading import PayloadTypes, PayloadTyper
+from .payloading import PayloadTypage, PayloadTypes, PayloadTyper

@@ -7,9 +7,8 @@ from dataclasses import asdict
 
 import pytest
 
-from keri import core
-from keri.app import watching, habbing, DiffState
-from keri.core import coring
+from keri.app import Adjudicator, DiffState, diffState, openHby
+from keri.core import Saider, Salter
 from keri.recording import KeyStateRecord, ObservedRecord
 
 
@@ -63,7 +62,7 @@ def test_diffstate():
     ksr1 = KeyStateRecord(**d1)
 
     wat = "BbIg_3-11d3PYxSInLN-Q9_T2axD6kkXd3XRgbGZTm6s"
-    diffstate = watching.diffState(wat, ksr0, ksr1)
+    diffstate = diffState(wat, ksr0, ksr1)
 
     # Sequence numbers are the same, digest different == duplicitous
     assert asdict(diffstate) == {'dig': 'Ey2pXEnaoQVwxA4jB6k0QH5G2Us-0juFL5hOAHAwIEkc',
@@ -73,7 +72,7 @@ def test_diffstate():
                                  'wit': 'BbIg_3-11d3PYxSInLN-Q9_T2axD6kkXd3XRgbGZTm6s'}
 
     # Same state == event
-    diffstate = watching.diffState(wat, ksr0, ksr0)
+    diffstate = diffState(wat, ksr0, ksr0)
     assert asdict(diffstate) == {'dig': 'EBiIFxr_o1b4x1YR21PblAFpFG61qDghqFBDyVSOXYW0',
                                  'pre': 'EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM',
                                  'sn': 0,
@@ -81,7 +80,7 @@ def test_diffstate():
                                  'wit': 'BbIg_3-11d3PYxSInLN-Q9_T2axD6kkXd3XRgbGZTm6s'}
 
     ksr1.s = "2"
-    diffstate = watching.diffState(wat, ksr0, ksr1)
+    diffstate = diffState(wat, ksr0, ksr1)
 
     # Sequence numbers are the same, digest different == duplicitous
     assert asdict(diffstate) == {'dig': 'Ey2pXEnaoQVwxA4jB6k0QH5G2Us-0juFL5hOAHAwIEkc',
@@ -91,7 +90,7 @@ def test_diffstate():
                                  'wit': 'BbIg_3-11d3PYxSInLN-Q9_T2axD6kkXd3XRgbGZTm6s'}
 
     ksr0.s = "3"
-    diffstate = watching.diffState(wat, ksr0, ksr1)
+    diffstate = diffState(wat, ksr0, ksr1)
 
     # Sequence numbers are the same, digest different == duplicitous
     assert asdict(diffstate) == {'dig': 'Ey2pXEnaoQVwxA4jB6k0QH5G2Us-0juFL5hOAHAwIEkc',
@@ -102,12 +101,12 @@ def test_diffstate():
 
 
 def test_adjudicator():
-    default_salt = core.Salter(raw=b'0123456789abcdef').qb64
-    with habbing.openHby(name="test", base="test", salt=default_salt) as hby:
+    default_salt = Salter(raw=b'0123456789abcdef').qb64
+    with openHby(name="test", base="test", salt=default_salt) as hby:
         hab = hby.makeHab("test")
         assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
         wat = "BbIg_3-11d3PYxSInLN-Q9_T2axD6kkXd3XRgbGZTm6s"
-        saider = coring.Saider(qb64b=b'EClqKVJREM3MWKBqR2j712s3Z6rPxhqO-h-p8Ls6_9hQ')
+        saider = Saider(qb64b=b'EClqKVJREM3MWKBqR2j712s3Z6rPxhqO-h-p8Ls6_9hQ')
 
         ksr = hab.kever.state()
         ksr0 = KeyStateRecord(**asdict(ksr))
@@ -116,7 +115,7 @@ def test_adjudicator():
         hab.db.ksns.pin(keys=(saider.qb64, ), val=ksr0)
         hab.db.obvs.pin(keys=(hab.pre, wat, hab.pre), val=ObservedRecord(enabled=True))
 
-        adj = watching.Adjudicator(hby=hby, hab=hab)
+        adj = Adjudicator(hby=hby, hab=hab)
 
         adj.adjudicate(hab.pre, 1)
         assert len(adj.cues) == 1

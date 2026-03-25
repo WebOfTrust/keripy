@@ -9,9 +9,12 @@ import pytest
 import os
 import lmdb
 
-from keri.db import (dbing, LMDBer, dgKey, onKey, openLMDB,
-                     snKey, dtKey, splitKey,
-                     splitOnKey, splitKeyDT, splitSnKey)
+from keri.kering import MaxON
+
+from keri.db import (LMDBer, dgKey, onKey, openLMDB,
+                     snKey, dtKey, splitKey, suffix,
+                     unsuffix, splitOnKey, splitKeyDT,
+                     splitSnKey, SuffixSize, MaxSuffix)
 
 from keri.help import helping
 
@@ -131,32 +134,32 @@ def test_suffix():
     """
     Test suffix unsuffix stuff
     """
-    assert dbing.SuffixSize == 32
-    assert dbing.MaxSuffix ==  340282366920938463463374607431768211455
-    assert dbing.MaxSuffix >= dbing.MaxON
+    assert SuffixSize == 32
+    assert MaxSuffix ==  340282366920938463463374607431768211455
+    assert MaxSuffix >= MaxON
 
     key = "ABCDEFG.FFFFFF"
     keyb = b"ABCDEFG.FFFFFF"
 
     ion = 0
-    iokey = dbing.suffix(key, ion)
+    iokey = suffix(key, ion)
     assert iokey == b'ABCDEFG.FFFFFF.00000000000000000000000000000000'
-    k, i = dbing.unsuffix(iokey)
+    k, i = unsuffix(iokey)
     assert k == keyb
     assert i == ion
 
     ion = 64
-    iokey = dbing.suffix(keyb, ion)
+    iokey = suffix(keyb, ion)
     assert iokey == b'ABCDEFG.FFFFFF.00000000000000000000000000000040'
-    k, i = dbing.unsuffix(iokey)
+    k, i = unsuffix(iokey)
     assert k == keyb
     assert i == ion
 
-    iokey = dbing.suffix(key, dbing.MaxSuffix)
+    iokey = suffix(key, MaxSuffix)
     assert iokey ==  b'ABCDEFG.FFFFFF.ffffffffffffffffffffffffffffffff'
-    k, i = dbing.unsuffix(iokey)
+    k, i = unsuffix(iokey)
     assert k == keyb
-    assert i == dbing.MaxSuffix
+    assert i == MaxSuffix
 
 
     """Done Test"""

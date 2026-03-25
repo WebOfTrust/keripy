@@ -5,15 +5,17 @@ tests.vc.proving module
 """
 import pytest
 
-from keri import InvalidValueError, Versionage, Vrsn_1_0, Kinds
+from keri import (InvalidValueError, Versionage,
+                  Vrsn_1_0, Kinds, Protocols, versify)
 from keri.core import (Prefixer, Seqner, Diger, Siger,
-                       Salter, Counter, coring, scheming,
-                       parsing, serdering, counting, Codens,
-                       CacheResolver)
+                       Saider, Seqner, Parser, Salter,
+                       Counter, scheming, Schemer,
+                       JSONSchema, SerderACDC, CacheResolver,
+                       CtrDex_1_0, Codens, MtrDex)
 
-from keri.app import habbing
+from keri.app import openHab, openHby
 from keri.vc import credential
-from keri.vdr import verifying, credentialing
+from keri.vdr import Verifier, Regery
 
 
 def test_proving(mockHelpingNowIso8601):
@@ -21,7 +23,7 @@ def test_proving(mockHelpingNowIso8601):
 
     sidSalt = Salter(raw=b'0123456789abcdef').qb64
 
-    with habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby:
+    with openHby(name="sid", base="test", salt=sidSalt) as sidHby:
         sidHab = sidHby.makeHab(name="test", )
         assert sidHab.pre == 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
         sed = dict()
@@ -39,9 +41,9 @@ def test_proving(mockHelpingNowIso8601):
             )
         ))
 
-        schemer = scheming.Schemer(sed=sed,
-                                   typ=scheming.JSONSchema(),
-                                   code=coring.MtrDex.Blake3_256)
+        schemer = Schemer(sed=sed,
+                          typ=JSONSchema(),
+                          code=MtrDex.Blake3_256)
         credSubject = dict(
             d="",
             i="EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh0nc",  # this needs to be generated from a KEL
@@ -68,18 +70,18 @@ def test_proving(mockHelpingNowIso8601):
                        b'6mBl2QV8dDjI3-AABAAAmfpF4BjMS3b4kzvPdOpkSlH3PiVx7MSySulPyKFxtaS3'
                        b'oxH45Y3kIvZg67u2DyxtUqVixVzRhOOTnMAB_SowI')
 
-        creder = serdering.SerderACDC(raw=msg) # Creder(raw=msg)
+        creder = SerderACDC(raw=msg) # Creder(raw=msg)
         proof = msg[creder.size:]
 
         ctr = Counter(qb64b=proof, strip=True, version=Vrsn_1_0)
-        assert ctr.code == counting.CtrDex_1_0.AttachmentGroup
+        assert ctr.code == CtrDex_1_0.AttachmentGroup
         assert ctr.count == 52
 
         pags = ctr.count * 4
         assert len(proof) == pags
 
         ctr = Counter(qb64b=proof, strip=True, version=Vrsn_1_0)
-        assert ctr.code == counting.CtrDex_1_0.TransIdxSigGroups
+        assert ctr.code == CtrDex_1_0.TransIdxSigGroups
         assert ctr.count == 1
 
         prefixer = Prefixer(qb64b=proof, strip=True)
@@ -92,7 +94,7 @@ def test_proving(mockHelpingNowIso8601):
         assert diger.qb64 == sidHab.kever.serder.said
 
         ictr = Counter(qb64b=proof, strip=True, version=Vrsn_1_0)
-        assert ictr.code == counting.CtrDex_1_0.ControllerIdxSigs
+        assert ictr.code == CtrDex_1_0.ControllerIdxSigs
 
         isigers = []
         for i in range(ictr.count):
@@ -111,21 +113,21 @@ def test_credentialer():
     """Test SerderACDC as credential"""
 
     with pytest.raises(InvalidValueError):
-        serdering.SerderACDC()  # Creder()
+        SerderACDC()  # Creder()
 
     sub = dict(a=123, b="abc", issuanceDate="2021-06-27T21:26:21.233257+00:00")
     d = dict(
-        v=coring.versify(proto=coring.Protocols.acdc, kind=Kinds.json, size=0),
+        v=versify(proto=Protocols.acdc, kind=Kinds.json, size=0),
         d="",
         i="EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi",
         s="abc",
         a=sub
     )
-    _, d = coring.Saider.saidify(sad=d)
+    _, d = Saider.saidify(sad=d)
 
     said = 'ENWScKaCtogzVvZfbDmvS3izq7bM7AOhHzjf-QL-VU5m'  # creder.said
 
-    creder = serdering.SerderACDC(sad=d)  # Creder(ked=d)
+    creder = SerderACDC(sad=d)  # Creder(ked=d)
     assert creder.said == said
     assert creder.kind == Kinds.json
     assert creder.issuer == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
@@ -147,7 +149,7 @@ def test_credentialer():
     assert sad1 == d
     assert ver1 == Versionage(major=1, minor=0)
 
-    creder = serdering.SerderACDC(raw=raw1)  # Creder(raw=raw1)
+    creder = SerderACDC(raw=raw1)  # Creder(raw=raw1)
     assert creder.kind == Kinds.json
     assert creder.issuer == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
     assert creder.sad == d
@@ -155,10 +157,10 @@ def test_credentialer():
 
     d2 = dict(d)
     d2['d'] = ""
-    d2["v"] = coring.versify(proto=coring.Protocols.acdc, kind=Kinds.cbor, size=0)
-    _, d2 = coring.Saider.saidify(sad=d2)
+    d2["v"] = versify(proto=Protocols.acdc, kind=Kinds.cbor, size=0)
+    _, d2 = Saider.saidify(sad=d2)
 
-    creder = serdering.SerderACDC(sad=d2)  # Creder(ked=d2)
+    creder = SerderACDC(sad=d2)  # Creder(ked=d2)
     assert creder.said == "EJHxKgPiGfPmdH2EbybID30hXIl916ILZQgC3JOa0cvY"  # shouldnt this be different here?
     assert creder.issuer == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
     assert creder.schema == "abc"
@@ -171,7 +173,7 @@ def test_credentialer():
                           b'uanceDatex 2021-06-27T21:26:21.233257+00:00')
 
     raw2 = bytes(creder.raw)
-    creder = serdering.SerderACDC(raw=raw2)  # Creder(raw=raw2)
+    creder = SerderACDC(raw=raw2)  # Creder(raw=raw2)
     assert creder.said == "EJHxKgPiGfPmdH2EbybID30hXIl916ILZQgC3JOa0cvY"
     assert creder.issuer == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
     assert creder.schema == "abc"
@@ -181,9 +183,9 @@ def test_credentialer():
     assert creder.sad == d2
 
     d3 = dict(d)
-    d3["v"] = coring.versify(proto=coring.Protocols.acdc, kind=Kinds.mgpk, size=0)
-    _, d3 = coring.Saider.saidify(sad=d3)
-    creder = serdering.SerderACDC(sad=d3)  # Creder(ked=d3)
+    d3["v"] = versify(proto=Protocols.acdc, kind=Kinds.mgpk, size=0)
+    _, d3 = Saider.saidify(sad=d3)
+    creder = SerderACDC(sad=d3)  # Creder(ked=d3)
 
     assert creder.said == "EMZeK1yLZd1JV6Ktdq_YUt-YbyoTWB9UMcFzuiDly2Y6"
     assert creder.issuer == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
@@ -198,7 +200,7 @@ def test_credentialer():
                           b'3257+00:00')
 
     raw3 = bytes(creder.raw)
-    creder = serdering.SerderACDC(raw=raw3)
+    creder = SerderACDC(raw=raw3)
     assert creder.said == "EMZeK1yLZd1JV6Ktdq_YUt-YbyoTWB9UMcFzuiDly2Y6"
     assert creder.issuer == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
     assert creder.schema == "abc"
@@ -223,7 +225,7 @@ def test_credential(mockHelpingNowIso8601):
         dict(qualifiedvLEIIssuervLEICredential="EGtyThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sHYTGFD")
     ]
 
-    saider = coring.Saider(sad=d, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
+    saider = Saider(sad=d, code=MtrDex.Blake3_256, label=scheming.Saids.d)
     assert saider.qb64 == 'EM_S2MdMaKgP6P2Yyno6-flV6GqrwPencTIw8tCMR7iB'
     d["i"] = saider.qb64
 
@@ -272,10 +274,10 @@ def test_privacy_preserving_credential(mockHelpingNowIso8601):
 
 
 def test_credential_parsator():
-    with habbing.openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab):
+    with openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab):
         assert hab.pre == 'EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o'
 
-        regery = credentialing.Regery(hby=hby, name="sid", temp=True)
+        regery = Regery(hby=hby, name="sid", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="sid", noBackers=True, estOnly=True)
 
         credSubject = dict(
@@ -291,11 +293,11 @@ def test_credential_parsator():
         msg = bytearray(creder.raw)
         msg.extend(Counter(Codens.SealSourceTriples, count=1, version=Vrsn_1_0).qb64b)
         msg.extend(hab.kever.prefixer.qb64b)
-        msg.extend(coring.Seqner(sn=hab.kever.sn).qb64b)
+        msg.extend(Seqner(sn=hab.kever.sn).qb64b)
         msg.extend(hab.kever.serder.said.encode("utf-8"))
 
-        verifier = verifying.Verifier(hby=hby)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=msg, vry=verifier)
+        verifier = Verifier(hby=hby)
+        Parser(version=Vrsn_1_0).parse(ims=msg, vry=verifier)
 
         assert len(verifier.cues) == 1
         cue = verifier.cues.popleft()
