@@ -6,7 +6,7 @@ tests.app.apping module
 
 from hio.base import doing
 
-from keri.app import apping
+from keri.app import Consoler
 
 
 def test_app():
@@ -35,7 +35,7 @@ def test_consoler():
     assert doist.limit == limit
     assert doist.doers == []
 
-    doer = apping.Consoler()
+    doer = Consoler()
 
     doers = [doer]
     try:

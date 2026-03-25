@@ -6,6 +6,7 @@ from hio.base import doing
 
 from keri.app import openHby, runController
 from keri.cli.commands.exn import send as send_cmd
+from keri.app import forwarding
 
 
 def patch_poster(monkeypatch):

@@ -1735,7 +1735,7 @@ class Kramer:
                     f"Coverage hole detected: old pattern msg={old_msg}, route={old_route} "
                     f"is not covered by ANY new pattern. New graph={newGraph}"
                 )
-                raise kering.KramError("Coverage hole detected, new configuration is invalid")
+                raise KramError("Coverage hole detected, new configuration is invalid")
 
 
     def _pruneMessages(self, rdt_ms):

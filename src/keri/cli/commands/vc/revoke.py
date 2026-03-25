@@ -12,7 +12,7 @@ from ...common import Parsery, setupHby
 from ....kering import ValidationError, Ilks
 from ....app import (MailboxDirector, HaberyDoer, Counselor,
                      Multiplexor, Poster, Organizer, Notifier,
-                     GroupHab, multisigRevokeExn, loadHandlers)
+                     GroupHab, multisigRevokeExn, loadGroupingHandlers)
 
 from ....core import SealEvent, Seqner, SerderKERI
 from ....peer import Exchanger
@@ -60,7 +60,7 @@ class RevokeDoer(doing.DoDoer):
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
         exc = Exchanger(hby=self.hby, handlers=[])
-        loadHandlers(exc, mux)
+        loadGroupingHandlers(exc, mux)
 
         mbx = MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/credential"],
                               verifier=self.verifier, exc=exc)

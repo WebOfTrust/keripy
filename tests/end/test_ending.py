@@ -11,39 +11,43 @@ import platform
 import falcon
 from falcon import testing
 from hio.base import tyming, doing
-from hio.help import Hict
+from hio.help import Hict, ogler
 
-from keri import help, kering
+from keri.kering import Roles, Schemes, Kinds, Ilks
 
-from keri.core import Salter, coring, serdering
-from keri.app import habbing
-from keri.end import ending
+from keri.help import helping
+from keri.core import Salter, SerderKERI, dumps
+from keri.app import openHby, openHab
+from keri.end import (Signage, Mimes, KeriMimes,
+                      signature, designature, loadEndingEnds,
+                      desiginput, normalize, setup)
+from keri.end.ending import siginput as sigInputEnding
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 def test_mimes():
     """
     Test mime type namedtuples
     """
-    assert ending.Mimes.json == 'application/json'
-    assert ending.Mimes.mgpk == 'application/msgpack'
-    assert ending.Mimes.cbor == 'application/cbor'
-    assert ending.Mimes.cesr == 'application/cesr'
+    assert Mimes.json == 'application/json'
+    assert Mimes.mgpk == 'application/msgpack'
+    assert Mimes.cbor == 'application/cbor'
+    assert Mimes.cesr == 'application/cesr'
 
-    assert ending.KeriMimes.json == 'application/keri+json'
-    assert ending.KeriMimes.mgpk == 'application/keri+msgpack'
-    assert ending.KeriMimes.cbor == 'application/keri+cbor'
-    assert ending.KeriMimes.cesr == 'application/keri+cesr'
+    assert KeriMimes.json == 'application/keri+json'
+    assert KeriMimes.mgpk == 'application/keri+msgpack'
+    assert KeriMimes.cbor == 'application/keri+cbor'
+    assert KeriMimes.cesr == 'application/keri+cesr'
 
     # Usage: to get Mime from serialization kind
-    assert getattr(ending.Mimes, coring.Kinds.json.lower()) == ending.Mimes.json
-    assert getattr(ending.Mimes, coring.Kinds.mgpk.lower()) == ending.Mimes.mgpk
-    assert getattr(ending.Mimes, coring.Kinds.cbor.lower()) == ending.Mimes.cbor
+    assert getattr(Mimes, Kinds.json.lower()) == Mimes.json
+    assert getattr(Mimes, Kinds.mgpk.lower()) == Mimes.mgpk
+    assert getattr(Mimes, Kinds.cbor.lower()) == Mimes.cbor
 
-    assert getattr(ending.KeriMimes, coring.Kinds.json.lower()) == ending.KeriMimes.json
-    assert getattr(ending.KeriMimes, coring.Kinds.mgpk.lower()) == ending.KeriMimes.mgpk
-    assert getattr(ending.KeriMimes, coring.Kinds.cbor.lower()) == ending.KeriMimes.cbor
+    assert getattr(KeriMimes, Kinds.json.lower()) == KeriMimes.json
+    assert getattr(KeriMimes, Kinds.mgpk.lower()) == KeriMimes.mgpk
+    assert getattr(KeriMimes, Kinds.cbor.lower()) == KeriMimes.cbor
     """Done Test"""
 
 
@@ -61,7 +65,7 @@ def test_signature_designature():
     # db = basing.Baser(name=name, temp=temp, reopen=reopen)
 
     # Setup Habery and Hab
-    with habbing.openHby(name=name, base=base, salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+    with openHby(name=name, base=base, salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
         # hby = habbing.Habery(name=name, base=base, temp=temp, free=True)
         hab = hby.makeHab(name=name, icount=3)
         print()
@@ -80,15 +84,15 @@ def test_signature_designature():
         sigers = hab.sign(ser=text, verfers=hab.kever.verfers)
 
         # test signature with list markers as indexed sigers and defaults for indexed and signer
-        signage = ending.Signage(markers=sigers, indexed=None, signer=None, ordinal=None, digest=None,
+        signage = Signage(markers=sigers, indexed=None, signer=None, ordinal=None, digest=None,
                                  kind=None)
-        header = ending.signature([signage])  # put it in a list
+        header = signature([signage])  # put it in a list
         assert header == {
             'Signature': 'indexed="?1";0="AACsufRGYI-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn'
                          '-3LYSKIrnmH3oIN";1="ABDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";2="ACDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F"'}
 
         # test designature
-        signages = ending.designature(header["Signature"])
+        signages = designature(header["Signature"])
         signage = signages[0]
         assert signage.indexed
         assert not signage.signer
@@ -99,13 +103,13 @@ def test_signature_designature():
 
         # include signer ordinal digest and kind
         # test signature with list markers as indexed sigers and defaults for indexed and signer
-        signage = ending.Signage(markers=sigers,
+        signage = Signage(markers=sigers,
                                  indexed=True,
                                  signer=hab.pre,
                                  ordinal="0",
                                  digest=digest,
                                  kind="CESR")
-        header = ending.signature([signage])  # put it in a list
+        header = signature([signage])  # put it in a list
         assert header == {
             'Signature': 'indexed="?1";signer="EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-";ordinal="0";digest'
                          '="EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-";kind="CESR";0="AACsufRGYI'
@@ -114,7 +118,7 @@ def test_signature_designature():
                          '="ACDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F"'}
 
         # test designature
-        signages = ending.designature(header["Signature"])
+        signages = designature(header["Signature"])
         signage = signages[0]
         assert signage.indexed
         assert signage.signer == hab.pre
@@ -128,9 +132,9 @@ def test_signature_designature():
 
         # test signature with list markers as nonindexed cigars and defaults for indexed and signer
         cigars = hab.sign(ser=text, verfers=hab.kever.verfers, indexed=False)
-        signage = ending.Signage(markers=cigars, indexed=None, signer=None, ordinal=None, digest=None,
+        signage = Signage(markers=cigars, indexed=None, signer=None, ordinal=None, digest=None,
                                  kind=None)
-        header = ending.signature([signage])
+        header = signature([signage])
         assert header == {
             'Signature': 'indexed="?0";DAi2TaRNVtGmV8eSUvqHIBzTzIgrQi57vKzw5Svmy7jw="0BCsufRGYI'
                          '-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn-3LYSKIrnmH3oIN'
@@ -140,7 +144,7 @@ def test_signature_designature():
                          '="0BDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F"'}
 
         # test designature
-        signages = ending.designature(header["Signature"])
+        signages = designature(header["Signature"])
         signage = signages[0]
         assert not signage.indexed
         assert not signage.signer
@@ -151,19 +155,19 @@ def test_signature_designature():
 
         #  now combine into one header
         signages = []
-        signages.append(ending.Signage(markers=sigers, indexed=True, signer=hab.pre,
+        signages.append(Signage(markers=sigers, indexed=True, signer=hab.pre,
                                        ordinal=None, digest=None, kind="CESR"))
-        signages.append(ending.Signage(markers=cigars, indexed=False, signer=hab.pre,
+        signages.append(Signage(markers=cigars, indexed=False, signer=hab.pre,
                                        ordinal=None, digest=None, kind="CESR"))
 
-        header = ending.signature(signages)
+        header = signature(signages)
         assert header == {
             'Signature': 'indexed="?1";signer="EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-";kind="CESR";0'
                          '="AACsufRGYI-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn-3LYSKIrnmH3oIN'
                          '";1="ABDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";2="ACDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F",indexed="?0";signer="EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-";kind="CESR";DAi2TaRNVtGmV8eSUvqHIBzTzIgrQi57vKzw5Svmy7jw="0BCsufRGYI-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn-3LYSKIrnmH3oIN";DNK2KFnL0jUGlmvZHRse7HwNGVdtkM-ORvTZfFw7mDbt="0BDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";DDvIoIYqeuXJ4Zb8e2luWfjPTg4FeIzfHzIO8lC56WjD="0BDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F"'}
 
         # test designature
-        signages = ending.designature(header["Signature"])
+        signages = designature(header["Signature"])
 
         signage = signages[0]
         assert signage.indexed
@@ -185,20 +189,20 @@ def test_signature_designature():
         tags = ["wit0", "wit1", "wit2"]
         signages = []
         markers = {tags[i]: marker for i, marker in enumerate(sigers)}
-        signages.append(ending.Signage(markers=markers, signer=hab.pre, indexed=True,
+        signages.append(Signage(markers=markers, signer=hab.pre, indexed=True,
                                        ordinal=None, digest=None, kind="CESR"))
         markers = {tags[i]: marker for i, marker in enumerate(cigars)}
-        signages.append(ending.Signage(markers=markers, signer=hab.pre, indexed=False,
+        signages.append(Signage(markers=markers, signer=hab.pre, indexed=False,
                                        ordinal=None, digest=None, kind="CESR"))
 
-        header = ending.signature(signages)
+        header = signature(signages)
         assert header == {
             'Signature': 'indexed="?1";signer="EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-";kind="CESR";wit0'
                          '="AACsufRGYI-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn-3LYSKIrnmH3oIN'
                          '";wit1="ABDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";wit2="ACDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F",indexed="?0";signer="EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-";kind="CESR";wit0="0BCsufRGYI-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn-3LYSKIrnmH3oIN";wit1="0BDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";wit2="0BDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F"'}
 
         # test designature
-        signages = ending.designature(header["Signature"])
+        signages = designature(header["Signature"])
 
         signage = signages[0]
         assert signage.indexed
@@ -230,7 +234,7 @@ def test_get_static_sink():
     tymist = tyming.Tymist(tyme=0.0)
 
     myapp = falcon.App()  # falcon.App instances are callable WSGI apps
-    ending.loadEnds(myapp, hby=None, tymth=tymist.tymen(), static=True)
+    loadEndingEnds(myapp, hby=None, tymth=tymist.tymen(), static=True)
 
     client = testing.TestClient(app=myapp)
 
@@ -323,14 +327,14 @@ def test_seid_api():
     # Setup Habery and Hab
     name = 'zoe'
     base = 'test'
-    with habbing.openHby(name=name, base=base, salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+    with openHby(name=name, base=base, salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
         hab = hby.makeHab(name=name)
         # hab = setupTestHab(name='zoe')
         # must do it here to inject into Falcon endpoint resource instances
         tymist = tyming.Tymist(tyme=0.0)
 
         app = falcon.App()  # falcon.App instances are callable WSGI apps
-        ending.loadEnds(app, tymth=tymist.tymen(), hby=hby)
+        loadEndingEnds(app, tymth=tymist.tymen(), hby=hby)
 
         client = testing.TestClient(app=app)
 
@@ -354,16 +358,16 @@ def test_seid_api():
         path = '/witness'
 
         data = dict(seid=seid, name=name, dts=dts, scheme=scheme, host=host, port=port, path=path)
-        text = coring.dumps(data)  # default is kind=coring.Serials.json
+        text = dumps(data)  # default is kind=coring.Serials.json
         assert text == (b'{"seid":"BA89hKezugU2LFKiFVbitoHAxXqJh6HQ8Rn9tH7fxd68","name":"wit0","dts":"'
                         b'2021-01-01T00:00:00.000000+00:00","scheme":"http","host":"localhost","port":'
                         b'8080,"path":"/witness"}')
 
         # sign here  check for non-transferable
         sigers = hab.sign(ser=text, verfers=hab.kever.verfers)
-        signage = ending.Signage(markers=sigers, indexed=None, signer=None, ordinal=None, digest=None,
+        signage = Signage(markers=sigers, indexed=None, signer=None, ordinal=None, digest=None,
                                  kind=None)
-        header = ending.signature([signage])
+        header = signature([signage])
         assert header == {
             'Signature':
                 'indexed="?1";0="AACuduac6au7JSqANK1IaHWP_GlLG9OhPC7Mg52_uRSoddogaYw8mfuyIM6x4lRhKAlxUVDRv_Fh0plB7wx'
@@ -392,7 +396,7 @@ def test_get_admin():
     # Setup Habery and Hab
     name = 'zoe'
     base = 'test'
-    with habbing.openHby(name=name, base=base, salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+    with openHby(name=name, base=base, salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
         hab = hby.makeHab(name=name)
         # hab = setupTestHab(name='zoe')
 
@@ -400,7 +404,7 @@ def test_get_admin():
     tymist = tyming.Tymist(tyme=0.0)
 
     myapp = falcon.App()  # falcon.App instances are callable WSGI apps
-    ending.loadEnds(myapp, tymth=tymist.tymen(), hby=hby)
+    loadEndingEnds(myapp, tymth=tymist.tymen(), hby=hby)
 
     client = testing.TestClient(app=myapp)
 
@@ -418,35 +422,35 @@ def test_get_oobi():
     name = 'oobi'
     base = 'test'
     salt = Salter(raw=b'0123456789abcdef').qb64
-    with habbing.openHby(name=name, base=base, salt=salt) as hby:
+    with openHby(name=name, base=base, salt=salt) as hby:
         hab = hby.makeHab(name=name)
         msgs = bytearray()
         msgs.extend(hab.makeEndRole(eid=hab.pre,
-                                    role=kering.Roles.controller,
-                                    stamp=help.nowIso8601()))
+                                    role=Roles.controller,
+                                    stamp=helping.nowIso8601()))
 
         msgs.extend(hab.makeLocScheme(url='http://127.0.0.1:5555',
-                                      scheme=kering.Schemes.http,
-                                      stamp=help.nowIso8601()))
+                                      scheme=Schemes.http,
+                                      stamp=helping.nowIso8601()))
         hab.psr.parse(ims=msgs)
 
         # must do it here to inject into Falcon endpoint resource instances
         tymist = tyming.Tymist(tyme=0.0)
 
         app = falcon.App()  # falcon.App instances are callable WSGI apps
-        ending.loadEnds(app, tymth=tymist.tymen(), hby=hby, default=hab.pre)
+        loadEndingEnds(app, tymth=tymist.tymen(), hby=hby, default=hab.pre)
 
         client = testing.TestClient(app=app)
 
         rep = client.simulate_get('/oobi', )
         assert rep.status == falcon.HTTP_OK
-        serder = serdering.SerderKERI(raw=rep.text.encode("utf-8"))
-        assert serder.ked['t'] == coring.Ilks.icp
+        serder = SerderKERI(raw=rep.text.encode("utf-8"))
+        assert serder.ked['t'] == Ilks.icp
         assert serder.ked['i'] == "EOaICQwhOy3wMwecjAuHQTbv_Cmuu1azTMnHi4QtUmEU"
 
     delname = "delegator"
-    with habbing.openHby(name=name, base=base, salt=salt) as hby, \
-            habbing.openHby(name=delname, base=base, salt=salt) as delhby:
+    with openHby(name=name, base=base, salt=salt) as hby, \
+            openHby(name=delname, base=base, salt=salt) as delhby:
         delhab = delhby.makeHab(name=delname)
         hab = hby.makeHab(name=name, delpre=delhab.pre)
 
@@ -454,19 +458,19 @@ def test_get_oobi():
         assert hab.kever.delpre == delhab.pre
 
         msgs.extend(hab.makeEndRole(eid=hab.pre,
-                                    role=kering.Roles.controller,
-                                    stamp=help.nowIso8601()))
+                                    role=Roles.controller,
+                                    stamp=helping.nowIso8601()))
 
         msgs.extend(hab.makeLocScheme(url='http://127.0.0.1:5555',
-                                      scheme=kering.Schemes.http,
-                                      stamp=help.nowIso8601()))
+                                      scheme=Schemes.http,
+                                      stamp=helping.nowIso8601()))
         hab.psr.parse(ims=msgs)
 
         # must do it here to inject into Falcon endpoint resource instances
         tymist = tyming.Tymist(tyme=0.0)
 
         app = falcon.App()  # falcon.App instances are callable WSGI apps
-        ending.loadEnds(app, tymth=tymist.tymen(), hby=hby, default=hab.pre)
+        loadEndingEnds(app, tymth=tymist.tymen(), hby=hby, default=hab.pre)
 
         client = testing.TestClient(app=app)
 
@@ -483,8 +487,8 @@ def test_get_oobi():
         assert rep.status == falcon.HTTP_OK
 
         # We'll get the delegator first
-        serder = serdering.SerderKERI(raw=rep.text.encode("utf-8"))
-        assert serder.ked['t'] == coring.Ilks.icp
+        serder = SerderKERI(raw=rep.text.encode("utf-8"))
+        assert serder.ked['t'] == Ilks.icp
         assert serder.ked['i'] == "EKL3to0Q059vtxKi7wWmaNFJ3NKE1nQsOPasRXqPzpjS"
 
     """Done Test"""
@@ -492,7 +496,7 @@ def test_get_oobi():
 
 def test_siginput(mockHelpingNowUTC):
     print()
-    with habbing.openHab(name="test", base="test", temp=True, salt=b'0123456789abcdef') as (hby, hab):
+    with openHab(name="test", base="test", temp=True, salt=b'0123456789abcdef') as (hby, hab):
         headers = Hict([
             ("Content-Type", "application/json"),
             ("Content-Length", "256"),
@@ -501,16 +505,16 @@ def test_siginput(mockHelpingNowUTC):
             ("Signify-Timestamp", "2022-09-24T00:05:48.196795+00:00"),
         ])
 
-        header, sig = ending.siginput("sig0", "POST", "/signify", headers,
-                                      fields=["Signify-Resource", "@method",
-                                              "@path",
-                                              "Signify-Timestamp"],
-                                      alg="ed25519", keyid=hab.pre, hab=hab)
+        header, sig = sigInputEnding("sig0", "POST", "/signify", headers,
+                               fields=["Signify-Resource", "@method",
+                                       "@path",
+                                       "Signify-Timestamp"],
+                                       alg="ed25519", keyid=hab.pre, hab=hab)
 
         headers.extend(header)
-        signage = ending.Signage(markers=dict(sig0=sig), indexed=False, signer=None, ordinal=None, digest=None,
+        signage = Signage(markers=dict(sig0=sig), indexed=False, signer=None, ordinal=None, digest=None,
                                  kind=None)
-        headers.extend(ending.signature([signage]))
+        headers.extend(signature([signage]))
 
         assert dict(headers) == {'Connection': 'close',
                                  'Content-Length': '256',
@@ -524,9 +528,9 @@ def test_siginput(mockHelpingNowUTC):
                                                     'iKDIrg-vIyge6mBl2QV8dDjI3";alg="ed25519"'}
 
         siginput = headers["Signature-Input"]
-        signature = headers["Signature"]
+        sig_value = headers["Signature"]
 
-        inputs = ending.desiginput(siginput.encode("utf-8"))
+        inputs = desiginput(siginput.encode("utf-8"))
         assert len(inputs) == 1
         inputage = inputs[0]
 
@@ -552,7 +556,7 @@ def test_siginput(mockHelpingNowUTC):
                 if field not in headers:
                     continue
 
-                value = ending.normalize(headers[field])
+                value = normalize(headers[field])
                 items.append(f'"{field}": {value}')
 
         values = [f"({' '.join(inputage.fields)})", f"created={inputage.created}"]
@@ -572,7 +576,7 @@ def test_siginput(mockHelpingNowUTC):
         items.append(f'"@signature-params: {params}"')
         ser = "\n".join(items).encode("utf-8")
 
-        signages = ending.designature(signature)
+        signages = designature(sig_value)
         assert len(signages) == 1
         assert signages[0].indexed is False
         assert "sig0" in signages[0].markers
@@ -594,10 +598,10 @@ def test_end_demo():
     # must do it here to inject into Falcon endpoint resource instances
     doist = doing.Doist()
 
-    doers = ending.setup(name="Test ReST Server",
-                         temp=True,
-                         webPort=webPort,
-                         tymth=doist.tymen())
+    doers = setup(name="Test ReST Server",
+                  temp=True,
+                  webPort=webPort,
+                  tymth=doist.tymen())
 
     logger.info("\nWeb Server on port %s.\n\n", webPort)
 

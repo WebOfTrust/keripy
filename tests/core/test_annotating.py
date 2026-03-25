@@ -4,7 +4,7 @@ tests.core.test_annotating module
 
 """
 from binascii import unhexlify
-from keri import Kinds
+from keri.kering import Kinds
 from keri.core import dumps, annot, denot
 
 

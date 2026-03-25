@@ -13,9 +13,7 @@ from ...common import Parsery, setupHby
 from ....kering import Vrsn_1_0
 from ....app import (Notifier, StreamPoster, Organizer,
                      GroupHab, Multiplexor, MailboxDirector,
-                     multisigExn)
-
-from ....app.grouping import loadHandlers as loadHandlersGrouping
+                     multisigExn, loadGroupingHandlers)
 
 from ....core import Kevery, Parser
 from ....peer import Exchanger, cloneMessage
@@ -65,7 +63,7 @@ class SpurnDoer(doing.DoDoer):
         mux = Multiplexor(self.hby, notifier=notifier)
 
         self.exc = Exchanger(hby=self.hby, handlers=[])
-        loadHandlersGrouping(self.exc, mux)
+        loadGroupingHandlers(self.exc, mux)
         loadHandlersProtocoling(self.hby, exc=self.exc, notifier=notifier)
 
         mbx = MailboxDirector(hby=self.hby,

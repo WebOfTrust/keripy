@@ -9,7 +9,7 @@ import pytest
 
 from keri import ValidationError
 from keri.core import Saider, Schemer, JSONSchema, CacheResolver, MtrDex, Saids, dumps
-from keri.db import basing
+from keri.db import openDB
 
 
 def test_json_schema():
@@ -281,7 +281,7 @@ def test_resolution():
     payload = b'{"a": "test", "b": 123, "c": "2018-11-13T20:20:39+00:00", "xy": {"z": 456}}'
     badload = b'{"a": "test", "b": 123, "c": "2018-11-13T20:20:39+00:00", "xy": {"z": "456"}}'
 
-    with basing.openDB(name="edy") as db:
+    with openDB(name="edy") as db:
         cache = CacheResolver(db=db)
         cache.add(refsaid, ref)  # add referenced schema to db indexed by its said
 

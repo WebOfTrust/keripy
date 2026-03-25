@@ -24,7 +24,7 @@ from ..recording import TopicsRecord
 from ..core import (Kevery, parsing, routing, coring, serdering,
                     Counter, receipt, Codens)
 from ..db import BaserDoer
-from ..end import loadEnds as loadEndsEnding
+from ..end import loadEndingEnds
 from ..help import nowUTC
 from ..peer import Exchanger
 
@@ -34,8 +34,7 @@ from .storing import Mailboxer, Respondant
 from .httping import Clienter, createCESRRequest, parseCesrHttpRequest, CESR_CONTENT_TYPE
 from .forwarding import ForwardHandler
 from .agenting import httpClient
-from .oobiing import (Oobiery,
-                      loadEnds as loadEndsOobiing)
+from .oobiing import Oobiery, loadOobiingEnds
 
 logger = ogler.getLogger()
 
@@ -69,8 +68,8 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     oobiery = Oobiery(hby=hby, clienter=clienter)
 
     app = falcon.App(cors_enable=True)
-    loadEndsEnding(app=app, hby=hby, default=hab.pre)
-    loadEndsOobiing(app=app, hby=hby, prefix="/ext")
+    loadEndingEnds(app=app, hby=hby, default=hab.pre)
+    loadOobiingEnds(app=app, hby=hby, prefix="/ext")
     rep = Respondant(hby=hby, mbx=mbx, aids=aids)
 
     rvy = routing.Revery(db=hby.db, cues=cues)

@@ -3,12 +3,12 @@
 tests.vdr.test_credentialing module
 
 """
-from keri import kering
+from keri.kering import ValidationError
 
-from keri.core import Number, Saider, Diger, serdering, SealEvent
+from keri.core import Number, Saider, Diger, SerderKERI, SealEvent
 
-from keri.app import keeping
-from keri.db import basing
+from keri.app import openKS
+from keri.db import openDB
 from keri.vdr import Regery, Registrar
 
 from tests.vdr import buildHab
@@ -17,7 +17,7 @@ from tests.vdr import buildHab
 def test_tpwe():
     vcdig = "EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU"
 
-    with basing.openDB(temp=True) as db, keeping.openKS(temp=True) as kpr:
+    with openDB(temp=True) as db, openKS(temp=True) as kpr:
         hby, hab = buildHab(db, kpr)
         rgy = Regery(hby=hby, name="test", temp=True)
         registrar = Registrar(hby=hby, rgy=rgy, counselor=None)
@@ -37,7 +37,7 @@ def test_tpwe():
         reg_iss = rgy.makeRegistry(name="tpwe_iss", prefix=hab.pre, noBackers=True)
         rseal = SealEvent(i=reg_iss.vcp.pre, s=reg_iss.vcp.ked["s"], d=reg_iss.vcp.said)
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = serdering.SerderKERI(raw=rot)
+        rotser = SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=reg_iss.vcp,
                              seqner=Number(num=rotser.sn),
                              saider=Saider(qb64=rotser.said))
@@ -51,14 +51,14 @@ def test_tpwe():
         reg_rev = rgy.makeRegistry(name="tpwe_rev", prefix=hab.pre, noBackers=True)
         rseal = SealEvent(i=reg_rev.vcp.pre, s=reg_rev.vcp.ked["s"], d=reg_rev.vcp.said)
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = serdering.SerderKERI(raw=rot)
+        rotser = SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=reg_rev.vcp,
                              seqner=Number(num=rotser.sn),
                              saider=Saider(qb64=rotser.said))
         iss2 = reg_rev.issue(said=vcdig)
         rseal = SealEvent(iss2.ked["i"], iss2.ked["s"], iss2.said)
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = serdering.SerderKERI(raw=rot)
+        rotser = SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=iss2,
                              seqner=Number(num=rotser.sn),
                              saider=Saider(qb64=rotser.said))
@@ -91,7 +91,7 @@ def test_tmse():
     vcdig = "EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU"
 
     # tmse is populated correctly (inject and verify entries)
-    with basing.openDB(temp=True) as db, keeping.openKS(temp=True) as kpr:
+    with openDB(temp=True) as db, openKS(temp=True) as kpr:
         hby, hab = buildHab(db, kpr)
         rgy = Regery(hby=hby, name="test", temp=True)
 
@@ -110,7 +110,7 @@ def test_tmse():
         reg_iss = rgy.makeRegistry(name="tmse_iss", prefix=hab.pre, noBackers=True)
         rseal = SealEvent(i=reg_iss.vcp.pre, s=reg_iss.vcp.ked["s"], d=reg_iss.vcp.said)
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = serdering.SerderKERI(raw=rot)
+        rotser = SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=reg_iss.vcp,
                              seqner=Number(num=rotser.sn),
                              saider=Saider(qb64=rotser.said))
@@ -124,14 +124,14 @@ def test_tmse():
         reg_rev = rgy.makeRegistry(name="tmse_rev", prefix=hab.pre, noBackers=True)
         rseal = SealEvent(i=reg_rev.vcp.pre, s=reg_rev.vcp.ked["s"], d=reg_rev.vcp.said)
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = serdering.SerderKERI(raw=rot)
+        rotser = SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=reg_rev.vcp,
                              seqner=Number(num=rotser.sn),
                              saider=Saider(qb64=rotser.said))
         iss2 = reg_rev.issue(said=vcdig)
         rseal = SealEvent(iss2.ked["i"], iss2.ked["s"], iss2.said)
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = serdering.SerderKERI(raw=rot)
+        rotser = SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=iss2,
                              seqner=Number(num=rotser.sn),
                              saider=Saider(qb64=rotser.said))
@@ -142,7 +142,7 @@ def test_tmse():
         assert len(rgy.reger.tmse.get(keys=(vcdig, rnum_rev.huge, rev.said))) == 1
 
     # processMultisigEscrow is a no-op when counselor.complete is False
-    with basing.openDB(temp=True) as db, keeping.openKS(temp=True) as kpr:
+    with openDB(temp=True) as db, openKS(temp=True) as kpr:
         hby, hab = buildHab(db, kpr)
         rgy = Regery(hby=hby, name="test", temp=True)
 
@@ -163,7 +163,7 @@ def test_tmse():
         assert rgy.reger.tede.get(keys=(reg.regk, rnum.huge)) == []
 
     # processMultisigEscrow drains tmse and seeds tede when complete
-    with basing.openDB(temp=True) as db, keeping.openKS(temp=True) as kpr:
+    with openDB(temp=True) as db, openKS(temp=True) as kpr:
         hby, hab = buildHab(db, kpr)
         rgy = Regery(hby=hby, name="test", temp=True)
 
@@ -186,12 +186,12 @@ def test_tmse():
         assert len(rgy.reger.tede.get(keys=(reg.regk, rnum.huge))) == 1
 
     # processMultisigEscrow drops entry on ValidationError
-    with basing.openDB(temp=True) as db, keeping.openKS(temp=True) as kpr:
+    with openDB(temp=True) as db, openKS(temp=True) as kpr:
         hby, hab = buildHab(db, kpr)
         rgy = Regery(hby=hby, name="test", temp=True)
 
         class _RaisesValidation:
-            def complete(self, *a, **kw): raise kering.ValidationError("bad")
+            def complete(self, *a, **kw): raise ValidationError("bad")
 
         registrar = Registrar(hby=hby, rgy=rgy, counselor=_RaisesValidation())
         reg = rgy.makeRegistry(name="tmse_valerr", prefix=hab.pre, noBackers=True)
@@ -207,7 +207,7 @@ def test_tmse():
 
 
 def test_tede():
-    with basing.openDB(temp=True) as db, keeping.openKS(temp=True) as kpr:
+    with openDB(temp=True) as db, openKS(temp=True) as kpr:
         hby, hab = buildHab(db, kpr)
         rgy = Regery(hby=hby, name="test", temp=True)
 
@@ -262,7 +262,7 @@ def test_tede():
         reg_drain = rgy.makeRegistry(name="diss_drain", prefix=hab.pre, noBackers=True)
         rseal = SealEvent(i=reg_drain.vcp.pre, s=reg_drain.vcp.ked["s"], d=reg_drain.vcp.said)
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = serdering.SerderKERI(raw=rot)
+        rotser = SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=reg_drain.vcp,
                              seqner=Number(num=rotser.sn),
                              saider=Saider(qb64=rotser.said))
@@ -279,7 +279,7 @@ def test_tede():
 def test_escrow_suber_klas():
     SN = 42
 
-    with basing.openDB(temp=True) as db, keeping.openKS(temp=True) as kpr:
+    with openDB(temp=True) as db, openKS(temp=True) as kpr:
         hby, hab = buildHab(db, kpr)
         rgy = Regery(hby=hby, name="test", temp=True)
 

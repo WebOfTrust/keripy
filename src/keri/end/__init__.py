@@ -10,7 +10,7 @@ ReST endpoints
 from .ending import (Signage, Inputage, signature,
                      designature, normalize, siginput,
                      desiginput, PointEnd, LocationEnd,
-                     AdminEnd, OOBIEnd, loadEnds, setup,
-                     OOBI_RE, DOOBI_RE, WOOBI_RE,
-                     OOBI_AID_HEADER)
+                     AdminEnd, OOBIEnd, loadEndingEnds, setup,
+                     OOBI_RE, DOOBI_RE, Mimes, KeriMimes,
+                     WOOBI_RE, OOBI_AID_HEADER)
 from .priming import parseArgs

@@ -10,23 +10,26 @@ import falcon
 from hio.base import doing, tyming
 from hio.core import http
 
-from keri import core, kering, help
-from keri.core import coring, eventing, parsing, serdering
-from keri.kering import Vrsn_1_0
+from keri import help
+from keri.core import (Salter, Pather, Prefixer,
+                       Bexter, Kevery, Parser, SerderKERI)
+from keri.kering import Vrsn_1_0, Ilks, Roles, Schemes
 
-from keri.app import forwarding, habbing, indirecting, storing
+from keri.app import (Mailboxer, ForwardHandler, Poster,
+                      StreamPoster, HttpEnd,
+                      openHab, openHby, setupWitness)
 
 from keri.peer import exchanging
 from keri.spac import payloading
 
 
 def test_postman(seeder):
-    with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab), \
-            habbing.openHby(name="wes", salt=core.Salter(raw=b'wess-the-witness').qb64, temp=True) as wesHby, \
-            habbing.openHby(name="repTest", temp=True) as recpHby:
+    with openHab(name="test", transferable=True, temp=True) as (hby, hab), \
+            openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=True) as wesHby, \
+            openHby(name="repTest", temp=True) as recpHby:
 
-        mbx = storing.Mailboxer(name="wes", temp=True)
-        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644)
+        mbx = Mailboxer(name="wes", temp=True)
+        wesDoers = setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644)
         wesHab = wesHby.habByName("wes")
         seeder.seedWitEnds(hby.db, witHabs=[wesHab])
         seeder.seedWitEnds(wesHby.db, witHabs=[wesHab])
@@ -35,20 +38,20 @@ def test_postman(seeder):
         recpHab = recpHby.makeHab(name="repTest", transferable=True, wits=[wesHab.pre])
 
         recpIcp = recpHab.makeOwnEvent(sn=0)
-        wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(recpIcp), kvy=wesKvy, local=True)
+        wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(recpIcp), kvy=wesKvy, local=True)
         assert recpHab.pre in wesKvy.kevers
 
-        serder = serdering.SerderKERI(raw=recpIcp)
+        serder = SerderKERI(raw=recpIcp)
         rct = wesHab.receipt(serder)
 
-        kvy = eventing.Kevery(db=hab.db)
-        parsing.Parser(version=Vrsn_1_0).parseOne(bytearray(recpIcp), kvy=kvy, local=True)
-        parsing.Parser(version=Vrsn_1_0).parseOne(bytearray(rct), kvy=kvy, local=True)
+        kvy = Kevery(db=hab.db)
+        Parser(version=Vrsn_1_0).parseOne(bytearray(recpIcp), kvy=kvy, local=True)
+        Parser(version=Vrsn_1_0).parseOne(bytearray(rct), kvy=kvy, local=True)
         kvy.processEscrows()
         assert recpHab.pre in kvy.kevers
 
-        pman = forwarding.Poster(hby=hby)
+        pman = Poster(hby=hby)
 
         exn, _ = exchanging.exchange(route="/echo", payload=dict(msg="test"), sender=hab.pre)
         atc = hab.endorse(exn, last=False)
@@ -76,19 +79,19 @@ def test_postman(seeder):
             msgs.append(msg)
 
         assert len(msgs) == 1
-        serder = serdering.SerderKERI(raw=msgs[0])
-        assert serder.ked["t"] == coring.Ilks.exn
+        serder = SerderKERI(raw=msgs[0])
+        assert serder.ked["t"] == Ilks.exn
         assert serder.ked["r"] == "/echo"
         assert serder.ked["a"] == dict(msg="test")
 
 
 def test_forward_handler():
-    with habbing.openHab(name="sender", transferable=True, temp=True) as (hby, hab), \
-         habbing.openHab(name="recp", transferable=True, temp=True) as (recpHby, recpHab), \
-         habbing.openHab(name="recp2", transferable=True, temp=True) as (recp2Hby, recp2Hab):
+    with openHab(name="sender", transferable=True, temp=True) as (hby, hab), \
+         openHab(name="recp", transferable=True, temp=True) as (recpHby, recpHab), \
+         openHab(name="recp2", transferable=True, temp=True) as (recp2Hby, recp2Hab):
 
-        mbx = storing.Mailboxer(temp=True)
-        forwarder = forwarding.ForwardHandler(hby=hby, mbx=mbx)
+        mbx = Mailboxer(temp=True)
+        forwarder = ForwardHandler(hby=hby, mbx=mbx)
 
         # Happy path: single embed
         inner_exn, _ = exchanging.exchange(route="/echo", payload=dict(msg="hello"), sender=hab.pre)
@@ -104,7 +107,7 @@ def test_forward_handler():
             embeds=dict(evt=evt),
             sender=hab.pre,
         )
-        pather = coring.Pather(path=["evt"])
+        pather = Pather(path=["evt"])
         forwarder.handle(serder=fwd, attachments=[(pather, inner_atc)])
 
         msgs = list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/echo"))
@@ -112,8 +115,8 @@ def test_forward_handler():
         _, _, raw = msgs[0]
 
         # Field-level correctness
-        stored = serdering.SerderKERI(raw=raw)
-        assert stored.ked["t"] == coring.Ilks.exn
+        stored = SerderKERI(raw=raw)
+        assert stored.ked["t"] == Ilks.exn
         assert stored.ked["r"] == "/echo"
         assert stored.ked["a"] == dict(msg="hello")
 
@@ -137,7 +140,7 @@ def test_forward_handler():
             embeds=dict(evt=evt2),
             sender=hab.pre,
         )
-        forwarder.handle(serder=fwd2, attachments=[(coring.Pather(path=["evt"]), inner_atc2)])
+        forwarder.handle(serder=fwd2, attachments=[(Pather(path=["evt"]), inner_atc2)])
 
         echo_msgs = list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/echo"))
         delegate_msgs = list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/delegate"))
@@ -158,7 +161,7 @@ def test_forward_handler():
             embeds=dict(evt=evt3),
             sender=hab.pre,
         )
-        forwarder.handle(serder=fwd3, attachments=[(coring.Pather(path=["evt"]), inner_atc3)])
+        forwarder.handle(serder=fwd3, attachments=[(Pather(path=["evt"]), inner_atc3)])
 
         recp1_echo = list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/echo"))
         recp2_echo = list(mbx.cloneTopicIter(topic=f"{recp2Hab.pre}/echo"))
@@ -184,8 +187,8 @@ def test_forward_handler():
             embeds=dict(evtA=evtA, evtB=evtB),
             sender=hab.pre,
         )
-        patherA = coring.Pather(path=["evtA"])
-        patherB = coring.Pather(path=["evtB"])
+        patherA = Pather(path=["evtA"])
+        patherB = Pather(path=["evtB"])
         forwarder.handle(serder=fwd_multi, attachments=[(patherA, inner_atcA), (patherB, inner_atcB)])
 
         multi_msgs = list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/multi"))
@@ -203,37 +206,37 @@ def test_forward_handler():
 
 
 def test_essr_stream(seeder):
-    with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab), \
-            habbing.openHab(name="test", transferable=True, temp=True) as (recpHby, recpHab):
+    with openHab(name="test", transferable=True, temp=True) as (hby, hab), \
+            openHab(name="test", transferable=True, temp=True) as (recpHby, recpHab):
 
         app = falcon.App()
-        httpEnd = indirecting.HttpEnd(rxbs=recpHab.psr.ims)
+        httpEnd = HttpEnd(rxbs=recpHab.psr.ims)
         app.add_route("/", httpEnd)
         server = http.Server(port=5555, app=app)
         httpServerDoer = http.ServerDoer(server=server)
 
-        kvy = eventing.Kevery(db=hab.db)
-        parsing.Parser(version=Vrsn_1_0).parseOne(bytearray(recpHab.makeOwnEvent(sn=0)), kvy=kvy, local=True)
+        kvy = Kevery(db=hab.db)
+        Parser(version=Vrsn_1_0).parseOne(bytearray(recpHab.makeOwnEvent(sn=0)), kvy=kvy, local=True)
         kvy.processEscrows()
         assert recpHab.pre in kvy.kevers
 
-        recpKvy = eventing.Kevery(db=recpHab.db)
+        recpKvy = Kevery(db=recpHab.db)
         icp = hab.makeOwnEvent(sn=0)
-        parsing.Parser(version=Vrsn_1_0).parseOne(bytearray(icp), kvy=recpKvy, local=True)
+        Parser(version=Vrsn_1_0).parseOne(bytearray(icp), kvy=recpKvy, local=True)
         kvy.processEscrows()
         assert hab.pre in recpKvy.kevers
 
         msgs = bytearray()
         msgs.extend(recpHab.makeEndRole(eid=recpHab.pre,
-                                        role=kering.Roles.controller,
+                                        role=Roles.controller,
                                         stamp=help.nowIso8601()))
 
         msgs.extend(recpHab.makeLocScheme(url='http://127.0.0.1:5555',
-                                          scheme=kering.Schemes.http,
+                                          scheme=Schemes.http,
                                           stamp=help.nowIso8601()))
         hab.psr.parse(ims=msgs)
 
-        postman = forwarding.StreamPoster(hby=hby, hab=hab, recp=recpHab.pre, essr=True)
+        postman = StreamPoster(hby=hby, hab=hab, recp=recpHab.pre, essr=True)
 
         # Test chunking
         saids = []
@@ -278,9 +281,9 @@ def test_essr_stream(seeder):
 
         tag = recpHby.psr.extract(ims, payloading.PayloadTyper)
         assert tag.type == payloading.PayloadTypes.SCS
-        pre = recpHby.psr.extract(ims, coring.Prefixer)
+        pre = recpHby.psr.extract(ims, Prefixer)
         assert pre.qb64 == hab.pre  # encrypt sender
-        pad = recpHby.psr.extract(ims, coring.Bexter)
+        pad = recpHby.psr.extract(ims, Bexter)
         assert pad.bext == ""
         recpHby.psr.parse(ims=ims)
 
@@ -288,30 +291,30 @@ def test_essr_stream(seeder):
         ims = bytearray(recpHab.decrypt(texter.raw))
 
         _tag = recpHby.psr.extract(ims, payloading.PayloadTyper)
-        _pre = recpHby.psr.extract(ims, coring.Prefixer)
-        _pad = recpHby.psr.extract(ims, coring.Bexter)
+        _pre = recpHby.psr.extract(ims, Prefixer)
+        _pad = recpHby.psr.extract(ims, Bexter)
         recpHby.psr.parse(ims=ims)
 
         # Both chunks present
         # Can come out of order, so need to parse both ESSR packets first for test to be reliable
         serder = recpHby.db.exns.get(saids[0])
-        assert serder.ked["t"] == coring.Ilks.exn
+        assert serder.ked["t"] == Ilks.exn
         assert serder.ked["r"] == "/echo"
         assert serder.ked["a"] == dict(msg="test", i=0)
 
         serder = recpHby.db.exns.get(saids[39])
-        assert serder.ked["t"] == coring.Ilks.exn
+        assert serder.ked["t"] == Ilks.exn
         assert serder.ked["r"] == "/echo"
         assert serder.ked["a"] == dict(msg="test", i=39)
 
 
 def test_essr_mbx(seeder):
-    with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab), \
-            habbing.openHby(name="wes", salt=core.Salter(raw=b'wess-the-witness').qb64, temp=True) as wesHby, \
-            habbing.openHby(name="repTest", temp=True) as recpHby:
+    with openHab(name="test", transferable=True, temp=True) as (hby, hab), \
+            openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=True) as wesHby, \
+            openHby(name="repTest", temp=True) as recpHby:
 
-        mbx = storing.Mailboxer(name="wes", temp=True)
-        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644)
+        mbx = Mailboxer(name="wes", temp=True)
+        wesDoers = setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644)
         wesHab = wesHby.habByName("wes")
         seeder.seedWitEnds(hby.db, witHabs=[wesHab])
         seeder.seedWitEnds(wesHby.db, witHabs=[wesHab])
@@ -320,26 +323,26 @@ def test_essr_mbx(seeder):
         recpHab = recpHby.makeHab(name="repTest", transferable=True, wits=[wesHab.pre])
 
         recpIcp = recpHab.makeOwnEvent(sn=0)
-        wesKvy = eventing.Kevery(db=wesHab.db, lax=False, local=False)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(recpIcp), kvy=wesKvy, local=True)
+        wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(recpIcp), kvy=wesKvy, local=True)
         assert recpHab.pre in wesKvy.kevers
 
-        serder = serdering.SerderKERI(raw=recpIcp)
+        serder = SerderKERI(raw=recpIcp)
         rct = wesHab.receipt(serder)
 
-        kvy = eventing.Kevery(db=hab.db)
-        parsing.Parser(version=Vrsn_1_0).parseOne(bytearray(recpIcp), kvy=kvy, local=True)
-        parsing.Parser(version=Vrsn_1_0).parseOne(bytearray(rct), kvy=kvy, local=True)
+        kvy = Kevery(db=hab.db)
+        Parser(version=Vrsn_1_0).parseOne(bytearray(recpIcp), kvy=kvy, local=True)
+        Parser(version=Vrsn_1_0).parseOne(bytearray(rct), kvy=kvy, local=True)
         kvy.processEscrows()
         assert recpHab.pre in kvy.kevers
 
-        recpKvy = eventing.Kevery(db=recpHab.db)
+        recpKvy = Kevery(db=recpHab.db)
         icp = hab.makeOwnEvent(sn=0)
-        parsing.Parser(version=Vrsn_1_0).parseOne(bytearray(icp), kvy=recpKvy, local=True)
+        Parser(version=Vrsn_1_0).parseOne(bytearray(icp), kvy=recpKvy, local=True)
         kvy.processEscrows()
         assert hab.pre in recpKvy.kevers
 
-        postman = forwarding.StreamPoster(hby=hby, hab=hab, recp=recpHab.pre, topic="echo", essr=True)
+        postman = StreamPoster(hby=hby, hab=hab, recp=recpHab.pre, topic="echo", essr=True)
 
         # Test chunking
         saids = []
@@ -382,14 +385,14 @@ def test_essr_mbx(seeder):
 
         tag = wesHby.psr.extract(ims, payloading.PayloadTyper)
         assert tag.type == payloading.PayloadTypes.SCS
-        pre = wesHby.psr.extract(ims, coring.Prefixer)
+        pre = wesHby.psr.extract(ims, Prefixer)
         assert pre.qb64 == hab.pre  # encrypt sender
-        pad = wesHby.psr.extract(ims, coring.Bexter)
+        pad = wesHby.psr.extract(ims, Bexter)
         assert pad.bext == ""
 
-        forwarder = forwarding.ForwardHandler(hby=hby, mbx=mbx)
+        forwarder = ForwardHandler(hby=hby, mbx=mbx)
         exchanger = exchanging.Exchanger(hby=hby, handlers=[forwarder])
-        parser = parsing.Parser(framed=True,
+        parser = Parser(framed=True,
                                 kvy=wesHby.kvy,
                                 exc=exchanger,
                                 version=Vrsn_1_0)
@@ -399,14 +402,14 @@ def test_essr_mbx(seeder):
         ims = bytearray(wesHab.decrypt(texter.raw))
 
         _tag = wesHby.psr.extract(ims, payloading.PayloadTyper)
-        _pre = wesHby.psr.extract(ims, coring.Prefixer)
-        _pad = wesHby.psr.extract(ims, coring.Bexter)
+        _pre = wesHby.psr.extract(ims, Prefixer)
+        _pad = wesHby.psr.extract(ims, Bexter)
         parser.parse(ims=ims)
 
         mbxSaids = []
         for _, topic, msg in mbx.cloneTopicIter(topic=recpHab.pre + "/echo"):
-            serder = serdering.SerderKERI(raw=msg)
-            assert serder.ked["t"] == coring.Ilks.exn
+            serder = SerderKERI(raw=msg)
+            assert serder.ked["t"] == Ilks.exn
             assert serder.ked["r"] == "/echo"
             mbxSaids.append(serder.said)
 
