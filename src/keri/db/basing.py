@@ -316,7 +316,7 @@ class Baser(LMDBer):
             and offset into the witness list of the latest establishment event.
             subkey 'uwes.'
             Key: receipted event controller prefix + sequence number.
-            More than one value per DB key is allowed.
+            Multiple values per key are stored in insertion order as a set.
 
         .ooes is named subDB instance of OnIoDupSuber for out-of-order event
             escrows under composite keys "<pre><sep><on>". Tracks events whose

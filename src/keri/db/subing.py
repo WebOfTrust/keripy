@@ -3531,7 +3531,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
         Returns:
             count (int): count values in set at effective onkey from insertion
-                        ordering offset ion.
+                         ordering offset ion.
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key.
