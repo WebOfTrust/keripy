@@ -12,23 +12,24 @@ import pytest
 from keri.db.webbasing import WebBaser
 
 try:
-    from keri.db import subing, koming, dgKey, snKey
+    from keri.db import subing, koming, dgKey, snKey, statedict
 except ImportError:
     subing = None
     koming = None
 
 try:
     from keri.core import (serdering, coring, signing, Noncer, Labeler,
-                        indexing, Number, Diger, Seqner, Saider, Texter,
+                        indexing, Number, Diger, Seqner, Saider, Texter, StateEstEvent,
                         SerderKERI, Salter, rotate, MtrDex, incept, rotate, interact,
                         Kever, Prefixer, Siger, Dater, Serder, Signer, NumDex)
-    from keri import versify, Kinds
+    from keri import versify, Kinds, Ilks
     from keri.recording import EventSourceRecord, OobiRecord
     from keri import core
 except ImportError:
     # Pyodide fallback
     from keri.core import serdering
 
+from keri.core import state as eventState
 from keri.app import openHby
 from keri.help import datify, dictify
 from keri.recording import (EventSourceRecord, KeyStateRecord,
@@ -2190,5 +2191,101 @@ def test_db_keyspace_end_to_end_migration():
                 ordered_sns.append(n.num)
 
         assert ordered_sns == sns
+
+    asyncio.run(_go())
+
+
+def test_statedict():
+    """
+    Test custom statedict subclass of dict
+    """
+    
+
+    async def _go():
+
+        backend = FakeStorageBackend()
+        db = WebBaser()
+
+        await db.reopen(storageOpener=backend.open)
+
+        assert db.opened
+
+        dbd = statedict(a=1, b=2, c=3)  # init in memory so never acesses db
+        assert dbd.db == None
+        assert 'a' in dbd
+        assert 'b' in dbd
+        assert 'c' in dbd
+        assert [(k, v) for k, v in dbd.items()] == [('a', 1), ('b', 2), ('c', 3)]
+        assert list(dbd.keys()) == ['a', 'b', 'c']
+        assert list(dbd.values()) == [1, 2, 3]
+
+        assert dbd.get('a') == 1
+        assert dbd['a'] == 1
+
+        dbd.clear()
+        assert not dbd
+        dbd.db = db
+        assert dbd.db == db
+        assert not dbd
+
+        dbd['a'] = 1
+        dbd['b'] = 2
+        dbd['c'] = 3
+        assert dbd
+        assert dbd.get('a') == 1
+        assert dbd['a'] == 1
+
+        assert [(k, v) for k, v in dbd.items()] == [('a', 1), ('b', 2), ('c', 3)]
+
+        assert 'd' not in dbd
+        assert dbd.get('d') is None
+
+        with pytest.raises(KeyError):
+            x = dbd['d']
+
+        dbd.clear()
+        pre = 'DApYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0'
+
+        assert pre not in dbd
+        dig = 'EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30'
+        serder = interact(pre=pre, dig=dig, sn=4)
+
+        eevt = StateEstEvent(s='3', d=dig, br=[], ba=[])
+
+        state = eventState(pre=pre,
+                           sn=4,
+                           pig=dig,
+                           dig=serder.said,
+                           fn=4,
+                           eilk=Ilks.ixn,
+                           keys=[pre],
+                           eevt=eevt,
+                           )
+
+        db.evts.put(keys=(pre, serder.said), val=serder)
+        assert db.evts.get(keys=(pre, serder.said)) is not None
+
+        db.states.pin(keys=pre, val=state)  # put state in database
+        dbstate = db.states.get(keys=pre)
+        assert dbstate is not None
+        assert dbstate == state
+
+        kever = Kever(state=state, db=db)
+        assert kever.state() == state
+
+        dkever = dbd[pre]  # read through cache works here
+        dstate = dkever.state()
+        assert  dstate == state
+
+        del dbd[pre]  # not in dbd memory
+        assert pre in dbd  #  read through cache works
+        dkever = dbd[pre]
+        dstate = dkever.state()
+        assert  dstate == state
+
+        db.states.rem(keys=pre)
+        assert pre in dbd  # still in memory
+        del dbd[pre]
+        assert pre not in dbd  # not in memory or db so read through cache misses
 
     asyncio.run(_go())
