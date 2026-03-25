@@ -3539,6 +3539,9 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             on (int): ordinal number used with onKey(pre,on) to form key.
             ion (int): starting insertion ordinal offset into set, default 0.
         """
+        if not keys:
+            return self.db.cntOnAllIoSet(db=self.sdb)
+
         return (self.db.cntOnIoSet(db=self.sdb,
                                    key=self._tokey(keys),
                                    on=on,
