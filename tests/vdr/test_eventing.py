@@ -5,10 +5,10 @@ tests.vdr.eventing module
 """
 import pytest
 
-from keri.app import keeping
-from keri.core import (Signer, coring, serdering, SealEvent,
+from keri.app import openKS
+from keri.core import (Signer, Diger, SerderKERI, SealEvent,
                        Prefixer, Seqner, Diger, MtrDex)
-from keri.db import basing, snKey, dgKey
+from keri.db import openDB, snKey, dgKey
 from keri import (Ilks, TraitDex, MissingAnchorError, ValidationError,
                   MissingWitnessSignatureError, LikelyDuplicitousError)
 from keri.vdr import (openReger, incept, rotate,
@@ -326,7 +326,7 @@ def test_tever_escrow(mockCoringRandomNonce):
         Tever()
 
     # registry with no backers, invalid anchor
-    with basing.openDB() as db, keeping.openKS() as kpr, openReger() as reg:
+    with openDB() as db, openKS() as kpr, openReger() as reg:
         hby, hab = buildHab(db, kpr)
         vcp = incept(hab.pre,
                               baks=[],
@@ -346,7 +346,7 @@ def test_tever_escrow(mockCoringRandomNonce):
             Tever(serder=vcp, seqner=seqner, saider=None, db=db, reger=reg)
 
     # registry with no backers
-    with basing.openDB() as db, keeping.openKS() as kpr, openReger() as reg:
+    with openDB() as db, openKS() as kpr, openReger() as reg:
         hby, hab = buildHab(db, kpr)
         vcp = incept(hab.pre,
                               baks=[],
@@ -373,7 +373,7 @@ def test_tever_escrow(mockCoringRandomNonce):
         assert bytes(dig) == b'EEu4cX0EqO9mTqsNgxDgCT9lJbj9qmuPvD7BwNUl6wms'
 
     # registry with backers, no signatures.  should escrow
-    with basing.openDB() as db, keeping.openKS() as kpr, openReger() as reg:
+    with openDB() as db, openKS() as kpr, openReger() as reg:
         hby, hab = buildHab(db, kpr)
         vcp = incept(hab.pre,
                               baks=["BAOcciw30IVQsaenKXpiyMVrjtPDW3KeD_6KFnSfoaqI"],
@@ -386,7 +386,7 @@ def test_tever_escrow(mockCoringRandomNonce):
         rseal = SealEvent(regk, vcp.ked["s"], vcp.said)
 
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = serdering.SerderKERI(raw=rot)
+        rotser = SerderKERI(raw=rot)
 
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
@@ -414,7 +414,7 @@ def test_tever_escrow(mockCoringRandomNonce):
 def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
     # registry with no backers
     # registry with backer and receipt
-    with basing.openDB() as db, keeping.openKS() as kpr, openReger() as reg:
+    with openDB() as db, openKS() as kpr, openReger() as reg:
         hby, hab = buildHab(db, kpr)
 
         vcp = incept(hab.pre,
@@ -428,7 +428,7 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         rseal = SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
 
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = serdering.SerderKERI(raw=rot)
+        rotser = SerderKERI(raw=rot)
 
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
@@ -458,7 +458,7 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         vrt = rotate(regk, dig=vcp.said)
         rseal = SealEvent(regk, vrt.ked["s"], vrt.said)
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = serdering.SerderKERI(raw=rot)
+        rotser = SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
         diger = Diger(qb64=rotser.said)
@@ -474,7 +474,7 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         # successfully anchor to a rotation event
         rseal = SealEvent(iss.ked["i"], iss.ked["s"], iss.said)
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = serdering.SerderKERI(raw=rot)
+        rotser = SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
         rdiger = Diger(qb64=rotser.said)
@@ -498,7 +498,7 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         # successfully anchor to a rotation event
         rseal = SealEvent(rev.ked["i"], rev.ked["s"], rev.said)
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = serdering.SerderKERI(raw=rot)
+        rotser = SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
         diger = Diger(qb64=rotser.said)
@@ -515,7 +515,7 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
 
 def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
     # registry with backer and receipt
-    with basing.openDB() as db, keeping.openKS() as kpr, openReger() as reg:
+    with openDB() as db, openKS() as kpr, openReger() as reg:
         valSecret = 'ABjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw'
 
         # create receipt signer prefixer default code is non-transferable
@@ -538,7 +538,7 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         rseal = SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
 
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = serdering.SerderKERI(raw=rot)
+        rotser = SerderKERI(raw=rot)
 
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
@@ -575,7 +575,7 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         # successfully anchor to a rotation event
         rseal = SealEvent(regk, vrt.ked["s"], vrt.said)
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = serdering.SerderKERI(raw=rot)
+        rotser = SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
         diger = Diger(qb64=rotser.said)
@@ -594,7 +594,7 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         # successfully anchor to a rotation event
         rseal = SealEvent(bis.ked["i"], bis.ked["s"], bis.said)
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = serdering.SerderKERI(raw=rot)
+        rotser = SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
         diger = Diger(qb64=rotser.said)
@@ -611,7 +611,7 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
 
 
 def test_tevery():
-    with basing.openDB() as db, keeping.openKS() as kpr, openReger() as reg:
+    with openDB() as db, openKS() as kpr, openReger() as reg:
         hby, hab = buildHab(db, kpr)
 
         vcp = incept(hab.pre,
@@ -625,7 +625,7 @@ def test_tevery():
         rseal = SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
 
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = serdering.SerderKERI(raw=rot)
+        rotser = SerderKERI(raw=rot)
 
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
@@ -652,7 +652,7 @@ def test_tevery():
         # successfully anchor to a rotation event
         rseal = SealEvent(iss.ked["i"], iss.ked["s"], iss.said)
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = serdering.SerderKERI(raw=rot)
+        rotser = SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
         diger = Diger(qb64=rotser.said)
@@ -668,7 +668,7 @@ def test_tevery():
         # successfully anchor to a rotation event
         rseal = SealEvent(rev.ked["i"], rev.ked["s"], rev.said)
         rot = hab.rotate(data=[rseal._asdict()])
-        rotser = serdering.SerderKERI(raw=rot)
+        rotser = SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
         diger = Diger(qb64=rotser.said)
@@ -680,7 +680,7 @@ def test_tevery():
 
 
 def test_tevery_process_escrow(mockCoringRandomNonce):
-    with basing.openDB() as db, keeping.openKS() as kpr, openReger() as reg:
+    with openDB() as db, openKS() as kpr, openReger() as reg:
         hby, hab = buildHab(db, kpr)
 
         vcp = incept(hab.pre,
@@ -696,7 +696,7 @@ def test_tevery_process_escrow(mockCoringRandomNonce):
         seqner = Seqner(sn=1)
         # said of rotation
         rotsaid = b'EGe5uFh3t0JglSPQtJJoxCV1RlFoTBept1BPRk3o6hgh'
-        diger = coring.Diger(qb64b=rotsaid)
+        diger = Diger(qb64b=rotsaid)
 
         tvy = Tevery(reger=reg, db=db)
 
@@ -706,7 +706,7 @@ def test_tevery_process_escrow(mockCoringRandomNonce):
         assert regk not in tvy.tevers
 
         rot = hab.rotate(data=[rseal._asdict()])  # Now rotate so the achoring KEL event gets into the database
-        rotser = serdering.SerderKERI(raw=rot)
+        rotser = SerderKERI(raw=rot)
         assert rotser.saidb == diger.qb64b
 
         tvy.processEscrows()  # process escrows and now the Tever event is good.
@@ -718,7 +718,7 @@ def test_tevery_process_escrow(mockCoringRandomNonce):
 
 def test_tevery_process_escrow_anchorless_with_bigers(mockHelpingNowUTC, mockCoringRandomNonce):
     """Escrow a bis event with backer sigs (tibs non-empty), then unescrow so processEscrowAnchorless uses tibs.get."""
-    with basing.openDB() as db, keeping.openKS() as kpr, openReger() as reg:
+    with openDB() as db, openKS() as kpr, openReger() as reg:
         valSecret = 'ABjD4nRlycmM5cPcAkfOATAp8wVldRsnc9f1tiwctXlw'
         valSigner = Signer(qb64=valSecret, transferable=False)
         valPrefixer = Prefixer(qb64=valSigner.verfer.qb64)
@@ -735,7 +735,7 @@ def test_tevery_process_escrow_anchorless_with_bigers(mockHelpingNowUTC, mockCor
 
         rseal1 = SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
         rot1 = hab.rotate(data=[rseal1._asdict()])
-        rotser1 = serdering.SerderKERI(raw=rot1)
+        rotser1 = SerderKERI(raw=rot1)
         seqner1 = Seqner(sn=int(rotser1.ked["s"], 16))
         diger1 = Diger(qb64=rotser1.said)
 
@@ -751,7 +751,7 @@ def test_tevery_process_escrow_anchorless_with_bigers(mockHelpingNowUTC, mockCor
 
         rseal2 = SealEvent(i=bis.ked["i"], s=bis.ked["s"], d=bis.said)
         rot2 = hab.rotate(data=[rseal2._asdict()])
-        rotser2 = serdering.SerderKERI(raw=rot2)
+        rotser2 = SerderKERI(raw=rot2)
         rotsaid2 = rotser2.saidb
 
         db.kels.rem(keys=hab.pre, on=2)

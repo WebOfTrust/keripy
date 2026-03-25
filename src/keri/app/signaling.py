@@ -159,7 +159,7 @@ class Signaler(doing.DoDoer):
             yield self.tock
 
 
-def loadEnds(app, *, signals=None):
+def loadSignalingEnds(app, *, signals=None):
     """ Load endpoints for agent to controller messages
 
     Args:

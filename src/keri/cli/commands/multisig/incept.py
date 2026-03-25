@@ -17,7 +17,7 @@ from hio.help import ogler
 from ....kering import ConfigurationError
 from ....app import (Notifier, MailboxDirector, Multiplexor,
                      Counselor, HaberyDoer, Poster,
-                     loadHandlers, multisigInceptExn)
+                     loadGroupingHandlers, multisigInceptExn)
 from ...common import Parsery, setupHby, printIdentifier
 from ....core import Prefixer, Number, Diger
 from ....peer import Exchanger
@@ -90,7 +90,7 @@ class GroupMultisigIncept(doing.DoDoer):
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
         exc = Exchanger(hby=self.hby, handlers=[])
-        loadHandlers(exc, mux)
+        loadGroupingHandlers(exc, mux)
 
         self.mbx = MailboxDirector(hby=self.hby, topics=topics, exc=exc)
         self.counselor = Counselor(hby=self.hby)

@@ -12,9 +12,8 @@ from ...common import existing, Parsery
 from .... import Vrsn_1_0
 from ....app import (Notifier, Organizer, GroupHab,
                      Multiplexor, MailboxDirector,
-                     WitnessInquisitor, StreamPoster, multisigExn)
-
-from ....app.grouping import loadHandlers as loadHandlersGrouping
+                     WitnessInquisitor, StreamPoster,
+                     multisigExn, loadGroupingHandlers)
 
 from ....core import Parser, Sadder, Kevery
 from ....peer import Exchanger, cloneMessage, serializeMessage
@@ -69,7 +68,7 @@ class AdmitDoer(doing.DoDoer):
         mux = Multiplexor(self.hby, notifier=notifier)
 
         self.exc = Exchanger(hby=self.hby, handlers=[])
-        loadHandlersGrouping(self.exc, mux)
+        loadGroupingHandlers(self.exc, mux)
         loadHandlersProtocoling(self.hby, exc=self.exc, notifier=notifier)
 
         mbx = MailboxDirector(hby=self.hby,

@@ -10,7 +10,9 @@ import pytest
 
 from dataclasses import asdict
 
-from keri import (Colds, Kinds, SerializeError, DeserializeError, InvalidValueError)
+from keri.kering import (Colds, Kinds, SerializeError,
+                         DeserializeError, InvalidValueError)
+
 from keri.core import (EscapeDex, Labeler, Mapper, Compactor, Aggor,
                        DigDex, Diger, Decimer, Noncer)
 

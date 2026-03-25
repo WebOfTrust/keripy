@@ -12,8 +12,9 @@ import tempfile
 import lmdb
 from keri import versify, Kinds
 
-from keri.core import indexing, Diger, Number, Prefixer, Saider, Seqner
-from keri.db import subing, openLMDB, dgKey, snKey
+from keri.core import (Siger, Diger, Number,
+                       Prefixer, Saider, Seqner)
+from keri.db import Suber, openLMDB, dgKey, snKey
 from keri.vdr import Reger
 
 
@@ -32,7 +33,7 @@ def test_issuer():
     assert issuer.env.path() == issuer.path
     assert os.path.exists(issuer.path)
 
-    assert isinstance(issuer.tvts, subing.Suber)
+    assert isinstance(issuer.tvts, Suber)
 
     issuer.close(clear=True)
     assert not os.path.exists(issuer.path)
@@ -59,7 +60,7 @@ def test_issuer():
     assert not os.path.exists(issuer.path)
     assert not issuer.opened
 
-    assert isinstance(issuer.tvts, subing.Suber)
+    assert isinstance(issuer.tvts, Suber)
 
     with openLMDB(cls=Reger) as issuer:
         assert isinstance(issuer, Reger)
@@ -71,7 +72,7 @@ def test_issuer():
         assert issuer.env.path() == issuer.path
         assert os.path.exists(issuer.path)
 
-        assert isinstance(issuer.tvts, subing.Suber)
+        assert isinstance(issuer.tvts, Suber)
 
     assert not os.path.exists(issuer.path)
 
@@ -119,9 +120,9 @@ def test_issuer():
         # Tibs store Siger instances; use valid Siger bytes and distinct indices
         valid_tib_bytes = (b'AAAUr5RHYiDH8RU0ig-2Dp5h7rVKx89StH5M3CL60-cWEbgG-XmtW31pZlFicYgSPduJZUnD838_'
                           b'QLbASSQLAZcC')
-        s0 = indexing.Siger(qb64b=valid_tib_bytes)
-        s1 = indexing.Siger(raw=s0.raw, code=s0.code, index=1)
-        s2 = indexing.Siger(raw=s0.raw, code=s0.code, index=2)
+        s0 = Siger(qb64b=valid_tib_bytes)
+        s1 = Siger(raw=s0.raw, code=s0.code, index=1)
+        s2 = Siger(raw=s0.raw, code=s0.code, index=2)
         sigers = [s0, s1, s2]
 
         key = dgKey(regk, vdig.qb64b)
@@ -331,21 +332,21 @@ def test_clone():
         assert issuer.tvts.put(keys=dgkey, val=vcpb) is True
         assert issuer.tels.put(keys=regk, on=sn, val=vdig.qb64b)
         assert issuer.ancs.put(keys=dgkey, val=(number01, diger01)) is True
-        assert issuer.tibs.pin(keys=(regk, vdig.qb64b), vals=[indexing.Siger(qb64b=tib01)]) is True
+        assert issuer.tibs.pin(keys=(regk, vdig.qb64b), vals=[Siger(qb64b=tib01)]) is True
 
         dgkey = dgKey(regk, r1dig.qb64b)
         snkey = snKey(regk, sn + 1)
         assert issuer.tvts.put(keys=dgkey, val=rot1b) is True
         assert issuer.tels.put(keys=regk, on=sn + 1, val=r1dig.qb64b)
         assert issuer.ancs.put(keys=dgkey, val=(number02, diger02)) is True
-        assert issuer.tibs.pin(keys=(regk, r1dig.qb64b), vals=[indexing.Siger(qb64b=tib02)]) is True
+        assert issuer.tibs.pin(keys=(regk, r1dig.qb64b), vals=[Siger(qb64b=tib02)]) is True
 
         dgkey = dgKey(regk, r2dig.qb64b)
         snkey = snKey(regk, sn + 2)
         assert issuer.tvts.put(keys=dgkey, val=rot2b) is True
         assert issuer.tels.put(keys=regk, on=sn + 2, val=r2dig.qb64b)
         assert issuer.ancs.put(keys=dgkey, val=(number03, diger03)) is True
-        assert issuer.tibs.pin(keys=(regk, r2dig.qb64b), vals=[indexing.Siger(qb64b=tib03)]) is True
+        assert issuer.tibs.pin(keys=(regk, r2dig.qb64b), vals=[Siger(qb64b=tib03)]) is True
 
         msgs = bytearray()  # outgoing messages
         for msg in issuer.clonePreIter(regk):

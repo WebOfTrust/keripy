@@ -7,9 +7,11 @@ import os
 
 import pytest
 
-from keri import kering
-from keri.app import organizing, habbing
-from keri.core import signing
+from keri.kering import ValidationError
+from keri.app import (Organizer, BaseOrganizer,
+                      IdentifierOrganizer, openHby, openHab)
+
+from keri.core import Salter
 
 
 def test_organizer():
@@ -33,8 +35,8 @@ def test_organizer():
                 zip="70605",
                 company="GLEIF", alias="sally")
 
-    with habbing.openHby(name="test", temp=True) as hby:
-        org = organizing.Organizer(hby=hby)
+    with openHby(name="test", temp=True) as hby:
+        org = Organizer(hby=hby)
 
         org.replace(pre=joe, data=joed)
         org.replace(pre=bob, data=bobd)
@@ -144,14 +146,14 @@ def test_organizer():
                      'zip': '08807'}
 
         # Update the Jen's data signature by signing garbage
-        nonce = signing.Salter().qb64
+        nonce = Salter().qb64
         cigar = hby.signator.sign(ser=nonce.encode("utf-8"))
         hby.db.ccigs.pin(keys=(jen,), val=cigar)
-        with pytest.raises(kering.ValidationError):
+        with pytest.raises(ValidationError):
             org.get(pre=jen)
 
         # This will fail too because it contains Jen
-        with pytest.raises(kering.ValidationError):
+        with pytest.raises(ValidationError):
             org.find(field="company", val="GLEIF")
 
 
@@ -169,8 +171,8 @@ def test_find_exact():
     sdird = dict(first="Sally", last="Smith-Direct", alias="sally-direct")
     bobd = dict(first="Bob", last="Burns", alias="bob")
 
-    with habbing.openHby(name="test_exact", temp=True) as hby:
-        org = organizing.Organizer(hby=hby)
+    with openHby(name="test_exact", temp=True) as hby:
+        org = Organizer(hby=hby)
 
         org.replace(pre=sal, data=sald)
         org.replace(pre=sal_direct, data=sdird)
@@ -211,8 +213,8 @@ def test_find_exact():
 
 def test_organizer_imgs():
 
-    with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
-        org = organizing.Organizer(hby=hby)
+    with openHab(name="test", transferable=True, temp=True) as (hby, hab):
+        org = Organizer(hby=hby)
         pre = "EFC7f_MEPE5dboc_E4yG15fnpMD34YaU3ue6vnDLodJU"
         data = bytearray(os.urandom(100000))
         assert len(data) == 100000
@@ -251,9 +253,9 @@ def test_base_organizer():
     bobd = {"first": "Bob", "last": "Burns", "address": "37 East Shadow Brook St.", "city": "Sebastian", "state": "FL",
                 "zip": "32958", "company": "HCF", "alias": "bob"}
 
-    with habbing.openHby(name="test", temp=True) as hby:
+    with openHby(name="test", temp=True) as hby:
         # Test BaseOrganizer with contact databases (same as Organizer)
-        base_org = organizing.BaseOrganizer(
+        base_org = BaseOrganizer(
             hby=hby,
             cigsdb=hby.db.ccigs,
             datadb=hby.db.cons,
@@ -312,9 +314,9 @@ def test_identifier_organizer():
     id2_data = {"name": "Secondary ID", "description": "Backup identifier", "role": "witness",
                    "created": "2025-08-29T01:00:00Z", "status": "active"}
 
-    with habbing.openHby(name="test", temp=True) as hby:
+    with openHby(name="test", temp=True) as hby:
         # Test IdentifierOrganizer
-        id_org = organizing.IdentifierOrganizer(hby=hby)
+        id_org = IdentifierOrganizer(hby=hby)
 
         # Test basic CRUD operations
         id_org.replace(pre=aid1, data=id1_data)
@@ -378,10 +380,10 @@ def test_organizer_vs_identifier_organizer_separation():
     contact_data = {"first": "John", "last": "Doe", "company": "ACME Corp"}
     identifier_data = {"name": "Test ID", "role": "controller", "status": "active"}
 
-    with habbing.openHby(name="test", temp=True) as hby:
+    with openHby(name="test", temp=True) as hby:
         # Create both organizers
-        contact_org = organizing.Organizer(hby=hby)
-        id_org = organizing.IdentifierOrganizer(hby=hby)
+        contact_org = Organizer(hby=hby)
+        id_org = IdentifierOrganizer(hby=hby)
 
         # Add data to both
         contact_org.replace(pre=contact_id, data=contact_data)
@@ -419,8 +421,8 @@ def test_organizer_vs_identifier_organizer_separation():
 
 def test_identifier_organizer_imgs():
     """Test IdentifierOrganizer image functionality"""
-    with habbing.openHab(name="test", transferable=True, temp=True) as (hby, hab):
-        id_org = organizing.IdentifierOrganizer(hby=hby)
+    with openHab(name="test", transferable=True, temp=True) as (hby, hab):
+        id_org = IdentifierOrganizer(hby=hby)
         pre = "EFC7f_MEPE5dboc_E4yG15fnpMD34YaU3ue6vnDLodJU"
 
         # Create test image data
@@ -457,13 +459,13 @@ def test_identifier_organizer_imgs():
 
 def test_base_organizer_inheritance():
     """Test that Organizer and IdentifierOrganizer properly inherit from BaseOrganizer"""
-    with habbing.openHby(name="test", temp=True) as hby:
-        contact_org = organizing.Organizer(hby=hby)
-        id_org = organizing.IdentifierOrganizer(hby=hby)
+    with openHby(name="test", temp=True) as hby:
+        contact_org = Organizer(hby=hby)
+        id_org = IdentifierOrganizer(hby=hby)
 
         # Test inheritance
-        assert isinstance(contact_org, organizing.BaseOrganizer)
-        assert isinstance(id_org, organizing.BaseOrganizer)
+        assert isinstance(contact_org, BaseOrganizer)
+        assert isinstance(id_org, BaseOrganizer)
 
         # Test that they have all the expected methods
         expected_methods = ['update', 'replace', 'set', 'unset', 'rem', 'get', 'list', 'find', 'values',

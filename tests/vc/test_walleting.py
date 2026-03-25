@@ -3,19 +3,19 @@
 tests.vc.walleting module
 
 """
-from keri.core import (Salter, Counter, coring,
-                       parsing, SealEvent, Codens)
+from keri.core import (Salter, Counter, Seqner, Diger, Prefixer,
+                       Parser, SealEvent, Codens)
 from keri.kering import Vrsn_1_0
-from keri.app import habbing
+from keri.app import openHby
 
 from keri.vc import credential
-from keri.vdr import verifying, credentialing
+from keri.vdr import Verifier, Regery
 
 
 def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
     sidSalt = Salter(raw=b'0123456789abcdef').qb64
 
-    with habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby:
+    with openHby(name="sid", base="test", salt=sidSalt) as sidHby:
         sidHab = sidHby.makeHab(name="test")
         seeder.seedSchema(db=sidHby.db)
         assert sidHab.pre == "EMl4RhuR_JxpiMd1N8DEJEhTxM3Ovvn9Xya8AN-tiUbl"
@@ -25,16 +25,16 @@ def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
             LEI="254900OPPU84GM83MG36",
         )
 
-        sidReg = credentialing.Regery(hby=sidHby, name="bob", temp=True)
-        verifier = verifying.Verifier(hby=sidHby, reger=sidReg.reger)
+        sidReg = Regery(hby=sidHby, name="bob", temp=True)
+        verifier = Verifier(hby=sidHby, reger=sidReg.reger)
         issuer = sidReg.makeRegistry(prefix=sidHab.pre, name="bob")
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         sidHab.interact(data=[rseal])
-        seqner = coring.Seqner(sn=sidHab.kever.sn)
+        seqner = Seqner(sn=sidHab.kever.sn)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
                          seqner=seqner,
-                         saider=coring.Diger(qb64=sidHab.kever.serder.said))
+                         saider=Diger(qb64=sidHab.kever.serder.said))
         sidReg.processEscrows()
 
         creder = credential(issuer=sidHab.pre,
@@ -47,18 +47,18 @@ def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
         sidHab.interact(data=[rseal])
-        seqner = coring.Seqner(sn=sidHab.kever.sn)
+        seqner = Seqner(sn=sidHab.kever.sn)
         issuer.anchorMsg(pre=iss.pre,
                          regd=iss.said,
                          seqner=seqner,
-                         saider=coring.Diger(qb64=sidHab.kever.serder.said))
+                         saider=Diger(qb64=sidHab.kever.serder.said))
         sidReg.processEscrows()
 
         msg = bytearray(creder.raw)
         msg.extend(Counter(Codens.SealSourceTriples, count=1,
                                 version=Vrsn_1_0).qb64b)
-        msg.extend(coring.Prefixer(qb64=iss.pre).qb64b)
-        msg.extend(coring.Seqner(sn=0).qb64b)
+        msg.extend(Prefixer(qb64=iss.pre).qb64b)
+        msg.extend(Seqner(sn=0).qb64b)
         msg.extend(iss.saidb)
 
         assert msg == (b'{"v":"ACDC10JSON000197_","d":"EAP1MTFwoSZ7P9Ym9yIqBvihjqZYpilpFp'
@@ -78,7 +78,7 @@ def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
                b'Md1N8DEJEhTxM3Ovvn9Xya8AN-tiUbl","dt":"2021-06-27T21:26:21.233257+00:00","LE'
                b'I":"254900OPPU84GM83MG36"}}')
 
-        parsing.Parser(version=Vrsn_1_0).parse(ims=msg, vry=verifier)
+        Parser(version=Vrsn_1_0).parse(ims=msg, vry=verifier)
 
         # verify we can load serialized VC by SAID
         creder, *_ = verifier.reger.cloneCred(said=creder.said)

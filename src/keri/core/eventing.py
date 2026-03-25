@@ -3858,8 +3858,8 @@ class Kevery:
         self.kramer = kramer    # Kramer instance for KRAM processing
         if self.kramer is not None:
             self.kramer.cues = self.cues
-        self.allowList = set()
-        self.denyList = set()
+        self.allowList = oset()
+        self.denyList = oset()
         self.lax = True if lax else False  # promiscuous mode
         self.local = True if local else False  # local vs nonlocal default
         self.cloned = True if cloned else False  # process as cloned
@@ -4301,7 +4301,7 @@ class Kevery:
         qry, rpy, pro, bar, xip, exn.
 
         Processing order:
-            1. AID-based allow/deny logic (TBD - placeholder)
+            1. AID-based allow/deny logic 
             2. KRAM processing via self.kramer.intake()
             3. Message-type-specific processing delegation
 
@@ -4320,18 +4320,13 @@ class Kevery:
         exc = kwa.pop('exc', None) or self.exc
         tvy = kwa.pop('tvy', None) or self.tvy
 
-        # Step 1: AID-based allow/deny (TBD - placeholder for future consolidation)
-        
-        sender = None
+        # Step 1: AID-based allow/deny Draft
+    
+        # Determine sender AID using the serder
+        sender = serder.pre
 
-        # Determine sender AID deterministically
+        # Still needs fleshing out for delegate messages and multisig 
 
-        if kwa.get("ssgs"):
-            sender = kwa["ssgs"][-1][0].qb64  # (pre, sigers)
-        elif kwa.get("cigars"):
-            sender = kwa["cigars"][-1].verfer.qb64
-        elif kwa.get("tsgs"):
-            sender = kwa["tsgs"][-1][0].qb64
         # Apply allow/deny rules
         if sender is not None:
             # Denylist always wins

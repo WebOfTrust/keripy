@@ -12,7 +12,7 @@ from hio.base import doing
 from hio.help import ogler
 
 from ....app import (MailboxDirector, Organizer, Signaler,
-                     loadHandlers)
+                     loadChallengingHandlers)
 from ....help import helping
 from ....peer import Exchanger
 
@@ -71,7 +71,7 @@ class VerifyDoer(doing.DoDoer):
         self.org = Organizer(hby=self.hby)
         signaler = Signaler()
 
-        loadHandlers(db=self.hby.db, signaler=signaler, exc=self.exc)
+        loadChallengingHandlers(db=self.hby.db, signaler=signaler, exc=self.exc)
 
         self.mbd = MailboxDirector(hby=self.hby, topics=['/challenge'], exc=self.exc)
 

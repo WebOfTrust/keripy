@@ -8,10 +8,10 @@ from base64 import urlsafe_b64decode as decodeB64
 
 import pytest
 
-from keri import kering
-from keri.kering import Colds, Protocols, Versionage, Vrsn_1_0, Vrsn_2_0
+from keri.kering import (ShortageError, InvalidCodeError, EmptyMaterialError,
+                         Colds, Protocols, Versionage, Vrsn_1_0, Vrsn_2_0)
 
-from keri.help.helping import intToB64,  b64ToInt, codeB64ToB2
+from keri.help import intToB64, b64ToInt, codeB64ToB2
 
 from keri.core import Texter
 from keri.core import (GenDex, Cizage, Counter, Codens, SUDex_1_0, CtrDex_1_0,
@@ -792,7 +792,7 @@ def test_counter_class():
     assert enclosure ==bytearray(b'\xf8\x00\x07\xe0\x10\x06How ya doing babe?')
 
     # error cases
-    with pytest.raises(kering.InvalidCodeError):
+    with pytest.raises(InvalidCodeError):
         enclosure = Counter.enclose(qb64=texter.qb64, code="MadeUpCode")
 
     with pytest.raises(ValueError):  # not aligned 24 bit
@@ -876,7 +876,7 @@ def test_counter_v1():
     CtrDex = Counter.Codes[Vrsn_1_0.major][Vrsn_1_0.minor]  # set CtrDex to Vrsn_1_0
 
     # test Counter instances
-    with pytest.raises(kering.EmptyMaterialError):
+    with pytest.raises(EmptyMaterialError):
         counter = Counter(version=Vrsn_1_0)
 
     # create code manually
@@ -967,7 +967,7 @@ def test_counter_v1():
 
     # test raises ShortageError if not enough bytes in qb64 parameter
     shortqsc64 = qsc[:-1]  # too short
-    with pytest.raises(kering.ShortageError):
+    with pytest.raises(ShortageError):
         counter = Counter(qb64=shortqsc64, version=Vrsn_1_0)
 
     # test truncates extra bytes from qb2 parameter
@@ -978,7 +978,7 @@ def test_counter_v1():
 
     # test raises ShortageError if not enough bytes in qb2 parameter
     shortqscb2 = qscb2[:-4]  # too few bytes in  size
-    with pytest.raises(kering.ShortageError):
+    with pytest.raises(ShortageError):
         counter = Counter(qb2=shortqscb2, version=Vrsn_1_0)
 
     # test with non-zero count=5
@@ -1307,7 +1307,7 @@ def test_counter_v2():
     CtrDex = Counter.Codes[Vrsn_2_0.major][Vrsn_2_0.minor]  # set CtrDex to Vrsn_2_0
 
     # test Counter instances
-    with pytest.raises(kering.EmptyMaterialError):
+    with pytest.raises(EmptyMaterialError):
         counter = Counter()
 
     # create code manually
@@ -1381,7 +1381,7 @@ def test_counter_v2():
 
     # test raises ShortageError if not enough bytes in qb64 parameter
     shortqsc64 = qsc[:-1]  # too short
-    with pytest.raises(kering.ShortageError):
+    with pytest.raises(ShortageError):
         counter = Counter(qb64=shortqsc64, version=Vrsn_2_0)
 
     # test truncates extra bytes from qb2 parameter
@@ -1392,7 +1392,7 @@ def test_counter_v2():
 
     # test raises ShortageError if not enough bytes in qb2 parameter
     shortqscb2 = qscb2[:-4]  # too few bytes in  size
-    with pytest.raises(kering.ShortageError):
+    with pytest.raises(ShortageError):
         counter = Counter(qb2=shortqscb2, version=Vrsn_2_0)
 
     # test with non-zero count=5

@@ -9,8 +9,8 @@ import tempfile
 import pytest
 
 from hio.base import doing
-from keri.app import configing
-from keri.core import coring
+from keri.app import Configer, ConfigerDoer, openCF
+from keri.core import dumps, loads
 
 def test_configer():
     """
@@ -22,7 +22,7 @@ def test_configer():
     if os.path.exists(filepath):
         os.remove(filepath)
 
-    cfr = configing.Configer()  # defaults
+    cfr = Configer()  # defaults
     # assert cfr.path == filepath
     # github runner does not allow /usr/local/var
     assert cfr.path.endswith(os.path.join('keri', 'cf', 'main', 'conf.json'))
@@ -35,13 +35,13 @@ def test_configer():
 
     # plain json manually
     data = dict(name="habi", oobi="ABCDEFG")
-    wmsg = coring.dumps(data)
+    wmsg = dumps(data)
     assert hasattr(wmsg, "decode")  # bytes
     assert len(wmsg) == cfr.file.write(wmsg)
     assert 0 == cfr.file.seek(0)
     rmsg = cfr.file.read()
     assert rmsg == wmsg
-    assert data == coring.loads(rmsg)
+    assert data == loads(rmsg)
 
      # default is hjson for .human == True
     wdata = dict(name="hope", oobi="abc")
@@ -107,7 +107,7 @@ def test_configer():
         rdata = cfr.get()
 
     # Test with plain json human==False
-    cfr = configing.Configer(human=False)
+    cfr = Configer(human=False)
     # assert cfr.path == filepath
     # github runner does not allow /usr/local/var
     assert cfr.path.endswith(os.path.join('keri', 'cf', 'main', 'conf.json'))
@@ -137,7 +137,7 @@ def test_configer():
     headDirPath = "/root/keri"
     if platform.system() == "Windows":
         headDirPath="C:\\System Volume Information"
-    cfr = configing.Configer(headDirPath=headDirPath)
+    cfr = Configer(headDirPath=headDirPath)
     assert cfr.path.endswith(os.path.join('.keri', 'cf', 'main', 'conf.json'))
     assert cfr.opened
     assert os.path.exists(cfr.path)
@@ -147,13 +147,13 @@ def test_configer():
     assert not cfr.file.read()
 
     data = dict(name="habi", oobi="ABCDEFG")
-    wmsg = coring.dumps(data)
+    wmsg = dumps(data)
     assert hasattr(wmsg, "decode")  # bytes
     assert len(wmsg) == cfr.file.write(wmsg)
     assert 0 == cfr.file.seek(0)
     rmsg = cfr.file.read()
     assert rmsg == wmsg
-    assert data == coring.loads(rmsg)
+    assert data == loads(rmsg)
 
     wdata = dict(name="hope", oobi="abc")
     assert cfr.put(wdata)
@@ -214,7 +214,7 @@ def test_configer():
         rdata = cfr.get()
 
     #test openCF hjson
-    with configing.openCF() as cfr:  # default uses json and temp==True
+    with openCF() as cfr:  # default uses json and temp==True
         filepath = os.path.join(tempDirPath, 'keri_cf_2_zu01lb_test', 'keri', 'cf', 'main', 'test.json')
         assert cfr.path.startswith(os.path.join(tempDirPath, 'keri_'))
         assert cfr.path.endswith(os.path.join('_test', 'keri', 'cf', 'main', 'test.json'))
@@ -230,7 +230,7 @@ def test_configer():
     assert not os.path.exists(cfr.path)  # if temp cleans
 
     #test openCF json
-    with configing.openCF(human=False) as cfr:  # default uses json and temp==True
+    with openCF(human=False) as cfr:  # default uses json and temp==True
         filepath = os.path.join(tempDirPath,'keri_cf_2_zu01lb_test/keri/cf/main/test.json')
         assert cfr.path.startswith(os.path.join(tempDirPath, 'keri_'))
         assert cfr.path.endswith(os.path.join('_test', 'keri', 'cf', 'main', 'test.json'))
@@ -246,7 +246,7 @@ def test_configer():
     assert not os.path.exists(cfr.path)  # if temp cleans
 
     #test openCF mgpk
-    with configing.openCF(fext='mgpk') as cfr:  # default uses temp==True
+    with openCF(fext='mgpk') as cfr:  # default uses temp==True
         assert cfr.path.startswith(os.path.join(tempDirPath, 'keri_'))
         assert cfr.path.endswith(os.path.join('_test', 'keri', 'cf', 'main', 'test.mgpk'))
         assert cfr.opened
@@ -260,7 +260,7 @@ def test_configer():
     assert not os.path.exists(cfr.path)  # if temp cleans
 
     # test openCF cbor
-    with configing.openCF(fext='cbor') as cfr:  # default uses temp==True
+    with openCF(fext='cbor') as cfr:  # default uses temp==True
         assert cfr.path.startswith(os.path.join(tempDirPath, 'keri_'))
         assert cfr.path.endswith(os.path.join('_test', 'keri', 'cf', 'main', 'test.cbor'))
         assert cfr.opened
@@ -280,21 +280,21 @@ def test_configer_doer():
     """
     Test ConfigerDoer
     """
-    cfr0 = configing.Configer(name='test0', temp=True, reopen=False)
+    cfr0 = Configer(name='test0', temp=True, reopen=False)
     assert cfr0.opened == False
     assert cfr0.path == None
     assert cfr0.file == None
 
-    cfrDoer0 = configing.ConfigerDoer(configer=cfr0)
+    cfrDoer0 = ConfigerDoer(configer=cfr0)
     assert cfrDoer0.configer == cfr0
     assert cfrDoer0.configer.opened == False
 
-    cfr1 = configing.Configer(name='test1', temp=True, reopen=False)
+    cfr1 = Configer(name='test1', temp=True, reopen=False)
     assert cfr1.opened == False
     assert cfr1.path == None
     assert cfr0.file == None
 
-    cfrDoer1 = configing.ConfigerDoer(configer=cfr1)
+    cfrDoer1 = ConfigerDoer(configer=cfr1)
     assert cfrDoer1.configer == cfr1
     assert cfrDoer1.configer.opened == False
 
@@ -334,21 +334,21 @@ def test_configer_doer():
         assert not os.path.exists(doer.configer.path)
 
     # test with filed == True
-    cfr0 = configing.Configer(name='test0', temp=True, reopen=False, filed=True)
+    cfr0 = Configer(name='test0', temp=True, reopen=False, filed=True)
     assert cfr0.opened == False
     assert cfr0.path == None
     assert cfr0.file == None
 
-    cfrDoer0 = configing.ConfigerDoer(configer=cfr0)
+    cfrDoer0 = ConfigerDoer(configer=cfr0)
     assert cfrDoer0.configer == cfr0
     assert cfrDoer0.configer.opened == False
 
-    cfr1 = configing.Configer(name='test1', temp=True, reopen=False, filed=True)
+    cfr1 = Configer(name='test1', temp=True, reopen=False, filed=True)
     assert cfr1.opened == False
     assert cfr1.path == None
     assert cfr0.file == None
 
-    cfrDoer1 = configing.ConfigerDoer(configer=cfr1)
+    cfrDoer1 = ConfigerDoer(configer=cfr1)
     assert cfrDoer1.configer == cfr1
     assert cfrDoer1.configer.opened == False
 

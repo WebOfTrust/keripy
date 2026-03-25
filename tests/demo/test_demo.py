@@ -8,20 +8,20 @@ import os
 
 import time
 from hio.base import doing
+from hio.help import ogler
 from hio.core.tcp import clienting, serving
 
-from keri import help
-
-from keri.core import Salter, eventing, coring
-from keri.app import habbing, directing
-from keri.demo import demoing
+from keri.core import Salter, Diger, MtrDex, incept
+from keri.app import Reactor, Directant, openHby
+from keri.demo import (BobDirector, EveDirector,
+                       SamDirector, CamDirector, setupDemoController)
 
 
 def test_direct_mode_bob_eve_demo():
     """
     Test direct mode bob and eve
     """
-    help.ogler.resetLevel(level=logging.DEBUG)
+    ogler.resetLevel(level=logging.DEBUG)
 
     raw = b"raw salt to test"
 
@@ -30,9 +30,9 @@ def test_direct_mode_bob_eve_demo():
     bobSecrecies = [[signer.qb64] for signer in bobSigners]
 
     # bob inception transferable (nxt digest not empty)
-    bobSerder = eventing.incept(keys=[bobSigners[0].verfer.qb64],
-                                ndigs=[coring.Diger(ser=bobSigners[1].verfer.qb64b).qb64],
-                                code=coring.MtrDex.Blake3_256)
+    bobSerder = incept(keys=[bobSigners[0].verfer.qb64],
+                                ndigs=[Diger(ser=bobSigners[1].verfer.qb64b).qb64],
+                                code=MtrDex.Blake3_256)
 
     bob = bobSerder.ked["i"]
     assert bob == 'EFa1wAk_coghxxGCID6jEN79Kmvyj0Y1wWN_ndUv3LjW'
@@ -42,15 +42,15 @@ def test_direct_mode_bob_eve_demo():
     eveSecrecies = [[signer.qb64] for signer in eveSigners]
 
     # eve inception transferable (nxt digest not empty)
-    eveSerder = eventing.incept(keys=[eveSigners[0].verfer.qb64],
-                                ndigs=[coring.Diger(ser=eveSigners[1].verfer.qb64b).qb64],
-                                code=coring.MtrDex.Blake3_256)
+    eveSerder = incept(keys=[eveSigners[0].verfer.qb64],
+                                ndigs=[Diger(ser=eveSigners[1].verfer.qb64b).qb64],
+                                code=MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
     assert eve == 'EFhg5my9DuMU6gw1CVk6QgkmZKBttWSXDzVzWVmxh0_K'
 
-    with (habbing.openHby(name="eve", base="test") as eveHby,
-          habbing.openHby(name="bob", base="test") as bobHby):
+    with (openHby(name="eve", base="test") as eveHby,
+          openHby(name="bob", base="test") as bobHby):
 
         limit = 1.0
         tock = 0.03125
@@ -70,14 +70,14 @@ def test_direct_mode_bob_eve_demo():
         bobClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=evePort)
         bobClientDoer = clienting.ClientDoer(client=bobClient)
 
-        bobDirector = demoing.BobDirector(hab=bobHab, client=bobClient, tock=0.125)
+        bobDirector = BobDirector(hab=bobHab, client=bobClient, tock=0.125)
         assert bobDirector.hab == bobHab
         assert bobDirector.client == bobClient
         assert id(bobDirector.hab.kvy.kevers) == id(bobHab.kevers)
         assert bobDirector.hab.kvy.db == bobHby.db # bobDB
         assert bobDirector.tock == 0.125
 
-        bobReactor = directing.Reactor(hab=bobHab, client=bobClient)
+        bobReactor = Reactor(hab=bobHab, client=bobClient)
         assert bobReactor.hab == bobHab
         assert bobReactor.client == bobClient
         assert id(bobReactor.hab.kvy.kevers) == id(bobHab.kevers)
@@ -87,7 +87,7 @@ def test_direct_mode_bob_eve_demo():
         bobServer = serving.Server(host="", port=bobPort)
         bobServerDoer = serving.ServerDoer(server=bobServer)
 
-        bobDirectant = directing.Directant(hab=bobHab, server=bobServer)
+        bobDirectant = Directant(hab=bobHab, server=bobServer)
         assert bobDirectant.hab == bobHab
         assert bobDirectant.server == bobServer
         # Bob's Reactants created on demand
@@ -100,13 +100,13 @@ def test_direct_mode_bob_eve_demo():
         eveClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=bobPort)
         eveClientDoer = clienting.ClientDoer(client=eveClient)
 
-        eveDirector = demoing.EveDirector(hab=eveHab, client=eveClient, tock=0.125)
+        eveDirector = EveDirector(hab=eveHab, client=eveClient, tock=0.125)
         assert eveDirector.hab == eveHab
         assert eveDirector.client == eveClient
         assert id(eveDirector.hab.kvy.kevers) == id(eveHab.kevers)
         assert eveDirector.hab.kvy.db == eveHby.db  # eveDB
 
-        eveReactor = directing.Reactor(hab=eveHab, client=eveClient)
+        eveReactor = Reactor(hab=eveHab, client=eveClient)
         assert eveReactor.hab == eveHab
         assert eveReactor.client == eveClient
         assert id(eveReactor.hab.kvy.kevers) == id(eveHab.kevers)
@@ -116,7 +116,7 @@ def test_direct_mode_bob_eve_demo():
         eveServer = serving.Server(host="", port=evePort)
         eveServerDoer = serving.ServerDoer(server=eveServer)
 
-        eveDirectant = directing.Directant(hab=eveHab, server=eveServer)
+        eveDirectant = Directant(hab=eveHab, server=eveServer)
         assert eveDirectant.hab == eveHab
         assert eveDirectant.server == eveServer
         # Eve's Reactants created on demand
@@ -143,7 +143,7 @@ def test_direct_mode_bob_eve_demo():
     assert not os.path.exists(eveHby.db.path)
     assert not os.path.exists(bobHby.db.path)
 
-    help.ogler.resetLevel(level=help.ogler.level)
+    ogler.resetLevel(level=ogler.level)
     """End Test"""
 
 
@@ -152,7 +152,7 @@ def test_direct_mode_sam_eve_demo():
     """
     Test direct mode sam and eve
     """
-    help.ogler.resetLevel(level=logging.DEBUG)
+    ogler.resetLevel(level=logging.DEBUG)
 
     raw = b"raw salt to test"
 
@@ -161,9 +161,9 @@ def test_direct_mode_sam_eve_demo():
     samSecrecies = [[signer.qb64] for signer in samSigners]
 
     # sam inception transferable (nxt digest not empty)
-    samSerder = eventing.incept(keys=[samSigners[0].verfer.qb64],
-                                ndigs=[coring.Diger(ser=samSigners[1].verfer.qb64b).qb64],
-                                code=coring.MtrDex.Blake3_256)
+    samSerder = incept(keys=[samSigners[0].verfer.qb64],
+                                ndigs=[Diger(ser=samSigners[1].verfer.qb64b).qb64],
+                                code=MtrDex.Blake3_256)
 
     sam = samSerder.ked["i"]
     assert sam == 'EDkU2U_TPKca14VElEItpj7twohQL60GIaUPvSHAghga'
@@ -173,16 +173,16 @@ def test_direct_mode_sam_eve_demo():
     eveSecrecies = [[signer.qb64] for signer in eveSigners]
 
     # eve inception transferable (nxt digest not empty)
-    eveSerder = eventing.incept(keys=[eveSigners[0].verfer.qb64],
-                                ndigs=[coring.Diger(ser=eveSigners[1].verfer.qb64b).qb64],
-                                code=coring.MtrDex.Blake3_256)
+    eveSerder = incept(keys=[eveSigners[0].verfer.qb64],
+                                ndigs=[Diger(ser=eveSigners[1].verfer.qb64b).qb64],
+                                code=MtrDex.Blake3_256)
 
     eve = eveSerder.ked["i"]
     assert eve == 'EFhg5my9DuMU6gw1CVk6QgkmZKBttWSXDzVzWVmxh0_K'
 
 
-    with habbing.openHby(name="eve", base="test") as eveHby, \
-         habbing.openHby(name="sam", base="test") as samHby:
+    with openHby(name="eve", base="test") as eveHby, \
+         openHby(name="sam", base="test") as samHby:
 
         limit = 1.0
         tock = 0.03125
@@ -207,14 +207,14 @@ def test_direct_mode_sam_eve_demo():
         samClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=evePort)
         samClientDoer = clienting.ClientDoer(client=samClient)
 
-        samDirector = demoing.SamDirector(hab=samHab, client=samClient, tock=0.125)
+        samDirector = SamDirector(hab=samHab, client=samClient, tock=0.125)
         assert samDirector.hab == samHab
         assert samDirector.client == samClient
         assert id(samDirector.hab.kvy.kevers) == id(samHab.kevers)
         assert samDirector.hab.kvy.db == samHby.db
         assert samDirector.tock == 0.125
 
-        samReactor = directing.Reactor(hab=samHab, client=samClient)
+        samReactor = Reactor(hab=samHab, client=samClient)
         assert samReactor.hab == samHab
         assert samReactor.client == samClient
         assert id(samReactor.hab.kvy.kevers) == id(samHab.kevers)
@@ -224,7 +224,7 @@ def test_direct_mode_sam_eve_demo():
         samServer = serving.Server(host="", port=samPort)
         samServerDoer = serving.ServerDoer(server=samServer)
 
-        samDirectant = directing.Directant(hab=samHab, server=samServer)
+        samDirectant = Directant(hab=samHab, server=samServer)
         assert samDirectant.hab == samHab
         assert samDirectant.server == samServer
         # Sam's Reactants created on demand
@@ -243,13 +243,13 @@ def test_direct_mode_sam_eve_demo():
         eveClient = clienting.Client(tymth=doist.tymen(), host='127.0.0.1', port=samPort)
         eveClientDoer = clienting.ClientDoer(client=eveClient)
 
-        eveDirector = demoing.EveDirector(hab=eveHab, client=eveClient, tock=0.125)
+        eveDirector = EveDirector(hab=eveHab, client=eveClient, tock=0.125)
         assert eveDirector.hab == eveHab
         assert eveDirector.client == eveClient
         assert id(eveDirector.hab.kvy.kevers) == id(eveHab.kevers)
         assert eveDirector.hab.kvy.db == eveHby.db
 
-        eveReactor = directing.Reactor(hab=eveHab, client=eveClient)
+        eveReactor = Reactor(hab=eveHab, client=eveClient)
         assert eveReactor.hab == eveHab
         assert eveReactor.client == eveClient
         assert id(eveReactor.hab.kvy.kevers) == id(eveHab.kevers)
@@ -259,7 +259,7 @@ def test_direct_mode_sam_eve_demo():
         eveServer = serving.Server(host="", port=evePort)
         eveServerDoer = serving.ServerDoer(server=eveServer)
 
-        eveDirectant = directing.Directant(hab=eveHab, server=eveServer)
+        eveDirectant = Directant(hab=eveHab, server=eveServer)
         assert eveDirectant.hab == eveHab
         assert eveDirectant.server == eveServer
         # Eve's Reactants created on demand
@@ -287,7 +287,7 @@ def test_direct_mode_sam_eve_demo():
     assert not os.path.exists(eveHby.db.path)
     assert not os.path.exists(samHby.db.path)
 
-    help.ogler.resetLevel(level=help.ogler.level)
+    ogler.resetLevel(level=ogler.level)
     """End Test"""
 
 
@@ -296,7 +296,7 @@ def test_run_bob_eve_demo():
     """
     Test demo setupController and run with DoDoers and Doist
     """
-    help.ogler.resetLevel(level=logging.DEBUG)
+    ogler.resetLevel(level=logging.DEBUG)
 
     tock = 0.03125
     expire =  2.5
@@ -315,10 +315,10 @@ def test_run_bob_eve_demo():
                                                    temp=True)]
 
     # bobs is list of Doers
-    bobs = demoing.setupDemoController(secrecies=secrecies,
-                                       name=name,
-                                       remotePort=remote,
-                                       localPort=local)
+    bobs = setupDemoController(secrecies=secrecies,
+                               name=name,
+                               remotePort=remote,
+                               localPort=local)
 
     name = "eve"
     remote = 5620
@@ -330,10 +330,10 @@ def test_run_bob_eve_demo():
                                                       path="eve",
                                                       temp=True)]
 
-    eves = demoing.setupDemoController(secrecies=secrecies,
-                                       name=name,
-                                       remotePort=remote,
-                                       localPort=local)
+    eves = setupDemoController(secrecies=secrecies,
+                               name=name,
+                               remotePort=remote,
+                               localPort=local)
 
     bobDoer = doing.DoDoer(doers=bobs)
     eveDoer = doing.DoDoer(doers=eves)
@@ -342,7 +342,7 @@ def test_run_bob_eve_demo():
     # doist = doing.Doist(limit=expire, tock=tock, real=True, doers=[eveDoer, bobDoer])
     doist.do(doers=[eveDoer, bobDoer])
 
-    help.ogler.resetLevel(level=help.ogler.level)
+    ogler.resetLevel(level=ogler.level)
     """End Test"""
 
 
@@ -350,7 +350,7 @@ def test_run_sam_eve_demo():
     """
     Test demo setupController and run with DoDoers and Doist
     """
-    help.ogler.resetLevel(level=logging.DEBUG)
+    ogler.resetLevel(level=logging.DEBUG)
 
     tock = 0.03125
     expire =  2.0
@@ -369,10 +369,10 @@ def test_run_sam_eve_demo():
                                                    temp=True)]
 
     # sams is list of Doers
-    sams = demoing.setupDemoController(secrecies=secrecies,
-                                       name=name,
-                                       remotePort=remote,
-                                       localPort=local)
+    sams = setupDemoController(secrecies=secrecies,
+                               name=name,
+                               remotePort=remote,
+                               localPort=local)
 
 
     name = "eve"
@@ -386,10 +386,10 @@ def test_run_sam_eve_demo():
                                                       temp=True)]
 
     # eves is list of Doers
-    eves = demoing.setupDemoController(secrecies=secrecies,
-                                       name=name,
-                                       remotePort=remote,
-                                       localPort=local)
+    eves = setupDemoController(secrecies=secrecies,
+                               name=name,
+                               remotePort=remote,
+                               localPort=local)
 
 
     samDoer = doing.DoDoer(doers=sams)
@@ -399,14 +399,14 @@ def test_run_sam_eve_demo():
     # doist = doing.Doist(limit=expire, tock=tock, real=True, doers=[eveDoer, samDoer])
     doist.do(doers=[eveDoer, samDoer])
 
-    help.ogler.resetLevel(level=help.ogler.level)
+    ogler.resetLevel(level=ogler.level)
     """End Test"""
 
 
 def test_indirect_mode_sam_cam_wit_demo():
     """ Test indirect mode, sam and cam with witness """
 
-    help.ogler.resetLevel(level=logging.DEBUG)
+    ogler.resetLevel(level=logging.DEBUG)
 
     raw = b"raw salt to test"
 
@@ -418,9 +418,9 @@ def test_indirect_mode_sam_cam_wit_demo():
     camSigners = Salter(raw=raw).signers(count=8, path="cam", temp=True)
     camSecrecies = [[signer.qb64] for signer in camSigners]
 
-    with (habbing.openHby(name="cam", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as camHby,
-          habbing.openHby(name="sam", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as samHby,
-          habbing.openHby(name="wit", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as witHby):
+    with (openHby(name="cam", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as camHby,
+          openHby(name="sam", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as samHby,
+          openHby(name="wit", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as witHby):
 
         samPort = 5620  # sam's TCP listening port for server
         witPort = 5621  # wit' TCP listening port for server
@@ -434,7 +434,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         wit = witHab.pre
         witServer = serving.Server(host="", port=witPort)
         witServerDoer = serving.ServerDoer(server=witServer)
-        witDirectant = directing.Directant(hab=witHab, server=witServer)
+        witDirectant = Directant(hab=witHab, server=witServer)
         witDoers = [witServerDoer, witDirectant]
 
         # setup sam with witness
@@ -444,9 +444,9 @@ def test_indirect_mode_sam_cam_wit_demo():
 
         # confirm that makeHab works the same as manual setup
         # sam inception transferable (nxt digest not empty)
-        serder = eventing.incept(keys=[samSigners[0].verfer.qb64], wits=[wit],
-                                     ndigs=[coring.Diger(ser=samSigners[1].verfer.qb64b).qb64],
-                                            code=coring.MtrDex.Blake3_256)
+        serder = incept(keys=[samSigners[0].verfer.qb64], wits=[wit],
+                                     ndigs=[Diger(ser=samSigners[1].verfer.qb64b).qb64],
+                                            code=MtrDex.Blake3_256)
 
         assert samHab.iserder.said == serder.said  # same setup
         assert serder.ked["i"] == sam
@@ -454,14 +454,14 @@ def test_indirect_mode_sam_cam_wit_demo():
         samClient = clienting.Client(host='127.0.0.1', port=witPort)
         samClientDoer = clienting.ClientDoer(client=samClient)
 
-        samDirector = demoing.SamDirector(hab=samHab, client=samClient, tock=0.125)
+        samDirector = SamDirector(hab=samHab, client=samClient, tock=0.125)
         assert samDirector.hab == samHab
         assert samDirector.client == samClient
         assert id(samDirector.hab.kvy.kevers) == id(samHab.kevers)
         assert samDirector.hab.kvy.db == samHby.db
         assert samDirector.tock == 0.125
 
-        samReactor = directing.Reactor(hab=samHab, client=samClient)
+        samReactor = Reactor(hab=samHab, client=samClient)
         assert samReactor.hab == samHab
         assert samReactor.client == samClient
         assert id(samReactor.hab.kvy.kevers) == id(samHab.kevers)
@@ -471,7 +471,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         samServer = serving.Server(host="", port=samPort)
         samServerDoer = serving.ServerDoer(server=samServer)
 
-        samDirectant = directing.Directant(hab=samHab, server=samServer)
+        samDirectant = Directant(hab=samHab, server=samServer)
         assert samDirectant.hab == samHab
         assert samDirectant.server == samServer
         # Sam's Reactants created on demand
@@ -484,9 +484,9 @@ def test_indirect_mode_sam_cam_wit_demo():
 
         # confirm that makeHab works same as manual setup
         # cam inception transferable (nxt digest not empty)
-        serder = eventing.incept(keys=[camSigners[0].verfer.qb64],
-                                        ndigs=[coring.Diger(ser=camSigners[1].verfer.qb64b).qb64],
-                                        code=coring.MtrDex.Blake3_256)
+        serder = incept(keys=[camSigners[0].verfer.qb64],
+                                        ndigs=[Diger(ser=camSigners[1].verfer.qb64b).qb64],
+                                        code=MtrDex.Blake3_256)
 
         assert camHab.iserder.said == serder.said  # same setup
         assert cam == serder.ked["i"] == 'EB1f36VmoizOIpBIBv3X4ZiWJQWjtKJ7TMmsZltT0B32'
@@ -494,14 +494,14 @@ def test_indirect_mode_sam_cam_wit_demo():
         camClient = clienting.Client(host='127.0.0.1', port=witPort)
         camClientDoer = clienting.ClientDoer(client=camClient)
 
-        camDirector = demoing.CamDirector(hab=camHab, remotePre=sam, client=camClient, tock=0.125)
+        camDirector = CamDirector(hab=camHab, remotePre=sam, client=camClient, tock=0.125)
         assert camDirector.hab == camHab
         assert camDirector.client == camClient
         assert id(camDirector.hab.kvy.kevers) == id(camHab.kevers)
         assert camDirector.hab.kvy.db == camHby.db
         assert camDirector.tock == 0.125
 
-        camReactor = directing.Reactor(hab=camHab, client=camClient, indirect=True)
+        camReactor = Reactor(hab=camHab, client=camClient, indirect=True)
         assert camReactor.hab == camHab
         assert camReactor.client == camClient
         assert id(camReactor.hab.kvy.kevers) == id(camHab.kevers)
@@ -554,7 +554,7 @@ def test_indirect_mode_sam_cam_wit_demo():
     assert not os.path.exists(samHby.db.path)
     assert not os.path.exists(witHby.db.path)
 
-    help.ogler.resetLevel(level=help.ogler.level)
+    ogler.resetLevel(level=ogler.level)
     """End Test"""
 
 

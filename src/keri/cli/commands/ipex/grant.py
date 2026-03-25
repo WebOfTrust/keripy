@@ -12,9 +12,7 @@ from ...common import Parsery, setupHby
 from ....kering import Vrsn_1_0
 from ....app import (Notifier, StreamPoster, Organizer,
                      GroupHab, Multiplexor, MailboxDirector,
-                     serialize, multisigExn)
-
-from ....app.grouping import loadHandlers as loadHandlersGrouping
+                     serialize, multisigExn, loadGroupingHandlers)
 
 from ....core import coring, parsing, serdering
 from ....peer import exchanging
@@ -67,7 +65,7 @@ class GrantDoer(doing.DoDoer):
         mux = Multiplexor(self.hby, notifier=notifier)
 
         self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        loadHandlersGrouping(self.exc, mux)
+        loadGroupingHandlers(self.exc, mux)
         loadHandlersProtocoling(self.hby, exc=self.exc, notifier=notifier)
 
         mbx = MailboxDirector(hby=self.hby,
