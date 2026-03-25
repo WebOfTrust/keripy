@@ -780,12 +780,13 @@ class LMDBer(filing.Filer):
         """
         if val is None or not key:
             return False
+
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             onkey = onKey(key, on, sep=sep)
             try:
                 return (txn.put(onkey, val, overwrite=False))
             except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{onkey}` is either empty, too big (for lmdb),"
+                raise KeyError(f"Key: `{onkey}` is either too big (for lmdb)"
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
@@ -815,7 +816,7 @@ class LMDBer(filing.Filer):
             try:
                 return (txn.put(onkey, val))
             except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{onkey}` is either empty, too big (for lmdb),"
+                raise KeyError(f"Key: `{onkey}` is either too big (for lmdb)"
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
@@ -1730,7 +1731,7 @@ class LMDBer(filing.Filer):
         transparently suffixed and unsuffixed
         Assumes DB opened with dupsort=False
         """
-         # val of None will return False
+        # val of None will return False
         return self.addIoSetVal(db=db, key=onKey(key, on, sep=sep), val=val, sep=sep)
 
 
@@ -2461,7 +2462,9 @@ class LMDBer(filing.Filer):
         """
 
         result = False
-        dups = set(self.getIoDupVals(db, key))  #get preexisting dups if any
+        if not key or not vals:
+            return result
+        dups = set(self.getIoDupVals(db, key))  # get preexisting dups if any
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             idx = 0
             cursor = txn.cursor()
@@ -2470,7 +2473,7 @@ class LMDBer(filing.Filer):
                     if cursor.last_dup(): # move to last dup
                         idx = 1 + int(bytes(cursor.value()[:32]), 16)  # get last index as int
             except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                raise KeyError(f"Key: `{key}` is either too big (for lmdb)"
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
             for val in vals:
@@ -2885,8 +2888,6 @@ class LMDBer(filing.Filer):
             val (bytes): serialized value to add at onkey as dup
             sep (bytes): separator character for split
         """
-        if not key:
-            return False
         onkey = onKey(key, on, sep=sep)
         return (self.addIoDupVal(db, key=onkey, val=val))
 
