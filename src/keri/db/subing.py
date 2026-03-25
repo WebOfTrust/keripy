@@ -3531,7 +3531,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
 
         Returns:
             count (int): count values in set at effective onkey from insertion
-                        ordering offset ion. Count of whole db when keys empty.
+                        ordering offset ion.
 
         Parameters:
             keys (str|bytes|memoryview|Iterable): key(s) made into base key.
@@ -3539,8 +3539,6 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
             on (int): ordinal number used with onKey(pre,on) to form key.
             ion (int): starting insertion ordinal offset into set, default 0.
         """
-        if not keys:
-            return self.db.cntAll(db=self.sdb)
         return (self.db.cntOnIoSet(db=self.sdb,
                                    key=self._tokey(keys),
                                    on=on,
