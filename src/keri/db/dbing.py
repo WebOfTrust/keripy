@@ -686,11 +686,14 @@ class LMDBer(filing.Filer):
             key is bytes of key within sub db's keyspace
             val is bytes of value to be written
         """
+        if not key:
+            return False
+
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             try:
                 return (txn.put(key, val, overwrite=False))
             except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                raise KeyError(f"Key: `{key}` is either too big (for lmdb)"
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
@@ -707,11 +710,13 @@ class LMDBer(filing.Filer):
             key is bytes of key within sub db's keyspace
             val is bytes of value to be written
         """
+        if not key:
+            return False
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             try:
                 return (txn.put(key, val))
             except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                raise KeyError(f"Key: `{key}` is either too big (for lmdb)"
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
@@ -725,11 +730,13 @@ class LMDBer(filing.Filer):
             key is bytes of key within sub db's keyspace
 
         """
+        if not key:
+            return False
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             try:
                 return(txn.get(key))
             except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                raise KeyError(f"Key: `{key}` is either too big (for lmdb)"
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
@@ -2278,13 +2285,16 @@ class LMDBer(filing.Filer):
             key (bytes):  within sub db's keyspace
             vals (Iterable[bytes]): of values to be written
         """
+        if not key:
+            return False
+
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             result = True
             try:
                 for val in vals:
                     result = result and txn.put(key, val, dupdata=True)
             except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                raise KeyError(f"Key: `{key}` is either too big (for lmdb)"
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
             return result
 
@@ -2308,6 +2318,9 @@ class LMDBer(filing.Filer):
             key (bytes):  within sub db's keyspace
             val (bytes): value to be written
         """
+        if not key:
+            return False
+
         dups = set(self.getVals(db, key))  #get preexisting dups if any
         result = False
         if val not in dups:
@@ -2315,7 +2328,7 @@ class LMDBer(filing.Filer):
                 try:
                     result = txn.put(key, val, dupdata=True)
                 except lmdb.BadValsizeError as ex:
-                    raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                    raise KeyError(f"Key: `{key}` is either too big (for lmdb)"
                                    " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
         return result
 
@@ -2331,6 +2344,8 @@ class LMDBer(filing.Filer):
             db (lmdb._Database): instance of named sub db with dupsort=True
             key is bytes of key within sub db's keyspace
         """
+        if not key:
+            return False
 
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
@@ -2339,7 +2354,7 @@ class LMDBer(filing.Filer):
                 if cursor.set_key(key):  # moves to first_dup
                     vals = [val for val in cursor.iternext_dup()]
             except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                raise KeyError(f"Key: `{key}` is either too big (for lmdb)"
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
             return vals
 
@@ -2354,6 +2369,8 @@ class LMDBer(filing.Filer):
             db (lmdb._Database): instance of named sub db with dupsort=True
             key is bytes of key within sub db's keyspace
         """
+        if not key:
+            return False
 
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
@@ -2363,7 +2380,7 @@ class LMDBer(filing.Filer):
                     if cursor.last_dup(): # move to last_dup
                         val = cursor.value()
             except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                raise KeyError(f"Key: `{key}` is either too big (for lmdb)"
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
             return val
 
@@ -2400,6 +2417,9 @@ class LMDBer(filing.Filer):
             db (lmdb._Database): instance of named sub db with dupsort=True
             key is bytes of key within sub db's keyspace
         """
+        if not key:
+            return 0
+
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             count = 0
@@ -2423,11 +2443,14 @@ class LMDBer(filing.Filer):
             key is bytes of key within sub db's keyspace
             val is bytes of dup val at key to delete
         """
+        if not key:
+            return False
+
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             try:
                 return (txn.delete(key, val))
             except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                raise KeyError(f"Key: `{key}` is either too big (for lmdb)"
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
@@ -2462,7 +2485,8 @@ class LMDBer(filing.Filer):
         """
 
         result = False
-        if not key or not vals:
+        # detect if there is no key, no vals, or if the key exists but is empty
+        if not key or not vals or key[:1] == b'.':
             return result
         dups = set(self.getIoDupVals(db, key))  # get preexisting dups if any
         with self.env.begin(db=db, write=True, buffers=True) as txn:
@@ -2628,6 +2652,8 @@ class LMDBer(filing.Filer):
             db (lmdb._Database): instance of named sub db with dupsort=True
             key (bytes): within sub db's keyspace
         """
+        if not key:
+            return None
 
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
@@ -2638,7 +2664,7 @@ class LMDBer(filing.Filer):
                         val = cursor.value()[33:]  # slice off prepended ordering proem
                 return val
             except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                raise KeyError(f"Key: `{key}` is either too big (for lmdb)"
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
@@ -2667,12 +2693,14 @@ class LMDBer(filing.Filer):
             db (lmdb._Database): instance of named sub db with dupsort=True
             key (bytes): within sub db's keyspace
         """
+        if not key:
+            return False
 
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             try:
                 return (txn.delete(key))
             except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                raise KeyError(f"Key: `{key}` is either too big (for lmdb)"
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
 
 
@@ -2706,6 +2734,8 @@ class LMDBer(filing.Filer):
             key (bytes): within sub db's keyspace
             val (bytes): effective value to be deleted
         """
+        if not key:
+            return False
 
         with self.env.begin(db=db, write=True, buffers=True) as txn:
             cursor = txn.cursor()
@@ -2715,7 +2745,7 @@ class LMDBer(filing.Filer):
                         if val == proval[33:]:  #  strip of proem
                             return cursor.delete()
             except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                raise KeyError(f"Key: `{key}` is either too big (for lmdb)"
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
         return False
 
@@ -2745,6 +2775,8 @@ class LMDBer(filing.Filer):
             db (lmdb._Database): instance of named sub db with dupsort=True
             key (bytes): within sub db's keyspace
         """
+        if not key:
+            return 0
         with self.env.begin(db=db, write=False, buffers=True) as txn:
             cursor = txn.cursor()
             count = 0
@@ -2752,7 +2784,7 @@ class LMDBer(filing.Filer):
                 if cursor.set_key(key):  # moves to first_dup
                     count = cursor.count()
             except lmdb.BadValsizeError as ex:
-                raise KeyError(f"Key: `{key}` is either empty, too big (for lmdb),"
+                raise KeyError(f"Key: `{key}` is either too big (for lmdb)"
                                " or wrong DUPFIXED size. ref) lmdb.BadValsizeError")
             return count
 
