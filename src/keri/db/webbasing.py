@@ -99,6 +99,38 @@ class WebBaser(WebDBer):
         return self._kevers
 
     async def reopen(self, clear=False, storageOpener=None):
+        """
+        Open or re‑open the WebBaser backing store.
+
+        This method initializes a new WebDBer instance for this WebBaser by
+        creating or loading all configured SubDbs from browser storage.
+
+        Parameters:
+            clear (bool): When True, all existing persisted data for this baser
+                (across all SubDbs) is cleared before loading. When False (default),
+                previously persisted state is loaded.
+            storageOpener (callable | None): Optional async factory that returns
+                a storage handle for a given namespace. When provided, it overrides
+                the default WebDBer storage opener. This is primarily used for
+                injecting FakeStorageBackend during testing.
+
+        Behavior:
+            • Creates a WebDBer instance using the baser's name and declared
+            SubDbNames.
+            • Loads or initializes each SubDb's underlying IndexedDB store.
+            • Binds all SubDbs to this WebBaser via `_bindSubDbs()`.
+            • Reloads in‑memory state (e.g., kevers, escrows) via `reload()`.
+            • Marks the baser as opened.
+
+        Notes:
+            - This method must be awaited because IndexedDB operations are
+            asynchronous.
+            - After calling `reopen()`, the WebBaser is fully operational and
+            ready for reads, writes, and flushes.
+            - Calling `reopen()` on an already‑open baser replaces the existing
+            WebDBer instance and resets all SubDb bindings.
+        """
+
         self.db = await WebDBer.open(
             name=self.name,
             stores=self.SubDbNames,
@@ -115,10 +147,24 @@ class WebBaser(WebDBer):
 
     async def close(self, *, clear: bool = False):
             """
-            Flush pending writes and optionally clear backing storage.
+            Close the WebBaser instance.
 
-            In a browser environment, "clear" is typically used only for tests or
-            explicit reset flows.
+            This method finalizes the current WebBaser session by flushing all
+            pending in‑memory writes to the backing browser storage and then
+            clearing all internal references to the active database environment.
+
+            Parameters:
+                clear (bool): When True, the backing IndexedDB storage for this
+                    WebBaser is cleared after flushing. When False (default),
+                    the stored state is preserved for future reopen() calls.
+
+            Behavior:
+                - If the baser is not open, the method returns immediately.
+                - All dirty sub‑databases are flushed via WebDBer.flush().
+                - If `clear=True`, all IndexedDB object stores associated with
+                this baser are deleted via `_clearIndexedDB()`.
+                - Internal handles (`self.db`, `self.env`) are set to None.
+                - `self.opened` is set to False to mark the baser as closed.
             """
 
             if not self.opened or self.db is None:
@@ -136,10 +182,19 @@ class WebBaser(WebDBer):
     
     async def _clearIndexedDB(self):
         """
-        Clear all backing storage namespaces for this baser.
+        Clear all persisted IndexedDB storage associated with this WebBaser.
 
-        Each SubDb in WebDBer has a `handle` that behaves like a dict-like
-        IndexedDB wrapper. Clearing the handle removes all persisted records.
+        This method iterates over all SubDbs currently bound to the WebBaser and
+        clears their underlying IndexedDB namespaces by calling:
+            - handle.clear()  – remove all key/value pairs from the store
+            - await handle.sync() – persist the deletion to IndexedDB
+
+        Behavior:
+            - If no database is open (`self.db is None`), the method returns
+            immediately.
+            - Each SubDb's handle is cleared and synced.
+            - In‑memory state is not modified here; `close(clear=True)` handles
+            full teardown.
         """
         if self.db is None:
             return
@@ -152,6 +207,28 @@ class WebBaser(WebDBer):
 
 
     def _bindSubDbs(self):
+        """
+        Bind all WebBaser sub‑databases (Subers and Komers) to this instance.
+
+        This method initializes the full set of logical sub‑databases that make up
+        the WebBaser storage schema. Each sub‑database is created with the correct
+        Suber/Komer type, serialization format, and key prefix (`subkey`).
+
+        WebBaser uses WebDBer as the underlying backend, which provides a
+        lexicographically‑sorted key/value store. Because WebDBer does not support
+        LMDB dupsort semantics, the choice of Suber class (IoSetSuber, OnIoSetSuber,
+        CatCesrIoSetSuber, etc.) determines how uniqueness, ordering, and grouping
+        are emulated in the browser environment.
+
+        This method must be called exactly once during initialization or reopen().
+        After binding, each attribute (e.g. `self.kels`, `self.sigs`, `self.states`)
+        provides the full API for interacting with that logical sub‑database.
+
+        No I/O occurs here; this method only constructs the Suber/Komer wrappers.
+        Actual persistence happens through WebDBer during flush(), reopen(), and
+        close().
+        """
+
         from . import koming, subing
         from ..core import coring, indexing
 
@@ -518,6 +595,37 @@ class WebBaser(WebDBer):
                                                         coring.Labeler, coring.Texter))
 
     def reload(self):
+        """
+        Rebuild in‑memory Kever state from persisted habitat and key state records.
+
+        WebBaser stores KERI state across multiple SubDbs, but maintains an
+        in‑memory cache of active Kevers, prefixes, and group identifiers for
+        efficient event processing. This method reconstructs that in‑memory
+        state after a reopen().
+
+        Behavior:
+            - Clears all in‑memory prefix, group, and kever caches.
+            - Iterates over all habitat records in `habs.` using getTopItemIter().
+            - For each habitat:
+                – Looks up the corresponding KeyStateRecord in `stts.`.
+                – If a state exists, attempts to construct a Kever from it.
+                – On success, stores the Kever in `_kevers` keyed by its prefix.
+                – Adds the prefix to `self.prefixes`.
+                – If the habitat represents a group (hab.mid is set),
+                adds its identifier to `self.groups`.
+
+        Notes:
+            - Any habitat without a corresponding key state is skipped.
+            - Any failure to construct a Kever (e.g., missing events) is ignored,
+            matching LMDB Baser's tolerant reload semantics.
+            - This method does not perform any I/O; it operates entirely on
+            already‑loaded SubDbs and their in‑memory views.
+
+        This method is automatically invoked during `reopen()` to ensure that
+        WebBaser is fully initialized and ready for event validation and state
+        queries.
+        """
+
         self.prefixes.clear()
         self.groups.clear()
         self._kevers.clear()
@@ -772,24 +880,18 @@ class WebBaser(WebDBer):
         from ..core import parsing
         from ..core.eventing import Kevery
 
-        # -------------------------------------------------------------
         # 1. Create a fresh empty WebBaser clone
-        # -------------------------------------------------------------
         clean_name = f"{self.name}_clean"
         copy = WebBaser(name=clean_name, headDirPath=self.headDirPath)
 
-        # -------------------------------------------------------------
         # 2. Replay all events into the clean DB
-        # -------------------------------------------------------------
         kvy = Kevery(db=copy)
         psr = parsing.Parser(kvy=kvy, version=Vrsn_1_0)
 
         for msg in self.cloneAllPreIter():
             psr.parseOne(ims=msg)
 
-        # -------------------------------------------------------------
         # 3. Copy non-event subdbs (same logic as LMDB version)
-        # -------------------------------------------------------------
         unsecured = [
             "hbys", "schema", "states", "rpys", "eans", "tops", "cgms", "exns",
             "erpy", "kdts", "ksns", "knas", "oobis", "roobi", "woobi", "moobi",
@@ -805,9 +907,7 @@ class WebBaser(WebDBer):
             for keys, val in src.getTopItemIter():
                 dst.put(keys=keys, val=val)
 
-        # -------------------------------------------------------------
         # 4. Copy set-based subdbs
-        # -------------------------------------------------------------
         sets = ["esigs", "ecigs", "epath", "chas", "reps", "wkas", "meids", "maids"]
 
         for name in sets:
@@ -818,18 +918,14 @@ class WebBaser(WebDBer):
             for keys, val in src.getTopItemIter():
                 dst.add(keys=keys, val=val)
 
-        # -------------------------------------------------------------
         # 5. Copy imgs and iimgs
-        # -------------------------------------------------------------
         for keys, val in self.imgs.getTopItemIter():
             copy.imgs.pin(keys=keys, val=val)
 
         for keys, val in self.iimgs.getTopItemIter():
             copy.iimgs.pin(keys=keys, val=val)
 
-        # -------------------------------------------------------------
         # 6. Clone .habs and .names and prefix/group sets
-        # -------------------------------------------------------------
         for keys, val in self.habs.getTopItemIter():
             if val.hid in copy.kevers:  # only copy verified habitats
                 copy.habs.put(keys=keys, val=val)
@@ -839,9 +935,7 @@ class WebBaser(WebDBer):
                 if val.mid:
                     copy.groups.add(val.hid)
 
-        # -------------------------------------------------------------
         # 7. Clone .ends and .locs
-        # -------------------------------------------------------------
         for (cid, role, eid), val in self.ends.getTopItemIter():
             exists = False
             for scheme in ("https", "http", "tcp"):
@@ -852,9 +946,7 @@ class WebBaser(WebDBer):
             if exists:
                 copy.ends.put(keys=(cid, role, eid), val=val)
 
-        # -------------------------------------------------------------
         # 8. Replace kevers, prefixes, groups in self with cloned ones
-        # -------------------------------------------------------------
         self.kevers.clear()
         for pre, kever in copy.kevers.items():
             self.kevers[pre] = kever
@@ -865,14 +957,10 @@ class WebBaser(WebDBer):
         self.groups.clear()
         self.groups.update(copy.groups)
 
-        # -------------------------------------------------------------
         # 9. Replace old IndexedDB database with the clean clone
-        # -------------------------------------------------------------
         await self._replaceIndexedDB(copy)
 
-        # -------------------------------------------------------------
         # 10. Reopen this WebBaser using the new DB
-        # -------------------------------------------------------------
         await self.reopen()
 
 
