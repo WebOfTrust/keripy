@@ -19,14 +19,21 @@ except ImportError:
 
 try:
     from keri.core import (serdering, coring, signing, Noncer, Labeler,
-                        indexing, Number, Diger, Seqner, Saider, Texter)
+                        indexing, Number, Diger, Seqner, Saider, Texter,
+                        SerderKERI, Salter, rotate, MtrDex, incept, rotate, interact,
+                        Kever, Prefixer, Siger, Dater, Serder, Signer, NumDex)
     from keri import versify, Kinds
-    from keri.recording import EventSourceRecord
+    from keri.recording import EventSourceRecord, OobiRecord
     from keri import core
 except ImportError:
     # Pyodide fallback
     from keri.core import serdering
 
+from keri.app import openHby
+from keri.help import datify, dictify
+from keri.recording import (EventSourceRecord, KeyStateRecord,
+                            OobiRecord, RawRecord, StateEERecord)
+                            
 needskeri = pytest.mark.skipif(subing is None, reason="requires full keri (lmdb)")
 
 
@@ -1768,5 +1775,426 @@ def test_webdb_baser():
         assert baser.iimgs.rem(keys=img_key) == True
         assert baser.iimgs.get(keys=img_key) is None
 
+
+    asyncio.run(_go())
+
+
+def test_fetchkeldel():
+    """
+    Test fetching full KEL and full DEL from Baser
+    """
+    async def _go():
+        backend = FakeStorageBackend()
+        baser = WebBaser()
+
+        await baser.reopen(storageOpener=backend.open)
+
+        assert baser.opened
+        assert baser.name == "main"
+
+
+        preb = 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8")
+        digb = 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'.encode("utf-8")
+        sn = 3
+        vs = versify(kind=Kinds.json, size=20)
+        assert vs == 'KERI10JSON000014_'
+
+        ked = dict(vs=vs, pre=preb.decode("utf-8"),
+                sn="{:x}".format(sn),
+                ilk="rot",
+                dig=digb.decode("utf-8"))
+        skedb = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+        assert skedb == (b'{"vs":"KERI10JSON000014_","pre":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhc'
+                        b'c","sn":"3","ilk":"rot","dig":"EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4"'
+                        b'}')
+
+
+        sig0b = 'AAz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQ'.encode("utf-8")
+        sig1b = 'AB_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ91Timrykocna6Z'.encode("utf-8")
+
+        wit0b = 'BmuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gzQPYGGwT'.encode("utf-8")
+        wit1b = 'BjhccWzwEHHzq7K0gzmuupUhPx5_yZ-Wk1x4eQPYGGwT'.encode("utf-8")
+        wsig0b = '0A1Timrykocna6Z_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2z5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5AzJ9'.encode("utf-8")
+        wsig1b = '0A5IRqcFe4gPs9l3wsFKi1NsSZvBe8yQJmiu5Az_pQBl2gt59I_F6BsSwFbIOG1TDQz1KAV2zJ91Timrykocna6Z'.encode("utf-8")
+
+        # test kels getAllIter
+        sn = 0
+        vals0 = [skedb]
+        assert baser.kels.add(keys=preb, on=sn, val=vals0[0]) == True
+
+        vals1 = [b"mary", b"peter", b"john", b"paul"]
+        sn += 1
+        for val in vals1:
+            assert baser.kels.add(keys=preb, on=sn, val=val) == True
+
+        vals2 = [b"dog", b"cat", b"bird"]
+        sn += 1
+        for val in vals2:
+            assert baser.kels.add(keys=preb, on=sn, val=val) == True
+
+        vals = list(baser.kels.getAllIter(keys=preb))
+        allvals = [v.decode("utf-8") for v in (vals0 + vals1 + vals2)]
+        assert vals == allvals
+
+        # test kels getLastIter
+        preb = 'B4ejhccWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x'.encode("utf-8")
+        sn = 0
+        
+        vals0 = [skedb]
+        assert baser.kels.add(keys=preb, on=sn, val=vals0[0]) == True
+
+        vals1 = [b"mary", b"peter", b"john", b"paul"]
+        sn += 1
+        for val in vals1:
+            assert baser.kels.add(keys=preb, on=sn, val=val) == True
+
+        vals2 = [b"dog", b"cat", b"bird"]
+        sn += 1
+        for val in vals2:
+            assert baser.kels.add(keys=preb, on=sn, val=val) == True
+        vals = list(baser.kels.getLastIter(keys=preb))
+        # Kels being an IoSetSuber, getLastIter calls getIoSetLastItemIterAll 
+        # which Iterates over every last added ioset entry at every effective key
+        # starting at key greater or equal to key so the values from the previous tests are 
+        # yielded here too.
+        lastvals = ['{"vs":"KERI10JSON000014_","pre":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","sn":"3","ilk":"rot","dig":"EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4"}', 'paul', 'bird', 
+                    '{"vs":"KERI10JSON000014_","pre":"BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc","sn":"3","ilk":"rot","dig":"EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4"}', 'paul', 'bird']
+
+        assert vals == lastvals
+
+
+        # test getDelItemIter
+        preb = 'BTmuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gzQPYGGw'.encode("utf-8")
+        sn = 1  # do not start at zero
+        key = snKey(preb, sn)
+        assert key == (b'BTmuupUhPx5_yZ-Wk1x4ejhccWzwEHHzq7K0gzQPYGGw.'
+                        b'00000000000000000000000000000001')
+        vals0 = [skedb]
+        assert baser.dels.add(keys=preb, on=sn, val=vals0[0]) == True
+
+        vals1 = [b"mary", b"peter", b"john", b"paul"]
+        sn += 1
+        for val in vals1:
+            assert baser.dels.add(keys=preb, on=sn, val=val) == True
+
+        vals2 = [b"dog", b"cat", b"bird"]
+        sn += 3  # skip make gap in SN
+        for val in vals2:
+            assert baser.dels.add(keys=preb, on=sn, val=val) == True
+
+        allvals = vals0 + vals1 + vals2
+        vals = [(val.encode("utf-8") if isinstance(val, str) else bytes(val))
+            for keys, on, val in baser.dels.getAllItemIter(keys=preb)]
+        assert vals == allvals
+
+    asyncio.run(_go())
+
+
+def test_usebaser():
+    """
+    Test using Baser
+    """
+
+    async def _go():
+        backend = FakeStorageBackend()
+        baser = WebBaser()
+
+        await baser.reopen(storageOpener=backend.open)
+
+        assert baser.opened
+
+        raw = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
+        salter = Salter(raw=raw)
+
+        #  create coe's signers
+        signers = salter.signers(count=8, path='db', temp=True)
+
+        # Event 0  Inception Transferable (nxt digest not empty) 2 0f 3 multisig
+        keys = [signers[0].verfer.qb64, signers[1].verfer.qb64, signers[2].verfer.qb64]
+        count = len(keys)
+        nxtkeys = [signers[3].verfer.qb64b, signers[4].verfer.qb64b, signers[5].verfer.qb64b]
+        sith = "2"
+        code = MtrDex.Blake3_256  # Blake3 digest of incepting data
+        serder = incept(keys=keys,
+                        code=code,
+                        isith=sith,
+                        ndigs=[Diger(ser=key).qb64 for key in nxtkeys])
+
+
+        # sign serialization
+        sigers = [signers[i].sign(serder.raw, index=i) for i in range(count)]
+        # create key event verifier state
+        kever = Kever(serder=serder, sigers=sigers, db=baser)
+
+        # Event 1 Rotation Transferable
+        keys = [signers[3].verfer.qb64, signers[4].verfer.qb64, signers[5].verfer.qb64]
+        nxtkeys = [signers[5].verfer.qb64b, signers[6].verfer.qb64b, signers[7].verfer.qb64b]
+        serder = rotate(pre=kever.prefixer.qb64,
+                        keys=keys,
+                        isith=sith,
+                        dig=kever.serder.said,
+                        ndigs=[Diger(ser=key).qb64 for key in nxtkeys],
+                        sn=1)
+
+        # sign serialization
+        sigers = [signers[i].sign(serder.raw, index=i-count) for i in range(count, count+count)]
+        # update key event verifier state
+        kever.update(serder=serder, sigers=sigers)
+
+
+        # Event 2 Interaction
+        serder = interact(pre=kever.prefixer.qb64,
+                          dig=kever.serder.said,
+                          sn=2)
+
+        # sign serialization  (keys don't change for signing)
+        sigers = [signers[i].sign(serder.raw, index=i-count) for i in range(count, count+count)]
+        # update key event verifier state
+        kever.update(serder=serder, sigers=sigers)
+
+    asyncio.run(_go())
+
+
+def test_clear_escrows():
+    async def _go():
+        backend = FakeStorageBackend()
+        db = WebBaser()
+
+        await db.reopen(storageOpener=backend.open)
+
+        assert db.opened
+
+        key = b'A'
+        vals = [b"z", b"m", b"x", b"a"]
+        d1 = Diger(ser=b"event1")                     # event digest
+        p1 = Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        n1 = Number(num=1)
+        e1 = Diger(ser=b"est1")                       # est event digest
+        s1 = Siger(raw=b"\x00" * 64)                    # fake sig
+        res_vals = [(d1, p1, n1, e1, s1)]
+
+        db.ures.put(keys=key, vals=res_vals)
+        db.vres.put(keys=key, vals=res_vals)
+        db.pses.put(keys=key, vals=vals)
+        for v in vals:
+            db.pwes.add(keys=key, on=0, val=v)
+        for v in vals:
+            db.ooes.add(keys=key, on=0, val=v)
+
+        db.ldes.put(keys=key, on=0, vals=vals)
+
+        pre = b'k'
+        sn = 0
+        snh = b"%032x" % sn
+        saidb = b'saidb'
+
+        db.uwes.add(keys=pre, on=sn, val=saidb)
+        assert db.uwes.cnt(keys=pre, on=sn) == 1
+
+        db.qnfs.add(keys=(pre, saidb), val=b"z")
+        assert db.qnfs.cnt(keys=(pre, saidb)) == 1
+
+        db.misfits.add(keys=(pre, snh), val=saidb)
+        assert db.misfits.cnt(keys=(pre, snh)) == 1
+
+        db.delegables.add(snKey(pre, 0), saidb)
+        assert db.delegables.cnt(keys=snKey(pre, 0)) == 1
+
+        db.pdes.add(keys=pre, on=0, val=saidb)
+        assert db.pdes.cnt(keys=pre, on=0) == 1
+
+        udesKey = ('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8"),
+                    'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'.encode("utf-8"))
+        db.udes.put(keys=udesKey, val=(Number(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'),
+                                   Diger(qb64b=b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E')))
+        assert db.udes.get(keys=udesKey) is not None
+
+        diger = Diger(qb64b='EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4')
+        db.rpes.put(keys=('route',), vals=[diger])
+        assert db.rpes.cnt(keys=('route',)) == 1
+
+        db.epsd.put(keys=('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc',), val=Dater())
+        assert db.epsd.get(keys=('DAzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc',)) is not None
+
+        db.eoobi.pin(keys=('url',), val=OobiRecord())
+        assert db.eoobi.cnt() == 1
+
+        serder = Serder(raw=b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EG8WAmM29ZBdoXbnb87yiPxQw4Y7gcQjqZS74vBAKsRm","i":"DApYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0","s":"4","p":"EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30","a":[]}')
+        db.dpub.put(keys=(pre, 'said'), val=serder)
+        assert db.dpub.get(keys=(pre, 'said')) is not None
+
+        db.gpwe.add(keys=(pre,), val=(Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), diger))
+        assert db.gpwe.cnt(keys=(pre,)) == 1
+
+        db.gdee.add(keys=(pre,), val=(Seqner(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), diger))
+        assert db.gdee.cnt(keys=(pre,)) == 1
+
+        db.dpwe.pin(keys=(pre, 'said'), val=serder)
+        assert db.dpwe.get(keys=(pre, 'said')) is not None
+
+        db.gpse.add(keys=('qb64',), val=(Number(qb64b=b'0AAAAAAAAAAAAAAAAAAAAAAB'), diger))
+        assert db.gpse.cnt(keys=('qb64',)) == 1
+
+        db.epse.put(keys=('dig',), val=serder)
+        assert db.epse.get(keys=('dig',)) is not None
+
+        db.dune.pin(keys=(pre, 'said'), val=serder)
+        assert db.dune.get(keys=(pre, 'said')) is not None
+
+        db.clearEscrows()
+
+        for escrow in [db.ures, db.vres, db.pses, db.pwes, db.ooes,
+                       db.qnfs, db.uwes,
+                       db.qnfs, db.misfits, db.delegables, db.pdes,
+                       db.udes, db.rpes, db.ldes, db.epsd, db.eoobi,
+                       db.dpub, db.gpwe, db.gdee, db.dpwe, db.gpse,
+                       db.epse, db.dune]:
+            assert escrow.cntAll() == 0
+
+    asyncio.run(_go())
+
+
+def test_trim_all_escrows_during_migration():
+    """Regression test for issue #863: old qnfs key format crashes migration.
+
+    When upgrading from keripy <1.2.0, qnfs entries lack the insertion-order
+    suffix (e.g. 'PRE.SAID' instead of 'PRE.SAID.00000000'). The high-level
+    iterators in clearEscrows() call unsuffix() which does int(SAID, 16) and
+    crashes with ValueError.
+
+    _trimAllEscrows() uses low-level .trim() which bypasses key parsing,
+    safely clearing all escrow databases regardless of key format.
+    """
+    async def _go(): 
+
+        backend = FakeStorageBackend()
+        db = WebBaser()
+
+        await db.reopen(storageOpener=backend.open)
+
+        # Populate escrow databases with test data
+        pre = b'k'
+        saidb = b'saidb'
+        vals = [b"z", b"m", b"x"]
+
+        db.qnfs.add(keys=(pre, saidb), val=b"z")
+        assert db.qnfs.cnt(keys=(pre, saidb)) == 1
+
+        db.pses.put(keys=pre, vals=vals)
+        assert db.pses.cnt(keys=pre) == 3
+
+        ooes_key = (snKey(pre, 0),)
+        db.ooes.put(keys=ooes_key, vals=vals)
+        assert db.ooes.cntAll() > 0
+
+        db.misfits.add(keys=(pre, b'snh'), val=saidb)
+        assert db.misfits.cnt(keys=(pre, b'snh')) == 1
+
+        # _trimAllEscrows clears everything via .trim()
+        db._trimAllEscrows()
+
+        assert db.qnfs.cntAll() == 0
+        assert db.pses.cntAll() == 0
+        assert db.ooes.cntAll() == 0
+        assert db.misfits.cntAll() == 0
+        assert db.ures.cntAll() == 0
+        assert db.vres.cntAll() == 0
+        assert db.pwes.cntAll() == 0
+        assert db.uwes.cntAll() == 0
+        assert db.delegables.cntAll() == 0
+        assert db.pdes.cntAll() == 0
+        assert db.udes.cntAll() == 0
+        assert db.rpes.cntAll() == 0
+        assert db.ldes.cntAll() == 0
+        assert db.epsd.cntAll() == 0
+        assert db.eoobi.cnt() == 0
+        assert db.dpub.cntAll() == 0
+        assert db.gpwe.cntAll() == 0
+        assert db.gdee.cntAll() == 0
+        assert db.dpwe.cntAll() == 0
+        assert db.gpse.cntAll() == 0
+        assert db.epse.cntAll() == 0
+        assert db.dune.cntAll() == 0
+
+    asyncio.run(_go())
+
+
+def test_db_keyspace_end_to_end_migration():
+    """
+    End-to-end test for DB keyspace migration from Seqner.qb64 to Number with Huge code.
+
+    Asserts:
+    - Correct DB writes using Number (Huge)
+    - Correct DB reads using Number (Huge)
+    - Backward compatibility with old Seqner.qb64 keys
+    - Round-trip correctness for Number (Huge)
+    - Lexicographic ordering == numeric ordering (for NEW keys)
+    - Mixed encodings do not break iteration
+    """
+
+
+    async def _go():
+        backend = FakeStorageBackend()
+        db = WebBaser()
+
+        await db.reopen(storageOpener=backend.open)
+
+        assert db.opened
+
+        sns = [0, 1, 2, 10, 100, 999999, 2**40, 2**80]
+
+        # Build a valid Cigar + Prefixer once, reuse in all values
+        signer = Signer()                     # ephemeral keypair
+        cigar = signer.sign(b"test")          # Cigar
+        pre = cigar.verfer.qb64               # non-transferable prefix
+
+        # old encoding (Seqner.qb64) – backward compatibility
+        for sn in sns:
+            old_key = Seqner(sn=sn).qb64
+            dig = Diger(raw=b"\x00" * 32)     # valid 32-byte raw
+            val = (dig, Prefixer(qb64=pre), cigar)
+            db.ures.add(keys=("OLD", old_key), val=val)
+
+        # new encoding (Number with Huge code)
+        for sn in sns:
+            new_key = Number(num=sn, code=NumDex.Huge).qb64
+            dig = Diger(raw=b"\x01" * 32)     # distinguishable but valid
+            val = (dig, Prefixer(qb64=pre), cigar)
+            db.ures.add(keys=("NEW", new_key), val=val)
+
+        # round-trip correctness for Number with Huge code
+        for sn in sns:
+            enc = Number(num=sn, code=NumDex.Huge).qb64
+            parsed = Number(qb64=enc)
+            assert parsed.num == sn
+
+        # read back old and new keys (existence + type)
+        for sn in sns:
+            old_key = Seqner(sn=sn).qb64
+            new_key = Number(num=sn, code=NumDex.Huge).qb64
+
+            old_vals = db.ures.get(keys=("OLD", old_key))
+            new_vals = db.ures.get(keys=("NEW", new_key))
+
+            assert len(old_vals) == 1
+            assert len(new_vals) == 1
+
+            odig, opre, ocig = old_vals[0]
+            ndig, npre, ncig = new_vals[0]
+
+            assert isinstance(odig, Diger)
+            assert isinstance(opre, Prefixer)
+            assert isinstance(ncig, type(cigar))
+            assert isinstance(ndig, Diger)
+            assert isinstance(npre, Prefixer)
+
+        # lexicographic ordering must match numeric ordering for NEW keys
+        ordered_sns = []
+        for (pre_key, key), vals in db.ures.getTopItemIter():
+            if pre_key == "NEW":
+                n = Number(qb64=key)
+                ordered_sns.append(n.num)
+
+        assert ordered_sns == sns
 
     asyncio.run(_go())

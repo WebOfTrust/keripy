@@ -18,7 +18,7 @@ from ordered_set import OrderedSet as oset
 from keri import __version__
 
 from ..recording import (KeyStateRecord, EventSourceRecord,
-                         HabitatRecord)
+                         HabitatRecord, OobiRecord)
 
 from ..kering import (MissingEntryError, ValidationError,
                       ConfigurationError, Vrsn_1_0)
@@ -64,7 +64,8 @@ class WebBaser(WebDBer):
             "evts.", "sigs.", "wigs.", "dtss.", "aess.", "rcts.", "vrcs.", "vres.",
             "kels.", "fels.", "ooes.", "pses.", "dels.", "ldes.", "pdes.", "pwes.",
             "ures.", "esrs.", "states.", "habs.", "names.", "udes.", "uwes.", "ooes.",
-            "imgs.", "iimgs.", "gpse.",
+            "imgs.", "iimgs.", "gpse.", "fons.", "qnfs.", "mfes.", "dees.", "rpes.", "epsd.",
+            "eoobi.", "dpub.", "gdwe.", "gdee.", "dpwe.", "epsd.", "epse.", "dune."
         ]
         self.SubDbNames = SubDbNames
 
@@ -165,6 +166,7 @@ class WebBaser(WebDBer):
         self.ooes = subing.OnIoSetSuber(db=self, subkey='ooes.')
         self.dels = subing.OnIoSetSuber(db=self, subkey='dels.')
         self.ldes = subing.OnIoSetSuber(db=self, subkey='ldes.')
+        self.qnfs = subing.IoSetSuber(db=self, subkey="qnfs.")
         self.ures = subing.CatCesrIoSetSuber(db=self, subkey='ures.',
                                             klas=(coring.Diger, coring.Prefixer, coring.Cigar))
 
@@ -181,6 +183,20 @@ class WebBaser(WebDBer):
                                                 coring.Labeler, coring.Texter))
 
         self.gpse = subing.CatCesrIoSetSuber(db=self, subkey='gpse.', klas=(coring.Number, coring.Diger))
+        self.gdee = subing.CatCesrIoSetSuber(db=self, subkey='gdee.', klas=(coring.Number, coring.Diger))
+        self.gpwe = subing.CatCesrIoSetSuber(db=self, subkey='gdwe.', klas=(coring.Number, coring.Diger))
+        self.misfits = subing.OnIoSetSuber(db=self, subkey='mfes.')
+        self.delegables = subing.IoSetSuber(db=self, subkey='dees.')
+        self.rpes = subing.CesrIoSetSuber(db=self, subkey='rpes.', klas=coring.Diger)
+        self.epsd = subing.CesrSuber(db=self, subkey="epsd.", klas=coring.Dater)
+        self.eoobi = koming.Komer(db=self, subkey='eoobi.', klas=OobiRecord, sep=">")
+        self.dpub = subing.SerderSuber(db=self, subkey='dpub.')
+        self.epsd = subing.CesrSuber(db=self, subkey="epsd.", klas=coring.Dater)
+        self.epse = subing.SerderSuber(db=self, subkey="epse.")
+        self.dune = subing.SerderSuber(db=self, subkey='dune.')
+        self.dpwe = subing.SerderSuber(db=self, subkey='dpwe.')
+
+        self.fons = subing.CesrSuber(db=self, subkey='fons.', klas=coring.Number)
 
     def reload(self):
         self.prefixes.clear()
@@ -279,7 +295,7 @@ class WebBaser(WebDBer):
         ]
         total = 0
         for escrow in escrows:
-            count = escrow.cnt()
+            count = escrow.cntAll()
             if count > 0:
                 escrow.trim()
                 total += count
