@@ -1259,7 +1259,7 @@ def test_transactioned(mockHelpingNowUTC):
             mkPrefixer = Prefixer(qb64=mkHab.pre)
 
 
-            # Step 2: Test with seeded xip via kramit directly
+            # Step 2: Seed xip via processMsg
 
             xip = exchept(sender=skHab.pre,
                           receiver=receiverHab.pre,
@@ -1272,9 +1272,7 @@ def test_transactioned(mockHelpingNowUTC):
                                     indexed=True)
             kwa = dict(ssgs=[(skPrefixer, sigers)])
 
-            # Call kramit directly (processMsg rejects xip)
-            result = kramer.kramit(xip, **kwa)
-            assert result is not None  # xip accepted
+            kvy.processMsg(xip, **kwa)
 
             # Assert: kramTMSC entry created, xip's exId is its own SAID
             cache = receiverHby.db.kramTMSC.get(keys=(skHab.pre, xip.said, xip.said))
@@ -1434,7 +1432,7 @@ def test_transactioned(mockHelpingNowUTC):
                                          kramer=kramer, exc=exc)
             assert kvyWithExc.exc is exc
 
-            # Seed a fresh xip via kramit directly (processMsg rejects xip ilk)
+            # Seed a fresh xip via processMsg
             xip8 = exchept(sender=skHab.pre,
                            receiver=receiverHab.pre,
                            route="/test/exchange",
@@ -1442,7 +1440,7 @@ def test_transactioned(mockHelpingNowUTC):
             sigers8 = skHab.mgr.sign(ser=xip8.raw,
                                      verfers=skHab.kever.verfers,
                                      indexed=True)
-            assert kramer.kramit(xip8, **dict(ssgs=[(skPrefixer, sigers8)])) is not None
+            kvy.processMsg(xip8, **dict(ssgs=[(skPrefixer, sigers8)]))
 
             exn8 = exchange(sender=skHab.pre,
                             receiver=receiverHab.pre,
@@ -1477,7 +1475,7 @@ def test_transactioned(mockHelpingNowUTC):
                                          kramer=kramer, exc=exc)
             assert kvyWithExc.exc is exc
 
-            # Seed a fresh xip via kramit directly (processMsg rejects xip ilk)
+            # Seed a fresh xip via processMsg
             xip8 = exchept(sender=skHab.pre,
                            receiver=receiverHab.pre,
                            route="/test/exchange",
@@ -1485,7 +1483,7 @@ def test_transactioned(mockHelpingNowUTC):
             sigers8 = skHab.mgr.sign(ser=xip8.raw,
                                      verfers=skHab.kever.verfers,
                                      indexed=True)
-            assert kramer.kramit(xip8, **dict(ssgs=[(skPrefixer, sigers8)])) is not None
+            kvy.processMsg(xip8, **dict(ssgs=[(skPrefixer, sigers8)]))
 
             exn8 = exchange(sender=skHab.pre,
                             receiver=receiverHab.pre,
@@ -2438,9 +2436,9 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
                                     indexed=True)
             kwa = dict(ssgs=[(skPrefixer, sigers)])
 
-            # Call kramit directly (processMsg rejects xip)
+            # processMsg should propagate missing sender key state from KRAM
             with pytest.raises(MissingSenderKeyStateError):
-                result = kramer.kramit(xip, **kwa)
+                kvy.processMsg(xip, **kwa)
 
             # Assert cue key state retrieval notification
             cue = kvy.cues.popleft()
@@ -2465,9 +2463,9 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
                                     indexed=True)
             kwa = dict(ssgs=[(mkPrefixer, sigers)])
 
-            # Call kramit directly (processMsg rejects xip)
+            # processMsg should propagate missing sender key state from KRAM
             with pytest.raises(MissingSenderKeyStateError):
-                result = kramer.kramit(xip, **kwa)
+                kvy.processMsg(xip, **kwa)
 
             # Assert cue key state retrieval notification
             cue = kvy.cues.popleft()
@@ -2491,8 +2489,8 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
             sscs = [(Seqner(sn=999), Saider(qb64=ixnSaid))]
             kwa = dict(sscs=sscs)  # pure sscs, no sigs
 
-            # Call kramit directly (processMsg rejects xip)
-            kramer.kramit(xip, **kwa)
+            # processMsg should still cue keystate retrieval for seal refs
+            kvy.processMsg(xip, **kwa)
 
             # Assert for cue key state retrieval
             cue = kvy.cues.popleft()
@@ -3119,7 +3117,7 @@ def test_new_cache_type(fakeHelpingClock):
             prefixer = Prefixer(qb64=senderHab.pre)
             verfers = senderHab.kever.verfers
 
-            # Test with seeded xip via kramit directly
+            # Seed xip via processMsg
             xip = exchept(sender=senderHab.pre,
                           receiver=receiverHab.pre,
                           route="route1",
@@ -3131,9 +3129,7 @@ def test_new_cache_type(fakeHelpingClock):
                                         indexed=True)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
-            # Call kramit directly (processMsg rejects xip)
-            result = kramer.kramit(xip, **kwa)
-            assert result is not None  # xip accepted
+            kvy.processMsg(xip, **kwa)
 
             # Create an exchange message with route1
             exn = exchange(sender=senderHab.pre,
@@ -3428,7 +3424,7 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             prefixer = Prefixer(qb64=senderHab.pre)
             verfers = senderHab.kever.verfers
 
-            # Test with seeded xip via kramit directly
+            # Seed xip via processMsg
             xip = exchept(sender=senderHab.pre,
                           receiver=receiverHab.pre,
                           route="route1",
@@ -3440,9 +3436,7 @@ def test_multiple_new_cache_type(fakeHelpingClock):
                                         indexed=True)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
-            # Call kramit directly (processMsg rejects xip)
-            result = kramer.kramit(xip, **kwa)
-            assert result is not None  # xip accepted
+            kvy.processMsg(xip, **kwa)
 
             # Create an exchange message with a route, still falls in the broader exn cache-type
             exn = exchange(sender=senderHab.pre,
@@ -4699,7 +4693,7 @@ def test_pruning_exchanges(fakeHelpingClock):
             prefixer = Prefixer(qb64=senderHab.pre)
             verfers = senderHab.kever.verfers
 
-            # Test with seeded xip via kramit directly
+            # Seed xip via processMsg
 
             xip = exchept(sender=senderHab.pre,
                           receiver=receiverHab.pre,
@@ -4712,9 +4706,7 @@ def test_pruning_exchanges(fakeHelpingClock):
                                         indexed=True)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
-            # Call kramit directly (processMsg rejects xip)
-            result = kramer.kramit(xip, **kwa)
-            assert result is not None  # xip accepted
+            kvy.processMsg(xip, **kwa)
 
             # Assert: tmsc entry created, xip's exId is its own SAID
             cache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, xip.said))

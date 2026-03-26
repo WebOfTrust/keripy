@@ -1262,6 +1262,18 @@ class Parser:
                     raise ValidationError(f"No Exchange to process so "
                                     f"dropped msg={serder.pretty()}.") from ex
 
+            elif ilk in (Ilks.xip,):
+                if not (exts['cigars'] or exts['tsgs'] or exts['sigers'] or exts['ssgs']):
+                    raise ValidationError(f"Missing attached exchanger "
+                                        f"signatures for msg={serder.pretty()}")
+
+                try:
+                    kvy.processMsg(**exts)
+
+                except AttributeError as ex:
+                    raise ValidationError(f"No kevery to process so "
+                                    f"dropped msg={serder.pretty()}.") from ex
+
             elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
                 # TEL msg
                 # get transaction event seal ref to Issuer's KEL
