@@ -109,12 +109,12 @@ class WebBaser(WebDBer):
                 injecting FakeStorageBackend during testing.
 
         Behavior:
-            • Creates a WebDBer instance using the baser's name and declared
+            - Creates a WebDBer instance using the baser's name and declared
             SubDbNames.
-            • Loads or initializes each SubDb's underlying IndexedDB store.
-            • Binds all SubDbs to this WebBaser via `_bindSubDbs()`.
-            • Reloads in‑memory state (e.g., kevers, escrows) via `reload()`.
-            • Marks the baser as opened.
+            - Loads or initializes each SubDb's underlying IndexedDB store.
+            - Binds all SubDbs to this WebBaser via `_bindSubDbs()`.
+            - Reloads in‑memory state (e.g., kevers, escrows) via `reload()`.
+            - Marks the baser as opened.
 
         Notes:
             - This method must be awaited because IndexedDB operations are
@@ -124,6 +124,32 @@ class WebBaser(WebDBer):
             - Calling `reopen()` on an already‑open baser replaces the existing
             WebDBer instance and resets all SubDb bindings.
         """
+        if storageOpener is not None:
+            self._storageOpener = storageOpener
+
+        opener = (
+            storageOpener
+            if storageOpener is not None
+                else getattr(self, "_storageOpener", None)
+        )
+
+        # Let WebDBer decide if opener is None (PyScript)
+        try:
+            self.db = await WebDBer.open(
+                name=self.name,
+                stores=self.SubDbNames,
+                clear=clear,
+                storageOpener=opener,
+            )
+        except RuntimeError as e:
+            # CPython with no opener then fail clearly
+            if opener is None:
+                raise RuntimeError(
+                    "No storage opener available. "
+                    "Provide storageOpener=FakeStorageBackend.open in CPython, "
+                    "or run under PyScript for IndexedDB."
+                ) from e
+            raise
 
         self.db = await WebDBer.open(
             name=self.name,
@@ -814,7 +840,6 @@ class WebBaser(WebDBer):
         await clean.close()
 
         # 2. Delete the old IndexedDB database
-        #    Equivalent to LMDB's: rm -rf old
         delete_req = js.indexedDB.deleteDatabase(old_name)
         await delete_req
 
