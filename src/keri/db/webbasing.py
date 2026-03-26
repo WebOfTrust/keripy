@@ -237,22 +237,26 @@ class WebBaser(WebDBer):
 
 
     def _bindSubDbs(self):
-        """Bind all WebBaser sub-databases (Subers and Komers) to this instance.
+        """
+        Bind all WebBaser sub‑databases (Subers and Komers) to this instance.
 
-        Initialises the full set of logical sub-databases that make up the
-        WebBaser storage schema.  Each sub-database is created with the
-        correct Suber/Komer type, serialisation format, and key prefix
-        (``subkey``).
+        This method initializes the full set of logical sub‑databases that make up
+        the WebBaser storage schema. Each sub‑database is created with the correct
+        Suber/Komer type, serialization format, and key prefix (`subkey`).
 
-        WebDBer provides a lexicographically-sorted key/value store but
-        does not support LMDB dupsort semantics.  The choice of Suber
-        class (IoSetSuber, OnIoSetSuber, CatCesrIoSetSuber, etc.)
-        determines how uniqueness, ordering, and grouping are emulated in
-        the browser environment.
+        WebBaser uses WebDBer as the underlying backend, which provides a
+        lexicographically‑sorted key/value store. Because WebDBer does not support
+        LMDB dupsort semantics, the choice of Suber class (IoSetSuber, OnIoSetSuber,
+        CatCesrIoSetSuber, etc.) determines how uniqueness, ordering, and grouping
+        are emulated in the browser environment.
 
-        No I/O occurs here — this method only constructs the Suber/Komer
-        wrappers.  Actual persistence happens through WebDBer during
-        ``flush()``, ``reopen()``, and ``close()``.
+        This method must be called exactly once during initialization or reopen().
+        After binding, each attribute (e.g. `self.kels`, `self.sigs`, `self.states`)
+        provides the full API for interacting with that logical sub‑database.
+
+        No I/O occurs here; this method only constructs the Suber/Komer wrappers.
+        Actual persistence happens through WebDBer during flush(), reopen(), and
+        close().
         """
 
         from . import koming, subing
