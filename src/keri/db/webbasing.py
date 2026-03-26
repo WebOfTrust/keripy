@@ -855,7 +855,7 @@ class WebBaser(WebDBer):
         open_req2 = js.indexedDB.open(old_name)
         new_db = await open_req2
 
-        # Copy all object stores from clean_db → new_db
+        # Copy all object stores from clean_db to new_db
         for store_name in clean_db.objectStoreNames:
             if store_name not in new_db.objectStoreNames:
                 version = new_db.version + 1
@@ -920,23 +920,23 @@ class WebBaser(WebDBer):
         ]
 
         for name in unsecured:
-            src = getattr(self, name, None)
-            dst = getattr(copy, name, None)
-            if src is None or dst is None:
+            srcdb = getattr(self, name, None)
+            cpydb = getattr(copy, name, None)
+            if srcdb is None or cpydb is None:
                 continue
-            for keys, val in src.getTopItemIter():
-                dst.put(keys=keys, val=val)
+            for keys, val in srcdb.getTopItemIter():
+                cpydb.put(keys=keys, val=val)
 
         # 4. Copy set-based subdbs
         sets = ["esigs", "ecigs", "epath", "chas", "reps", "wkas", "meids", "maids"]
 
         for name in sets:
-            src = getattr(self, name, None)
-            dst = getattr(copy, name, None)
-            if src is None or dst is None:
+            srcdb = getattr(self, name, None)
+            cpydb = getattr(copy, name, None)
+            if srcdb is None or cpydb is None:
                 continue
-            for keys, val in src.getTopItemIter():
-                dst.add(keys=keys, val=val)
+            for keys, val in srcdb.getTopItemIter():
+                cpydb.add(keys=keys, val=val)
 
         # 5. Copy imgs and iimgs
         for keys, val in self.imgs.getTopItemIter():
@@ -979,9 +979,6 @@ class WebBaser(WebDBer):
 
         # 9. Replace old IndexedDB database with the clean clone
         await self._replaceIndexedDB(copy)
-
-        # 10. Reopen this WebBaser using the new DB
-        await self.reopen()
 
 
     def clonePreIter(self, pre, fn=0):
