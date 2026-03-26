@@ -14,16 +14,11 @@ from typing import Any, Union
 from ordered_set import OrderedSet as oset
 from sortedcontainers import SortedDict
 
-from hio.help import ogler
-
-from keri import __version__
-
 try:
     from pyscript import storage
 except ImportError:  # pragma: no cover
     storage = None
 
-logger = ogler.getLogger()
 
 # The following are necessary to define in this file 
 # to prevent non wasm compatible imports (importing from dbing)
@@ -869,18 +864,7 @@ class WebDBer:
                 yield key, val
             return
 
-        try:
-            raw = db.items.irange(minimum=prefix)
-        except IndexError:
-            return iter(())
-
-        try:
-            keys = list(raw)
-        except IndexError:
-            return iter(())
-
-
-        for key in keys:
+        for key in list(db.items.irange(minimum=prefix)):
             if not key.startswith(prefix):
                 break
             yield key, db.items[key]
@@ -1139,22 +1123,9 @@ class WebDBer:
         if not key:
             return iter(())
 
-        # Get the prefix
+        # Snapshot keys via list() to allow safe delete-during-iteration
         iokey = suffix(key, ion, sep=sep)
-
-        try:
-            raw = db.items.irange(minimum=iokey)
-        except IndexError:
-            return iter(())
-
-        try:
-            keys = list(raw)
-        except IndexError:
-            return iter(())
-
-
-        # Iterate through items from the starting key
-        for iokey in keys:
+        for iokey in list(db.items.irange(minimum=iokey)):
             ckey, cion = unsuffix(iokey, sep=sep)
             # Stop when we leave this IoSet
             if ckey != key:
@@ -2333,58 +2304,3 @@ def _deserialize_meta(raw: Any) -> dict[str, Any]:
         raise TypeError(f"Unsupported persisted metadata payload type: {type(payload)}")
 
     return dict(payload)
-
-
-class statedict(dict):
-    """
-    Subclass of dict that has db as attribute and employs read through cache
-    from db Baser.stts of kever states to reload kever from state in database
-    when not found in memory as dict item.
-    """
-    __slots__ = ('db')  # no .__dict__ just for db reference
-
-    def __init__(self, *pa, **kwa):
-        super(statedict, self).__init__(*pa, **kwa)
-        self.db = None
-
-    def __getitem__(self, k):
-        try:
-            return super(statedict, self).__getitem__(k)
-        except KeyError as ex:
-            if not self.db:
-                raise ex  # reraise KeyError
-            if (ksr := self.db.states.get(keys=k)) is None:
-                raise ex  # reraise KeyError
-            try:
-                from ..core.eventing import Kever
-                kever = Kever(state=ksr, db=self.db)
-            except MissingEntryError:  # no kel event for keystate
-                raise ex  # reraise KeyError
-            self.__setitem__(k, kever)
-            return kever
-
-    def __contains__(self, k):
-        if not super(statedict, self).__contains__(k):
-            try:
-                self.__getitem__(k)
-                return True
-            except KeyError:
-                return False
-        else:
-            return True
-
-    def get(self, k, default=None):
-        """Override of dict get method
-
-        Parameters:
-            k (str): key for dict
-            default: default value to return if not found
-
-        Returns:
-            kever: converted from underlying dict or database
-
-        """
-        if not super(statedict, self).__contains__(k):
-            return default
-        else:
-            return self.__getitem__(k)
