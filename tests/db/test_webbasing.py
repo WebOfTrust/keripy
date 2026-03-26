@@ -9,7 +9,7 @@ import json
 
 import pytest
 
-from keri.db.webbasing import WebBaser
+from keri.db.webbasing import WebBaser, WebBaserDoer, _strip_prerelease
 
 try:
     from keri.db import subing, koming, dgKey, snKey, statedict
@@ -32,7 +32,7 @@ except ImportError:
 from keri.core import state as eventState
 from keri.app import openHby
 from keri.help import datify, dictify
-from keri.recording import (EventSourceRecord, KeyStateRecord,
+from keri.recording import (EventSourceRecord, HabitatRecord, KeyStateRecord,
                             OobiRecord, RawRecord, StateEERecord)
                             
 needskeri = pytest.mark.skipif(subing is None, reason="requires full keri (lmdb)")
@@ -2287,5 +2287,206 @@ def test_statedict():
         assert pre in dbd  # still in memory
         del dbd[pre]
         assert pre not in dbd  # not in memory or db so read through cache misses
+
+    asyncio.run(_go())
+
+
+@needskeri
+def test_close_clear_persistence():
+    """Test that close(clear=False) preserves data and close(clear=True) wipes it."""
+    async def _go():
+        backend = FakeStorageBackend()
+        baser = WebBaser()
+
+        await baser.reopen(storageOpener=backend.open)
+        assert baser.opened
+
+        # Write data
+        baser.oobis.put(keys=("test_cid",), val=OobiRecord(cid="test_cid"))
+        assert baser.oobis.get(keys=("test_cid",)) is not None
+
+        # close(clear=False) should preserve data across reopen
+        await baser.close(clear=False)
+        assert not baser.opened
+        assert baser.db is None
+
+        await baser.reopen(storageOpener=backend.open)
+        assert baser.oobis.get(keys=("test_cid",)) is not None
+
+        # close(clear=True) should wipe data
+        await baser.close(clear=True)
+        await baser.reopen(storageOpener=backend.open)
+        assert baser.oobis.get(keys=("test_cid",)) is None
+
+        # double-close is a no-op
+        await baser.close()
+        await baser.close()  # should not raise
+
+    asyncio.run(_go())
+
+
+@needskeri
+def test_reload_orphan_cleanup():
+    """Test that reload() removes orphan habs and keeps valid/group habs."""
+    async def _go():
+        backend = FakeStorageBackend()
+        baser = WebBaser()
+
+        await baser.reopen(storageOpener=backend.open)
+
+        # --- Build a valid hab with key state ---
+        pre = 'DApYGFaqnrALTyejaJaGAVhNpSCtqyerPqWVK9ZBNZk0'
+        dig = 'EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30'
+        serder = interact(pre=pre, dig=dig, sn=4)
+        eevt = StateEstEvent(s='3', d=dig, br=[], ba=[])
+        state = eventState(pre=pre, sn=4, pig=dig, dig=serder.said,
+                           fn=4, eilk=Ilks.ixn, keys=[pre], eevt=eevt)
+
+        baser.evts.put(keys=(pre, serder.said), val=serder)
+        baser.states.pin(keys=pre, val=state)
+        baser.habs.put(keys=pre, val=HabitatRecord(hid=pre, name="valid"))
+
+        # --- Orphan hab: no key state, mid=None ---
+        orphan_pre = 'DBMbr7Z-pd4KJwzxuptSmCYqxrBnE2xKVO-MnjYkeUrt'
+        baser.habs.put(keys=orphan_pre,
+                       val=HabitatRecord(hid=orphan_pre, name="orphan", mid=None))
+
+        # --- Group hab stub: no key state, but mid is set ---
+        group_pre = 'DCMbr7Z-pd4KJwzxuptSmCYqxrBnE2xKVO-MnjYkeUrt'
+        group_mid = 'DDMbr7Z-pd4KJwzxuptSmCYqxrBnE2xKVO-MnjYkeUrt'
+        baser.habs.put(keys=group_pre,
+                       val=HabitatRecord(hid=group_pre, name="group", mid=group_mid))
+
+        # reload should clean up orphans
+        baser.reload()
+
+        # Valid hab should be in kevers and prefixes
+        assert pre in baser.prefixes
+        assert pre in baser.kevers
+
+        # Orphan should be removed
+        assert baser.habs.get(keys=orphan_pre) is None
+
+        # Group hab should remain (mid is set, so not an orphan)
+        assert baser.habs.get(keys=group_pre) is not None
+
+    asyncio.run(_go())
+
+
+@needskeri
+def test_clean_subdb_swap():
+    """Test that clean() swaps SubDb data from clone back into self."""
+    async def _go():
+        backend = FakeStorageBackend()
+        baser = WebBaser()
+
+        await baser.reopen(storageOpener=backend.open)
+
+        # Write to an "unsecured" SubDb that clean() copies to clone
+        baser.oobis.put(keys=("test_cid",), val=OobiRecord(cid="test_cid"))
+        assert baser.oobis.get(keys=("test_cid",)) is not None
+
+        # Write to a SubDb NOT in the unsecured/sets lists
+        baser.names.put(keys=("", "myname"), val="somepre")
+        assert baser.names.get(keys=("", "myname")) is not None
+
+        await baser.clean()
+
+        # oobis data should survive (self -> clone via unsecured copy -> swap back)
+        assert baser.oobis.get(keys=("test_cid",)) is not None
+
+        # names data should be gone (not copied to clone, clone's empty names replaced self's)
+        assert baser.names.get(keys=("", "myname")) is None
+
+        assert baser.opened
+
+    asyncio.run(_go())
+
+
+@needskeri
+def test_web_baser_doer():
+    """Test WebBaserDoer lifecycle: enter requires opened baser, exit schedules close."""
+    async def _go():
+        backend = FakeStorageBackend()
+        baser = WebBaser()
+
+        # enter() on un-opened baser should raise
+        doer = WebBaserDoer(baser=baser)
+        with pytest.raises(RuntimeError, match="must be opened"):
+            doer.enter()
+
+        # Open baser, enter() should succeed
+        await baser.reopen(storageOpener=backend.open)
+        assert baser.opened
+        doer.enter()  # no error
+
+        # exit() schedules async close via ensure_future
+        doer.exit()
+        await asyncio.sleep(0)  # let the scheduled coroutine run
+        assert not baser.opened
+
+        # Test with temp=True to verify clear=True path
+        await baser.reopen(storageOpener=backend.open)
+        baser.temp = True
+        baser.oobis.put(keys=("x",), val=OobiRecord(cid="x"))
+
+        doer2 = WebBaserDoer(baser=baser)
+        doer2.enter()
+        doer2.exit()
+        await asyncio.sleep(0)
+        assert not baser.opened
+
+        # Reopen and verify data was cleared (temp=True -> clear=True)
+        await baser.reopen(storageOpener=backend.open)
+        assert baser.oobis.get(keys=("x",)) is None
+
+    asyncio.run(_go())
+
+
+def test_strip_prerelease_webbasing():
+    """Test the locally-duplicated _strip_prerelease in webbasing.py."""
+    import semver
+
+    # Core bug that _strip_prerelease fixes: dev4 > dev10 lexicographically
+    assert semver.compare("1.2.0-dev4", "1.2.0-dev10") == 1
+
+    # _strip_prerelease normalizes by removing prerelease/build metadata
+    assert _strip_prerelease("1.2.0-dev4") == "1.2.0"
+    assert _strip_prerelease("1.2.0-dev10") == "1.2.0"
+    assert _strip_prerelease("1.2.0") == "1.2.0"
+    assert _strip_prerelease("0.6.8") == "0.6.8"
+    assert _strip_prerelease("1.2.0-rc1") == "1.2.0"
+    assert _strip_prerelease("2.0.0-dev5+build42") == "2.0.0"
+
+    # After stripping, migration version comparisons work correctly
+    db_ver = _strip_prerelease("1.2.0-dev4")
+    assert semver.compare("1.2.0", db_ver) == 0  # same cycle, skip
+
+    db_ver = _strip_prerelease("1.0.0")
+    assert semver.compare("1.2.0", db_ver) == 1  # newer, run migration
+
+
+@needskeri
+def test_trim_all_escrows_old_key_format_web():
+    """Test _trimAllEscrows handles old-format keys injected into SortedDict."""
+    async def _go():
+        backend = FakeStorageBackend()
+        baser = WebBaser()
+
+        await baser.reopen(storageOpener=backend.open)
+
+        # Inject old-format key directly into qnfs SubDb's SortedDict.
+        # Old format: PRE.SAID (no .00000000 insertion-order suffix)
+        old_key = (b'EBMbr7Z-pd4KJwzxuptSmCYqxrBnE2xKVO-MnjYkeUrt.'
+                   b'EBMbr7Z-pd4KJwzxuptSmCYqxrBnE2xKVO-MnjYkeUrt')
+        baser.qnfs.sdb.items[old_key] = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
+        baser.qnfs.sdb.dirty = True
+
+        assert baser.qnfs.cntAll() > 0
+
+        # _trimAllEscrows uses .trim() which bypasses key parsing
+        baser._trimAllEscrows()
+
+        assert baser.qnfs.cntAll() == 0
 
     asyncio.run(_go())
