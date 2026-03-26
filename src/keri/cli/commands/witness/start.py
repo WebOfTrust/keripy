@@ -10,7 +10,7 @@ import logging
 
 from hio.help import ogler
 
-from keri import __version__
+from ...._version import __version__ 
 
 from ...common import Parsery, setupHby
 

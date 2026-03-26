@@ -7,7 +7,7 @@ import argparse
 
 from hio.base import doing
 
-from keri import __version__
+from ..._version import __version__
 
 from ..common import Parsery, existingHby
 
