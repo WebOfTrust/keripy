@@ -380,7 +380,7 @@ class Baser(LMDBer):
             dgKey (prefix + digest)
             Only one value per DB key is allowed.
 
-        .misfits is named subDB instance of IoSetSuber for misfit escrows.
+        .misfits is named subDB instance of OnIoSetSuber for misfit escrows.
             Events with remote (nonlocal) sources that are inappropriate (i.e.
             would be dropped) unless promoted to local source via extra
             after-the-fact authentication. Escrow processing determines if and
@@ -954,7 +954,7 @@ class Baser(LMDBer):
                                    subkey='esrs.')
 
         # misfit escrows whose processing may change the .esrs event source record
-        self.misfits = subing.IoSetSuber(db=self, subkey='mfes.')
+        self.misfits = subing.OnIoSetSuber(db=self, subkey='mfes.')
 
         # delegable events escrows. events with local delegator that need approval
         self.delegables = subing.IoSetSuber(db=self, subkey='dees.')
