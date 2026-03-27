@@ -227,6 +227,13 @@ class WebBaser(WebDBer):
 
         If the baser is not open the method returns immediately.
 
+        Note:
+            After close, all Suber/Komer attributes (e.g. ``self.oobis``)
+            are deleted.  Any attempt to access them will raise
+            ``AttributeError``, making accidental post-close usage fail
+            loudly instead of silently writing to an orphaned in-memory
+            SubDb.  The attributes are rebound on ``reopen()``.
+
         Parameters:
             clear (bool): When True, the backing storage for this WebBaser
                 is cleared.  When False (default), stored state is preserved
@@ -245,6 +252,14 @@ class WebBaser(WebDBer):
         self.db = None
         self.env = None
         self.opened = False
+
+        # Remove all Suber/Komer attributes so post-close writes raise
+        # AttributeError instead of silently going to an orphaned SubDb.
+        for name in getattr(self, '_subdb_names', ()):
+            try:
+                delattr(self, name)
+            except AttributeError:
+                pass
 
         # Schedule async flush as fire-and-forget task.
         try:
@@ -273,6 +288,13 @@ class WebBaser(WebDBer):
 
         If the baser is not open the method returns immediately.
 
+        Note:
+            After close, all Suber/Komer attributes (e.g. ``self.oobis``)
+            are deleted.  Any attempt to access them will raise
+            ``AttributeError``, making accidental post-close usage fail
+            loudly instead of silently writing to an orphaned in-memory
+            SubDb.  The attributes are rebound on ``reopen()``.
+
         Parameters:
             clear (bool): When True the backing storage for this WebBaser
                 is cleared.  When False (default) stored state is preserved
@@ -291,6 +313,13 @@ class WebBaser(WebDBer):
         self.env = None
         self.opened = False
 
+        # Remove all Suber/Komer attributes so post-close writes raise
+        # AttributeError instead of silently going to an orphaned SubDb.
+        for name in getattr(self, '_subdb_names', ()):
+            try:
+                delattr(self, name)
+            except AttributeError:
+                pass
 
     def _bindSubDbs(self):
         """
@@ -318,6 +347,7 @@ class WebBaser(WebDBer):
         from . import koming, subing
         from ..core import coring, indexing
 
+        _before = set(self.__dict__)
         self.evts = subing.SerderSuber(db=self, subkey='evts.')
         self.fels = subing.OnSuber(db=self, subkey='fels.')
         self.kels = subing.OnIoSetSuber(db=self, subkey='kels.')
@@ -680,6 +710,10 @@ class WebBaser(WebDBer):
                                                   klas=(coring.Diger, coring.Noncer,
                                                         coring.Labeler, coring.Texter))
 
+        # Every attribute added above is a Suber or Komer.  Record their
+        # names so close()/aclose() can null them out to prevent silent
+        # writes to orphaned SubDb objects.
+        self._subdb_names = set(self.__dict__) - _before
 
     def reload(self):
         """Rebuild in-memory Kever state from persisted habitat and key state records.

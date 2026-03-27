@@ -2295,19 +2295,15 @@ def test_statedict():
 
 @needskeri
 def test_close_clear_persistence():
-    """Test that close(clear=False) preserves data and close(clear=True) wipes it."""
+    """Test close() and aclose() — both clear/preserve paths, temp flag, and
+    post-close inoperability."""
     async def _go():
         backend = FakeStorageBackend()
         baser = WebBaser()
 
+        # --- aclose(clear=False) preserves data ---
         await baser.reopen(storageOpener=backend.open)
-        assert baser.opened
-
-        # Write data
         baser.oobis.put(keys=("test_cid",), val=OobiRecord(cid="test_cid"))
-        assert baser.oobis.get(keys=("test_cid",)) is not None
-
-        # close(clear=False) should preserve data across reopen
         await baser.aclose(clear=False)
         assert not baser.opened
         assert baser.db is None
@@ -2315,17 +2311,79 @@ def test_close_clear_persistence():
         await baser.reopen(storageOpener=backend.open)
         assert baser.oobis.get(keys=("test_cid",)) is not None
 
-        # close(clear=True) should wipe data
+        # --- aclose(clear=True) wipes data ---
         await baser.aclose(clear=True)
         await baser.reopen(storageOpener=backend.open)
         assert baser.oobis.get(keys=("test_cid",)) is None
 
-        # After close, baser.db is None and baser.opened is False
+        # --- self.temp=True triggers implicit clear without explicit clear arg ---
+        baser.oobis.put(keys=("tmp",), val=OobiRecord(cid="tmp"))
+        baser.temp = True
+        await baser.aclose()  # clear not passed, but temp=True should clear
+        baser.temp = False
+        await baser.reopen(storageOpener=backend.open)
+        assert baser.oobis.get(keys=("tmp",)) is None
+
+        # --- sync close() preserves data via fire-and-forget flush ---
+        baser.oobis.put(keys=("sync",), val=OobiRecord(cid="sync"))
+        baser.close(clear=False)
+        assert not baser.opened
+        assert baser.db is None
+        await asyncio.sleep(0)  # let fire-and-forget flush task run
+
+        await baser.reopen(storageOpener=backend.open)
+        assert baser.oobis.get(keys=("sync",)) is not None
+
+        # --- sync close(clear=True) wipes data ---
+        baser.close(clear=True)
+        await asyncio.sleep(0)
+
+        await baser.reopen(storageOpener=backend.open)
+        assert baser.oobis.get(keys=("sync",)) is None
+
+        # --- post-close: SubDb attributes are deleted, any access raises ---
         await baser.aclose()
         assert baser.db is None
         assert not baser.opened
+        assert not hasattr(baser, 'oobis')
+        with pytest.raises(AttributeError):
+            baser.oobis.put(keys=("ghost",), val=OobiRecord(cid="ghost"))
+
+        # reopen restores the attributes
+        await baser.reopen(storageOpener=backend.open)
+        assert hasattr(baser, 'oobis')
+
+        # --- double-close is a no-op for both variants ---
+        baser.close()   # sync on already-closed — should not raise
+        await baser.aclose()  # async on already-closed — should not raise
 
     asyncio.run(_go())
+
+
+@needskeri
+def test_sync_close_no_event_loop():
+    """Test that sync close() works outside a running event loop (no-flush path).
+
+    When there is no running asyncio loop, close() should still drop state
+    without raising — it just can't schedule the flush task.
+    """
+    # Set up baser inside asyncio.run so reopen can await
+    backend = FakeStorageBackend()
+    baser = WebBaser()
+    asyncio.run(baser.reopen(storageOpener=backend.open))
+    assert baser.opened
+
+    baser.oobis.put(keys=("nf",), val=OobiRecord(cid="nf"))
+
+    # Now we're outside asyncio.run — no running event loop
+    baser.close(clear=False)  # should not raise despite no loop
+    assert not baser.opened
+    assert baser.db is None
+
+    # Data was NOT flushed (no loop to run the task), but the in-memory
+    # state was dropped.  Reopen to confirm flush didn't happen — data
+    # may or may not be there depending on whether a prior flush persisted it.
+    # The key assertion is that close() itself didn't raise.
 
 
 @needskeri
@@ -2439,7 +2497,8 @@ def test_clean_subdb_swap():
 
 @needskeri
 def test_web_baser_doer():
-    """Test WebBaserDoer lifecycle: enter requires opened baser, exit closes sync."""
+    """Test WebBaserDoer lifecycle: enter guard, exit closes, round-trip, and
+    exit on already-closed baser."""
     async def _go():
         backend = FakeStorageBackend()
         baser = WebBaser()
@@ -2457,10 +2516,20 @@ def test_web_baser_doer():
         # exit() calls sync close() — baser is closed immediately
         doer.exit()
         assert not baser.opened
-        # Let fire-and-forget flush task complete before reopen
+        await asyncio.sleep(0)  # let fire-and-forget flush run
+
+        # exit() on already-closed baser should not raise
+        doer.exit()  # close() is a no-op when not opened
+
+        # --- Full round-trip: enter -> exit -> reopen -> enter -> exit ---
+        await baser.reopen(storageOpener=backend.open)
+        doer.enter()
+        assert baser.opened
+        doer.exit()
+        assert not baser.opened
         await asyncio.sleep(0)
 
-        # Test with temp=True to verify clear=True path
+        # --- temp=True causes exit to clear data ---
         await baser.reopen(storageOpener=backend.open)
         baser.temp = True
         baser.oobis.put(keys=("x",), val=OobiRecord(cid="x"))
@@ -2469,10 +2538,10 @@ def test_web_baser_doer():
         doer2.enter()
         doer2.exit()
         assert not baser.opened
-        # Let fire-and-forget flush persist the cleared state
         await asyncio.sleep(0)
 
         # Reopen and verify data was cleared (temp=True -> clear=True)
+        baser.temp = False
         await baser.reopen(storageOpener=backend.open)
         assert baser.oobis.get(keys=("x",)) is None
 
