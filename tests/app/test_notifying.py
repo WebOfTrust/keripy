@@ -238,6 +238,7 @@ def test_noter_db_size_set_from_env_var():
     noter = Noter()
     assert noter.env.info()['map_size'] != new_map_size, "Expected map size to be the default 10MB"
     assert noter.env.info()['map_size'] == LMDBer.MapSize, "Expected map size to be the default 10MB"
+    noter.close()
 
     # Specific map size works
     os.environ[KERINoterMapSizeKey] = f"{new_map_size}"
@@ -245,6 +246,7 @@ def test_noter_db_size_set_from_env_var():
     noter = Noter()
     assert noter.env.info()['map_size'] == new_map_size, "Expected map size to be set from environment variable to 10GB"
     os.environ.pop(KERINoterMapSizeKey)
+    noter.close()
 
     # generic map size works
     baser_map_size = 10737418240
@@ -252,6 +254,7 @@ def test_noter_db_size_set_from_env_var():
 
     noter = Noter()
     assert noter.env.info()['map_size'] == new_map_size, "Expected map size to be set from environment variable to 10GB"
+    noter.close()
 
     # bad map size throws
     os.environ[KERINoterMapSizeKey] = f"bad_map_size"
