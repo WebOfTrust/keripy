@@ -18,10 +18,10 @@ except ImportError:
     koming = None
 
 try:
-    from keri.core import (serdering, coring, signing, Noncer, Labeler,
+    from keri.core import (serdering, coring, signing, Noncer, Labeler, Parser,
                         indexing, Number, Diger, Seqner, Saider, Texter, StateEstEvent,
                         SerderKERI, Salter, rotate, MtrDex, incept, rotate, interact,
-                        Kever, Prefixer, Siger, Dater, Serder, Signer, NumDex)
+                        Kever, Prefixer, Siger, Dater, Serder, Signer, NumDex, Kevery)
     from keri import versify, Kinds, Ilks
     from keri.recording import EventSourceRecord, OobiRecord
     from keri import core
@@ -29,6 +29,7 @@ except ImportError:
     # Pyodide fallback
     from keri.core import serdering
 
+from keri.kering import Vrsn_1_0
 from keri.core import state as eventState
 from keri.app import openHby
 from keri.help import datify, dictify
@@ -2488,5 +2489,51 @@ def test_trim_all_escrows_old_key_format_web():
         baser._trimAllEscrows()
 
         assert baser.qnfs.cntAll() == 0
+
+    asyncio.run(_go())
+
+
+def test_webbaser_clone_all_pre_iter():
+    """
+    Test cloneAllPreIter yields first-seen event messages for all identifier
+    prefixes in the database.
+    """
+    async def _go():
+        backend = FakeStorageBackend()
+        baser = WebBaser()
+
+        await baser.reopen(storageOpener=backend.open)
+
+        kwa = dict(db=baser)
+
+        with openHby(name="test", base="test", **kwa) as hby:
+            hab1 = hby.makeHab(name="alice", isith="1", icount=1)
+            hab2 = hby.makeHab(name="bob", isith="1", icount=1)
+            # Single shared db now has fels (and evts, sigs) for both identifiers
+            msgs = list(hby.db.cloneAllPreIter())
+            assert len(msgs) >= 2
+            pres = set()
+            for msg in msgs:
+                serder = SerderKERI(raw=bytes(msg))
+                pres.add(serder.pre)
+            assert hab1.pre in pres
+            assert hab2.pre in pres
+
+            hab1.rotate()
+            hab2.rotate()
+
+            msgs = list(hby.db.cloneAllPreIter())
+            assert len(msgs) >= 4  # two icps + two rots
+
+            sn_by_pre = {}
+            for msg in msgs:
+                ser = SerderKERI(raw=bytes(msg))
+                sn = ser.sn
+                sn_by_pre.setdefault(ser.pre, []).append(sn)
+
+            for pre, sns in sn_by_pre.items():
+                assert sns == sorted(sns)
+
+
 
     asyncio.run(_go())

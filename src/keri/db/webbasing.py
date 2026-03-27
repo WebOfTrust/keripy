@@ -104,7 +104,7 @@ class statedict(dict):
 
 
 class WebBaser(WebDBer):
-    def __init__(self, name="main", reopen=False, **kwa):
+    def __init__(self, name="main", reopen=False, temp=False, **kwa):
         """
         Setup named sub databases.
 
@@ -146,6 +146,8 @@ class WebBaser(WebDBer):
         self.name = name
         self._version = None
         self.opened = False
+
+        self.temp = temp
 
     @property
     def kevers(self):
@@ -223,7 +225,7 @@ class WebBaser(WebDBer):
         if not self.opened or self.db is None:
             return
 
-        if clear:
+        if clear or self.temp:
             for subdb in self.db._stores.values():
                 subdb.items.clear()
                 subdb.dirty = True
