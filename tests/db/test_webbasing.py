@@ -803,9 +803,9 @@ def test_webdb_baser():
         assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
 
         p1 = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")  # fake prefix
-        n1 = core.Number(num=1)
+        n1 = Number(num=1)
         e1 = coring.Diger(ser=b"est1")    # digest of est event
-        s1 = core.Siger(raw=b"\x00" * 64)  # 64‑byte fake signature
+        s1 = Siger(raw=b"\x00" * 64)  # 64‑byte fake signature
 
         cesrVal = (p1, n1, e1, s1)
         cesrVal = [cesrVal]
@@ -834,20 +834,20 @@ def test_webdb_baser():
         pC = coring.Prefixer(qb64="BCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")
         pD = coring.Prefixer(qb64="BDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
 
-        nA = core.Number(num=1)
-        nB = core.Number(num=2)
-        nC = core.Number(num=3)
-        nD = core.Number(num=4)
+        nA = Number(num=1)
+        nB = Number(num=2)
+        nC = Number(num=3)
+        nD = Number(num=4)
 
         eA = coring.Diger(ser=b"estA")
         eB = coring.Diger(ser=b"estB")
         eC = coring.Diger(ser=b"estC")
         eD = coring.Diger(ser=b"estD")
 
-        sA = core.Siger(raw=b"\x00" * 64)
-        sB = core.Siger(raw=b"\x01" * 64)
-        sC = core.Siger(raw=b"\x02" * 64)
-        sD = core.Siger(raw=b"\x03" * 64)
+        sA = Siger(raw=b"\x00" * 64)
+        sB = Siger(raw=b"\x01" * 64)
+        sC = Siger(raw=b"\x02" * 64)
+        sD = Siger(raw=b"\x03" * 64)
 
         quadA = (pA, nA, eA, sA)
         quadB = (pB, nB, eB, sB)
@@ -902,9 +902,9 @@ def test_webdb_baser():
 
         d1 = coring.Diger(ser=b"event1")  # digest of event
         p1 = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")  # fake prefix
-        n1 = core.Number(num=1)
+        n1 = Number(num=1)
         e1 = coring.Diger(ser=b"est1")    # digest of est event
-        s1 = core.Siger(raw=b"\x00" * 64)  # 64‑byte fake signature
+        s1 = Siger(raw=b"\x00" * 64)  # 64‑byte fake signature
 
         cesrVal = (d1, p1, n1, e1, s1)
         cesrVal = [cesrVal]
@@ -1205,7 +1205,7 @@ def test_webdb_baser():
 
         # test .udes CatCesrSuber sub baser methods
         assert isinstance(baser.udes, subing.CatCesrSuber)
-        assert baser.udes.klas == (core.Number, coring.Diger)
+        assert baser.udes.klas == (Number, coring.Diger)
 
         ssnu1 = b'0AAAAAAAAAAAAAAAAAAAAAAB'
         sdig1 = b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E'
