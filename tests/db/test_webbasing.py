@@ -20,11 +20,11 @@ except ImportError:
 try:
     from keri.core import (serdering, coring, signing, Noncer, Labeler, Parser,
                         indexing, Number, Diger, Seqner, Saider, Texter, StateEstEvent,
-                        SerderKERI, Salter, rotate, MtrDex, incept, rotate, interact,
+                        SerderKERI, Salter, rotate, MtrDex, incept, interact,
                         Kever, Prefixer, Siger, Dater, Serder, Signer, NumDex, Kevery)
     from keri import versify, Kinds, Ilks
-    from keri.recording import EventSourceRecord, OobiRecord
-    from keri import core
+    from keri.recording import (EventSourceRecord, HabitatRecord, KeyStateRecord,
+                            OobiRecord, RawRecord, StateEERecord)
 except ImportError:
     # Pyodide fallback
     from keri.core import serdering
@@ -33,8 +33,6 @@ from keri.kering import Vrsn_1_0
 from keri.core import state as eventState
 from keri.app import openHby
 from keri.help import datify, dictify
-from keri.recording import (EventSourceRecord, HabitatRecord, KeyStateRecord,
-                            OobiRecord, RawRecord, StateEERecord)
                             
 needskeri = pytest.mark.skipif(subing is None, reason="requires full keri (lmdb)")
 
@@ -1781,6 +1779,7 @@ def test_webdb_baser():
     asyncio.run(_go())
 
 
+@needskeri
 def test_fetchkeldel():
     """
     Test fetching full KEL and full DEL from Baser
@@ -1886,6 +1885,7 @@ def test_fetchkeldel():
     asyncio.run(_go())
 
 
+@needskeri
 def test_usebaser():
     """
     Test using Baser
@@ -2050,6 +2050,7 @@ def test_clear_escrows():
     asyncio.run(_go())
 
 
+@needskeri
 def test_trim_all_escrows_during_migration():
     """Regression test for issue #863: old qnfs key format crashes migration.
 
@@ -2493,6 +2494,7 @@ def test_trim_all_escrows_old_key_format_web():
     asyncio.run(_go())
 
 
+@needskeri
 def test_webbaser_clone_all_pre_iter():
     """
     Test cloneAllPreIter yields first-seen event messages for all identifier
