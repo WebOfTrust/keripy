@@ -57,7 +57,7 @@ import lmdb
 from ordered_set import OrderedSet as oset
 from hio.base import filing
 
-import keri
+from keri import __version__
 from ..kering import MaxON  # maximum ordinal number for seqence or first seen
 from ..help import helping
 
@@ -473,7 +473,7 @@ class LMDBer(filing.Filer):
         self.opened = True if opened and self.env else False
 
         if self.opened and not self.readonly and (not exists or self.temp):
-            self.version = keri.__version__
+            self.version = __version__
 
         return self.opened
 
