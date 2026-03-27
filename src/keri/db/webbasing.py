@@ -124,8 +124,8 @@ class WebBaser(WebDBer):
         """
         SubDbNames = ["aess.", "bsss.", "bsqs.", "ccigs.", "cdel.", "cfld.", "chas.",
             "cgms.", "coobi.", "cons.", "ctyp.", "dees.", "dels.", "dpwe.", "dpub.",
-            "dtss.", "dune.", "eans.", "ecigs.", "ends.", "eoobi.", ".epath", "epse.",
-            "epsd.", "erpy.", "esigs.", "esrs.", ".essrs", "exns.", "evts.", "fels.", "fons.",
+            "dtss.", "dune.", "eans.", "ecigs.", "ends.", "eoobi.", "epath.", "epse.",
+            "epsd.", "erpy.", "esigs.", "esrs.", "essrs.", "exns.", "evts.", "fels.", "fons.",
             "frcs.", "gdee.", "gdwe.", "gpse.", "habs.", "hbys.", "iimgs.", "icigs.",
             "ifld.", "imgs.", "kels.", "kdts.", "knas.", "ksns.", "lans.", "ldes.",
             "locs.", "maids.", "meids.", "mfes.", "mfa.", "migs.", "moobi.", "msgc.",
@@ -414,9 +414,9 @@ class WebBaser(WebDBer):
                                               klas=(coring.Verfer, coring.Cigar))
 
         # exchange pathed attachments
-        self.epath = subing.IoSetSuber(db=self, subkey=".epath")
+        self.epath = subing.IoSetSuber(db=self, subkey="epath.")
 
-        self.essrs = subing.CesrIoSetSuber(db=self, subkey=".essrs", klas=coring.Texter)
+        self.essrs = subing.CesrIoSetSuber(db=self, subkey="essrs.", klas=coring.Texter)
 
         # accepted signed 12-word challenge response exn messages keys by prefix of signer
         self.chas = subing.CesrIoSetSuber(db=self, subkey='chas.', klas=coring.Diger)
