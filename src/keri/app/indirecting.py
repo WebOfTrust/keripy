@@ -99,7 +99,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     app.add_route("/", httpEnd)
     receiptEnd = ReceiptEnd(hab=hab, inbound=cues, aids=aids)
     app.add_route("/receipts", receiptEnd)
-    queryEnd = QueryEnd(hab=hab)
+    queryEnd = QueryEnd(hab=hab, reger=verfer.reger)
     app.add_route("/query", queryEnd)
 
     server = createHttpServer(host, httpPort, app, keypath, certpath, cafilepath)
@@ -1200,11 +1200,14 @@ class QueryEnd:
 
      """
 
-    def __init__(self, hab):
+    def __init__(self, hab, reger=None):
         self.hab = hab
 
-        from ..vdr import Reger  # dynamic import to avoid circular
-        self.reger = Reger(name=hab.name, db=hab.db, temp=hab.temp)
+        if reger is not None:
+            self.reger = reger
+        else:
+            from ..vdr import Reger  # dynamic import to avoid circular
+            self.reger = Reger(name=hab.name, db=hab.db, temp=hab.temp)
 
     def on_get(self, req, rep):
         """ Handles GET requests to query KEL or TEL events of a pre from a witness.

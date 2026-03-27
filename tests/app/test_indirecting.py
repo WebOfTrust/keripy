@@ -298,6 +298,20 @@ def test_createHttpServer(monkeypatch):
 
 
 
+def test_query_end_reuses_injected_reger():
+    """QueryEnd must use an injected reger instead of opening a second one,
+    preventing LMDB double-open on the same TEL store.  See #1367.
+    """
+    from keri.app.indirecting import QueryEnd
+    from unittest.mock import MagicMock
+
+    mock_hab = MagicMock()
+    mock_reger = MagicMock()
+
+    qe = QueryEnd(hab=mock_hab, reger=mock_reger)
+    assert qe.reger is mock_reger
+
+
 if __name__ == "__main__":
     test_mailbox_iter()
     test_qrymailbox_iter()
