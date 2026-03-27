@@ -478,6 +478,71 @@ def test_flush_dirty_counting():
     asyncio.run(_go())
 
 
+
+def test_close():
+    """Test WebDBer.close() behavior with and without clear=True."""
+    async def _go():
+        backend = FakeStorageBackend()
+
+        # --- 1. close(clear=False) preserves items and dirty flags ---
+        dber, _ = await _open_fake_dber(
+            name="close-test",
+            stores=["vals."],
+            clear=True,
+            backend=backend,
+        )
+        sdb = dber.env.open_db(key=b"vals.")
+
+        # Add some data
+        assert dber.putVal(sdb, b"a.1", b"wow") is True
+        assert dber.putVal(sdb, b"a.2", b"wee") is True
+        assert dber.putVal(sdb, b"b.1", b"woo") is True
+
+        dber.close(clear=False)
+
+        # Stores removed from dber
+        assert dber._stores == {}
+        assert dber.stores == []
+        assert sdb.dirty == True
+
+        # Original SubDb values unchanged
+        assert list(dber.getTopItemIter(sdb)) == [
+            (b"a.1", b"wow"), (b"a.2", b"wee"), (b"b.1", b"woo"),
+        ]
+
+        # 2. close(clear=True) clears items
+        dber2, _ = await _open_fake_dber(
+            name="close-test-2",
+            stores=["vals."],
+            clear=True,
+            backend=backend,
+        )
+        sdb2 = dber2.env.open_db(key=b"vals.")
+
+        # Add some data
+        assert dber2.putVal(sdb2, b"a.1", b"wow") is True
+        assert dber2.putVal(sdb2, b"a.2", b"wee") is True
+        assert dber2.putVal(sdb2, b"b.1", b"woo") is True
+
+        dber2.close(clear=True)
+
+        # Stores removed from dber2
+        assert dber2._stores == {}
+        assert dber2.stores == []
+        assert sdb.dirty == True
+
+        # Items cleared
+        assert list(dber2.getTopItemIter(sdb2)) == []
+
+
+        # 3. close() is idempotent
+        dber2.close()
+        assert dber2._stores == {}
+        assert dber2.stores == []
+
+    asyncio.run(_go())
+
+
 @pytest.mark.skip(reason="Requires hio>=0.7.20 Doist.ado() for async task integration")
 def test_flush_with_hio_ado():
     """Test flush completion under hio Doist.ado() scheduling."""
