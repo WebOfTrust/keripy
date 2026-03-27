@@ -7,6 +7,7 @@ Browser-safe plain-value DBer backed by PyScript storage.
 
 from __future__ import annotations
 
+import asyncio
 import semver
 import importlib
 from collections import namedtuple
@@ -204,23 +205,32 @@ class WebBaser(WebDBer):
         self.opened = True
 
 
-    async def close(self, *, clear: bool = False):
-        """Close the WebBaser instance.
+    def close(self, *, clear: bool = False):
+        """Synchronous close. Safe to call from hio Doer.exit() and Habery.close().
 
-        Flushes all pending in-memory writes to backing browser storage,
-        then clears internal references to the database environment.
+        Drops all in-memory state and schedules a best-effort fire-and-forget
+        flush to the browser's backing storage.  The flush is scheduled as an
+        ``asyncio`` task via ``loop.create_task()`` so it does NOT block the
+        caller.
 
-        When ``clear=True``, each SubDb's in-memory items are emptied and
-        marked dirty before flushing, so the cleared state is persisted.
-        All clearing works through the WebDBer API (SubDb items and flush)
-        — WebBaser never touches IndexedDB directly.
+        In a browser / Pyodide environment the event loop persists for the
+        lifetime of the page, so the scheduled flush task will always complete.
+
+        In CPython tests where ``asyncio.run()`` terminates the loop when
+        the test coroutine returns, the task may be cancelled before it runs.
+        Use `aclose` instead when the caller can ``await`` and needs a
+        guaranteed flush.
+
+        When ``clear=True`` (or ``self.temp is True``), each SubDb's in-memory
+        items are emptied and marked dirty before the flush is scheduled, so
+        the cleared state is what gets persisted.
 
         If the baser is not open the method returns immediately.
 
         Parameters:
             clear (bool): When True, the backing storage for this WebBaser
-                is cleared after flushing.  When False (default), stored
-                state is preserved for future ``reopen()`` calls.
+                is cleared.  When False (default), stored state is preserved
+                for future ``reopen()`` calls.
         """
         if not self.opened or self.db is None:
             return
@@ -229,10 +239,54 @@ class WebBaser(WebDBer):
             for subdb in self.db._stores.values():
                 subdb.items.clear()
                 subdb.dirty = True
-            await self.db.flush()
-        else:
-            await self.db.flush()
 
+        # Capture reference before clearing self.db
+        db = self.db
+        self.db = None
+        self.env = None
+        self.opened = False
+
+        # Schedule async flush as fire-and-forget task.
+        try:
+            loop = asyncio.get_running_loop()
+            loop.create_task(db.flush())
+        except RuntimeError:
+            pass  # no running event loop — skip async flush
+
+    async def aclose(self, *, clear: bool = False):
+        """Async close with guaranteed flush — use when the caller can ``await``.
+
+        Flushes all pending in-memory writes to backing browser storage and
+        waits for the flush to complete before clearing internal references.
+        This is the preferred close path in any ``async`` context (tests,
+        wallet ``AsyncRecurDoer.recur_async()`` shutdown, etc.) because the
+        caller can be certain that all data has been persisted when the method
+        returns.
+
+        When ``clear=True`` (or ``self.temp is True``), each SubDb's in-memory
+        items are emptied and marked dirty before flushing, so the cleared
+        state is what gets persisted.
+
+        For sync callers (hio Doer.exit(), Habery.close(), openHby() context
+        manager) use :meth:`close` instead — it schedules the flush as a
+        fire-and-forget task that completes on the next event-loop tick.
+
+        If the baser is not open the method returns immediately.
+
+        Parameters:
+            clear (bool): When True the backing storage for this WebBaser
+                is cleared.  When False (default) stored state is preserved
+                for future ``reopen()`` calls.
+        """
+        if not self.opened or self.db is None:
+            return
+
+        if clear or self.temp:
+            for subdb in self.db._stores.values():
+                subdb.items.clear()
+                subdb.dirty = True
+
+        await self.db.flush()
         self.db = None
         self.env = None
         self.opened = False
@@ -923,7 +977,7 @@ class WebBaser(WebDBer):
                 dst_store.items.update(src_store.items)
                 dst_store.dirty = True
         await self.db.flush()
-        await copy.close(clear=True)
+        await copy.aclose(clear=True)
 
 
     def clonePreIter(self, pre, fn=0):
@@ -1317,10 +1371,26 @@ class WebBaser(WebDBer):
 
 
 class WebBaserDoer(doing.Doer):
-    """Doer for WebBaser lifecycle management.
+    """Doer for WebBaser lifecycle management within the hio scheduler.
 
-    Opens WebBaser on enter, closes on exit.  WebBaser.reopen() must have
-    been awaited before the Doer starts since enter() is synchronous.
+    Manages the close-on-exit side of the WebBaser lifecycle.  Because hio's
+    Doer.enter() and Doer.exit() are synchronous, and WebBaser.reopen()
+    is async, the baser must already be opened before the Doist starts.
+
+    On exit, calls the synchronous :meth:`WebBaser.close` which schedules a
+    fire-and-forget flush to IndexedDB.  In a browser/Pyodide environment
+    the event loop persists, so the flush will complete.  For guaranteed
+    flush semantics, call ``await baser.aclose()`` from an async context
+    before the Doer exits (e.g. in an ``AsyncRecurDoer.recur_async()``
+    finally block).
+
+    Typical usage::
+
+        baser = WebBaser(name="wallet", temp=False)
+        await baser.reopen(storageOpener=backend.open)
+        doer = WebBaserDoer(baser=baser)
+        doist.doers = [doer, ...]
+        await doist.ado()
     """
 
     def __init__(self, baser, **kwa):
@@ -1334,7 +1404,4 @@ class WebBaserDoer(doing.Doer):
 
     def exit(self):
         if self.baser.opened:
-            import asyncio
-            asyncio.ensure_future(
-                self.baser.close(clear=getattr(self.baser, 'temp', False))
-            )
+            self.baser.close(clear=self.baser.temp)

@@ -102,7 +102,7 @@ def test_webdb_baser():
         assert isinstance(baser.imgs, subing.CatCesrSuber)
         assert isinstance(baser.iimgs, subing.CatCesrSuber)
 
-        await baser.close(clear=True)
+        await baser.aclose(clear=True)
         assert not baser.opened
 
         # test not opened on init
@@ -132,7 +132,7 @@ def test_webdb_baser():
         assert isinstance(baser.imgs, subing.CatCesrSuber)
         assert isinstance(baser.iimgs, subing.CatCesrSuber)
 
-        await baser.close(clear=True)
+        await baser.aclose(clear=True)
         assert not baser.opened
 
         backend = FakeStorageBackend()
@@ -2308,7 +2308,7 @@ def test_close_clear_persistence():
         assert baser.oobis.get(keys=("test_cid",)) is not None
 
         # close(clear=False) should preserve data across reopen
-        await baser.close(clear=False)
+        await baser.aclose(clear=False)
         assert not baser.opened
         assert baser.db is None
 
@@ -2316,20 +2316,22 @@ def test_close_clear_persistence():
         assert baser.oobis.get(keys=("test_cid",)) is not None
 
         # close(clear=True) should wipe data
-        await baser.close(clear=True)
+        await baser.aclose(clear=True)
         await baser.reopen(storageOpener=backend.open)
         assert baser.oobis.get(keys=("test_cid",)) is None
 
-        # double-close is a no-op
-        await baser.close()
-        await baser.close()  # should not raise
+        # After close, baser.db is None and baser.opened is False
+        await baser.aclose()
+        assert baser.db is None
+        assert not baser.opened
 
     asyncio.run(_go())
 
 
 @needskeri
 def test_reload_orphan_cleanup():
-    """Test that reload() removes orphan habs and keeps valid/group habs."""
+    """Test that reload() removes orphan habs, keeps valid/group habs, and
+    handles MissingEntryError (state exists but event missing)."""
     async def _go():
         backend = FakeStorageBackend()
         baser = WebBaser()
@@ -2359,7 +2361,23 @@ def test_reload_orphan_cleanup():
         baser.habs.put(keys=group_pre,
                        val=HabitatRecord(hid=group_pre, name="group", mid=group_mid))
 
-        # reload should clean up orphans
+        # --- Corrupt hab: state exists but event missing from evts ---
+        # Kever(state=ksr, db=baser) will raise MissingEntryError when it
+        # looks up db.evts.get(keys=(pre, state.d)) and gets None.
+        corrupt_pre = 'DEMbr7Z-pd4KJwzxuptSmCYqxrBnE2xKVO-MnjYkeUrt'
+        corrupt_dig = 'EFskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30'
+        corrupt_serder = interact(pre=corrupt_pre, dig=corrupt_dig, sn=1)
+        corrupt_eevt = StateEstEvent(s='0', d=corrupt_dig, br=[], ba=[])
+        corrupt_state = eventState(pre=corrupt_pre, sn=1, pig=corrupt_dig,
+                                   dig=corrupt_serder.said, fn=1,
+                                   eilk=Ilks.ixn, keys=[corrupt_pre],
+                                   eevt=corrupt_eevt)
+        baser.states.pin(keys=corrupt_pre, val=corrupt_state)
+        # Deliberately do NOT put the event into baser.evts
+        baser.habs.put(keys=corrupt_pre,
+                       val=HabitatRecord(hid=corrupt_pre, name="corrupt"))
+
+        # reload should clean up orphans and corrupt habs
         baser.reload()
 
         # Valid hab should be in kevers and prefixes
@@ -2369,6 +2387,9 @@ def test_reload_orphan_cleanup():
         # Orphan should be removed
         assert baser.habs.get(keys=orphan_pre) is None
 
+        # Corrupt hab should be removed (MissingEntryError path)
+        assert baser.habs.get(keys=corrupt_pre) is None
+
         # Group hab should remain (mid is set, so not an orphan)
         assert baser.habs.get(keys=group_pre) is not None
 
@@ -2377,16 +2398,22 @@ def test_reload_orphan_cleanup():
 
 @needskeri
 def test_clean_subdb_swap():
-    """Test that clean() swaps SubDb data from clone back into self."""
+    """Test that clean() copies unsecured and sets-type subdbs, wipes others."""
     async def _go():
         backend = FakeStorageBackend()
         baser = WebBaser()
 
         await baser.reopen(storageOpener=backend.open)
 
-        # Write to an "unsecured" SubDb that clean() copies to clone
+        # Write to an "unsecured" SubDb that clean() copies via .put()
         baser.oobis.put(keys=("test_cid",), val=OobiRecord(cid="test_cid"))
         assert baser.oobis.get(keys=("test_cid",)) is not None
+
+        # Write to a "sets" SubDb that clean() copies via .add()
+        # chas is CesrIoSetSuber(klas=Diger) in the sets list at webbasing.py:924
+        test_diger = Diger(ser=b"test-challenge-response")
+        baser.chas.add(keys=("challenge_pre",), val=test_diger)
+        assert baser.chas.get(keys=("challenge_pre",))
 
         # Write to a SubDb NOT in the unsecured/sets lists
         baser.names.put(keys=("", "myname"), val="somepre")
@@ -2394,10 +2421,15 @@ def test_clean_subdb_swap():
 
         await baser.clean()
 
-        # oobis data should survive (self -> clone via unsecured copy -> swap back)
+        # oobis data should survive (unsecured copy via .put())
         assert baser.oobis.get(keys=("test_cid",)) is not None
 
-        # names data should be gone (not copied to clone, clone's empty names replaced self's)
+        # chas data should survive (sets copy via .add())
+        chas_vals = baser.chas.get(keys=("challenge_pre",))
+        assert chas_vals
+        assert test_diger.qb64 in [v.qb64 for v in chas_vals]
+
+        # names data should be gone (not copied to clone)
         assert baser.names.get(keys=("", "myname")) is None
 
         assert baser.opened
@@ -2407,7 +2439,7 @@ def test_clean_subdb_swap():
 
 @needskeri
 def test_web_baser_doer():
-    """Test WebBaserDoer lifecycle: enter requires opened baser, exit schedules close."""
+    """Test WebBaserDoer lifecycle: enter requires opened baser, exit closes sync."""
     async def _go():
         backend = FakeStorageBackend()
         baser = WebBaser()
@@ -2422,10 +2454,11 @@ def test_web_baser_doer():
         assert baser.opened
         doer.enter()  # no error
 
-        # exit() schedules async close via ensure_future
+        # exit() calls sync close() — baser is closed immediately
         doer.exit()
-        await asyncio.sleep(0)  # let the scheduled coroutine run
         assert not baser.opened
+        # Let fire-and-forget flush task complete before reopen
+        await asyncio.sleep(0)
 
         # Test with temp=True to verify clear=True path
         await baser.reopen(storageOpener=backend.open)
@@ -2435,8 +2468,9 @@ def test_web_baser_doer():
         doer2 = WebBaserDoer(baser=baser)
         doer2.enter()
         doer2.exit()
-        await asyncio.sleep(0)
         assert not baser.opened
+        # Let fire-and-forget flush persist the cleared state
+        await asyncio.sleep(0)
 
         # Reopen and verify data was cleared (temp=True -> clear=True)
         await baser.reopen(storageOpener=backend.open)
@@ -2469,8 +2503,12 @@ def test_strip_prerelease_webbasing():
 
 
 @needskeri
-def test_trim_all_escrows_old_key_format_web():
-    """Test _trimAllEscrows handles old-format keys injected into SortedDict."""
+def test_trim_all_escrows_web():
+    """Test _trimAllEscrows clears all escrow subdbs via trim().
+
+    trim() with empty keys uses startswith(b"") which matches every key,
+    so all entries are removed regardless of key format.
+    """
     async def _go():
         backend = FakeStorageBackend()
         baser = WebBaser()
@@ -2535,7 +2573,5 @@ def test_webbaser_clone_all_pre_iter():
 
             for pre, sns in sn_by_pre.items():
                 assert sns == sorted(sns)
-
-
 
     asyncio.run(_go())
