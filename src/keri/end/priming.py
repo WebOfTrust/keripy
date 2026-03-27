@@ -8,7 +8,7 @@ Prime (preload) setup witnesses, watchers, etc
 import argparse
 import logging
 
-from .._version import __version__ 
+from keri import __version__
 
 from hio.help import ogler
 

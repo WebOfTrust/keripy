@@ -15,7 +15,7 @@ from ordered_set import OrderedSet as oset
 from hio.base import doing
 from hio.help import ogler
 
-from .._version import __version__ 
+from keri import __version__
 from .dbing import LMDBer, dgKey, openLMDB
 from ..kering import (MissingEntryError, DatabaseError,
                       ConfigurationError, ValidationError,

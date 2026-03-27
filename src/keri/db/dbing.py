@@ -57,7 +57,7 @@ import lmdb
 from ordered_set import OrderedSet as oset
 from hio.base import filing
 
-from .._version import __version__ 
+from keri import __version__
 from ..kering import MaxON  # maximum ordinal number for seqence or first seen
 from ..help import helping
 
