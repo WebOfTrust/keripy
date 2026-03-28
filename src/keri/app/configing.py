@@ -43,7 +43,7 @@ class Configer(filing.Filer):
 
 
 
-    Config file example (json or hjon)::
+    Config file example (json or hjson)::
 
         {
           "dt": "2021-01-01T00:00:00.000000+00:00",
