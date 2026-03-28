@@ -18,6 +18,7 @@ from hio.help import decking
 
 from keri.kering import Schemes
 from keri.core import SerderKERI, Salter
+from keri.db import basing
 from keri.app import (MailboxIterable, QryRpyMailboxIterable,
                       QueryEnd, Mailboxer, Receiptor,
                       setupWitness, createHttpServer, openHab, openHby)
@@ -164,13 +165,15 @@ def test_wit_query_ends(seeder):
     with openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64) as wesHby, \
             openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64) as palHby:
         wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
+        # Pull the reger out of the Doers so the reger is reused and does not trigger an LMDB error on reuse
+        wesReger = next(doer.baser for doer in wesDoers if isinstance(doer, basing.BaserDoer))
         witDoer = Receiptor(hby=palHby)
 
         wesHab = wesHby.habByName(name="wes")
         seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[Schemes.http])
 
         app = falcon.App()
-        query_endpoint = QueryEnd(wesHab)
+        query_endpoint = QueryEnd(wesHab, reger=wesReger)
         app.add_route("/query", query_endpoint)
 
         wesClient = testing.TestClient(app)

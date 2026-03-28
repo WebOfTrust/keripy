@@ -384,6 +384,7 @@ def test_run_witness_closes_boot_keeper_before_reopen(monkeypatch):
 
     monkeypatch.setattr(witness_start, 'Keeper', SpyKeeper)
     monkeypatch.setattr(witness_start, 'runController', fake_run)
+    monkeypatch.setattr(witness_start, 'setupWitness', lambda **kw: [])
 
     witness_start.runWitness(name='test-spy-keeper', base='', bran='0123456789abcdefghijk',
                              tcp=5631, http=5632, expire=0.0)
