@@ -8,37 +8,66 @@ from ..core import Diger
 
 
 def loadChallengingHandlers(db, signaler, exc):
-    """ Load handlers for the peer-to-peer challenge response protocol
+    """Registers challenge response handlers with the peer-to-peer message router.
 
-    Parameters:
-        db (Baser): database environment
-        signaler (Signaler): Signaler for transient messages for the controller of the agent
-        exc (Exchanger): Peer-to-peer message router
+    Creates a ``ChallengeHandler`` instance and adds it to the provided
+    ``Exchanger`` so that incoming ``/challenge/response`` ``exn`` messages
+    are routed and processed correctly.
 
+    Args:
+        db (Baser): Database environment used to persist signed challenge
+            responses.
+        signaler (Signaler): Signaler used to push transient notifications
+            to the agent controller.
+        exc (Exchanger): Peer-to-peer message router to which the handler
+            is registered.
     """
     chacha = ChallengeHandler(db=db, signaler=signaler)
     exc.addHandler(chacha)
 
 
 class ChallengeHandler:
-    """  Handle challenge response peer to peer `exn` message """
+    """Handles incoming peer-to-peer ``/challenge/response`` ``exn`` messages.
+
+    On receipt of a valid challenge response, this handler notifies the agent
+    controller via the signaler and records the signer's SAID in the database
+    to track successfully completed challenges.
+
+    Attributes:
+        resource (str): The ``exn`` route this handler is registered for.
+        db (Baser): Database environment used to persist challenge records.
+        signaler (Signaler): Signaler used to push notifications to the agent
+            controller.
+    """
 
     resource = "/challenge/response"
 
     def __init__(self, db, signaler):
-        """ Initialize peer to peer challenge response messsage """
+        """Initializes the ChallengeHandler with a database and signaler.
 
+        Args:
+            db (Baser): Database environment used to persist signed challenge
+                responses.
+            signaler (Signaler): Signaler used to push transient notifications
+                to the agent controller.
+        """
         self.db = db
         self.signaler = signaler
         super(ChallengeHandler, self).__init__()
 
     def handle(self, serder, attachments=None):
-        """  Do route specific processsing of Challenge response messages
+        """Processes an incoming challenge response ``exn`` message.
 
-        Parameters:
-            serder (Serder): Serder of the exn challenge response message
-            attachments (list): list of tuples of pather, CESR SAD path attachments to the exn event
+        Extracts the signer prefix, SAID, and words from the message payload,
+        notifies the agent controller of the successful challenge via the
+        signaler, and logs the signer's SAID in the database.
 
+        Args:
+            serder (Serder): Serder of the incoming ``/challenge/response``
+                ``exn`` message. The ``ked['a']`` payload must contain a
+                ``words`` field.
+            attachments (list[tuple] | None): CESR SAD path attachments as
+                ``(pather, SAD)`` tuples. Currently unused. Defaults to None.
         """
         payload = serder.ked['a']
         signer = serder.pre
@@ -50,7 +79,7 @@ class ChallengeHandler:
             words=words
         )
 
-        # Notify controller of sucessful challenge
+        # Notify controller of successful challenge
         self.signaler.push(msg, topic="/challenge")
 
         # Log signer against event to track successful challenges with signed response

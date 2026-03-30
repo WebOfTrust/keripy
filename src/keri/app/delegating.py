@@ -21,22 +21,39 @@ logger = ogler.getLogger()
 
 
 class Anchorer(doing.DoDoer):
-    """Anchorer subclass of DoDoer
-    Sends messages to Delegator of an identifier and wait for the anchoring event to
-    be processed to ensure the inception or rotation event has been approved by the delegator.
+    """Manages the delegation anchoring lifecycle for a delegated identifier.
 
-    Removes all Doers and exits as Done once the event has been anchored.
+    Sends the delegated inception or rotation event to the delegator and waits
+    for the anchoring seal to appear in the delegator's KEL, confirming that the
+    delegation has been approved.  Once the event is fully witnessed and the
+    anchor is confirmed, all internal Doers are removed and this DoDoer exits as
+    done.
 
+    Attributes:
+        hby (Habery): Local controller database and keystore.
+        postman (Poster): Sends KERI messages to remote AIDs.
+        witq (WitnessInquisitor): Queries witnesses for receipts and KEL state.
+        witDoer (Receiptor): Collects witness receipts for local events.
+        publishers (dict[str, WitnessPublisher]): Maps delegated AID prefix to
+            its WitnessPublisher, used to broadcast the anchored event.
+        proxy (Hab | None): Optional proxy Habitat used to sign and send
+            outbound messages on behalf of the delegated identifier.
+        auths (list[str] | None): TOTP codes forwarded to witnesses to
+            authorize event receipting.
     """
 
     def __init__(self, hby, proxy=None, auths=None, **kwa):
-        """
-        Initialize Anchorer.
+        """Initializes Anchorer with required doers and optional proxy/auth.
 
-        Parameters:
-            hby (Habery): local controller database for this Anchorer
-            proxy (Hab): optional proxy Habitat to use for sending messages
-            auths (list[str]): TOTP authentication codes to send to witnesses to authorize event receipting
+        Args:
+            hby (Habery): Local controller database and keystore for this
+                Anchorer instance.
+            proxy (Hab, optional): Proxy Habitat used to send outbound
+                messages when the delegated identifier cannot send directly.
+                Defaults to None.
+            auths (list[str], optional): TOTP authentication codes sent to
+                witnesses to authorize event receipting. Defaults to None.
+            **kwa: Additional keyword arguments forwarded to DoDoer.__init__.
         """
         self.hby = hby
         self.postman = Poster(hby=hby)
@@ -49,15 +66,30 @@ class Anchorer(doing.DoDoer):
         super(Anchorer, self).__init__(doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)], **kwa)
 
     def delegation(self, pre, sn=None, proxy=None, auths=None):
-        """
-        Add witness publishers by prefix and send delegation event to witnesses and place event on
-        the delegation partial witness escrow.
+        """Initiates the delegation protocol for a locally-controlled identifier.
 
-        Parameters:
-            pre (str): qb64 identifier prefix of delegated identifier
-            sn (int): optional sequence number of event to anchor, defaults to latest event
-            proxy (Hab): optional proxy Habitat to use for sending messages
-            auths (list[str]): TOTP authentication codes to send to witnesses to authorize event receipting
+        Creates a WitnessPublisher for the delegated AID, queues the target
+        event for witness receipting via the Receiptor doer, and places the
+        event on the partial-witness delegation escrow (``dpwe``) so that
+        ``escrowDo`` can drive it through the remaining protocol steps.
+
+        Args:
+            pre (str): qb64 identifier prefix of the locally-controlled
+                delegated AID whose inception or rotation requires anchoring.
+            sn (int, optional): Sequence number of the event to anchor.
+                Defaults to the current sequence number of the AID's KEL.
+            proxy (Hab, optional): Proxy Habitat to use for sending outbound
+                messages.  Overrides ``self.proxy`` when provided.
+                Defaults to None.
+            auths (list[str], optional): TOTP authentication codes sent to
+                witnesses to authorize event receipting.  Overrides
+                ``self.auths`` when provided. Defaults to None.
+
+        Raises:
+            ValidationError: If ``pre`` does not correspond to a locally
+                controlled AID in ``hby.habs``.
+            ValidationError: If the delegator prefix recorded in the AID's
+                KEL is not present in the known kevers.
         """
         if pre not in self.hby.habs:
             raise ValidationError(f"{pre} is not a valid local AID for delegation")
@@ -84,15 +116,28 @@ class Anchorer(doing.DoDoer):
         self.hby.db.dpwe.pin(keys=(srdr.pre, srdr.said), val=srdr)
 
     def complete(self, prefixer, number, diger=None):
-        """ Check for completed delegation for the specific delegation event
+        """Checks whether the delegation protocol has completed for a specific event.
 
-        Parameters:
-            prefixer (Prefixer): qb64 identifier prefix of event to check
-            number (Number.huge): number of event to check
-            diger (Diger): optional digest of event to verify
+        Looks up the completed-delegation database (``cdel``) for a confirmed
+        anchor at the given sequence number.  Optionally verifies that the
+        anchored event digest matches the expected value.
+
+        Args:
+            prefixer (Prefixer): Prefixer for the delegated AID whose
+                delegation status is being queried.
+            number (Number): Sequence number (``Number.huge``) of the event
+                to check.
+            diger (Diger, optional): Expected digest of the anchored event.
+                When provided, the stored digest is compared and a
+                ``ValidationError`` is raised on mismatch. Defaults to None.
 
         Returns:
-            bool: True if delegation protocol is complete, False otherwise
+            bool: ``True`` if the delegation anchor has been recorded for the
+            event; ``False`` if the anchor has not yet been confirmed.
+
+        Raises:
+            ValidationError: If ``diger`` is provided and does not match the
+                digest stored in the completed-delegation database.
         """
         cdiger = self.hby.db.cdel.get(keys=prefixer.qb64b, on=number.sn)
         if not cdiger:
@@ -104,20 +149,32 @@ class Anchorer(doing.DoDoer):
         return True
 
     def escrowDo(self, tymth, tock=1.0, **kwa):
-        """ Process escrows of delegation events waiting to be completed.
+        """Async generator doer that continuously drives delegation escrow processing.
 
-        Steps involve:
-           1. Sending local event with sig to other participants
-           2. Waiting for signature threshold to be met.
-           3. If elected and delegated identifier, send complete event to delegator
-           4. If delegated, wait for delegator's anchored seal
-           5. If elected, send event to witnesses and collect receipts.
-           6. Otherwise, wait for fully receipted event
+        Enters the tymist context and then loops forever, calling
+        ``processEscrows`` on each cycle and yielding to allow other doers
+        to run.  The full delegation lifecycle managed across escrow buckets is:
 
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value.  Default to 1.0 to slow down processing
+        1. Collect witness receipts for the local delegated event.
+        2. Once receipts reach threshold, forward the event to the delegator
+           via an ``exn`` delegation-request and a direct KEL message.
+        3. Query the delegator's witnesses for the anchoring seal.
+        4. On anchor confirmation, publish the event to the delegated AID's
+           own witnesses.
+        5. Record completion in the ``cdel`` database.
+
+        Args:
+            tymth (function): Injected wrapper closure returned by
+                ``Tymist.tymen()``. Calling ``tymth()`` returns the associated
+                Tymist ``.tyme`` value.
+            tock (float, optional): Initial tock value controlling the doer's
+                scheduling interval in seconds. Defaults to 1.0.
+            **kwa: Additional keyword arguments (unused; accepted for
+                DoDoer compatibility).
+
+        Yields:
+            float: Tock value that signals the scheduler how long to wait
+            before resuming this generator.
         """
         # enter context
         self.wind(tymth)
@@ -129,15 +186,36 @@ class Anchorer(doing.DoDoer):
             yield 0.5
 
     def processEscrows(self):
-        """Process delegation escrows"""
+        """Runs all delegation escrow processing steps in order.
+
+        Delegates to the three escrow processors that collectively drive an
+        event through the full delegation lifecycle:
+
+        1. ``processPartialWitnessEscrow`` — waits for witness receipts and,
+           once complete, forwards the event to the delegator.
+        2. ``processUnanchoredEscrow`` — waits for the delegator's anchor seal
+           and, once found, moves the event to witness publication.
+        3. ``processWitnessPublication`` — waits for publication to the
+           delegated AID's witnesses to finish, then records completion.
+        """
         self.processPartialWitnessEscrow()
         self.processUnanchoredEscrow()
         self.processWitnessPublication()
 
     def processUnanchoredEscrow(self):
-        """
-        Process escrow of unanchored delegation events.  Message processing will send this local
-        controller's event to witnesses.
+        """Processes events waiting for the delegator's anchoring seal.
+
+        Iterates over the delegated-unanchored escrow (``dune``).  For each
+        event, queries the delegator's KEL for a sealing event whose seal
+        matches the delegated event's prefix, sequence number, and digest.
+        When a matching sealing event is found:
+
+        - Stores the authorizer event seal (delegator sequence number and
+          digest) in ``aess``.
+        - Moves the event to the witness-publication escrow (``dpub``).
+        - Removes the event from the unanchored escrow (``dune``).
+        - Triggers ``publishDelegator`` to broadcast the delegation event to
+          the delegated AID's witnesses.
         """
         for (pre, said), serder in self.hby.db.dune.getTopItemIter():  # delegated unanchored escrow
             kever = self.hby.kevers[pre]
@@ -157,11 +235,28 @@ class Anchorer(doing.DoDoer):
                 self.hby.db.dune.rem(keys=(pre, said))
 
     def processPartialWitnessEscrow(self):
-        """
-        Process escrow of delegated events that do not have a full complement of receipts
-        from witnesses yet.  When receipting is complete, remove from escrow and cue up a message
-        that the event is complete.
+        """Processes delegated events waiting for a full complement of witness receipts.
 
+        Iterates over the delegation partial-witness escrow (``dpwe``).  For
+        each event, checks whether the number of receipts in ``wigs`` equals
+        the number of witnesses for the delegated AID's KEL.  When the receipt
+        threshold is met and the Receiptor has confirmed witnessing:
+
+        - Sends a signed ``exn`` delegation-request message to the delegator
+          via the Postman.
+        - Sends the raw delegated event to the delegator via the Postman.
+        - Queues a witness query on the delegator's KEL for the expected
+          anchoring seal.
+        - Moves the event from the partial-witness escrow (``dpwe``) to the
+          unanchored escrow (``dune``).
+
+        For group (multisig) Habs the member Hab (``mhab``) is used as the
+        signing proxy; for single-sig Habs ``self.proxy`` must be set.
+
+        Raises:
+            ValidationError: If the delegated Hab is not a GroupHab and
+                ``self.proxy`` is ``None``, because there is no available
+                proxy to sign and send the delegation messages.
         """
         for (pre, said), serder in self.hby.db.dpwe.getTopItemIter():  # group partial witness escrow
             kever = self.hby.kevers[pre]
@@ -215,9 +310,17 @@ class Anchorer(doing.DoDoer):
                 self.hby.db.dune.pin(keys=(srdr.pre, srdr.said), val=srdr)
 
     def processWitnessPublication(self):
-        """
-        Process escrow of partially signed delegation events.  Message processing waits for
-        publication to the witnesses to complete then completes the delegation.
+        """Processes events whose delegation is anchored and awaiting witness publication.
+
+        Iterates over the delegation publication escrow (``dpub``).  For each
+        event, checks whether the associated WitnessPublisher has finished
+        broadcasting.  When publication is complete:
+
+        - Removes the publisher from the active doer set and from
+          ``self.publishers``.
+        - Removes the event from the publication escrow (``dpub``).
+        - Records completion of the delegation in ``cdel`` keyed by the
+          delegated AID prefix and indexed by sequence number.
         """
         for (pre, said), serder in self.hby.db.dpub.getTopItemIter():  # group partial witness escrow
             if pre not in self.publishers:
@@ -235,7 +338,17 @@ class Anchorer(doing.DoDoer):
             self.hby.db.cdel.put(keys=pre, on=serder.sn, val=Diger(qb64=serder.said))
 
     def publishDelegator(self, pre):
-        """Publish the delegation event to my witnesses."""
+        """Queues the delegation event for broadcast to the delegated AID's witnesses.
+
+        Retrieves the WitnessPublisher for ``pre``, adds it to the active doer
+        set, and enqueues each message from the cloned delegation KEL so the
+        publisher can forward them to the witnesses.  Does nothing if no
+        publisher has been registered for ``pre``.
+
+        Args:
+            pre (str): qb64 identifier prefix of the delegated AID whose
+                delegation event should be published to witnesses.
+        """
         if pre not in self.publishers:
             return
 
@@ -247,43 +360,65 @@ class Anchorer(doing.DoDoer):
 
 
 def loadHandlers(hby, exc, notifier):
-    """ Load handlers for the peer-to-peer delegation protocols
+    """Registers peer-to-peer delegation protocol handlers with the Exchanger.
 
-    Parameters:
-        hby (Habery): Database and keystore for environment
-        exc (Exchanger): Peer-to-peer message router
-        notifier (Notifier): Outbound notifications
+    Currently registers ``DelegateRequestHandler`` so that inbound
+    ``/delegate/request`` ``exn`` messages are routed to the correct handler
+    and converted into controller notifications.
 
+    Args:
+        hby (Habery): Database and keystore for the local environment.
+        exc (Exchanger): Peer-to-peer message router that dispatches ``exn``
+            messages to registered handlers by route.
+        notifier (Notifier): Outbound notification bus used by
+            ``DelegateRequestHandler`` to surface delegation requests to the
+            controller UI.
     """
     delreq = DelegateRequestHandler(hby=hby, notifier=notifier)
     exc.addHandler(delreq)
 
 
 class DelegateRequestHandler:
-    """
-    Handler for multisig group inception notification EXN messages
+    """Handles inbound ``/delegate/request`` peer-to-peer ``exn`` messages.
 
+    Validates that the target delegator AID (``delpre``) is controlled
+    locally, then converts the message payload into a controller notification
+    so the operator can approve or reject the delegation request.
+
+    Attributes:
+        resource (str): Route string that identifies this handler to the
+            Exchanger; set to ``"/delegate/request"``.
+        hby (Habery): Database and keystore for the local environment.
+        notifier (Notifier): Outbound notification bus for surfacing
+            delegation requests to the controller UI.
     """
     resource = "/delegate/request"
 
     def __init__(self, hby, notifier):
-        """
+        """Initializes DelegateRequestHandler.
 
-        Parameters:
-            hby (Habery) database environment for this handler
-            notifier (str) notifier for converting delegate request exn messages to controller notifications
-
+        Args:
+            hby (Habery): Database and keystore for the local environment.
+            notifier (Notifier): Outbound notification bus used to surface
+                inbound delegation requests to the controller UI.
         """
         self.hby = hby
         self.notifier = notifier
 
     def handle(self, serder, attachments=None):
-        """  Do route specific processsing of delegation request messages
+        """Processes an inbound ``/delegate/request`` ``exn`` message.
 
-        Parameters:
-            serder (Serder): Serder of the exn delegation request message
-            attachments (list): list of tuples of pather, CESR SAD path attachments to the exn event
+        Extracts the delegator AID (``delpre``) and embedded event from the
+        message payload, verifies that ``delpre`` is a locally controlled AID,
+        and adds a notification so the controller can act on the request.
+        Logs an error and returns without raising if ``delpre`` is not local.
 
+        Args:
+            serder (Serder): Serder of the inbound ``exn`` delegation-request
+                message.
+            attachments (list[tuple], optional): List of ``(pather, SAD)``
+                path-attachment tuples from the ``exn`` envelope.
+                Defaults to None.
         """
 
         src = serder.pre
@@ -308,16 +443,28 @@ class DelegateRequestHandler:
 
 
 def delegateRequestExn(hab, delpre, evt, aids=None):
-    """
+    """Constructs a signed ``/delegate/request`` ``exn`` peer-to-peer message.
 
-    Parameters:
-        hab (Hab): database environment of sender
-        delpre (str): qb64 AID of delegator
-        evt (bytes): serialized and signed event requiring delegation approval
-        aids (list): list of multisig AIDs participating
+    Builds the payload and embeds dict for a delegation-request ``exn``,
+    creates the ``exn`` envelope via ``exchange()``, and endorses it with
+    the sender's current signing keys.  Returns the serder and detached
+    attachment bytes so the caller can forward both to the delegator.
+
+    Args:
+        hab (Hab): Sending Habitat used to sign the ``exn`` message.
+        delpre (str): qb64 AID of the delegator that must approve the event.
+        evt (bytes): Fully serialized and signed delegated event (e.g. ``icp``
+            or ``rot``) that requires the delegator's anchoring seal.
+        aids (list[str], optional): qb64 AIDs of the multisig group members
+            participating in this delegation, included in the payload when the
+            delegated identifier is a group Hab. Defaults to None.
 
     Returns:
-
+        tuple[SerderKERI, bytes]: A two-tuple of:
+            - **exn** (SerderKERI): The signed ``/delegate/request`` ``exn``
+              serder.
+            - **atc** (bytes): Detached CESR attachment bytes (signatures)
+              to be sent alongside the ``exn`` serder.
     """
     data = dict(
         delpre=delpre,
