@@ -1262,10 +1262,10 @@ class Parser:
                     raise ValidationError(f"No Exchange to process so "
                                     f"dropped msg={serder.pretty()}.") from ex
 
-            elif ilk in (Ilks.xip,):
+            elif ilk in (Ilks.xip, Ilks.pro, Ilks.bar):
                 if not (exts['cigars'] or exts['tsgs'] or exts['sigers'] or exts['ssgs']):
-                    raise ValidationError(f"Missing attached exchanger "
-                                        f"signatures for msg={serder.pretty()}")
+                    raise ValidationError(f"Missing attached authenticator(s) "
+                                        f"for msg={serder.pretty()}")
 
                 try:
                     kvy.processMsg(**exts)

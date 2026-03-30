@@ -17,7 +17,8 @@ from keri.kering import (KramConfigurationError, MissingAuthAttachmentError,
 from keri.core import (Kramer, SerderKERI, Kevery, Pruner, Salter,
                        Parser, Seqner, Saider, Prefixer, Diger,
                        Dater, Noncer, Number, Verser, Labeler, Texter,
-                       AuthTypes, exchange, exchept, reply, query)
+                       AuthTypes, exchange, exchept, reply, query, prod,
+                       bare)
 
 from keri.app import openHby, openCF
 from keri.db import openDB
@@ -423,6 +424,62 @@ KRAM_INTEGRATION_CONFIG = {
             "http://127.0.0.1:5644/.well-known/keri/oobi/EBNaNu-M9P5cgrnfl2Fvymy4E_jvxxyjb70PRtiANlJy?name=Root"
         ]
 }
+
+
+def test_process_msg_pro_bar(mockHelpingNowUTC):
+    """pro and bar complete processMsg after KRAM; no downstream processor."""
+    salt1 = Salter(raw=b'0123456789abcdef').qb64
+    salt2 = Salter(raw=b'0123456789abcdeg').qb64
+
+    with (openHby(name="sender", base="test", salt=salt1) as senderHby,
+          openHby(name="receiver", base="test", salt=salt2) as receiverHby):
+
+        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1,
+                                      transferable=True)
+        receiverHby.makeHab(name="receiver", isith='1', icount=1,
+                            transferable=True)
+
+        crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
+        senderIcp = senderHab.makeOwnEvent(sn=0)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+        assert senderHab.pre in crossKvy.kevers
+
+        with openCF(name="kram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+            kvy = Kevery(db=receiverHby.db, lax=False, local=False,
+                         kramer=kramer)
+
+            stamp = helping.nowIso8601()
+            dig = "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
+
+            proSer = prod(pre=senderHab.pre,
+                          route="data",
+                          replyRoute="data/processor",
+                          query=dict(d=dig),
+                          stamp=stamp,
+                          pvrsn=Vrsn_2_0)
+            assert proSer.ilk == Ilks.pro
+            sigers = senderHab.mgr.sign(ser=proSer.raw,
+                                          verfers=senderHab.kever.verfers,
+                                          indexed=True)
+            prefixer = Prefixer(qb64=senderHab.pre)
+            kwa = dict(ssgs=[(prefixer, sigers)])
+            kvy.processMsg(proSer, **kwa)
+            assert receiverHby.db.kramMSGC.get(keys=(senderHab.pre, proSer.said)) is not None
+
+            barSer = bare(pre=senderHab.pre,
+                          route="sealed/processor",
+                          data={},
+                          stamp=helping.nowIso8601(),
+                          pvrsn=Vrsn_2_0)
+            assert barSer.ilk == Ilks.bar
+            sigers2 = senderHab.mgr.sign(ser=barSer.raw,
+                                         verfers=senderHab.kever.verfers,
+                                         indexed=True)
+            kwa2 = dict(ssgs=[(prefixer, sigers2)])
+            kvy.processMsg(barSer, **kwa2)
+            assert receiverHby.db.kramMSGC.get(keys=(senderHab.pre, barSer.said)) is not None
 
 
 def test_assk(mockHelpingNowUTC):

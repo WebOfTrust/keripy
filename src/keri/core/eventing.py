@@ -4405,13 +4405,10 @@ class Kevery:
                         f"dropped msg={serder.pretty()}.")
                 exc.processEvent(serder=serder, **kwa)
 
-            case Ilks.xip:
-                # xip is fully validated and cache-gated by KRAM above.
-                # No additional message-specific processor is required here.
+            case Ilks.xip | Ilks.pro | Ilks.bar:
+                # Validated and cache-gated by KRAM above. No message-specific
+                # processor exists in keripy for xip/pro/bar yet.
                 return
-            case Ilks.pro | Ilks.bar:
-                raise ValidationError(
-                    f"Message type {ilk} not yet supported in processMsg")
             case _:
                 raise ValidationError(
                     f"Unexpected non-event message type {ilk} "
