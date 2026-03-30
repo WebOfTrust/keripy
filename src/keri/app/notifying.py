@@ -2,6 +2,8 @@
 """
 keri.app.notifying module
 
+Provides data structures and persistence utilities for creating, storing,
+retrieving, and signaling agent notifications.
 """
 import os
 from collections.abc import Iterable
@@ -16,16 +18,19 @@ from .signaling import Signaler
 
 
 def notice(attrs, dt=None, read=False):
-    """
+    """Create a Notice instance.
 
-    Parameters:
-        attrs (dict): payload of the notice
-        dt(Optional(str, datetime)): iso8601 formatted datetime of notice
-        read (bool): message read indicator
+    Args:
+        attrs (dict): Arbitrary payload describing the notification.
+        dt (str | datetime, optional): Datetime for the notice. If a
+            ``datetime`` object is provided it is converted to ISO 8601
+            format via its ``isoformat()`` method. Defaults to the current
+            time via ``nowIso8601()``.
+        read (bool, optional): Whether the notice is marked as read.
+            Defaults to ``False``.
 
     Returns:
-        Notice:  Notice instance
-
+        Notice: An initialized notice instance.
     """
     dt = dt if dt is not None else nowIso8601()
 
@@ -42,29 +47,35 @@ def notice(attrs, dt=None, read=False):
 
 
 class Notice(Dicter):
-    """ Notice is for creating notification messages for the controller of the agent
+    """Notification message container.
 
-    Sub class of Sadder that adds notification specific validation and properties
+    Extends :class:`Dicter` with notification-specific fields and validation.
+    A notice encapsulates a timestamp, a read status, and a metadata payload.
 
-    Inherited Properties:
-        .raw is bytes of serialized event only
-        .pad is key event dict
-
-    Properties:
-        .datetime (str): ISO8601 formatted datetime of notice
-        .pad (dict): payload of the notice
-
+    Attributes:
+        raw (bytes): Serialized representation of the notice, inherited from
+            :class:`Dicter`.
+        pad (dict): Underlying structured data dictionary, inherited from
+            :class:`Dicter`.
     """
 
     def __init__(self, raw=b'', pad=None, note=None):
-        """ Creates a serializer/deserializer for a ACDC Verifiable Credential in CESR Proof Format
+        """Initialize a notice instance.
 
-        Requires either raw or (crd and kind) to load credential from serialized form or in memory
+        Exactly one of ``raw``, ``pad``, or ``note`` should be provided.
+        The ``note`` argument is forwarded to the base class as the
+        ``dicter`` parameter.
 
-        Parameters:
-            raw (bytes): is raw credential
-            pad (dict): is populated data
+        Args:
+            raw (bytes, optional): Serialized notice data. Defaults to ``b''``.
+            pad (dict, optional): Structured notice data. Must contain at least
+                the key ``"a"`` (attributes). Defaults to ``None``.
+            note (Dicter, optional): An existing :class:`Dicter` instance used
+                to initialize the notice. Defaults to ``None``.
 
+        Raises:
+            ValueError: If the resolved data is missing the required ``"a"``
+                (attributes) key.
         """
         super(Notice, self).__init__(raw=raw, pad=pad, dicter=note)
 
@@ -76,148 +87,152 @@ class Notice(Dicter):
 
     @property
     def datetime(self):
-        """ issuer property getter"""
+        """str: The ISO 8601 formatted datetime of the notice."""
         return self._pad["dt"]
 
     @property
     def attrs(self):
-        """ pad property getter"""
+        """dict: The notification's arbitrary attributes payload."""
         return self._pad["a"]
 
     @property
     def read(self):
-        """ read property getter """
+        """bool: The read status flag of the notice."""
         return self._pad["r"]
 
     @read.setter
     def read(self, val):
-        """ read property setter """
+        """Set the read status flag.
+
+        Args:
+            val (bool): The new read state to apply.
+        """
         pad = self.pad
         pad["r"] = val
         self.pad = pad
 
 
 class DicterSuber(Suber):
-    """ Data serialization for Dicter and subclasses
+    """Sub-database for storing :class:`Dicter` instances.
 
-    Sub class of Suber where data is serialized Dicter instance or subclass
-    Automatically serializes and deserializes using Dicter methods
+    Serializes values using ``Dicter.raw`` and deserializes them back into
+    instances of a configurable subclass.
 
+    Attributes:
+        klas (Type[Dicter]): The class used to wrap raw bytes during retrieval.
     """
 
     def __init__(self, *pa, klas: Type[Dicter] = Dicter, **kwa):
-        """
-        Parameters:
-            db (LMDBer): base db
-            subkey (str):  LMDB sub database key
+        """Initialize the sub-database.
 
+        Args:
+            *pa: Positional arguments forwarded to :class:`Suber`.
+            klas (Type[Dicter], optional): Class used for deserializing stored
+                bytes. Defaults to :class:`Dicter`.
+            **kwa: Keyword arguments forwarded to :class:`Suber`.
         """
         super(DicterSuber, self).__init__(*pa, **kwa)
         self.klas = klas
 
     def put(self, keys: Union[str, Iterable], val: Dicter):
-        """ Puts val at key made from keys. Does not overwrite
+        """Store a value without overwriting an existing entry.
 
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            val (Dicter): instance
+        Args:
+            keys (str | Iterable): Components used to construct the database
+                key.
+            val (Dicter): The :class:`Dicter` instance to store.
 
         Returns:
-            bool: True If successful, False otherwise, such as key
-                              already in database.
+            bool: ``True`` if the value was stored, ``False`` if the key
+                already exists.
         """
         return (self.db.putVal(db=self.sdb,
                                key=self._tokey(keys),
                                val=val.raw))
 
     def pin(self, keys: Union[str, Iterable], val: Dicter):
-        """ Pins (sets) val at key made from keys. Overwrites.
+        """Store a value, overwriting any existing entry.
 
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
-            val (Sadder): instance
+        Args:
+            keys (str | Iterable): Components used to construct the database
+                key.
+            val (Dicter): The :class:`Dicter` instance to store.
 
         Returns:
-            bool: True If successful. False otherwise.
+            bool: ``True`` if the operation succeeded.
         """
         return (self.db.setVal(db=self.sdb,
                                key=self._tokey(keys),
                                val=val.raw))
 
     def get(self, keys: Union[str, Iterable]):
-        """ Gets Sadder at keys
+        """Retrieve and deserialize a value by key.
 
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+        Args:
+            keys (str | Iterable): Components used to construct the database
+                key.
 
         Returns:
-            Sadder: instance at keys
-            None: if no entry at keys
-
-        Usage:
-            Use walrus operator to catch and raise missing entry
-            if (creder := mydb.get(keys)) is None:
-                raise ExceptionHere
-            use creder here
-
+            Dicter | None: An instance of ``self.klas`` populated from the
+                stored bytes, or ``None`` if the key is not found.
         """
         val = self.db.getVal(db=self.sdb, key=self._tokey(keys))
         return self.klas(raw=bytes(val)) if val is not None else None
 
     def rem(self, keys: Union[str, Iterable]):
-        """ Removes entry at keys
+        """Remove an entry from the sub-database by key.
 
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+        Args:
+            keys (str | Iterable): Components used to construct the database
+                key.
 
         Returns:
-           bool: True if key exists so delete successful. False otherwise
+            bool: ``True`` if the entry existed and was removed, ``False``
+                otherwise.
         """
         return self.db.remVal(db=self.sdb, key=self._tokey(keys))
 
     def getTopItemIter(self, keys: Union[str, Iterable] = b""):
-        """ Return iterator over the all the items in subdb
+        """Iterate over entries whose key matches a given prefix.
 
-        Parameters:
-            keys (tuple): of key strs to be combined in order to form key
+        Args:
+            keys (str | Iterable, optional): Prefix components used to filter
+                entries. Defaults to ``b""`` which matches all entries.
 
-        Returns:
-            iterator: of tuples of keys tuple and val serdering.SerderKERI for
-            each entry in db
-
+        Yields:
+            tuple[tuple, Dicter]: A pair of the reconstructed key tuple and
+                the deserialized instance of ``self.klas``.
         """
         for key, val in self.db.getTopItemIter(db=self.sdb,
                                                top=self._tokey(keys)):
             yield self._tokeys(key), self.klas(raw=bytes(val))
 
     def cntAll(self):
-        """
-        Return count over the all the items in subdb
+        """Count the total number of entries in the sub-database.
 
         Returns:
-            count of all items
+            int: The total entry count.
         """
         return self.db.cntAll(db=self.sdb)
 
 
 class Noter(LMDBer):
-    """
-    Noter stores Notifications generated by the agent that are
-    intended to be read and dismissed by the controller of the agent.
+    """Persistent storage for :class:`Notice` objects and their signatures."""
 
-    """
     TailDirPath = os.path.join("keri", "not")
     AltTailDirPath = os.path.join(".keri", "not")
     TempPrefix = "keri_not_"
 
     def __init__(self, name="not", headDirPath=None, reopen=True, **kwa):
-        """
+        """Initialize the notifier database.
 
-        Parameters:
-            headDirPath:
-            perm:
-            reopen:
-            kwa:
+        Args:
+            name (str, optional): Database name. Defaults to ``"not"``.
+            headDirPath (str, optional): Base directory path. Defaults to
+                ``None``.
+            reopen (bool, optional): Whether to open the database immediately.
+                Defaults to ``True``.
+            **kwa: Additional keyword arguments forwarded to :class:`LMDBer`.
         """
         self.notes = None
         self.nidx = None
@@ -226,10 +241,16 @@ class Noter(LMDBer):
         super(Noter, self).__init__(name=name, headDirPath=headDirPath, reopen=reopen, **kwa)
 
     def reopen(self, **kwa):
-        """
+        """Open or reopen the underlying LMDB environment.
 
-        :param kwa:
-        :return:
+        Initializes the ``notes``, ``nidx``, and ``ncigs`` sub-databases.
+
+        Args:
+            **kwa: Additional keyword arguments forwarded to
+                :meth:`LMDBer.reopen`.
+
+        Returns:
+            lmdb.Environment: The open LMDB environment.
         """
         super(Noter, self).reopen(**kwa)
 
@@ -240,13 +261,20 @@ class Noter(LMDBer):
         return self.env
 
     def add(self, note, cigar):
-        """
-        Adds note to database, keyed by the datetime and said of the note.
+        """Add a new notice.
 
-        Parameters:
-            note (Notice): sad message content
-            cigar (Cigar): non-transferable signature over note
+        Indexes the notice by its ``rid`` under ``nidx``, stores the
+        signature under ``ncigs``, and stores the notice itself under the
+        composite key ``(dt, rid)`` in ``notes``. Does nothing if a notice
+        with the same ``rid`` already exists in the index.
 
+        Args:
+            note (Notice): The notice to store.
+            cigar (Cigar): Cryptographic signature over the serialized notice.
+
+        Returns:
+            bool: ``True`` if the notice was added, ``False`` if a notice with
+                the same ``rid`` already exists.
         """
         dt = note.datetime
         rid = note.rid
@@ -258,13 +286,19 @@ class Noter(LMDBer):
         return self.notes.pin(keys=(dt, rid), val=note)
 
     def update(self, note, cigar):
-        """
-        Adds note to database, keyed by the datetime and said of the note.
+        """Update an existing notice in place.
 
-        Parameters:
-            note (Notice): sad message content
-            cigar (Cigar): non-transferable signature over note
+        Overwrites the stored datetime index, signature, and notice body for
+        the given ``rid``. The notice must already exist in the index.
 
+        Args:
+            note (Notice): The updated notice. Its ``rid`` must match an
+                existing entry.
+            cigar (Cigar): Cryptographic signature over the serialized notice.
+
+        Returns:
+            bool: ``True`` if the notice was updated, ``False`` if no notice
+                with the given ``rid`` exists.
         """
         dt = note.datetime
         rid = note.rid
@@ -276,15 +310,15 @@ class Noter(LMDBer):
         return self.notes.pin(keys=(dt, rid), val=note)
 
     def get(self, rid):
-        """
-        Adds note to database, keyed by the datetime and said of the note.
+        """Retrieve a notice and its signature by identifier.
 
-        Parameters:
-            rid (str): qb64 random ID of note to get
+        Args:
+            rid (str): QB64 identifier of the notice.
 
         Returns:
-            (Notice, Cigar) = couple of notice object and accompanying signature
-
+            tuple[Notice, Cigar] | None: The notice and its signature, or
+                ``None`` if no notice with the given ``rid`` exists in the
+                index.
         """
         dt = self.nidx.get(keys=(rid,))
         if dt is None:
@@ -296,14 +330,17 @@ class Noter(LMDBer):
         return note, cig
 
     def rem(self, rid):
-        """
-        Remove note from database if it exists
+        """Remove a notice by identifier.
 
-        Parameters:
-            rid (str): qb64 random ID of note to remove
+        Removes the notice from ``notes``, its index entry from ``nidx``,
+        and its signature from ``ncigs``.
+
+        Args:
+            rid (str): QB64 identifier of the notice.
 
         Returns:
-            bool:  True if deleted
+            bool: ``True`` if the notice was found and removed, ``False`` if
+                no notice with the given ``rid`` exists.
         """
         res = self.get(rid)
         if res is None:
@@ -317,23 +354,30 @@ class Noter(LMDBer):
         return self.notes.rem(keys=(dt, rid))
 
     def getNoteCnt(self):
-        """
-        Return count over the all Notes
+        """Return the total number of stored notices.
 
         Returns:
-            int: count of all items
-
+            int: Number of notices in the database.
         """
         return self.notes.cntAll()
 
     def getNotes(self, start=0, end=25):
-        """
-        Returns list of tuples (note, cigar) of notes for controller of agent
+        """Retrieve a slice of stored notices ordered by datetime.
 
-        Parameters:
-            start (int): number of item to start
-            end (int): number of last item to return
+        Skips the first ``start`` entries in iteration order, then collects
+        up to ``(end - start) + 1`` notices. Pass ``end=-1`` to collect all
+        remaining notices after ``start``.
 
+        Args:
+            start (int, optional): Zero-based count of notices to skip before
+                collecting. Defaults to ``0``.
+            end (int, optional): Inclusive upper bound controlling how many
+                notices are returned: ``(end - start) + 1`` notices are
+                collected. Pass ``-1`` to return all remaining notices after
+                ``start``. Defaults to ``25``.
+
+        Returns:
+            list[tuple[Notice, Cigar]]: Ordered list of notice/signature pairs.
         """
         if hasattr(start, "isoformat"):
             start = start.isoformat()
@@ -358,36 +402,38 @@ class Noter(LMDBer):
 
 
 class Notifier:
-    """ Class for sending notifications to the controller of an agent.
-
-    The notifications are not just signals to reload data and not persistent messages that can be reread
-
-    """
+    """High-level interface for managing and signaling notifications."""
 
     def __init__(self, hby, signaler=None, noter=None):
-        """
+        """Initialize the notifier.
 
-        Parameters:
-            hby (Habery): habery database environment with Signator
-            noter (Noter): database
-            signaler (Signaler): signaler for sending signals to controller that new data is available
-
+        Args:
+            hby (Habery): Habitat environment providing a ``signator`` for
+                signing and verification.
+            signaler (Signaler, optional): Signaling interface used to push
+                notification events. Defaults to a new :class:`Signaler`
+                instance.
+            noter (Noter, optional): Persistent storage backend. Defaults to a
+                new :class:`Noter` instance scoped to ``hby.name``.
         """
         self.hby = hby
         self.signaler = signaler if signaler is not None else Signaler()
         self.noter = noter if noter is not None else Noter(name=hby.name, temp=hby.temp)
 
     def add(self, attrs):
-        """  Add unread notice to the end of the current list of notices
+        """Create and store a new unread notice.
+
+        Constructs a :class:`Notice` from ``attrs``, signs it with
+        ``hby.signator``, and persists it via :meth:`Noter.add`. On success,
+        pushes an ``"add"`` signal to the ``"/notification"`` topic.
 
         Args:
-            attrs (dict): body of a new unread notice to append to the current list of notices
+            attrs (dict): Notification payload.
 
         Returns:
-            bool: returns True if the notice was added
-
+            bool: ``True`` if the notice was created and stored, ``False`` if
+                a notice with the same identifier already exists.
         """
-
         note = notice(attrs, dt=nowIso8601())
         cig = self.hby.signator.sign(ser=note.raw)
         if self.noter.add(note, cig):
@@ -402,17 +448,19 @@ class Notifier:
             return False
 
     def rem(self, rid):
-        """ Mark as Read
+        """Delete a notice by identifier.
 
-        Delete the note identified by the provided random ID
+        Retrieves the notice, removes it from storage, then verifies the
+        stored signature before pushing a ``"rem"`` signal. The signal is
+        only sent when both removal and signature verification succeed.
 
-        Parameters:
-            rid (str): qb64 random ID of the Note to delete
+        Args:
+            rid (str): QB64 identifier of the notice.
 
         Returns:
-            bool: True means the note was deleted, False otherwise
+            bool: ``True`` if the notice was found and removed, ``False`` if
+                no notice with the given ``rid`` exists.
         """
-
         res = self.noter.get(rid=rid)
         if res is None:
             return False
@@ -431,18 +479,22 @@ class Notifier:
         return True
 
     def mar(self, rid):
-        """ Mark as Read
+        """Mark a notice as read.
 
-        Mark the note identified by the provided SAID as having been read by the controller of the agent
+        Retrieves the notice and verifies its stored signature before mutating
+        it. Sets the read flag to ``True``, re-signs the updated notice, and
+        persists it via :meth:`Noter.update`. Pushes a ``"mar"`` signal on
+        success.
 
-        Parameters:
-            rid (str): qb64 random ID of the Note to mark as read
+        Args:
+            rid (str): QB64 identifier of the notice.
 
         Returns:
-            bool: True means the note was marked as read, False otherwise
-
+            bool: ``True`` if the notice was found, verified, and marked as
+                read. ``False`` if the notice does not exist, the signature
+                verification fails, the notice was already marked as read, or
+                the update fails.
         """
-
         res = self.noter.get(rid=rid)
         if res is None:
             return False
@@ -472,23 +524,31 @@ class Notifier:
         return False
 
     def getNoteCnt(self):
-        """
-        Return count over the all Notes
+        """Return the total number of notices.
 
         Returns:
-            int: count of all items
-
+            int: Number of notices in the backing store.
         """
         return self.noter.getNoteCnt()
 
     def getNotes(self, start=0, end=24):
-        """
-        Returns list of tuples (note, cigar) of notes for controller of agent
+        """Retrieve notices with signature verification.
 
-        Parameters:
-            start (int): number of item to start
-            end (int): number of last item to return
+        Delegates to :meth:`Noter.getNotes` and verifies the signature of
+        every returned notice.
 
+        Args:
+            start (int, optional): Zero-based count of notices to skip before
+                collecting. Defaults to ``0``.
+            end (int, optional): Inclusive upper bound passed to
+                :meth:`Noter.getNotes` controlling how many notices are
+                returned. Defaults to ``24``.
+
+        Returns:
+            list[Notice]: Verified notice instances.
+
+        Raises:
+            ValidationError: If the stored signature for any notice is invalid.
         """
         notesigs = self.noter.getNotes(start, end)
         notes = []

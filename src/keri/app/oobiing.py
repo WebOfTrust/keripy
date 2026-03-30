@@ -1,7 +1,9 @@
 # -*- encoding: utf-8 -*-
 """
-keri.kli.common.oobiing module
+keri.app.oobiing module
 
+Provides OOBI (Out-Of-Band Introduction) endpoint resources, handlers,
+and resolution workflows for discovering and verifying remote identifiers.
 """
 import datetime
 import json
@@ -14,7 +16,7 @@ import falcon
 from hio.base import doing
 from hio.help import decking, ogler
 
-from .httping import Clienter,CESR_CONTENT_TYPE
+from .httping import Clienter, CESR_CONTENT_TYPE
 from .organizing import Organizer
 from .. import (Vrsn_1_0, Roles, Schemes, Ilks,
                 ValidationError, UnverifiedReplyError,
@@ -33,73 +35,65 @@ Result = Resultage(resolved='resolved', failed='failed')
 
 
 def loadOobiingEnds(app, *, hby, prefix=""):
+    """Register OOBI HTTP endpoints on the Falcon application.
+
+    Args:
+        app (falcon.App): Falcon WSGI application instance.
+        hby (Habery): Identifier database environment.
+        prefix (str, optional): Route prefix for mounting endpoints.
+
+    Returns:
+        list: Empty list (no doers registered).
+    """
     oobiEnd = OobiResource(hby=hby)
     app.add_route(prefix + "/oobi", oobiEnd)
     return []
 
 
 def loadOobiingHandlers(hby, exc, notifier):
-    """ Load handlers for the peer-to-peer delegation protocols
+    """Load handlers for the peer-to-peer delegation protocols
 
-    Parameters:
+    Args:
         hby (Habery): Database and keystore for environment
         exc (Exchanger): Peer-to-peer message router
         notifier (Notifier): Outbound notifications
-
     """
     oobireq = OobiRequestHandler(hby=hby, notifier=notifier)
     exc.addHandler(oobireq)
 
 
 class OobiResource:
-    """
-    Resource for managing OOBIs
-
-    """
+    """Falcon resource for managing OOBI generation and resolution."""
 
     def __init__(self, hby):
-        """ Create Endpoints for discovery and resolution of OOBIs
+        """Initialize OOBI resource endpoints.
 
-        Parameters:
-            hby (Habery): identifier database environment
-
+        Args:
+            hby (Habery): Identifier database environment.
         """
         self.hby = hby
 
     def on_get_alias(self, req, rep, alias=None):
-        """ OOBI GET endpoint
+        """Handle GET requests to generate OOBIs for an identifier.
 
-        Parameters:
-            req: falcon.Request HTTP request
-            rep: falcon.Response HTTP response
-            alias: option route parameter for specific identifier to get
+        Args:
+            req (falcon.Request): HTTP request object.
+            rep (falcon.Response): HTTP response object.
+            alias (str, optional): Human-readable alias of the identifier.
 
-        ---
-        summary:  Get OOBI for specific identifier
-        description:  Generate OOBI for the identifier of the specified alias and role
-        tags:
-           - OOBIs
-        parameters:
-          - in: path
-            name: alias
-            schema:
-              type: string
-            required: true
-            description: human readable alias for the identifier generate OOBI for
-          - in: query
-            name: role
-            schema:
-              type: string
-            required: true
-            description: role for which to generate OOBI
-        responses:
-            200:
-              description: An array of Identifier key state information
-              content:
-                  application/json:
-                    schema:
-                        description: Key state information for current identifiers
-                        type: object
+        Query Parameters:
+            role (str): Role for which to generate OOBIs. Supported values
+                include witness and controller.
+
+        Behavior:
+            - Resolves the identifier associated with the alias.
+            - Generates OOBI URLs for the requested role.
+            - Returns URLs for witnesses or controller endpoints.
+
+        Responses:
+            200: JSON object containing generated OOBIs.
+            400: Invalid alias.
+            404: Missing endpoints or unsupported role.
         """
 
         hab = self.hby.habByName(alias)
@@ -144,39 +138,26 @@ class OobiResource:
         rep.data = json.dumps(res).encode("utf-8")
 
     def on_post(self, req, rep):
-        """ Resolve OOBI endpoint.
+        """Handle POST requests to resolve an OOBI.
 
-        Parameters:
-            req: falcon.Request HTTP request
-            rep: falcon.Response HTTP response
+        Args:
+            req (falcon.Request): HTTP request object.
+            rep (falcon.Response): HTTP response object.
 
-        ---
-        summary: Resolve OOBI and assign an alias for the remote identifier
-        description: Resolve OOBI URL or `rpy` message by process results of request and assign 'alias' in contact data
-                      for resolved identifier
-        tags:
-           - OOBIs
-        requestBody:
-            required: true
-            content:
-              application/json:
-                schema:
-                    description: OOBI
-                    properties:
-                        oobialias:
-                          type: string
-                          description: alias to assign to the identifier resolved from this OOBI
-                          required: false
-                        url:
-                          type: string
-                          description:  URL OOBI
-                        rpy:
-                          type: object
-                          description: unsigned KERI `rpy` event message with endpoints
-        responses:
-           202:
-              description: OOBI resolution to key state successful
+        Request Body:
+            application/json:
+                url (str, optional): OOBI URL to resolve.
+                rpy (dict, optional): Unsigned KERI reply message (not implemented).
+                oobialias (str, optional): Alias to assign to resolved identifier.
 
+        Behavior:
+            - Stores OOBI URL for asynchronous resolution.
+            - Optionally associates an alias with the resolved identifier.
+
+        Responses:
+            202: OOBI accepted for processing.
+            400: Invalid request body.
+            501: `rpy` support not implemented.
         """
         body = req.get_media()
 
@@ -203,30 +184,33 @@ class OobiResource:
 
 
 class OobiRequestHandler:
-    """
-    Handler for oobi notification EXN messages
-
-    """
+    """Handler for processing OOBI request EXN messages."""
     resource = "/oobis"
 
     def __init__(self, hby, notifier):
-        """
+        """Initialize OOBI request handler.
 
-        Parameters:
-            hby (Habery) database environment of the controller
-            notifier (Notifier) notifier to convert OOBI request exn messages to controller notifications
-
+        Args:
+            hby (Habery): Identifier database environment.
+            notifier (Notifier): Notification dispatcher for outbound events.
         """
         self.hby = hby
         self.notifier = notifier
 
     def handle(self, serder, attachments=None):
-        """  Do route specific processsing of OOBI request messages
+        """Process an incoming OOBI request EXN message.
 
-        Parameters:
-            serder (Serder): Serder of the exn OOBI request message
-            attachments (list): list of tuples of pather, CESR SAD path attachments to the exn event
+        Args:
+            serder (Serder): Serialized EXN message.
+            attachments (list, optional): CESR attachments associated with the message.
 
+        Behavior:
+            - Extracts OOBI URL from the message payload.
+            - Stores the OOBI for later resolution.
+            - Emits a notification for UI or downstream processing.
+
+        Notes:
+            Invalid messages missing an ``oobi`` field are ignored.
         """
         src = serder.pre
         pay = serder.ked['a']
@@ -253,6 +237,22 @@ class OobiRequestHandler:
 
 
 def oobiRequestExn(hab, dest, oobi):
+    """Create an EXN message requesting OOBI resolution.
+
+    Args:
+        hab (Hab): Local habitat initiating the request.
+        dest (str): Recipient identifier prefix.
+        oobi (str): OOBI URL.
+
+    Returns:
+        tuple:
+            - Serder: Constructed EXN message.
+            - bytearray: Attachments for transmission.
+
+    Behavior:
+        - Constructs a peer-to-peer EXN message.
+        - Endorses the message for sending.
+    """
     data = dict(
         dest=dest,
         oobi=oobi
@@ -268,19 +268,27 @@ def oobiRequestExn(hab, dest, oobi):
 
 
 class Oobiery:
-    """ Resolver for OOBIs
+    """Resolver and processor for OOBIs.
 
+    Coordinates retrieval, parsing, verification, and persistence
+    of OOBI data from remote endpoints.
     """
 
     RetryDelay = 30
 
     def __init__(self, hby, rvy=None, clienter=None, cues=None):
-        """  DoDoer to handle the request and parsing of OOBIs
+        """Initialize OOBI resolver.
 
-        Parameters:
-            hby (Habery): database environment
-            clienter (Clienter): DoDoer client provider responsible for managing HTTP client requests
-            cues (decking.Deck): outbound cues from processing oobis
+        Args:
+            hby (Habery): Identifier database environment.
+            rvy (Revery, optional): Reply verifier for processing `rpy` messages.
+            clienter (Clienter, optional): HTTP client manager.
+            cues (decking.Deck, optional): Output queue for resolution events.
+
+        Behavior:
+            - Sets up HTTP client handling.
+            - Initializes parser for CESR and KERI message streams.
+            - Registers reply routes if a verifier is provided.
         """
 
         self.hby = hby
@@ -303,53 +311,52 @@ class Oobiery:
         self.doers = [self.clienter, doing.doify(self.scoobiDo)]
 
     def registerReplyRoutes(self, router):
-        """ Register the routes for processing messages embedded in `rpy` event messages
+        """Register reply routes for OOBI-related messages.
 
-        The Oobiery handles rpy messages with the /introduce route by processing the contained oobi
+        Args:
+            router (Router): Reply message router.
 
-        Parameters:
-            router(Router): reply message router
-
+        Behavior:
+            Adds support for processing ``/introduce`` reply messages.
         """
         router.addRoute("/introduce", self)
 
     def processReply(self, *, serder, diger, route, cigars=None, tsgs=None, **kwargs):
-        """
-        Process one reply message for route = /introduce
-        with either attached nontrans receipt couples in cigars or attached trans
-        indexed sig groups in tsgs.
-        Assumes already validated diger, dater, and route from serder.ked
+        """Process a reply message for OOBI introduction.
 
-        Parameters:
-            serder (SerderKERI): instance of reply msg (SAD)
-            diger (Diger): instance from said in serder (SAD)
-            route (str): reply route
-            cigars (list): of Cigar instances that contain nontrans signing couple
-                          signature in .raw and public key in .verfer
-            tsgs (list): tuples (quadruples) of form
-                (prefixer, seqner, diger, [sigers]) where:
-                prefixer is pre of trans endorser
-                seqner is sequence number of trans endorser's est evt for keys for sigs
-                diger is digest of trans endorser's est evt for keys for sigs
-                [sigers] is list of indexed sigs from trans endorser's keys from est evt
+        Args:
+            serder (SerderKERI): Parsed reply message.
+            diger (Diger): Digest of the message.
+            route (str): Reply route (must be ``/introduce``).
+            cigars (list, optional): Non-transferable signature attachments.
+            tsgs (list, optional): Transferable signature groups.
 
-        OobiRecord:
-            date: str = date time of reply message of the introduction
+        Raises:
+            ValidationError: Invalid route or missing required fields.
+            ConfigurationError: Resolver not configured for reply handling.
+            UnverifiedReplyError: Reply signature verification failed.
 
-        Reply Message:
-        {
-          "v" : "KERI10JSON00011c_",
-          "t" : "rpy",
-          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-          "dt": "2020-08-22T17:50:12.988921+00:00",
-          "r" : "/introduce",
-          "a" :
-          {
-             "cid": "ENcOes8_t2C7tck4X4j61fSm0sWkLbZrEZffq7mSn8On",
-             "oobi":  "http://localhost:5632/oobi/ENcOes8_t2C7tck4X4j61fSm0sWkLbZrEZffq7mSn8On/witness",
-          }
-        }
+        Behavior:
+            - Validates message structure and required fields.
+            - Verifies signatures using the reply verifier.
+            - Stores OOBI record if verification succeeds.
 
+        Reply Message::
+
+            .. code-block:: json
+
+                {
+                "v" : "KERI10JSON00011c_",
+                "t" : "rpy",
+                "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                "dt": "2020-08-22T17:50:12.988921+00:00",
+                "r" : "/introduce",
+                "a" :
+                {
+                    "cid": "ENcOes8_t2C7tck4X4j61fSm0sWkLbZrEZffq7mSn8On",
+                    "oobi":  "http://localhost:5632/oobi/ENcOes8_t2C7tck4X4j61fSm0sWkLbZrEZffq7mSn8On/witness",
+                }
+                }
         """
         if route != "/introduce":
             raise ValidationError(f"Usupported route={route} in {Ilks.rpy} "
@@ -386,17 +393,17 @@ class Oobiery:
         self.hby.db.oobis.put(keys=(oobi,), val=obr)
 
     def scoobiDo(self, tymth=None, tock=0.0, **kwa):
-        """
-        Returns doifiable Doist compatibile generator method (doer dog) to process
-            .exc responses and pass them on to the HTTPRespondant
+        """Generator for periodic OOBI processing.
 
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
+        Args:
+            tymth (Callable, optional): Time function from scheduler.
+            tock (float, optional): Scheduling interval.
 
-        Usage:
-            add result of doify on this method to doers list
+        Yields:
+            float: Next scheduling interval.
+
+        Behavior:
+            Continuously processes OOBI workflows.
         """
         _ = (yield tock)
 
@@ -405,9 +412,13 @@ class Oobiery:
             yield tock
 
     def processFlows(self):
-        """
-        Process OOBI URLs by requesting from the endpoint and parsing the results
+        """Execute all OOBI processing stages.
 
+        Stages include:
+            - OOBI discovery
+            - Client response handling
+            - Retry scheduling
+            - Multi-OOBI resolution
         """
         self.processOobis()
         self.processClients()
@@ -415,10 +426,15 @@ class Oobiery:
         self.processMOOBIs()
 
     def processOobis(self):
-        """ Process OOBI records loaded for discovery
+        """Process pending OOBI records for discovery.
 
-        There should be only one OOBIERY that minds the OOBI table, this should read from the table like an escrow
+        Behavior:
+            - Iterates over stored OOBIs.
+            - Determines type (standard, data, well-known).
+            - Initiates HTTP requests for resolution.
 
+        Notes:
+            Acts as the primary escrow processor for OOBI records.
         """
         for (url,), obr in self.hby.db.oobis.getTopItemIter():
             try:
@@ -470,8 +486,12 @@ class Oobiery:
                 print(f"error requesting invalid OOBI URL {ex}", url)
 
     def processClients(self):
-        """ Process Client responses by parsing the messages and removing the client/doer
+        """Process HTTP client responses for OOBI requests.
 
+        Behavior:
+            - Parses responses based on content type.
+            - Handles CESR streams, schema responses, and JSON replies.
+            - Updates resolution state and persists results.
         """
         for (url,), obr in self.hby.db.coobi.getTopItemIter():
             if url not in self.clients:
@@ -576,8 +596,11 @@ class Oobiery:
                 self.cues.append(dict(kin=obr.state, oobi=url))
 
     def processMOOBIs(self):
-        """ Process Client responses by parsing the messages and removing the client/doer
+        """Process multi-OOBI (MOOBI) resolution results.
 
+        Behavior:
+            - Aggregates results from multiple OOBI URLs.
+            - Marks overall resolution state when complete.
         """
         for (url,), obr in self.hby.db.moobi.getTopItemIter():
             result = Result.resolved
@@ -596,8 +619,10 @@ class Oobiery:
                 self.hby.db.roobi.put(keys=(url,), val=obr)
 
     def processRetries(self):
-        """ Process Client responses by parsing the messages and removing the client/doer
+        """Retry failed OOBI resolutions after delay.
 
+        Behavior:
+            - Moves expired retry records back into active processing.
         """
         for (url,), obr in self.hby.db.eoobi.getTopItemIter():
             last = fromIso8601(obr.date)
@@ -608,6 +633,16 @@ class Oobiery:
                 self.hby.db.oobis.pin(keys=(url,), val=obr)
 
     def request(self, url, obr):
+        """Initiate HTTP request for an OOBI.
+
+        Args:
+            url (str): OOBI URL.
+            obr (OobiRecord): Associated OOBI record.
+
+        Behavior:
+            - Creates HTTP client request.
+            - Moves record into client-processing escrow.
+        """
         client = self.clienter.request("GET", url=url)
         if client is None:
             self.hby.db.oobis.rem(keys=(url,))
@@ -619,6 +654,20 @@ class Oobiery:
         self.hby.db.coobi.pin(keys=(url,), val=obr)
 
     def processMultiOobiRpy(self, url, serder, mobr):
+        """Process multi-OOBI reply message.
+
+        Args:
+            url (str): Source OOBI URL.
+            serder (SerderKERI): Parsed reply message.
+            mobr (OobiRecord): Multi-OOBI record.
+
+        Returns:
+            str: Resolution result state.
+
+        Behavior:
+            - Validates identifier consistency.
+            - Expands into multiple OOBI requests.
+        """
         data = serder.ked["a"]
         cid = data["aid"]
 
@@ -639,13 +688,14 @@ class Oobiery:
 
 
 class Authenticator:
+    """Handler for well-known OOBI-based authentication workflows."""
 
     def __init__(self, hby, clienter=None):
-        """
+        """Initialize authenticator.
 
-        Parameters:
-            hby (Habery): Identifier database environment
-            clienter (Clienter): DoDoer client provider responsible for managing HTTP client requests
+        Args:
+            hby (Habery): Identifier database environment.
+            clienter (Clienter, optional): HTTP client manager.
         """
         self.hby = hby
         self.clienter = clienter if clienter is not None else Clienter()
@@ -653,6 +703,12 @@ class Authenticator:
         self.doers = [self.clienter, doing.doify(self.authzDo)]
 
     def request(self, wurl, obr):
+        """Initiate request for well-known OOBI authentication.
+
+        Args:
+            wurl (str): Well-known OOBI URL.
+            obr (OobiRecord): Associated record.
+        """
         client = self.clienter.request("GET", wurl)
 
         self.clients[wurl] = client
@@ -660,22 +716,25 @@ class Authenticator:
         self.hby.db.mfa.pin(keys=(wurl,), val=obr)
 
     def addAuthToAid(self, cid, url):
+        """Associate authentication URL with an identifier.
+
+        Args:
+            cid (str): Controller identifier prefix.
+            url (str): Authentication endpoint URL.
+        """
         now = nowIso8601()
         wkan = WellKnownAuthN(url=url, dt=now)
         self.hby.db.wkas.add(keys=(cid,), val=wkan)
 
     def authzDo(self, tymth=None, tock=0.0, **kwa):
-        """
-        Returns doifiable Doist compatibile generator method (doer dog) to process
-            .exc responses and pass them on to the HTTPRespondant
+        """Generator for authentication processing loop.
 
-        Parameters:
-            tymth (function): injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
+        Args:
+            tymth (Callable, optional): Time function from scheduler.
+            tock (float, optional): Scheduling interval.
 
-        Usage:
-            add result of doify on this method to doers list
+        Yields:
+            float: Next scheduling interval.
         """
         _ = (yield tock)
 
@@ -684,16 +743,17 @@ class Authenticator:
             yield tock
 
     def processFlows(self):
-        """ Process well-known authentication URLs """
+        """Process well-known authentication URLs """
 
         self.processWoobis()
         self.processMultiFactorAuth()
 
     def processWoobis(self):
-        """ Process well-known OOBIs saved as multi-factor auth records
+        """Process well-known OOBI records for authentication.
 
-        Process wOOBI URLs by requesting from the endpoint and confirming the results
-
+        Behavior:
+            - Filters valid well-known OOBIs.
+            - Initiates authentication requests for known identifiers.
         """
         for (wurl,), obr in self.hby.db.woobi.getTopItemIter():
             # Find any woobis that match and can be used to perform MFA for this resolved AID
@@ -709,8 +769,13 @@ class Authenticator:
                 self.hby.db.woobi.rem(keys=(wurl,))
 
     def processMultiFactorAuth(self):
-        """ Process Client responses by parsing the messages and removing the client
+        """Processes responses for multi-factor authentication requests.
 
+        Iterates through pending MFA items, matches them with client responses,
+        and updates the database state based on the HTTP status code.
+
+        Note:
+            This method modifies the internal `hby.db` and `clients` collection.
         """
         for (wurl,), obr in self.hby.db.mfa.getTopItemIter():
             if wurl not in self.clients:
