@@ -18,8 +18,8 @@ from keri.kering import Roles, Schemes, Kinds, Ilks
 from keri.help import helping
 from keri.core import Salter, SerderKERI, dumps
 from keri.app import openHby, openHab
-from keri.end import (Signage, Mimes, KeriMimes,
-                      signature, designature, loadEndingEnds,
+from keri.end import (ending, Signage, Mimes, KeriMimes,
+                      signature, loadEndingEnds,
                       desiginput, normalize, setup)
 from keri.end.ending import siginput as sigInputEnding
 
@@ -92,7 +92,7 @@ def test_signature_designature():
                          '-3LYSKIrnmH3oIN";1="ABDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";2="ACDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F"'}
 
         # test designature
-        signages = designature(header["Signature"])
+        signages = ending.designature(header["Signature"])
         signage = signages[0]
         assert signage.indexed
         assert not signage.signer
@@ -118,7 +118,7 @@ def test_signature_designature():
                          '="ACDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F"'}
 
         # test designature
-        signages = designature(header["Signature"])
+        signages = ending.designature(header["Signature"])
         signage = signages[0]
         assert signage.indexed
         assert signage.signer == hab.pre
@@ -144,7 +144,7 @@ def test_signature_designature():
                          '="0BDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F"'}
 
         # test designature
-        signages = designature(header["Signature"])
+        signages = ending.designature(header["Signature"])
         signage = signages[0]
         assert not signage.indexed
         assert not signage.signer
@@ -167,7 +167,7 @@ def test_signature_designature():
                          '";1="ABDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";2="ACDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F",indexed="?0";signer="EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-";kind="CESR";DAi2TaRNVtGmV8eSUvqHIBzTzIgrQi57vKzw5Svmy7jw="0BCsufRGYI-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn-3LYSKIrnmH3oIN";DNK2KFnL0jUGlmvZHRse7HwNGVdtkM-ORvTZfFw7mDbt="0BDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";DDvIoIYqeuXJ4Zb8e2luWfjPTg4FeIzfHzIO8lC56WjD="0BDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F"'}
 
         # test designature
-        signages = designature(header["Signature"])
+        signages = ending.designature(header["Signature"])
 
         signage = signages[0]
         assert signage.indexed
@@ -202,7 +202,7 @@ def test_signature_designature():
                          '";wit1="ABDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";wit2="ACDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F",indexed="?0";signer="EGqHykT1gVyuWxsVW6LUUsz_KtLJGYMi_SrohInwvjC-";kind="CESR";wit0="0BCsufRGYI-sRvS2c0rsOueSoSRtrjODaf48DYLJbLvvD8aHe7b2sWGebZ-y9ichhsxMF3Hhn-3LYSKIrnmH3oIN";wit1="0BDs7m2-h5l7vpjYtbFXtksicpZK5Oclm43EOkE2xoQOfr08doj73VrlKZOKNfJmRumD3tfaiFFgVZqPgiHuFVoA";wit2="0BDVOy2LvGgFINUneL4iwA55ypJR6vDpLLbdleEsiANmFazwZARypJMiw9vu2Iu0oL7XCUiUT4JncU8P3HdIp40F"'}
 
         # test designature
-        signages = designature(header["Signature"])
+        signages = ending.designature(header["Signature"])
 
         signage = signages[0]
         assert signage.indexed
@@ -576,7 +576,7 @@ def test_siginput(mockHelpingNowUTC):
         items.append(f'"@signature-params: {params}"')
         ser = "\n".join(items).encode("utf-8")
 
-        signages = designature(sig_value)
+        signages = ending.designature(sig_value)
         assert len(signages) == 1
         assert signages[0].indexed is False
         assert "sig0" in signages[0].markers

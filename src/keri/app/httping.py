@@ -16,7 +16,7 @@ from hio.help import Hict, ogler
 from ..kering import (ShortageError, ExtractionError,
                       ColdStartError, sniff, Colds)
 from ..core import Sadder, SerderKERI
-from ..end import designature
+from ..end import ending
 from ..help import nowUTC
 
 
@@ -51,7 +51,7 @@ class SignatureValidationComponent(object):
             return
 
     def validate(self, sig, ser):
-        signages = designature(sig)
+        signages = ending.designature(sig)
         markers = signages[0].markers
 
         if self.pre not in self.hby.kevers:
