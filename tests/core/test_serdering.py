@@ -26,7 +26,7 @@ from keri.core import (Salter, Diger, Number, FieldDom,
 
 from keri.peer import exchanging
 
-from keri.app import habbing
+from keri.app import openHby
 
 
 def test_fielddom():
@@ -4539,10 +4539,10 @@ def test_cesr_native_dumps_hby():
 
     # need to fix this so it uses different Kind and different Version
     # makHab uses stem=name to make different names have differnt AID pre
-    with (habbing.openHby(name="wes", base="test", salt=salt) as wesHby,
-         habbing.openHby(name="wok", base="test", salt=salt) as wokHby,
-         habbing.openHby(name="wam", base="test", salt=salt) as wamHby,
-         habbing.openHby(name="cam", base="test", salt=salt) as camHby):
+    with (openHby(name="wes", base="test", salt=salt) as wesHby,
+         openHby(name="wok", base="test", salt=salt) as wokHby,
+         openHby(name="wam", base="test", salt=salt) as wamHby,
+         openHby(name="cam", base="test", salt=salt) as camHby):
 
         # witnesses first so can setup inception event for tam
         wsith = '1'

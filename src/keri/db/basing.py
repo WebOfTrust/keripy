@@ -309,14 +309,14 @@ class Baser(LMDBer):
             dgKey (prefix + digest)
             Only one value per DB key is allowed.
 
-        .uwes is named subDB instance of B64OnIoDupSuber for unverified event
+        .uwes is named subDB instance of B64OnIoSetSuber for unverified event
             indexed escrowed couples from witness signers. Each couple is
             (edig, wig) where edig is receipted event digest and wig is the
             indexed witness signature derived from the witness nontrans prefix
             and offset into the witness list of the latest establishment event.
             subkey 'uwes.'
             Key: receipted event controller prefix + sequence number.
-            More than one value per DB key is allowed.
+            Multiple values per key are stored in insertion order as a set.
 
         .ooes is named subDB instance of OnIoDupSuber for out-of-order event
             escrows under composite keys "<pre><sep><on>". Tracks events whose
@@ -380,7 +380,7 @@ class Baser(LMDBer):
             dgKey (prefix + digest)
             Only one value per DB key is allowed.
 
-        .misfits is named subDB instance of IoSetSuber for misfit escrows.
+        .misfits is named subDB instance of OnIoSetSuber for misfit escrows.
             Events with remote (nonlocal) sources that are inappropriate (i.e.
             would be dropped) unless promoted to local source via extra
             after-the-fact authentication. Escrow processing determines if and
@@ -936,7 +936,7 @@ class Baser(LMDBer):
         self.pwes = subing.OnIoDupSuber(db=self, subkey='pwes.')
         self.pdes = subing.OnIoDupSuber(db=self, subkey='pdes.')
         self.udes = subing.CatCesrSuber(db=self, subkey='udes.', klas=(coring.Number, coring.Diger))
-        self.uwes = subing.B64OnIoDupSuber(db=self, subkey='uwes.')
+        self.uwes = subing.B64OnIoSetSuber(db=self, subkey='uwes.')
         self.ooes = subing.OnIoDupSuber(db=self, subkey='ooes.')
         self.dels = subing.OnIoDupSuber(db=self, subkey='dels.')
         self.ldes = subing.OnIoDupSuber(db=self, subkey='ldes.')
@@ -954,7 +954,7 @@ class Baser(LMDBer):
                                    subkey='esrs.')
 
         # misfit escrows whose processing may change the .esrs event source record
-        self.misfits = subing.IoSetSuber(db=self, subkey='mfes.')
+        self.misfits = subing.OnIoSetSuber(db=self, subkey='mfes.')
 
         # delegable events escrows. events with local delegator that need approval
         self.delegables = subing.IoSetSuber(db=self, subkey='dees.')
@@ -1240,25 +1240,25 @@ class Baser(LMDBer):
         self.maids = subing.CesrIoSetSuber(db=self, subkey="maids.", klas=coring.Prefixer)
 
         # KRAM cache type — key: expression string, value: drift and lag params
-        self.kramCTYP = koming.Komer(db=self, subkey='kramCTYP.',
+        self.kramCTYP = koming.Komer(db=self, subkey='ctyp.',
                                  klas=CacheTypeRecord)
 
         # KRAM message cache — key: (AID, MID), value: msg datetime, drift, lags
-        self.kramMSGC = koming.Komer(db=self, subkey='kramMSGC.',
+        self.kramMSGC = koming.Komer(db=self, subkey='msgc.',
                                  klas=MsgCacheRecord)
 
         # KRAM transactioned message cache — key: (AID, XID, MID), value: datetimes, drift, lags
-        self.kramTMSC = koming.Komer(db=self, subkey='kramTMSC.',
+        self.kramTMSC = koming.Komer(db=self, subkey='tmsc.',
                                  klas=TxnMsgCacheRecord)
 
         # KRAM partially signed multi-key message key (AID.MID) mapped to associated message (SerderKERI)
-        self.kramPMKM = subing.SerderSuber(db=self, subkey='kramPMKM.')
+        self.kramPMKM = subing.SerderSuber(db=self, subkey='pmkm.')
 
         # KRAM partially signed multi-key signature key (AID.MID) mapped to associated signatures
-        self.kramPMKS = subing.CesrIoSetSuber(db=self, subkey='kramPMKS.', klas=indexing.Siger)
+        self.kramPMKS = subing.CesrIoSetSuber(db=self, subkey='pmks.', klas=indexing.Siger)
 
         # KRAM partially signed multi-key sender key state key (AID.MID) mapped to SN and event SAID
-        self.kramPMSK = subing.CatCesrSuber(db=self, subkey='kramPMSK.', klas=(coring.Number, coring.Diger))
+        self.kramPMSK = subing.CatCesrSuber(db=self, subkey='pmsk.', klas=(coring.Number, coring.Diger))
 
         # KRAM partially signed multi-key non-authenticator attachments
 

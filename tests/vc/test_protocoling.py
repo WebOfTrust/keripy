@@ -5,14 +5,17 @@ tests.vc.protocoling module
 """
 
 from keri import Vrsn_1_0
-from keri.core import (Salter, Counter, SealEvent,
-                       coring, scheming, parsing,
-                       Codens)
+from keri.core import (Salter, Counter, SealEvent, Seqner,
+                       Diger, Prefixer, Saider, Parser,
+                       Saids, MtrDex, Codens)
 
-from keri.peer import exchanging
-from keri.vc import protocoling, credential
-from keri.vdr import credentialing, verifying
-from keri.app import habbing, notifying
+from keri.peer import Exchanger
+from keri.vc import (IpexHandler, ipexAdmitExn, ipexOfferExn,
+                     credential, loadHandlers, ipexApplyExn,
+                     ipexSpurnExn, ipexAgreeExn, ipexGrantExn)
+
+from keri.vdr import Regery, Verifier
+from keri.app import Notifier, openHby
 
 
 def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingNowUTC):
@@ -25,8 +28,8 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
 
     default_salt = Salter(raw=b'0123456789abcdef').qb64
 
-    with (habbing.openHby(name="red", base="test", salt=default_salt) as redHby,
-          habbing.openHby(name="sid", base="test", salt=sidSalt) as sidHby):
+    with (openHby(name="red", base="test", salt=default_salt) as redHby,
+          openHby(name="sid", base="test", salt=sidSalt) as sidHby):
         seeder.seedSchema(redHby.db)
         seeder.seedSchema(sidHby.db)
 
@@ -38,22 +41,22 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
         redPre = redHab.pre
         assert redPre == "EMl4RhuR_JxpiMd1N8DEJEhTxM3Ovvn9Xya8AN-tiUbl"
 
-        sidRgy = credentialing.Regery(hby=sidHby, name="bob", temp=True)
-        sidVer = verifying.Verifier(hby=sidHby, reger=sidRgy.reger)
+        sidRgy = Regery(hby=sidHby, name="bob", temp=True)
+        sidVer = Verifier(hby=sidHby, reger=sidRgy.reger)
 
-        notifier = notifying.Notifier(hby=sidHby)
+        notifier = Notifier(hby=sidHby)
         issuer = sidRgy.makeRegistry(prefix=sidHab.pre, name="sid")
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
         sidHab.interact(data=[rseal])
-        seqner = coring.Seqner(sn=sidHab.kever.sn)
+        seqner = Seqner(sn=sidHab.kever.sn)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
                          seqner=seqner,
-                         saider=coring.Diger(qb64=sidHab.kever.serder.said))
+                         saider=Diger(qb64=sidHab.kever.serder.said))
         sidRgy.processEscrows()
 
-        sidExc = exchanging.Exchanger(hby=sidHby, handlers=[])
-        protocoling.loadHandlers(hby=sidHby, exc=sidExc, notifier=notifier)
+        sidExc = Exchanger(hby=sidHby, handlers=[])
+        loadHandlers(hby=sidHby, exc=sidExc, notifier=notifier)
 
         schema = "EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC"
 
@@ -64,7 +67,7 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
             dt="2021-06-27T21:26:21.233257+00:00",
             LEI="254900OPPU84GM83MG36",
         )
-        _, d = scheming.Saider.saidify(sad=credSubject, code=coring.MtrDex.Blake3_256, label=scheming.Saids.d)
+        _, d = Saider.saidify(sad=credSubject, code=MtrDex.Blake3_256, label=Saids.d)
 
         creder = credential(issuer=sidHab.pre,
                             schema=schema,
@@ -80,11 +83,11 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
                            b'7+00:00"}')
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
         sidHab.interact(data=[rseal])
-        seqner = coring.Seqner(sn=sidHab.kever.sn)
+        seqner = Seqner(sn=sidHab.kever.sn)
         issuer.anchorMsg(pre=iss.pre,
                          regd=iss.said,
                          seqner=seqner,
-                         saider=coring.Diger(qb64=sidHab.kever.serder.said))
+                         saider=Diger(qb64=sidHab.kever.serder.said))
         sidRgy.processEscrows()
 
         msg = creder.raw
@@ -97,8 +100,8 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
 
         atc = bytearray(msg)
         atc.extend(Counter(Codens.SealSourceTriples, count=1, version=Vrsn_1_0).qb64b)
-        atc.extend(coring.Prefixer(qb64=iss.pre).qb64b)
-        atc.extend(coring.Seqner(sn=0).qb64b)
+        atc.extend(Prefixer(qb64=iss.pre).qb64b)
+        atc.extend(Seqner(sn=0).qb64b)
         atc.extend(iss.saidb)
 
         assert atc == (b'{"v":"ACDC10JSON000197_","d":"EElymNmgs1u0mSaoCeOtSsNOROLuqOz103'
@@ -110,14 +113,14 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
                        b'254900OPPU84GM83MG36"}}-IABEElymNmgs1u0mSaoCeOtSsNOROLuqOz103V3-'
                        b'4E-ClXH0AAAAAAAAAAAAAAAAAAAAAAAECUw7AdWEE3fvr7dgbFDXj0CEZuJTTa_H'
                        b'8-iLLAmIUPO')
-        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytes(atc), vry=sidVer)
+        Parser(version=Vrsn_1_0).parseOne(ims=bytes(atc), vry=sidVer)
 
         # Successfully parsed credential is now saved in database.
         assert sidVer.reger.saved.get(keys=(creder.said,)) is not None
 
-        ipexhan = protocoling.IpexHandler(resource="/ipex/apply", hby=sidHby, notifier=notifier)
+        ipexhan = IpexHandler(resource="/ipex/apply", hby=sidHby, notifier=notifier)
 
-        apply0, apply0atc = protocoling.ipexApplyExn(sidHab, message="Please give me a credential", schema=schema,
+        apply0, apply0atc = ipexApplyExn(sidHab, message="Please give me a credential", schema=schema,
                                                      recp=redPre, attrs={})
 
         assert apply0.raw == (b'{"v":"KERI10JSON000175_","t":"exn","d":"EHVK5cO32UQJCkpK9RqRP_ONViK8u3JNXn73'
@@ -129,7 +132,7 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
         # No requirements for apply, except that its first, no `p`
         assert ipexhan.verify(serder=apply0) is True
 
-        offer0, offer0atc = protocoling.ipexOfferExn(sidHab, "How about this", acdc=creder.raw, apply=apply0)
+        offer0, offer0atc = ipexOfferExn(sidHab, "How about this", acdc=creder.raw, apply=apply0)
         assert offer0.raw == (b'{"v":"KERI10JSON0002f8_","t":"exn","d":"ENdVOCsP5Xz57qs1xa_msznozvBs6Ii0_JRo'
                               b'i6tp2NBu","i":"EMl4RhuR_JxpiMd1N8DEJEhTxM3Ovvn9Xya8AN-tiUbl","rp":"","p":"EH'
                               b'VK5cO32UQJCkpK9RqRP_ONViK8u3JNXn73nJ8hdmXr","dt":"2021-06-27T21:26:21.233257'
@@ -148,7 +151,7 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
         omsg = bytearray(offer0.raw)
         omsg.extend(offer0atc)
 
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytes(omsg), exc=sidExc)
+        Parser(version=Vrsn_1_0).parse(ims=bytes(omsg), exc=sidExc)
 
         # Not saved because no apply
         assert sidHby.db.exns.get(keys=(offer0.said,)) is None
@@ -157,15 +160,15 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
         amsg.extend(apply0atc)
 
         # Now parse both messages in order and both will save
-        parsing.Parser(version=Vrsn_1_0).parse(ims=amsg, exc=sidExc)
+        Parser(version=Vrsn_1_0).parse(ims=amsg, exc=sidExc)
         serder = sidHby.db.exns.get(keys=(apply0.said,))
         assert serder.ked == apply0.ked
-        parsing.Parser(version=Vrsn_1_0).parse(ims=omsg, exc=sidExc)
+        Parser(version=Vrsn_1_0).parse(ims=omsg, exc=sidExc)
         serder = sidHby.db.exns.get(keys=(offer0.said,))
         assert serder.ked == offer0.ked
 
         # Let's see if we can spurn a message we previously accepted.
-        spurn0, spurn0atc = protocoling.ipexSpurnExn(sidHab, "I reject you", spurned=apply0)
+        spurn0, spurn0atc = ipexSpurnExn(sidHab, "I reject you", spurned=apply0)
         assert spurn0.raw == (b'{"v":"KERI10JSON000125_","t":"exn","d":"EHijfrof83z7JeFR-wJO9Ptgl-PieQHhKC-F'
                               b'bZIDvGvM","i":"EMl4RhuR_JxpiMd1N8DEJEhTxM3Ovvn9Xya8AN-tiUbl","rp":"","p":"EH'
                               b'VK5cO32UQJCkpK9RqRP_ONViK8u3JNXn73nJ8hdmXr","dt":"2021-06-27T21:26:21.233257'
@@ -175,7 +178,7 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
         assert ipexhan.verify(spurn0) is False
 
         # Now lets try an offer without a pointer back to a reply
-        offer1, offer1atc = protocoling.ipexOfferExn(sidHab, "Here a credential offer", acdc=creder.raw)
+        offer1, offer1atc = ipexOfferExn(sidHab, "Here a credential offer", acdc=creder.raw)
         assert offer1.raw == (b'{"v":"KERI10JSON0002d5_","t":"exn","d":"EC8fiu3IoCex-7uhTskkEodJOiQYQpO61l3Y'
                               b'HCXWuuFi","i":"EMl4RhuR_JxpiMd1N8DEJEhTxM3Ovvn9Xya8AN-tiUbl","rp":"","p":"",'
                               b'"dt":"2021-06-27T21:26:21.233257+00:00","r":"/ipex/offer","q":{},"a":{"m":"H'
@@ -192,11 +195,11 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
 
         omsg = bytearray(offer1.raw)
         omsg.extend(offer1atc)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=omsg, exc=sidExc)
+        Parser(version=Vrsn_1_0).parse(ims=omsg, exc=sidExc)
         serder = sidHby.db.exns.get(keys=(offer1.said,))
         assert serder.ked == offer1.ked
 
-        agree, argeeAtc = protocoling.ipexAgreeExn(sidHab, "I'll accept that offer", offer=offer0)
+        agree, argeeAtc = ipexAgreeExn(sidHab, "I'll accept that offer", offer=offer0)
         assert agree.raw == (b'{"v":"KERI10JSON00012f_","t":"exn","d":"ECU3UjnSY1_6Wl3aYEW19jaGiKuyFh_chIQQ'
                              b'w48bcT_X","i":"EMl4RhuR_JxpiMd1N8DEJEhTxM3Ovvn9Xya8AN-tiUbl","rp":"","p":"EN'
                              b'dVOCsP5Xz57qs1xa_msznozvBs6Ii0_JRoi6tp2NBu","dt":"2021-06-27T21:26:21.233257'
@@ -208,13 +211,13 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
 
         amsg = bytearray(agree.raw)
         amsg.extend(argeeAtc)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=amsg, exc=sidExc)
+        Parser(version=Vrsn_1_0).parse(ims=amsg, exc=sidExc)
         serder = sidHby.db.exns.get(keys=(agree.said,))
         assert serder.ked == agree.ked
 
         # First try a bare grant (no prior agree)
         anc = sidHab.makeOwnEvent(sn=2)
-        grant0, grant0atc = protocoling.ipexGrantExn(sidHab, message="Here's a credential", recp=sidHab.pre,
+        grant0, grant0atc = ipexGrantExn(sidHab, message="Here's a credential", recp=sidHab.pre,
                                                      acdc=msg, iss=iss.raw, anc=anc)
         assert grant0.raw == (b'{"v":"KERI10JSON000539_","t":"exn","d":"ELnjKvzdgO57JZwG3giIScoOeTB0rLuevniv'
                               b'zRE5DbTE","i":"EMl4RhuR_JxpiMd1N8DEJEhTxM3Ovvn9Xya8AN-tiUbl","rp":"","p":"",'
@@ -240,24 +243,24 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
         # Lets save this bare offer so we can test full spurn workflow
         gmsg = bytearray(grant0.raw)
         gmsg.extend(grant0atc)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=gmsg, exc=sidExc)
+        Parser(version=Vrsn_1_0).parse(ims=gmsg, exc=sidExc)
         serder = sidHby.db.exns.get(keys=(grant0.said,))
         assert serder.ked == grant0.ked
 
         # Let's see if we can spurn a message we previously accepted.
-        spurn1, spurn1atc = protocoling.ipexSpurnExn(sidHab, "I reject you", spurned=grant0)
+        spurn1, spurn1atc = ipexSpurnExn(sidHab, "I reject you", spurned=grant0)
         assert spurn1.raw == (b'{"v":"KERI10JSON000125_","t":"exn","d":"ELHFilyCgYvVq6vczgPQc7ZuRMs7Cv10U_h-'
                               b'2LIvJ1-Z","i":"EMl4RhuR_JxpiMd1N8DEJEhTxM3Ovvn9Xya8AN-tiUbl","rp":"","p":"EL'
                               b'njKvzdgO57JZwG3giIScoOeTB0rLuevnivzRE5DbTE","dt":"2021-06-27T21:26:21.233257'
                               b'+00:00","r":"/ipex/spurn","q":{},"a":{"m":"I reject you"},"e":{}}')
         smsg = bytearray(spurn1.raw)
         smsg.extend(spurn1atc)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=smsg, exc=sidExc)
+        Parser(version=Vrsn_1_0).parse(ims=smsg, exc=sidExc)
         serder = sidHby.db.exns.get(keys=(spurn1.said,))
         assert serder.ked == spurn1.ked  # This credential grant has been spurned and not accepted into database
 
         # Now we'll run a grant pointing back to the agree all the way to the database
-        grant1, grant1atc = protocoling.ipexGrantExn(sidHab, message="Here's a credential", acdc=msg, iss=iss.raw,
+        grant1, grant1atc = ipexGrantExn(sidHab, message="Here's a credential", acdc=msg, iss=iss.raw,
                                                      recp=sidHab.pre, anc=anc, agree=agree)
         assert grant1.raw == (b'{"v":"KERI10JSON000565_","t":"exn","d":"EHAY_L6Ig4k_5qIw6uH-QZwBswWLfwVzCqaG'
                               b'sjtdnubK","i":"EMl4RhuR_JxpiMd1N8DEJEhTxM3Ovvn9Xya8AN-tiUbl","rp":"","p":"EC'
@@ -282,12 +285,12 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
 
         gmsg = bytearray(grant1.raw)
         gmsg.extend(grant1atc)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=gmsg, exc=sidExc)
+        Parser(version=Vrsn_1_0).parse(ims=gmsg, exc=sidExc)
         serder = sidHby.db.exns.get(keys=(grant1.said,))
         assert serder.ked == grant1.ked
 
         # And now the last... admit the granted credential to complete the full flow
-        admit0, admit0atc = protocoling.ipexAdmitExn(sidHab, "Thanks for the credential", grant=grant1)
+        admit0, admit0atc = ipexAdmitExn(sidHab, "Thanks for the credential", grant=grant1)
         assert admit0.raw == (b'{"v":"KERI10JSON000132_","t":"exn","d":"EMxU5rfeqKnZzrbqnL7weXQGaC8Zum4qowj2'
                               b'eiL6GxqL","i":"EMl4RhuR_JxpiMd1N8DEJEhTxM3Ovvn9Xya8AN-tiUbl","rp":"","p":"EH'
                               b'AY_L6Ig4k_5qIw6uH-QZwBswWLfwVzCqaGsjtdnubK","dt":"2021-06-27T21:26:21.233257'
@@ -297,6 +300,6 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
 
         amsg = bytearray(admit0.raw)
         amsg.extend(admit0atc)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=amsg, exc=sidExc)
+        Parser(version=Vrsn_1_0).parse(ims=amsg, exc=sidExc)
         serder = sidHby.db.exns.get(keys=(admit0.said,))
         assert serder.ked == admit0.ked

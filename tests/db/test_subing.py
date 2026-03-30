@@ -8,11 +8,22 @@ import os
 import pytest
 
 from keri import help
-from keri import core
-from keri.core import coring, eventing, serdering, indexing, scheming
+from keri.core import (SerderKERI, Siger, Schemer, Signer,
+                       Salter, Decrypter, Encrypter, Cipher,
+                       Saider, Seqner, Diger, Prefixer,
+                       Matter, Dater, Number, MtrDex, Tiers,
+                       incept, rotate)
 
-from keri.db import dbing, subing
-from keri.app import keeping
+from keri.db import (Suber, OnSuber, LMDBer, B64Suber, DupSuber,
+                     IoDupSuber, B64IoDupSuber, OnIoDupSuber, B64OnIoDupSuber,
+                     IoSetSuber, B64IoSetSuber, CesrIoSetSuber, OnIoSetSuber,
+                     B64OnIoSetSuber, SerderSuber, SerderSuber, SerderIoSetSuber,
+                     SerderIoSetSuber, SchemerSuber, CesrSuber, CesrOnSuber,
+                     CatCesrSuberBase, CatCesrSuber, CatCesrIoSetSuber,
+                     CesrDupSuber, CatCesrDupSuber, SignerSuber, CryptSignerSuber,
+                     openLMDB, onKey)
+
+from keri.app import Manager, openKS, Algos
 
 
 def test_suber():
@@ -20,13 +31,13 @@ def test_suber():
     Test Suber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        suber = subing.Suber(db=db, subkey='bags.')
-        assert isinstance(suber, subing.Suber)
+        suber = Suber(db=db, subkey='bags.')
+        assert isinstance(suber, Suber)
         assert not suber.sdb.flags()["dupsort"]
 
         sue = "Hello sailer!"
@@ -111,8 +122,8 @@ def test_suber():
         y = "Red apple"
         z = "White snow"
 
-        suber = subing.Suber(db=db, subkey='pugs.')
-        assert isinstance(suber, subing.Suber)
+        suber = Suber(db=db, subkey='pugs.')
+        assert isinstance(suber, Suber)
 
         suber.put(keys=("a","1"), val=w)
         suber.put(keys=("a","2"), val=x)
@@ -225,13 +236,13 @@ def test_on_suber():
     Test OnSuber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        onsuber = subing.OnSuber(db=db, subkey='bags.')
-        assert isinstance(onsuber, subing.OnSuber)
+        onsuber = OnSuber(db=db, subkey='bags.')
+        assert isinstance(onsuber, OnSuber)
         assert not onsuber.sdb.flags()["dupsort"]
 
         w = "Blue dog"
@@ -418,14 +429,14 @@ def test_b64_suber():
     Test B64Suber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
         # Test Single klas
-        buber = subing.B64Suber(db=db, subkey='bags.')  # default klas is [Matter]
-        assert isinstance(buber, subing.B64Suber)
+        buber = B64Suber(db=db, subkey='bags.')  # default klas is [Matter]
+        assert isinstance(buber, B64Suber)
         assert not buber.sdb.flags()["dupsort"]
 
         vals0 = ("alpha", "beta")
@@ -510,13 +521,13 @@ def test_dup_suber():
     Test DubSuber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        dupber = subing.DupSuber(db=db, subkey='bags.')
-        assert isinstance(dupber, subing.DupSuber)
+        dupber = DupSuber(db=db, subkey='bags.')
+        assert isinstance(dupber, DupSuber)
         assert dupber.sdb.flags()["dupsort"]
 
         sue = "Hello sailer!"
@@ -606,11 +617,11 @@ def test_dup_suber():
         # test cntpre
         vals = ["hi", "me", "my"]
         for i, val in enumerate(vals):
-            assert dupber.put(keys=dbing.onKey("bob", i), vals=val)
+            assert dupber.put(keys=onKey("bob", i), vals=val)
 
         vals = ["bye", "guy", "gal"]
         for i, val in enumerate(vals):
-            assert dupber.put(keys=dbing.onKey("bob", i), vals=val)
+            assert dupber.put(keys=onKey("bob", i), vals=val)
 
         items = [(keys, val) for keys, val in dupber.getTopItemIter(keys="bob")]
         assert items == [
@@ -622,9 +633,9 @@ def test_dup_suber():
             (('bob', '00000000000000000000000000000002'), 'my')
         ]
 
-        assert dupber.cnt(keys=dbing.onKey("bob", 1)) == 2
+        assert dupber.cnt(keys=onKey("bob", 1)) == 2
 
-        vals = [val for val in dupber.getIter(keys=dbing.onKey("bob", 2))]
+        vals = [val for val in dupber.getIter(keys=onKey("bob", 2))]
         assert vals == ["gal", "my"]
 
 
@@ -637,13 +648,13 @@ def test_iodup_suber():
     Test IoDupSuber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        ioduber = subing.IoDupSuber(db=db, subkey='bags.')
-        assert isinstance(ioduber, subing.IoDupSuber)
+        ioduber = IoDupSuber(db=db, subkey='bags.')
+        assert isinstance(ioduber, IoDupSuber)
         assert ioduber.sdb.flags()["dupsort"]
 
         sue = "Hello sailer!"
@@ -830,14 +841,14 @@ def test_b64_iodup_suber():
     Test B64IoDupSuber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
         # Test Single klas
-        iobuber = subing.B64IoDupSuber(db=db, subkey='bags.')
-        assert isinstance(iobuber, subing.B64IoDupSuber)
+        iobuber = B64IoDupSuber(db=db, subkey='bags.')
+        assert isinstance(iobuber, B64IoDupSuber)
         assert iobuber.sdb.flags()["dupsort"]
         assert iobuber.sep == '.'
         assert not help.Reb64.match(iobuber.sep.encode())
@@ -1092,13 +1103,13 @@ def test_on_iodup_suber():
     Test OnIoDupSuber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        oidsuber = subing.OnIoDupSuber(db=db, subkey='bags.')
-        assert isinstance(oidsuber, subing.OnIoDupSuber)
+        oidsuber = OnIoDupSuber(db=db, subkey='bags.')
+        assert isinstance(oidsuber, OnIoDupSuber)
         assert oidsuber.sdb.flags()["dupsort"]
 
         w = "Blue dog"
@@ -1420,13 +1431,13 @@ def test_b64_oniodup_suber():
     Test B64OnIoDupSuber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        oidbuber = subing.B64OnIoDupSuber(db=db, subkey='bags.')
-        assert isinstance(oidbuber, subing.B64OnIoDupSuber)
+        oidbuber = B64OnIoDupSuber(db=db, subkey='bags.')
+        assert isinstance(oidbuber, B64OnIoDupSuber)
         assert oidbuber.sdb.flags()["dupsort"]
 
         k = "a"
@@ -1742,13 +1753,13 @@ def test_ioset_suber():
     Test IoSetSuber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        iosuber = subing.IoSetSuber(db=db, subkey='bags.')
-        assert isinstance(iosuber, subing.IoSetSuber)
+        iosuber = IoSetSuber(db=db, subkey='bags.')
+        assert isinstance(iosuber, IoSetSuber)
         assert not iosuber.sdb.flags()["dupsort"]
 
 
@@ -2095,14 +2106,14 @@ def test_b64_ioset_suber():
     Test B64IoSetSuber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
         # Test Single klas
-        iobuber = subing.B64IoSetSuber(db=db, subkey='bags.')
-        assert isinstance(iobuber, subing.B64IoSetSuber)
+        iobuber = B64IoSetSuber(db=db, subkey='bags.')
+        assert isinstance(iobuber, B64IoSetSuber)
         assert not iobuber.sdb.flags()["dupsort"]
         assert iobuber.sep == '.'
         assert not help.Reb64.match(iobuber.sep.encode())
@@ -2358,29 +2369,29 @@ def test_cesr_ioset_suber():
     Test CesrIoSetSuber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        cisuber = subing.CesrIoSetSuber(db=db, subkey='bags.', klas=coring.Saider)
-        assert isinstance(cisuber, subing.CesrIoSetSuber)
-        assert issubclass(cisuber.klas, coring.Saider)
+        cisuber = CesrIoSetSuber(db=db, subkey='bags.', klas=Saider)
+        assert isinstance(cisuber, CesrIoSetSuber)
+        assert issubclass(cisuber.klas, Saider)
         assert not cisuber.sdb.flags()["dupsort"]
 
-        seqner0 = coring.Seqner(sn=20)
+        seqner0 = Seqner(sn=20)
         seq0 = seqner0.qb64
         assert seq0 == '0AAAAAAAAAAAAAAAAAAAAAAU'
 
-        seqner1 = coring.Seqner(sn=10)
+        seqner1 = Seqner(sn=10)
         seq1 = seqner1.qb64
         assert seq1 == '0AAAAAAAAAAAAAAAAAAAAAAK'
 
-        diger0 = coring.Diger(ser=b"Hello Me Maties.")
+        diger0 = Diger(ser=b"Hello Me Maties.")
         dig0 = diger0.qb64
         assert dig0 == 'ELq6uSA62FaWKAQf2rclt4D1wRAeVwQ7hBucDG43GrsJ'
 
-        diger1 = coring.Diger(ser=b"Bye Y'all.")
+        diger1 = Diger(ser=b"Bye Y'all.")
         dig1 = diger1.qb64
         assert dig1 == 'EK--ZWfMjPZ8R90eDBuwy9umo1CnxpF95H550OGv65ry'
 
@@ -2399,7 +2410,7 @@ def test_cesr_ioset_suber():
                                 role= "Founder",
                              ),
                    )
-        saider0, sad0 = coring.Saider.saidify(sad=sad)
+        saider0, sad0 = Saider.saidify(sad=sad)
         said0 = saider0.qb64
         assert said0 == 'EKwVGsUU1sUlYRq_g2Z3_3GOIREYtlQ3kPSNjpg8w4j0'
         assert sad0 == {'v': 'KERI10JSON0000b8_',
@@ -2420,7 +2431,7 @@ def test_cesr_ioset_suber():
                                 role= "Creator",
                              ),
                    )
-        saider1, sad1 = coring.Saider.saidify(sad=sad)
+        saider1, sad1 = Saider.saidify(sad=sad)
         said1 = saider1.qb64
         assert said1 == 'EPl1dMAs2RDsZ12K3yxA0fTHP6dRJzDkStf65VVeFxne'
 
@@ -2436,7 +2447,7 @@ def test_cesr_ioset_suber():
                                 role= "Maven",
                              ),
                    )
-        saider2, sad2 = coring.Saider.saidify(sad=sad)
+        saider2, sad2 = Saider.saidify(sad=sad)
         said2 = saider2.qb64
         assert said2 == 'EJxOaEsBSObrcmrsnlfHOdVAowGhUBKoE2Ce3TZ4Mhgu'
 
@@ -2548,13 +2559,13 @@ def test_on_ioset_suber():
     Test OnIoSetSuber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        niosuber = subing.OnIoSetSuber(db=db, subkey='bags.')
-        assert isinstance(niosuber, subing.OnIoSetSuber)
+        niosuber = OnIoSetSuber(db=db, subkey='bags.')
+        assert isinstance(niosuber, OnIoSetSuber)
         assert not niosuber.sdb.flags()["dupsort"]
 
         # test empty keys
@@ -2589,7 +2600,8 @@ def test_on_ioset_suber():
         assert niosuber.cntAll(keys="") == 12
         assert niosuber.cntAll(keys1) == 4
         assert niosuber.cntAll(keys1, on=2) == 0
-        assert niosuber.cnt(keys='') == 0
+        assert niosuber.cnt(keys='') == 12  # whole db count via cntAll
+        assert niosuber.cnt() == 12  # no-arg form
         assert niosuber.cnt(keys=keys0) == 4
         assert niosuber.cnt(keys=keys0, on=0, ion=2) == 2
         assert niosuber.cnt(keys=keys1) == 4
@@ -3017,13 +3029,13 @@ def test_b64_onioset_suber():
     Test B64OnIoSetSuber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        oisbuber = subing.B64OnIoSetSuber(db=db, subkey='bags.')
-        assert isinstance(oisbuber, subing.B64OnIoSetSuber)
+        oisbuber = B64OnIoSetSuber(db=db, subkey='bags.')
+        assert isinstance(oisbuber, B64OnIoSetSuber)
         assert not oisbuber.sdb.flags()["dupsort"]
 
         k = "a"
@@ -3360,23 +3372,23 @@ def test_serder_suber():
     Test SerderSuber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        serber = subing.SerderSuber(db=db, subkey='bags.')
-        assert isinstance(serber, subing.SerderSuber)
+        serber = SerderSuber(db=db, subkey='bags.')
+        assert isinstance(serber, SerderSuber)
         assert not serber.sdb.flags()["dupsort"]
-        assert serber.klas == serdering.SerderKERI
+        assert serber.klas == SerderKERI
 
         pre = "BDzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
-        srdr0 = eventing.incept(keys=[pre])
+        srdr0 = incept(keys=[pre])
 
         keys = (pre, srdr0.said)
         serber.put(keys=keys, val=srdr0)
         actual = serber.get(keys=keys)
-        assert isinstance(actual, serdering.SerderKERI)
+        assert isinstance(actual, SerderKERI)
         assert actual.said == srdr0.said
 
         assert serber.rem(keys)
@@ -3385,20 +3397,20 @@ def test_serder_suber():
 
         serber.put(keys=keys, val=srdr0)
         actual = serber.get(keys=keys)
-        assert isinstance(actual, serdering.SerderKERI)
+        assert isinstance(actual, SerderKERI)
         assert actual.said == srdr0.said
 
-        srdr1 = eventing.rotate(pre=pre, keys=[pre], dig=srdr0.said)
+        srdr1 = rotate(pre=pre, keys=[pre], dig=srdr0.said)
         result = serber.put(keys=keys, val=srdr1)
         assert not result
         actual = serber.get(keys=keys)
-        assert isinstance(actual, serdering.SerderKERI)
+        assert isinstance(actual, SerderKERI)
         assert actual.said == srdr0.said
 
         result = serber.pin(keys=keys, val=srdr1)
         assert result
         actual = serber.get(keys=keys)
-        assert isinstance(actual, serdering.SerderKERI)
+        assert isinstance(actual, SerderKERI)
         assert actual.said == srdr1.said
 
         # test with keys as string not tuple
@@ -3406,7 +3418,7 @@ def test_serder_suber():
 
         serber.put(keys=keys, val=srdr1)
         actual = serber.get(keys=keys)
-        assert isinstance(actual, serdering.SerderKERI)
+        assert isinstance(actual, SerderKERI)
         assert actual.said == srdr1.said
 
         assert serber.rem(keys)
@@ -3419,8 +3431,8 @@ def test_serder_suber():
         assert actual is None
 
         # test iteritems
-        serber = subing.SerderSuber(db=db, subkey='pugs.')
-        assert isinstance(serber, subing.SerderSuber)
+        serber = SerderSuber(db=db, subkey='pugs.')
+        assert isinstance(serber, SerderSuber)
         serber.put(keys=("a","1"), val=srdr0)
         serber.put(keys=("a","2"), val=srdr1)
 
@@ -3445,24 +3457,24 @@ def test_serder_ioset_suber():
     Test SerderIoSetSuber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        serber = subing.SerderIoSetSuber(db=db, subkey='bags.')
-        assert isinstance(serber, subing.SerderIoSetSuber)
+        serber = SerderIoSetSuber(db=db, subkey='bags.')
+        assert isinstance(serber, SerderIoSetSuber)
         assert not serber.sdb.flags()["dupsort"]
-        assert serber.klas == serdering.SerderKERI
+        assert serber.klas == SerderKERI
 
         pre = "BDzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
-        srdr0 = eventing.incept(keys=[pre])
+        srdr0 = incept(keys=[pre])
 
         keys = (pre, srdr0.said)
         serber.put(keys=keys, vals=(srdr0, ))
         actuals = serber.get(keys=keys)
         for actual in actuals:
-            assert isinstance(actual, serdering.SerderKERI)
+            assert isinstance(actual, SerderKERI)
             assert actual.said == srdr0.said
 
         assert serber.rem(keys)
@@ -3472,17 +3484,17 @@ def test_serder_ioset_suber():
         serber.put(keys=keys, vals=(srdr0, ))
         actuals = serber.get(keys=keys)
         for actual in actuals:
-            assert isinstance(actual, serdering.SerderKERI)
+            assert isinstance(actual, SerderKERI)
             assert actual.said == srdr0.said
 
-        srdr1 = eventing.rotate(pre=pre, keys=[pre], dig=srdr0.said)
+        srdr1 = rotate(pre=pre, keys=[pre], dig=srdr0.said)
 
         result = serber.put(keys=keys, vals=(srdr1, ))
         assert result
         actuals = serber.get(keys=keys)
-        assert isinstance(actuals[0], serdering.SerderKERI)
+        assert isinstance(actuals[0], SerderKERI)
         assert actuals[0].said == srdr0.said
-        assert isinstance(actuals[1], serdering.SerderKERI)
+        assert isinstance(actuals[1], SerderKERI)
         assert actuals[1].said == srdr1.said
 
 
@@ -3490,22 +3502,22 @@ def test_serder_ioset_suber():
         assert result
         actuals = serber.get(keys=keys)
         for actual in actuals:
-            assert isinstance(actual, serdering.SerderKERI)
+            assert isinstance(actual, SerderKERI)
             assert actual.said == srdr1.said
 
 
         # test rem a specific value
         serber.put(keys=keys, vals=(srdr0, ))
         actuals = serber.get(keys=keys)
-        assert isinstance(actuals[0], serdering.SerderKERI)
+        assert isinstance(actuals[0], SerderKERI)
         assert actuals[0].said == srdr1.said
-        assert isinstance(actuals[1], serdering.SerderKERI)
+        assert isinstance(actuals[1], SerderKERI)
         assert actuals[1].said == srdr0.said
 
         assert serber.rem(keys=keys, val=srdr1)
         actuals = serber.get(keys=keys)
         assert len(actuals) == 1
-        assert isinstance(actuals[0], serdering.SerderKERI)
+        assert isinstance(actuals[0], SerderKERI)
         assert actuals[0].said == srdr0.said
 
 
@@ -3515,7 +3527,7 @@ def test_serder_ioset_suber():
         serber.put(keys=keys, vals=(srdr1, ))
         actuals = serber.get(keys=keys)
         for actual in actuals:
-            assert isinstance(actual, serdering.SerderKERI)
+            assert isinstance(actual, SerderKERI)
             assert actual.said == srdr1.said
 
         assert serber.rem(keys)
@@ -3528,8 +3540,8 @@ def test_serder_ioset_suber():
         assert not actuals
 
         # test iteritems
-        serber = subing.SerderIoSetSuber(db=db, subkey='pugs.')
-        assert isinstance(serber, subing.SerderIoSetSuber)
+        serber = SerderIoSetSuber(db=db, subkey='pugs.')
+        assert isinstance(serber, SerderIoSetSuber)
         serber.put(keys=("a","1"), vals=(srdr0, ))
         serber.put(keys=("a","1"), vals=(srdr1, ))
         serber.put(keys=("a","2"), vals=(srdr1, ))
@@ -3559,15 +3571,15 @@ def test_schemer_suber():
     Test SchemerSuber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        scmber = subing.SchemerSuber(db=db, subkey='bags.')
-        assert isinstance(scmber, subing.SchemerSuber)
+        scmber = SchemerSuber(db=db, subkey='bags.')
+        assert isinstance(scmber, SchemerSuber)
         assert not scmber.sdb.flags()["dupsort"]
-        assert scmber.klas == scheming.Schemer
+        assert scmber.klas == Schemer
 
         pre = "BDzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
 
@@ -3575,12 +3587,12 @@ def test_schemer_suber():
                 b'-schema.org/draft-07/schema#","type":"object","properties":{"a":{"type":"str'
                 b'ing"},"b":{"type":"number"},"c":{"type":"string","format":"date-time"}}}')
 
-        scmr0 = scheming.Schemer(raw=raw0)
+        scmr0 = Schemer(raw=raw0)
 
         keys = (pre, scmr0.said)
         scmber.put(keys=keys, val=scmr0)
         actual = scmber.get(keys=keys)
-        assert isinstance(actual, scheming.Schemer)
+        assert isinstance(actual, Schemer)
         assert actual.said == scmr0.said
 
         assert scmber.rem(keys)
@@ -3589,25 +3601,25 @@ def test_schemer_suber():
 
         scmber.put(keys=keys, val=scmr0)
         actual = scmber.get(keys=keys)
-        assert isinstance(actual, scheming.Schemer)
+        assert isinstance(actual, Schemer)
         assert actual.said == scmr0.said
 
         raw1 = (b'{"$id":"ENQKl3r1Z6HiLXOD-050aVvKziCWJtXWg3vY2FWUGSxG","$schema":"http://json'
          b'-schema.org/draft-07/schema#","type":"object","properties":{"a":{"type":"obj'
          b'ect","properties":{"b":{"type":"number"},"c":{"type":"string","format":"date'
          b'-time"}}}}}')
-        scmr1 = scheming.Schemer(raw=raw1)
+        scmr1 = Schemer(raw=raw1)
 
         result = scmber.put(keys=keys, val=scmr1)
         assert not result
         actual = scmber.get(keys=keys)
-        assert isinstance(actual, scheming.Schemer)
+        assert isinstance(actual, Schemer)
         assert actual.said == scmr0.said
 
         result = scmber.pin(keys=keys, val=scmr1)
         assert result
         actual = scmber.get(keys=keys)
-        assert isinstance(actual, scheming.Schemer)
+        assert isinstance(actual, Schemer)
         assert actual.said == scmr1.said
 
         # test with keys as string not tuple
@@ -3615,7 +3627,7 @@ def test_schemer_suber():
 
         scmber.put(keys=keys, val=scmr1)
         actual = scmber.get(keys=keys)
-        assert isinstance(actual, scheming.Schemer)
+        assert isinstance(actual, Schemer)
         assert actual.said == scmr1.said
 
         assert scmber.rem(keys)
@@ -3628,8 +3640,8 @@ def test_schemer_suber():
         assert actual is None
 
         # test iteritems
-        scmber = subing.SchemerSuber(db=db, subkey='pugs.')
-        assert isinstance(scmber, subing.SchemerSuber)
+        scmber = SchemerSuber(db=db, subkey='pugs.')
+        assert isinstance(scmber, SchemerSuber)
         scmber.put(keys=("a","1"), val=scmr0)
         scmber.put(keys=("a","2"), val=scmr1)
 
@@ -3647,7 +3659,7 @@ def test_schemer_suber():
                          (('b', '2'), scmr1.said)]
 
         with pytest.raises(TypeError):
-            scmber = subing.SchemerSuber(db=db, subkey='bags.', klas=coring.Matter)
+            scmber = SchemerSuber(db=db, subkey='bags.', klas=Matter)
 
 
     assert not os.path.exists(db.path)
@@ -3659,23 +3671,23 @@ def test_cesr_suber():
     Test CesrSuber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        sdb = subing.CesrSuber(db=db, subkey='bags.')  # default klas is Matter
-        assert isinstance(sdb, subing.CesrSuber)
-        assert issubclass(sdb.klas, coring.Matter)
+        sdb = CesrSuber(db=db, subkey='bags.')  # default klas is Matter
+        assert isinstance(sdb, CesrSuber)
+        assert issubclass(sdb.klas, Matter)
         assert not sdb.sdb.flags()["dupsort"]
 
         pre0 = "BDzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
-        val0 = coring.Matter(qb64=pre0)
+        val0 = Matter(qb64=pre0)
 
         keys = ("alpha", "dog")
         assert sdb.put(keys=keys, val=val0)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Matter)
+        assert isinstance(actual, Matter)
         assert actual.qb64 == val0.qb64
 
         assert sdb.rem(keys)
@@ -3684,18 +3696,18 @@ def test_cesr_suber():
 
         sdb.put(keys=keys, val=val0)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Matter)
+        assert isinstance(actual, Matter)
         assert actual.qb64 == val0.qb64
 
         pre1 = "BHHzqZWzwE-Wk7K0gzQPYGGwTmuupUhPx5_y1x4ejhcc"
-        val1 = coring.Matter(qb64=pre1)
+        val1 = Matter(qb64=pre1)
         assert not sdb.put(keys=keys, val=val1)
-        assert isinstance(actual, coring.Matter)
+        assert isinstance(actual, Matter)
         assert actual.qb64 == val0.qb64
 
         assert sdb.pin(keys=keys, val=val1)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Matter)
+        assert isinstance(actual, Matter)
         assert actual.qb64 == val1.qb64
 
         # test with keys as string not tuple
@@ -3703,7 +3715,7 @@ def test_cesr_suber():
 
         assert sdb.put(keys=keys, val=val1)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Matter)
+        assert isinstance(actual, Matter)
         assert actual.qb64 == val1.qb64
 
         assert sdb.rem(keys)
@@ -3716,8 +3728,8 @@ def test_cesr_suber():
         assert actual is None
 
         # test iteritems
-        sdb = subing.CesrSuber(db=db, subkey='pugs.')
-        assert isinstance(sdb, subing.CesrSuber)
+        sdb = CesrSuber(db=db, subkey='pugs.')
+        assert isinstance(sdb, CesrSuber)
         assert sdb.put(keys=("a","1"), val=val0)
         assert sdb.put(keys=("a","2"), val=val1)
 
@@ -3726,17 +3738,17 @@ def test_cesr_suber():
                          (('a', '2'), val1.qb64)]
 
         #  Try other classs
-        sdb = subing.CesrSuber(db=db, subkey='pigs.', klas=coring.Diger)
-        assert isinstance(sdb, subing.CesrSuber)
-        assert issubclass(sdb.klas, coring.Diger)
+        sdb = CesrSuber(db=db, subkey='pigs.', klas=Diger)
+        assert isinstance(sdb, CesrSuber)
+        assert issubclass(sdb.klas, Diger)
 
         dig0 = "EAPYGGwTmuupWzwEHHzq7K0gzUhPx5_yZ-Wk1x4ejhcc"
-        val0 = coring.Diger(qb64=dig0)
+        val0 = Diger(qb64=dig0)
 
         keys = ("alpha", "dog")
         assert sdb.put(keys=keys, val=val0)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Diger)
+        assert isinstance(actual, Diger)
         assert actual.qb64 == val0.qb64
 
         assert sdb.rem(keys)
@@ -3745,24 +3757,24 @@ def test_cesr_suber():
 
         assert sdb.put(keys=keys, val=val0)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Diger)
+        assert isinstance(actual, Diger)
         assert actual.qb64 == val0.qb64
 
         pre1 = "EHHzqZWzwE-Wk7K0gzQPYGGwTmuupUhPx5_y1x4ejhcc"
-        val1 = coring.Matter(qb64=pre1)
+        val1 = Matter(qb64=pre1)
         assert not sdb.put(keys=keys, val=val1)
-        assert isinstance(actual, coring.Diger)
+        assert isinstance(actual, Diger)
         assert actual.qb64 == val0.qb64
 
         result = sdb.pin(keys=keys, val=val1)
         assert result
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Diger)
+        assert isinstance(actual, Diger)
         assert actual.qb64 == val1.qb64
 
         # test iteritems
-        sdb = subing.CesrSuber(db=db, subkey='figs.')
-        assert isinstance(sdb, subing.CesrSuber)
+        sdb = CesrSuber(db=db, subkey='figs.')
+        assert isinstance(sdb, CesrSuber)
         assert sdb.put(keys=("a","1"), val=val0)
         assert sdb.put(keys=("a","2"), val=val1)
 
@@ -3780,15 +3792,15 @@ def test_cesr_suber():
                          (('b', '2'), val1.qb64)]
 
         # Try Siger Indexer Subclass
-        sdb = subing.CesrSuber(db=db, subkey='pigs.', klas=indexing.Siger)
-        assert isinstance(sdb, subing.CesrSuber)
-        assert issubclass(sdb.klas, indexing.Siger)
+        sdb = CesrSuber(db=db, subkey='pigs.', klas=Siger)
+        assert isinstance(sdb, CesrSuber)
+        assert issubclass(sdb.klas, Siger)
         sig0 = 'AACdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-        val0 = indexing.Siger(qb64=sig0)
+        val0 = Siger(qb64=sig0)
         keys = ("zeta", "cat")
         assert sdb.put(keys=keys, val=val0)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, indexing.Siger)
+        assert isinstance(actual, Siger)
         assert actual.qb64 == val0.qb64
 
 
@@ -3801,20 +3813,20 @@ def test_cesr_suber_strict_subclass_enforcement():
     """
     Test CesrSuber strict mode enforces subclass checks in _ser
     """
-    with dbing.openLMDB() as db:
-        sdb = subing.CesrSuber(db=db, subkey='bags.', klas=coring.Diger, strict=True)
-        assert isinstance(sdb, subing.CesrSuber)
+    with openLMDB() as db:
+        sdb = CesrSuber(db=db, subkey='bags.', klas=Diger, strict=True)
+        assert isinstance(sdb, CesrSuber)
         assert sdb.strict is True
 
-        diger = coring.Diger(ser=b"strict cesr")
+        diger = Diger(ser=b"strict cesr")
         keys = ("alpha", "dog")
 
         assert sdb.put(keys=keys, val=diger)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Diger)
+        assert isinstance(actual, Diger)
         assert actual.qb64 == diger.qb64
 
-        wrong = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        wrong = Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
         with pytest.raises(TypeError):
             sdb.pin(keys=keys, val=wrong)
 
@@ -3825,7 +3837,7 @@ def test_cesr_suber_strict_subclass_enforcement():
             sdb.pin(keys=keys, val=diger.qb64)
 
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, coring.Diger)
+        assert isinstance(actual, Diger)
         assert actual.qb64 == diger.qb64
 
     assert not os.path.exists(db.path)
@@ -3837,23 +3849,23 @@ def test_cesr_on_suber():
     Test CesrOnSuber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        onsuber = subing.CesrOnSuber(db=db, subkey='bags.')
-        assert isinstance(onsuber, subing.CesrOnSuber)
+        onsuber = CesrOnSuber(db=db, subkey='bags.')
+        assert isinstance(onsuber, CesrOnSuber)
         assert not onsuber.sdb.flags()["dupsort"]
 
         prew = "BDzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
-        w = coring.Matter(qb64=prew)
+        w = Matter(qb64=prew)
         prex = "BHHzqZWzwE-Wk7K0gzQPYGGwTmuupUhPx5_y1x4ejhcc"
-        x = coring.Matter(qb64=prex)
+        x = Matter(qb64=prex)
         prey = "EHHzqZWzwE-Wk7K0gzQPYGGwTmuupUhPx5_y1x4ejhcc"
-        y = coring.Matter(qb64=prey)
+        y = Matter(qb64=prey)
         prez = "EAPYGGwTmuupWzwEHHzq7K0gzUhPx5_yZ-Wk1x4ejhcc"
-        z = coring.Matter(qb64=prez)
+        z = Matter(qb64=prez)
 
 
         # test append
@@ -3945,30 +3957,30 @@ def test_cat_cesr_suber():
     Test CatCesrSuber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
         # Test Single klas
-        sdb = subing.CatCesrSuber(db=db, subkey='bags.')  # default klas is [Matter]
-        assert isinstance(sdb, subing.CatCesrSuber)
+        sdb = CatCesrSuber(db=db, subkey='bags.')  # default klas is [Matter]
+        assert isinstance(sdb, CatCesrSuber)
         assert len(sdb.klas) == 1
-        assert issubclass(sdb.klas[0], coring.Matter)
+        assert issubclass(sdb.klas[0], Matter)
         assert not sdb.sdb.flags()["dupsort"]
 
         matb0 = "BDzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
-        matter0 = coring.Matter(qb64=matb0)
+        matter0 = Matter(qb64=matb0)
         vals0 = [matter0]
 
         matb1 = "BHHzqZWzwE-Wk7K0gzQPYGGwTmuupUhPx5_y1x4ejhcc"
-        matter1 = coring.Matter(qb64=matb1)
+        matter1 = Matter(qb64=matb1)
         vals1 = [matter1]
 
         keys0 = ("alpha", "dog")
         sdb.put(keys=keys0, val=vals0)
         actuals = sdb.get(keys=keys0)
-        assert isinstance(actuals[0], coring.Matter)
+        assert isinstance(actuals[0], Matter)
         assert actuals[0].qb64 == matter0.qb64
 
         sdb.rem(keys0)
@@ -3977,7 +3989,7 @@ def test_cat_cesr_suber():
 
         sdb.put(keys=keys0, val=vals0)
         actuals = sdb.get(keys=keys0)
-        assert isinstance(actuals[0], coring.Matter)
+        assert isinstance(actuals[0], Matter)
         assert actuals[0].qb64 == vals0[0].qb64
 
         result = sdb.put(keys=keys0, val=vals1)
@@ -3986,7 +3998,7 @@ def test_cat_cesr_suber():
         result = sdb.pin(keys=keys0, val=vals1)
         assert result
         actuals = sdb.get(keys=keys0)
-        assert isinstance(actuals[0], coring.Matter)
+        assert isinstance(actuals[0], Matter)
         assert actuals[0].qb64 == matter1.qb64
 
         sdb.rem(keys0)
@@ -3998,7 +4010,7 @@ def test_cat_cesr_suber():
 
         sdb.put(keys=keys1, val=vals1)
         actuals = sdb.get(keys=keys1)
-        assert isinstance(actuals[0], coring.Matter)
+        assert isinstance(actuals[0], Matter)
         assert actuals[0].qb64 == matter1.qb64
 
         sdb.rem(keys1)
@@ -4031,23 +4043,23 @@ def test_cat_cesr_suber():
                          (('b', '2'), [matter1.qb64])]
 
         # Test multiple klases
-        klases = (coring.Dater, coring.Seqner, coring.Diger)
-        sdb = subing.CatCesrSuber(db=db, subkey='bags.', klas=klases)
-        assert isinstance(sdb, subing.CatCesrSuber)
+        klases = (Dater, Seqner, Diger)
+        sdb = CatCesrSuber(db=db, subkey='bags.', klas=klases)
+        assert isinstance(sdb, CatCesrSuber)
         for klas, sklas in zip(klases, sdb.klas):
             assert klas == sklas
         assert not sdb.sdb.flags()["dupsort"]
 
 
-        dater = coring.Dater(dts="2021-01-01T00:00:00.000000+00:00")
+        dater = Dater(dts="2021-01-01T00:00:00.000000+00:00")
         datb = dater.qb64b
         assert datb == b'1AAG2021-01-01T00c00c00d000000p00c00'
 
-        seqner = coring.Seqner(sn=20)
+        seqner = Seqner(sn=20)
         seqb = seqner.qb64b
         assert seqb == b'0AAAAAAAAAAAAAAAAAAAAAAU'
 
-        diger = coring.Diger(ser=b"Hello Me Maties.")
+        diger = Diger(ser=b"Hello Me Maties.")
         digb = diger.qb64b
         assert digb == b'ELq6uSA62FaWKAQf2rclt4D1wRAeVwQ7hBucDG43GrsJ'
 
@@ -4061,15 +4073,15 @@ def test_cat_cesr_suber():
             assert isinstance(val, klas)
 
         # Try Siger Indexer Subclass
-        sdb = subing.CatCesrSuber(db=db, subkey='pigs.', klas=(indexing.Siger, ))
-        assert isinstance(sdb, subing.CatCesrSuber)
-        assert issubclass(sdb.klas[0], indexing.Siger)
+        sdb = CatCesrSuber(db=db, subkey='pigs.', klas=(Siger, ))
+        assert isinstance(sdb, CatCesrSuber)
+        assert issubclass(sdb.klas[0], Siger)
         sig0 = 'AACdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-        val0 = indexing.Siger(qb64=sig0)
+        val0 = Siger(qb64=sig0)
         keys = ("zeta", "cat")
         assert sdb.put(keys=keys, val=[val0])
         actual = sdb.get(keys=keys)
-        assert isinstance(actual[0], indexing.Siger)
+        assert isinstance(actual[0], Siger)
         assert actual[0].qb64 == val0.qb64
 
     assert not os.path.exists(db.path)
@@ -4081,20 +4093,20 @@ def test_cat_cesr_suber_strict_subclass_enforcement():
     """
     Test CatCesrSuber strict mode enforces ordered subclass checks in _ser
     """
-    with dbing.openLMDB() as db:
-        klases = (coring.Seqner, coring.Saider)
-        sdb = subing.CatCesrSuber(db=db, subkey='bags.', klas=klases, strict=True)
-        assert isinstance(sdb, subing.CatCesrSuber)
+    with openLMDB() as db:
+        klases = (Seqner, Saider)
+        sdb = CatCesrSuber(db=db, subkey='bags.', klas=klases, strict=True)
+        assert isinstance(sdb, CatCesrSuber)
         assert sdb.strict is True
 
-        seqner = coring.Seqner(sn=1)
-        saider = coring.Saider(qb64b=b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E')
+        seqner = Seqner(sn=1)
+        saider = Saider(qb64b=b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E')
         keys = ("alpha", "dog")
 
         assert sdb.put(keys=keys, val=(seqner, saider))
         actuals = sdb.get(keys=keys)
-        assert isinstance(actuals[0], coring.Seqner)
-        assert isinstance(actuals[1], coring.Saider)
+        assert isinstance(actuals[0], Seqner)
+        assert isinstance(actuals[1], Saider)
         assert actuals[0].qb64 == seqner.qb64
         assert actuals[1].qb64 == saider.qb64
 
@@ -4105,7 +4117,7 @@ def test_cat_cesr_suber_strict_subclass_enforcement():
         assert actuals[0].qb64 == seqner.qb64
         assert actuals[1].qb64 == saider.qb64
 
-        wrong = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        wrong = Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
         with pytest.raises(TypeError):
             sdb.pin(keys=keys, val=(wrong, saider))
 
@@ -4125,30 +4137,30 @@ def test_cat_cesr_ioset_suber():
     Test CatIoSetSuber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        sdb = subing.CatCesrIoSetSuber(db=db, subkey='bags.')
-        assert isinstance(sdb, subing.CatCesrIoSetSuber)
-        assert sdb.klas == (coring.Matter, )  # default
+        sdb = CatCesrIoSetSuber(db=db, subkey='bags.')
+        assert isinstance(sdb, CatCesrIoSetSuber)
+        assert sdb.klas == (Matter, )  # default
         assert not sdb.sdb.flags()["dupsort"]
-        assert isinstance(sdb, subing.CatCesrSuberBase)
-        assert isinstance(sdb, subing.IoSetSuber)
+        assert isinstance(sdb, CatCesrSuberBase)
+        assert isinstance(sdb, IoSetSuber)
 
-        klases = (coring.Seqner, coring.Diger)
-        sdb = subing.CatCesrIoSetSuber(db=db, subkey='bags.', klas=klases)
-        assert isinstance(sdb, subing.CatCesrIoSetSuber)
+        klases = (Seqner, Diger)
+        sdb = CatCesrIoSetSuber(db=db, subkey='bags.', klas=klases)
+        assert isinstance(sdb, CatCesrIoSetSuber)
         for klas, sklas in zip(klases, sdb.klas):
             assert klas == sklas
         assert not sdb.sdb.flags()["dupsort"]
 
         # test .toval and tovals  needs .klas to work
-        sqr0 = coring.Seqner(sn=20)
+        sqr0 = Seqner(sn=20)
         assert sqr0.qb64b == b'0AAAAAAAAAAAAAAAAAAAAAAU'
 
-        dgr0 = coring.Diger(ser=b"Hello Me Maties.")
+        dgr0 = Diger(ser=b"Hello Me Maties.")
         assert dgr0.qb64b == b'ELq6uSA62FaWKAQf2rclt4D1wRAeVwQ7hBucDG43GrsJ'
 
         vals0 = (sqr0, dgr0)
@@ -4160,18 +4172,18 @@ def test_cat_cesr_ioset_suber():
         for val, klas in zip(vals, sdb.klas):
             assert isinstance(val, klas)
 
-        sqr1 = coring.Seqner(sn=32)
+        sqr1 = Seqner(sn=32)
         sqr1.qb64b == b'0AAAAAAAAAAAAAAAAAAAAAIA'
 
-        dgr1 = coring.Diger(ser=b"Hi Guy.")
+        dgr1 = Diger(ser=b"Hi Guy.")
         assert dgr1.qb64b == b'EAdfsnL-ko8ldxIZ9JL-KBTD4eMCqAAkEw4HmKFsT45C'
 
         vals1 = (sqr1, dgr1)
 
-        sqr2 = coring.Seqner(sn=1534)
+        sqr2 = Seqner(sn=1534)
         assert sqr2.qb64b == b'0AAAAAAAAAAAAAAAAAAAAAX-'
 
-        dgr2 = coring.Diger(ser=b"Bye Bye Birdie.")
+        dgr2 = Diger(ser=b"Bye Bye Birdie.")
         assert dgr2.qb64b == b'EAO4UVcSfvfoGnSzJycMiihykJyYOshsyvU_l8U5TrO2'
 
         vals2 = (sqr2, dgr2)
@@ -4305,15 +4317,15 @@ def test_cat_cesr_ioset_suber():
 
 
         # Try Siger Indexer Subclass
-        sdb = subing.CatCesrIoSetSuber(db=db, subkey='pigs.', klas=(indexing.Siger, ))
-        assert isinstance(sdb, subing.CatCesrIoSetSuber)
-        assert issubclass(sdb.klas[0], indexing.Siger)
+        sdb = CatCesrIoSetSuber(db=db, subkey='pigs.', klas=(Siger, ))
+        assert isinstance(sdb, CatCesrIoSetSuber)
+        assert issubclass(sdb.klas[0], Siger)
         sig0 = 'AACdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-        val0 = indexing.Siger(qb64=sig0)
+        val0 = Siger(qb64=sig0)
         keys = ("zeta", "cat")
         assert sdb.put(keys=keys, vals=[[val0]])
         actuals = sdb.get(keys=keys)
-        assert isinstance(actuals[0][0], indexing.Siger)
+        assert isinstance(actuals[0][0], Siger)
         assert actuals[0][0].qb64 == val0.qb64
 
     assert not os.path.exists(db.path)
@@ -4325,30 +4337,30 @@ def test_cesr_dup_suber():
     Test CesrDupSuber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        sdb = subing.CesrDupSuber(db=db, subkey='bags.')
-        assert isinstance(sdb, subing.CesrDupSuber)
-        assert issubclass(sdb.klas, coring.Matter)
+        sdb = CesrDupSuber(db=db, subkey='bags.')
+        assert isinstance(sdb, CesrDupSuber)
+        assert issubclass(sdb.klas, Matter)
         assert sdb.sdb.flags()["dupsort"]
 
         pre0 = "BDzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
-        val0 = coring.Matter(qb64=pre0)
+        val0 = Matter(qb64=pre0)
         assert val0.qb64 == pre0
 
         pre1 = "BBPYGGwTmuupUhPx5_yZ-Wk1x4ejWzwEHHzq7K0gzhcA"
-        val1 = coring.Matter(qb64=pre1)
+        val1 = Matter(qb64=pre1)
         assert val1.qb64 == pre1
 
         pre2 = "BAzhcQPYGGwTmuupUhWk1x4ejWzwEHHzq7K0Px5_yZ-Y"
-        val2 = coring.Matter(qb64=pre2)
+        val2 = Matter(qb64=pre2)
         assert val2.qb64 == pre2
 
         pre3 = "BEK0gzhcQPYGGwTmuupUhWk1x4ejWzwEHHzqPx5_yZ-w"
-        val3 = coring.Matter(qb64=pre3)
+        val3 = Matter(qb64=pre3)
         assert val3.qb64 == pre3
 
         keys0 = ("alpha", "dog")
@@ -4442,15 +4454,15 @@ def test_cesr_dup_suber():
         assert pres == [val2.qb64, val1.qb64]  # lexi order
 
         # Try Siger Indexer Subclass
-        sdb = subing.CesrDupSuber(db=db, subkey='pigs.', klas=indexing.Siger)
-        assert isinstance(sdb, subing.CesrDupSuber)
-        assert issubclass(sdb.klas, indexing.Siger)
+        sdb = CesrDupSuber(db=db, subkey='pigs.', klas=Siger)
+        assert isinstance(sdb, CesrDupSuber)
+        assert issubclass(sdb.klas, Siger)
         sig0 = 'AACdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-        val0 = indexing.Siger(qb64=sig0)
+        val0 = Siger(qb64=sig0)
         keys = ("zeta", "cat")
         assert sdb.put(keys=keys, vals=[val0])
         actuals = sdb.get(keys=keys)
-        assert isinstance(actuals[0], indexing.Siger)
+        assert isinstance(actuals[0], Siger)
         assert actuals[0].qb64 == val0.qb64
 
 
@@ -4463,30 +4475,30 @@ def test_cat_cesr_dup_suber():
     Test CatCesrDupSuber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        sdb = subing.CatCesrDupSuber(db=db, subkey='bags.')
-        assert isinstance(sdb, subing.CatCesrDupSuber)
-        assert sdb.klas == (coring.Matter, )  # default
+        sdb = CatCesrDupSuber(db=db, subkey='bags.')
+        assert isinstance(sdb, CatCesrDupSuber)
+        assert sdb.klas == (Matter, )  # default
         assert sdb.sdb.flags()["dupsort"]
-        assert isinstance(sdb, subing.CatCesrSuberBase)
-        assert isinstance(sdb, subing.DupSuber)
+        assert isinstance(sdb, CatCesrSuberBase)
+        assert isinstance(sdb, DupSuber)
 
-        klases = (coring.Number, coring.Diger)
-        sdb = subing.CatCesrDupSuber(db=db, subkey='bags.', klas=klases)
-        assert isinstance(sdb, subing.CatCesrDupSuber)
+        klases = (Number, Diger)
+        sdb = CatCesrDupSuber(db=db, subkey='bags.', klas=klases)
+        assert isinstance(sdb, CatCesrDupSuber)
         for klas, sklas in zip(klases, sdb.klas):
             assert klas == sklas
         assert sdb.sdb.flags()["dupsort"]
 
         # test .toval and tovals  needs .klas to work
-        sqr0 = coring.Number(num=20)
+        sqr0 = Number(num=20)
         assert sqr0.qb64b == b'MAAU'
 
-        dgr0 = coring.Diger(ser=b"Hello Me Maties.")
+        dgr0 = Diger(ser=b"Hello Me Maties.")
         assert dgr0.qb64b == b'ELq6uSA62FaWKAQf2rclt4D1wRAeVwQ7hBucDG43GrsJ'
 
         vals0 = (sqr0, dgr0)
@@ -4498,18 +4510,18 @@ def test_cat_cesr_dup_suber():
         for val, klas in zip(vals, sdb.klas):
             assert isinstance(val, klas)
 
-        sqr1 = coring.Number(num=32)
+        sqr1 = Number(num=32)
         sqr1.qb64b == b'MAAg'
 
-        dgr1 = coring.Diger(ser=b"Hi Guy.")
+        dgr1 = Diger(ser=b"Hi Guy.")
         assert dgr1.qb64b == b'EAdfsnL-ko8ldxIZ9JL-KBTD4eMCqAAkEw4HmKFsT45C'
 
         vals1 = (sqr1, dgr1)
 
-        sqr2 = coring.Number(num=1534)
+        sqr2 = Number(num=1534)
         assert sqr2.qb64b == b'MAX-'
 
-        dgr2 = coring.Diger(ser=b"Bye Bye Birdie.")
+        dgr2 = Diger(ser=b"Bye Bye Birdie.")
         assert dgr2.qb64b == b'EAO4UVcSfvfoGnSzJycMiihykJyYOshsyvU_l8U5TrO2'
 
         vals2 = (sqr2, dgr2)
@@ -4643,15 +4655,15 @@ def test_cat_cesr_dup_suber():
 
 
         # Try Siger Indexer Subclass
-        sdb = subing.CatCesrDupSuber(db=db, subkey='pigs.', klas=(indexing.Siger, ))
-        assert isinstance(sdb, subing.CatCesrDupSuber)
-        assert issubclass(sdb.klas[0], indexing.Siger)
+        sdb = CatCesrDupSuber(db=db, subkey='pigs.', klas=(Siger, ))
+        assert isinstance(sdb, CatCesrDupSuber)
+        assert issubclass(sdb.klas[0], Siger)
         sig0 = 'AACdI8OSQkMJ9r-xigjEByEjIua7LHH3AOJ22PQKqljMhuhcgh9nGRcKnsz5KvKd7K_H9-1298F4Id1DxvIoEmCQ'
-        val0 = indexing.Siger(qb64=sig0)
+        val0 = Siger(qb64=sig0)
         keys = ("zeta", "cat")
         assert sdb.put(keys=keys, vals=[[val0]])
         actuals = sdb.get(keys=keys)
-        assert isinstance(actuals[0][0], indexing.Siger)
+        assert isinstance(actuals[0][0], Siger)
         assert actuals[0][0].qb64 == val0.qb64
 
 
@@ -4664,25 +4676,25 @@ def test_cat_cesr_suber_strict_inherited_subers():
     """
     Test strict behavior inherited by CatCesrIoSetSuber and CatCesrDupSuber
     """
-    with dbing.openLMDB() as db:
-        wrong = coring.Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+    with openLMDB() as db:
+        wrong = Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
 
-        isdb = subing.CatCesrIoSetSuber(db=db,
+        isdb = CatCesrIoSetSuber(db=db,
                                         subkey='ibags.',
-                                        klas=(coring.Seqner, coring.Saider),
+                                        klas=(Seqner, Saider),
                                         strict=True)
-        seqner = coring.Seqner(sn=1)
-        saider = coring.Saider(qb64b=b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E')
+        seqner = Seqner(sn=1)
+        saider = Saider(qb64b=b'EALkveIFUPvt38xhtgYYJRCCpAGO7WjjHVR37Pawv67E')
         assert isdb.put(keys=("a", "1"), vals=[(seqner, saider)])
         with pytest.raises(TypeError):
             isdb.put(keys=("a", "2"), vals=[(wrong, saider)])
 
-        dsdb = subing.CatCesrDupSuber(db=db,
+        dsdb = CatCesrDupSuber(db=db,
                                       subkey='dbags.',
-                                      klas=(coring.Number, coring.Diger),
+                                      klas=(Number, Diger),
                                       strict=True)
-        number = coring.Number(num=1)
-        diger = coring.Diger(ser=b"strict cat dup")
+        number = Number(num=1)
+        diger = Diger(ser=b"strict cat dup")
         assert dsdb.put(keys=("b", "1"), vals=[(number, diger)])
         with pytest.raises(TypeError):
             dsdb.put(keys=("b", "2"), vals=[(wrong, diger)])
@@ -4696,21 +4708,21 @@ def test_signer_suber():
     Test SignerSuber LMDBer sub database class
     """
 
-    with dbing.openLMDB() as db:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        sdb = subing.SignerSuber(db=db, subkey='bags.')  # default klas is Signer
-        assert isinstance(sdb, subing.SignerSuber)
-        assert issubclass(sdb.klas, core.Signer)
+        sdb = SignerSuber(db=db, subkey='bags.')  # default klas is Signer
+        assert isinstance(sdb, SignerSuber)
+        assert issubclass(sdb.klas, Signer)
         assert not sdb.sdb.flags()["dupsort"]
 
         # preseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
         seed0 = (b'\x18;0\xc4\x0f*vF\xfa\xe3\xa2Eee\x1f\x96o\xce)G\x85\xe3X\x86\xda\x04\xf0\xdc'
                            b'\xde\x06\xc0+')
-        signer0 = core.Signer(raw=seed0, code=coring.MtrDex.Ed25519_Seed)
-        assert signer0.verfer.code == coring.MtrDex.Ed25519
+        signer0 = Signer(raw=seed0, code=MtrDex.Ed25519_Seed)
+        assert signer0.verfer.code == MtrDex.Ed25519
         assert signer0.verfer.transferable  # default
         assert signer0.qb64b == b'ABg7MMQPKnZG-uOiRWVlH5ZvzilHheNYhtoE8NzeBsAr'
         assert signer0.verfer.qb64b == b'DIYsYWYwtVo9my0dUHQA0-_ZEts8B5XdvXpHGtHpcR4h'
@@ -4719,8 +4731,8 @@ def test_signer_suber():
         seed1 = (b'`\x05\x93\xb9\x9b6\x1e\xe0\xd7\x98^\x94\xc8Et\xf2\xc4\xcd\x94\x18'
                  b'\xc6\xae\xb9\xb6m\x12\xc4\x80\x03\x07\xfc\xf7')
 
-        signer1 = core.Signer(raw=seed1, code=coring.MtrDex.Ed25519_Seed)
-        assert signer1.verfer.code == coring.MtrDex.Ed25519
+        signer1 = Signer(raw=seed1, code=MtrDex.Ed25519_Seed)
+        assert signer1.verfer.code == MtrDex.Ed25519
         assert signer1.verfer.transferable  # default
         assert signer1.qb64b == b'AGAFk7mbNh7g15helMhFdPLEzZQYxq65tm0SxIADB_z3'
         assert signer1.verfer.qb64b == b'DIHpH-kgf2oMMfeplUmSOj0wtPY-EqfKlG4CoJTfLi42'
@@ -4728,7 +4740,7 @@ def test_signer_suber():
         keys = (signer0.verfer.qb64, )  # must be verfer as key to get transferable
         sdb.put(keys=keys, val=signer0)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, core.Signer)
+        assert isinstance(actual, Signer)
         assert actual.qb64 == signer0.qb64
         assert actual.verfer.qb64 == signer0.verfer.qb64
 
@@ -4738,14 +4750,14 @@ def test_signer_suber():
 
         sdb.put(keys=keys, val=signer0)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, core.Signer)
+        assert isinstance(actual, Signer)
         assert actual.qb64 == signer0.qb64
         assert actual.verfer.qb64 == signer0.verfer.qb64
 
         #  try put different val when already put
         result = sdb.put(keys=keys, val=signer1)
         assert not result
-        assert isinstance(actual, core.Signer)
+        assert isinstance(actual, Signer)
         assert actual.qb64 == signer0.qb64
         assert actual.verfer.qb64 == signer0.verfer.qb64
 
@@ -4754,7 +4766,7 @@ def test_signer_suber():
         result = sdb.pin(keys=keys, val=signer1)
         assert result
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, core.Signer)
+        assert isinstance(actual, Signer)
         assert actual.qb64 == signer1.qb64
         assert actual.verfer.qb64 == signer1.verfer.qb64
 
@@ -4763,7 +4775,7 @@ def test_signer_suber():
 
         sdb.pin(keys=keys, val=signer0)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, core.Signer)
+        assert isinstance(actual, Signer)
         assert actual.qb64 == signer0.qb64
         assert actual.verfer.qb64 == signer0.verfer.qb64
 
@@ -4775,8 +4787,8 @@ def test_signer_suber():
         assert not  sdb.get(badkey)
 
         # test iteritems
-        sdb = subing.SignerSuber(db=db, subkey='pugs.')
-        assert isinstance(sdb, subing.SignerSuber)
+        sdb = SignerSuber(db=db, subkey='pugs.')
+        assert isinstance(sdb, SignerSuber)
         assert sdb.put(keys=signer0.verfer.qb64b, val=signer0)
         assert sdb.put(keys=signer1.verfer.qb64b, val=signer1)
 
@@ -4806,8 +4818,8 @@ def test_crypt_signer_suber():
     # preseed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     seed0 = (b'\x18;0\xc4\x0f*vF\xfa\xe3\xa2Eee\x1f\x96o\xce)G\x85\xe3X\x86\xda\x04\xf0\xdc'
                        b'\xde\x06\xc0+')
-    signer0 = core.Signer(raw=seed0, code=coring.MtrDex.Ed25519_Seed)
-    assert signer0.verfer.code == coring.MtrDex.Ed25519
+    signer0 = Signer(raw=seed0, code=MtrDex.Ed25519_Seed)
+    assert signer0.verfer.code == MtrDex.Ed25519
     assert signer0.verfer.transferable  # default
     assert signer0.qb64b == b'ABg7MMQPKnZG-uOiRWVlH5ZvzilHheNYhtoE8NzeBsAr'
     assert signer0.verfer.qb64b == b'DIYsYWYwtVo9my0dUHQA0-_ZEts8B5XdvXpHGtHpcR4h'
@@ -4816,8 +4828,8 @@ def test_crypt_signer_suber():
     seed1 = (b'`\x05\x93\xb9\x9b6\x1e\xe0\xd7\x98^\x94\xc8Et\xf2\xc4\xcd\x94\x18'
              b'\xc6\xae\xb9\xb6m\x12\xc4\x80\x03\x07\xfc\xf7')
 
-    signer1 = core.Signer(raw=seed1, code=coring.MtrDex.Ed25519_Seed)
-    assert signer1.verfer.code == coring.MtrDex.Ed25519
+    signer1 = Signer(raw=seed1, code=MtrDex.Ed25519_Seed)
+    assert signer1.verfer.code == MtrDex.Ed25519
     assert signer1.verfer.transferable  # default
     assert signer1.qb64b == b'AGAFk7mbNh7g15helMhFdPLEzZQYxq65tm0SxIADB_z3'
     assert signer1.verfer.qb64b == b'DIHpH-kgf2oMMfeplUmSOj0wtPY-EqfKlG4CoJTfLi42'
@@ -4825,45 +4837,45 @@ def test_crypt_signer_suber():
 
     # rawsalt =pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
     rawsalt = b'0123456789abcdef'
-    salter = core.Salter(raw=rawsalt)
+    salter = Salter(raw=rawsalt)
     salt = salter.qb64
     assert salt == '0AAwMTIzNDU2Nzg5YWJjZGVm'
     stem = "blue"
 
     # cryptseed0 = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     cryptseed0 = b'h,#|\x8ap"\x12\xc43t2\xa6\xe1\x18\x19\xf0f2,y\xc4\xc21@\xf5@\x15.\xa2\x1a\xcf'
-    cryptsigner0 = core.Signer(raw=cryptseed0, code=coring.MtrDex.Ed25519_Seed,
+    cryptsigner0 = Signer(raw=cryptseed0, code=MtrDex.Ed25519_Seed,
                            transferable=False)
     seed0 = cryptsigner0.qb64
     aeid0 = cryptsigner0.verfer.qb64
     assert aeid0 == 'BCa7mK96FwxkU0TdF54Yqg3qBDXUWpOhQ_Mtr7E77yZB'
 
-    decrypter = core.Decrypter(seed=seed0)
-    encrypter = core.Encrypter(verkey=aeid0)
+    decrypter = Decrypter(seed=seed0)
+    encrypter = Encrypter(verkey=aeid0)
     assert encrypter.verifySeed(seed=seed0)
 
     # cryptseed1 = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     cryptseed1 = (b"\x89\xfe{\xd9'\xa7\xb3\x89#\x19\xbec\xee\xed\xc0\xf9\x97\xd0\x8f9\x1dyNI"
                b'I\x98\xbd\xa4\xf6\xfe\xbb\x03')
-    cryptsigner1 = core.Signer(raw=cryptseed1, code=coring.MtrDex.Ed25519_Seed,
+    cryptsigner1 = Signer(raw=cryptseed1, code=MtrDex.Ed25519_Seed,
                            transferable=False)
 
 
-    with dbing.openLMDB() as db,  keeping.openKS() as ks:
-        assert isinstance(db, dbing.LMDBer)
+    with openLMDB() as db, openKS() as ks:
+        assert isinstance(db, LMDBer)
         assert db.name == "test"
         assert db.opened
 
-        sdb = subing.CryptSignerSuber(db=db, subkey='bags.')  # default klas is Signer
-        assert isinstance(sdb, subing.CryptSignerSuber)
-        assert issubclass(sdb.klas, core.Signer)
+        sdb = CryptSignerSuber(db=db, subkey='bags.')  # default klas is Signer
+        assert isinstance(sdb, CryptSignerSuber)
+        assert issubclass(sdb.klas, Signer)
         assert not sdb.sdb.flags()["dupsort"]
 
         # Test without encrypter or decrypter
         keys = (signer0.verfer.qb64, )  # must be verfer as key to get transferable
         sdb.put(keys=keys, val=signer0)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, core.Signer)
+        assert isinstance(actual, Signer)
         assert actual.qb64 == signer0.qb64
         assert actual.verfer.qb64 == signer0.verfer.qb64
 
@@ -4873,14 +4885,14 @@ def test_crypt_signer_suber():
 
         sdb.put(keys=keys, val=signer0)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, core.Signer)
+        assert isinstance(actual, Signer)
         assert actual.qb64 == signer0.qb64
         assert actual.verfer.qb64 == signer0.verfer.qb64
 
         #  try put different val when already put
         result = sdb.put(keys=keys, val=signer1)
         assert not result
-        assert isinstance(actual, core.Signer)
+        assert isinstance(actual, Signer)
         assert actual.qb64 == signer0.qb64
         assert actual.verfer.qb64 == signer0.verfer.qb64
 
@@ -4889,7 +4901,7 @@ def test_crypt_signer_suber():
         result = sdb.pin(keys=keys, val=signer1)
         assert result
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, core.Signer)
+        assert isinstance(actual, Signer)
         assert actual.qb64 == signer1.qb64
         assert actual.verfer.qb64 == signer1.verfer.qb64
 
@@ -4898,7 +4910,7 @@ def test_crypt_signer_suber():
 
         sdb.pin(keys=keys, val=signer0)
         actual = sdb.get(keys=keys)
-        assert isinstance(actual, core.Signer)
+        assert isinstance(actual, Signer)
         assert actual.qb64 == signer0.qb64
         assert actual.verfer.qb64 == signer0.verfer.qb64
 
@@ -4910,8 +4922,8 @@ def test_crypt_signer_suber():
         assert not  sdb.get(badkey)
 
         # test iteritems
-        sdb = subing.CryptSignerSuber(db=db, subkey='pugs.')
-        assert isinstance(sdb, subing.CryptSignerSuber)
+        sdb = CryptSignerSuber(db=db, subkey='pugs.')
+        assert isinstance(sdb, CryptSignerSuber)
         assert sdb.put(keys=signer0.verfer.qb64b, val=signer0)
         assert sdb.put(keys=signer1.verfer.qb64b, val=signer1)
 
@@ -4921,8 +4933,8 @@ def test_crypt_signer_suber():
 
 
         # now test with encrypter and decrypter
-        encrypter0 = core.Encrypter(verkey=cryptsigner0.verfer.qb64)
-        decrypter0 = core.Decrypter(seed=cryptsigner0.qb64b)
+        encrypter0 = Encrypter(verkey=cryptsigner0.verfer.qb64)
+        decrypter0 = Decrypter(seed=cryptsigner0.qb64b)
 
         # first pin with encrypter
         assert sdb.pin(keys=signer0.verfer.qb64b, val=signer0, encrypter=encrypter0)
@@ -4930,12 +4942,12 @@ def test_crypt_signer_suber():
 
         # now get
         actual0 = sdb.get(keys=signer0.verfer.qb64b, decrypter=decrypter0)
-        assert isinstance(actual0, core.Signer)
+        assert isinstance(actual0, Signer)
         assert actual0.qb64 == signer0.qb64
         assert actual0.verfer.qb64 == signer0.verfer.qb64
 
         actual1 = sdb.get(keys=signer1.verfer.qb64b, decrypter=decrypter0)
-        assert isinstance(actual1, core.Signer)
+        assert isinstance(actual1, Signer)
         assert actual1.qb64 == signer1.qb64
         assert actual1.verfer.qb64 == signer1.verfer.qb64
 
@@ -4972,8 +4984,8 @@ def test_crypt_signer_suber():
 
 
         # test re-encrypt
-        encrypter1 = core.Encrypter(verkey=cryptsigner1.verfer.qb64)
-        decrypter1 = core.Decrypter(seed=cryptsigner1.qb64b)
+        encrypter1 = Encrypter(verkey=cryptsigner1.verfer.qb64)
+        decrypter1 = Decrypter(seed=cryptsigner1.qb64b)
         for keys, sgnr in sdb.getTopItemIter(decrypter=decrypter0):
             sdb.pin(keys, sgnr, encrypter=encrypter1)
 
@@ -4988,7 +5000,7 @@ def test_crypt_signer_suber():
 
 
         # now test with manager
-        manager = keeping.Manager(ks=ks, seed=seed0, salt=salt, aeid=aeid0, )
+        manager = Manager(ks=ks, seed=seed0, salt=salt, aeid=aeid0, )
         assert manager.ks.opened
         assert manager.inited
         assert manager._inits == {'salt': '0AAwMTIzNDU2Nzg5YWJjZGVm',
@@ -4998,18 +5010,18 @@ def test_crypt_signer_suber():
         assert manager.decrypter.qb64 == decrypter.qb64  # aeid and seed provided
         assert manager.seed == seed0  # in memory only
         assert manager.aeid == aeid0  # on disk only
-        assert manager.algo == keeping.Algos.salty
+        assert manager.algo == Algos.salty
         assert manager.salt == salt  # encrypted on disk but property decrypts if seed
         assert manager.pidx == 0
-        assert manager.tier == core.Tiers.low
-        saltCipher0 = core.Cipher(qb64=manager.ks.gbls.get('salt'))
+        assert manager.tier == Tiers.low
+        saltCipher0 = Cipher(qb64=manager.ks.gbls.get('salt'))
         assert saltCipher0.decrypt(seed=seed0).qb64 == salt
 
 
         manager.updateAeid(aeid=cryptsigner1.verfer.qb64, seed=cryptsigner1.qb64)
         assert manager.aeid == cryptsigner1.verfer.qb64 == 'BEcOrMrG_7r_NWaLl6h8UJapwIfQWIkjrIPXkCZm2fFM'
         assert manager.salt == salt
-        saltCipher1 = core.Cipher(qb64=manager.ks.gbls.get('salt'))
+        saltCipher1 = Cipher(qb64=manager.ks.gbls.get('salt'))
         assert not saltCipher0.qb64 == saltCipher1.qb64  # old cipher different
 
     """End Test"""

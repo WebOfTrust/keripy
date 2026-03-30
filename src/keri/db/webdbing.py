@@ -141,6 +141,8 @@ def isNonStringIterable(obj):
 
 _RECORDS_KEY = "__records__"
 _META_KEY = "__meta__"
+_META_STORE = "__meta__"
+_VERSION_KEY = b"__version__"
 
 
 @dataclass
@@ -229,6 +231,7 @@ class WebDBer:
         self.env = WebEnv(self)
         self._stores = stores
         self.stores = list(stores)
+        self._version = None
 
     @classmethod
     async def open(
@@ -262,7 +265,10 @@ class WebDBer:
             raise RuntimeError("pyscript.storage is unavailable in this environment")
 
         opened: dict[str, SubDb] = {}
-        for store_name in [cls._storify(store) for store in stores]:
+        all_store_names = [cls._storify(store) for store in stores]
+        if cls._storify(_META_STORE) not in all_store_names:
+            all_store_names.append(cls._storify(_META_STORE))
+        for store_name in all_store_names:
             namespace = f"{name}:{store_name}"
             handle = await opener(namespace)
             if clear:
@@ -320,6 +326,63 @@ class WebDBer:
             subdb.dirty = False
             count += 1
         return count
+
+    @property
+    def version(self):
+        """Return the database version string, or None if not set.
+
+        Caches in memory after first read, matching LMDBer behaviour.
+        """
+        if self._version is None:
+            self._version = self.getVer()
+        return self._version
+
+    @version.setter
+    def version(self, val):
+        """Set the database version string in memory and backing store."""
+        if hasattr(val, "decode"):
+            val = val.decode("utf-8")
+        self._version = val
+        self.setVer(self._version)
+
+    def getVer(self):
+        """Read the version string from the __meta__ store.
+
+        Returns:
+            str | None: The semver version string, or None if not set.
+        """
+        store_name = self._storify(_META_STORE)
+        if store_name not in self._stores:
+            return None
+        val = self._stores[store_name].items.get(_VERSION_KEY)
+        return val.decode("utf-8") if val is not None else None
+
+    def setVer(self, val):
+        """Write the version string to the __meta__ store.
+
+        Parameters:
+            val (str | bytes): The semver version string to store.
+        """
+        if hasattr(val, "encode"):
+            val = val.encode("utf-8")
+        store_name = self._storify(_META_STORE)
+        if store_name not in self._stores:
+            return
+        self._stores[store_name].items[_VERSION_KEY] = val
+        self._stores[store_name].dirty = True
+
+    def close(self, clear=False):
+        """Close the database, optionally clearing all store data.
+
+        Parameters:
+            clear (bool): If True, clear all in-memory data and mark dirty.
+        """
+        if clear:
+            for subdb in self._stores.values():
+                subdb.items.clear()
+                subdb.dirty = True
+        self._stores = {}
+        self.stores = []
 
     def putVal(self, db: SubDb, key: bytes, val: bytes) -> bool:
         """
@@ -1396,8 +1459,8 @@ class WebDBer:
             sep (bytes): separator character for split
 
         Set of values at a given effective key preserve insertion order.
-        Because lmdb is lexocographic an insertion ordering suffix is appended to
-        all keys that makes lexocographic order the same as insertion order.
+        Because lmdb is lexicographic an insertion ordering suffix is appended to
+        all keys that makes lexicographic order the same as insertion order.
 
         Suffix is 33 characters long consisting of sep '.' followed by 32 char
         hex string for essentially unlimited number of values in each set
@@ -1438,8 +1501,8 @@ class WebDBer:
         Assumes DB opened with dupsort=False
 
         Set of values at a given effective key preserve insertion order.
-        Because lmdb is lexocographic an insertion ordering suffix is appended to
-        all keys that makes lexocographic order the same as insertion order.
+        Because lmdb is lexicographic an insertion ordering suffix is appended to
+        all keys that makes lexicographic order the same as insertion order.
 
         Suffix is 33 characters long consisting of sep '.' followed by 32 char
         hex string for essentially unlimited number of values in each set
@@ -1564,7 +1627,7 @@ class WebDBer:
     def getOnIoSetItemIter(self, db, key, *, on=0, ion=0, sep=b'.'):
         """Get iterator of all set vals at onkey = key + sep + on in db starting
         at insertion order ion within set This provides ordinal ordering of
-        keys and inserion ordering of set vals.
+        keys and insertion ordering of set vals.
         When key is empty then returns empty iterator
 
         Returns:
@@ -1965,7 +2028,7 @@ class WebDBer:
         Raises StopIterationError when done or when key empty or None
 
         Backwards means decreasing numerical value of ion, for each on and
-        decreasing numerical value on for each key and decreasing lexocographic
+        decreasing numerical value on for each key and decreasing lexicographic
         order of each key.
 
         Returns:
@@ -2035,7 +2098,7 @@ class WebDBer:
         Raises StopIterationError when done or when key empty or None
 
         Backwards means decreasing numerical value of each ion, for each on and
-        decreasing numerical value of each on for each key and decreasing lexocographic
+        decreasing numerical value of each on for each key and decreasing lexicographic
         value of each key.
 
         Returns:

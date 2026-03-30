@@ -4,8 +4,6 @@ tests.vc.test_messaging module
 
 """
 
-import pytest
-
 from keri.kering import Protocols, Kinds, Ilks, Vrsn_2_0
 from keri.core import (GenDex, Noncer, SerderACDC, BlindState, Blinder,
                        Compactor, Aggor)

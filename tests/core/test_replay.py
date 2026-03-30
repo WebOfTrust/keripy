@@ -6,15 +6,19 @@ tests delegation primaily from keri.core.eventing
 import datetime
 import os
 
-from keri import help, Vrsn_1_0, Ilks
+from hio.help import ogler
+
+
+from keri.kering import Vrsn_1_0, Ilks
 from keri.help import helping
-from keri.core import (Salter, Counter, coring, eventing, parsing,
-                       serdering, indexing, counting)
+from keri.core import (Salter, Counter, Seqner, Dater, Kevery,
+                       Parser, SerderKERI, Siger, CtrDex_1_0,
+                       deTransReceiptQuadruple, deReceiptCouple)
 
-from keri.app import habbing
+from keri.app import openHby
 
 
-logger = help.ogler.getLogger()
+logger = ogler.getLogger()
 
 
 def test_replay():
@@ -30,10 +34,10 @@ def test_replay():
     artSalt = Salter(raw=b'abcdef0123456789').qb64
     default_salt = Salter(raw=b'0123456789abcdef').qb64
 
-    with (habbing.openHby(name="deb", base="test", salt=default_salt) as debHby,
-         habbing.openHby(name="cam", base="test", salt=default_salt) as camHby,
-         habbing.openHby(name="bev", base="test", salt=default_salt) as bevHby,
-         habbing.openHby(name="art", base="test", salt=artSalt) as artHby):
+    with (openHby(name="deb", base="test", salt=default_salt) as debHby,
+         openHby(name="cam", base="test", salt=default_salt) as camHby,
+         openHby(name="bev", base="test", salt=default_salt) as bevHby,
+         openHby(name="art", base="test", salt=artSalt) as artHby):
 
         # setup Deb's habitat using default salt multisig already incepts
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
@@ -136,16 +140,16 @@ def test_replay():
 
         assert debHab.kever.sn == 6
         msgs = next(debHab.db.clonePreIter(debHab.pre, fn=4))
-        serder = serdering.SerderKERI(raw=msgs)
+        serder = SerderKERI(raw=msgs)
         assert serder.ilk == Ilks.ixn
         assert serder.sn == 4
 
         # Play debMsgs to Cam
         # create non-local kevery for Cam to process msgs from Deb
-        camKevery = eventing.Kevery(db=camHab.db,
+        camKevery = Kevery(db=camHab.db,
                                     lax=False,
                                     local=False)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(debMsgs), kvy=camKevery)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(debMsgs), kvy=camKevery)
         # camKevery.process(ims=bytearray(debMsgs))  # give copy to process
         assert debHab.pre in camKevery.kevers
         assert camKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
@@ -225,10 +229,10 @@ def test_replay():
 
         # Play camMsgs to Deb
         # create non-local kevery for Deb to process msgs from Cam
-        debKevery = eventing.Kevery(db=debHab.db,
+        debKevery = Kevery(db=debHab.db,
                                     lax=False,
                                     local=False)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(camMsgs), kvy=debKevery)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(camMsgs), kvy=debKevery)
         # debKevery.process(ims=bytearray(camMsgs))  # give copy to process
         assert camHab.pre in debKevery.kevers
         assert debKevery.kevers[camHab.pre].sn == camHab.kever.sn == 0
@@ -248,15 +252,15 @@ def test_replay():
                         b'GhGTKOxFbTcCwnnkL')
 
         # Play disjoints debCamVrcs to Cam
-        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(debCamVrcs), kvy=camKevery)
+        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(debCamVrcs), kvy=camKevery)
         # camKevery.processOne(ims=bytearray(debCamVrcs))  # give copy to process
 
         # Play debMsgs to Bev
         # create non-local kevery for Bev to process msgs from Deb
-        bevKevery = eventing.Kevery(db=bevHab.db,
+        bevKevery = Kevery(db=bevHab.db,
                                     lax=False,
                                     local=False)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(debMsgs), kvy=bevKevery)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(debMsgs), kvy=bevKevery)
         # bevKevery.process(ims=bytearray(debMsgs))  # give copy to process
         assert debHab.pre in bevKevery.kevers
         assert bevKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
@@ -304,7 +308,7 @@ def test_replay():
                         b'uro0ISwG')
 
         # Play bevMsgs to Deb
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(bevMsgs), kvy=debKevery)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(bevMsgs), kvy=debKevery)
         # debKevery.process(ims=bytearray(bevMsgs))  # give copy to process
         assert bevHab.pre in debKevery.kevers
         assert debKevery.kevers[bevHab.pre].sn == bevHab.kever.sn == 0
@@ -324,7 +328,7 @@ def test_replay():
                         b'00VuA1RMj1p6COtQC')
 
         # Play disjoints debBevVrcs to Bev
-        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(debBevVrcs), kvy=bevKevery)
+        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(debBevVrcs), kvy=bevKevery)
         # bevKevery.processOne(ims=bytearray(debBevVrcs))  # give copy to process
 
         # now setup conjoint replay
@@ -340,63 +344,63 @@ def test_replay():
         debFelMsgs.extend(msg)
 
         # parse msg
-        serder = serdering.SerderKERI(raw=msg)
+        serder = SerderKERI(raw=msg)
         assert serder.raw == debHab.iserder.raw
         assert serder.sn == fn  # no recovery forks so sn == fn
-        assert serder.ked["t"] == coring.Ilks.icp
+        assert serder.ked["t"] == Ilks.icp
         del msg[:len(serder.raw)]
         assert len(msg) == 1076
 
         counter = Counter(qb64b=msg, version=Vrsn_1_0)  # attachment length quadlets counter
-        assert counter.code == counting.CtrDex_1_0.AttachmentGroup
+        assert counter.code == CtrDex_1_0.AttachmentGroup
         assert counter.count == (len(msg) - len(counter.qb64b)) // 4 == 268
         del msg[:len(counter.qb64b)]
         assert len(msg) == 1072 == 268 * 4
 
         counter = Counter(qb64b=msg, version=Vrsn_1_0)  # indexed signatures counter
-        assert counter.code == counting.CtrDex_1_0.ControllerIdxSigs
+        assert counter.code == CtrDex_1_0.ControllerIdxSigs
         assert counter.count == 3  # multisig deb
         del msg[:len(counter.qb64b)]
         assert len(msg) == 1068
 
         for i in range(counter.count):  # parse signatures
-            siger = indexing.Siger(qb64b=msg)
+            siger = Siger(qb64b=msg)
             del msg[:len(siger.qb64b)]
         assert len(msg) == 1068 - 3 * len(siger.qb64b) == 804
 
         counter = Counter(qb64b=msg, version=Vrsn_1_0)  # trans receipt (vrc) counter
-        assert counter.code == counting.CtrDex_1_0.TransReceiptQuadruples
+        assert counter.code == CtrDex_1_0.TransReceiptQuadruples
         assert counter.count == 3  # multisig cam
         del msg[:len(counter.qb64b)]
         assert len(msg) == 800
 
         for i in range(counter.count):  # parse receipt quadruples
-            prefixer, seqner, diger, siger = eventing.deTransReceiptQuadruple(msg, strip=True)
+            prefixer, seqner, diger, siger = deTransReceiptQuadruple(msg, strip=True)
         assert len(msg) == 800 - 3 * (len(prefixer.qb64b) + len(seqner.qb64b) +
                                       len(diger.qb64b) + len(siger.qb64b)) == 200
 
         counter = Counter(qb64b=msg, version=Vrsn_1_0)  # nontrans receipt (rct) counter
-        assert counter.code == counting.CtrDex_1_0.NonTransReceiptCouples
+        assert counter.code == CtrDex_1_0.NonTransReceiptCouples
         assert counter.count == 1  # single sig bev
         del msg[:len(counter.qb64b)]
         assert len(msg) == 196
 
         for i in range(counter.count):  # parse receipt couples
-            prefixer, cigar = eventing.deReceiptCouple(msg, strip=True)
+            prefixer, cigar = deReceiptCouple(msg, strip=True)
         assert len(msg) == 196 - 1 * (len(prefixer.qb64b) + len(cigar.qb64b)) == 64
 
         counter = Counter(qb64b=msg, version=Vrsn_1_0)  # first seen replay couple counter
-        assert counter.code == counting.CtrDex_1_0.FirstSeenReplayCouples
+        assert counter.code == CtrDex_1_0.FirstSeenReplayCouples
         assert counter.count == 1
         del msg[:len(counter.qb64b)]
         assert len(msg) == 60
 
-        seqner = coring.Seqner(qb64b=msg)
+        seqner = Seqner(qb64b=msg)
         assert seqner.sn == fn == 0
         del msg[:len(seqner.qb64b)]
         assert len(msg) == 36  # 24 less
 
-        dater = coring.Dater(qb64b=msg)
+        dater = Dater(qb64b=msg)
         assert (helping.fromIso8601(helping.nowIso8601()) -
                 helping.fromIso8601(dater.dts)) > datetime.timedelta()
         del msg[:len(dater.qb64b)]
@@ -414,16 +418,16 @@ def test_replay():
         cloner = debHab.db.clonePreIter(pre=debHab.pre, fn=fn)  # create iterator not at 0
         msg = next(cloner)  # next event with attachments
         assert len(msg) == 1279
-        serder = serdering.SerderKERI(raw=msg)
+        serder = SerderKERI(raw=msg)
         assert serder.sn == fn  # no recovery forks so sn == fn
-        assert serder.ked["t"] == coring.Ilks.ixn
+        assert serder.ked["t"] == Ilks.ixn
         debFelMsgs.extend(msg)
 
         fn += 1
         msg = next(cloner)  # get zeroth event with attachments
-        serder = serdering.SerderKERI(raw=msg)
+        serder = SerderKERI(raw=msg)
         assert serder.sn == fn  # no recovery forks so sn == fn
-        assert serder.ked["t"] == coring.Ilks.rot
+        assert serder.ked["t"] == Ilks.rot
         assert len(msg) == 1648
         assert ([verfer.qb64 for verfer in serder.verfers] ==
                 [verfer.qb64 for verfer in debHab.kever.verfers])
@@ -432,9 +436,9 @@ def test_replay():
         fn += 1
         while (fn <= 6):
             msg = next(cloner)  # get zeroth event with attachments
-            serder = serdering.SerderKERI(raw=msg)
+            serder = SerderKERI(raw=msg)
             assert serder.sn == fn  # no recovery forks so sn == fn
-            assert serder.ked["t"] == coring.Ilks.ixn
+            assert serder.ked["t"] == Ilks.ixn
             assert len(msg) == 1279
             debFelMsgs.extend(msg)
             fn += 1
@@ -446,14 +450,14 @@ def test_replay():
         assert msgs == debFelMsgs
 
         # Play Cam's messages to Bev
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(camMsgs), kvy=bevKevery)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(camMsgs), kvy=bevKevery)
         # bevKevery.process(ims=bytearray(camMsgs))  # give copy to process
         assert camHab.pre in bevKevery.kevers
         assert bevKevery.kevers[camHab.pre].sn == camHab.kever.sn == 0
         assert len(bevKevery.cues) == 1
 
         # Play Bev's messages to Cam
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(bevMsgs), kvy=camKevery)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(bevMsgs), kvy=camKevery)
         # camKevery.process(ims=bytearray(bevMsgs))  # give copy to process
         assert bevHab.pre in camKevery.kevers
         assert camKevery.kevers[bevHab.pre].sn == bevHab.kever.sn == 0
@@ -465,19 +469,19 @@ def test_replay():
         assert len(bevDebFelMsgs) == len(camDebFelMsgs) == len(debFelMsgs) == 9638
 
         # create non-local kevery for Art to process conjoint replay msgs from Deb
-        artKevery = eventing.Kevery(db=artHab.db,
+        artKevery = Kevery(db=artHab.db,
                                     lax=False,
                                     local=False)
         # process Cam's inception so Art will proces Cam's vrcs without escrowing
         camIcpMsg = camHab.makeOwnInception()
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(camIcpMsg), kvy=artKevery)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(camIcpMsg), kvy=artKevery)
         # artKevery.process(ims=bytearray(camIcpMsg))
         assert camHab.pre in artKevery.kevers
         assert len(artKevery.cues) == 1
 
         # process in cloned mode
         artKevery.cloned = True
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(debFelMsgs), kvy=artKevery)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(debFelMsgs), kvy=artKevery)
         assert debHab.pre in artKevery.kevers
         assert artKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
         assert len(artKevery.cues) == 8
@@ -510,10 +514,10 @@ def test_replay_all():
     artSalt = Salter(raw=b'abcdef0123456789').qb64
     default_salt = Salter(raw=b'0123456789abcdef').qb64
 
-    with (habbing.openHby(name="deb", base="test", salt=default_salt) as debHby,
-         habbing.openHby(name="cam", base="test", salt=default_salt) as camHby,
-         habbing.openHby(name="bev", base="test", salt=default_salt) as bevHby,
-         habbing.openHby(name="art", base="test", salt=artSalt) as artHby):
+    with (openHby(name="deb", base="test", salt=default_salt) as debHby,
+         openHby(name="cam", base="test", salt=default_salt) as camHby,
+         openHby(name="bev", base="test", salt=default_salt) as bevHby,
+         openHby(name="art", base="test", salt=artSalt) as artHby):
 
         # setup Deb's habitat using default salt multisig already incepts
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
@@ -551,10 +555,10 @@ def test_replay_all():
 
         # Play debMsgs to Cam
         # create non-local kevery for Cam to process msgs from Deb
-        camKevery = eventing.Kevery(db=camHab.db,
+        camKevery = Kevery(db=camHab.db,
                                     lax=False,
                                     local=False)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(debMsgs), kvy=camKevery)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(debMsgs), kvy=camKevery)
         # camKevery.process(ims=bytearray(debMsgs))  # give copy to process
         assert debHab.pre in camKevery.kevers
         assert camKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
@@ -566,10 +570,10 @@ def test_replay_all():
 
         # Play camMsgs to Deb
         # create non-local kevery for Deb to process msgs from Cam
-        debKevery = eventing.Kevery(db=debHab.db,
+        debKevery = Kevery(db=debHab.db,
                                     lax=False,
                                     local=False)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(camMsgs), kvy=debKevery)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(camMsgs), kvy=debKevery)
         # debKevery.process(ims=bytearray(camMsgs))  # give copy to process
         assert camHab.pre in debKevery.kevers
         assert debKevery.kevers[camHab.pre].sn == camHab.kever.sn == 0
@@ -580,15 +584,15 @@ def test_replay_all():
         assert len(debKevery.cues) == 0
 
         # Play disjoints debCamVrcs to Cam
-        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(debCamVrcs), kvy=camKevery)
+        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(debCamVrcs), kvy=camKevery)
         # camKevery.processOne(ims=bytearray(debCamVrcs))  # give copy to process
 
         # Play debMsgs to Bev
         # create non-local kevery for Bev to process msgs from Deb
-        bevKevery = eventing.Kevery(db=bevHab.db,
+        bevKevery = Kevery(db=bevHab.db,
                                     lax=False,
                                     local=False)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(debMsgs), kvy=bevKevery)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(debMsgs), kvy=bevKevery)
         # bevKevery.process(ims=bytearray(debMsgs))  # give copy to process
         assert debHab.pre in bevKevery.kevers
         assert bevKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
@@ -599,7 +603,7 @@ def test_replay_all():
         assert len(bevKevery.cues) == 0
 
         # Play bevMsgs to Deb
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(bevMsgs), kvy=debKevery)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(bevMsgs), kvy=debKevery)
         # debKevery.process(ims=bytearray(bevMsgs))  # give copy to process
         assert bevHab.pre in debKevery.kevers
         assert debKevery.kevers[bevHab.pre].sn == bevHab.kever.sn == 0
@@ -610,7 +614,7 @@ def test_replay_all():
         assert len(debKevery.cues) == 0
 
         # Play disjoints debBevVrcs to Bev
-        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytearray(debBevVrcs), kvy=bevKevery)
+        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(debBevVrcs), kvy=bevKevery)
         # bevKevery.processOne(ims=bytearray(debBevVrcs))  # give copy to process
 
         # now setup replay
@@ -618,17 +622,17 @@ def test_replay_all():
         # assert len(debAllFelMsgs) == 12495
 
         # create non-local kevery for Art to process conjoint replay msgs from Deb
-        artKevery = eventing.Kevery(db=artHab.db,
+        artKevery = Kevery(db=artHab.db,
                                     lax=False,
                                     local=False)
         # process Cam's inception so Art will proces Cam's vrcs without escrowing
         camIcpMsg = camHab.makeOwnInception()
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(camIcpMsg), kvy=artKevery)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(camIcpMsg), kvy=artKevery)
         assert camHab.pre in artKevery.kevers
         assert len(artKevery.cues) == 1
         # give copy to process in cloned mode
         artKevery.cloned = True
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(debAllFelMsgs), kvy=artKevery)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(debAllFelMsgs), kvy=artKevery)
         assert debHab.pre in artKevery.kevers
         assert artKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
         assert len(artKevery.cues) == 10
