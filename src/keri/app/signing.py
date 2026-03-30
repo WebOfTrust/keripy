@@ -10,6 +10,20 @@ from ..core import Pather, Counter, Seqner, Diger, Codens
 
 
 def serialize(creder, prefixer, seqner, saider):
+    """Serialize a credential with a seal source triple attachment.
+
+    Appends a CESR-encoded SealSourceTriples counter followed by the
+    prefixer, seqner, and saider to the raw credential bytes.
+
+    Args:
+        creder: Credential whose raw bytes form the base of the serialization.
+        prefixer: Prefixer for the establishment event that seals the credential.
+        seqner (Seqner): Sequence number of the sealing establishment event.
+        saider (Saider): SAID of the sealing establishment event.
+
+    Returns:
+        bytes: Serialized credential bytes with the seal source triple appended.
+    """
     craw = bytearray(creder.raw)
     craw.extend(Counter(Codens.SealSourceTriples, count=1,
                              version=Vrsn_1_0).qb64b)
@@ -70,20 +84,28 @@ def serialize(creder, prefixer, seqner, saider):
 
 
 def signPaths(hab, serder, paths):
-    """ Sign the SAD or SAIDs with the keys from the Habitat.
+    """Sign the SAD or SAIDs identified by the given paths using the Habitat's keys.
 
-    Sign the SADs or SAIDs of the SADs as identified by the paths.
+    For each path, extracts the tail of the SAD at that path and signs it.
+    Transferable identifiers produce indexed signatures (sadsigers); non-transferable
+    identifiers produce non-indexed bare signatures (sadcigars).
 
-    Parameters:
-        hab (Habitat): environment used to sign the SAD
-        serder (Union[Serder,Creder]): the self addressing data (SAD)
-        paths (list[list]): list of lists of path parts
+    Args:
+        hab (Habitat): Signing environment providing keys and identifier state.
+        serder (Serder | Creder): Self-addressing data (SAD) to sign.
+        paths (list[list]): List of path component lists identifying the SAD
+            fields to sign. Each inner list contains the string components of
+            one path (e.g. ``[["a", "i"], []]``).
 
     Returns:
-        str: qb64 signature attachment
+        tuple[list, list]: A two-element tuple ``(sadsigers, sadcigars)`` where:
 
+        - **sadsigers** (*list*) — Each entry is a tuple
+          ``(pather, prefixer, seqner, saider, sigers)`` for transferable
+          identifier signatures.
+        - **sadcigars** (*list*) — Each entry is a tuple
+          ``(pather, cigars)`` for non-transferable identifier signatures.
     """
-
     sadsigers = []
     sadcigars = []
 
@@ -111,19 +133,30 @@ def signPaths(hab, serder, paths):
 
 
 def transSeal(hab):
-    """ Returns seal components and signing indices as appropriate for current state of Habitat
+    """Return seal components and signing indices for the current Habitat state.
+
+    Derives the prefixer, seqner, and diger from the Habitat's current
+    establishment event (``kever.lastEst``). For a group Habitat the signing
+    index is the position of the member Habitat's prefix within the group's
+    signing member list (smids); for a non-group Habitat the index is left as
+    ``None`` so the default key order is used.
 
     Args:
-        hab (Habitat): environment that contains the information for the idenfitier prefix
+        hab (Habitat): Signing environment whose current key-event state
+            provides the seal and index information.
 
     Returns:
-       tuple:  seal components with signing indices
+        tuple: A four-element tuple ``(prefixer, seqner, diger, indices)``
+        where:
 
-    ToDo: NRR
-       indices for both hab.smids and hab.rmids
+        - **prefixer** (*Prefixer*) — Identifier prefix of the establishment
+          event used for signing.
+        - **seqner** (*Seqner*) — Sequence number of that establishment event.
+        - **diger** (*Diger*) — SAID of that establishment event.
+        - **indices** (*list[int] | None*) — ``[index]`` giving the signer's
+          position in the group's smids list, or ``None`` for non-group
+          Habitats (uses default key order).
     """
-    # create SealEvent or SealLast for endorser's est evt whose keys are
-    # used to sign
     if not isinstance(hab, GroupHab):  # not a group use own kever
         indices = None  # use default order
     else:  # group so use gid kever

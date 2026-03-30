@@ -91,6 +91,18 @@ keri.app.oobing
 .. automodule:: keri.app.oobiing
     :members:
 
+keri.app.organizing
+-------------------
+
+.. automodule:: keri.app.organizing
+    :members:
+
+keri.app.querying
+-------------------
+
+.. automodule:: keri.app.querying
+    :members:
+
 keri.app.signaling
 ------------------
 

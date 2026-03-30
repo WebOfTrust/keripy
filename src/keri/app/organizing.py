@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
+KERI
 keri.app.organizing module
 
 """
@@ -12,17 +13,17 @@ from ..kering import ValidationError
 
 
 class BaseOrganizer:
-    """ Base class for organizing contact or identifier information """
+    """Base class for organizing contact or identifier information."""
 
     def __init__(self, hby, cigsdb, datadb, fielddb, imgsdb):
-        """ Create base Organizer
+        """Create base Organizer.
 
-        Parameters:
-            hby (Habery): database environment
-            cigsdb: database for storing signatures
-            datadb: database for storing main data
-            fielddb: database for storing individual fields
-            imgsdb: database for storing images
+        Args:
+            hby (Habery): database environment.
+            cigsdb (SuberBase): database for storing signatures.
+            datadb (SuberBase): database for storing main data.
+            fielddb (SuberBase): database for storing individual fields.
+            imgsdb (SuberBase): database for storing images.
         """
         self.hby = hby
         self.cigsdb = cigsdb
@@ -31,12 +32,14 @@ class BaseOrganizer:
         self.imgsdb = imgsdb
 
     def update(self, pre, data):
-        """ Add or update contact information in data for the identifier prefix
+        """Merge data into existing record for identifier prefix.
 
-        Parameters:
-            pre (str): qb64 identifier prefix of contact information to update
-            data (dict): data to add to or update in contact information
+        If no record exists for ``pre``, a new one is created. Existing
+        fields not present in ``data`` are preserved.
 
+        Args:
+            pre (str): qb64 identifier prefix of the record to update.
+            data (dict): fields to add or overwrite in the existing record.
         """
         existing = self.get(pre)
         if existing is None:
@@ -54,24 +57,28 @@ class BaseOrganizer:
             self.fielddb.pin(keys=(pre, field), val=val)
 
     def replace(self, pre, data):
-        """ Replace all contact information for identifier prefix with data
+        """Replace all stored data for identifier prefix with data.
 
-        Parameters:
-            pre (str): qb64 identifier prefix of contact information to replace
-            data (dict): data to replace contact information with
+        Removes the existing record entirely before writing ``data``,
+        so fields absent from ``data`` will no longer exist.
 
+        Args:
+            pre (str): qb64 identifier prefix of the record to replace.
+            data (dict): fields to write as the new record.
         """
         self.rem(pre)
         self.update(pre, data)
 
     def set(self, pre, field, val):
-        """ Add or replace one value in contact information for identifier prefix
+        """Set a single field value for identifier prefix.
 
-        Parameters:
-            pre (str): qb64 identifier prefix for contact
-            field (str): field to set
-            val (Union[str,bytes]): data value
+        Retrieves the current record, updates the specified field, then
+        replaces the full record.
 
+        Args:
+            pre (str): qb64 identifier prefix of the record to update.
+            field (str): field name to set.
+            val (str | bytes): value to assign to the field.
         """
         data = self.get(pre) or dict()
         data[field] = val
@@ -79,12 +86,11 @@ class BaseOrganizer:
         self.fielddb.pin(keys=(pre, field), val=val)
 
     def unset(self, pre, field):
-        """ Remove field from contact information for identifier prefix
+        """Remove a single field from the record for identifier prefix.
 
-        Parameters:
-            pre (str): qb64 identifier prefix for contact
-            field (str): field to remove
-
+        Args:
+            pre (str): qb64 identifier prefix of the record to modify.
+            field (str): field name to remove.
         """
         data = self.get(pre)
         del data[field]
@@ -92,28 +98,41 @@ class BaseOrganizer:
         self.fielddb.rem(keys=(pre, field))
 
     def rem(self, pre):
-        """ Remove all contact information for identifier prefix
+        """Remove all stored data for identifier prefix.
 
-        Parameters:
-            pre (str): qb64 identifier prefix for contact to remove
+        Deletes the signature, main data record, and all field index entries
+        associated with ``pre``.
+
+        Args:
+            pre (str): qb64 identifier prefix of the record to remove.
 
         Returns:
-
+            bool: True if field entries were removed, False otherwise.
         """
         self.cigsdb.rem(keys=(pre,))
         self.datadb.rem(keys=(pre,))
         return self.fielddb.trim(keys=(pre,))
 
     def get(self, pre, field=None):
-        """ Retrieve all contact information for identifier prefix
+        """Retrieve stored data for identifier prefix.
 
-        Parameters:
-            pre (str): qb64 identifier prefix for contact
-            field (str): optional field name to retrieve a single field value
+        Verifies the stored signature before returning data. Raises
+        ``ValidationError`` if verification fails.
+
+        Args:
+            pre (str): qb64 identifier prefix of the record to retrieve.
+            field (str | None): if provided, return only the value for this
+                field rather than the full record.
 
         Returns:
-            dict: Contact data
+            dict | str | None: the full data dict (with ``"id"`` set to
+            ``pre``) when ``field`` is ``None``; the value of the named field
+            when ``field`` is given; or ``None`` if no record exists for
+            ``pre`` or the named field is absent.
 
+        Raises:
+            ValidationError: if the stored signature does not verify against
+                the stored data.
         """
         raw = self.datadb.get(keys=(pre,))
         if raw is None:
@@ -134,11 +153,14 @@ class BaseOrganizer:
         return data
 
     def list(self):
-        """ Return list of all contact information for all remote identifiers
+        """Return all records for all known identifier prefixes.
+
+        Iterates the field index to reconstruct each record. Records are
+        assembled from individual field entries and do not undergo signature
+        verification.
 
         Returns:
-            list: All contact information
-
+            list[dict]: all records, each containing at minimum ``"id"``.
         """
         key = ""
         data = None
@@ -158,15 +180,14 @@ class BaseOrganizer:
         return contacts
 
     def find(self, field, val):
-        """ Find all contact information for all contacts that have the val in field
+        """Find all records where field contains val as a case-insensitive substring.
 
-        Parameters:
-            field (str): field name to search for
-            val (Union[str,bytes,list]): value to search for
+        Args:
+            field (str): field name to search.
+            val (str): substring pattern to match against field values.
 
         Returns:
-            list: All contacts that match the val in field
-
+            list[dict]: all records whose ``field`` value matches the pattern.
         """
         pres = []
         prog = re.compile(f".*{val}.*", re.I)
@@ -177,19 +198,18 @@ class BaseOrganizer:
         return [self.get(pre) for pre in pres]
 
     def findExact(self, field, val):
-        """ Find all contacts where field is an exact case-sensitive match for val
+        """Find all records where field is an exact case-sensitive match for val.
 
-        Unlike find(), which uses a substring regex, this performs a strict
+        Unlike :meth:`find`, which uses a substring regex, this performs strict
         equality comparison suitable for alias lookups where similar names
-        (e.g. "sally" vs "sally-direct") must not collide.
+        (e.g. ``"sally"`` vs ``"sally-direct"``) must not collide.
 
-        Parameters:
-            field (str): field name to search for
-            val (str): exact value to match (case-sensitive)
+        Args:
+            field (str): field name to search.
+            val (str): exact value to match (case-sensitive).
 
         Returns:
-            list: All contacts whose field equals val exactly
-
+            list[dict]: all records whose ``field`` value equals ``val`` exactly.
         """
         pres = []
         for (pre, f), v in self.fielddb.getTopItemIter():
@@ -199,15 +219,15 @@ class BaseOrganizer:
         return [self.get(pre) for pre in pres]
 
     def values(self, field, val=None):
-        """ Find unique values for field in all contacts
+        """Return unique values for field across all records.
 
         Args:
-            field (str): field to load values for
-            val (Optional(str|None): optional filter for the value of the grouped field
+            field (str): field name whose values are collected.
+            val (str | None): optional case-insensitive substring filter;
+                when provided, only values matching the pattern are included.
 
         Returns:
-            list: Unique values from all contacts for field
-
+            list[str]: deduplicated values found for ``field``, in insertion order.
         """
         prog = re.compile(f".*{val}.*", re.I) if val is not None else None
 
@@ -219,16 +239,16 @@ class BaseOrganizer:
         return list(vals)
 
     def setImg(self, pre, typ, stream):
-        """ Upload image for identifier prefix
+        """Store image data for identifier prefix.
 
-        Streams image data in 4k chunks into database and sets content type and content length.
-        Performs a full replace of all data for image of specified identifier
+        Streams image data in 4 KiB chunks into the database. Any previously
+        stored image for ``pre`` is removed before writing begins. Content type
+        and content length metadata are persisted alongside the chunk data.
 
-        Parameters:
-            pre (str): qb64 identifier prefix for image
-            typ (str): image content mime type
-            stream (file): file-like stream of image data
-
+        Args:
+            pre (str): qb64 identifier prefix the image is associated with.
+            typ (str): MIME type of the image (e.g. ``"image/jpeg"``).
+            stream (IO[bytes]): readable file-like object yielding image bytes.
         """
         self.hby.db.remTop(db=self.imgsdb.sdb, top=pre.encode("utf-8"))
 
@@ -250,14 +270,15 @@ class BaseOrganizer:
         self.hby.db.setVal(db=self.imgsdb.sdb, key=key, val=size.to_bytes(4, "big"))
 
     def getImgData(self, pre):
-        """ Get image metadata for identifier image if one exists
+        """Return image metadata for identifier prefix if an image exists.
 
-            Parameters:
-                pre (str): qb64 identifier prefix for image
+        Args:
+            pre (str): qb64 identifier prefix of the image to query.
 
-            Returns:
-                dict: image metadata including length and type
-
+        Returns:
+            dict | None: a dict with keys ``"type"`` (str, MIME type) and
+            ``"length"`` (int, byte length), or ``None`` if no image is stored
+            for ``pre``.
         """
         key = f"{pre}.content-length".encode("utf-8")
         size = self.hby.db.getVal(db=self.imgsdb.sdb, key=key)
@@ -275,11 +296,13 @@ class BaseOrganizer:
         )
 
     def getImg(self, pre):
-        """ Generator that yields image data in 4k chunks for identifier
+        """Yield image data in 4 KiB chunks for identifier prefix.
 
-        Parameters:
-            pre (str): qb64 identifier prefix for image
+        Args:
+            pre (str): qb64 identifier prefix of the image to retrieve.
 
+        Yields:
+            bytes: successive 4 KiB chunks of image data.
         """
         idx = 0
         while True:
@@ -292,13 +315,13 @@ class BaseOrganizer:
 
 
 class Organizer(BaseOrganizer):
-    """ Organizes contacts relating contact information to AIDs """
+    """Organizes contact information relating it to remote AIDs."""
 
     def __init__(self, hby):
-        """ Create contact Organizer
+        """Create contact Organizer.
 
-        Parameters:
-            hby (Habery): database environment for contact information
+        Args:
+            hby (Habery): database environment for contact information.
         """
         super().__init__(
             hby=hby,
@@ -310,13 +333,13 @@ class Organizer(BaseOrganizer):
 
 
 class IdentifierOrganizer(BaseOrganizer):
-    """ Organizes identifier information for local identifiers """
+    """Organizes metadata for local identifiers."""
 
     def __init__(self, hby):
-        """ Create identifier Organizer
+        """Create identifier Organizer.
 
-        Parameters:
-            hby (Habery): database environment for identifier information
+        Args:
+            hby (Habery): database environment for identifier information.
         """
         super().__init__(
             hby=hby,

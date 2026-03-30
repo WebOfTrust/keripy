@@ -1,5 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
+KERI
 keri.app.signaling module
 
 """
@@ -15,17 +16,19 @@ from ..help import fromIso8601, nowIso8601, nowUTC
 
 
 def signal(attrs, topic, ckey=None, dt=None):
-    """
+    """Create a Signal instance with the given payload and routing information.
 
-    Parameters:
-        attrs (dict): payload of the notice
-        topic (str): routing for recipient of message
-        dt(Optional(str, datetime)): iso8601 formatted datetime of notice
-        ckey (str): collapse key
+    Args:
+        attrs (dict): Payload attributes of the signal.
+        topic (str): Routing topic for the recipient of the signal.
+        ckey (str, optional): Collapse key. Signals sharing a collapse key
+            replace any unread signal with the same key. Defaults to None.
+        dt (str or datetime, optional): ISO 8601 formatted datetime for the
+            signal. If a ``datetime`` object is provided it will be converted
+            via ``isoformat()``. Defaults to the current UTC time.
 
     Returns:
-        Notice:  Notice instance
-
+        Signal: A new Signal instance constructed from the given arguments.
     """
     dt = dt if dt is not None else nowIso8601()
 
@@ -42,15 +45,27 @@ def signal(attrs, topic, ckey=None, dt=None):
 
 
 class Signal(Dicter):
+    """A single signal message passed from an agent to its controller.
+
+    Signals are ephemeral pings that carry a structured payload (``pad``) and
+    an optional collapse key (``ckey``).  A Signal with a collapse key replaces
+    any existing unread Signal that shares the same key in the queue.
+
+    Attributes:
+        _ckey (str or None): The collapse key for this signal.
+    """
+
     def __init__(self, pad, ckey=None):
-        """ New Signal
+        """Initialize a Signal.
 
-        Signals with a collapse key will replace any existing signal not yet read with a matching value
-        as collapse key
-
-        Parameters:
-            pad (dict):  Attribute values that make up the payload of the signal
-            ckey (str): The collapse key to use for
+        Args:
+            pad (dict): Attribute values that make up the payload of the
+                signal. Expected keys are ``i`` (identifier), ``dt``
+                (ISO 8601 datetime), ``r`` (topic/route), and ``a``
+                (application-level attributes dict).
+            ckey (str, optional): Collapse key. A signal with a collapse key
+                replaces any existing unread signal with the same key.
+                Defaults to None.
         """
         super(Signal, self).__init__(pad=pad)
         self._ckey = ckey
@@ -60,6 +75,8 @@ class Signal(Dicter):
 
     @property
     def topic(self):
+        """str or None: The routing topic of the signal (``pad['r']``), or
+        ``None`` if not present."""
         if 'r' in self.pad:
             return self.pad['r']
         else:
@@ -67,14 +84,23 @@ class Signal(Dicter):
 
     @property
     def ckey(self):
+        """str or None: The collapse key for this signal."""
         return self._ckey
 
     @property
     def dt(self):
+        """str: ISO 8601 datetime string for this signal (``pad['dt']``)."""
         return self.pad['dt']
 
     @dt.setter
     def dt(self, dt):
+        """Set the datetime for this signal.
+
+        Args:
+            dt (str or datetime): ISO 8601 formatted string or a
+                ``datetime`` object. If a ``datetime`` object is provided
+                it will be converted via ``isoformat()``.
+        """
         if hasattr(dt, "isoformat"):
             dt = dt.isoformat()
 
@@ -82,40 +108,54 @@ class Signal(Dicter):
 
     @property
     def attrs(self):
+        """dict or None: Application-level attributes from the signal payload
+        (``pad['a']``), or ``None`` if not present."""
         if 'a' in self.pad:
             return self.pad['a']
         return None
 
 
 class Signaler(doing.DoDoer):
-    """ Class for sending signals to the controller of an agent.
+    """Manages a queue of Signal messages from an agent to its controller.
 
-    The signals are just pings to reload data and not persistent messages that can be reread
+    Signals are ephemeral pings intended to notify the controller to reload
+    data; they are not persistent and cannot be re-read once consumed.  A
+    background doer (``expireDo``) automatically removes signals that have
+    been in the queue longer than ``SignalTimeout``.
 
+    Attributes:
+        signals (Deck): Queue holding pending Signal instances.
+        SignalTimeout (datetime.timedelta): Maximum age of a signal before it
+            is expired. Defaults to 10 minutes.
     """
 
     SignalTimeout = datetime.timedelta(minutes=10)
 
     def __init__(self, signals=None):
-        """
+        """Initialize a Signaler.
 
-        Parameters:
+        Args:
+            signals (Deck, optional): Existing deck to use as the signal
+                queue. A new ``decking.Deck`` is created when not provided.
+                Defaults to None.
         """
         self.signals = signals if signals is not None else decking.Deck()
         doers = [doing.doify(self.expireDo)]
         super(Signaler, self).__init__(doers=doers)
 
     def push(self, attrs, topic, ckey=None, dt=None):
-        """
+        """Build a Signal and append it to the signal queue.
 
-        Parameters:
-            attrs (dict): signal attributes to push to the cue
-            topic (str): routing for recipient of message
-            ckey (str): collapse key
-            dt(Optional(str, datetime)): iso8601 formatted datetime of notice
+        If the signal carries a collapse key and an unread signal with the
+        same key already exists in the queue, that existing signal is replaced
+        in-place rather than a new entry being appended.
 
-        Returns:
-
+        Args:
+            attrs (dict): Signal attributes to push to the queue.
+            topic (str): Routing topic for the recipient of the signal.
+            ckey (str, optional): Collapse key. Defaults to None.
+            dt (str or datetime, optional): ISO 8601 formatted datetime for
+                the signal. Defaults to the current UTC time.
         """
         dt = dt if dt is not None else nowIso8601()
         sig = signal(attrs=attrs, topic=topic, ckey=ckey, dt=dt)
@@ -129,17 +169,23 @@ class Signaler(doing.DoDoer):
         self.signals.append(sig)
 
     def expireDo(self, tymth=None, tock=0.0, **kwa):
-        """
-        Returns doifiable Doist compatible generator method (doer dog)
+        """Doer generator that periodically removes expired signals from the queue.
 
-        Usage:
-            add result of doify on this method to doers list
+        Iterates over the signal queue on every tock and removes any signal
+        whose age exceeds ``SignalTimeout``.  Intended to be registered via
+        ``doing.doify`` and driven by a ``Doist``.
 
-        Parameters:
-            tymth is injected function wrapper closure returned by .tymen() of
-                Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock is injected initial tock value
+        Args:
+            tymth (callable, optional): Injected function wrapper closure
+                returned by ``Tymist.tymen()``. Calling ``tymth()`` returns
+                the associated ``Tymist.tyme``. Defaults to None.
+            tock (float, optional): Injected initial tock value representing
+                the scheduler time increment in seconds. Defaults to 0.0.
+            **kwa: Additional keyword arguments passed by the doer framework.
 
+        Yields:
+            float: The current tock value, yielding control back to the
+                ``Doist`` scheduler on each iteration.
         """
         self.wind(tymth)
         self.tock = tock
@@ -160,14 +206,17 @@ class Signaler(doing.DoDoer):
 
 
 def loadSignalingEnds(app, *, signals=None):
-    """ Load endpoints for agent to controller messages
+    """Register the signaling mailbox endpoint with a Falcon application.
+
+    Creates a ``SignalsEnd`` instance and mounts it at ``/mbx``.
 
     Args:
-        app (falcon.App): falcon.App to register handlers with:
-        signals (Deck): messages for the mailbox stream
+        app (falcon.App): Falcon application instance to register the route on.
+        signals (Deck, optional): Deck of pending Signal instances to pass to
+            the endpoint handler. Defaults to None.
 
     Returns:
-
+        SignalsEnd: The endpoint handler instance that was registered.
     """
     sigEnd = SignalsEnd(signals=signals)
     app.add_route("/mbx", sigEnd)
@@ -175,50 +224,36 @@ def loadSignalingEnds(app, *, signals=None):
 
 
 class SignalsEnd:
-    """
-    HTTP handler that accepts and KERI events POSTed as the body of a request with all attachments to
-    the message as a CESR attachment HTTP header.  KEL Messages are processed and added to the database
-    of the provided Habitat.
+    """Falcon HTTP resource that streams pending signals as Server-Sent Events.
 
-    This also handles `req`, `exn` and `tel` messages that respond with a KEL replay.
+    Exposes a mailbox endpoint (``/mbx``) that both GET and POST requests can
+    use to receive a stream of SSE-formatted Signal messages destined for the
+    agent's controller.
     """
 
     def __init__(self, signals=None):
-        """
-        Create the MBX HTTP server from the Habitat with an optional Falcon App to
-        register the routes with.
+        """Initialize a SignalsEnd resource.
 
-        Parameters
-             rxbs (bytearray): output queue of bytes for message processing
-             mbx (Mailboxer): Mailbox storage
-             qrycues (Deck): inbound qry response queues
-
+        Args:
+            signals (Deck, optional): Deck of pending Signal instances to
+                stream to clients. A new ``decking.Deck`` is created when not
+                provided. Defaults to None.
         """
         self.signals = signals if signals is not None else decking.Deck()
 
     def on_post(self, req, rep):
-        """
-        Handles POST for KERI mailbox service.
+        """Handle POST requests by streaming pending signals as SSE.
 
-        Parameters:
-              req (Request) Falcon HTTP request
-              rep (Response) Falcon HTTP response
+        Streams all pending signals from the mailbox queue as a
+        ``text/event-stream`` response. Each signal is encoded as an SSE
+        event frame and sent to the client.
 
-        ---
-        summary:  Stream Server-Sent Events for KERI mailbox for identifier
-        description:  Stream Server-Sent Events for KERI mailbox for identifier
-        tags:
-           - Mailbox
-
-        responses:
-           200:
-              content:
-                 text/event-stream:
-                    schema:
-                       type: object
-              description: Signal query response for server sent events
-           204:
-              description: KEL or EXN event accepted.
+        Args:
+            req (falcon.Request): Incoming Falcon HTTP request.
+            rep (falcon.Response): Outgoing Falcon HTTP response. On return,
+                ``rep.status`` is set to ``200 OK``, ``Content-Type`` is set
+                to ``text/event-stream``, and ``rep.stream`` is set to a
+                :class:`SignalIterable` that drains the pending signal queue.
         """
         rep.set_header('Cache-Control', "no-cache")
         rep.set_header('connection', "close")
@@ -228,25 +263,18 @@ class SignalsEnd:
         rep.stream = SignalIterable(signals=self.signals)
 
     def on_get(self, req, rep):
-        """
-        Handles GET requests as a stream of SSE events
-        Parameters:
-              req (Request) Falcon HTTP request
-              rep (Response) Falcon HTTP response
-        ---
-        summary:  Stream Server-Sent Events for KERI mailbox for identifier
-        description:  Stream Server-Sent Events for KERI mailbox for identifier
-        tags:
-           - Mailbox
-        responses:
-           200:
-              content:
-                 text/event-stream:
-                    schema:
-                       type: object
-              description: Mailbox query response for server sent events
-           204:
-              description: KEL or EXN event accepted.
+        """Handle GET requests by streaming pending signals as SSE.
+
+        Streams all pending signals from the mailbox queue as a
+        ``text/event-stream`` response. Each signal is encoded as an SSE
+        event frame and sent to the client.
+
+        Args:
+            req (falcon.Request): Incoming Falcon HTTP request.
+            rep (falcon.Response): Outgoing Falcon HTTP response. On return,
+                ``Content-Type`` is set to ``text/event-stream`` and
+                ``rep.stream`` is set to a :class:`SignalIterable` that
+                drains the pending signal queue.
         """
         rep.set_header('Cache-Control', "no-cache")
         rep.set_header('connection', "close")
@@ -256,17 +284,60 @@ class SignalsEnd:
 
 
 class SignalIterable:
+    """Iterator that yields SSE-formatted bytes from the signal queue.
+
+    On the first call to ``__next__`` a ``retry`` directive is sent to the
+    client.  Subsequent calls drain all available signals from the queue,
+    encode each one as an SSE event frame, and return the combined bytes.
+    Iteration stops once ``TimeoutMBX`` seconds have elapsed since the
+    iterator was first entered.
+
+    Attributes:
+        TimeoutMBX (int): Maximum number of seconds the iterator will produce
+            data before raising ``StopIteration``. Defaults to 300.
+        signals (Deck): Shared signal queue consumed by this iterator.
+        retry (int): SSE ``retry`` interval in milliseconds sent to the
+            client. Defaults to 5000.
+    """
+
     TimeoutMBX = 300
 
     def __init__(self, signals, retry=5000):
+        """Initialize a SignalIterable.
+
+        Args:
+            signals (Deck): Shared queue of pending Signal instances to drain
+                and encode as SSE event frames.
+            retry (int, optional): SSE ``retry`` interval in milliseconds
+                included in each event frame. Defaults to 5000.
+        """
         self.signals = signals
         self.retry = retry
 
     def __iter__(self):
+        """Prepare the iterator and record the start time.
+
+        Returns:
+            SignalIterable: This iterator instance.
+        """
         self.start = self.end = time.perf_counter()
         return self
 
     def __next__(self):
+        """Yield the next chunk of SSE-encoded signal bytes.
+
+        On the very first call, returns a ``retry`` directive frame.  On
+        subsequent calls, drains all currently available signals from the
+        queue and returns them as concatenated SSE event frames.  Raises
+        ``StopIteration`` once ``TimeoutMBX`` seconds have elapsed.
+
+        Returns:
+            bytes: SSE-formatted bytes containing one or more event frames,
+                or an empty payload when no signals are pending.
+
+        Raises:
+            StopIteration: When the elapsed time exceeds ``TimeoutMBX``.
+        """
         if self.end - self.start < self.TimeoutMBX:
             if self.start == self.end:
                 self.end = time.perf_counter()
