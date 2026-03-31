@@ -2766,7 +2766,7 @@ def test_change_config_accept_delta_override_larger(fakeHelpingClock):
                 }
             }
             cf.put(new_cfg)
-            kramer.changeConfig(cf, acceptDeltaOverride=10_000)
+            kramer.changeConfig(cf, deltaOverride=10_000)
 
             pend = kramer._pending["~"]
             assert pend["delta"] == 10_000
@@ -2807,7 +2807,7 @@ def test_change_config_accept_delta_override_smaller(fakeHelpingClock):
                 }
             }
             cf.put(new_cfg)
-            kramer.changeConfig(cf, acceptDeltaOverride="2000")
+            kramer.changeConfig(cf, deltaOverride="2000")
 
             assert kramer._pending["~"]["delta"] == 2000
 
@@ -2825,7 +2825,7 @@ def test_change_config_accept_delta_override_smaller(fakeHelpingClock):
 
 
 def test_change_config_accept_delta_invalid():
-    """Non-integer or negative acceptDeltaOverride raises KramConfigurationError."""
+    """Non-integer or non-positive acceptDeltaOverride raises KramConfigurationError."""
     salt_receiver = Salter(raw=b'0123456789abcdeg').qb64
 
     with openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby:
@@ -2846,7 +2846,7 @@ def test_change_config_accept_delta_invalid():
                 }
             })
             with pytest.raises(KramConfigurationError):
-                kramer.changeConfig(cf, acceptDeltaOverride=-1)
+                kramer.changeConfig(cf, deltaOverride=-1)
 
             cf.put({
                 "kram": {
@@ -2855,7 +2855,16 @@ def test_change_config_accept_delta_invalid():
                 }
             })
             with pytest.raises(KramConfigurationError):
-                kramer.changeConfig(cf, acceptDeltaOverride="notint")
+                kramer.changeConfig(cf, deltaOverride=0)
+
+            cf.put({
+                "kram": {
+                    "enabled": True,
+                    "caches": {"~": [1000, 5000, 5000, 5000, 5000, 5000, 5000]},
+                }
+            })
+            with pytest.raises(KramConfigurationError):
+                kramer.changeConfig(cf, deltaOverride="notint")
 
 
 def test_dynamic_cache_decrease(fakeHelpingClock):

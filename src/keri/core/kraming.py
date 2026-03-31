@@ -1205,7 +1205,7 @@ class Kramer:
                 else:
                     raise KramError("Unexpected auth type while kraming.")
 
-    def changeConfig(self, newCf, acceptDeltaOverride=None):
+    def changeConfig(self, newCf, deltaOverride=None):
         """
         Apply a new cache‑type configuration using full Case‑3 (see KRAM specs), coverage‑aware
         semantics. This method enforces all KRAM invariants for safe dynamic
@@ -1242,14 +1242,15 @@ class Kramer:
                 dictionary containing the new cache‑type configuration under:
                     config["kram"]["caches"]
 
-            acceptDeltaOverride:
+            deltaOverride:
                 Optional runtime override injected at call time.
                 If absent, staging delays are computed automatically
-                (Case‑2 / Case‑3). If set to a non-negative integer
-                (milliseconds), that value is used as _pending[ctype]["delta"] 
-                for every staged accept‑window update in this transition instead of 
-                the computed delay. The admin/user is responsible for choosing 
-                a safe value when overriding.
+                (Case‑2 / Case‑3), including Case‑3 coverage diff and worst‑case
+                delta. If set to a positive integer (milliseconds), that value
+                is used as ``_pending[ctype]["delta"]`` for every staged update
+                and no Case‑3 delta computation is performed. Newly introduced
+                cache‑types are staged with this delay. The admin/user is
+                responsible for choosing a safe value.
 
         Behavior by case:
 
@@ -1273,14 +1274,14 @@ class Kramer:
         # Get the new config
         config = newCf.get()
         new = config.get("kram", {}).get("caches", {})
-        if acceptDeltaOverride is not None:
+        if deltaOverride is not None:
             try:
-                acceptDeltaOverride = int(acceptDeltaOverride)
-                if acceptDeltaOverride < 0:
+                deltaOverride = int(deltaOverride)
+                if deltaOverride <= 0:
                     raise ValueError
             except (TypeError, ValueError) as e:
                 raise KramConfigurationError(
-                    f"Invalid kram.acceptDeltaOverride: {acceptDeltaOverride!r}"
+                    f"Invalid kram.acceptDeltaOverride: {deltaOverride!r}"
                 ) from e
         newRecords = self._validateCtypConfig(new)
 
@@ -1292,11 +1293,11 @@ class Kramer:
         # Validate coverage (no coverage holes)
         self._validateCoverage(oldGraph, newGraph, new)
 
-        # Compute coverage diff
-        coverageDiff = self._computeCoverageDiff(oldGraph, newGraph)
-
-        # Compute worst-case delta across coverage
-        deltaCase3 = self._computeWorstCaseDelta(coverageDiff, old, new)
+        if deltaOverride is None:
+            coverageDiff = self._computeCoverageDiff(oldGraph, newGraph)
+            deltaCase3 = self._computeWorstCaseDelta(coverageDiff, old, new)
+        else:
+            deltaCase3 = None
 
         # Get the smallest old accept windows so that it cannot accept
         # messages earlier than any existing cache‑type
@@ -1322,40 +1323,32 @@ class Kramer:
             # Newly introduced cache
             if ctype not in old:
 
-                # No expansion detected in the coverage graph
-                if deltaCase3 == 0:
-                    # Safe to apply immediately
+                if deltaOverride is not None:
+                    delta = deltaOverride
+                elif deltaCase3 == 0:
                     rec = newrec
                     self.db.kramCTYP.pin(ctype, rec)
-
-                # Pattern in the coverage graph expanded, accept-window increases must be staged
+                    continue
                 else:
-                    # Stage accept windows using Case 3 delta
-                    # Get staging start time
-                    start = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
+                    delta = deltaCase3
 
-                    # Populate pending with the new values
-                    self._pending[ctype] = {
-                        "d_new": d_new,
-                        "sl_new": sl_new,
-                        "ll_new": ll_new,
-                        "xl_new": xl_new,
-                        "start": start,
-                        "delta": acceptDeltaOverride if acceptDeltaOverride is not None else deltaCase3,
-                    }
-
-                    # Populate the new Cache record, note that pruning values are immediately updated
-                    # while we use the smallest accept-window values determined earlier
-                    rec = CacheTypeRecord(
-                        d=d_new,
-                        sl=min_sl, ll=min_ll, xl=min_xl,
-                        psl=max(psl_new, sl_new),
-                        pll=max(pll_new, ll_new),
-                        pxl=max(pxl_new, xl_new),
-                    )
-
-                    # Update the cache record inside db
-                    self.db.kramCTYP.pin(ctype, rec)
+                start = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
+                self._pending[ctype] = {
+                    "d_new": d_new,
+                    "sl_new": sl_new,
+                    "ll_new": ll_new,
+                    "xl_new": xl_new,
+                    "start": start,
+                    "delta": delta,
+                }
+                rec = CacheTypeRecord(
+                    d=d_new,
+                    sl=min_sl, ll=min_ll, xl=min_xl,
+                    psl=max(psl_new, sl_new),
+                    pll=max(pll_new, ll_new),
+                    pxl=max(pxl_new, xl_new),
+                )
+                self.db.kramCTYP.pin(ctype, rec)
                 continue
 
             # Cache is already in old config, determine if case 1 or case 2
@@ -1396,20 +1389,19 @@ class Kramer:
             d_xl = max(0, xl_new - xl_old)
             deltaCase2  = max(d_sl, d_ll, d_xl)
 
-            # Unified delta ensures safety across Case 2 and Case 3
-            delta = max(deltaCase2, deltaCase3)
+            if deltaOverride is None:
+                delta = max(deltaCase2, deltaCase3)
+            else:
+                delta = deltaOverride
 
-            # Get the start time of the change
             start = helping.fromIso8601(helping.nowIso8601()).timestamp() * 1000
-
-            # Populate pending with the new values
             self._pending[ctype] = {
                 "d_new": d_new,
                 "sl_new": sl_new,
                 "ll_new": ll_new,
                 "xl_new": xl_new,
                 "start": start,
-                "delta": acceptDeltaOverride if acceptDeltaOverride is not None else delta,
+                "delta": delta,
             }
 
             # Create cache record with the new values
