@@ -21,10 +21,8 @@ from hio.core import http, wiring
 from hio.help import ogler
 
 from ..kering import Roles, Schemes
-def _habbing():
-    """Lazily import and return the habbing module."""
-    import importlib
-    return importlib.import_module("..app.habbing", package=__name__)
+from ..app.habbing import Habery, HaberyDoer
+
 from ..core import Cigar, Siger
 from ..help import helping
 
@@ -547,7 +545,7 @@ class OOBIEnd:
 
     """
 
-    def __init__(self, hby, default=None):
+    def __init__(self, hby: Habery, default=None):
         """  End point for responding to OOBIs
 
         Parameters:
@@ -667,9 +665,8 @@ def setup(name="who", temp=False, tymth=None, isith=None, count=1,
     Setup and return doers list to run controller
     """
     # setup habery with resources
-    _hab = _habbing()
-    hby = _hab.Habery(name=name, base="endo", temp=True, free=True)
-    hbyDoer = _hab.HaberyDoer(habery=hby)  # setup doer
+    hby = Habery(name=name, base="endo", temp=True, free=True)
+    hbyDoer = HaberyDoer(habery=hby)  # setup doer
 
     # make hab
     hab = hby.makeHab(name=name, isith=isith, icount=count)
