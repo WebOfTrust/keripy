@@ -1205,7 +1205,7 @@ class Kramer:
                 else:
                     raise KramError("Unexpected auth type while kraming.")
 
-    def changeConfig(self, newCf):
+    def changeConfig(self, newCf, acceptDeltaOverride=None):
         """
         Apply a new cache‑type configuration using full Case‑3 (see KRAM specs), coverage‑aware
         semantics. This method enforces all KRAM invariants for safe dynamic
@@ -1242,6 +1242,15 @@ class Kramer:
                 dictionary containing the new cache‑type configuration under:
                     config["kram"]["caches"]
 
+            acceptDeltaOverride:
+                Optional runtime override injected at call time.
+                If absent, staging delays are computed automatically
+                (Case‑2 / Case‑3). If set to a non-negative integer
+                (milliseconds), that value is used as _pending[ctype]["delta"] 
+                for every staged accept‑window update in this transition instead of 
+                the computed delay. The admin/user is responsible for choosing 
+                a safe value when overriding.
+
         Behavior by case:
 
             • New cache‑type:
@@ -1264,6 +1273,15 @@ class Kramer:
         # Get the new config
         config = newCf.get()
         new = config.get("kram", {}).get("caches", {})
+        if acceptDeltaOverride is not None:
+            try:
+                acceptDeltaOverride = int(acceptDeltaOverride)
+                if acceptDeltaOverride < 0:
+                    raise ValueError
+            except (TypeError, ValueError) as e:
+                raise KramConfigurationError(
+                    f"Invalid kram.acceptDeltaOverride: {acceptDeltaOverride!r}"
+                ) from e
         newRecords = self._validateCtypConfig(new)
 
         # Case 3 coverage aware logic
@@ -1323,7 +1341,7 @@ class Kramer:
                         "ll_new": ll_new,
                         "xl_new": xl_new,
                         "start": start,
-                        "delta": deltaCase3,
+                        "delta": acceptDeltaOverride if acceptDeltaOverride is not None else deltaCase3,
                     }
 
                     # Populate the new Cache record, note that pruning values are immediately updated
@@ -1391,7 +1409,7 @@ class Kramer:
                 "ll_new": ll_new,
                 "xl_new": xl_new,
                 "start": start,
-                "delta": delta,
+                "delta": acceptDeltaOverride if acceptDeltaOverride is not None else delta,
             }
 
             # Create cache record with the new values
