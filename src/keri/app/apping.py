@@ -40,7 +40,7 @@ class Consoler(doing.Doer):
         (see ReDoer below for example of .recur that is a generator method)
 
         Returns completion state of recurrence actions.
-           True means done False means continue
+        True means done False means continue
 
         Parameters:
             Doist feeds its .tyme through .send to .do yield which passes it here.
@@ -49,10 +49,10 @@ class Consoler(doing.Doer):
         .recur maybe implemented by a subclass either as a non-generator method
         or a generator method. This stub here is as a non-generator method.
         The base class .do detects which type:
-            If non-generator .do method runs .recur method once per iteration
-                until .recur returns (True)
-            If generator .do method runs .recur with (yield from) until .recur
-                returns (see ReDoer for example of generator .recur)
+        If non-generator .do method runs .recur method once per iteration
+        until .recur returns (True)
+        If generator .do method runs .recur with (yield from) until .recur
+        returns (see ReDoer for example of generator .recur)
 
         """
         line = self.console.get()  # process one line of input

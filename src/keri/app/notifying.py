@@ -155,10 +155,12 @@ class DicterSuber(Suber):
             None: if no entry at keys
 
         Usage:
-            Use walrus operator to catch and raise missing entry
-            if (creder := mydb.get(keys)) is None:
-                raise ExceptionHere
-            use creder here
+            Use walrus operator to catch and raise missing entry.
+            Example::
+
+                if (creder := mydb.get(keys)) is None:
+                    raise ExceptionHere
+                use creder here
 
         """
         val = self.db.getVal(db=self.sdb, key=self._tokey(keys))
