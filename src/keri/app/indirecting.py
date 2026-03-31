@@ -974,6 +974,14 @@ class HttpEnd:
             req (falcon.Request): Incoming HTTP request containing a KERI event.
             rep (falcon.Response): HTTP response object to populate.
         """
+        if req.method == "OPTIONS":
+            rep.status = falcon.HTTP_200
+            return
+
+        rep.set_header('Cache-Control', "no-cache")
+        rep.set_header('connection', "close")
+
+        cr = parseCesrHttpRequest(req=req)
         sadder = coring.Sadder(ked=cr.payload, kind=Kinds.json)
         msg = bytearray(sadder.raw)
         msg.extend(cr.attachments.encode("utf-8"))
@@ -1444,6 +1452,7 @@ class QueryEnd:
             hab (Hab): Local witness habitat. Its associated database is used
                 to retrieve KEL events, and is also passed to the registry
                 handler for TEL queries.
+            reger (Reger): Registry database interface used for TEL queries.
         """
         self.hab = hab
         self.reger = reger
