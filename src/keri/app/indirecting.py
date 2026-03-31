@@ -905,6 +905,14 @@ class HttpEnd:
                204:
                   description: KEL or EXN event accepted.
         """
+        if req.method == "OPTIONS":
+            rep.status = falcon.HTTP_200
+            return
+
+        rep.set_header('Cache-Control', "no-cache")
+        rep.set_header('connection', "close")
+
+        cr = parseCesrHttpRequest(req=req)
         sadder = coring.Sadder(ked=cr.payload, kind=Kinds.json)
         msg = bytearray(sadder.raw)
         msg.extend(cr.attachments.encode("utf-8"))
