@@ -81,7 +81,7 @@ class ConfirmDoer(doing.DoDoer):
 
         exc = Exchanger(hby=hby, handlers=[])
         delegating.loadHandlers(hby=hby, exc=exc, notifier=self.notifier)
-        grouping.loadGroupingHandlers(exc=exc, mux=self.mux)
+        grouping.loadHandlers(exc=exc, mux=self.mux)
 
         self.mbx = MailboxDirector(hby=hby, topics=['/receipt', '/multisig', '/replay', '/delegate'],
                                                exc=exc)
