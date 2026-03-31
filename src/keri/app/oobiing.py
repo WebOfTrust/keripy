@@ -74,32 +74,34 @@ class OobiResource:
             rep: falcon.Response HTTP response
             alias: option route parameter for specific identifier to get
 
-        ---
-        summary:  Get OOBI for specific identifier
-        description:  Generate OOBI for the identifier of the specified alias and role
-        tags:
-           - OOBIs
-        parameters:
-          - in: path
-            name: alias
-            schema:
-              type: string
-            required: true
-            description: human readable alias for the identifier generate OOBI for
-          - in: query
-            name: role
-            schema:
-              type: string
-            required: true
-            description: role for which to generate OOBI
-        responses:
-            200:
-              description: An array of Identifier key state information
-              content:
-                  application/json:
-                    schema:
-                        description: Key state information for current identifiers
-                        type: object
+        .. code-block:: none
+
+            ---
+            summary:  Get OOBI for specific identifier
+            description:  Generate OOBI for the identifier of the specified alias and role
+            tags:
+               - OOBIs
+            parameters:
+              - in: path
+                name: alias
+                schema:
+                  type: string
+                required: true
+                description: human readable alias for the identifier generate OOBI for
+              - in: query
+                name: role
+                schema:
+                  type: string
+                required: true
+                description: role for which to generate OOBI
+            responses:
+                200:
+                  description: An array of Identifier key state information
+                  content:
+                      application/json:
+                        schema:
+                            description: Key state information for current identifiers
+                            type: object
         """
 
         hab = self.hby.habByName(alias)
@@ -150,32 +152,34 @@ class OobiResource:
             req: falcon.Request HTTP request
             rep: falcon.Response HTTP response
 
-        ---
-        summary: Resolve OOBI and assign an alias for the remote identifier
-        description: Resolve OOBI URL or `rpy` message by process results of request and assign 'alias' in contact data
-                      for resolved identifier
-        tags:
-           - OOBIs
-        requestBody:
-            required: true
-            content:
-              application/json:
-                schema:
-                    description: OOBI
-                    properties:
-                        oobialias:
-                          type: string
-                          description: alias to assign to the identifier resolved from this OOBI
-                          required: false
-                        url:
-                          type: string
-                          description:  URL OOBI
-                        rpy:
-                          type: object
-                          description: unsigned KERI `rpy` event message with endpoints
-        responses:
-           202:
-              description: OOBI resolution to key state successful
+        .. code-block:: none
+
+            ---
+            summary: Resolve OOBI and assign an alias for the remote identifier
+            description: Resolve OOBI URL or rpy message by process results of request
+                and assign alias in contact data for resolved identifier
+            tags:
+               - OOBIs
+            requestBody:
+                required: true
+                content:
+                  application/json:
+                    schema:
+                        description: OOBI
+                        properties:
+                            oobialias:
+                              type: string
+                              description: alias to assign to the identifier resolved from this OOBI
+                              required: false
+                            url:
+                              type: string
+                              description:  URL OOBI
+                            rpy:
+                              type: object
+                              description: unsigned KERI rpy event message with endpoints
+            responses:
+               202:
+                  description: OOBI resolution to key state successful
 
         """
         body = req.get_media()
@@ -325,7 +329,7 @@ class Oobiery:
             diger (Diger): instance from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
-                          signature in .raw and public key in .verfer
+                signature in .raw and public key in .verfer
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
                 prefixer is pre of trans endorser
@@ -336,19 +340,20 @@ class Oobiery:
         OobiRecord:
             date: str = date time of reply message of the introduction
 
-        Reply Message:
-        {
-          "v" : "KERI10JSON00011c_",
-          "t" : "rpy",
-          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-          "dt": "2020-08-22T17:50:12.988921+00:00",
-          "r" : "/introduce",
-          "a" :
-          {
-             "cid": "ENcOes8_t2C7tck4X4j61fSm0sWkLbZrEZffq7mSn8On",
-             "oobi":  "http://localhost:5632/oobi/ENcOes8_t2C7tck4X4j61fSm0sWkLbZrEZffq7mSn8On/witness",
-          }
-        }
+        Reply Message::
+
+            {
+              "v" : "KERI10JSON00011c_",
+              "t" : "rpy",
+              "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+              "dt": "2020-08-22T17:50:12.988921+00:00",
+              "r" : "/introduce",
+              "a" :
+              {
+                 "cid": "ENcOes8_t2C7tck4X4j61fSm0sWkLbZrEZffq7mSn8On",
+                 "oobi":  "http://localhost:5632/oobi/ENcOes8_t2C7tck4X4j61fSm0sWkLbZrEZffq7mSn8On/witness",
+              }
+            }
 
         """
         if route != "/introduce":
