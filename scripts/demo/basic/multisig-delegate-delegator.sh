@@ -66,6 +66,145 @@ PID_LIST+=" $pid"
 
 wait $PID_LIST
 
-kli status --name delegate2 --alias delegate
+echo ""
+echo "==================== Post-Inception Verification ===================="
+echo ""
 
-echo "Script complete"
+# --- Delegate status from delegate's perspective ---
+echo "Delegate multisig status (from delegate1's perspective):"
+kli status --name delegate1 --alias delegate
+echo ""
+echo "Delegate multisig status (from delegate2's perspective):"
+kli status --name delegate2 --alias delegate
+echo ""
+
+# --- Delegator status (should show sn=1 for the anchor IXN) ---
+echo "Delegator multisig status (from delegator1's perspective):"
+kli status --name delegator1 --alias delegator
+echo ""
+
+# --- Delegator resolves delegate member OOBIs (needed to verify multisig sigs) ---
+echo "Generating delegate member OOBIs..."
+DELEGATE1_OOBI=$(kli oobi generate --name delegate1 --alias delegate1 --role witness | head -n 1)
+DELEGATE2_OOBI=$(kli oobi generate --name delegate2 --alias delegate2 --role witness | head -n 1)
+
+echo "Delegator1 resolving delegate1 member OOBI..."
+kli oobi resolve --name delegator1 --oobi-alias delegate1 --oobi "${DELEGATE1_OOBI}"
+echo "Delegator1 resolving delegate2 member OOBI..."
+kli oobi resolve --name delegator1 --oobi-alias delegate2 --oobi "${DELEGATE2_OOBI}"
+echo "Delegator2 resolving delegate1 member OOBI..."
+kli oobi resolve --name delegator2 --oobi-alias delegate1 --oobi "${DELEGATE1_OOBI}"
+echo "Delegator2 resolving delegate2 member OOBI..."
+kli oobi resolve --name delegator2 --oobi-alias delegate2 --oobi "${DELEGATE2_OOBI}"
+
+# --- Delegator resolves delegate multisig OOBI ---
+echo "Generating delegate multisig OOBI..."
+DELEGATE_OOBI=$(kli oobi generate --name delegate1 --alias delegate --role witness | head -n 1)
+
+echo "Delegator1 resolving delegate multisig OOBI..."
+kli oobi resolve --name delegator1 --oobi-alias delegate --oobi "${DELEGATE_OOBI}"
+echo "Delegator2 resolving delegate multisig OOBI..."
+kli oobi resolve --name delegator2 --oobi-alias delegate --oobi "${DELEGATE_OOBI}"
+
+# --- Verify delegate is known to delegator via kli kevers ---
+echo ""
+echo "--- Verification: delegator1 views delegate multisig keystate (sn=0) ---"
+DELEGATE_AID=$(kli aid --name delegate1 --alias delegate)
+echo "Delegate multisig AID: ${DELEGATE_AID}"
+kli kevers --name delegator1 --prefix "${DELEGATE_AID}"
+
+echo ""
+echo "--- Verification: delegator2 views delegate multisig keystate (sn=0) ---"
+kli kevers --name delegator2 --prefix "${DELEGATE_AID}"
+
+# --- Also verify delegator's own anchor event (sn should be 1) ---
+echo ""
+echo "--- Verification: delegator anchor event (sn=1) ---"
+DELEGATOR_AID=$(kli aid --name delegator1 --alias delegator)
+echo "Delegator multisig AID: ${DELEGATOR_AID}"
+kli kevers --name delegator1 --prefix "${DELEGATOR_AID}"
+
+echo ""
+echo "==================== Delegated Rotation ===================="
+echo ""
+
+# --- Step 1: Rotate individual delegate member keys prior to rotating the delegate multisig ---
+echo "Rotating delegate1 individual keys..."
+kli rotate --name delegate1 --alias delegate1
+
+echo "Rotating delegate2 individual keys..."
+kli rotate --name delegate2 --alias delegate2
+
+# --- Step 2: Sync keystate between delegate members ---
+# Each member queries the other to discover the newly rotated keys.
+DELEGATE1_AID=$(kli aid --name delegate1 --alias delegate1)
+DELEGATE2_AID=$(kli aid --name delegate2 --alias delegate2)
+
+echo "delegate2 querying delegate1 keystate..."
+kli query --name delegate2 --alias delegate2 --prefix "${DELEGATE1_AID}"
+echo "delegate1 querying delegate2 keystate..."
+kli query --name delegate1 --alias delegate1 --prefix "${DELEGATE2_AID}"
+
+# --- Step 3: Rotate the delegate multisig (DRT event, needs delegation approval) ---
+echo "Rotating delegate multisig..."
+PID_LIST=""
+
+kli multisig rotate --name delegate1 --alias delegate &
+pid=$!
+PID_LIST+=" $pid"
+
+kli multisig rotate --name delegate2 --alias delegate &
+pid=$!
+PID_LIST+=" $pid"
+
+# Wait for the rotation request to propagate, then approve
+sleep 3
+
+echo "Approving delegated rotation from delegator1..."
+kli delegate confirm --name delegator1 --alias delegator --interact --auto &
+pid=$!
+PID_LIST+=" $pid"
+
+echo "Approving delegated rotation from delegator2..."
+kli delegate confirm --name delegator2 --alias delegator --interact --auto &
+pid=$!
+PID_LIST+=" $pid"
+
+wait $PID_LIST
+
+echo ""
+echo "==================== Post-Rotation Verification ===================="
+echo ""
+
+# --- Delegate status after rotation (sn should be 1) ---
+echo "Delegate multisig status after rotation (from delegate1's perspective):"
+kli status --name delegate1 --alias delegate
+echo ""
+
+# --- Delegator status after rotation (sn should be 2 -- inception anchor + rotation anchor) ---
+echo "Delegator multisig status after rotation (from delegator1's perspective):"
+kli status --name delegator1 --alias delegator
+echo ""
+
+# --- Delegator re-resolves delegate OOBI to pick up the rotation event ---
+echo "Re-resolving delegate multisig OOBI after rotation..."
+DELEGATE_OOBI=$(kli oobi generate --name delegate1 --alias delegate --role witness | head -n 1)
+kli oobi resolve --name delegator1 --oobi-alias delegate --oobi "${DELEGATE_OOBI}"
+kli oobi resolve --name delegator2 --oobi-alias delegate --oobi "${DELEGATE_OOBI}"
+
+# --- Verify delegator sees the rotated delegate (sn=1) ---
+echo ""
+echo "--- Verification: delegator1 views delegate multisig keystate after rotation (sn=1) ---"
+kli kevers --name delegator1 --prefix "${DELEGATE_AID}"
+
+echo ""
+echo "--- Verification: delegator2 views delegate multisig keystate after rotation (sn=1) ---"
+kli kevers --name delegator2 --prefix "${DELEGATE_AID}"
+
+# --- Verify delegator's own KEL has both anchors (sn=2) ---
+echo ""
+echo "--- Verification: delegator anchor event after rotation (sn=2) ---"
+kli kevers --name delegator1 --prefix "${DELEGATOR_AID}"
+
+echo ""
+echo "==================== Script complete ===================="
