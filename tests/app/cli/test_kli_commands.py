@@ -7,6 +7,7 @@ from keri.kering import Ilks, ValidationError
 from keri.core import Salter
 
 from keri.app import runController
+from keri.cli.commands.witness import start as witness_start
 
 from keri.cli import commands
 from keri.cli.common import existingHab, existingHby
@@ -356,3 +357,37 @@ def test_incept_and_rotate_opts(helpers, capsys):
     doers = args.handler(args)
 
     runController(doers=doers)
+
+
+def test_run_witness_closes_boot_keeper_before_reopen(monkeypatch):
+    """Regression: runWitness must close the boot Keeper before Habery re-opens
+    the same keystore, otherwise LMDB raises 'LMDB Environment is already open'
+    on Linux.  See WebOfTrust/keripy#1367.
+    """
+    close_called = False
+    original_init = witness_start.Keeper.__init__
+
+    class SpyKeeper(witness_start.Keeper):
+        def __init__(self, *args, **kwargs):
+            original_init(self, *args, **kwargs)
+
+        def close(self, clear=False):
+            nonlocal close_called
+            close_called = True
+            super().close(clear=clear)
+
+    stopped = False
+
+    def fake_run(doers, expire=0.0):
+        nonlocal stopped
+        stopped = True
+
+    monkeypatch.setattr(witness_start, 'Keeper', SpyKeeper)
+    monkeypatch.setattr(witness_start, 'runController', fake_run)
+    monkeypatch.setattr(witness_start, 'setupWitness', lambda **kw: [])
+
+    witness_start.runWitness(name='test-spy-keeper', base='', bran='0123456789abcdefghijk',
+                             tcp=5631, http=5632, expire=0.0)
+
+    assert close_called, "Keeper.close() was never called before Habery re-open"
+    assert stopped, "runController was never reached"
