@@ -7,7 +7,8 @@ from ....common import Parsery, setupHby
 
 from .....app import (GroupHab, Notifier, MailboxDirector,
                       HaberyDoer, Multiplexor, Counselor,
-                      Poster, loadGroupingHandlers, multisigRegistryInceptExn)
+                      Poster, multisigRegistryInceptExn)
+from .....app.grouping import loadHandlers
 
 from .....core import SerderKERI, SealEvent
 from .....peer import Exchanger
@@ -103,7 +104,7 @@ class RegistryInceptor(doing.DoDoer):
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
         exc = Exchanger(hby=self.hby, handlers=[])
-        loadGroupingHandlers(exc, mux)
+        loadHandlers(exc, mux)
 
         mbx = MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc)
         self.registrar = Registrar(hby=self.hby, rgy=self.rgy, counselor=counselor)
