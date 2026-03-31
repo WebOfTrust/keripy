@@ -63,18 +63,18 @@ class AdmitDoer(doing.DoDoer):
 
         self.psr = parsing.Parser(kvy=self.kvy, tvy=self.tvy, vry=self.vry)
 
-        notifier = Notifier(self.hby)
-        mux = grouping.Multiplexor(self.hby, notifier=notifier)
+        self.notifier = Notifier(self.hby)
+        self.mux = grouping.Multiplexor(self.hby, notifier=self.notifier)
 
         self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        grouping.loadHandlers(self.exc, mux)
-        protocoling.loadHandlers(self.hby, exc=self.exc, notifier=notifier)
+        grouping.loadHandlers(self.exc, self.mux)
+        protocoling.loadHandlers(self.hby, exc=self.exc, notifier=self.notifier)
 
-        mbx = indirecting.MailboxDirector(hby=self.hby,
+        self.mbx = indirecting.MailboxDirector(hby=self.hby,
                                           topics=["/receipt", "/multisig", "/replay", "/credential"],
                                           exc=self.exc, kvy=self.kvy, tvy=self.tvy, verifier=self.vry)
 
-        self.toRemove = [mbx, self.witq]
+        self.toRemove = [self.mbx, self.witq]
         super(AdmitDoer, self).__init__(doers=self.toRemove + [doing.doify(self.admitDo)])
 
     def admitDo(self, tymth, tock=0.0, **kwa):
@@ -164,3 +164,12 @@ class AdmitDoer(doing.DoDoer):
             self.remove([doer])
 
         self.remove(self.toRemove)
+
+    def exit(self, deeds=None):
+        """Close doer resources when the scheduler exits this workflow."""
+        super(AdmitDoer, self).exit(deeds=deeds)
+        if deeds is None:
+            self.rgy.close()
+            self.notifier.noter.close(clear=self.notifier.noter.temp)
+            if self.hby.inited:
+                self.hby.close(clear=self.hby.temp)

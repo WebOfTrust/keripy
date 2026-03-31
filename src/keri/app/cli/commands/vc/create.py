@@ -154,14 +154,14 @@ class CredentialIssuer(doing.DoDoer):
         self.registrar = credentialing.Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)
         self.org = connecting.Organizer(hby=self.hby)
         self.postman = forwarding.Poster(hby=self.hby)
-        notifier = notifying.Notifier(self.hby)
-        mux = grouping.Multiplexor(self.hby, notifier=notifier)
-        exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        grouping.loadHandlers(exc, mux)
+        self.notifier = notifying.Notifier(self.hby)
+        self.mux = grouping.Multiplexor(self.hby, notifier=self.notifier)
+        self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
+        grouping.loadHandlers(self.exc, self.mux)
 
         self.verifier = verifying.Verifier(hby=self.hby, reger=self.rgy.reger)
-        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/credential"],
-                                          verifier=self.verifier, exc=exc)
+        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/credential"],
+                                          verifier=self.verifier, exc=self.exc)
         self.credentialer = credentialing.Credentialer(hby=self.hby, rgy=self.rgy, registrar=self.registrar,
                                                        verifier=self.verifier)
 
@@ -197,7 +197,7 @@ class CredentialIssuer(doing.DoDoer):
             print(f"error issuing credential {e}")
             return
 
-        doers = [self.hbyDoer, mbx, self.counselor, self.registrar, self.credentialer, self.postman]
+        doers = [self.hbyDoer, self.mbx, self.counselor, self.registrar, self.credentialer, self.postman]
         self.toRemove = list(doers)
 
         doers.extend([doing.doify(self.createDo)])
@@ -259,3 +259,12 @@ class CredentialIssuer(doing.DoDoer):
 
         print(f"{self.creder.said} has been created.")
         self.remove(self.toRemove)
+
+    def exit(self, deeds=None):
+        """Close doer resources when the scheduler exits this workflow."""
+        super(CredentialIssuer, self).exit(deeds=deeds)
+        if deeds is None:
+            self.rgy.close()
+            self.notifier.noter.close(clear=self.notifier.noter.temp)
+            if self.hby.inited:
+                self.hby.close(clear=self.hby.temp)

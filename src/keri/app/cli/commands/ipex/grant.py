@@ -57,18 +57,18 @@ class GrantDoer(doing.DoDoer):
         self.hab = self.hby.habByName(alias)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
         self.org = connecting.Organizer(hby=self.hby)
-        notifier = Notifier(self.hby)
-        mux = grouping.Multiplexor(self.hby, notifier=notifier)
+        self.notifier = Notifier(self.hby)
+        self.mux = grouping.Multiplexor(self.hby, notifier=self.notifier)
 
         self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        grouping.loadHandlers(self.exc, mux)
-        protocoling.loadHandlers(self.hby, exc=self.exc, notifier=notifier)
+        grouping.loadHandlers(self.exc, self.mux)
+        protocoling.loadHandlers(self.hby, exc=self.exc, notifier=self.notifier)
 
-        mbx = indirecting.MailboxDirector(hby=self.hby,
+        self.mbx = indirecting.MailboxDirector(hby=self.hby,
                                           topics=["/receipt", "/multisig", "/replay", "/credential"],
                                           exc=self.exc)
 
-        self.toRemove = [mbx]
+        self.toRemove = [self.mbx]
         super(GrantDoer, self).__init__(doers=self.toRemove + [doing.doify(self.grantDo)])
 
     def grantDo(self, tymth, tock=0.0, **kwa):
@@ -165,3 +165,12 @@ class GrantDoer(doing.DoDoer):
             self.remove([doer])
 
         self.remove(self.toRemove)
+
+    def exit(self, deeds=None):
+        """Close doer resources when the scheduler exits this workflow."""
+        super(GrantDoer, self).exit(deeds=deeds)
+        if deeds is None:
+            self.rgy.close()
+            self.notifier.noter.close(clear=self.notifier.noter.temp)
+            if self.hby.inited:
+                self.hby.close(clear=self.hby.temp)

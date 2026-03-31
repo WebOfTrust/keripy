@@ -87,17 +87,17 @@ class RegistryInceptor(doing.DoDoer):
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
-        counselor = grouping.Counselor(hby=self.hby)
+        self.counselor = grouping.Counselor(hby=self.hby)
         self.postman = forwarding.Poster(hby=self.hby)
 
-        notifier = Notifier(self.hby)
-        mux = grouping.Multiplexor(self.hby, notifier=notifier)
-        exc = exchanging.Exchanger(hby=self.hby, handlers=[])
-        grouping.loadHandlers(exc, mux)
+        self.notifier = Notifier(self.hby)
+        self.mux = grouping.Multiplexor(self.hby, notifier=self.notifier)
+        self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
+        grouping.loadHandlers(self.exc, self.mux)
 
-        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc)
-        self.registrar = credentialing.Registrar(hby=self.hby, rgy=self.rgy, counselor=counselor)
-        doers = [self.hbyDoer, counselor, self.registrar, self.postman, mbx]
+        self.mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=self.exc)
+        self.registrar = credentialing.Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)
+        doers = [self.hbyDoer, self.counselor, self.registrar, self.postman, self.mbx]
         self.toRemove = list(doers)
 
         doers.extend([doing.doify(self.inceptDo, **kwa)])
@@ -123,7 +123,13 @@ class RegistryInceptor(doing.DoDoer):
             raise ValueError(f"{self.alias} is not a valid AID alias")
 
         estOnly = "estOnly" in kwa and kwa["estOnly"]
-        registry = self.rgy.makeRegistry(name=self.registryName, prefix=hab.pre, **kwa)
+        # separate out registry kwa to avoid passing through hio temp arg - blows up Registry.make
+        regKwa = {
+            key: kwa[key]
+            for key in ("nonce", "estOnly", "noBackers", "baks", "toad")
+            if key in kwa
+        }
+        registry = self.rgy.makeRegistry(name=self.registryName, prefix=hab.pre, **regKwa)
 
         rseal = SealEvent(registry.regk, "0", registry.regd)
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
@@ -159,3 +165,12 @@ class RegistryInceptor(doing.DoDoer):
                                                                                 registry.regk, hab.pre))
 
         self.remove(self.toRemove)
+
+    def exit(self, deeds=None):
+        """Close doer resources when the scheduler exits this workflow."""
+        super(RegistryInceptor, self).exit(deeds=deeds)
+        if deeds is None:
+            self.rgy.close()
+            self.notifier.noter.close(clear=self.notifier.noter.temp)
+            if self.hby.inited:
+                self.hby.close(clear=self.hby.temp)

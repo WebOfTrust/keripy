@@ -257,3 +257,11 @@ class ConfirmDoer(doing.DoDoer):
         for (pre, sn), edig in self.hby.db.delegables.getItemIter():
             esc.append((pre, sn, edig))
         return esc
+
+    def exit(self, deeds=None):
+        """Close doer resources when the scheduler exits this workflow."""
+        super(ConfirmDoer, self).exit(deeds=deeds)
+        if deeds is None:
+            self.notifier.noter.close(clear=self.notifier.noter.temp)
+            if self.hby.inited:
+                self.hby.close(clear=self.hby.temp)
