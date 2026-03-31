@@ -8,7 +8,7 @@ Prime (preload) setup witnesses, watchers, etc
 import argparse
 import logging
 
-import keri
+from keri import __version__
 
 from hio.help import ogler
 
@@ -21,7 +21,7 @@ def prime(name="main"):
     """
 
 
-def parseArgs(version=keri.__version__):
+def parseArgs(version=__version__):
     d = "Runs KERI direct mode demo controller.\n"
     d += "Example:\npriming -n best'\n"
     p = argparse.ArgumentParser(description=d)
@@ -41,12 +41,12 @@ def parseArgs(version=keri.__version__):
 
 
 def main():
-    args = parseArgs(version=keri.__version__)
+    args = parseArgs(version=__version__)
 
-    help.ogler.level = logging.INFO
-    help.ogler.reopen(name=args.name, temp=True, clear=True)
+    ogler.level = logging.INFO
+    ogler.reopen(name=args.name, temp=True, clear=True)
 
-    logger = help.ogler.getLogger()
+    logger = ogler.getLogger()
 
     logger.info("\n******* Priming %s.******\n\n", args.name)
 

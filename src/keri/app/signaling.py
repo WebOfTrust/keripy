@@ -204,21 +204,23 @@ class SignalsEnd:
               req (Request) Falcon HTTP request
               rep (Response) Falcon HTTP response
 
-        ---
-        summary:  Stream Server-Sent Events for KERI mailbox for identifier
-        description:  Stream Server-Sent Events for KERI mailbox for identifier
-        tags:
-           - Mailbox
+        .. code-block:: none
 
-        responses:
-           200:
-              content:
-                 text/event-stream:
-                    schema:
-                       type: object
-              description: Signal query response for server sent events
-           204:
-              description: KEL or EXN event accepted.
+            ---
+            summary:  Stream Server-Sent Events for KERI mailbox for identifier
+            description:  Stream Server-Sent Events for KERI mailbox for identifier
+            tags:
+               - Mailbox
+
+            responses:
+               200:
+                  content:
+                     text/event-stream:
+                        schema:
+                           type: object
+                  description: Signal query response for server sent events
+               204:
+                  description: KEL or EXN event accepted.
         """
         rep.set_header('Cache-Control', "no-cache")
         rep.set_header('connection', "close")
@@ -233,20 +235,22 @@ class SignalsEnd:
         Parameters:
               req (Request) Falcon HTTP request
               rep (Response) Falcon HTTP response
-        ---
-        summary:  Stream Server-Sent Events for KERI mailbox for identifier
-        description:  Stream Server-Sent Events for KERI mailbox for identifier
-        tags:
-           - Mailbox
-        responses:
-           200:
-              content:
-                 text/event-stream:
-                    schema:
-                       type: object
-              description: Mailbox query response for server sent events
-           204:
-              description: KEL or EXN event accepted.
+        .. code-block:: none
+
+            ---
+            summary:  Stream Server-Sent Events for KERI mailbox for identifier
+            description:  Stream Server-Sent Events for KERI mailbox for identifier
+            tags:
+               - Mailbox
+            responses:
+               200:
+                  content:
+                     text/event-stream:
+                        schema:
+                           type: object
+                  description: Mailbox query response for server sent events
+               204:
+                  description: KEL or EXN event accepted.
         """
         rep.set_header('Cache-Control', "no-cache")
         rep.set_header('connection', "close")

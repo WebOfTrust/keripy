@@ -702,8 +702,8 @@ class ForwardHandler:
     Example ``/fwd`` message structure::
 
         {
-           "v": "KERI10JSON00011c_",
-           "t": "exn",
+           "v": "KERI10JSON00011c_",                               // KERI Version String
+           "t": "exn",                                             // peer to peer message ilk
            "dt": "2020-08-22T17:50:12.988921+00:00",
            "r": "/fwd",
            "q": {
