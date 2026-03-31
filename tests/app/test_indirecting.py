@@ -164,13 +164,18 @@ def test_wit_query_ends(seeder):
     with habbing.openHby(name="wes", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
             habbing.openHby(name="pal", salt=core.Salter(raw=b'0123456789abcdef').qb64) as palHby:
         wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
+
+        # Pull the reger out of the Doers so the reger is reused and does not trigger an LMDB error on reuse
+        wesReger = next(doer.baser for doer in wesDoers
+                        if isinstance(getattr(doer, "baser", None), viring.Reger))
+
         witDoer = agenting.Receiptor(hby=palHby)
 
         wesHab = wesHby.habByName(name="wes")
         seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[kering.Schemes.http])
 
         app = falcon.App()
-        query_endpoint = indirecting.QueryEnd(wesHab)
+        query_endpoint = indirecting.QueryEnd(wesHab, reger=wesReger)
         app.add_route("/query", query_endpoint)
 
         wesClient = testing.TestClient(app)
@@ -263,7 +268,7 @@ class QueryTestDoer(doing.Doer):
         res = wesClient.simulate_get("/query", params={"typ": "invalid"})
         assert res.status_code == 400
         assert res.headers['Content-Type'] == "application/json"
-        assert "unkown query type" in res.text
+        assert "unknown query type" in res.text
 
         return True
 

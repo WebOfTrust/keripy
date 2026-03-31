@@ -229,6 +229,7 @@ def escrows(tymth, tock=0.0, **opts):
                 escrows["credential-out-of-order"] = sum(1 for key, _ in reger.txnsb.escrowdb.getItemIter(keys=("credential-ooo", "")))
 
             print(json.dumps(escrows, indent=2))
+            reger.close()
 
     except ConfigurationError as e:
         print(f"identifier prefix for {name} does not exist, incept must be run first", )
