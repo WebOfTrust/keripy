@@ -28,9 +28,11 @@ class Director(doing.Doer):
     Inherited Properties:
         tyme (float): relative cycle time of associated Tymist, obtained
             via injected .tymth function wrapper closure.
+
         tymth (function): function wrapper closure returned by Tymist .tymeth()
             method.  When .tymth is called it returns associated Tymist .tyme.
             .tymth provides injected dependency on Tymist tyme base.
+
         tock (float): desired time in seconds between runs or until next run,
             non negative, zero means run asap
 
@@ -45,6 +47,7 @@ class Director(doing.Doer):
     Hidden:
        ._tymth is injected function wrapper closure returned by .tymen() of
             associated Tymist instance that returns Tymist .tyme. when called.
+
        ._tock is hidden attribute for .tock property
     """
 
@@ -93,13 +96,12 @@ class Director(doing.Doer):
 
 class Reactor(doing.DoDoer):
     """
-    Reactor Subclass of DoDoer with doers list from do generator methods:
-        .msgDo, .cueDo, and  .escrowDo.
+    Reactor Subclass of DoDoer with doers list from do generator methods: .msgDo, .cueDo, and .escrowDo.
     Enables continuous scheduling of doers (do generator instances or functions)
 
     Implements Doist like functionality to allow nested scheduling of doers.
     Each DoDoer runs a list of doers like a Doist but using the tyme from its
-       injected tymist as injected by its parent DoDoer or Doist.
+    injected tymist as injected by its parent DoDoer or Doist.
 
     Scheduling hierarchy: Doist->DoDoer...->DoDoer->Doers
 
@@ -107,6 +109,7 @@ class Reactor(doing.DoDoer):
         .done is Boolean completion state:
             True means completed
             Otherwise incomplete. Incompletion maybe due to close or abort.
+
         .opts is dict of injected options for its generator .do
         .doers is list of Doers or Doer like generator functions
 
@@ -119,18 +122,22 @@ class Reactor(doing.DoDoer):
     Inherited Properties:
         .tyme is float relative cycle time of associated Tymist .tyme obtained
             via injected .tymth function wrapper closure.
+
         .tymth is function wrapper closure returned by Tymist .tymeth() method.
             When .tymth is called it returns associated Tymist .tyme.
             .tymth provides injected dependency on Tymist tyme base.
+
         .tock is float, desired time in seconds between runs or until next run,
-                 non negative, zero means run asap
+            non negative, zero means run asap
 
     Properties:
 
     Inherited Methods:
         .wind  injects ._tymth dependency from associated Tymist to get its .tyme
+
         .__call__ makes instance callable
             Appears as generator function that returns generator
+
         .do is generator method that returns generator
         .enter is enter context action method
         .recur is recur context action method or generator method
@@ -144,6 +151,7 @@ class Reactor(doing.DoDoer):
     Hidden:
        ._tymth is injected function wrapper closure returned by .tymen() of
             associated Tymist instance that returns Tymist .tyme. when called.
+
        ._tock is hidden attribute for .tock property
 
     """
@@ -310,7 +318,7 @@ class Directant(doing.DoDoer):
 
     Implements Doist like functionality to allow nested scheduling of doers.
     Each DoDoer runs a list of doers like a Doist but using the tyme from its
-       injected tymist as injected by its parent DoDoer or Doist.
+    injected tymist as injected by its parent DoDoer or Doist.
 
     Scheduling hierarchy: Doist->DoDoer...->DoDoer->Doers
 
@@ -318,6 +326,7 @@ class Directant(doing.DoDoer):
         .done is Boolean completion state:
             True means completed
             Otherwise incomplete. Incompletion maybe due to close or abort.
+
         .opts is dict of injected options for its generator .do
         .doers is list of Doers or Doer like generator functions
 
@@ -333,14 +342,16 @@ class Directant(doing.DoDoer):
             When .tymth is called it returns associated Tymist .tyme.
             .tymth provides injected dependency on Tymist tyme base.
         .tock is desired time in seconds between runs or until next run,
-                 non negative, zero means run asap
+            non negative, zero means run asap
 
     Properties:
 
     Inherited Methods:
         .wind  injects ._tymth dependency from associated Tymist to get its .tyme
+
         .__call__ makes instance callable
             Appears as generator function that returns generator
+
         .do is generator method that returns generator
         .enter is enter context action method
         .recur is recur context action method or generator method
@@ -354,6 +365,7 @@ class Directant(doing.DoDoer):
     Hidden:
        ._tymth is injected function wrapper closure returned by .tymen() of
             associated Tymist instance that returns Tymist .tyme. when called.
+
        ._tock is hidden attribute for .tock property
     """
 
@@ -444,13 +456,12 @@ class Directant(doing.DoDoer):
 
 class Reactant(doing.DoDoer):
     """
-    Reactant Subclass of DoDoer with doers list from do generator methods:
-        .msgDo, .cueDo, and .escrowDo.
+    Reactant Subclass of DoDoer with doers list from do generator methods: .msgDo, .cueDo, and .escrowDo.
     Enables continuous scheduling of doers (do generator instances or functions)
 
     Implements Doist like functionality to allow nested scheduling of doers.
     Each DoDoer runs a list of doers like a Doist but using the tyme from its
-       injected tymist as injected by its parent DoDoer or Doist.
+    injected tymist as injected by its parent DoDoer or Doist.
 
     Scheduling hierarchy: Doist->DoDoer...->DoDoer->Doers
 
@@ -463,6 +474,7 @@ class Reactant(doing.DoDoer):
         .done is Boolean completion state:
             True means completed
             Otherwise incomplete. Incompletion maybe due to close or abort.
+
         .opts is dict of injected options for its generator .do
         .doers is list of Doers or Doer like generator functions
 
@@ -470,18 +482,22 @@ class Reactant(doing.DoDoer):
     Inherited Properties:
         .tyme is float relative cycle time of associated Tymist .tyme obtained
             via injected .tymth function wrapper closure.
+
         .tymth is function wrapper closure returned by Tymist .tymeth() method.
             When .tymth is called it returns associated Tymist .tyme.
             .tymth provides injected dependency on Tymist tyme base.
+
         .tock is float, desired time in seconds between runs or until next run,
-                 non negative, zero means run asap
+            non negative, zero means run asap
 
     Properties:
 
     Inherited Methods:
         .wind  injects ._tymth dependency from associated Tymist to get its .tyme
+
         .__call__ makes instance callable
             Appears as generator function that returns generator
+
         .do is generator method that returns generator
         .enter is enter context action method
         .recur is recur context action method or generator method
@@ -495,6 +511,7 @@ class Reactant(doing.DoDoer):
     Hidden:
        ._tymth is injected function wrapper closure returned by .tymen() of
             associated Tymist instance that returns Tymist .tyme. when called.
+
        ._tock is hidden attribute for .tock property
 
     """
