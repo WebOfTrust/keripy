@@ -6,6 +6,7 @@ processMsg on Kevery.
 """
 
 import pytest
+from datetime import timedelta
 
 from hio.base import doing
 
@@ -22,7 +23,7 @@ from keri.core import (Kramer, SerderKERI, Kevery, Pruner, Salter,
 from keri.app import openHby, openCF
 from keri.db import openDB
 from keri.peer import Exchanger
-from keri.recording import TxnMsgCacheRecord
+from keri.recording import MsgCacheRecord, TxnMsgCacheRecord
 from keri.help import helping
 
 
@@ -4633,6 +4634,93 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
             assert receiverHby.db.kramBSQS.get(keys=partialKey) == []
             assert receiverHby.db.kramBSSS.get(keys=partialKey) == []
             assert receiverHby.db.kramTMQS.get(keys=partialKey) == []
+
+
+def test_strict_monotonicity_existing_cache(mockHelpingNowUTC):
+    """Existing KRAM caches enforce strict mdt monotonicity (new > cached)."""
+    salt1 = Salter(raw=b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Iu').qb64
+    salt2 = Salter(raw=b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Iv').qb64
+
+    with (openHby(name="senderMonotonic", base="test", salt=salt1) as senderHby,
+          openHby(name="receiverMonotonic", base="test", salt=salt2) as receiverHby):
+
+        senderHab = senderHby.makeHab(name="senderMonotonic", isith='1', icount=1,
+                                      transferable=True)
+        receiverHab = receiverHby.makeHab(name="receiverMonotonic", isith='1', icount=1,
+                                          transferable=True)
+
+        crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
+        senderIcp = senderHab.makeOwnEvent(sn=0)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+        assert senderHab.pre in crossKvy.kevers
+
+        with openCF(name="kram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+
+            stamp = helping.nowIso8601()
+            base = helping.fromIso8601(stamp)
+            olderCacheStamp = helping.toIso8601(base + timedelta(seconds=1))
+            newerCacheStamp = helping.toIso8601(base - timedelta(seconds=1))
+
+            prefixer = Prefixer(qb64=senderHab.pre)
+
+            # Non-transactioned branch (kramMSGC)
+            qry = query(pre=senderHab.pre,
+                        route="ksn",
+                        query=dict(i=senderHab.pre, src=receiverHab.pre, n='8a'),
+                        stamp=stamp,
+                        pvrsn=Vrsn_2_0)
+            qrySigers = senderHab.mgr.sign(ser=qry.raw,
+                                           verfers=senderHab.kever.verfers,
+                                           indexed=True)
+            qryKwa = dict(ssgs=[(prefixer, qrySigers)])
+            qryKey = (senderHab.pre, qry.said)
+
+            for cachedMdt in (olderCacheStamp, stamp):
+                receiverHby.db.kramMSGC.pin(
+                    keys=qryKey,
+                    val=MsgCacheRecord(
+                        mdt=cachedMdt, d=1000, ml=5000, pml=5000, xl=5000, pxl=5000))
+                receiverHby.db.kevers.pop(senderHab.pre, None)
+                assert kramer.kramit(qry, **qryKwa) is None
+
+            receiverHby.db.kramMSGC.pin(
+                keys=qryKey,
+                val=MsgCacheRecord(
+                    mdt=newerCacheStamp, d=1000, ml=5000, pml=5000, xl=5000, pxl=5000))
+            receiverHby.db.kevers.pop(senderHab.pre, None)
+            with pytest.raises(MissingSenderKeyStateError):
+                kramer.kramit(qry, **qryKwa)
+
+            # Transactioned branch (kramTMSC)
+            xip = exchept(sender=senderHab.pre,
+                          receiver=receiverHab.pre,
+                          route="/test/monotonic",
+                          stamp=stamp)
+            xipSigers = senderHab.mgr.sign(ser=xip.raw,
+                                           verfers=senderHab.kever.verfers,
+                                           indexed=True)
+            xipKwa = dict(ssgs=[(prefixer, xipSigers)])
+            xipKey = (senderHab.pre, xip.said, xip.said)
+
+            for cachedMdt in (olderCacheStamp, stamp):
+                receiverHby.db.kramTMSC.pin(
+                    keys=xipKey,
+                    val=TxnMsgCacheRecord(
+                        mdt=cachedMdt, xdt=stamp, d=1000, ml=5000, pml=5000,
+                        xl=5000, pxl=5000))
+                receiverHby.db.kevers.pop(senderHab.pre, None)
+                assert kramer.kramit(xip, **xipKwa) is None
+
+            receiverHby.db.kramTMSC.pin(
+                keys=xipKey,
+                val=TxnMsgCacheRecord(
+                    mdt=newerCacheStamp, xdt=stamp, d=1000, ml=5000, pml=5000,
+                    xl=5000, pxl=5000))
+            receiverHby.db.kevers.pop(senderHab.pre, None)
+            with pytest.raises(MissingSenderKeyStateError):
+                kramer.kramit(xip, **xipKwa)
 
 
 def test_pruning_exchanges(fakeHelpingClock):

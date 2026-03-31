@@ -2,10 +2,10 @@
 """
 kraming module - KRAM (KERI Request Authentication Mechanism) implementation
 
-This module implements Full KRAM, a monotonic timed cache for preventing replay
-attacks in KERI. The last request from any client is cached inside a sliding
-time window. A new request must both have a later datetime than the cached
-request and must be inside the host time window.
+This module implements Full KRAM, a strict monotonic timed cache for preventing
+replay attacks in KERI. The last request from any client is cached inside a
+sliding time window. A new request must both have a strictly later datetime
+than the cached request and must be inside the host time window.
 
 Full KRAM employs a strictly monotonically ordered timeliness cache to protect
 from replay attacks. It includes protection from retrograde attacks on the
@@ -389,6 +389,15 @@ class Kramer:
 
         return None, False
 
+    @staticmethod
+    def _isNewerMdt(newMdtMs, cachedMdtIso):
+        """Return True when incoming mdt is strictly newer than cached mdt."""
+        try:
+            cachedMdtMs = helping.fromIso8601(cachedMdtIso).timestamp() * 1000
+        except Exception:
+            return False
+        return newMdtMs > cachedMdtMs
+
 
     def _verifyAttachedSigs(self, *, msg, senderId, kever, **kwa):
         """Verify attached signatures using cigar gate then oset pooling.
@@ -678,6 +687,13 @@ class Kramer:
             cache = self.db.kramMSGC.get(key)
 
             if cache:  # Existing message-ID-cache processing logic.
+                # Strict monotonic check blocks retrograde/equal replays early.
+                # Exception: when a partial multi-key escrow exists for this key,
+                # equal-mdt re-deliveries must be allowed to accumulate sigs.
+                hasPartialEscrow = self.db.kramPMKM.get(key) is not None
+                if (not self._isNewerMdt(mdt, cache.mdt) and not hasPartialEscrow):
+                    return None
+
                 # Determine authentication type (resolve "both attached"
                 # special case) then drop or accumulate.
 
@@ -916,6 +932,13 @@ class Kramer:
             cache = self.db.kramTMSC.get(key)
 
             if cache:
+                # Strict monotonic check blocks retrograde/equal replays early.
+                # Exception: when a partial multi-key escrow exists for this key,
+                # equal-mdt re-deliveries must be allowed to accumulate sigs.
+                hasPartialEscrow = self.db.kramPMKM.get(partialKey) is not None
+                if (not self._isNewerMdt(mdt, cache.mdt) and not hasPartialEscrow):
+                    return None
+
                 # Existing message-ID-cache processing logic.
                 # Determine authentication type (resolve "both attached"
                 # special case per whitepaper) then drop or accumulate.
