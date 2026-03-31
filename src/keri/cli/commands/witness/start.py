@@ -92,6 +92,7 @@ def runWitness(name="witness", base="", alias="witness", bran="", tcp=5631, http
                 reopen=True)
 
     aeid = ks.gbls.get('aeid')
+    ks.close()  # release LMDB env before Habery/setupHby re-opens the same keystore
 
     cf = None
     if configFile is not None:

@@ -99,7 +99,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     app.add_route("/", httpEnd)
     receiptEnd = ReceiptEnd(hab=hab, inbound=cues, aids=aids)
     app.add_route("/receipts", receiptEnd)
-    queryEnd = QueryEnd(hab=hab)
+    queryEnd = QueryEnd(hab=hab, reger=reger)
     app.add_route("/query", queryEnd)
 
     server = createHttpServer(host, httpPort, app, keypath, certpath, cafilepath)
@@ -108,7 +108,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     httpServerDoer = http.ServerDoer(server=server)
 
     # setup doers
-    regDoer = BaserDoer(baser=verfer.reger)
+    regDoer = BaserDoer(baser=reger)
 
     if tcpPort is not None:
         server = serving.Server(host="", port=tcpPort)
@@ -276,14 +276,13 @@ class Indirector(doing.DoDoer):
     Base class for Indirect Mode KERI Controller Doer with habitat and
     TCP Clients for talking to witnesses
 
-    Subclass of DoDoer with doers list from do generator methods:
-        .msgDo, .cueDo, and  .escrowDo.
+    Subclass of DoDoer with doers list from do generator methods: .msgDo, .cueDo, and .escrowDo.
 
     Enables continuous scheduling of doers (do generator instances or functions)
 
     Implements Doist like functionality to allow nested scheduling of doers.
     Each DoDoer runs a list of doers like a Doist but using the tyme from its
-       injected tymist as injected by its parent DoDoer or Doist.
+    injected tymist as injected by its parent DoDoer or Doist.
 
     Scheduling hierarchy: Doist->DoDoer...->DoDoer->Doers
 
@@ -291,6 +290,7 @@ class Indirector(doing.DoDoer):
         .done is Boolean completion state:
             True means completed
             Otherwise incomplete. Incompletion maybe due to close or abort.
+
         .opts is dict of injected options for its generator .do
         .doers is list of Doers or Doer like generator functions
 
@@ -323,9 +323,10 @@ class Indirector(doing.DoDoer):
 
 
     Hidden:
-       ._tymth is injected function wrapper closure returned by .tymen() of
+        ._tymth is injected function wrapper closure returned by .tymen() of
             associated Tymist instance that returns Tymist .tyme. when called.
-       ._tock is hidden attribute for .tock property
+
+        ._tock is hidden attribute for .tock property
 
     """
 
@@ -469,14 +470,13 @@ class MailboxDirector(doing.DoDoer):
     Class for Indirect Mode KERI Controller Doer with habitat and
     TCP Clients for talking to witnesses
 
-    Subclass of DoDoer with doers list from do generator methods:
-        .msgDo, .cueDo, and  .escrowDo.
+    Subclass of DoDoer with doers list from do generator methods: .msgDo, .cueDo, and .escrowDo.
 
     Enables continuous scheduling of doers (do generator instances or functions)
 
     Implements Doist like functionality to allow nested scheduling of doers.
     Each DoDoer runs a list of doers like a Doist but using the tyme from its
-       injected tymist as injected by its parent DoDoer or Doist.
+    injected tymist as injected by its parent DoDoer or Doist.
 
     Scheduling hierarchy: Doist->DoDoer...->DoDoer->Doers
 
@@ -484,6 +484,7 @@ class MailboxDirector(doing.DoDoer):
         .done is Boolean completion state:
             True means completed
             Otherwise incomplete. Incompletion maybe due to close or abort.
+
         .opts is dict of injected options for its generator .do
         .doers is list of Doers or Doer like generator functions
 
@@ -512,9 +513,10 @@ class MailboxDirector(doing.DoDoer):
 
 
     Hidden:
-       ._tymth is injected function wrapper closure returned by .tymen() of
+        ._tymth is injected function wrapper closure returned by .tymen() of
             associated Tymist instance that returns Tymist .tyme. when called.
-       ._tock is hidden attribute for .tock property
+
+        ._tock is hidden attribute for .tock property
 
     """
 
@@ -883,23 +885,25 @@ class HttpEnd:
               req (Request) Falcon HTTP request
               rep (Response) Falcon HTTP response
 
-        ---
-        summary:  Accept KERI events with attachment headers and parse
-        description:  Accept KERI events with attachment headers and parse.
-        tags:
-           - Events
-        requestBody:
-           required: true
-           content:
-             application/json:
-               schema:
-                 type: object
-                 description: KERI event message
-        responses:
-           200:
-              description: Mailbox query response for server sent events
-           204:
-              description: KEL or EXN event accepted.
+        .. code-block:: none
+
+            ---
+            summary:  Accept KERI events with attachment headers and parse
+            description:  Accept KERI events with attachment headers and parse.
+            tags:
+               - Events
+            requestBody:
+               required: true
+               content:
+                 application/json:
+                   schema:
+                     type: object
+                     description: KERI event message
+            responses:
+               200:
+                  description: Mailbox query response for server sent events
+               204:
+                  description: KEL or EXN event accepted.
         """
         if req.method == "OPTIONS":
             rep.status = falcon.HTTP_200
@@ -943,23 +947,25 @@ class HttpEnd:
               req (Request) Falcon HTTP request
               rep (Response) Falcon HTTP response
 
-        ---
-        summary:  Accept KERI events with attachment headers and parse
-        description:  Accept KERI events with attachment headers and parse.
-        tags:
-           - Events
-        requestBody:
-           required: true
-           content:
-             application/json:
-               schema:
-                 type: object
-                 description: KERI event message
-        responses:
-           200:
-              description: Mailbox query response for server sent events
-           204:
-              description: KEL or EXN event accepted.
+        .. code-block:: none
+
+            ---
+            summary:  Accept KERI events with attachment headers and parse
+            description:  Accept KERI events with attachment headers and parse.
+            tags:
+               - Events
+            requestBody:
+               required: true
+               content:
+                 application/json:
+                   schema:
+                     type: object
+                     description: KERI event message
+            responses:
+               200:
+                  description: Mailbox query response for server sent events
+               204:
+                  description: KEL or EXN event accepted.
         """
         if req.method == "OPTIONS":
             rep.status = falcon.HTTP_200
@@ -1200,11 +1206,9 @@ class QueryEnd:
 
      """
 
-    def __init__(self, hab):
+    def __init__(self, hab, reger):
         self.hab = hab
-
-        from ..vdr import Reger  # dynamic import to avoid circular
-        self.reger = Reger(name=hab.name, db=hab.db, temp=hab.temp)
+        self.reger = reger
 
     def on_get(self, req, rep):
         """ Handles GET requests to query KEL or TEL events of a pre from a witness.
@@ -1215,13 +1219,14 @@ class QueryEnd:
 
             Query Parameters:
                 typ (string): The type of event data to query for. Accepted values are:
-                    - 'kel': Retrieve KEL events for a specified 'pre'.
-                    - 'tel': Retrieve TEL events  based on 'reg' or 'vcid'.
+                - 'kel': Retrieve KEL events for a specified 'pre'.
+                - 'tel': Retrieve TEL events  based on 'reg' or 'vcid'.
+
                 pre (string, optional): For 'kel' queries, the specific 'pre' to query.
-                sn (int, optional): For "kel" queries. If provided, returns events with seq-num
-                                   greater than or equal to `sn`.
-                reg (string, optional): For 'tel' queries, registry pre. required if `vcid` is not provided.
-                vcid (string, optional): For 'tel' queries, credential said. required if `reg` is not provided.
+                sn (int, optional): For "kel" queries. If provided, returns events with seq-num >= sn.
+
+                reg (string, optional): For 'tel' queries, registry pre. Required if vcid not provided.
+                vcid (string, optional): For 'tel' queries, credential said. Required if reg not provided.
 
             Response:
                 - 200 OK: Returns event data in "application/cesr" format.

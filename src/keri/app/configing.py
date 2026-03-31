@@ -43,32 +43,32 @@ class Configer(filing.Filer):
 
 
 
-    config file  json or hjon
+    Config file example (json or hjson)::
 
-    {
-      "dt": "2021-01-01T00:00:00.000000+00:00",
-      "nel":
-      {
-        "dt": "2021-01-01T00:00:00.000000+00:00",
-        "curls":
-        [
-          "tcp://localhost:5621/"
-        ]
-      },
-      "iurls":
-      [
-        "tcp://localhost:5620/?role=peer&name=tam"
-      ],
-      "durls":
-      [
-        "http://127.0.0.1:7723/oobi/EBNaNu-M9P5cgrnfl2Fvymy4E_jvxxyjb70PRtiANlJy",
-        "http://127.0.0.1:7723/oobi/EMhvwOlyEJ9kN4PrwCpr9Jsv7TxPhiYveZ0oP3lJzdEi",
-      ],
-      "wurls":
-      [
-        "http://127.0.0.1:5644/.well-known/keri/oobi/EBNaNu-M9P5cgrnfl2Fvymy4E_jvxxyjb70PRtiANlJy?name=Root"
-      ]
-    }
+        {
+          "dt": "2021-01-01T00:00:00.000000+00:00",
+          "nel":
+          {
+            "dt": "2021-01-01T00:00:00.000000+00:00",
+            "curls":
+            [
+              "tcp://localhost:5621/"
+            ]
+          },
+          "iurls":
+          [
+            "tcp://localhost:5620/?role=peer&name=tam"
+          ],
+          "durls":
+          [
+            "http://127.0.0.1:7723/oobi/EBNaNu-M9P5cgrnfl2Fvymy4E_jvxxyjb70PRtiANlJy",
+            "http://127.0.0.1:7723/oobi/EMhvwOlyEJ9kN4PrwCpr9Jsv7TxPhiYveZ0oP3lJzdEi",
+          ],
+          "wurls":
+          [
+            "http://127.0.0.1:5644/.well-known/keri/oobi/EBNaNu-M9P5cgrnfl2Fvymy4E_jvxxyjb70PRtiANlJy?name=Root"
+          ]
+        }
     """
     TailDirPath = os.path.join("keri", "cf")
     CleanTailDirPath = os.path.join("keri", "clean", "cf")
