@@ -244,20 +244,26 @@ class Keeper(LMDBer):
             to its corresponding private key (signer).  Keys are fully
             qualified qb64 public keys; values are :class:`Signer` instances,
             stored encrypted when an ``aeid`` is configured.
+
         prxs (CesrSuber): Named sub-database of encrypted proxy ciphers,
             keyed by public key.  Values are :class:`Cipher` instances.
+
         nxts (CesrSuber): Named sub-database of encrypted next-key ciphers,
             keyed by public key.  Values are :class:`Cipher` instances.
+
         smids (CatCesrIoSetSuber): Named sub-database of signing member
             identifier sets, storing ``(Prefixer, Number)`` pairs as ordered
             duplicate sets.
+
         rmids (CatCesrIoSetSuber): Named sub-database of rotation member
             identifier sets, storing ``(Prefixer, Number)`` pairs as ordered
             duplicate sets.
+
         pres (CesrSuber): Named sub-database mapping the first public key of
             a key sequence (used as a temporary prefix) to the canonical
             identifier prefix once it is known.  Values are
             :class:`Prefixer` instances.
+
         prms (Komer): Named sub-database of key-creation parameters per
             prefix.  Keys are identifier prefixes (qb64); values are
             :class:`PrePrm` dataclass instances serialized as dicts::
@@ -380,10 +386,13 @@ class KeeperDoer(doing.Doer):
         done (bool): Completion state. ``True`` means the doer finished
             normally; ``False`` means it is still running, was closed, or was
             aborted.
+
         tyme (float): Relative cycle time supplied by the injected
             :class:`Tymist`.
+
         tymth (callable): Closure that returns the associated
             :class:`Tymist`'s ``.tyme`` when called.
+
         tock (float): Desired seconds between recur calls. ``0`` means run
             as soon as possible.
     """
@@ -1918,10 +1927,13 @@ class ManagerDoer(doing.Doer):
         done (bool): Completion state. ``True`` means the doer finished
             normally; ``False`` means it is still running, was closed, or
             was aborted.
+
         tyme (float): Relative cycle time supplied by the injected
             :class:`Tymist`.
+
         tymth (callable): Closure that returns the associated
             :class:`Tymist`'s ``.tyme`` when called.
+
         tock (float): Desired seconds between recur calls. ``0`` means run
             as soon as possible.
     """

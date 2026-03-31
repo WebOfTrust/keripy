@@ -2725,7 +2725,8 @@ def test_on_ioset_suber_contract():
         assert onios.cntAll(keys="") == 12
         assert onios.cntAll(keys1) == 4
         assert onios.cntAll(keys1, on=2) == 0
-        assert onios.cnt(keys='') == 0
+        assert onios.cnt(keys='') == 12  # whole db count via cntAll
+        assert onios.cnt() == 12  # no-arg form
         assert onios.cnt(keys=keys0) == 4
         assert onios.cnt(keys=keys0, on=0, ion=2) == 2
         assert onios.cnt(keys=keys1) == 4

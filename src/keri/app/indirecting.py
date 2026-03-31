@@ -127,7 +127,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     app.add_route("/", httpEnd)
     receiptEnd = ReceiptEnd(hab=hab, inbound=cues, aids=aids)
     app.add_route("/receipts", receiptEnd)
-    queryEnd = QueryEnd(hab=hab)
+    queryEnd = QueryEnd(hab=hab, reger=reger)
     app.add_route("/query", queryEnd)
 
     server = createHttpServer(host, httpPort, app, keypath, certpath, cafilepath)
@@ -136,7 +136,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     httpServerDoer = http.ServerDoer(server=server)
 
     # setup doers
-    regDoer = BaserDoer(baser=verfer.reger)
+    regDoer = BaserDoer(baser=reger)
 
     if tcpPort is not None:
         server = serving.Server(host="", port=tcpPort)
@@ -974,14 +974,6 @@ class HttpEnd:
             req (falcon.Request): Incoming HTTP request containing a KERI event.
             rep (falcon.Response): HTTP response object to populate.
         """
-        if req.method == "OPTIONS":
-            rep.status = falcon.HTTP_200
-            return
-
-        rep.set_header('Cache-Control', "no-cache")
-        rep.set_header('connection', "close")
-
-        cr = parseCesrHttpRequest(req=req)
         sadder = coring.Sadder(ked=cr.payload, kind=Kinds.json)
         msg = bytearray(sadder.raw)
         msg.extend(cr.attachments.encode("utf-8"))
@@ -1019,6 +1011,26 @@ class HttpEnd:
         Args:
             req (falcon.Request): Incoming HTTP request containing raw bytes.
             rep (falcon.Response): HTTP response object to populate.
+
+        .. code-block:: none
+
+            ---
+            summary:  Accept KERI events with attachment headers and parse
+            description:  Accept KERI events with attachment headers and parse.
+            tags:
+               - Events
+            requestBody:
+               required: true
+               content:
+                 application/json:
+                   schema:
+                     type: object
+                     description: KERI event message
+            responses:
+               200:
+                  description: Mailbox query response for server sent events
+               204:
+                  description: KEL or EXN event accepted.
         """
         if req.method == "OPTIONS":
             rep.status = falcon.HTTP_200
@@ -1425,7 +1437,7 @@ class QueryEnd:
         reger (Reger): Registry database interface used for TEL queries.
     """
 
-    def __init__(self, hab):
+    def __init__(self, hab, reger):
         """Initialize the QueryEnd endpoint.
 
         Args:
@@ -1434,9 +1446,7 @@ class QueryEnd:
                 handler for TEL queries.
         """
         self.hab = hab
-
-        from ..vdr import Reger  # dynamic import to avoid circular
-        self.reger = Reger(name=hab.name, db=hab.db, temp=hab.temp)
+        self.reger = reger
 
     def on_get(self, req, rep):
         """Handle HTTP GET requests for querying events.

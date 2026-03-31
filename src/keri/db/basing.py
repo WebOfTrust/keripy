@@ -15,7 +15,7 @@ from ordered_set import OrderedSet as oset
 from hio.base import doing
 from hio.help import ogler
 
-import keri
+from keri import __version__
 from .dbing import LMDBer, dgKey, openLMDB
 from ..kering import (MissingEntryError, DatabaseError,
                       ConfigurationError, ValidationError,
@@ -309,14 +309,14 @@ class Baser(LMDBer):
             dgKey (prefix + digest)
             Only one value per DB key is allowed.
 
-        .uwes is named subDB instance of B64OnIoDupSuber for unverified event
+        .uwes is named subDB instance of B64OnIoSetSuber for unverified event
             indexed escrowed couples from witness signers. Each couple is
             (edig, wig) where edig is receipted event digest and wig is the
             indexed witness signature derived from the witness nontrans prefix
             and offset into the witness list of the latest establishment event.
             subkey 'uwes.'
             Key: receipted event controller prefix + sequence number.
-            More than one value per DB key is allowed.
+            Multiple values per key are stored in insertion order as a set.
 
         .ooes is named subDB instance of OnIoDupSuber for out-of-order event
             escrows under composite keys "<pre><sep><on>". Tracks events whose
@@ -380,7 +380,7 @@ class Baser(LMDBer):
             dgKey (prefix + digest)
             Only one value per DB key is allowed.
 
-        .misfits is named subDB instance of IoSetSuber for misfit escrows.
+        .misfits is named subDB instance of OnIoSetSuber for misfit escrows.
             Events with remote (nonlocal) sources that are inappropriate (i.e.
             would be dropped) unless promoted to local source via extra
             after-the-fact authentication. Escrow processing determines if and
@@ -936,7 +936,7 @@ class Baser(LMDBer):
         self.pwes = subing.OnIoDupSuber(db=self, subkey='pwes.')
         self.pdes = subing.OnIoDupSuber(db=self, subkey='pdes.')
         self.udes = subing.CatCesrSuber(db=self, subkey='udes.', klas=(coring.Number, coring.Diger))
-        self.uwes = subing.B64OnIoDupSuber(db=self, subkey='uwes.')
+        self.uwes = subing.B64OnIoSetSuber(db=self, subkey='uwes.')
         self.ooes = subing.OnIoDupSuber(db=self, subkey='ooes.')
         self.dels = subing.OnIoDupSuber(db=self, subkey='dels.')
         self.ldes = subing.OnIoDupSuber(db=self, subkey='ldes.')
@@ -954,7 +954,7 @@ class Baser(LMDBer):
                                    subkey='esrs.')
 
         # misfit escrows whose processing may change the .esrs event source record
-        self.misfits = subing.IoSetSuber(db=self, subkey='mfes.')
+        self.misfits = subing.OnIoSetSuber(db=self, subkey='mfes.')
 
         # delegable events escrows. events with local delegator that need approval
         self.delegables = subing.IoSetSuber(db=self, subkey='dees.')
@@ -1319,7 +1319,7 @@ class Baser(LMDBer):
         """
         # Check migrations to see if this database is up to date.  Error otherwise
         if not self.current:
-            raise DatabaseError(f"Database migrations must be run. DB version {self.version}; current {keri.__version__}")
+            raise DatabaseError(f"Database migrations must be run. DB version {self.version}; current {__version__}")
 
         removes = []
         for keys, data in self.habs.getTopItemIter():
@@ -1359,11 +1359,11 @@ class Baser(LMDBer):
 
         for (version, migrations) in MIGRATIONS:
             # Only run migration if current source code version is at or below the migration version
-            ver = semver.VersionInfo.parse(keri.__version__)
+            ver = semver.VersionInfo.parse(__version__)
             ver_no_prerelease = semver.Version(ver.major, ver.minor, ver.patch)
             if self.version is not None and semver.compare(version, str(ver_no_prerelease)) > 0:
                 print(
-                    f"Skipping migration {version} as higher than the current KERI version {keri.__version__}")
+                    f"Skipping migration {version} as higher than the current KERI version {__version__}")
                 continue
             # Skip migrations already run - where version less than (-1) or equal to (0) database version
             # Strip prerelease from DB version to avoid lexicographic comparison bugs (#820)
@@ -1396,7 +1396,7 @@ class Baser(LMDBer):
             # update database version after successful migration
             self.version = version
 
-        self.version = keri.__version__
+        self.version = __version__
 
     def _trimAllEscrows(self):
         """Trim all escrow databases via low-level .trim().
@@ -1447,15 +1447,15 @@ class Baser(LMDBer):
          If the current database version is ahead of the current library version, raise exception
 
          """
-        if self.version == keri.__version__:
+        if self.version == __version__:
             return True
 
-        ver = semver.VersionInfo.parse(keri.__version__)
+        ver = semver.VersionInfo.parse(__version__)
         ver_no_prerelease = semver.Version(ver.major, ver.minor, ver.patch)
         # Strip prerelease from DB version to avoid lexicographic comparison bugs (#820)
         if self.version is not None and semver.compare(_strip_prerelease(self.version), str(ver_no_prerelease)) == 1:
             raise ConfigurationError(
-                f"Database version={self.version} is ahead of library version={keri.__version__}")
+                f"Database version={self.version} is ahead of library version={__version__}")
 
         last = MIGRATIONS[-1]
         # If we aren't at latest version, but there are no outstanding migrations,

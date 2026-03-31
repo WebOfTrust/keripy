@@ -354,7 +354,7 @@ class Oobiery:
                 "a" :
                 {
                     "cid": "ENcOes8_t2C7tck4X4j61fSm0sWkLbZrEZffq7mSn8On",
-                    "oobi":  "http://localhost:5632/oobi/ENcOes8_t2C7tck4X4j61fSm0sWkLbZrEZffq7mSn8On/witness",
+                    "oobi":  "http://localhost:5632/oobi/ENcOes8_t2C7tck4X4j61fSm0sWkLbZrEZffq7mSn8On/witness"
                 }
                 }
         """

@@ -2125,21 +2125,18 @@ def test_lmdber():
         assert  dber.remOnAllIoSet(db, key=b"")
 
 
-        # ToDo all methods that raise error on empty key that are returning a value
-        # should be refactored to catch empty key and return appropriate failed
-        # value. Empty key should act same as non-empty but missing key in db
-
         # Empty keys cause lmdb.BalValsizeError so LMDBer now throws a KeyError
         # if it catches this kind of thing in the various places where it gets
-        # thrown
-        empty_key = ''.encode('utf8')
-        some_value = 'foo'.encode('utf8')
-        with pytest.raises(KeyError):
-            dber.putVal(db, empty_key, some_value)
-        with pytest.raises(KeyError):
-            dber.setVal(db, empty_key, some_value)
-        with pytest.raises(KeyError):
-            dber.getVal(db, empty_key)
+        # thrown.
+        # All methods that return a value must treat empty key same as non-empty
+        # but missing key
+        empty_key = b''
+        some_value = b'foo'
+
+        # raw Val methods: return False on empty key
+        assert dber.putVal(db, empty_key, some_value) == False
+        assert dber.setVal(db, empty_key, some_value) == False
+        assert dber.getVal(db, empty_key) == False
         dber.putIoSetVals(db, empty_key, [some_value])
         dber.addIoSetVal(db, empty_key, some_value)
         dber.pinIoSetVals(db, empty_key, [some_value])
@@ -2147,32 +2144,65 @@ def test_lmdber():
         dber.cntIoSet(db, empty_key)
         dber.remIoSet(db, empty_key)
         dber.remIoSetVal(db, empty_key, some_value)
-        with pytest.raises(KeyError):
-            dber.putVals(db, empty_key, [some_value])
-        with pytest.raises(KeyError):
-            dber.addVal(db, empty_key, some_value)
-        with pytest.raises(KeyError):
-            dber.getVals(db, empty_key)
-        with pytest.raises(KeyError):
-            dber.getValLast(db, empty_key)
+        assert dber.putVals(db, empty_key, [some_value]) == False
+        assert dber.addVal(db, empty_key, some_value) == False
+        assert dber.getVals(db, empty_key) == False
+        assert dber.getValLast(db, empty_key) == False
+        # getValsIter generator: intentionally raise KeyError on empty key
         with pytest.raises(KeyError):
             [_ for _ in dber.getValsIter(db, empty_key)]
+        assert dber.cntVals(db, empty_key) == 0
+        assert dber.delVals(db, empty_key) == False 
+
+        # IoDup methods: return False on empty key
+        assert dber.putIoDupVals(db, empty_key, [some_value]) == False
+        assert dber.addIoDupVal(db, empty_key, some_value) == False
+        assert dber.getIoDupValLast(db, empty_key) is None
+        assert dber.cntIoDups(db, empty_key) == 0
+        assert dber.delIoDupVals(db, empty_key) == False
+        assert dber.delIoDupVal(db, empty_key, some_value) == False
+
+        # OnVal methods
+        # putOnVal: empty key returns False, does not write
+        assert dber.putOnVal(db, empty_key, on=0, val=some_value) == False
+
+        # OnIoDup methods: empty key returns graceful failed value
+        assert dber.addOnIoDupVal(db, empty_key, on=0, val=some_value) == False
+        assert dber.getOnIoDupLast(db, empty_key, on=0) is None
+        assert dber.cntOnIoDups(db, empty_key, on=0) == 0
+        assert dber.delOnIoDups(db, empty_key, on=0) == False
+        assert dber.delOnIoDupVal(db, empty_key, on=0, val=some_value) == False
+
+        # IoSet methods: empty key returns graceful failed value
+        assert dber.putIoSetVals(db, empty_key, [some_value]) == False
+        assert dber.addIoSetVal(db, empty_key, some_value) == False
+        assert dber.pinIoSetVals(db, empty_key, [some_value]) == False
+        assert list(dber.getIoSetItemIter(db, empty_key)) == []
+        assert dber.cntIoSet(db, empty_key) == 0
+        assert dber.remIoSet(db, empty_key) == False
+        assert dber.remIoSetVal(db, empty_key, some_value) == False
+        assert dber.remIoSetVal(db, empty_key, val=None) == False
+
+        # OnIoSet methods: empty key returns graceful failed value
+        assert list(dber.getOnIoSetItemIter(db, empty_key)) == []
+        assert dber.getOnIoSetLastItem(db, empty_key) == ()
+        assert dber.remOnIoSetVal(db, empty_key, on=0) == False
+        assert dber.cntOnIoSet(db, empty_key, on=0) == 0
+
+        # raw Val methods: intentionally raise KeyError on too-big key
+        too_big_key = b'x' * 512  # lmdb max key size is 511 bytes
+
         with pytest.raises(KeyError):
-            dber.cntVals(db, empty_key)
+            dber.putVal(db, too_big_key, some_value)
+
         with pytest.raises(KeyError):
-            dber.delVals(db, empty_key)
+            dber.setVal(db, too_big_key, some_value)
+
         with pytest.raises(KeyError):
-            dber.putIoDupVals(db, empty_key, [some_value])
+            dber.putVals(db, too_big_key, [some_value])
+
         with pytest.raises(KeyError):
-            dber.addIoDupVal(db, empty_key, some_value)
-        with pytest.raises(KeyError):
-            dber.getIoDupValLast(db, empty_key)
-        with pytest.raises(KeyError):
-            dber.cntIoDups(db, empty_key)
-        with pytest.raises(KeyError):
-            dber.delIoDupVals(db, empty_key)
-        with pytest.raises(KeyError):
-            dber.delIoDupVal(db, empty_key, some_value)
+            dber.addVal(db, too_big_key, some_value)
 
     assert not os.path.exists(dber.path)
 
