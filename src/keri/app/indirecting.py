@@ -905,6 +905,7 @@ class HttpEnd:
                204:
                   description: KEL or EXN event accepted.
         """
+        cr = parseCesrHttpRequest(req=req)
         sadder = coring.Sadder(ked=cr.payload, kind=Kinds.json)
         msg = bytearray(sadder.raw)
         msg.extend(cr.attachments.encode("utf-8"))
