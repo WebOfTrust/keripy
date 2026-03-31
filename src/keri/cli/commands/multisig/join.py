@@ -20,7 +20,8 @@ from ....app import (HaberyDoer, MailboxDirector, WitnessInquisitor,
                      Notifier, Multiplexor, Counselor, Organizer, Poster,
                      multisigInceptExn, multisigInteractExn, multisigRotateExn,
                      multisigRpyExn, multisigRegistryInceptExn, multisigIssueExn,
-                     multisigRevokeExn, loadGroupingHandlers)
+                     multisigRevokeExn)
+from ....app.grouping import loadHandlers
 
 from ....core import (Prefixer, Number, Diger, Tholder,
                       Schemer, Parser, Revery, SerderKERI,
@@ -89,7 +90,7 @@ class JoinDoer(doing.DoDoer):
                           version=Vrsn_1_0)
 
         mux = Multiplexor(hby=self.hby, notifier=self.notifier)
-        loadGroupingHandlers(exc=self.exc, mux=mux)
+        loadHandlers(exc=self.exc, mux=mux)
         self.counselor = Counselor(hby=self.hby)
 
         self.registrar = Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)
