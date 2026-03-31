@@ -89,7 +89,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     app.add_route("/", httpEnd)
     receiptEnd = ReceiptEnd(hab=hab, inbound=cues, aids=aids)
     app.add_route("/receipts", receiptEnd)
-    queryEnd = QueryEnd(hab=hab)
+    queryEnd = QueryEnd(hab=hab, reger=reger)
     app.add_route("/query", queryEnd)
     metricsEnd = EscrowEnd(hby=hby, reger=reger)
     app.add_route("/metrics", metricsEnd)
@@ -100,7 +100,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     httpServerDoer = http.ServerDoer(server=server)
 
     # setup doers
-    regDoer = basing.BaserDoer(baser=verfer.reger)
+    regDoer = basing.BaserDoer(baser=reger)
 
     if tcpPort is not None:
         server = serving.Server(host="", port=tcpPort)
@@ -1193,9 +1193,9 @@ class QueryEnd:
 
      """
 
-    def __init__(self, hab):
+    def __init__(self, hab, reger):
         self.hab = hab
-        self.reger = viring.Reger(name=hab.name, db=hab.db, temp=False)
+        self.reger = reger
    
     def on_get(self, req, rep):
         """ Handles GET requests to query KEL or TEL events of a pre from a witness.

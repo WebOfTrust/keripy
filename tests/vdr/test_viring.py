@@ -430,6 +430,7 @@ def test_mailbox_db_size_set_from_env_var():
     reger = Reger()
     assert reger.env.info()['map_size'] != new_map_size, "Expected map size to be the default 10MB"
     assert reger.env.info()['map_size'] == LMDBer.MapSize, "Expected map size to be the default 10MB"
+    reger.close()
 
     # Specific map size works
     os.environ[KERIRegerMapSizeKey] = f"{new_map_size}"
@@ -437,6 +438,7 @@ def test_mailbox_db_size_set_from_env_var():
     reger = Reger()
     assert reger.env.info()['map_size'] == new_map_size, "Expected map size to be set from environment variable to 10GB"
     os.environ.pop(KERIRegerMapSizeKey)
+    reger.close()
 
     # generic map size works
     baser_map_size = 10737418240
@@ -444,6 +446,7 @@ def test_mailbox_db_size_set_from_env_var():
 
     reger = Reger()
     assert reger.env.info()['map_size'] == new_map_size, "Expected map size to be set from environment variable to 10GB"
+    reger.close()
 
     # Bad map size throws
     os.environ[KERIRegerMapSizeKey] = f"bad_map_size"
