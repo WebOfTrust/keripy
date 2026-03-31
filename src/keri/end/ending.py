@@ -79,6 +79,7 @@ def signature(signages):
     Parameters:
         signages (list): items are Signage namedtuples,
                            (markers, indexed, signer, ordinal, kind)
+
             where:
                 markers (Union[list, dict]): When dict each item (key, val) has
                     key as str identifier of marker and has val as instance of
@@ -94,12 +95,14 @@ def signature(signages):
                     multi-sig group identifier. Default is None. When None or
                     empty signer is not included in header value
                 ordinal (str): optional ordinal hex str of int that is an ordinal
-                               such as sequence number to further identify the
-                               keys used for the signatures. Usually when indexed
-                               with signer and digest
+                    such as sequence number to further identify the
+                    keys used for the signatures. Usually when indexed
+                    with signer and digest
+
                 digest (str): optional CESR Base64 serialization of a digest to
-                              further identify the keys used for the signatures.
-                              Usually when indexed with signer and ordinal
+                    further identify the keys used for the signatures.
+                    Usually when indexed with signer and ordinal
+
                 kind (str): serialization kind of the markers and other primitives
 
 
@@ -185,6 +188,7 @@ def designature(value):
     Returns:
        signages (list): items are Signage namedtuples,
                            (markers, indexed, signer, ordinal, kind)
+
             where:
                 markers (Union[list, dict]): When dict each item (key, val) has
                     key as str identifier of marker and has val as instance of
@@ -200,12 +204,14 @@ def designature(value):
                     multi-sig group identifier. Default is None. When None or
                     empty signer is not included in header value
                 ordinal (str): optional ordinal hex str of int that is an ordinal
-                               such as sequence number to further identify the
-                               keys used for the signatures. Usually when indexed
-                               with signer and digest
+                    such as sequence number to further identify the
+                    keys used for the signatures. Usually when indexed
+                    with signer and digest
+
                 digest (str): optional CESR Base64 serialization of a digest to
-                              further identify the keys used for the signatures.
-                              Usually when indexed with signer and ordinal
+                    further identify the keys used for the signatures.
+                    Usually when indexed with signer and ordinal
+
                 kind (str): serialization kind of the markers and other primitives
 
        signatures (list): Siger or Cigar instances
@@ -620,7 +626,8 @@ def loadEndingEnds(app, hby, *, tymth=None, default=None, static=False):
     """
     Load endpoints for app with shared resource dependencies
     This function provides the endpoint resource instances
-    with references to the needed shared dependencies:
+    with references to the needed shared dependencies::
+
         tymth: virtual time reference injection function from Tymist subclass
         hab: local habitat
 
