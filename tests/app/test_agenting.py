@@ -12,7 +12,7 @@ from keri.core import coring, serdering
 from keri.core.coring import Seqner
 from keri.help import nowIso8601
 from keri.app import habbing, indirecting, agenting, directing
-from keri.db import dbing
+from keri.db import basing, dbing
 from keri.vdr import eventing, viring
 
 
@@ -131,6 +131,12 @@ class PublishDoer(doing.DoDoer):
         wilDoers = indirecting.setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
         wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
 
+        self.regers = dict(
+            wan=next(doer.baser for doer in wanDoers if isinstance(doer, basing.BaserDoer)),
+            wil=next(doer.baser for doer in wilDoers if isinstance(doer, basing.BaserDoer)),
+            wes=next(doer.baser for doer in wesDoers if isinstance(doer, basing.BaserDoer)),
+        )
+
         wanHab = wanHby.habByName(name="wan")
         wilHab = wilHby.habByName(name="wil")
         wesHab = wesHby.habByName(name="wes")
@@ -170,7 +176,7 @@ class PublishDoer(doing.DoDoer):
         assert cue["msg"] == msg
 
         for name in ["wes", "wil", "wan"]:
-            reger = viring.Reger(name=name)
+            reger = self.regers[name]
             while True:
                 raw = reger.getTvt(dbing.dgKey(serder.preb, serder.saidb))
                 if raw:
