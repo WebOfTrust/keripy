@@ -15,7 +15,8 @@ from ...common import setupHby
 from .... import Vrsn_1_0
 from ....app import (HaberyDoer, MailboxDirector, WitnessInquisitor,
                      Notifier, Multiplexor, Organizer,
-                     Counselor, Poster, loadGroupingHandlers, multisigExn)
+                     Counselor, Poster, multisigExn)
+from ....app.grouping import loadHandlers
 
 from ....core import Parser, Revery, SerderKERI, Sadder
 from ....peer import Exchanger, cloneMessage, serializeMessage
@@ -76,7 +77,7 @@ class JoinDoer(doing.DoDoer):
                                   version=Vrsn_1_0)
 
         mux = Multiplexor(hby=self.hby, notifier=self.notifier)
-        loadGroupingHandlers(exc=self.exc, mux=mux)
+        loadHandlers(exc=self.exc, mux=mux)
         self.counselor = Counselor(hby=self.hby)
 
         self.registrar = Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)

@@ -12,13 +12,14 @@ from ...common import Parsery, setupHby
 from ....kering import Vrsn_1_0
 from ....app import (Notifier, StreamPoster, Organizer,
                      GroupHab, Multiplexor, MailboxDirector,
-                     serialize, multisigExn, loadGroupingHandlers)
+                     serialize, multisigExn)
+from ....app.grouping import loadHandlers as loadGroupingHandlers
 
 from ....core import coring, parsing, serdering
 from ....peer import exchanging
 
 from ....vc import ipexGrantExn
-from ....vc.protocoling import loadHandlers as loadHandlersProtocoling
+from ....vc.protocoling import loadHandlers as loadProtocolingHandlers
 
 from ....vdr import credentialing
 
@@ -66,7 +67,7 @@ class GrantDoer(doing.DoDoer):
 
         self.exc = exchanging.Exchanger(hby=self.hby, handlers=[])
         loadGroupingHandlers(self.exc, mux)
-        loadHandlersProtocoling(self.hby, exc=self.exc, notifier=notifier)
+        loadProtocolingHandlers(self.hby, exc=self.exc, notifier=notifier)
 
         mbx = MailboxDirector(hby=self.hby,
                               topics=["/receipt", "/multisig", "/replay", "/credential"],

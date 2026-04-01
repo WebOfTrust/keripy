@@ -34,7 +34,7 @@ Resultage = namedtuple("Resultage", 'resolved failed')  # stream cold start stat
 Result = Resultage(resolved='resolved', failed='failed')
 
 
-def loadOobiingEnds(app, *, hby, prefix=""):
+def loadEnds(app, *, hby, prefix=""):
     """Register OOBI HTTP endpoints on the Falcon application.
 
     Args:
@@ -50,7 +50,7 @@ def loadOobiingEnds(app, *, hby, prefix=""):
     return []
 
 
-def loadOobiingHandlers(hby, exc, notifier):
+def loadHandlers(hby, exc, notifier):
     """Load handlers for the peer-to-peer delegation protocols
 
     Args:

@@ -269,7 +269,7 @@ class MultisigNotificationHandler:
         self.mux.add(serder=serder)
 
 
-def loadGroupingHandlers(exc, mux):
+def loadHandlers(exc, mux):
     """ Load handlers for the peer-to-peer distributed group multisig protocol
 
     Parameters:

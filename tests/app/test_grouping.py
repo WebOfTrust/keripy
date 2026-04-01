@@ -9,7 +9,9 @@ from keri.kering import Vrsn_1_0
 from keri.app import (Notifier, Counselor, Multiplexor,
                       openHab, multisigInceptExn,
                       multisigRotateExn, multisigInteractExn,
-                      multisigRegistryInceptExn, loadGroupingHandlers)
+                      multisigRegistryInceptExn)
+
+from keri.app.grouping import loadHandlers
 
 from keri.core import (Prefixer, Number, Diger, Kevery,
                        Parser, SerderKERI, Counter,
@@ -717,7 +719,7 @@ def test_multisig_incept_handler(mockHelpingNowUTC):
         notifier = Notifier(hby=hby)
         mux = Multiplexor(hby=hby, notifier=notifier)
         exc = Exchanger(hby=hby, handlers=[])
-        loadGroupingHandlers(exc=exc, mux=mux)
+        loadHandlers(exc=exc, mux=mux)
 
         ims = bytearray(exn.raw)
         ims.extend(atc)
@@ -739,7 +741,7 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
         notifier = Notifier(hby=hby1)
         mux = Multiplexor(hby=hby1, notifier=notifier)
         exc = Exchanger(hby=hby1, handlers=[])
-        loadGroupingHandlers(exc=exc, mux=mux)
+        loadHandlers(exc=exc, mux=mux)
 
         # create and send message from ghab2
         exn, atc = multisigRotateExn(ghab=ghab2, smids=ghab1.smids, rmids=ghab1.rmids,
@@ -786,7 +788,7 @@ def test_multisig_interact_handler(mockHelpingNowUTC):
         notifier = Notifier(hby=hby1)
         mux = Multiplexor(hby=hby1, notifier=notifier)
         exc = Exchanger(hby=hby1, handlers=[])
-        loadGroupingHandlers(exc=exc, mux=mux)
+        loadHandlers(exc=exc, mux=mux)
 
         ims = bytearray(exn.raw)
         ims.extend(atc)
