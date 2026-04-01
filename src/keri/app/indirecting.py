@@ -24,7 +24,7 @@ from ..recording import TopicsRecord
 from ..core import (Kevery, parsing, routing, coring, serdering,
                     Counter, receipt, Codens)
 from ..db import BaserDoer
-from ..end import loadEndingEnds
+from ..end import loadEnds as loadEndingEnds
 from ..help import nowUTC
 from ..peer import Exchanger
 
@@ -34,7 +34,7 @@ from .storing import Mailboxer, Respondant
 from .httping import Clienter, createCESRRequest, parseCesrHttpRequest, CESR_CONTENT_TYPE
 from .forwarding import ForwardHandler
 from .agenting import httpClient
-from .oobiing import Oobiery, loadOobiingEnds
+from .oobiing import Oobiery, loadEnds as loadOobiingEnds
 
 logger = ogler.getLogger()
 

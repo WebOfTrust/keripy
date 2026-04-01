@@ -12,7 +12,8 @@ from ....kering import ConfigurationError
 
 from ....app import (MailboxDirector, HaberyDoer, GroupHab, Counselor,
                      Multiplexor, Organizer, Poster, Notifier,
-                     serialize, loadGroupingHandlers, multisigIssueExn)
+                     serialize, multisigIssueExn)
+from ....app.grouping import loadHandlers
 
 from ....core import (Prefixer, Number, Diger, SealEvent,
                       SerderKERI, SerderACDC, NumDex)
@@ -162,7 +163,7 @@ class CredentialIssuer(doing.DoDoer):
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
         exc = Exchanger(hby=self.hby, handlers=[])
-        loadGroupingHandlers(exc, mux)
+        loadHandlers(exc, mux)
 
         self.verifier = Verifier(hby=self.hby, reger=self.rgy.reger)
         mbx = MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/credential"],

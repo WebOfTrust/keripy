@@ -205,7 +205,7 @@ class Signaler(doing.DoDoer):
             yield self.tock
 
 
-def loadSignalingEnds(app, *, signals=None):
+def loadEnds(app, *, signals=None):
     """Register the signaling mailbox endpoint with a Falcon application.
 
     Creates a ``SignalsEnd`` instance and mounts it at ``/mbx``.

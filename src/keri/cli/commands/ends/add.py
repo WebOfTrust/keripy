@@ -14,7 +14,8 @@ from ...common import setupHby, Parsery
 from ....kering import Vrsn_1_0, ConfigurationError
 from ....app import (GroupHab, Multiplexor, MailboxDirector,
                      Poster, WitnessPublisher, Notifier,
-                     loadGroupingHandlers, multisigRpyExn)
+                     multisigRpyExn)
+from ....app.grouping import loadHandlers
 
 from ....core import Parser
 from ....peer import Exchanger
@@ -62,7 +63,7 @@ class RoleDoer(doing.DoDoer):
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
         exc = Exchanger(hby=self.hby, handlers=[])
-        loadGroupingHandlers(exc, mux)
+        loadHandlers(exc, mux)
 
         mbx = MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc)
 
