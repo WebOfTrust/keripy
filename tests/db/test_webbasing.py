@@ -268,51 +268,1052 @@ def test_webdb_baser():
         # Build minimal Serder
         sked = serdering.SerderKERI(raw=skedb, verify=False)
 
-        # .evts tests
-        assert baser.evts.get(keys=(preb, digb)) is None
-        assert baser.evts.rem(keys=(preb, digb)) is False
+        # Basic tests for all SerderSuber instances
+        serderSubers = [    
+            baser.evts,
+            baser.rpys,
+            baser.epse,
+            baser.exns,
+            baser.dpwe,
+            baser.dune,
+            baser.dpub,
+            baser.kramPMKM,
+        ]
 
-        assert baser.evts.put(keys=(preb, digb), val=sked) is True
-        assert baser.evts.get(keys=(preb, digb)).raw == skedb
+        for sub in serderSubers:
+            assert isinstance(sub, subing.SerderSuber)
 
-        # put again should not overwrite
-        assert baser.evts.put(keys=(preb, digb), val=sked) is False
+            # empty db
+            assert sub.get(keys=(preb, digb)) is None
+            assert sub.rem(keys=(preb, digb)) is False
 
-        # pin should overwrite
-        assert baser.evts.pin(keys=(preb, digb), val=sked) is True
-        assert baser.evts.get(keys=(preb, digb)).raw == skedb
+            # insert
+            assert sub.put(keys=(preb, digb), val=sked) is True
+            assert sub.get(keys=(preb, digb)).raw == skedb
 
-        # remove
-        assert baser.evts.rem(keys=(preb, digb)) is True
-        assert baser.evts.get(keys=(preb, digb)) is None
+            # put should not overwrite
+            assert sub.put(keys=(preb, digb), val=sked) is False
 
-        pre2 = b"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
-        dig2 = b"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
+            # pin should overwrite
+            assert sub.pin(keys=(preb, digb), val=sked) is True
+            assert sub.get(keys=(preb, digb)).raw == skedb
 
-        ked2 = ked.copy()
-        ked2["i"] = pre2.decode()
-        ked2["d"] = dig2.decode()
+            # remove
+            assert sub.rem(keys=(preb, digb)) is True
+            assert sub.get(keys=(preb, digb)) is None
 
-        assert baser.evts.put(keys=(pre2, dig2), val=sked) is True
-        assert baser.evts.get(keys=(pre2, dig2)).raw == skedb
+            # second key
+            pre2 = b"BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB"
+            dig2 = b"CCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC"
 
-        # pin() is idempotent
-        assert baser.evts.pin(keys=(pre2, dig2), val=sked) is True
-        assert baser.evts.pin(keys=(pre2, dig2), val=sked) is True
+            assert sub.put(keys=(pre2, dig2), val=sked) is True
+            assert sub.get(keys=(pre2, dig2)).raw == skedb
 
-        # put() with equal-content Serder does NOT overwrite
-        sked_clone = serdering.SerderKERI(raw=skedb, verify=False)
-        assert baser.evts.put(keys=(pre2, dig2), val=sked_clone) is False
-        assert baser.evts.get(keys=(pre2, dig2)).raw == skedb
+            # idempotent pin
+            assert sub.pin(keys=(pre2, dig2), val=sked) is True
+            assert sub.pin(keys=(pre2, dig2), val=sked) is True
 
-        # Persistence across reopen (tests serialization/deserialization)
+            # equal-content Serder should not overwrite
+            skedClone = serdering.SerderKERI(raw=skedb, verify=False)
+            assert sub.put(keys=(pre2, dig2), val=skedClone) is False
+            assert sub.get(keys=(pre2, dig2)).raw == skedb
+
+            # persistence
+            await baser.reopen(storageOpener=backend.open)
+            assert sub.get(keys=(preb, digb)) is None
+            assert sub.get(keys=(pre2, dig2)) is not None
+
+            # delete second key
+            assert sub.rem(keys=(pre2, dig2)) is True
+            assert sub.get(keys=(pre2, dig2)) is None
+
+
+        # Basic tests for OnIoSetSuber instances
+        onIoSubers = [
+            baser.ooes,
+            baser.pses,
+            baser.dels,
+            baser.ldes,
+            baser.kels,
+            baser.pwes,
+            baser.pdes,
+        ]
+
+        for sub in onIoSubers:
+            assert isinstance(sub, subing.OnIoSetSuber)
+            
+            # Basic insertion behavior
+            pre = 'A'
+            sn = 0
+            key = snKey(pre, sn)
+            vals = [b"z", b"m", b"x", b"a"]
+            deserialized_vals = [sub._des(val) for val in vals]
+
+            # Empty db
+            assert sub.get(keys=key) == []
+            assert sub.cntAll(key) == 0
+            assert sub.rem(key) is False
+
+            # initial insertion
+            assert sub.put(keys=key, vals=vals) is True
+            assert sub.get(keys=key) == deserialized_vals
+
+            # duplicate insertion
+            assert sub.put(keys=key, vals=[b'd', b'k']) is True
+            assert sub.put(keys=key, vals=[b'd']) is False
+            assert sub.put(keys=key, vals=[b'k']) is False
+            assert sub.put(keys=key, vals=[b'k', b'd', b'k']) is False
+            assert sub.add(keys=key, val=b'd') is False
+            assert sub.add(keys=key, val=b'k') is False
+            assert sub.get(keys=key) == deserialized_vals + ['d', 'k']
+
+            # mixed insertion
+            assert sub.put(keys=key, vals=[b'k', b'c']) is True
+            assert sub.get(keys=key) == deserialized_vals + ['d', 'k', 'c']
+
+            # deletion + reinsertion
+            assert sub.rem(keys=key, val=b'd') is True
+            assert sub.get(keys=key) == deserialized_vals + ['k', 'c']
+            assert sub.add(keys=key, val=b'd') is True
+            assert sub.get(keys=key) == deserialized_vals + ['k', 'c', 'd']
+
+            # empty insertion
+            assert sub.put(keys=key, vals=[]) is False
+            assert sub.get(keys=key) == deserialized_vals + ['k', 'c', 'd']
+
+            # empty val allowed
+            assert sub.add(keys=key, val=b'') is True
+            assert sub.get(keys=key) == deserialized_vals + ['k', 'c', 'd', '']
+
+            # cleanup
+            assert sub.rem(key) is True
+            assert sub.get(keys=key) == []
+
+            # Key type normalization
+            assert sub.put(keys='B', vals=[b'1', b'2']) is True
+            assert sub.add(keys='B', val=b'3') is True
+            assert sub.put(['B'], vals=b'4') is True
+            assert sub.add(keys=['B'], val=b'5') is True
+            assert sub.put(("B"), vals=b'6') is True
+            assert sub.add(keys=("B"), val=b'7') is True
+            assert sub.put(memoryview(b'B'), vals=b'8') is True
+            assert sub.add(keys=memoryview(b'B'), val=b'9') is True
+
+            assert sub.get(keys=b'B') == ['1','2','3','4','5','6','7','8','9']
+
+            assert sub.rem(b'B') is True
+            assert sub.get(keys=b'B') == []
+
+            # Edge case: duplicate vals
+            assert sub.put(key, vals=[b'a', 'a']) is True
+            assert sub.get(keys=key) == ['a']   # Only added once
+            assert sub.rem(key) is True
+
+            # Retrieval behavior
+            assert sub.put(keys=pre, on=sn, vals=vals) is True
+            assert sub.get(keys=pre, on=sn) == deserialized_vals
+            assert list(sub.getAllIter(pre, on=sn)) == deserialized_vals
+            assert sub.getLast(keys=pre, on=sn) == deserialized_vals[-1]
+            assert sub.cntAll(pre, on=sn) == 4
+
+            # empty retrieval
+            assert sub.get(keys=b'X') == []
+            assert list(sub.getAllIter(b'X')) == []
+            assert sub.getLast(keys=b'X') is None
+            assert sub.cntAll(b'X') == 0
+            assert list(sub.getAllItemIter(keys=b'X')) == []
+
+            # getAllItemIter ordering
+            items = list(sub.getAllItemIter())
+            assert items == [(('A',), 0, 'z'),
+                            (('A',), 0, 'm'),
+                            (('A',), 0, 'x'),
+                            (('A',), 0, 'a')]
+
+            # Key type normalization (again)
+            assert sub.get(keys=b'A') == deserialized_vals
+            assert sub.get(keys='A') == deserialized_vals
+            assert sub.get(keys=['A']) == deserialized_vals
+            assert sub.get(keys=('A',)) == deserialized_vals
+            assert sub.get(keys=memoryview(b'A')) == deserialized_vals
+
+            # Deletion behavior
+            assert sub.getLast(keys=pre, on=sn) == 'a'
+            assert sub.rem(keys=pre, on=sn, val=b'a') is True
+            assert sub.get(keys=pre, on=sn) == ['z','m','x']
+            assert sub.getLast(keys=pre, on=sn) == 'x'
+            assert sub.cntAll(pre, on=sn) == 3
+
+            assert sub.rem(pre, on=sn) is True
+
+            # Pinning behavior
+            assert sub.get(keys=key) == []
+            assert sub.put(keys=key, vals=vals) is True
+            assert sub.get(keys=key) == deserialized_vals
+
+            assert sub.pin(keys=key, vals=[b'a', b'b', b'c']) is True
+            assert sub.get(keys=key) == ['a','b','c']
+
+            assert sub.pin(keys=key, vals=[b'x', b'y']) is True
+            assert sub.get(keys=key) == ['x','y']
+
+            assert sub.pin(keys=key, vals=[]) is False
+            assert sub.get(keys=key) == ['x','y']
+
+            assert sub.rem(key) is True
+
+            assert sub.put(keys=key, vals=[b'1', b'2']) is True
+            assert sub.pin(keys=key, vals=[b'Q']) is True
+            assert sub.get(keys=key) == ['Q']
+
+            assert sub.pin(keys=key, vals=[b'A','A',memoryview(b'A')]) is True
+            assert sub.get(keys=key) == ['A']
+
+            assert sub.rem(key) is True
+
+            # Multi-sn ordering tests
+            pre = b"A"
+            aKey = snKey(pre, 1)
+            bKey = snKey(pre, 2)
+            cKey = snKey(pre, 4)
+            dKey = snKey(pre, 7)
+
+            assert sub.put(keys=pre, on=1, vals=[b"z", b"m", b"x"])
+            assert sub.put(keys=pre, on=2, vals=[b"o", b"r", b"z"])
+            assert sub.put(keys=pre, on=4, vals=[b"h", b"n"])
+            assert sub.put(keys=pre, on=7, vals=[b"k", b"b"])
+
+            assert list(sub.getTopItemIter(keys=aKey)) == [(('A',),1,'z'),
+                                                        (('A',),1,'m'),
+                                                        (('A',),1,'x')]
+
+            # cleanup each sn
+            assert sub.remAll() is True
+            assert list(sub.getFullItemIter()) == []
+
+            # tokey / tokeys round-trip
+            t = sub._tokey(aKey)
+            assert sub._tokeys(t) == ("A", "00000000000000000000000000000001")
+
+
+        # Basic tests for IoSetSuber instances
+        ioSetSubers = [
+            baser.qnfs,
+            baser.misfits,
+            baser.delegables,
+            baser.epath,
+            baser.kramPTDS,
+        ]
+
+        for sub in ioSetSubers:
+            assert isinstance(sub, subing.IoSetSuber)
+
+            # Basic insertion behavior
+            key = b"A"
+            vals = [b"z", b"m", b"x", b"a"]
+
+            assert sub.get(keys=key) == []
+            assert sub.cnt(keys=key) == 0
+            assert sub.rem(keys=key) is False
+
+            # initial insertion
+            assert sub.put(keys=key, vals=vals) is True
+            assert sorted(sub.get(keys=key)) == sorted([v.decode() for v in vals])
+
+            # duplicate insertion
+            assert sub.put(keys=key, vals=[b'd', b'k']) is True
+            assert sub.put(keys=key, vals=[b'd']) is False
+            assert sub.put(keys=key, vals=[b'k']) is False
+            assert sub.add(keys=key, val=b'd') is False
+            assert sub.add(keys=key, val=b'k') is False
+
+            # mixed insertion
+            assert sub.put(keys=key, vals=[b'k', b'c']) is True
+            assert 'c' in sub.get(keys=key)
+
+            # deletion + reinsertion
+            assert sub.rem(keys=key, val=b'd') is True
+            assert 'd' not in sub.get(keys=key)
+            assert sub.add(keys=key, val=b'd') is True
+            assert 'd' in sub.get(keys=key)
+
+            # empty insertion
+            assert sub.put(keys=key, vals=[]) is False
+
+            # empty val allowed
+            assert sub.add(keys=key, val=b'') is True
+            assert '' in sub.get(keys=key)
+
+            # cleanup
+            assert sub.rem(keys=key) is True
+            assert sub.get(keys=key) == []
+
+            # Key type normalization
+            assert sub.put(keys='B', vals=[b'1', b'2']) is True
+            assert sub.add(keys='B', val=b'3') is True
+            assert sub.put(['B'], vals=b'4') is True
+            assert sub.add(keys=['B'], val=b'5') is True
+            assert sub.put(("B"), vals=b'6') is True
+            assert sub.add(keys=("B"), val=b'7') is True
+            assert sub.put(memoryview(b'B'), vals=b'8') is True
+            assert sub.add(keys=memoryview(b'B'), val=b'9') is True
+
+            assert sorted(sub.get(keys=b'B')) == ['1','2','3','4','5','6','7','8','9']
+
+            assert sub.rem(b'B') is True
+            assert sub.get(keys=b'B') == []
+
+            # Duplicate vals collapse
+            assert sub.put(key, vals=[b'a', b'a']) is True
+            assert sub.get(keys=key) == ['a']
+            assert sub.rem(key) is True
+
+            # Deletion behavior
+            assert sub.put(key, vals=vals) is True
+            assert sub.rem(key, val=b'm') is True
+            assert 'm' not in sub.get(keys=key)
+
+            assert sub.rem(key, val=b'y') is False
+
+            assert sub.rem(key) is True
+            assert sub.get(keys=key) == []
+            assert sub.cnt(key) == 0
+
+            assert sub.rem(b'X') is False
+
+            # key isolation
+            assert sub.put(b'A', vals=[b'1']) is True
+            assert sub.put(b'B', vals=[b'2']) is True
+            assert sub.rem(b'A') is True
+            assert sub.get(keys=b'B') == ['2']
+
+            # cleanup all
+            for fullKey, val in list(sub.getFullItemIter()):
+                userKey = fullKey[0]
+                assert sub.rem(keys=userKey) is True
+            assert list(sub.getFullItemIter()) == []
+
+            # Persistence across reopen
+            assert sub.put(keys=b'C', vals=[b'1', b'2']) is True
+            await baser.reopen(storageOpener=backend.open)
+            assert sub.get(keys=b'C') == ['1', '2']
+
+        # -------- CesrIoSetSuber Subdbs tests ---------
+
+        # Tests for CesrIoSetSuber where klas=Siger
+        sigerSubers = [
+            "sigs",
+            "ssgs",
+            "wigs",
+            "esigs",
+            "kramPMKS"
+        ]
+        for name in sigerSubers:
+            sub = getattr(baser, name)
+
+            # Setup
+            key = dgKey(preb, digb)
+            assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
+
+            # Empty db
+            assert sub.get(keys=key) == []
+            assert sub.cnt(keys=key) == 0
+            assert sub.rem(keys=key) == False
+
+            # Create valid test signatures
+            signer0 = signing.Signer(transferable=False, seed=b'0123456789abcdef0123456789abcdef')
+            signer1 = signing.Signer(transferable=False, seed=b'fedcba9876543210fedcba9876543210')
+
+            test_data = b"test witness signatures"
+            cigar0 = signer0.sign(ser=test_data)
+            cigar1 = signer1.sign(ser=test_data)
+
+            siger0 = indexing.Siger(raw=cigar0.raw, code=indexing.IdrDex.Ed25519_Sig, index=0)
+            siger1 = indexing.Siger(raw=cigar1.raw, code=indexing.IdrDex.Ed25519_Sig, index=1)
+
+            # Basic insertion
+            assert sub.put(keys=key, vals=[siger0]) == True
+            assert [s.qb64b for s in sub.get(keys=key)] == [siger0.qb64b]
+            assert sub.cnt(keys=key) == 1
+
+            # idempotent put
+            assert sub.put(keys=key, vals=[siger0]) == False
+            assert [s.qb64b for s in sub.get(keys=key)] == [siger0.qb64b]
+            
+            # Add second signature
+            assert sub.add(keys=key, val=siger1) == True
+            assert [s.qb64b for s in sub.get(keys=key)] == [siger0.qb64b, siger1.qb64b]
+            assert [val.qb64b for val in sub.getIter(keys=key)] == [siger0.qb64b, siger1.qb64b]
+            
+            # Deletion
+            assert sub.rem(keys=key) == True
+            assert sub.get(keys=key) == []
+
+            # put with multiple vals and delete individually
+            assert sub.put(keys=key, vals=[siger0, siger1]) == True
+            for val in [siger0, siger1]:
+                assert sub.rem(keys=key, val=val) == True
+            assert sub.get(keys=key) == []
+
+            # put with multiple vals and delete via iteration
+            assert sub.put(keys=key, vals=[siger0, siger1]) == True
+            for val in sub.getIter(keys=key):
+                assert sub.rem(keys=key, val=val) == True
+            assert sub.get(keys=key) == []
+
+            # Put with multiple vals and check ordering 
+            assert sub.put(keys=key, vals=[siger0]) == True
+            assert [s.qb64b for s in sub.get(keys=key)] == [siger0.qb64b]
+            assert sub.put(keys=key, vals=[siger1]) == True
+            assert [s.qb64b for s in sub.get(keys=key)] == [siger0.qb64b, siger1.qb64b]
+            
+            # Delete
+            assert sub.rem(keys=key) == True
+            
+            # Check insertion order
+            assert sub.put(keys=key, vals=[siger1, siger0]) == True
+            assert [s.qb64b for s in sub.get(keys=key)] == [siger1.qb64b, siger0.qb64b]
+            assert sub.rem(keys=key) == True
+            assert sub.get(keys=key) == []
+            assert sub.put(keys=key, vals=[siger0, siger1]) == True
+
+            # more sigs tests
+
+            # Reset to empty 
+            assert sub.rem(keys=key) == True
+            assert sub.get(keys=key) == []
+
+            # Mixed insertion behavior
+            assert sub.put(keys=key, vals=[siger0]) is True
+            assert sub.add(keys=key, val=siger0) is False  # duplicate
+            assert sub.add(keys=key, val=siger1) is True
+            assert sub.put(keys=key, vals=[siger1]) is False  # duplicate
+            assert sub.cnt(keys=key) == 2
+
+            # Key normalization
+            altKeyStr = key.decode()
+            altKeyMv = memoryview(key)
+
+            assert sub.get(keys=altKeyStr) != sub.get(keys=key)
+            assert sub.get(keys=altKeyMv) != sub.get(keys=key)
+
+            # Type safety
+            with pytest.raises(AttributeError):
+                sub.add(keys=key, val=b"not a siger")
+
+            with pytest.raises(AttributeError):
+                sub.put(keys=key, vals=[b"nope"])
+
+            # Reset to empty
+            assert sub.rem(keys=key) is True
+            assert sub.get(keys=key) == []
+
+            # Non-Persistence across reopen
+            assert sub.put(keys=key, vals=[siger0, siger1]) is True
+            await baser.reopen(storageOpener=backend.open)
+            sub = getattr(baser, name)
+            assert sub.get(keys=key) == []
+
+            # getFullItemIter consistency
+            assert sub.put(keys=key, vals=[siger0, siger1]) is True
+            items = list(sub.getFullItemIter(keys=key))
+            assert len(items) == 2
+            assert [v.qb64b for k, v in items] == [siger0.qb64b, siger1.qb64b]
+
+            # Cleanup
+            for k, v in list(sub.getFullItemIter()):
+                # The key is stored as a (pre, dig) tuple
+                preStr = k[0]   # prefix of the user
+                digStr = k[1]   # digest of the event
+                k = f"{preStr}.{digStr}".encode("utf-8")
+                assert sub.rem(keys=k, val=v) is True
+
+            assert sub.get(keys=key) == []
+
+
+        # Tests for CesrIoSetSuber where klas=Prefixer
+        prefixerSubers = [
+            "wits",
+            "maids",            
+        ]
+
+        # Create witness prefixes
+        witA = coring.Prefixer(qb64b=b'BADA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg')
+        witB = coring.Prefixer(qb64b=b'BADAyl33W9ja_wLX85UrzRnL4KNzlsIKIA7CrD04nVX1w')
+
+        for name in prefixerSubers:
+            sub = getattr(baser, name)
+
+            # Empty DB behavior
+            assert sub.get(keys=key) == []
+            assert sub.cnt(keys=key) == 0
+            assert sub.rem(keys=key) is False
+
+            # Basic insertion
+            assert sub.put(keys=key, vals=[witA]) is True
+            assert [w.qb64b for w in sub.get(keys=key)] == [witA.qb64b]
+            assert sub.cnt(keys=key) == 1
+
+            # idempotent put
+            assert sub.put(keys=key, vals=[witA]) is False
+            assert [w.qb64b for w in sub.get(keys=key)] == [witA.qb64b]
+
+            # add second witness
+            assert sub.add(keys=key, val=witB) is True
+            assert [w.qb64b for w in sub.get(keys=key)] == [witA.qb64b, witB.qb64b]
+
+            # iteration
+            assert [w.qb64b for w in sub.getIter(keys=key)] == [witA.qb64b, witB.qb64b]
+
+            # Deletion
+            assert sub.rem(keys=key) is True
+            assert sub.get(keys=key) == []
+
+            # delete individual values
+            assert sub.put(keys=key, vals=[witA, witB]) is True
+            for w in [witA, witB]:
+                assert sub.rem(keys=key, val=w) is True
+            assert sub.get(keys=key) == []
+
+            # delete via iteration
+            assert sub.put(keys=key, vals=[witA, witB]) is True
+            for w in sub.getIter(keys=key):
+                assert sub.rem(keys=key, val=w) is True
+            assert sub.get(keys=key) == []
+
+            # Ordering guarantees
+            assert sub.put(keys=key, vals=[witA]) is True
+            assert sub.put(keys=key, vals=[witB]) is True
+            assert [w.qb64b for w in sub.get(keys=key)] == [witA.qb64b, witB.qb64b]
+
+            assert sub.rem(keys=key) is True
+
+            # reversed insertion order
+            assert sub.put(keys=key, vals=[witB, witA]) is True
+            assert [w.qb64b for w in sub.get(keys=key)] == [witB.qb64b, witA.qb64b]
+
+            assert sub.rem(keys=key) is True
+
+            # Mixed insertion behavior
+            assert sub.put(keys=key, vals=[witA]) is True
+            assert sub.add(keys=key, val=witA) is False  # duplicate
+            assert sub.add(keys=key, val=witB) is True
+            assert sub.put(keys=key, vals=[witB]) is False  # duplicate
+            assert sub.cnt(keys=key) == 2
+
+            # Key normalization
+            alt_key_str = key.decode()
+            alt_key_mv = memoryview(key)
+
+            assert sub.get(keys=alt_key_str) != sub.get(keys=key)
+            assert sub.get(keys=alt_key_mv) != sub.get(keys=key)
+
+            # Type safety
+            with pytest.raises(AttributeError):
+                sub.add(keys=key, val=b"not a prefixer")
+
+            with pytest.raises(AttributeError):
+                sub.put(keys=key, vals=[b"nope"])
+
+            # Reset to empty
+            assert sub.rem(keys=key) is True
+            assert sub.get(keys=key) == []
+
+            # getFullItemIter consistency
+            assert sub.put(keys=key, vals=[witA, witB]) is True
+            items = list(sub.getFullItemIter(keys=key))
+
+            assert len(items) == 2
+            assert all(isinstance(internal_key, tuple) for internal_key, _ in items)
+            assert all(isinstance(w, coring.Prefixer) for _, w in items)
+            assert [w.qb64b for _, w in items] == [witA.qb64b, witB.qb64b]
+
+            # Cleanup using _tokey (correct)
+            for k, w in list(sub.getFullItemIter()):
+                preStr = k[0]   # prefix of the user
+                digStr = k[1]   # digest of the event
+                k = f"{preStr}.{digStr}".encode("utf-8")
+                assert sub.rem(keys=k, val=w) is True
+
+            assert sub.get(keys=key) == []
+
+            # Persistence across reopen
+            assert sub.put(keys=key, vals=[witA, witB]) is True
+            await baser.reopen(storageOpener=backend.open)
+            sub = getattr(baser, name)
+
+            # WebBaser clears CesrIoSetSuber on reopen
+            assert sub.get(keys=key) == []
+            assert sub.cnt(keys=key) == 0
+
+
+        # Tests for CesrIoSetSuber where klas=Diger
+        digerSubers = [
+            "rpes",
+            "chas",
+            "reps",
+            "meids", 
+        ]
+
+        # Setup
+        # Create two valid Diger values
+        raw0 = b"abcdef0123456789abcdef0123456789"
+        raw1 = b"0123456789abcdef0123456789abcdef"
+
+        diger0 = coring.Diger(raw=raw0, code=coring.MtrDex.Blake3_256)
+        diger1 = coring.Diger(raw=raw1, code=coring.MtrDex.Blake3_256)
+        
+        for name in digerSubers:
+            sub = getattr(baser, name)
+
+            # Empty DB behavior
+            assert sub.get(keys=key) == []
+            assert sub.cnt(keys=key) == 0
+            assert sub.rem(keys=key) is False
+
+            # Basic insertion
+            assert sub.put(keys=key, vals=[diger0]) is True
+            assert [d.qb64b for d in sub.get(keys=key)] == [diger0.qb64b]
+            assert sub.cnt(keys=key) == 1
+
+            # idempotent put
+            assert sub.put(keys=key, vals=[diger0]) is False
+            assert [d.qb64b for d in sub.get(keys=key)] == [diger0.qb64b]
+
+            # add second diger
+            assert sub.add(keys=key, val=diger1) is True
+            assert [d.qb64b for d in sub.get(keys=key)] == [diger0.qb64b, diger1.qb64b]
+
+            # iteration
+            assert [d.qb64b for d in sub.getIter(keys=key)] == [diger0.qb64b, diger1.qb64b]
+
+            # Deletion
+            assert sub.rem(keys=key) is True
+            assert sub.get(keys=key) == []
+
+            # delete individually
+            assert sub.put(keys=key, vals=[diger0, diger1]) is True
+            for d in [diger0, diger1]:
+                assert sub.rem(keys=key, val=d) is True
+            assert sub.get(keys=key) == []
+
+            # delete via iteration
+            assert sub.put(keys=key, vals=[diger0, diger1]) is True
+            for d in sub.getIter(keys=key):
+                assert sub.rem(keys=key, val=d) is True
+            assert sub.get(keys=key) == []
+
+            # Ordering guarantees
+            assert sub.put(keys=key, vals=[diger0]) is True
+            assert sub.put(keys=key, vals=[diger1]) is True
+            assert [d.qb64b for d in sub.get(keys=key)] == [diger0.qb64b, diger1.qb64b]
+
+            assert sub.rem(keys=key) is True
+
+            # reversed insertion order
+            assert sub.put(keys=key, vals=[diger1, diger0]) is True
+            assert [d.qb64b for d in sub.get(keys=key)] == [diger1.qb64b, diger0.qb64b]
+
+            assert sub.rem(keys=key) is True
+
+            # Mixed insertion behavior
+            assert sub.put(keys=key, vals=[diger0]) is True
+            assert sub.add(keys=key, val=diger0) is False  # duplicate
+            assert sub.add(keys=key, val=diger1) is True
+            assert sub.put(keys=key, vals=[diger1]) is False  # duplicate
+            assert sub.cnt(keys=key) == 2
+
+            # Key normalization
+            alt_key_str = key.decode()
+            alt_key_mv = memoryview(key)
+
+            assert sub.get(keys=alt_key_str) != sub.get(keys=key)
+            assert sub.get(keys=alt_key_mv) != sub.get(keys=key)
+
+            # Type safety
+            with pytest.raises(AttributeError):
+                sub.add(keys=key, val=b"not a diger")
+
+            with pytest.raises(AttributeError):
+                sub.put(keys=key, vals=[b"nope"])
+
+            # Reset to empty
+            assert sub.rem(keys=key) is True
+            assert sub.get(keys=key) == []
+            
+            # getFullItemIter consistency
+            assert sub.put(keys=key, vals=[diger0, diger1]) is True
+            items = list(sub.getFullItemIter(keys=key))
+
+            assert len(items) == 2
+            assert all(isinstance(internal_key, tuple) for internal_key, _ in items)
+            assert all(isinstance(d, coring.Diger) for _, d in items)
+            assert [d.qb64b for _, d in items] == [diger0.qb64b, diger1.qb64b]
+
+            # Cleanup (correct composite key reconstruction)
+            for internal_key, d in list(sub.getFullItemIter()):
+                preStr = internal_key[0]
+                digStr = internal_key[1]
+                composite_key = f"{preStr}.{digStr}".encode()
+                assert sub.rem(keys=composite_key, val=d) is True
+
+            assert sub.get(keys=key) == []
+
+            # Persistence across reopen
+            assert sub.put(keys=key, vals=[diger0, diger1]) is True
+            await baser.reopen(storageOpener=backend.open)
+            sub = getattr(baser, name)
+
+            # WebBaser clears CesrIoSetSuber on reopen
+            assert sub.get(keys=key) == []
+            assert sub.cnt(keys=key) == 0
+
+
+        # Test .essrs (CesrIoSetSuber of Texter)
+
+        # Setup
+        pre = b'BAKY1sKmgyjAiUDdUBPNPyrSz_ad_Qf9yzhDNZlEKiMc'
+        dig = b'EA73b7reENuBahMJsMTLbeyyNPsfTRzKRWtJ3ytmInvw'
+
+        key = dgKey(pre, dig)
+        assert key == f"{pre.decode()}.{dig.decode()}".encode()
+
+        # Create two valid Texter values
+        texter0 = coring.Texter(text="hello world")
+        texter1 = coring.Texter(text="another value")
+
+        # Empty DB behavior
+        assert baser.essrs.get(keys=key) == []
+        assert baser.essrs.cnt(keys=key) == 0
+        assert baser.essrs.rem(keys=key) is False
+
+        # Basic insertion
+        assert baser.essrs.put(keys=key, vals=[texter0]) is True
+        assert [t.qb64b for t in baser.essrs.get(keys=key)] == [texter0.qb64b]
+        assert baser.essrs.cnt(keys=key) == 1
+
+        # idempotent put
+        assert baser.essrs.put(keys=key, vals=[texter0]) is False
+        assert [t.qb64b for t in baser.essrs.get(keys=key)] == [texter0.qb64b]
+
+        # add second texter
+        assert baser.essrs.add(keys=key, val=texter1) is True
+        assert [t.qb64b for t in baser.essrs.get(keys=key)] == [texter0.qb64b, texter1.qb64b]
+
+        # iteration
+        assert [t.qb64b for t in baser.essrs.getIter(keys=key)] == [texter0.qb64b, texter1.qb64b]
+
+        # Deletion
+        assert baser.essrs.rem(keys=key) is True
+        assert baser.essrs.get(keys=key) == []
+
+        # delete individually
+        assert baser.essrs.put(keys=key, vals=[texter0, texter1]) is True
+        for t in [texter0, texter1]:
+            assert baser.essrs.rem(keys=key, val=t) is True
+        assert baser.essrs.get(keys=key) == []
+
+        # delete via iteration
+        assert baser.essrs.put(keys=key, vals=[texter0, texter1]) is True
+        for t in baser.essrs.getIter(keys=key):
+            assert baser.essrs.rem(keys=key, val=t) is True
+        assert baser.essrs.get(keys=key) == []
+
+        # Ordering guarantees
+        assert baser.essrs.put(keys=key, vals=[texter0]) is True
+        assert baser.essrs.put(keys=key, vals=[texter1]) is True
+        assert [t.qb64b for t in baser.essrs.get(keys=key)] == [texter0.qb64b, texter1.qb64b]
+
+        assert baser.essrs.rem(keys=key) is True
+
+        # reversed insertion order
+        assert baser.essrs.put(keys=key, vals=[texter1, texter0]) is True
+        assert [t.qb64b for t in baser.essrs.get(keys=key)] == [texter1.qb64b, texter0.qb64b]
+
+        assert baser.essrs.rem(keys=key) is True
+
+        # Mixed insertion behavior
+        assert baser.essrs.put(keys=key, vals=[texter0]) is True
+        assert baser.essrs.add(keys=key, val=texter0) is False  # duplicate
+        assert baser.essrs.add(keys=key, val=texter1) is True
+        assert baser.essrs.put(keys=key, vals=[texter1]) is False  # duplicate
+        assert baser.essrs.cnt(keys=key) == 2
+
+        # Key normalization
+        alt_key_str = key.decode()
+        alt_key_mv = memoryview(key)
+
+        assert baser.essrs.get(keys=alt_key_str) != baser.essrs.get(keys=key)
+        assert baser.essrs.get(keys=alt_key_mv) != baser.essrs.get(keys=key)
+
+        # Type safety
+        with pytest.raises(AttributeError):
+            baser.essrs.add(keys=key, val=b"not a texter")
+
+        with pytest.raises(AttributeError):
+            baser.essrs.put(keys=key, vals=[b"nope"])
+
+        # Reset to empty
+        assert baser.essrs.rem(keys=key) is True
+        assert baser.essrs.get(keys=key) == []
+
+        # getFullItemIter consistency
+        assert baser.essrs.put(keys=key, vals=[texter0, texter1]) is True
+        items = list(baser.essrs.getFullItemIter(keys=key))
+
+        assert len(items) == 2
+        assert all(isinstance(internal_key, tuple) for internal_key, _ in items)
+        assert all(isinstance(t, coring.Texter) for _, t in items)
+        assert [t.qb64b for _, t in items] == [texter0.qb64b, texter1.qb64b]
+
+        # Cleanup (correct composite key reconstruction)
+        for internal_key, t in list(baser.essrs.getFullItemIter()):
+            pre_str = internal_key[0]
+            dig_str = internal_key[1]
+            composite_key = f"{pre_str}.{dig_str}".encode()
+            assert baser.essrs.rem(keys=composite_key, val=t) is True
+
+        assert baser.essrs.get(keys=key) == []
+
+        # Persistence across reopen 
+        assert baser.essrs.put(keys=key, vals=[texter0, texter1]) is True
         await baser.reopen(storageOpener=backend.open)
-        assert baser.evts.get(keys=(preb, digb)) is None
-        assert baser.evts.get(keys=(pre2, dig2)) is None
 
-        # delete second event
-        assert baser.evts.rem(keys=(pre2, dig2)) is False
-        assert baser.evts.get(keys=(pre2, dig2)) is None
+        assert baser.essrs.get(keys=key) == []
+        assert baser.essrs.cnt(keys=key) == 0
+
+
+        # -------- CesrSuber Subdbs tests ---------
+        
+        # Tests for CesrSuber where klas=Dater
+        daterCesrSubers = [
+            "dtss",
+            "migs",
+            "sdts",
+            "epsd", 
+            "kdts", 
+        ]
+
+        # Two Dater values
+        dater0 = coring.Dater(dts="2020-08-22T17:50:09.988921+00:00")
+        dater1 = coring.Dater(dts="2020-08-22T17:50:10.000000+00:00")
+
+        for name in daterCesrSubers:
+            sub = getattr(baser, name)
+
+            # Empty DB behavior
+            assert sub.get(keys=key) == None
+            assert sub.cnt() == 0
+            assert sub.rem(keys=key) == False
+
+            # Basic insertion
+            assert sub.put(keys=key, val=dater0) == True
+            assert sub.get(keys=key).dts == dater0.dts
+
+            # idempotent put
+            assert sub.put(keys=key, val=dater0) == False
+            assert sub.get(keys=key).dts == dater0.dts
+
+            # pin overwrites
+            assert sub.pin(keys=key, val=dater1) == True
+            assert sub.get(keys=key).dts == dater1.dts
+
+            # Deletion
+            assert sub.rem(keys=key) == True
+            assert sub.get(keys=key) == None
+
+            # delete individually (CesrSuber stores only one value)
+            assert sub.put(keys=key, val=dater0) is True
+            assert sub.rem(keys=key) is True
+            assert sub.get(keys=key) is None
+
+            # delete via iteration (using getFullItemIter)
+            assert sub.put(keys=key, val=dater0) is True
+            for k, d in sub.getFullItemIter(keys=key):
+                assert sub.rem(keys=key) is True
+            assert sub.get(keys=key) is None
+
+            # Ordering guarantees (CesrSuber stores only one value, so overwrite)
+            assert sub.put(keys=key, val=dater0) is True
+            assert sub.pin(keys=key, val=dater1) is True
+            assert sub.get(keys=key).dts == dater1.dts
+
+            assert sub.rem(keys=key) is True
+
+            # reversed insertion order (still only one value)
+            assert sub.put(keys=key, val=dater1) is True
+            assert sub.pin(keys=key, val=dater0) is True
+            assert sub.get(keys=key).dts == dater0.dts
+
+            assert sub.rem(keys=key) is True
+
+            # Mixed insertion behavior
+            assert sub.put(keys=key, val=dater0) is True
+            assert sub.put(keys=key, val=dater0) is False  # idempotent
+            assert sub.pin(keys=key, val=dater1) is True   # overwrite
+            assert sub.get(keys=key).dts == dater1.dts
+
+            # Key normalization
+            alt_key_str = key.decode()
+            alt_key_mv = memoryview(key)
+
+            assert sub.get(keys=alt_key_str).dts == sub.get(keys=key).dts
+            assert sub.get(keys=alt_key_mv).dts == sub.get(keys=key).dts
+
+            # Type safety
+            with pytest.raises(AttributeError):
+                sub.put(keys=key, val=b"not a dater")
+
+            with pytest.raises(AttributeError):
+                sub.pin(keys=key, val=b"nope")
+
+            # Reset to empty
+            assert sub.rem(keys=key) is True
+            assert sub.get(keys=key) is None
+
+            # getFullItemIter consistency
+            assert sub.put(keys=key, val=dater0) is True
+            items = list(sub.getFullItemIter(keys=key))
+
+            assert len(items) == 1
+            internal_key, d = items[0]
+            assert isinstance(internal_key, tuple)
+            assert isinstance(d, coring.Dater)
+            assert d.qb64b == dater0.qb64b
+
+            # Cleanup (correct composite key reconstruction)
+            for internal_key, d in list(sub.getFullItemIter()):
+                preStr = internal_key[0]
+                digStr = internal_key[1]
+                composite_key = f"{preStr}.{digStr}".encode()
+                assert sub.rem(keys=composite_key) is True
+
+            assert sub.get(keys=key) is None
+
+            # Persistence across reopen
+            assert sub.put(keys=key, val=dater0) is True
+            await baser.reopen(storageOpener=backend.open)
+            sub = getattr(baser, name)
+
+            # WebBaser clears CesrSuber on reopen
+            assert sub.get(keys=key) is None
+
+
+        # Test for CesrSuber where klas=Diger
+        digerCesrSubers = [
+            "eans",
+            "lans",
+            "cgms",
+            "knas",
+            "wwas",
+        ]
+
+        # Two Diger values
+        raw0 = b"abcdef0123456789abcdef0123456789"
+        raw1 = b"0123456789abcdef0123456789abcdef"
+
+        diger0 = coring.Diger(raw=raw0, code=coring.MtrDex.Blake3_256)
+        diger1 = coring.Diger(raw=raw1, code=coring.MtrDex.Blake3_256)
+
+        for name in digerCesrSubers:
+            sub = getattr(baser, name)
+            # Empty DB behavior
+            assert sub.get(keys=key) is None
+            assert sub.cnt() == 0
+            assert sub.rem(keys=key) is False
+
+            # Basic insertion
+            assert sub.put(keys=key, val=diger0) is True
+            assert sub.get(keys=key).qb64b == diger0.qb64b
+
+            # idempotent put
+            assert sub.put(keys=key, val=diger0) is False
+            assert sub.get(keys=key).qb64b == diger0.qb64b
+
+            # pin overwrites
+            assert sub.pin(keys=key, val=diger1) is True
+            assert sub.get(keys=key).qb64b == diger1.qb64b
+
+            # Deletion
+            assert sub.rem(keys=key) is True
+            assert sub.get(keys=key) is None
+
+            # delete individually (CesrSuber stores only one value)
+            assert sub.put(keys=key, val=diger0) is True
+            assert sub.rem(keys=key) is True
+            assert sub.get(keys=key) is None
+
+            # delete via iteration (using getFullItemIter)
+            assert sub.put(keys=key, val=diger0) is True
+            for k, d in sub.getFullItemIter(keys=key):
+                assert sub.rem(keys=key) is True
+            assert sub.get(keys=key) is None
+
+            # Ordering guarantees (CesrSuber stores only one value, so overwrite)
+            assert sub.put(keys=key, val=diger0) is True
+            assert sub.pin(keys=key, val=diger1) is True
+            assert sub.get(keys=key).qb64b == diger1.qb64b
+
+            assert sub.rem(keys=key) is True
+
+            # reversed insertion order (still only one value)
+            assert sub.put(keys=key, val=diger1) is True
+            assert sub.pin(keys=key, val=diger0) is True
+            assert sub.get(keys=key).qb64b == diger0.qb64b
+
+            assert sub.rem(keys=key) is True
+
+            # Mixed insertion behavior
+            assert sub.put(keys=key, val=diger0) is True
+            assert sub.put(keys=key, val=diger0) is False  # idempotent
+            assert sub.pin(keys=key, val=diger1) is True   # overwrite
+            assert sub.get(keys=key).qb64b == diger1.qb64b
+
+            # Key normalization
+            alt_key_str = key.decode()
+            alt_key_mv = memoryview(key)
+
+            assert sub.get(keys=alt_key_str).qb64b == sub.get(keys=key).qb64b
+            assert sub.get(keys=alt_key_mv).qb64b == sub.get(keys=key).qb64b
+
+            # Type safety
+            with pytest.raises(AttributeError):
+                sub.put(keys=key, val=b"not a diger")
+
+            with pytest.raises(AttributeError):
+                sub.pin(keys=key, val=b"nope")
+
+            # Reset to empty
+            assert sub.rem(keys=key) is True
+            assert sub.get(keys=key) is None
+
+            # getFullItemIter consistency
+            assert sub.put(keys=key, val=diger0) is True
+            items = list(sub.getFullItemIter(keys=key))
+
+            assert len(items) == 1
+            internal_key, d = items[0]
+            assert isinstance(internal_key, tuple)
+            assert isinstance(d, coring.Diger)
+            assert d.qb64b == diger0.qb64b
+
+            # Cleanup (correct composite key reconstruction)
+            for internal_key, d in list(sub.getFullItemIter()):
+                preStr = internal_key[0]
+                digStr = internal_key[1]
+                composite_key = f"{preStr}.{digStr}".encode()
+                assert sub.rem(keys=composite_key) is True
+
+            assert sub.get(keys=key) is None
+
+            # Persistence across reopen
+            assert sub.put(keys=key, val=diger0) is True
+            await baser.reopen(storageOpener=backend.open)
+            sub = getattr(baser, name)
+
+            # WebBaser clears CesrSuber on reopen
+            assert sub.get(keys=key) is None
+
 
 
         # ---- EventSourceRecord tests ----
@@ -627,56 +1628,6 @@ def test_webdb_baser():
         rnum4, rdig4 = baser.aess.get(keys=(pre3, dig3))
         assert rnum4.qb64b == number2.qb64b
         assert rdig4.qb64b == diger2.qb64b
-
-        
-        # test .sigs sub db methods
-        key = dgKey(preb, digb)
-        assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
-
-        assert baser.sigs.get(keys=key) == []
-        assert baser.sigs.cnt(keys=key) == 0
-        assert baser.sigs.rem(keys=key) == False
-
-        # Create valid test signatures
-        signer0 = signing.Signer(transferable=False, seed=b'0123456789abcdef0123456789abcdef')
-        signer1 = signing.Signer(transferable=False, seed=b'fedcba9876543210fedcba9876543210')
-
-        test_data = b"test witness signatures"
-        cigar0 = signer0.sign(ser=test_data)
-        cigar1 = signer1.sign(ser=test_data)
-
-        siger0 = indexing.Siger(raw=cigar0.raw, code=indexing.IdrDex.Ed25519_Sig, index=0)
-        siger1 = indexing.Siger(raw=cigar1.raw, code=indexing.IdrDex.Ed25519_Sig, index=1)
-
-        assert baser.sigs.put(keys=key, vals=[siger0]) == True
-        assert [s.qb64b for s in baser.sigs.get(keys=key)] == [siger0.qb64b]
-        assert baser.sigs.cnt(keys=key) == 1
-        assert baser.sigs.put(keys=key, vals=[siger0]) == False  , idempotent
-        assert [s.qb64b for s in baser.sigs.get(keys=key)] == [siger0.qb64b]
-        assert baser.sigs.add(keys=key, val=siger1) == True
-        assert [s.qb64b for s in baser.sigs.get(keys=key)] == [siger0.qb64b, siger1.qb64b]
-        assert [val.qb64b for val in baser.sigs.getIter(keys=key)] == [siger0.qb64b, siger1.qb64b]
-        assert baser.sigs.rem(keys=key) == True
-        assert baser.sigs.get(keys=key) == []
-        assert baser.sigs.put(keys=key, vals=[siger0, siger1]) == True
-        for val in [siger0, siger1]:
-            assert baser.sigs.rem(keys=key, val=val) == True
-        assert baser.sigs.get(keys=key) == []
-        assert baser.sigs.put(keys=key, vals=[siger0, siger1]) == True
-        for val in baser.sigs.getIter(keys=key):
-            assert baser.sigs.rem(keys=key, val=val) == True
-        assert baser.sigs.get(keys=key) == []
-
-        assert baser.sigs.put(keys=key, vals=[siger0]) == True
-        assert [s.qb64b for s in baser.sigs.get(keys=key)] == [siger0.qb64b]
-        assert baser.sigs.put(keys=key, vals=[siger1]) == True
-        assert [s.qb64b for s in baser.sigs.get(keys=key)] == [siger0.qb64b, siger1.qb64b]
-        assert baser.sigs.rem(keys=key) == True
-        assert baser.sigs.put(keys=key, vals=[siger1, siger0]) == True
-        assert [s.qb64b for s in baser.sigs.get(keys=key)] == [siger1.qb64b, siger0.qb64b]
-        assert baser.sigs.rem(keys=key) == True
-        assert baser.sigs.get(keys=key) == []
-        assert baser.sigs.put(keys=key, vals=[siger0, siger1]) == True
 
         # test .wigs sub db methods (witness indexed sigs)
         key = dgKey(preb, digb)
