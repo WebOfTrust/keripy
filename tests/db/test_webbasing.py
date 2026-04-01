@@ -601,14 +601,26 @@ def test_webdb_baser():
         # -------- CesrIoSetSuber Subdbs tests ---------
 
         # Tests for CesrIoSetSuber where klas=Siger
-        sigerSubers = [
+        sigerCesrIoSetSuber = [
             "sigs",
             "ssgs",
             "wigs",
             "esigs",
             "kramPMKS"
         ]
-        for name in sigerSubers:
+
+        # Create valid test signatures
+        signer0 = signing.Signer(transferable=False, seed=b'0123456789abcdef0123456789abcdef')
+        signer1 = signing.Signer(transferable=False, seed=b'fedcba9876543210fedcba9876543210')
+
+        test_data = b"test witness signatures"
+        cigar0 = signer0.sign(ser=test_data)
+        cigar1 = signer1.sign(ser=test_data)
+
+        siger0 = indexing.Siger(raw=cigar0.raw, code=indexing.IdrDex.Ed25519_Sig, index=0)
+        siger1 = indexing.Siger(raw=cigar1.raw, code=indexing.IdrDex.Ed25519_Sig, index=1)
+
+        for name in sigerCesrIoSetSuber:
             sub = getattr(baser, name)
 
             # Setup
@@ -619,17 +631,6 @@ def test_webdb_baser():
             assert sub.get(keys=key) == []
             assert sub.cnt(keys=key) == 0
             assert sub.rem(keys=key) == False
-
-            # Create valid test signatures
-            signer0 = signing.Signer(transferable=False, seed=b'0123456789abcdef0123456789abcdef')
-            signer1 = signing.Signer(transferable=False, seed=b'fedcba9876543210fedcba9876543210')
-
-            test_data = b"test witness signatures"
-            cigar0 = signer0.sign(ser=test_data)
-            cigar1 = signer1.sign(ser=test_data)
-
-            siger0 = indexing.Siger(raw=cigar0.raw, code=indexing.IdrDex.Ed25519_Sig, index=0)
-            siger1 = indexing.Siger(raw=cigar1.raw, code=indexing.IdrDex.Ed25519_Sig, index=1)
 
             # Basic insertion
             assert sub.put(keys=key, vals=[siger0]) == True
@@ -732,7 +733,7 @@ def test_webdb_baser():
 
 
         # Tests for CesrIoSetSuber where klas=Prefixer
-        prefixerSubers = [
+        prefixerCesrIoSetSubers = [
             "wits",
             "maids",            
         ]
@@ -741,7 +742,7 @@ def test_webdb_baser():
         witA = coring.Prefixer(qb64b=b'BADA1n-WiBA0A8YOqnKrB-wWQYYC49i5zY_qrIZIicQg')
         witB = coring.Prefixer(qb64b=b'BADAyl33W9ja_wLX85UrzRnL4KNzlsIKIA7CrD04nVX1w')
 
-        for name in prefixerSubers:
+        for name in prefixerCesrIoSetSubers:
             sub = getattr(baser, name)
 
             # Empty DB behavior
@@ -848,7 +849,7 @@ def test_webdb_baser():
 
 
         # Tests for CesrIoSetSuber where klas=Diger
-        digerSubers = [
+        digerCesrIoSetSubers = [
             "rpes",
             "chas",
             "reps",
@@ -863,7 +864,7 @@ def test_webdb_baser():
         diger0 = coring.Diger(raw=raw0, code=coring.MtrDex.Blake3_256)
         diger1 = coring.Diger(raw=raw1, code=coring.MtrDex.Blake3_256)
         
-        for name in digerSubers:
+        for name in digerCesrIoSetSubers:
             sub = getattr(baser, name)
 
             # Empty DB behavior
@@ -1314,6 +1315,221 @@ def test_webdb_baser():
             # WebBaser clears CesrSuber on reopen
             assert sub.get(keys=key) is None
 
+        # Tests for .erpy subdb 
+
+        # Using the diger values from above
+        sdig0 = diger0.qb64b
+        sdig1 = diger1.qb64b
+
+        saider0 = Saider(qb64=sdig0)
+        saider1 = Saider(qb64=sdig1)
+
+        # Empty DB behavior
+        assert baser.erpy.get(keys=key) is None
+        assert baser.erpy.cnt() == 0
+        assert baser.erpy.rem(keys=key) is False
+
+        # Basic insertion
+        assert baser.erpy.put(keys=key, val=saider0) is True
+        assert baser.erpy.get(keys=key).qb64b == saider0.qb64b
+
+        # idempotent put
+        assert baser.erpy.put(keys=key, val=saider0) is False
+        assert baser.erpy.get(keys=key).qb64b == saider0.qb64b
+
+        # pin overwrites
+        assert baser.erpy.pin(keys=key, val=saider1) is True
+        assert baser.erpy.get(keys=key).qb64b == saider1.qb64b
+
+        # Deletion
+        assert baser.erpy.rem(keys=key) is True
+        assert baser.erpy.get(keys=key) is None
+
+        # delete individually (Cesrbaser.erpyer stores only one value)
+        assert baser.erpy.put(keys=key, val=saider0) is True
+        assert baser.erpy.rem(keys=key) is True
+        assert baser.erpy.get(keys=key) is None
+
+        # delete via iteration (using getFullItemIter)
+        assert baser.erpy.put(keys=key, val=saider0) is True
+        for k, d in baser.erpy.getFullItemIter(keys=key):
+            assert baser.erpy.rem(keys=key) is True
+        assert baser.erpy.get(keys=key) is None
+
+        # Ordering guarantees (Cesrbaser.erpyer stores only one value)
+        assert baser.erpy.put(keys=key, val=saider0) is True
+        assert baser.erpy.pin(keys=key, val=saider1) is True
+        assert baser.erpy.get(keys=key).qb64b == saider1.qb64b
+
+        assert baser.erpy.rem(keys=key) is True
+
+        # reversed insertion order (still only one value)
+        assert baser.erpy.put(keys=key, val=saider1) is True
+        assert baser.erpy.pin(keys=key, val=saider0) is True
+        assert baser.erpy.get(keys=key).qb64b == saider0.qb64b
+
+        assert baser.erpy.rem(keys=key) is True
+
+        # Mixed insertion behavior
+        assert baser.erpy.put(keys=key, val=saider0) is True
+        assert baser.erpy.put(keys=key, val=saider0) is False  # idempotent
+        assert baser.erpy.pin(keys=key, val=saider1) is True   # overwrite
+        assert baser.erpy.get(keys=key).qb64b == saider1.qb64b
+
+        # Key normalization
+        alt_key_str = key.decode()
+        alt_key_mv = memoryview(key)
+
+        assert baser.erpy.get(keys=alt_key_str).qb64b == baser.erpy.get(keys=key).qb64b
+        assert baser.erpy.get(keys=alt_key_mv).qb64b == baser.erpy.get(keys=key).qb64b
+
+        # Type safety
+        with pytest.raises(AttributeError):
+            baser.erpy.put(keys=key, val=b"not a saider")
+
+        with pytest.raises(AttributeError):
+            baser.erpy.pin(keys=key, val=b"nope")
+
+        # Reset to empty
+        assert baser.erpy.rem(keys=key) is True
+        assert baser.erpy.get(keys=key) is None
+
+        # getFullItemIter consistency
+        assert baser.erpy.put(keys=key, val=saider0) is True
+        items = list(baser.erpy.getFullItemIter(keys=key))
+
+        assert len(items) == 1
+        internal_key, d = items[0]
+        assert isinstance(internal_key, tuple)
+        assert isinstance(d, coring.Saider)
+        assert d.qb64b == saider0.qb64b
+
+        # Cleanup (correct composite key reconstruction)
+        for internal_key, d in list(baser.erpy.getFullItemIter()):
+            preStr = internal_key[0]
+            digStr = internal_key[1]
+            composite_key = f"{preStr}.{digStr}".encode()
+            assert baser.erpy.rem(keys=composite_key) is True
+
+        assert baser.erpy.get(keys=key) is None
+
+        # Persistence across reopen
+        assert baser.erpy.put(keys=key, val=saider0) is True
+        await baser.reopen(storageOpener=backend.open)
+        baser.erpy = getattr(baser, name)
+
+        # WebBaser clears Cesrbaser.erpyer on reopen
+        assert baser.erpy.get(keys=key) is None
+
+
+        # Test for CesrSuber where klas=Cigar
+        cigarCesrSubers = [
+            "ccigs",
+            "icigs",
+        ]
+
+        # Use the cigar values from Tests for CesrIoSetSuber where klas=Siger
+        
+        for name in cigarCesrSubers:
+
+            sub = getattr(baser, name)
+
+            # Empty DB behavior
+            assert sub.get(keys=key) is None
+            assert sub.cnt() == 0
+            assert sub.rem(keys=key) is False
+
+            # Basic insertion
+            assert sub.put(keys=key, val=cigar0) is True
+            assert sub.get(keys=key).qb64b == cigar0.qb64b
+
+            # idempotent put
+            assert sub.put(keys=key, val=cigar0) is False
+            assert sub.get(keys=key).qb64b == cigar0.qb64b
+
+            # pin overwrites
+            assert sub.pin(keys=key, val=cigar1) is True
+            assert sub.get(keys=key).qb64b == cigar1.qb64b
+
+            # Deletion
+            assert sub.rem(keys=key) is True
+            assert sub.get(keys=key) is None
+
+            # delete individually (CesrSuber stores only one value)
+            assert sub.put(keys=key, val=cigar0) is True
+            assert sub.rem(keys=key) is True
+            assert sub.get(keys=key) is None
+
+            # delete via iteration (using getFullItemIter)
+            assert sub.put(keys=key, val=cigar0) is True
+            for k, d in sub.getFullItemIter(keys=key):
+                assert sub.rem(keys=key) is True
+            assert sub.get(keys=key) is None
+
+            # Ordering guarantees (CesrSuber stores only one value)
+            assert sub.put(keys=key, val=cigar0) is True
+            assert sub.pin(keys=key, val=cigar1) is True
+            assert sub.get(keys=key).qb64b == cigar1.qb64b
+
+            assert sub.rem(keys=key) is True
+
+            # reversed insertion order (still only one value)
+            assert sub.put(keys=key, val=cigar1) is True
+            assert sub.pin(keys=key, val=cigar0) is True
+            assert sub.get(keys=key).qb64b == cigar0.qb64b
+
+            assert sub.rem(keys=key) is True
+
+            # Mixed insertion behavior
+            assert sub.put(keys=key, val=cigar0) is True
+            assert sub.put(keys=key, val=cigar0) is False  # idempotent
+            assert sub.pin(keys=key, val=cigar1) is True   # overwrite
+            assert sub.get(keys=key).qb64b == cigar1.qb64b
+
+            # Key normalization
+            alt_key_str = key.decode()
+            alt_key_mv = memoryview(key)
+
+            assert sub.get(keys=alt_key_str).qb64b == sub.get(keys=key).qb64b
+            assert sub.get(keys=alt_key_mv).qb64b == sub.get(keys=key).qb64b
+
+            # Type safety
+            with pytest.raises(AttributeError):
+                sub.put(keys=key, val=b"not a cigar")
+
+            with pytest.raises(AttributeError):
+                sub.pin(keys=key, val=b"nope")
+
+            # Reset to empty
+            assert sub.rem(keys=key) is True
+            assert sub.get(keys=key) is None
+
+            # getFullItemIter consistency
+            assert sub.put(keys=key, val=cigar0) is True
+            items = list(sub.getFullItemIter(keys=key))
+
+            assert len(items) == 1
+            internal_key, d = items[0]
+            assert isinstance(internal_key, tuple)
+            assert isinstance(d, coring.Cigar)
+            assert d.qb64b == cigar0.qb64b
+
+            # Cleanup (correct composite key reconstruction)
+            for internal_key, d in list(sub.getFullItemIter()):
+                preStr = internal_key[0]
+                digStr = internal_key[1]
+                composite_key = f"{preStr}.{digStr}".encode()
+                assert sub.rem(keys=composite_key) is True
+
+            assert sub.get(keys=key) is None
+
+            # Persistence across reopen
+            assert sub.put(keys=key, val=cigar0) is True
+            await baser.reopen(storageOpener=backend.open)
+            sub = getattr(baser, name)
+
+            # WebBaser clears CesrSuber on reopen
+            assert sub.get(keys=key) is None
 
 
         # ---- EventSourceRecord tests ----
