@@ -7,7 +7,7 @@ keri.vc.challenging module
 from ..core import Diger
 
 
-def loadChallengingHandlers(db, signaler, exc):
+def loadHandlers(db, signaler, exc):
     """Registers challenge response handlers with the peer-to-peer message router.
 
     Creates a ``ChallengeHandler`` instance and adds it to the provided

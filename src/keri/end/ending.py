@@ -21,7 +21,7 @@ from hio.core import http, wiring
 from hio.help import ogler
 
 from ..kering import Roles, Schemes
-from ..app.habbing import Habery, HaberyDoer
+
 from ..core import Cigar, Siger
 from ..help import helping
 
@@ -544,7 +544,7 @@ class OOBIEnd:
 
     """
 
-    def __init__(self, hby: Habery, default=None):
+    def __init__(self, hby, default=None):
         """  End point for responding to OOBIs
 
         Parameters:
@@ -622,7 +622,7 @@ WEB_DIR_PATH = os.path.dirname(
 STATIC_DIR_PATH = os.path.join(WEB_DIR_PATH, 'static')
 
 
-def loadEndingEnds(app, hby, *, tymth=None, default=None, static=False):
+def loadEnds(app, hby, *, tymth=None, default=None, static=False):
     """
     Load endpoints for app with shared resource dependencies
     This function provides the endpoint resource instances
@@ -663,6 +663,9 @@ def setup(name="who", temp=False, tymth=None, isith=None, count=1,
     """
     Setup and return doers list to run controller
     """
+
+    from ..app.habbing import Habery, HaberyDoer
+
     # setup habery with resources
     hby = Habery(name=name, base="endo", temp=True, free=True)
     hbyDoer = HaberyDoer(habery=hby)  # setup doer
@@ -684,7 +687,7 @@ def setup(name="who", temp=False, tymth=None, isith=None, count=1,
 
     # must do it here to inject into Falcon endpoint resource instances
     myapp = falcon.App(cors_enable=True)  # falcon.App instances are callable WSGI apps
-    loadEndingEnds(myapp, tymth=tymth, hby=hby)
+    loadEnds(myapp, tymth=tymth, hby=hby)
 
     webServer = http.Server(name="keri.wsgi.server", app=myapp, port=webPort, wl=wl)
     webServerDoer = http.ServerDoer(server=webServer)

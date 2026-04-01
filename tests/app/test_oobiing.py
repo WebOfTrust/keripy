@@ -11,12 +11,14 @@ from hio.core import http
 from keri.kering import Vrsn_1_0, Roles, Schemes
 from keri.app import (Notifier, Oobiery, Authenticator,
                       Result, openHab, openHby,
-                      loadOobiingHandlers, oobiRequestExn, loadOobiingEnds)
+                      oobiRequestExn)
+from keri.app.oobiing import (loadHandlers as loadOobiingHandlers,
+                              loadEnds as loadOobiingEnds)
 
 from keri.core import (SerderKERI, Kevery, Parser,
                        Salter, Router, Revery)
 
-from keri.end import loadEndingEnds
+from keri.end.ending import loadEnds as loadEndingEnds
 from keri.help import helping
 from keri.peer import Exchanger
 from keri.recording import OobiRecord

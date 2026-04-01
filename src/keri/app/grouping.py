@@ -317,7 +317,7 @@ class MultisigNotificationHandler:
         self.mux.add(serder=serder)
 
 
-def loadGroupingHandlers(exc, mux):
+def loadHandlers(exc, mux):
     """Register handlers for the peer-to-peer distributed group multisig protocol.
 
     Registers a MultisigNotificationHandler with exc for each supported /multisig/*
