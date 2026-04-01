@@ -10,7 +10,8 @@ import falcon
 from falcon import testing
 from hio.base import doing, tyming
 
-from keri.app import Signal, Signaler, SignalIterable, loadSignalingEnds, signal
+from keri.app import Signal, Signaler, SignalIterable, signal
+from keri.app.signaling import loadEnds
 from keri.help import helping
 
 
@@ -113,7 +114,7 @@ def test_signal_ends():
     rid0 = signaler.signals[0].rid
     rid1 = signaler.signals[1].rid
 
-    _ = loadSignalingEnds(app, signals=signaler.signals)
+    _ = loadEnds(app, signals=signaler.signals)
 
     client = testing.TestClient(app)
     result = client.simulate_get(path="/mbx")

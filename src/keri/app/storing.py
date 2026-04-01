@@ -36,12 +36,12 @@ class Mailboxer(LMDBer):
 
         Mailboxer uses two dbs for mailbox messages these are .tpcs and .msgs.
         The message index is in .tpcs (topics).
-            Each .tpcs index key consists of topic.on where topic is bytes
-                identifier or prefix/topic for message and on is serialized
-                ordinal number to orders the appearance of a topic message.
-            Eash .tpcs val is the digest of the message.
+        Each .tpcs index key consists of topic.on where topic is bytes
+        identifier or prefix/topic for message and on is serialized
+        ordinal number to orders the appearance of a topic message.
+        Each .tpcs val is the digest of the message.
         The message itself is stored in .msgs where the key is the msg digest
-            and the value is the serialized messag itself.
+        and the value is the serialized messag itself.
         Multiple messages can share the same topic but with a different ordinal.
 
         """
@@ -67,8 +67,7 @@ class Mailboxer(LMDBer):
 
         Returns:
             result (boo): True if full key consisting of key and serialized on
-                             exists in database so removed
-                          False otherwise (not removed)
+                exists in database so removed. False otherwise (not removed).
         """
         return self.tpcs.rem(keys=key, on=on)
 
@@ -133,14 +132,14 @@ class Mailboxer(LMDBer):
     def cloneTopicIter(self, topic, fn=0):
         """
         Returns:
-            triple (Iterator[(on, topic, msg): iterator of messages at topic
-            beginning with ordinal fn.
+            triple (Iterator[(on, topic, msg)]): iterator of messages at topic
+                beginning with ordinal fn.
 
         topic (Option(bytes|str)): key prefix combined with serialized on
-                    to form full actual key.  When key is empty then retrieves
-                    whole database.
-             fn (int): starting index ordinal number used with onKey(pre,on)
-                    to form key at at which to initiate retrieval
+            to form full actual key. When key is empty then retrieves
+            whole database.
+        fn (int): starting index ordinal number used with onKey(pre,on)
+            to form key at at which to initiate retrieval
 
 
 
