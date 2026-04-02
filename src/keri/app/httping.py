@@ -317,10 +317,13 @@ class Clienter(doing.DoDoer):
     TimeoutClient = 300  # seconds to wait for response before removing client, default is 5 minutes
 
     def __init__(self):
-        """Initializes Clienter with an empty client pool and registers :meth:`clientDo`.
+        """Initialize clienter with an empty list of client tuples.
 
-        The ``clientDo`` coroutine is wrapped with :func:`~hio.base.doing.doify`
-        and passed to the parent :class:`~hio.base.doing.DoDoer`.
+        Attributes:
+            clients (list[tuple]): Active client tuples, each containing a
+                ``ClientDoer`` instance, an hio HTTP ``Client`` instance,
+                and a ``datetime`` timestamp.
+            doers (list): Doers managed by this Clienter, initialized with clientDo.
         """
         self.clients = []
         doers = [doing.doify(self.clientDo)]
