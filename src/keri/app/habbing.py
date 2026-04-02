@@ -136,11 +136,6 @@ class Habery:
             Use ``habByName`` to look up by name and ``habByPre`` to look up
             by prefix.
         inited (bool): ``True`` once ``setup`` has completed successfully.
-        kevers (dict): All ``Kever`` instances from ``db.kevers``, keyed by
-            qb64 prefix.
-        prefixes (OrderedSet): Local prefixes registered in ``db.prefixes``.
-        signator (Signator): Signer/verifier for data-at-rest in this
-            environment.
     """
 
     def __init__(self, *, name='test', base="", temp=False,
@@ -1044,12 +1039,6 @@ class BaseHab:
         inited (bool): True means fully initialized wrt databases,
             False means not yet fully initialized.
         delpre (str or None): Delegator prefix if any, else None.
-        kever (Kever): Property. Key state of local controller.
-        kevers (dict): Property. Read-through cache of ``Kever`` instances keyed
-            by qb64 prefix, drawn from KEL states in ``db.states``.
-        iserder (serdering.SerderKERI): Property. Own inception event.
-        prefixes (OrderedSet): Property. Local prefixes for ``.db``.
-        accepted (bool): Property. True means accepted into local KEL.
     """
 
     def __init__(self, ks, db, cf, mgr, rtr, rvy, kvy, psr, *,
@@ -2479,8 +2468,6 @@ class Hab(BaseHab):
         inited (bool): ``True`` means fully initialized with respect to
             databases; ``False`` means not yet fully initialized.
         delpre (str or None): Delegator prefix if any, else ``None``.
-        kever (eventing.Kever): Key state instance of the local controller.
-            (Read-only property)
         kevers (dict): Kever instances from KELs in the local db, keyed by
             qb64 prefix. Read-through cache of states for KELs in
             ``db.states``. (Read-only property)
@@ -3092,8 +3079,6 @@ class GroupHab(BaseHab):
         inited (bool): ``True`` means fully initialized with respect to
             databases; ``False`` means not yet fully initialized.
         delpre (str or None): Delegator prefix if any, else ``None``.
-        kever (eventing.Kever): Key state instance of the local controller.
-            (Read-only property)
         kevers (dict): Kever instances from KELs in the local db, keyed by
             qb64 prefix. Read-through cache of states for KELs in
             ``db.states``. (Read-only property)

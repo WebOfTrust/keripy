@@ -80,7 +80,7 @@ keri.app.notifying
     :members:
 
 keri.app.oobiing
----------------
+----------------
 
 .. automodule:: keri.app.oobiing
     :members:
