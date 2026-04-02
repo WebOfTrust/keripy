@@ -30,6 +30,20 @@ from keri.core.indexing import IdrDex
 from keri.app import keeping
 
 
+def test_extern_module():
+    """Test ExternModule base class raises NotImplementedError for all methods"""
+    mod = keeping.ExternModule()
+
+    with pytest.raises(NotImplementedError):
+        mod.incept()
+
+    with pytest.raises(NotImplementedError):
+        mod.rotate(pre="EExample")
+
+    with pytest.raises(NotImplementedError):
+        mod.sign(ser=b"test")
+
+
 def test_dataclasses():
     """
     test key set tracking and creation dataclasses
