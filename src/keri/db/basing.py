@@ -127,7 +127,7 @@ MIGRATIONS = [
     ("1.2.0", ["rekey_habs"])
 ]
 
-class BaseBaser:
+class BaserBase:
 
     def __init__(self, **kwa):
 
@@ -727,7 +727,7 @@ def reopenDB(db, clear=False, **kwa):
 KERIBaserMapSizeKey = "KERI_BASER_MAP_SIZE"
 
 
-class Baser(BaseBaser,LMDBer ):
+class Baser(BaserBase,LMDBer ):
     """
     Baser sets up named sub databases with Keri Event Logs within main database
 
@@ -1439,7 +1439,7 @@ class Baser(BaseBaser,LMDBer ):
                 logger.error("KERI_BASER_MAP_SIZE must be an integer value >1!")
                 raise
 
-        BaseBaser.__init__(self)
+        BaserBase.__init__(self)
         LMDBer.__init__(self, headDirPath=headDirPath, reopen=reopen, **kwa)
 
 

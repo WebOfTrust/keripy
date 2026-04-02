@@ -32,9 +32,9 @@ from ..kering import (MissingEntryError, ValidationError,
 from .webdbing import WebDBer
 
 try:
-    from .basing import BaseBaser
+    from .basing import BaserBase
 except ImportError: 
-    BaseBaser = None
+    BaserBase = None
 
 logger = ogler.getLogger()
 
@@ -109,7 +109,7 @@ class statedict(dict):
             return self.__getitem__(k)
 
 
-class WebBaser(WebDBer, BaseBaser):
+class WebBaser(WebDBer, BaserBase):
     def __init__(self, name="main", reopen=False, temp=False, **kwa):
         """
         Setup named sub databases.
@@ -150,7 +150,7 @@ class WebBaser(WebDBer, BaseBaser):
 
         self.temp = temp
 
-        BaseBaser.__init__(self)
+        BaserBase.__init__(self)
 
     async def reopen(self, clear=False, storageOpener=None):
         """Open or re-open the WebBaser backing store.
