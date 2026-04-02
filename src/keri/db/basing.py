@@ -128,6 +128,22 @@ MIGRATIONS = [
 ]
 
 class BaserBase:
+    """
+    Base class for Baser and WebBaser.
+
+    BaserBase provides minimal, non‑persistent structures like
+    prefixes, groups, kevers and db as well as common functions. 
+
+    Attributes:
+        - prefixes (oset): set of local prefix identifiers (`prefixes`)
+        - groups (oset): set of group identifiers (`groups`)
+        - _kevers (statedict): in‑memory mapping of prefix to Kever
+        - db: db where `_kevers.db` points back to this instance so that kever
+          lookups and read‑through caching work correctly
+
+    This class must be initialized *before* any LMDB‑backed components
+    so that reload() has valid in‑memory targets to populate.
+    """
 
     def __init__(self, **kwa):
 
