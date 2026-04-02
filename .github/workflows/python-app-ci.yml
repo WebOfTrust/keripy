@@ -98,6 +98,21 @@ jobs:
         run: |
           ./scripts/demo/test_scripts.sh
 
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.12
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - name: Install keripy (required for autodoc imports)
+        run: pip install .
+      - name: Install Sphinx dependencies
+        run: pip install -r docs/requirements.txt
+      - name: Build docs (warnings as errors)
+        run: sphinx-build -b dirhtml -W docs/ _build/dirhtml
+
   interop-setup:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/interop'
