@@ -41,17 +41,6 @@ logger = ogler.getLogger()
 
 # --- Duplicated from dbing.py / basing.py to avoid lmdb import ---
 
-def dgKey(pre, dig):
-    """Returns bytes DB key from concatenation with '.' of qualified Base64
-    prefix bytes pre and qualified Base64 bytes digest of serialized event.
-    """
-    if hasattr(pre, "encode"):
-        pre = pre.encode("utf-8")
-    if hasattr(dig, "encode"):
-        dig = dig.encode("utf-8")
-    return (b'%s.%s' % (pre, dig))
-
-
 def _strip_prerelease(version_str):
     """Strip prerelease and build metadata from a semver string.
 
@@ -59,54 +48,6 @@ def _strip_prerelease(version_str):
     """
     ver = semver.VersionInfo.parse(version_str)
     return str(semver.Version(ver.major, ver.minor, ver.patch))
-
-
-MIGRATIONS = [
-    ("0.6.8", ["hab_data_rename"]),
-    ("1.0.0", ["add_key_and_reg_state_schemas"]),
-    ("1.2.0", ["rekey_habs"])
-]
-
-
-class statedict(dict):
-    """Read-through cache of Kever instances backed by db.states."""
-    __slots__ = ('db')
-
-    def __init__(self, *pa, **kwa):
-        super(statedict, self).__init__(*pa, **kwa)
-        self.db = None
-
-    def __getitem__(self, k):
-        try:
-            return super(statedict, self).__getitem__(k)
-        except KeyError as ex:
-            if not self.db:
-                raise ex
-            if (ksr := self.db.states.get(keys=k)) is None:
-                raise ex
-            try:
-                from ..core.eventing import Kever
-                kever = Kever(state=ksr, db=self.db)
-            except MissingEntryError:
-                raise ex
-            self.__setitem__(k, kever)
-            return kever
-
-    def __contains__(self, k):
-        if not super(statedict, self).__contains__(k):
-            try:
-                self.__getitem__(k)
-                return True
-            except KeyError:
-                return False
-        else:
-            return True
-
-    def get(self, k, default=None):
-        if not super(statedict, self).__contains__(k):
-            return default
-        else:
-            return self.__getitem__(k)
 
 
 class WebBaser(WebDBer, BaserBase):
