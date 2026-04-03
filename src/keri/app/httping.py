@@ -28,19 +28,18 @@ CESR_DESTINATION_HEADER = "CESR-DESTINATION"
 
 
 class SignatureValidationComponent(object):
-    """ Validate SKWA signatures """
+    """Validate SKWA signatures"""
 
     def __init__(self, hby, pre):
         self.hby = hby
         self.pre = pre
 
     def process_request(self, req, resp):
-        """ Process request to ensure has a valid signature from controller
+        """Process request to ensure has a valid signature from controller
 
         Parameters:
             req: Http request object
             resp: Http response object
-
         """
         sig = req.headers.get("SIGNATURE")
         ked = req.media
@@ -78,13 +77,11 @@ class CesrRequest:
 
 
 def parseCesrHttpRequest(req):
-    """
-    Parse Falcon HTTP request and create a CESR message from the body of the request and the two
+    """Parse Falcon HTTP request and create a CESR message from the body of the request and the two
     CESR HTTP headers (Date, Attachment).
 
-    Parameters
+    Parameters:
         req (falcon.Request) http request object in CESR format:
-
     """
     if req.content_type != CESR_CONTENT_TYPE:
         raise falcon.HTTPError(falcon.HTTP_NOT_ACCEPTABLE,
@@ -113,15 +110,13 @@ def parseCesrHttpRequest(req):
 
 
 def createCESRRequest(msg, client, dest, path=None):
-    """
-    Turns a KERI message into a CESR http request against the provided hio http Client
+    """Turns a KERI message into a CESR http request against the provided hio http Client
 
-    Parameters
+    Parameters:
        msg:  KERI message parsable as Serder.raw
        dest (str): qb64 identifier prefix of destination controller
        client: hio http Client that will send the message as a CESR request
        path (str): path to post to
-
     """
     path = path if path is not None else "/"
 
@@ -152,18 +147,16 @@ def createCESRRequest(msg, client, dest, path=None):
 
 
 def streamCESRRequests(client, ims, dest, path=None, headers=None):
-    """
-    Turns a stream of KERI messages into CESR http requests against the provided hio http Client
+    """Turns a stream of KERI messages into CESR http requests against the provided hio http Client
 
-    Parameters
+    Parameters:
        client (Client): hio http Client that will send the message as a CESR request
        ims (bytearray):  stream of KERI messages parsable as Serder.raw
        dest (str): qb64 identifier prefix of destination controller
        path (str): path to post to
 
-    Returns
+    Returns:
        int: Number of individual requests posted
-
     """
     path = path if path is not None else "/"
     path = parse.urljoin(client.requester.path, path)
@@ -238,14 +231,13 @@ class Clienter(doing.DoDoer):
         super(Clienter, self).__init__(doers=doers)
 
     def request(self, method, url, body=None, headers=None):
-        """
-        Perform an HTTP request using a hio http Client and ClientDoer and returns the Client.
+        """Perform an HTTP request using a hio http Client and ClientDoer and returns the Client.
 
         Parameters:
             method (str): HTTP method to use (e.g., "GET", "POST")
             url (str): URL to send the request to
-            body (str or bytes, optional): Body of the request, defaults to None
-            headers (dict, optional): Headers to include in the request, defaults to None
+            body (str | bytes): Body of the request, defaults to None
+            headers (dict): Headers to include in the request, defaults to None
 
         Returns:
             http.clienting.Client: The hio HTTP Client used for the request, or None if an error occurs.
@@ -279,8 +271,7 @@ class Clienter(doing.DoDoer):
         return client
 
     def remove(self, client):
-        """
-        Find a client tuple by hio HTTP Client and remove it and its Doer from the Clienter.
+        """Find a client tuple by hio HTTP Client and remove it and its Doer from the Clienter.
 
         Parameters:
             client (http.clienting.Client): The hio HTTP Client to remove from the Clienter.
@@ -295,7 +286,7 @@ class Clienter(doing.DoDoer):
         super(Clienter, self).remove([doer])
 
     def clientDo(self, tymth, tock=0.0, **kwa):
-        """ Periodically prune stale clients
+        """Periodically prune stale clients
 
         Process existing clients and prune any that have receieved a response longer than timeout
 
@@ -303,7 +294,6 @@ class Clienter(doing.DoDoer):
             tymth (function): injected function wrapper closure returned by .tymen() of
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value
-
         """
         self.wind(tymth)
         self.tock = tock

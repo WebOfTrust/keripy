@@ -27,12 +27,12 @@ class Consoler(doing.Doer):
     """
 
     def __init__(self, db=None, console=None, **kwa):
-        """Initializes Consoler with optional database and console.
+        """Initializes Consoler with database and console.
 
-        Args:
-            db (Baser, optional): Database instance. Defaults to a new
+        Parameters:
+            db (Baser): Database instance. Defaults to a new
                 :class:`~keri.db.basing.Baser` instance if None.
-            console (serialing.Console, optional): Serial console instance.
+            console (serialing.Console): Serial console instance.
                 Defaults to a new :class:`~hio.core.serial.serialing.Console`
                 instance if None.
             **kwa: Additional keyword arguments passed to
@@ -47,8 +47,8 @@ class Consoler(doing.Doer):
 
         Called by the Doer framework when entering the task context.
 
-        Args:
-            temp (bool, optional): Unused. Reserved for interface compatibility.
+        Parameters:
+            temp (bool): Unused. Reserved for interface compatibility.
 
         Raises:
             IOError: If the console cannot be opened.
@@ -59,14 +59,20 @@ class Consoler(doing.Doer):
     def recur(self, tyme):
         """Reads one line from the console and dispatches a movement command.
 
-        Recognized commands (matched on the first character, case-insensitive):
+        Do 'recur' context actions. Override in subclass.
+        Regular method that perform repetitive actions once per invocation.
+        Assumes resource setup in .enter() and resource takedown in .exit()
+        (see ReDoer below for example of .recur that is a generator method)
 
-        - ``r`` / ``right``: turn right
-        - ``l`` / ``left``: turn left
-        - ``w`` / ``walk``: walk 1 step
-        - ``s`` / ``stop``: stop
+        .recur maybe implemented by a subclass either as a non-generator method
+        or a generator method. This stub here is as a non-generator method.
+        The base class .do detects which type:
+        If non-generator .do method runs .recur method once per iteration
+        until .recur returns (True)
+        If generator .do method runs .recur with (yield from) until .recur
+        returns (see ReDoer for example of generator .recur)
 
-        Args:
+        Parameters:
             tyme (float): Current loop time provided by the Doist scheduler.
 
         Returns:
