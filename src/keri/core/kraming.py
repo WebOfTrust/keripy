@@ -544,8 +544,7 @@ class Kramer:
 
         return False  # No matching seal digest found
 
-
-    def _storeNonAuthAttachments(self, key, **kwa):
+    def _storeNonAuthAttachments(self, key, senderId, **kwa):
         """Idempotently store non-authenticator attachments for a partially
         signed multi-key message pending threshold satisfaction.
 
@@ -565,10 +564,9 @@ class Kramer:
         for prefixer, number, diger, sigers in kwa.get('tsgs', []):
             for siger in sigers:
                 self.db.kramTSGS.add(key, (prefixer, number, diger, siger))
-        for item in kwa.get('sscs', []):
-            self.db.kramSSCS.add(key, item)
-        for item in kwa.get('ssts', []):
-            self.db.kramSSTS.add(key, item)
+        for prefixer, number, diger in kwa.get('ssts', []):
+            if prefixer.qb64 != senderId:
+                self.db.kramSSTS.add(key, (prefixer, number, diger))
         for item in kwa.get('frcs', []):
             self.db.kramFRCS.add(key, item)
         for item in kwa.get('tdcs', []):
@@ -763,7 +761,7 @@ class Kramer:
                     if sigResult.stale_tsgs:
                         kwa.setdefault('tsgs', [])
                         kwa['tsgs'].extend(sigResult.stale_tsgs)
-                    self._storeNonAuthAttachments(key, **kwa)
+                    self._storeNonAuthAttachments(key, senderId, **kwa)
 
                 # Check threshold using current kever's tholder
                 allSigs = existingSigs + newSigs
@@ -906,7 +904,7 @@ class Kramer:
                     if sigResult.stale_tsgs:
                         kwa.setdefault('tsgs', [])
                         kwa['tsgs'].extend(sigResult.stale_tsgs)
-                    self._storeNonAuthAttachments(key, **kwa)
+                    self._storeNonAuthAttachments(key, senderId, **kwa)
 
                     return None  # message pending
 
@@ -1003,7 +1001,7 @@ class Kramer:
                     if sigResult.stale_tsgs:
                         kwa.setdefault('tsgs', [])
                         kwa['tsgs'].extend(sigResult.stale_tsgs)
-                    self._storeNonAuthAttachments(partialKey, **kwa)
+                    self._storeNonAuthAttachments(partialKey, senderId, **kwa)
 
                 # Check threshold using current kever's tholder
                 allSigs = existingSigs + newSigs
@@ -1199,7 +1197,7 @@ class Kramer:
                     if sigResult.stale_tsgs:
                         kwa.setdefault('tsgs', [])
                         kwa['tsgs'].extend(sigResult.stale_tsgs)
-                    self._storeNonAuthAttachments(partialKey, **kwa)
+                    self._storeNonAuthAttachments(partialKey, senderId, **kwa)
 
                     return None  # message pending
                 else:
