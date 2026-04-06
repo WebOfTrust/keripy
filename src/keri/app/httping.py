@@ -43,7 +43,7 @@ class SignatureValidationComponent(object):
     def __init__(self, hby, pre):
         """Initializes SignatureValidationComponent.
 
-        Args:
+        Parameters:
             hby: Habery instance used to look up key state for ``pre``.
             pre (str): qb64 identifier prefix of the controller whose
                 signature must be present on every request.
@@ -59,7 +59,7 @@ class SignatureValidationComponent(object):
         ``401 Unauthorized`` and marks the response complete if validation
         fails, preventing further processing.
 
-        Args:
+        Parameters:
             req (falcon.Request): Incoming HTTP request object.
             resp (falcon.Response): Outgoing HTTP response object.
         """
@@ -78,7 +78,7 @@ class SignatureValidationComponent(object):
         indexed verfer in the current key state of ``self.pre`` against
         the corresponding siger.
 
-        Args:
+        Parameters:
             sig (str): Raw signature header value, parseable by
                 :func:`~keri.end.designature`.
             ser (bytes): Serialized data that was signed.
@@ -127,7 +127,7 @@ def parseCesrHttpRequest(req):
     Validates the ``Content-Type`` header, decodes the JSON body, and
     extracts the required ``CESR-ATTACHMENT`` header.
 
-    Args:
+    Parameters:
         req (falcon.Request): Incoming HTTP request object.  Must have
             ``Content-Type: application/cesr`` and a valid JSON body.
 
@@ -176,13 +176,13 @@ def createCESRRequest(msg, client, dest, path=None):
     :class:`~keri.core.SerderKERI`, strips it from the bytearray, treats
     the remainder as the attachment, and issues a ``POST`` via ``client``.
 
-    Args:
+    Parameters:
         msg (bytearray): Raw KERI message stream.  The leading event is
             consumed; remaining bytes become the attachment.
         client: hio HTTP ``Client`` instance used to send the request.
         dest (str): qb64 identifier prefix of the destination controller,
             written to the ``CESR-DESTINATION`` header.
-        path (str, optional): URL path to post to.  Defaults to ``"/"``.
+        path (str): URL path to post to.  Defaults to ``"/"``.
 
     Raises:
         ExtractionError: If fewer bytes are available than the declared
@@ -225,16 +225,16 @@ def streamCESRRequests(client, ims, dest, path=None, headers=None):
     ``0x7b`` / ``{`` byte).  Each event-plus-attachment pair is dispatched
     as a separate ``POST`` via ``client``.
 
-    Args:
+    Parameters:
         client: hio HTTP ``Client`` instance that will send each request.
         ims (bytearray): Stream of concatenated KERI messages.  Consumed
             in place as events and attachments are extracted.
         dest (str): qb64 identifier prefix of the destination controller,
             written to the ``CESR-DESTINATION`` header of every request.
-        path (str, optional): URL path to post to.  Defaults to ``"/"``.
+        path (str): URL path to post to.  Defaults to ``"/"``.
             Joined with ``client.requester.path`` using
             :func:`urllib.parse.urljoin`.
-        headers (Hict, optional): Additional headers merged into each
+        headers (Hict): Additional headers merged into each
             request after the standard CESR headers.  Defaults to an
             empty :class:`~hio.help.Hict`.
 
@@ -317,13 +317,10 @@ class Clienter(doing.DoDoer):
     TimeoutClient = 300  # seconds to wait for response before removing client, default is 5 minutes
 
     def __init__(self):
-        """Initialize clienter with an empty list of client tuples.
+        """Initializes Clienter with an empty client pool and registers :meth:`clientDo`.
 
-        Attributes:
-            clients (list[tuple]): Active client tuples, each containing a
-                ``ClientDoer`` instance, an hio HTTP ``Client`` instance,
-                and a ``datetime`` timestamp.
-            doers (list): Doers managed by this Clienter, initialized with clientDo.
+        The ``clientDo`` coroutine is wrapped with :func:`~hio.base.doing.doify`
+        and passed to the parent :class:`~hio.base.doing.DoDoer`.
         """
         self.clients = []
         doers = [doing.doify(self.clientDo)]
@@ -337,13 +334,13 @@ class Clienter(doing.DoDoer):
         :class:`~hio.core.http.clienting.ClientDoer`, and appends both to the
         internal ``clients`` list alongside the current UTC timestamp.
 
-        Args:
+        Parameters:
             method (str): HTTP method (e.g., ``"GET"``, ``"POST"``).
             url (str): Fully qualified URL including scheme, host, port, path,
                 and optional query string.
-            body (str or bytes, optional): Request body.  ``str`` values are
+            body (str | bytes): Request body.  ``str`` values are
                 encoded to UTF-8 before sending.  Defaults to ``None``.
-            headers (dict, optional): Request headers.  Defaults to ``None``.
+            headers (dict): Request headers.  Defaults to ``None``.
 
         Returns:
             hio.core.http.clienting.Client: The client used to send the request,
@@ -385,7 +382,7 @@ class Clienter(doing.DoDoer):
         removal to the parent :class:`~hio.base.doing.DoDoer`.  No-ops if
         ``client`` is not found.
 
-        Args:
+        Parameters:
             client (hio.core.http.clienting.Client): The client instance to
                 remove.
         """
@@ -406,7 +403,7 @@ class Clienter(doing.DoDoer):
         time since creation exceeds :attr:`TimeoutClient`, then removes
         them via :meth:`remove`.
 
-        Args:
+        Parameters:
             tymth (callable): Injected closure returned by ``.tymen()`` on
                 the governing :class:`~hio.base.tyming.Tymist`.  Calling
                 ``tymth()`` returns the current tyme.

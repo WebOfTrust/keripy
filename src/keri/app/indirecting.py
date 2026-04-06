@@ -47,22 +47,22 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     ForwardHandler, Exchanger, HTTP and (optionally) TCP servers, and all
     associated Doers required to run a witness node.
 
-    Args:
+    Parameters:
         hby (Habery): Habery instance that manages Hab creation and lookup.
         alias (str): Name of the witness Hab. Created if it does not exist.
             Defaults to ``"witness"``.
-        mbx (Mailboxer, optional): Mailbox storage instance. A new
+        mbx (Mailboxer): Mailbox storage instance. A new
             ``Mailboxer`` is created when ``None``. Defaults to ``None``.
-        aids (list, optional): Allowlist of AIDs this witness will receipt.
+        aids (list): Allowlist of AIDs this witness will receipt.
             ``None`` means no restriction. Defaults to ``None``.
         tcpPort (int): Port for the TCP server. Pass ``None`` to disable TCP.
             Defaults to ``5631``.
         httpPort (int): Port for the HTTP server. Defaults to ``5632``.
-        keypath (str, optional): File path to the TLS private key.
+        keypath (str): File path to the TLS private key.
             Defaults to ``None``.
-        certpath (str, optional): File path to the TLS signed certificate.
+        certpath (str): File path to the TLS signed certificate.
             Defaults to ``None``.
-        cafilepath (str, optional): File path to the TLS CA certificate chain.
+        cafilepath (str): File path to the TLS CA certificate chain.
             Defaults to ``None``.
 
     Returns:
@@ -158,16 +158,16 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
 def createHttpServer(host, port, app, keypath=None, certpath=None, cafilepath=None):
     """Create an HTTP or HTTPS server depending on whether TLS key material is present.
 
-    Args:
+    Parameters:
         host (str): Hostname or IP address to bind. Use ``"0.0.0.0"`` for all
             interfaces.
         port (int): Port to listen on.
         app: WSGI application instance passed to the ``http.Server``.
-        keypath (str, optional): File path to the TLS private key.
+        keypath (str): File path to the TLS private key.
             Defaults to ``None``.
-        certpath (str, optional): File path to the TLS signed certificate
+        certpath (str): File path to the TLS signed certificate
             (public key). Defaults to ``None``.
-        cafilepath (str, optional): File path to the TLS CA certificate chain.
+        cafilepath (str): File path to the TLS CA certificate chain.
             Defaults to ``None``.
 
     Returns:
@@ -211,20 +211,20 @@ class WitnessStart(doing.DoDoer):
     def __init__(self, hab, parser, kvy, tvy, rvy, exc, cues=None, replies=None, responses=None, queries=None, **opts):
         """Initialize WitnessStart.
 
-        Args:
+        Parameters:
             hab (Hab): Local witness Hab.
             parser (Parser): CESR stream parser.
             kvy (Kevery): KEL event processor.
             tvy (Tevery): TEL event processor.
             rvy (Revery): Reply-event router/processor.
             exc (Exchanger): Exchange (``exn``) message handler.
-            cues (Deck, optional): Inbound receipt cues from ``ReceiptEnd``.
+            cues (Deck): Inbound receipt cues from ``ReceiptEnd``.
                 A new ``Deck`` is created when ``None``. Defaults to ``None``.
-            replies (Deck, optional): Reply messages from the Respondant.
+            replies (Deck): Reply messages from the Respondant.
                 A new ``Deck`` is created when ``None``. Defaults to ``None``.
-            responses (Deck, optional): Non-stream outbound response cues.
+            responses (Deck): Non-stream outbound response cues.
                 A new ``Deck`` is created when ``None``. Defaults to ``None``.
-            queries (Deck, optional): Stream-kind cues forwarded to HTTP query
+            queries (Deck): Stream-kind cues forwarded to HTTP query
                 handlers. A new ``Deck`` is created when ``None``.
                 Defaults to ``None``.
             **opts: Keyword arguments forwarded to ``doing.DoDoer.__init__``.
@@ -247,8 +247,8 @@ class WitnessStart(doing.DoDoer):
         """Doer generator that waits for Hab initialization and prints the
         witness name and AID prefix to stdout.
 
-        Args:
-            tymth (callable, optional): Tymist tyme accessor closure injected
+        Parameters:
+            tymth (callable): Tymist tyme accessor closure injected
                 by the parent Doist or DoDoer.
             tock (float): Initial tock value in seconds. Defaults to ``0.0``.
             **kwa: Keyword arguments.
@@ -269,8 +269,8 @@ class WitnessStart(doing.DoDoer):
         """Doer generator that continuously processes the inbound CESR message
         stream via ``self.parser``.
 
-        Args:
-            tymth (callable, optional): Tymist tyme accessor closure injected
+        Parameters:
+            tymth (callable): Tymist tyme accessor closure injected
                 by the parent Doist or DoDoer.
             tock (float): Initial tock value in seconds. Defaults to ``0.0``.
             **kwa: Keyword arguments.
@@ -295,8 +295,8 @@ class WitnessStart(doing.DoDoer):
         """Doer generator that continuously drains the escrow queues of
         ``self.kvy``, ``self.rvy``, ``self.tvy``, and ``self.exc``.
 
-        Args:
-            tymth (callable, optional): Tymist tyme accessor closure injected
+        Parameters:
+            tymth (callable): Tymist tyme accessor closure injected
                 by the parent Doist or DoDoer.
             tock (float): Initial tock value in seconds. Defaults to ``0.0``.
             **kwa: Keyword arguments.
@@ -322,8 +322,8 @@ class WitnessStart(doing.DoDoer):
         ``self.queries`` (for ``stream``-kind cues) or ``self.responses``
         (for all other kinds).
 
-        Args:
-            tymth (callable, optional): Tymist tyme accessor closure injected
+        Parameters:
+            tymth (callable): Tymist tyme accessor closure injected
                 by the parent Doist or DoDoer.
             tock (float): Initial tock value in seconds. Defaults to ``0.0``.
             **kwa: Keyword arguments.
@@ -368,14 +368,14 @@ class Indirector(doing.DoDoer):
     def __init__(self, hab, client, direct=True, doers=None, **kwa):
         """Initialize Indirector.
 
-        Args:
+        Parameters:
             hab (Hab): Local controller Hab.
             client (hio.core.tcp.Client): TCP client for sending and receiving.
             direct (bool): ``True`` enables direct mode, which processes
                 receipt cues and sends chits back to the remote. ``False``
                 disables cue processing (indirect/cloned mode).
                 Defaults to ``True``.
-            doers (list, optional): Additional doers to include. Defaults to
+            doers (list): Additional doers to include. Defaults to
                 ``None``.
             **kwa: Keyword arguments forwarded to ``doing.DoDoer.__init__``.
         """
@@ -404,7 +404,7 @@ class Indirector(doing.DoDoer):
     def wind(self, tymth):
         """Inject a new Tymist tyme accessor and propagate it to the TCP client.
 
-        Args:
+        Parameters:
             tymth (callable): Tymist tyme accessor closure.
         """
         super(Indirector, self).wind(tymth)
@@ -414,8 +414,8 @@ class Indirector(doing.DoDoer):
         """Doer generator that continuously processes the inbound CESR message
         stream read from ``self.client.rxbs`` via ``self.parser``.
 
-        Args:
-            tymth (callable, optional): Tymist tyme accessor closure injected
+        Parameters:
+            tymth (callable): Tymist tyme accessor closure injected
                 by the parent Doist or DoDoer.
             tock (float): Initial tock value in seconds. Defaults to ``0.0``.
             **kwa: Keyword arguments
@@ -443,8 +443,8 @@ class Indirector(doing.DoDoer):
 
         Only scheduled when ``self.direct`` is ``True``.
 
-        Args:
-            tymth (callable, optional): Tymist tyme accessor closure injected
+        Parameters:
+            tymth (callable): Tymist tyme accessor closure injected
                 by the parent Doist or DoDoer.
             tock (float): Initial tock value in seconds. Defaults to ``0.0``.
             **kwa: Keyword arguments
@@ -466,8 +466,8 @@ class Indirector(doing.DoDoer):
         """Doer generator that continuously drains ``self.kevery``'s escrow
         queue.
 
-        Args:
-            tymth (callable, optional): Tymist tyme accessor closure injected
+        Parameters:
+            tymth (callable): Tymist tyme accessor closure injected
                 by the parent Doist or DoDoer.
             tock (float): Initial tock value in seconds. Defaults to ``0.0``.
             **kwa: Keyword arguments
@@ -486,7 +486,7 @@ class Indirector(doing.DoDoer):
     def sendMessage(self, msg, label=""):
         """Transmit a message to the remote and log it.
 
-        Args:
+        Parameters:
             msg (bytes | bytearray): Serialized CESR message to send.
             label (str): Human-readable label for log output.
                 Defaults to ``""``.
@@ -533,28 +533,28 @@ class MailboxDirector(doing.DoDoer):
                  tvy=None, witnesses=True, **kwa):
         """Initialize MailboxDirector.
 
-        Args:
+        Parameters:
             hby (Habery): Habery instance whose Habs are polled for mailbox
                 messages.
             topics (list[str]): Mailbox topic paths to subscribe to.
-            ims (bytearray, optional): Shared inbound message stream buffer.
+            ims (bytearray): Shared inbound message stream buffer.
                 A new ``bytearray`` is created when ``None``.
                 Defaults to ``None``.
-            verifier (Verifier, optional): TEL event verifier. When provided,
+            verifier (Verifier): TEL event verifier. When provided,
                 a ``Tevery`` is also created. Defaults to ``None``.
-            kvy (Kevery, optional): Pre-constructed KEL event processor.
+            kvy (Kevery): Pre-constructed KEL event processor.
                 A new ``Kevery`` is created when ``None``.
                 Defaults to ``None``.
-            exc (Exchanger, optional): Exchange (``exn``) message handler.
+            exc (Exchanger): Exchange (``exn``) message handler.
                 Defaults to ``None``.
-            rep (Respondant, optional): Respondant for reply messages.
+            rep (Respondant): Respondant for reply messages.
                 Defaults to ``None``.
-            cues (Deck, optional): Shared cue queue. A new ``Deck`` is created
+            cues (Deck): Shared cue queue. A new ``Deck`` is created
                 when ``None``. Defaults to ``None``.
-            rvy (Revery, optional): Pre-constructed reply-event processor.
+            rvy (Revery): Pre-constructed reply-event processor.
                 A new ``Revery`` is created when ``None``.
                 Defaults to ``None``.
-            tvy (Tevery, optional): Pre-constructed TEL event processor. Only
+            tvy (Tevery): Pre-constructed TEL event processor. Only
                 used when ``verifier`` is also provided. A new ``Tevery`` is
                 created when ``None`` and ``verifier`` is set.
                 Defaults to ``None``.
@@ -617,7 +617,7 @@ class MailboxDirector(doing.DoDoer):
     def wind(self, tymth):
         """Inject a new Tymist tyme accessor.
 
-        Args:
+        Parameters:
             tymth (callable): Tymist tyme accessor closure.
         """
         super(MailboxDirector, self).wind(tymth)
@@ -630,8 +630,8 @@ class MailboxDirector(doing.DoDoer):
         subsequent cycle, newly discovered prefixes are checked and pollers are
         added as needed.
 
-        Args:
-            tymth (callable, optional): Tymist tyme accessor closure injected
+        Parameters:
+            tymth (callable): Tymist tyme accessor closure injected
                 by the parent Doist or DoDoer.
             tock (float): Initial tock value in seconds. Defaults to ``0.0``.
 
@@ -670,7 +670,7 @@ class MailboxDirector(doing.DoDoer):
 
         Marks ``hab.pre`` in ``self.prefixes`` so it is not processed again.
 
-        Args:
+        Parameters:
             hab (Hab): The Hab whose mailbox endpoints and witnesses are polled.
         """
         for (_, erole, eid), end in hab.db.ends.getTopItemIter(keys=(hab.pre, Roles.mailbox)):
@@ -692,7 +692,7 @@ class MailboxDirector(doing.DoDoer):
         """Create and register a single :class:`Poller` sub-doer for a
         specific witness.
 
-        Args:
+        Parameters:
             hab (Hab): The Hab whose mailbox is being polled.
             witness (str): QB64 AID of the witness to poll.
         """
@@ -723,8 +723,8 @@ class MailboxDirector(doing.DoDoer):
         """Doer generator that continuously processes the inbound CESR message
         stream in ``self.ims`` via ``self.parser``.
 
-        Args:
-            tymth (callable, optional): Tymist tyme accessor closure injected
+        Parameters:
+            tymth (callable): Tymist tyme accessor closure injected
                 by the parent Doist or DoDoer.
             tock (float): Initial tock value in seconds. Defaults to ``0.0``.
 
@@ -747,8 +747,8 @@ class MailboxDirector(doing.DoDoer):
         ``self.kvy``, ``self.rvy``, ``self.exchanger``, ``self.tvy``, and
         ``self.verifier``.
 
-        Args:
-            tymth (callable, optional): Tymist tyme accessor closure injected
+        Parameters:
+            tymth (callable): Tymist tyme accessor closure injected
                 by the parent Doist or DoDoer.
             tock (float): Initial tock value in seconds. Defaults to ``0.0``.
 
@@ -812,11 +812,11 @@ class Poller(doing.DoDoer):
     def __init__(self, hab, witness, topics, msgs=None, retry=1000, **kwa):
         """Initialize Poller.
 
-        Args:
+        Parameters:
             hab (Hab): Local controller Hab used to build query messages.
             witness (str): QB64 AID of the witness mailbox to poll.
             topics (list[str]): Mailbox topic paths to subscribe to.
-            msgs (Deck, optional): Output message queue. A new ``Deck`` is
+            msgs (Deck): Output message queue. A new ``Deck`` is
                 created when ``None``. Defaults to ``None``.
             retry (int): Initial SSE retry interval in milliseconds.
                 Defaults to ``1000``.
@@ -843,8 +843,8 @@ class Poller(doing.DoDoer):
         bytes. Topic offsets are persisted to ``hab.db.tops`` after each
         event so polling resumes from the correct position on reconnect.
 
-        Args:
-            tymth (callable, optional): Tymist tyme accessor closure injected
+        Parameters:
+            tymth (callable): Tymist tyme accessor closure injected
                 by the parent Doist or DoDoer.
             tock (float): Initial tock value in seconds. Defaults to ``0.0``.
             **kwa: Keyword arguments
@@ -947,11 +947,11 @@ class HttpEnd:
     def __init__(self, rxbs=None, mbx=None, qrycues=None):
         """Initialize the KEL HTTP server.
 
-        Args:
-            rxbs (bytearray, optional): Shared inbound byte buffer. If not
+        Parameters:
+            rxbs (bytearray): Shared inbound byte buffer. If not
                 provided, a new ``bytearray`` is created.
-            mbx (Mailboxer, optional): Mailbox storage for serving SSE streams.
-            qrycues (Deck, optional): Queue for inbound query cues. If not
+            mbx (Mailboxer): Mailbox storage for serving SSE streams.
+            qrycues (Deck): Queue for inbound query cues. If not
                 provided, a new ``Deck`` instance is created.
         """
         self.rxbs = rxbs if rxbs is not None else bytearray()
@@ -970,7 +970,7 @@ class HttpEnd:
               with HTTP 200 status.
             - All other valid KERI message types: returns HTTP 204 (No Content).
 
-        Args:
+        Parameters:
             req (falcon.Request): Incoming HTTP request containing a KERI event.
             rep (falcon.Response): HTTP response object to populate.
         """
@@ -1016,7 +1016,7 @@ class HttpEnd:
 
         Always responds with HTTP 204 (No Content).
 
-        Args:
+        Parameters:
             req (falcon.Request): Incoming HTTP request containing raw bytes.
             rep (falcon.Response): HTTP response object to populate.
 
@@ -1078,7 +1078,7 @@ class QryRpyMailboxIterable:
     def __init__(self, cues, mbx, said, retry=5000):
         """Initialize QryRpyMailboxIterable.
 
-        Args:
+        Parameters:
             cues (Deck): Queue of ``stream``-kind query cues.
             mbx (Mailboxer): Mailbox storage for event replay.
             said (str): SAID of the originating ``qry`` event; used to match
@@ -1142,13 +1142,13 @@ class MailboxIterable:
     def __init__(self, mbx, pre, topics, retry=5000):
         """Initialize the MailboxIterable.
 
-        Args:
+        Parameters:
             mbx (Mailboxer): Mailbox storage instance used for retrieving
                 messages.
             pre (str): QB64 AID prefix identifying the mailbox.
             topics (dict[str, int]): Mapping of topic names to starting
                 sequence numbers. This mapping is updated in place.
-            retry (int, optional): SSE retry interval in milliseconds.
+            retry (int): SSE retry interval in milliseconds.
                 Defaults to ``5000``.
         """
         self.mbx = mbx
@@ -1241,14 +1241,14 @@ class ReceiptEnd(doing.DoDoer):
     def __init__(self, hab, inbound=None, outbound=None, aids=None):
         """Initialize ReceiptEnd.
 
-        Args:
+        Parameters:
             hab (Hab): Local witness Hab.
-            inbound (Deck, optional): Inbound cue queue from Kevery. A new
+            inbound (Deck): Inbound cue queue from Kevery. A new
                 ``Deck`` is created when ``None``. Defaults to ``None``.
-            outbound (Deck, optional): Outbound cue queue consumed by the
+            outbound (Deck): Outbound cue queue consumed by the
                 witness cue pipeline. A new ``Deck`` is created when ``None``.
                 Defaults to ``None``.
-            aids (list, optional): Allowlist of AIDs to receipt. ``None``
+            aids (list): Allowlist of AIDs to receipt. ``None``
                 means no restriction. Defaults to ``None``.
         """
         self.hab = hab
@@ -1269,7 +1269,7 @@ class ReceiptEnd(doing.DoDoer):
         and returns the receipt inline. When the event is not yet in
         ``self.hab.kevers`` (still in escrow), responds with ``202 Accepted``.
 
-        Args:
+        Parameters:
             req (falcon.Request): Incoming Falcon HTTP request.
             rep (falcon.Response): Outgoing Falcon HTTP response.
 
@@ -1327,13 +1327,13 @@ class ReceiptEnd(doing.DoDoer):
         the receipt with indexed witness signatures from ``hab.db.wigs``, and
         returns it as CESR bytes.
 
-        Args:
+        Parameters:
             req (falcon.Request): Incoming Falcon HTTP request. Expected query
                 parameters:
 
                 - ``pre`` (str, required): AID prefix of the event.
-                - ``sn`` (int, optional): Sequence number of the event.
-                - ``said`` (str, optional): SAID of the event. Required when
+                - ``sn`` (int): Sequence number of the event.
+                - ``said`` (str): SAID of the event. Required when
                   ``sn`` is omitted.
 
             rep (falcon.Response): Outgoing Falcon HTTP response.
@@ -1392,8 +1392,8 @@ class ReceiptEnd(doing.DoDoer):
 
         Non-``receipt`` cues are forwarded to ``self.outbound`` unconditionally.
 
-        Args:
-            tymth (callable, optional): Tymist tyme accessor closure injected
+        Parameters:
+            tymth (callable): Tymist tyme accessor closure injected
                 by the parent Doist or DoDoer.
             tock (float): Initial tock value in seconds. Defaults to ``0.0``.
 
@@ -1448,7 +1448,7 @@ class QueryEnd:
     def __init__(self, hab, reger):
         """Initialize the QueryEnd endpoint.
 
-        Args:
+        Parameters:
             hab (Hab): Local witness habitat. Its associated database is used
                 to retrieve KEL events, and is also passed to the registry
                 handler for TEL queries.
@@ -1463,7 +1463,7 @@ class QueryEnd:
         Depending on the ``typ`` query parameter, this method retrieves and
         streams either KEL or TEL events.
 
-        Args:
+        Parameters:
             req (falcon.Request): Incoming HTTP request. Expected query
                 parameters:
 

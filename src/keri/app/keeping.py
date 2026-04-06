@@ -180,7 +180,7 @@ def riKey(pre, ri):
     characters so that lexicographic ordering of keys matches numeric ordering
     of rotation indexes.
 
-    Args:
+    Parameters:
         pre (str | bytes): Fully qualified Base64 identifier prefix. A
             ``str`` is UTF-8 encoded to ``bytes`` automatically.
         ri (int): Rotation index of the establishment event. Inception has
@@ -201,7 +201,7 @@ def openKS(name="test", **kwa):
     database class, so callers receive a temporary or persistent LMDB-backed
     key store without having to reference :class:`Keeper` directly.
 
-    Args:
+    Parameters:
         name (str): Directory path name component used to differentiate
             multiple database instances. Defaults to ``"test"``.
         **kwa: Additional keyword arguments forwarded to :func:`openLMDB`
@@ -303,7 +303,7 @@ class Keeper(LMDBer):
         than the :class:`LMDBer` base default) to protect private key
         material, then delegates to :meth:`LMDBer.__init__`.
 
-        Args:
+        Parameters:
             headDirPath (str | None): Override for the head directory path of
                 the LMDB environment.  ``None`` uses the class-level default.
             perm (int | None): Numeric OS permissions mode applied to the
@@ -330,7 +330,7 @@ class Keeper(LMDBer):
         with ``'.'`` to avoid namespace collisions with Base64 identifier
         prefixes.
 
-        Args:
+        Parameters:
             **kwa: Keyword arguments forwarded to :meth:`LMDBer.reopen`.
 
         Returns:
@@ -400,7 +400,7 @@ class KeeperDoer(doing.Doer):
     def __init__(self, keeper, **kwa):
         """Initialize the KeeperDoer.
 
-        Args:
+        Parameters:
             keeper (Keeper): The :class:`Keeper` instance whose lifecycle
                 this doer manages.
             **kwa: Additional keyword arguments forwarded to
@@ -415,7 +415,7 @@ class KeeperDoer(doing.Doer):
 
         Called automatically when the doer enters its execution context.
 
-        Args:
+        Parameters:
             temp (bool | None): Unused; present for interface compatibility.
         """
         if not self.keeper.opened:
@@ -442,7 +442,7 @@ class Creator:
     def __init__(self, **kwa):
         """Initialize the Creator.
 
-        Args:
+        Parameters:
             **kwa: Accepted for subclass compatibility; not used by the base
                 class.
         """
@@ -450,7 +450,7 @@ class Creator:
     def create(self, **kwa):
         """Create and return key-pair signers.
 
-        Args:
+        Parameters:
             **kwa: Algorithm-specific parameters defined by subclasses.
 
         Returns:
@@ -486,7 +486,7 @@ class RandyCreator(Creator):
     def __init__(self, **kwa):
         """Initialize the RandyCreator.
 
-        Args:
+        Parameters:
             **kwa: Forwarded to :class:`Creator.__init__`.
         """
         super(RandyCreator, self).__init__(**kwa)
@@ -498,7 +498,7 @@ class RandyCreator(Creator):
         When ``codes`` is not provided, ``count`` signers are created, each
         using ``code`` as their derivation code.
 
-        Args:
+        Parameters:
             codes (list[str] | None): Derivation codes, one per key pair.
                 When provided, its length determines the number of signers
                 created and ``count`` / ``code`` are ignored.
@@ -540,7 +540,7 @@ class SaltyCreator(Creator):
     def __init__(self, salt=None, stem=None, tier=None, **kwa):
         """Initialize the SaltyCreator.
 
-        Args:
+        Parameters:
             salt (str | None): Fully qualified qb64 root salt.  ``None``
                 causes :class:`Salter` to generate a fresh random salt.
             stem (str | None): Unique path stem prepended to the per-key
@@ -581,7 +581,7 @@ class SaltyCreator(Creator):
         passed to :meth:`Salter.signer` to stretch the salt into a private
         key.
 
-        Args:
+        Parameters:
             codes (list[str] | None): Derivation codes, one per key pair.
                 When provided, its length determines the number of signers
                 and ``count`` / ``code`` are ignored.
@@ -636,7 +636,7 @@ class Creatory:
     def __init__(self, algo=Algos.salty):
         """Initialize the Creatory factory.
 
-        Args:
+        Parameters:
             algo (str): Key-creation algorithm code.  Supported values are
                 ``Algos.randy`` and ``Algos.salty``.
 
@@ -653,7 +653,7 @@ class Creatory:
     def make(self, **kwa):
         """Construct and return a :class:`Creator` subclass for the configured algorithm.
 
-        Args:
+        Parameters:
             **kwa: Keyword arguments forwarded to the selected creator
                 constructor (e.g. ``salt``, ``stem``, ``tier`` for
                 :class:`SaltyCreator`).
@@ -668,7 +668,7 @@ class Creatory:
     def _makeRandy(self, **kwa):
         """Construct and return a :class:`RandyCreator`.
 
-        Args:
+        Parameters:
             **kwa: Forwarded to :class:`RandyCreator.__init__`.
 
         Returns:
@@ -680,7 +680,7 @@ class Creatory:
     def _makeSalty(self, **kwa):
         """Construct and return a :class:`SaltyCreator`.
 
-        Args:
+        Parameters:
             **kwa: Forwarded to :class:`SaltyCreator.__init__`.
 
         Returns:
@@ -726,7 +726,7 @@ class Manager:
         initialization is deferred until :meth:`setup` is called explicitly
         (or via :class:`ManagerDoer`).
 
-        Args:
+        Parameters:
             ks (Keeper | None): Key store instance. A new default
                 :class:`Keeper` opened with ``reopen=True`` is created when
                 ``None``.
@@ -768,7 +768,7 @@ class Manager:
         later once the database becomes available (e.g., via
         :class:`ManagerDoer`).
 
-        Args:
+        Parameters:
             aeid (str | None): Fully qualified qb64 non-transferable
                 identifier prefix for authentication and encryption.
                 Behavior depends on the relationship to the value already
@@ -857,7 +857,7 @@ class Manager:
         Providing an empty ``aeid`` removes encryption at rest: all secrets
         are stored as plain text and no ``aeid`` is persisted.
 
-        Args:
+        Parameters:
             aeid (str): Fully qualified qb64 of the new authentication and
                 encryption identifier (public signing key), or empty string
                 to disable encryption at rest.
@@ -953,7 +953,7 @@ class Manager:
     def pidx(self, pidx):
         """Set the prefix index in the keeper database.
 
-        Args:
+        Parameters:
             pidx (int): New prefix index value.  Stored as a hex string.
         """
         self.ks.gbls.pin("pidx", "%x" % pidx)
@@ -973,7 +973,7 @@ class Manager:
     def algo(self, algo):
         """Set the default root algorithm code in the keeper database.
 
-        Args:
+        Parameters:
             algo (str): Algorithm code to store (e.g. ``Algos.salty``).
         """
         self.ks.gbls.pin('algo', algo)
@@ -998,7 +998,7 @@ class Manager:
     def salt(self, salt):
         """Store the root salt in the keeper database, encrypting it when configured.
 
-        Args:
+        Parameters:
             salt (str): Fully qualified qb64 root salt.  Encrypted with the
                 current :attr:`encrypter` before storage when one is
                 configured; stored as plain qb64 otherwise.
@@ -1022,7 +1022,7 @@ class Manager:
     def tier(self, tier):
         """Set the default security tier in the keeper database.
 
-        Args:
+        Parameters:
             tier (str): Security tier value (e.g. a member of
                 :class:`Tiers`).
         """
@@ -1048,7 +1048,7 @@ class Manager:
         prefix.  Call :meth:`move` afterwards to migrate the records to the
         permanent prefix.
 
-        Args:
+        Parameters:
             icodes (list[str] | None): Derivation codes for each inception
                 key pair.  When ``None``, ``icount`` key pairs are created
                 using ``icode``.
@@ -1199,7 +1199,7 @@ class Manager:
         If ``old == new``, this method returns immediately without any
         changes.
 
-        Args:
+        Parameters:
             old (str): The old (temporary) identifier prefix under which
                 records are currently stored.
             new (str): The new (permanent) identifier prefix to migrate
@@ -1279,7 +1279,7 @@ class Manager:
           ``ps.new`` (active signers).
         * Newly generated signers — stored as the new ``ps.nxt``.
 
-        Args:
+        Parameters:
             pre (str): Fully qualified qb64 identifier prefix to rotate.
             ncodes (list[str] | None): Derivation codes for each new next
                 key pair.  When ``None``, ``ncount`` key pairs are created
@@ -1418,7 +1418,7 @@ class Manager:
             a ``TypeError`` when the subsequent iteration over ``verfers``
             (which is ``None``) is attempted.
 
-        Args:
+        Parameters:
             ser (bytes): The serialized data to sign.
             pubs (list[str] | None): Fully qualified qb64 public keys whose
                 private keys are looked up in the database.  Takes precedence
@@ -1550,7 +1550,7 @@ class Manager:
         result of the final successful decryption is returned; provide a
         single public key in the normal case.
 
-        Args:
+        Parameters:
             qb64 (str | bytes | bytearray | memoryview): Fully qualified
                 Base64 sealed-box ciphertext to decrypt.
             pubs (list[str] | None): Fully qualified qb64 public keys whose
@@ -1646,7 +1646,7 @@ class Manager:
         Typical use cases are import from an external key store and recovery
         from backup.
 
-        Args:
+        Parameters:
             secrecies (list[list[str]]): Ordered list of lists of fully
                 qualified qb64 private key secrets.  The outer list is in
                 establishment event order; each inner list contains the
@@ -1825,7 +1825,7 @@ class Manager:
         When ``advance=False``, the current ``ps.new`` is returned without
         any state update, providing a read-only view of the active key set.
 
-        Args:
+        Parameters:
             pre (str): Fully qualified qb64 identifier prefix to replay.
             dcode (str): Derivation code for computing next key digests.
                 Defaults to ``MtrDex.Blake3_256``.
@@ -1941,7 +1941,7 @@ class ManagerDoer(doing.Doer):
     def __init__(self, manager, **kwa):
         """Initialize the ManagerDoer.
 
-        Args:
+        Parameters:
             manager (Manager): The :class:`Manager` instance to initialize
                 on enter.
             **kwa: Additional keyword arguments forwarded to
@@ -1958,7 +1958,7 @@ class ManagerDoer(doing.Doer):
         Passes the keyword arguments captured in ``manager._inits`` at
         construction time to :meth:`Manager.setup`.
 
-        Args:
+        Parameters:
             temp (bool | None): Unused; present for interface compatibility.
         """
         if not self.manager.inited:

@@ -37,10 +37,10 @@ Result = Resultage(resolved='resolved', failed='failed')
 def loadEnds(app, *, hby, prefix=""):
     """Register OOBI HTTP endpoints on the Falcon application.
 
-    Args:
+    Parameters:
         app (falcon.App): Falcon WSGI application instance.
         hby (Habery): Identifier database environment.
-        prefix (str, optional): Route prefix for mounting endpoints.
+        prefix (str): Route prefix for mounting endpoints.
 
     Returns:
         list: Empty list (no doers registered).
@@ -53,7 +53,7 @@ def loadEnds(app, *, hby, prefix=""):
 def loadHandlers(hby, exc, notifier):
     """Load handlers for the peer-to-peer delegation protocols
 
-    Args:
+    Parameters:
         hby (Habery): Database and keystore for environment
         exc (Exchanger): Peer-to-peer message router
         notifier (Notifier): Outbound notifications
@@ -68,7 +68,7 @@ class OobiResource:
     def __init__(self, hby):
         """Initialize OOBI resource endpoints.
 
-        Args:
+        Parameters:
             hby (Habery): Identifier database environment.
         """
         self.hby = hby
@@ -76,10 +76,10 @@ class OobiResource:
     def on_get_alias(self, req, rep, alias=None):
         """Handle GET requests to generate OOBIs for an identifier.
 
-        Args:
+        Parameters:
             req (falcon.Request): HTTP request object.
             rep (falcon.Response): HTTP response object.
-            alias (str, optional): Human-readable alias of the identifier.
+            alias (str): Human-readable alias of the identifier.
 
         Query Parameters:
             role (str): Role for which to generate OOBIs. Supported values
@@ -140,15 +140,15 @@ class OobiResource:
     def on_post(self, req, rep):
         """Handle POST requests to resolve an OOBI.
 
-        Args:
+        Parameters:
             req (falcon.Request): HTTP request object.
             rep (falcon.Response): HTTP response object.
 
         Request Body:
             application/json:
-                url (str, optional): OOBI URL to resolve.
-                rpy (dict, optional): Unsigned KERI reply message (not implemented).
-                oobialias (str, optional): Alias to assign to resolved identifier.
+                url (str): OOBI URL to resolve.
+                rpy (dict): Unsigned KERI reply message (not implemented).
+                oobialias (str): Alias to assign to resolved identifier.
 
         Behavior:
             - Stores OOBI URL for asynchronous resolution.
@@ -190,7 +190,7 @@ class OobiRequestHandler:
     def __init__(self, hby, notifier):
         """Initialize OOBI request handler.
 
-        Args:
+        Parameters:
             hby (Habery): Identifier database environment.
             notifier (Notifier): Notification dispatcher for outbound events.
         """
@@ -200,9 +200,9 @@ class OobiRequestHandler:
     def handle(self, serder, attachments=None):
         """Process an incoming OOBI request EXN message.
 
-        Args:
+        Parameters:
             serder (Serder): Serialized EXN message.
-            attachments (list, optional): CESR attachments associated with the message.
+            attachments (list): CESR attachments associated with the message.
 
         Behavior:
             - Extracts OOBI URL from the message payload.
@@ -239,7 +239,7 @@ class OobiRequestHandler:
 def oobiRequestExn(hab, dest, oobi):
     """Create an EXN message requesting OOBI resolution.
 
-    Args:
+    Parameters:
         hab (Hab): Local habitat initiating the request.
         dest (str): Recipient identifier prefix.
         oobi (str): OOBI URL.
@@ -279,11 +279,11 @@ class Oobiery:
     def __init__(self, hby, rvy=None, clienter=None, cues=None):
         """Initialize OOBI resolver.
 
-        Args:
+        Parameters:
             hby (Habery): Identifier database environment.
-            rvy (Revery, optional): Reply verifier for processing `rpy` messages.
-            clienter (Clienter, optional): HTTP client manager.
-            cues (decking.Deck, optional): Output queue for resolution events.
+            rvy (Revery): Reply verifier for processing `rpy` messages.
+            clienter (Clienter): HTTP client manager.
+            cues (decking.Deck): Output queue for resolution events.
 
         Behavior:
             - Sets up HTTP client handling.
@@ -313,7 +313,7 @@ class Oobiery:
     def registerReplyRoutes(self, router):
         """Register reply routes for OOBI-related messages.
 
-        Args:
+        Parameters:
             router (Router): Reply message router.
 
         Behavior:
@@ -324,12 +324,12 @@ class Oobiery:
     def processReply(self, *, serder, diger, route, cigars=None, tsgs=None, **kwargs):
         """Process a reply message for OOBI introduction.
 
-        Args:
+        Parameters:
             serder (SerderKERI): Parsed reply message.
             diger (Diger): Digest of the message.
             route (str): Reply route (must be ``/introduce``).
-            cigars (list, optional): Non-transferable signature attachments.
-            tsgs (list, optional): Transferable signature groups.
+            cigars (list): Non-transferable signature attachments.
+            tsgs (list): Transferable signature groups.
 
         Raises:
             ValidationError: Invalid route or missing required fields.
@@ -395,9 +395,9 @@ class Oobiery:
     def scoobiDo(self, tymth=None, tock=0.0, **kwa):
         """Generator for periodic OOBI processing.
 
-        Args:
-            tymth (Callable, optional): Time function from scheduler.
-            tock (float, optional): Scheduling interval.
+        Parameters:
+            tymth (Callable): Time function from scheduler.
+            tock (float): Scheduling interval.
 
         Yields:
             float: Next scheduling interval.
@@ -635,7 +635,7 @@ class Oobiery:
     def request(self, url, obr):
         """Initiate HTTP request for an OOBI.
 
-        Args:
+        Parameters:
             url (str): OOBI URL.
             obr (OobiRecord): Associated OOBI record.
 
@@ -656,7 +656,7 @@ class Oobiery:
     def processMultiOobiRpy(self, url, serder, mobr):
         """Process multi-OOBI reply message.
 
-        Args:
+        Parameters:
             url (str): Source OOBI URL.
             serder (SerderKERI): Parsed reply message.
             mobr (OobiRecord): Multi-OOBI record.
@@ -693,9 +693,9 @@ class Authenticator:
     def __init__(self, hby, clienter=None):
         """Initialize authenticator.
 
-        Args:
+        Parameters:
             hby (Habery): Identifier database environment.
-            clienter (Clienter, optional): HTTP client manager.
+            clienter (Clienter): HTTP client manager.
         """
         self.hby = hby
         self.clienter = clienter if clienter is not None else Clienter()
@@ -705,7 +705,7 @@ class Authenticator:
     def request(self, wurl, obr):
         """Initiate request for well-known OOBI authentication.
 
-        Args:
+        Parameters:
             wurl (str): Well-known OOBI URL.
             obr (OobiRecord): Associated record.
         """
@@ -718,7 +718,7 @@ class Authenticator:
     def addAuthToAid(self, cid, url):
         """Associate authentication URL with an identifier.
 
-        Args:
+        Parameters:
             cid (str): Controller identifier prefix.
             url (str): Authentication endpoint URL.
         """
@@ -729,9 +729,9 @@ class Authenticator:
     def authzDo(self, tymth=None, tock=0.0, **kwa):
         """Generator for authentication processing loop.
 
-        Args:
-            tymth (Callable, optional): Time function from scheduler.
-            tock (float, optional): Scheduling interval.
+        Parameters:
+            tymth (Callable): Time function from scheduler.
+            tock (float): Scheduling interval.
 
         Yields:
             float: Next scheduling interval.

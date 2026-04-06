@@ -20,13 +20,13 @@ from .signaling import Signaler
 def notice(attrs, dt=None, read=False):
     """Create a Notice instance.
 
-    Args:
+    Parameters:
         attrs (dict): Arbitrary payload describing the notification.
-        dt (str | datetime, optional): Datetime for the notice. If a
+        dt (str | datetime): Datetime for the notice. If a
             ``datetime`` object is provided it is converted to ISO 8601
             format via its ``isoformat()`` method. Defaults to the current
             time via ``nowIso8601()``.
-        read (bool, optional): Whether the notice is marked as read.
+        read (bool): Whether the notice is marked as read.
             Defaults to ``False``.
 
     Returns:
@@ -66,11 +66,11 @@ class Notice(Dicter):
         The ``note`` argument is forwarded to the base class as the
         ``dicter`` parameter.
 
-        Args:
-            raw (bytes, optional): Serialized notice data. Defaults to ``b''``.
-            pad (dict, optional): Structured notice data. Must contain at least
+        Parameters:
+            raw (bytes): Serialized notice data. Defaults to ``b''``.
+            pad (dict): Structured notice data. Must contain at least
                 the key ``"a"`` (attributes). Defaults to ``None``.
-            note (Dicter, optional): An existing :class:`Dicter` instance used
+            note (Dicter): An existing :class:`Dicter` instance used
                 to initialize the notice. Defaults to ``None``.
 
         Raises:
@@ -104,7 +104,7 @@ class Notice(Dicter):
     def read(self, val):
         """Set the read status flag.
 
-        Args:
+        Parameters:
             val (bool): The new read state to apply.
         """
         pad = self.pad
@@ -125,9 +125,9 @@ class DicterSuber(Suber):
     def __init__(self, *pa, klas: Type[Dicter] = Dicter, **kwa):
         """Initialize the sub-database.
 
-        Args:
+        Parameters:
             *pa: Positional arguments forwarded to :class:`Suber`.
-            klas (Type[Dicter], optional): Class used for deserializing stored
+            klas (Type[Dicter]): Class used for deserializing stored
                 bytes. Defaults to :class:`Dicter`.
             **kwa: Keyword arguments forwarded to :class:`Suber`.
         """
@@ -137,7 +137,7 @@ class DicterSuber(Suber):
     def put(self, keys: Union[str, Iterable], val: Dicter):
         """Store a value without overwriting an existing entry.
 
-        Args:
+        Parameters:
             keys (str | Iterable): Components used to construct the database
                 key.
             val (Dicter): The :class:`Dicter` instance to store.
@@ -153,7 +153,7 @@ class DicterSuber(Suber):
     def pin(self, keys: Union[str, Iterable], val: Dicter):
         """Store a value, overwriting any existing entry.
 
-        Args:
+        Parameters:
             keys (str | Iterable): Components used to construct the database
                 key.
             val (Dicter): The :class:`Dicter` instance to store.
@@ -168,7 +168,7 @@ class DicterSuber(Suber):
     def get(self, keys: Union[str, Iterable]):
         """Retrieve and deserialize a value by key.
 
-        Args:
+        Parameters:
             keys (str | Iterable): Components used to construct the database
                 key.
 
@@ -182,7 +182,7 @@ class DicterSuber(Suber):
     def rem(self, keys: Union[str, Iterable]):
         """Remove an entry from the sub-database by key.
 
-        Args:
+        Parameters:
             keys (str | Iterable): Components used to construct the database
                 key.
 
@@ -195,8 +195,8 @@ class DicterSuber(Suber):
     def getTopItemIter(self, keys: Union[str, Iterable] = b""):
         """Iterate over entries whose key matches a given prefix.
 
-        Args:
-            keys (str | Iterable, optional): Prefix components used to filter
+        Parameters:
+            keys (str | Iterable): Prefix components used to filter
                 entries. Defaults to ``b""`` which matches all entries.
 
         Yields:
@@ -226,11 +226,11 @@ class Noter(LMDBer):
     def __init__(self, name="not", headDirPath=None, reopen=True, **kwa):
         """Initialize the notifier database.
 
-        Args:
-            name (str, optional): Database name. Defaults to ``"not"``.
-            headDirPath (str, optional): Base directory path. Defaults to
+        Parameters:
+            name (str): Database name. Defaults to ``"not"``.
+            headDirPath (str): Base directory path. Defaults to
                 ``None``.
-            reopen (bool, optional): Whether to open the database immediately.
+            reopen (bool): Whether to open the database immediately.
                 Defaults to ``True``.
             **kwa: Additional keyword arguments forwarded to :class:`LMDBer`.
         """
@@ -245,7 +245,7 @@ class Noter(LMDBer):
 
         Initializes the ``notes``, ``nidx``, and ``ncigs`` sub-databases.
 
-        Args:
+        Parameters:
             **kwa: Additional keyword arguments forwarded to
                 :meth:`LMDBer.reopen`.
 
@@ -268,7 +268,7 @@ class Noter(LMDBer):
         composite key ``(dt, rid)`` in ``notes``. Does nothing if a notice
         with the same ``rid`` already exists in the index.
 
-        Args:
+        Parameters:
             note (Notice): The notice to store.
             cigar (Cigar): Cryptographic signature over the serialized notice.
 
@@ -291,7 +291,7 @@ class Noter(LMDBer):
         Overwrites the stored datetime index, signature, and notice body for
         the given ``rid``. The notice must already exist in the index.
 
-        Args:
+        Parameters:
             note (Notice): The updated notice. Its ``rid`` must match an
                 existing entry.
             cigar (Cigar): Cryptographic signature over the serialized notice.
@@ -312,7 +312,7 @@ class Noter(LMDBer):
     def get(self, rid):
         """Retrieve a notice and its signature by identifier.
 
-        Args:
+        Parameters:
             rid (str): QB64 identifier of the notice.
 
         Returns:
@@ -335,7 +335,7 @@ class Noter(LMDBer):
         Removes the notice from ``notes``, its index entry from ``nidx``,
         and its signature from ``ncigs``.
 
-        Args:
+        Parameters:
             rid (str): QB64 identifier of the notice.
 
         Returns:
@@ -368,10 +368,10 @@ class Noter(LMDBer):
         up to ``(end - start) + 1`` notices. Pass ``end=-1`` to collect all
         remaining notices after ``start``.
 
-        Args:
-            start (int, optional): Zero-based count of notices to skip before
+        Parameters:
+            start (int): Zero-based count of notices to skip before
                 collecting. Defaults to ``0``.
-            end (int, optional): Inclusive upper bound controlling how many
+            end (int): Inclusive upper bound controlling how many
                 notices are returned: ``(end - start) + 1`` notices are
                 collected. Pass ``-1`` to return all remaining notices after
                 ``start``. Defaults to ``25``.
@@ -407,13 +407,13 @@ class Notifier:
     def __init__(self, hby, signaler=None, noter=None):
         """Initialize the notifier.
 
-        Args:
+        Parameters:
             hby (Habery): Habitat environment providing a ``signator`` for
                 signing and verification.
-            signaler (Signaler, optional): Signaling interface used to push
+            signaler (Signaler): Signaling interface used to push
                 notification events. Defaults to a new :class:`Signaler`
                 instance.
-            noter (Noter, optional): Persistent storage backend. Defaults to a
+            noter (Noter): Persistent storage backend. Defaults to a
                 new :class:`Noter` instance scoped to ``hby.name``.
         """
         self.hby = hby
@@ -427,7 +427,7 @@ class Notifier:
         ``hby.signator``, and persists it via :meth:`Noter.add`. On success,
         pushes an ``"add"`` signal to the ``"/notification"`` topic.
 
-        Args:
+        Parameters:
             attrs (dict): Notification payload.
 
         Returns:
@@ -454,7 +454,7 @@ class Notifier:
         stored signature before pushing a ``"rem"`` signal. The signal is
         only sent when both removal and signature verification succeed.
 
-        Args:
+        Parameters:
             rid (str): QB64 identifier of the notice.
 
         Returns:
@@ -486,7 +486,7 @@ class Notifier:
         persists it via :meth:`Noter.update`. Pushes a ``"mar"`` signal on
         success.
 
-        Args:
+        Parameters:
             rid (str): QB64 identifier of the notice.
 
         Returns:
@@ -537,10 +537,10 @@ class Notifier:
         Delegates to :meth:`Noter.getNotes` and verifies the signature of
         every returned notice.
 
-        Args:
-            start (int, optional): Zero-based count of notices to skip before
+        Parameters:
+            start (int): Zero-based count of notices to skip before
                 collecting. Defaults to ``0``.
-            end (int, optional): Inclusive upper bound passed to
+            end (int): Inclusive upper bound passed to
                 :meth:`Noter.getNotes` controlling how many notices are
                 returned. Defaults to ``24``.
 
