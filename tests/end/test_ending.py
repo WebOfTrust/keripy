@@ -19,9 +19,10 @@ from keri.help import helping
 from keri.core import Salter, SerderKERI, dumps
 from keri.app import openHby, openHab
 from keri.end import (Signage, Mimes, KeriMimes,
-                      signature, designature, loadEndingEnds,
+                      signature, designature,
                       desiginput, normalize, setup)
-from keri.end.ending import siginput as sigInputEnding
+from keri.end.ending import (siginput as sigInputEnding,
+                             loadEnds)
 
 logger = ogler.getLogger()
 
@@ -234,7 +235,7 @@ def test_get_static_sink():
     tymist = tyming.Tymist(tyme=0.0)
 
     myapp = falcon.App()  # falcon.App instances are callable WSGI apps
-    loadEndingEnds(myapp, hby=None, tymth=tymist.tymen(), static=True)
+    loadEnds(myapp, hby=None, tymth=tymist.tymen(), static=True)
 
     client = testing.TestClient(app=myapp)
 
@@ -334,7 +335,7 @@ def test_seid_api():
         tymist = tyming.Tymist(tyme=0.0)
 
         app = falcon.App()  # falcon.App instances are callable WSGI apps
-        loadEndingEnds(app, tymth=tymist.tymen(), hby=hby)
+        loadEnds(app, tymth=tymist.tymen(), hby=hby)
 
         client = testing.TestClient(app=app)
 
@@ -404,7 +405,7 @@ def test_get_admin():
     tymist = tyming.Tymist(tyme=0.0)
 
     myapp = falcon.App()  # falcon.App instances are callable WSGI apps
-    loadEndingEnds(myapp, tymth=tymist.tymen(), hby=hby)
+    loadEnds(myapp, tymth=tymist.tymen(), hby=hby)
 
     client = testing.TestClient(app=myapp)
 
@@ -438,7 +439,7 @@ def test_get_oobi():
         tymist = tyming.Tymist(tyme=0.0)
 
         app = falcon.App()  # falcon.App instances are callable WSGI apps
-        loadEndingEnds(app, tymth=tymist.tymen(), hby=hby, default=hab.pre)
+        loadEnds(app, tymth=tymist.tymen(), hby=hby, default=hab.pre)
 
         client = testing.TestClient(app=app)
 
@@ -470,7 +471,7 @@ def test_get_oobi():
         tymist = tyming.Tymist(tyme=0.0)
 
         app = falcon.App()  # falcon.App instances are callable WSGI apps
-        loadEndingEnds(app, tymth=tymist.tymen(), hby=hby, default=hab.pre)
+        loadEnds(app, tymth=tymist.tymen(), hby=hby, default=hab.pre)
 
         client = testing.TestClient(app=app)
 

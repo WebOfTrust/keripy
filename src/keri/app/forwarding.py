@@ -442,8 +442,7 @@ class ForwardHandler:
     Handler for forward `exn` messages used to envelope other KERI messages intended for another recipient.
     This handler acts as a mailbox for other identifiers and stores the messages in a local database.
 
-    on
-        {
+    Example message::\n\n        {
            "v": "KERI10JSON00011c_",                               // KERI Version String
            "t": "exn",                                             // peer to peer message ilk
            "dt": "2020-08-22T17:50:12.988921+00:00"

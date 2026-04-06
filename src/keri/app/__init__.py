@@ -10,12 +10,12 @@ from .agenting import (Receiptor, WitnessReceiptor, WitnessInquisitor,
                        messenger, messengerFrom, streamMessengerFrom,
                        httpClient, schemes)
 from .apping import Consoler
-from .challenging import ChallengeHandler, loadChallengingHandlers
+from .challenging import ChallengeHandler
 from .configing import openCF, Configer, ConfigerDoer
 from .delegating import Anchorer, DelegateRequestHandler, delegateRequestExn
 from .directing import Director, Reactor, Directant, Reactant, runController
 from .forwarding import Poster, StreamPoster, ForwardHandler, introduce
-from .grouping import (Counselor, MultisigNotificationHandler, multisigInceptExn, loadGroupingHandlers,
+from .grouping import (Counselor, MultisigNotificationHandler, multisigInceptExn,
                        multisigRotateExn, multisigInteractExn, multisigRegistryInceptExn,
                        multisigIssueExn, multisigRevokeExn, multisigRpyExn,
                        multisigExn, getEscrowedEvent, Multiplexor)
@@ -32,12 +32,12 @@ from .keeping import (PubLot, PreSit, PrePrm, PubSet, riKey, openKS, Keeper,
                       KeeperDoer, Creator, RandyCreator, SaltyCreator,
                       Creatory, Initage, Manager, ManagerDoer, Algos)
 from .notifying import notice, Notice, DicterSuber, Noter, Notifier
-from .oobiing import (loadOobiingEnds, loadOobiingHandlers, OobiResource, OobiRequestHandler,
+from .oobiing import (OobiResource, OobiRequestHandler,
                       oobiRequestExn, Oobiery, Authenticator, Result)
 from .organizing import BaseOrganizer, Organizer, IdentifierOrganizer
 from .querying import (QueryDoer, KeyStateNoticer, LogQuerier,
                        SeqNoQuerier, AnchorQuerier)
-from .signaling import (signal, Signal, Signaler, loadSignalingEnds,
+from .signaling import (signal, Signal, Signaler,
                         SignalsEnd, SignalIterable)
 from .signing import serialize, signPaths, transSeal
 from .specing import SpecResource

@@ -25,12 +25,6 @@ keri.app.configing
 .. automodule:: keri.app.configing
     :members:
 
-keri.app.connecting
--------------------
-
-.. automodule:: keri.app.connecting
-    :members:
-
 keri.app.delegating
 -------------------
 
@@ -85,8 +79,8 @@ keri.app.notifying
 .. automodule:: keri.app.notifying
     :members:
 
-keri.app.oobing
----------------
+keri.app.oobiing
+----------------
 
 .. automodule:: keri.app.oobiing
     :members:

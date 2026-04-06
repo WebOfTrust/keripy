@@ -9,17 +9,19 @@ Terminology:
     seed or secret or private key is crypto suite length dependent random bytes
     public key
 
-txn.put(
-            did.encode(),
-            json.dumps(certifiable_data).encode("utf-8")
-        )
-raw_data = txn.get(did.encode())
+Example usage::
+
+    txn.put(
+                did.encode(),
+                json.dumps(certifiable_data).encode("utf-8")
+            )
+    raw_data = txn.get(did.encode())
     if raw_data is None:
         return None
     return json.loads(raw_data)
 
-ked = json.loads(raw[:size].decode("utf-8"))
-raw = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
+    ked = json.loads(raw[:size].decode("utf-8"))
+    raw = json.dumps(ked, separators=(",", ":"), ensure_ascii=False).encode("utf-8")
 
 """
 import math
@@ -126,9 +128,10 @@ def openKS(name="test", **kwa):
     openLMDB Parameters:
         cls is Class instance of subclass instance
         name is str name of LMDBer dirPath so can have multiple databasers
-            at different directory path names thar each use different name
+        at different directory path names thar each use different name
+
         temp is Boolean, True means open in temporary directory, clear on close
-            Otherwise open in persistent directory, do not clear on close
+        Otherwise open in persistent directory, do not clear on close
     """
     return openLMDB(cls=Keeper, name=name, **kwa)
 
@@ -138,20 +141,20 @@ class Keeper(LMDBer):
     Keeper sets up named sub databases for key pair storage (KS).
     Methods provide key pair creation, storage, and data signing.
 
-     Attributes:  (inherited)
+    Attributes:  (inherited)
         name (str): unique path component used in directory or file path name
         base (str): another unique path component inserted before name
         temp (bool): True means use /tmp directory
         headDirPath is head directory path
         path is full directory path
         perm is numeric os permissions for directory and/or file(s)
-        filed (bool): True means .path ends in file.
-                       False means .path ends in directory
+        filed (bool): True means .path ends in file. Otherwise .path ends in directory.
+
         mode (str): file open mode if filed
         fext (str): file extension if filed
         file (File)
-        opened is Boolean, True means directory created and if file then file
-                is opened. False otherwise
+        opened is Boolean, True means directory created and if file then file is opened. False otherwise.
+
         env (lmdb.env): LMDB main (super) database environment
         readonly (bool): True means open LMDB env as readonly
 
@@ -159,55 +162,64 @@ class Keeper(LMDBer):
         gbls (Suber): named sub DB whose values are global parameters
             for all prefixes
             Key is parameter labels
-            Value is parameter
-               parameters:
-                   aeid (bytes): fully qualified qb64 non-transferable identifier
-                       prefix for authentication via signing and asymmetric encryption
-                       of secrets using the associated (public, private) key pair.
-                       Secrets include both salts and private keys for all key sets
-                       in keeper. Defaults to empty which means no authentication
-                       or encryption of key sets.
-                   pidx (bytes): hex index of next prefix key-pair sequence to be incepted
-                   algo (str): default root algorithm for generating key pair
-                   salt (bytes): root salt for generating key pairs
-                   tier (bytes): default root security tier for root salt
+            Value is parameter::
+
+                parameters:
+                    aeid (bytes): fully qualified qb64 non-transferable identifier
+                        prefix for authentication via signing and asymmetric encryption
+                        of secrets using the associated (public, private) key pair.
+                        Secrets include both salts and private keys for all key sets
+                        in keeper. Defaults to empty which means no authentication
+                        or encryption of key sets.
+
+                    pidx (bytes): hex index of next prefix key-pair sequence to be incepted
+                    algo (str): default root algorithm for generating key pair
+                    salt (bytes): root salt for generating key pairs
+                    tier (bytes): default root security tier for root salt
 
         pris (CryptSignerSuber): named sub DB whose keys are public key
             from key pair and values are private keys from key pair
             Key is public key (fully qualified qb64)
             Value is private key (fully qualified qb64)
+
         pres (CesrSuber): named sub DB whose values are prefixes or first
             public keys
             Key is first public key in key sequence for a prefix (fully qualified qb64)
             Value is prefix or first public key (temporary) (fully qualified qb64
+
         prms (Komer): named sub DB whose values are serialized dicts of
             PrePrm instance
             Key is identifier prefix (fully qualified qb64)
-            Value is  serialized parameter dict of public key parameters
-            {
-                pidx: ,
-                algo: ,
-                salt: ,
-                stem: ,
-                tier: ,
-            }
+            Value is  serialized parameter dict of public key parameters::
+
+                {
+                    pidx: ,
+                    algo: ,
+                    salt: ,
+                    stem: ,
+                    tier: ,
+                }
+
         sits (Komer): named sub DB whose values are serialized dicts of
             PreSit instance
             Key is identifier prefix (fully qualified qb64)
-            Value is  serialized parameter dict of public key situation
+            Value is  serialized parameter dict of public key situation::
+
                 {
-                  old: { pubs: ridx:, kidx,  dt:},
-                  new: { pubs: ridx:, kidx:, dt:},
-                  nxt: { pubs: ridx:, kidx:, dt:}
+                  old: { pubs: ridx, kidx,  dt },
+                  new: { pubs: ridx, kidx, dt },
+                  nxt: { pubs: ridx, kidx, dt }
                 }
+
         .pubs (Komer): named sub DB whose values are serialized lists of
             public keys
             Enables lookup of public keys from prefix and ridx for replay of
             public keys by prefix in establishment event order.
             Key is prefix.ridx (rotation index as 32 char hex string)
-                use riKey(pre, ri)
+            use riKey(pre, ri)
+
             Value is serialized list of fully qualified public keys that are the
-                current signing keys after the rotation given by rotation index
+            current signing keys after the rotation given by rotation index
 
     Properties:
 
@@ -223,21 +235,18 @@ class Keeper(LMDBer):
         Setup named sub databases.
 
         Inherited Parameters:
-            name is str directory path name differentiator for main database
-                When system employs more than one keri database, name allows
-                differentiating each instance by name
-                default name='main'
-            temp is boolean, assign to .temp
-                True then open in temporary directory, clear on close
-                Othewise then open persistent directory, do not clear on close
-                default temp=False
-            headDirPath is optional str head directory pathname for main database
-                If not provided use default .HeadDirpath
-                default headDirPath=None so uses self.HeadDirPath
-            perm is numeric optional os dir permissions mode
-                default perm=None so do not set mode
-            reopen is boolean, IF True then database will be reopened by this init
-                default reopen=True
+            name is str directory path name differentiator for main database.
+            When system employs more than one keri database, name allows
+            differentiating each instance by name. Default name='main'.
+            temp is boolean, assign to .temp.
+            True then open in temporary directory, clear on close.
+            Otherwise then open persistent directory, do not clear on close.
+            Default temp=False.
+            headDirPath is optional str head directory pathname for main database.
+            If not provided use default .HeadDirpath. Default headDirPath=None.
+            perm is numeric optional os dir permissions mode. Default perm=None.
+            reopen is boolean, IF True then database will be reopened by this init.
+            Default reopen=True.
 
         Notes:
 
@@ -311,18 +320,22 @@ class KeeperDoer(doing.Doer):
     Inherited Properties:
         .tyme is float relative cycle time of associated Tymist .tyme obtained
             via injected .tymth function wrapper closure.
+
         .tymth is function wrapper closure returned by Tymist .tymeth() method.
             When .tymth is called it returns associated Tymist .tyme.
             .tymth provides injected dependency on Tymist tyme base.
+
         .tock is float, desired time in seconds between runs or until next run,
-                 non negative, zero means run asap
+            non negative, zero means run asap
 
     Properties:
 
     Methods:
         .wind  injects ._tymth dependency from associated Tymist to get its .tyme
+
         .__call__ makes instance callable
             Appears as generator function that returns generator
+
         .do is generator method that returns generator
         .enter is enter context action method
         .recur is recur context action method or generator method
@@ -333,6 +346,7 @@ class KeeperDoer(doing.Doer):
     Hidden:
         ._tymth is injected function wrapper closure returned by .tymen() of
             associated Tymist instance that returns Tymist .tyme. when called.
+
         ._tock is hidden attribute for .tock property
     """
 
@@ -669,9 +683,11 @@ class Manager:
                 all secrets are re-encrypted using new aeid. In this case the
                 provided seed must not be empty. A change in aeid should require
                 a second authentication mechanism besides the seed.
+
             pidx (int): index of next new created key pair sequence bound to a
                 given identifier prefix. Each sequence gets own pidx. Enables
                 unique recreatable salting of key sequence based on pidx.
+
             salt (str): qb64 of root salt. Makes random root salt if not provided
             tier (str): default security tier (Tierage) for root salt
         """
@@ -1468,6 +1484,7 @@ class Manager:
             ret (tuple): (ipre, veferies) where:
                 ipre is prefix index of ingested key pairs needed to fetch later
                    for replay
+
                 veferies is list of lists of all the verfers for the  public keys
                 from the private keys in secrecies in order of appearance.
 
@@ -1494,6 +1511,7 @@ class Manager:
             secrecies (list): list of lists of fully qualified secrets (private keys)
             iridx (int): initial ridx at where set PubSit after ingestion
                 enables database to store where initial replay should start from
+
             ncount (int): count of next public keys for next after end of secrecies
             ncode (str): derivation code qb64  of all ncount next public keys
                 after end of secrecies
@@ -1637,14 +1655,14 @@ class Manager:
         the key sequence for identifier prefix pre at rotation index ridx stored
         in db .pubs. Inception is at ridx == 0.
         Enables replay of preexisting public key sequence.
+
         In returned duple:
-            verfers is list of current public key verfers
-                public key is verfer.qb64
-            digers is list of next public key digers
-                digest to xor is diger.raw
+            verfers is list of current public key verfers. Public key is verfer.qb64.
+            digers is list of next public key digers. Digest to xor is diger.raw.
 
         If key sequence at ridx does already exist in .pubs database for pre then
             raises ValueError.
+
         If  preexisting pubs for pre exist but .ridx is two large for preexisting
             pubs then raises IndexError.
 
@@ -1725,18 +1743,22 @@ class ManagerDoer(doing.Doer):
     Inherited Properties:
         .tyme is float relative cycle time of associated Tymist .tyme obtained
             via injected .tymth function wrapper closure.
+
         .tymth is function wrapper closure returned by Tymist .tymeth() method.
             When .tymth is called it returns associated Tymist .tyme.
             .tymth provides injected dependency on Tymist tyme base.
+
         .tock is float, desired time in seconds between runs or until next run,
-                 non negative, zero means run asap
+            non negative, zero means run asap
 
     Properties:
 
     Methods:
         .wind  injects ._tymth dependency from associated Tymist to get its .tyme
+
         .__call__ makes instance callable
             Appears as generator function that returns generator
+
         .do is generator method that returns generator
         .enter is enter context action method
         .recur is recur context action method or generator method
@@ -1747,6 +1769,7 @@ class ManagerDoer(doing.Doer):
     Hidden:
         ._tymth is injected function wrapper closure returned by .tymen() of
             associated Tymist instance that returns Tymist .tyme. when called.
+
         ._tock is hidden attribute for .tock property
     """
 

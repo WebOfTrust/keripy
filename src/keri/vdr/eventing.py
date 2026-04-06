@@ -454,24 +454,25 @@ def state(pre,
     Returns:
         Serder: Event message Serder
 
-    Key State Dict
-    {
-        "v": "KERI10JSON00011c_",
-        "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-        "s": "2":,
-        "p": "EYAfSVPzhzZ-i0d8JZS6b5CMAoTNZH3ULvaU6JR2nmwy",
-        "d": "EAoTNZH3ULvaU6JR2nmwyYAfSVPzhzZ-i0d8JZS6b5CM",
-        "ri": "EYAfSVPzhzZ-i0d8JZS6b5CMAoTNZH3ULvaU6JR2nmwy",
-        "dt": "2020-08-22T20:35:06.687702+00:00",
-        "et": "vrt",
-        "a": {i=12, d="EYAfSVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULv"},
-        "k": ["DaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],
-        "n": "EZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM",
-        "bt": "1",
-        "b": ["DnmwyYAfSVPzhzS6b5CMZ-i0d8JZAoTNZH3ULvaU6JR2"],
-        "di": "EYAfSVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULv",
-        "c": ["EO"],
-    }
+    Key State Dict::
+
+        {
+            "v": "KERI10JSON00011c_",
+            "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+            "s": "2":,
+            "p": "EYAfSVPzhzZ-i0d8JZS6b5CMAoTNZH3ULvaU6JR2nmwy",
+            "d": "EAoTNZH3ULvaU6JR2nmwyYAfSVPzhzZ-i0d8JZS6b5CM",
+            "ri": "EYAfSVPzhzZ-i0d8JZS6b5CMAoTNZH3ULvaU6JR2nmwy",
+            "dt": "2020-08-22T20:35:06.687702+00:00",
+            "et": "vrt",
+            "a": {i=12, d="EYAfSVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULv"},
+            "k": ["DaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"],
+            "n": "EZ-i0d8JZAoTNZH3ULvaU6JR2nmwyYAfSVPzhzS6b5CM",
+            "bt": "1",
+            "b": ["DnmwyYAfSVPzhzS6b5CMZ-i0d8JZAoTNZH3ULvaU6JR2"],
+            "di": "EYAfSVPzhzS6b5CMaU6JR2nmwyZ-i0d8JZAoTNZH3ULv",
+            "c": ["EO"],
+        }
 
     """
     #vs = versify(version=version, kind=kind, size=0)
@@ -550,20 +551,21 @@ def vcstate(vcpre,
         version (Version): is KERI version instance
         kind (str): is serialization kind
 
-    Credential Transaction State Dict
-    {
-       "v": "KERI10JSON00012d_",
-       "i": "EDGhJ8V1tuwH55Bk0fBFe9L0za2BUNOt2FX4GUeOLNHQ",
-       "s": "0",
-       "d": "ENNTabgWbaNqOKLqEZdQCjxbafwwSoXNzAsE1Enq-kdk",
-       "ri": "EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDGeLWHb9vSY",
-       "a": {
-        "s": 3,
-        "d": "Ex7i6wv4YzDRTO9_iHkTQSXrvLYldSd_UEjNfqia3Pqc"
-       },
-       "dt": "2021-01-01T00:00:00.000000+00:00",
-       "et": "bis"
-    }
+    Credential Transaction State Dict::
+
+        {
+           "v": "KERI10JSON00012d_",
+           "i": "EDGhJ8V1tuwH55Bk0fBFe9L0za2BUNOt2FX4GUeOLNHQ",
+           "s": "0",
+           "d": "ENNTabgWbaNqOKLqEZdQCjxbafwwSoXNzAsE1Enq-kdk",
+           "ri": "EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDGeLWHb9vSY",
+           "a": {
+            "s": 3,
+            "d": "Ex7i6wv4YzDRTO9_iHkTQSXrvLYldSd_UEjNfqia3Pqc"
+           },
+           "dt": "2021-01-01T00:00:00.000000+00:00",
+           "et": "bis"
+        }
     """
 
     if sn < 0:
@@ -1037,7 +1039,7 @@ class Tever:
         Validate and process credential issuance events.  If valid, event is persisted
         in local datastore for TEL.  Will escrow event if missing anchor or backer signatures
 
-        Parameters
+        Parameters:
             serder (Serder): instance of issuance or backer issuance event
             seqner (Seqner): issuing event sequence number from controlling KEL.
             saider (Saider): issuing event SAID from controlling KEL.
@@ -1104,7 +1106,7 @@ class Tever:
         Validate and process credential revocation events.  If valid, event is persisted
         in local datastore for TEL.  Will escrow event if missing anchor or backer signatures
 
-        Parameters
+        Parameters:
             serder (Serder): instance of issuance or backer issuance event
             seqner (Seqner): issuing event sequence number from controlling KEL.
             saider (Saider): issuing event digest from controlling KEL.
@@ -1277,9 +1279,11 @@ class Tever:
         """ Validate anchor and backer signatures (bigers) when provided.
 
         Validates sigers signatures by validating indexes, verifying signatures, and
-            validating threshold sith.
+        validating threshold sith.
+
         Validate backer receipts by validating indexes, verifying
-            backer signatures and validating toad.
+        backer signatures and validating toad.
+
         Backer validation is a function of .regk and .local
 
         Parameters:
@@ -1289,6 +1293,7 @@ class Tever:
             bigers (list)  Siger instances of indexed witness signatures.
                 Index is offset into wits list of associated witness nontrans pre
                 from which public key may be derived.
+
             toad (int):  str hex of witness threshold
             baks (list): qb64 non-transferable prefixes of backers used to
                 derive werfers for bigers
@@ -1706,7 +1711,7 @@ class Tevery:
              saider (Diger): instance  from said in serder (SAD)
              route (str): reply route
              cigars (list): of Cigar instances that contain nontrans signing couple
-                           signature in .raw and public key in .verfer
+                 signature in .raw and public key in .verfer
              tsgs (list): tuples (quadruples) of form
                  (prefixer, seqner, diger, [sigers]) where:
                  prefixer is pre of trans endorser
@@ -1714,37 +1719,38 @@ class Tevery:
                  diger is digest of trans endorser's est evt for keys for sigs
                  [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
-         Reply Message:
-         {
-           "v" : "KERI10JSON00011c_",
-           "t" : "rpy",
-           "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-           "dt": "2020-08-22T17:50:12.988921+00:00",
-           "r" : "/tsn/EgHOJJ9mgNosU2hgt7bsM8AViwgz--ey3ZXWgfIcxdpI",
-           "a" :
+         Reply Message::
+
              {
-               "v": "KERI10JSON0001b0_",
-               "i": "EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDGeLWHb9vSY",
-               "s": "1",
-               "d": "EpltHxeKueSR1a7e0_oSAhgO6U7VDnX7x4KqNCwBqbI0",
-               "ii": "EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY",
-               "dt": "2021-01-01T00:00:00.000000+00:00",
-               "et": "vrt",
-               "a": {
-                "s": 2,
-                "d": "Ef12IRHtb_gVo5ClaHHNV90b43adA0f8vRs3jeU-AstY"
-               },
-               "bt": "1",
-               "br": [],
-               "ba": [
-                "BwFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"
-               ],
-               "b": [
-                "BwFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"
-               ],
-               "c": []
+               "v" : "KERI10JSON00011c_",
+               "t" : "rpy",
+               "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+               "dt": "2020-08-22T17:50:12.988921+00:00",
+               "r" : "/tsn/EgHOJJ9mgNosU2hgt7bsM8AViwgz--ey3ZXWgfIcxdpI",
+               "a" :
+                 {
+                   "v": "KERI10JSON0001b0_",
+                   "i": "EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDGeLWHb9vSY",
+                   "s": "1",
+                   "d": "EpltHxeKueSR1a7e0_oSAhgO6U7VDnX7x4KqNCwBqbI0",
+                   "ii": "EaKJ0FoLxO1TYmyuprguKO7kJ7Hbn0m0Wuk5aMtSrMtY",
+                   "dt": "2021-01-01T00:00:00.000000+00:00",
+                   "et": "vrt",
+                   "a": {
+                    "s": 2,
+                    "d": "Ef12IRHtb_gVo5ClaHHNV90b43adA0f8vRs3jeU-AstY"
+                   },
+                   "bt": "1",
+                   "br": [],
+                   "ba": [
+                    "BwFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"
+                   ],
+                   "b": [
+                    "BwFbQvUaS4EirvZVPUav7R_KDHB8AKmSfXNpWnZU_YEU"
+                   ],
+                   "c": []
+                 }
              }
-         }
 
          """
         cigars = cigars if cigars is not None else []
@@ -1846,7 +1852,7 @@ class Tevery:
              saider (Diger): instance  from said in serder (SAD)
              route (str): reply route
              cigars (list): of Cigar instances that contain nontrans signing couple
-                           signature in .raw and public key in .verfer
+                 signature in .raw and public key in .verfer
              tsgs (list): tuples (quadruples) of form
                  (prefixer, seqner, diger, [sigers]) where:
                  prefixer is pre of trans endorser
@@ -1854,28 +1860,29 @@ class Tevery:
                  diger is digest of trans endorser's est evt for keys for sigs
                  [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
-         Reply Message:
-         {
-           "v" : "KERI10JSON00011c_",
-           "t" : "rpy",
-           "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-           "dt": "2020-08-22T17:50:12.988921+00:00",
-           "r" : "/tsn/EgHOJJ9mgNosU2hgt7bsM8AViwgz--ey3ZXWgfIcxdpI",
-           "a" :
+         Reply Message::
+
              {
-              "v": "KERI10JSON00012d_",
-              "i": "EDGhJ8V1tuwH55Bk0fBFe9L0za2BUNOt2FX4GUeOLNHQ",
-              "s": "0",
-              "d": "ENNTabgWbaNqOKLqEZdQCjxbafwwSoXNzAsE1Enq-kdk",
-              "ri": "EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDGeLWHb9vSY",
-              "a": {
-               "s": 3,
-               "d": "Ex7i6wv4YzDRTO9_iHkTQSXrvLYldSd_UEjNfqia3Pqc"
-              },
-              "dt": "2021-01-01T00:00:00.000000+00:00",
-              "et": "bis"
+               "v" : "KERI10JSON00011c_",
+               "t" : "rpy",
+               "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+               "dt": "2020-08-22T17:50:12.988921+00:00",
+               "r" : "/tsn/EgHOJJ9mgNosU2hgt7bsM8AViwgz--ey3ZXWgfIcxdpI",
+               "a" :
+                 {
+                  "v": "KERI10JSON00012d_",
+                  "i": "EDGhJ8V1tuwH55Bk0fBFe9L0za2BUNOt2FX4GUeOLNHQ",
+                  "s": "0",
+                  "d": "ENNTabgWbaNqOKLqEZdQCjxbafwwSoXNzAsE1Enq-kdk",
+                  "ri": "EoN_Ln_JpgqsIys-jDOH8oWdxgWqs7hzkDGeLWHb9vSY",
+                  "a": {
+                   "s": 3,
+                   "d": "Ex7i6wv4YzDRTO9_iHkTQSXrvLYldSd_UEjNfqia3Pqc"
+                  },
+                  "dt": "2021-01-01T00:00:00.000000+00:00",
+                  "et": "bis"
+                 }
              }
-         }
 
          """
         cigars = cigars if cigars is not None else []
@@ -2319,11 +2326,14 @@ class Reger(LMDBer):
             name (str): directory path name differentiator for main database
                 When system employs more than one keri database, name allows
                 differentiating each instance by name
+
             temp (boolean,): assign to .temp
                 True then open in temporary directory, clear on close
                 Othewise then open persistent directory, do not clear on close
+
             headDirPath (Optional(str)): head directory pathname for main database
                 If not provided use default .HeadDirpath
+
             mode (int): numeric os dir permissions for database directory
             reopen (boolean,): IF True then database will be reopened by this init
 

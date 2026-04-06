@@ -21,7 +21,7 @@ from hio.core import http, wiring
 from hio.help import ogler
 
 from ..kering import Roles, Schemes
-from ..app.habbing import Habery, HaberyDoer
+
 from ..core import Cigar, Siger
 from ..help import helping
 
@@ -79,6 +79,7 @@ def signature(signages):
     Parameters:
         signages (list): items are Signage namedtuples,
                            (markers, indexed, signer, ordinal, kind)
+
             where:
                 markers (Union[list, dict]): When dict each item (key, val) has
                     key as str identifier of marker and has val as instance of
@@ -94,12 +95,14 @@ def signature(signages):
                     multi-sig group identifier. Default is None. When None or
                     empty signer is not included in header value
                 ordinal (str): optional ordinal hex str of int that is an ordinal
-                               such as sequence number to further identify the
-                               keys used for the signatures. Usually when indexed
-                               with signer and digest
+                    such as sequence number to further identify the
+                    keys used for the signatures. Usually when indexed
+                    with signer and digest
+
                 digest (str): optional CESR Base64 serialization of a digest to
-                              further identify the keys used for the signatures.
-                              Usually when indexed with signer and ordinal
+                    further identify the keys used for the signatures.
+                    Usually when indexed with signer and ordinal
+
                 kind (str): serialization kind of the markers and other primitives
 
 
@@ -185,6 +188,7 @@ def designature(value):
     Returns:
        signages (list): items are Signage namedtuples,
                            (markers, indexed, signer, ordinal, kind)
+
             where:
                 markers (Union[list, dict]): When dict each item (key, val) has
                     key as str identifier of marker and has val as instance of
@@ -200,12 +204,14 @@ def designature(value):
                     multi-sig group identifier. Default is None. When None or
                     empty signer is not included in header value
                 ordinal (str): optional ordinal hex str of int that is an ordinal
-                               such as sequence number to further identify the
-                               keys used for the signatures. Usually when indexed
-                               with signer and digest
+                    such as sequence number to further identify the
+                    keys used for the signatures. Usually when indexed
+                    with signer and digest
+
                 digest (str): optional CESR Base64 serialization of a digest to
-                              further identify the keys used for the signatures.
-                              Usually when indexed with signer and ordinal
+                    further identify the keys used for the signatures.
+                    Usually when indexed with signer and ordinal
+
                 kind (str): serialization kind of the markers and other primitives
 
        signatures (list): Siger or Cigar instances
@@ -538,7 +544,7 @@ class OOBIEnd:
 
     """
 
-    def __init__(self, hby: Habery, default=None):
+    def __init__(self, hby, default=None):
         """  End point for responding to OOBIs
 
         Parameters:
@@ -616,11 +622,12 @@ WEB_DIR_PATH = os.path.dirname(
 STATIC_DIR_PATH = os.path.join(WEB_DIR_PATH, 'static')
 
 
-def loadEndingEnds(app, hby, *, tymth=None, default=None, static=False):
+def loadEnds(app, hby, *, tymth=None, default=None, static=False):
     """
     Load endpoints for app with shared resource dependencies
     This function provides the endpoint resource instances
-    with references to the needed shared dependencies:
+    with references to the needed shared dependencies::
+
         tymth: virtual time reference injection function from Tymist subclass
         hab: local habitat
 
@@ -656,6 +663,9 @@ def setup(name="who", temp=False, tymth=None, isith=None, count=1,
     """
     Setup and return doers list to run controller
     """
+
+    from ..app.habbing import Habery, HaberyDoer
+
     # setup habery with resources
     hby = Habery(name=name, base="endo", temp=True, free=True)
     hbyDoer = HaberyDoer(habery=hby)  # setup doer
@@ -677,7 +687,7 @@ def setup(name="who", temp=False, tymth=None, isith=None, count=1,
 
     # must do it here to inject into Falcon endpoint resource instances
     myapp = falcon.App(cors_enable=True)  # falcon.App instances are callable WSGI apps
-    loadEndingEnds(myapp, tymth=tymth, hby=hby)
+    loadEnds(myapp, tymth=tymth, hby=hby)
 
     webServer = http.Server(name="keri.wsgi.server", app=myapp, port=webPort, wl=wl)
     webServerDoer = http.ServerDoer(server=webServer)

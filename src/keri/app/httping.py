@@ -225,13 +225,13 @@ class Clienter(doing.DoDoer):
     TimeoutClient = 300  # seconds to wait for response before removing client, default is 5 minutes
 
     def __init__(self):
-        """
-        Initialize clienter with an empty list of client tuples.
+        """Initialize clienter with an empty list of client tuples.
 
         Attributes:
-            clients (list((client, clientdoer, timestamp)):
-                list of client tuples containing (client, clientDoer, datetime) for each active client.
-            doers (list): List of Doers to be managed by this Clienter, initialized with clientDo method.
+            clients (list[tuple]): Active client tuples, each containing a
+                ``ClientDoer`` instance, an hio HTTP ``Client`` instance,
+                and a ``datetime`` timestamp.
+            doers (list): Doers managed by this Clienter, initialized with clientDo.
         """
         self.clients = []
         doers = [doing.doify(self.clientDo)]
