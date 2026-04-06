@@ -25,7 +25,7 @@ class QueryDoer(doing.DoDoer):
     def __init__(self, hby, hab, kvy, pre, **kwa):
         """Initialize QueryDoer.
 
-        Args:
+        Parameters:
             hby (Habery): Habitat environment.
             hab (Hab): Local habitat used as the query source.
             kvy (Kevery): Key event processor providing the cue queue.
@@ -62,7 +62,7 @@ class KeyStateNoticer(doing.DoDoer):
     def __init__(self, hby, hab, pre, cues, **opts):
         """Initialize KeyStateNoticer and immediately issue a KSN witness query.
 
-        Args:
+        Parameters:
             hby (Habery): Habitat environment.
             hab (Hab): Local habitat used as the query source.
             pre (str): Qualified Base64 identifier prefix to monitor.
@@ -88,7 +88,7 @@ class KeyStateNoticer(doing.DoDoer):
         WitnessInquisitor is removed. Unrelated cues are returned to the queue.
         Returns True once the local key state is current, signalling completion.
 
-        Args:
+        Parameters:
             tyme (float): Current elapsed time in seconds provided by the Doist.
             deeds (list | None): Optional list of scheduled deeds from the Doist.
 
@@ -146,7 +146,7 @@ class LogQuerier(doing.DoDoer):
     def __init__(self, hby, hab, ksn, **opts):
         """Initialize LogQuerier and immediately issue an event log witness query.
 
-        Args:
+        Parameters:
             hby (Habery): Habitat environment.
             hab (Hab): Local habitat used as the query source.
             ksn (dict): Key state notice dictionary. Must contain ``"i"``
@@ -168,7 +168,7 @@ class LogQuerier(doing.DoDoer):
         the WitnessInquisitor is removed and True is returned to signal
         completion.
 
-        Args:
+        Parameters:
             tyme (float): Current elapsed time in seconds provided by the Doist.
             deeds (list | None): Optional list of scheduled deeds from the Doist.
 
@@ -204,7 +204,7 @@ class SeqNoQuerier(doing.DoDoer):
     def __init__(self, hby, hab, pre, sn, fn=None, wits=None, **opts):
         """Initialize SeqNoQuerier and immediately issue a sequence-number-targeted witness query.
 
-        Args:
+        Parameters:
             hby (Habery): Habitat environment.
             hab (Hab): Local habitat used as the query source.
             pre (str): Qualified Base64 identifier prefix to query.
@@ -234,7 +234,7 @@ class SeqNoQuerier(doing.DoDoer):
         the target, the WitnessInquisitor is removed and True is returned to
         signal completion.
 
-        Args:
+        Parameters:
             tyme (float): Current elapsed time in seconds provided by the Doist.
             deeds (list | None): Optional list of scheduled deeds from the Doist.
 
@@ -274,7 +274,7 @@ class AnchorQuerier(doing.DoDoer):
     def __init__(self, hby, hab, pre, anchor, **opts):
         """Initialize AnchorQuerier and immediately issue an anchor-targeted witness query.
 
-        Args:
+        Parameters:
             hby (Habery): Habitat environment.
             hab (Hab): Local habitat used as the query source.
             pre (str): Qualified Base64 identifier prefix to query.
@@ -297,7 +297,7 @@ class AnchorQuerier(doing.DoDoer):
         matching the anchor, the WitnessInquisitor is removed and True is
         returned to signal completion.
 
-        Args:
+        Parameters:
             tyme (float): Current elapsed time in seconds provided by the Doist.
             deeds (list | None): Optional list of scheduled deeds from the Doist.
 

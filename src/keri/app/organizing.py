@@ -18,7 +18,7 @@ class BaseOrganizer:
     def __init__(self, hby, cigsdb, datadb, fielddb, imgsdb):
         """Create base Organizer.
 
-        Args:
+        Parameters:
             hby (Habery): database environment.
             cigsdb (SuberBase): database for storing signatures.
             datadb (SuberBase): database for storing main data.
@@ -37,7 +37,7 @@ class BaseOrganizer:
         If no record exists for ``pre``, a new one is created. Existing
         fields not present in ``data`` are preserved.
 
-        Args:
+        Parameters:
             pre (str): qb64 identifier prefix of the record to update.
             data (dict): fields to add or overwrite in the existing record.
         """
@@ -62,7 +62,7 @@ class BaseOrganizer:
         Removes the existing record entirely before writing ``data``,
         so fields absent from ``data`` will no longer exist.
 
-        Args:
+        Parameters:
             pre (str): qb64 identifier prefix of the record to replace.
             data (dict): fields to write as the new record.
         """
@@ -75,7 +75,7 @@ class BaseOrganizer:
         Retrieves the current record, updates the specified field, then
         replaces the full record.
 
-        Args:
+        Parameters:
             pre (str): qb64 identifier prefix of the record to update.
             field (str): field name to set.
             val (str | bytes): value to assign to the field.
@@ -88,7 +88,7 @@ class BaseOrganizer:
     def unset(self, pre, field):
         """Remove a single field from the record for identifier prefix.
 
-        Args:
+        Parameters:
             pre (str): qb64 identifier prefix of the record to modify.
             field (str): field name to remove.
         """
@@ -103,7 +103,7 @@ class BaseOrganizer:
         Deletes the signature, main data record, and all field index entries
         associated with ``pre``.
 
-        Args:
+        Parameters:
             pre (str): qb64 identifier prefix of the record to remove.
 
         Returns:
@@ -119,7 +119,7 @@ class BaseOrganizer:
         Verifies the stored signature before returning data. Raises
         ``ValidationError`` if verification fails.
 
-        Args:
+        Parameters:
             pre (str): qb64 identifier prefix of the record to retrieve.
             field (str | None): if provided, return only the value for this
                 field rather than the full record.
@@ -182,7 +182,7 @@ class BaseOrganizer:
     def find(self, field, val):
         """Find all records where field contains val as a case-insensitive substring.
 
-        Args:
+        Parameters:
             field (str): field name to search.
             val (str): substring pattern to match against field values.
 
@@ -204,7 +204,7 @@ class BaseOrganizer:
         equality comparison suitable for alias lookups where similar names
         (e.g. ``"sally"`` vs ``"sally-direct"``) must not collide.
 
-        Args:
+        Parameters:
             field (str): field name to search.
             val (str): exact value to match (case-sensitive).
 
@@ -221,7 +221,7 @@ class BaseOrganizer:
     def values(self, field, val=None):
         """Return unique values for field across all records.
 
-        Args:
+        Parameters:
             field (str): field name whose values are collected.
             val (str | None): optional case-insensitive substring filter;
                 when provided, only values matching the pattern are included.
@@ -245,7 +245,7 @@ class BaseOrganizer:
         stored image for ``pre`` is removed before writing begins. Content type
         and content length metadata are persisted alongside the chunk data.
 
-        Args:
+        Parameters:
             pre (str): qb64 identifier prefix the image is associated with.
             typ (str): MIME type of the image (e.g. ``"image/jpeg"``).
             stream (IO[bytes]): readable file-like object yielding image bytes.
@@ -272,7 +272,7 @@ class BaseOrganizer:
     def getImgData(self, pre):
         """Return image metadata for identifier prefix if an image exists.
 
-        Args:
+        Parameters:
             pre (str): qb64 identifier prefix of the image to query.
 
         Returns:
@@ -298,7 +298,7 @@ class BaseOrganizer:
     def getImg(self, pre):
         """Yield image data in 4 KiB chunks for identifier prefix.
 
-        Args:
+        Parameters:
             pre (str): qb64 identifier prefix of the image to retrieve.
 
         Yields:
@@ -320,7 +320,7 @@ class Organizer(BaseOrganizer):
     def __init__(self, hby):
         """Create contact Organizer.
 
-        Args:
+        Parameters:
             hby (Habery): database environment for contact information.
         """
         super().__init__(
@@ -338,7 +338,7 @@ class IdentifierOrganizer(BaseOrganizer):
     def __init__(self, hby):
         """Create identifier Organizer.
 
-        Args:
+        Parameters:
             hby (Habery): database environment for identifier information.
         """
         super().__init__(

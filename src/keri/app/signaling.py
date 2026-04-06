@@ -18,12 +18,12 @@ from ..help import fromIso8601, nowIso8601, nowUTC
 def signal(attrs, topic, ckey=None, dt=None):
     """Create a Signal instance with the given payload and routing information.
 
-    Args:
+    Parameters:
         attrs (dict): Payload attributes of the signal.
         topic (str): Routing topic for the recipient of the signal.
-        ckey (str, optional): Collapse key. Signals sharing a collapse key
+        ckey (str): Collapse key. Signals sharing a collapse key
             replace any unread signal with the same key. Defaults to None.
-        dt (str or datetime, optional): ISO 8601 formatted datetime for the
+        dt (str | datetime): ISO 8601 formatted datetime for the
             signal. If a ``datetime`` object is provided it will be converted
             via ``isoformat()``. Defaults to the current UTC time.
 
@@ -52,18 +52,18 @@ class Signal(Dicter):
     any existing unread Signal that shares the same key in the queue.
 
     Attributes:
-        _ckey (str or None): The collapse key for this signal.
+        _ckey (str): The collapse key for this signal.
     """
 
     def __init__(self, pad, ckey=None):
         """Initialize a Signal.
 
-        Args:
+        Parameters:
             pad (dict): Attribute values that make up the payload of the
                 signal. Expected keys are ``i`` (identifier), ``dt``
                 (ISO 8601 datetime), ``r`` (topic/route), and ``a``
                 (application-level attributes dict).
-            ckey (str, optional): Collapse key. A signal with a collapse key
+            ckey (str): Collapse key. A signal with a collapse key
                 replaces any existing unread signal with the same key.
                 Defaults to None.
         """
@@ -75,7 +75,7 @@ class Signal(Dicter):
 
     @property
     def topic(self):
-        """str or None: The routing topic of the signal (``pad['r']``), or
+        """str: The routing topic of the signal (``pad['r']``), or
         ``None`` if not present."""
         if 'r' in self.pad:
             return self.pad['r']
@@ -84,7 +84,7 @@ class Signal(Dicter):
 
     @property
     def ckey(self):
-        """str or None: The collapse key for this signal."""
+        """str: The collapse key for this signal."""
         return self._ckey
 
     @property
@@ -96,8 +96,8 @@ class Signal(Dicter):
     def dt(self, dt):
         """Set the datetime for this signal.
 
-        Args:
-            dt (str or datetime): ISO 8601 formatted string or a
+        Parameters:
+            dt (str | datetime): ISO 8601 formatted string or a
                 ``datetime`` object. If a ``datetime`` object is provided
                 it will be converted via ``isoformat()``.
         """
@@ -108,7 +108,7 @@ class Signal(Dicter):
 
     @property
     def attrs(self):
-        """dict or None: Application-level attributes from the signal payload
+        """dict: Application-level attributes from the signal payload
         (``pad['a']``), or ``None`` if not present."""
         if 'a' in self.pad:
             return self.pad['a']
@@ -134,8 +134,8 @@ class Signaler(doing.DoDoer):
     def __init__(self, signals=None):
         """Initialize a Signaler.
 
-        Args:
-            signals (Deck, optional): Existing deck to use as the signal
+        Parameters:
+            signals (Deck): Existing deck to use as the signal
                 queue. A new ``decking.Deck`` is created when not provided.
                 Defaults to None.
         """
@@ -150,11 +150,11 @@ class Signaler(doing.DoDoer):
         same key already exists in the queue, that existing signal is replaced
         in-place rather than a new entry being appended.
 
-        Args:
+        Parameters:
             attrs (dict): Signal attributes to push to the queue.
             topic (str): Routing topic for the recipient of the signal.
-            ckey (str, optional): Collapse key. Defaults to None.
-            dt (str or datetime, optional): ISO 8601 formatted datetime for
+            ckey (str): Collapse key. Defaults to None.
+            dt (str | datetime): ISO 8601 formatted datetime for
                 the signal. Defaults to the current UTC time.
         """
         dt = dt if dt is not None else nowIso8601()
@@ -175,11 +175,11 @@ class Signaler(doing.DoDoer):
         whose age exceeds ``SignalTimeout``.  Intended to be registered via
         ``doing.doify`` and driven by a ``Doist``.
 
-        Args:
-            tymth (callable, optional): Injected function wrapper closure
+        Parameters:
+            tymth (callable): Injected function wrapper closure
                 returned by ``Tymist.tymen()``. Calling ``tymth()`` returns
                 the associated ``Tymist.tyme``. Defaults to None.
-            tock (float, optional): Injected initial tock value representing
+            tock (float): Injected initial tock value representing
                 the scheduler time increment in seconds. Defaults to 0.0.
             **kwa: Additional keyword arguments passed by the doer framework.
 
@@ -210,9 +210,9 @@ def loadEnds(app, *, signals=None):
 
     Creates a ``SignalsEnd`` instance and mounts it at ``/mbx``.
 
-    Args:
+    Parameters:
         app (falcon.App): Falcon application instance to register the route on.
-        signals (Deck, optional): Deck of pending Signal instances to pass to
+        signals (Deck): Deck of pending Signal instances to pass to
             the endpoint handler. Defaults to None.
 
     Returns:
@@ -234,8 +234,8 @@ class SignalsEnd:
     def __init__(self, signals=None):
         """Initialize a SignalsEnd resource.
 
-        Args:
-            signals (Deck, optional): Deck of pending Signal instances to
+        Parameters:
+            signals (Deck): Deck of pending Signal instances to
                 stream to clients. A new ``decking.Deck`` is created when not
                 provided. Defaults to None.
         """
@@ -248,7 +248,7 @@ class SignalsEnd:
         ``text/event-stream`` response. Each signal is encoded as an SSE
         event frame and sent to the client.
 
-        Args:
+        Parameters:
             req (falcon.Request): Incoming Falcon HTTP request.
             rep (falcon.Response): Outgoing Falcon HTTP response. On return,
                 ``rep.status`` is set to ``200 OK``, ``Content-Type`` is set
@@ -269,7 +269,7 @@ class SignalsEnd:
         ``text/event-stream`` response. Each signal is encoded as an SSE
         event frame and sent to the client.
 
-        Args:
+        Parameters:
             req (falcon.Request): Incoming Falcon HTTP request.
             rep (falcon.Response): Outgoing Falcon HTTP response. On return,
                 ``Content-Type`` is set to ``text/event-stream`` and
@@ -305,10 +305,10 @@ class SignalIterable:
     def __init__(self, signals, retry=5000):
         """Initialize a SignalIterable.
 
-        Args:
+        Parameters:
             signals (Deck): Shared queue of pending Signal instances to drain
                 and encode as SSE event frames.
-            retry (int, optional): SSE ``retry`` interval in milliseconds
+            retry (int): SSE ``retry`` interval in milliseconds
                 included in each event frame. Defaults to 5000.
         """
         self.signals = signals

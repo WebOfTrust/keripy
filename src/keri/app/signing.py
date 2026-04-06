@@ -15,7 +15,7 @@ def serialize(creder, prefixer, seqner, saider):
     Appends a CESR-encoded SealSourceTriples counter followed by the
     prefixer, seqner, and saider to the raw credential bytes.
 
-    Args:
+    Parameters:
         creder: Credential whose raw bytes form the base of the serialization.
         prefixer: Prefixer for the establishment event that seals the credential.
         seqner (Seqner): Sequence number of the sealing establishment event.
@@ -90,7 +90,7 @@ def signPaths(hab, serder, paths):
     Transferable identifiers produce indexed signatures (sadsigers); non-transferable
     identifiers produce non-indexed bare signatures (sadcigars).
 
-    Args:
+    Parameters:
         hab (Habitat): Signing environment providing keys and identifier state.
         serder (Serder | Creder): Self-addressing data (SAD) to sign.
         paths (list[list]): List of path component lists identifying the SAD
@@ -141,7 +141,7 @@ def transSeal(hab):
     signing member list (smids); for a non-group Habitat the index is left as
     ``None`` so the default key order is used.
 
-    Args:
+    Parameters:
         hab (Habitat): Signing environment whose current key-event state
             provides the seal and index information.
 
@@ -156,6 +156,9 @@ def transSeal(hab):
         - **indices** (*list[int] | None*) — ``[index]`` giving the signer's
           position in the group's smids list, or ``None`` for non-group
           Habitats (uses default key order).
+
+    Notes:
+        TODO: NRR, indices for both hab.smids and hab.rmids
     """
     if not isinstance(hab, GroupHab):  # not a group use own kever
         indices = None  # use default order
