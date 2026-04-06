@@ -380,7 +380,7 @@ def test_intake():
 
             kramit_called = [False]
 
-            def mock_kramit(msg, **kwa):
+            def mock_kramit(msg, kwa=None):
                 kramit_called[0] = True
                 return msg
 
@@ -496,7 +496,7 @@ def test_assk(mockHelpingNowUTC):
             prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             # Assert cache created
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
@@ -525,7 +525,7 @@ def test_assk(mockHelpingNowUTC):
                                           indexed=False)
             kwa = dict(cigars=cigars)
 
-            kvy.processMsg(msg2, **kwa)
+            kvy.processMsg(msg2, kwa)
 
             # Assert cache created for non-transferable sender
             cache = receiverHby.db.kramMSGC.get(keys=(senderNTHab.pre, msg2.said))
@@ -549,7 +549,7 @@ def test_assk(mockHelpingNowUTC):
             staleKwa = dict(ssgs=[(prefixer, staleSigers)])
 
             # kramit returns None -> processMsg returns silently
-            kvy.processMsg(staleMsg, **staleKwa)
+            kvy.processMsg(staleMsg, staleKwa)
 
             # Assert no cache entry created for stale message
             staleCache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, staleMsg.said))
@@ -563,7 +563,7 @@ def test_assk(mockHelpingNowUTC):
             origCache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             assert origCache is not None  # still there from step 2
 
-            kvy.processMsg(msg, **dict(ssgs=[(prefixer, sigers)]))
+            kvy.processMsg(msg, dict(ssgs=[(prefixer, sigers)]))
 
             # Cache entry unchanged, no error raised
             cacheAfter = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
@@ -602,7 +602,7 @@ def test_assk(mockHelpingNowUTC):
             unknownKwa = dict(ssgs=[(unknownPrefixer, unknownSigers)])
 
             with pytest.raises(MissingSenderKeyStateError):
-                kvy.processMsg(unknownMsg, **unknownKwa)
+                kvy.processMsg(unknownMsg, unknownKwa)
 
             # Assert cue key state retrieval notification
             cue = kvy.cues.popleft()
@@ -672,7 +672,7 @@ def test_asmk(mockHelpingNowUTC):
             assert len(allSigers) == 3
 
             kwa = dict(ssgs=[(prefixer, allSigers)])
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             # Assert kramMSGC cache created, partials empty (threshold met immediately)
             cacheOrig = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
@@ -698,7 +698,7 @@ def test_asmk(mockHelpingNowUTC):
             allSigers2 = signMsg(msg2)
 
             kwa = dict(ssgs=[(prefixer, [allSigers2[0]])])
-            kvy.processMsg(msg2, **kwa)
+            kvy.processMsg(msg2, kwa)
 
             # Assert kramMSGC cache created for partial sigs
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg2.said))
@@ -718,7 +718,7 @@ def test_asmk(mockHelpingNowUTC):
 
             # Second delivery: 2 of 3 sigs, threshold met
             kwa = dict(ssgs=[(prefixer, [allSigers2[2]])])
-            kvy.processMsg(msg2, **kwa)
+            kvy.processMsg(msg2, kwa)
 
             # Partials persist until pruner cleans up (not deleted on threshold)
             assert receiverHby.db.kramPMKM.get(keys=(senderHab.pre, msg2.said)) is not None
@@ -743,12 +743,12 @@ def test_asmk(mockHelpingNowUTC):
             allSigers3 = signMsg(msg3)
 
             # First delivery, sig index 0
-            kvy.processMsg(msg3, **dict(ssgs=[(prefixer, [allSigers3[0]])]))
+            kvy.processMsg(msg3, dict(ssgs=[(prefixer, [allSigers3[0]])]))
             kramPMKS = receiverHby.db.kramPMKS.get(keys=(senderHab.pre, msg3.said))
             assert len(kramPMKS) == 1
 
             # Second delivery: same sig index 0 again
-            kvy.processMsg(msg3, **dict(ssgs=[(prefixer, [allSigers3[0]])]))
+            kvy.processMsg(msg3, dict(ssgs=[(prefixer, [allSigers3[0]])]))
             kramPMKS_after = receiverHby.db.kramPMKS.get(keys=(senderHab.pre, msg3.said))
             assert len(kramPMKS_after) == 1  # deduped, still 1 unique sig
 
@@ -774,7 +774,7 @@ def test_asmk(mockHelpingNowUTC):
             kwa = dict(ssgs=[(prefixer, [allSigers4[0]])],
                          tsgs=[tsg])
 
-            kvy.processMsg(msg4, **kwa)
+            kvy.processMsg(msg4, kwa)
 
             # Assert both sigs pooled, 2 of 3 threshold met
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg4.said))
@@ -795,7 +795,7 @@ def test_asmk(mockHelpingNowUTC):
             allSigers2f = signMsg(msg5)
 
             # First delivery, 1 sig
-            kvy.processMsg(msg5, **dict(ssgs=[(prefixer, [allSigers2f[0]])]))
+            kvy.processMsg(msg5, dict(ssgs=[(prefixer, [allSigers2f[0]])]))
             assert receiverHby.db.kramPMKS.get(keys=(senderHab.pre, msg5.said)) is not None
 
             # Rotate sender
@@ -808,7 +808,7 @@ def test_asmk(mockHelpingNowUTC):
                                            indexed=True)
 
             # Second delivery with new-key sig — key state mismatch detected
-            kvy.processMsg(msg5, **dict(ssgs=[(prefixer, [newSigers[2]])]))
+            kvy.processMsg(msg5, dict(ssgs=[(prefixer, [newSigers[2]])]))
 
             # Assert accumulation invalidated by key state change -> returns None
             # The partial DB entries still exist (should we be wiping these here?)
@@ -833,7 +833,7 @@ def test_asmk(mockHelpingNowUTC):
                                              verfers=senderHab.kever.verfers,
                                              indexed=True)
 
-            kvy.processMsg(msg6, **dict(ssgs=[(prefixer, allSigers2g)]))
+            kvy.processMsg(msg6, dict(ssgs=[(prefixer, allSigers2g)]))
 
             # Assert accepted because multi-key uses long lag (ll=60000ms)
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg6.said))
@@ -844,7 +844,7 @@ def test_asmk(mockHelpingNowUTC):
 
             # Step 8: Test cache-exists idempotency
             # Resend the fully-accepted message from 2b with more sigs
-            kvy.processMsg(msg, **dict(ssgs=[(prefixer, allSigers)]))
+            kvy.processMsg(msg, dict(ssgs=[(prefixer, allSigers)]))
 
             # kramit finds existing cache, multi-key path -> accumulation attempt
             # but threshold already met -> idempotent drop, no error
@@ -931,7 +931,7 @@ def test_asr(mockHelpingNowUTC):
             # Pure seal, no sigs. kramit accepts via asr, but downstream
             # _processMsgQry raises ValidationError (no source/cigars).
             with pytest.raises(ValidationError):
-                kvy.processMsg(msg, **dict(sscs=sscs))
+                kvy.processMsg(msg, dict(sscs=sscs))
 
             # Assert: kramit created cache before downstream error
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
@@ -968,7 +968,7 @@ def test_asr(mockHelpingNowUTC):
                                         indexed=True)
             kwa = dict(ssts=ssts, ssgs=[(prefixer, sigers)])
 
-            kvy.processMsg(msg2, **kwa)
+            kvy.processMsg(msg2, kwa)
 
             # Assert accepted via asr, full flow succeeds
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg2.said))
@@ -978,6 +978,12 @@ def test_asr(mockHelpingNowUTC):
             assert cue["kin"] == "reply"
             kvy.cues.clear()
 
+            assert 'ssts' not in kwa
+            sn0, sd0 = kwa['sscs'][0]
+            assert sn0.sn == ixnSn and sd0.qb64 == ixnSaid
+            assert 'ssgs' not in kwa
+            assert kwa['sigers'] == sigers
+            assert kwa['source'].qb64 == senderHab.pre
 
             # Step 4: Test Non-matching ssts falls back to assk
 
@@ -999,7 +1005,7 @@ def test_asr(mockHelpingNowUTC):
                                         indexed=True)
             kwa = dict(ssts=nonMatchingSsts, ssgs=[(prefixer, sigers)])
 
-            kvy.processMsg(msg3, **kwa)
+            kvy.processMsg(msg3, kwa)
 
             # Resolves to assk (single-key). Accepted via sig auth.
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg3.said))
@@ -1024,7 +1030,7 @@ def test_asr(mockHelpingNowUTC):
             kwa = dict(sscs=sscs)  # pure sscs, no sigs
 
             # kramit returns None (message dropped)
-            kvy.processMsg(msg4, **kwa)
+            kvy.processMsg(msg4, kwa)
 
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg4.said))
             assert cache is None  # no cache created
@@ -1044,7 +1050,7 @@ def test_asr(mockHelpingNowUTC):
             sscs = [(Seqner(sn=999), Saider(qb64=ixnSaid))]
             kwa = dict(sscs=sscs)  # pure sscs, no sigs
 
-            kvy.processMsg(msg5, **kwa)
+            kvy.processMsg(msg5, kwa)
 
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg5.said))
             assert cache is None  # no cache
@@ -1073,7 +1079,7 @@ def test_asr(mockHelpingNowUTC):
             kwa = dict(sscs=sscs, ssgs=[(prefixer, sigers)])
 
             # falls back to assk
-            kvy.processMsg(msg6, **kwa)
+            kvy.processMsg(msg6, kwa)
 
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg6.said))
             assert cache is not None  # accepted via sig fallback
@@ -1100,7 +1106,7 @@ def test_asr(mockHelpingNowUTC):
                                         verfers=senderHab.kever.verfers,
                                         indexed=True)
             kwa = dict(sscs=sscs, ssgs=[(prefixer, sigers)])
-            kvy.processMsg(msg7, **kwa)
+            kvy.processMsg(msg7, kwa)
 
             # Seal valid -> asr, sigs irrelevant to auth type resolution
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg7.said))
@@ -1126,7 +1132,7 @@ def test_asr(mockHelpingNowUTC):
                                         verfers=senderHab.kever.verfers,
                                         indexed=True)
             kwa = dict(sscs=sscs, ssgs=[(prefixer, sigers)])
-            kvy.processMsg(msg8, **kwa)
+            kvy.processMsg(msg8, kwa)
 
             # _resolveAuthType: seal fails -> single-key resolves to assk
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg8.said))
@@ -1154,7 +1160,7 @@ def test_asr(mockHelpingNowUTC):
                                        indexed=True)
             kwa = dict(sscs=sscs, ssgs=[(mkPrefixer, [allSigers[0]])])
 
-            kvy.processMsg(msg7, **kwa)
+            kvy.processMsg(msg7, kwa)
 
             # _resolveAuthType: seal fails, resolves to asmk
             cache = receiverHby.db.kramMSGC.get(keys=(mkHab.pre, msg7.said))
@@ -1166,7 +1172,7 @@ def test_asr(mockHelpingNowUTC):
             assert len(kramPMKS) == 1
 
             # Send 2nd sig -> threshold met (2 of 3)
-            kvy.processMsg(msg7, **dict(sscs=sscs,
+            kvy.processMsg(msg7, dict(sscs=sscs,
                                         ssgs=[(mkPrefixer, [allSigers[1]])]))
 
             # Partials persist until pruner cleans up (not deleted on threshold)
@@ -1199,7 +1205,7 @@ def test_asr(mockHelpingNowUTC):
                                              indexed=True)
             kwa = dict(sscs=sscs, ssgs=[(prefixer, wrongSigers)])
 
-            kvy.processMsg(msg8, **kwa)
+            kvy.processMsg(msg8, kwa)
 
             # _resolveAuthType: seal validates -> asr -> sigs never checked
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg8.said))
@@ -1273,7 +1279,7 @@ def test_transactioned(mockHelpingNowUTC):
             kwa = dict(ssgs=[(skPrefixer, sigers)])
 
             # Call kramit directly (processMsg rejects xip)
-            result = kramer.kramit(xip, **kwa)
+            result = kramer.kramit(xip, kwa)
             assert result is not None  # xip accepted
 
             # Assert: kramTMSC entry created, xip's exId is its own SAID
@@ -1299,7 +1305,7 @@ def test_transactioned(mockHelpingNowUTC):
 
             # Error raised due to lack of exchanger. Could probably set one up for this test
             with pytest.raises(ValidationError):
-                kvy.processMsg(exn, **kwa)
+                kvy.processMsg(exn, kwa)
 
             # Assert kramTMSC entry created for exn
             cache = receiverHby.db.kramTMSC.get(keys=(skHab.pre, xip.said, exn.said))
@@ -1324,7 +1330,7 @@ def test_transactioned(mockHelpingNowUTC):
             kwa = dict(ssgs=[(skPrefixer, sigers)])
 
             # kramit can't find xip's xdt, returns None, processMsg returns
-            kvy.processMsg(msg3, **kwa)
+            kvy.processMsg(msg3, kwa)
 
             # Assert no kramTMSC entry for the exn
             cache = receiverHby.db.kramTMSC.get(keys=(skHab.pre, fakeXid, msg3.said))
@@ -1358,7 +1364,7 @@ def test_transactioned(mockHelpingNowUTC):
 
             # mdt passes standard timeliness, but
             # xdt=10min ago, mdt=now: xdt + xl = 5min ago < now -> fails
-            kvy.processMsg(msg4, **kwa)
+            kvy.processMsg(msg4, kwa)
 
             # Assert no kramTMSC entry (exchange window failed)
             cache = receiverHby.db.kramTMSC.get(
@@ -1377,7 +1383,7 @@ def test_transactioned(mockHelpingNowUTC):
                                     verfers=mkHab.kever.verfers,
                                     indexed=True)
             # Use all sigs for xip to seed it successfully
-            result = kramer.kramit(mkXip, **dict(ssgs=[(mkPrefixer, sigers)]))
+            result = kramer.kramit(mkXip, dict(ssgs=[(mkPrefixer, sigers)]))
             assert result is not None
 
             cache = receiverHby.db.kramTMSC.get(
@@ -1401,7 +1407,7 @@ def test_transactioned(mockHelpingNowUTC):
             # First delivery: 1 sig (below 2-of-3 threshold)
             kwa = dict(ssgs=[(mkPrefixer, [allSigers[0]])])
             # kramit returns None (pending) -> processMsg returns without dispatch
-            kvy.processMsg(mkExn, **kwa)
+            kvy.processMsg(mkExn, kwa)
 
             # kramTMSC cache created (multi-key still creates cache entry)
             cache = receiverHby.db.kramTMSC.get(
@@ -1419,7 +1425,7 @@ def test_transactioned(mockHelpingNowUTC):
             # kramit returns msg (threshold met). processMsg dispatches to
             # _processMsgExn which raises ValidationError (no Exchanger).
             with pytest.raises(ValidationError):
-                kvy.processMsg(mkExn, **kwa)
+                kvy.processMsg(mkExn, kwa)
 
             # Partials persist until pruner cleans up (not deleted on threshold)
             assert receiverHby.db.kramPMKM.get(keys=partialKey) is not None
@@ -1442,7 +1448,7 @@ def test_transactioned(mockHelpingNowUTC):
             sigers8 = skHab.mgr.sign(ser=xip8.raw,
                                      verfers=skHab.kever.verfers,
                                      indexed=True)
-            assert kramer.kramit(xip8, **dict(ssgs=[(skPrefixer, sigers8)])) is not None
+            assert kramer.kramit(xip8, dict(ssgs=[(skPrefixer, sigers8)])) is not None
 
             exn8 = exchange(sender=skHab.pre,
                             receiver=receiverHab.pre,
@@ -1462,8 +1468,8 @@ def test_transactioned(mockHelpingNowUTC):
                     sigers8)
 
             kvyWithExc.processMsg(exn8,
-                                  **dict(ssgs=[(skPrefixer, sigers8)],
-                                         tsgs=[tsg8]))
+                                  dict(ssgs=[(skPrefixer, sigers8)],
+                                       tsgs=[tsg8]))
 
             cache = receiverHby.db.kramTMSC.get(keys=(skHab.pre, xip8.said, exn8.said))
             assert cache is not None
@@ -1485,7 +1491,7 @@ def test_transactioned(mockHelpingNowUTC):
             sigers8 = skHab.mgr.sign(ser=xip8.raw,
                                      verfers=skHab.kever.verfers,
                                      indexed=True)
-            assert kramer.kramit(xip8, **dict(ssgs=[(skPrefixer, sigers8)])) is not None
+            assert kramer.kramit(xip8, dict(ssgs=[(skPrefixer, sigers8)])) is not None
 
             exn8 = exchange(sender=skHab.pre,
                             receiver=receiverHab.pre,
@@ -1505,8 +1511,8 @@ def test_transactioned(mockHelpingNowUTC):
                     sigers8)
 
             kvyWithExc.processMsg(exn8,
-                                  **dict(ssgs=[(skPrefixer, sigers8)],
-                                         tsgs=[tsg8]))
+                                  dict(ssgs=[(skPrefixer, sigers8)],
+                                       tsgs=[tsg8]))
 
             cache = receiverHby.db.kramTMSC.get(keys=(skHab.pre, xip8.said, exn8.said))
             assert cache is not None
@@ -1585,7 +1591,7 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
                                         indexed=True)
             kwa = dict(ssgs=[(skPrefixer, sigers)])
 
-            result = kramer.kramit(v1ExnWithP, **kwa)
+            result = kramer.kramit(v1ExnWithP, kwa)
 
             assert result is not None  # accepted
             # Routed to non-transactional cache
@@ -1626,7 +1632,7 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
                                         indexed=True)
             kwa = dict(ssgs=[(skPrefixer, sigers)])
 
-            result = kramer.kramit(v1ExnWithX, **kwa)
+            result = kramer.kramit(v1ExnWithX, kwa)
 
             assert result is not None  # accepted
             # Still routes to non-transactional cache (x field ignored for v1)
@@ -1649,7 +1655,7 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
             xipSigers = senderHab.mgr.sign(ser=v2Xip.raw,
                                             verfers=senderHab.kever.verfers,
                                             indexed=True)
-            xipResult = kramer.kramit(v2Xip, **dict(ssgs=[(skPrefixer, xipSigers)]))
+            xipResult = kramer.kramit(v2Xip, dict(ssgs=[(skPrefixer, xipSigers)]))
             assert xipResult is not None  # xip accepted
 
             v2Exn = exchange(sender=senderHab.pre,
@@ -1667,7 +1673,7 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
                                         indexed=True)
             kwa = dict(ssgs=[(skPrefixer, sigers)])
 
-            result = kramer.kramit(v2Exn, **kwa)
+            result = kramer.kramit(v2Exn, kwa)
 
             assert result is not None  # accepted
             # Routed to transactional cache
@@ -1788,7 +1794,7 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
                        trqs=trqs, tsgs=tsgs, sscs=sscs, ssts=ssts,
                        frcs=frcs, tdcs=tdcs, ptds=ptds,
                        bsqs=bsqs, bsss=bsss, tmqs=tmqs)
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             # Threshold not met, partials populated
             assert receiverHby.db.kramPMKM.get(keys=partialKey) is not None
@@ -1812,7 +1818,7 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
 
             # Re-delivery of same non-auth attachments is idempotent
 
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) == 1
@@ -1833,7 +1839,7 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
                         trqs=trqs, tsgs=tsgs, sscs=sscs, ssts=ssts,
                         frcs=frcs, tdcs=tdcs, ptds=ptds,
                         bsqs=bsqs, bsss=bsss, tmqs=tmqs)
-            kvy.processMsg(msg, **kwa2)
+            kvy.processMsg(msg, kwa2)
 
             # Threshold met, cue generated
             assert len(kvy.cues) > 0
@@ -1900,7 +1906,7 @@ def test_non_auth_attachments_empty_kwa(mockHelpingNowUTC):
             # Partial delivery with no non-auth attachments in kwa
 
             kwa = dict(ssgs=[(prefixer, [allSigers[0]])])
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             # Sig partial populated
             assert receiverHby.db.kramPMKM.get(keys=partialKey) is not None
@@ -2129,7 +2135,7 @@ def test_stale_tsgs(mockHelpingNowUTC):
 
             kwa = dict(ssgs=[(prefixer, currentSigers)],
                        tsgs=currentTsgs + [staleTsg])
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             # Fast path: threshold met on first delivery.
             # Cache created, no partials stored.
@@ -2167,7 +2173,7 @@ def test_stale_tsgs(mockHelpingNowUTC):
 
             kwa2 = dict(ssgs=[(prefixer, currentSigers2)],
                         tsgs=currentTsgs2 + [bogusStaleTsg])
-            kvy.processMsg(msg2, **kwa2)
+            kvy.processMsg(msg2, kwa2)
 
             # Accepted via current-keystate sigs; bogus stale tsg silently ignored
             cache2 = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg2.said))
@@ -2203,7 +2209,7 @@ def test_stale_tsgs(mockHelpingNowUTC):
             kwa3a = dict(ssgs=[(prefixer, [currentSigers3[0]])],
                          tsgs=[(prefixer, curSeqner, curSaider,
                                 [currentSigers3[0]])] + [staleTsg3])
-            kvy.processMsg(msg3, **kwa3a)
+            kvy.processMsg(msg3, kwa3a)
 
             assert receiverHby.db.kramPMKM.get(keys=partialKey3) is not None
             pmks3 = receiverHby.db.kramPMKS.get(keys=partialKey3)
@@ -2219,7 +2225,7 @@ def test_stale_tsgs(mockHelpingNowUTC):
             kwa3b = dict(ssgs=[(prefixer, [currentSigers3[1]])],
                          tsgs=[(prefixer, curSeqner, curSaider,
                                 [currentSigers3[1]])])
-            kvy.processMsg(msg3, **kwa3b)
+            kvy.processMsg(msg3, kwa3b)
 
             # Threshold met, cue generated
             assert len(kvy.cues) > 0
@@ -2302,7 +2308,7 @@ def test_cue_ks_non_transactioned(mockHelpingNowUTC):
             kwa = dict(ssgs=[(skPrefixer, sigers)])
 
             with pytest.raises(MissingSenderKeyStateError):
-                kvy.processMsg(msg, **kwa)
+                kvy.processMsg(msg, kwa)
 
             # Assert cue key state retrieval notification
             cue = kvy.cues.popleft()
@@ -2328,7 +2334,7 @@ def test_cue_ks_non_transactioned(mockHelpingNowUTC):
             kwa = dict(ssgs=[(mkPrefixer, sigers)])
 
             with pytest.raises(MissingSenderKeyStateError):
-                kvy.processMsg(msg, **kwa)
+                kvy.processMsg(msg, kwa)
 
             # Assert cue key state retrieval notification
             cue = kvy.cues.popleft()
@@ -2352,7 +2358,7 @@ def test_cue_ks_non_transactioned(mockHelpingNowUTC):
             sscs = [(Seqner(sn=999), Saider(qb64=ixnSaid))]
             kwa = dict(sscs=sscs)  # pure sscs, no sigs
 
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             cache = receiverHby.db.kramMSGC.get(keys=(kownSenderHab.pre, msg.said))
             assert cache is None  # no cache
@@ -2436,7 +2442,7 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
 
             # Call kramit directly (processMsg rejects xip)
             with pytest.raises(MissingSenderKeyStateError):
-                result = kramer.kramit(xip, **kwa)
+                result = kramer.kramit(xip, kwa)
 
             # Assert cue key state retrieval notification
             cue = kvy.cues.popleft()
@@ -2463,7 +2469,7 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
 
             # Call kramit directly (processMsg rejects xip)
             with pytest.raises(MissingSenderKeyStateError):
-                result = kramer.kramit(xip, **kwa)
+                result = kramer.kramit(xip, kwa)
 
             # Assert cue key state retrieval notification
             cue = kvy.cues.popleft()
@@ -2488,7 +2494,7 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
             kwa = dict(sscs=sscs)  # pure sscs, no sigs
 
             # Call kramit directly (processMsg rejects xip)
-            kramer.kramit(xip, **kwa)
+            kramer.kramit(xip, kwa)
 
             # Assert for cue key state retrieval
             cue = kvy.cues.popleft()
@@ -2559,7 +2565,7 @@ def test_aid_allow_deny(mockHelpingNowUTC):
                                         indexed=True)
             prefixer = Prefixer(qb64=denyHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             # Assert cache was not created
             assert receiverHby.db.kramMSGC.get(keys=(denyHab.pre, msg.said)) is None
@@ -2582,7 +2588,7 @@ def test_aid_allow_deny(mockHelpingNowUTC):
                                         indexed=True)
             prefixer = Prefixer(qb64=allowHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             # Assert cache was created
             assert receiverHby.db.kramMSGC.get(keys=(allowHab.pre, msg.said)) is not None
@@ -2600,7 +2606,7 @@ def test_aid_allow_deny(mockHelpingNowUTC):
                                         indexed=True)
             prefixer = Prefixer(qb64=denyHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             # Assert cache was not created because the allow list is active and denyHab is not 
             # in the allow list
@@ -2610,7 +2616,7 @@ def test_aid_allow_deny(mockHelpingNowUTC):
             kvy.allowList.add(denyHab.pre)
 
             # Re process the message
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             # Assert cache was created
             assert receiverHby.db.kramMSGC.get(keys=(denyHab.pre, msg.said)) is not None
@@ -2898,7 +2904,7 @@ def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
             prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             # Assert cache created
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
@@ -2975,7 +2981,7 @@ def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
             prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             ctyp2 = receiverHby.db.kramCTYP.get("~")
             # Accept windows updated
@@ -3128,7 +3134,7 @@ def test_new_cache_type(fakeHelpingClock):
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             # Call kramit directly (processMsg rejects xip)
-            result = kramer.kramit(xip, **kwa)
+            result = kramer.kramit(xip, kwa)
             assert result is not None  # xip accepted
 
             # Create an exchange message with route1
@@ -3146,7 +3152,7 @@ def test_new_cache_type(fakeHelpingClock):
 
             # Error raised due to lack of exchanger
             with pytest.raises(ValidationError):
-                kvy.processMsg(exn, **kwa)
+                kvy.processMsg(exn, kwa)
 
             # Assert tmsc entry created for exn
             cache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn.said))
@@ -3189,7 +3195,7 @@ def test_new_cache_type(fakeHelpingClock):
 
             # Error raised due to lack of exchanger
             with pytest.raises(ValidationError):
-                kvy.processMsg(exn, **kwa)
+                kvy.processMsg(exn, kwa)
 
              # Assert the new cache-type was processed and removed
             assert "exn.R.route1" not in kramer._pending
@@ -3228,7 +3234,7 @@ def test_new_cache_type(fakeHelpingClock):
 
             # Error raised due to lack of exchanger
             with pytest.raises(ValidationError):
-                kvy.processMsg(exn, **kwa)
+                kvy.processMsg(exn, kwa)
 
             # Assert tmsc entry created for exn
             cache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn.said))
@@ -3401,7 +3407,7 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             # Assert cache created
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
@@ -3437,7 +3443,7 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             # Call kramit directly (processMsg rejects xip)
-            result = kramer.kramit(xip, **kwa)
+            result = kramer.kramit(xip, kwa)
             assert result is not None  # xip accepted
 
             # Create an exchange message with a route, still falls in the broader exn cache-type
@@ -3455,7 +3461,7 @@ def test_multiple_new_cache_type(fakeHelpingClock):
 
             # Error raised due to lack of exchanger
             with pytest.raises(ValidationError):
-                kvy.processMsg(exn, **kwa)
+                kvy.processMsg(exn, kwa)
 
             # Assert tmsc entry created for exn
             cache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn.said))
@@ -3495,7 +3501,7 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             # Assert new qry cache-type values
             qryCt = receiverHby.db.kramCTYP.get("qry")
@@ -3539,7 +3545,7 @@ def test_multiple_new_cache_type(fakeHelpingClock):
 
             # Error raised due to lack of exchanger
             with pytest.raises(ValidationError):
-                kvy.processMsg(exn, **kwa)
+                kvy.processMsg(exn, kwa)
 
             # Assert tmsc entry created for exn
             cache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn.said))
@@ -3695,7 +3701,7 @@ def test_merge_cache_types(fakeHelpingClock):
             prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             # Assert cache created
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
@@ -3726,7 +3732,7 @@ def test_merge_cache_types(fakeHelpingClock):
             prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             # Assert cache created
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
@@ -3764,7 +3770,7 @@ def test_merge_cache_types(fakeHelpingClock):
             prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
              # Assert "qry" was processed and removed
             assert "qry" not in kramer._pending
@@ -3803,7 +3809,7 @@ def test_merge_cache_types(fakeHelpingClock):
             prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             # Assert cache created
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
@@ -3913,7 +3919,7 @@ def test_modify_cache_types(fakeHelpingClock):
             prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             # Assert qry.R.logs cache-type values
             qryCtLgs = receiverHby.db.kramCTYP.get("qry.R.logs")
@@ -3972,7 +3978,7 @@ def test_modify_cache_types(fakeHelpingClock):
             prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             # Assert cache created
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
@@ -4030,7 +4036,7 @@ def test_modify_cache_types(fakeHelpingClock):
             prefixer = Prefixer(qb64=senderHab.pre)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
             
             # Assert "qry" was processed and removed
             assert "qry.R.logs" not in kramer._pending
@@ -4201,7 +4207,7 @@ def test_pruning_messages_single_key(fakeHelpingClock):
             kwa = dict(ssgs=[(prefixer, earlySigers)])
 
             # Process message, should be accepted and cached
-            kvy.processMsg(earlyMsg, **kwa)
+            kvy.processMsg(earlyMsg, kwa)
 
             # Run the doist to process pruning (though it shouldn't prune anything yet)
             doist.recur(deeds=deeds)
@@ -4239,7 +4245,7 @@ def test_pruning_messages_single_key(fakeHelpingClock):
             kwa = dict(ssgs=[(prefixer, laterSigers)])
 
             # Process the later message
-            kvy.processMsg(laterMsg, **kwa)
+            kvy.processMsg(laterMsg, kwa)
 
             # Assert later message is cached with its own timestamp
             laterCache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, laterMsg.said))
@@ -4423,7 +4429,7 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
                        frcs=frcs, tdcs=tdcs, ptds=ptds,
                        bsqs=bsqs, bsss=bsss, tmqs=tmqs)
 
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             # Run the doist to process pruning (it shouldn't prune anything yet)
             doist.recur(deeds=deeds)
@@ -4557,7 +4563,7 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
                        trqs=trqs, tsgs=tsgs, sscs=sscs, ssts=ssts,
                        frcs=frcs, tdcs=tdcs, ptds=ptds,
                        bsqs=bsqs, bsss=bsss, tmqs=tmqs)
-            kvy.processMsg(msg, **kwa)
+            kvy.processMsg(msg, kwa)
 
             # Assert msgc cache created for partial sigs
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
@@ -4593,7 +4599,7 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
                         trqs=trqs, tsgs=tsgs, sscs=sscs, ssts=ssts,
                         frcs=frcs, tdcs=tdcs, ptds=ptds,
                         bsqs=bsqs, bsss=bsss, tmqs=tmqs)
-            kvy.processMsg(msg, **kwa2)
+            kvy.processMsg(msg, kwa2)
 
             # Threshold met, cue generated
             assert len(kvy.cues) > 0
@@ -4711,7 +4717,7 @@ def test_pruning_exchanges(fakeHelpingClock):
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             # Call kramit directly (processMsg rejects xip)
-            result = kramer.kramit(xip, **kwa)
+            result = kramer.kramit(xip, kwa)
             assert result is not None  # xip accepted
 
             # Assert: tmsc entry created, xip's exId is its own SAID
@@ -4738,7 +4744,7 @@ def test_pruning_exchanges(fakeHelpingClock):
 
             # Error raised due to lack of exchanger
             with pytest.raises(ValidationError):
-                kvy.processMsg(exn, **kwa)
+                kvy.processMsg(exn, kwa)
 
             # Assert tmsc entry created for exn
             firstCache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn.said))
@@ -4772,7 +4778,7 @@ def test_pruning_exchanges(fakeHelpingClock):
 
             # Error raised due to lack of exchanger
             with pytest.raises(ValidationError):
-                kvy.processMsg(exn2, **kwa)
+                kvy.processMsg(exn2, kwa)
 
             # Assert tmsc entry created for exn2
             secondCache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn2.said))

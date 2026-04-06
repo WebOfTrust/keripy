@@ -4294,7 +4294,7 @@ class Kevery:
             raise UnverifiedReceiptError(msg)
 
 
-    def processMsg(self, serder, **kwa):
+    def processMsg(self, serder, kwa=None):
         """Process one non-key-event KERI message with attachments.
 
         Consolidated entry point for non-event message types:
@@ -4307,18 +4307,24 @@ class Kevery:
 
         Parameters:
             serder (SerderKERI): message instance
-            **kwa: keyword arguments from parser exts dict (sigers, cigars, tsgs,
+            kwa (dict | None): parser exts / attachment dict (sigers, cigars, tsgs,
                    ssgs, sscs, ssts, tdcs, wigers, trqs, frcs, ptds, essrs,
-                   bsqs, bsss, tmqs, local, etc.)
+                   bsqs, bsss, tmqs, local, etc.); mutated in place (KRAM
+                   normalization, rvy/exc/tvy pops, qry source/sigers).
                    Also accepts processor overrides injected by parser:
                    rvy (Revery), exc (Exchanger), tvy (Tevery)
         """
+        if kwa is None:
+            kwa = {}
         ilk = serder.ilk
 
         # Extract processor overrides injected by parser, fall back to self
         rvy = kwa.pop('rvy', None) or self.rvy
         exc = kwa.pop('exc', None) or self.exc
         tvy = kwa.pop('tvy', None) or self.tvy
+
+        # Normalize attachment shape: KRAM and qry dispatch always see a list.
+        kwa.setdefault('sigers', [])
 
         # Step 1: AID-based allow/deny Draft
     
@@ -4345,7 +4351,7 @@ class Kevery:
         # Step 2: KRAM
         if self.kramer:
             self.kramer.reconcileConfig()
-            result = self.kramer.intake(serder, **kwa)
+            result = self.kramer.intake(serder, kwa)
             if result is None:
                 return  # message dropped or pending in KRAM
 
@@ -4357,8 +4363,8 @@ class Kevery:
                     pre, sigers = kwa['ssgs'][-1]
                     kwa['source'] = pre
                     kwa['sigers'] = sigers
-                else:
-                    kwa['sigers'] = []  # just in case sigers provided not by ssgs
+                elif kwa['sigers'] and not kwa.get('source'):
+                    kwa['source'] = Prefixer(qb64=serder.pre)
 
                 if not (kwa.get('source') or kwa.get('cigars', [])):
                     raise ValidationError(

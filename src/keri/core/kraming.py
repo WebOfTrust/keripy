@@ -60,8 +60,10 @@ Fields:
         sdiger, vsigers) whose (number, sdiger) references a past
         establishment event and whose signatures verified against that
         historical key state. Not counted toward the current threshold.
-        Empty when no non-current tsgs verified. Not merged into kwa; sender
-        tsgs are stripped from kwa after verify (see _stripSenderTsgsFromKwa).
+        Empty when no non-current tsgs verified. Not merged into kwa; the
+        live kwa dict is not stripped (downstream dispatch may need tsgs).
+        Non-auth DB storage skips sender-addressed tsgs when writing
+        ``kramTSGS`` (see :meth:`Kramer._storeNonAuthAttachments`).
 
 Key state ref and tholder are derivable from the sender's kever
 (current key state) and are not included here. Callers that need
@@ -387,87 +389,48 @@ class Kramer:
 
         Parameters:
             senderId (str): message sender AID (qb64)
-            kwa (dict): parser attachment keyword arguments
+            kwa (dict): parser attachment keyword arguments; ``sigers`` must
+                exist (``kramit`` ensures this before calling).
         """
-        ssgs = kwa.get('ssgs')
-        if not ssgs:
-            return
-        keep = []
-        moved = []
+        ssgs = kwa.get('ssgs', [])
+        scrub = []
         for prefixer, sigers in ssgs:
             if prefixer.qb64 == senderId:
-                moved.extend(sigers)
-            else:
-                keep.append((prefixer, sigers))
-        if not moved:
-            return
-        kwa.setdefault('sigers', []).extend(moved)
-        if keep:
-            kwa['ssgs'] = keep
-        else:
+                kwa['sigers'].extend(sigers)
+                scrub.append((prefixer, sigers))
+        if scrub:
+            for pair in scrub:
+                ssgs.remove(pair)
+        if not ssgs:
             kwa.pop('ssgs', None)
 
     def _normalizeCurrentSenderTsgs(self, senderId, kever, kwa):
-        """Move sender-matching current-key trans last-sig groups into sigers.
+        """Fold sender-matching current-key trans last-sig groups into sigers.
 
         Each tsgs entry is (prefixer, number, sdiger, sigers). When
         prefixer.qb64 == senderId and (number, sdiger) references the
-        sender's current establishment event, those sigers are folded into
-        sigers and the quad is removed from tsgs. Non-sender quads and
-        sender quads for a prior key state remain in tsgs until
-        _verifyAttachedSigs strips them from kwa after verification.
+        sender's current establishment event, those sigers are also added
+        to ``sigers`` so _hasSigs and signature auth paths see them.
+
+        Unlike :meth:`_normalizeSenderSsgs`, matching quads are **not**
+        removed from ``tsgs``; downstream exn/rpy handling still needs the
+        full transferable-signature groups on the message.
 
         Parameters:
             senderId (str): message sender AID (qb64)
             kever (Kever): sender's Kever (current key state)
-            kwa (dict): parser attachment keyword arguments
+            kwa (dict): parser attachment keyword arguments; ``sigers`` must
+                exist (``kramit`` ensures this before calling).
         """
-        tsgs = kwa.get('tsgs')
-        if not tsgs:
-            return
-        keep = []
-        moved = []
+        tsgs = kwa.get('tsgs', [])
         cur_sn = kever.sner.num
         cur_said = kever.serder.said
-        for quad in tsgs:
-            prefixer, number, sdiger, sigers = quad
+        for prefixer, number, sdiger, sigers in tsgs:
             if prefixer.qb64 != senderId:
-                keep.append(quad)
                 continue
             if number.sn == cur_sn and sdiger.qb64 == cur_said:
-                moved.extend(sigers)
-            else:
-                keep.append(quad)
-        if not moved:
-            return
-        kwa.setdefault('sigers', []).extend(moved)
-        if keep:
-            kwa['tsgs'] = keep
-        else:
-            kwa.pop('tsgs', None)
-
-    @staticmethod
-    def _stripSenderTsgsFromKwa(senderId, kwa):
-        """Remove sender-addressed tsgs quads from kwa after verify.
-
-        After _normalizeCurrentSenderTsgs, any sender quad still in tsgs
-        references a non-current establishment event. Those signatures
-        cannot authenticate against the current key state; we do not
-        forward them in kwa or merge them back from sigResult.stale_tsgs.
-
-        Non-sender tsgs (other prefixers) are unchanged.
-
-        Parameters:
-            senderId (str): message sender AID (qb64)
-            kwa (dict): parser attachment keyword arguments
-        """
-        tsgs = kwa.get('tsgs')
+                kwa['sigers'].extend(sigers)
         if not tsgs:
-            return
-        keep = [q for q in tsgs if q[0].qb64 != senderId]
-        if keep:
-            kwa['tsgs'] = keep
-        else:
             kwa.pop('tsgs', None)
 
     def _resolveAuthType(self, msg, kwa, kever, hasSealRef, hasSigs, senderId):
@@ -542,8 +505,10 @@ class Kramer:
             msg (SerderKERI): message being authenticated
             senderId (str): sender AID prefix (qb64)
             kever (Kever): sender's Kever instance (current key state)
-            kwa (dict): parser attachment dict; mutated in place (must not
-                use **kwa at call sites or updates would not propagate).
+            kwa (dict): parser attachment dict; mutated in place for
+                normalization (must not use **kwa at call sites or updates
+                would not propagate). Sender tsgs are not stripped here so
+                downstream exn/rpy handlers keep full attachments.
 
         Returns:
             SigVerifyResult: namedtuple with (verified, sigers, stale_tsgs)
@@ -557,14 +522,13 @@ class Kramer:
             if senderId != cigar.verfer.qb64:  # sender identity check
                 continue
             if cigar.verfer.verify(cigar.raw, msg.raw):
-                Kramer._stripSenderTsgsFromKwa(senderId, kwa)
                 return SigVerifyResult(verified=True, sigers=[], stale_tsgs=[])
 
         # Build siger pool, oset by siger.qb64 to deduplicate.
         pool = oset()
 
         # Bare sigers, always included
-        for siger in kwa.get('sigers', []):
+        for siger in kwa['sigers']:
             pool.add(siger.qb64)
 
         # ssgs gate: prefixer must match senderId
@@ -576,8 +540,7 @@ class Kramer:
 
         # tsgs gate: prefixer matches AND current keystate matches.
         # Non-current but sender-matching tsgs are verified against their
-        # historical event and recorded in stale_tsgs (return value only);
-        # _stripSenderTsgsFromKwa removes sender quads from kwa before return.
+        # historical event and recorded in stale_tsgs (return value only).
         stale_tsgs = []
         for prefixer, number, sdiger, sigers in kwa.get('tsgs', []):
             if prefixer.qb64 != senderId:
@@ -599,14 +562,12 @@ class Kramer:
 
         # Verify pool in one pass against current key state.
         if not pool:
-            Kramer._stripSenderTsgsFromKwa(senderId, kwa)
             return SigVerifyResult(verified=False, sigers=[], stale_tsgs=stale_tsgs)
 
         poolSigers = [Siger(qb64=q) for q in pool]
         vsigers, _ = verifySigs(
             raw=msg.raw, sigers=poolSigers, verfers=kever.verfers)
 
-        Kramer._stripSenderTsgsFromKwa(senderId, kwa)
         return SigVerifyResult(
             verified=True if vsigers else False,
             sigers=vsigers,
@@ -689,8 +650,9 @@ class Kramer:
         from the sender cannot authenticate this message via that triple and
         are retained as ordinary attachments.
 
-        Sender-addressed tsgs are stripped from kwa in _verifyAttachedSigs
-        before this runs; remaining tsgs are non-sender quads only.
+        Sender-addressed tsgs quads are not written to kramTSGS (they are
+        authenticator material, not non-auth forwarding); other prefixers'
+        tsgs are stored. The live kwa dict is not mutated.
 
         Parameters:
             key (tuple): (AID, MID) partial db key
@@ -700,6 +662,8 @@ class Kramer:
         for item in kwa.get('trqs', []):
             self.db.kramTRQS.add(key, item)
         for prefixer, number, diger, sigers in kwa.get('tsgs', []):
+            if prefixer.qb64 == senderId:
+                continue
             for siger in sigers:
                 self.db.kramTSGS.add(key, (prefixer, number, diger, siger))
         for prefixer, number, diger in kwa.get('ssts', []):
@@ -737,23 +701,26 @@ class Kramer:
         self.db.kramTMQS.rem(key)
 
 
-    def intake(self, serder, **kwa):
+    def intake(self, serder, kwa=None):
         """Process message through KRAM denial and cache logic.
 
         Parameters:
             serder (SerderKERI): message instance
-            **kwa: keyword arguments from parser exts dict
+            kwa (dict | None): parser exts / attachment dict; mutated in place
+                when KRAM normalizes seals or signature groups.
         """
+        if kwa is None:
+            kwa = {}
         if self.enabled:
             md = self.denial(serder)  # message denial string
             for d in self.denials:
                 if md.startswith(d):
                     return serder
-            return self.kramit(serder, **kwa)
+            return self.kramit(serder, kwa)
         return serder  # KRAM disabled for all messages return message for further processing
 
 
-    def kramit(self, msg, **kwa):
+    def kramit(self, msg, kwa=None):
         """Core KRAM processing logic.
 
         Implements timeliness cache checking, auth type detection,
@@ -766,8 +733,8 @@ class Kramer:
 
         Parameters:
             msg (SerderKERI): message instance
-            **kwa: keyword arguments from parser exts dict containing
-                   auth attachments and other parsed data
+            kwa (dict | None): parser exts / attachment dict; normalized and
+                otherwise mutated in place (e.g. seal and ssgs folding).
 
         Returns:
             SerderKERI: the message if it passes KRAM
@@ -779,6 +746,9 @@ class Kramer:
             KramError: general errors used for linter compliance; indicates
                 something is very wrong if raised
         """
+        if kwa is None:
+            kwa = {}
+        kwa.setdefault('sigers', [])
 
         senderId = msg.pre
         msgType = msg.ilk
