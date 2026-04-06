@@ -548,8 +548,12 @@ class Kramer:
         """Idempotently store non-authenticator attachments for a partially
         signed multi-key message pending threshold satisfaction.
 
-        Handles all parser kwa attachment keys except ssgs and essrs, which
-        are handled separately as authenticators or encapsulations.
+        Handles parser kwa attachment keys except ssgs, essrs, sscs, and
+        sender-matching ssts. Seal couples (sscs) and source triples whose
+        prefix is the message sender are anchoring-seal-reference material
+        for this AID and are not stored here. Only ssts whose prefix differs
+        from the sender cannot authenticate this message via that triple and
+        are retained as ordinary attachments.
 
         Stale tsgs (verified against a historical key state) are folded into
         kwa['tsgs'] by the caller before this method is invoked, so they are
@@ -557,6 +561,7 @@ class Kramer:
 
         Parameters:
             key (tuple): (AID, MID) partial db key
+            senderId (str): message sender AID (qb64), for ssts filtering
             **kwa: keyword arguments from parser exts dict
         """
         for item in kwa.get('trqs', []):

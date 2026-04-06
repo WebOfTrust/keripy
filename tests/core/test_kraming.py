@@ -1682,13 +1682,15 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
 
 
 def test_non_auth_attachments_stored(mockHelpingNowUTC):
-    """Test that all non-authenticator attachments are stored in their
-    respective partial databases during multi-key accumulation and are
-    retrievable after threshold satisfaction.
+    """Test that non-authenticator attachments are stored in partial DBs.
 
-    Covers: trqs, tsgs, sscs, ssts, frcs, tdcs, ptds, bsqs, bsss, tmqs
-    populated on partial delivery, idempotency on re-delivery, persistence
-    after threshold met.
+    Seal-auth material (sscs; ssts whose prefix is the message sender) is not
+    stored there per KRAM: those reference the sender KEL for authentication.
+    ssts with a different prefix are stored like other non-auth attachments.
+
+    Covers: trqs, tsgs, foreign-prefix ssts, frcs, tdcs, ptds, bsqs, bsss,
+    tmqs on partial delivery, idempotency on re-delivery, persistence after
+    threshold met. sscs and sender-matching ssts remain only on the message.
     """
 
     salt1 = Salter(raw=b'0123456789abcdef').qb64
@@ -1702,8 +1704,8 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
                                       transferable=True)
         assert len(senderHab.kever.verfers) == 3
 
-        receiverHby.makeHab(name="naaReceiver", isith='1', icount=1,
-                            transferable=True)
+        receiverHab = receiverHby.makeHab(name="naaReceiver", isith='1', icount=1,
+                                            transferable=True)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
         senderIcp = senderHab.makeOwnEvent(sn=0)
@@ -1744,11 +1746,12 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
             # tsgs: trans last sig group (prefixer, seqner, saider, [sigers])
             tsgs = [(prefixer, seqner, saider, [allSigers[0]])]
 
-            # sscs: first seen seal couple (seqner, saider) issuing or delegating
+            # sscs: first seen seal couple (seqner, saider) — not copied to partial DBs
             sscs = [(seqner, saider)]
 
-            # ssts: source seal triple (prefixer, seqner, saider) issued or delegated
-            ssts = [(prefixer, seqner, saider)]
+            # ssts: triple with non-sender prefix — cannot seal-auth this msg; stored
+            otherPrefixer = Prefixer(qb64=receiverHab.pre)
+            ssts = [(otherPrefixer, seqner, saider)]
 
             # frcs: first seen replay couple (seqner, dater)
             firner = Seqner(sn=0)
@@ -1791,10 +1794,10 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
             kramPMKS = receiverHby.db.kramPMKS.get(keys=partialKey)
             assert len(kramPMKS) == 1
 
-            # All non-auth attachment dbs populated
+            # Non-auth attachment dbs populated (not sscs / not sender ssts)
+            assert receiverHby.db.kramSSCS.get(keys=partialKey) == []
             assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.kramSSCS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramSSTS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramFRCS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramTDCS.get(keys=partialKey)) == 1
@@ -1812,7 +1815,7 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
 
             assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.kramSSCS.get(keys=partialKey)) == 1
+            assert receiverHby.db.kramSSCS.get(keys=partialKey) == []
             assert len(receiverHby.db.kramSSTS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramFRCS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramTDCS.get(keys=partialKey)) == 1
@@ -1839,7 +1842,7 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
             # Non-auth attachments persist (pruner cleans up, not kramit)
             assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) >= 1
             assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) >= 1
-            assert len(receiverHby.db.kramSSCS.get(keys=partialKey)) >= 1
+            assert receiverHby.db.kramSSCS.get(keys=partialKey) == []
             assert len(receiverHby.db.kramSSTS.get(keys=partialKey)) >= 1
             assert len(receiverHby.db.kramFRCS.get(keys=partialKey)) >= 1
             assert len(receiverHby.db.kramTDCS.get(keys=partialKey)) >= 1
@@ -4328,8 +4331,8 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
         assert len(senderHab.kever.verfers) == 3
 
         # Create receiver hab for db context
-        receiverHby.makeHab(name="mkReceiver", isith='1', icount=1,
-                            transferable=True)
+        receiverHab = receiverHby.makeHab(name="mkReceiver", isith='1', icount=1,
+                                            transferable=True)
 
         # Cross-feed sender ICP to receiver
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
@@ -4385,11 +4388,12 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
             # tsgs: trans last sig group (prefixer, seqner, saider, [sigers])
             tsgs = [(prefixer, seqner, saider, [allSigers[0]])]
 
-            # sscs: first seen seal couple (seqner, saider) issuing or delegating
+            # sscs: first seen seal couple (seqner, saider) — not copied to partial DBs
             sscs = [(seqner, saider)]
 
-            # ssts: source seal triple (prefixer, seqner, saider) issued or delegated
-            ssts = [(prefixer, seqner, saider)]
+            # ssts: triple with non-sender prefix — stored as non-auth attachment
+            otherPrefixer = Prefixer(qb64=receiverHab.pre)
+            ssts = [(otherPrefixer, seqner, saider)]
 
             # frcs: first seen replay couple (seqner, dater)
             firner = Seqner(sn=0)
@@ -4448,10 +4452,10 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
             pmsk = receiverHby.db.kramPMSK.get(keys=(senderHab.pre, msg.said))
             assert pmsk is not None
 
-            # All non-auth attachment dbs populated
+            # Non-auth attachment dbs populated (not sscs / not sender ssts)
+            assert receiverHby.db.kramSSCS.get(keys=partialKey) == []
             assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.kramSSCS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramSSTS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramFRCS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramTDCS.get(keys=partialKey)) == 1
@@ -4519,11 +4523,12 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
             # tsgs: trans last sig group (prefixer, seqner, saider, [sigers])
             tsgs = [(prefixer, seqner, saider, [allSigers[0]])]
 
-            # sscs: first seen seal couple (seqner, saider) issuing or delegating
+            # sscs: first seen seal couple (seqner, saider) — not copied to partial DBs
             sscs = [(seqner, saider)]
 
-            # ssts: source seal triple (prefixer, seqner, saider) issued or delegated
-            ssts = [(prefixer, seqner, saider)]
+            # ssts: triple with non-sender prefix — stored as non-auth attachment
+            otherPrefixer2 = Prefixer(qb64=receiverHab.pre)
+            ssts = [(otherPrefixer2, seqner, saider)]
 
             # frcs: first seen replay couple (seqner, dater)
             firner = Seqner(sn=0)
@@ -4574,10 +4579,10 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
             pmks = receiverHby.db.kramPMKS.get(keys=partialKey)
             assert len(pmks) == 1
 
-            # All non-auth attachment dbs populated
+            # Non-auth attachment dbs populated (not sscs / not sender ssts)
+            assert receiverHby.db.kramSSCS.get(keys=partialKey) == []
             assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.kramSSCS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramSSTS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramFRCS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramTDCS.get(keys=partialKey)) == 1
@@ -4605,7 +4610,7 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
             # Non-auth attachments persist
             assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) >= 1
             assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) >= 1
-            assert len(receiverHby.db.kramSSCS.get(keys=partialKey)) >= 1
+            assert receiverHby.db.kramSSCS.get(keys=partialKey) == []
             assert len(receiverHby.db.kramSSTS.get(keys=partialKey)) >= 1
             assert len(receiverHby.db.kramFRCS.get(keys=partialKey)) >= 1
             assert len(receiverHby.db.kramTDCS.get(keys=partialKey)) >= 1
