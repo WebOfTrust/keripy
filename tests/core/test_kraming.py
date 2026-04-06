@@ -1739,18 +1739,19 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
             seqner = Seqner(sn=senderKever.sner.num)
             saider = Saider(qb64=senderKever.serder.said)
             diger = Diger(ser=msg.raw)
+            otherPrefixer = Prefixer(qb64=receiverHab.pre)
 
             # trqs: trans receipt quadruple (prefixer, seqner, saider, siger)
             trqs = [(prefixer, seqner, saider, allSigers[0])]
 
-            # tsgs: trans last sig group (prefixer, seqner, saider, [sigers])
-            tsgs = [(prefixer, seqner, saider, [allSigers[0]])]
+            # tsgs: foreign prefix only (sender current tsgs are folded into sigers
+            # and not stored as non-auth in kramTSGS)
+            tsgs = [(otherPrefixer, seqner, saider, [allSigers[0]])]
 
             # sscs: first seen seal couple (seqner, saider) — not copied to partial DBs
             sscs = [(seqner, saider)]
 
             # ssts: triple with non-sender prefix — cannot seal-auth this msg; stored
-            otherPrefixer = Prefixer(qb64=receiverHab.pre)
             ssts = [(otherPrefixer, seqner, saider)]
 
             # frcs: first seen replay couple (seqner, dater)
@@ -2024,25 +2025,24 @@ def test_rem_non_auth_attachments(mockHelpingNowUTC):
 
 
 def test_stale_tsgs(mockHelpingNowUTC):
-    """Test that non-current but verifiable tsgs are collected, stored, and
-    forwarded in-band via kwa['tsgs'].
+    """Test non-current but verifiable tsgs: crypto check and stale_tsgs list.
 
     A tsg whose (number, sdiger) references a past establishment event in the
     sender's KEL verifies against the verfers from that historical event, not
     the current kever. Such stale tsgs are not counted toward the current
-    threshold but are folded into kwa['tsgs'] so downstream processors see
-    the full set of signers across key states.
+    threshold. They appear in sigResult.stale_tsgs from _verifyAttachedSigs but
+    are not merged into kwa or kramTSGS (sender tsgs are stripped from kwa
+    after verify).
 
     Covers:
         - stale tsg verified against historical key state appears in
           sigResult.stale_tsgs
         - stale tsg with no matching historical event produces empty
           stale_tsgs (ignored)
-        - fast path (threshold met on first delivery): stale tsgs merged
-          into kwa['tsgs'] directly from sigResult before return
-        - accumulation path (threshold met on later delivery): stale tsgs
-          stored in db.tsgs alongside current-keystate tsgs, present at
-          threshold satisfaction
+        - fast path (threshold met on first delivery): message accepted; stale
+          sender tsgs are not left in kwa for downstream
+        - accumulation path: kramTSGS only stores non-sender tsgs from kwa;
+          sender-only stale tsgs are not persisted there
     """
 
     salt1 = Salter(raw=b'0123456789abcdef').qb64
@@ -2138,11 +2138,7 @@ def test_stale_tsgs(mockHelpingNowUTC):
             assert cache is not None
             assert receiverHby.db.kramPMKM.get(keys=partialKey) is None
 
-            # stale tsg stored in db.tsgs alongside current-keystate tsgs
-            # (merged into kwa['tsgs'] before _storeNonAuthAttachments — but
-            # on the fast path _storeNonAuthAttachments is never called, so
-            # the stale tsg does NOT land in db.tsgs here. Instead it was
-            # merged into kwa['tsgs'] in-memory for downstream forwarding.)
+            # Stale sender tsg is not forwarded in kwa after verify.
             # Verify downstream dispatch occurred (cue generated).
             assert len(kvy.cues) > 0
             kvy.cues.clear()
@@ -2179,13 +2175,12 @@ def test_stale_tsgs(mockHelpingNowUTC):
             kvy.cues.clear()
 
 
-            # Step 3: accumulation path — stale tsg stored in db.tsgs
+            # Step 3: accumulation path — sender tsgs are not stored in kramTSGS
             #
             # First delivery: 1 current-keystate sig (below 2-of-3 threshold)
-            # plus one stale tsg. Stale tsg should be folded into kwa['tsgs']
-            # and stored in db.tsgs under the partial key.
-            # Second delivery: completes the threshold. db.tsgs should contain
-            # both current-keystate and stale entries.
+            # plus one stale tsg. Stale sender tsg is stripped from kwa; only
+            # current sigs accumulate in PMKS.
+            # Second delivery: completes the threshold.
 
             msg3 = query(pre=senderHab.pre,
                                   route="ksn",
@@ -2214,10 +2209,9 @@ def test_stale_tsgs(mockHelpingNowUTC):
             pmks3 = receiverHby.db.kramPMKS.get(keys=partialKey3)
             assert len(pmks3) == 1  # only 1 current-keystate sig so far
 
-            # db.tsgs should contain both the current-keystate tsg entry AND
-            # the stale tsg entry (folded in via kwa['tsgs'] before store)
+            # kramTSGS is not populated from sender-only tsgs after verify strip
             tsgs3 = receiverHby.db.kramTSGS.get(keys=partialKey3)
-            assert len(tsgs3) == 2  # 1 current + 1 stale
+            assert tsgs3 is None or len(tsgs3) == 0
 
             assert len(kvy.cues) == 0
 
@@ -2231,9 +2225,8 @@ def test_stale_tsgs(mockHelpingNowUTC):
             assert len(kvy.cues) > 0
             kvy.cues.clear()
 
-            # db.tsgs still holds all entries including the stale one
             tsgs3_after = receiverHby.db.kramTSGS.get(keys=partialKey3)
-            assert len(tsgs3_after) >= 2  # stale entry persists until pruner
+            assert tsgs3_after is None or len(tsgs3_after) == 0
 
     """Done Test"""
 
@@ -4381,18 +4374,18 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
             seqner = Seqner(sn=senderKever.sner.num)
             saider = Saider(qb64=senderKever.serder.said)
             diger = Diger(ser=msg.raw)
+            otherPrefixer = Prefixer(qb64=receiverHab.pre)
 
             # trqs: trans receipt quadruple (prefixer, seqner, saider, siger)
             trqs = [(prefixer, seqner, saider, allSigers[0])]
 
-            # tsgs: trans last sig group (prefixer, seqner, saider, [sigers])
-            tsgs = [(prefixer, seqner, saider, [allSigers[0]])]
+            # tsgs: foreign prefix only (sender current tsgs are not stored as non-auth)
+            tsgs = [(otherPrefixer, seqner, saider, [allSigers[0]])]
 
             # sscs: first seen seal couple (seqner, saider) — not copied to partial DBs
             sscs = [(seqner, saider)]
 
             # ssts: triple with non-sender prefix — stored as non-auth attachment
-            otherPrefixer = Prefixer(qb64=receiverHab.pre)
             ssts = [(otherPrefixer, seqner, saider)]
 
             # frcs: first seen replay couple (seqner, dater)
@@ -4516,18 +4509,18 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
             seqner = Seqner(sn=senderKever.sner.num)
             saider = Saider(qb64=senderKever.serder.said)
             diger = Diger(ser=msg.raw)
+            otherPrefixer2 = Prefixer(qb64=receiverHab.pre)
 
             # trqs: trans receipt quadruple (prefixer, seqner, saider, siger)
             trqs = [(prefixer, seqner, saider, allSigers[0])]
 
-            # tsgs: trans last sig group (prefixer, seqner, saider, [sigers])
-            tsgs = [(prefixer, seqner, saider, [allSigers[0]])]
+            # tsgs: foreign prefix only (sender current tsgs are not stored as non-auth)
+            tsgs = [(otherPrefixer2, seqner, saider, [allSigers[0]])]
 
             # sscs: first seen seal couple (seqner, saider) — not copied to partial DBs
             sscs = [(seqner, saider)]
 
             # ssts: triple with non-sender prefix — stored as non-auth attachment
-            otherPrefixer2 = Prefixer(qb64=receiverHab.pre)
             ssts = [(otherPrefixer2, seqner, saider)]
 
             # frcs: first seen replay couple (seqner, dater)
