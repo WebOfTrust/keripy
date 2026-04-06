@@ -4411,13 +4411,31 @@ class Kevery:
                         f"dropped msg={serder.pretty()}.")
                 exc.processEvent(serder=serder, **kwa)
 
-            case Ilks.xip | Ilks.pro | Ilks.bar:
-                raise ValidationError(
-                    f"Message type {ilk} not yet supported in processMsg")
+            case Ilks.xip:
+                self.processXip(serder, kwa)
+
+            case Ilks.pro:
+                self.processPro(serder, kwa)
+
+            case Ilks.bar:
+                self.processBar(serder, kwa)
+
             case _:
                 raise ValidationError(
                     f"Unexpected non-event message type {ilk} "
                     f"for msg={serder.pretty()}")
+
+    def processXip(self, serder, kwa):
+        """Stub: KERI v2 exchange transaction; no processing yet."""
+        pass
+
+    def processPro(self, serder, kwa):
+        """Stub: exchange proposal message; no processing yet."""
+        pass
+
+    def processBar(self, serder, kwa):
+        """Stub: exchange barrier message; no processing yet."""
+        pass
 
     def processAttachedReceiptCouples(self, serder, cigars, *, firner=None,
                                       local=None, **kwa):

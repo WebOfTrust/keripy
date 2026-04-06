@@ -1278,7 +1278,7 @@ def test_transactioned(mockHelpingNowUTC):
                                     indexed=True)
             kwa = dict(ssgs=[(skPrefixer, sigers)])
 
-            # Call kramit directly (processMsg rejects xip)
+            # Call kramit directly
             result = kramer.kramit(xip, kwa)
             assert result is not None  # xip accepted
 
@@ -1440,7 +1440,7 @@ def test_transactioned(mockHelpingNowUTC):
                                          kramer=kramer, exc=exc)
             assert kvyWithExc.exc is exc
 
-            # Seed a fresh xip via kramit directly (processMsg rejects xip ilk)
+            # Seed a fresh xip via kramit directly
             xip8 = exchept(sender=skHab.pre,
                            receiver=receiverHab.pre,
                            route="/test/exchange",
@@ -1483,7 +1483,7 @@ def test_transactioned(mockHelpingNowUTC):
                                          kramer=kramer, exc=exc)
             assert kvyWithExc.exc is exc
 
-            # Seed a fresh xip via kramit directly (processMsg rejects xip ilk)
+            # Seed a fresh xip via kramit directly
             xip8 = exchept(sender=skHab.pre,
                            receiver=receiverHab.pre,
                            route="/test/exchange",
@@ -2440,7 +2440,7 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
                                     indexed=True)
             kwa = dict(ssgs=[(skPrefixer, sigers)])
 
-            # Call kramit directly (processMsg rejects xip)
+            # Call kramit directly
             with pytest.raises(MissingSenderKeyStateError):
                 result = kramer.kramit(xip, kwa)
 
@@ -2467,7 +2467,7 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
                                     indexed=True)
             kwa = dict(ssgs=[(mkPrefixer, sigers)])
 
-            # Call kramit directly (processMsg rejects xip)
+            # Call kramit directly
             with pytest.raises(MissingSenderKeyStateError):
                 result = kramer.kramit(xip, kwa)
 
@@ -2493,7 +2493,7 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
             sscs = [(Seqner(sn=999), Saider(qb64=ixnSaid))]
             kwa = dict(sscs=sscs)  # pure sscs, no sigs
 
-            # Call kramit directly (processMsg rejects xip)
+            # Call kramit directly
             kramer.kramit(xip, kwa)
 
             # Assert for cue key state retrieval
@@ -3133,7 +3133,7 @@ def test_new_cache_type(fakeHelpingClock):
                                         indexed=True)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
-            # Call kramit directly (processMsg rejects xip)
+            # Call kramit directly
             result = kramer.kramit(xip, kwa)
             assert result is not None  # xip accepted
 
@@ -3442,7 +3442,7 @@ def test_multiple_new_cache_type(fakeHelpingClock):
                                         indexed=True)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
-            # Call kramit directly (processMsg rejects xip)
+            # Call kramit directly
             result = kramer.kramit(xip, kwa)
             assert result is not None  # xip accepted
 
@@ -4716,7 +4716,7 @@ def test_pruning_exchanges(fakeHelpingClock):
                                         indexed=True)
             kwa = dict(ssgs=[(prefixer, sigers)])
 
-            # Call kramit directly (processMsg rejects xip)
+            # Call kramit directly
             result = kramer.kramit(xip, kwa)
             assert result is not None  # xip accepted
 
