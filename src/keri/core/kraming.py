@@ -280,7 +280,7 @@ class Kramer:
 
 
     @staticmethod
-    def _hasSeals(senderId, **kwa):
+    def _hasSeals(senderId, kwa):
         """Check if kwa contains seal reference attachments from the sender.
 
         Two attachment types qualify for KRAM seal-based authentication:
@@ -302,7 +302,7 @@ class Kramer:
 
         Parameters:
             senderId (str): sender AID prefix (qb64)
-            **kwa: keyword arguments from parser exts dict
+            kwa (dict): parser exts / attachment dict (read-only here)
 
         Returns:
             bool: True if KRAM-applicable seal reference attachments present
@@ -316,7 +316,7 @@ class Kramer:
 
 
     @staticmethod
-    def _hasSigs(senderId, **kwa):
+    def _hasSigs(senderId, kwa):
         """Check if kwa contains signature attachments applicable to sender.
 
         Bare sigers always count. For cigars, ssgs, and tsgs, only entries
@@ -325,7 +325,7 @@ class Kramer:
 
         Parameters:
             senderId (str): qb64 of sender AID
-            **kwa: keyword arguments from parser exts dict
+            kwa (dict): parser exts / attachment dict (read-only here)
 
         Returns:
             bool: True if applicable signature attachments present
@@ -468,7 +468,7 @@ class Kramer:
         if hasSealRef and hasSigs:
             try:
                 sealValid = self._validateSenderSeal(
-                    msg, senderId, **kwa)
+                    msg, senderId, kwa)
             except MissingSenderKeyStateError:
                 sealValid = False
 
@@ -573,7 +573,7 @@ class Kramer:
             sigers=vsigers,
             stale_tsgs=stale_tsgs)
 
-    def _validateSenderSeal(self, msg, senderId, **kwa):
+    def _validateSenderSeal(self, msg, senderId, kwa):
         """Validate seal reference attachments against sender's KEL.
 
         Checks both sscs (seal source couples) and ssts (seal source
@@ -590,7 +590,7 @@ class Kramer:
         Parameters:
             msg (SerderKERI): message being authenticated
             senderId (str): sender AID prefix (qb64)
-            **kwa: keyword arguments from parser exts dict
+            kwa (dict): parser exts / attachment dict (read-only here)
 
         Returns:
             bool: True if seal is valid, False if invalid
@@ -639,7 +639,7 @@ class Kramer:
 
         return False  # No matching seal digest found
 
-    def _storeNonAuthAttachments(self, key, senderId, **kwa):
+    def _storeNonAuthAttachments(self, key, senderId, kwa):
         """Idempotently store non-authenticator attachments for a partially
         signed multi-key message pending threshold satisfaction.
 
@@ -657,7 +657,7 @@ class Kramer:
         Parameters:
             key (tuple): (AID, MID) partial db key
             senderId (str): message sender AID (qb64), for ssts filtering
-            **kwa: keyword arguments from parser exts dict
+            kwa (dict): parser exts / attachment dict (read-only here)
         """
         for item in kwa.get('trqs', []):
             self.db.kramTRQS.add(key, item)
@@ -762,8 +762,8 @@ class Kramer:
         self._normalizeSenderSeals(senderId, kwa)
         self._normalizeSenderSsgs(senderId, kwa)
 
-        hasSealRef = self._hasSeals(senderId, **kwa)
-        hasSigs = self._hasSigs(senderId, **kwa)
+        hasSealRef = self._hasSeals(senderId, kwa)
+        hasSigs = self._hasSigs(senderId, kwa)
 
         if not hasSealRef and not hasSigs:
             raise MissingAuthAttachmentError(
@@ -814,7 +814,7 @@ class Kramer:
 
                 # "Both attached" case, try seal validation first
                 if hasSealRef and hasSigs:
-                    if self._validateSenderSeal(msg, senderId, **kwa):
+                    if self._validateSenderSeal(msg, senderId, kwa):
                         # Seal valid -> treat as seal auth -> idempotent drop
                         return None
                     # Seal invalid -> fall through to signature auth below
@@ -867,7 +867,7 @@ class Kramer:
                         self.db.kramPMSK.pin(key, currentKeyState)
 
                     # Store non-auth attachments alongside new sigs
-                    self._storeNonAuthAttachments(key, senderId, **kwa)
+                    self._storeNonAuthAttachments(key, senderId, kwa)
 
                 # Check threshold using current kever's tholder
                 allSigs = existingSigs + newSigs
@@ -929,7 +929,7 @@ class Kramer:
                     if not sealValidated:
                         try:
                             sealValidated = self._validateSenderSeal(
-                                msg, senderId, **kwa)
+                                msg, senderId, kwa)
                         except MissingSenderKeyStateError as e:
                             logger.info("Missing sender key state for "
                                         "%s: %s", senderId, e)
@@ -1000,7 +1000,7 @@ class Kramer:
                     self.db.kramPMSK.pin(key, currentKeyState)
 
                     # Store non-auth attachments for forwarding on threshold satisfaction
-                    self._storeNonAuthAttachments(key, senderId, **kwa)
+                    self._storeNonAuthAttachments(key, senderId, kwa)
 
                     return None  # message pending
 
@@ -1038,7 +1038,7 @@ class Kramer:
 
                 # "Both attached" case, try seal validation first
                 if hasSealRef and hasSigs:
-                    if self._validateSenderSeal(msg, senderId, **kwa):
+                    if self._validateSenderSeal(msg, senderId, kwa):
                         # Seal valid -> treat as seal auth -> idempotent drop
                         return None
                     # Seal invalid -> fall through to signature auth below
@@ -1092,7 +1092,7 @@ class Kramer:
                         self.db.kramPMSK.pin(partialKey, currentKeyState)
 
                     # Store non-auth attachments alongside new sigs
-                    self._storeNonAuthAttachments(partialKey, senderId, **kwa)
+                    self._storeNonAuthAttachments(partialKey, senderId, kwa)
 
                 # Check threshold using current kever's tholder
                 allSigs = existingSigs + newSigs
@@ -1175,7 +1175,7 @@ class Kramer:
                         if not sealValidated:
                             try:
                                 sealValidated = self._validateSenderSeal(
-                                    msg, senderId, **kwa)
+                                    msg, senderId, kwa)
                             except MissingSenderKeyStateError as e:
                                 logger.info("Missing sender key state for "
                                             "%s: %s", senderId, e)
@@ -1278,7 +1278,7 @@ class Kramer:
                     self.db.kramPMSK.pin(partialKey, currentKeyState)
 
                     # Store non-auth attachments for forwarding on threshold satisfaction
-                    self._storeNonAuthAttachments(partialKey, senderId, **kwa)
+                    self._storeNonAuthAttachments(partialKey, senderId, kwa)
 
                     return None  # message pending
                 else:
