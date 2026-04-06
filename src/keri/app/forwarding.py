@@ -65,7 +65,7 @@ class Poster(doing.DoDoer):
         Successful deliveries are acknowledged by appending a cue dict to
         ``self.cues``.
 
-        Args:
+        Parameters:
             tymth: Tymth generator reference injected by the Doist framework;
                 used to bind the local ``tock`` clock.
             tock (float): Scheduling interval in seconds (default ``0.0``).
@@ -131,17 +131,17 @@ class Poster(doing.DoDoer):
         Builds an event dict from the supplied arguments and appends it to
         ``self.evts`` for asynchronous processing by :meth:`deliverDo`.
 
-        Args:
+        Parameters:
             dest (str): qb64 identifier prefix of the intended recipient.
             topic (str): Routing topic string used by the recipient's mailbox
                 (e.g. ``"delegate"``, ``"credential"``).
             serder (Serder): KERI event to envelope and forward.
-            src (str, optional): qb64 identifier prefix of the sender.
+            src (str): qb64 identifier prefix of the sender.
                 Derived from ``hab.pre`` when omitted.
-            hab (Hab, optional): Sender's habitat. Used directly when provided;
+            hab (Hab): Sender's habitat. Used directly when provided;
                 otherwise the hab is looked up from ``self.hby.habs[src]``
                 during delivery.
-            attachment (bytes, optional): Raw CESR attachment bytes to append
+            attachment (bytes): Raw CESR attachment bytes to append
                 to the serialised event.
         """
         src = src if src is not None else hab.pre
@@ -160,7 +160,7 @@ class Poster(doing.DoDoer):
         Scans ``self.cues`` for a confirmation entry whose ``said`` field
         matches the supplied value.
 
-        Args:
+        Parameters:
             said (str): qb64 SAID of the message to check.
 
         Returns:
@@ -181,12 +181,12 @@ class Poster(doing.DoDoer):
         for delivery to the delegator prefix stored in ``hab.kever.delpre``, and
         yields until a matching cue appears in ``self.cues``.
 
-        Args:
+        Parameters:
             sender (Hab): Habitat of the sending identifier whose prefix is used
                 as the ``src`` for the outbound event.
             hab (Hab): Delegatee habitat whose KEL event is being forwarded to
                 the delegator.
-            fn (int, optional): First-seen sequence number of the event to
+            fn (int): First-seen sequence number of the event to
                 clone from the database (default ``0``).
 
         Yields:
@@ -215,7 +215,7 @@ class Poster(doing.DoDoer):
         serialised event and any attachment, then yields until the messenger
         becomes idle before removing it.
 
-        Args:
+        Parameters:
             hab (Hab): Sender's habitat used to authenticate the outbound
                 connection.
             ends (dict): Mapping of ``{prefix: {scheme: url}}`` for a single
@@ -258,7 +258,7 @@ class Poster(doing.DoDoer):
             Unlike :meth:`sendDirect`, the messenger is not removed from the doer
             list after the send completes.
 
-        Args:
+        Parameters:
             hab (Hab): Sender's habitat used to sign and endorse the forwarded
                 envelope.
             ends (dict): Mapping of ``{mailbox_prefix: {scheme: url}}`` for all
@@ -323,7 +323,7 @@ class Poster(doing.DoDoer):
             Unlike :meth:`sendDirect`, the messenger is not removed from the doer
             list after the send completes.
 
-        Args:
+        Parameters:
             hab (Hab): Sender's habitat used to sign and endorse the forwarded
                 envelope.
             ends (dict): Mapping of ``{witness_prefix: {scheme: url}}`` for all
@@ -495,7 +495,7 @@ class StreamPoster:
             return []
 
     def send(self, serder, attachment=None):
-        """Resolve the recipient's endpoints, optionally wrap the event in a
+        """Resolve the recipient's endpointsly wrap the event in a
         ``/fwd`` envelope, and enqueue it for delivery.
 
         Determines whether the event needs to be wrapped (mailbox or witness
@@ -503,9 +503,9 @@ class StreamPoster:
         :meth:`createForward` is called to produce the signed envelope before
         the event dict is appended to ``self.evts``.
 
-        Args:
+        Parameters:
             serder (Serder): KERI event to forward.
-            attachment (bytes, optional): Raw CESR attachment bytes to include
+            attachment (bytes): Raw CESR attachment bytes to include
                 with the event, or ``None`` if there is no attachment.
 
         Raises:
@@ -547,7 +547,7 @@ class StreamPoster:
         via :meth:`_essrWrapper` before being handed to the messenger.  All
         created messengers are also appended to ``self.messagers``.
 
-        Args:
+        Parameters:
             hab (Hab): Sender's habitat.
             ends (dict): Mapping of ``{prefix: {scheme: url}}`` for each
                 controller or agent endpoint.
@@ -572,7 +572,7 @@ class StreamPoster:
         ``crypto_box_seal``, and returns a signed ``/essr/req`` exchange message
         with the ciphertext appended as an ``ESSRPayloadGroup`` counter group.
 
-        Args:
+        Parameters:
             hab (Hab): Sender's habitat used to sign the ``/essr/req`` envelope.
             msg (bytearray): Plaintext message stream to encrypt.
             ctrl (str): qb64 identifier prefix of the intended recipient.
@@ -611,7 +611,7 @@ class StreamPoster:
         ``topic`` in the modifiers, the event embedded under the ``evt`` key in
         the ``e`` field, and the bundle endorsed by ``hab``.
 
-        Args:
+        Parameters:
             hab (Hab): Sender's habitat used to endorse the forward envelope.
             ends (dict): Mapping of endpoint prefixes to URL location dicts;
                 only the keys are used to determine whether this hab is a local
@@ -655,7 +655,7 @@ class StreamPoster:
         encrypted via :meth:`_essrWrapper`, and a stream messenger is created
         and appended to ``self.messagers``.
 
-        Args:
+        Parameters:
             hab (Hab): Sender's habitat.
             ends (dict): Mapping of ``{endpoint_prefix: {scheme: url}}`` for
                 all known mailbox or witness endpoints.
@@ -727,7 +727,7 @@ class ForwardHandler:
     def __init__(self, hby, mbx):
         """Initialise the ForwardHandler.
 
-        Args:
+        Parameters:
             hby (Habery): Database environment used for identifier resolution.
             mbx (Mailboxer): Mailbox storage backend for persisting forwarded
                 messages.
@@ -743,9 +743,9 @@ class ForwardHandler:
         each embedded SAD.  The reconstituted events are concatenated and stored
         in ``self.mbx`` under the key ``"{recipient}/{topic}"``.
 
-        Args:
+        Parameters:
             serder (Serder): Serder of the incoming ``/fwd`` ``exn`` message.
-            attachments (list, optional): List of ``(Pather, atc_bytes)`` tuples
+            attachments (list): List of ``(Pather, atc_bytes)`` tuples
                 where each ``Pather`` resolves a path into the ``e`` embed field
                 and ``atc_bytes`` are the corresponding CESR SAD path attachments.
         """
@@ -782,7 +782,7 @@ def introduce(hab, wit):
     witnesses an empty bytearray is returned immediately, since that witness
     is assumed to have the KEL already.
 
-    Args:
+    Parameters:
         hab (Hab): Local environment for the identifier whose KEL may be
             propagated.
         wit (str): qb64 identifier prefix of the potential receipt target.

@@ -14,7 +14,7 @@ def loadHandlers(db, signaler, exc):
     ``Exchanger`` so that incoming ``/challenge/response`` ``exn`` messages
     are routed and processed correctly.
 
-    Args:
+    Parameters:
         db (Baser): Database environment used to persist signed challenge
             responses.
         signaler (Signaler): Signaler used to push transient notifications
@@ -45,7 +45,7 @@ class ChallengeHandler:
     def __init__(self, db, signaler):
         """Initializes the ChallengeHandler with a database and signaler.
 
-        Args:
+        Parameters:
             db (Baser): Database environment used to persist signed challenge
                 responses.
             signaler (Signaler): Signaler used to push transient notifications
@@ -62,11 +62,11 @@ class ChallengeHandler:
         notifies the agent controller of the successful challenge via the
         signaler, and logs the signer's SAID in the database.
 
-        Args:
+        Parameters:
             serder (Serder): Serder of the incoming ``/challenge/response``
                 ``exn`` message. The ``ked['a']`` payload must contain a
                 ``words`` field.
-            attachments (list[tuple] | None): CESR SAD path attachments as
+            attachments (list[tuple]): CESR SAD path attachments as
                 ``(pather, SAD)`` tuples. Currently unused. Defaults to None.
         """
         payload = serder.ked['a']
@@ -79,7 +79,7 @@ class ChallengeHandler:
             words=words
         )
 
-        # Notify controller of successful challenge
+        # Notify controller of sucessful challenge
         self.signaler.push(msg, topic="/challenge")
 
         # Log signer against event to track successful challenges with signed response

@@ -41,11 +41,11 @@ class Counselor(doing.DoDoer):
     def __init__(self, hby, swain=None, proxy=None, **kwa):
         """Initialize Counselor.
 
-        Args:
+        Parameters:
             hby (Habery): Database environment for local Habs.
-            swain (Anchorer, optional): Anchorer for delegation anchoring. Defaults to a
+            swain (Anchorer): Anchorer for delegation anchoring. Defaults to a
                 new Anchorer instance if not provided.
-            proxy (Hab, optional): Proxy Hab used to query the delegator for anchor
+            proxy (Hab): Proxy Hab used to query the delegator for anchor
                 confirmation when the local member Hab should not be used directly.
         """
         self.hby = hby
@@ -65,7 +65,7 @@ class Counselor(doing.DoDoer):
         group escrow (gpse) so that subsequent signature collection and delegation /
         witnessing steps can proceed.
 
-        Args:
+        Parameters:
             ghab (Hab): Group Habitat.
             prefixer (Prefixer): Prefixer of the group identifier.
             number (Number): Sequence number of the group event.
@@ -86,10 +86,10 @@ class Counselor(doing.DoDoer):
         prefixer/number pair. If a digest is provided it is compared against the
         stored digest to verify the event matches.
 
-        Args:
+        Parameters:
             prefixer (Prefixer): Identifier prefix of the event to check.
             number (Number): Sequence number of the event to check.
-            diger (Diger, optional): Digest of the event to verify against the stored
+            diger (Diger): Digest of the event to verify against the stored
                 value. If provided and the digests do not match, a ValidationError is
                 raised.
 
@@ -111,18 +111,15 @@ class Counselor(doing.DoDoer):
     def escrowDo(self, tymth, tock=1.0, **kwa):
         """Process escrows of group multisig identifiers waiting to be completed.
 
-        Runs continuously, calling processEscrows on each iteration. The escrow
-        processing pipeline covers three stages. First, the local signed event is sent
-        to other participants and the coordinator waits for enough signatures to meet the
-        signing threshold (gpse). Second, for delegated identifiers (dip/drt), the
-        elected participant sends the fully signed event to the delegator while
-        non-elected participants query witnesses for the delegator's anchor; both wait in
-        gdee until delegation approval is confirmed. Third, once delegation is confirmed
-        (or for non-delegated identifiers), the coordinator waits for a full complement
-        of witness receipts (gpwe), with the elected participant submitting the event to
-        witnesses and others polling for the receipted result.
+        Steps involve:
+        1. Sending local event with sig to other participants
+        2. Waiting for signature threshold to be met.
+        3. If elected and delegated identifier, send complete event to delegator
+        4. If delegated, wait for delegator's anchored seal
+        5. If elected, send event to witnesses and collect receipts.
+        6. Otherwise, wait for fully receipted event
 
-        Args:
+        Parameters:
             tymth (function): Injected function wrapper closure returned by .tymen() of
                 a Tymist instance. Calling tymth() returns the associated Tymist .tyme.
             tock (float): Injected initial tock value. Defaults to 1.0 to slow down
@@ -293,7 +290,7 @@ class MultisigNotificationHandler:
     def __init__(self, resource, mux):
         """Create a handler for a specific multisig exn route.
 
-        Args:
+        Parameters:
             resource (str): The route string this handler is registered for
                 (e.g. ``"/multisig/icp"``).
             mux (Multiplexor): Multisig communication coordinator that will
@@ -307,9 +304,9 @@ class MultisigNotificationHandler:
 
         Logs receipt of the message and forwards the serder to the Multiplexor.
 
-        Args:
+        Parameters:
             serder (SerderKERI): Serder of the incoming /multisig/* exn message.
-            attachments (list, optional): List of (pather, bytes) tuples representing
+            attachments (list): List of (pather, bytes) tuples representing
                 CESR SAD-path attachments to the exn event.
         """
         logger.info("Notification for %s event SAID=%s", self.resource, serder.said)
@@ -323,7 +320,7 @@ def loadHandlers(exc, mux):
     Registers a MultisigNotificationHandler with exc for each supported /multisig/*
     route: icp, rot, ixn, vcp, iss, rev, exn, and rpy.
 
-    Args:
+    Parameters:
         exc (Exchanger): Peer-to-peer message router.
         mux (Multiplexor): Multisig communication coordinator passed to each handler.
     """
@@ -340,13 +337,13 @@ def loadHandlers(exc, mux):
 def multisigInceptExn(hab, smids, rmids, icp, delegator=None):
     """Create a peer-to-peer exn message proposing a group multisig inception event.
 
-    Args:
+    Parameters:
         hab (Hab): Habitat of the local multisig member AID used to endorse the message.
         smids (list): qb64 AIDs of members with signing authority.
         rmids (list): qb64 AIDs of members with rotation authority. Defaults to smids
             if None.
         icp (bytes): Serialized inception event with CESR streamed attachments.
-        delegator (str, optional): qb64 AID of the delegator if the group multisig
+        delegator (str): qb64 AID of the delegator if the group multisig
             identifier is a delegated AID.
 
     Returns:
@@ -380,7 +377,7 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None):
 def multisigRotateExn(ghab, smids, rmids, rot):
     """Create a peer-to-peer exn message proposing a group multisig rotation event.
 
-    Args:
+    Parameters:
         ghab (GroupHab): Habitat of the group multisig AID used to endorse the message.
         smids (list): qb64 AIDs of members with signing authority.
         rmids (list): qb64 AIDs of members with rotation authority.
@@ -409,7 +406,7 @@ def multisigRotateExn(ghab, smids, rmids, rot):
 def multisigInteractExn(ghab, aids, ixn):
     """Create a peer-to-peer exn message proposing a group multisig interaction event.
 
-    Args:
+    Parameters:
         ghab (GroupHab): Group Hab used to endorse the message.
         aids (list): qb64 identifier prefixes of the signing members to include.
         ixn (bytes): Serialized interaction event with CESR streamed attachments.
@@ -438,7 +435,7 @@ def multisigRegistryInceptExn(ghab, usage, vcp, anc):
     """Create a peer-to-peer exn message proposing a credential registry inception from a
     group multisig identifier.
 
-    Args:
+    Parameters:
         ghab (GroupHab): Group Hab used to endorse the message.
         usage (str): Human-readable description of the intended use of the registry.
         vcp (bytes): Serialized credential registry inception event.
@@ -467,7 +464,7 @@ def multisigIssueExn(ghab, acdc, iss, anc):
     """Create a peer-to-peer exn message proposing a credential issuance from a group
     multisig identifier.
 
-    Args:
+    Parameters:
         ghab (GroupHab): Group Hab used to endorse the message.
         acdc (bytes): Serialized credential (ACDC).
         iss (bytes): CESR stream of the serialized TEL issuance event.
@@ -497,7 +494,7 @@ def multisigRevokeExn(ghab, said, rev, anc):
     """Create a peer-to-peer exn message proposing a credential revocation from a group
     multisig identifier.
 
-    Args:
+    Parameters:
         ghab (GroupHab): Group Hab used to endorse the message.
         said (str): qb64 SAID of the credential being revoked.
         rev (bytes): CESR stream of the serialized TEL revocation event.
@@ -526,7 +523,7 @@ def multisigRpyExn(ghab, rpy):
     """Create a peer-to-peer exn message proposing a reply event from a group multisig
     identifier.
 
-    Args:
+    Parameters:
         ghab (GroupHab): Group Hab used to endorse the message.
         rpy (bytes): CESR stream of the serialized reply event with attachments.
 
@@ -551,7 +548,7 @@ def multisigExn(ghab, exn):
     """Create a peer-to-peer exn wrapper message forwarding a multisig-coordinated exchange
     message from a group multisig identifier.
 
-    Args:
+    Parameters:
         ghab (GroupHab): Group Hab used to endorse the wrapper message.
         exn (bytes): CESR stream of the serialized exchange message with signatures.
 
@@ -578,8 +575,8 @@ def getEscrowedEvent(db, pre, sn):
     to the KEL (kels). Assembles the raw event bytes, the controller indexed signature
     counter and signers, and (if present) a seal source couple for delegated events.
 
-    Args:
-        db: LMDB database environment (Baser) providing event and escrow access.
+    Parameters:
+        db (Baser): LMDB database environment providing event and escrow access.
         pre (str): qb64 identifier prefix of the event.
         sn (int): Sequence number of the event.
 
@@ -638,7 +635,7 @@ class Multiplexor:
     def __init__(self, hby, notifier):
         """Create a Multiplexor for a local database and Hab set.
 
-        Args:
+        Parameters:
             hby (Habery): Database environment for local Habs.
             notifier (Notifier): Stores notices for human consumption.
         """
@@ -667,7 +664,7 @@ class Multiplexor:
         any additional signatures are incorporated. If neither condition holds, a second
         notification is queued prompting the local participant to review and approve.
 
-        Args:
+        Parameters:
             serder (SerderKERI): The incoming /multisig/* exn message to process.
 
         Raises:
@@ -762,7 +759,7 @@ class Multiplexor:
     def get(self, esaid):
         """Retrieve all exn messages associated with a given embedded event section SAID.
 
-        Args:
+        Parameters:
             esaid (str): qb64 SAID of the embedded event section to look up.
 
         Returns:

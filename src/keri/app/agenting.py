@@ -36,14 +36,14 @@ class Receiptor(doing.DoDoer):
     def __init__(self, hby, msgs=None, gets=None, cues=None):
         """Initializes the Receiptor and creates doers for processing and retrieving witness receipts.
 
-        Args:
+        Parameters:
             hby (Habery): Provides access to local identifiers and their associated
                 witness configurations.
-            msgs (Deck, optional): Inbound queue of KEL events to submit to witnesses
+            msgs (Deck): Inbound queue of KEL events to submit to witnesses
                 for receipting. Each entry must contain ``{"pre": str, "sn": int, "auths": dict}``.
-            gets (Deck, optional): Inbound queue of receipt queries to dispatch to
+            gets (Deck): Inbound queue of receipt queries to dispatch to
                 witnesses. Each entry must contain ``{"pre": str, "sn": int}``.
-            cues (Deck, optional): Outbound queue onto which completed events are pushed.
+            cues (Deck): Outbound queue onto which completed events are pushed.
                 Not currently consumed by any downstream component.
         """
         self.msgs = msgs if msgs is not None else decking.Deck()
@@ -64,11 +64,11 @@ class Receiptor(doing.DoDoer):
         other witnesses. Also catches up any newly-added witnesses via
         :meth:`catchup` when processing rotation events.
 
-        Args:
+        Parameters:
             pre (str): Qualified base64 identifier prefix to gather receipts for.
-            sn (int, optional): Sequence number of the event to receipt. Defaults to
+            sn (int): Sequence number of the event to receipt. Defaults to
                 the latest sequence number for the identifier.
-            auths (dict, optional): Map of witness AIDs to ``(time, auth)`` tuples
+            auths (dict): Map of witness AIDs to ``(time, auth)`` tuples
                 for TOTP-based witness authentication.
 
         Yields:
@@ -169,9 +169,9 @@ class Receiptor(doing.DoDoer):
     def get(self, pre, sn=None):
         """Queries a randomly selected witness for a specific event receipt.
 
-        Args:
+        Parameters:
             pre (str): Qualified base64 identifier prefix to retrieve a receipt for.
-            sn (int, optional): Sequence number of the event. Defaults to the latest
+            sn (int): Sequence number of the event. Defaults to the latest
                 sequence number for the identifier.
 
         Yields:
@@ -220,7 +220,7 @@ class Receiptor(doing.DoDoer):
         Intended for use when a new witness is added via rotation. Iterates through
         all events in the local KEL and streams each to the target witness over HTTP.
 
-        Args:
+        Parameters:
             pre (str): Qualified base64 AID of the KEL to send.
             wit (str): Qualified base64 AID of the witness to receive the KEL.
 
@@ -252,10 +252,10 @@ class Receiptor(doing.DoDoer):
         :meth:`receipt`, and pushes completed messages onto ``self.cues``.
         Intended to be wrapped with :func:`doing.doify`.
 
-        Args:
-            tymth (callable, optional): Function returning the current cycle time used
+        Parameters:
+            tymth (callable): Function returning the current cycle time used
                 to configure this doer's tock.
-            tock (float, optional): Cycle time in seconds. Defaults to ``0.0``.
+            tock (float): Cycle time in seconds. Defaults to ``0.0``.
             **kwa: Absorbed keyword arguments passed through by the doer framework.
 
         Yields:
@@ -283,10 +283,10 @@ class Receiptor(doing.DoDoer):
         Processes one query message at a time from ``self.gets`` and delegates
         to :meth:`get`. Intended to be wrapped with :func:`doing.doify`.
 
-        Args:
-            tymth (callable, optional): Function returning the current cycle time used
+        Parameters:
+            tymth (callable): Function returning the current cycle time used
                 to configure this doer's tock.
-            tock (float, optional): Cycle time in seconds. Defaults to ``0.0``.
+            tock (float): Cycle time in seconds. Defaults to ``0.0``.
             **kwa: Absorbed keyword arguments passed through by the doer framework.
 
         Yields:
@@ -322,16 +322,16 @@ class WitnessReceiptor(doing.DoDoer):
     def __init__(self, hby, msgs=None, cues=None, force=False, auths=None, **kwa):
         """Initializes the WitnessReceiptor with event queue and propagation options.
 
-        Args:
+        Parameters:
             hby (Habery): Habery containing the identifier whose witnesses will be
                 receipted.
-            msgs (Deck, optional): Incoming events to receipt and propagate. Each
+            msgs (Deck): Incoming events to receipt and propagate. Each
                 message dict must contain ``{"pre": str, "sn": int, "auths": dict}``.
-            cues (Deck, optional): Outgoing cues for events confirmed as fully
+            cues (Deck): Outgoing cues for events confirmed as fully
                 receipted. Messages have the same shape as ``msgs`` entries.
-            force (bool, optional): When ``True``, re-sends all receipts to witnesses
+            force (bool): When ``True``, re-sends all receipts to witnesses
                 even if a full complement already exists. Defaults to ``False``.
-            auths (dict, optional): Map of witness AIDs to ``(time, auth)`` tuples
+            auths (dict): Map of witness AIDs to ``(time, auth)`` tuples
                 for TOTP-based witness authentication.
             **kwa: Additional keyword arguments forwarded to :class:`doing.DoDoer`.
         """
@@ -351,10 +351,10 @@ class WitnessReceiptor(doing.DoDoer):
         witness's receipt to all other witnesses along with location introduction
         messages where required (inception/rotation).
 
-        Args:
-            tymth (callable, optional): Function returning the current cycle time used
+        Parameters:
+            tymth (callable): Function returning the current cycle time used
                 to configure this doer's tock.
-            tock (float, optional): Cycle time in seconds. Defaults to ``0.0``.
+            tock (float): Cycle time in seconds. Defaults to ``0.0``.
             **kwa: Absorbed keyword arguments passed through by the doer framework.
 
         Yields:
@@ -480,19 +480,19 @@ class WitnessInquisitor(doing.DoDoer):
     message has been dispatched.
 
     Note:
-        May be renamed in a future release to reflect that multiple endpoint
+        TODO: May be renamed in a future release to reflect that multiple endpoint
         role types (controller, agent, witness) are supported as query targets.
     """
 
     def __init__(self, hby, msgs=None, klas=None, **kwa):
         """Initializes the WitnessInquisitor with context, message queue, and messenger class.
 
-        Args:
+        Parameters:
             hby (Habery): Habery context used to retrieve the source Hab for reading
                 endpoint role records.
-            msgs (Deck, optional): Query message buffer. Each message is dispatched to
+            msgs (Deck): Query message buffer. Each message is dispatched to
                 the appropriate target or a randomly selected witness.
-            klas (type, optional): Messenger class used to send outbound messages.
+            klas (type): Messenger class used to send outbound messages.
                 Defaults to :class:`HTTPMessenger`. Currently unused.
             **kwa: Additional keyword arguments forwarded to :class:`doing.DoDoer`.
         """
@@ -510,10 +510,10 @@ class WitnessInquisitor(doing.DoDoer):
         priority) or from the explicitly provided witness list. Introduces the source
         hab to the target witness before sending the query message.
 
-        Args:
-            tymth (callable, optional): Function returning the current cycle time used
+        Parameters:
+            tymth (callable): Function returning the current cycle time used
                 to configure this doer's tock.
-            tock (float, optional): Cycle time in seconds. Defaults to ``1.0``.
+            tock (float): Cycle time in seconds. Defaults to ``1.0``.
             **opts: Absorbed keyword arguments passed through by the doer framework.
 
         Yields:
@@ -593,21 +593,19 @@ class WitnessInquisitor(doing.DoDoer):
     def query(self, pre, r="logs", sn='0', fn='0', src=None, hab=None, anchor=None, wits=None, **kwa):
         """Enqueues a KEL query message for the given prefix onto ``self.msgs``.
 
-        Constructs a ``qry`` message targeting ``pre`` and appends it to the internal
+        Constructs a KEL query ``qry`` message targeting ``pre`` and appends it to the internal
         message queue for processing by :meth:`msgDo`.
 
-        Args:
+        Parameters:
             pre (str): Qualified base64 identifier prefix being queried for.
-            r (str, optional): Query route. Defaults to ``"logs"``.
-            sn (str, optional): Hex string of the sequence number to query for.
-                Defaults to ``"0"``.
-            fn (str, optional): Hex string of the first sequence number to start from.
-                Defaults to ``"0"``.
-            src (str, optional): Qualified base64 identifier prefix of the query source.
-            hab (Hab, optional): Hab to use for signing and endpoint role lookups,
+            r (str): Query route. Defaults to ``"logs"``.
+            sn (str): Hex string of the sequence number to query for.
+            fn (str): Hex string of the first sequence number to start from.
+            src (str): Qualified base64 identifier prefix of the query source.
+            hab (Hab): Hab to use for signing and endpoint role lookups,
                 in place of resolving ``src``.
-            anchor (Seal, optional): Anchored seal to include in the query.
-            wits (list, optional): Explicit list of witness AIDs to query.
+            anchor (Seal): Anchored seal to include in the query.
+            wits (list): Explicit list of witness AIDs to query.
             **kwa: Absorbed for forward compatibility.
         """
         qry = dict(s=sn, fn=fn)
@@ -626,15 +624,15 @@ class WitnessInquisitor(doing.DoDoer):
         Constructs a TEL query targeting registry ``ri`` and appends it to the internal
         message queue for processing by :meth:`msgDo`.
 
-        Args:
+        Parameters:
             ri (str): Qualified base64 identifier prefix of the registry being queried.
-            src (str, optional): Qualified base64 identifier prefix of the query source.
-            i (str, optional): Qualified base64 identifier prefix of the registry issuer.
-            r (str, optional): Query route. Defaults to ``"tels"``.
-            hab (Hab, optional): Hab to use for signing and endpoint role lookups,
+            src (str): Qualified base64 identifier prefix of the query source.
+            i (str): Qualified base64 identifier prefix of the registry issuer.
+            r (str): Query route. Defaults to ``"tels"``.
+            hab (Hab): Hab to use for signing and endpoint role lookups,
                 in place of resolving ``src``.
-            pre (str, optional): Qualified base64 identifier prefix of the query target.
-            wits (list, optional): Explicit list of witness AIDs to query.
+            pre (str): Qualified base64 identifier prefix of the query target.
+            wits (list): Explicit list of witness AIDs to query.
             **kwa: Absorbed for forward compatibility.
         """
         qry = dict(ri=ri)
@@ -656,12 +654,12 @@ class WitnessPublisher(doing.DoDoer):
     def __init__(self, hby, msgs=None, cues=None, **kwa):
         """Initializes the WitnessPublisher with publish queue and completion cues.
 
-        Args:
+        Parameters:
             hby (Habery): Habery containing the identifier whose witnesses will be
                 published to.
-            msgs (Deck, optional): Incoming messages to broadcast to all witnesses.
+            msgs (Deck): Incoming messages to broadcast to all witnesses.
                 Each message dict must contain ``{"pre": str, "msg": bytes}``.
-            cues (Deck, optional): Outgoing cues signalling successful delivery.
+            cues (Deck): Outgoing cues signalling successful delivery.
                 Each entry mirrors the corresponding ``msgs`` entry.
             **kwa: Additional keyword arguments forwarded to :class:`doing.DoDoer`.
         """
@@ -678,10 +676,10 @@ class WitnessPublisher(doing.DoDoer):
         the message to each, waits for all messengers to become idle, then pushes
         the original event to ``self.cues``.
 
-        Args:
-            tymth (callable, optional): Function returning the current cycle time used
+        Parameters:
+            tymth (callable): Function returning the current cycle time used
                 to configure this doer's tock.
-            tock (float, optional): Cycle time in seconds. Defaults to ``0.0``.
+            tock (float): Cycle time in seconds. Defaults to ``0.0``.
             **opts: Absorbed keyword arguments passed through by the doer framework.
 
         Yields:
@@ -728,7 +726,7 @@ class WitnessPublisher(doing.DoDoer):
     def sent(self, said):
         """Returns whether the message with the given SAID has been delivered.
 
-        Args:
+        Parameters:
             said (str): Qualified base64 SAID of the message to check.
 
         Returns:
@@ -753,13 +751,13 @@ class TCPMessenger(doing.DoDoer):
     def __init__(self, hab, wit, url, msgs=None, sent=None, doers=None, **kwa):
         """Initializes the TCPMessenger with queues, a Kevery, and the receipt doer.
 
-        Args:
+        Parameters:
             hab (Hab): Habitat for KEL parsing and database access.
             wit (str): Qualified base64 witness identifier.
             url (str): TCP endpoint URL for the witness (must use the ``tcp`` scheme).
-            msgs (Deck, optional): Outbound message queue.
-            sent (Deck, optional): Queue of successfully sent messages.
-            doers (list, optional): Additional doers to compose into this DoDoer.
+            msgs (Deck): Outbound message queue.
+            sent (Deck): Queue of successfully sent messages.
+            doers (list): Additional doers to compose into this DoDoer.
             **kwa: Additional keyword arguments forwarded to :class:`doing.DoDoer`.
         """
         self.hab = hab
@@ -784,10 +782,10 @@ class TCPMessenger(doing.DoDoer):
         data, and drains ``self.msgs``, transmitting each message and waiting for the
         send buffer to flush before appending to ``self.sent``.
 
-        Args:
-            tymth (callable, optional): Function returning the current cycle time used
+        Parameters:
+            tymth (callable): Function returning the current cycle time used
                 to configure this doer's tock.
-            tock (float, optional): Cycle time in seconds. Defaults to ``0.0``.
+            tock (float): Cycle time in seconds. Defaults to ``0.0``.
             **kwa: Absorbed keyword arguments passed through by the doer framework.
 
         Yields:
@@ -832,9 +830,9 @@ class TCPMessenger(doing.DoDoer):
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """Doer generator that continuously parses inbound TCP messages into the Kevery.
 
-        Args:
-            tymth (callable, optional): Unused; present for doer framework compatibility.
-            tock (float, optional): Unused; present for doer framework compatibility.
+        Parameters:
+            tymth (callable): Unused; present for doer framework compatibility.
+            tock (float): Unused; present for doer framework compatibility.
             **opts: Absorbed keyword arguments.
 
         Yields:
@@ -854,13 +852,13 @@ class TCPStreamMessenger(doing.DoDoer):
     def __init__(self, hab, wit, url, msgs=None, sent=None, doers=None, **kwa):
         """Initializes the TCPStreamMessenger with queues, a Kevery, and the receipt doer.
 
-        Args:
+        Parameters:
             hab (Hab): Habitat for KEL parsing and database access.
             wit (str): Qualified base64 witness identifier.
             url (str): TCP endpoint URL for the witness (must use the ``tcp`` scheme).
-            msgs (Deck, optional): Outbound message queue.
-            sent (Deck, optional): Queue of successfully sent messages.
-            doers (list, optional): Additional doers to compose into this DoDoer.
+            msgs (Deck): Outbound message queue.
+            sent (Deck): Queue of successfully sent messages.
+            doers (list): Additional doers to compose into this DoDoer.
             **kwa: Additional keyword arguments forwarded to :class:`doing.DoDoer`.
         """
         self.hab = hab
@@ -885,10 +883,10 @@ class TCPStreamMessenger(doing.DoDoer):
         data, and drains ``self.msgs``, transmitting each and waiting for the send
         buffer to flush before appending to ``self.sent``.
 
-        Args:
-            tymth (callable, optional): Function returning the current cycle time used
+        Parameters:
+            tymth (callable): Function returning the current cycle time used
                 to configure this doer's tock.
-            tock (float, optional): Cycle time in seconds. Defaults to ``0.0``.
+            tock (float): Cycle time in seconds. Defaults to ``0.0``.
             **kwa: Absorbed keyword arguments passed through by the doer framework.
 
         Yields:
@@ -933,9 +931,9 @@ class TCPStreamMessenger(doing.DoDoer):
     def msgDo(self, tymth=None, tock=0.0, **opts):
         """Doer generator that continuously parses inbound TCP messages into the Kevery.
 
-        Args:
-            tymth (callable, optional): Unused; present for doer framework compatibility.
-            tock (float, optional): Unused; present for doer framework compatibility.
+        Parameters:
+            tymth (callable): Unused; present for doer framework compatibility.
+            tock (float): Unused; present for doer framework compatibility.
             **opts: Absorbed keyword arguments.
 
         Yields:
@@ -955,14 +953,14 @@ class HTTPMessenger(doing.DoDoer):
     def __init__(self, hab, wit, url, msgs=None, sent=None, doers=None, auth=None, **kwa):
         """Initializes the HTTPMessenger with queues, an HTTP client, and optional auth.
 
-        Args:
+        Parameters:
             hab (Hab): Habitat for KEL parsing and database access.
             wit (str): Qualified base64 witness identifier.
             url (str): HTTP or HTTPS endpoint URL for the witness.
-            msgs (Deck, optional): Outbound message queue.
-            sent (Deck, optional): Queue of HTTP response objects.
-            doers (list, optional): Additional doers to compose into this DoDoer.
-            auth (str, optional): Authorization header value for TOTP-based witness
+            msgs (Deck): Outbound message queue.
+            sent (Deck): Queue of HTTP response objects.
+            doers (list): Additional doers to compose into this DoDoer.
+            auth (str): Authorization header value for TOTP-based witness
                 authentication.
             **kwa: Additional keyword arguments forwarded to :class:`doing.DoDoer`.
 
@@ -995,10 +993,10 @@ class HTTPMessenger(doing.DoDoer):
 
         Attaches an ``Authorization`` header when ``self.auth`` is set.
 
-        Args:
-            tymth (callable, optional): Function returning the current cycle time used
+        Parameters:
+            tymth (callable): Function returning the current cycle time used
                 to configure this doer's tock.
-            tock (float, optional): Cycle time in seconds. Defaults to ``0.0``.
+            tock (float): Cycle time in seconds. Defaults to ``0.0``.
             **kwa: Absorbed keyword arguments passed through by the doer framework.
 
         Yields:
@@ -1027,10 +1025,10 @@ class HTTPMessenger(doing.DoDoer):
     def responseDo(self, tymth=None, tock=0.0, **kwa):
         """Doer generator that drains the HTTP client response queue into ``self.sent``.
 
-        Args:
-            tymth (callable, optional): Function returning the current cycle time used
+        Parameters:
+            tymth (callable): Function returning the current cycle time used
                 to configure this doer's tock.
-            tock (float, optional): Cycle time in seconds. Defaults to ``0.0``.
+            tock (float): Cycle time in seconds. Defaults to ``0.0``.
             **kwa: Absorbed keyword arguments passed through by the doer framework.
 
         Yields:
@@ -1062,12 +1060,12 @@ class HTTPStreamMessenger(doing.DoDoer):
 
         The HTTP request is issued during ``__init__``; no separate send step is needed.
 
-        Args:
+        Parameters:
             hab (Hab): Habitat for KEL parsing and database access.
             wit (str): Qualified base64 witness identifier.
             url (str): HTTP or HTTPS endpoint URL for the witness.
-            msg (bytes, optional): CESR message body to transmit. Defaults to ``b''``.
-            headers (dict, optional): Additional HTTP headers to merge into the
+            msg (bytes): CESR message body to transmit. Defaults to ``b''``.
+            headers (dict): Additional HTTP headers to merge into the
                 request. Merged after the required CESR headers.
             **kwa: Additional keyword arguments forwarded to :class:`doing.DoDoer`.
 
@@ -1106,9 +1104,9 @@ class HTTPStreamMessenger(doing.DoDoer):
     def recur(self, tyme, deeds=None):
         """Polls for a response on each cycle and stops the doer once one is received.
 
-        Args:
+        Parameters:
             tyme (float): Current cycle time provided by the Hio framework.
-            deeds (list, optional): Deed list forwarded to the parent ``recur``.
+            deeds (list): Deed list forwarded to the parent ``recur``.
 
         Returns:
             bool: ``True`` when a response has been received and this doer is done,
@@ -1129,7 +1127,7 @@ def mailbox(hab, cid):
     to selecting a random witness from the controller's KEL if no explicit mailbox
     role is found.
 
-    Args:
+    Parameters:
         hab (Hab): Hab used to look up endpoint role records and witness URLs.
         cid (str): Qualified base64 identifier prefix of the controller to find a
             mailbox for.
@@ -1159,10 +1157,10 @@ def messenger(hab, pre, auth=None):
     Fetches URL records from ``hab`` for ``pre`` and delegates to
     :func:`messengerFrom`.
 
-    Args:
+    Parameters:
         hab (Hab): Habitat used to look up endpoint URLs for the recipient.
         pre (str): Qualified base64 identifier prefix of the recipient.
-        auth (str, optional): Authorization header value to include in HTTP requests.
+        auth (str): Authorization header value to include in HTTP requests.
 
     Returns:
         TCPMessenger or HTTPMessenger: Messenger appropriate for the available endpoint.
@@ -1177,11 +1175,11 @@ def messengerFrom(hab, pre, urls, auth=None):
     Prefers HTTPS over HTTP and HTTP/HTTPS over TCP when multiple schemes are
     available.
 
-    Args:
+    Parameters:
         hab (Hab): Habitat used for KEL access and event parsing.
         pre (str): Qualified base64 identifier prefix of the recipient.
         urls (dict): Map of URL scheme strings to endpoint URL strings.
-        auth (str, optional): Authorization header value to include in HTTP requests.
+        auth (str): Authorization header value to include in HTTP requests.
 
     Returns:
         TCPMessenger or HTTPMessenger: Messenger appropriate for the available endpoint.
@@ -1208,12 +1206,12 @@ def streamMessengerFrom(hab, pre, urls, msg, headers=None):
     Prefers HTTPS over HTTP and HTTP/HTTPS over TCP when multiple schemes are
     available.
 
-    Args:
+    Parameters:
         hab (Hab): Habitat used for KEL access and event parsing.
         pre (str): Qualified base64 identifier prefix of the recipient.
         urls (dict): Map of URL scheme strings to endpoint URL strings.
         msg (bytes): CESR message bytes to transmit.
-        headers (dict, optional): Additional HTTP headers for the request.
+        headers (dict): Additional HTTP headers for the request.
 
     Returns:
         TCPStreamMessenger or HTTPStreamMessenger: Stream messenger appropriate for
@@ -1240,7 +1238,7 @@ def httpClient(hab, wit):
 
     Prefers HTTPS over HTTP when both are available.
 
-    Args:
+    Parameters:
         hab (Hab): Habitat used to look up witness endpoint URLs.
         wit (str): Qualified base64 identifier prefix of the witness.
 
@@ -1270,7 +1268,7 @@ def schemes(db, eids):
     records from ``db`` and serializes them as signed reply messages. Used to
     introduce witnesses to each other during inception and rotation events.
 
-    Args:
+    Parameters:
         db (Baser): Habitat database used to retrieve location records and witness
             signatures.
         eids (list[str]): Qualified base64 endpoint role AIDs whose location records
