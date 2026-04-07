@@ -1,3 +1,4 @@
+
 # -*- encoding: utf-8 -*-
 """
 KERI
@@ -40,6 +41,48 @@ logger = help.ogler.getLogger()
 
 Algoage = namedtuple("Algoage", 'randy salty group extern')
 Algos = Algoage(randy='randy', salty='salty', group="group", extern="extern")  # randy is rerandomize, salty is use salt
+
+
+class ExternModule:
+    """Base class for external key management.
+
+    Subclasses implement key generation and signing via external hardware
+    security devices. The interface mirrors Manager.incept(), Manager.rotate(),
+    and Manager.sign().
+    """
+
+    def incept(self, icodes=None, icount=1, icode=coring.MtrDex.Ed25519_Seed,
+               ncodes=None, ncount=1, ncode=coring.MtrDex.Ed25519_Seed,
+               dcode=coring.MtrDex.Blake3_256,
+               transferable=True, temp=False, **kwa):
+        """Create keys on external device.
+
+        Returns:
+            tuple: (verfers, digers) where verfers is list of Verfer and
+                   digers is list of Diger for next keys
+        """
+        raise NotImplementedError
+
+    def rotate(self, pre, ncodes=None, ncount=1,
+               ncode=coring.MtrDex.Ed25519_Seed,
+               dcode=coring.MtrDex.Blake3_256,
+               transferable=True, temp=False, **kwa):
+        """Rotate keys on external device.
+
+        Returns:
+            tuple: (verfers, digers) where verfers is list of new current
+                   Verfer and digers is list of Diger for next keys
+        """
+        raise NotImplementedError
+
+    def sign(self, ser, pubs=None, verfers=None, indexed=True,
+             indices=None, ondices=None, **kwa):
+        """Sign using external device.
+
+        Returns:
+            list: list of Siger instances if indexed else list of Cigar instances
+        """
+        raise NotImplementedError
 
 
 @dataclass()
@@ -182,7 +225,7 @@ class Keeper(dbing.LMDBer):
         pres (subing.CesrSuber): named sub DB whose values are prefixes or first
             public keys
             Key is first public key in key sequence for a prefix (fully qualified qb64)
-            Value is prefix or first public key (temporary) (fully qualified qb64
+            Value is prefix or first public key (temporary) (fully qualified qb64)
         prms (koming.Komer): named sub DB whose values are serialized dicts of
             PrePrm instance
             Key is identifier prefix (fully qualified qb64)
@@ -657,7 +700,7 @@ class Manager:
 
     """
 
-    def __init__(self, *, ks=None, seed=None, **kwa):
+    def __init__(self, *, ks=None, seed=None, extern=None, **kwa):
         """
         Setup Manager.
 
@@ -673,6 +716,9 @@ class Manager:
                 and decryption secret for the Manager and must be stored on
                 another device from the device that runs the Manager.
                 Currently only code MtrDex.Ed25519_Seed is supported.
+            extern (ExternModule): optional external key management module external 
+                device integration. When provided, enables Algos.extern for incept, 
+                rotate, and sign.
 
         Parameters: Passthrough to .setup for later initialization
             aeid (str): qb64 of non-transferable identifier prefix for
@@ -691,6 +737,7 @@ class Manager:
         self.encrypter = None
         self.decrypter = None
         self._seed = seed if seed is not None else ""
+        self.extern = extern
         self.inited = False
 
         # save keyword arg parameters to init later if db not opened yet
@@ -1004,6 +1051,43 @@ class Manager:
         ridx = 0  # rotation index
         kidx = 0  # key pair index
 
+        if algo == Algos.extern:
+            if self.extern is None:
+                raise ValueError("Extern algorithm requested but no extern "
+                                 "module provided to Manager.")
+
+            verfers, digers = self.extern.incept(icodes=icodes, icount=icount,
+                                                 icode=icode, ncodes=ncodes,
+                                                 ncount=ncount, ncode=ncode,
+                                                 dcode=dcode,
+                                                 transferable=transferable,
+                                                 temp=temp)
+
+            pp = PrePrm(pidx=pidx, algo=Algos.extern, stem=stem or '')
+            dt = helping.nowIso8601()
+            ps = PreSit(
+                        new=PubLot(pubs=[verfer.qb64 for verfer in verfers],
+                                       ridx=ridx, kidx=kidx, dt=dt),
+                        nxt=PubLot(pubs=[diger.qb64 for diger in digers],
+                                       ridx=ridx+1, kidx=kidx+len(verfers), dt=dt))
+
+            pre = verfers[0].qb64b
+            if not self.ks.pres.put(pre, val=coring.Prefixer(qb64=pre)):
+                raise ValueError("Already incepted pre={}.".format(pre.decode("utf-8")))
+
+            if not self.ks.prms.put(pre, val=pp):
+                raise ValueError("Already incepted prm for pre={}.".format(pre.decode("utf-8")))
+
+            self.pidx = pidx + 1
+
+            if not self.ks.sits.put(pre, val=ps):
+                raise ValueError("Already incepted sit for pre={}.".format(pre.decode("utf-8")))
+
+            self.ks.pubs.put(riKey(pre, ri=ridx), val=PubSet(pubs=ps.new.pubs))
+            self.ks.pubs.put(riKey(pre, ri=ridx+1), val=PubSet(pubs=ps.nxt.pubs))
+
+            return (verfers, digers)
+
         creator = Creatory(algo=algo).make(salt=salt, stem=stem, tier=tier)
 
         if not icodes:  # all same code, make list of len icount of same code
@@ -1180,6 +1264,33 @@ class Manager:
         if not ps.nxt.pubs:  # empty nxt public keys so non-transferable prefix
             raise ValueError("Attempt to rotate nontransferable pre={}.".format(pre))
 
+        if pp.algo == Algos.extern:
+            if self.extern is None:
+                raise ValueError("Extern algorithm requested but no extern "
+                                 "module provided to Manager.")
+
+            verfers, digers = self.extern.rotate(pre, ncodes=ncodes,
+                                                 ncount=ncount, ncode=ncode,
+                                                 dcode=dcode,
+                                                 transferable=transferable,
+                                                 temp=temp)
+
+            ridx = ps.new.ridx + 1
+            kidx = ps.nxt.kidx + len(ps.new.pubs)
+            dt = helping.nowIso8601()
+
+            ps.old = ps.new
+            ps.new = ps.nxt
+            ps.nxt = PubLot(pubs=[diger.qb64 for diger in digers],
+                                  ridx=ridx, kidx=kidx, dt=dt)
+
+            if not self.ks.sits.pin(pre, val=ps):
+                raise ValueError("Problem updating pubsit db for pre={}.".format(pre))
+
+            self.ks.pubs.put(riKey(pre, ri=ps.nxt.ridx), val=PubSet(pubs=ps.nxt.pubs))
+
+            return (verfers, digers)
+
         old = ps.old  # save prior old so can clean out if rotate successful
         ps.old = ps.new  # move prior new to old so save previous one step
         ps.new = ps.nxt  # move prior nxt to new which new is now current signer
@@ -1328,6 +1439,15 @@ class Manager:
         then signs ser with eah pub
         returns list of sigers indexed else list of cigars if not
         """
+        if pre is not None:
+            if (pp := self.ks.prms.get(pre)) is not None and pp.algo == Algos.extern:
+                if self.extern is None:
+                    raise ValueError("Extern algorithm requested but no extern "
+                                     "module provided to Manager.")
+                return self.extern.sign(ser, pubs=pubs, verfers=verfers,
+                                        indexed=indexed, indices=indices,
+                                        ondices=ondices)
+
         signers = []
 
         if pubs is None and verfers is None:

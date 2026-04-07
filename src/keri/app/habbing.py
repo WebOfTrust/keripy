@@ -1318,7 +1318,8 @@ class BaseHab:
                              verfers=verfers,
                              indexed=indexed,
                              indices=indices,
-                             ondices=ondices)
+                             ondices=ondices,
+                             pre=self.pre)
 
 
     def decrypt(self, ser, verfers=None, **kwa):
