@@ -6,7 +6,7 @@ keri.db Package
 
 from . import basing, dbing, escrowing, koming, subing, webdbing
 
-from .basing import Baser, BaserDoer, openDB, reopenDB, statedict
+from .basing import Baser, BaserDoer, openDB, reopenDB, statedict, BaserBase
 from .dbing import (LMDBer, clearDatabaserDir, openLMDB, onKey,
                     snKey, fnKey, dgKey, dtKey, splitKey, splitOnKey,
                     splitKeyDT, fetchTsgs, suffix, unsuffix,

@@ -10,15 +10,15 @@ from __future__ import annotations
 import json
 from collections.abc import Awaitable, Callable, Iterable, Iterator
 from dataclasses import dataclass, field
-from typing import Any
+from typing import Any, Union
+from ordered_set import OrderedSet as oset
+from sortedcontainers import SortedDict
 
 try:
     from pyscript import storage
 except ImportError:  # pragma: no cover
     storage = None
 
-from ordered_set import OrderedSet as oset
-from sortedcontainers import SortedDict
 
 # The following are necessary to define in this file 
 # to prevent non wasm compatible imports (importing from dbing)
@@ -864,7 +864,7 @@ class WebDBer:
                 yield key, val
             return
 
-        for key in db.items.irange(minimum=prefix):
+        for key in list(db.items.irange(minimum=prefix)):
             if not key.startswith(prefix):
                 break
             yield key, db.items[key]
@@ -1123,11 +1123,9 @@ class WebDBer:
         if not key:
             return iter(())
 
-        # Get the prefix 
+        # Snapshot keys via list() to allow safe delete-during-iteration
         iokey = suffix(key, ion, sep=sep)
-
-        # Iterate through items from the starting key
-        for iokey in db.items.irange(minimum=iokey):
+        for iokey in list(db.items.irange(minimum=iokey)):
             ckey, cion = unsuffix(iokey, sep=sep)
             # Stop when we leave this IoSet
             if ckey != key:

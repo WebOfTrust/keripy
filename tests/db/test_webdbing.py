@@ -6,7 +6,6 @@ tests.db.test_webdbing module
 
 import asyncio
 from dataclasses import asdict, dataclass
-from typing import Any
 
 import pytest
 
@@ -26,7 +25,7 @@ try:
     )
     from keri.db import webdbing as webdbing_module
 except ImportError:
-    from webdbing import (  # standalone import for Pyodide
+    from keri.db.webdbing import (  # standalone import for Pyodide
         WebDBer,
         _META_KEY,
         _META_STORE,
@@ -39,13 +38,22 @@ except ImportError:
         onKey,
         splitOnKey,
     )
-    import webdbing as webdbing_module
+    import keri.db.webdbing as webdbing_module
 
 try:
-    from keri.db import subing, koming
+    from keri.db import subing, koming, dgKey, snKey
 except ImportError:
     subing = None
     koming = None
+
+try:
+    from keri.core import serdering, coring, signing, indexing
+    from keri import versify, Kinds
+    from keri.recording import EventSourceRecord
+    from keri import core
+except ImportError:
+    # Pyodide fallback
+    from keri.core import serdering
 
 needskeri = pytest.mark.skipif(subing is None, reason="requires full keri (lmdb)")
 
@@ -66,6 +74,10 @@ class FakeStorageHandle:
 
     def __setitem__(self, key, value):
         self._local[key] = value
+
+    def clear(self):
+        """Remove all keys from the local storage buffer."""
+        self._local.clear()
 
     async def sync(self):
         self.backend.persisted[self.namespace] = dict(self._local)
