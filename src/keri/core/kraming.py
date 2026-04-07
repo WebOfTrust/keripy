@@ -557,32 +557,32 @@ class Kramer:
         kwa['sigers'][:] = [s for s in kwa['sigers'] if s.qb64 in verified]
 
         if kwa.get('ssgs'):
-            new_ssgs = []
+            newSsgs = []
             for prefixer, sigers in kwa['ssgs']:
                 if prefixer.qb64 != senderId:
-                    new_ssgs.append((prefixer, sigers))
+                    newSsgs.append((prefixer, sigers))
                 else:
                     filtered = [s for s in sigers if s.qb64 in verified]
                     if filtered:
-                        new_ssgs.append((prefixer, filtered))
-            kwa['ssgs'] = new_ssgs
+                        newSsgs.append((prefixer, filtered))
+            kwa['ssgs'] = newSsgs
             if not kwa['ssgs']:
                 kwa.pop('ssgs', None)
 
-        cur_sn = kever.sner.num
-        cur_said = kever.serder.said
+        curSn = kever.sner.num
+        curSaid = kever.serder.said
         if kwa.get('tsgs'):
-            new_tsgs = []
+            newTsgs = []
             for quad in kwa['tsgs']:
                 prefixer, number, sdiger, sigers = quad
                 if prefixer.qb64 != senderId:
-                    new_tsgs.append(quad)
+                    newTsgs.append(quad)
                     continue
-                if number.sn == cur_sn and sdiger.qb64 == cur_said:
+                if number.sn == curSn and sdiger.qb64 == curSaid:
                     filtered = [s for s in sigers if s.qb64 in verified]
                     if filtered:
-                        new_tsgs.append((prefixer, number, sdiger, filtered))
-            kwa['tsgs'] = new_tsgs
+                        newTsgs.append((prefixer, number, sdiger, filtered))
+            kwa['tsgs'] = newTsgs
             if not kwa['tsgs']:
                 kwa.pop('tsgs', None)
 
@@ -844,17 +844,17 @@ class Kramer:
             _senderId (str): message sender AID (qb64); reserved for filtering
             kwa (dict): parser attachment dict; mutated in place
         """
-        escrow_sigs = self.db.kramPMKS.get(partialKey)
-        if escrow_sigs:
-            kwa['sigers'] = sorted(escrow_sigs, key=lambda s: s.index)
+        escrowSigs = self.db.kramPMKS.get(partialKey)
+        if escrowSigs:
+            kwa['sigers'] = sorted(escrowSigs, key=lambda s: s.index)
 
-        trqs_esc = list(self.db.kramTRQS.get(partialKey) or [])
+        trqsEsc = list(self.db.kramTRQS.get(partialKey) or [])
         kwa['trqs'] = self._dedupeAttachmentItems(
-            trqs_esc + kwa.get('trqs', []))
+            trqsEsc + kwa.get('trqs', []))
 
-        flat_tsgs = list(self.db.kramTSGS.get(partialKey) or [])
+        flatTsgs = list(self.db.kramTSGS.get(partialKey) or [])
         groups = {}
-        for prefixer, number, diger, siger in flat_tsgs:
+        for prefixer, number, diger, siger in flatTsgs:
             gk = (prefixer.qb64, number.sn, diger.qb64)
             if gk not in groups:
                 groups[gk] = [prefixer, number, diger, []]
@@ -862,53 +862,53 @@ class Kramer:
             if not any(s.qb64 == siger.qb64 for s in sigers):
                 sigers.append(siger)
 
-        merged_tsgs = {}
+        mergedTsgs = {}
         for quad in groups.values():
             prefixer, number, diger, sigers = quad
             gk = (prefixer.qb64, number.sn, diger.qb64)
-            merged_tsgs[gk] = (prefixer, number, diger, list(sigers))
+            mergedTsgs[gk] = (prefixer, number, diger, list(sigers))
 
         for prefixer, number, diger, sigers in kwa.get('tsgs', []):
             gk = (prefixer.qb64, number.sn, diger.qb64)
-            if gk not in merged_tsgs:
-                merged_tsgs[gk] = (prefixer, number, diger, [])
-            bucket = merged_tsgs[gk][3]
+            if gk not in mergedTsgs:
+                mergedTsgs[gk] = (prefixer, number, diger, [])
+            bucket = mergedTsgs[gk][3]
             for s in sigers:
                 if not any(x.qb64 == s.qb64 for x in bucket):
                     bucket.append(s)
 
-        if merged_tsgs:
-            kwa['tsgs'] = list(merged_tsgs.values())
+        if mergedTsgs:
+            kwa['tsgs'] = list(mergedTsgs.values())
         else:
             kwa.pop('tsgs', None)
 
-        ssts_esc = list(self.db.kramSSTS.get(partialKey) or [])
+        sstsEsc = list(self.db.kramSSTS.get(partialKey) or [])
         kwa['ssts'] = self._dedupeAttachmentItems(
-            ssts_esc + kwa.get('ssts', []))
+            sstsEsc + kwa.get('ssts', []))
 
-        frcs_esc = list(self.db.kramFRCS.get(partialKey) or [])
+        frcsEsc = list(self.db.kramFRCS.get(partialKey) or [])
         kwa['frcs'] = self._dedupeAttachmentItems(
-            frcs_esc + kwa.get('frcs', []))
+            frcsEsc + kwa.get('frcs', []))
 
-        tdcs_esc = list(self.db.kramTDCS.get(partialKey) or [])
+        tdcsEsc = list(self.db.kramTDCS.get(partialKey) or [])
         kwa['tdcs'] = self._dedupeAttachmentItems(
-            tdcs_esc + kwa.get('tdcs', []))
+            tdcsEsc + kwa.get('tdcs', []))
 
-        ptds_esc = list(self.db.kramPTDS.get(partialKey) or [])
+        ptdsEsc = list(self.db.kramPTDS.get(partialKey) or [])
         kwa['ptds'] = self._dedupeAttachmentItems(
-            ptds_esc + kwa.get('ptds', []))
+            ptdsEsc + kwa.get('ptds', []))
 
-        bsqs_esc = list(self.db.kramBSQS.get(partialKey) or [])
+        bsqsEsc = list(self.db.kramBSQS.get(partialKey) or [])
         kwa['bsqs'] = self._dedupeAttachmentItems(
-            bsqs_esc + kwa.get('bsqs', []))
+            bsqsEsc + kwa.get('bsqs', []))
 
-        bsss_esc = list(self.db.kramBSSS.get(partialKey) or [])
+        bsssEsc = list(self.db.kramBSSS.get(partialKey) or [])
         kwa['bsss'] = self._dedupeAttachmentItems(
-            bsss_esc + kwa.get('bsss', []))
+            bsssEsc + kwa.get('bsss', []))
 
-        tmqs_esc = list(self.db.kramTMQS.get(partialKey) or [])
+        tmqsEsc = list(self.db.kramTMQS.get(partialKey) or [])
         kwa['tmqs'] = self._dedupeAttachmentItems(
-            tmqs_esc + kwa.get('tmqs', []))
+            tmqsEsc + kwa.get('tmqs', []))
 
         for name in ('trqs', 'ssts', 'frcs', 'tdcs', 'ptds', 'bsqs', 'bsss',
                      'tmqs'):
