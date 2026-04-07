@@ -22,5 +22,5 @@ keri.vdr.verifying
 keri.vdr.viring
 ---------------
 
-.. automodule:: keri.vdr.viring
+.. automodule:: keri.vdr.vdring
     :members:
