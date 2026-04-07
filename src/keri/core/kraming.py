@@ -56,14 +56,16 @@ SigVerifyResult = namedtuple("SigVerifyResult", "verified sigers stale_tsgs")
 Fields:
     verified (bool): True if at least one signature verified
     sigers (list[Siger]): verified Siger instances (empty for cigars)
-    stale_tsgs (list[tuple]): tsgs entries of the form (prefixer, number,
-        sdiger, vsigers) whose (number, sdiger) references a past
-        establishment event and whose signatures verified against that
+    stale_tsgs (list[tuple]): tsgs entries of the form
+        (prefixer, number, sdiger, vsigers) whose (number, sdiger) references
+        a past establishment event and whose signatures verified against that
         historical key state. Not counted toward the current threshold.
-        Empty when no non-current tsgs verified. Not merged into kwa; the
-        live kwa dict is not stripped (downstream dispatch may need tsgs).
+        These quads are removed from kwa['tsgs'] and are not forwarded
+        to downstream processMsg dispatch (scrubbed in
+        Kramer._scrubSameSenderPriorEventTsgs).
+        Empty when no such tsgs verified historically.
         Non-auth DB storage skips sender-addressed tsgs when writing
-        ``kramTSGS`` (see :meth:`Kramer._storeNonAuthAttachments`).
+        kramTSGS (see :meth:`Kramer._storeNonAuthAttachments`).
 
 Key state ref and tholder are derivable from the sender's kever
 (current key state) and are not included here. Callers that need
@@ -480,12 +482,71 @@ class Kramer:
 
         return None, False
 
+    def _scrubSameSenderPriorEventTsgs(self, msg, senderId, kever, kwa):
+        """Drop sender-matching non-current establishment tsgs from ``kwa``.
+
+        Per KRAM PR #1788: "Decided on scrubbing same-sender prior-event tsgs
+        since they cannot be used for authentication, and we do not have a
+        known use case at the moment. If someone comes up with a reason we
+        should be forwarding prior-event tsgs, we can adjust this logic."
+
+        Other-prefix tsgs quads are unchanged. For each sender-matching
+        quad whose (sn, said) is not the sender's current establishment event,
+        the quad is removed from kwa. When the referenced event exists in
+        the KEL and signatures verify against that event's keys, the verified
+        quad is appended to the returned list (for SigVerifyResult.stale_tsgs
+        only); it is still not left in kwa.
+
+        Parameters:
+            msg (SerderKERI): message being authenticated
+            senderId (str): message sender AID (qb64)
+            kever (Kever): sender's Kever (current key state)
+            kwa (dict): parser attachment dict; ``tsgs`` mutated in place
+
+        Returns:
+            list: ``stale_tsgs`` tuples
+                (prefixer, number, sdiger, vsigers) for historically verified
+                non-current sender quads (may be empty)
+        """
+        stale_tsgs = []
+        tsgs = kwa.get('tsgs', [])
+        if not tsgs:
+            return stale_tsgs
+
+        cur_sn = kever.sner.num
+        cur_said = kever.serder.said
+        new_tsgs = []
+        for quad in tsgs:
+            prefixer, number, sdiger, sigers = quad
+            if prefixer.qb64 != senderId:
+                new_tsgs.append(quad)
+                continue
+            if number.sn == cur_sn and sdiger.qb64 == cur_said:
+                new_tsgs.append(quad)
+                continue
+
+            sdig = self.db.kels.getLast(keys=senderId, on=number.sn)
+            if sdig is not None and sdig == sdiger.qb64:
+                if (evtSerder := self.db.evts.get(keys=(senderId, sdiger.qb64))) is not None:
+                    vsigers, _ = verifySigs(
+                        raw=msg.raw, sigers=list(sigers),
+                        verfers=evtSerder.verfers)
+                    if vsigers:
+                        stale_tsgs.append((prefixer, number, sdiger, vsigers))
+            # Same-sender non-current quads are never forwarded in kwa.
+        kwa['tsgs'] = new_tsgs
+        if not kwa['tsgs']:
+            kwa.pop('tsgs', None)
+        return stale_tsgs
+
     def _scrubFailedVerification(self, senderId, kever, kwa, verified):
         """Drop sender-side pool signatures from kwa that did not verify.
 
         verified is the set of Siger.qb64 values that verified
         against the sender's current establishment keys. Non-sender ssgs
-        and tsgs rows are unchanged.
+        and tsgs rows are unchanged. Sender-matching tsgs quads that
+        reference a non-current establishment event are dropped entirely
+        (not forwarded).
 
         Parameters:
             senderId (str): message sender AID (qb64)
@@ -521,8 +582,6 @@ class Kramer:
                     filtered = [s for s in sigers if s.qb64 in verified]
                     if filtered:
                         new_tsgs.append((prefixer, number, sdiger, filtered))
-                else:
-                    new_tsgs.append(quad)
             kwa['tsgs'] = new_tsgs
             if not kwa['tsgs']:
                 kwa.pop('tsgs', None)
@@ -545,11 +604,11 @@ class Kramer:
         Signatures that fail crypto verification are dropped from the
         returned sigers and scrubbed from sender-side ``sigers``, sender
         ``ssgs`` couples, and sender **current** ``tsgs`` quads in ``kwa``.
-        Non-current sender ``tsgs`` are scrubbed when a historical
-        ``verifySigs`` runs (invalid entries removed; verified-only tuples
-        kept). Signatures that don't apply (non-matching tsgs, non-sender
-        ssgs) remain in kwa for downstream forwarding but are not counted
-        toward KRAM threshold.
+        Sender-matching ``tsgs`` for a **non-current** establishment event are
+        removed from ``kwa`` entirely (historically verified tuples appear only
+        in ``SigVerifyResult.stale_tsgs``). Signatures that don't apply
+        (non-matching tsgs, non-sender ssgs) remain in kwa for downstream
+        forwarding but are not counted toward KRAM threshold.
 
         Parameters:
             msg (SerderKERI): message being authenticated
@@ -557,14 +616,16 @@ class Kramer:
             kever (Kever): sender's Kever instance (current key state)
             kwa (dict): parser attachment dict; mutated in place for
                 normalization (must not use **kwa at call sites or updates
-                would not propagate). Sender ``tsgs`` quads remain (with
-                unverifiable signatures removed) so downstream exn/rpy
-                handlers still see transferable groups.
+                would not propagate). After verification, ``kwa['tsgs']``
+                retains only other-prefix quads and sender quads for the
+                current establishment event (signatures may be filtered).
 
         Returns:
             SigVerifyResult: namedtuple with (verified, sigers, stale_tsgs)
         """
         self._normalizeCurrentSenderTsgs(senderId, kever, kwa)
+        stale_tsgs = self._scrubSameSenderPriorEventTsgs(
+            msg, senderId, kever, kwa)
 
         # If any cigar from the matching sender verifies, return immediately.
         for cigar in kwa.get('cigars', []):
@@ -573,39 +634,8 @@ class Kramer:
             if senderId != cigar.verfer.qb64:  # sender identity check
                 continue
             if cigar.verfer.verify(cigar.raw, msg.raw):
-                return SigVerifyResult(verified=True, sigers=[], stale_tsgs=[])
-
-        # Non-current sender-matching tsgs: verify historically and scrub kwa.
-        stale_tsgs = []
-        tsgs = kwa.get('tsgs', [])
-        if tsgs:
-            new_tsgs = []
-            for quad in tsgs:
-                prefixer, number, sdiger, sigers = quad
-                if prefixer.qb64 != senderId:
-                    new_tsgs.append(quad)
-                    continue
-                if (number.sn != kever.sner.num or
-                        sdiger.qb64 != kever.serder.said):
-                    sdig = self.db.kels.getLast(keys=senderId, on=number.sn)
-                    if sdig is not None and sdig == sdiger.qb64:
-                        evtSerder = self.db.evts.get(keys=(senderId, sdiger.qb64))
-                        if evtSerder is not None:
-                            vsigers, _ = verifySigs(
-                                raw=msg.raw, sigers=list(sigers),
-                                verfers=evtSerder.verfers)
-                            if vsigers:
-                                stale_tsgs.append((prefixer, number, sdiger, vsigers))
-                                new_tsgs.append((prefixer, number, sdiger, vsigers))
-                        else:
-                            new_tsgs.append(quad)
-                    else:
-                        new_tsgs.append(quad)
-                    continue
-                new_tsgs.append(quad)
-            kwa['tsgs'] = new_tsgs
-            if not kwa['tsgs']:
-                kwa.pop('tsgs', None)
+                return SigVerifyResult(
+                    verified=True, sigers=[], stale_tsgs=stale_tsgs)
 
         # Build siger pool, oset by siger.qb64 to deduplicate.
         pool = oset()

@@ -2091,15 +2091,15 @@ def test_stale_tsgs(mockHelpingNowUTC):
     A tsg whose (number, sdiger) references a past establishment event in the
     sender's KEL verifies against the verfers from that historical event, not
     the current kever. Such stale tsgs are not counted toward the current
-    threshold. They appear in sigResult.stale_tsgs from _verifyAttachedSigs but
-    are not merged into kwa or kramTSGS (sender tsgs are stripped from kwa
-    after verify).
+    threshold. Historically verified tuples appear in sigResult.stale_tsgs
+    from _verifyAttachedSigs for observability only; they are removed from
+    kwa['tsgs'] (not forwarded). kramTSGS does not store sender-addressed tsgs.
 
     Covers:
         - stale tsg verified against historical key state appears in
-          sigResult.stale_tsgs
+          sigResult.stale_tsgs only; kwa retains current-establishment tsgs
         - stale tsg with no matching historical event produces empty
-          stale_tsgs (ignored)
+          stale_tsgs (ignored) and is scrubbed from kwa
         - fast path (threshold met on first delivery): message accepted; stale
           sender tsgs are not left in kwa for downstream
         - accumulation path: kramTSGS only stores non-sender tsgs from kwa;
@@ -2190,7 +2190,19 @@ def test_stale_tsgs(mockHelpingNowUTC):
 
             kwa = dict(ssgs=[(prefixer, currentSigers)],
                        tsgs=currentTsgs + [staleTsg])
+            kwa.setdefault('sigers', [])
+            sig_probe = kramer._verifyAttachedSigs(
+                msg=msg, senderId=senderHab.pre, kever=receiverKever, kwa=kwa)
+            assert len(sig_probe.stale_tsgs) == 1
+
             kvy.processMsg(msg, kwa)
+
+            # Same-sender prior-event tsg scrubbed; only current quad remains.
+            assert len(kwa.get('tsgs', [])) == 1
+            kept = kwa['tsgs'][0]
+            assert kept[0].qb64 == senderHab.pre
+            assert kept[1].sn == receiverKever.sner.num
+            assert kept[2].qb64 == receiverKever.serder.said
 
             # Fast path: threshold met on first delivery.
             # Cache created, no partials stored.
@@ -2230,6 +2242,9 @@ def test_stale_tsgs(mockHelpingNowUTC):
                         tsgs=currentTsgs2 + [bogusStaleTsg])
             kvy.processMsg(msg2, kwa2)
 
+            assert len(kwa2.get('tsgs', [])) == 1
+            assert kwa2['tsgs'][0][1].sn == curSeqner.sn
+
             # Accepted via current-keystate sigs; bogus stale tsg silently ignored
             cache2 = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg2.said))
             assert cache2 is not None
@@ -2266,6 +2281,9 @@ def test_stale_tsgs(mockHelpingNowUTC):
                                 [currentSigers3[0]])] + [staleTsg3])
             kvy.processMsg(msg3, kwa3a)
 
+            assert len(kwa3a.get('tsgs', [])) == 1
+            assert kwa3a['tsgs'][0][1].sn == curSeqner.sn
+
             assert receiverHby.db.kramPMKM.get(keys=partialKey3) is not None
             pmks3 = receiverHby.db.kramPMKS.get(keys=partialKey3)
             assert len(pmks3) == 1  # only 1 current-keystate sig so far
@@ -2290,6 +2308,62 @@ def test_stale_tsgs(mockHelpingNowUTC):
             assert tsgs3_after is None or len(tsgs3_after) == 0
 
     """Done Test"""
+
+
+def test_cigar_scrubs_same_sender_prior_tsgs(mockHelpingNowUTC):
+    """Cigar auth returns only after prior-event scrub; stale tsgs leave kwa.
+
+    Regression: cigar success must not skip scrubbing same-sender non-current
+    tsgs (those quads must not reach downstream dispatch).
+    """
+    salt1 = Salter(raw=b'0123456789abcdef').qb64
+    salt2 = Salter(raw=b'0123456789abcdeg').qb64
+
+    with (openHby(name="cigarSenderNT", base="test", salt=salt1) as senderHby,
+          openHby(name="cigarReceiver", base="test", salt=salt2) as receiverHby):
+
+        senderNTHab = senderHby.makeHab(name="nt", isith='1', icount=1,
+                                        transferable=False)
+        receiverHby.makeHab(name="rcv", isith='1', icount=1,
+                            transferable=True)
+
+        crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
+        Parser(version=Vrsn_1_0).parse(
+            ims=bytearray(senderNTHab.makeOwnEvent(sn=0)), kvy=crossKvy)
+        kever = receiverHby.db.kevers[senderNTHab.pre]
+        assert kever is not None
+
+        with openCF(name="cigarKram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+
+        stamp = helping.nowIso8601()
+        msg = query(pre=senderNTHab.pre,
+                    route="ksn",
+                    query=dict(i=senderNTHab.pre, src=senderNTHab.pre,
+                               n='cigar-stale'),
+                    stamp=stamp,
+                    pvrsn=Vrsn_2_0)
+
+        cigars = senderNTHab.mgr.sign(ser=msg.raw,
+                                      verfers=senderNTHab.kever.verfers,
+                                      indexed=False)
+
+        prefixer = Prefixer(qb64=senderNTHab.pre)
+        bogusSeqner = Seqner(sn=999)
+        bogusSaider = Saider(qb64=senderNTHab.kever.serder.said)
+        staleSigers = senderNTHab.mgr.sign(ser=msg.raw,
+                                           verfers=senderNTHab.kever.verfers,
+                                           indexed=True)
+        bogusStaleTsg = (prefixer, bogusSeqner, bogusSaider, [staleSigers[0]])
+
+        kwa = dict(cigars=cigars, sigers=[], tsgs=[bogusStaleTsg])
+        sig_result = kramer._verifyAttachedSigs(
+            msg=msg, senderId=senderNTHab.pre, kever=kever, kwa=kwa)
+
+        assert sig_result.verified is True
+        assert sig_result.stale_tsgs == []
+        assert kwa.get('tsgs') is None
 
 
 def test_cue_ks_non_transactioned(mockHelpingNowUTC):
