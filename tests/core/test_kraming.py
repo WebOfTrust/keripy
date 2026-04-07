@@ -425,6 +425,61 @@ KRAM_INTEGRATION_CONFIG = {
 }
 
 
+def test_scrub_invalid_pool_sigs():
+    """_verifyAttachedSigs removes unverifiable signatures from kwa in place."""
+    salt1 = Salter(raw=b'\xc1\x00' * 8).qb64
+    salt2 = Salter(raw=b'\xc2\x00' * 8).qb64
+    with (openHby(name="sender", base="test", salt=salt1) as senderHby,
+          openHby(name="receiver", base="test", salt=salt2) as receiverHby):
+
+        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1,
+                                      transferable=True)
+        receiverHby.makeHab(name="receiver", isith='1', icount=1,
+                            transferable=True)
+        crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(senderHab.makeOwnEvent(sn=0)),
+                                       kvy=crossKvy)
+        kever = receiverHby.db.kevers.get(senderHab.pre)
+        assert kever is not None
+
+        with openCF(name="kram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+
+        stamp = helping.nowIso8601()
+        msg = query(
+            pre=senderHab.pre,
+            route="ksn",
+            query=dict(i=senderHab.pre, src=senderHab.pre, n='scrub-kwa'),
+            stamp=stamp,
+            pvrsn=Vrsn_2_0,
+        )
+        good = senderHab.mgr.sign(
+            ser=msg.raw, verfers=senderHab.kever.verfers, indexed=True)
+        bad = senderHab.mgr.sign(
+            ser=b'wrong payload', verfers=senderHab.kever.verfers, indexed=True)
+
+        kwa = dict(sigers=good + bad)
+        sig_result = kramer._verifyAttachedSigs(
+            msg=msg, senderId=senderHab.pre, kever=kever, kwa=kwa)
+
+        assert sig_result.verified is True
+        assert len(sig_result.sigers) == 1
+        assert len(kwa['sigers']) == 1
+        assert kwa['sigers'][0].qb64 == sig_result.sigers[0].qb64
+
+        prefixer = Prefixer(qb64=senderHab.pre)
+        kwa2 = dict(ssgs=[(prefixer, good + bad)])
+        kwa2.setdefault('sigers', [])
+        sig_result2 = kramer._verifyAttachedSigs(
+            msg=msg, senderId=senderHab.pre, kever=kever, kwa=kwa2)
+
+        assert sig_result2.verified is True
+        assert len(kwa2['ssgs']) == 1
+        assert len(kwa2['ssgs'][0][1]) == 1
+        assert kwa2['ssgs'][0][1][0].qb64 == sig_result2.sigers[0].qb64
+
+
 def test_assk(mockHelpingNowUTC):
     """Test processMsg with single-key sender (assk auth type).
 
