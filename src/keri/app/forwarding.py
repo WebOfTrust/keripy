@@ -513,6 +513,39 @@ class ForwardHandler:
         self.mbx.storeMsg(topic=resource, msg=pevt)
 
 
+class AuthorizedForwardHandler(ForwardHandler):
+    """Mailbox `/fwd` handler that enforces recipient mailbox authorization.
+
+    Decoupling mailbox hosting from witness hosting removes the old implicit
+    trust boundary. A standalone mailbox host must not become an open storage
+    surface for unsolicited or malicious `/fwd` traffic.
+
+    This handler stores the embedded payload only when accepted ``ends.`` state
+    currently authorizes ``(recipient, Roles.mailbox, mailboxAid)``.
+    """
+
+    def __init__(self, hby, mbx, mailboxAid):
+        """Create a mailbox-specific forward handler.
+
+        Parameters:
+            hby (Habery): database environment
+            mbx (Mailboxer): provider-side mailbox storage
+            mailboxAid (str): hosted mailbox AID that this handler represents
+        """
+        super().__init__(hby=hby, mbx=mbx)
+        self.mailboxAid = mailboxAid
+
+    def handle(self, serder, attachments=None):
+        """Store the forwarded payload only when the hosted mailbox is allowed."""
+        modifiers = serder.ked.get("q", {})
+        recipient = modifiers["pre"]
+        end = self.hby.db.ends.get(keys=(recipient, Roles.mailbox, self.mailboxAid))
+        if not end or not (end.allowed or end.enabled):
+            return
+
+        super().handle(serder, attachments=attachments)
+
+
 def introduce(hab, wit):
     """ Clone and return hab KEL if lastest event has not been receipted by wit
 

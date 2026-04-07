@@ -14,7 +14,7 @@ from .challenging import ChallengeHandler
 from .configing import openCF, Configer, ConfigerDoer
 from .delegating import Anchorer, DelegateRequestHandler, delegateRequestExn
 from .directing import Director, Reactor, Directant, Reactant, runController
-from .forwarding import Poster, StreamPoster, ForwardHandler, introduce
+from .forwarding import Poster, StreamPoster, ForwardHandler, AuthorizedForwardHandler, introduce
 from .grouping import (Counselor, MultisigNotificationHandler, multisigInceptExn,
                        multisigRotateExn, multisigInteractExn, multisigRegistryInceptExn,
                        multisigIssueExn, multisigRevokeExn, multisigRpyExn,
@@ -24,10 +24,11 @@ from .habbing import (openHby, openHab, Habery, Signator, HaberyDoer, SIGNER,
 from .httping import (SignatureValidationComponent, CesrRequest, CESR_CONTENT_TYPE,
                       parseCesrHttpRequest, createCESRRequest, streamCESRRequests,
                       Clienter, CESR_DESTINATION_HEADER)
-from .indirecting import (setupWitness, createHttpServer, WitnessStart,
-                          Indirector, MailboxDirector, Poller, HttpEnd,
-                          QryRpyMailboxIterable, MailboxIterable, ReceiptEnd,
-                          QueryEnd)
+from .indirecting import (setupWitness, createHttpServer,
+                          WitnessStart, Indirector, MailboxDirector, Poller,
+                          HttpEnd, QryRpyMailboxIterable, MailboxIterable,
+                          ReceiptEnd, QueryEnd)
+from .mailboxing import setupMailbox, MailboxStart, MailboxAddRemoveEnd, HealthEnd
 from .keeping import (PubLot, PreSit, PrePrm, PubSet, riKey, openKS, Keeper,
                       KeeperDoer, Creator, RandyCreator, SaltyCreator,
                       Creatory, Initage, Manager, ManagerDoer, Algos)
