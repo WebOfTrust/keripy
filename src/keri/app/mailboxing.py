@@ -20,6 +20,7 @@ Maintainer notes:
 """
 import json
 import platform
+from urllib.parse import urlparse
 
 import falcon
 
@@ -27,7 +28,7 @@ from hio.base import doing
 from hio.core import http
 from hio.help import decking
 
-from ..kering import Vrsn_1_0, Roles, Ilks
+from ..kering import Vrsn_1_0, Roles, Ilks, Schemes
 from ..core import Kevery, parsing, routing, serdering
 from ..end import loadEnds as loadEndingEnds
 from ..peer import Exchanger
@@ -157,6 +158,61 @@ def _ingestCesr(raw, *, kvy, rvy, exc, tvy=None):
         exc.processEscrow()
 
 
+def _mailboxAdminPath(hab):
+    """Return the served mailbox-admin route for one hosted mailbox habitat.
+
+    The route follows the historical KERIpy mailbox-admin convention: append
+    ``/mailboxes`` relative to the stored mailbox endpoint URL path.
+
+    This helper is intentionally strict:
+        - mailbox admin routing must come from the loaded self ``/loc/scheme``
+        - this path-relative rule applies only to mailbox admin, not to every
+          other mailbox-host surface
+    """
+    urls = hab.fetchUrls(eid=hab.pre, scheme=Schemes.https) or hab.fetchUrls(
+        eid=hab.pre,
+        scheme=Schemes.http,
+    )
+    if not urls:
+        raise ValueError("mailbox admin requires a loaded self HTTP(S) location record")
+
+    url = urls[Schemes.https] if Schemes.https in urls else urls[Schemes.http]
+    path = urlparse(url).path.rstrip("/")
+    return f"{path}/mailboxes"
+
+
+def _roleEnabled(hby, cid, role, eid):
+    """Return True when one endpoint role record is active for startup use."""
+    end = hby.db.ends.get(keys=(cid, role, eid))
+    return bool(end and (end.allowed or end.enabled))
+
+
+def _requireMailboxIdentity(hby, hab):
+    """Require authoritative self mailbox identity state before host startup.
+
+    Boot-time invariant:
+        - the hosted non-transferable mailbox AID must already advertise at
+          least one self HTTP(S) location
+        - it must already authorize itself as both controller and mailbox
+
+    This prevents the mailbox host from booting with an invented admin route or
+    an incomplete self-description. Mailbox start is responsible for creating
+    or reconciling this accepted self state before hosting begins; startup here
+    still refuses to serve if that reconciliation did not actually land in the
+    local database.
+    """
+    urls = hab.fetchUrls(eid=hab.pre, scheme=Schemes.https) or hab.fetchUrls(
+        eid=hab.pre,
+        scheme=Schemes.http,
+    )
+    if not urls:
+        raise ValueError("mailbox host startup requires a loaded self HTTP(S) location record")
+    if not _roleEnabled(hby, hab.pre, Roles.controller, hab.pre):
+        raise ValueError("mailbox host startup requires self controller authorization state")
+    if not _roleEnabled(hby, hab.pre, Roles.mailbox, hab.pre):
+        raise ValueError("mailbox host startup requires self mailbox authorization state")
+
+
 def setupMailbox(hby, alias="mailbox", mbx=None, aids=None, httpPort=5632,
                  keypath=None, certpath=None, cafilepath=None):
     """Set up one mailbox host around an existing local habitat.
@@ -166,11 +222,14 @@ def setupMailbox(hby, alias="mailbox", mbx=None, aids=None, httpPort=5632,
         - ``AuthorizedForwardHandler`` gates ``/fwd`` storage by mailbox authz
         - ``Respondant`` owns reply emission for non-stream cues
         - ``MailboxStart`` runs parser ingress, escrow replay, and cue routing
+        - mailbox admin is served at ``<stored-mailbox-url-path>/mailboxes``
 
     Because mailbox hosting here is separate from witness hosting, ``/fwd``
     storage is gated through ``AuthorizedForwardHandler`` so the host stores
     traffic only for recipients that currently authorize the hosted mailbox
-    AID.
+    AID. Only mailbox admin follows the stored location URL path in this
+    module; served OOBIs still come from ``loadEndingEnds(...)`` at their
+    normal root routes.
     """
     from .indirecting import createHttpServer, HttpEnd
 
@@ -186,6 +245,7 @@ def setupMailbox(hby, alias="mailbox", mbx=None, aids=None, httpPort=5632,
         raise ValueError(f"missing local mailbox alias {alias!r}")
     if hab.kever.prefixer.transferable:
         raise ValueError("mailbox host requires a non-transferable identifier")
+    _requireMailboxIdentity(hby, hab)
 
     mbx = mbx if mbx is not None else Mailboxer(name=alias, temp=hby.temp)
     forwarder = AuthorizedForwardHandler(hby=hby, mbx=mbx, mailboxAid=hab.pre)
@@ -212,7 +272,8 @@ def setupMailbox(hby, alias="mailbox", mbx=None, aids=None, httpPort=5632,
     httpEnd = HttpEnd(rxbs=parser.ims, mbx=mbx)
     app.add_route("/", httpEnd)
     app.add_route("/health", HealthEnd())
-    app.add_route("/mailboxes", MailboxAddRemoveEnd(hby=hby, hab=hab, kvy=kvy, rvy=rvy, exc=exchanger))
+    app.add_route(_mailboxAdminPath(hab),
+                  MailboxAddRemoveEnd(hby=hby, hab=hab, kvy=kvy, rvy=rvy, exc=exchanger))
 
     server = createHttpServer(host, httpPort, app, keypath, certpath, cafilepath)
     if not server.reopen():

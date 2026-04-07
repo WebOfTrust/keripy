@@ -108,3 +108,71 @@ def test_mailbox_add_posts_multipart_fields(monkeypatch, capsys, helpers):
         assert f"Mailbox {mailbox_pre} added for alice" in out
 
     helpers.remove_test_dirs(name)
+
+
+def test_mailbox_add_posts_relative_to_stored_mailbox_url_path(monkeypatch, capsys, helpers):
+    """`kli mailbox add` appends `mailboxes` relative to the stored mailbox URL path."""
+    name = f"test-mailbox-add-path-{os.urandom(4).hex()}"
+    requests = []
+
+    class ClientStub:
+        def __init__(self):
+            self.responses = decking.Deck()
+            self.requester = type("Requester", (), {"path": "/relay/admin"})()
+
+        def request(self, **kwargs):
+            requests.append(kwargs)
+            self.responses.append(type("Rep", (), {
+                "status": 200,
+                "data": "",
+                "body": "",
+            })())
+
+        def respond(self):
+            return self.responses.popleft()
+
+    class WitnessPublisherStub(doing.DoDoer):
+        def __init__(self, **kwargs):
+            self.msgs = decking.Deck()
+            self.cues = decking.Deck()
+            super().__init__(doers=[doing.doify(self.publishDo)])
+
+        def publishDo(self, tymth=None, tock=0.0, **kwa):
+            self.wind(tymth)
+            self.tock = tock
+            _ = (yield self.tock)
+
+            while True:
+                while self.msgs:
+                    self.cues.append(self.msgs.popleft())
+                    yield self.tock
+                yield self.tock
+
+    def stub_http_client(hab, wit):
+        return ClientStub(), doing.DoDoer(doers=[])
+
+    monkeypatch.setattr(mailbox_add, "httpClient", stub_http_client)
+    monkeypatch.setattr(mailbox_add, "WitnessPublisher", WitnessPublisherStub)
+
+    with openHby(name=name, temp=True) as hby:
+        monkeypatch.setattr(mailbox_add, "setupHby", lambda **kwargs: hby)
+        alice = hby.makeHab(name="alice", transferable=True)
+        mailbox = hby.makeHab(name="mbx", transferable=False)
+        args = mailbox_add.parser.parse_args([
+            "--name",
+            name,
+            "--alias",
+            "alice",
+            "--mailbox",
+            mailbox.pre,
+        ])
+
+        runController(doers=args.handler(args))
+
+        assert len(requests) == 1
+        assert requests[0]["path"] == "/relay/admin/mailboxes"
+
+        out = capsys.readouterr().out
+        assert f"Mailbox {mailbox.pre} added for alice" in out
+
+    helpers.remove_test_dirs(name)
