@@ -4,6 +4,7 @@ tests.app.mailboxing module
 
 """
 import importlib
+import os
 
 import falcon
 from falcon import testing
@@ -12,9 +13,13 @@ import pytest
 from hio.help import decking
 
 from keri.app import openHby
-from keri.app.mailboxing import MailboxAddRemoveEnd
+from keri.app.mailboxing import MailboxAddRemoveEnd, _mailboxAdminPath, setupMailbox
+from keri.app.configing import Configer
 from keri.core import Kevery, Salter, routing
 from keri.kering import Roles
+
+
+mailbox_start = importlib.import_module("keri.cli.commands.mailbox.start")
 
 
 def _collect_replay(hab):
@@ -27,15 +32,15 @@ def _collect_replay(hab):
     return body
 
 
-def _mailbox_admin_client(hby, hab):
-    """Build a focused Falcon client exposing only the mailbox admin endpoint."""
+def _mailbox_admin_client(hby, hab, route="/mailboxes"):
+    """Build a focused Falcon client exposing only one mailbox admin route."""
     cues = decking.Deck()
     rvy = routing.Revery(db=hby.db, cues=cues)
     kvy = Kevery(db=hby.db, lax=True, local=False, rvy=rvy, cues=cues)
     kvy.registerReplyRoutes(router=rvy.rtr)
 
     app = falcon.App()
-    app.add_route("/mailboxes",
+    app.add_route(route,
                   MailboxAddRemoveEnd(hby=hby, hab=hab, kvy=kvy, rvy=rvy, exc=None))
     return testing.TestClient(app)
 
@@ -57,13 +62,13 @@ def _multipart_body(**fields):
     return bytes(body), f"multipart/form-data; boundary={boundary}"
 
 
-def _post_mailbox_admin(client, *, fields=None, content_type="text/plain", body=b""):
-    """Post either raw bytes or mailbox-admin multipart fields to `/mailboxes`."""
+def _post_mailbox_admin(client, *, path="/mailboxes", fields=None, content_type="text/plain", body=b""):
+    """Post either raw bytes or mailbox-admin multipart fields to one admin path."""
     if fields is not None:
         body, content_type = _multipart_body(**fields)
 
     return client.simulate_post(
-        "/mailboxes",
+        path,
         headers={"Content-Type": content_type},
         body=body,
     )
@@ -145,6 +150,160 @@ def test_mailbox_add_remove_end_accepts_multipart_cut_after_add():
             "allowed": False,
         }
         assert not providerHby.db.ends.get(keys=(controller.pre, Roles.mailbox, mailboxHab.pre)).allowed
+
+
+def test_mailbox_admin_path_uses_stored_mailbox_url_path_without_root_alias():
+    """Mailbox admin is served relative to the stored mailbox URL path only."""
+    with openHby(name="mailbox-provider-path",
+                 salt=Salter(raw=b"mailbox-provider-path").qb64) as providerHby, \
+            openHby(name="mailbox-controller-path",
+                    salt=Salter(raw=b"mailbox-controller-path").qb64) as controllerHby:
+        mailboxHab = providerHby.makeHab(name="mbx", transferable=False)
+        controller = controllerHby.makeHab(name="alice", transferable=True)
+        mailboxUrl = f"http://127.0.0.1:5632/{mailboxHab.pre}"
+        mailboxHab.psr.parse(ims=bytearray(mailboxHab.makeLocScheme(
+            url=mailboxUrl,
+            eid=mailboxHab.pre,
+            scheme="http",
+        )))
+
+        adminPath = _mailboxAdminPath(mailboxHab)
+        assert adminPath == f"/{mailboxHab.pre}/mailboxes"
+
+        client = _mailbox_admin_client(providerHby, mailboxHab, route=adminPath)
+        fields = {
+            "kel": _collect_replay(controller).decode("utf-8"),
+            "rpy": controller.makeEndRole(mailboxHab.pre, Roles.mailbox, allow=True).decode("utf-8"),
+        }
+
+        rep = _post_mailbox_admin(client, fields=fields)
+        assert rep.status_code == 404
+
+        rep = _post_mailbox_admin(client, path=adminPath, fields=fields)
+        assert rep.status_code == 200
+        assert rep.json["allowed"] is True
+
+
+def test_mailbox_admin_path_requires_loaded_self_location():
+    """Mailbox admin path is derived only from loaded self location state."""
+    with openHby(name="mailbox-provider-missing-loc",
+                 salt=Salter(raw=b"mailbox-provider-missing").qb64) as providerHby:
+        mailboxHab = providerHby.makeHab(name="mbx", transferable=False)
+
+        with pytest.raises(ValueError, match="loaded self HTTP"):
+            _mailboxAdminPath(mailboxHab)
+
+
+def test_setup_mailbox_requires_self_identity_state_before_boot():
+    """Mailbox host boot fails until self location and self role state are accepted."""
+    with openHby(name="mailbox-provider-boot",
+                 salt=Salter(raw=b"mailbox-provider-boot").qb64) as providerHby:
+        mailboxHab = providerHby.makeHab(name="mbx", transferable=False)
+
+        with pytest.raises(ValueError, match="loaded self HTTP"):
+            setupMailbox(providerHby, alias="mbx")
+
+        mailboxHab.psr.parse(ims=bytearray(mailboxHab.makeLocScheme(
+            url=f"http://127.0.0.1:5632/{mailboxHab.pre}",
+            eid=mailboxHab.pre,
+            scheme="http",
+        )))
+        with pytest.raises(ValueError, match="self controller authorization"):
+            setupMailbox(providerHby, alias="mbx")
+
+        mailboxHab.psr.parse(ims=bytearray(mailboxHab.makeEndRole(
+            mailboxHab.pre,
+            Roles.controller,
+            allow=True,
+        )))
+        with pytest.raises(ValueError, match="self mailbox authorization"):
+            setupMailbox(providerHby, alias="mbx")
+
+        mailboxHab.psr.parse(ims=bytearray(mailboxHab.makeEndRole(
+            mailboxHab.pre,
+            Roles.mailbox,
+            allow=True,
+        )))
+        doers = setupMailbox(providerHby, alias="mbx", httpPort=9000)
+        try:
+            assert len(doers) > 0
+        finally:
+            for doer in doers:
+                if hasattr(doer, "server"):
+                    doer.server.close()
+
+
+def test_mailbox_start_creates_missing_alias_from_config_startup_material():
+    """Mailbox start bootstrap reuses Hab config application for alias startup material."""
+    cf = Configer(name=f"mailbox-start-cf-{os.urandom(4).hex()}",
+                  temp=True,
+                  reopen=True,
+                  clear=False)
+    hby = None
+    try:
+        cf.put({
+            "relay": {
+                "dt": "2026-04-07T12:00:00.000000+00:00",
+                "curls": ["http://127.0.0.1:5632/relay"],
+            }
+        })
+
+        hby = mailbox_start._openMailboxHabery(
+            name=f"mailbox-start-config-{os.urandom(4).hex()}",
+            cf=cf,
+            temp=True,
+        )
+        hab, startup = mailbox_start._prepareMailboxHabitat(hby=hby, alias="relay")
+
+        assert startup["source"] == "stored"
+        assert not hab.kever.prefixer.transferable
+        assert hab.fetchUrls(eid=hab.pre, scheme="http")["http"] == "http://127.0.0.1:5632/relay"
+        assert hby.db.ends.get(keys=(hab.pre, Roles.controller, hab.pre)).allowed
+        assert hby.db.ends.get(keys=(hab.pre, Roles.mailbox, hab.pre)).allowed
+    finally:
+        if hby is not None:
+            hby.close(clear=hby.temp)
+        cf.close(clear=cf.temp)
+
+
+def test_mailbox_start_requires_config_when_alias_is_missing():
+    """Mailbox start does not offer a CLI bootstrap path in KERIpy."""
+    hby = mailbox_start._openMailboxHabery(
+        name=f"mailbox-start-no-config-{os.urandom(4).hex()}",
+        temp=True,
+    )
+    try:
+        with pytest.raises(ValueError, match="matching config alias section"):
+            mailbox_start._prepareMailboxHabitat(hby=hby, alias="relay")
+    finally:
+        hby.close(clear=hby.temp)
+
+
+def test_mailbox_start_rejects_incomplete_config_startup_material():
+    """Mailbox start fails when Hab config application does not yield usable self state."""
+    cf = Configer(name=f"mailbox-start-bad-cf-{os.urandom(4).hex()}",
+                  temp=True,
+                  reopen=True,
+                  clear=False)
+    hby = None
+    try:
+        cf.put({
+            "relay": {
+                "dt": "2026-04-07T12:00:00.000000+00:00",
+            }
+        })
+        hby = mailbox_start._openMailboxHabery(
+            name=f"mailbox-start-bad-{os.urandom(4).hex()}",
+            cf=cf,
+            temp=True,
+        )
+
+        with pytest.raises(ValueError, match="complete mailbox startup state"):
+            mailbox_start._prepareMailboxHabitat(hby=hby, alias="relay", requireConfig=True)
+    finally:
+        if hby is not None:
+            hby.close(clear=hby.temp)
+        cf.close(clear=cf.temp)
 
 
 def test_mailbox_add_remove_end_rejects_invalid_requests():
