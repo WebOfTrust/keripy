@@ -1916,6 +1916,102 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
     """Done Test"""
 
 
+def test_multisig_kwa_rehydration_after_threshold(mockHelpingNowUTC):
+    """Threshold on a later delivery merges escrow PMKS + non-auth into kwa.
+
+    The second parse may omit non-auth attachments that were stored on the
+    first partial; :meth:`Kramer._rehydrateKwaFromEscrow` restores them.
+    """
+
+    salt1 = Salter(raw=b'0123456789abcdef').qb64
+    salt2 = Salter(raw=b'0123456789abcdeg').qb64
+
+    with (openHby(name="rehSender", base="test", salt=salt1) as senderHby,
+          openHby(name="rehReceiver", base="test", salt=salt2) as receiverHby):
+
+        senderHab = senderHby.makeHab(name="rehSender", isith='2', icount=3,
+                                      transferable=True)
+        receiverHab = receiverHby.makeHab(name="rehReceiver", isith='1', icount=1,
+                                          transferable=True)
+
+        crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
+        senderIcp = senderHab.makeOwnEvent(sn=0)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+
+        with openCF(name="rehKram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+
+            stamp = helping.nowIso8601()
+            prefixer = Prefixer(qb64=senderHab.pre)
+
+            msg = query(pre=senderHab.pre,
+                        route="ksn",
+                        query=dict(i=senderHab.pre, src=senderHab.pre),
+                        stamp=stamp,
+                        pvrsn=Vrsn_2_0)
+
+            allSigers = senderHab.mgr.sign(ser=msg.raw,
+                                           verfers=senderHab.kever.verfers,
+                                           indexed=True)
+
+            partialKey = (senderHab.pre, msg.said)
+
+            senderKever = receiverHby.db.kevers[senderHab.pre]
+            seqner = Seqner(sn=senderKever.sner.num)
+            saider = Saider(qb64=senderKever.serder.said)
+            diger = Diger(ser=msg.raw)
+            otherPrefixer = Prefixer(qb64=receiverHab.pre)
+
+            trqs = [(prefixer, seqner, saider, allSigers[0])]
+            tsgs = [(otherPrefixer, seqner, saider, [allSigers[0]])]
+            ssts = [(otherPrefixer, seqner, saider)]
+            firner = Seqner(sn=0)
+            dater = Dater(dts=stamp)
+            frcs = [(firner, dater)]
+            verser = Verser(pvrsn=Vrsn_2_0)
+            tdcs = [(verser, diger)]
+            ptds = [b'\x00\x01\x02\x03']
+            noncer0 = Noncer()
+            noncer1 = Noncer()
+            labeler = Labeler(label='test')
+            bsqs = [(diger, noncer0, noncer1, labeler)]
+            number = Number(num=1)
+            noncer2 = Noncer()
+            bsss = [(diger, noncer0, noncer1, labeler, number, noncer2)]
+            texter = Texter(text='application/json')
+            tmqs = [(diger, noncer0, labeler, texter)]
+
+            kwa = dict(ssgs=[(prefixer, [allSigers[0]])],
+                       trqs=trqs, tsgs=tsgs, ssts=ssts,
+                       frcs=frcs, tdcs=tdcs, ptds=ptds,
+                       bsqs=bsqs, bsss=bsss, tmqs=tmqs)
+
+            r1 = kramer.kramit(msg, kwa)
+            assert r1 is None
+            assert len(kramer.db.kramPMKS.get(keys=partialKey)) == 1
+
+            kwa2 = dict(ssgs=[(prefixer, [allSigers[2]])])
+            r2 = kramer.kramit(msg, kwa2)
+            assert r2 is not None
+
+            assert {s.index for s in kwa2['sigers']} == {0, 2}
+            assert len(kwa2['trqs']) == 1
+            assert len(kwa2['tsgs']) == 1
+            assert len(kwa2['ssts']) == 1
+            assert len(kwa2['frcs']) == 1
+            assert len(kwa2['tdcs']) == 1
+            assert len(kwa2['ptds']) == 1
+            assert len(kwa2['bsqs']) == 1
+            assert len(kwa2['bsss']) == 1
+            assert len(kwa2['tmqs']) == 1
+
+            escrow = kramer.db.kramPMKS.get(keys=partialKey)
+            assert {s.index for s in escrow} == {0, 2}
+
+    """Done Test"""
+
+
 def test_non_auth_attachments_empty_kwa(mockHelpingNowUTC):
     """Test that _storeNonAuthAttachments is a no-op when kwa contains no
     non-auth attachment keys. Partial dbs remain empty.

@@ -806,6 +806,114 @@ class Kramer:
         self.db.kramBSSS.rem(key)
         self.db.kramTMQS.rem(key)
 
+    @staticmethod
+    def _dedupeAttachmentItems(items):
+        """Return items in first-seen order with duplicates removed.
+
+        Items are CESR tuples or bytes; identity uses a nested qb64/raw key.
+        """
+        seen = set()
+        out = []
+        for item in items:
+            key = Kramer._attachmentItemKey(item)
+            if key in seen:
+                continue
+            seen.add(key)
+            out.append(item)
+        return out
+
+    @staticmethod
+    def _attachmentItemKey(item):
+        if isinstance(item, (bytes, memoryview)):
+            return ('b', bytes(item))
+        if isinstance(item, (list, tuple)):
+            return tuple(Kramer._attachmentItemKey(x) for x in item)
+        if hasattr(item, 'qb64'):
+            return item.qb64
+        return repr(item)
+
+    def _rehydrateKwaFromEscrow(self, partialKey, _senderId, kwa):
+        """Merge escrowed partial multisig state into ``kwa`` for downstream dispatch.
+
+        After threshold is satisfied on a later delivery, ``kwa`` reflects only
+        that parse; ``kramPMKS`` and non-auth attachment DBs hold the union of
+        state accumulated across deliveries.
+
+        Parameters:
+            partialKey (tuple): ``(AID, MID)`` escrow key
+            _senderId (str): message sender AID (qb64); reserved for filtering
+            kwa (dict): parser attachment dict; mutated in place
+        """
+        escrow_sigs = self.db.kramPMKS.get(partialKey)
+        if escrow_sigs:
+            kwa['sigers'] = sorted(escrow_sigs, key=lambda s: s.index)
+
+        trqs_esc = list(self.db.kramTRQS.get(partialKey) or [])
+        kwa['trqs'] = self._dedupeAttachmentItems(
+            trqs_esc + kwa.get('trqs', []))
+
+        flat_tsgs = list(self.db.kramTSGS.get(partialKey) or [])
+        groups = {}
+        for prefixer, number, diger, siger in flat_tsgs:
+            gk = (prefixer.qb64, number.sn, diger.qb64)
+            if gk not in groups:
+                groups[gk] = [prefixer, number, diger, []]
+            sigers = groups[gk][3]
+            if not any(s.qb64 == siger.qb64 for s in sigers):
+                sigers.append(siger)
+
+        merged_tsgs = {}
+        for quad in groups.values():
+            prefixer, number, diger, sigers = quad
+            gk = (prefixer.qb64, number.sn, diger.qb64)
+            merged_tsgs[gk] = (prefixer, number, diger, list(sigers))
+
+        for prefixer, number, diger, sigers in kwa.get('tsgs', []):
+            gk = (prefixer.qb64, number.sn, diger.qb64)
+            if gk not in merged_tsgs:
+                merged_tsgs[gk] = (prefixer, number, diger, [])
+            bucket = merged_tsgs[gk][3]
+            for s in sigers:
+                if not any(x.qb64 == s.qb64 for x in bucket):
+                    bucket.append(s)
+
+        if merged_tsgs:
+            kwa['tsgs'] = list(merged_tsgs.values())
+        else:
+            kwa.pop('tsgs', None)
+
+        ssts_esc = list(self.db.kramSSTS.get(partialKey) or [])
+        kwa['ssts'] = self._dedupeAttachmentItems(
+            ssts_esc + kwa.get('ssts', []))
+
+        frcs_esc = list(self.db.kramFRCS.get(partialKey) or [])
+        kwa['frcs'] = self._dedupeAttachmentItems(
+            frcs_esc + kwa.get('frcs', []))
+
+        tdcs_esc = list(self.db.kramTDCS.get(partialKey) or [])
+        kwa['tdcs'] = self._dedupeAttachmentItems(
+            tdcs_esc + kwa.get('tdcs', []))
+
+        ptds_esc = list(self.db.kramPTDS.get(partialKey) or [])
+        kwa['ptds'] = self._dedupeAttachmentItems(
+            ptds_esc + kwa.get('ptds', []))
+
+        bsqs_esc = list(self.db.kramBSQS.get(partialKey) or [])
+        kwa['bsqs'] = self._dedupeAttachmentItems(
+            bsqs_esc + kwa.get('bsqs', []))
+
+        bsss_esc = list(self.db.kramBSSS.get(partialKey) or [])
+        kwa['bsss'] = self._dedupeAttachmentItems(
+            bsss_esc + kwa.get('bsss', []))
+
+        tmqs_esc = list(self.db.kramTMQS.get(partialKey) or [])
+        kwa['tmqs'] = self._dedupeAttachmentItems(
+            tmqs_esc + kwa.get('tmqs', []))
+
+        for name in ('trqs', 'ssts', 'frcs', 'tdcs', 'ptds', 'bsqs', 'bsss',
+                     'tmqs'):
+            if not kwa.get(name):
+                kwa.pop(name, None)
 
     def intake(self, serder, kwa=None):
         """Process message through KRAM denial and cache logic.
@@ -981,6 +1089,7 @@ class Kramer:
                     sigIndices = [sig.index for sig in allSigs]
 
                     if kever.tholder.satisfy(indices=sigIndices):
+                        self._rehydrateKwaFromEscrow(key, senderId, kwa)
                         return msg
 
                 # Threshold not satisfied, message remains pending
@@ -1206,6 +1315,7 @@ class Kramer:
                     sigIndices = [sig.index for sig in allSigs]
 
                     if kever.tholder.satisfy(indices=sigIndices):
+                        self._rehydrateKwaFromEscrow(partialKey, senderId, kwa)
                         return msg
 
                 # Threshold not satisfied, message remains pending
