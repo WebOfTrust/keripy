@@ -2710,7 +2710,7 @@ def test_semver_dev_tag_comparison():
     correctly in migrate(), current, and complete().
     """
     import semver
-    from keri.db.basing import _strip_prerelease
+    from keri.db.basebasing import _strip_prerelease
 
     # Core bug: dev4 should be LESS than dev10, but semver says otherwise
     assert semver.compare("1.2.0-dev4", "1.2.0-dev10") == 1  # broken by design

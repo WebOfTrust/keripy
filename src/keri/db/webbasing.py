@@ -31,10 +31,7 @@ from ..kering import (MissingEntryError, ValidationError,
 
 from .webdbing import WebDBer
 
-try:
-    from .basing import BaserBase
-except ImportError: 
-    BaserBase = None
+from .basebasing import BaserBase, statedict
 
 logger = ogler.getLogger()
 
