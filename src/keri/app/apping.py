@@ -15,56 +15,69 @@ logger = ogler.getLogger()
 
 
 class Consoler(doing.Doer):
-    """
-    Manages command console
+    """Manages a command-line serial console
+
+    Reads lines from a serial console, parses simple movement commands,
+    and echoes feedback. Inherits lifecycle management (enter/recur/exit)
+    from :class:`hio.base.doing.Doer`.
+
+    Attributes:
+        db (Baser): Database instance used by this doer.
+        console (serialing.Console): Serial console for input/output.
     """
 
     def __init__(self, db=None, console=None, **kwa):
-        """
+        """Initializes Consoler with optional database and console.
 
+        Args:
+            db (Baser, optional): Database instance. Defaults to a new
+                :class:`~keri.db.basing.Baser` instance if None.
+            console (serialing.Console, optional): Serial console instance.
+                Defaults to a new :class:`~hio.core.serial.serialing.Console`
+                instance if None.
+            **kwa: Additional keyword arguments passed to
+                :class:`~hio.base.doing.Doer`.
         """
         super(Consoler, self).__init__(**kwa)
         self.db = db if db is not None else Baser()
         self.console = console if console is not None else serialing.Console()
 
     def enter(self, *, temp=None):
-        """"""
-        if not self.console.reopen():  # reopen(temp=temp)
+        """Opens the serial console resource.
+
+        Called by the Doer framework when entering the task context.
+
+        Args:
+            temp (bool, optional): Unused. Reserved for interface compatibility.
+
+        Raises:
+            IOError: If the console cannot be opened.
+        """
+        if not self.console.reopen():
             raise IOError("Unable to open serial console.")
 
     def recur(self, tyme):
+        """Reads one line from the console and dispatches a movement command.
+
+        Recognized commands (matched on the first character, case-insensitive):
+
+        - ``r`` / ``right``: turn right
+        - ``l`` / ``left``: turn left
+        - ``w`` / ``walk``: walk 1 step
+        - ``s`` / ``stop``: stop
+
+        Args:
+            tyme (float): Current loop time provided by the Doist scheduler.
+
+        Returns:
+            bool: Always ``False``; signals the Doer to continue recurring.
         """
-        Do 'recur' context actions. Override in subclass.
-        Regular method that perform repetitive actions once per invocation.
-        Assumes resource setup in .enter() and resource takedown in .exit()
-        (see ReDoer below for example of .recur that is a generator method)
-
-        Returns completion state of recurrence actions.
-        True means done False means continue
-
-        Parameters:
-            Doist feeds its .tyme through .send to .do yield which passes it here.
-
-
-        .recur maybe implemented by a subclass either as a non-generator method
-        or a generator method. This stub here is as a non-generator method.
-        The base class .do detects which type:
-        If non-generator .do method runs .recur method once per iteration
-        until .recur returns (True)
-        If generator .do method runs .recur with (yield from) until .recur
-        returns (see ReDoer for example of generator .recur)
-
-        """
-        line = self.console.get()  # process one line of input
+        line = self.console.get()
         if not line:
             return False
         chunks = line.lower().split()
 
-        # args = parser.parse_args(chunks)
-        # if hasattr(args, "handler"):
-        # args.handler(args)
-
-        if not chunks:  # empty list
+        if not chunks:
             self.console.put("Try one of: l[eft] r[ight] w[alk] s[top]\n")
             return False
         verb = chunks[0]
@@ -91,5 +104,8 @@ class Consoler(doing.Doer):
         return False
 
     def exit(self):
-        """"""
+        """Closes the serial console resource.
+
+        Called by the Doer framework when leaving the task context.
+        """
         self.console.close()
