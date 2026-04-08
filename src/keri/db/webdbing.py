@@ -1457,8 +1457,8 @@ class WebDBer:
             sep (bytes): separator character for split
 
         Set of values at a given effective key preserve insertion order.
-        Because lmdb is lexocographic an insertion ordering suffix is appended to
-        all keys that makes lexocographic order the same as insertion order.
+        Because lmdb is lexicographic an insertion ordering suffix is appended to
+        all keys that makes lexicographic order the same as insertion order.
 
         Suffix is 33 characters long consisting of sep '.' followed by 32 char
         hex string for essentially unlimited number of values in each set
@@ -1499,8 +1499,8 @@ class WebDBer:
         Assumes DB opened with dupsort=False
 
         Set of values at a given effective key preserve insertion order.
-        Because lmdb is lexocographic an insertion ordering suffix is appended to
-        all keys that makes lexocographic order the same as insertion order.
+        Because lmdb is lexicographic an insertion ordering suffix is appended to
+        all keys that makes lexicographic order the same as insertion order.
 
         Suffix is 33 characters long consisting of sep '.' followed by 32 char
         hex string for essentially unlimited number of values in each set
@@ -1625,7 +1625,7 @@ class WebDBer:
     def getOnIoSetItemIter(self, db, key, *, on=0, ion=0, sep=b'.'):
         """Get iterator of all set vals at onkey = key + sep + on in db starting
         at insertion order ion within set This provides ordinal ordering of
-        keys and inserion ordering of set vals.
+        keys and insertion ordering of set vals.
         When key is empty then returns empty iterator
 
         Returns:
@@ -2026,7 +2026,7 @@ class WebDBer:
         Raises StopIterationError when done or when key empty or None
 
         Backwards means decreasing numerical value of ion, for each on and
-        decreasing numerical value on for each key and decreasing lexocographic
+        decreasing numerical value on for each key and decreasing lexicographic
         order of each key.
 
         Returns:
@@ -2096,7 +2096,7 @@ class WebDBer:
         Raises StopIterationError when done or when key empty or None
 
         Backwards means decreasing numerical value of each ion, for each on and
-        decreasing numerical value of each on for each key and decreasing lexocographic
+        decreasing numerical value of each on for each key and decreasing lexicographic
         value of each key.
 
         Returns:

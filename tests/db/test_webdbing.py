@@ -494,6 +494,71 @@ def test_flush_dirty_counting():
     asyncio.run(_go())
 
 
+
+def test_close():
+    """Test WebDBer.close() behavior with and without clear=True."""
+    async def _go():
+        backend = FakeStorageBackend()
+
+        # --- 1. close(clear=False) preserves items and dirty flags ---
+        dber, _ = await _open_fake_dber(
+            name="close-test",
+            stores=["vals."],
+            clear=True,
+            backend=backend,
+        )
+        sdb = dber.env.open_db(key=b"vals.")
+
+        # Add some data
+        assert dber.putVal(sdb, b"a.1", b"wow") is True
+        assert dber.putVal(sdb, b"a.2", b"wee") is True
+        assert dber.putVal(sdb, b"b.1", b"woo") is True
+
+        dber.close(clear=False)
+
+        # Stores removed from dber
+        assert dber._stores == {}
+        assert dber.stores == []
+        assert sdb.dirty == True
+
+        # Original SubDb values unchanged
+        assert list(dber.getTopItemIter(sdb)) == [
+            (b"a.1", b"wow"), (b"a.2", b"wee"), (b"b.1", b"woo"),
+        ]
+
+        # 2. close(clear=True) clears items
+        dber2, _ = await _open_fake_dber(
+            name="close-test-2",
+            stores=["vals."],
+            clear=True,
+            backend=backend,
+        )
+        sdb2 = dber2.env.open_db(key=b"vals.")
+
+        # Add some data
+        assert dber2.putVal(sdb2, b"a.1", b"wow") is True
+        assert dber2.putVal(sdb2, b"a.2", b"wee") is True
+        assert dber2.putVal(sdb2, b"b.1", b"woo") is True
+
+        dber2.close(clear=True)
+
+        # Stores removed from dber2
+        assert dber2._stores == {}
+        assert dber2.stores == []
+        assert sdb.dirty == True
+
+        # Items cleared
+        assert list(dber2.getTopItemIter(sdb2)) == []
+
+
+        # 3. close() is idempotent
+        dber2.close()
+        assert dber2._stores == {}
+        assert dber2.stores == []
+
+    asyncio.run(_go())
+
+
 @pytest.mark.skip(reason="Requires hio>=0.7.20 Doist.ado() for async task integration")
 def test_flush_with_hio_ado():
     """Test flush completion under hio Doist.ado() scheduling."""
@@ -3769,6 +3834,161 @@ def test_on_ioset_db_level():
         assert dber.cntOnAllIoSet(db, key1, on=1) == 0
         # on=0 entries should still exist
         assert dber.cntOnIoSet(db, key1, on=0) == 4
+
+
+        # more tests
+        assert dber.remOnAllIoSet(db) == True
+        assert [item for item in dber.getOnIoSetItemIter(db, b'A')] == []
+        # test pinOnIoSetVals 
+        vals0 = ["z", "m", "x", "a"]
+        vals1 = ["w", "n", "y", "d"]
+        keyA = b'A'
+        keyB = b'B'
+        assert dber.putOnIoSetVals(db, keyA) == False
+        assert dber.pinOnIoSetVals(db, key='',vals=vals0) == False # empty keyA no-op
+        assert dber.pinOnIoSetVals(db, key=None ,vals=vals0) == False # None keyA no-op
+        assert dber.pinOnIoSetVals(db, key=None ,vals='') == False # empty vals no-op
+        assert dber.pinOnIoSetVals(db, key=None ,vals=None) == False # None vals no-op
+
+        assert dber.putOnIoSetVals(db, keyA, vals=vals0) == True
+        assert list(dber.getOnIoSetItemIter(db, keyA)) == [(keyA, 0, "z"), 
+                                                            (keyA, 0, "m"), 
+                                                            (keyA, 0, "x"),
+                                                            (keyA, 0, "a")]  
+        assert dber.pinOnIoSetVals(db, keyA, vals=vals0) == True     # pinning same vals still returns True
+        assert list(dber.getOnIoSetItemIter(db, keyA)) == [(keyA, 0, "z"), 
+                                                            (keyA, 0, "m"), 
+                                                            (keyA, 0, "x"),
+                                                            (keyA, 0, "a")]  
+        assert dber.pinOnIoSetVals(db, keyB, vals=vals1) == True       # pinning vals1 to a different keyB doesn't affect keyA's values
+        assert list(dber.getOnIoSetItemIter(db, keyA)) == [(keyA, 0, "z"), 
+                                                            (keyA, 0, "m"), 
+                                                            (keyA, 0, "x"),
+                                                            (keyA, 0, "a")]  
+        assert list(dber.getOnIoSetItemIter(db, keyB)) == [(keyB, 0, "w"),    # vals0 replaced by vals1
+                                                            (keyB, 0, "n"), 
+                                                            (keyB, 0, "y"),
+                                                            (keyB, 0, "d")]  
+
+        assert dber.pinOnIoSetVals(db, keyA, vals=vals1) == True             # default on=0 so vals0 replaced by vals1
+        assert list(dber.getOnIoSetItemIter(db, keyA)) == [(keyA, 0, "w"),    # vals0 replaced by vals1
+                                                            (keyA, 0, "n"), 
+                                                            (keyA, 0, "y"),
+                                                            (keyA, 0, "d")] 
+
+        assert dber.pinOnIoSetVals(db, keyA, on=1, vals=vals1) == True       # pinning on=1 vals1 should not affect on=0 vals1 so should add on=1 vals1
+        assert list(dber.getOnIoSetItemIter(db, keyA)) == [(keyA, 0, "w"), 
+                                                            (keyA, 0, "n"), 
+                                                            (keyA, 0, "y"),
+                                                            (keyA, 0, "d")] 
+        assert list(dber.getOnIoSetItemIter(db, keyA, on=1)) == [(keyA, 1, "w"), 
+                                                            (keyA, 1, "n"), 
+                                                            (keyA, 1, "y"),
+                                                            (keyA, 1, "d")] 
+
+        assert dber.pinOnIoSetVals(db, keyA, on=4, vals=vals1) == True       # gaps between on values is allowed
+        assert list(dber.getOnIoSetItemIter(db, keyA, on=4)) == [(keyA, 4, "w"), 
+                                                            (keyA, 4, "n"), 
+                                                            (keyA, 4, "y"),
+                                                            (keyA, 4, "d")] 
+        
+        assert list(dber.getOnAllIoSetItemIter(db, keyA)) == [
+                                                            (keyA, 0, "w"), 
+                                                            (keyA, 0, "n"), 
+                                                            (keyA, 0, "y"),
+                                                            (keyA, 0, "d"),
+                                                            (keyA, 1, "w"), 
+                                                            (keyA, 1, "n"), 
+                                                            (keyA, 1, "y"),
+                                                            (keyA, 1, "d"),
+                                                            (keyA, 4, "w"), 
+                                                            (keyA, 4, "n"), 
+                                                            (keyA, 4, "y"),
+                                                            (keyA, 4, "d")] 
+
+        assert dber.remOnAllIoSet(db) == True
+        assert [item for item in dber.getOnIoSetItemIter(db, b'A')] == []
+
+
+        # test getOnTopIoSetItemIter
+        vals0 = ["z", "m", "x", "a"]
+        vals1 = ["w", "n", "y", "d"]
+        keyA = b'A'
+        keyB = b'B'
+
+        assert list(dber.getOnTopIoSetItemIter(db)) == [] # empty db
+        assert dber.putOnIoSetVals(db, keyA, vals=vals0) == True
+        assert list(dber.getOnTopIoSetItemIter(db, keyA)) == [(keyA, 0, "z"), 
+                                                            (keyA, 0, "m"), 
+                                                            (keyA, 0, "x"),
+                                                            (keyA, 0, "a")]  
+        assert dber.putOnIoSetVals(db, keyB, vals=vals1) == True
+        assert list(dber.getOnTopIoSetItemIter(db, keyB)) == [(keyB, 0, "w"), 
+                                                            (keyB, 0, "n"), 
+                                                            (keyB, 0, "y"),
+                                                            (keyB, 0, "d")] 
+
+        itemsA = list(dber.getOnTopIoSetItemIter(db, keyA))
+        assert itemsA == [
+            (keyA, 0, "z"),
+            (keyA, 0, "m"),
+            (keyA, 0, "x"),
+            (keyA, 0, "a"),
+        ]
+
+        itemsB = list(dber.getOnTopIoSetItemIter(db, keyB))
+        assert itemsB == [
+            (keyB, 0, "w"),
+            (keyB, 0, "n"),
+            (keyB, 0, "y"),
+            (keyB, 0, "d"),
+        ]
+
+        itemsAll = list(dber.getOnTopIoSetItemIter(db, top=b""))
+        assert itemsAll == [
+            (keyA, 0, "z"), (keyA, 0, "m"), (keyA, 0, "x"), (keyA, 0, "a"),
+            (keyB, 0, "w"), (keyB, 0, "n"), (keyB, 0, "y"), (keyB, 0, "d"),
+        ]
+
+        # Add additional branches under A*
+        keyA1 = b"A1"
+        keyA2 = b"A2"
+
+        valsA1 = ["p", "q"]
+        valsA2 = ["r"]
+
+        assert dber.putOnIoSetVals(db, keyA1, vals=valsA1) is True
+        assert dber.putOnIoSetVals(db, keyA2, vals=valsA2) is True
+
+        # top=b"A" should match A, A1, A2 (because all start with b"A")
+        itemsAstar = list(dber.getOnTopIoSetItemIter(db, top=b"A"))
+
+        assert itemsAstar == [
+            # A branch
+            (keyA, 0, "z"), (keyA, 0, "m"), (keyA, 0, "x"), (keyA, 0, "a"),
+            # A1 branch
+            (keyA1, 0, "p"), (keyA1, 0, "q"),
+            # A2 branch
+            (keyA2, 0, "r"),
+        ]
+
+        # top=b"A1" should match ONLY A1 branch
+        itemsA1 = list(dber.getOnTopIoSetItemIter(db, top=b"A1"))
+        assert itemsA1 == [
+            (keyA1, 0, "p"),
+            (keyA1, 0, "q"),
+        ]
+
+        # top=b"A2" should match ONLY A2 branch
+        itemsA2 = list(dber.getOnTopIoSetItemIter(db, top=b"A2"))
+        assert itemsA2 == [
+            (keyA2, 0, "r"),
+        ]
+        assert list(dber.getOnTopIoSetItemIter(db)) == [
+            (keyA, 0, "z"), (keyA, 0, "m"), (keyA, 0, "x"), (keyA, 0, "a"),
+            (keyA1, 0, "p"), (keyA1, 0, "q"), (keyA2, 0, "r"), (keyB, 0, "w"),
+            (keyB, 0, "n"), (keyB, 0, "y"), (keyB, 0, "d"),
+        ] # empty top returns whole db, keyA1 and keyA2 are in correct order under keyA and before keyB
 
     asyncio.run(_go())
 
