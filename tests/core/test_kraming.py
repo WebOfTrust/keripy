@@ -6,6 +6,7 @@ processMsg on Kevery.
 """
 
 import pytest
+from datetime import timedelta
 
 from hio.base import doing
 
@@ -22,7 +23,7 @@ from keri.core import (Kramer, SerderKERI, Kevery, Pruner, Salter,
 from keri.app import openHby, openCF
 from keri.db import openDB
 from keri.peer import Exchanger
-from keri.recording import TxnMsgCacheRecord
+from keri.recording import MsgCacheRecord, TxnMsgCacheRecord
 from keri.help import helping
 
 
@@ -4864,6 +4865,93 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
             assert receiverHby.db.kramTMQS.get(keys=partialKey) == []
 
 
+def test_strict_monotonicity_existing_cache(mockHelpingNowUTC):
+    """Existing KRAM caches enforce strict mdt monotonicity (new > cached)."""
+    salt1 = Salter(raw=b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Iu').qb64
+    salt2 = Salter(raw=b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Iv').qb64
+
+    with (openHby(name="senderMonotonic", base="test", salt=salt1) as senderHby,
+          openHby(name="receiverMonotonic", base="test", salt=salt2) as receiverHby):
+
+        senderHab = senderHby.makeHab(name="senderMonotonic", isith='1', icount=1,
+                                      transferable=True)
+        receiverHab = receiverHby.makeHab(name="receiverMonotonic", isith='1', icount=1,
+                                          transferable=True)
+
+        crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
+        senderIcp = senderHab.makeOwnEvent(sn=0)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+        assert senderHab.pre in crossKvy.kevers
+
+        with openCF(name="kram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+
+            stamp = helping.nowIso8601()
+            base = helping.fromIso8601(stamp)
+            olderCacheStamp = helping.toIso8601(base + timedelta(seconds=1))
+            newerCacheStamp = helping.toIso8601(base - timedelta(seconds=1))
+
+            prefixer = Prefixer(qb64=senderHab.pre)
+
+            # Non-transactioned branch (kramMSGC)
+            qry = query(pre=senderHab.pre,
+                        route="ksn",
+                        query=dict(i=senderHab.pre, src=receiverHab.pre, n='8a'),
+                        stamp=stamp,
+                        pvrsn=Vrsn_2_0)
+            qrySigers = senderHab.mgr.sign(ser=qry.raw,
+                                           verfers=senderHab.kever.verfers,
+                                           indexed=True)
+            qryKwa = dict(ssgs=[(prefixer, qrySigers)])
+            qryKey = (senderHab.pre, qry.said)
+
+            for cachedMdt in (olderCacheStamp, stamp):
+                receiverHby.db.kramMSGC.pin(
+                    keys=qryKey,
+                    val=MsgCacheRecord(
+                        mdt=cachedMdt, d=1000, ml=5000, pml=5000, xl=5000, pxl=5000))
+                receiverHby.db.kevers.pop(senderHab.pre, None)
+                assert kramer.kramit(qry, **qryKwa) is None
+
+            receiverHby.db.kramMSGC.pin(
+                keys=qryKey,
+                val=MsgCacheRecord(
+                    mdt=newerCacheStamp, d=1000, ml=5000, pml=5000, xl=5000, pxl=5000))
+            receiverHby.db.kevers.pop(senderHab.pre, None)
+            with pytest.raises(MissingSenderKeyStateError):
+                kramer.kramit(qry, **qryKwa)
+
+            # Transactioned branch (kramTMSC)
+            xip = exchept(sender=senderHab.pre,
+                          receiver=receiverHab.pre,
+                          route="/test/monotonic",
+                          stamp=stamp)
+            xipSigers = senderHab.mgr.sign(ser=xip.raw,
+                                           verfers=senderHab.kever.verfers,
+                                           indexed=True)
+            xipKwa = dict(ssgs=[(prefixer, xipSigers)])
+            xipKey = (senderHab.pre, xip.said, xip.said)
+
+            for cachedMdt in (olderCacheStamp, stamp):
+                receiverHby.db.kramTMSC.pin(
+                    keys=xipKey,
+                    val=TxnMsgCacheRecord(
+                        mdt=cachedMdt, xdt=stamp, d=1000, ml=5000, pml=5000,
+                        xl=5000, pxl=5000))
+                receiverHby.db.kevers.pop(senderHab.pre, None)
+                assert kramer.kramit(xip, **xipKwa) is None
+
+            receiverHby.db.kramTMSC.pin(
+                keys=xipKey,
+                val=TxnMsgCacheRecord(
+                    mdt=newerCacheStamp, xdt=stamp, d=1000, ml=5000, pml=5000,
+                    xl=5000, pxl=5000))
+            receiverHby.db.kevers.pop(senderHab.pre, None)
+            with pytest.raises(MissingSenderKeyStateError):
+                kramer.kramit(xip, **xipKwa)
+
+
 def test_pruning_exchanges(fakeHelpingClock):
     """
     Test pruning behavior for exchanges.
@@ -5026,3 +5114,201 @@ def test_pruning_exchanges(fakeHelpingClock):
 
             # Second Cache is also pruned because it belongs to the same exchange
             assert receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn2.said)) is None
+
+
+def test_assk_timeliness_boundaries_and_future_reject(fakeHelpingClock):
+    """assk accepts inclusive bounds and rejects just-outside timestamps."""
+    clock = fakeHelpingClock
+    assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
+
+    salt1 = Salter(raw=b'0123456789abcdef').qb64
+    salt2 = Salter(raw=b'0123456789abcdeg').qb64
+
+    with (openHby(name="timingSender", base="test", salt=salt1) as senderHby,
+          openHby(name="timingReceiver", base="test", salt=salt2) as receiverHby):
+        senderHab = senderHby.makeHab(name="timingSender", isith='1', icount=1,
+                                      transferable=True)
+        receiverHby.makeHab(name="timingReceiver", isith='1', icount=1,
+                            transferable=True)
+
+        crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
+        senderIcp = senderHab.makeOwnEvent(sn=0)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+        assert senderHab.pre in crossKvy.kevers
+
+        with openCF(name="timingKram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+
+            now = helping.fromIso8601(helping.nowIso8601())
+            prefixer = Prefixer(qb64=senderHab.pre)
+
+            # KRAM_INTEGRATION_CONFIG: d=1000ms, sl=5000ms => lower bound = -6000ms
+            cases = [
+                ("lower_inclusive", -6000, True),
+                ("lower_outside", -6001, False),
+                ("upper_inclusive", 1000, True),
+                ("upper_outside_future", 1001, False),
+            ]
+
+            for nonce, offset_ms, accepted in cases:
+                stamp = helping.toIso8601(now + timedelta(milliseconds=offset_ms))
+                msg = query(pre=senderHab.pre,
+                            route="ksn",
+                            query=dict(i=senderHab.pre, src=senderHab.pre, n=nonce),
+                            stamp=stamp,
+                            pvrsn=Vrsn_2_0)
+                sigers = senderHab.mgr.sign(ser=msg.raw,
+                                            verfers=senderHab.kever.verfers,
+                                            indexed=True)
+                result = kramer.kramit(msg, **dict(ssgs=[(prefixer, sigers)]))
+                cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
+                if accepted:
+                    assert result is not None
+                    assert cache is not None
+                else:
+                    assert result is None
+                    assert cache is None
+
+
+def test_transactioned_exchange_window_boundaries(fakeHelpingClock):
+    """Transactioned path accepts xdt/xdt+xl boundaries and rejects just outside."""
+    clock = fakeHelpingClock
+    assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
+
+    salt1 = Salter(raw=b'0123456789abcdeh').qb64
+    salt2 = Salter(raw=b'0123456789abcdei').qb64
+
+    with (openHby(name="xwinSender", base="test", salt=salt1) as senderHby,
+          openHby(name="xwinReceiver", base="test", salt=salt2) as receiverHby):
+        senderHab = senderHby.makeHab(name="xwinSender", isith='1', icount=1,
+                                      transferable=True)
+        receiverHab = receiverHby.makeHab(name="xwinReceiver", isith='1', icount=1,
+                                          transferable=True)
+
+        crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
+        senderIcp = senderHab.makeOwnEvent(sn=0)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+        assert senderHab.pre in crossKvy.kevers
+
+        with openCF(name="xwinKram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+            prefixer = Prefixer(qb64=senderHab.pre)
+
+            xdt = helping.fromIso8601(helping.nowIso8601())
+            xip = exchept(sender=senderHab.pre,
+                          receiver=receiverHab.pre,
+                          route="/test/exchange",
+                          stamp=helping.toIso8601(xdt))
+            xipSigers = senderHab.mgr.sign(ser=xip.raw,
+                                           verfers=senderHab.kever.verfers,
+                                           indexed=True)
+            assert kramer.kramit(xip, **dict(ssgs=[(prefixer, xipSigers)])) is not None
+
+            # KRAM_INTEGRATION_CONFIG: xl=300000ms
+            cases = [
+                ("xdt_inclusive", 0, True),
+                ("xdt_plus_xl_inclusive", 300000, True),
+                ("xdt_plus_xl_outside", 300001, False),
+            ]
+
+            for nonce, offset_ms, accepted in cases:
+                target_dt = xdt + timedelta(milliseconds=offset_ms)
+                now_dt = helping.fromIso8601(helping.nowIso8601())
+                delta_ms = int((target_dt - now_dt).total_seconds() * 1000)
+                if delta_ms > 0:
+                    clock.advance(milliseconds=delta_ms)
+                stamp = helping.toIso8601(target_dt)
+                exn = exchange(sender=senderHab.pre,
+                               receiver=receiverHab.pre,
+                               xid=xip.said,
+                               route="/test/exchange",
+                               attributes=dict(n=nonce),
+                               stamp=stamp)
+                sigers = senderHab.mgr.sign(ser=exn.raw,
+                                            verfers=senderHab.kever.verfers,
+                                            indexed=True)
+                result = kramer.kramit(exn, **dict(ssgs=[(prefixer, sigers)]))
+                cache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn.said))
+                if accepted:
+                    assert result is not None
+                    assert cache is not None
+                else:
+                    assert result is None
+                    assert cache is None
+
+
+def test_invalid_signature_attachments_rejected(mockHelpingNowUTC):
+    """Invalid ssgs/cigars/tsgs signatures are rejected and not cached."""
+    salt1 = Salter(raw=b'0123456789abcdej').qb64
+    salt2 = Salter(raw=b'0123456789abcdek').qb64
+    salt3 = Salter(raw=b'0123456789abcdel').qb64
+    salt4 = Salter(raw=b'0123456789abcdem').qb64
+
+    with (openHby(name="badSigSk", base="test", salt=salt1) as skHby,
+          openHby(name="badSigNt", base="test", salt=salt2) as ntHby,
+          openHby(name="badSigMk", base="test", salt=salt3) as mkHby,
+          openHby(name="badSigReceiver", base="test", salt=salt4) as receiverHby):
+        skHab = skHby.makeHab(name="badSigSk", isith='1', icount=1, transferable=True)
+        ntHab = ntHby.makeHab(name="badSigNt", isith='1', icount=1, transferable=False)
+        mkHab = mkHby.makeHab(name="badSigMk", isith='2', icount=3, transferable=True)
+        receiverHby.makeHab(name="badSigReceiver", isith='1', icount=1, transferable=True)
+
+        crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
+        for hab in (skHab, ntHab, mkHab):
+            icp = hab.makeOwnEvent(sn=0)
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(icp), kvy=crossKvy)
+            assert hab.pre in crossKvy.kevers
+
+        with openCF(name="badSigKram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+            stamp = helping.nowIso8601()
+
+            # 1) Invalid ssgs for single-key sender
+            skMsg = query(pre=skHab.pre,
+                          route="ksn",
+                          query=dict(i=skHab.pre, src=skHab.pre, n="bad-ssgs"),
+                          stamp=stamp,
+                          pvrsn=Vrsn_2_0)
+            wrongSkSigs = skHab.mgr.sign(ser=b'not-the-message',
+                                         verfers=skHab.kever.verfers,
+                                         indexed=True)
+            skPrefixer = Prefixer(qb64=skHab.pre)
+            assert kramer.kramit(skMsg, **dict(ssgs=[(skPrefixer, wrongSkSigs)])) is None
+            assert receiverHby.db.kramMSGC.get(keys=(skHab.pre, skMsg.said)) is None
+
+            # 2) Invalid cigars for non-transferable sender
+            ntMsg = query(pre=ntHab.pre,
+                          route="ksn",
+                          query=dict(i=ntHab.pre, src=ntHab.pre, n="bad-cigar"),
+                          stamp=stamp,
+                          pvrsn=Vrsn_2_0)
+            wrongCigars = ntHab.mgr.sign(ser=b'not-the-message',
+                                         verfers=ntHab.kever.verfers,
+                                         indexed=False)
+            assert kramer.kramit(ntMsg, **dict(cigars=wrongCigars)) is None
+            assert receiverHby.db.kramMSGC.get(keys=(ntHab.pre, ntMsg.said)) is None
+
+            # 3) Invalid tsgs for multi-key sender (no verified sigs -> no partials)
+            mkMsg = query(pre=mkHab.pre,
+                          route="ksn",
+                          query=dict(i=mkHab.pre, src=mkHab.pre, n="bad-tsgs"),
+                          stamp=stamp,
+                          pvrsn=Vrsn_2_0)
+            mkPrefixer = Prefixer(qb64=mkHab.pre)
+            mkKever = receiverHby.db.kevers[mkHab.pre]
+            seqner = Seqner(sn=mkKever.sner.num)
+            saider = Saider(qb64=mkKever.serder.said)
+            wrongMkSigs = mkHab.mgr.sign(ser=b'not-the-message',
+                                         verfers=mkHab.kever.verfers,
+                                         indexed=True)
+            tsg = (mkPrefixer, seqner, saider, wrongMkSigs)
+
+            assert kramer.kramit(mkMsg, **dict(tsgs=[tsg])) is None
+            partialKey = (mkHab.pre, mkMsg.said)
+            assert receiverHby.db.kramMSGC.get(keys=partialKey) is None
+            assert receiverHby.db.kramPMKM.get(keys=partialKey) is None
+            assert receiverHby.db.kramPMKS.get(keys=partialKey) == []
+            assert receiverHby.db.kramPMSK.get(keys=partialKey) is None
