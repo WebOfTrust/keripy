@@ -661,15 +661,11 @@ class Kramer:
             for siger in sigers:
                 pool.add(siger.qb64)
 
-        # Verify pool in one pass against current key state.
-        if not pool:
-            self._scrubFailedVerification(senderId, kever, kwa, set())
-            return SigVerifyResult(verified=False, sigers=[], stale_tsgs=stale_tsgs)
-
+        # Verify pool against current key state; 
+        # scrub using the verified qb64 set. 
         poolSigers = [Siger(qb64=q) for q in pool]
         vsigers, _ = verifySigs(
             raw=msg.raw, sigers=poolSigers, verfers=kever.verfers)
-
         verified = {s.qb64 for s in vsigers}
         self._scrubFailedVerification(senderId, kever, kwa, verified)
 
