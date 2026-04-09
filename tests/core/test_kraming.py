@@ -5036,7 +5036,7 @@ def test_strict_monotonicity_existing_cache(mockHelpingNowUTC):
                     val=MsgCacheRecord(
                         mdt=cachedMdt, d=1000, ml=5000, pml=5000, xl=5000, pxl=5000))
                 receiverHby.db.kevers.pop(senderHab.pre, None)
-                assert kramer.kramit(qry, **qryKwa) is None
+                assert kramer.kramit(qry, qryKwa) is None
 
             receiverHby.db.kramMSGC.pin(
                 keys=qryKey,
@@ -5044,7 +5044,7 @@ def test_strict_monotonicity_existing_cache(mockHelpingNowUTC):
                     mdt=newerCacheStamp, d=1000, ml=5000, pml=5000, xl=5000, pxl=5000))
             receiverHby.db.kevers.pop(senderHab.pre, None)
             with pytest.raises(MissingSenderKeyStateError):
-                kramer.kramit(qry, **qryKwa)
+                kramer.kramit(qry, qryKwa)
 
             # Transactioned branch (kramTMSC)
             xip = exchept(sender=senderHab.pre,
@@ -5064,7 +5064,7 @@ def test_strict_monotonicity_existing_cache(mockHelpingNowUTC):
                         mdt=cachedMdt, xdt=stamp, d=1000, ml=5000, pml=5000,
                         xl=5000, pxl=5000))
                 receiverHby.db.kevers.pop(senderHab.pre, None)
-                assert kramer.kramit(xip, **xipKwa) is None
+                assert kramer.kramit(xip, xipKwa) is None
 
             receiverHby.db.kramTMSC.pin(
                 keys=xipKey,
@@ -5073,7 +5073,7 @@ def test_strict_monotonicity_existing_cache(mockHelpingNowUTC):
                     xl=5000, pxl=5000))
             receiverHby.db.kevers.pop(senderHab.pre, None)
             with pytest.raises(MissingSenderKeyStateError):
-                kramer.kramit(xip, **xipKwa)
+                kramer.kramit(xip, xipKwa)
 
 
 def test_pruning_exchanges(fakeHelpingClock):
@@ -5285,7 +5285,7 @@ def test_assk_timeliness_boundaries_and_future_reject(fakeHelpingClock):
                 sigers = senderHab.mgr.sign(ser=msg.raw,
                                             verfers=senderHab.kever.verfers,
                                             indexed=True)
-                result = kramer.kramit(msg, **dict(ssgs=[(prefixer, sigers)]))
+                result = kramer.kramit(msg, dict(ssgs=[(prefixer, sigers)]))
                 cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
                 if accepted:
                     assert result is not None
@@ -5328,7 +5328,7 @@ def test_transactioned_exchange_window_boundaries(fakeHelpingClock):
             xipSigers = senderHab.mgr.sign(ser=xip.raw,
                                            verfers=senderHab.kever.verfers,
                                            indexed=True)
-            assert kramer.kramit(xip, **dict(ssgs=[(prefixer, xipSigers)])) is not None
+            assert kramer.kramit(xip, dict(ssgs=[(prefixer, xipSigers)])) is not None
 
             # KRAM_INTEGRATION_CONFIG: xl=300000ms
             cases = [
@@ -5353,7 +5353,7 @@ def test_transactioned_exchange_window_boundaries(fakeHelpingClock):
                 sigers = senderHab.mgr.sign(ser=exn.raw,
                                             verfers=senderHab.kever.verfers,
                                             indexed=True)
-                result = kramer.kramit(exn, **dict(ssgs=[(prefixer, sigers)]))
+                result = kramer.kramit(exn, dict(ssgs=[(prefixer, sigers)]))
                 cache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn.said))
                 if accepted:
                     assert result is not None
@@ -5400,7 +5400,7 @@ def test_invalid_signature_attachments_rejected(mockHelpingNowUTC):
                                          verfers=skHab.kever.verfers,
                                          indexed=True)
             skPrefixer = Prefixer(qb64=skHab.pre)
-            assert kramer.kramit(skMsg, **dict(ssgs=[(skPrefixer, wrongSkSigs)])) is None
+            assert kramer.kramit(skMsg, dict(ssgs=[(skPrefixer, wrongSkSigs)])) is None
             assert receiverHby.db.kramMSGC.get(keys=(skHab.pre, skMsg.said)) is None
 
             # 2) Invalid cigars for non-transferable sender
@@ -5412,7 +5412,7 @@ def test_invalid_signature_attachments_rejected(mockHelpingNowUTC):
             wrongCigars = ntHab.mgr.sign(ser=b'not-the-message',
                                          verfers=ntHab.kever.verfers,
                                          indexed=False)
-            assert kramer.kramit(ntMsg, **dict(cigars=wrongCigars)) is None
+            assert kramer.kramit(ntMsg, dict(cigars=wrongCigars)) is None
             assert receiverHby.db.kramMSGC.get(keys=(ntHab.pre, ntMsg.said)) is None
 
             # 3) Invalid tsgs for multi-key sender (no verified sigs -> no partials)
@@ -5430,7 +5430,7 @@ def test_invalid_signature_attachments_rejected(mockHelpingNowUTC):
                                          indexed=True)
             tsg = (mkPrefixer, seqner, saider, wrongMkSigs)
 
-            assert kramer.kramit(mkMsg, **dict(tsgs=[tsg])) is None
+            assert kramer.kramit(mkMsg, dict(tsgs=[tsg])) is None
             partialKey = (mkHab.pre, mkMsg.said)
             assert receiverHby.db.kramMSGC.get(keys=partialKey) is None
             assert receiverHby.db.kramPMKM.get(keys=partialKey) is None
