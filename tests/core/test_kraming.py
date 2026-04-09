@@ -5240,6 +5240,88 @@ def test_pruning_exchanges(fakeHelpingClock):
             assert receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn2.said)) is None
 
 
+def test_pruning_exchanges_cleans_transactional_partial_multisig(fakeHelpingClock):
+    """_pruneExchanges must remove PMKM/PMKS/PMSK at (AID, MID), matching txn kramit storage."""
+
+    clock = fakeHelpingClock
+    assert helping.nowIso8601() == "2021-01-01T00:00:00.000000+00:00"
+
+    salt_mk = Salter(raw=b'0123456789abcdek').qb64
+    salt_rx = Salter(raw=b'0123456789abcdel').qb64
+
+    with (openHby(name="mkPruneSender", base="test", salt=salt_mk) as mkHby,
+          openHby(name="mkPruneReceiver", base="test", salt=salt_rx) as receiverHby):
+
+        mkHab = mkHby.makeHab(name="mkSender", isith='2', icount=3,
+                              transferable=True)
+        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1,
+                                          transferable=True)
+
+        crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
+        mkIcp = mkHab.makeOwnEvent(sn=0)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(mkIcp), kvy=crossKvy)
+        assert mkHab.pre in crossKvy.kevers
+
+        with openCF(name="kram", base="test") as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+            kvy = Kevery(db=receiverHby.db, lax=False, local=False,
+                         kramer=kramer)
+
+            tock = 1.0
+            pruneDoer = Pruner(kramer, tock)
+            doist = doing.Doist(tock=tock, limit=1.0, real=True)
+            deeds = doist.enter(doers=[pruneDoer])
+
+            stamp = helping.nowIso8601()
+            mkPrefixer = Prefixer(qb64=mkHab.pre)
+
+            mkXip = exchept(sender=mkHab.pre,
+                            receiver=receiverHab.pre,
+                            route="/test/exchange",
+                            stamp=stamp)
+            sigers = mkHab.mgr.sign(ser=mkXip.raw,
+                                    verfers=mkHab.kever.verfers,
+                                    indexed=True)
+            assert kramer.kramit(mkXip, dict(ssgs=[(mkPrefixer, sigers)])) is not None
+
+            mkExn = exchange(sender=mkHab.pre,
+                             receiver=receiverHab.pre,
+                             xid=mkXip.said,
+                             route="/test/exchange",
+                             attributes=dict(n='prune-partial'),
+                             stamp=stamp)
+            allSigers = mkHab.mgr.sign(ser=mkExn.raw,
+                                       verfers=mkHab.kever.verfers,
+                                       indexed=True)
+            kwa = dict(ssgs=[(mkPrefixer, [allSigers[0]])])
+            kvy.processMsg(mkExn, kwa)
+
+            tmscKey = (mkHab.pre, mkXip.said, mkExn.said)
+            cache = receiverHby.db.kramTMSC.get(keys=tmscKey)
+            assert cache is not None
+
+            partialKey = (mkHab.pre, mkExn.said)
+            assert receiverHby.db.kramPMKM.get(keys=partialKey) is not None
+            assert len(receiverHby.db.kramPMKS.get(keys=partialKey)) == 1
+            assert receiverHby.db.kramPMSK.get(keys=partialKey) is not None
+
+            doist.recur(deeds=deeds)
+            assert receiverHby.db.kramTMSC.get(keys=tmscKey) is not None
+
+            pxl_sec = cache.pxl / 1000
+            clock.advance(seconds=pxl_sec + 1)
+
+            doist.recur(deeds=deeds)
+
+            assert receiverHby.db.kramTMSC.get(keys=tmscKey) is None
+            assert receiverHby.db.kramPMKM.get(keys=partialKey) is None
+            assert receiverHby.db.kramPMKS.get(keys=partialKey) == []
+            assert receiverHby.db.kramPMSK.get(keys=partialKey) is None
+
+            doist.exit()
+
+
 def test_assk_timeliness_boundaries_and_future_reject(fakeHelpingClock):
     """assk accepts inclusive bounds and rejects just-outside timestamps."""
     clock = fakeHelpingClock

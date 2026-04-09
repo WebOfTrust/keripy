@@ -2117,9 +2117,9 @@ class Kramer:
             # Apply the comparison
             if not xdt_ms <= rdt_ms <= xdt_ms + pxl:
                 self.db.kramTMSC.rem(keys=(aid, xid, mid))
-                self.db.kramPMKM.rem(keys=(aid, xid, mid))
-                self.db.kramPMKS.rem(keys=(aid, xid, mid))
-                self.db.kramPMSK.rem(keys=(aid, xid, mid))
+                self.db.kramPMKM.rem(keys=(aid, mid))
+                self.db.kramPMKS.rem(keys=(aid, mid))
+                self.db.kramPMSK.rem(keys=(aid, mid))
 
                 # Remove non Auth Partials
                 self._remNonAuthAttachments((aid, mid))
