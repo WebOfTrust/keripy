@@ -50,7 +50,7 @@ VER2TERM = b'.'  # teminator character
 VEREX2 = ( b'(?P<proto2>[A-Z]{4})'
            b'(?P<pmajor2>[0-9A-Za-z_-])(?P<pminor2>[0-9A-Za-z_-]{2})'
            b'(?P<gmajor2>[0-9A-Za-z_-])(?P<gminor2>[0-9A-Za-z_-]{2})'
-           b'(?P<kind2>[A-Z]{4})(?P<size2>[0-9A-Za-z_-]{4})\.')
+           b'(?P<kind2>[A-Z]{4})(?P<size2>[0-9A-Za-z_-]{4})\\.')
 
 VEREX = VEREX2 + b'|' + VEREX1
 

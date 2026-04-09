@@ -2971,6 +2971,130 @@ def test_dynamic_cache_increase(fakeHelpingClock):
             assert "~" not in kramer._pending
 
 
+def test_change_config_accept_delta_override_larger(fakeHelpingClock):
+    """Runtime acceptDeltaOverride longer than computed delta delays reconcileConfig."""
+    clock = fakeHelpingClock
+    salt_receiver = Salter(raw=b'0123456789abcdeg').qb64
+
+    with openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby:
+        old_cfg = {
+            "kram": {
+                "enabled": True,
+                "caches": {"~": [1000, 1000, 1000, 1000, 1000, 1000, 1000]},
+            }
+        }
+        with openCF(name="kram", base="test", temp=True) as cf:
+            cf.put(old_cfg)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+
+            new_cfg = {
+                "kram": {
+                    "enabled": True,
+                    "caches": {"~": [1000, 5000, 5000, 5000, 5000, 5000, 5000]},
+                }
+            }
+            cf.put(new_cfg)
+            kramer.changeConfig(cf, deltaOverride=10_000)
+
+            pend = kramer._pending["~"]
+            assert pend["delta"] == 10_000
+
+            clock.advance(seconds=4)
+            kramer.reconcileConfig()
+            rec = receiverHby.db.kramCTYP.get("~")
+            assert rec.sl == 1000
+            assert "~" in kramer._pending
+
+            clock.advance(seconds=6)
+            kramer.reconcileConfig()
+            rec = receiverHby.db.kramCTYP.get("~")
+            assert rec.sl == 5000
+            assert "~" not in kramer._pending
+
+
+def test_change_config_accept_delta_override_smaller(fakeHelpingClock):
+    """Runtime acceptDeltaOverride shorter than computed delta allows earlier reconcileConfig."""
+    clock = fakeHelpingClock
+    salt_receiver = Salter(raw=b'0123456789abcdeg').qb64
+
+    with openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby:
+        old_cfg = {
+            "kram": {
+                "enabled": True,
+                "caches": {"~": [1000, 1000, 1000, 1000, 1000, 1000, 1000]},
+            }
+        }
+        with openCF(name="kram", base="test", temp=True) as cf:
+            cf.put(old_cfg)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+
+            new_cfg = {
+                "kram": {
+                    "enabled": True,
+                    "caches": {"~": [1000, 5000, 5000, 5000, 5000, 5000, 5000]},
+                }
+            }
+            cf.put(new_cfg)
+            kramer.changeConfig(cf, deltaOverride="2000")
+
+            assert kramer._pending["~"]["delta"] == 2000
+
+            clock.advance(seconds=1)
+            kramer.reconcileConfig()
+            rec = receiverHby.db.kramCTYP.get("~")
+            assert rec.sl == 1000
+            assert "~" in kramer._pending
+
+            clock.advance(seconds=1)
+            kramer.reconcileConfig()
+            rec = receiverHby.db.kramCTYP.get("~")
+            assert rec.sl == 5000
+            assert "~" not in kramer._pending
+
+
+def test_change_config_accept_delta_invalid():
+    """Non-integer or non-positive acceptDeltaOverride raises KramConfigurationError."""
+    salt_receiver = Salter(raw=b'0123456789abcdeg').qb64
+
+    with openHby(name="receiver", base="test", salt=salt_receiver, temp=True) as receiverHby:
+        old_cfg = {
+            "kram": {
+                "enabled": True,
+                "caches": {"~": [1000, 1000, 1000, 1000, 1000, 1000, 1000]},
+            }
+        }
+        with openCF(name="kram", base="test", temp=True) as cf:
+            cf.put(old_cfg)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+
+            cf.put({
+                "kram": {
+                    "enabled": True,
+                    "caches": {"~": [1000, 5000, 5000, 5000, 5000, 5000, 5000]},
+                }
+            })
+            with pytest.raises(KramConfigurationError):
+                kramer.changeConfig(cf, deltaOverride=-1)
+
+            cf.put({
+                "kram": {
+                    "enabled": True,
+                    "caches": {"~": [1000, 5000, 5000, 5000, 5000, 5000, 5000]},
+                }
+            })
+            with pytest.raises(KramConfigurationError):
+                kramer.changeConfig(cf, deltaOverride=0)
+
+            cf.put({
+                "kram": {
+                    "enabled": True,
+                    "caches": {"~": [1000, 5000, 5000, 5000, 5000, 5000, 5000]},
+                }
+            })
+            with pytest.raises(KramConfigurationError):
+                kramer.changeConfig(cf, deltaOverride="notint")
+
+
 def test_dynamic_cache_decrease(fakeHelpingClock):
     """
     Tests that Kramer.changeConfig() correctly applies:
