@@ -26,8 +26,7 @@ from ..kering import (MissingEntryError, UntrustedKeyStateSource,
 
 from ..help import helping
 
-from .coring import (PreDex, DigDex, NonTransDex, NumDex, Prefixer,
-                     Diger, Number, Seqner, Cigar, Dater, Noncer,
+from .coring import (PreDex, DigDex, NonTransDex, NumDex, Number, Seqner, Cigar, Dater, Noncer,
                      Verfer, Diger, Prefixer, Tholder)
 
 from .counting import Counter, Codens
@@ -58,8 +57,10 @@ LastEstLoc = namedtuple("LastEstLoc", 's d')
 def simple(n):
     """
     Returns int as simple majority of n when n >=1
-        otherwise returns 0
-    Parameters:
+    otherwise returns 0
+
+    Parameters::
+
         n is int total number of elements
     """
     return min(max(0, n), (max(0, n) // 2) + 1)
@@ -68,8 +69,10 @@ def simple(n):
 def ample(n, f=None, weak=True):
     """
     Returns int as sufficient immune (ample) majority of n when n >=1
-        otherwise returns 0
-    Parameters:
+    otherwise returns 0
+
+    Parameters::
+
         n is int total number of elements
         f is int optional fault number
         weak is Boolean
@@ -112,16 +115,20 @@ def ample(n, f=None, weak=True):
 def deWitnessCouple(data, strip=False):
     """
     Returns tuple of (diger, wiger) extracted from bytes or bytearray
-    that hold concatenated data couple where:
+    that hold concatenated data couple where::
+
         diger is Diger instance
         wiger is Siger instance
-    Couple is dig+wig  where:
+
+    Couple is dig+wig  where::
+
         dig is receipted event digest
         wig is indexed signature made with key pair derived from witness nontrans
             identifier prefix from witness list. Index is offset into witness
             list of latest establishment event for receipted event.
 
-    Parameters:
+    Parameters::
+
         data is couple of bytes concatenation of dig+wig from receipt
         deletive is Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream
@@ -131,8 +138,6 @@ def deWitnessCouple(data, strip=False):
     is offset into associated witness list. At time of escrow receipted event
     may not be in KEL so need the dig to look up event and then look up witness
     list from key state.
-
-
     """
     if isinstance(data, memoryview):
         data = bytes(data)
@@ -149,12 +154,15 @@ def deWitnessCouple(data, strip=False):
 def deReceiptCouple(data, strip=False):
     """
     Returns tuple of (prefixer, cigar) from concatenated bytes or bytearray
-    of data couple made up of qb64 or qb64b versions of pre+cig where:
+    of data couple made up of qb64 or qb64b versions of pre+cig where::
+
        pre is nontransferable identifier prefix of receiptor
        cig is nonindexed signature made with key pair derived from pre
+
     Couple is used for receipts signed by nontransferable prefix keys
 
-    Parameters:
+    Parameters::
+
         data is couple of bytes concatenation of pre+sig from receipt
         strip is Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream
@@ -175,12 +183,15 @@ def deReceiptCouple(data, strip=False):
 def deSourceCouple(data, strip=False):
     """
     Returns tuple of (number, diger) from concatenated bytes or bytearray
-    of data couple made up of qb64 or qb64b versions of snu+dig where:
+    of data couple made up of qb64 or qb64b versions of snu+dig where::
+
        snu is sn of delegator/issuer source event
        dig is digest of delegator/issuer source event
+
     Couple is used for delegated/issued event attachment of delegator/issuer evt
 
-    Parameters:
+    Parameters::
+
         data is couple of bytes concatenation of pre+sig from receipt
         strip is Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream
@@ -201,7 +212,8 @@ def deSourceCouple(data, strip=False):
 def deReceiptTriple(data, strip=False):
     """
     Returns tuple of (diger, prefixer, cigar) from concatenated bytes or bytearray
-    of data triple made up of qb64 or qb64b versions of dig+pre+cig where:
+    of data triple made up of qb64 or qb64b versions of dig+pre+cig where::
+
         dig is receipted event digest
         pre is nontransferable identifier prefix of receiptor
         cig is nonindexed signature made with key pair derived from pre
@@ -209,7 +221,8 @@ def deReceiptTriple(data, strip=False):
     Triple is used for escrows of unverified receipts signed by nontransferable
     prefix keys
 
-    Parameters:
+    Parameters::
+
         data is triple of bytes concatenation of dig+pre+cig from receipt
         deletive is Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream
@@ -1022,38 +1035,40 @@ def query(pre="",
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
-    Version 1.0
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "qry",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "logs",
-      "rr": "log/processor",
-      "q" :
-      {
-        "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-        "sn": "5",
-        "dt": "2020-08-01T12:20:05.123456+00:00",
-      }
-    }
+                Version 1.0::
 
-    Version 2.0
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "qry",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "logs",
-      "rr": "log/processor",
-      "q" :
-      {
-        "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-        "sn": "5",
-        "dt": "2020-08-01T12:20:05.123456+00:00",
-      }
-    }
+                                {
+                                    "v" : "KERI10JSON00011c_",
+                                    "t" : "qry",
+                                    "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                                    "dt": "2020-08-22T17:50:12.988921+00:00",
+                                    "r" : "logs",
+                                    "rr": "log/processor",
+                                    "q" :
+                                    {
+                                        "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                                        "sn": "5",
+                                        "dt": "2020-08-01T12:20:05.123456+00:00",
+                                    }
+                                }
+
+                Version 2.0::
+
+                                {
+                                    "v" : "KERI10JSON00011c_",
+                                    "t" : "qry",
+                                    "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                                    "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
+                                    "dt": "2020-08-22T17:50:12.988921+00:00",
+                                    "r" : "logs",
+                                    "rr": "log/processor",
+                                    "q" :
+                                    {
+                                        "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                                        "sn": "5",
+                                        "dt": "2020-08-01T12:20:05.123456+00:00",
+                                    }
+                                }
 
     """
     pvrsn = pvrsn if pvrsn is not None else version
@@ -1112,38 +1127,40 @@ def reply(pre="",
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
-    Version 1:
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "rpy",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "logs/processor",
-      "a" :
-      {
-         "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-         "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-         "name": "John Jones",
-         "role": "Founder",
-      }
-    }
+                Version 1::
 
-    Version 2:
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "rpy",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "logs/processor",
-      "a" :
-      {
-         "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-         "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-         "name": "John Jones",
-         "role": "Founder",
-      }
-    }
+                                {
+                                    "v" : "KERI10JSON00011c_",
+                                    "t" : "rpy",
+                                    "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                                    "dt": "2020-08-22T17:50:12.988921+00:00",
+                                    "r" : "logs/processor",
+                                    "a" :
+                                    {
+                                         "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                                         "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+                                         "name": "John Jones",
+                                         "role": "Founder",
+                                    }
+                                }
+
+                Version 2::
+
+                                {
+                                    "v" : "KERI10JSON00011c_",
+                                    "t" : "rpy",
+                                    "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                                    "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+                                    "dt": "2020-08-22T17:50:12.988921+00:00",
+                                    "r" : "logs/processor",
+                                    "a" :
+                                    {
+                                         "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                                         "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+                                         "name": "John Jones",
+                                         "role": "Founder",
+                                    }
+                                }
 
 
     """
@@ -1189,8 +1206,8 @@ def prod(pre="",
 
     Returns:
         prod (SerderKERI):  of prod, 'pro', msg to request disclosure via bare, 'bar' msg
-    of data anchored via seal(s) on KEL for identifier prefix, pre, when given
-    by all SAIDs given in digs list.
+            of data anchored via seal(s) on KEL for identifier prefix, pre, when given
+            by all SAIDs given in digs list.
 
     Parameters:
         pre (str): Identifier prefix (AID) of sender controller (Version 2)
@@ -1206,35 +1223,36 @@ def prod(pre="",
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
-    Version 1
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "pro",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "data",
-      "rr": "data/processor",
-      "q":
-      {
-        "d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
-      }
-    }
+                Version 1::
 
-    Version 2
+                                {
+                                    "v" : "KERI10JSON00011c_",
+                                    "t" : "pro",
+                                    "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                                    "dt": "2020-08-22T17:50:12.988921+00:00",
+                                    "r" : "data",
+                                    "rr": "data/processor",
+                                    "q":
+                                    {
+                                        "d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
+                                    }
+                                }
 
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "pro",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "data",
-      "rr": "data/processor",
-      "q":
-      {
-        "d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
-      }
-    }
+                Version 2::
+
+                                {
+                                    "v" : "KERI10JSON00011c_",
+                                    "t" : "pro",
+                                    "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                                    "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                                    "dt": "2020-08-22T17:50:12.988921+00:00",
+                                    "r" : "data",
+                                    "rr": "data/processor",
+                                    "q":
+                                    {
+                                        "d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
+                                    }
+                                }
 
     """
     pvrsn = pvrsn if pvrsn is not None else version
@@ -1298,55 +1316,47 @@ def bare(pre="",
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
+        Examples:
 
-       route is route path string that indicates data flow handler (behavior)
-           to processs the exposure
-       data is dict of dicts of comitted SADS for SAIDs in seals keyed by SAID
-       stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                     creation of message or data
-       version is Version instance
-       kind is serialization kind
+            Version 1::
 
-    Version 1
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "bar",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "sealed/processor",
-      "a" :
-        {
-          "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM":
-            {
-               "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-               "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-               "dt": "2020-08-22T17:50:12.988921+00:00",
-               "name": "John Jones",
-               "role": "Founder",
-            }
-        }
-    }
+                {
+                    "v": "KERI10JSON00011c_",
+                    "t": "bar",
+                    "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                    "dt": "2020-08-22T17:50:12.988921+00:00",
+                    "r": "sealed/processor",
+                    "a": {
+                        "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM": {
+                            "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                            "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+                            "dt": "2020-08-22T17:50:12.988921+00:00",
+                            "name": "John Jones",
+                            "role": "Founder"
+                        }
+                    }
+                }
 
-    Version 2
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "bar",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "sealed/processor",
-      "a" :
-        {
-          "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM":
-            {
-               "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-               "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-               "dt": "2020-08-22T17:50:12.988921+00:00",
-               "name": "John Jones",
-               "role": "Founder",
-            }
-        }
-    }
+            Version 2::
+
+                {
+                    "v": "KERI10JSON00011c_",
+                    "t": "bar",
+                    "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                    "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                    "dt": "2020-08-22T17:50:12.988921+00:00",
+                    "r": "sealed/processor",
+                    "a": {
+                        "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM": {
+                            "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                            "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+                            "dt": "2020-08-22T17:50:12.988921+00:00",
+                            "name": "John Jones",
+                            "role": "Founder"
+                        }
+                    }
+                }
+
     """
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
@@ -1392,7 +1402,7 @@ def exchept(sender="",
         exchept (SerderKERI):  'xip' message.
 
     Fields in order:
-    (v, t, d, u, ri, dt, r, q, a),
+        (v, t, d, u, ri, dt, r, q, a),
 
 
     Parameters:
@@ -1409,26 +1419,28 @@ def exchept(sender="",
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
-    Version 2:
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "rpy",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "u": '0AAwMTIzNDU2Nzg5YWJjZGVm',
-      "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-      "ri": "EBPzhzS6baU6JR2nmwyZ-i0d8JZ5CMAoTNZH3ULvYAfS",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "/logs/processor",
-      "q":
-      {
-           "name": "Zoe",
-           "color": "Blue"
-      }
-      "a":
-      {
-          "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
-      }
-    }
+        Examples:
+
+            Version 2::
+
+                {
+                    "v": "KERI10JSON00011c_",
+                    "t": "rpy",
+                    "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                    "u": "0AAwMTIzNDU2Nzg5YWJjZGVm",
+                    "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+                    "ri": "EBPzhzS6baU6JR2nmwyZ-i0d8JZ5CMAoTNZH3ULvYAfS",
+                    "dt": "2020-08-22T17:50:12.988921+00:00",
+                    "r": "/logs/processor",
+                    "q": {
+                        "name": "Zoe",
+                        "color": "Blue"
+                    },
+                    "a": {
+                        "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
+                    }
+                }
+
     """
     pvrsn = pvrsn if pvrsn is not None else Vrsn_2_0
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
@@ -2647,9 +2659,9 @@ class Kever:
         for siger in sigers:
             try:
                 diger = self.ndigers[siger.ondex]
-            except TypeError as ex:  # ondex may be None
+            except TypeError:  # ondex may be None
                 continue
-            except IndexError as ex:
+            except IndexError:
                 continue
                 #raise ValidationError(f'Invalid ondex={siger.ondex} '
                                       #f'to expose digest.') from ex
@@ -3592,7 +3604,7 @@ class Kever:
             esr = EventSourceRecord(local=local)
             self.db.esrs.put(keys=dgkey, val=esr)
 
-        logger.debug(f"Kever: Escrowed partially delegated event=\n%s\n", serder.pretty())
+        logger.debug("Kever: Escrowed partially delegated event=\n%s\n", serder.pretty())
         return self.db.pdes.add(keys=serder.pre, on=serder.sn, val=serder.said)
 
 
@@ -4655,38 +4667,40 @@ class Kevery:
                 diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
-        EndpointRecord:
-            allowed: bool = False  # True eid allowed (add), False eid disallowed (cut)
-            name: str = ""  # optional user friendly name of endpoint
+                EndpointRecord::
 
-        Reply Message:
-        {
-          "v" : "KERI10JSON00011c_",
-          "t" : "rpy",
-          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-          "dt": "2020-08-22T17:50:12.988921+00:00",
-          "r" : "/end/role/add",
-          "a" :
-          {
-             "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-             "role": "watcher",  # one of Roles
-             "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
-          }
-        }
+                        allowed: bool = False  # True eid allowed (add), False eid disallowed (cut)
+                        name: str = ""  # optional user friendly name of endpoint
 
-        {
-          "v" : "KERI10JSON00011c_",
-          "t" : "rpy",
-          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-          "dt": "2020-08-22T17:50:12.988921+00:00",
-          "r" : "/end/role/cut",
-          "a" :
-          {
-             "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-             "role": "watcher",  # one of Roles
-             "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
-          }
-        }
+                Reply Message::
+
+                        {
+                          "v" : "KERI10JSON00011c_",
+                          "t" : "rpy",
+                          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                          "dt": "2020-08-22T17:50:12.988921+00:00",
+                          "r" : "/end/role/add",
+                          "a" :
+                          {
+                             "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                             "role": "watcher",  # one of Roles
+                             "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+                          }
+                        }
+
+                        {
+                          "v" : "KERI10JSON00011c_",
+                          "t" : "rpy",
+                          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                          "dt": "2020-08-22T17:50:12.988921+00:00",
+                          "r" : "/end/role/cut",
+                          "a" :
+                          {
+                             "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                             "role": "watcher",  # one of Roles
+                             "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+                          }
+                        }
 
         """
         # reply specific logic
@@ -4724,8 +4738,8 @@ class Kevery:
                                         tsgs=tsgs)
         if not accepted:
             msg = f"Unverified end role reply = {serder.said} role = {role}"
-            logger.debug(f"Kevery: %s", msg)
-            logger.debug(f"Event=\n%s\n", serder.pretty())
+            logger.debug("Kevery: %s", msg)
+            logger.debug("Event=\n%s\n", serder.pretty())
             raise UnverifiedReplyError(msg)
 
         self.updateEnd(keys=keys, saider=diger, allowed=allowed)  # update .eans and .ends
@@ -4752,43 +4766,45 @@ class Kevery:
                 diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
-        EndAuthRecord
-             cid: str = ""  # identifier prefix of controller that authorizes endpoint
-             roles: list[str] = field(default_factory=list)  # str endpoint roles such as watcher, witness etc
+                EndAuthRecord::
 
-        LocationRecord:
-            url: str  # full url including host:port/path?query scheme is optional
-            cids: list[EndAuthRecord] = field(default_factory=list)  # optional authorization record references
+                    cid: str = ""  # identifier prefix of controller that authorizes endpoint
+                    roles: list[str] = field(default_factory=list)  # str endpoint roles such as watcher, witness etc
 
-        Reply Message:
+                LocationRecord::
 
-        {
-          "v" : "KERI10JSON00011c_",
-          "t" : "rpy",
-          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-          "dt": "2020-08-22T17:50:12.988921+00:00",
-          "r" : "/loc/scheme",
-          "a" :
-          {
-             "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
-             "scheme": "http",  # one of Schemes
-             "url":  "http://localhost:8080/watcher/wilma",
-          }
-        }
+                    url: str  # full url including host:port/path?query scheme is optional
+                    cids: list[EndAuthRecord] = field(default_factory=list)  # optional authorization record references
 
-        {
-          "v" : "KERI10JSON00011c_",
-          "t" : "rpy",
-          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-          "dt": "2020-08-22T17:50:12.988921+00:00",
-          "r" : "/loc/scheme",
-          "a" :
-          {
-             "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
-             "scheme": "http",  # one of Schemes
-             "url":  "",  # Nullifies
-          }
-        }
+                Reply Message::
+
+                        {
+                      "v" : "KERI10JSON00011c_",
+                      "t" : "rpy",
+                      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                      "dt": "2020-08-22T17:50:12.988921+00:00",
+                      "r" : "/loc/scheme",
+                      "a" :
+                      {
+                         "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+                         "scheme": "http",  # one of Schemes
+                         "url":  "http://localhost:8080/watcher/wilma",
+                      }
+                        }
+
+                        {
+                      "v" : "KERI10JSON00011c_",
+                      "t" : "rpy",
+                      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                      "dt": "2020-08-22T17:50:12.988921+00:00",
+                      "r" : "/loc/scheme",
+                      "a" :
+                      {
+                         "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+                         "scheme": "http",  # one of Schemes
+                         "url":  "",  # Nullifies
+                      }
+                        }
 
 
         """
@@ -4854,45 +4870,45 @@ class Kevery:
                 diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
-        Reply Message:
-        {
-          "v" : "KERI10JSON00011c_",
-          "t" : "rpy",
-          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-          "dt": "2020-08-22T17:50:12.988921+00:00",
-          "r" : "/ksn/EeS834LMlGVEOGR8WU3rzZ9M6HUv_vtF32pSXQXKP7jg",
-          "a" :
-          {
-            "v": "KERI10JSON000274_",
-            "i": "EeS834LMlGVEOGR8WU3rzZ9M6HUv_vtF32pSXQXKP7jg",
-            "s": "1",
-            "t": "ksn",
-            "p": "ESORkffLV3qHZljOcnijzhCyRT0aXM2XHGVoyd5ST-Iw",
-            "d": "EtgNGVxYd6W0LViISr7RSn6ul8Yn92uyj2kiWzt51mHc",
-            "f": "1",
-            "dt": "2021-11-04T12:55:14.480038+00:00",
-            "et": "ixn",
-            "kt": "1",
-            "k": [
-              "DTH0PwWwsrcO_4zGe7bUR-LJX_ZGBTRsmP-ZeJ7fVg_4"
-            ],
-            "n": "E6qpfz7HeczuU3dAd1O9gPPS6-h_dCxZGYhU8UaDY2pc",
-            "bt": "3",
-            "b": [
-              "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo",
-              "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
-              "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"
-            ],
-            "c": [],
-            "ee": {
-              "s": "0",
-              "d": "ESORkffLV3qHZljOcnijzhCyRT0aXM2XHGVoyd5ST-Iw",
-              "br": [],
-              "ba": []
-            },
-            "di": ""
-          }
-        }
+                Reply message example::
+
+                                {
+                                        "v": "KERI10JSON00011c_",
+                                        "t": "rpy",
+                                        "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                                        "dt": "2020-08-22T17:50:12.988921+00:00",
+                                        "r": "/ksn/EeS834LMlGVEOGR8WU3rzZ9M6HUv_vtF32pSXQXKP7jg",
+                                        "a": {
+                                                "v": "KERI10JSON000274_",
+                                                "i": "EeS834LMlGVEOGR8WU3rzZ9M6HUv_vtF32pSXQXKP7jg",
+                                                "s": "1",
+                                                "t": "ksn",
+                                                "p": "ESORkffLV3qHZljOcnijzhCyRT0aXM2XHGVoyd5ST-Iw",
+                                                "d": "EtgNGVxYd6W0LViISr7RSn6ul8Yn92uyj2kiWzt51mHc",
+                                                "f": "1",
+                                                "dt": "2021-11-04T12:55:14.480038+00:00",
+                                                "et": "ixn",
+                                                "kt": "1",
+                                                "k": [
+                                                        "DTH0PwWwsrcO_4zGe7bUR-LJX_ZGBTRsmP-ZeJ7fVg_4"
+                                                ],
+                                                "n": "E6qpfz7HeczuU3dAd1O9gPPS6-h_dCxZGYhU8UaDY2pc",
+                                                "bt": "3",
+                                                "b": [
+                                                        "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo",
+                                                        "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
+                                                        "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"
+                                                ],
+                                                "c": [],
+                                                "ee": {
+                                                        "s": "0",
+                                                        "d": "ESORkffLV3qHZljOcnijzhCyRT0aXM2XHGVoyd5ST-Iw",
+                                                        "br": [],
+                                                        "ba": []
+                                                },
+                                                "di": ""
+                                        }
+                                }
 
         """
         cigars = cigars if cigars is not None else []
@@ -5048,20 +5064,20 @@ class Kevery:
                 diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
-        Reply Message:
-        {
-          "v" : "KERI10JSON00011c_",
-          "t" : "rpy",
-          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-          "dt": "2020-08-22T17:50:12.988921+00:00",
-          "r" : "/watcher/BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE/add",
-          "a" :
-          {
-            "cid": "EyX-zd8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM"
-            "oid": "EM0-i05TNZJZAoH3UR2nmLaU6JwyvPzhzS6YAfSVbMC5"
-            "oobi": "http://example.com/oobi/EyX-zd8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM"
-          }
-        }
+                Reply message example::
+
+                                {
+                                        "v": "KERI10JSON00011c_",
+                                        "t": "rpy",
+                                        "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                                        "dt": "2020-08-22T17:50:12.988921+00:00",
+                                        "r": "/watcher/BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE/add",
+                                        "a": {
+                                                "cid": "EyX-zd8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                                                "oid": "EM0-i05TNZJZAoH3UR2nmLaU6JwyvPzhzS6YAfSVbMC5",
+                                                "oobi": "http://example.com/oobi/EyX-zd8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM"
+                                        }
+                                }
 
         """
         aid = kwa["aid"]
@@ -5907,7 +5923,7 @@ class Kevery:
                     self.cues.push(dict(kin="psUnescrow", serder=eserder))
 
                 logger.info("Kevery: PSE unescrow succeeded in valid event event= %s", eserder.said)
-                logger.debug(f"Event=\n%s\n", eserder.pretty())
+                logger.debug("Event=\n%s\n", eserder.pretty())
 
             #if ekey == key:  # still same so no escrows found on last while iteration
                 #break
@@ -6582,7 +6598,7 @@ class Kevery:
                 self.db.delegables.rem(keys=(pre, sn,), val=edig)  # removes one escrow at key val
                 logger.info("Kevery DEL unescrow succeeded in valid event: "
                             "event=%s", eserder.said)
-                logger.debug(f"Event=\n%s\n", eserder.pretty())
+                logger.debug("Event=\n%s\n", eserder.pretty())
 
 
     def processQueryNotFound(self):
