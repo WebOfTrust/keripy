@@ -163,7 +163,7 @@ def deReceiptCouple(data, strip=False):
 
     Parameters::
 
-        data is couple of bytes concatenation of pre+sig from receipt
+        data is couple of bytes concatenation of snu+dig from source event
         strip is Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream
             Raises error if not bytearray
@@ -1049,7 +1049,7 @@ def query(pre="",
                                     {
                                         "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
                                         "sn": "5",
-                                        "dt": "2020-08-01T12:20:05.123456+00:00",
+                                        "dt": "2020-08-01T12:20:05.123456+00:00"
                                     }
                                 }
 
@@ -1059,7 +1059,7 @@ def query(pre="",
                                     "v" : "KERI10JSON00011c_",
                                     "t" : "qry",
                                     "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-                                    "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
+                                    "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
                                     "dt": "2020-08-22T17:50:12.988921+00:00",
                                     "r" : "logs",
                                     "rr": "log/processor",
@@ -1067,7 +1067,7 @@ def query(pre="",
                                     {
                                         "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
                                         "sn": "5",
-                                        "dt": "2020-08-01T12:20:05.123456+00:00",
+                                        "dt": "2020-08-01T12:20:05.123456+00:00"
                                     }
                                 }
 
@@ -1141,7 +1141,7 @@ def reply(pre="",
                                          "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
                                          "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
                                          "name": "John Jones",
-                                         "role": "Founder",
+                                         "role": "Founder"
                                     }
                                 }
 
@@ -1159,7 +1159,7 @@ def reply(pre="",
                                          "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
                                          "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
                                          "name": "John Jones",
-                                         "role": "Founder",
+                                         "role": "Founder"
                                     }
                                 }
 
@@ -1817,8 +1817,6 @@ class Kever:
     @property
     def prefixes(self):
         """
-        :no-index:
-
         Returns .db.prefixes
         """
         return self.db.prefixes
