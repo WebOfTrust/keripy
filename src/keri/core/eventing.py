@@ -888,7 +888,8 @@ def deltate(pre,
     Syntactic suger that calls rotate but with ilk set to drt.
 
 
-    Inherited Parameters:
+    Inherited Parameters::
+
         pre (str): identifier prefix qb64
         keys  (list): current signing keys qb64
         dig (str): said of previous event qb64
@@ -1518,7 +1519,9 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
     """
     Attaches indexed signatures from sigers and/or cigars and/or wigers to
     KERI message data from serder
-    Parameters:
+
+    Parameters::
+
         serder (SerderKERI): instance containing the event
         sigers (list): of Siger instances (optional) to create indexed signatures
         seal (Union[SealEvent, SealLast]): optional if sigers and
@@ -1536,7 +1539,9 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
         pipelined (bool), True means prepend pipelining count code to attachemnts
             False means to not prepend pipelining count code
 
-    Returns: bytearray KERI event message
+    Returns::
+
+        bytearray KERI event message
     """
     msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
     atc = bytearray()  # attachment
@@ -1601,6 +1606,7 @@ class Kever:
     Has the following public attributes and properties:
 
     Class Attributes:
+
         EstOnly (bool):
                 True means allow only establishment events
                 False means allow all events
@@ -1609,6 +1615,7 @@ class Kever:
                 False means allow delegation of delegated identifiers
 
     Attributes:
+
         db (Baser | None): instance that manages the LMDB database when provided.
             When None provided then create and assign vacuous instance of Baser.
         cues (deque | None): Injected Kevery.cues when provided. Default None.
@@ -1645,6 +1652,7 @@ class Kever:
 
 
     Properties:
+
         sn (int): sequence number property that returns .sner.num
         fn (int): first seen ordinal number property the returns .fner.num
         ndigs (list): of digests qb64 of .digers
@@ -1653,8 +1661,9 @@ class Kever:
 
 
 
-    ToDo:
-       Add Registrar Backer support:
+    ToDo
+
+        Add Registrar Backer support:
         Class variable, instance variable and parse support config trait.
         raise error for now
 
@@ -1808,6 +1817,8 @@ class Kever:
     @property
     def prefixes(self):
         """
+        :no-index:
+
         Returns .db.prefixes
         """
         return self.db.prefixes
@@ -1825,9 +1836,10 @@ class Kever:
     def transferable(self):
         """
         Property transferable:
+
         Returns True if identifier does not have non-transferable derivation code
-                and .nextor is not None
-                False otherwise
+        and .nextor is not None
+        False otherwise
         """
         return True if self.ndigers and self.prefixer.transferable else False
 
@@ -1882,7 +1894,9 @@ class Kever:
             pre (str): qb64 identifier prefix if any.
 
 
-        ToDo: this code does not account for stale group members as delegators.
+        ToDo:
+
+        this code does not account for stale group members as delegators.
         i.e. a stale group membed is a member AID for a group AID in .groups
         for which the member AID was a signing (smids) or rotating (rmids) member
         in the past but is no longer. For delegation approval there must be
@@ -1894,7 +1908,8 @@ class Kever:
         That later approval must detect and properly handle the staleness.
 
         Alternatively the logic could be changed to short circut that later
-        work by checking here for staleness. For example:
+        work by checking here for staleness. For example::
+
             delpre.mhab.pre in delpre's hab.smids  (not stale )
 
 
@@ -2423,14 +2438,15 @@ class Kever:
                                 local=True):
         """
         Returns triple (sigers, wigers, delegator) where:
+
         sigers is unique validated signature verified members of inputed sigers
         wigers is unique validated signature verified members of inputed wigers
         delegator is qb64 delegator prefix if delegated else None
 
         Validates sigers signatures by validating indexes, verifying signatures, and
-            validating threshold sith.
+        validating threshold sith.
         Validate witness receipts by validating indexes, verifying
-            witness signatures and validating toad.
+        witness signatures and validating toad.
         Witness validation is a function of wits .prefixes and .local
 
         Parameters:
@@ -2681,11 +2697,12 @@ class Kever:
         this function is called.
 
         Rules:
-            If event is not a delegated event then not valid delegation
-            If delegatee's own event (.mine) then valid delegation
-            If delegation seal found in delgator's KEL then valid delegation given
-                valid superseding rules below
-            Otherwise escrow or reject if error condition
+
+            - If event is not a delegated event then not valid delegation
+            - If delegatee's own event (.mine) then valid delegation
+            - If delegation seal found in delgator's KEL then valid delegation given
+              valid superseding rules below
+            - Otherwise escrow or reject if error condition
 
         seal validates with respect to Delegator's KEL
         Location Seal is from Delegate's establishment event
@@ -2707,7 +2724,7 @@ class Kever:
                 If this event is not delegated then ignored
             deldiger (Diger | None): instance of delegating event digest.
                 If this event is not delegated ignored
-                local (bool): event source for validation logic
+            local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
                 Event validation logic is a function of local or remote
@@ -2725,6 +2742,7 @@ class Kever:
             None
 
         Process Logic:
+
             A delegative event is processed differently for each of four different
             parties, namely, controller of event, witness to controller of event,
             delegator of event , and validator of event that is not controller,
@@ -2823,7 +2841,7 @@ class Kever:
             remote event because the validator is not one of the protected parties
             to the event.
 
-        Superseding Recovery:
+        Superseding Recovery
 
         Supersede means that after an event has already been accepted as first seen
         into a KEL that a different event with the same sequence number is accepted
@@ -2894,7 +2912,7 @@ class Kever:
             A. or B. must be satisfied, or else the superseding rotation must
             be discarded.
 
-        Note: The latest seen delegated rotation constraint means that any earlier
+        Note. The latest seen delegated rotation constraint means that any earlier
         delegated rotations CAN NOT be superseded. This greatly simplifies the
         validation logic and avoids a potential infinite regress of forks in the
         delegated identifier's KEL while allowing the delegate to
@@ -2926,7 +2944,7 @@ class Kever:
         to detect a comprimised or duplicitious superseding rotation and
         prevent the additional verification from proceding.
 
-        Mitigations of malicious source seal couples:
+        Mitigations of malicious source seal couples
 
         Repair the approval source seal couple in the 'aess' database on recursive
         climb the kel tree.  Once an event has been accepted into its kel.
@@ -3753,7 +3771,8 @@ class Kever:
           verfer (Verfer): instance of verfer
           sn (int | None): sn to start searching. If None then start at .lastEst.s
 
-        Returns:
+        Returns::
+
             tuple(int, int, list[Verfer]) | None: where tuple is of form
             (sn, index, verfers)
                 sn is sequence number
@@ -3793,7 +3812,8 @@ class Kevery:
 
     Has the following public attributes and properties:
 
-    Attributes:
+    Attributes::
+
         cues (Deck):  of Cues i.e. notices of events needing receipt or
                       requests needing response
         db (Baser): instance of LMDB Baser object
@@ -3814,7 +3834,8 @@ class Kevery:
                 and timestamps.
 
 
-    Properties:
+    Properties::
+
         .kevers is dict of db kevers indexed by pre (qb64) of each Kever
         .prefixes is OrderedSet of fully qualified base64 identifier prefixes of db
             local habitats if any.
@@ -3837,7 +3858,8 @@ class Kevery:
         """
         Initialize instance:
 
-        Parameters:
+        Parameters::
+
             cues (Deck)  notices to create responses to evts
             kevers is dict of Kever instances of key state in db
             db (Baser): instance of database
@@ -5422,7 +5444,8 @@ class Kevery:
         """
         Update associated logs for escrow of Unverified Event Witness Receipt
         (non-transferable)
-        Escrowed value is couple edig+wig where:
+        Escrowed value is couple edig+wig where::
+
            edig is receipted event dig not serder.dig
            wig is witness indexed signature on receipted event with key pair
                 derived from witness nontrans identifier prefix in witness list.
@@ -5457,7 +5480,8 @@ class Kevery:
     def escrowUReceipt(self, serder, cigars, said):
         """
         Update associated logs for escrow of Unverified Event Receipt (non-transferable)
-        Escrowed value is triple edig+rpre+cig where:
+        Escrowed value is triple edig+rpre+cig where::
+
            edig is event dig
            rpre is nontrans receiptor prefix
            cig is non-indexed signature on event with key pair derived from rpre
@@ -5502,7 +5526,8 @@ class Kevery:
                 diger is Diger instance of digest of est event of receiptor
                 sigers is list of Siger instances of multi-sig of receiptor
 
-        escrow quintuple for each siger
+        escrow quintuple for each siger::
+
             quintuple = edig+pre+snu+dig+sig
             where:
                 edig is receipted event dig (serder.dig)
@@ -5550,7 +5575,8 @@ class Kevery:
             saider is Saider instance of said of est event of receiptor
             igers is list of Siger instances of multi-sig of receiptor
 
-        escrow quintuple for each siger
+        escrow quintuple for each siger::
+
             quintuple = edig+pre+snu+dig+sig
             where:
                 edig is receipted event dig (serder.dig)
@@ -5787,7 +5813,8 @@ class Kevery:
 
         Value is dgkey for event stored in .Evt where .Evt has serder.raw of event.
 
-        Original Escrow steps:
+        Original Escrow steps::
+
             dgkey = dgKey(pre, serder.digb)
             .db.dtss.put(keys=dgkey, val=Dater())
             self.db.sigs.put(keys=dgkey, vals=sigers)
@@ -5799,7 +5826,8 @@ class Kevery:
                 pre is str qb64 of identifier prefix of event
                 sn is int sequence number of event
 
-        Steps:
+        Steps::
+
             Each pass  (walk index table)
                 For each prefix,sn
                     For each escrow item dup at prefix,sn:
@@ -5938,12 +5966,14 @@ class Kevery:
         Escrowed items in .pwes are indexed in database table keyed by prefix and
         sequence number with duplicates inserted in insertion order. This allows
         FIFO processing of events with same prefix and sn.
-        Reads db.pwes .db.getPwe put there by  .db.pwes.addOn(keys, on, val)
+        Reads db.pwes .db.getPwe put there by  .db.pwes.addOn(keys, on, val)::
+
             which is IOVal with dups.
 
         Value is dgkey for event stored in .Evt where .Evt has serder.raw of event.
 
-        Original Escrow steps:
+        Original Escrow steps::
+
             dgkey = dgKey(pre, serder.digb)
             .db.dtss.put(keys=dgkey, val=Dater())
             .db.putWigs(dgkey, [siger.qb64b for siger in sigers])
@@ -5955,7 +5985,8 @@ class Kevery:
                 pre is str qb64 of identifier prefix of event
                 sn is int sequence number of event
 
-        Steps:
+        Steps::
+
             Each pass  (walk index table)
                 For each prefix,sn
                     For each escrow item dup at prefix,sn:
@@ -6246,7 +6277,8 @@ class Kevery:
         signatures neither to look up the witness list to verify the indexed
         signatures.
 
-        The escrow is a couple with edig+wig where:
+        The escrow is a couple with edig+wig where::
+
             edig is receipted event digest
             wig is witness indexed signature by key-pair derived from witness
                 prefix in associated witness list. Index is offset into witness
@@ -6263,7 +6295,8 @@ class Kevery:
 
         Value is couple
 
-        Original Escrow steps:
+        Original Escrow steps::
+
             self.db.dtss.put(keys=dgKey(pre, dig), val=Dater())
             for wiger in wigers:  # escrow each couple
                 couple = dig.encode("utf-8") + wiger.qb64b
@@ -6275,7 +6308,8 @@ class Kevery:
                 pre is str qb64 of identifier prefix of receipted event
                 sn is int sequence number of receipted event
 
-        Steps:
+        Steps::
+
             Each pass  (walk index table)
                 For each prefix,sn
                     For each escrow item dup at prefix,sn:
@@ -6350,7 +6384,8 @@ class Kevery:
         into its KEL.
         Without the event, there is no way to know where to store the receipts.
 
-        The escrow is a triple with edig+rpre+cig where:
+        The escrow is a triple with edig+rpre+cig where::
+
            edig is event digest
            rpre is receiptor (signer) of event
            cig is non-indexed signature by key-pair derived from rpre of event
@@ -6367,7 +6402,8 @@ class Kevery:
 
         Value is triple
 
-        Original Escrow steps:
+        Original Escrow steps::
+
             self.db.dtss.put(keys=dgKey(pre, dig), val=Dater())
             for cigar in cigars:  # escrow each triple
                 if cigar.verfer.transferable:  # skip transferable verfers
@@ -6380,7 +6416,8 @@ class Kevery:
                 pre is str qb64 of identifier prefix of receipted event
                 sn is int sequence number of receipted event
 
-        Steps:
+        Steps::
+
             Each pass  (walk index table)
                 For each prefix,sn
                     For each escrow item dup at prefix,sn:
@@ -6835,7 +6872,8 @@ class Kevery:
 
         Value is quintuple
 
-        Original Escrow steps:
+        Original Escrow steps::
+
             self.db.dtss.put(keys=dgKey(serder.preb, dig), val=Dater())
             prelet = (dig.encode("utf-8") + seal.i.encode("utf-8") +
                   Seqner(sn=int(seal.s, 16)).qb64b + seal.d.encode("utf-8"))
@@ -6847,7 +6885,8 @@ class Kevery:
                 sigers is list of Siger instances for receipted event
 
 
-        Steps:
+        Steps::
+
             Each pass  (walk index table)
                 For each prefix,sn
                     For each escrow item dup at prefix,sn:
@@ -6987,7 +7026,8 @@ class Kevery:
 
         Value is dgkey for event stored in .Evt where .Evt has serder.raw of event.
 
-        Original Escrow steps:
+        Original Escrow steps::
+
             dgkey = dgKey(pre, serder.dig)
             self.db.dtss.put(keys=dgkey, val=Dater())
             self.db.sigs.put(keys=dgkey, vals=sigers)
@@ -6999,7 +7039,8 @@ class Kevery:
                 pre is str qb64 of identifier prefix of event
                 sn is int sequence number of event
 
-        Steps:
+        Steps::
+
             Each pass  (walk index table)
                 For each prefix,sn
                     For each escrow item dup at prefix,sn:
