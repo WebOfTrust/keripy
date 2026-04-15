@@ -79,7 +79,8 @@ references to Schema. The Management TEL will have two events: `vcp` for Registr
 for rotation of the list or Registrars. The events will reference the controlling identifier in the `ii` field and be
 anchored to the KEL with an event seal triple attachment.
 
-The Registry specific identifier will be self-addressing (see [below](#self-addressing-Identifiers)
+The Registry specific identifier will be self-addressing (see below in the
+"Self Addressing Identifiers" section
 for definition) using its inception data for its derivation. This requires a commitment to the anchor in the controlling
 KEL and necessitates the event location seal be included in the event. The derived identifier is then set in the `i`
 field of the events in the management TEL.

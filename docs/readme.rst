@@ -101,5 +101,14 @@ Testing
   pytest tests/demo/
 
 
+Documentation Build Notes
+-------------------------
+* Build docs from :bash:`docs/` with :bash:`make html`.
+* Keep canonical KERI domain terms in docstrings and reference docs. Do not
+  rename domain vocabulary only to satisfy cross-reference resolution.
+* Sphinx reference resolution policy for domain terminology is managed in
+  :bash:`docs/conf.py`.
+
+
 
 

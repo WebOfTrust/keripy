@@ -49,7 +49,7 @@ DocStrings:
    such as this string. Embedded strings use 'single quotes'.
    """
 
-   Format for code documentation in the the Google flavor of sphinx.ext.napolean format.
+   Format for code documentation in the the Google flavor of sphinx.ext.napoleon format.
    See
    https://www.sphinx-doc.org/en/master/usage/extensions/napoleon.html
    and
@@ -57,6 +57,10 @@ DocStrings:
 
    Napoleon supports two styles of docstrings: Google and NumPy. The main difference between
    the two styles is that Google uses indentation to separate sections, whereas NumPy uses underlines.
+
+   Preserve KERI domain terminology in docstrings and reference text.
+   If a domain term does not map cleanly to a Python import path for Sphinx cross-references,
+   handle the resolution policy in docs/conf.py instead of renaming the domain term.
 ```
    Google style:
 

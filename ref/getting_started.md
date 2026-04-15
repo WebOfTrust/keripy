@@ -460,7 +460,7 @@ Indirect mode needs supporting infrastructure like witness and validators to fun
 
 ## Event Life Cycle
 
-#### Creating An Inception Event Message
+### Creating An Inception Event Message
 Creating an event message involves appending count code prefixes and signatures to an event object.
 There is a function that will handle all this for you called messagize().
 ```python
@@ -487,7 +487,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     print()
 ```
 
-#### Signing An Inception Event
+### Signing An Inception Event
 In order for an event to be valid it must be signed.  The Manager object can be used to sign an event. This will create
 signatures, but they are not yet attached to the event.  See the section below for how to attach them to the event by
 creating an event message.
@@ -514,7 +514,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 ```
 
-#### Verifying An Inception Event Message
+### Verifying An Inception Event Message
 ```python
 import keri.core.eventing as eventing
 import keri.core.coring as coring
@@ -551,7 +551,7 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     print()
 ```
 
-#### Rotating Keys
+### Rotating Keys
 
 ```python
 import keri.core.eventing as eventing
@@ -587,9 +587,9 @@ with dbing.openLMDB(name="edy") as db, keeping.openKS(name="edy") as kpr:
     print()
 ```
 
-#### Interaction
+### Interaction
 
-#### Abandonment
+### Abandonment
 Abandonment or revocation is a subset of rotation.  KERI events always include a pre rotated key.  To abandon an
 identifier a rotation event is created and the pre rotated key is set to an empty string or null.
 
