@@ -4,6 +4,7 @@ KERI
 keri.db.koming module
 
 """
+
 import json
 from dataclasses import dataclass
 from collections.abc import Iterable
@@ -37,15 +38,20 @@ class KomerBase:
         deserializer (types.MethodType): deserializer method
         sep (str): separator for combining keys tuple of strs into key bytes
     """
-    Sep = '.'  # separator for combining key iterables
 
-    def __init__(self, db: LMDBer, *,
-                 subkey: str = 'docs.',
-                 klas: type[dataclass],  # class not instance
-                 kind: str|None = None,
-                 dupsort: bool = False,
-                 sep: str = None,
-                 **kwa):
+    Sep = "."  # separator for combining key iterables
+
+    def __init__(
+        self,
+        db: LMDBer,
+        *,
+        subkey: str = "docs.",
+        klas: type[dataclass],  # class not instance
+        kind: str | None = None,
+        dupsort: bool = False,
+        sep: str = None,
+        **kwa,
+    ):
         """
         Parameters:
             db (LMDBer): base db
@@ -61,6 +67,7 @@ class KomerBase:
         super(KomerBase, self).__init__()
         if kind is None:
             from ..core.coring import Kinds
+
             kind = Kinds.json
         self.db = db
         self.sdb = self.db.env.open_db(key=subkey.encode("utf-8"), dupsort=dupsort)
@@ -70,8 +77,7 @@ class KomerBase:
         self._ser = self._serializer(kind)
         self._des = self._deserializer(kind)
 
-
-    def _tokey(self, keys: str|bytes|memoryview|Iterable, topive: bool=False):
+    def _tokey(self, keys: str | bytes | memoryview | Iterable, topive: bool = False):
         """Converts keys Iterable to key bytes with proper separators and returns key bytes.
         If keys is already str or bytes or memoryview then returns key bytes.
         Else If keys is iterable (non-str) of strs or bytes then joins with
@@ -99,15 +105,15 @@ class KomerBase:
             return keys.encode("utf-8")
         if isinstance(keys, memoryview):  # memoryview of bytes
             return bytes(keys)  # return bytes
-        elif hasattr(keys, "decode"): # bytes
+        elif hasattr(keys, "decode"):  # bytes
             return keys
         if topive and keys[-1]:  # topive and keys is not already partial
-            keys = tuple(keys) + ('',)  # cat empty str so join adds trailing sep
-        return (self.sep.join(key.decode() if hasattr(key, "decode") else key
-                              for key in keys).encode("utf-8"))
+            keys = tuple(keys) + ("",)  # cat empty str so join adds trailing sep
+        return self.sep.join(
+            key.decode() if hasattr(key, "decode") else key for key in keys
+        ).encode("utf-8")
 
-
-    def _tokeys(self, key: str|bytes|memoryview):
+    def _tokeys(self, key: str | bytes | memoryview):
         """Converts key bytes|memoryview to keys tuple of strs by decoding and
         then splitting at separator .sep.
 
@@ -121,7 +127,6 @@ class KomerBase:
         if isinstance(key, memoryview):  # memoryview of bytes
             key = bytes(key)
         return tuple(key.decode("utf-8").split(self.sep))
-
 
     def _serializer(self, kind):
         """
@@ -137,7 +142,6 @@ class KomerBase:
         else:
             return self.__serializeJSON
 
-
     def _deserializer(self, kind):
         """
         Parameters:
@@ -152,64 +156,75 @@ class KomerBase:
         else:
             return self.__deserializeJSON
 
-
     def __deserializeJSON(self, val):
         if val is not None:
             val = helping.datify(self.klas, json.loads(bytes(val).decode("utf-8")))
             if not isinstance(val, self.klas):
-                raise ValueError("Invalid schema type={} of value={}, expected {}."
-                                 "".format(type(val), val, self.klas))
+                raise ValueError(
+                    "Invalid schema type={} of value={}, expected {}.".format(
+                        type(val), val, self.klas
+                    )
+                )
         return val
-
 
     def __deserializeMGPK(self, val):
         if val is not None:
             val = helping.datify(self.klas, msgpack.loads(bytes(val)))
             if not isinstance(val, self.klas):
-                raise ValueError("Invalid schema type={} of value={}, expected {}."
-                                 "".format(type(val), val, self.klas))
+                raise ValueError(
+                    "Invalid schema type={} of value={}, expected {}.".format(
+                        type(val), val, self.klas
+                    )
+                )
         return val
-
 
     def __deserializeCBOR(self, val):
         if val is not None:
             val = helping.datify(self.klas, cbor2.loads(bytes(val)))
             if not isinstance(val, self.klas):
-                raise ValueError("Invalid schema type={} of value={}, expected {}."
-                                 "".format(type(val), val, self.klas))
+                raise ValueError(
+                    "Invalid schema type={} of value={}, expected {}.".format(
+                        type(val), val, self.klas
+                    )
+                )
         return val
-
 
     def __serializeJSON(self, val):
         if val is not None:
             if not isinstance(val, self.klas):
-                raise ValueError("Invalid schema type={} of value={}, expected {}."
-                                 "".format(type(val), val, self.klas))
-            val = json.dumps(helping.dictify(val),
-                          separators=(",", ":"),
-                          ensure_ascii=False).encode("utf-8")
+                raise ValueError(
+                    "Invalid schema type={} of value={}, expected {}.".format(
+                        type(val), val, self.klas
+                    )
+                )
+            val = json.dumps(
+                helping.dictify(val), separators=(",", ":"), ensure_ascii=False
+            ).encode("utf-8")
         return val
-
 
     def __serializeMGPK(self, val):
         if val is not None:
             if not isinstance(val, self.klas):
-                raise ValueError("Invalid schema type={} of value={}, expected {}."
-                                 "".format(type(val), val, self.klas))
+                raise ValueError(
+                    "Invalid schema type={} of value={}, expected {}.".format(
+                        type(val), val, self.klas
+                    )
+                )
             val = msgpack.dumps(helping.dictify(val))
         return val
-
 
     def __serializeCBOR(self, val):
         if val is not None:
             if not isinstance(val, self.klas):
-                raise ValueError("Invalid schema type={} of value={}, expected {}."
-                                 "".format(type(val), val, self.klas))
+                raise ValueError(
+                    "Invalid schema type={} of value={}, expected {}.".format(
+                        type(val), val, self.klas
+                    )
+                )
             val = cbor2.dumps(helping.dictify(val))
         return val
 
-
-    def trim(self, keys: str|bytes|memoryview|Iterable=b"", *, topive=False):
+    def trim(self, keys: str | bytes | memoryview | Iterable = b"", *, topive=False):
         """Removes all entries whose keys startswith keys. Enables removal of whole
         branches of db key space. To ensure that proper separation of a branch
         include empty string as last key in keys. For example ("a","") deletes
@@ -229,12 +244,13 @@ class KomerBase:
         Returns:
            result (bool): True if key exists so delete successful. False otherwise
         """
-        return(self.db.remTop(db=self.sdb, top=self._tokey(keys, topive=topive)))
+        return self.db.remTop(db=self.sdb, top=self._tokey(keys, topive=topive))
 
     remTop = trim  # convenience alias
 
-
-    def getTopItemIter(self, keys: str|bytes|memoryview|Iterable=b"", *, topive=False):
+    def getTopItemIter(
+        self, keys: str | bytes | memoryview | Iterable = b"", *, topive=False
+    ):
         """Iterator over items in top branch of db given by keys.
         Subclasses that do special hidden transforms on either the keyspace or
         valuespace should override this method to hide hidden parts from the
@@ -267,12 +283,14 @@ class KomerBase:
                 partial ending in sep regardless of top value
 
         """
-        for key, val in self.db.getTopItemIter(db=self.sdb,
-                                        top=self._tokey(keys, topive=topive)):
+        for key, val in self.db.getTopItemIter(
+            db=self.sdb, top=self._tokey(keys, topive=topive)
+        ):
             yield (self._tokeys(key), self._des(val))
 
-
-    def getFullItemIter(self, keys: str|bytes|memoryview|Iterable=b"",  *, topive=False):
+    def getFullItemIter(
+        self, keys: str | bytes | memoryview | Iterable = b"", *, topive=False
+    ):
         """Iterator over items in top branch of db that returns full items
         with subclass specific special hidden parts shown for debugging or testing.
 
@@ -296,10 +314,10 @@ class KomerBase:
                 partial ending in sep regardless of top value
 
         """
-        for key, val in self.db.getTopItemIter(db=self.sdb,
-                                    top=self._tokey(keys, topive=topive)):
+        for key, val in self.db.getTopItemIter(
+            db=self.sdb, top=self._tokey(keys, topive=topive)
+        ):
             yield (self._tokeys(key), self._des(val))
-
 
 
 class Komer(KomerBase):
@@ -307,12 +325,15 @@ class Komer(KomerBase):
     deserializes) dataclass to/from database entry at key made from keys
     """
 
-    def __init__(self,
-                 db: LMDBer, *,
-                 subkey: str = 'docs.',
-                 klas: type[dataclass],  # class not instance
-                 kind: str | None = None,
-                 **kwa):
+    def __init__(
+        self,
+        db: LMDBer,
+        *,
+        subkey: str = "docs.",
+        klas: type[dataclass],  # class not instance
+        kind: str | None = None,
+        **kwa,
+    ):
         """Initialize instance
         Parameters:
             db (LMDBer): base db
@@ -320,10 +341,11 @@ class Komer(KomerBase):
             subkey (str):  LMDB sub database key
             kind (str): serialization/deserialization type
         """
-        super(Komer, self).__init__(db=db, subkey=subkey, klas=klas,
-                                    kind=kind, dupsort=False, **kwa)
+        super(Komer, self).__init__(
+            db=db, subkey=subkey, klas=klas, kind=kind, dupsort=False, **kwa
+        )
 
-    def put(self, keys: str|bytes|memoryview|Iterable, val: dataclass):
+    def put(self, keys: str | bytes | memoryview | Iterable, val: dataclass):
         """Puts val at key made from keys. Does not overwrite
 
         Parameters:
@@ -335,12 +357,9 @@ class Komer(KomerBase):
             result (bool): True If successful, False otherwise, such as key
                               already in database.
         """
-        return (self.db.putVal(db=self.sdb,
-                               key=self._tokey(keys),
-                               val=self._ser(val)))
+        return self.db.putVal(db=self.sdb, key=self._tokey(keys), val=self._ser(val))
 
-
-    def pin(self, keys: str|bytes|memoryview|Iterable, val: dataclass):
+    def pin(self, keys: str | bytes | memoryview | Iterable, val: dataclass):
         """Pins (sets) val at key made from keys. Overwrites.
 
         Parameters:
@@ -351,11 +370,9 @@ class Komer(KomerBase):
         Returns:
             result (bool): True If successful. False otherwise.
         """
-        return (self.db.setVal(db=self.sdb,
-                               key=self._tokey(keys),
-                               val=self._ser(val)))
+        return self.db.setVal(db=self.sdb, key=self._tokey(keys), val=self._ser(val))
 
-    def get(self, keys: str|bytes|memoryview|Iterable):
+    def get(self, keys: str | bytes | memoryview | Iterable):
         """Gets val at keys
 
         Parameters:
@@ -363,19 +380,17 @@ class Komer(KomerBase):
                 in order to form key
 
         Returns:
-            val (dataclass):
-            None if no entry at keys
+            val (dataclass | None): value at keys, or None if no entry exists
 
-        Usage:
-            Use walrus operator to catch and raise missing entry
+        Usage::
+
             if (val := mydb.get(keys)) is None:
                 raise ExceptionHere
-            use val here
+            # use val here
         """
-        return (self._des(self.db.getVal(db=self.sdb,
-                                  key=self._tokey(keys))))
+        return self._des(self.db.getVal(db=self.sdb, key=self._tokey(keys)))
 
-    def getDict(self, keys: str|bytes|memoryview|Iterable):
+    def getDict(self, keys: str | bytes | memoryview | Iterable):
         """Gets dictified val at keys
 
         Parameters:
@@ -383,20 +398,18 @@ class Komer(KomerBase):
                 in order to form key
 
         Returns:
-            val (dict):
-            None if no entry at keys
+            val (dict | None): value at keys as dict, or None if no entry exists
 
-        Usage:
-            Use walrus operator to catch and raise missing entry
+        Usage::
+
             if (val := mydb.get(keys)) is None:
                 raise ExceptionHere
-            use val here
+            # use val here
         """
         val = self.get(keys)
         return helping.dictify(val) if val is not None else None
 
-
-    def rem(self, keys: str|bytes|memoryview|Iterable):
+    def rem(self, keys: str | bytes | memoryview | Iterable):
         """Removes entry at keys
 
         Parameters:
@@ -406,8 +419,7 @@ class Komer(KomerBase):
         Returns:
            result (bool): True if key exists so delete successful. False otherwise
         """
-        return (self.db.remVal(db=self.sdb, key=self._tokey(keys)))
-
+        return self.db.remVal(db=self.sdb, key=self._tokey(keys))
 
     def cnt(self):
         """Count all items in db
@@ -452,12 +464,16 @@ class IoSetKomer(KomerBase):
         deserializer (types.MethodType): deserializer method
         sep (str): separator for combining keys tuple of strs into key bytes
     """
-    def __init__(self,
-             db: LMDBer, *,
-             subkey: str = 'recs.',
-             klas: type[dataclass],  # class not instance
-             kind: str | None = None,
-             **kwa):
+
+    def __init__(
+        self,
+        db: LMDBer,
+        *,
+        subkey: str = "recs.",
+        klas: type[dataclass],  # class not instance
+        kind: str | None = None,
+        **kwa,
+    ):
         """
         Parameters:
             db (LMDBer): base db
@@ -465,11 +481,11 @@ class IoSetKomer(KomerBase):
             subkey (str):  LMDB sub database key
             kind (str): serialization/deserialization type
         """
-        super(IoSetKomer, self).__init__(db=db, subkey=subkey, klas=klas,
-                                       kind=kind, dupsort=False, **kwa)
+        super(IoSetKomer, self).__init__(
+            db=db, subkey=subkey, klas=klas, kind=kind, dupsort=False, **kwa
+        )
 
-
-    def put(self, keys: str|bytes|memoryview|Iterable, vals: list):
+    def put(self, keys: str | bytes | memoryview | Iterable, vals: list):
         """Puts all vals at key made from keys. Does not overwrite. Puts all vals
         at effective key made from keys and hidden ordinal suffix.
         that are not already in set of vals at key. Does not overwrite.
@@ -486,13 +502,11 @@ class IoSetKomer(KomerBase):
 
         """
         vals = [self._ser(val) for val in vals]
-        return (self.db.putIoSetVals(db=self.sdb,
-                                     key=self._tokey(keys),
-                                     vals=vals,
-                                     sep=self.sep))
+        return self.db.putIoSetVals(
+            db=self.sdb, key=self._tokey(keys), vals=vals, sep=self.sep
+        )
 
-
-    def add(self, keys: str|bytes|memoryview|Iterable, val: dataclass):
+    def add(self, keys: str | bytes | memoryview | Iterable, val: dataclass):
         """Add val to vals at effective key made from keys and hidden ordinal suffix.
         that is not already in set of vals at key. Does not overwrite.
 
@@ -506,13 +520,11 @@ class IoSetKomer(KomerBase):
                               False means duplicte of same value already exists.
 
         """
-        return (self.db.addIoSetVal(db=self.sdb,
-                                    key=self._tokey(keys),
-                                    val=self._ser(val),
-                                    sep=self.sep))
+        return self.db.addIoSetVal(
+            db=self.sdb, key=self._tokey(keys), val=self._ser(val), sep=self.sep
+        )
 
-
-    def pin(self, keys: str|bytes|memoryview|Iterable, vals: list):
+    def pin(self, keys: str | bytes | memoryview | Iterable, vals: list):
         """Pins (sets) vals at effective key made from keys and hidden ordinal suffix.
         Overwrites. Removes all pre-existing vals that share same effective keys
         and replaces them with vals
@@ -526,13 +538,14 @@ class IoSetKomer(KomerBase):
             result (bool): True If successful, False otherwise.
 
         """
-        return (self.db.pinIoSetVals(db=self.sdb,
-                                     key=self._tokey(keys),
-                                     vals=[self._ser(val) for val in vals],
-                                     sep=self.sep))
+        return self.db.pinIoSetVals(
+            db=self.sdb,
+            key=self._tokey(keys),
+            vals=[self._ser(val) for val in vals],
+            sep=self.sep,
+        )
 
-
-    def get(self, keys: str|bytes|memoryview|Iterable):
+    def get(self, keys: str | bytes | memoryview | Iterable):
         """Gets dup vals list at key made from keys
 
         Parameters:
@@ -544,13 +557,14 @@ class IoSetKomer(KomerBase):
                           empty list if no entry at keys
 
         """
-        return [self._des(val) for key, val in
-                    self.db.getIoSetItemIter(db=self.sdb,
-                                             key=self._tokey(keys),
-                                             sep=self.sep)]
+        return [
+            self._des(val)
+            for key, val in self.db.getIoSetItemIter(
+                db=self.sdb, key=self._tokey(keys), sep=self.sep
+            )
+        ]
 
-
-    def getLast(self, keys: str|bytes|memoryview|Iterable):
+    def getLast(self, keys: str | bytes | memoryview | Iterable):
         """Gets last effective dup val at effective dup key made from keys
 
         Parameters:
@@ -567,8 +581,7 @@ class IoSetKomer(KomerBase):
             return self._des(val)
         return None
 
-
-    def getIter(self, keys: str|bytes|memoryview|Iterable):
+    def getIter(self, keys: str | bytes | memoryview | Iterable):
         """Gets vals iterator at effecive key made from keys and hidden ordinal suffix.
         All vals in set of vals that share same effecive key are retrieved in
         insertion order.
@@ -581,13 +594,12 @@ class IoSetKomer(KomerBase):
             vals (Iterator):  str values. Raises StopIteration when done
 
         """
-        for key, val in self.db.getIoSetItemIter(db=self.sdb,
-                                            key=self._tokey(keys),
-                                            sep=self.sep):
+        for key, val in self.db.getIoSetItemIter(
+            db=self.sdb, key=self._tokey(keys), sep=self.sep
+        ):
             yield self._des(val)
 
-
-    def cnt(self, keys: str|bytes|memoryview|Iterable = ""):
+    def cnt(self, keys: str | bytes | memoryview | Iterable = ""):
         """Count of effective dup values at key made from keys. If keys is empty
         then returns count of all entries in db
 
@@ -599,12 +611,9 @@ class IoSetKomer(KomerBase):
         if not keys:
             return self.db.cntAll(db=self.sdb)
 
-        return (self.db.cntIoSet(db=self.sdb,
-                                     key=self._tokey(keys),
-                                     sep=self.sep))
+        return self.db.cntIoSet(db=self.sdb, key=self._tokey(keys), sep=self.sep)
 
-
-    def rem(self, keys: str|bytes|memoryview|Iterable, val=None):
+    def rem(self, keys: str | bytes | memoryview | Iterable, val=None):
         """Removes entry at keys
 
         Parameters:
@@ -617,14 +626,16 @@ class IoSetKomer(KomerBase):
            result (bool): True if key exists so delete successful. False otherwise
 
         """
-        return self.db.remIoSetVal(db=self.sdb,
-                                   key=self._tokey(keys),
-                                   val=self._ser(val) if val is not None else val,
-                                   sep=self.sep)
+        return self.db.remIoSetVal(
+            db=self.sdb,
+            key=self._tokey(keys),
+            val=self._ser(val) if val is not None else val,
+            sep=self.sep,
+        )
 
-
-    def getTopItemIter(self, keys: str|bytes|memoryview|Iterable=b"", *,
-                             topive=False):
+    def getTopItemIter(
+        self, keys: str | bytes | memoryview | Iterable = b"", *, topive=False
+    ):
         """Get items iterator over top branch of db given by keys.
 
         Returns:
@@ -652,10 +663,11 @@ class IoSetKomer(KomerBase):
                 When last item in keys is empty str then will treat as
                 partial ending in sep regardless of top value
         """
-        for iokey, val in self.db.getTopIoSetItemIter(db=self.sdb,
-                                            top=self._tokey(keys, topive=topive),
-                                            sep=self.sep.encode()):
+        for iokey, val in self.db.getTopIoSetItemIter(
+            db=self.sdb, top=self._tokey(keys, topive=topive), sep=self.sep.encode()
+        ):
             yield (self._tokeys(iokey), self._des(val))
+
 
 class DupKomer(KomerBase):
     """Duplicate Keyspace Object Mapper factory class that supports multiple entries
@@ -664,12 +676,16 @@ class DupKomer(KomerBase):
     Do not use if Komer dataclass instance serializes to greater than 511 bytes.
     This is a limitation of dupsort==True sub dbs in LMDB
     """
-    def __init__(self,
-             db: LMDBer, *,
-             subkey: str = 'recs.',
-             klas: type[dataclass],  # class not instance
-             kind: str | None = None,
-             **kwa):
+
+    def __init__(
+        self,
+        db: LMDBer,
+        *,
+        subkey: str = "recs.",
+        klas: type[dataclass],  # class not instance
+        kind: str | None = None,
+        **kwa,
+    ):
         """
         Parameters:
             db (LMDBer): base db
@@ -677,11 +693,11 @@ class DupKomer(KomerBase):
             subkey (str):  LMDB sub database key
             kind (str): serialization/deserialization type
         """
-        super(DupKomer, self).__init__(db=db, subkey=subkey, klas=klas,
-                                       kind=kind, dupsort=True, **kwa)
+        super(DupKomer, self).__init__(
+            db=db, subkey=subkey, klas=klas, kind=kind, dupsort=True, **kwa
+        )
 
-
-    def put(self, keys: str|bytes|memoryview|Iterable, vals: list):
+    def put(self, keys: str | bytes | memoryview | Iterable, vals: list):
         """Puts all vals at key made from keys. Does not overwrite. Adds to existing
         dup values at key if any. Duplicate means another entry at the same key
         but the entry is still a unique value. Duplicates are inserted in
@@ -700,12 +716,9 @@ class DupKomer(KomerBase):
 
         """
         vals = [self._ser(val) for val in vals]
-        return (self.db.putVals(db=self.sdb,
-                                key=self._tokey(keys),
-                                vals=vals))
+        return self.db.putVals(db=self.sdb, key=self._tokey(keys), vals=vals)
 
-
-    def add(self, keys: str|bytes|memoryview|Iterable, val: dataclass):
+    def add(self, keys: str | bytes | memoryview | Iterable, val: dataclass):
         """Add val to vals at key made from keys. Does not overwrite. Adds to existing
         dup values at key if any. Duplicate means another entry at the same key
         but the entry is still a unique value. Duplicates are inserted in
@@ -722,12 +735,9 @@ class DupKomer(KomerBase):
                               False means duplicte of same value already exists.
 
         """
-        return (self.db.addVal(db=self.sdb,
-                               key=self._tokey(keys),
-                               val=self._ser(val)))
+        return self.db.addVal(db=self.sdb, key=self._tokey(keys), val=self._ser(val))
 
-
-    def pin(self, keys: str|bytes|memoryview|Iterable, vals: list):
+    def pin(self, keys: str | bytes | memoryview | Iterable, vals: list):
         """Pins (sets) vals at key made from keys. Overwrites. Removes all
         pre-existing dup vals and replaces them with vals
 
@@ -743,12 +753,9 @@ class DupKomer(KomerBase):
         key = self._tokey(keys)
         self.db.delVals(db=self.sdb, key=key)  # delete all values
         vals = [self._ser(val) for val in vals]
-        return (self.db.putVals(db=self.sdb,
-                                key=key,
-                                vals=vals))
+        return self.db.putVals(db=self.sdb, key=key, vals=vals)
 
-
-    def get(self, keys: str|bytes|memoryview|Iterable):
+    def get(self, keys: str | bytes | memoryview | Iterable):
         """Gets dup vals list at key made from keys
 
         Parameters:
@@ -760,11 +767,12 @@ class DupKomer(KomerBase):
                           empty list if no entry at keys
 
         """
-        return ([self._des(val) for val in
-                self.db.getValsIter(db=self.sdb, key=self._tokey(keys))])
+        return [
+            self._des(val)
+            for val in self.db.getValsIter(db=self.sdb, key=self._tokey(keys))
+        ]
 
-
-    def getLast(self, keys: str|bytes|memoryview|Iterable):
+    def getLast(self, keys: str | bytes | memoryview | Iterable):
         """Gets last dup val at key made from keys
 
         Parameters:
@@ -781,8 +789,7 @@ class DupKomer(KomerBase):
             val = self._des(val)
         return val
 
-
-    def getIter(self, keys: str|bytes|memoryview|Iterable):
+    def getIter(self, keys: str | bytes | memoryview | Iterable):
         """Gets dup vals iterator at key made from keys
 
         Duplicates are retrieved in lexocographic order not insertion order.
@@ -798,8 +805,7 @@ class DupKomer(KomerBase):
         for val in self.db.getValsIter(db=self.sdb, key=self._tokey(keys)):
             yield self._des(val)
 
-
-    def cnt(self, keys: str|bytes|memoryview|Iterable):
+    def cnt(self, keys: str | bytes | memoryview | Iterable):
         """Count entries (dups) at key made from keys.
 
         Returns:
@@ -809,10 +815,9 @@ class DupKomer(KomerBase):
             keys (str|bytes|memoryview|Iterable): of key strs to be combined
                 in order to form key
         """
-        return (self.db.cntVals(db=self.sdb, key=self._tokey(keys)))
+        return self.db.cntVals(db=self.sdb, key=self._tokey(keys))
 
-
-    def rem(self, keys: str|bytes|memoryview|Iterable, val=None):
+    def rem(self, keys: str | bytes | memoryview | Iterable, val=None):
         """Removes entry at key made from keys
 
         Parameters:
@@ -828,5 +833,5 @@ class DupKomer(KomerBase):
         if val is not None:
             val = self._ser(val)
         else:
-            val = b''
-        return (self.db.delVals(db=self.sdb, key=self._tokey(keys), val=val))
+            val = b""
+        return self.db.delVals(db=self.sdb, key=self._tokey(keys), val=val)

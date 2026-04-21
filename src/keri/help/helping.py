@@ -3,6 +3,7 @@
 keri.help.helping module
 
 """
+
 import base64
 import dataclasses
 import datetime
@@ -19,7 +20,7 @@ import pysodium
 # x not in TRUTHY
 # x in TRUTHY
 FALSEY = (False, 0, None, "?0", "no", "false", "False", "off")
-TRUTHY = (True, 1, "?1", "yes" "true", "True", 'on')
+TRUTHY = (True, 1, "?1", "yestrue", "True", "on")
 
 
 # Utilities
@@ -30,22 +31,25 @@ def isign(i):
         (int): 1 if i > 0, -1 if i < 0, 0 otherwise
 
     """
-    return (1 if i > 0 else -1 if i < 0 else 0)
+    return 1 if i > 0 else -1 if i < 0 else 0
 
 
 def sceil(r):
     """
     Symmetric ceiling function
-    Returns:
-       sceil (int): value that is symmetric ceiling of r away from zero
 
-    Because int() provides a symmetric floor towards zero, just inc int(r) by:
-     1 when r - int(r) >  0  (r positive)
-    -1 when r - int(r) <  0  (r negative)
-     0 when r - int(r) == 0  (r integral already)
-    abs(r) > abs(int(r) or 0 when abs(r)
+    Returns:
+        int: Value that is symmetric ceiling of r away from zero.
+
+    Because int() provides a symmetric floor towards zero, increment int(r) by::
+
+        1 when r - int(r) > 0 (r positive)
+       -1 when r - int(r) < 0 (r negative)
+        0 when r - int(r) == 0 (r integral already)
+
+    This ensures the result is a ceiling away from zero.
     """
-    return (int(r) + isign(r - int(r)))
+    return int(r) + isign(r - int(r))
 
 
 def dictify(val: dataclasses.dataclass):
@@ -99,9 +103,14 @@ def klasify(sers: Iterable, klases: Iterable, args: Iterable = None):
     if not args:
         args = ("qb64",) * len(klases)
 
-    return tuple(klas(**{arg: ser}) if arg is not None
-                 else klas(ser) if klas is not None
-                 else ser for ser, klas, arg in zip(sers, klases, args))
+    return tuple(
+        klas(**{arg: ser})
+        if arg is not None
+        else klas(ser)
+        if klas is not None
+        else ser
+        for ser, klas, arg in zip(sers, klases, args)
+    )
 
 
 class NonStringIterable(metaclass=ABCMeta):
@@ -109,10 +118,11 @@ class NonStringIterable(metaclass=ABCMeta):
     Allows isinstance check for iterable that is not a string
     if isinstance(x, NonStringIterable):
     """
+
     @classmethod
     def __subclasshook__(cls, C):
         if cls is NonStringIterable:
-            if (not issubclass(C, (str, bytes)) and issubclass(C, Iterable)):
+            if not issubclass(C, (str, bytes)) and issubclass(C, Iterable):
                 return True
         return NotImplemented
 
@@ -122,10 +132,11 @@ class NonStringSequence(metaclass=ABCMeta):
     Allows isinstance check for sequence that is not a string
     if isinstance(x, NonStringSequence):
     """
+
     @classmethod
     def __subclasshook__(cls, C):
         if cls is NonStringSequence:
-            if (not issubclass(C, (str, bytes)) and issubclass(C, Sequence)):
+            if not issubclass(C, (str, bytes)) and issubclass(C, Sequence):
                 return True
         return NotImplemented
 
@@ -141,7 +152,7 @@ def isNonStringIterable(obj):
     Faster way that is less future proof
     return (hasattr(x, '__iter__') and not isinstance(x, (str, bytes)))
     """
-    return (not isinstance(obj, (str, bytes)) and isinstance(obj, Iterable))
+    return not isinstance(obj, (str, bytes)) and isinstance(obj, Iterable)
 
 
 def isNonStringSequence(obj):
@@ -152,7 +163,7 @@ def isNonStringSequence(obj):
     for non string sequences.
 
     """
-    return (not isinstance(obj, (str, bytes)) and isinstance(obj, Sequence))
+    return not isinstance(obj, (str, bytes)) and isinstance(obj, Sequence)
 
 
 def extractElementValues(element, values):
@@ -219,7 +230,7 @@ def nowUTC():
     Returns timezone aware datetime of current UTC time
     Convenience function that allows monkeypatching in tests to mock time
     """
-    return (datetime.datetime.now(datetime.timezone.utc))
+    return datetime.datetime.now(datetime.timezone.utc)
 
 
 def nowIso8601():
@@ -233,7 +244,7 @@ def nowIso8601():
     Assumes TZ aware
     For nanosecond use instead attotime or datatime64 in pandas or numpy
     """
-    return (nowUTC().isoformat(timespec='microseconds'))
+    return nowUTC().isoformat(timespec="microseconds")
 
 
 def toIso8601(dt=None):
@@ -251,7 +262,7 @@ def toIso8601(dt=None):
     if dt is None:
         dt = nowUTC()  # make it aware
 
-    return (dt.isoformat(timespec='microseconds'))  # force include microseconds
+    return dt.isoformat(timespec="microseconds")  # force include microseconds
 
 
 def fromIso8601(dts):
@@ -267,29 +278,34 @@ def fromIso8601(dts):
     """
     if hasattr(dts, "decode"):
         dts = dts.decode("utf-8")
-    return (datetime.datetime.fromisoformat(dts))
-
+    return datetime.datetime.fromisoformat(dts)
 
 
 # Base64 utilities
-BASE64_PAD = b'='
+BASE64_PAD = b"="
 
 # Mappings between Base64 Encode Index and Decode Characters
 #  B64ChrByIdx is dict where each key is a B64 index and each value is the B64 char
 #  B64IdxByChr is dict where each key is a B64 char and each value is the B64 index
 # Map Base64 index to char
-B64ChrByIdx = dict((index, char) for index, char in enumerate([chr(x) for x in range(65, 91)]))
-B64ChrByIdx.update([(index + 26, char) for index, char in enumerate([chr(x) for x in range(97, 123)])])
-B64ChrByIdx.update([(index + 52, char) for index, char in enumerate([chr(x) for x in range(48, 58)])])
-B64ChrByIdx[62] = '-'
-B64ChrByIdx[63] = '_'
+B64ChrByIdx = dict(
+    (index, char) for index, char in enumerate([chr(x) for x in range(65, 91)])
+)
+B64ChrByIdx.update(
+    [(index + 26, char) for index, char in enumerate([chr(x) for x in range(97, 123)])]
+)
+B64ChrByIdx.update(
+    [(index + 52, char) for index, char in enumerate([chr(x) for x in range(48, 58)])]
+)
+B64ChrByIdx[62] = "-"
+B64ChrByIdx[63] = "_"
 # Map char to Base64 index
 B64IdxByChr = {char: index for index, char in B64ChrByIdx.items()}
 # tuple
 B64_CHARS = tuple(B64ChrByIdx.values())  # tuple of characters in Base64
 
 
-B64REX = rb'^[0-9A-Za-z_-]*\Z'   # [A-Za-z0-9\-\_]  bytes MAY be empty string
+B64REX = rb"^[0-9A-Za-z_-]*\Z"  # [A-Za-z0-9\-\_]  bytes MAY be empty string
 Reb64 = re.compile(B64REX)  # compile is faster
 # Usage: if Reb64.match(bext): or if not Reb64.match(bext): bext is bytes
 
@@ -308,7 +324,7 @@ def intToB64(i, l=1):
             break
     for j in range(l - len(d)):  # range(x)  x <= 0 means do not iterate
         d.appendleft("A")
-    return ("".join(d))
+    return "".join(d)
 
 
 def intToB64b(i, l=1):
@@ -316,7 +332,7 @@ def intToB64b(i, l=1):
     Returns conversion of int i to Base64 bytes
     l is min number of b64 digits left padded with Base64 0 == "A" char
     """
-    return (intToB64(i=i, l=l).encode("utf-8"))
+    return intToB64(i=i, l=l).encode("utf-8")
 
 
 def b64ToInt(s):
@@ -325,13 +341,12 @@ def b64ToInt(s):
     """
     if not s:
         raise ValueError("Empty string, conversion undefined.")
-    if hasattr(s, 'decode'):
+    if hasattr(s, "decode"):
         s = s.decode("utf-8")
     i = 0
     for e, c in enumerate(reversed(s)):
         i |= B64IdxByChr[c] << (e * 6)  # same as i += B64IdxByChr[c] * (64 ** e)
     return i
-
 
 
 def codeB64ToB2(s):
@@ -356,7 +371,7 @@ def codeB64ToB2(s):
     i = b64ToInt(s)
     i <<= 2 * (len(s) % 4)  # add 2 bits right zero padding for each sextet
     n = sceil(len(s) * 3 / 4)  # compute min number of ocetets to hold all sextets
-    return (i.to_bytes(n, 'big'))
+    return i.to_bytes(n, "big")
 
 
 def codeB2ToB64(b, l):
@@ -376,20 +391,21 @@ def codeB2ToB64(b, l):
         b (bytes | str): target from which to nab sextets
         l (int): number of sextets to convert from front of b
     """
-    if hasattr(b, 'encode'):
+    if hasattr(b, "encode"):
         b = b.encode("utf-8")  # convert to bytes
     n = sceil(l * 3 / 4)  # number of bytes needed for l sextets
     if n > len(b):
         raise ValueError("Not enough bytes in {} to nab {} sextets.".format(b, l))
-    i = int.from_bytes(b[:n], 'big')  # convert only first n bytes to int
+    i = int.from_bytes(b[:n], "big")  # convert only first n bytes to int
     # check if prepad bits are zero
     tbs = 2 * (l % 4)  # trailing bit size in bits
     i >>= tbs  # right shift out trailing bits to make right aligned
-    return (intToB64(i, l))  # return as B64
+    return intToB64(i, l)  # return as B64
 
 
 def nabSextets(b, l):
     """Nab l sextets from front of b
+
     Returns:
         sextets (bytes): first l sextets from front (left) of b as bytes
         (byte string). Length of bytes returned is minimum sufficient to hold
@@ -401,16 +417,16 @@ def nabSextets(b, l):
         l (int): number of sextets to nab from front of b
 
     """
-    if hasattr(b, 'encode'):
+    if hasattr(b, "encode"):
         b = b.encode()  # convert to bytes
     n = sceil(l * 3 / 4)  # number of bytes needed for l sextets
     if n > len(b):
         raise ValueError("Not enough bytes in {} to nab {} sextets.".format(b, l))
-    i = int.from_bytes(b[:n], 'big')
+    i = int.from_bytes(b[:n], "big")
     p = 2 * (l % 4)
     i >>= p  # strip of last bits
     i <<= p  # pad with empty bits
-    return (i.to_bytes(n, 'big'))
+    return i.to_bytes(n, "big")
 
 
 def keyToKey64u(key):
@@ -439,7 +455,7 @@ def verifyEd25519(sig, msg, vk):
         result = pysodium.crypto_sign_verify_detached(sig, msg, vk)
     except Exception as ex:
         return False
-    return (True if result else False)
+    return True if result else False
 
 
 def verify64uEd25519(signature, message, verkey):
@@ -454,18 +470,17 @@ def verify64uEd25519(signature, message, verkey):
     sig = key64uToKey(signature)
     vk = key64uToKey(verkey)
     msg = message.encode("utf-8")
-    return (verifyEd25519(sig, msg, vk))
+    return verifyEd25519(sig, msg, vk)
 
 
 # Regular expression to detect valid attributish names as bytes
-ATREX = rb'^[a-zA-Z_][a-zA-Z0-9_]*$'  # bytes MUST NOT be empty string
+ATREX = rb"^[a-zA-Z_][a-zA-Z0-9_]*$"  # bytes MUST NOT be empty string
 # Usage: if Reat.match(name): or if not Reat.match(name):
 Reatt = re.compile(ATREX)  # compile is faster
 
 
 # Regular expression to detect Base64 path parts as bytes excluding b'-' in part
 # because '-' is path separator when in B64
-PATHREX = rb'^[a-zA-Z0-9_]*$'  # bytes May be empty string
+PATHREX = rb"^[a-zA-Z0-9_]*$"  # bytes May be empty string
 # Usage: if Reat.match(name): or if not Reat.match(name):
 Repath = re.compile(PATHREX)  # compile is faster
-
