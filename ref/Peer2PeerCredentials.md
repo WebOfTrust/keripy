@@ -266,7 +266,7 @@ KERI Message: `exn` for peer to peer exchanges.
 
 ### Verifiable Credential with CESR Proof Format
 
-```json=
+```text
 {
    "x": "EZllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
    "d": {

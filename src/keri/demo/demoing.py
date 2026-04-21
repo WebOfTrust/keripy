@@ -17,8 +17,9 @@ from ..app import habbing, directing
 logger = help.ogler.getLogger()
 
 
-def setupDemoController(secrecies, name="who", remotePort=5621, localPort=5620,
-                        indirect=False, remotePre=""):
+def setupDemoController(
+    secrecies, name="who", remotePort=5621, localPort=5620, indirect=False, remotePre=""
+):
     """
     Setup and return doers list to run controller
     """
@@ -32,20 +33,21 @@ def setupDemoController(secrecies, name="who", remotePort=5621, localPort=5620,
 
     # setup wirelog to create test vectors
     path = os.path.dirname(__file__)
-    path = os.path.join(path, 'logs')
+    path = os.path.join(path, "logs")
 
-    wl = wiring.WireLog(samed=True, filed=True, name=name, prefix='demo', reopen=True,
-                        headDirPath=path)
+    wl = wiring.WireLog(
+        samed=True, filed=True, name=name, prefix="demo", reopen=True, headDirPath=path
+    )
     wireDoer = wiring.WireLogDoer(wl=wl)
 
-    client = clienting.Client(host='127.0.0.1', port=remotePort, wl=wl)
+    client = clienting.Client(host="127.0.0.1", port=remotePort, wl=wl)
     clientDoer = clienting.ClientDoer(client=client)
 
-    if name == 'bob':
+    if name == "bob":
         director = BobDirector(hab=hab, client=client, tock=0.125)
     elif name == "sam":
         director = SamDirector(hab=hab, client=client, tock=0.125)
-    elif name == 'eve':
+    elif name == "eve":
         director = EveDirector(hab=hab, client=client, tock=0.125)
     else:
         raise ValueError("Invalid director name={}.".format(name))
@@ -57,8 +59,13 @@ def setupDemoController(secrecies, name="who", remotePort=5621, localPort=5620,
     directant = directing.Directant(hab=hab, server=server)
     # Reactants created on demand by directant
 
-    logger.info("\nDirect Mode demo of %s:\nNamed %s on TCP port %s to port %s.\n\n",
-                hab.pre, hab.name, localPort, remotePort)
+    logger.info(
+        "\nDirect Mode demo of %s:\nNamed %s on TCP port %s to port %s.\n\n",
+        hab.pre,
+        hab.name,
+        localPort,
+        remotePort,
+    )
 
     return [hbyDoer, wireDoer, clientDoer, director, reactor, serverDoer, directant]
 
@@ -73,6 +80,7 @@ class BobDirector(directing.Director):
         .client is TCP client instance. Assumes operated by another doer.
 
     Attributes:
+        None.
 
     Inherited Properties:
         .tyme is float relative cycle time of associated Tymist .tyme obtained
@@ -84,17 +92,20 @@ class BobDirector(directing.Director):
                  non negative, zero means run asap
 
     Properties:
+        None.
 
     Inherited Methods:
         .__call__ makes instance callable return generator
         .do is generator function returns generator
 
     Methods:
+        None.
 
     Hidden:
-       ._tymth is injected function wrapper closure returned by .tymen() of
-            associated Tymist instance that returns Tymist .tyme. when called.
-       ._tock is hidden attribute for .tock property
+                - ._tymth is injected function wrapper closure returned by .tymen() of
+                    associated Tymist instance that returns Tymist .tyme. when called.
+                - ._tock is hidden attribute for .tock property
+
     """
 
     def do(self, tymth=None, tock=0.0, **opts):
@@ -109,26 +120,30 @@ class BobDirector(directing.Director):
             # tyme = self.tyme
 
             # recur context
-            tyme = (yield (self.tock))  # yields tock then waits for next send
+            tyme = yield (self.tock)  # yields tock then waits for next send
 
-            logger.info("%s:\nWaiting for connection to remote  %s.\n\n", self.hab.pre, self.client.ha)
-            while (not self.client.connected):
-                tyme = (yield (self.tock))
+            logger.info(
+                "%s:\nWaiting for connection to remote  %s.\n\n",
+                self.hab.pre,
+                self.client.ha,
+            )
+            while not self.client.connected:
+                tyme = yield (self.tock)
 
             logger.info("%s:\nConnected to %s.\n\n", self.hab.pre, self.client.ha)
 
             self.sendOwnInception()  # Inception Event
-            tyme = (yield (self.tock))
+            tyme = yield (self.tock)
 
             msg = self.hab.rotate()  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            tyme = (yield (self.tock))
+            tyme = yield (self.tock)
 
             msg = self.hab.interact()  # Interaction event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            tyme = (yield (self.tock))
+            tyme = yield (self.tock)
 
             # create a bunch of out of order messages to test out of order escrow
             msgs = []
@@ -149,9 +164,9 @@ class BobDirector(directing.Director):
             for msg in msgs:
                 self.client.tx(msg)  # send to connected remote
                 logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-                tyme = (yield (self.tock))
+                tyme = yield (self.tock)
 
-            tyme = (yield (self.tock))
+            tyme = yield (self.tock)
 
         except GeneratorExit:  # close context, forced exit due to .close
             pass
@@ -175,6 +190,7 @@ class SamDirector(directing.Director):
         .client is TCP client instance. Assumes operated by another doer.
 
     Attributes:
+        None.
 
     Inherited Properties:
         .tyme is float relative cycle time of associated Tymist .tyme obtained
@@ -186,17 +202,20 @@ class SamDirector(directing.Director):
                  non negative, zero means run asap
 
     Properties:
+        None.
 
     Inherited Methods:
         .__call__ makes instance callable return generator
         .do is generator function returns generator
 
     Methods:
+        None.
 
     Hidden:
-       ._tymth is injected function wrapper closure returned by .tymen() of
-            associated Tymist instance that returns Tymist .tyme. when called.
-       ._tock is hidden attribute for .tock property
+                - ._tymth is injected function wrapper closure returned by .tymen() of
+                    associated Tymist instance that returns Tymist .tyme. when called.
+                - ._tock is hidden attribute for .tock property
+
     """
 
     def do(self, tymth=None, tock=0.0, **opts):
@@ -211,72 +230,75 @@ class SamDirector(directing.Director):
             # tyme = self.tyme
 
             # recur context
-            tyme = (yield (self.tock))  # yields tock then waits
+            tyme = yield (self.tock)  # yields tock then waits
 
-            while (not self.client.connected):
-                logger.info("%s:\n waiting for connection to remote %s.\n\n",
-                            self.hab.pre, self.client.ha)
-                tyme = (yield (self.tock))
+            while not self.client.connected:
+                logger.info(
+                    "%s:\n waiting for connection to remote %s.\n\n",
+                    self.hab.pre,
+                    self.client.ha,
+                )
+                tyme = yield (self.tock)
 
             logger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
 
             self.sendOwnInception()  # Inception Event
-            tyme = (yield (self.tock))
+            tyme = yield (self.tock)
 
             msg = self.hab.interact()  # Interaction Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            tyme = (yield (self.tock))
+            tyme = yield (self.tock)
 
             msg = self.hab.rotate()  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            tyme = (yield (self.tock))
+            tyme = yield (self.tock)
 
             msg = self.hab.rotate()  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            tyme = (yield (self.tock))
+            tyme = yield (self.tock)
 
             msg = self.hab.rotate()  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            tyme = (yield (self.tock))
+            tyme = yield (self.tock)
 
             msg = self.hab.rotate()  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            tyme = (yield (self.tock))
+            tyme = yield (self.tock)
 
             msg = self.hab.rotate()  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            tyme = (yield (self.tock))
+            tyme = yield (self.tock)
 
             msg = self.hab.rotate()  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            tyme = (yield (self.tock))
+            tyme = yield (self.tock)
 
             msg = self.hab.interact()  # Interaction Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            tyme = (yield (self.tock))
+            tyme = yield (self.tock)
 
             msg = self.hab.rotate()  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            tyme = (yield (self.tock))
+            tyme = yield (self.tock)
 
             msg = self.hab.rotate()  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            tyme = (yield (self.tock))
+            tyme = yield (self.tock)
 
             msg = self.hab.rotate()  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            tyme = (yield (self.tock))
+            tyme = yield (self.tock)
 
         except GeneratorExit:  # close context, forced exit due to .close
             pass
@@ -300,6 +322,7 @@ class CamDirector(directing.Director):
         .client is TCP client instance. Assumes operated by another doer.
 
     Attributes:
+        None.
 
     Inherited Properties:
         .tyme is float relative cycle time of associated Tymist .tyme obtained
@@ -311,17 +334,20 @@ class CamDirector(directing.Director):
                  non negative, zero means run asap
 
     Properties:
+        None.
 
     Inherited Methods:
         .__call__ makes instance callable return generator
         .do is generator function returns generator
 
     Methods:
+        None.
 
     Hidden:
-       ._tymth is injected function wrapper closure returned by .tymen() of
-            associated Tymist instance that returns Tymist .tyme. when called.
-       ._tock is hidden attribute for .tock property
+                - ._tymth is injected function wrapper closure returned by .tymen() of
+                    associated Tymist instance that returns Tymist .tyme. when called.
+                - ._tock is hidden attribute for .tock property
+
     """
 
     def __init__(self, remotePre, hab, client, **kwa):
@@ -340,21 +366,24 @@ class CamDirector(directing.Director):
             # tyme = self.tyme
 
             # recur context
-            tyme = (yield (self.tock))  # yields tock then waits
+            tyme = yield (self.tock)  # yields tock then waits
 
-            while (not self.client.connected):
-                logger.info("%s:\n waiting for connection to remote %s.\n\n",
-                            self.hab.pre, self.client.ha)
-                tyme = (yield (self.tock))
+            while not self.client.connected:
+                logger.info(
+                    "%s:\n waiting for connection to remote %s.\n\n",
+                    self.hab.pre,
+                    self.client.ha,
+                )
+                tyme = yield (self.tock)
 
             logger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
 
-            msg = self.hab.query(self.remotePre, src=self.remotePre, route="logs")  # Query for remote pre Event
+            msg = self.hab.query(
+                self.remotePre, src=self.remotePre, route="logs"
+            )  # Query for remote pre Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
-            tyme = (yield (self.tock))
-
-
+            tyme = yield (self.tock)
 
         except GeneratorExit:  # close context, forced exit due to .close
             pass
@@ -378,6 +407,7 @@ class EveDirector(directing.Director):
         .client is TCP client instance. Assumes operated by another doer.
 
     Attributes:
+        None.
 
     Inherited Properties:
         .tyme is float relative cycle time of associated Tymist .tyme obtained
@@ -389,17 +419,20 @@ class EveDirector(directing.Director):
                  non negative, zero means run asap
 
     Properties:
+        None.
 
     Inherited Methods:
         .__call__ makes instance callable return generator
         .do is generator function returns generator
 
     Methods:
+        None.
 
     Hidden:
-       ._tymth is injected function wrapper closure returned by .tymen() of
-            associated Tymist instance that returns Tymist .tyme. when called.
-       ._tock is hidden attribute for .tock property
+                - ._tymth is injected function wrapper closure returned by .tymen() of
+                    associated Tymist instance that returns Tymist .tyme. when called.
+                - ._tock is hidden attribute for .tock property
+
     """
 
     def do(self, tymth=None, tock=0.0, **opts):
@@ -414,15 +447,18 @@ class EveDirector(directing.Director):
             # tyme = self.tyme
 
             # recur context after first yield
-            tyme = (yield (tock))
+            tyme = yield (tock)
 
-            while (not self.client.connected):
-                logger.info("%s:\n waiting for connection to remote %s.\n\n",
-                            self.hab.pre, self.client.ha)
-                tyme = (yield (self.tock))
+            while not self.client.connected:
+                logger.info(
+                    "%s:\n waiting for connection to remote %s.\n\n",
+                    self.hab.pre,
+                    self.client.ha,
+                )
+                tyme = yield (self.tock)
 
             logger.info("%s:\n connected to %s.\n\n", self.hab.pre, self.client.ha)
-            tyme = (yield (self.tock))
+            tyme = yield (self.tock)
 
         except GeneratorExit:  # close context, forced exit due to .close
             pass

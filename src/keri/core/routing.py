@@ -176,8 +176,11 @@ class Revery:
         Latest-Seen-Signed Pairwise comparison of new update reply compared to
         old already accepted reply from same source for same route (same data).
         Accept new reply (update) if new reply is later than old reply where:
+
             1) Later means date-time-stamp of new is greater than old
+
         If non-trans signer then also (AND)
+
             2) Later means sn (sequence number) of last (if forked) Est evt that
                provides keys for signature(s) of new is greater than or equal to
                sn of last Est evt that provides keys for signature(s) of new.
@@ -222,10 +225,11 @@ class Revery:
         Latest-Seen-Signed Pairwise comparison of new update reply compared to
         old already accepted reply from same source for same route (same data).
         Accept new reply (update) if new reply is later than old reply where:
+
             1) If transferable: Later is True
                  A) If sn (sequence number) of last (if forked) Est evt that provides
-                 keys for signature(s) of new is greater than sn of last Est evt
-                 that provides keys for signature(s) of old.
+                    keys for signature(s) of new is greater than sn of last Est evt
+                    that provides keys for signature(s) of old.
 
                  Or
 
