@@ -561,12 +561,12 @@ class Baser(LMDBer):
 
         .epath is named subDB instance of IoSetSuber for exchange message
             pathed attachments.
-            subkey '.epath'
+            subkey 'epath.'
             Multiple values per key.
 
         .essrs is named subDB instance of CesrIoSetSuber (klas=Texter) for
             exchange message event source records.
-            subkey '.essrs'
+            subkey 'essrs.'
             Multiple values per key.
 
         .chas is named subDB instance of CesrIoSetSuber (klas=Diger) for
@@ -1075,9 +1075,9 @@ class Baser(LMDBer):
 
         # exchange pathed attachments
         # TODO: clean
-        self.epath = subing.IoSetSuber(db=self, subkey=".epath")
+        self.epath = subing.IoSetSuber(db=self, subkey="epath.")
 
-        self.essrs = subing.CesrIoSetSuber(db=self, subkey=".essrs", klas=coring.Texter)
+        self.essrs = subing.CesrIoSetSuber(db=self, subkey="essrs.", klas=coring.Texter)
 
         # accepted signed 12-word challenge response exn messages keys by prefix of signer
         # TODO: clean
