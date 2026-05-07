@@ -340,11 +340,161 @@ def test_blake3():
 
     digestbig = blake3.blake3(verkey).digest(length=64)
     assert len(digestbig) == 64
-    assert digestbig[:32] == digest
+    assert digestbig[:32] == digest  # first 32 bytes of big same as little
 
-    digestbig = blake3.blake3(verkey).digest(length=64)
-    assert len(digestbig) == 64
-    assert digestbig[:32] == digest
+    """
+    Done Test
+    """
+
+def test_blake3_modes():
+    """ Test different blake3 modes
+    https://github.com/BLAKE3-team/BLAKE3/
+
+    """
+    from blake3 import blake3 as blake
+
+    # create keypair without seed
+    verkey,  sigkey = pysodium.crypto_sign_keypair()
+    assert len(verkey) == 32 == pysodium.crypto_sign_PUBLICKEYBYTES
+    assert len(sigkey) == 64 == pysodium.crypto_sign_SECRETKEYBYTES
+
+    verkey = b'Z\x80s\x81\xd3\xf4\xaa\x94\x80\x86\x9bH\x8ay\xc2\xf9\x89k_\x946\xf1_`\x8c\xa9\xd8\xd2b\xe4\x00\x08'
+    assert verkey.hex() == '5a807381d3f4aa9480869b488a79c2f9896b5f9436f15f608ca9d8d262e40008'
+
+    #  digest of publickey
+    dig = blake(verkey).digest()
+    assert len(dig) == 32
+    assert dig == b'\xb4\xaf\xd5,G\x97\xaf\x06\xda\xbbTNs\xcbM4\xa81\xb8\xcd\xc60\xc7c"\xe2B\xe5_\x96\xcb\x95'
+    assert dig.hex() == 'b4afd52c4797af06dabb544e73cb4d34a831b8cdc630c76322e242e55f96cb95'
+
+    digbig = blake(verkey).digest(length=64)
+    assert len(digbig) == 64
+    assert digbig[:32] == dig   # first 32 bytes of big same as little
+
+    msgb = b"abcdefghijklmnopqrstuvwxyz012345"
+    assert len(msgb) == 32
+    msgdig = blake(msgb).digest()
+    assert msgdig == (b"5^_\xd6%\xa9\xcd\\'\xb3\x12\xb3\xc4 \x8d\x026\xedm2Vk\xd5\xa0d%\x99\xc1"
+                      b'\xc8\x99d\x06')
+    assert msgdig.hex() == '355e5fd625a9cd5c27b312b3c4208d0236ed6d32566bd5a0642599c1c8996406'
+
+    #prefixed message as hmac like mode
+    vermsg = verkey + msgb
+    assert len(vermsg) == 64
+    vmdig = blake(vermsg).digest()
+    assert len(vmdig) == 32
+    assert vmdig == (b'\x9e\x9dD\x1d\xa1^\x0c)/\x14\x95\x91B);\xbf:\xdfF\xd5u\xf1%\xca\xe3\x8fw]'
+                     b'N\xdcIm')
+    assert vmdig.hex() == '9e9d441da15e0c292f14959142293bbf3adf46d575f125cae38f775d4edc496d'
+
+    assert vmdig != msgdig
+
+    # hmac key mode. Key loads state to key instead of default more difficult
+    # to attack when using for HMAC
+    keydig = blake(msgb, key=verkey).digest()
+    assert keydig == (b'\xd4zf\x89js\x8a\xfd\x9b\xd7\xfb\xc2\xcf\xad\x10\xc0\xe9Q\x96\xb5'
+                      b'\xad\xb6\xfb\xbc\xdc\xdf\xb3@q\xc8p\xa6')
+    assert keydig.hex() == 'd47a66896a738afd9bd7fbc2cfad10c0e95196b5adb6fbbcdcdfb34071c870a6'
+
+    assert keydig != vmdig
+    assert keydig != msgdig
+
+    # HDKeychain mode,  uses context as hdkey path and and data as salt
+    context = '0_0'
+    hierdig = blake(verkey, derive_key_context=context).digest()
+    assert hierdig == (b'XU\xe7\\\x96\x12\xe2\xaej.q\x199Ok\xd2W\xdf\xfb\x03\xc5w\x07M.\x9d\xefX'
+                       b'&\xce?\xb4')
+    assert hierdig.hex() == '5855e75c9612e2ae6a2e7119394f6bd257dffb03c577074d2e9def5826ce3fb4'
+
+    emptydig = blake(b'').digest()
+    assert emptydig == (b'\xaf\x13I\xb9\xf5\xf9\xa1\xa6\xa0@M\xea6\xdc\xc9I\x9b\xcb%\xc9'
+                        b'\xad\xc1\x12\xb7\xcc\x9a\x93\xca\xe4\x1f2b')
+    assert emptydig.hex() == 'af1349b9f5f9a1a6a0404dea36dcc9499bcb25c9adc112b7cc9a93cae41f3262'
+
+    zerosb = bytes([0]) *32
+    assert zerosb.hex() == '0000000000000000000000000000000000000000000000000000000000000000'
+
+    zerodig = blake(zerosb).digest()
+    assert zerodig == (b'*\xda\x83\xc1\x81\x9aSr\xda\xe1#\x8f\xc1\xde\xd1#\xc8\x10O\xda\xa1Xb\xaa'
+                       b'\xeeiB\x8a\x18 \xfc\xda')
+    assert zerodig.hex() ==  '2ada83c1819a5372dae1238fc1ded123c8104fdaa15862aaee69428a1820fcda'
+
+    onesb = bytes([255]) *32
+    assert onesb == (b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff'
+                   b'\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff\xff')
+    assert onesb.hex() == 'ffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff'
+
+    onedig = blake(onesb).digest()
+    assert onedig == (b'\x9b4\xf0`\xfb\xc0\xf0\xaa\x11\xf1P\xe2e\x19\xde\xffa2w\xb6\x06V\xf0\xf8'
+                      b'5n\xd2&\x15\x05\xf5\xc5')
+    assert onedig.hex() == '9b34f060fbc0f0aa11f150e26519deff613277b60656f0f8356ed2261505f5c5'
+
+
+    # bitwise operations
+
+    zero = int.from_bytes(zerosb)
+    assert zero == 0
+
+    ones = int.from_bytes(onesb)
+    assert ones == 115792089237316195423570985008687907853269984665640564039457584007913129639935
+    assert ones ==  0xffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffffff
+
+    # xor  ^
+    assert ones ^ zero == ones
+    assert ones ^ ones == zero
+    assert zero ^ zero == zero
+
+    vkint = int.from_bytes(verkey)
+    assert vkint == 40935109997770152556746109449840531881192132167145235300759205962933009121288
+    assert vkint == 0x5a807381d3f4aa9480869b488a79c2f9896b5f9436f15f608ca9d8d262e40008
+
+    assert vkint ^ zero == vkint
+    assert vkint ^ vkint == zero
+    # ~vkint is in signed twos complement, must use zeroed sign bit or byte
+    nvk = vkint ^ ones
+    assert nvk ^ vkint == ones
+
+    assert vkint & nvk == zero
+    assert vkint & ones == vkint
+    assert vkint & zero == zero
+    assert vkint & vkint == vkint
+
+    # test blinding with xor
+    msgint = int.from_bytes(msgb)
+    assert msgint == 44048183304486788312148433451363384677562265908331949128489393197024686584885
+
+    blind = msgint ^ vkint
+    assert blind == 0x3be210e5b692cdfce9ecf024e717ad89f8192ce043872818f5d3e8e350d7343d
+
+    assert msgint ^ blind == vkint
+    assert vkint ^ blind == msgint
+
+    # test if H[a ^ b] = H[a] ^ H[b]
+    vorm = vkint ^ msgint
+    vormb = vorm.to_bytes(32)
+    vormdig = blake(vormb).digest()
+    assert vormdig.hex() == '28f555eb72a91cf495602f3d9f76110eee46a40d4b4dd49aa1245f50c1d37d06'
+
+    digint = int.from_bytes(dig) # verkey
+    msgdigint = int.from_bytes(msgdig)
+
+    hvorhm = digint ^ msgdigint
+    hvorhmdig = hvorhm.to_bytes(32)
+    assert hvorhmdig.hex() == '81f18afa623e625afd0846fdb7ebc0369edcd5ff905b12c346c7db24970faf93'
+
+    assert vormdig != hvorhmdig  # so blake3 hash does not commute with xor
+
+    # test extension with zeros
+    vkext = verkey + zerosb
+    vkextdig = blake(vkext).digest()
+    assert vkextdig.hex() == '0782639d57d1b01bdb4c4ab6d6c92636f45894f8ee430786eb0d8b9a0021a75c'
+    # verkey '5a807381d3f4aa9480869b488a79c2f9896b5f9436f15f608ca9d8d262e40008'
+    # dig 'b4afd52c4797af06dabb544e73cb4d34a831b8cdc630c76322e242e55f96cb95'
+
+    # keyed mode extended with zeros
+    vkext2dig = blake(zerosb, key=verkey).digest()
+    assert vkext2dig.hex() == 'b34cfdde740c0e750ebec7d3f43389c184e803b7f355087a5bcef4f2ad96aa1b'
+
 
     """
     Done Test
@@ -473,7 +623,7 @@ def test_sha3():
 
 def test_secp256r1():
     """
-    test secp256r1 
+    test secp256r1
 
     https://cryptography.io/en/latest/hazmat/primitives/asymmetric/ec/
     """
@@ -482,11 +632,11 @@ def test_secp256r1():
     private_key = ec.generate_private_key(ec.SECP256R1())
     assert isinstance(private_key.curve, ec.SECP256R1)
     assert private_key.key_size == 256     # for the secp256r1 curve, the private key is 256-bit integer (32 bytes)
-    
+
     public_key = private_key.public_key()
     assert isinstance(public_key.curve, ec.SECP256R1)
     assert public_key.key_size == 256
-    
+
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
     signature = private_key.sign(ser, ec.ECDSA(hashes.SHA256()))
     try:
@@ -511,17 +661,17 @@ def test_secp256r1():
     sig = bytearray(r.to_bytes(32, "big"))
     sig.extend(s.to_bytes(32, "big"))
 
-    # encode signature to encoded Ecdsa-Sig-Value from raw r and s values 
+    # encode signature to encoded Ecdsa-Sig-Value from raw r and s values
     # https://cryptography.io/en/latest/hazmat/primitives/asymmetric/utils/#cryptography.hazmat.primitives.asymmetric.utils.encode_dss_signature
     r = int.from_bytes(sig[:32], "big")
     s = int.from_bytes(sig[32:], "big")
     der = utils.encode_dss_signature(r, s)
-    #  verify der    
+    #  verify der
     try:
         public_key.verify(der, ser, ec.ECDSA(hashes.SHA256()))
     except Exception as exc:
         assert False, f"signature verification, raised an exception {exc}"
-    
+
     with pytest.raises(exceptions.InvalidSignature):
         public_key.verify(b'XYZ', ser, ec.ECDSA(hashes.SHA256()))
 
@@ -532,7 +682,7 @@ def test_secp256r1():
 
 def test_secp256k1():
     """
-    test secp256k1 
+    test secp256k1
 
     https://cryptography.io/en/latest/hazmat/primitives/asymmetric/ec/
     """
@@ -541,11 +691,11 @@ def test_secp256k1():
     private_key = ec.generate_private_key(ec.SECP256K1())
     assert isinstance(private_key.curve, ec.SECP256K1)
     assert private_key.key_size == 256     # for the secp256k1 curve, the private key is 256-bit integer (32 bytes)
-    
+
     public_key = private_key.public_key()
     assert isinstance(public_key.curve, ec.SECP256K1)
     assert public_key.key_size == 256
-    
+
     ser = b'abcdefghijklmnopqrstuvwxyz0123456789'
     signature = private_key.sign(ser, ec.ECDSA(hashes.SHA256()))
     try:
@@ -570,17 +720,17 @@ def test_secp256k1():
     sig = bytearray(r.to_bytes(32, "big"))
     sig.extend(s.to_bytes(32, "big"))
 
-    # encode signature to encoded Ecdsa-Sig-Value from raw r and s values 
+    # encode signature to encoded Ecdsa-Sig-Value from raw r and s values
     # https://cryptography.io/en/latest/hazmat/primitives/asymmetric/utils/#cryptography.hazmat.primitives.asymmetric.utils.encode_dss_signature
     r = int.from_bytes(sig[:32], "big")
     s = int.from_bytes(sig[32:], "big")
     der = utils.encode_dss_signature(r, s)
-    #  verify der    
+    #  verify der
     try:
         public_key.verify(der, ser, ec.ECDSA(hashes.SHA256()))
     except Exception as exc:
         assert False, f"signature verification, raised an exception {exc}"
-    
+
     with pytest.raises(exceptions.InvalidSignature):
         public_key.verify(b'XYZ', ser, ec.ECDSA(hashes.SHA256()))
 
@@ -591,4 +741,6 @@ def test_secp256k1():
 
 
 if __name__ == "__main__":
+    test_pysodium()
     test_blake3()
+    test_blake3_modes()
