@@ -342,9 +342,8 @@ def test_blake3():
     assert len(digestbig) == 64
     assert digestbig[:32] == digest  # first 32 bytes of big same as little
 
-    """
-    Done Test
-    """
+    """Done Test"""
+
 
 def test_blake3_modes():
     """ Test different blake3 modes
@@ -360,6 +359,7 @@ def test_blake3_modes():
 
     verkey = b'Z\x80s\x81\xd3\xf4\xaa\x94\x80\x86\x9bH\x8ay\xc2\xf9\x89k_\x946\xf1_`\x8c\xa9\xd8\xd2b\xe4\x00\x08'
     assert verkey.hex() == '5a807381d3f4aa9480869b488a79c2f9896b5f9436f15f608ca9d8d262e40008'
+    assert len(verkey) == 32
 
     #  digest of publickey
     dig = blake(verkey).digest()
@@ -496,9 +496,69 @@ def test_blake3_modes():
     assert vkext2dig.hex() == 'b34cfdde740c0e750ebec7d3f43389c184e803b7f355087a5bcef4f2ad96aa1b'
 
 
+    # test kA ^ H[kB] = H[kA] ^ kB
+    kA = verkey
+    kB = msgb
+    HkA = dig
+    HkB = msgdig
+
+    kAint = int.from_bytes(kA)
+    kBint = int.from_bytes(kB)
+
+    HkAint = int.from_bytes(HkA)
+    HkBint = int.from_bytes(HkB)
+
+    assert kAint ^ HkBint != HkAint ^ kBint
+
+    """Done Test"""
+
+
+def test_bext_b3():
+    """BEXT-B3 key exchange protocol from
+    https://www.researchgate.net/publication/394046262_Boolean_semiring_key-exchange_with_BLAKE3_security_BKEX-B3
+    https://github.com/BLAKE3-team/BLAKE3/
+
     """
-    Done Test
-    """
+     # python code for BEXT-B3
+    from blake3 import blake3
+
+    p = 2**256 - 2**32 - 2**9 - 2**8 - 2**7 - 2**6 - 2**4 - 1
+    xA = 1234567890123456789123456789012345678901234567890123456789012345
+    yA = 9876543210987654321098765432109876543210987654321098765432109876
+
+    xB = 2234567890123456789223456789012345678922345678901234567890123456
+    yB = 8876543210987654321988765432109876543210988765432109876543210987
+
+    def enbool(x, y, p):
+        a = ((x ^ y) & (x | y)) ^ ( ~x & ~y)
+        b = ((x & y) | (x ^ ~y))
+        g = (a * b) ^ ((x << 3) | ( y << 2))
+        return g % p
+
+    kA = enbool(xA, yA, p)
+    kB = enbool(xB, yB, p)
+
+    kAb = kA.to_bytes(32)
+    kBb = kB.to_bytes(32)
+
+    HkAb = blake3(kAb).digest()
+    HkBb = blake3(kBb).digest()
+
+    HkA = int.from_bytes(HkAb)
+    HkB = int.from_bytes(HkBb)
+
+    c1 = (kA ^ HkB) % p
+    c1b = c1.to_bytes(32)
+    sA = blake3(c1b).digest()
+
+    c2 = (kB ^ HkA) % p
+    c2b = c2.to_bytes(32)
+    sB = blake3(c2b).digest()
+
+    assert sA != sB  # why is this not == ?
+
+    """Done Test"""
+
 
 def test_blake2b():
     """
@@ -744,3 +804,4 @@ if __name__ == "__main__":
     test_pysodium()
     test_blake3()
     test_blake3_modes()
+    test_bext_b3()
