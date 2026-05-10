@@ -363,14 +363,14 @@ class Komer(KomerBase):
                 in order to form key
 
         Returns:
-            val (dataclass):
-            None if no entry at keys
+            val (dataclass | None): value at keys, or None if no entry at keys.
 
         Usage:
-            Use walrus operator to catch and raise missing entry
-            if (val := mydb.get(keys)) is None:
-                raise ExceptionHere
-            use val here
+            Use walrus operator to catch and raise missing entry::
+
+                if (val := mydb.get(keys)) is None:
+                    raise ExceptionHere
+                use val here
         """
         return (self._des(self.db.getVal(db=self.sdb,
                                   key=self._tokey(keys))))
@@ -383,14 +383,14 @@ class Komer(KomerBase):
                 in order to form key
 
         Returns:
-            val (dict):
-            None if no entry at keys
+            val (dict | None): dictified value at keys, or None if no entry at keys.
 
         Usage:
-            Use walrus operator to catch and raise missing entry
-            if (val := mydb.get(keys)) is None:
-                raise ExceptionHere
-            use val here
+            Use walrus operator to catch and raise missing entry::
+
+                if (val := mydb.get(keys)) is None:
+                    raise ExceptionHere
+                use val here
         """
         val = self.get(keys)
         return helping.dictify(val) if val is not None else None
