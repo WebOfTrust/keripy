@@ -1502,11 +1502,11 @@ def exchange(sender="",
 
 
 def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
-              pipelined=False):
-    """
-    Attaches indexed signatures from sigers and/or cigars and/or wigers to
+              pipelined=False, topial=True, ):
+    """Attaches indexed signatures from sigers and/or cigars and/or wigers to
     KERI message data from serder
-    Parameters:
+
+    Parameters::
         serder (SerderKERI): instance containing the event
         sigers (list): of Siger instances (optional) to create indexed signatures
         seal (Union[SealEvent, SealLast]): optional if sigers and
@@ -1521,63 +1521,87 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
         cigars (list): optional list of Cigars instances of non-transferable non indexed
             signatures from  which to form receipt couples.
             Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
-        pipelined (bool), True means prepend pipelining count code to attachemnts
-            False means to not prepend pipelining count code
+        pipelined (bool): True means prepend pipelining count code to attachemnts
+                          False means to not prepend pipelining count code
+        topial (bool): True means messagize for top level of stream.
+                            This allows bare non-native serialization with
+                            attachedment group
+                       False means messagize for non-top level
+                            This forces non-native serializion to be embedded
+                            in non-native group code
 
-    Returns: bytearray KERI event message
+    Returns::
+        msg (bytearray): KERI event with attachments if any
+
     """
     msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
-    atc = bytearray()  # attachment
 
-    if not (sigers or cigars or wigers):
-        raise ValueError("Missing attached signatures on message = {}."
-                         "".format(serder.ked))
+    if serder.pvrsn.major < 2:  # version 1 legacy
 
-    if sigers:
-        if isinstance(seal, SealEvent):
-            atc.extend(Counter(Codens.TransIdxSigGroups, count=1,
-                                    version=Vrsn_1_0).qb64b)
-            atc.extend(seal.i.encode("utf-8"))
-            atc.extend(Seqner(snh=seal.s).qb64b)
-            atc.extend(seal.d.encode("utf-8"))
 
-        elif isinstance(seal, SealLast):
-            atc.extend(Counter(Codens.TransLastIdxSigGroups, count=1,
+        atc = bytearray()  # attachment
+
+        if not (sigers or cigars or wigers):
+            raise ValueError("Missing attached signatures on message = {}."
+                             "".format(serder.ked))
+
+        if sigers:
+            if isinstance(seal, SealEvent):
+                atc.extend(Counter(Codens.TransIdxSigGroups, count=1,
+                                        version=Vrsn_1_0).qb64b)
+                atc.extend(seal.i.encode("utf-8"))
+                atc.extend(Seqner(snh=seal.s).qb64b)
+                atc.extend(seal.d.encode("utf-8"))
+
+            elif isinstance(seal, SealLast):
+                atc.extend(Counter(Codens.TransLastIdxSigGroups, count=1,
+                                   version=Vrsn_1_0).qb64b)
+                atc.extend(seal.i.encode("utf-8"))
+
+            atc.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
                                version=Vrsn_1_0).qb64b)
-            atc.extend(seal.i.encode("utf-8"))
+            for siger in sigers:
+                atc.extend(siger.qb64b)
 
-        atc.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                           version=Vrsn_1_0).qb64b)
-        for siger in sigers:
-            atc.extend(siger.qb64b)
+        if wigers:
+            atc.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
+                               version=Vrsn_1_0).qb64b)
+            for wiger in wigers:
+                if wiger.verfer and wiger.verfer.code not in NonTransDex:
+                    raise ValueError(f"Attempt to use tranferable prefix="
+                                     f"{wiger.verfer.qb64} for receipt.")
+                atc.extend(wiger.qb64b)
 
-    if wigers:
-        atc.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
-                           version=Vrsn_1_0).qb64b)
-        for wiger in wigers:
-            if wiger.verfer and wiger.verfer.code not in NonTransDex:
-                raise ValueError("Attempt to use tranferable prefix={} for "
-                                 "receipt.".format(wiger.verfer.qb64))
-            atc.extend(wiger.qb64b)
+        if cigars:
+            atc.extend(Counter(Codens.NonTransReceiptCouples, count=len(cigars),
+                               version=Vrsn_1_0).qb64b)
+            for cigar in cigars:
+                if cigar.verfer.code not in NonTransDex:
+                    raise ValueError(f"Attempt to use tranferable prefix="
+                                     f"{cigar.verfer.qb64} for receipt.")
+                atc.extend(cigar.verfer.qb64b)
+                atc.extend(cigar.qb64b)
 
-    if cigars:
-        atc.extend(Counter(Codens.NonTransReceiptCouples, count=len(cigars),
-                           version=Vrsn_1_0).qb64b)
-        for cigar in cigars:
-            if cigar.verfer.code not in NonTransDex:
-                raise ValueError("Attempt to use tranferable prefix={} for "
-                                 "receipt.".format(cigar.verfer.qb64))
-            atc.extend(cigar.verfer.qb64b)
-            atc.extend(cigar.qb64b)
-
-    if pipelined:
         if len(atc) % 4:
-            raise ValueError("Invalid attachments size={}, nonintegral"
-                             " quadlets.".format(len(atc)))
-        msg.extend(Counter(Codens.AttachmentGroup,
-                           count=(len(atc) // 4), version=Vrsn_1_0).qb64b)
+            raise ValueError(f"Invalid attachments size={len(atc)}, "
+                             f"nonintegral quadlets.")
 
-    msg.extend(atc)
+        if pipelined:
+            msg.extend(Counter(Codens.AttachmentGroup,
+                               count=(len(atc) // 4), version=Vrsn_1_0).qb64b)
+
+        msg.extend(atc)
+
+    elif serder.pvrsn.major == 2:  # version 2.x
+        if topial:
+            pass
+
+        else:
+            pass
+
+    else:
+        raise ValueError(f"Unsupported protocol version={serder.pvrsn}")
+
     return msg
 
 
@@ -4301,7 +4325,7 @@ class Kevery:
         qry, rpy, pro, bar, xip, exn.
 
         Processing order:
-            1. AID-based allow/deny logic 
+            1. AID-based allow/deny logic
             2. KRAM processing via self.kramer.intake()
             3. Message-type-specific processing delegation
 
@@ -4321,11 +4345,11 @@ class Kevery:
         tvy = kwa.pop('tvy', None) or self.tvy
 
         # Step 1: AID-based allow/deny Draft
-    
+
         # Determine sender AID using the serder
         sender = serder.pre
 
-        # Still needs fleshing out for delegate messages and multisig 
+        # Still needs fleshing out for delegate messages and multisig
 
         # Apply allow/deny rules
         if sender is not None:
@@ -4341,7 +4365,7 @@ class Kevery:
                 f"(not in allowlist; allowlist active)"
                 )
                 return  # drop silently
-                
+
         # Step 2: KRAM
         if self.kramer:
             self.kramer.reconcileConfig()

@@ -933,7 +933,6 @@ class Structor:
                                                   f"={self.crew}")
 
 
-
     @property
     def data(self):
         """Property data
