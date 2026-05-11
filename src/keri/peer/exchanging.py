@@ -581,6 +581,8 @@ def serializeMessage(hby, said, framed=False):
                             is isolated as frame when parsing so do need
                             attachment group when messagizing
 
+    Returns::
+        msg (bytearray):  message by said with attachments
 
     """
     atc = bytearray()
