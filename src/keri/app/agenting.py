@@ -418,7 +418,7 @@ class WitnessReceiptor(doing.DoDoer):
                     rserder = eventing.receipt(pre=ser.pre,
                                                sn=sn,
                                                said=ser.said)
-                    rctMsg.extend(eventing.messagize(serder=rserder, wigers=wigers))
+                    rctMsg.extend(eventing.messagize(serder=rserder, wigers=wigers, framed=True))
 
                     witer.msgs.append(rctMsg)
                     _ = (yield self.tock)

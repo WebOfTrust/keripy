@@ -1368,7 +1368,7 @@ class BaseHab:
         sigers = self.sign(ser=serder.raw, verfers=verfers, rotated=True)
 
         # update own key event verifier state
-        msg = messagize(serder, sigers=sigers)
+        msg = messagize(serder, sigers=sigers, framed=True)
 
         try:
             self.kvy.processEvent(serder=serder, sigers=sigers)
@@ -1400,7 +1400,7 @@ class BaseHab:
 
         sigers = self.sign(ser=serder.raw)
 
-        msg = messagize(serder, sigers=sigers)
+        msg = messagize(serder, sigers=sigers, framed=True)
         try:
             # verify event, update kever state, and escrow if group
             self.kvy.processEvent(serder=serder, sigers=sigers)
@@ -1490,7 +1490,7 @@ class BaseHab:
         serder = queryEvent(query=query, **kwa)
         return self.endorse(serder, last=True, framed=False)
 
-    def endorse(self, serder, last=False, framed=False):
+    def endorse(self, serder, last=False, framed=False, nested=False):
         """Return msg with own endorsement of msg from serder with attached
         signature groups based on own pre transferable or non-transferable.
 
@@ -1507,6 +1507,11 @@ class BaseHab:
                            False means may not assume eash message plus its attachments
                                 is isolated as frame when parsing so do need
                                 attachment group when messagizing
+            nested (bool): True means messagize for non-top level
+                                This forces non-native serializion to be embedded
+                                in non-native group code
+                           False means messagize for top level of stream.
+                                This allows bare non-native serialization of message
 
         Returns::
             bytearray: endorsed message with attached signatures from messagize.
@@ -1522,11 +1527,13 @@ class BaseHab:
                                           s="{:x}".format(kever.lastEst.s),
                                           d=kever.lastEst.d)
             sigers = self.sign(ser=serder.raw, indexed=True)
-            msg = messagize(serder=serder, sigers=sigers, seal=seal, framed=framed)
+            msg = messagize(serder=serder, sigers=sigers, seal=seal,
+                            framed=framed, nested=nested)
 
         else:
             cigars = self.sign(ser=serder.raw, indexed=False)
-            msg = messagize(serder=serder, cigars=cigars, framed=framed)
+            msg = messagize(serder=serder, cigars=cigars,
+                            framed=framed, nested=nested)
 
         return msg
 
@@ -1574,7 +1581,7 @@ class BaseHab:
         else:
             cigars = self.sign(ser=serder.raw,
                                indexed=False)
-            msg = messagize(serder, cigars=cigars)
+            msg = messagize(serder, cigars=cigars, framed=True)
 
         msg.extend(end)
 
@@ -1605,11 +1612,11 @@ class BaseHab:
                                       d=self.kever.lastEst.d)
             sigers = self.sign(ser=serder.raw,
                                indexed=True)
-            msg = messagize(serder=reserder, sigers=sigers, seal=seal)
+            msg = messagize(serder=reserder, sigers=sigers, seal=seal, framed=True)
         else:
             cigars = self.sign(ser=serder.raw,
                                indexed=False)
-            msg = messagize(reserder, cigars=cigars)
+            msg = messagize(reserder, cigars=cigars, framed=True)
 
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
@@ -2791,7 +2798,7 @@ class SignifyHab(BaseHab):
         Returns:
             bytearray: Rotation message with attached signatures.
         """
-        msg = messagize(serder, sigers=sigers)
+        msg = messagize(serder, sigers=sigers, framed=True)
         self.processEvent(serder, sigers)
         return msg
 
@@ -2810,7 +2817,7 @@ class SignifyHab(BaseHab):
         Returns:
             bytearray: Interaction message with attached signatures.
         """
-        msg = messagize(serder, sigers=sigers)
+        msg = messagize(serder, sigers=sigers, framed=True)
         self.processEvent(serder, sigers)
         return msg
 
@@ -2834,7 +2841,7 @@ class SignifyHab(BaseHab):
             signatures.
         """
         # sign serder event
-        msg = messagize(serder=serder, sigers=sigers, seal=seal)
+        msg = messagize(serder=serder, sigers=sigers, seal=seal, framed=True)
 
         if save:
             self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
@@ -3245,7 +3252,7 @@ class GroupHab(BaseHab):
         sigers = self.sign(ser=serder.raw, verfers=serder.verfers, rotated=True)
 
         # update own key event verifier state
-        msg = messagize(serder, sigers=sigers)
+        msg = messagize(serder, sigers=sigers, framed=True)
 
         try:
             self.kvy.processEvent(serder=serder, sigers=sigers)

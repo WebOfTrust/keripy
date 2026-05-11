@@ -1502,14 +1502,14 @@ def exchange(sender="",
 
 
 def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
-              framed=True, topial=True):
+              framed=False, nested=False):
     """Attaches indexed signatures from sigers and/or cigars and/or wigers to
     KERI message data from serder
 
     Parameters::
         serder (SerderKERI): instance containing the event
         sigers (list): of Siger instances (optional) to create indexed signatures
-        seal (Union[SealEvent, SealLast]): optional if sigers and
+        seal (SealEvent|SealLast): optional if sigers and
             If SealEvent use attachment group code TransIdxSigGroups plus attach
                 triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
                 plus attached indexed sigs in sigers
@@ -1526,27 +1526,26 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
                             attachment group
                        False means use attachment group since message plus
                             attachments may not be isolated as frame when parsing
-        topial (bool): True means messagize for top level of stream.
-                            This allows bare non-native serialization with
-                            attachedment group
-                       False means messagize for non-top level
+        nested (bool): True means messagize for non-top level
                             This forces non-native serializion to be embedded
                             in non-native group code
+                       False means messagize for top level of stream.
+                            This allows bare non-native serialization of message
 
     Returns::
         msg (bytearray): KERI event with attachments if any
 
     """
+    if not (sigers or cigars or wigers):
+        raise ValueError("Missing attached signatures on message = {}."
+                         "".format(serder.ked))
+
     msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
 
     if serder.pvrsn.major < 2:  # version 1 legacy
 
-
         atc = bytearray()  # attachment
 
-        if not (sigers or cigars or wigers):
-            raise ValueError("Missing attached signatures on message = {}."
-                             "".format(serder.ked))
 
         if sigers:
             if isinstance(seal, SealEvent):
@@ -1596,7 +1595,7 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
         msg.extend(atc)
 
     elif serder.pvrsn.major == 2:  # version 2.x
-        if topial:
+        if nested:
             pass
 
         else:

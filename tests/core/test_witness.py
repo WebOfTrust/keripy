@@ -123,7 +123,7 @@ def test_indexed_witness_replay():
         rserder = receipt(pre=camHab.pre,
                           sn=camHab.kever.sn,
                           said=camHab.kever.serder.said)
-        camIcpWitRctMsg = messagize(serder=rserder, wigers=wigers)
+        camIcpWitRctMsg = messagize(serder=rserder, wigers=wigers, framed=True)
         assert len(camIcpWitRctMsg) == 413
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
@@ -171,7 +171,7 @@ def test_indexed_witness_replay():
         rserder = receipt(pre=camHab.pre,
                           sn=camHab.kever.sn,
                           said=camHab.kever.serder.said)
-        camIxnWitRctMsg = messagize(serder=rserder, wigers=wigers)
+        camIxnWitRctMsg = messagize(serder=rserder, wigers=wigers, framed=True)
         assert len(camIxnWitRctMsg) == 413
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
@@ -238,7 +238,7 @@ def test_indexed_witness_replay():
         rserder = receipt(pre=camHab.pre,
                           sn=camHab.kever.sn,
                           said=camHab.kever.serder.said)
-        camRotWitRctMsg = messagize(serder=rserder, wigers=wigers)
+        camRotWitRctMsg = messagize(serder=rserder, wigers=wigers, framed=True)
         assert len(camRotWitRctMsg) == 413
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]

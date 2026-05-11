@@ -647,7 +647,7 @@ class JoinDoer(doing.DoDoer):
 
             # Now sign the event and parse it with our signatures
             sigers = hab.sign(aserder.raw)
-            anc = messagize(serder=aserder, sigers=sigers)
+            anc = messagize(serder=aserder, sigers=sigers, framed=True)
             self.psr.parseOne(ims=bytes(anc))
 
             vcp = embeds["vcp"]
@@ -745,7 +745,7 @@ class JoinDoer(doing.DoDoer):
 
             # Now sign the event and parse it with our signatures
             sigers = hab.sign(aserder.raw)
-            anc = messagize(serder=aserder, sigers=sigers)
+            anc = messagize(serder=aserder, sigers=sigers, framed=True)
             self.psr.parseOne(ims=bytes(anc))
 
             iss = embeds["iss"]
@@ -847,7 +847,7 @@ class JoinDoer(doing.DoDoer):
 
             # Now sign the event and parse it with our signatures
             sigers = hab.sign(aserder.raw)
-            anc = messagize(serder=aserder, sigers=sigers)
+            anc = messagize(serder=aserder, sigers=sigers, framed=True)
             self.psr.parseOne(ims=bytes(anc))
 
             rev = embeds["rev"]

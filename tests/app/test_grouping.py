@@ -111,7 +111,7 @@ def test_counselor():
                               b'CoeLmfUzvE3mnxmcU2m_nyKfSDfpxV4"],"bt":"0","br":[],"ba":[],"a":[]}')
 
         sigers = hab2.mgr.sign(srdr.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1], ondices=[1])
-        msg = messagize(serder=srdr, sigers=sigers)
+        msg = messagize(serder=srdr, sigers=sigers, framed=True)
         assert msg == (b'{"v":"KERI10JSON0001be_","t":"rot","d":"EFWaDXMVIhIMpsXMOcnXhU0t'
                        b'kJfD_rPULkQzphoM_EVb","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2v'
                        b'DS1EVAS","s":"1","p":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2vDS1EV'
@@ -165,7 +165,7 @@ def test_counselor():
                               b'Un"],"bt":"0","br":[],"ba":[],"a":[]}')
 
         sigers = hab2.mgr.sign(srdr.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1])
-        msg = messagize(serder=srdr, sigers=sigers)
+        msg = messagize(serder=srdr, sigers=sigers, framed=True)
         assert msg == (b'{"v":"KERI10JSON0001ed_","t":"rot","d":"EAFmW50FmBfJXp4sPnYBp51L'
                        b'-aT9RESXYh8jylx2dEGc","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2v'
                        b'DS1EVAS","s":"2","p":"EFWaDXMVIhIMpsXMOcnXhU0tkJfD_rPULkQzphoM_E'
@@ -219,7 +219,7 @@ def test_counselor():
 
         serder = evt
         sigers = hab3.mgr.sign(serder.raw, verfers=hab3.kever.verfers, indexed=True, indices=[1], ondices=[2])
-        msg = messagize(serder=serder, sigers=sigers)
+        msg = messagize(serder=serder, sigers=sigers, framed=True)
         assert msg == (b'{"v":"KERI10JSON0001be_","t":"rot","d":"EEQVk2x7-t_fnYNoOzeZppvI'
                        b'KkEbVRDDVf1oxGj_hnXw","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2v'
                        b'DS1EVAS","s":"3","p":"EAFmW50FmBfJXp4sPnYBp51L-aT9RESXYh8jylx2dE'
@@ -407,14 +407,14 @@ def test_the_seven():
 
         # Grab the group ROT event, sign with Hab2 and parse into Kev1
         sigers = hab2.mgr.sign(srdr.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1])
-        msg = messagize(serder=srdr, sigers=sigers)
+        msg = messagize(serder=srdr, sigers=sigers, framed=True)
         assert msg[srdr.size:] == (b'-AABABAzvHN7yC3581dp9DxFXrKuXGP_62r_pzNMXL20T6RaPQASXvnBn6sKJ78z'
                                      b'KM9o499Zaz76j940nBoMT-yb9i8N')
         Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kev1, local=True)  # parse second signed group inception
 
         # Now sign the group ROT with Hab3 and parse into Kev1.  This should commit the event
         sigers = hab3.mgr.sign(srdr.raw, verfers=hab3.kever.verfers, indexed=True, indices=[2])
-        msg = messagize(serder=srdr, sigers=sigers)
+        msg = messagize(serder=srdr, sigers=sigers, framed=True)
         assert msg[srdr.size:] == (b'-AABACB6z6LrzBAgpnrCopgiGxuki3sE-KAfY8t_rFq-2dIcQxRF4iCqCYNPKM9D'
                                      b'NbZbA1WDaQ72enSsR2UWMftX2kYD')
 
@@ -470,14 +470,14 @@ def test_the_seven():
 
         # Grab the group ROT event, sign with Hab2 and parse into Kev1
         sigers = hab2.mgr.sign(srdr.raw, verfers=hab2.kever.verfers, indexed=True, indices=[1])
-        msg = messagize(serder=srdr, sigers=sigers)
+        msg = messagize(serder=srdr, sigers=sigers, framed=True)
         assert msg[srdr.size:] == (b'-AABABC4sYnDXCpO87BMXO21ofqHZKntPSdEXlBPlq1H8NOHD3KV-GHGWrXyrElK'
                                      b'BkQNBbNr9_yg-nSnBq7N9rAxEFcK')
         Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kev1, local=True)  # parse second signed group inception
 
         # Now sign the group ROT with Hab3 and parse into Kev1.  This should commit the event
         sigers = hab3.mgr.sign(srdr.raw, verfers=hab3.kever.verfers, indexed=True, indices=[2])
-        msg = messagize(serder=srdr, sigers=sigers)
+        msg = messagize(serder=srdr, sigers=sigers, framed=True)
         assert msg[srdr.size:] == (b'-AABACAXyUueUfXC-ccUxBZTgnyHTXOy1wUYgQrhlk8FMJGQPiaOOdAzhaW71JeF'
                                      b'0By8Se-tKKuPP1xG41DblgXIwNkE')
 
@@ -543,14 +543,14 @@ def test_the_seven():
 
         # Grab the group ROT event, sign with Hab5 and parse into Kev4
         sigers = hab5.mgr.sign(srdr.raw, verfers=hab5.kever.verfers, indexed=True, indices=[1], ondices=[4])
-        msg = messagize(serder=srdr, sigers=sigers)
+        msg = messagize(serder=srdr, sigers=sigers, framed=True)
         assert msg[srdr.size:] == (b'-AAB2AABAEDSs99oM-KOhJ8q3H8lqGqPE3EvZxCHvCjZFvWHLzhqm91YlcskGqvK'
                                      b'8DwCg9dj8wRZP54ienzD52EIKvJWWh4J')
         Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kev4, local=True)  # parse second signed group inception
 
         # Now sign the group ROT with Hab6 and parse into Kev4.  This should commit the event
         sigers = hab6.mgr.sign(srdr.raw, verfers=hab6.kever.verfers, indexed=True, indices=[2], ondices=[5])
-        msg = messagize(serder=srdr, sigers=sigers)
+        msg = messagize(serder=srdr, sigers=sigers, framed=True)
         assert msg[srdr.size:] == (b'-AAB2AACAFBNVTM0Gw4rSd-S5HQ_KpmBfDedi7XNvB24ijMjQaekIfKlcdguPS8p'
                                      b'ax9ht7EE3SiTj9fSO_3f4SVUfJMPmHIK')
 
