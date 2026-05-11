@@ -17,7 +17,7 @@ from .keeping import Keeper, Manager
 from ..peer import Exchanger, exchange
 from ..db import Baser, dgKey, fetchTsgs
 from ..help import fromIso8601, toIso8601
-from ..kering import (Vrsn_1_0, Ilks, ClosedError, AuthError,
+from ..kering import (Version, Vrsn_1_0, Vrsn_2_0, Ilks, ClosedError, AuthError,
                 ConfigurationError, ValidationError, MissingEntryError,
                 KeriError, MissingSignatureError, Roles, Schemes)
 from ..core import (Tholder, Diger, Prefixer, Kevery, Parser, Revery,
@@ -1490,7 +1490,8 @@ class BaseHab:
         serder = queryEvent(query=query, **kwa)
         return self.endorse(serder, last=True, framed=False)
 
-    def endorse(self, serder, last=False, framed=False, nested=False):
+    def endorse(self, serder, last=False, framed=False, nested=False,
+                              gvrsn=Version, genusify=False):
         """Return msg with own endorsement of msg from serder with attached
         signature groups based on own pre transferable or non-transferable.
 
@@ -1512,6 +1513,13 @@ class BaseHab:
                                 in non-native group code
                            False means messagize for top level of stream.
                                 This allows bare non-native serialization of message
+            gvrsn (Versionage): CESR Genus version for attachment group codes or
+                            nesting group code (useful when serder.gvrsn < 2)
+                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                                if serder.gvrsn else serder.pvrsn
+            genusify (bool): True means prepend genus version code from gvrsn before
+                            serder to override default stream genus version
+                         False means do nothing
 
         Returns::
             bytearray: endorsed message with attached signatures from messagize.

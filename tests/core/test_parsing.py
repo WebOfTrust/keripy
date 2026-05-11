@@ -3213,7 +3213,8 @@ def test_parser_v2_enclosed_message():
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
-        # Event 2 Rotation Transferable v1 serder inside v1 override body + attach
+        # Event 2 Rotation Transferable v1 serder inside v1 group body+attach
+        # prepend stream genus code override to force stream to v1 so can use v1 group
         emas = bytearray()  # message + attachement substream
         emas.extend(gvc1.qb64b)  # V1 message inside v1 message group
         serder = rotate(pre=pre,

@@ -21,8 +21,8 @@ from ..kering import (MissingEntryError, UntrustedKeyStateSource,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError,
                       QueryNotFoundError, MisfitEventSourceError,
                       MissingDelegableApprovalError, Version, Versionage,
-                      TraitDex, Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Ilks,
-                      versify, Kinds)
+                      TraitDex, Vrsn_1_0, Vrsn_2_0, GVC_1_0, GVC_2_0,
+                      Roles, Schemes, Ilks, versify, Kinds)
 
 from ..help import helping
 
@@ -1502,21 +1502,28 @@ def exchange(sender="",
 
 
 def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
-              framed=False, nested=False):
-    """Attaches indexed signatures from sigers and/or cigars and/or wigers to
-    KERI message data from serder
+              framed=False, nested=False, gvrsn=Version, genusify=False):
+    """Attaches authenticator from sigers and/or cigars and/or wigers and/or seal
+    to KERI message data from serder
 
     Parameters::
         serder (SerderKERI): instance containing the event
         sigers (list): of Siger instances (optional) to create indexed signatures
-        seal (SealEvent|SealLast): optional if sigers and
-            If SealEvent use attachment group code TransIdxSigGroups plus attach
-                triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
-                plus attached indexed sigs in sigers
-            Else If SealLast use attachment group code TransLastIdxSigGroups plus
-                attach uniple pre made from (i,) of seal plus ControllerIdxSigs
-                plus attached indexed sigs in sigers
-            Else use ControllerIdxSigs plus attached indexed sigs in sigers
+                       based on seal type if any
+        seal (SealEvent|SealLast): optional
+            IF sigers
+                If SealEvent use attachment group code TransIdxSigGroups plus attach
+                    triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
+                    plus attached indexed sigs in sigers
+                ElIf SealLast use attachment group code TransLastIdxSigGroups plus
+                    attach uniple pre made from (i,) of seal plus ControllerIdxSigs
+                    plus attached indexed sigs in sigers
+                Else use ControllerIdxSigs plus attached indexed sigs in sigers
+            Else
+                If SealEvent
+                    Attach SealSourceTriples group with triple pre+snu+dig made
+                    from (i,s,d) of seal
+                Else raise error
         wigers (list): optional list of Siger instances of witness index signatures
         cigars (list): optional list of Cigars instances of non-transferable non indexed
             signatures from  which to form receipt couples.
@@ -1531,29 +1538,43 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
                             in non-native group code
                        False means messagize for top level of stream.
                             This allows bare non-native serialization of message
+        gvrsn (Versionage): CESR Genus version for attachment group codes or
+                            nesting group code (useful when serder.gvrsn < 2)
+                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                                if serder.gvrsn else serder.pvrsn
+        genusify (bool): True means prepend genus version code from gvrsn before
+                            serder to override default stream genus version
+                         False means do nothing
 
     Returns::
         msg (bytearray): KERI event with attachments if any
 
     """
-    if not (sigers or cigars or wigers):
-        raise ValueError("Missing attached signatures on message = {}."
-                         "".format(serder.ked))
+    if not (sigers or cigars or wigers or seal):
+        raise ValueError(f"Missing authenticator for msg={serder.pretty()}")
 
-    msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
+    svrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn  # effective serder gvrsn
 
-    if serder.pvrsn.major < 2:  # version 1 legacy
+    if (gvrsn.major < svrsn.major or
+            (gvrsn.major == svrsn.major and gvrsn.minor < svrsn.minor)):
+        gvrsn = svrsn  # serder vrsn greater than gvrsn so use it instead
 
-        atc = bytearray()  # attachment
+    msg = bytearray()  # new bytearray so can be deleted
+    if genusify:  # create and insert stream genus version code
+        gvc = Counter.makeGVC(version=gvrsn)
+        msg.extend(gvc)
+    msg.extend(serder.raw)
 
+    if gvrsn.major < 2 and not nested:  # version 1 legacy toplevel attachments
+        atc = bytearray()  # attachments
 
         if sigers:
             if isinstance(seal, SealEvent):
                 atc.extend(Counter(Codens.TransIdxSigGroups, count=1,
                                         version=Vrsn_1_0).qb64b)
-                atc.extend(seal.i.encode("utf-8"))
+                atc.extend(seal.i.encode())
                 atc.extend(Seqner(snh=seal.s).qb64b)
-                atc.extend(seal.d.encode("utf-8"))
+                atc.extend(seal.d.encode())
 
             elif isinstance(seal, SealLast):
                 atc.extend(Counter(Codens.TransLastIdxSigGroups, count=1,
@@ -1564,6 +1585,18 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
                                version=Vrsn_1_0).qb64b)
             for siger in sigers:
                 atc.extend(siger.qb64b)
+
+        elif seal:
+            if isinstance(seal, SealEvent):  # authenticator is event seal
+                atc.extend(Counter(Codens.SealSourceTriples, count=1,
+                                        version=Vrsn_1_0).qb64b)
+                atc.extend(seal.i.encode())
+                atc.extend(Seqner(snh=seal.s).qb64b)
+                atc.extend(seal.d.encode())
+
+            else:
+                raise ValueError(f"Invalid authenticator {seal} for "
+                                 f"msg={serder.pretty()}")
 
         if wigers:
             atc.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
@@ -1594,14 +1627,14 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
 
         msg.extend(atc)
 
-    elif serder.pvrsn.major == 2:  # version 2.x
+    elif gvrsn.major == 2:  # version 2.x for attachments or nesting
         if nested:
             pass
 
         else:
             pass
 
-    else:
+    else:  # not a supported gvrsn for attachments and nesting
         raise ValueError(f"Unsupported protocol version={serder.pvrsn}")
 
     return msg

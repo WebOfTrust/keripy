@@ -9,7 +9,8 @@ from base64 import urlsafe_b64decode as decodeB64
 import pytest
 
 from keri.kering import (ShortageError, InvalidCodeError, EmptyMaterialError,
-                         Colds, Protocols, Versionage, Vrsn_1_0, Vrsn_2_0)
+                         InvalidVersionError, Colds, Protocols, Versionage,
+                         Vrsn_1_0, Vrsn_2_0, GVC_1_0, GVC_2_0)
 
 from keri.help import intToB64, b64ToInt, codeB64ToB2
 
@@ -22,8 +23,7 @@ from keri.core import (GenDex, Cizage, Counter, Codens, SUDex_1_0, CtrDex_1_0,
 
 
 def test_genus_codex_pro_gen():
-    """
-    Test protocol genera in GenDex as instance of GenusCodex and shared genus
+    """Test protocol genera in GenDex as instance of GenusCodex and shared genus
     code table mapping from Protocols via ProGen
 
     """
@@ -737,6 +737,14 @@ def test_counter_class():
         Counter.verToB64(minor=-1)
 
     # Test class methods
+
+    # Test makeGVC
+    assert Counter.makeGVC(version=Vrsn_1_0) == GVC_1_0 == '-_AAABAA'
+    assert Counter.makeGVC(version=Vrsn_2_0) == GVC_2_0 == '-_AAACAA'
+    with pytest.raises(InvalidVersionError):
+        assert Counter.makeGVC(version=Versionage(2, 1)) == '-_AAACAB'
+
+
     # Test .enclose default V2
     enclosure = Counter.enclose()  # test defaults
     assert enclosure == bytearray(b'-CAA')
