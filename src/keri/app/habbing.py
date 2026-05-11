@@ -1535,13 +1535,13 @@ class BaseHab:
                                           s="{:x}".format(kever.lastEst.s),
                                           d=kever.lastEst.d)
             sigers = self.sign(ser=serder.raw, indexed=True)
-            msg = messagize(serder=serder, sigers=sigers, seal=seal,
-                            framed=framed, nested=nested)
+            msg = messagize(serder=serder, sigers=sigers, seal=seal, framed=framed,
+                            nested=nested, gvrsn=gvrsn, genusify=genusify)
 
         else:
             cigars = self.sign(ser=serder.raw, indexed=False)
-            msg = messagize(serder=serder, cigars=cigars,
-                            framed=framed, nested=nested)
+            msg = messagize(serder=serder, cigars=cigars, framed=framed,
+                            nested=nested, gvrsn=gvrsn, genusify=genusify)
 
         return msg
 
