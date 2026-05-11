@@ -580,7 +580,7 @@ class JoinDoer(doing.DoDoer):
             self.psr.parseOne(ims=bytes(anc))
 
             # Now sign the event and parse it with our signatures
-            anc = hab.endorse(rserder)
+            anc = hab.endorse(rserder, framed=False)
             self.psr.parseOne(ims=bytes(anc))
 
             smids = hab.db.signingMembers(pre=hab.pre)

@@ -68,7 +68,7 @@ def test_essrs():
         diger = Diger(ser=raw, code=MtrDex.Blake3_256)
         essr, _ = exchange(route='/essr/req', sender=hab.pre, diger=diger,
                                       modifiers=dict(src=hab.pre, dest=recHab.pre))
-        ims = hab.endorse(serder=essr, pipelined=False)
+        ims = hab.endorse(serder=essr, framed=True)
         ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
                                 version=Vrsn_1_0).qb64b)
         ims.extend(texter.qb64b)
@@ -92,7 +92,7 @@ def test_essrs():
         diger = Diger(qb64="EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o")
         essr, _ = exchange(route='/essr/req', sender=hab.pre, diger=diger,
                                       modifiers=dict(src=hab.pre, dest=recHab.pre))
-        ims = hab.endorse(serder=essr, pipelined=False)
+        ims = hab.endorse(serder=essr, framed=True)
         ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
                                 version=Vrsn_1_0).qb64b)
         ims.extend(texter[0].qb64b)
@@ -194,7 +194,7 @@ def test_hab_exchange(mockHelpingNowUTC):
         assert hab.pre == "BJZ_LF61JTCCSCIw2Q4ozE2MsbRC4m-N6-tFVlCeiZPG"
 
         embeds = dict(
-            vcp=hab.endorse(regser, pipelined=False)
+            vcp=hab.endorse(regser, framed=True)
         )
         msg = hab.exchange(route="/multisig/registry/incept", payload=data, embeds=embeds,
                            recipient="")

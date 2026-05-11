@@ -319,7 +319,7 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None):
     # Create `exn` peer to peer message to notify other participants UI
     exn, end = exchange(route="/multisig/icp", modifiers=dict(),
                         payload=data, embeds=embeds, sender=hab.pre)
-    ims = hab.endorse(serder=exn, last=False, pipelined=False)
+    ims = hab.endorse(serder=exn, last=False, framed=True)
     del ims[:exn.size]
     ims.extend(end)
 
@@ -349,7 +349,7 @@ def multisigRotateExn(ghab, smids, rmids, rot):
                                      rmids=rmids),
                         sender=ghab.mhab.pre,
                         embeds=embeds)
-    ims = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
+    ims = ghab.mhab.endorse(serder=exn, last=False, framed=True)
     atc = bytearray(ims[exn.size:])
     atc.extend(end)
 
@@ -377,7 +377,7 @@ def multisigInteractExn(ghab, aids, ixn):
                                      smids=aids),
                         sender=ghab.mhab.pre,
                         embeds=embeds)
-    ims = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
+    ims = ghab.mhab.endorse(serder=exn, last=False, framed=True)
     atc = bytearray(ims[exn.size:])
     atc.extend(end)
 
@@ -407,7 +407,7 @@ def multisigRegistryInceptExn(ghab, usage, vcp, anc):
 
     exn, end = exchange(route="/multisig/vcp", payload={'gid': ghab.pre, 'usage': usage},
                         sender=ghab.mhab.pre, embeds=embeds)
-    evt = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
+    evt = ghab.mhab.endorse(serder=exn, last=False, framed=True)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
 
@@ -438,7 +438,7 @@ def multisigIssueExn(ghab, acdc, iss, anc):
 
     exn, end = exchange(route="/multisig/iss", payload={'gid': ghab.pre},
                         sender=ghab.mhab.pre, embeds=embeds)
-    evt = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
+    evt = ghab.mhab.endorse(serder=exn, last=False, framed=True)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
 
@@ -467,8 +467,8 @@ def multisigRevokeExn(ghab, said, rev, anc):
     )
 
     exn, end = exchange(route="/multisig/rev", payload={'gid': ghab.pre, 'said': said},
-                        sender=ghab.mhab.pre, embeds=embeds)    
-    evt = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
+                        sender=ghab.mhab.pre, embeds=embeds)
+    evt = ghab.mhab.endorse(serder=exn, last=False, framed=True)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
 
@@ -495,7 +495,7 @@ def multisigRpyExn(ghab, rpy):
 
     exn, end = exchange(route="/multisig/rpy", payload={'gid': ghab.pre},
                         sender=ghab.mhab.pre, embeds=embeds)
-    evt = ghab.mhab.endorse(serder=exn, last=False, pipelined=False)
+    evt = ghab.mhab.endorse(serder=exn, last=False, framed=True)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
 
@@ -521,7 +521,7 @@ def multisigExn(ghab, exn):
 
     wexn, end = exchange(route="/multisig/exn", payload={'gid': ghab.pre}, sender=ghab.mhab.pre,
                          embeds=embeds)
-    evt = ghab.mhab.endorse(serder=wexn, last=False, pipelined=False)
+    evt = ghab.mhab.endorse(serder=wexn, last=False, framed=True)
     atc = bytearray(evt[wexn.size:])
     atc.extend(end)
 

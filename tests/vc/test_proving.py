@@ -58,7 +58,7 @@ def test_proving(mockHelpingNowIso8601):
                             schema=schemer.said,
                             data=credSubject)
 
-        msg = sidHab.endorse(serder=creder)
+        msg = sidHab.endorse(serder=creder, framed=False)
         assert msg == (b'{"v":"ACDC10JSON000195_","d":"EPVHgaM_Yad1b5VHs6SIZyqF72m_byxSYU'
                        b'w3VNx5Ubqt","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","'
                        b's":"EHggmYtUecR1JYbMkDZv-za1EExCmR-T_bwaJp3PQIoW","a":{"d":"EO-m'

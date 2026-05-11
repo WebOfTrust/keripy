@@ -1488,49 +1488,48 @@ class BaseHab:
         query['i'] = pre
         query["src"] = src
         serder = queryEvent(query=query, **kwa)
-        return self.endorse(serder, last=True)
+        return self.endorse(serder, last=True, framed=False)
 
-    def endorse(self, serder, last=False, pipelined=True):
+    def endorse(self, serder, last=False, framed=False):
         """Return msg with own endorsement of msg from serder with attached
         signature groups based on own pre transferable or non-transferable.
 
-        Args:
+        Parameters::
             serder (Serder): instance of msg.
-            last (bool): True means use SealLast. False means use SealEvent.
-                Query messages use SealLast.
-            pipelined (bool): True means use pipelining attachment code.
+            last (bool): Affects which signature group code messagize will use
+                        the seal type provided here,
+                        True means provide SealLast so messagize uses TransLastIdxSigGroups
+                            Query messages should always use SealLast.
+                        False means provide SealEvent so messagize uses TransIdxSigGroups
+            framed (bool): True means may assume each message plus its attachments
+                                is isolated as frame when parsing so do not need
+                                attachment group when messagizing
+                           False means may not assume eash message plus its attachments
+                                is isolated as frame when parsing so do need
+                                attachment group when messagizing
 
-        Returns:
-            bytearray: endorsed message with attached signatures.
+        Returns::
+            bytearray: endorsed message with attached signatures from messagize.
         """
         if self.kever.prefixer.transferable:
             # create SealEvent or SealLast for endorser's est evt whose keys are
-            # used to sign
+            # used to sign to indicate to messagize which type sig group to use
             kever = self.kever
-
             if last:
                 seal = SealLast(i=kever.prefixer.qb64)
             else:
                 seal = SealEvent(i=kever.prefixer.qb64,
                                           s="{:x}".format(kever.lastEst.s),
                                           d=kever.lastEst.d)
-
-            sigers = self.sign(ser=serder.raw,
-                               indexed=True)
-
-            msg = messagize(serder=serder,
-                                     sigers=sigers,
-                                     seal=seal,
-                                     pipelined=pipelined)
+            sigers = self.sign(ser=serder.raw, indexed=True)
+            msg = messagize(serder=serder, sigers=sigers, seal=seal, framed=framed)
 
         else:
-            cigars = self.sign(ser=serder.raw,
-                               indexed=False)
-            msg = messagize(serder=serder,
-                                     cigars=cigars,
-                                     pipelined=pipelined)
+            cigars = self.sign(ser=serder.raw, indexed=False)
+            msg = messagize(serder=serder, cigars=cigars, framed=framed)
 
         return msg
+
 
     def exchange(self, route,
                  payload,
@@ -1571,7 +1570,7 @@ class BaseHab:
                                embeds=embeds)
 
         if self.kever.prefixer.transferable:
-            msg = self.endorse(serder=serder, pipelined=False)
+            msg = self.endorse(serder=serder, framed=True)
         else:
             cigars = self.sign(ser=serder.raw,
                                indexed=False)
@@ -1663,7 +1662,7 @@ class BaseHab:
                                pubs=[self.pre],
                                indices=[index])
 
-        msg = messagize(reserder, wigers=wigers, pipelined=True)
+        msg = messagize(reserder, wigers=wigers, framed=False)
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
 
@@ -1985,7 +1984,7 @@ class BaseHab:
         Returns:
             bytearray: reply message.
         """
-        return self.endorse(replyEvent(**kwa))
+        return self.endorse(replyEvent(**kwa), framed=False)
 
 
     def makeEndRole(self, eid, role=Roles.controller, allow=True, stamp=None):
@@ -2050,7 +2049,7 @@ class BaseHab:
                                            cigars=[cigar] if cigar else [],
                                            sigers=sigers,
                                            seal=seal,
-                                           pipelined=True))
+                                           framed=False))
         return msgs
 
 
@@ -2140,7 +2139,7 @@ class BaseHab:
                                            cigars=[cigar] if cigar else [],
                                            sigers=sigers,
                                            seal=seal,
-                                           pipelined=True))
+                                           framed=False))
         return msgs
 
 
@@ -3393,7 +3392,7 @@ class GroupHab(BaseHab):
         query["src"] = src
         serder = queryEvent(query=query, **kwa)
 
-        return self.mhab.endorse(serder, last=True)
+        return self.mhab.endorse(serder, last=True, framed=False)
 
 
     def witnesser(self):

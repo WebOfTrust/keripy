@@ -39,7 +39,7 @@ def test_pathed_material(mockHelpingNowUTC):
         fwd, end = exchange(route='/fwd',
                             modifiers=dict(pre=palHab.pre, topic="replay"), payload={}, embeds=debMsgs,
                             sender=debHab.pre)
-        fwd = debHab.endorse(fwd, last=False, pipelined=False)
+        fwd = debHab.endorse(fwd, last=False, framed=True)
         fwd.extend(end)
         handler = MockHandler()
         exc = Exchanger(hby=debHby, handlers=[handler])

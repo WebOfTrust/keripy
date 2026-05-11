@@ -1502,7 +1502,7 @@ def exchange(sender="",
 
 
 def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
-              pipelined=False, topial=True, ):
+              framed=True, topial=True):
     """Attaches indexed signatures from sigers and/or cigars and/or wigers to
     KERI message data from serder
 
@@ -1521,8 +1521,11 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
         cigars (list): optional list of Cigars instances of non-transferable non indexed
             signatures from  which to form receipt couples.
             Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
-        pipelined (bool): True means prepend pipelining count code to attachemnts
-                          False means to not prepend pipelining count code
+        framed (bool): True means each message plus attachments may be assumed to
+                            be isolated as frame when parsing so do not need
+                            attachment group
+                       False means use attachment group since message plus
+                            attachments may not be isolated as frame when parsing
         topial (bool): True means messagize for top level of stream.
                             This allows bare non-native serialization with
                             attachedment group
@@ -1586,7 +1589,7 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
             raise ValueError(f"Invalid attachments size={len(atc)}, "
                              f"nonintegral quadlets.")
 
-        if pipelined:
+        if not framed:
             msg.extend(Counter(Codens.AttachmentGroup,
                                count=(len(atc) // 4), version=Vrsn_1_0).qb64b)
 

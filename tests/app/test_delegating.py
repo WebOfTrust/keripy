@@ -131,7 +131,7 @@ def test_delegation_request(mockHelpingNowUTC):
         delpre = "EArzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"
         serder = delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=delpre,
                                   ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
-        evt = hab.endorse(serder=serder)
+        evt = hab.endorse(serder=serder, framed=False)
         exn, atc = delegateRequestExn(hab=hab, delpre=delpre, evt=evt)
 
         assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAA'
@@ -157,7 +157,7 @@ def test_delegation_request_handler(mockHelpingNowUTC):
         serder = delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=hab.pre,
                                   ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
 
-        evt = hab.endorse(serder=serder)
+        evt = hab.endorse(serder=serder, framed=False)
         notifier = Notifier(hby=hby)
         handler = DelegateRequestHandler(hby=hby, notifier=notifier)
         exn, _ = delegateRequestExn(hab, hab.pre, evt=evt)

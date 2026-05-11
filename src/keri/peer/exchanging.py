@@ -14,7 +14,7 @@ from ..kering import (Vrsn_1_0, Vrsn_2_0, Ilks,
                       ValidationError, MissingSignatureError)
 from ..core import (Counter, Pather, Dater, Diger,
                     Prefixer, Seqner, Saider,
-                    Noncer, Sadder, SerderKERI, 
+                    Noncer, Sadder, SerderKERI,
                     NonTransDex, Saids, Codens,
                     verifySigs)
 from ..db import fetchTsgs
@@ -568,7 +568,21 @@ def cloneMessage(hby, said):
     return exn, pathed
 
 
-def serializeMessage(hby, said, pipelined=False):
+def serializeMessage(hby, said, framed=False):
+    """Fetch message and attachments from hby.db by said and then serialize them
+
+    Parameters::
+        hby (Habery): environment with db
+        said (str): of message
+        framed (bool): True means may assume each message plus its attachments
+                            is isolated as frame when parsing so do not need
+                            attachment group when messagizing
+                       False means may not assume eash message plus its attachments
+                            is isolated as frame when parsing so do need
+                            attachment group when messagizing
+
+
+    """
     atc = bytearray()
 
     exn = hby.db.exns.get(keys=(said,))
@@ -610,10 +624,11 @@ def serializeMessage(hby, said, pipelined=False):
 
     msg = bytearray()
 
-    if pipelined:
-        if len(atc) % 4:
-            raise ValueError("Invalid attachments size={}, nonintegral"
-                             " quadlets.".format(len(atc)))
+    if len(atc) % 4:
+        raise ValueError("Invalid attachments size={}, nonintegral"
+                         " quadlets.".format(len(atc)))
+
+    if not framed:
         msg.extend(Counter(Codens.AttachmentGroup,
                                   count=(len(atc) // 4), version=Vrsn_1_0).qb64b)
 

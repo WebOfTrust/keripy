@@ -204,7 +204,7 @@ class JoinDoer(doing.DoDoer):
             anc = bytearray(eserder.raw) + pathed["exn"]
             self.psr.parseOne(ims=bytes(anc))
 
-            msg = hab.endorse(serder=eserder, last=False, pipelined=False)
+            msg = hab.endorse(serder=eserder, last=False, framed=True)
             msg = msg + pathed["exn"]
             self.psr.parseOne(ims=bytes(msg))
 
@@ -227,7 +227,7 @@ class JoinDoer(doing.DoDoer):
 
             if self.exc.lead(hab, said=exn.said):
                 print(f"Sending message {eserder.said} to {recp}")
-                atc = serializeMessage(self.hby, eserder.said)
+                atc = serializeMessage(self.hby, eserder.said, framed=True)
                 del atc[:eserder.size]
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recp,

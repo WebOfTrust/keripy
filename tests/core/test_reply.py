@@ -190,7 +190,7 @@ def test_reply(mockHelpingNowUTC):
         assert serderR.said == 'EFlkeg-NociMRXHSGBSqARxV5y7zuT5z-ZpLZAkcoMkk'
 
         # Sign Reply
-        msg = nelHab.endorse(serder=serderR)
+        msg = nelHab.endorse(serder=serderR, framed=False)
         assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EFlkeg-NociMRXHSGBSqARxV'
                     b'5y7zuT5z-ZpLZAkcoMkk","dt":"2021-01-01T00:00:00.000000+00:00","r'
                     b'":"/end/role/add","a":{"cid":"BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuP'
@@ -256,7 +256,7 @@ def test_reply(mockHelpingNowUTC):
         assert serderR.said == 'EM_AD-vVfhW-paUryMAZJKasyBuz_GoYIU_kfp7hmqHY'
 
         # Sign Reply
-        msg = nelHab.endorse(serder=serderR)
+        msg = nelHab.endorse(serder=serderR, framed=False)
         assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EM_AD-vVfhW-paUryMAZJKas'
                     b'yBuz_GoYIU_kfp7hmqHY","dt":"2021-01-01T00:00:00.000000+00:00","r'
                     b'":"/end/role/cut","a":{"cid":"BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuP'
@@ -319,7 +319,7 @@ def test_reply(mockHelpingNowUTC):
         assert serderR.said == 'ELGR7LbL2Ik4gd9Odc_BfmetxQKrnZawMwEPNR5vBWrI'
 
         # Sign Reply
-        msg = nelHab.endorse(serder=serderR)
+        msg = nelHab.endorse(serder=serderR, framed=False)
         assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"ELGR7LbL2Ik4gd9Odc_Bfmet'
                     b'xQKrnZawMwEPNR5vBWrI","dt":"2021-01-01T00:00:01.000000+00:00","r'
                     b'":"/end/role/cut","a":{"cid":"BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuP'
@@ -397,7 +397,7 @@ def test_reply(mockHelpingNowUTC):
 
         serderR = reply(route=route, data=data, )
         assert serderR.ked['dt'] == helping.DTS_BASE_0  # independent datetimes for each eid
-        msg = nelHab.endorse(serder=serderR)
+        msg = nelHab.endorse(serder=serderR, framed=False)
 
         # tam process for nel watcher wel
         tamPrs.parse(ims=bytearray(msg))
@@ -474,7 +474,7 @@ def test_reply(mockHelpingNowUTC):
 
         serderR = reply(route=route, data=data, stamp=helping.DTS_BASE_2)
         assert serderR.ked['dt'] == helping.DTS_BASE_2
-        msg = nelHab.endorse(serder=serderR)
+        msg = nelHab.endorse(serder=serderR, framed=False)
         # Tam process
         tamPrs.parse(ims=bytearray(msg))
 
@@ -520,7 +520,7 @@ def test_reply(mockHelpingNowUTC):
         assert serderR.said == 'ECvGf7-4WSGJgpm1KvzD5_r5MDD6tcDvJ3JTnmd8CRPp'
 
         # Sign Reply
-        msg = watHab.endorse(serder=serderR)
+        msg = watHab.endorse(serder=serderR, framed=False)
         assert msg == (b'{"v":"KERI10JSON000105_","t":"rpy","d":"ECvGf7-4WSGJgpm1KvzD5_r5'
                     b'MDD6tcDvJ3JTnmd8CRPp","dt":"2021-01-01T00:00:00.000000+00:00","r'
                     b'":"/loc/scheme","a":{"eid":"BF6YSJGAtVNmq3b7dpBi04Q0YdqvTfsk9PFk'
@@ -596,7 +596,7 @@ def test_reply(mockHelpingNowUTC):
         assert serderR.said == 'EHC0gHTxQ16xL9vT9n7OBu5sZlO96AX0Jh-dUD42QLDA'
 
         # Sign Reply
-        msg = tamHab.endorse(serder=serderR)
+        msg = tamHab.endorse(serder=serderR, framed=False)
         assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EHC0gHTxQ16xL9vT9n7OBu5s'
                     b'ZlO96AX0Jh-dUD42QLDA","dt":"2021-01-01T00:00:00.000000+00:00","r'
                     b'":"/end/role/add","a":{"cid":"ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CK'
@@ -655,7 +655,7 @@ def test_reply(mockHelpingNowUTC):
         assert serderR.said == 'ELoGi_w2FKTRR2FU6UjclHJuCgtDOHKXL8GxdIt5ZGtf'
 
         # Sign Reply
-        msg = tamHab.endorse(serder=serderR)
+        msg = tamHab.endorse(serder=serderR, framed=False)
         assert msg == (b'{"v":"KERI10JSON000108_","t":"rpy","d":"ELoGi_w2FKTRR2FU6UjclHJu'
                     b'CgtDOHKXL8GxdIt5ZGtf","dt":"2021-01-01T00:00:00.000000+00:00","r'
                     b'":"/loc/scheme","a":{"eid":"ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG'
@@ -767,7 +767,7 @@ def test_reply(mockHelpingNowUTC):
         assert serderR.ked['dt'] == helping.DTS_BASE_0
 
         # Sign Reply
-        msg = tamHab.endorse(serder=serderR)
+        msg = tamHab.endorse(serder=serderR, framed=False)
 
         # use Nel's parser and kevery to authZ wok as tam end witness
         nelPrs.parse(ims=bytearray(msg))
@@ -817,7 +817,7 @@ def test_reply(mockHelpingNowUTC):
         assert serderR.said == 'EN0OizQsqguCvvhE4mkxn4anHCEBvEaRRjNvfsffVzLv'
 
         # Sign Reply
-        msg = wokHab.endorse(serder=serderR)
+        msg = wokHab.endorse(serder=serderR, framed=False)
         assert msg == (b'{"v":"KERI10JSON000105_","t":"rpy","d":"EN0OizQsqguCvvhE4mkxn4an'
                     b'HCEBvEaRRjNvfsffVzLv","dt":"2021-01-01T00:00:00.000000+00:00","r'
                     b'":"/loc/scheme","a":{"eid":"BKVb58uITf48YoMPz8SBOTVwLgTO9BY4oEXR'
@@ -868,7 +868,7 @@ def test_reply(mockHelpingNowUTC):
         serderR = reply(route=route, data=data, stamp=helping.DTS_BASE_1)
         assert serderR.ked['dt'] == helping.DTS_BASE_1
         # Sign Reply
-        msg = tamHab.endorse(serder=serderR)
+        msg = tamHab.endorse(serder=serderR, framed=False)
 
         # use Nels's parser and kevery to process
         nelPrs.parse(ims=bytearray(msg))
@@ -930,7 +930,7 @@ def test_reply(mockHelpingNowUTC):
         assert serderR.ked['dt'] == helping.DTS_BASE_0
 
         # Sign Reply
-        msg = tamHab.endorse(serder=serderR)
+        msg = tamHab.endorse(serder=serderR, framed=False)
 
         # use Nel's parser and kevery to authZ tam as tam end controller
         nelPrs.parse(ims=bytearray(msg))
