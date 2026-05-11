@@ -1440,13 +1440,18 @@ class Baser(LMDBer):
     def current(self):
         """ Current property determines if we are at the current database migration state.
 
-         If the database version matches the library version return True
-         If the current database version is behind the current library version, check for migrations
-            - If there are migrations to run, return False
-            - If there are no migrations to run, reset database version to library version and return True
-         If the current database version is ahead of the current library version, raise exception
+        If the database version matches the library version, return True.
+        If the current database version is behind the current library version,
+        check for migrations:
 
-         """
+            - If there are migrations to run, return False.
+            - If there are no migrations to run, reset database version to the
+              library version and return True.
+
+        If the current database version is ahead of the current library
+        version, raise exception.
+
+        """
         if self.version == __version__:
             return True
 
@@ -1768,7 +1773,7 @@ class Baser(LMDBer):
         witnessed. Searchs from sn forward (default = 0).Searches all events in
         KEL of pre including disputed and/or superseded events.
         Returns the Serder of the first event with the anchored SealEvent seal,
-            None if not found
+        or None if not found.
 
 
         Parameters:
@@ -1841,7 +1846,7 @@ class Baser(LMDBer):
         an anchored Seal with same Seal type as provided seal but in dict form.
         Searchs from sn forward (default = 0).
         Returns the Serder of the first found event with the anchored Seal seal,
-            None if not found
+        or None if not found.
 
         Parameters:
             pre (bytes|str): identifier of the KEL to search
