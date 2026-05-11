@@ -390,11 +390,13 @@ def codeB2ToB64(b, l):
 
 def nabSextets(b, l):
     """Nab l sextets from front of b
+
     Returns:
         sextets (bytes): first l sextets from front (left) of b as bytes
-        (byte string). Length of bytes returned is minimum sufficient to hold
-        all l sextets. Last byte returned is right bit padded with zeros which
-        is compatible with mid padded codes on front of primitives
+            (byte string). Length of bytes returned is minimum sufficient to
+            hold all l sextets. Last byte returned is right bit padded with
+            zeros which is compatible with mid padded codes on front of
+            primitives
 
     Parameters:
         b (bytes | str): target from which to nab sextets
