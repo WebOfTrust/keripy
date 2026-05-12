@@ -31,7 +31,7 @@ from .coring import (PreDex, DigDex, NonTransDex, NumDex, Prefixer,
                      Verfer, Diger, Prefixer, Tholder)
 
 from .counting import Counter, Codens
-from .structing import SealEvent, SealLast, StateEstEvent
+from .structing import SealEvent, SealLast, StateEstEvent, Sealer
 from .indexing import Siger
 from .serdering import SerderKERI
 
@@ -1564,75 +1564,152 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
         gvc = Counter.makeGVC(version=gvrsn)
         msg.extend(gvc)
     msg.extend(serder.raw)
+    aims = bytearray()  # attachment message stream
 
     if gvrsn.major < 2 and not nested:  # version 1 legacy toplevel attachments
-        atc = bytearray()  # attachments
-
         if sigers:
             if isinstance(seal, SealEvent):
-                atc.extend(Counter(Codens.TransIdxSigGroups, count=1,
+                aims.extend(Counter(Codens.TransIdxSigGroups, count=1,
                                         version=Vrsn_1_0).qb64b)
-                atc.extend(seal.i.encode())
-                atc.extend(Seqner(snh=seal.s).qb64b)
-                atc.extend(seal.d.encode())
+                aims.extend(seal.i.encode())
+                aims.extend(Seqner(snh=seal.s).qb64b)
+                aims.extend(seal.d.encode())
 
             elif isinstance(seal, SealLast):
-                atc.extend(Counter(Codens.TransLastIdxSigGroups, count=1,
+                aims.extend(Counter(Codens.TransLastIdxSigGroups, count=1,
                                    version=Vrsn_1_0).qb64b)
-                atc.extend(seal.i.encode("utf-8"))
+                aims.extend(seal.i.encode("utf-8"))
 
-            atc.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
+            aims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
                                version=Vrsn_1_0).qb64b)
             for siger in sigers:
-                atc.extend(siger.qb64b)
+                aims.extend(siger.qb64b)
 
         elif seal:
             if isinstance(seal, SealEvent):  # authenticator is event seal
-                atc.extend(Counter(Codens.SealSourceTriples, count=1,
+                aims.extend(Counter(Codens.SealSourceTriples, count=1,
                                         version=Vrsn_1_0).qb64b)
-                atc.extend(seal.i.encode())
-                atc.extend(Seqner(snh=seal.s).qb64b)
-                atc.extend(seal.d.encode())
+                aims.extend(seal.i.encode())
+                aims.extend(Seqner(snh=seal.s).qb64b)
+                aims.extend(seal.d.encode())
 
             else:
                 raise ValueError(f"Invalid authenticator {seal} for "
                                  f"msg={serder.pretty()}")
 
         if wigers:
-            atc.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
+            aims.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
                                version=Vrsn_1_0).qb64b)
             for wiger in wigers:
                 if wiger.verfer and wiger.verfer.code not in NonTransDex:
                     raise ValueError(f"Attempt to use tranferable prefix="
                                      f"{wiger.verfer.qb64} for receipt.")
-                atc.extend(wiger.qb64b)
+                aims.extend(wiger.qb64b)
 
         if cigars:
-            atc.extend(Counter(Codens.NonTransReceiptCouples, count=len(cigars),
+            aims.extend(Counter(Codens.NonTransReceiptCouples, count=len(cigars),
                                version=Vrsn_1_0).qb64b)
             for cigar in cigars:
                 if cigar.verfer.code not in NonTransDex:
                     raise ValueError(f"Attempt to use tranferable prefix="
                                      f"{cigar.verfer.qb64} for receipt.")
-                atc.extend(cigar.verfer.qb64b)
-                atc.extend(cigar.qb64b)
+                aims.extend(cigar.verfer.qb64b)
+                aims.extend(cigar.qb64b)
 
-        if len(atc) % 4:
+        if len(aims) % 4:
             raise ValueError(f"Invalid attachments size={len(atc)}, "
                              f"nonintegral quadlets.")
 
         if not framed:
             msg.extend(Counter(Codens.AttachmentGroup,
-                               count=(len(atc) // 4), version=Vrsn_1_0).qb64b)
+                               count=(len(aims) // 4), version=Vrsn_1_0).qb64b)
 
-        msg.extend(atc)
+        msg.extend(aims)
 
     elif gvrsn.major == 2:  # version 2.x for attachments or nesting
+
+        if sigers:
+            eims = bytearray() # enclosed group incoming message stream
+            sims = bytearray() # signature incoming message stream
+
+            coden = None
+            if isinstance(seal, SealEvent):  # composed idx sig group
+                coden = Codens.TransIdxSigGroups
+                eims.extend(seal.i.encode())
+                eims.extend(Seqner(snh=seal.s).qb64b)
+                eims.extend(seal.d.encode())
+
+            elif isinstance(seal, SealLast):  # composed idx sig group
+                coden = Codens.TransLastIdxSigGroups
+                eims.extend(seal.i.encode("utf-8"))
+
+            for siger in sigers:
+                eims.extend(siger.qb64b)
+            sims.extend(Counter.enclose(qb64=eims,
+                                        code=Codens.ControllerIdxSigs,
+                                        version=gvrsn))
+
+            aims.extend(Counter.enclose(qb64=sims, code=coden, version=gvrsn))
+
+        elif seal:
+            sims = bytearray()
+            sims.extend(Sealer.enclose([Sealer(crew=seal)]))
+
+            #if isinstance(seal, SealEvent):  # authenticator is event seal
+
+                #sims.extend(seal.i.encode())
+                #sims.extend(Seqner(snh=seal.s).qb64b)
+                #sims.extend(seal.d.encode())
+                #aims.extend(Counter.enclose(qb64=sims,
+                                            #code=Codens.SealSourceTriples,
+                                            #version=gvrsn))
+
+            #else:
+                #raise ValueError(f"Invalid authenticator {seal} for "
+                                     #f"msg={serder.pretty()}")
+
+        if wigers:
+            sims = bytearray()
+
+            for wiger in wigers:
+                if wiger.verfer and wiger.verfer.code not in NonTransDex:
+                    raise ValueError(f"Mismatch: tranferable prefix="
+                                     f"{wiger.verfer.qb64} for receipt.")
+                sims.extend(wiger.qb64b)
+            aims.extend(Counter.enclose(qb64=sims,
+                                        code=Codens.WitnessIdxSigs,
+                                        version=gvrsn))
+
+        if cigars:
+            sims = bytearray()
+
+            for cigar in cigars:
+                if cigar.verfer.code not in NonTransDex:
+                    raise ValueError(f"Mismatch: tranferable prefix="
+                                     f"{cigar.verfer.qb64} with nontrans cnt code.")
+                sims.extend(cigar.verfer.qb64b)
+                sims.extend(cigar.qb64b)
+
+            aims.extend(Counter.enclose(qb64=sims,
+                                        code=Codens.NonTransReceiptCouples,
+                                        version=gvrsn))
+
+        if len(aims) % 4:
+            raise ValueError(f"Invalid attachments size={len(aims)}, "
+                             f"nonintegral quadlets.")
+
+        if not framed:
+            msg.extend(Counter.enclose(qb64=aims,
+                                       code=Codens.AttachmentGroup,
+                                       version=gvrsn))
+        else:
+            msg.extend(aims)
+
+
         if nested:
             pass
 
-        else:
-            pass
+
 
     else:  # not a supported gvrsn for attachments and nesting
         raise ValueError(f"Unsupported protocol version={serder.pvrsn}")
