@@ -158,7 +158,7 @@ def loads(raw, size=None, kind=Kinds.json):
 
     elif kind == Kinds.cbor:
         try:
-            ked = cbor.loads(raw[:size])
+            ked = cbor.loads(bytes(raw[:size]))
         except Exception as ex:
             raise DeserializeError("Error deserializing CBOR: {}"
                                        "".format(raw[:size]))

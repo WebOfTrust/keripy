@@ -1285,7 +1285,7 @@ class Serder:
 
         elif kind == Kinds.cbor:
             try:
-                sad = cbor.loads(raw[:size])
+                sad = cbor.loads(bytes(raw[:size]))
             except Exception as ex:
                 raise DeserializeError(f"Error deserializing CBOR: "
                     f"{raw[:size].decode()}") from ex
