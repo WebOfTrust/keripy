@@ -14,6 +14,7 @@ from keri import kering
 from keri.app import agenting, habbing, httping, notifying
 from keri.app.cli.common import existing
 from keri.app.habbing import GroupHab
+from keri.peer import exchanging
 
 logger = help.ogler.getLogger()
 
@@ -27,6 +28,8 @@ parser.add_argument('--alias', '-a', help='human readable alias for the new iden
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument("--verbose", "-V", help="print JSON of all current events", action="store_true")
+parser.add_argument("--check", help="validate the exn referenced by each notice; print only notices that would fail to load",
+                    action="store_true")
 
 
 def handler(args):
@@ -42,21 +45,23 @@ def handler(args):
     bran = args.bran
     alias = args.alias
     verbose = args.verbose
+    check = args.check
 
-    notesDoer = NotesDoer(name=name, base=base, alias=alias, bran=bran, verbose=verbose)
+    notesDoer = NotesDoer(name=name, base=base, alias=alias, bran=bran, verbose=verbose, check=check)
 
     doers = [notesDoer]
     return doers
 
 
 class NotesDoer(doing.DoDoer):
-    def __init__(self, name, base, alias, bran, verbose):
+    def __init__(self, name, base, alias, bran, verbose, check=False):
 
         hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
         self.alias = alias
         self.hby = hby
         self.verbose = verbose
+        self.check = check
         self.notifier = notifying.Notifier(hby=self.hby)
 
         doers = [self.hbyDoer, doing.doify(self.readDo)]
@@ -82,12 +87,37 @@ class NotesDoer(doing.DoDoer):
         while self.notifier.noter.notes.cntAll() == 0:
             yield self.tock
 
-        for keys, notice in self.notifier.noter.notes.getItemIter():
-            if self.verbose:
-                print(keys)
-                print(json.dumps(notice.pad, indent=4))
+        if self.check:
+            bad = 0
+            for keys, notice in self.notifier.noter.notes.getItemIter():
+                attrs = notice.attrs
+                said = attrs.get('d')
+                route = attrs.get('r', 'no route')
+                rid = keys[-1] if isinstance(keys, tuple) else keys
+                if not said:
+                    continue
+                try:
+                    exn, _ = exchanging.cloneMessage(self.hby, said=said)
+                    if exn is None:
+                        print(f"MISSING  rid={rid}  route={route}  said={said}")
+                        bad += 1
+                except Exception as ex:
+                    reason = str(ex).splitlines()[0][:200] if str(ex) else ""
+                    print(f"INVALID  rid={rid}  route={route}  said={said}  "
+                          f"{type(ex).__name__}: {reason}")
+                    bad += 1
+            if bad:
+                print(f"\n{bad} invalid notification(s) found.")
+                print("Remove with: kli notifications rem --rid <rid>")
             else:
-                print(keys, notice.attrs.get('r', 'no route'))
+                print("No invalid notifications found.")
+        else:
+            for keys, notice in self.notifier.noter.notes.getItemIter():
+                if self.verbose:
+                    print(keys)
+                    print(json.dumps(notice.pad, indent=4))
+                else:
+                    print(keys, notice.attrs.get('r', 'no route'))
 
         self.remove([self.hbyDoer,])
         return
