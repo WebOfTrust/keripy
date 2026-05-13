@@ -701,8 +701,9 @@ class Counter:
                 versioning to change code but keep stable code name.
         """
         if qb64 is None and qb2 is None:
-            qb64 = b''
+            qb64 = b''  # default counter of empty content
 
+        enclosure = bytearray()
         if qb64 is not None:  # process qb64 in text domain
             if hasattr(qb64, "encode"):
                 qb64 = qb64.encode()  # convert to bytes
@@ -715,24 +716,24 @@ class Counter:
             # processes code as codens code name
             counter = cls(code=code, count=count, version=version)
             if version.major < Vrsn_2_0.major and counter.code not in (QTDex_1_0):
-                raise ValueError("Non V1 quadlet/triplet counter code={counter.code}")
-            enclosure = bytearray(counter.qb64b)
+                raise ValueError(f"Non V1 quadlet/triplet counter code={counter.code}")
+            enclosure.extend(counter.qb64b)
             enclosure.extend(qb64)
-            return enclosure
 
-        # process qb2 in binary domain
-        if isinstance(qb2, memoryview):
-            qb2 = bytearray(qb2)  # converts memoryview to bytearray
-        length = len(qb2)
-        if length % 3:  # invalid sized qb64 not aligned on 24 bit boundaries
-            raise ValueError(f"Bad enclosed qb2 {length=}")
-        count = length // 3
-        # processes code as codens code name
-        counter = cls(code=code, count=count, version=version)
-        if version.major < Vrsn_2_0.major and counter.code not in (QTDex_1_0):
-            raise ValueError("Non V1 quadlet/triplet counter code={counter.code}")
-        enclosure = bytearray(counter.qb2)
-        enclosure.extend(qb2)
+        else:  # process qb2 in binary domain
+            if isinstance(qb2, memoryview):
+                qb2 = bytearray(qb2)  # converts memoryview to bytearray
+            length = len(qb2)
+            if length % 3:  # invalid sized qb64 not aligned on 24 bit boundaries
+                raise ValueError(f"Bad enclosed qb2 {length=}")
+            count = length // 3
+            # processes code as codens code name
+            counter = cls(code=code, count=count, version=version)
+            if version.major < Vrsn_2_0.major and counter.code not in (QTDex_1_0):
+                raise ValueError(f"Non V1 quadlet/triplet counter code={counter.code}")
+            enclosure.extend(counter.qb2)
+            enclosure.extend(qb2)
+
         return enclosure
 
 
