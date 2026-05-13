@@ -28,7 +28,7 @@ from ..help import helping
 
 from .coring import (PreDex, DigDex, NonTransDex, NumDex, Prefixer,
                      Diger, Number, Seqner, Cigar, Dater, Noncer,
-                     Verfer, Diger, Prefixer, Tholder)
+                     Verfer, Diger, Prefixer, Tholder, Texter)
 
 from .counting import Counter, Codens
 from .structing import SealEvent, SealLast, StateEstEvent, Sealer
@@ -593,7 +593,7 @@ def incept(keys,
             makes this a msg type "dip", delegated inception event.
     """
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = Ilks.icp if delpre is None else Ilks.dip  # inception or delegated inception
     sner = Number(num=0)  # sn for incept must be 0
@@ -754,7 +754,7 @@ def rotate(pre,
                        instead of hex str when numeric threshold
     """
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = ilk
     if ilk not in (Ilks.rot, Ilks.drt):
@@ -925,7 +925,7 @@ def interact(pre,
         kind is serialization kind
     """
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = Ilks.ixn
     sner = Number(num=sn)
@@ -975,7 +975,7 @@ def receipt(pre,
         kind  is serialization kind of receipt
     """
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = Ilks.rct
 
@@ -1148,7 +1148,7 @@ def reply(pre="",
 
     """
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     if data is None:
         data = {}
@@ -1238,7 +1238,7 @@ def prod(pre="",
 
     """
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = Ilks.pro
 
@@ -1349,7 +1349,7 @@ def bare(pre="",
     }
     """
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
     ilk = Ilks.bar
 
     if pvrsn.major == Vrsn_1_0.major:
@@ -1431,7 +1431,7 @@ def exchept(sender="",
     }
     """
     pvrsn = pvrsn if pvrsn is not None else Vrsn_2_0
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = Ilks.xip
 
@@ -1481,7 +1481,7 @@ def exchange(sender="",
 
 
     """
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = Ilks.exn
 
@@ -1564,7 +1564,6 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
         gvc = Counter.makeGVC(version=gvrsn)
         gims.extend(gvc)
 
-    msg = bytearray(serder.raw)
     aims = bytearray()  # attachment message stream
 
     if gvrsn.major < 2 and not nested:  # version 1 legacy toplevel attachments
@@ -1621,6 +1620,7 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
             raise ValueError(f"Invalid attachments size={len(atc)}, "
                              f"nonintegral quadlets.")
 
+        msg = bytearray(serder.raw)
         if not framed:
             msg.extend(Counter(Codens.AttachmentGroup,
                                count=(len(aims) // 4), version=Vrsn_1_0).qb64b)
@@ -1630,7 +1630,6 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
 
         if sigers:
             eims = bytearray() # enclosed incoming message stream
-
             coden = None
             if isinstance(seal, SealEvent):  # composed idx sig group
                 coden = Codens.TransIdxSigGroups
@@ -1647,7 +1646,6 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
             eims = Counter.enclose(qb64=eims,
                                         code=Codens.ControllerIdxSigs,
                                         version=gvrsn)
-
             aims.extend(Counter.enclose(qb64=eims, code=coden, version=gvrsn))
 
         elif seal:
@@ -1655,7 +1653,6 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
 
         if wigers:
             eims = bytearray()
-
             for wiger in wigers:
                 if wiger.verfer and wiger.verfer.code not in NonTransDex:
                     raise ValueError(f"Mismatch: tranferable prefix="
@@ -1667,14 +1664,12 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
 
         if cigars:
             eims = bytearray()
-
             for cigar in cigars:
                 if cigar.verfer.code not in NonTransDex:
                     raise ValueError(f"Mismatch: tranferable prefix="
                                      f"{cigar.verfer.qb64} with nontrans cnt code.")
                 eims.extend(cigar.verfer.qb64b)
                 eims.extend(cigar.qb64b)
-
             aims.extend(Counter.enclose(qb64=eims,
                                         code=Codens.NonTransReceiptCouples,
                                         version=gvrsn))
@@ -1687,9 +1682,23 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
             aims = Counter.enclose(qb64=aims,
                                        code=Codens.AttachmentGroup,
                                        version=gvrsn)
-        msg.extend(aims)
 
-        gims.extend(msg)  # extend on GVC if any
+        if nested:  # enclose message+attachments in body+attach group
+            if serder.kind != Kinds.cesr:  # non-native  v1 always or v2
+                # enclose msg in non-native body group
+                texter = Texter(raw=serder.raw)
+                msg = Counter.enclose(qb64=texter.qb64b,
+                                      code=Codens.NonNativeBodyGroup,
+                                      version=gvrsn)
+            else:  # native cesr v2 only
+                msg = bytearray(serder.raw)
+
+            msg.extend(aims)  # attach attachments
+            msg = Counter.enclose(qb64=msg, code=Codens.BodyWithAttachmentGroup)
+
+        else:
+            msg = bytearray(serder.raw)
+            msg.extend(aims)  # attach attachments
 
     else:  # not a supported gvrsn for attachments and nesting
         raise ValueError(f"Unsupported protocol version={serder.pvrsn}")
