@@ -1559,11 +1559,13 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
             (gvrsn.major == svrsn.major and gvrsn.minor < svrsn.minor)):
         gvrsn = svrsn  # serder vrsn greater than gvrsn so use it instead
 
-    msg = bytearray()  # new bytearray so can be deleted
+    gims = bytearray()  # for grouped message stream
     if genusify:  # create and insert stream genus version code
         gvc = Counter.makeGVC(version=gvrsn)
-        msg.extend(gvc)
-    msg.extend(serder.raw)
+        gims.extend(gvc)
+
+    msg = bytearray(serder.raw)
+
     aims = bytearray()  # attachment message stream
 
     if gvrsn.major < 2 and not nested:  # version 1 legacy toplevel attachments
@@ -1625,6 +1627,7 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
                                count=(len(aims) // 4), version=Vrsn_1_0).qb64b)
 
         msg.extend(aims)
+        gims.extend(msg)
 
     elif gvrsn.major == 2:  # version 2.x for attachments or nesting
 
@@ -1709,12 +1712,13 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
         if nested:
             pass
 
-
+        msg.extend(aims)
+        gims.extend(msg)
 
     else:  # not a supported gvrsn for attachments and nesting
         raise ValueError(f"Unsupported protocol version={serder.pvrsn}")
 
-    return msg
+    return gims
 
 
 class Kever:
