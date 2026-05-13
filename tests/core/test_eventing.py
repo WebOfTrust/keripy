@@ -2709,6 +2709,306 @@ def test_messagize_v2():
         """ Done Test """
 
 
+def test_messagize_v2_native():
+    """Test messagize for v2 native messages and v2 attachments
+    """
+    salter = Salter(raw=b'0123456789abcdef')
+    with openDB(name="edy") as db, openKS(name="edy") as ks:
+        # Init key pair manager
+        mgr = Manager(ks=ks, salt=salter.qb64)
+        verfers, digers = mgr.incept(icount=1, ncount=0, transferable=True, stem="C")
+
+        # Test with inception message
+        serder = incept(keys=[verfers[0].qb64], code=MtrDex.Blake3_256,
+                        kind=Kinds.cesr, pvrsn=Vrsn_2_0)
+        ked = serder.ked
+        pre = serder.pre
+
+        sigers = mgr.sign(ser=serder.raw, verfers=verfers)  # default indexed True
+        assert isinstance(sigers[0], Siger)
+
+        # test framed
+        msg = messagize(serder, sigers=sigers, framed=True, gvrsn=Vrsn_2_0)
+        assert isinstance(msg, bytearray)
+        assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
+                    b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-KAW'
+                    b'AABfKnU9VdFRGI2pQ2gMotaAB3Q8BxNhLRnrXTrKiyi5qhjQ5YKU4SbDFjVdGoUo'
+                    b'N3u5gfn6dHBVwvnBkr96OPwM')
+
+        # test framed and genusify
+        msg = messagize(serder, sigers=sigers, framed=True, gvrsn=Vrsn_2_0, genusify=True)
+        assert isinstance(msg, bytearray)
+        assert msg == (b'-_AAACAA-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9Pap'
+                    b'Q2A2NfHnEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JAL'
+                    b'DOif48whAmpb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA'
+                    b'-JAA-KAWAABfKnU9VdFRGI2pQ2gMotaAB3Q8BxNhLRnrXTrKiyi5qhjQ5YKU4SbD'
+                    b'FjVdGoUoN3u5gfn6dHBVwvnBkr96OPwM')
+
+        # Test not framed
+        msg = messagize(serder, sigers=sigers, framed=False, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
+                    b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-CAX'
+                    b'-KAWAABfKnU9VdFRGI2pQ2gMotaAB3Q8BxNhLRnrXTrKiyi5qhjQ5YKU4SbDFjVd'
+                    b'GoUoN3u5gfn6dHBVwvnBkr96OPwM')
+
+        # Test not framed and genuisfy
+        msg = messagize(serder, sigers=sigers, framed=False, gvrsn=Vrsn_2_0, genusify=True)
+        assert msg == (b'-_AAACAA-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9Pap'
+                    b'Q2A2NfHnEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JAL'
+                    b'DOif48whAmpb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA'
+                    b'-JAA-CAX-KAWAABfKnU9VdFRGI2pQ2gMotaAB3Q8BxNhLRnrXTrKiyi5qhjQ5YKU'
+                    b'4SbDFjVdGoUoN3u5gfn6dHBVwvnBkr96OPwM')
+
+        # Test with SealEvent and Sigers
+        # create SealEvent for endorsers est evt whose keys use to sign
+        seal = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
+                         s='0',
+                         d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        msg = messagize(serder, sigers=sigers, seal=seal, framed=True, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
+                    b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-XAz'
+                    b'DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAAAAA'
+                    b'AAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-KAWAABfKnU9VdFR'
+                    b'GI2pQ2gMotaAB3Q8BxNhLRnrXTrKiyi5qhjQ5YKU4SbDFjVdGoUoN3u5gfn6dHBV'
+                    b'wvnBkr96OPwM')
+
+        # Test with not framed
+        msg = messagize(serder, sigers=sigers, seal=seal, framed=False, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
+                    b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-CA0'
+                    b'-XAzDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAA'
+                    b'AAAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-KAWAABfKnU9'
+                    b'VdFRGI2pQ2gMotaAB3Q8BxNhLRnrXTrKiyi5qhjQ5YKU4SbDFjVdGoUoN3u5gfn6'
+                    b'dHBVwvnBkr96OPwM')
+
+         # Test with SealEvent Only
+        msg = messagize(serder, seal=seal, framed=True, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
+                    b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-TAc'
+                    b'DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAAAAA'
+                    b'AAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+
+        # Test with not framed
+        msg = messagize(serder, seal=seal, framed=False, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
+                    b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-CAd'
+                    b'-TAcDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAA'
+                    b'AAAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+
+        # Test with SealLast and Sigers
+        # create SealLast for endorsers est evt whose keys use to sign
+        seal = SealLast(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI')
+        msg = messagize(serder, sigers=sigers, seal=seal, framed=True, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
+                    b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-YAi'
+                    b'DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI-KAWAABfKnU9VdFRGI2p'
+                    b'Q2gMotaAB3Q8BxNhLRnrXTrKiyi5qhjQ5YKU4SbDFjVdGoUoN3u5gfn6dHBVwvnB'
+                    b'kr96OPwM')
+
+        # Test with not framed
+        msg = messagize(serder, sigers=sigers, seal=seal, framed=False, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
+                    b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-CAj'
+                    b'-YAiDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI-KAWAABfKnU9VdFR'
+                    b'GI2pQ2gMotaAB3Q8BxNhLRnrXTrKiyi5qhjQ5YKU4SbDFjVdGoUoN3u5gfn6dHBV'
+                    b'wvnBkr96OPwM')
+
+        # Test with SealLast only
+        msg = messagize(serder, seal=seal, framed=True, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
+                    b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-UAL'
+                    b'DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI')
+
+        # Test with not framed
+        msg = messagize(serder, seal=seal, framed=False, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
+                    b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-CAM'
+                    b'-UALDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI')
+
+        # Test with wigers
+        verfers, digers = mgr.incept(icount=1, ncount=0, transferable=False, stem="W")
+        wigers = mgr.sign(ser=serder.raw, verfers=verfers)  # default indexed True
+        assert isinstance(wigers[0], Siger)
+        msg = messagize(serder, wigers=wigers, framed=True, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
+                    b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-LAW'
+                    b'AAA704jdZETqR_LNm1gf82PAXEa7qFxza_SEP4Q97wL32P1oItaECL2m9egSKBGe'
+                    b'LofMC1tL22Mvz2RICLDUvbsA')
+
+        # Test with wigers and not framed
+        msg = messagize(serder, wigers=wigers,framed=False, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
+                    b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-CAX'
+                    b'-LAWAAA704jdZETqR_LNm1gf82PAXEa7qFxza_SEP4Q97wL32P1oItaECL2m9egS'
+                    b'KBGeLofMC1tL22Mvz2RICLDUvbsA')
+
+        # Test with cigars
+        verfers, digers = mgr.incept(icount=1, ncount=0, transferable=False, stem="R")
+        cigars = mgr.sign(ser=serder.raw, verfers=verfers, indexed=False)
+        assert isinstance(cigars[0], Cigar)
+        msg = messagize(serder, cigars=cigars, framed=True, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
+                    b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-MAh'
+                    b'BJjH1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BDB0Tz52RRyT-CFE6zb'
+                    b'oIEkrJI87RfIltfOiYBZLcrdK2Sk3aCRrg3185PzzR1XGd9asEEG6l3zejhFHaA9'
+                    b'1O8M')
+
+        # Test with cigars and not framed
+        msg = messagize(serder, cigars=cigars, framed=False, gvrsn=Vrsn_2_0)
+        assert msg ==(b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
+                    b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-CAi'
+                    b'-MAhBJjH1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BDB0Tz52RRyT-CF'
+                    b'E6zboIEkrJI87RfIltfOiYBZLcrdK2Sk3aCRrg3185PzzR1XGd9asEEG6l3zejhF'
+                    b'HaA91O8M')
+
+        # Test with wigers and cigars
+        msg = messagize(serder, wigers=wigers, cigars=cigars, framed=True, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
+                    b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-LAW'
+                    b'AAA704jdZETqR_LNm1gf82PAXEa7qFxza_SEP4Q97wL32P1oItaECL2m9egSKBGe'
+                    b'LofMC1tL22Mvz2RICLDUvbsA-MAhBJjH1MCDssEZMnORskF34AwOFDgDL47513Gi'
+                    b'vRvd_QKz0BDB0Tz52RRyT-CFE6zboIEkrJI87RfIltfOiYBZLcrdK2Sk3aCRrg31'
+                    b'85PzzR1XGd9asEEG6l3zejhFHaA91O8M')
+
+        # Test with wigers and cigars and not framed
+        msg = messagize(serder, cigars=cigars, wigers=wigers, framed=False, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
+                    b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-CA5'
+                    b'-LAWAAA704jdZETqR_LNm1gf82PAXEa7qFxza_SEP4Q97wL32P1oItaECL2m9egS'
+                    b'KBGeLofMC1tL22Mvz2RICLDUvbsA-MAhBJjH1MCDssEZMnORskF34AwOFDgDL475'
+                    b'13GivRvd_QKz0BDB0Tz52RRyT-CFE6zboIEkrJI87RfIltfOiYBZLcrdK2Sk3aCR'
+                    b'rg3185PzzR1XGd9asEEG6l3zejhFHaA91O8M')
+
+        # Test with sigers and wigers and cigars and framed
+        msg = messagize(serder, sigers=sigers, cigars=cigars, wigers=wigers,
+                        framed=True, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
+                    b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-KAW'
+                    b'AABfKnU9VdFRGI2pQ2gMotaAB3Q8BxNhLRnrXTrKiyi5qhjQ5YKU4SbDFjVdGoUo'
+                    b'N3u5gfn6dHBVwvnBkr96OPwM-LAWAAA704jdZETqR_LNm1gf82PAXEa7qFxza_SE'
+                    b'P4Q97wL32P1oItaECL2m9egSKBGeLofMC1tL22Mvz2RICLDUvbsA-MAhBJjH1MCD'
+                    b'ssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BDB0Tz52RRyT-CFE6zboIEkrJI8'
+                    b'7RfIltfOiYBZLcrdK2Sk3aCRrg3185PzzR1XGd9asEEG6l3zejhFHaA91O8M')
+
+        # Test with sigers and wigers and cigars and not framed
+        msg = messagize(serder, sigers=sigers, cigars=cigars, wigers=wigers,
+                        framed=False, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
+                    b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-CBQ'
+                    b'-KAWAABfKnU9VdFRGI2pQ2gMotaAB3Q8BxNhLRnrXTrKiyi5qhjQ5YKU4SbDFjVd'
+                    b'GoUoN3u5gfn6dHBVwvnBkr96OPwM-LAWAAA704jdZETqR_LNm1gf82PAXEa7qFxz'
+                    b'a_SEP4Q97wL32P1oItaECL2m9egSKBGeLofMC1tL22Mvz2RICLDUvbsA-MAhBJjH'
+                    b'1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BDB0Tz52RRyT-CFE6zboIEk'
+                    b'rJI87RfIltfOiYBZLcrdK2Sk3aCRrg3185PzzR1XGd9asEEG6l3zejhFHaA91O8M')
+
+        # Test with sigers and seal and wigers and cigars and not framed
+        seal = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
+                         s='0',
+                         d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        msg = messagize(serder, sigers=sigers, seal=seal, wigers=wigers,
+                        cigars=cigars, framed=False, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
+                    b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-CBt'
+                    b'-XAzDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAA'
+                    b'AAAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-KAWAABfKnU9'
+                    b'VdFRGI2pQ2gMotaAB3Q8BxNhLRnrXTrKiyi5qhjQ5YKU4SbDFjVdGoUoN3u5gfn6'
+                    b'dHBVwvnBkr96OPwM-LAWAAA704jdZETqR_LNm1gf82PAXEa7qFxza_SEP4Q97wL3'
+                    b'2P1oItaECL2m9egSKBGeLofMC1tL22Mvz2RICLDUvbsA-MAhBJjH1MCDssEZMnOR'
+                    b'skF34AwOFDgDL47513GivRvd_QKz0BDB0Tz52RRyT-CFE6zboIEkrJI87RfIltfO'
+                    b'iYBZLcrdK2Sk3aCRrg3185PzzR1XGd9asEEG6l3zejhFHaA91O8M')
+
+        # Test with receipt message with wigers and or cigars on prior message
+        wigers = mgr.sign(ser=serder.raw, verfers=verfers, indexed=True)
+        assert isinstance(wigers[0], Siger)
+        cigars = mgr.sign(ser=serder.raw, verfers=verfers, indexed=False)  # sign event not receipt
+
+        serder = receipt(pre=pre,
+                           sn=int(ked["s"], 16),
+                           said=serder.said,
+                           kind=Kinds.cesr,
+                           pvrsn=Vrsn_2_0)
+
+        # Test with wigers
+        msg = messagize(serder, wigers=wigers, framed=True, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAb0OKERICAACAAXrctEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAA-LAWAADB0Tz52RRy'
+                    b'T-CFE6zboIEkrJI87RfIltfOiYBZLcrdK2Sk3aCRrg3185PzzR1XGd9asEEG6l3z'
+                    b'ejhFHaA91O8M')
+
+        # Test with cigars
+        msg = messagize(serder, cigars=cigars, framed=True, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAb0OKERICAACAAXrctEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAA-MAhBJjH1MCDssEZ'
+                    b'MnORskF34AwOFDgDL47513GivRvd_QKz0BDB0Tz52RRyT-CFE6zboIEkrJI87RfI'
+                    b'ltfOiYBZLcrdK2Sk3aCRrg3185PzzR1XGd9asEEG6l3zejhFHaA91O8M')
+
+        # Test with wigers and cigars
+        msg = messagize(serder, wigers=wigers, cigars=cigars, framed=True, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAb0OKERICAACAAXrctEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAA-LAWAADB0Tz52RRy'
+                    b'T-CFE6zboIEkrJI87RfIltfOiYBZLcrdK2Sk3aCRrg3185PzzR1XGd9asEEG6l3z'
+                    b'ejhFHaA91O8M-MAhBJjH1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BDB'
+                    b'0Tz52RRyT-CFE6zboIEkrJI87RfIltfOiYBZLcrdK2Sk3aCRrg3185PzzR1XGd9a'
+                    b'sEEG6l3zejhFHaA91O8M')
+
+        # Test with wigers and cigars and not framed
+        msg = messagize(serder, wigers=wigers, cigars=cigars, framed=False, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAb0OKERICAACAAXrctEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAA-CA5-LAWAADB0Tz5'
+                    b'2RRyT-CFE6zboIEkrJI87RfIltfOiYBZLcrdK2Sk3aCRrg3185PzzR1XGd9asEEG'
+                    b'6l3zejhFHaA91O8M-MAhBJjH1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz'
+                    b'0BDB0Tz52RRyT-CFE6zboIEkrJI87RfIltfOiYBZLcrdK2Sk3aCRrg3185PzzR1X'
+                    b'Gd9asEEG6l3zejhFHaA91O8M')
+
+        # Test with query message
+        serder = query(pre=pre,
+                       route="log",
+                        query=dict(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
+                        stamp=helping.DTS_BASE_0,
+                        kind=Kinds.cesr,
+                        pvrsn=Vrsn_2_0)
+
+        # Test with SealLast and framed for endorsers est evt whose keys use to sign
+        seal = SealLast(i=pre)
+        msg = messagize(serder, sigers=sigers, seal=seal, framed=True, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAz0OKERICAACAAXqryEOtc_pUXyVNOyRDMJXTBpFrfEn9e-v56A6RIRVhv4tDE'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn1AAG2021-01-01T00c00'
+                    b'c00d000000p00c004AABAlog4AAA-IAM0J_iDAvCLRr5luWmp7keDvDuLP0kIqcy'
+                    b'BYq79b3Dho1QvrjI-YAiEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'-KAWAABfKnU9VdFRGI2pQ2gMotaAB3Q8BxNhLRnrXTrKiyi5qhjQ5YKU4SbDFjVd'
+                    b'GoUoN3u5gfn6dHBVwvnBkr96OPwM')
+
+        # Not framed SealLast
+        msg = messagize(serder, sigers=sigers, seal=seal, framed=False, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAz0OKERICAACAAXqryEOtc_pUXyVNOyRDMJXTBpFrfEn9e-v56A6RIRVhv4tDE'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn1AAG2021-01-01T00c00'
+                    b'c00d000000p00c004AABAlog4AAA-IAM0J_iDAvCLRr5luWmp7keDvDuLP0kIqcy'
+                    b'BYq79b3Dho1QvrjI-CAj-YAiEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2'
+                    b'NfHn-KAWAABfKnU9VdFRGI2pQ2gMotaAB3Q8BxNhLRnrXTrKiyi5qhjQ5YKU4SbD'
+                    b'FjVdGoUoN3u5gfn6dHBVwvnBkr96OPwM')
+
+        """ Done Test """
+
+
 def test_messagize_v1_nested():
     """Test messagize utility function with version 1 messages nested in body
     +attach group
@@ -6396,6 +6696,7 @@ if __name__ == "__main__":
     test_messagize_v1()
     test_messagize_v1_mix_v2()
     test_messagize_v2()
+    test_messagize_v2_native()
     test_messagize_v1_nested()
     test_messagize_v2_nested()
     test_messagize_v2_native_nested()
