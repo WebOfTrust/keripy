@@ -1490,6 +1490,7 @@ class BaseHab:
         serder = queryEvent(query=query, **kwa)
         return self.endorse(serder, last=True, framed=False)
 
+
     def endorse(self, serder, last=False, framed=False, nested=False,
                               gvrsn=Version, genusify=False):
         """Return msg with own endorsement of msg from serder with attached

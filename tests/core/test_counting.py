@@ -739,10 +739,10 @@ def test_counter_class():
     # Test class methods
 
     # Test makeGVC
-    assert Counter.makeGVC(version=Vrsn_1_0) == GVC_1_0 == '-_AAABAA'
-    assert Counter.makeGVC(version=Vrsn_2_0) == GVC_2_0 == '-_AAACAA'
+    assert Counter.makeGVC(version=Vrsn_1_0) == GVC_1_0 == b'-_AAABAA'
+    assert Counter.makeGVC(version=Vrsn_2_0) == GVC_2_0 == b'-_AAACAA'
     with pytest.raises(InvalidVersionError):
-        assert Counter.makeGVC(version=Versionage(2, 1)) == '-_AAACAB'
+        assert Counter.makeGVC(version=Versionage(2, 1)) == b'-_AAACAB'
 
 
     # Test .enclose default V2

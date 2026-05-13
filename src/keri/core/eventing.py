@@ -1555,6 +1555,9 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
 
     svrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn  # effective serder gvrsn
 
+    if nested and gvrsn.major < 2:
+        gvrsn = Vrsn_2_0  # force gvrsn to v2 for nesting
+
     if (gvrsn.major < svrsn.major or
             (gvrsn.major == svrsn.major and gvrsn.minor < svrsn.minor)):
         gvrsn = svrsn  # serder vrsn greater than gvrsn so use it instead
@@ -1593,6 +1596,11 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
                 aims.extend(Seqner(snh=seal.s).qb64b)
                 aims.extend(seal.d.encode())
 
+            elif isinstance(seal, SealLast):  # authenticator is last seal
+                aims.extend(Counter(Codens.SealSourceLastSingles, count=1,
+                                        version=Vrsn_1_0).qb64b)
+                aims.extend(seal.i.encode())
+
             else:
                 raise ValueError(f"Invalid authenticator {seal} for "
                                  f"msg={serder.pretty()}")
@@ -1630,6 +1638,7 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
 
         if sigers:
             eims = bytearray() # enclosed incoming message stream
+            sims = bytearray() # composes idxsig group inside group
             coden = None
             if isinstance(seal, SealEvent):  # composed idx sig group
                 coden = Codens.TransIdxSigGroups
@@ -1642,14 +1651,34 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
                 eims.extend(seal.i.encode("utf-8"))
 
             for siger in sigers:
-                eims.extend(siger.qb64b)
-            eims = Counter.enclose(qb64=eims,
+                sims.extend(siger.qb64b)
+
+            eims.extend(Counter.enclose(qb64=sims,
                                         code=Codens.ControllerIdxSigs,
-                                        version=gvrsn)
-            aims.extend(Counter.enclose(qb64=eims, code=coden, version=gvrsn))
+                                        version=gvrsn))
+            if coden:
+                aims.extend(Counter.enclose(qb64=eims, code=coden, version=gvrsn))
+            else:
+                aims.extend(eims)
 
         elif seal:
-            aims.extend(Sealer.enclose([Sealer(crew=seal)]))
+            # in order to use Sealer instead need to fix parser to allow Number
+            # in attached seals with sn
+            #aims.extend(Sealer.enclose([Sealer(crew=seal)]))
+
+            eims = bytearray() # enclosed incoming message stream
+            coden = None
+            if isinstance(seal, SealEvent):  # authenticator is event seal
+                coden = Codens.SealSourceTriples
+                eims.extend(seal.i.encode())
+                eims.extend(Seqner(snh=seal.s).qb64b)
+                eims.extend(seal.d.encode())
+
+            elif isinstance(seal, SealLast):  # authenticator is last seal
+                coden = Codens.SealSourceLastSingles
+                eims.extend(seal.i.encode("utf-8"))
+
+            aims.extend(Counter.enclose(qb64=eims, code=coden, version=gvrsn))
 
         if wigers:
             eims = bytearray()

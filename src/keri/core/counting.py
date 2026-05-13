@@ -668,13 +668,13 @@ class Counter:
             version (Versionage): version portion of Genus Version Code
 
         Returns::
-            qb64 (str):  qb64 serialized genus version counter for KERI/ACDC genus
+            qb64b (bytes):  qb64b serialized genus version counter for KERI/ACDC genus
 
         """
         return cls(countB64=cls.verToB64(major=version.major,
                                          minor=version.minor),
                     code=Codens.KERIACDCGenusVersion,
-                    version=version).qb64
+                    version=version).qb64b
 
 
     @classmethod
