@@ -1565,7 +1565,6 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
         gims.extend(gvc)
 
     msg = bytearray(serder.raw)
-
     aims = bytearray()  # attachment message stream
 
     if gvrsn.major < 2 and not nested:  # version 1 legacy toplevel attachments
@@ -1625,15 +1624,12 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
         if not framed:
             msg.extend(Counter(Codens.AttachmentGroup,
                                count=(len(aims) // 4), version=Vrsn_1_0).qb64b)
-
         msg.extend(aims)
-        gims.extend(msg)
 
-    elif gvrsn.major == 2:  # version 2.x for attachments or nesting
+    elif gvrsn.major == 2:  # version 2.x for attachments and/or nesting
 
         if sigers:
-            eims = bytearray() # enclosed group incoming message stream
-            sims = bytearray() # signature incoming message stream
+            eims = bytearray() # enclosed incoming message stream
 
             coden = None
             if isinstance(seal, SealEvent):  # composed idx sig group
@@ -1648,52 +1644,38 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
 
             for siger in sigers:
                 eims.extend(siger.qb64b)
-            sims.extend(Counter.enclose(qb64=eims,
+            eims = Counter.enclose(qb64=eims,
                                         code=Codens.ControllerIdxSigs,
-                                        version=gvrsn))
+                                        version=gvrsn)
 
-            aims.extend(Counter.enclose(qb64=sims, code=coden, version=gvrsn))
+            aims.extend(Counter.enclose(qb64=eims, code=coden, version=gvrsn))
 
         elif seal:
-            sims = bytearray()
-            sims.extend(Sealer.enclose([Sealer(crew=seal)]))
-
-            #if isinstance(seal, SealEvent):  # authenticator is event seal
-
-                #sims.extend(seal.i.encode())
-                #sims.extend(Seqner(snh=seal.s).qb64b)
-                #sims.extend(seal.d.encode())
-                #aims.extend(Counter.enclose(qb64=sims,
-                                            #code=Codens.SealSourceTriples,
-                                            #version=gvrsn))
-
-            #else:
-                #raise ValueError(f"Invalid authenticator {seal} for "
-                                     #f"msg={serder.pretty()}")
+            aims.extend(Sealer.enclose([Sealer(crew=seal)]))
 
         if wigers:
-            sims = bytearray()
+            eims = bytearray()
 
             for wiger in wigers:
                 if wiger.verfer and wiger.verfer.code not in NonTransDex:
                     raise ValueError(f"Mismatch: tranferable prefix="
                                      f"{wiger.verfer.qb64} for receipt.")
-                sims.extend(wiger.qb64b)
-            aims.extend(Counter.enclose(qb64=sims,
+                eims.extend(wiger.qb64b)
+            aims.extend(Counter.enclose(qb64=eims,
                                         code=Codens.WitnessIdxSigs,
                                         version=gvrsn))
 
         if cigars:
-            sims = bytearray()
+            eims = bytearray()
 
             for cigar in cigars:
                 if cigar.verfer.code not in NonTransDex:
                     raise ValueError(f"Mismatch: tranferable prefix="
                                      f"{cigar.verfer.qb64} with nontrans cnt code.")
-                sims.extend(cigar.verfer.qb64b)
-                sims.extend(cigar.qb64b)
+                eims.extend(cigar.verfer.qb64b)
+                eims.extend(cigar.qb64b)
 
-            aims.extend(Counter.enclose(qb64=sims,
+            aims.extend(Counter.enclose(qb64=eims,
                                         code=Codens.NonTransReceiptCouples,
                                         version=gvrsn))
 
@@ -1701,23 +1683,18 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
             raise ValueError(f"Invalid attachments size={len(aims)}, "
                              f"nonintegral quadlets.")
 
-        if not framed:
-            msg.extend(Counter.enclose(qb64=aims,
+        if not nested and not framed:
+            aims = Counter.enclose(qb64=aims,
                                        code=Codens.AttachmentGroup,
-                                       version=gvrsn))
-        else:
-            msg.extend(aims)
-
-
-        if nested:
-            pass
-
+                                       version=gvrsn)
         msg.extend(aims)
-        gims.extend(msg)
+
+        gims.extend(msg)  # extend on GVC if any
 
     else:  # not a supported gvrsn for attachments and nesting
         raise ValueError(f"Unsupported protocol version={serder.pvrsn}")
 
+    gims.extend(msg)
     return gims
 
 
