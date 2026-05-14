@@ -31,7 +31,7 @@ from .coring import (PreDex, DigDex, NonTransDex, NumDex, Prefixer,
                      Verfer, Diger, Prefixer, Tholder, Texter)
 
 from .counting import Counter, Codens
-from .structing import SealEvent, SealLast, StateEstEvent, Sealer
+from .structing import SealEvent, SealSource, SealLast, StateEstEvent, Sealer
 from .indexing import Siger
 from .serdering import SerderKERI
 
@@ -1501,7 +1501,7 @@ def exchange(sender="",
     return SerderKERI(sad=sad, makify=True)
 
 
-def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
+def messagize(serder, *, sigers=None, source=None, seal=None, wigers=None, cigars=None,
               framed=False, nested=False, gvrsn=Version, genusify=False):
     """Attaches authenticator from sigers and/or cigars and/or wigers and/or seal
     to KERI message data from serder
@@ -1510,19 +1510,24 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
         serder (SerderKERI): instance containing the event
         sigers (list): of Siger instances (optional) to create indexed signatures
                        based on seal type if any
-        seal (SealEvent|SealLast): optional
-            IF sigers
+        source (SealEvent|SealLast|None): optional when sigers provided
                 If SealEvent use attachment group code TransIdxSigGroups plus attach
                     triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
                     plus attached indexed sigs in sigers
-                ElIf SealLast use attachment group code TransLastIdxSigGroups plus
+                Elif SealLast use attachment group code TransLastIdxSigGroups plus
                     attach uniple pre made from (i,) of seal plus ControllerIdxSigs
                     plus attached indexed sigs in sigers
-                Else use ControllerIdxSigs plus attached indexed sigs in sigers
-            Else
+                Else None use ControllerIdxSigs plus attached indexed sigs in sigers
+        seal (SealEvent|SealSource|SealLast|None):
                 If SealEvent
                     Attach SealSourceTriples group with triple pre+snu+dig made
                     from (i,s,d) of seal
+                Elif SealSource
+                    Attach SealSourceCouples group with couple snu+dig made from
+                    (s,d) of seal
+                Elif SealLast
+                    Attach SealSourceLastSingles group with single pre made from
+                    (i) of seal
                 Else raise error
         wigers (list): optional list of Siger instances of witness index signatures
         cigars (list): optional list of Cigars instances of non-transferable non indexed
@@ -1571,28 +1576,39 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
 
     if gvrsn.major < 2 and not nested:  # version 1 legacy toplevel attachments
         if sigers:
-            if isinstance(seal, SealEvent):
+            if isinstance(source, SealEvent):
                 aims.extend(Counter(Codens.TransIdxSigGroups, count=1,
                                         version=Vrsn_1_0).qb64b)
-                aims.extend(seal.i.encode())
-                aims.extend(Seqner(snh=seal.s).qb64b)
-                aims.extend(seal.d.encode())
+                aims.extend(source.i.encode())
+                aims.extend(Seqner(snh=source.s).qb64b)
+                aims.extend(source.d.encode())
 
-            elif isinstance(seal, SealLast):
+            elif isinstance(source, SealLast):
                 aims.extend(Counter(Codens.TransLastIdxSigGroups, count=1,
                                    version=Vrsn_1_0).qb64b)
-                aims.extend(seal.i.encode("utf-8"))
+                aims.extend(source.i.encode("utf-8"))
+
+            elif source:
+                raise ValueError(f"Invalid trans modifier {source} for "
+                                 f"sigers on msg={serder.pretty()}")
 
             aims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
                                version=Vrsn_1_0).qb64b)
             for siger in sigers:
                 aims.extend(siger.qb64b)
 
-        elif seal:
+        if seal:
             if isinstance(seal, SealEvent):  # authenticator is event seal
                 aims.extend(Counter(Codens.SealSourceTriples, count=1,
                                         version=Vrsn_1_0).qb64b)
                 aims.extend(seal.i.encode())
+                aims.extend(Seqner(snh=seal.s).qb64b)
+                aims.extend(seal.d.encode())
+
+            elif isinstance(seal, SealSource):  # authenticator is last seal
+                aims.extend(Counter(Codens.SealSourceCouples, count=1,
+                                        version=Vrsn_1_0).qb64b)
+
                 aims.extend(Seqner(snh=seal.s).qb64b)
                 aims.extend(seal.d.encode())
 
@@ -1640,15 +1656,19 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
             eims = bytearray() # enclosed incoming message stream
             sims = bytearray() # composes idxsig group inside group
             coden = None
-            if isinstance(seal, SealEvent):  # composed idx sig group
+            if isinstance(source, SealEvent):  # composed idx sig group
                 coden = Codens.TransIdxSigGroups
-                eims.extend(seal.i.encode())
-                eims.extend(Seqner(snh=seal.s).qb64b)
-                eims.extend(seal.d.encode())
+                eims.extend(source.i.encode())
+                eims.extend(Seqner(snh=source.s).qb64b)
+                eims.extend(source.d.encode())
 
-            elif isinstance(seal, SealLast):  # composed idx sig group
+            elif isinstance(source, SealLast):  # composed idx sig group
                 coden = Codens.TransLastIdxSigGroups
-                eims.extend(seal.i.encode("utf-8"))
+                eims.extend(source.i.encode("utf-8"))
+
+            elif source:
+                raise ValueError(f"Invalid trans modifier {source} for "
+                                 f"sigers on msg={serder.pretty()}")
 
             for siger in sigers:
                 sims.extend(siger.qb64b)
@@ -1661,7 +1681,7 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
             else:
                 aims.extend(eims)
 
-        elif seal:
+        if seal:
             # in order to use Sealer instead need to fix parser to allow Number
             # in attached seals with sn
             #aims.extend(Sealer.enclose([Sealer(crew=seal)]))
@@ -1671,6 +1691,11 @@ def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
             if isinstance(seal, SealEvent):  # authenticator is event seal
                 coden = Codens.SealSourceTriples
                 eims.extend(seal.i.encode())
+                eims.extend(Seqner(snh=seal.s).qb64b)
+                eims.extend(seal.d.encode())
+
+            elif isinstance(seal, SealSource):  # authenticator is event seal
+                coden = Codens.SealSourceCouples
                 eims.extend(Seqner(snh=seal.s).qb64b)
                 eims.extend(seal.d.encode())
 

@@ -1727,7 +1727,7 @@ def test_unverified_trans_receipt_escrow():
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
         rcticpmsg = eventing.messagize(serder=reserder, sigers=resigers,
-                                       seal=seal, framed=True)
+                                       source=seal, framed=True)
 
         # Process receipt by kvy
         psr.parse(ims=bytearray(rcticpmsg), kvy=kvy)
@@ -1794,7 +1794,7 @@ def test_unverified_trans_receipt_escrow():
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
         rctixnmsg = eventing.messagize(serder=reserder, sigers=resigers,
-                                       seal=seal, framed=True)
+                                       source=seal, framed=True)
 
         # Process receipt by kvy
         psr.parse(ims=bytearray(rctixnmsg), kvy=kvy)
@@ -1849,7 +1849,7 @@ def test_unverified_trans_receipt_escrow():
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
         rctrotmsg = eventing.messagize(serder=reserder, sigers=resigers,
-                                       seal=seal, framed=True)
+                                       source=seal, framed=True)
 
         # Process receipt by kvy
         psr.parse(ims=bytearray(rctrotmsg), kvy=kvy)

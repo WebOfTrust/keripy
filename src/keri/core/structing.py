@@ -37,6 +37,13 @@ SealDigest = namedtuple("SealDigest", 'd')
 # use MerkleRootSealSingles as count code for CESR native
 SealRoot = namedtuple("SealRoot", 'rd')
 
+# Event Seal: triple (i, s, d)
+# i = pre is qb64 of identifier prefix of KEL for event,
+# s = sn of event as lowercase hex string  no leading zeros,
+# d = SAID digest qb64 of key event
+# use SealSourceTriples as count code for CESR native
+SealEvent = namedtuple("SealEvent", 'i s d')
+
 # Source Seal: duple (s, d)  for Issuance, Delegation, or Transaction Event
 # where the AID pre of the issuer is implied by the context wherein the seal appears.
 # s = sn of event as lowercase hex string  no leading zeros,
@@ -44,13 +51,6 @@ SealRoot = namedtuple("SealRoot", 'rd')
 # the pre is provided in the 'i' field  qb64 of identifier prefix of KEL
 # use SealSourceCouples as count code for CESR native
 SealSource = namedtuple("SealSource", 's d')
-
-# Event Seal: triple (i, s, d)
-# i = pre is qb64 of identifier prefix of KEL for event,
-# s = sn of event as lowercase hex string  no leading zeros,
-# d = SAID digest qb64 of key event
-# use SealSourceTriples as count code for CESR native
-SealEvent = namedtuple("SealEvent", 'i s d')
 
 # Last Establishment Event Seal: uniple (i,)
 # i = pre is qb64 of identifier prefix of KEL from which to get last est, event

@@ -114,7 +114,7 @@ def test_bare():
     seal = SealEvent(i=preC,
                      s='0',
                      d='EAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-    msg = messagize(serderE, sigers=[sigerC], seal=seal, framed=True)
+    msg = messagize(serderE, sigers=[sigerC], source=seal, framed=True)
     assert msg == (b'{"v":"KERI10JSON000121_","t":"bar","d":"EGPY61eN5zhw7nnlra3bQL8x'
                     b'apaMhP4I_0yihFOLXNgH","dt":"2023-06-26T22:22:13.416766+00:00","r'
                     b'":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6l'
@@ -138,7 +138,7 @@ def test_bare():
     seal = SealEvent(i=preE,
                      s='0',
                      d='EAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-    msg = messagize(serderE, sigers=[sigerE], seal=seal, framed=True)
+    msg = messagize(serderE, sigers=[sigerE], source=seal, framed=True)
     assert msg == (b'{"v":"KERI10JSON000121_","t":"bar","d":"EGPY61eN5zhw7nnlra3bQL8x'
                 b'apaMhP4I_0yihFOLXNgH","dt":"2023-06-26T22:22:13.416766+00:00","r'
                 b'":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6l'

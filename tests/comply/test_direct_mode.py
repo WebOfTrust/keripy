@@ -122,7 +122,7 @@ def test_direct_mode_with_manager():
         sigers = valMgr.sign(ser=s.raw, verfers=valVerfers)  # return Siger if index
 
         # attach signatures
-        rmsg = messagize(reserder, sigers=sigers, seal=seal, framed=True)
+        rmsg = messagize(reserder, sigers=sigers, source=seal, framed=True)
         assert len(rmsg) == 353
 
         # process own validator receipt in validator's Kevery so have copy in own log
@@ -160,7 +160,7 @@ def test_direct_mode_with_manager():
         # sign event not receipt
         sigers = valMgr.sign(ser=s.raw, verfers=valVerfers)  # return Siger if index
         # create receipt message
-        vmsg = messagize(reserder, sigers=sigers, seal=seal, framed=True)
+        vmsg = messagize(reserder, sigers=sigers, source=seal, framed=True)
 
         Parser(version=Vrsn_1_0).parse(ims=bytearray(vmsg), kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  # controller process the escrow receipt from validator
@@ -194,7 +194,7 @@ def test_direct_mode_with_manager():
         s = coeKevery.db.evts.get(keys=(valpre, valIcpDig))
         sigers = coeMgr.sign(ser=s.raw, verfers=coeVerfers)  # return Siger if index
         # create receipt message
-        cmsg = messagize(reserder, sigers=sigers, seal=seal, framed=True)
+        cmsg = messagize(reserder, sigers=sigers, source=seal, framed=True)
         # controller process own receipt in own Kevery so have copy in own log
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # make copy
@@ -262,7 +262,7 @@ def test_direct_mode_with_manager():
         s = valKevery.db.evts.get(keys=(coepre, coeRotDig))
         sigers = valMgr.sign(ser=s.raw, verfers=valVerfers)
         # validator create receipt message
-        vmsg = messagize(reserder, sigers=sigers, seal=seal, framed=True)
+        vmsg = messagize(reserder, sigers=sigers, source=seal, framed=True)
 
         # validator process own receipt in own kevery so have copy in own log
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
@@ -328,7 +328,7 @@ def test_direct_mode_with_manager():
         s = valKevery.db.evts.get(keys=(coepre, coeIxnDig))
         sigers = valMgr.sign(ser=s.raw, verfers=valVerfers)
         # create receipt message
-        vmsg = messagize(reserder, sigers=sigers, seal=seal, framed=True)
+        vmsg = messagize(reserder, sigers=sigers, source=seal, framed=True)
 
         # validator process own receipt in own kevery so have copy in own log
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)

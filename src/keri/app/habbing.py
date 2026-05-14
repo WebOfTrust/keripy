@@ -1576,7 +1576,7 @@ class BaseHab:
                                           s="{:x}".format(kever.lastEst.s),
                                           d=kever.lastEst.d)
             sigers = self.sign(ser=serder.raw, indexed=True)
-            msg = messagize(serder=serder, sigers=sigers, seal=seal, framed=framed,
+            msg = messagize(serder=serder, sigers=sigers, source=seal, framed=framed,
                             nested=nested, gvrsn=gvrsn, genusify=genusify)
 
         else:
@@ -1703,7 +1703,7 @@ class BaseHab:
                                       d=self.kever.lastEst.d)
             sigers = self.sign(ser=serder.raw,
                                indexed=True)
-            msg = messagize(serder=reserder, sigers=sigers, seal=seal,
+            msg = messagize(serder=reserder, sigers=sigers, source=seal,
                             framed=framed, nested=nested, gvrsn=gvrsn,
                             genusify=genusify)
         else:
@@ -2188,7 +2188,7 @@ class BaseHab:
             msgs.extend(messagize(serder=serder,
                                            cigars=[cigar] if cigar else [],
                                            sigers=sigers,
-                                           seal=seal,
+                                           source=seal,
                                            framed=framed,
                                            nested=nested,
                                            gvrsn=gvrsn,
@@ -2300,7 +2300,7 @@ class BaseHab:
             msgs.extend(messagize(serder=serder,
                                            cigars=[cigar] if cigar else [],
                                            sigers=sigers,
-                                           seal=seal,
+                                           source=seal,
                                            framed=framed,
                                            nested=nested,
                                            gvrsn=gvrsn,
@@ -3060,7 +3060,7 @@ class SignifyHab(BaseHab):
             signatures.
         """
         # sign serder event
-        msg = messagize(serder=serder, sigers=sigers, seal=seal, framed=framed,
+        msg = messagize(serder=serder, sigers=sigers, source=seal, framed=framed,
                         nested=nested, gvrsn=gvrsn, genusify=genusify)
 
         if save:
