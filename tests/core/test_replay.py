@@ -67,12 +67,12 @@ def test_replay():
         # Create series of event for Deb
         debMsgs = bytearray()
         debMsgs.extend(debHab.makeOwnInception())
-        debMsgs.extend(debHab.interact())
-        debMsgs.extend(debHab.rotate())
-        debMsgs.extend(debHab.interact())
-        debMsgs.extend(debHab.interact())
-        debMsgs.extend(debHab.interact())
-        debMsgs.extend(debHab.interact())
+        debMsgs.extend(debHab.interact(framed=True))
+        debMsgs.extend(debHab.rotate(framed=True))
+        debMsgs.extend(debHab.interact(framed=True))
+        debMsgs.extend(debHab.interact(framed=True))
+        debMsgs.extend(debHab.interact(framed=True))
+        debMsgs.extend(debHab.interact(framed=True))
 
         assert debMsgs == (b'{"v":"KERI10JSON000207_","t":"icp","d":"ELfp9ZhqQCGov3wPRLa6vn5V'
             b'kIQjug2sb2QD17T-TIpY","i":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD1'
@@ -546,12 +546,12 @@ def test_replay_all():
         # Create series of event for Deb
         debMsgs = bytearray()
         debMsgs.extend(debHab.makeOwnInception())
-        debMsgs.extend(debHab.interact())
-        debMsgs.extend(debHab.rotate())
-        debMsgs.extend(debHab.interact())
-        debMsgs.extend(debHab.interact())
-        debMsgs.extend(debHab.interact())
-        debMsgs.extend(debHab.interact())
+        debMsgs.extend(debHab.interact(framed=True))
+        debMsgs.extend(debHab.rotate(framed=True))
+        debMsgs.extend(debHab.interact(framed=True))
+        debMsgs.extend(debHab.interact(framed=True))
+        debMsgs.extend(debHab.interact(framed=True))
+        debMsgs.extend(debHab.interact(framed=True))
 
         # Play debMsgs to Cam
         # create non-local kevery for Cam to process msgs from Deb

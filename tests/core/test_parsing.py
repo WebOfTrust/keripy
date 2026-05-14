@@ -2132,9 +2132,6 @@ def test_parser_v2_basic():
         aims.extend(siger.qb64b)
         msgs.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
 
-        # Switch back to version 1,  gvrsn of 1 will fail when serder pvrsn is 2
-        #msgs.extend(gvc1.qb64b)
-
         assert pre == kever.prefixer.qb64
 
         db_digs = [val for val in kever.db.kels.getAllIter(keys=pre)]
@@ -2629,7 +2626,7 @@ def test_parser_v2_mix():
 
 def test_parser_v2_enclosed_attachments():
     """Test the support functionality for Parser stream processor with CESRv2
-    with versioned and enclosed attachments
+    and v1 mix but all with versioned and enclosed attachments
 
     """
 
@@ -2811,7 +2808,6 @@ def test_parser_v2_enclosed_attachments():
         # enclose  message attachements and add to msgs
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
 
-
         # Event 1 Rotation Transferable
         serder = rotate(pre=pre,
                         keys=[signers2[1].verfer.qb64],
@@ -2831,7 +2827,6 @@ def test_parser_v2_enclosed_attachments():
         # enclose  message attachements and add to msgs
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
 
-
         # Event 2 Rotation Transferable
         serder = rotate(pre=pre,
                         keys=[signers2[2].verfer.qb64],
@@ -2850,7 +2845,6 @@ def test_parser_v2_enclosed_attachments():
         # enclose  message attachements and add to msgs
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
 
-
         # Event 3 Interaction
         serder = interact(pre=pre,
                           dig=serder.said,
@@ -2867,9 +2861,8 @@ def test_parser_v2_enclosed_attachments():
         # enclose  message attachements and add to msgs
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
 
-
-
-        # Event 4 Interaction  with version 1 psvrsn for serder
+        # Event 4 Interaction  with version 1 psvrsn for serder but attachments
+        # use gvrsn of stream
         serder = interact(pre=pre,
                           dig=serder.said,
                           sn=4,
@@ -2884,7 +2877,6 @@ def test_parser_v2_enclosed_attachments():
         emas.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
         # enclose  message attachements and add to msgs
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
-
 
         # Event 5 Rotation Transferable
         serder = rotate(pre=pre,
@@ -2904,8 +2896,6 @@ def test_parser_v2_enclosed_attachments():
         # enclose  message attachements and add to msgs
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
 
-
-
         # Event 6 Interaction
         serder = interact(pre=pre,
                           dig=serder.said,
@@ -2921,7 +2911,6 @@ def test_parser_v2_enclosed_attachments():
         emas.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
         # enclose  message attachements and add to msgs
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
-
 
         # Event 7 Rotation to null NonTransferable Abandon
         # nxt digest is empty
@@ -2959,7 +2948,6 @@ def test_parser_v2_enclosed_attachments():
         # enclose  message attachements and add to msgs
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
 
-
         # Event 8 Rotation override interaction but already abandoned
         serder = rotate(pre=pre,
                         keys=[signers2[4].verfer.qb64],
@@ -2978,7 +2966,6 @@ def test_parser_v2_enclosed_attachments():
         emas.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
         # enclose  message attachements and add to msgs
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
-
 
         kevery = Kevery(db=valDB)
         parser = Parser(kvy=kevery)  # default is Vrsn_2_0_
@@ -3226,9 +3213,10 @@ def test_parser_v2_enclosed_message():
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
-        # Event 2 Rotation Transferable
+        # Event 2 Rotation Transferable v1 serder inside v1 group body+attach
+        # prepend stream genus code override to force stream to v1 so can use v1 group
         emas = bytearray()  # message + attachement substream
-        emas.extend(gvc1.qb64b)  # V1 message insize v1 message group
+        emas.extend(gvc1.qb64b)  # V1 message inside v1 message group
         serder = rotate(pre=pre,
                         keys=[signers2[2].verfer.qb64],
                         dig=serder.said,
@@ -3241,13 +3229,15 @@ def test_parser_v2_enclosed_message():
                                     version=Vrsn_1_0))
         # sign serialization
         siger = signers2[2].sign(serder.raw, index=0)  # returns siger
-        # Attachment group  V1 that overrides to V2
+        # genus  V2 that overrides v1 for attach group inside v1 body + attach group
         eims = bytearray()  # enclosed message attachment stream
         eims.extend(gvc2.qb64b)  # insert genus-version V2 code in attachment group
         aims = bytearray()
         aims.extend(siger.qb64b)
+        # v2 idxsigs group
         eims.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
-        # enclose  attachments and add to emas use V1 attachment group
+        # enclose  attachments and add to emas use V1 attachment group inside
+        # v1 attach group inside v2 body+attachment group with v1 genus override
         emas.extend(Counter.enclose(qb64=eims,
                                     code=Codens.AttachmentGroup,
                                     version=Vrsn_1_0))
@@ -3255,7 +3245,7 @@ def test_parser_v2_enclosed_message():
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
-        # Event 3 Interaction  default V2 set at top level
+        # Event 3 Interaction  with v2 serder and v2 body attachments
         emas = bytearray()  # message + attachement substream
         serder = interact(pre=pre,
                           dig=serder.said,
@@ -3277,11 +3267,9 @@ def test_parser_v2_enclosed_message():
         # enclose message + attachments and add to msgs
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
-
-
-        # Event 4 Interaction  with version 2 serder and V1 attachements
+        # Event 4 Interaction  with version 2 serder and V1 override attachements
         emas = bytearray()  # message + attachement substream
-        emas.extend(gvc2.qb64b)  # insert genus-version V2 code in attachment group
+        emas.extend(gvc2.qb64b)  # insert genus-version V2 code override in body group
         serder = interact(pre=pre,
                           dig=serder.said,
                           sn=4,
@@ -3298,13 +3286,13 @@ def test_parser_v2_enclosed_message():
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         aims.extend(counter.qb64b)
         aims.extend(siger.qb64b)
-        # enclose  message attachements with v2 counter
+        # enclose  message attachements with v2 counter inside v2 body+attach group
         emas.extend(Counter.enclose(qb64=aims, code=Codens.AttachmentGroup))
         # enclose message plus attachments with v2
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
-        # Event 5 Rotation Transferable
+        # Event 5 Rotation Transferable all v2
         emas = bytearray()  # message + attachement substream
         serder = rotate(pre=pre,
                         keys=[signers2[3].verfer.qb64],
@@ -3329,8 +3317,7 @@ def test_parser_v2_enclosed_message():
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
-
-        # Event 6 Interaction
+        # Event 6 Interaction all v2
         emas = bytearray()  # message + attachement substream
         serder = interact(pre=pre,
                           dig=serder.said,
@@ -3457,8 +3444,9 @@ def test_parser_v2_enclosed_message():
 
     """ Done Test """
 
+
 def test_parse_generic_group():
-    """Test parse with nested GenericGroups """
+    """Test parse with nested GenericGroups with v1 v2 mix"""
 
     logger.setLevel("ERROR")
 
@@ -3644,6 +3632,7 @@ def test_parse_generic_group():
 
         ngms0 = bytearray()  # nested generic group
         ngms1 = bytearray()  # coubly nested generic group
+
         # Event 1 Rotation Transferable
         emas = bytearray()  # message + attachement substream
         emas.extend(gvc2.qb64b)  # insert genus-version V2 code in message-attachment group
@@ -3672,9 +3661,9 @@ def test_parse_generic_group():
         ngms1.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
         ngms0.extend(Counter.enclose(qb64=ngms1, code=Codens.GenericGroup))
 
-        # Event 2 Rotation Transferable
+        # Event 2 Rotation Transferable v1 override body, v2 override attach
         emas = bytearray()  # message + attachement substream
-        emas.extend(gvc1.qb64b)  # V1 message insize v1 message group
+        emas.extend(gvc1.qb64b)  # V1 message inside v1 override in message group
         serder = rotate(pre=pre,
                         keys=[signers2[2].verfer.qb64],
                         dig=serder.said,
@@ -3701,7 +3690,6 @@ def test_parse_generic_group():
         ngms0.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
         ggms.extend(Counter.enclose(qb64=ngms0, code=Codens.GenericGroup))
 
-
         # Event 3 Interaction  default V2 set at top level
         emas = bytearray()  # message + attachement substream
         serder = interact(pre=pre,
@@ -3724,8 +3712,8 @@ def test_parse_generic_group():
         # enclose message + attachments and add to enclosing group
         ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
-
         ngms0 = bytearray()
+
         # Event 4 Interaction  with version 2 serder and V1 attachements
         emas = bytearray()  # message + attachement substream
         emas.extend(gvc2.qb64b)  # insert genus-version V2 code in attachment group
@@ -3750,8 +3738,6 @@ def test_parse_generic_group():
         # enclose message plus attachments with v2
         ngms0.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
         ggms.extend(Counter.enclose(qb64=ngms0, code=Codens.GenericGroup))
-
-
 
         # Event 5 Rotation Transferable
         emas = bytearray()  # message + attachement substream
@@ -3799,7 +3785,6 @@ def test_parse_generic_group():
         # enclose message + attachments and add to enclosing group
         ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
-
         # Event 7 Rotation to null NonTransferable Abandon
         # nxt digest is empty
         emas = bytearray()  # message + attachement substream
@@ -3825,7 +3810,6 @@ def test_parse_generic_group():
         # enclose message + attachments and add to enclosing group
         ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
-
         # Event 8 Interaction but already abandoned
         emas = bytearray()  # message + attachement substream
         serder = interact(pre=pre,
@@ -3848,7 +3832,6 @@ def test_parse_generic_group():
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to enclosing group
         ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
-
 
         # Event 8 Rotation override interaction but already abandoned
         emas = bytearray()  # message + attachement substream
@@ -3908,7 +3891,7 @@ def test_parse_generic_group():
 
 
 def test_group_parsator():
-    """Test groupParsator """
+    """Test groupParsator with mix v1 v2"""
 
     logger.setLevel("ERROR")
 

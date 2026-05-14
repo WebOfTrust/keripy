@@ -89,7 +89,7 @@ class ReceiptDoer(doing.DoDoer):
         said = self.wanHab.db.lans.get(keys=keys)
         assert said is not None
 
-        palHab.rotate(adds=[self.wesHab.pre])
+        palHab.rotate(adds=[self.wesHab.pre], framed=True)
 
         witDoer.msgs.append(dict(pre=palHab.pre, sn=1))
 

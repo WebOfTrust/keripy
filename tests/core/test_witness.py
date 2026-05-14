@@ -123,7 +123,7 @@ def test_indexed_witness_replay():
         rserder = receipt(pre=camHab.pre,
                           sn=camHab.kever.sn,
                           said=camHab.kever.serder.said)
-        camIcpWitRctMsg = messagize(serder=rserder, wigers=wigers)
+        camIcpWitRctMsg = messagize(serder=rserder, wigers=wigers, framed=True)
         assert len(camIcpWitRctMsg) == 413
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
@@ -144,7 +144,7 @@ def test_indexed_witness_replay():
         assert vcKvr.wits == wits
 
         # Create Cam ixn and send to each of Cam's witnesses
-        camIxnMsg = camHab.interact()
+        camIxnMsg = camHab.interact(framed=True)
         rctMsgs = []  # list of receipts from each witness
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
@@ -171,7 +171,7 @@ def test_indexed_witness_replay():
         rserder = receipt(pre=camHab.pre,
                           sn=camHab.kever.sn,
                           said=camHab.kever.serder.said)
-        camIxnWitRctMsg = messagize(serder=rserder, wigers=wigers)
+        camIxnWitRctMsg = messagize(serder=rserder, wigers=wigers, framed=True)
         assert len(camIxnWitRctMsg) == 413
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
@@ -203,7 +203,7 @@ def test_indexed_witness_replay():
         assert wilHab.pre in camKvy.kevers
 
         # Cam rotation with witness rotation
-        camRotMsg = camHab.rotate(toad=2, cuts=[wokHab.pre], adds=[wilHab.pre])
+        camRotMsg = camHab.rotate(toad=2, cuts=[wokHab.pre], adds=[wilHab.pre], framed=True)
         assert camHab.kever.wits == [wesHab.pre, wamHab.pre, wilHab.pre]
         assert camHab.kever.toader.num == 2
         assert camHab.kever.sn == 2
@@ -238,7 +238,7 @@ def test_indexed_witness_replay():
         rserder = receipt(pre=camHab.pre,
                           sn=camHab.kever.sn,
                           said=camHab.kever.serder.said)
-        camRotWitRctMsg = messagize(serder=rserder, wigers=wigers)
+        camRotWitRctMsg = messagize(serder=rserder, wigers=wigers, framed=True)
         assert len(camRotWitRctMsg) == 413
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
@@ -416,7 +416,7 @@ def test_nonindexed_witness_receipts():
         assert vcKvr.wits == wits
 
         # Create Cam ixn and send to each of Cam's witnesses
-        camIxnMsg = camHab.interact()
+        camIxnMsg = camHab.interact(framed=True)
         rctMsgs = []  # list of receipts from each witness
         for i, kvy in enumerate(camWitKvys):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(camIxnMsg), kvy=kvy, local=True)
@@ -487,7 +487,7 @@ def test_nonindexed_witness_receipts():
         assert wilHab.pre in camKvy.kevers
 
         # Cam rotation with witness rotation
-        camRotMsg = camHab.rotate(toad=2, cuts=[wokHab.pre], adds=[wilHab.pre])
+        camRotMsg = camHab.rotate(toad=2, cuts=[wokHab.pre], adds=[wilHab.pre], framed=True)
         assert camHab.kever.wits == [wesHab.pre, wamHab.pre, wilHab.pre]
         assert camHab.kever.toader.num == 2
         assert camHab.kever.sn == 2
@@ -593,15 +593,15 @@ def test_out_of_order_witnessed_events():
         Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
         assert bobHab.pre in wesHab.kevers
         iserder = SerderKERI(raw=bytearray(bobIcp))
-        wesHab.receipt(serder=iserder)
+        wesHab.receipt(serder=iserder, framed=True)
 
         # Rotate and get Bob's rot, pass to Wes and generate receipt.
-        bobHab.rotate()
+        bobHab.rotate(framed=True)
         bobRotMsg = bobHab.makeOwnEvent(sn=1)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(bobRotMsg), kvy=wesKvy, local=True)
         assert wesKvy.kevers[bobHab.pre].sn == 1
         bobRot = SerderKERI(raw=bobRotMsg)
-        wesHab.receipt(serder=bobRot)
+        wesHab.receipt(serder=bobRot, framed=True)
 
         # Get the receipted rotation event and pass, out of order to Bam
         msgs = bytearray()

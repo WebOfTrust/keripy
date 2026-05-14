@@ -130,7 +130,7 @@ class SendDoer(doing.DoDoer):
         exn, _ = exchange(
             route=self.route, payload=payload, sender=senderHab.pre
         )
-        ims = hab.endorse(serder=exn, last=False, pipelined=False)
+        ims = hab.endorse(serder=exn, last=False, framed=True)
         del ims[: exn.size]
         self.postman.send(
             src=senderHab.pre,

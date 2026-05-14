@@ -76,7 +76,7 @@ def test_remote_salty_hab():
         assert habord.hid == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
         assert habord.sid == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
 
-        lhab.rotate()
+        lhab.rotate(framed=True)
 
         ridx = ridx + 1
         kidx = kidx + 1
@@ -97,7 +97,7 @@ def test_remote_salty_hab():
         assert tsig1.qb64b == (b'AAAGWYaw6N_4Wk2IBVOaPGb-rnuj1ys5xSHjfYnAzTRdBN8VzT9GVkBE8CLxLp0iSQ_SCRNpKQEV'
                                b'6BIwPVyJS0cA')
 
-        msg = hab.rotate(serder=rot, sigers=[tsig1])
+        msg = hab.rotate(serder=rot, sigers=[tsig1], framed=True)
         assert msg == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EEZTwrSQdE6QXDNHGMVDf8Zc'
                        b'fA-us9tavFORrBaorrtf","i":"EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiy'
                        b'ZCcDH7N","s":"1","p":"EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH'

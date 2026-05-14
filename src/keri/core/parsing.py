@@ -46,7 +46,7 @@ class Parser:
         ims (bytearray): incoming message stream
         framed (bool): True means stream is packet framed
         piped (bool): True means use pipeline processor to process
-                whenever stream includes pipelined count codes.
+                whenever stream includes pipelineable group count codes.
         kvy (Kevery): route KEL message types to this instance
         tvy (Tevery): route TEL message types to this instance
         exc (Exchanger): route EXN message types to this instance
@@ -319,7 +319,7 @@ class Parser:
             framed (bool): True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
             piped (bool):  True means use pipeline processor to process
-                ims msgs when stream incpyludes pipelined count codes.
+                ims msgs when stream incpyludes pipelineable count codes.
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger) route EXN message types to this instance
@@ -371,7 +371,7 @@ class Parser:
             framed (bool) True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
             piped (bool): True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
+                ims msgs when stream includes pipelineable count codes.
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger) route EXN message types to this instance
@@ -421,7 +421,7 @@ class Parser:
             framed (bool): True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
             piped (bool): True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
+                ims msgs when stream includes pipelineable count codes.
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger) route EXN message types to this instance
@@ -506,7 +506,7 @@ class Parser:
             framed (bool): True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
             piped (bool): True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
+                ims msgs when stream includes pipelineable count codes.
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger) route EXN message types to this instance
@@ -595,7 +595,7 @@ class Parser:
             framed (bool): True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
             piped (bool): True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
+                ims msgs when stream includes pipelineable count codes.
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger) route EXN message types to this instance
@@ -693,7 +693,7 @@ class Parser:
             framed (bool): True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
             piped (bool): True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
+                ims msgs when stream includes pipelineable count codes.
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger) route EXN message types to this instance
@@ -828,7 +828,7 @@ class Parser:
             framed (bool): True means ims contains only one frame of msg plus
                 counted attachments instead of stream with multiple messages
             piped (bool): True means use pipeline processor to process
-                ims msgs when stream includes pipelined count codes.
+                ims msgs when stream includes pipelineable count codes.
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger): route EXN message types to this instance

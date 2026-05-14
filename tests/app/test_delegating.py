@@ -100,7 +100,7 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
     assert delHab.pre == "EGyXT1FmEeI05xmaBsYs2H4v8bazCy-JClB21rAfvXZu"
 
     bts.delegation(pre=delHab.pre, proxy=proxyHab)
-    palHab.rotate(data=[dict(i=delHab.pre, s="0", d=delHab.kever.serder.said)])
+    palHab.rotate(data=[dict(i=delHab.pre, s="0", d=delHab.kever.serder.said)], framed=True)
     witDoer.msgs.append(dict(pre=palHab.pre))
     while not witDoer.cues:
         yield tock
@@ -131,7 +131,7 @@ def test_delegation_request(mockHelpingNowUTC):
         delpre = "EArzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"
         serder = delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=delpre,
                                   ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
-        evt = hab.endorse(serder=serder)
+        evt = hab.endorse(serder=serder, framed=False)
         exn, atc = delegateRequestExn(hab=hab, delpre=delpre, evt=evt)
 
         assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAA'
@@ -157,7 +157,7 @@ def test_delegation_request_handler(mockHelpingNowUTC):
         serder = delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=hab.pre,
                                   ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
 
-        evt = hab.endorse(serder=serder)
+        evt = hab.endorse(serder=serder, framed=False)
         notifier = Notifier(hby=hby)
         handler = DelegateRequestHandler(hby=hby, notifier=notifier)
         exn, _ = delegateRequestExn(hab, hab.pre, evt=evt)

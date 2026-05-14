@@ -41,7 +41,7 @@ def test_broker_nontrans():
         regery = Regery(hby=hby, name=hab.name, temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name=hab.name)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        hab.interact(data=[rseal])
+        hab.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=hab.kever.sn)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
@@ -110,7 +110,7 @@ def test_broker_trans():
         regery = Regery(hby=hby, name=hab.name, temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name=hab.name)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        hab.interact(data=[rseal])
+        hab.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=hab.kever.sn)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,

@@ -65,7 +65,7 @@ def test_querying():
         doist = doing.Doist(limit=limit, tock=tock, real=True)
 
         # rotate AID and submit as a new keyStateSave
-        rot = subHab.rotate()
+        rot = subHab.rotate(framed=True)
         ksr = subHab.kever.state()
         rpy = reply(route="/ksn", data=ksr._asdict())
         cue = dict(kin="keyStateSaved", ksn=ksr._asdict())

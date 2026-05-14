@@ -191,7 +191,7 @@ class Poster(doing.DoDoer):
         evt.extend(atc)
         fwd, atc = exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
                             payload={}, embeds=dict(evt=evt), sender=hab.pre)
-        ims = hab.endorse(serder=fwd, last=False, pipelined=False)
+        ims = hab.endorse(serder=fwd, last=False, framed=False)
 
         # Transpose the signatures to point to the new location
         witer = messengerFrom(hab=hab, pre=mbx, urls=mailbox)
@@ -224,7 +224,7 @@ class Poster(doing.DoDoer):
         evt.extend(atc)
         fwd, atc = exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
                             payload={}, embeds=dict(evt=evt), sender=hab.pre)
-        ims = hab.endorse(serder=fwd, last=False, pipelined=False)
+        ims = hab.endorse(serder=fwd, last=False, framed=True)
 
         # Transpose the signatures to point to the new location
         witer = messengerFrom(hab=hab, pre=mbx, urls=mailbox)
@@ -387,7 +387,7 @@ class StreamPoster:
         diger = Diger(ser=raw, code=MtrDex.Blake3_256)
         essr, _ = exchange(route='/essr/req', sender=hab.pre, diger=diger,
                            modifiers=dict(src=hab.pre, dest=ctrl))
-        ims = hab.endorse(serder=essr, pipelined=False)
+        ims = hab.endorse(serder=essr, framed=True)
         ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
                            gvrsn=Vrsn_1_0).qb64b)
         ims.extend(texter.qb64b)
@@ -408,7 +408,7 @@ class StreamPoster:
         evt.extend(atc)
         fwd, atc = exchange(route='/fwd', modifiers=dict(pre=self.recp, topic=topic),
                             payload={}, embeds=dict(evt=evt), sender=hab.pre)
-        ims = hab.endorse(serder=fwd, last=False, pipelined=False)
+        ims = hab.endorse(serder=fwd, last=False, framed=True)
         return fwd, ims + atc
 
     def forward(self, hab, ends, msg, topic):

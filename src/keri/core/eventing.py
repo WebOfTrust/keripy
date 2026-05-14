@@ -21,17 +21,17 @@ from ..kering import (MissingEntryError, UntrustedKeyStateSource,
                       UnverifiedReceiptError, UnverifiedTransferableReceiptError,
                       QueryNotFoundError, MisfitEventSourceError,
                       MissingDelegableApprovalError, Version, Versionage,
-                      TraitDex, Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Ilks,
-                      versify, Kinds)
+                      TraitDex, Vrsn_1_0, Vrsn_2_0, GVC_1_0, GVC_2_0,
+                      Roles, Schemes, Ilks, versify, Kinds)
 
 from ..help import helping
 
 from .coring import (PreDex, DigDex, NonTransDex, NumDex, Prefixer,
                      Diger, Number, Seqner, Cigar, Dater, Noncer,
-                     Verfer, Diger, Prefixer, Tholder)
+                     Verfer, Diger, Prefixer, Tholder, Texter)
 
 from .counting import Counter, Codens
-from .structing import SealEvent, SealLast, StateEstEvent
+from .structing import SealEvent, SealSource, SealLast, StateEstEvent, Sealer
 from .indexing import Siger
 from .serdering import SerderKERI
 
@@ -593,7 +593,7 @@ def incept(keys,
             makes this a msg type "dip", delegated inception event.
     """
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = Ilks.icp if delpre is None else Ilks.dip  # inception or delegated inception
     sner = Number(num=0)  # sn for incept must be 0
@@ -754,7 +754,7 @@ def rotate(pre,
                        instead of hex str when numeric threshold
     """
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = ilk
     if ilk not in (Ilks.rot, Ilks.drt):
@@ -925,7 +925,7 @@ def interact(pre,
         kind is serialization kind
     """
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = Ilks.ixn
     sner = Number(num=sn)
@@ -975,7 +975,7 @@ def receipt(pre,
         kind  is serialization kind of receipt
     """
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = Ilks.rct
 
@@ -1148,7 +1148,7 @@ def reply(pre="",
 
     """
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     if data is None:
         data = {}
@@ -1238,7 +1238,7 @@ def prod(pre="",
 
     """
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = Ilks.pro
 
@@ -1349,7 +1349,7 @@ def bare(pre="",
     }
     """
     pvrsn = pvrsn if pvrsn is not None else version
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
     ilk = Ilks.bar
 
     if pvrsn.major == Vrsn_1_0.major:
@@ -1431,7 +1431,7 @@ def exchept(sender="",
     }
     """
     pvrsn = pvrsn if pvrsn is not None else Vrsn_2_0
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = Ilks.xip
 
@@ -1481,7 +1481,7 @@ def exchange(sender="",
 
 
     """
-    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = Ilks.exn
 
@@ -1501,84 +1501,264 @@ def exchange(sender="",
     return SerderKERI(sad=sad, makify=True)
 
 
-def messagize(serder, *, sigers=None, seal=None, wigers=None, cigars=None,
-              pipelined=False):
-    """
-    Attaches indexed signatures from sigers and/or cigars and/or wigers to
-    KERI message data from serder
-    Parameters:
+def messagize(serder, *, sigers=None, source=None, seal=None, wigers=None, cigars=None,
+              framed=False, nested=False, gvrsn=Version, genusify=False):
+    """Attaches authenticator from sigers and/or cigars and/or wigers and/or seal
+    to KERI message data from serder
+
+    Parameters::
         serder (SerderKERI): instance containing the event
         sigers (list): of Siger instances (optional) to create indexed signatures
-        seal (Union[SealEvent, SealLast]): optional if sigers and
-            If SealEvent use attachment group code TransIdxSigGroups plus attach
-                triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
-                plus attached indexed sigs in sigers
-            Else If SealLast use attachment group code TransLastIdxSigGroups plus
-                attach uniple pre made from (i,) of seal plus ControllerIdxSigs
-                plus attached indexed sigs in sigers
-            Else use ControllerIdxSigs plus attached indexed sigs in sigers
+                       based on seal type if any
+        source (SealEvent|SealLast|None): optional when sigers provided
+                If SealEvent use attachment group code TransIdxSigGroups plus attach
+                    triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
+                    plus attached indexed sigs in sigers
+                Elif SealLast use attachment group code TransLastIdxSigGroups plus
+                    attach uniple pre made from (i,) of seal plus ControllerIdxSigs
+                    plus attached indexed sigs in sigers
+                Else None use ControllerIdxSigs plus attached indexed sigs in sigers
+        seal (SealEvent|SealSource|SealLast|None):
+                If SealEvent
+                    Attach SealSourceTriples group with triple pre+snu+dig made
+                    from (i,s,d) of seal
+                Elif SealSource
+                    Attach SealSourceCouples group with couple snu+dig made from
+                    (s,d) of seal
+                Elif SealLast
+                    Attach SealSourceLastSingles group with single pre made from
+                    (i) of seal
+                Else raise error
         wigers (list): optional list of Siger instances of witness index signatures
         cigars (list): optional list of Cigars instances of non-transferable non indexed
             signatures from  which to form receipt couples.
             Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
-        pipelined (bool), True means prepend pipelining count code to attachemnts
-            False means to not prepend pipelining count code
+        framed (bool): True means each message plus attachments may be assumed to
+                            be isolated as frame when parsing so do not need
+                            attachment group
+                       False means use attachment group since message plus
+                            attachments may not be isolated as frame when parsing
+        nested (bool): True means messagize for non-top level
+                            This forces non-native serializion to be embedded
+                            in non-native group code
+                       False means messagize for top level of stream.
+                            This allows bare non-native serialization of message
+        gvrsn (Versionage): CESR Genus version for attachment group codes or
+                            nesting group code (useful when serder.gvrsn < 2)
+                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                                if serder.gvrsn else serder.pvrsn
+        genusify (bool): True means prepend genus version code from gvrsn before
+                            serder to override default stream genus version
+                         False means do nothing
 
-    Returns: bytearray KERI event message
+    Returns::
+        msg (bytearray): KERI event with attachments if any
+
     """
-    msg = bytearray(serder.raw)  # make copy into new bytearray so can be deleted
-    atc = bytearray()  # attachment
+    if not (sigers or cigars or wigers or seal):
+        raise ValueError(f"Missing authenticator for msg={serder.pretty()}")
 
-    if not (sigers or cigars or wigers):
-        raise ValueError("Missing attached signatures on message = {}."
-                         "".format(serder.ked))
+    svrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn  # effective serder gvrsn
 
-    if sigers:
-        if isinstance(seal, SealEvent):
-            atc.extend(Counter(Codens.TransIdxSigGroups, count=1,
-                                    version=Vrsn_1_0).qb64b)
-            atc.extend(seal.i.encode("utf-8"))
-            atc.extend(Seqner(snh=seal.s).qb64b)
-            atc.extend(seal.d.encode("utf-8"))
+    if nested and gvrsn.major < 2:
+        gvrsn = Vrsn_2_0  # force gvrsn to v2 for nesting
 
-        elif isinstance(seal, SealLast):
-            atc.extend(Counter(Codens.TransLastIdxSigGroups, count=1,
+    if (gvrsn.major < svrsn.major or
+            (gvrsn.major == svrsn.major and gvrsn.minor < svrsn.minor)):
+        gvrsn = svrsn  # serder vrsn greater than gvrsn so use it instead
+
+    gims = bytearray()  # for grouped message stream
+    if genusify:  # create and insert stream genus version code
+        gvc = Counter.makeGVC(version=gvrsn)
+        gims.extend(gvc)
+
+    aims = bytearray()  # attachment message stream
+
+    if gvrsn.major < 2 and not nested:  # version 1 legacy toplevel attachments
+        if sigers:
+            if isinstance(source, SealEvent):
+                aims.extend(Counter(Codens.TransIdxSigGroups, count=1,
+                                        version=Vrsn_1_0).qb64b)
+                aims.extend(source.i.encode())
+                aims.extend(Seqner(snh=source.s).qb64b)
+                aims.extend(source.d.encode())
+
+            elif isinstance(source, SealLast):
+                aims.extend(Counter(Codens.TransLastIdxSigGroups, count=1,
+                                   version=Vrsn_1_0).qb64b)
+                aims.extend(source.i.encode("utf-8"))
+
+            elif source:
+                raise ValueError(f"Invalid trans modifier {source} for "
+                                 f"sigers on msg={serder.pretty()}")
+
+            aims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
                                version=Vrsn_1_0).qb64b)
-            atc.extend(seal.i.encode("utf-8"))
+            for siger in sigers:
+                aims.extend(siger.qb64b)
 
-        atc.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                           version=Vrsn_1_0).qb64b)
-        for siger in sigers:
-            atc.extend(siger.qb64b)
+        if seal:
+            if isinstance(seal, SealEvent):  # authenticator is event seal
+                aims.extend(Counter(Codens.SealSourceTriples, count=1,
+                                        version=Vrsn_1_0).qb64b)
+                aims.extend(seal.i.encode())
+                aims.extend(Seqner(snh=seal.s).qb64b)
+                aims.extend(seal.d.encode())
 
-    if wigers:
-        atc.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
-                           version=Vrsn_1_0).qb64b)
-        for wiger in wigers:
-            if wiger.verfer and wiger.verfer.code not in NonTransDex:
-                raise ValueError("Attempt to use tranferable prefix={} for "
-                                 "receipt.".format(wiger.verfer.qb64))
-            atc.extend(wiger.qb64b)
+            elif isinstance(seal, SealSource):  # authenticator is last seal
+                aims.extend(Counter(Codens.SealSourceCouples, count=1,
+                                        version=Vrsn_1_0).qb64b)
 
-    if cigars:
-        atc.extend(Counter(Codens.NonTransReceiptCouples, count=len(cigars),
-                           version=Vrsn_1_0).qb64b)
-        for cigar in cigars:
-            if cigar.verfer.code not in NonTransDex:
-                raise ValueError("Attempt to use tranferable prefix={} for "
-                                 "receipt.".format(cigar.verfer.qb64))
-            atc.extend(cigar.verfer.qb64b)
-            atc.extend(cigar.qb64b)
+                aims.extend(Seqner(snh=seal.s).qb64b)
+                aims.extend(seal.d.encode())
 
-    if pipelined:
-        if len(atc) % 4:
-            raise ValueError("Invalid attachments size={}, nonintegral"
-                             " quadlets.".format(len(atc)))
-        msg.extend(Counter(Codens.AttachmentGroup,
-                           count=(len(atc) // 4), version=Vrsn_1_0).qb64b)
+            elif isinstance(seal, SealLast):  # authenticator is last seal
+                aims.extend(Counter(Codens.SealSourceLastSingles, count=1,
+                                        version=Vrsn_1_0).qb64b)
+                aims.extend(seal.i.encode())
 
-    msg.extend(atc)
-    return msg
+            else:
+                raise ValueError(f"Invalid authenticator {seal} for "
+                                 f"msg={serder.pretty()}")
+
+        if wigers:
+            aims.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
+                               version=Vrsn_1_0).qb64b)
+            for wiger in wigers:
+                if wiger.verfer and wiger.verfer.code not in NonTransDex:
+                    raise ValueError(f"Attempt to use tranferable prefix="
+                                     f"{wiger.verfer.qb64} for receipt.")
+                aims.extend(wiger.qb64b)
+
+        if cigars:
+            aims.extend(Counter(Codens.NonTransReceiptCouples, count=len(cigars),
+                               version=Vrsn_1_0).qb64b)
+            for cigar in cigars:
+                if cigar.verfer.code not in NonTransDex:
+                    raise ValueError(f"Attempt to use tranferable prefix="
+                                     f"{cigar.verfer.qb64} for receipt.")
+                aims.extend(cigar.verfer.qb64b)
+                aims.extend(cigar.qb64b)
+
+        if len(aims) % 4:
+            raise ValueError(f"Invalid attachments size={len(atc)}, "
+                             f"nonintegral quadlets.")
+
+        msg = bytearray(serder.raw)
+        if not framed:
+            msg.extend(Counter(Codens.AttachmentGroup,
+                               count=(len(aims) // 4), version=Vrsn_1_0).qb64b)
+        msg.extend(aims)
+
+    elif gvrsn.major == 2:  # version 2.x for attachments and/or nesting
+
+        if sigers:
+            eims = bytearray() # enclosed incoming message stream
+            sims = bytearray() # composes idxsig group inside group
+            coden = None
+            if isinstance(source, SealEvent):  # composed idx sig group
+                coden = Codens.TransIdxSigGroups
+                eims.extend(source.i.encode())
+                eims.extend(Seqner(snh=source.s).qb64b)
+                eims.extend(source.d.encode())
+
+            elif isinstance(source, SealLast):  # composed idx sig group
+                coden = Codens.TransLastIdxSigGroups
+                eims.extend(source.i.encode("utf-8"))
+
+            elif source:
+                raise ValueError(f"Invalid trans modifier {source} for "
+                                 f"sigers on msg={serder.pretty()}")
+
+            for siger in sigers:
+                sims.extend(siger.qb64b)
+
+            eims.extend(Counter.enclose(qb64=sims,
+                                        code=Codens.ControllerIdxSigs,
+                                        version=gvrsn))
+            if coden:
+                aims.extend(Counter.enclose(qb64=eims, code=coden, version=gvrsn))
+            else:
+                aims.extend(eims)
+
+        if seal:
+            # in order to use Sealer instead need to fix parser to allow Number
+            # in attached seals with sn
+            #aims.extend(Sealer.enclose([Sealer(crew=seal)]))
+
+            eims = bytearray() # enclosed incoming message stream
+            coden = None
+            if isinstance(seal, SealEvent):  # authenticator is event seal
+                coden = Codens.SealSourceTriples
+                eims.extend(seal.i.encode())
+                eims.extend(Seqner(snh=seal.s).qb64b)
+                eims.extend(seal.d.encode())
+
+            elif isinstance(seal, SealSource):  # authenticator is event seal
+                coden = Codens.SealSourceCouples
+                eims.extend(Seqner(snh=seal.s).qb64b)
+                eims.extend(seal.d.encode())
+
+            elif isinstance(seal, SealLast):  # authenticator is last seal
+                coden = Codens.SealSourceLastSingles
+                eims.extend(seal.i.encode("utf-8"))
+
+            aims.extend(Counter.enclose(qb64=eims, code=coden, version=gvrsn))
+
+        if wigers:
+            eims = bytearray()
+            for wiger in wigers:
+                if wiger.verfer and wiger.verfer.code not in NonTransDex:
+                    raise ValueError(f"Mismatch: tranferable prefix="
+                                     f"{wiger.verfer.qb64} for receipt.")
+                eims.extend(wiger.qb64b)
+            aims.extend(Counter.enclose(qb64=eims,
+                                        code=Codens.WitnessIdxSigs,
+                                        version=gvrsn))
+
+        if cigars:
+            eims = bytearray()
+            for cigar in cigars:
+                if cigar.verfer.code not in NonTransDex:
+                    raise ValueError(f"Mismatch: tranferable prefix="
+                                     f"{cigar.verfer.qb64} with nontrans cnt code.")
+                eims.extend(cigar.verfer.qb64b)
+                eims.extend(cigar.qb64b)
+            aims.extend(Counter.enclose(qb64=eims,
+                                        code=Codens.NonTransReceiptCouples,
+                                        version=gvrsn))
+
+        if len(aims) % 4:
+            raise ValueError(f"Invalid attachments size={len(aims)}, "
+                             f"nonintegral quadlets.")
+
+        if not nested and not framed:
+            aims = Counter.enclose(qb64=aims,
+                                       code=Codens.AttachmentGroup,
+                                       version=gvrsn)
+
+        if nested:  # enclose message+attachments in body+attach group
+            if serder.kind != Kinds.cesr:  # non-native  v1 always or v2
+                # enclose msg in non-native body group
+                texter = Texter(raw=serder.raw)
+                msg = Counter.enclose(qb64=texter.qb64b,
+                                      code=Codens.NonNativeBodyGroup,
+                                      version=gvrsn)
+            else:  # native cesr v2 only
+                msg = bytearray(serder.raw)
+
+            msg.extend(aims)  # attach attachments
+            msg = Counter.enclose(qb64=msg, code=Codens.BodyWithAttachmentGroup)
+
+        else:
+            msg = bytearray(serder.raw)
+            msg.extend(aims)  # attach attachments
+
+    else:  # not a supported gvrsn for attachments and nesting
+        raise ValueError(f"Unsupported protocol version={serder.pvrsn}")
+
+    gims.extend(msg)
+    return gims
 
 
 class Kever:
@@ -4301,7 +4481,7 @@ class Kevery:
         qry, rpy, pro, bar, xip, exn.
 
         Processing order:
-            1. AID-based allow/deny logic 
+            1. AID-based allow/deny logic
             2. KRAM processing via self.kramer.intake()
             3. Message-type-specific processing delegation
 
@@ -4321,11 +4501,11 @@ class Kevery:
         tvy = kwa.pop('tvy', None) or self.tvy
 
         # Step 1: AID-based allow/deny Draft
-    
+
         # Determine sender AID using the serder
         sender = serder.pre
 
-        # Still needs fleshing out for delegate messages and multisig 
+        # Still needs fleshing out for delegate messages and multisig
 
         # Apply allow/deny rules
         if sender is not None:
@@ -4341,7 +4521,7 @@ class Kevery:
                 f"(not in allowlist; allowlist active)"
                 )
                 return  # drop silently
-                
+
         # Step 2: KRAM
         if self.kramer:
             self.kramer.reconcileConfig()

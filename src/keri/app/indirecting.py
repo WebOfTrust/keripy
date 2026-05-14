@@ -1109,7 +1109,7 @@ class ReceiptEnd(doing.DoDoer):
                 raise falcon.HTTPBadRequest(description=f"{self.hab.pre} is not a valid witness for {pre} event at "
                                                         f"{serder.sn}: wits={wits}")
 
-            rct = self.hab.receipt(serder)
+            rct = self.hab.receipt(serder, framed=True)
 
             self.psr.parseOne(bytes(rct))
 

@@ -418,7 +418,7 @@ class WitnessReceiptor(doing.DoDoer):
                     rserder = eventing.receipt(pre=ser.pre,
                                                sn=sn,
                                                said=ser.said)
-                    rctMsg.extend(eventing.messagize(serder=rserder, wigers=wigers))
+                    rctMsg.extend(eventing.messagize(serder=rserder, wigers=wigers, framed=True))
 
                     witer.msgs.append(rctMsg)
                     _ = (yield self.tock)
@@ -485,7 +485,7 @@ class WitnessInquisitor(doing.DoDoer):
             add result of doify on this method to doers list
         """
         from .forwarding import introduce
-        
+
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -1102,5 +1102,5 @@ def schemes(db, eids):
                     cigar = None
                 msgs.extend(eventing.messagize(serder=serder,
                                                cigars=[cigar],
-                                               pipelined=True))
+                                               framed=False))
     return msgs

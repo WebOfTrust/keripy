@@ -271,6 +271,11 @@ def test_cesr_examples():
 
     sad = serder.sad
 
+    path = ''  # empty path
+    pather = Pather(path=path)
+    assert pather.qb64 == '4AAA'
+    assert pather.resolve(sad=sad) == sad
+
     path = '-'
     pather = Pather(path=path)
     assert pather.qb64 == '6AABAAA-'

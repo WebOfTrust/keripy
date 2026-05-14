@@ -157,7 +157,7 @@ class GrantDoer(doing.DoDoer):
                 credentialing.sendArtifacts(self.hby, self.rgy.reger, postman, source, recp)
                 postman.send(serder=source, attachment=atc)
 
-            atc = exchanging.serializeMessage(self.hby, exn.said)
+            atc = exchanging.serializeMessage(self.hby, exn.said, framed=True)
             del atc[:exn.size]
             postman.send(serder=exn,
                          attachment=atc)

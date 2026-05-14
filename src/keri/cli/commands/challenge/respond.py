@@ -107,7 +107,7 @@ class RespondDoer(doing.DoDoer):
 
         payload = dict(i=hab.pre, words=self.words)
         exn, _ = exchange(route="/challenge/response", payload=payload, sender=hab.pre)
-        ims = hab.endorse(serder=exn, last=False, pipelined=False)
+        ims = hab.endorse(serder=exn, last=False, framed=True)
         del ims[:exn.size]
 
         senderHab = hab.mhab if isinstance(hab, GroupHab) else hab

@@ -210,7 +210,7 @@ def test_cache_type_constraints_invalid(request, caches):
     Tests the behavior of cache type constraints within the Kramer configuration.
 
     This parameterized test suite is designed to validate that invalid combinations of cache
-    parameters raise the appropriate `KramConfigurationError` based on KRAM spec which requires 
+    parameters raise the appropriate `KramConfigurationError` based on KRAM spec which requires
     the following constraints:
     0 <= d
     0 < sl <= ll <= xl
@@ -799,7 +799,7 @@ def test_asmk(mockHelpingNowUTC):
             assert receiverHby.db.kramPMKS.get(keys=(senderHab.pre, msg5.said)) is not None
 
             # Rotate sender
-            rotMsg = senderHab.rotate()
+            rotMsg = senderHab.rotate(framed=True)
             Parser(version=Vrsn_1_0).parse(ims=bytearray(rotMsg), kvy=crossKvy)
 
             # Second sig uses new keys post-rotation
@@ -919,7 +919,7 @@ def test_asr(mockHelpingNowUTC):
                                  pvrsn=Vrsn_2_0)
 
             # Anchor msg SAID in sender's KEL via interaction event
-            ixnMsg = senderHab.interact(data=[dict(d=msg.said)])
+            ixnMsg = senderHab.interact(data=[dict(d=msg.said)], framed=True)
             # Cross-feed ixn to receiver
             Parser(version=Vrsn_1_0).parse(ims=bytearray(ixnMsg), kvy=crossKvy)
 
@@ -951,7 +951,7 @@ def test_asr(mockHelpingNowUTC):
                                   pvrsn=Vrsn_2_0)
 
             # Anchor in new ixn
-            ixnMsg = senderHab.interact(data=[dict(d=msg2.said)])
+            ixnMsg = senderHab.interact(data=[dict(d=msg2.said)], framed=True)
             Parser(version=Vrsn_1_0).parse(ims=bytearray(ixnMsg), kvy=crossKvy)
 
             ixnSn = senderHab.kever.sn
@@ -1089,7 +1089,7 @@ def test_asr(mockHelpingNowUTC):
                                   pvrsn=Vrsn_2_0)
 
             # Anchor SAID in sender's KEL
-            ixnMsg = senderHab.interact(data=[dict(d=msg7.said)])
+            ixnMsg = senderHab.interact(data=[dict(d=msg7.said)], framed=True)
             Parser(version=Vrsn_1_0).parse(ims=bytearray(ixnMsg), kvy=crossKvy)
 
             ixnSn = senderHab.kever.sn
@@ -1186,7 +1186,7 @@ def test_asr(mockHelpingNowUTC):
                                   pvrsn=Vrsn_2_0)
 
             # Anchor SAID in sender's KEL
-            ixnMsg = senderHab.interact(data=[dict(d=msg8.said)])
+            ixnMsg = senderHab.interact(data=[dict(d=msg8.said)], framed=True)
             Parser(version=Vrsn_1_0).parse(ims=bytearray(ixnMsg), kvy=crossKvy)
 
             ixnSn = senderHab.kever.sn
@@ -2070,7 +2070,7 @@ def test_stale_tsgs(mockHelpingNowUTC):
         assert icpSn == 0
 
         # Rotate sender so sn=1 is now current
-        rotMsg = senderHab.rotate()
+        rotMsg = senderHab.rotate(framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(rotMsg), kvy=crossKvy)
         assert senderHab.kever.sn == 1
 
@@ -2507,7 +2507,7 @@ def test_aid_allow_deny(mockHelpingNowUTC):
     Test AID based allow/deny in processMsg()
     """
     # Step 1: Setup
-    
+
     salt1 = Salter(raw=b'0123456789abcdef').qb64
     salt2 = Salter(raw=b'0123456789abcdeg').qb64
     salt3 = Salter(raw=b'0123456789abcdeh').qb64
@@ -2545,7 +2545,7 @@ def test_aid_allow_deny(mockHelpingNowUTC):
             # Create Kevery with kramer for KRAM testing
             kvy = Kevery(db=receiverHby.db, lax=False, local=False,
                                   kramer=kramer)
- 
+
             # Put AID in Deny list of Kevery
             kvy.denyList.add(denyHab.pre)
 
@@ -2571,7 +2571,7 @@ def test_aid_allow_deny(mockHelpingNowUTC):
             # Remove denyHab from deny list
             kvy.denyList.discard(denyHab.pre)
 
-            # Add allowHab to allow list           
+            # Add allowHab to allow list
             kvy.allowList.add(allowHab.pre)
 
             msg = query(pre=allowHab.pre,
@@ -2591,7 +2591,7 @@ def test_aid_allow_deny(mockHelpingNowUTC):
             # Assert cache was created
             assert receiverHby.db.kramMSGC.get(keys=(allowHab.pre, msg.said)) is not None
 
-            # Send another message with denyHab 
+            # Send another message with denyHab
             msg = query(pre=denyHab.pre,
                         route="ksn",
                         query=dict(i=denyHab.pre, src=denyHab.pre),
@@ -2606,7 +2606,7 @@ def test_aid_allow_deny(mockHelpingNowUTC):
             kwa = dict(ssgs=[(prefixer, sigers)])
             kvy.processMsg(msg, **kwa)
 
-            # Assert cache was not created because the allow list is active and denyHab is not 
+            # Assert cache was not created because the allow list is active and denyHab is not
             # in the allow list
             assert receiverHby.db.kramMSGC.get(keys=(denyHab.pre, msg.said)) is None
 
@@ -2776,9 +2776,9 @@ def test_dynamic_cache_decrease(fakeHelpingClock):
         with openCF(name="kram", base="test", temp=True) as cf:
             cf.put(old_cfg)
 
-            
+
             # Instantiate Kramer with old config
-            
+
             kramer = Kramer(db=receiverHby.db, cf=cf)
 
             rec = receiverHby.db.kramCTYP.get("~")
@@ -2786,7 +2786,7 @@ def test_dynamic_cache_decrease(fakeHelpingClock):
             assert rec.sl == 5000
             assert rec.psl == 5000
 
-            
+
             # New CF (pure decrease)
             new_cfg = {
                 "kram": {
@@ -2880,9 +2880,9 @@ def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
             kvy = Kevery(db=receiverHby.db, lax=False, local=False,
                                   kramer=kramer)
 
-            # Stamp for events            
+            # Stamp for events
             stamp = helping.nowIso8601()
-            
+
             # Create an existing cache entry
 
                         # Happy path, attachments pruned after threshold is met
@@ -2911,7 +2911,7 @@ def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
             assert cache.d == 1000   # drift from config
             assert cache.ml == 1000  # short lag (assk)
             assert cache.pml == 1000  # prune short lag (assk)
-            
+
             # New CF (increase accept + prune)
             new_cfg = {
                 "kram": {
@@ -2923,20 +2923,20 @@ def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
             }
             # Set the new config
             cf.put(new_cfg)
-            
+
             # Apply dynamic update
             kramer.changeConfig(cf)
-            
+
             # Verify existing caches DID NOT change
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
-            
+
             # Existing caches must remain unchanged
             assert cache.d == 1000
             assert cache.ml == 1000
             assert cache.pml == 1000
             assert cache.xl == 1000
             assert cache.pxl == 1000
-            
+
             # Verify cache-type template DID change
             ctyp = receiverHby.db.kramCTYP.get("~")
 
@@ -2950,7 +2950,7 @@ def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
             assert ctyp.psl == 5000
             assert ctyp.pll == 5000
             assert ctyp.pxl == 5000
-            
+
             # Advance time to complete staging
             clock.advance(5000)
             # kramer.reconcileConfig()
@@ -3064,7 +3064,7 @@ def test_new_cache_type(fakeHelpingClock):
         assert senderHab.pre in cross.kevers
 
         with openCF(name="kram", base="test", temp=True) as cf:
-            
+
             # Old configuration only has the fallback or default cache-type ~
             old_cfg = {
                 "kram": {
@@ -3085,7 +3085,7 @@ def test_new_cache_type(fakeHelpingClock):
                     }
                 }
             }
-            
+
             # Put the old config
             cf.put(old_cfg)
 
@@ -3093,7 +3093,7 @@ def test_new_cache_type(fakeHelpingClock):
             kramer = Kramer(db=receiverHby.db, cf=cf)
             kvy = Kevery(db=receiverHby.db, lax=False, local=False,
                                   kramer=kramer)
-            
+
             # Update the config with the new config
             cf.put(new_cfg)
             kramer.changeConfig(cf)
@@ -3108,7 +3108,7 @@ def test_new_cache_type(fakeHelpingClock):
             assert exnCt.sl == 1000
             assert exnCt.ll == 2000
             assert exnCt.xl == 3000
-            
+
             # Pruning window is changed immediately
             assert exnCt.psl == 5000
             assert exnCt.pll == 6000
@@ -3337,7 +3337,7 @@ def test_multiple_new_cache_type(fakeHelpingClock):
 
         # Create transferable single-key sender
         senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True)
-        
+
         # Create receiver hab
         receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True)
 
@@ -3352,7 +3352,7 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             cf.put(old_cfg)
             kramer = Kramer(db=receiverHby.db, cf=cf)
 
-            # Create Kevery 
+            # Create Kevery
             kvy = Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
 
             cf.put(new_cfg)
@@ -3377,7 +3377,7 @@ def test_multiple_new_cache_type(fakeHelpingClock):
 
             # Assert qry cache-type values
             qryCt = receiverHby.db.kramCTYP.get("qry")
-            
+
             # Use the worst case scenario
             # Accept window is unchanged untill delta passes
             assert qryCt.sl == 1000
@@ -3410,13 +3410,13 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             # Assert cache created
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             assert cache is not None
-            
+
             # Assert lag values are still unchanged
             assert cache.ml == 1000
             assert cache.ml == qryCt.sl
             assert cache.xl == 3000
             assert cache.xl == qryCt.xl
-            
+
             # Assert pruning values
             assert cache.pml == 3000
             assert cache.pml == qryCt.psl
@@ -3464,13 +3464,13 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             # Assert tmsc entry created for exn
             cache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn.said))
             assert cache is not None
-            
+
             # Assert lag values are still unchanged
             assert cache.ml == 1000
             assert cache.ml == exnCt.sl
             assert cache.xl == 3000
             assert cache.xl == exnCt.xl
-            
+
             # Assert pruning values
             assert cache.pml == 4000
             assert cache.pml == exnCt.psl
@@ -3503,7 +3503,7 @@ def test_multiple_new_cache_type(fakeHelpingClock):
 
             # Assert new qry cache-type values
             qryCt = receiverHby.db.kramCTYP.get("qry")
-            
+
             # Assert values now reflect the new config
             assert qryCt.sl == 3000
             assert qryCt.ll == 4000
@@ -3521,13 +3521,13 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             # Assert cache created
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             assert cache is not None
-            
+
             # Assert window lag values changed
             assert cache.ml == 3000
             assert cache.ml == qryCt.sl
             assert cache.xl == 5000
             assert cache.xl == qryCt.xl
-            
+
             # Create an exchange message
             exn = exchange(sender=senderHab.pre,
                            receiver=receiverHab.pre,
@@ -3548,7 +3548,7 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             # Assert tmsc entry created for exn
             cache = receiverHby.db.kramTMSC.get(keys=(senderHab.pre, xip.said, exn.said))
             assert cache is not None
-            
+
             # Assert window lag values changed
             assert cache.ml == 4000
             assert cache.ml == exnCt.sl
@@ -3567,7 +3567,7 @@ def test_merge_cache_types(fakeHelpingClock):
 
     1. **Detection of a merge as a Case‑3 expansion**
        The new “qry” cache‑type covers all patterns previously covered by
-       “qry.R.logs” and “qry.R.ksn”. 
+       “qry.R.logs” and “qry.R.ksn”.
        Because its accept windows are larger than the old ones, the merge must be staged:
            • “qry” must appear in `kramer._pending`.
 
@@ -3642,7 +3642,7 @@ def test_merge_cache_types(fakeHelpingClock):
 
         # Create transferable single-key sender
         senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True)
-        
+
         # Create receiver hab
         receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True)
 
@@ -3656,10 +3656,10 @@ def test_merge_cache_types(fakeHelpingClock):
         with openCF(name="kram", base="test", temp=True) as cf:
             cf.put(old_cfg)
             kramer = Kramer(db=receiverHby.db, cf=cf)
-            
-            # Create Kevery 
+
+            # Create Kevery
             kvy = Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
-            
+
             cf.put(new_cfg)
             kramer.changeConfig(cf)
 
@@ -3672,7 +3672,7 @@ def test_merge_cache_types(fakeHelpingClock):
 
             # Assert qry cache-type values
             qryCt = receiverHby.db.kramCTYP.get("qry")
-            
+
             # Use the worst case scenario which in this case is the fallback ~
             # Accept window is unchanged untill delta passes
             assert qryCt.sl == 1000
@@ -3704,11 +3704,11 @@ def test_merge_cache_types(fakeHelpingClock):
             # Assert cache created
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             assert cache is not None
-            
+
             # Assert lag values are from the worst-case scenario
             assert cache.ml == 1000
             assert cache.xl == 3000
-            
+
             # Assert pruning values are from the new qry cache-type
             assert cache.pml == 6000
             assert cache.pml == qryCt.psl
@@ -3735,11 +3735,11 @@ def test_merge_cache_types(fakeHelpingClock):
             # Assert cache created
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             assert cache is not None
-            
+
             # Assert lag values are from the worst-case scenario
             assert cache.ml == 1000
             assert cache.xl == 3000
-            
+
             # Assert pruning values are from the new qry cache-type
             assert cache.pml == 6000
             assert cache.pml == qryCt.psl
@@ -3752,8 +3752,8 @@ def test_merge_cache_types(fakeHelpingClock):
 
             # Reconcile config
             # kramer.reconcileConfig()
-            
-            # Create a new qry message with the ksn route 
+
+            # Create a new qry message with the ksn route
             stamp = helping.nowIso8601()
             msg = query(pre=senderHab.pre,
                         route="ksn",
@@ -3775,7 +3775,7 @@ def test_merge_cache_types(fakeHelpingClock):
 
             # Assert qry cache-type values
             qryCt = receiverHby.db.kramCTYP.get("qry")
-            
+
             # Assert accept window now reflects the new config
             assert qryCt.sl == 6000
             assert qryCt.ll == 7000
@@ -3784,7 +3784,7 @@ def test_merge_cache_types(fakeHelpingClock):
             # Assert cache created
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             assert cache is not None
-            
+
             # Assert lag values are updated to the new qry cache-type
             assert cache.ml == 6000
             assert cache.ml == qryCt.sl
@@ -3792,7 +3792,7 @@ def test_merge_cache_types(fakeHelpingClock):
             assert cache.xl == qryCt.xl
 
 
-            # Create a new qry message with the logs route 
+            # Create a new qry message with the logs route
             stamp = helping.nowIso8601()
             msg = query(pre=senderHab.pre,
                         route="logs",
@@ -3812,7 +3812,7 @@ def test_merge_cache_types(fakeHelpingClock):
             # Assert cache created
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             assert cache is not None
-            
+
             # Assert lag values are updated to the new qry cache-type
             assert cache.ml == 6000
             assert cache.ml == qryCt.sl
@@ -3874,7 +3874,7 @@ def test_modify_cache_types(fakeHelpingClock):
 
         # Create transferable single-key sender
         senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True)
-        
+
         # Create receiver hab
         receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True)
 
@@ -3888,10 +3888,10 @@ def test_modify_cache_types(fakeHelpingClock):
         with openCF(name="kram", base="test", temp=True) as cf:
             cf.put(old_cfg)
             kramer = Kramer(db=receiverHby.db, cf=cf)
-            
-            # Create Kevery 
+
+            # Create Kevery
             kvy = Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
-            
+
             cf.put(new_cfg)
             kramer.changeConfig(cf)
 
@@ -3921,7 +3921,7 @@ def test_modify_cache_types(fakeHelpingClock):
 
             # Assert qry.R.logs cache-type values
             qryCtLgs = receiverHby.db.kramCTYP.get("qry.R.logs")
-            
+
             # Use the worst case scenario which in this case is ksn route
             # Accept window is unchanged untill delta passes
             assert qryCtLgs.sl == 1500
@@ -3949,11 +3949,11 @@ def test_modify_cache_types(fakeHelpingClock):
             # Assert cache created
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             assert cache is not None
-            
+
             # Assert lag values are from the new qry.R.ksn cache-type
             assert cache.ml == 1500
             assert cache.xl == 3500
-            
+
             # Assert pruning values are from the new qry.R.ksn cache-type
             assert cache.pml == 1500
             assert cache.pml == qryCtKsn.psl
@@ -3981,11 +3981,11 @@ def test_modify_cache_types(fakeHelpingClock):
             # Assert cache created
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             assert cache is not None
-            
+
             # Assert lag values are from the worst-case scenario
             assert cache.ml == 1500
             assert cache.xl == 3500
-            
+
             # Assert pruning values are from the new cache-type
             assert cache.pml == 3500
             assert cache.pml == qryCtLgs.psl
@@ -4018,7 +4018,7 @@ def test_modify_cache_types(fakeHelpingClock):
 
             # Reconcile config
             # kramer.reconcileConfig()
-            
+
             # Create a new qry message with the logs route
             stamp = helping.nowIso8601()
             msg = query(pre=senderHab.pre,
@@ -4035,13 +4035,13 @@ def test_modify_cache_types(fakeHelpingClock):
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             kvy.processMsg(msg, **kwa)
-            
+
             # Assert "qry" was processed and removed
             assert "qry.R.logs" not in kramer._pending
 
             # Assert qry cache-type values
             qryCtLgs = receiverHby.db.kramCTYP.get("qry.R.logs")
-            
+
             # Assert accept window now reflects the new config
             assert qryCtLgs.sl == 3500
             assert qryCtLgs.ll == 4500
@@ -4050,7 +4050,7 @@ def test_modify_cache_types(fakeHelpingClock):
             # Assert cache created
             cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, msg.said))
             assert cache is not None
-            
+
             # Assert lag values are updated to the new qry cache-type
             assert cache.ml == 3500
             assert cache.ml == qryCtLgs.sl

@@ -34,12 +34,16 @@ def test_pathed_material(mockHelpingNowUTC):
         palHab = hby.makeHab(name="pal")
         debHab = debHby.makeHab(name="deb", isith=sith, icount=3)
         # Create series of events
-        debMsgs = dict(icp=debHab.makeOwnInception(), ixn0=debHab.interact(), rot=debHab.rotate(),
-                       ixn1=debHab.interact())
+        debMsgs = dict(icp=debHab.makeOwnInception(),
+                       ixn0=debHab.interact(framed=True),
+                       rot=debHab.rotate(framed=True),
+                       ixn1=debHab.interact(framed=True))
         fwd, end = exchange(route='/fwd',
-                            modifiers=dict(pre=palHab.pre, topic="replay"), payload={}, embeds=debMsgs,
+                            modifiers=dict(pre=palHab.pre, topic="replay"),
+                            payload={},
+                            embeds=debMsgs,
                             sender=debHab.pre)
-        fwd = debHab.endorse(fwd, last=False, pipelined=False)
+        fwd = debHab.endorse(fwd, last=False, framed=True)
         fwd.extend(end)
         handler = MockHandler()
         exc = Exchanger(hby=debHby, handlers=[handler])

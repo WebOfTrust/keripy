@@ -3038,7 +3038,7 @@ class Pather(Matter):
             if bextable:  # use StrB64 code
                 code = MtrDex.StrB64_L0
                 ws = (4 - (len(path) % 4)) % 4  # pre conv wad size in chars
-                if path[0] == ord(b'A') and (ws in (0, 1)):  # use escape sequence
+                if path and path[0] == ord(b'A') and (ws in (0, 1)):  # use escape sequence
                     path = b'--' + path
                 raw = Bexter._rawify(path)
 

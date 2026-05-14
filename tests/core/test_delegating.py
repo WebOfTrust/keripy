@@ -382,7 +382,7 @@ def test_delegation_supersede():
 
         serder = wopHab.kevers[topHab.pre].serder
         # generate witness receipt and process
-        receipt = wopHab.witness(serder=serder)  # now has fully witnessd controller icp
+        receipt = wopHab.witness(serder=serder, framed=False)  # now has fully witnessd controller icp
         count = wopHab.db.wigs.cnt(keys=(topHab.pre, serder.said))
         assert count >= 1
 
@@ -427,7 +427,7 @@ def test_delegation_supersede():
 
         serder = widHab.kevers[midHab.pre].serder
         # generate witness receipt and process
-        receipt = widHab.witness(serder=serder)  # now has fully witnessed controller icp
+        receipt = widHab.witness(serder=serder, framed=True)  # now has fully witnessed controller icp
         count = widHab.db.wigs.cnt(keys=(midHab.pre, serder.said))
         assert count >= 1
 
@@ -467,7 +467,7 @@ def test_delegation_supersede():
 
         serder = wotHab.kevers[botHab.pre].serder
         # generate witness receipt and process
-        receipt = wotHab.witness(serder=serder)  # now has fully witnessed controller icp
+        receipt = wotHab.witness(serder=serder, framed=True)  # now has fully witnessed controller icp
         count = wotHab.db.wigs.cnt(keys=(botHab.pre, serder.said))
         assert count >= 1
 
@@ -770,7 +770,7 @@ def test_delegables_escrow():
         seal = SealEvent(i=gateHab.pre,
                                   s="0",
                                   d=gateHab.pre)
-        ixn = torHab.interact(data=[seal._asdict()])
+        ixn = torHab.interact(data=[seal._asdict()], framed=True)
         assert ixn == (b'{"v":"KERI10JSON00013a_","t":"ixn","d":"EPUCIjCibL-VeT3n6PYIkbyP'
                        b'qpioIFT79NRqxboFv0Os","i":"EJTtW40aDl0aKDZ09v-o6uDz_VwLJGplp6WTI'
                        b'BGCoVog","s":"1","p":"EJTtW40aDl0aKDZ09v-o6uDz_VwLJGplp6WTIBGCoV'

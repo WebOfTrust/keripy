@@ -23,7 +23,7 @@ import pytest
 from keri.kering import (EmptyMaterialError, RawMaterialError, ShortageError,
                          InvalidCodeSizeError, InvalidValueError, ValidationError,
                          InvalidVarRawSizeError, ConversionError, SoftMaterialError,
-                         InvalidSoftError, InvalidCodeError, Version,Vrsn_2_0, 
+                         InvalidSoftError, InvalidCodeError, Version,Vrsn_2_0,
                          Protocols, Ilks, TraitDex, Kinds, versify)
 
 from keri.help import sceil, intToB64, codeB64ToB2, DTS_BASE_0, DTS_BASE_1
@@ -4926,13 +4926,49 @@ def test_pather():
     rparts = []  # relative parts
     aparts = ['', '']  # absolute parts
     pather = Pather(parts=rparts)
-    #assert pather.bext == "-"
     assert pather.path == '/'
     assert pather.qb64 == "6AABAAA-"
     assert pather.raw == b'>'
     assert pather.resolve(sad) == sad
     assert pather.parts == aparts
     assert pather.rparts == rparts
+
+    rparts = [""]  # relative parts empty string
+    aparts = ['']  # absolute parts
+    pather = Pather(parts=rparts)
+    assert pather.path == ''
+    assert pather.qb64 == '4AAA'
+    assert pather.raw == b''
+    assert pather.resolve(sad) == sad
+    assert pather.parts == aparts
+    assert pather.rparts == []
+
+    # test with empty part of rparts
+    rparts = ["", "a", "b"]
+    aparts = ["", "a", "b"]
+    pather = Pather(parts=rparts)
+    assert pather.path == "/a/b"
+    assert pather.qb64 == '4AAB-a-b'
+    assert pather.raw == b'\xf9\xaf\x9b'
+    assert pather.resolve(sad) == {'x': 1, 'y': 2, 'c': 'test'}
+    assert pather.parts == aparts
+    assert pather.rparts == ["a", "b"]
+
+    # test with trailing empty rparts
+    rparts = ["a", "b", ""]
+    aparts = ["", "a", "b", ""]
+    pather = Pather(parts=rparts)
+    assert pather.path == "/a/b/"
+    assert pather.qb64 == '6AACAAA-a-b-'
+    assert pather.raw == b'>k\xe6\xfe'
+    assert pather.resolve(sad) == {'x': 1, 'y': 2, 'c': 'test'}
+    assert pather.parts == aparts
+    assert pather.rparts == rparts
+
+    # test with empty internal rparts
+    rparts = ["a", "", "b"]
+    with pytest.raises(InvalidValueError):
+        pather = Pather(parts=rparts)
 
     rparts = ["a", "b", "c"]
     aparts = ["", "a", "b", "c"]

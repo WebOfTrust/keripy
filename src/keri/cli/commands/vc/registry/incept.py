@@ -17,7 +17,7 @@ from .....vdr import Regery, Registrar
 
 logger = ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Initialize a new credential registry', 
+parser = argparse.ArgumentParser(description='Initialize a new credential registry',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: registryIncept(args))
 parser.add_argument('--registry-name', '-r', help='Human readable name for registry, defaults to name of Habitat',
@@ -146,9 +146,9 @@ class RegistryInceptor(doing.DoDoer):
         rseal = SealEvent(registry.regk, "0", registry.regd)
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
         if self.estOnly:
-            anc = hab.rotate(data=[rseal])
+            anc = hab.rotate(data=[rseal], framed=True)
         else:
-            anc = hab.interact(data=[rseal])
+            anc = hab.interact(data=[rseal], framed=True)
 
         aserder = SerderKERI(raw=bytes(anc))
         self.registrar.incept(iserder=registry.vcp, anc=aserder)
