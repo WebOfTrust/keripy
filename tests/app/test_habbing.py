@@ -523,7 +523,7 @@ def test_hab_rotate_with_witness():
         assert hab.pre in hab.kevers
         assert hab.iserder.said == oidig
 
-        hab.rotate(ncount=3)
+        hab.rotate(ncount=3, framed=True)
         assert opub != hab.kever.verfers[0].qb64
         assert odig != hab.kever.serder.said
 
@@ -576,7 +576,7 @@ def test_habery_reinitialization():
         assert hab.pre in hab.kevers
         assert hab.iserder.said == oidig
 
-        hab.rotate()
+        hab.rotate(framed=True)
         assert opub != hab.kever.verfers[0].qb64
         assert odig != hab.kever.serder.said
 
@@ -860,8 +860,8 @@ def test_make_other_event():
         hab = hby.makeHab(name="test")
         assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
 
-        hab.rotate()
-        hab.rotate()
+        hab.rotate(framed=True)
+        hab.rotate(framed=True)
 
         msg = hab.makeOtherEvent(hab.pre, sn=1)
         assert msg == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EGnFNzw2UJKpQZYJj_xhcFYW'
@@ -897,7 +897,7 @@ def test_get_own_event():
         assert duple is None
 
         # Happy path: rotation at sn=1
-        hab.rotate()
+        hab.rotate(framed=True)
         serder, sigs, duple = hab.getOwnEvent(sn=1)
         assert serder.sad["t"] == "rot"
         assert serder.sad["s"] == "1"
@@ -908,7 +908,7 @@ def test_get_own_event():
     # Happy path: delegated hab with authorizer seal (duple is not None)
     with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
         delHab = hby.makeHab(name="delegator")
-        delHab.interact(data=[])  # anchoring event at sn=1
+        delHab.interact(data=[], framed=True)  # anchoring event at sn=1
         anchorSner = Number(num=delHab.kever.sn, code=NumDex.Huge)
         anchorSaider = Diger(qb64b=delHab.kever.serder.saidb)
 
@@ -946,7 +946,7 @@ def test_make_own_event():
         assert msg0.startswith(b'{"v":"KERI10JSON')
 
         # makeOwnEvent(sn=1) after rotate
-        hab.rotate()
+        hab.rotate(framed=True)
         msg1 = hab.makeOwnEvent(sn=1)
         assert len(msg1) > 0
         serder = SerderKERI(raw=bytes(msg1))
@@ -1110,7 +1110,7 @@ def test_rotate_preserves_toad():
         assert hab.kever.sn == 0
 
         # Rotate WITHOUT specifying toad — should preserve toad=2
-        hab.rotate()
+        hab.rotate(framed=True)
         assert hab.kever.sn == 1
         assert hab.kever.toader.num == 2  # must stay 2, not recalculate to ample(3)
 
@@ -1147,7 +1147,7 @@ def test_failed_rotation_rollback():
         # This should fail during event creation (eventing.rotate raises
         # ValueError when tholder.size > len(keys)).
         with pytest.raises(ValueError):
-            hab.rotate(isith="2")
+            hab.rotate(isith="2", framed=True)
 
         # Key store state must be unchanged after the failed rotation
         ps_after = hab.mgr.ks.sits.get(pre)
@@ -1159,7 +1159,7 @@ def test_failed_rotation_rollback():
         assert hab.kever.sn == 0
 
         # A subsequent valid rotation must still succeed
-        hab.rotate()
+        hab.rotate(framed=True)
         assert hab.kever.sn == 1
 
 

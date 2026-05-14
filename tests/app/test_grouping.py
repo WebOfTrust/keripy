@@ -86,13 +86,14 @@ def test_counselor():
         assert counselor.complete(prefixer=prefixer, number=number, diger=diger)
 
         # First Partial Rotation
-        hab1.rotate()
-        hab2.rotate()
+        hab1.rotate(framed=True)
+        hab2.rotate(framed=True)
         merfers = [hab1.kever.verfers[0], hab2.kever.verfers[0]]
         migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0]]
         prefixer = Prefixer(qb64=ghab.pre)
         number = Number(sn=ghab.kever.sn + 1)
-        rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
+        rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(),
+                          verfers=merfers, digers=migers, framed=True)
         rserder = SerderKERI(raw=rot)
 
         counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=Diger(qb64=rserder.said))
@@ -139,13 +140,14 @@ def test_counselor():
 
         # Second Partial Rotation
 
-        hab1.rotate()
-        hab2.rotate()
+        hab1.rotate(framed=True)
+        hab2.rotate(framed=True)
         merfers = [hab1.kever.verfers[0], hab2.kever.verfers[0]]
         migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0], hab3.kever.ndigers[0]]
         prefixer = Prefixer(qb64=ghab.pre)
         number = Number(sn=ghab.kever.sn + 1)
-        rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
+        rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(),
+                          verfers=merfers, digers=migers, framed=True)
         rserder = SerderKERI(raw=rot)
 
         counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=Diger(qb64=rserder.said))
@@ -193,13 +195,14 @@ def test_counselor():
         assert [diger.qb64 for diger in ghab.kever.ndigers] == ndigs
 
         # Third Partial Rotation with Recovery
-        hab1.rotate()
-        hab3.rotate()
+        hab1.rotate(framed=True)
+        hab3.rotate(framed=True)
         merfers = [hab1.kever.verfers[0], hab3.kever.verfers[0]]
         migers = [hab1.kever.ndigers[0], hab3.kever.ndigers[0]]
         prefixer = Prefixer(qb64=ghab.pre)
         number = Number(sn=ghab.kever.sn + 1)
-        rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
+        rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(),
+                          verfers=merfers, digers=migers, framed=True)
         rserder = SerderKERI(raw=rot)
 
         counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=Diger(qb64=rserder.said))
@@ -371,16 +374,17 @@ def test_the_seven():
         assert counselor.complete(prefixer=prefixer, number=number, diger=diger)
 
         # First Partial Rotation
-        hab1.rotate()
-        hab2.rotate()
-        hab3.rotate()
+        hab1.rotate(framed=True)
+        hab2.rotate(framed=True)
+        hab3.rotate(framed=True)
         merfers = [hab1.kever.verfers[0], hab2.kever.verfers[0], hab3.kever.verfers[0]]
         migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0], hab3.kever.ndigers[0], hab4.kever.ndigers[0],
                   hab5.kever.ndigers[0], hab6.kever.ndigers[0], hab7.kever.ndigers[0]]
         prefixer = Prefixer(qb64=ghab.pre)
         number = Number(sn=ghab.kever.sn + 1)
         rot = ghab.rotate(isith='["1/3", "1/3", "1/3"]', nsith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
-                          toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
+                          toad=0, cuts=list(), adds=list(), verfers=merfers,
+                          digers=migers, framed=True)
         rserder = SerderKERI(raw=rot)
 
         counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=Diger(qb64=rserder.said))
@@ -433,16 +437,17 @@ def test_the_seven():
         assert [diger.qb64 for diger in ghab.kever.ndigers] == ndigs
 
         # Second Partial Rotation
-        hab1.rotate()
-        hab2.rotate()
-        hab3.rotate()
+        hab1.rotate(framed=True)
+        hab2.rotate(framed=True)
+        hab3.rotate(framed=True)
         merfers = [hab1.kever.verfers[0], hab2.kever.verfers[0], hab3.kever.verfers[0]]
         migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0], hab3.kever.ndigers[0], hab4.kever.ndigers[0],
                   hab5.kever.ndigers[0], hab6.kever.ndigers[0], hab7.kever.ndigers[0]]
         prefixer = Prefixer(qb64=ghab.pre)
         number = Number(sn=ghab.kever.sn + 1)
         rot = ghab.rotate(isith='["1/3", "1/3", "1/3"]', nsith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
-                          toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
+                          toad=0, cuts=list(), adds=list(), verfers=merfers,
+                          digers=migers, framed=True)
         rserder = SerderKERI(raw=rot)
 
         counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=Diger(qb64=rserder.said))
@@ -511,15 +516,16 @@ def test_the_seven():
         # Create a new counselor with #4
         counselor4 = Counselor(hby=hby4)
 
-        hab4.rotate()
-        hab5.rotate()
-        hab6.rotate()
+        hab4.rotate(framed=True)
+        hab5.rotate(framed=True)
+        hab6.rotate(framed=True)
         merfers = [hab4.kever.verfers[0], hab5.kever.verfers[0], hab6.kever.verfers[0]]
         migers = [hab4.kever.ndigers[0], hab5.kever.ndigers[0], hab6.kever.ndigers[0]]
         prefixer = Prefixer(qb64=ghab.pre)
         number = Number(sn=ghab.kever.sn + 1)
         rot = ghab4.rotate(isith='["1/3", "1/3", "1/3"]', nsith='["1/3", "1/3", "1/3"]',
-                           toad=0, cuts=list(), adds=list(), verfers=merfers, digers=migers)
+                           toad=0, cuts=list(), adds=list(), verfers=merfers,
+                           digers=migers, framed=True)
         rserder = SerderKERI(raw=rot)
 
         counselor4.start(ghab=ghab4, prefixer=prefixer, number=number, diger=Diger(qb64=rserder.said))
@@ -672,7 +678,7 @@ def test_multisig_rotate(mockHelpingNowUTC):
 
 def test_multisig_interact(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
-        ixn = ghab1.mhab.interact()
+        ixn = ghab1.mhab.interact(framed=True)
         exn, atc = multisigInteractExn(ghab=ghab1, aids=ghab1.smids,
                                                 ixn=ixn)
 
@@ -692,7 +698,7 @@ def test_multisig_interact(mockHelpingNowUTC):
 def test_multisig_registry_incept(mockHelpingNowUTC, mockCoringRandomNonce):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
         vcp = incept(ghab1.pre)
-        ixn = ghab1.mhab.interact(data=[dict(i=vcp.pre, s="0", d=vcp.said)])
+        ixn = ghab1.mhab.interact(data=[dict(i=vcp.pre, s="0", d=vcp.said)], framed=True)
         exn, atc = multisigRegistryInceptExn(ghab=ghab1, vcp=vcp.raw, anc=ixn,
                                                       usage="Issue vLEI Credentials")
 
@@ -737,7 +743,7 @@ def test_multisig_incept_handler(mockHelpingNowUTC):
 
 def test_multisig_rotate_handler(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (_, _)):
-        msg = ghab1.mhab.rotate()
+        msg = ghab1.mhab.rotate(framed=True)
         notifier = Notifier(hby=hby1)
         mux = Multiplexor(hby=hby1, notifier=notifier)
         exc = Exchanger(hby=hby1, handlers=[])
@@ -781,7 +787,7 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
 
 def test_multisig_interact_handler(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, ghab2), (_, _)):
-        ixn = ghab1.mhab.interact()
+        ixn = ghab1.mhab.interact(framed=True)
         exn, atc = multisigInteractExn(ghab=ghab2, aids=ghab1.smids,
                                                 ixn=ixn)
 

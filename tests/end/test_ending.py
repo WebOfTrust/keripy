@@ -480,7 +480,7 @@ def test_get_oobi():
         assert rep.status == falcon.HTTP_NOT_FOUND
 
         # Approve the delegation manually
-        delhab.interact(data=[dict(i=hab.pre, s="0", d=hab.pre)])
+        delhab.interact(data=[dict(i=hab.pre, s="0", d=hab.pre)], framed=True)
         for msg in delhab.db.clonePreIter(pre=delhab.pre, fn=0):
             hab.psr.parse(ims=msg)
 

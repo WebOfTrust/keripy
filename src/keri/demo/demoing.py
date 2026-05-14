@@ -120,29 +120,29 @@ class BobDirector(directing.Director):
             self.sendOwnInception()  # Inception Event
             tyme = (yield (self.tock))
 
-            msg = self.hab.rotate()  # Rotation Event
+            msg = self.hab.rotate(framed=True)  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.interact()  # Interaction event
+            msg = self.hab.interact(framed=True)  # Interaction event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
             # create a bunch of out of order messages to test out of order escrow
             msgs = []
-            msgs.append(self.hab.rotate())  # Rotation event
-            msgs.append(self.hab.rotate())  # Rotation event
-            msgs.append(self.hab.rotate())  # Rotation event
-            msgs.append(self.hab.interact())  # Interaction event
-            msgs.append(self.hab.rotate())  # Rotation event
-            msgs.append(self.hab.rotate())  # Rotation event
-            msgs.append(self.hab.interact())  # Interaction event
-            msgs.append(self.hab.rotate())  # Rotation event
-            msgs.append(self.hab.rotate())  # Rotation event
-            msgs.append(self.hab.rotate())  # Rotation event
-            msgs.append(self.hab.interact())
+            msgs.append(self.hab.rotate(framed=True))  # Rotation event
+            msgs.append(self.hab.rotate(framed=True))  # Rotation event
+            msgs.append(self.hab.rotate(framed=True))  # Rotation event
+            msgs.append(self.hab.interact(framed=True))  # Interaction event
+            msgs.append(self.hab.rotate(framed=True))  # Rotation event
+            msgs.append(self.hab.rotate(framed=True))  # Rotation event
+            msgs.append(self.hab.interact(framed=True))  # Interaction event
+            msgs.append(self.hab.rotate(framed=True))  # Rotation event
+            msgs.append(self.hab.rotate(framed=True))  # Rotation event
+            msgs.append(self.hab.rotate(framed=True))  # Rotation event
+            msgs.append(self.hab.interact(framed=True))
 
             msgs.reverse()  # reverse the order
 
@@ -223,57 +223,57 @@ class SamDirector(directing.Director):
             self.sendOwnInception()  # Inception Event
             tyme = (yield (self.tock))
 
-            msg = self.hab.interact()  # Interaction Event
+            msg = self.hab.interact(framed=True)  # Interaction Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.rotate()  # Rotation Event
+            msg = self.hab.rotate(framed=True)  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.rotate()  # Rotation Event
+            msg = self.hab.rotate(framed=True)  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.rotate()  # Rotation Event
+            msg = self.hab.rotate(framed=True)  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.rotate()  # Rotation Event
+            msg = self.hab.rotate(framed=True)  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.rotate()  # Rotation Event
+            msg = self.hab.rotate(framed=True)  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.rotate()  # Rotation Event
+            msg = self.hab.rotate(framed=True)  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.interact()  # Interaction Event
+            msg = self.hab.interact(framed=True)  # Interaction Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.rotate()  # Rotation Event
+            msg = self.hab.rotate(framed=True)  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.rotate()  # Rotation Event
+            msg = self.hab.rotate(framed=True)  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))
 
-            msg = self.hab.rotate()  # Rotation Event
+            msg = self.hab.rotate(framed=True)  # Rotation Event
             self.client.tx(msg)  # send to connected remote
             logger.info("%s sent event:\n%s\n\n", self.hab.pre, bytes(msg))
             tyme = (yield (self.tock))

@@ -234,10 +234,10 @@ class CredentialIssuer(doing.DoDoer):
         rseal = dict(i=rseal.i, s=rseal.s, d=rseal.d)
 
         if registry.estOnly:
-            anc = hab.rotate(data=[rseal])
+            anc = hab.rotate(data=[rseal], framed=True)
 
         else:
-            anc = hab.interact(data=[rseal])
+            anc = hab.interact(data=[rseal], framed=True)
 
         aserder = SerderKERI(raw=anc)
         self.credentialer.issue(self.creder, iserder)

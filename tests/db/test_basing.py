@@ -1842,12 +1842,12 @@ def test_clean_baser():
         path = natHab.db.path  # save for later
 
         # Create series of events for Nat
-        natHab.interact()
-        natHab.rotate()
-        natHab.interact()
-        natHab.interact()
-        natHab.interact()
-        natHab.interact()
+        natHab.interact(framed=True)
+        natHab.rotate(framed=True)
+        natHab.interact(framed=True)
+        natHab.interact(framed=True)
+        natHab.interact(framed=True)
+        natHab.interact(framed=True)
 
         assert natHab.kever.sn == 6
         assert natHab.kever.fn == 6

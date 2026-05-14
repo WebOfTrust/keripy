@@ -201,9 +201,9 @@ class ConfirmDoer(doing.DoDoer):
 
                         anchor = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
                         if self.interact:
-                            hab.interact(data=[anchor])
+                            hab.interact(data=[anchor], framed=True)
                         else:
-                            hab.rotate(data=[anchor])
+                            hab.rotate(data=[anchor], framed=True)
 
                         auths = {}
                         if self.authenticate:

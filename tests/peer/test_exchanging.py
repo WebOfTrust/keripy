@@ -115,7 +115,7 @@ def test_hab_exchange(mockHelpingNowUTC):
                         nonce=nonce,
                         code=MtrDex.Blake3_256)
         seal = dict(i=regser.pre, s=regser.sn, d=regser.said)
-        msg = hab.interact(data=[seal])
+        msg = hab.interact(data=[seal], framed=True)
 
         embeds = dict(
             vcp=regser.raw,
@@ -124,7 +124,7 @@ def test_hab_exchange(mockHelpingNowUTC):
 
         data = dict(m="Let's create a registry")
         msg = hab.exchange(route="/multisig/registry/incept", recipient="",
-                           payload=data, embeds=embeds)
+                           payload=data, embeds=embeds, framed=True)
         assert msg == (b'{"v":"KERI10JSON0003a0_","t":"exn","d":"ELkHqph-Tj4LGHYfFfoVmJJo'
                        b'09S2gp6ci8rK96upIAKE","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2Q'
                        b'V8dDjI3","rp":"","p":"","dt":"2021-01-01T00:00:00.000000+00:00",'
@@ -157,7 +157,7 @@ def test_hab_exchange(mockHelpingNowUTC):
                         code=MtrDex.Blake3_256)
 
         seal = dict(i=regser.pre, s=regser.sn, d=regser.said)
-        msg = hab2.interact(data=[seal])
+        msg = hab2.interact(data=[seal], framed=True)
 
         embeds = dict(
             vcp=regser.raw,
@@ -165,8 +165,9 @@ def test_hab_exchange(mockHelpingNowUTC):
         )
 
         data = dict(m="Lets create this registry instead")
-        msg = hab2.exchange(route="/multisig/registry/incept", payload=data, recipient="", dig=exn.said,
-                            embeds=embeds)
+        msg = hab2.exchange(route="/multisig/registry/incept", payload=data,
+                            recipient="", dig=exn.said,
+                            embeds=embeds, framed=True)
         assert msg == (b'{"v":"KERI10JSON0003d6_","t":"exn","d":"EPO_XC9nwSixqSoOvsHymFr-'
                        b'l3udclHBdOh4OUEqZ33P","i":"EIREQlatUJODbKogZfa3IqXZ90XdZA0qJMVli'
                        b'I61Bcc2","rp":"","p":"ELkHqph-Tj4LGHYfFfoVmJJo09S2gp6ci8rK96upIA'
@@ -196,8 +197,8 @@ def test_hab_exchange(mockHelpingNowUTC):
         embeds = dict(
             vcp=hab.endorse(regser, framed=True)
         )
-        msg = hab.exchange(route="/multisig/registry/incept", payload=data, embeds=embeds,
-                           recipient="")
+        msg = hab.exchange(route="/multisig/registry/incept", payload=data,
+                           embeds=embeds, recipient="", framed=True)
         assert msg == (b'{"v":"KERI10JSON00026b_","t":"exn","d":"EMBm0p7fCIqJrP4Z-PBI-yEv'
                        b'Xin_-eY1dU4XTCM9ykRC","i":"BJZ_LF61JTCCSCIw2Q4ozE2MsbRC4m-N6-tFV'
                        b'lCeiZPG","rp":"","p":"","dt":"2021-01-01T00:00:00.000000+00:00",'

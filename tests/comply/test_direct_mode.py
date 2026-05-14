@@ -60,7 +60,7 @@ def test_direct_mode_with_manager():
         sigers = coeMgr.sign(ser=coeSerder.raw, verfers=coeVerfers)
 
         #  create serialized message
-        cmsg = messagize(coeSerder, sigers=sigers)
+        cmsg = messagize(coeSerder, sigers=sigers, framed=True)
 
         # create own Controller Kever in  Controller's Kevery
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)

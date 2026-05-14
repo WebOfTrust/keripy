@@ -43,7 +43,7 @@ def test_postman(seeder):
         assert recpHab.pre in wesKvy.kevers
 
         serder = SerderKERI(raw=recpIcp)
-        rct = wesHab.receipt(serder)
+        rct = wesHab.receipt(serder, framed=True)
 
         kvy = Kevery(db=hab.db)
         Parser(version=Vrsn_1_0).parseOne(bytearray(recpIcp), kvy=kvy, local=True)
@@ -328,7 +328,7 @@ def test_essr_mbx(seeder):
         assert recpHab.pre in wesKvy.kevers
 
         serder = SerderKERI(raw=recpIcp)
-        rct = wesHab.receipt(serder)
+        rct = wesHab.receipt(serder, framed=True)
 
         kvy = Kevery(db=hab.db)
         Parser(version=Vrsn_1_0).parseOne(bytearray(recpIcp), kvy=kvy, local=True)

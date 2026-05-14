@@ -672,7 +672,7 @@ class Registrar(doing.DoDoer):
         Returns:
             (bytearray, Prefixer, Seqner, Saider): tuple of ixn event, Hab pre, and seq. no. and SAID of the ixn event.
         """
-        ixn = hab.interact(data=[rseal])
+        ixn = hab.interact(data=[rseal], framed=True)
         serder = SerderKERI(raw=bytes(ixn))
 
         sn = serder.sn

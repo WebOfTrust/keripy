@@ -297,7 +297,7 @@ class JoinDoer(doing.DoDoer):
             approve = yn in ('', 'y', 'Y')
 
         if approve:
-            ixn = ghab.interact(data=data)
+            ixn = ghab.interact(data=data, framed=True)
             serder = SerderKERI(raw=ixn)
 
             ixn = ghab.makeOwnEvent(allowPartiallySigned=True, sn=oixn.sn)
@@ -425,7 +425,7 @@ class JoinDoer(doing.DoDoer):
                 ghab = self.hby.joinGroupHab(pre, group=group, mhab=mhab, smids=smids, rmids=rmids)
 
             try:
-                ghab.rotate(serder=orot, smids=smids, rmids=rmids)
+                ghab.rotate(serder=orot, smids=smids, rmids=rmids, framed=True)
             except ValueError:
                 return False
 

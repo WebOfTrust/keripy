@@ -17,7 +17,7 @@ from ...app import (HaberyDoer, Receiptor, WitnessReceiptor,
                     MailboxDirector, Anchorer, Poster)
 
 
-parser = argparse.ArgumentParser(description='Rotate keys', 
+parser = argparse.ArgumentParser(description='Rotate keys',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: rotate(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
@@ -197,7 +197,7 @@ class RotateDoer(doing.DoDoer):
 
         hab.rotate(isith=self.isith, nsith=self.nsith, ncount=self.count, toad=self.toad,
                    cuts=list(self.cuts), adds=list(self.adds),
-                   data=self.data)
+                   data=self.data, framed=True)
 
         auths = {}
         if self.authenticate:

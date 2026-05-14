@@ -100,7 +100,7 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
     assert delHab.pre == "EGyXT1FmEeI05xmaBsYs2H4v8bazCy-JClB21rAfvXZu"
 
     bts.delegation(pre=delHab.pre, proxy=proxyHab)
-    palHab.rotate(data=[dict(i=delHab.pre, s="0", d=delHab.kever.serder.said)])
+    palHab.rotate(data=[dict(i=delHab.pre, s="0", d=delHab.kever.serder.said)], framed=True)
     witDoer.msgs.append(dict(pre=palHab.pre))
     while not witDoer.cues:
         yield tock

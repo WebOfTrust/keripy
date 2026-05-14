@@ -1280,11 +1280,12 @@ class BaseHab:
         """
         self.make(**kwa)
 
-    def rotate(self, *, verfers=None, digers=None, isith=None, nsith=None, toad=None, cuts=None, adds=None,
-               data=None):
+    def rotate(self, *, verfers=None, digers=None, isith=None, nsith=None,
+                        toad=None, cuts=None, adds=None, data=None, framed=False,
+                        nested=False, gvrsn=Version, genusify=False):
         """Perform rotation operation. Register rotation in database.
 
-        Args:
+        Parameters::
             verfers (list or None): Verfer instances of public keys qb64.
             digers (list or None): Diger instances of public next key digests
                 qb64.
@@ -1299,11 +1300,29 @@ class BaseHab:
             adds (list or None): qb64 prefixes of witnesses to be added to the
                 witness list.
             data (list or None): dicts of committed data such as seals.
+            framed (bool): True means may assume each message plus its attachments
+                                is isolated as frame when parsing so do not need
+                                attachment group when messagizing
+                           False means may not assume eash message plus its attachments
+                                is isolated as frame when parsing so do need
+                                attachment group when messagizing
+            nested (bool): True means messagize for non-top level
+                                This forces non-native serializion to be embedded
+                                in non-native group code
+                           False means messagize for top level of stream.
+                                This allows bare non-native serialization of message
+            gvrsn (Versionage): CESR Genus version for attachment group codes or
+                            nesting group code (useful when serder.gvrsn < 2)
+                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                                if serder.gvrsn else serder.pvrsn
+            genusify (bool): True means prepend genus version code from gvrsn before
+                            serder to override default stream genus version
+                         False means do nothing
 
-        Returns:
+        Returns::
             bytearray: rotation message with attached signatures.
 
-        Raises:
+        Raises::
             ValidationError: if the new key set cannot satisfy the prior next
                 signing threshold, or if the rotation event is otherwise
                 improper.
@@ -1368,7 +1387,8 @@ class BaseHab:
         sigers = self.sign(ser=serder.raw, verfers=verfers, rotated=True)
 
         # update own key event verifier state
-        msg = messagize(serder, sigers=sigers, framed=True)
+        msg = messagize(serder, sigers=sigers, framed=framed, nested=nested,
+                        gvrsn=gvrsn, genusify=genusify)
 
         try:
             self.kvy.processEvent(serder=serder, sigers=sigers)
@@ -1380,16 +1400,35 @@ class BaseHab:
 
         return msg
 
-    def interact(self, *, data=None):
+    def interact(self, *, data=None, framed=False, nested=False, gvrsn=Version,
+                          genusify=False):
         """Perform interaction operation. Register interaction in database.
 
-        Args:
+        Parameters::
             data (list or None): dicts of committed data such as seals.
+            framed (bool): True means may assume each message plus its attachments
+                                is isolated as frame when parsing so do not need
+                                attachment group when messagizing
+                           False means may not assume eash message plus its attachments
+                                is isolated as frame when parsing so do need
+                                attachment group when messagizing
+            nested (bool): True means messagize for non-top level
+                                This forces non-native serializion to be embedded
+                                in non-native group code
+                           False means messagize for top level of stream.
+                                This allows bare non-native serialization of message
+            gvrsn (Versionage): CESR Genus version for attachment group codes or
+                            nesting group code (useful when serder.gvrsn < 2)
+                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                                if serder.gvrsn else serder.pvrsn
+            genusify (bool): True means prepend genus version code from gvrsn before
+                            serder to override default stream genus version
+                         False means do nothing
 
-        Returns:
+        Returns::
             bytearray: interaction message with attached signatures.
 
-        Raises:
+        Raises::
             ValidationError: if the interaction event is improper.
         """
         kever = self.kever
@@ -1400,7 +1439,8 @@ class BaseHab:
 
         sigers = self.sign(ser=serder.raw)
 
-        msg = messagize(serder, sigers=sigers, framed=True)
+        msg = messagize(serder, sigers=sigers, framed=framed, nested=nested,
+                        gvrsn=gvrsn, genusify=genusify)
         try:
             # verify event, update kever state, and escrow if group
             self.kvy.processEvent(serder=serder, sigers=sigers)
@@ -1488,7 +1528,7 @@ class BaseHab:
         query['i'] = pre
         query["src"] = src
         serder = queryEvent(query=query, **kwa)
-        return self.endorse(serder, last=True, framed=False)
+        return self.endorse(serder, last=True, framed=False)  # was framed=False
 
 
     def endorse(self, serder, last=False, framed=False, nested=False,
@@ -1555,11 +1595,15 @@ class BaseHab:
                  dig=None,
                  modifiers=None,
                  embeds=None,
-                 save=False):
+                 save=False,
+                 framed=False,
+                 nested=False,
+                 gvrsn=Version,
+                 genusify=False):
         """Build and return a signed ``exn`` message, optionally saving it to
         own db.
 
-        Args:
+        Parameters::
             route (str): route path string indicating the data flow handler.
             payload (dict): payload data for the exchange message.
             recipient (str): qb64 identifier prefix of the recipient.
@@ -1569,8 +1613,26 @@ class BaseHab:
             modifiers (dict or None): additional modifiers for the exchange.
             embeds (dict or None): embedded message serders if any.
             save (bool): True means process local copy into db after building.
+            framed (bool): True means may assume each message plus its attachments
+                                is isolated as frame when parsing so do not need
+                                attachment group when messagizing
+                           False means may not assume eash message plus its attachments
+                                is isolated as frame when parsing so do need
+                                attachment group when messagizing
+            nested (bool): True means messagize for non-top level
+                                This forces non-native serializion to be embedded
+                                in non-native group code
+                           False means messagize for top level of stream.
+                                This allows bare non-native serialization of message
+            gvrsn (Versionage): CESR Genus version for attachment group codes or
+                            nesting group code (useful when serder.gvrsn < 2)
+                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                                if serder.gvrsn else serder.pvrsn
+            genusify (bool): True means prepend genus version code from gvrsn before
+                            serder to override default stream genus version
+                         False means do nothing
 
-        Returns:
+        Returns::
             bytearray: signed exchange message with count code and receipt
             couples (pre+cig).
         """
@@ -1590,7 +1652,8 @@ class BaseHab:
         else:
             cigars = self.sign(ser=serder.raw,
                                indexed=False)
-            msg = messagize(serder, cigars=cigars, framed=True)
+            msg = messagize(serder, cigars=cigars, framed=framed, nested=nested,
+                            gvrsn=gvrsn, genusify=genusify)
 
         msg.extend(end)
 
@@ -1599,14 +1662,33 @@ class BaseHab:
 
         return msg
 
-    def receipt(self, serder):
+    def receipt(self, serder, framed=False, nested=False, gvrsn=Version,
+                      genusify=False):
         """Build own receipt ``rct`` message of serder with count code and
         receipt couples (pre+cig). Processes local copy into db to validate.
 
-        Args:
+        Parameters::
             serder (Serder): event serder to receipt.
+            framed (bool): True means may assume each message plus its attachments
+                                is isolated as frame when parsing so do not need
+                                attachment group when messagizing
+                           False means may not assume eash message plus its attachments
+                                is isolated as frame when parsing so do need
+                                attachment group when messagizing
+            nested (bool): True means messagize for non-top level
+                                This forces non-native serializion to be embedded
+                                in non-native group code
+                           False means messagize for top level of stream.
+                                This allows bare non-native serialization of message
+            gvrsn (Versionage): CESR Genus version for attachment group codes or
+                            nesting group code (useful when serder.gvrsn < 2)
+                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                                if serder.gvrsn else serder.pvrsn
+            genusify (bool): True means prepend genus version code from gvrsn before
+                            serder to override default stream genus version
+                         False means do nothing
 
-        Returns:
+        Returns::
             bytearray: receipt message with attached signatures.
         """
         ked = serder.ked
@@ -1621,34 +1703,56 @@ class BaseHab:
                                       d=self.kever.lastEst.d)
             sigers = self.sign(ser=serder.raw,
                                indexed=True)
-            msg = messagize(serder=reserder, sigers=sigers, seal=seal, framed=True)
+            msg = messagize(serder=reserder, sigers=sigers, seal=seal,
+                            framed=framed, nested=nested, gvrsn=gvrsn,
+                            genusify=genusify)
         else:
             cigars = self.sign(ser=serder.raw,
                                indexed=False)
-            msg = messagize(reserder, cigars=cigars, framed=True)
+            msg = messagize(reserder, cigars=cigars, framed=framed, nested=nested,
+                        gvrsn=gvrsn, genusify=genusify)
 
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
 
 
-    def witness(self, serder):
+    def witness(self, serder, framed=False, nested=False, gvrsn=Version,
+                              genusify=False):
         """Build own witness receipt ``rct`` message of serder with count code
         and witness indexed receipt signatures, if the key state of
         ``serder.pre`` shows that own pre is a current witness of the event in
         serder.
 
-        Note:
+        Note::
             The caller must ensure that the serder being witnessed has been
             accepted as a valid event into this hab controller's KEL before
             calling this method.
 
-        Args:
+        Parameters::
             serder (Serder): event serder to witness.
+            framed (bool): True means may assume each message plus its attachments
+                                is isolated as frame when parsing so do not need
+                                attachment group when messagizing
+                           False means may not assume eash message plus its attachments
+                                is isolated as frame when parsing so do need
+                                attachment group when messagizing
+            nested (bool): True means messagize for non-top level
+                                This forces non-native serializion to be embedded
+                                in non-native group code
+                           False means messagize for top level of stream.
+                                This allows bare non-native serialization of message
+            gvrsn (Versionage): CESR Genus version for attachment group codes or
+                            nesting group code (useful when serder.gvrsn < 2)
+                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                                if serder.gvrsn else serder.pvrsn
+            genusify (bool): True means prepend genus version code from gvrsn before
+                            serder to override default stream genus version
+                         False means do nothing
 
-        Returns:
+        Returns::
             bytearray: witness receipt message with attached signatures.
 
-        Raises:
+        Raises::
             ValueError: if own prefix is transferable, if the key state for
                 ``serder.pre`` is missing, or if own prefix is not a witness
                 of the event.
@@ -1678,7 +1782,8 @@ class BaseHab:
                                pubs=[self.pre],
                                indices=[index])
 
-        msg = messagize(reserder, wigers=wigers, framed=False)
+        msg = messagize(reserder, wigers=wigers, framed=framed, nested=nested,
+                        gvrsn=gvrsn, genusify=genusify)
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
 
@@ -2024,17 +2129,36 @@ class BaseHab:
         return self.reply(route=route, data=data, stamp=stamp)
 
 
-    def loadEndRole(self, cid, eid, role=Roles.controller):
+    def loadEndRole(self, cid, eid, role=Roles.controller, framed=False,
+                        nested=False, gvrsn=Version, genusify=False):
         """Load and return the messagized end role authorization record for
         the given ``cid``, ``eid``, and ``role`` from the database, including
         associated attachments.
 
-        Args:
+        Parameters::
             cid (str): qb64 identifier prefix of controller.
             eid (str): qb64 identifier prefix of endpoint provider.
             role (str): endpoint role. Default is ``Roles.controller``.
+            framed (bool): True means may assume each message plus its attachments
+                                is isolated as frame when parsing so do not need
+                                attachment group when messagizing
+                           False means may not assume eash message plus its attachments
+                                is isolated as frame when parsing so do need
+                                attachment group when messagizing
+            nested (bool): True means messagize for non-top level
+                                This forces non-native serializion to be embedded
+                                in non-native group code
+                           False means messagize for top level of stream.
+                                This allows bare non-native serialization of message
+            gvrsn (Versionage): CESR Genus version for attachment group codes or
+                            nesting group code (useful when serder.gvrsn < 2)
+                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                                if serder.gvrsn else serder.pvrsn
+            genusify (bool): True means prepend genus version code from gvrsn before
+                            serder to override default stream genus version
+                         False means do nothing
 
-        Returns:
+        Returns::
             bytearray: messagized end role record with attachments, or empty
             bytearray if not found or not enabled/allowed.
         """
@@ -2065,7 +2189,10 @@ class BaseHab:
                                            cigars=[cigar] if cigar else [],
                                            sigers=sigers,
                                            seal=seal,
-                                           framed=False))
+                                           framed=framed,
+                                           nested=nested,
+                                           gvrsn=gvrsn,
+                                           genusify=genusify))
         return msgs
 
 
@@ -2117,16 +2244,35 @@ class BaseHab:
         return msgs
 
 
-    def loadLocScheme(self, eid, scheme=None):
+    def loadLocScheme(self, eid, scheme=None, framed=False, nested=False,
+                                 gvrsn=Version, genusify=False):
         """Load and return messagized location scheme records for the given
         ``eid`` and optional ``scheme`` from the database, including associated
         attachments.
 
-        Args:
+        Parameters::
             eid (str): qb64 identifier prefix of endpoint provider.
             scheme (str or None): url scheme filter. None means all schemes.
+            framed (bool): True means may assume each message plus its attachments
+                                is isolated as frame when parsing so do not need
+                                attachment group when messagizing
+                           False means may not assume eash message plus its attachments
+                                is isolated as frame when parsing so do need
+                                attachment group when messagizing
+            nested (bool): True means messagize for non-top level
+                                This forces non-native serializion to be embedded
+                                in non-native group code
+                           False means messagize for top level of stream.
+                                This allows bare non-native serialization of message
+            gvrsn (Versionage): CESR Genus version for attachment group codes or
+                            nesting group code (useful when serder.gvrsn < 2)
+                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                                if serder.gvrsn else serder.pvrsn
+            genusify (bool): True means prepend genus version code from gvrsn before
+                            serder to override default stream genus version
+                         False means do nothing
 
-        Returns:
+        Returns::
             bytearray: messagized location scheme records with attachments.
         """
         msgs = bytearray()
@@ -2155,7 +2301,10 @@ class BaseHab:
                                            cigars=[cigar] if cigar else [],
                                            sigers=sigers,
                                            seal=seal,
-                                           framed=False))
+                                           framed=framed,
+                                           nested=nested,
+                                           gvrsn=gvrsn,
+                                           genusify=genusify))
         return msgs
 
 
@@ -2383,7 +2532,7 @@ class BaseHab:
                         # no vrcs or rct of own icp from remote so send own inception
                         msgs.extend(self.makeOwnInception())
 
-                msgs.extend(self.receipt(cuedSerder))
+                msgs.extend(self.receipt(cuedSerder, framed=True))
                 yield msgs
 
             elif cueKin in ("replay",):
@@ -2401,7 +2550,7 @@ class BaseHab:
                 logger.info("%s got cue: kin=%s %s", self.pre, cueKin,
                             cuedSerder.said)
                 logger.debug(f"event=\n{cuedSerder.pretty()}\n")
-                msgs.extend(self.witness(cuedSerder))
+                msgs.extend(self.witness(cuedSerder, framed=True))
                 yield msgs
 
             elif cueKin in ("query",):  # cue to send a query message
@@ -2642,8 +2791,8 @@ class Hab(BaseHab):
         pp = self.ks.prms.get(self.pre)
         return pp.algo
 
-    def rotate(self, *, isith=None, nsith=None, ncount=None, toad=None, cuts=None, adds=None,
-               data=None, **kwargs):
+    def rotate(self, *, isith=None, nsith=None, ncount=None, toad=None,
+               cuts=None, adds=None, data=None, **kwargs):
         """Perform a rotation operation and register it in the database.
 
         Advances the key state by replaying the pre-committed next keys
@@ -2702,7 +2851,7 @@ class Hab(BaseHab):
                                           toad=toad,
                                           cuts=cuts,
                                           adds=adds,
-                                          data=data)
+                                          data=data, **kwargs)
         except Exception:
             # Rotation event validation failed. Rollback key state to
             # pre-rotation snapshot so KEL and key store stay in sync.
@@ -2792,45 +2941,87 @@ class SignifyHab(BaseHab):
         """
         raise KeriError("Signify hab does not support local signing")
 
-    def rotate(self, *, serder=None, sigers=None, **kwargs):
+    def rotate(self, *, serder=None, sigers=None, framed=False,
+                        nested=False, gvrsn=Version, genusify=False, **kwargs):
         """Perform a rotation operation from a pre-built, pre-signed event.
 
         Packages the provided serder and sigers into a message and processes
         it through the local Kevery to update key state.
 
-        Args:
+        Parameters::
             serder (SerderKERI): Pre-built rotation event serder.
             sigers (list[Siger]): Siger instances carrying the remote
                 agent's signatures over ``serder.raw``.
+            framed (bool): True means may assume each message plus its attachments
+                                is isolated as frame when parsing so do not need
+                                attachment group when messagizing
+                           False means may not assume eash message plus its attachments
+                                is isolated as frame when parsing so do need
+                                attachment group when messagizing
+            nested (bool): True means messagize for non-top level
+                                This forces non-native serializion to be embedded
+                                in non-native group code
+                           False means messagize for top level of stream.
+                                This allows bare non-native serialization of message
+            gvrsn (Versionage): CESR Genus version for attachment group codes or
+                            nesting group code (useful when serder.gvrsn < 2)
+                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                                if serder.gvrsn else serder.pvrsn
+            genusify (bool): True means prepend genus version code from gvrsn before
+                            serder to override default stream genus version
+                         False means do nothing
             **kwargs: Absorbed for API compatibility; not used.
 
-        Returns:
+        Returns::
             bytearray: Rotation message with attached signatures.
         """
-        msg = messagize(serder, sigers=sigers, framed=True)
+        msg = messagize(serder, sigers=sigers, framed=framed, nested=nested,
+                        gvrsn=gvrsn, genusify=genusify)
         self.processEvent(serder, sigers)
         return msg
 
-    def interact(self, *, serder=None, sigers=None, **kwargs):
+    def interact(self, *, serder=None, sigers=None, framed=False, nested=False,
+                          gvrsn=Version, genusify=False, **kwargs):
         """Perform an interaction operation from a pre-built, pre-signed event.
 
         Packages the provided serder and sigers into a message and processes
         it through the local Kevery to update key state.
 
-        Args:
+        Parameters::
             serder (SerderKERI): Pre-built interaction event serder.
             sigers (list[Siger]): Siger instances carrying the remote
                 agent's signatures over ``serder.raw``.
+            framed (bool): True means may assume each message plus its attachments
+                                is isolated as frame when parsing so do not need
+                                attachment group when messagizing
+                           False means may not assume eash message plus its attachments
+                                is isolated as frame when parsing so do need
+                                attachment group when messagizing
+            nested (bool): True means messagize for non-top level
+                                This forces non-native serializion to be embedded
+                                in non-native group code
+                           False means messagize for top level of stream.
+                                This allows bare non-native serialization of message
+            gvrsn (Versionage): CESR Genus version for attachment group codes or
+                            nesting group code (useful when serder.gvrsn < 2)
+                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                                if serder.gvrsn else serder.pvrsn
+            genusify (bool): True means prepend genus version code from gvrsn before
+                            serder to override default stream genus version
+                         False means do nothing
             **kwargs: Absorbed for API compatibility; not used.
 
-        Returns:
+        Returns::
             bytearray: Interaction message with attached signatures.
         """
-        msg = messagize(serder, sigers=sigers, framed=True)
+        msg = messagize(serder, sigers=sigers, framed=framed, nested=nested,
+                                gvrsn=gvrsn, genusify=genusify)
         self.processEvent(serder, sigers)
         return msg
 
-    def exchange(self, serder, seal=None, sigers=None, save=False):
+
+    def exchange(self, serder, seal=None, sigers=None, save=False, framed=False,
+                          nested=False,gvrsn=Version, genusify=False, **kwargs):
         """Build and optionally persist a signed ``exn`` exchange message.
 
         Assembles a peer-to-peer exchange message from the pre-built serder
@@ -2844,18 +3035,39 @@ class SignifyHab(BaseHab):
                 over ``serder.raw``.
             save (bool): When ``True``, parse a copy of the assembled message
                 into the local database. Defaults to ``False``.
+            framed (bool): True means may assume each message plus its attachments
+                                is isolated as frame when parsing so do not need
+                                attachment group when messagizing
+                           False means may not assume eash message plus its attachments
+                                is isolated as frame when parsing so do need
+                                attachment group when messagizing
+            nested (bool): True means messagize for non-top level
+                                This forces non-native serializion to be embedded
+                                in non-native group code
+                           False means messagize for top level of stream.
+                                This allows bare non-native serialization of message
+            gvrsn (Versionage): CESR Genus version for attachment group codes or
+                            nesting group code (useful when serder.gvrsn < 2)
+                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                                if serder.gvrsn else serder.pvrsn
+            genusify (bool): True means prepend genus version code from gvrsn before
+                            serder to override default stream genus version
+                         False means do nothing
+            **kwargs: Absorbed for API compatibility; not used.
 
         Returns:
             bytearray: Exchange message with count code and attached
             signatures.
         """
         # sign serder event
-        msg = messagize(serder=serder, sigers=sigers, seal=seal, framed=True)
+        msg = messagize(serder=serder, sigers=sigers, seal=seal, framed=framed,
+                        nested=nested, gvrsn=gvrsn, genusify=genusify)
 
         if save:
             self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
 
         return msg
+
 
     def processEvent(self, serder, sigers):
         """Process an event through the local Kevery, re-raising all exceptions.
@@ -2880,6 +3092,7 @@ class SignifyHab(BaseHab):
         except Exception:
             raise ConfigurationError(f"Improper Habitat event type={serder.ked['t']} for "
                                             f"pre={self.pre}.")
+
 
     def replyEndRole(self, cid, role=None, eids=None, scheme=""):
         """Build a reply message stream for endpoint role authorisations.
@@ -2973,6 +3186,7 @@ class SignifyGroupHab(SignifyHab):
 
         super(SignifyGroupHab, self).__init__(**kwa)
 
+
     def make(self, *, serder, sigers, **kwargs):
         """Finish setting up this SignifyGroupHab from a pre-built inception event.
 
@@ -2989,14 +3203,12 @@ class SignifyGroupHab(SignifyHab):
         """
         self.pre = serder.ked["i"]  # new pre
         self.prefixes.add(self.pre)
-
         self.processEvent(serder, sigers)
-
         habord = HabitatRecord(hid=self.pre, mid=self.mhab.pre, smids=self.smids, rmids=self.rmids,
                                       sid=self.pre, name=self.name, domain=self.ns)
         self.save(habord)
-
         self.inited = True
+
 
     def processEvent(self, serder, sigers):
         """Process an event through the local Kevery, tolerating missing signatures.
@@ -3222,7 +3434,8 @@ class GroupHab(BaseHab):
 
         self.inited = True
 
-    def rotate(self, smids=None, rmids=None, serder=None, **kwargs):
+    def rotate(self, smids=None, rmids=None, serder=None, framed=False,
+                        nested=False, gvrsn=Version, genusify=False, **kwargs):
         """Perform a rotation operation and update group member lists.
 
         When ``serder`` is ``None``, delegates entirely to
@@ -3239,6 +3452,25 @@ class GroupHab(BaseHab):
                 after rotation.
             serder (SerderKERI or None): Pre-built rotation event serder.  When
                 ``None`` a rotation event is generated by ``BaseHab.rotate``.
+            framed (bool): True means may assume each message plus its attachments
+                                is isolated as frame when parsing so do not need
+                                attachment group when messagizing
+                           False means may not assume eash message plus its attachments
+                                is isolated as frame when parsing so do need
+                                attachment group when messagizing
+            nested (bool): True means messagize for non-top level
+                                This forces non-native serializion to be embedded
+                                in non-native group code
+                           False means messagize for top level of stream.
+                                This allows bare non-native serialization of message
+            gvrsn (Versionage): CESR Genus version for attachment group codes or
+                            nesting group code (useful when serder.gvrsn < 2)
+                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                                if serder.gvrsn else serder.pvrsn
+            genusify (bool): True means prepend genus version code from gvrsn before
+                            serder to override default stream genus version
+                         False means do nothing
+
             **kwargs: Keyword arguments forwarded to ``BaseHab.rotate`` when
                 ``serder`` is ``None``.
 
@@ -3252,7 +3484,9 @@ class GroupHab(BaseHab):
         """
 
         if serder is None:
-            return super(GroupHab, self).rotate(**kwargs)
+            return super(GroupHab, self).rotate(framed=framed, nested=nested,
+                                                gvrsn=gvrsn, genusify=genusify,
+                                                **kwargs)
 
         if (habord := self.db.habs.get(keys=(self.pre,))) is None:
             raise ValidationError(f"Missing HabitatRecord for pre={self.pre}")
@@ -3261,7 +3495,8 @@ class GroupHab(BaseHab):
         sigers = self.sign(ser=serder.raw, verfers=serder.verfers, rotated=True)
 
         # update own key event verifier state
-        msg = messagize(serder, sigers=sigers, framed=True)
+        msg = messagize(serder, sigers=sigers, framed=framed, nested=nested,
+                        gvrsn=gvrsn, genusify=genusify)
 
         try:
             self.kvy.processEvent(serder=serder, sigers=sigers)

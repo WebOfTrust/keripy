@@ -25,7 +25,7 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
         regery = Regery(hby=bobHby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        bobHab.interact(data=[rseal])
+        bobHab.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=bobHab.kever.sn)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
@@ -104,7 +104,7 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
         regery = Regery(hby=bobHby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        bobHab.interact(data=[rseal])
+        bobHab.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=bobHab.kever.sn)
         diger = Diger(qb64=bobHab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
@@ -203,7 +203,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         regery = Regery(hby=bobHby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        bobHab.interact(data=[rseal])
+        bobHab.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=bobHab.kever.sn)
         diger = Diger(qb64=bobHab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
@@ -220,7 +220,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=wesKvy, local=True)
             iserder = SerderKERI(raw=bytearray(msg))
-            wesHab.receipt(serder=iserder)
+            wesHab.receipt(serder=iserder, framed=True)
 
         assert bobHab.pre in wesHab.kevers
 
@@ -328,7 +328,7 @@ def test_tsn_from_no_one(mockHelpingNowUTC, mockCoringRandomNonce):
         regery = Regery(hby=bobHby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        bobHab.interact(data=[rseal])
+        bobHab.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=bobHab.kever.sn)
         diger = Diger(qb64=bobHab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
@@ -417,7 +417,7 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
         regery = Regery(hby=bobHby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        bobHab.interact(data=[rseal])
+        bobHab.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=bobHab.kever.sn)
         diger = Diger(qb64=bobHab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
@@ -445,7 +445,7 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
 
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        bobHab.interact(data=[rseal])
+        bobHab.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=bobHab.kever.sn)
         diger = Diger(qb64=bobHab.kever.serder.said)
         issuer.anchorMsg(pre=iss.pre,
@@ -544,7 +544,7 @@ def test_tever_reload(mockHelpingNowUTC, mockCoringRandomNonce, mockHelpingNowIs
         regery = Regery(hby=hby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        bobHab.interact(data=[rseal])
+        bobHab.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=bobHab.kever.sn)
         diger = Diger(qb64=bobHab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,

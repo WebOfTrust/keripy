@@ -6453,12 +6453,12 @@ def test_reload_kever(mockHelpingNowUTC):
         path = natHab.db.path  # save for later
 
         # Create series of events for Nat
-        natHab.interact()
-        natHab.rotate()
-        natHab.interact()
-        natHab.interact()
-        natHab.interact()
-        natHab.interact()
+        natHab.interact(framed=True)
+        natHab.rotate(framed=True)
+        natHab.interact(framed=True)
+        natHab.interact(framed=True)
+        natHab.interact(framed=True)
+        natHab.interact(framed=True)
 
         assert natHab.kever.sn == 6
         assert natHab.kever.fn == 6
@@ -6573,7 +6573,7 @@ def test_load_event(mockHelpingNowUTC):
         teeIcp = teeHab.makeOwnEvent(sn=0)
 
         # Anchor Tee's inception event in Tor's KEL
-        ixn = torHab.interact(data=[dict(i=teeHab.pre, s='0', d=teeHab.kever.serder.said)])
+        ixn = torHab.interact(data=[dict(i=teeHab.pre, s='0', d=teeHab.kever.serder.said)], framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(ixn), kvy=wanHab.kvy, local=True)  # give to wan must be local
         wanHab.processCues(wanHab.kvy.cues)  # process cue returns rct msg
 
@@ -6607,8 +6607,8 @@ def test_load_event(mockHelpingNowUTC):
         teeIcp.extend(torHab.kever.serder.saidb)
 
         # Endorse Tee's inception event with Tor's Hab just so we have trans receipts
-        rct = torHab.receipt(serder=teeHab.kever.serder)
-        nrct = wilHab.receipt(serder=teeHab.kever.serder)
+        rct = torHab.receipt(serder=teeHab.kever.serder, framed=True)
+        nrct = wilHab.receipt(serder=teeHab.kever.serder, framed=True)
 
         # Now Wan should be ready for Tee's inception
         Parser(version=Vrsn_1_0).parse(ims=bytearray(teeIcp), kvy=wanKvy, local=True)  # local

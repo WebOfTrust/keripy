@@ -266,7 +266,7 @@ def test_witness_state():
         wit0 = hab.kvy.fetchWitnessState(hab.pre, 0)
         assert [w.qb64 for w in wit0] == [wits[0], wits[1]]
 
-        ixn0 = hab.interact()
+        ixn0 = hab.interact(framed=True)
         assert ixn0 == (b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EMrHSIByF9uIw9rM9rdSWxLQ'
                 b'IQiKloH-S5T8UO2Cq3xh","i":"EItocvw9Us8NGO5I3qff6dCCSsQzRSKMDzFUU'
                 b'BXEYLAH","s":"1","p":"EItocvw9Us8NGO5I3qff6dCCSsQzRSKMDzFUUBXEYL'
@@ -275,7 +275,7 @@ def test_witness_state():
         wit1 = hab.kvy.fetchWitnessState(hab.pre, 1)
         assert [w.qb64 for w in wit1] == [wits[0], wits[1]]
 
-        rot1 = hab.rotate()
+        rot1 = hab.rotate(framed=True)
         assert rot1 == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EF3IIBRGoGr5Mq35UBuhmfiA'
                 b'SkBAOc-sM5f8BUQisi6-","i":"EItocvw9Us8NGO5I3qff6dCCSsQzRSKMDzFUU'
                 b'BXEYLAH","s":"2","p":"EMrHSIByF9uIw9rM9rdSWxLQIQiKloH-S5T8UO2Cq3'
@@ -286,7 +286,7 @@ def test_witness_state():
         wit2 = hab.kvy.fetchWitnessState(hab.pre, 2)
         assert [w.qb64 for w in wit2] == [wits[0], wits[1]]
 
-        rot2 = hab.rotate(cuts=[wits[0]], adds=wits[7:])
+        rot2 = hab.rotate(cuts=[wits[0]], adds=wits[7:], framed=True)
         assert rot2 == (b'{"v":"KERI10JSON00021a_","t":"rot","d":"EEmrPqJNzOC2DvZx--TCbB5o'
                 b'pQ0Ewp7yXrzqAesXwwQ4","i":"EItocvw9Us8NGO5I3qff6dCCSsQzRSKMDzFUU'
                 b'BXEYLAH","s":"3","p":"EF3IIBRGoGr5Mq35UBuhmfiASkBAOc-sM5f8BUQisi'
@@ -301,10 +301,10 @@ def test_witness_state():
         assert [w.qb64 for w in wit3] == [wits[1], wits[7], wits[8], wits[9]]
 
         for _ in range(5):
-            hab.interact()
+            hab.interact(framed=True)
         assert hab.kever.sn == 8
 
-        hab.rotate(cuts=[wits[8], wits[9]], adds=wits[2:5])
+        hab.rotate(cuts=[wits[8], wits[9]], adds=wits[2:5], framed=True)
         assert hab.kever.sn == 9
 
         wit4 = hab.kvy.fetchWitnessState(hab.pre, 4)
@@ -371,21 +371,21 @@ def test_stale_event_receipts():
             Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=kvy, local=True)
             assert bobHab.pre in witHab.kevers
             iserder = SerderKERI(raw=bytearray(bobIcp))
-            msg = witHab.receipt(serder=iserder)
+            msg = witHab.receipt(serder=iserder, framed=True)
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         bamKvy.processEscrows()
         assert bobHab.pre in bamKvy.kevers
 
         # Rotate, pass to witnesses, send receipts from Wes and Wan to Bam
-        rot0 = bobHab.rotate(toad=2)
+        rot0 = bobHab.rotate(toad=2, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(rot0), kvy=bamKvy, local=True)
 
         for witHab in [wesHab, wanHab]:
             kvy = Kevery(db=witHab.db, lax=False, local=False)
             Parser(version=Vrsn_1_0).parse(ims=bytearray(rot0), kvy=kvy, local=True)
             iserder = SerderKERI(raw=bytearray(rot0))
-            msg = witHab.receipt(serder=iserder)
+            msg = witHab.receipt(serder=iserder, framed=True)
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         bamKvy.processEscrows()
@@ -397,14 +397,14 @@ def test_stale_event_receipts():
         assert len(wigers) == 2
 
         # Rotate out Wil, pass to witnesses, receipted event to bam.
-        rot1 = bobHab.rotate(cuts=[wilHab.pre], toad=2)
+        rot1 = bobHab.rotate(cuts=[wilHab.pre], toad=2, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(rot1), kvy=bamKvy, local=True)
 
         for witHab in [wesHab, wanHab]:
             kvy = Kevery(db=witHab.db)
             Parser(version=Vrsn_1_0).parse(ims=bytearray(rot1), kvy=kvy, local=True)
             iserder = SerderKERI(raw=bytearray(rot1))
-            msg = witHab.receipt(serder=iserder)
+            msg = witHab.receipt(serder=iserder, framed=True)
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         bamKvy.processEscrows()
@@ -415,7 +415,7 @@ def test_stale_event_receipts():
         kvy = Kevery(db=wilHab.db)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(rot0), kvy=kvy, local=True)
         iserder = SerderKERI(raw=bytearray(rot0))
-        msg = wilHab.receipt(serder=iserder)
+        msg = wilHab.receipt(serder=iserder, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         # Validate that bam has 3 receipts in DB for event 1

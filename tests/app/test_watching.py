@@ -131,7 +131,7 @@ def test_adjudicator():
                                             dig='EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3')],
                        'wids': {'BbIg_3-11d3PYxSInLN-Q9_T2axD6kkXd3XRgbGZTm6s'}}
 
-        hab.rotate()
+        hab.rotate(framed=True)
 
         adj.adjudicate(hab.pre, 1)
         assert len(adj.cues) == 1

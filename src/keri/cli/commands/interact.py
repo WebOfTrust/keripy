@@ -14,7 +14,7 @@ from ...kering import ConfigurationError
 from ...help import helping
 from ...app import HaberyDoer, Receiptor, WitnessReceiptor, MailboxDirector
 
-parser = argparse.ArgumentParser(description='Create and publish an interaction event', 
+parser = argparse.ArgumentParser(description='Create and publish an interaction event',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: interact(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
@@ -104,7 +104,7 @@ class InteractDoer(doing.DoDoer):
         _ = (yield self.tock)
 
         hab = self.hby.habByName(name=self.alias)
-        hab.interact(data=self.data)
+        hab.interact(data=self.data, framed=True)
 
         auths = {}
         if self.authenticate:
