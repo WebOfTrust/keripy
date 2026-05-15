@@ -270,7 +270,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         assert cue["kin"] == "query"
         assert cue['q']['pre'] == bobHab.pre
 
-        wesIcp = wesHab.makeOwnEvent(sn=0)
+        wesIcp = wesHab.makeOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(wesIcp), kvy=bamKvy, local=True)
         assert wesHab.pre in bamHby.db.kevers
 

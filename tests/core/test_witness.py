@@ -96,7 +96,7 @@ def test_indexed_witness_replay():
         camWitHabs = [wesHab, wokHab, wamHab]
 
         # Create Cam inception and send to each of Cam's witnesses
-        camIcpMsg = camHab.makeOwnInception()
+        camIcpMsg = camHab.makeOwnInception(framed=True)
         rctMsgs = []  # list of receipts from each witness
         for i in range(len(camWitKvys)):
             kvy = camWitKvys[i]
@@ -357,7 +357,7 @@ def test_nonindexed_witness_receipts():
         camWitHabs = [wesHab, wokHab, wamHab]
 
         # Create Cam inception and send to each of Cam's witnesses
-        camIcpMsg = camHab.makeOwnInception()
+        camIcpMsg = camHab.makeOwnInception(framed=True)
         rctMsgs = []  # list of receipts from each witness
         for i, kvy in enumerate(camWitKvys):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(camIcpMsg), kvy=kvy, local=True)
@@ -589,7 +589,7 @@ def test_out_of_order_witnessed_events():
 
         # Create Bob's icp, pass to Wes and generate receipt.
         wesKvy = Kevery(db=wesHby.db, lax=False, local=False)
-        bobIcp = bobHab.makeOwnEvent(sn=0)
+        bobIcp = bobHab.makeOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
         assert bobHab.pre in wesHab.kevers
         iserder = SerderKERI(raw=bytearray(bobIcp))
@@ -597,7 +597,7 @@ def test_out_of_order_witnessed_events():
 
         # Rotate and get Bob's rot, pass to Wes and generate receipt.
         bobHab.rotate(framed=True)
-        bobRotMsg = bobHab.makeOwnEvent(sn=1)
+        bobRotMsg = bobHab.makeOwnEvent(sn=1, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(bobRotMsg), kvy=wesKvy, local=True)
         assert wesKvy.kevers[bobHab.pre].sn == 1
         bobRot = SerderKERI(raw=bobRotMsg)

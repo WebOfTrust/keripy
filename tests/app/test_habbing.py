@@ -939,15 +939,15 @@ def test_make_own_event():
         assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
 
         # makeOwnEvent(sn=0) equals makeOwnInception()
-        msg0 = hab.makeOwnEvent(sn=0)
-        msg_icp = hab.makeOwnInception()
+        msg0 = hab.makeOwnEvent(sn=0, framed=True)
+        msg_icp = hab.makeOwnInception(framed=True)
         assert msg0 == msg_icp
         assert len(msg0) > 0
         assert msg0.startswith(b'{"v":"KERI10JSON')
 
         # makeOwnEvent(sn=1) after rotate
         hab.rotate(framed=True)
-        msg1 = hab.makeOwnEvent(sn=1)
+        msg1 = hab.makeOwnEvent(sn=1, framed=True)
         assert len(msg1) > 0
         serder = SerderKERI(raw=bytes(msg1))
         assert serder.sad["t"] == "rot"
@@ -1007,7 +1007,7 @@ def test_postman_endsfor():
         assert hab.kever.sn == 0
 
         kvy = Kevery(db=hab.db, lax=False, local=False)
-        icpMsg = hab.makeOwnInception()
+        icpMsg = hab.makeOwnInception(framed=True)
         rctMsgs = []  # list of receipts from each witness
         Parser(version=Vrsn_1_0).parse(ims=bytearray(icpMsg), kvy=wesKvy, local=True)
         assert wesKvy.kevers[hab.pre].sn == 0  # accepted event
@@ -1021,7 +1021,7 @@ def test_postman_endsfor():
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=kvy, local=True)
         assert wesHab.pre in kvy.kevers
 
-        agentIcpMsg = agentHab.makeOwnInception()
+        agentIcpMsg = agentHab.makeOwnInception(framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(agentIcpMsg), kvy=kvy, local=True)
         assert agentHab.pre in kvy.kevers
 
@@ -1191,7 +1191,7 @@ def test_cues():
         camKvy = Kevery(db=camHab.db, lax=False, local=False)
 
         # parse cam's inception into wes so wes has cam's key state
-        icpMsg = camHab.makeOwnInception()
+        icpMsg = camHab.makeOwnInception(framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(icpMsg),
                                                 kvy=wesKvy, local=True)
         assert camHab.pre in wesKvy.kevers

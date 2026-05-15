@@ -20,7 +20,7 @@ from ....core import SerderKERI
 
 logger = ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Notify other participants of the last event in a group multisig AID', 
+parser = argparse.ArgumentParser(description='Notify other participants of the last event in a group multisig AID',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: handler(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
@@ -82,7 +82,7 @@ class NoticeDoer(doing.DoDoer):
         if hab.group:
             (smids, rmids) = hab.members()
             serder = hab.kever.serder
-            rot = hab.makeOwnEvent(sn=hab.kever.sn)
+            rot = hab.makeOwnEvent(sn=hab.kever.sn, framed=True)
             eserder = SerderKERI(raw=rot)
             del rot[:eserder.size]
 

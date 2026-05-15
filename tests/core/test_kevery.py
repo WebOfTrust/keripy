@@ -362,7 +362,7 @@ def test_stale_event_receipts():
         bamKvy = Kevery(db=bamHby.db, lax=False, local=False)
 
         # Pass incept to witnesses, receipted event to bam
-        bobIcp = bobHab.makeOwnEvent(sn=0)
+        bobIcp = bobHab.makeOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=bamKvy, local=True)
         assert bobHab.pre not in bamKvy.kevers
 

@@ -300,7 +300,7 @@ class JoinDoer(doing.DoDoer):
             ixn = ghab.interact(data=data, framed=True)
             serder = SerderKERI(raw=ixn)
 
-            ixn = ghab.makeOwnEvent(allowPartiallySigned=True, sn=oixn.sn)
+            ixn = ghab.makeOwnEvent(allowPartiallySigned=True, sn=oixn.sn, framed=True)
 
             exn, ims = multisigInteractExn(ghab, aids=ghab.smids, ixn=ixn)
             others = list(oset(smids + (rmids or [])))

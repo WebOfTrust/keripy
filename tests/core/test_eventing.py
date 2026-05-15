@@ -6682,7 +6682,7 @@ def test_load_event(mockHelpingNowUTC):
         # Create Wan the witness
         wanHab = wanHby.makeHab(name="wan", transferable=False)
         assert wanHab.pre == "BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP"
-        msg = wanHab.makeOwnEvent(sn=0)
+        msg = wanHab.makeOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=msg, kvy=torKvy)
         assert wanHab.pre in torKvy.kevers
 
@@ -6692,7 +6692,7 @@ def test_load_event(mockHelpingNowUTC):
         # Create Tor the delegaTOR and pass to witness Wan
         torHab = torHby.makeHab(name="tor", icount=1, isith='1', ncount=1, nsith='1', wits=[wanHab.pre], toad=1)
         assert torHab.pre == "EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP"
-        torIcp = torHab.makeOwnEvent(sn=0)
+        torIcp = torHab.makeOwnEvent(sn=0, framed=True)
         assert torHab.pre in torHab.kvy.kevers
 
         # Try to load event before Wan has seen it
@@ -6732,7 +6732,7 @@ def test_load_event(mockHelpingNowUTC):
         teeHab = teeHby.makeHab(name="tee", delpre=torHab.pre, icount=1, isith='1', ncount=1, nsith='1',
                                 wits=[wanHab.pre], toad=1)
         assert teeHab.pre == "EDnrWpxagMvr5BBCwCOh3q5M9lvurboZ66vxR-GnIgQo"
-        teeIcp = teeHab.makeOwnEvent(sn=0)
+        teeIcp = teeHab.makeOwnEvent(sn=0, framed=True)
 
         # Anchor Tee's inception event in Tor's KEL
         ixn = torHab.interact(data=[dict(i=teeHab.pre, s='0', d=teeHab.kever.serder.said)], framed=True)

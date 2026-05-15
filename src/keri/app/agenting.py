@@ -79,7 +79,7 @@ class Receiptor(doing.DoDoer):
         if len(wits) == 0:
             return
 
-        msg = hab.makeOwnEvent(sn=sn)
+        msg = hab.makeOwnEvent(sn=sn, framed=True)
         ser = serdering.SerderKERI(raw=msg)
 
         # If we are a rotation event, may need to catch new witnesses up to current key state
@@ -351,7 +351,7 @@ class WitnessReceiptor(doing.DoDoer):
                 if len(wits) == 0:
                     continue
 
-                msg = hab.makeOwnEvent(sn=sn)
+                msg = hab.makeOwnEvent(sn=sn, framed=True)
                 ser = serdering.SerderKERI(raw=msg)
 
                 witers = []

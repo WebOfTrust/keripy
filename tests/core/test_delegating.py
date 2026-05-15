@@ -365,7 +365,7 @@ def test_delegation_supersede():
 
         # be witness to controller's inception
         # first make inception
-        stream = topHab.makeOwnInception()
+        stream = topHab.makeOwnInception(framed=True)
         assert stream == (b'{"v":"KERI10JSON000159_","t":"icp","d":"EJcCaHg3AtW_gRzpaz6Pw03Y'
                         b'v49is2IJDRwYE7ey91KE","i":"EJcCaHg3AtW_gRzpaz6Pw03Yv49is2IJDRwYE'
                         b'7ey91KE","s":"0","kt":"1","k":["DPJVPYS9efLUHDOqxwG6pxISZSRACgNf'
@@ -417,7 +417,7 @@ def test_delegation_supersede():
 
         # be witness to controller's inception.
         # first  make inception
-        stream = midHab.makeOwnInception()
+        stream = midHab.makeOwnInception(framed=True)
 
         # add test fail process as remote since since witness of controller
 
@@ -457,7 +457,7 @@ def test_delegation_supersede():
 
         # be witness to controller's inception.
         # first  make inception
-        stream = botHab.makeOwnInception()
+        stream = botHab.makeOwnInception(framed=True)
 
         # add test fail process as remote since since witness of controller
 
@@ -758,7 +758,7 @@ def test_delegables_escrow():
         gateHab = gateHby.makeHab(name="repTest", transferable=True, delpre=torHab.pre)
         assert gateHab.pre == "EFqw1EgGdd2B6MgNLJaNO13_JoQpxAtasIjySDzGm9pd"
 
-        gateIcp = gateHab.makeOwnEvent(sn=0)
+        gateIcp = gateHab.makeOwnEvent(sn=0, framed=True)
         torKvy = Kevery(db=torHab.db, lax=False, local=False)
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(gateIcp), kvy=torKvy, local=True)
         assert gateHab.pre not in torKvy.kevers
