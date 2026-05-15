@@ -2,6 +2,15 @@
 
 ## 2.0.0-dev6
 
+### core.eventing.messagize call signature changes: piplined parameter is replaced
+with framed and the default is framed=False. This is because the Parser meaning
+of piplined has evolved whereas messagize no longer tracks that meansing so
+framed is now the accurated parameter. Added other parameters to make it support
+verison 2
+BasHab methods that call messagize have pass through parameters with same semantics
+
+
+
 ### OnSuber and OnIoDupSuber remap of method names
 change method names to shadow super class methods to avoid confusion and reduce
 potential errors
