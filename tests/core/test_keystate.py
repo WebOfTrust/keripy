@@ -81,7 +81,7 @@ def test_keystate(mockHelpingNowUTC):
 
         # Create Bob's icp, pass to Wes.
         wesKvy = Kevery(db=wesHby.db)
-        bobIcp = bobHab.makeOwnEvent(sn=0)
+        bobIcp = bobHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
         assert bobHab.pre in wesHab.kevers
         iserder = SerderKERI(raw=bytearray(bobIcp))
@@ -144,7 +144,7 @@ def test_keystate(mockHelpingNowUTC):
 
         # Create Bob's icp, pass to Wes.
         wesKvy = Kevery(db=wesHby.db)
-        bobIcp = bobHab.makeOwnEvent(sn=0)
+        bobIcp = bobHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
         assert bobHab.pre in wesHab.kevers
 
@@ -210,7 +210,7 @@ def test_keystate(mockHelpingNowUTC):
 
         # Create Bob's icp, pass to Wes.
         wesKvy = Kevery(db=wesHby.db)
-        bobIcp = bobHab.makeOwnEvent(sn=0)
+        bobIcp = bobHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
         assert bobHab.pre in wesHab.kevers
 

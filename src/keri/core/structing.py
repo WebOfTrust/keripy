@@ -39,14 +39,14 @@ SealRoot = namedtuple("SealRoot", 'rd')
 
 # Event Seal: triple (i, s, d)
 # i = pre is qb64 of identifier prefix of KEL for event,
-# s = sn of event as lowercase hex string  no leading zeros,
+# s = sn of event as lowercase hex string snh no leading zeros,
 # d = SAID digest qb64 of key event
 # use SealSourceTriples as count code for CESR native
 SealEvent = namedtuple("SealEvent", 'i s d')
 
 # Source Seal: duple (s, d)  for Issuance, Delegation, or Transaction Event
 # where the AID pre of the issuer is implied by the context wherein the seal appears.
-# s = sn of event as lowercase hex string  no leading zeros,
+# s = sn of event as lowercase hex string snh  no leading zeros,
 # d = SAID digest qb64 of event (issuance, delegation, or transaction)
 # the pre is provided in the 'i' field  qb64 of identifier prefix of KEL
 # use SealSourceCouples as count code for CESR native
@@ -88,7 +88,7 @@ BlindState = namedtuple("BlindState", 'd u td ts')
 # u = UUID blind as deterministically derived from update sn and salty nonce (Noncer)
 # td = SAID of ACDC top-level 'd' field value (Noncer)
 # ts = state as string text (Labeler)
-# bn = bound issuee key event hex sequence number at time of state update
+# bn = bound issuee key event hex sequence number bnh at time of state update
 # bd = bound issuee key event SAID at time of state update
 # use BoundStateSextuples count code for CESR native
 BoundState = namedtuple("BoundState", 'd u td ts bn bd')

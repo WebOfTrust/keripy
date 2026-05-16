@@ -216,7 +216,7 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
         assert serder.ked == agree.ked
 
         # First try a bare grant (no prior agree)
-        anc = sidHab.makeOwnEvent(sn=2)
+        anc = sidHab.msgOwnEvent(sn=2, framed=True)
         grant0, grant0atc = ipexGrantExn(sidHab, message="Here's a credential", recp=sidHab.pre,
                                                      acdc=msg, iss=iss.raw, anc=anc)
         assert grant0.raw == (b'{"v":"KERI10JSON000539_","t":"exn","d":"ELnjKvzdgO57JZwG3giIScoOeTB0rLuevniv'

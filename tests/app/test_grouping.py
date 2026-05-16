@@ -34,13 +34,13 @@ def test_counselor():
         kev2 = Kevery(db=hab2.db, lax=True, local=False)
         kev3 = Kevery(db=hab3.db, lax=True, local=False)
 
-        icp1 = hab1.makeOwnEvent(sn=0)
+        icp1 = hab1.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(icp1), kvy=kev2, local=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(icp1), kvy=kev3, local=True)
-        icp2 = hab2.makeOwnEvent(sn=0)
+        icp2 = hab2.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(icp2), kvy=kev1, local=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(icp2), kvy=kev3, local=True)
-        icp3 = hab3.makeOwnEvent(sn=0)
+        icp3 = hab3.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(icp3), kvy=kev1, local=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(icp3), kvy=kev2, local=True)
 
@@ -65,7 +65,7 @@ def test_counselor():
         # Sith 2 so create second signature to get past the first escrow
         ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", mhab=hab2,
                                   smids=smids, rmids=rmids, **inits)
-        evt = ghab2.makeOwnInception(allowPartiallySigned=True)
+        evt = ghab2.msgOwnInception(allowPartiallySigned=True, framed=True)
         assert evt == (b'{"v":"KERI10JSON000207_","t":"icp","d":"ENuUR3YvSR2-dFoN1zBN2p8W'
                        b'9BvsySnrY6g2vDS1EVAS","i":"ENuUR3YvSR2-dFoN1zBN2p8W9BvsySnrY6g2v'
                        b'DS1EVAS","s":"0","kt":["1/2","1/2","1/2"],"k":["DEXdkHRR2Nspj5cz'
@@ -265,14 +265,16 @@ def test_the_seven():
         kev7 = Kevery(db=hab7.db)
         kevs = [kev1, kev2, kev3, kev4, kev5, kev6, kev7]
 
-        icps = [hab1.makeOwnEvent(sn=0),
-                hab2.makeOwnEvent(sn=0),
-                hab3.makeOwnEvent(sn=0),
-                hab4.makeOwnEvent(sn=0),
-                hab5.makeOwnEvent(sn=0),
-                hab6.makeOwnEvent(sn=0),
-                hab7.makeOwnEvent(sn=0)
-                ]
+        icps = \
+        [
+            hab1.msgOwnEvent(sn=0, framed=True),
+            hab2.msgOwnEvent(sn=0, framed=True),
+            hab3.msgOwnEvent(sn=0, framed=True),
+            hab4.msgOwnEvent(sn=0, framed=True),
+            hab5.msgOwnEvent(sn=0, framed=True),
+            hab6.msgOwnEvent(sn=0, framed=True),
+            hab7.msgOwnEvent(sn=0, framed=True)
+        ]
 
         # Introduce everyone to each other by parsing each others ICP event into our keverys
         for (kev, icp) in [(kev, icp) for (kdx, kev) in enumerate(kevs) for (idx, icp) in enumerate(icps) if
@@ -314,7 +316,7 @@ def test_the_seven():
         # Get participation from everyone on inception
         ghab2 = hby2.makeGroupHab(group=f"{prefix}_group2", mhab=hab2,
                                   smids=smids, rmids=rmids, **inits)
-        evt = ghab2.makeOwnInception(allowPartiallySigned=True)
+        evt = ghab2.msgOwnInception(allowPartiallySigned=True, framed=True)
         serd = SerderKERI(raw=bytearray(evt))
         assert evt[serd.size:] == (b'-AABBBAD108k4sWtYRv8jQaRbzX6kDebjdzFNVCh3N9cOAJqXV5IzmKdi60Cr0Eu'
                                    b'MaACskw0FCi73V2VX8BgFlxO8VIK')
@@ -323,7 +325,7 @@ def test_the_seven():
 
         ghab3 = hby3.makeGroupHab(group=f"{prefix}_group3", mhab=hab3,
                                   smids=smids, rmids=rmids, **inits)
-        evt = ghab3.makeOwnInception(allowPartiallySigned=True)
+        evt = ghab3.msgOwnInception(allowPartiallySigned=True, framed=True)
         serd = SerderKERI(raw=bytearray(evt))
         assert evt[serd.size:] == (b'-AABBCD6V2UkAovhY07MrJUNb-ICddDoyLde9i0FWclxfs7jes01YUEihfgbGERF'
                                    b'dKDR4kSr4WF3AskrZOPvMuXipAgP')
@@ -332,7 +334,7 @@ def test_the_seven():
 
         ghab4 = hby4.makeGroupHab(group=f"{prefix}_group4", mhab=hab4,
                                   smids=smids, rmids=rmids, **inits)
-        evt = ghab4.makeOwnInception(allowPartiallySigned=True)
+        evt = ghab4.msgOwnInception(allowPartiallySigned=True, framed=True)
         serd = SerderKERI(raw=bytearray(evt))
         assert evt[serd.size:] == (b'-AABBDBCZuZSFWy0tFshGny1pTR47GphDljd0SShmGRpUSpBX_BeHB1tdIObizaA'
                                    b'4GMoOcZ2sOWIe6muJPF_RaoKedYE')
@@ -341,7 +343,7 @@ def test_the_seven():
 
         ghab5 = hby5.makeGroupHab(group=f"{prefix}_group5", mhab=hab5,
                                   smids=smids, rmids=rmids, **inits)
-        evt = ghab5.makeOwnInception(allowPartiallySigned=True)
+        evt = ghab5.msgOwnInception(allowPartiallySigned=True, framed=True)
         serd = SerderKERI(raw=bytearray(evt))
         assert evt[serd.size:] == (b'-AABBEBsR6_hPId3H8fFG8EfevQVji8MsLAC72MjkkRxJp3h9v1vyFS1hAGGGxno'
                                    b'F5xSHOnpBpPwjMJwOCurAa3VrNAD')
@@ -350,7 +352,7 @@ def test_the_seven():
 
         ghab6 = hby6.makeGroupHab(group=f"{prefix}_group6", mhab=hab6,
                                   smids=smids, rmids=rmids, **inits)
-        evt = ghab6.makeOwnInception(allowPartiallySigned=True)
+        evt = ghab6.msgOwnInception(allowPartiallySigned=True, framed=True)
         serd = SerderKERI(raw=bytearray(evt))
         assert evt[serd.size:] == (b'-AABBFCi5hK6Ax4aBNsdoUkh7Q_CcSWJfpwkeF68aCO34J3BDN7k483lOxiyj6pl'
                                    b'8TQIQ7VJLBkoRscUMi_mls9jbpcD')
@@ -359,7 +361,7 @@ def test_the_seven():
 
         ghab7 = hby7.makeGroupHab(group=f"{prefix}_group7", mhab=hab7,
                                   smids=smids, rmids=rmids, **inits)
-        evt = ghab7.makeOwnInception(allowPartiallySigned=True)
+        evt = ghab7.msgOwnInception(allowPartiallySigned=True, framed=True)
         serd = SerderKERI(raw=bytearray(evt))
         assert evt[serd.size:] == (b'-AABBGCtPvRj00vEfT5Po6eH50DWfBWwAcQgvBaJ7LlYT7kQswkl_r-K9Lsxi5tm'
                                    b'Pvsb2xFtcMJkFf-BxamGhFo9OOcD')
@@ -584,13 +586,13 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
         kev2 = Kevery(db=hab2.db, lax=True, local=False)
         kev3 = Kevery(db=hab3.db, lax=True, local=False)
 
-        icp1 = hab1.makeOwnEvent(sn=0)
+        icp1 = hab1.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(icp1), kvy=kev2, local=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(icp1), kvy=kev3, local=True)
-        icp2 = hab2.makeOwnEvent(sn=0)
+        icp2 = hab2.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(icp2), kvy=kev1, local=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(icp2), kvy=kev3, local=True)
-        icp3 = hab3.makeOwnEvent(sn=0)
+        icp3 = hab3.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(icp3), kvy=kev1, local=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(icp3), kvy=kev2, local=True)
 
@@ -637,7 +639,8 @@ def test_multisig_incept(mockHelpingNowUTC):
     with openHab(name="test", temp=True, salt=b'0123456789abcdef') as (hby, hab):
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
         exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids,
-                                              icp=hab.makeOwnEvent(sn=hab.kever.sn))
+                                    icp=hab.msgOwnEvent(sn=hab.kever.sn,
+                                                         framed=True))
 
         assert exn.ked["r"] == '/multisig/icp'
         assert exn.saidb == b'EJ6Kl50IBicAa8zND_3wMSQ5itw555V7NKid9y1SKobe'
@@ -720,7 +723,8 @@ def test_multisig_incept_handler(mockHelpingNowUTC):
     with openHab(name="test0", temp=True, salt=b'0123456789abcdef') as (hby, hab):
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
         exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids,
-                                              icp=hab.makeOwnEvent(sn=hab.kever.sn))
+                                     icp=hab.msgOwnEvent(sn=hab.kever.sn,
+                                                          framed=True))
 
         notifier = Notifier(hby=hby)
         mux = Multiplexor(hby=hby, notifier=notifier)

@@ -228,7 +228,7 @@ class JoinDoer(doing.DoDoer):
             except ValueError as e:
                 return False
 
-            icp = ghab.makeOwnInception(allowPartiallySigned=True)
+            icp = ghab.msgOwnInception(allowPartiallySigned=True)
 
             exn, ims = multisigInceptExn(ghab.mhab,
                                          smids=ghab.smids,
@@ -300,7 +300,7 @@ class JoinDoer(doing.DoDoer):
             ixn = ghab.interact(data=data, framed=True)
             serder = SerderKERI(raw=ixn)
 
-            ixn = ghab.makeOwnEvent(allowPartiallySigned=True, sn=oixn.sn)
+            ixn = ghab.msgOwnEvent(allowPartiallySigned=True, sn=oixn.sn, framed=True)
 
             exn, ims = multisigInteractExn(ghab, aids=ghab.smids, ixn=ixn)
             others = list(oset(smids + (rmids or [])))
@@ -429,7 +429,7 @@ class JoinDoer(doing.DoDoer):
             except ValueError:
                 return False
 
-            rot = ghab.makeOwnEvent(allowPartiallySigned=True, sn=orot.sn)
+            rot = ghab.msgOwnEvent(allowPartiallySigned=True, sn=orot.sn)
 
             exn, ims = multisigRotateExn(ghab,
                                          smids=ghab.smids,

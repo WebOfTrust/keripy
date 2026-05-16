@@ -34,7 +34,7 @@ def test_pathed_material(mockHelpingNowUTC):
         palHab = hby.makeHab(name="pal")
         debHab = debHby.makeHab(name="deb", isith=sith, icount=3)
         # Create series of events
-        debMsgs = dict(icp=debHab.makeOwnInception(),
+        debMsgs = dict(icp=debHab.msgOwnInception(framed=True),
                        ixn0=debHab.interact(framed=True),
                        rot=debHab.rotate(framed=True),
                        ixn1=debHab.interact(framed=True))

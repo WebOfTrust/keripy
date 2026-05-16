@@ -37,7 +37,7 @@ def test_postman(seeder):
 
         recpHab = recpHby.makeHab(name="repTest", transferable=True, wits=[wesHab.pre])
 
-        recpIcp = recpHab.makeOwnEvent(sn=0)
+        recpIcp = recpHab.msgOwnEvent(sn=0, framed=True)
         wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(recpIcp), kvy=wesKvy, local=True)
         assert recpHab.pre in wesKvy.kevers
@@ -216,12 +216,13 @@ def test_essr_stream(seeder):
         httpServerDoer = http.ServerDoer(server=server)
 
         kvy = Kevery(db=hab.db)
-        Parser(version=Vrsn_1_0).parseOne(bytearray(recpHab.makeOwnEvent(sn=0)), kvy=kvy, local=True)
+        Parser(version=Vrsn_1_0).parseOne(recpHab.msgOwnEvent(sn=0, framed=True),
+                                          kvy=kvy, local=True)
         kvy.processEscrows()
         assert recpHab.pre in kvy.kevers
 
         recpKvy = Kevery(db=recpHab.db)
-        icp = hab.makeOwnEvent(sn=0)
+        icp = hab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parseOne(bytearray(icp), kvy=recpKvy, local=True)
         kvy.processEscrows()
         assert hab.pre in recpKvy.kevers
@@ -322,7 +323,7 @@ def test_essr_mbx(seeder):
 
         recpHab = recpHby.makeHab(name="repTest", transferable=True, wits=[wesHab.pre])
 
-        recpIcp = recpHab.makeOwnEvent(sn=0)
+        recpIcp = recpHab.msgOwnEvent(sn=0, framed=True)
         wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(recpIcp), kvy=wesKvy, local=True)
         assert recpHab.pre in wesKvy.kevers
@@ -337,7 +338,7 @@ def test_essr_mbx(seeder):
         assert recpHab.pre in kvy.kevers
 
         recpKvy = Kevery(db=recpHab.db)
-        icp = hab.makeOwnEvent(sn=0)
+        icp = hab.msgOwnEvent(sn=0)
         Parser(version=Vrsn_1_0).parseOne(bytearray(icp), kvy=recpKvy, local=True)
         kvy.processEscrows()
         assert hab.pre in recpKvy.kevers

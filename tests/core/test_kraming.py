@@ -460,11 +460,11 @@ def test_assk(mockHelpingNowUTC):
         # Parse sender ICPs into receiver's db via a cross-feed Kevery.
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
 
-        senderIcp = senderHab.makeOwnEvent(sn=0)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
         assert senderHab.pre in crossKvy.kevers
 
-        senderNTIcp = senderNTHab.makeOwnEvent(sn=0)
+        senderNTIcp = senderNTHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderNTIcp), kvy=crossKvy)
         assert senderNTHab.pre in crossKvy.kevers
 
@@ -640,7 +640,7 @@ def test_asmk(mockHelpingNowUTC):
 
         # Cross-feed sender ICP to receiver
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
-        senderIcp = senderHab.makeOwnEvent(sn=0)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
         assert senderHab.pre in crossKvy.kevers
 
@@ -888,11 +888,11 @@ def test_asr(mockHelpingNowUTC):
 
         # Cross-feed both senders to receiver
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
-        senderIcp = senderHab.makeOwnEvent(sn=0)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
         assert senderHab.pre in crossKvy.kevers
 
-        mkIcp = mkHab.makeOwnEvent(sn=0)
+        mkIcp = mkHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(mkIcp), kvy=crossKvy)
         assert mkHab.pre in crossKvy.kevers
 
@@ -1239,12 +1239,12 @@ def test_transactioned(mockHelpingNowUTC):
         # Cross-feed both senders to receiver
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
 
-        skIcp = skHab.makeOwnEvent(sn=0)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(skIcp), kvy=crossKvy)
+        skIcp = skHab.msgOwnEvent(sn=0, framed=True)
+        Parser(version=Vrsn_1_0).parse(ims=skIcp, kvy=crossKvy)
         assert skHab.pre in crossKvy.kevers
 
-        mkIcp = mkHab.makeOwnEvent(sn=0)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(mkIcp), kvy=crossKvy)
+        mkIcp = mkHab.msgOwnEvent(sn=0)
+        Parser(version=Vrsn_1_0).parse(ims=mkIcp, kvy=crossKvy)
         assert mkHab.pre in crossKvy.kevers
 
         # Create Kramer + Kevery
@@ -1541,7 +1541,7 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
                                           transferable=True)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
-        senderIcp = senderHab.makeOwnEvent(sn=0)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
         assert senderHab.pre in crossKvy.kevers
 
@@ -1706,7 +1706,7 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
                             transferable=True)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
-        senderIcp = senderHab.makeOwnEvent(sn=0)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
         assert senderHab.pre in crossKvy.kevers
 
@@ -1868,7 +1868,7 @@ def test_non_auth_attachments_empty_kwa(mockHelpingNowUTC):
                             transferable=True)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
-        senderIcp = senderHab.makeOwnEvent(sn=0)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
 
         with openCF(name="naesKram", base="test") as cf:
@@ -1931,7 +1931,7 @@ def test_rem_non_auth_attachments(mockHelpingNowUTC):
                             transferable=True)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
-        senderIcp = senderHab.makeOwnEvent(sn=0)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
 
         with openCF(name="remKram", base="test") as cf:
@@ -2059,7 +2059,7 @@ def test_stale_tsgs(mockHelpingNowUTC):
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
 
         # Cross-feed sender ICP (sn=0) to receiver
-        senderIcp = senderHab.makeOwnEvent(sn=0)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
         assert senderHab.pre in crossKvy.kevers
 
@@ -2270,13 +2270,13 @@ def test_cue_ks_non_transactioned(mockHelpingNowUTC):
         # Do not cross-feed senders ICP to receiver so they remain unknown to sender
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
 
-        senderSkHab.makeOwnEvent(sn=0)
-        senderMkHab.makeOwnEvent(sn=0)
+        senderSkHab.msgOwnEvent(sn=0, framed=True)
+        senderMkHab.msgOwnEvent(sn=0, framed=True)
         assert senderSkHab.pre not in crossKvy.kevers
         assert senderMkHab.pre not in crossKvy.kevers
 
         # Cross for the known sender
-        senderIcp = kownSenderHab.makeOwnEvent(sn=0)
+        senderIcp = kownSenderHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
         assert kownSenderHab.pre in crossKvy.kevers
 
@@ -2404,13 +2404,13 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
         # Do not cross-feed senders ICP to receiver so they remain unknown to sender
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
 
-        senderSkHab.makeOwnEvent(sn=0)
-        senderMkHab.makeOwnEvent(sn=0)
+        senderSkHab.msgOwnEvent(sn=0, framed=True)
+        senderMkHab.msgOwnEvent(sn=0, framed=True)
         assert senderSkHab.pre not in crossKvy.kevers
         assert senderMkHab.pre not in crossKvy.kevers
 
         # Cross for the known sender
-        senderIcp = kownSenderHab.makeOwnEvent(sn=0)
+        senderIcp = kownSenderHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
         assert kownSenderHab.pre in crossKvy.kevers
 
@@ -2529,11 +2529,11 @@ def test_aid_allow_deny(mockHelpingNowUTC):
         # Parse sender ICPs into receiver's db via a cross-feed Kevery.
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
 
-        allowSenderIcp = allowHab.makeOwnEvent(sn=0)
+        allowSenderIcp = allowHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(allowSenderIcp), kvy=crossKvy)
         assert allowHab.pre in crossKvy.kevers
 
-        denySenderIcp = denyHab.makeOwnEvent(sn=0)
+        denySenderIcp = denyHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(denySenderIcp), kvy=crossKvy)
         assert denyHab.pre in crossKvy.kevers
 
@@ -2869,7 +2869,7 @@ def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
         # Parse sender ICPs into receiver's db via a cross-feed Kevery.
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
 
-        senderIcp = senderHab.makeOwnEvent(sn=0)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
         assert senderHab.pre in crossKvy.kevers
 
@@ -3059,7 +3059,7 @@ def test_new_cache_type(fakeHelpingClock):
         # Load sender's ICP into receiver
         cross = Kevery(db=receiverHby.db, lax=False, local=False)
 
-        senderIcp = senderHab.makeOwnEvent(sn=0)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
         assert senderHab.pre in cross.kevers
 
@@ -3344,7 +3344,7 @@ def test_multiple_new_cache_type(fakeHelpingClock):
         # Load sender's ICP into receiver
         cross = Kevery(db=receiverHby.db, lax=False, local=False)
 
-        senderIcp = senderHab.makeOwnEvent(sn=0)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
         assert senderHab.pre in cross.kevers
 
@@ -3649,7 +3649,7 @@ def test_merge_cache_types(fakeHelpingClock):
         # Load sender's ICP into receiver
         cross = Kevery(db=receiverHby.db, lax=False, local=False)
 
-        senderIcp = senderHab.makeOwnEvent(sn=0)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
         assert senderHab.pre in cross.kevers
 
@@ -3881,7 +3881,7 @@ def test_modify_cache_types(fakeHelpingClock):
         # Load sender's ICP into receiver
         cross = Kevery(db=receiverHby.db, lax=False, local=False)
 
-        senderIcp = senderHab.makeOwnEvent(sn=0)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
         assert senderHab.pre in cross.kevers
 
@@ -4160,7 +4160,7 @@ def test_pruning_messages_single_key(fakeHelpingClock):
         # Load sender's ICP into receiver
         cross = Kevery(db=receiverHby.db, lax=False, local=False)
 
-        senderIcp = senderHab.makeOwnEvent(sn=0)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
         assert senderHab.pre in cross.kevers
 
@@ -4333,7 +4333,7 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
 
         # Cross-feed sender ICP to receiver
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
-        senderIcp = senderHab.makeOwnEvent(sn=0)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
         assert senderHab.pre in crossKvy.kevers
 
@@ -4672,7 +4672,7 @@ def test_pruning_exchanges(fakeHelpingClock):
         # Load sender's ICP into receiver
         cross = Kevery(db=receiverHby.db, lax=False, local=False)
 
-        senderIcp = senderHab.makeOwnEvent(sn=0)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=cross)
         assert senderHab.pre in cross.kevers
 

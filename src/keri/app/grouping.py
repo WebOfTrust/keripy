@@ -67,9 +67,11 @@ class Counselor(doing.DoDoer):
             diger (Diger): diger of event of group identifier
 
         """
-        evt = ghab.makeOwnEvent(sn=number.sn, allowPartiallySigned=True)  # used just for the log message
-        serder = SerderKERI(raw=evt)                            # used just for the log message
-        logger.info("Waiting for other signatures on %s for %s:%s...", serder.ilk, prefixer.qb64, number.sn)
+        # used just for the log message
+        evt = ghab.msgOwnEvent(sn=number.sn, allowPartiallySigned=True, framed=True)
+        serder = SerderKERI(raw=evt)  # used just for the log message
+        logger.info("Waiting for other signatures on %s for %s:%s...",
+                    serder.ilk, prefixer.qb64, number.sn)
         return self.hby.db.gpse.add(keys=(prefixer.qb64,), val=(number, diger))
 
     def complete(self, prefixer, number, diger=None):

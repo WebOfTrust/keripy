@@ -3580,9 +3580,7 @@ class Cigar(Matter):
 
 
 class Diger(Matter):
-    """
-    Diger is Matter subclass with method to verify digest of serialization
-
+    """Diger is Matter subclass with method to verify digest of serialization
 
     See Matter for inherited attributes and properties:
 
