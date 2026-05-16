@@ -1835,41 +1835,6 @@ class BaseHab:
         return msgs
 
 
-    def makeOtherEvent(self, pre, sn):
-        """Return messagized bytearray message with attached signatures of
-        the event at sequence number ``sn`` for ``pre``, retrieved from the
-        database.
-
-        Args:
-            pre (str): qb64 identifier prefix.
-            sn (int): sequence number of event.
-
-        Returns:
-            bytearray or None: messagized event with attached signatures,
-            or None if ``pre`` is not in kevers.
-
-        Raises:
-            MissingEntryError: if no event is found for ``pre`` at ``sn``.
-        """
-        if pre not in self.kevers:
-            return None
-
-        msg = bytearray()
-        dig = self.db.kels.getLast(keys=pre, on=sn)
-        if dig is None:
-            raise MissingEntryError("Missing event for pre={} at sn={}."
-                                           "".format(pre, sn))
-        dig = dig.encode("utf-8")
-        dig = bytes(dig)
-        serder = self.db.evts.get(keys=(pre, dig))
-        msg.extend(serder.raw)
-        msg.extend(Counter(Codens.ControllerIdxSigs, count=self.db.sigs.cnt(keys=(pre, dig)),
-                           version=Vrsn_1_0).qb64b)  # attach cnt
-        for siger in self.db.sigs.getIter(keys=(pre, dig)):
-            msg.extend(siger.qb64b)  # attach siger
-        return msg
-
-
     def fetchEnd(self, cid: str, role: str, eid: str):
         """Return the endpoint record for the given controller, role, and
         endpoint provider.
@@ -2475,21 +2440,8 @@ class BaseHab:
             msg (bytearray): qb64b serialization of own event at ``sn`` with
                         optionally attached signatures and seal source couple.
         """
-        #msg = bytearray()
         serder, sigers, duple = self.getOwnEvent(sn=sn,
                                                 allowPartiallySigned=allowPartiallySigned)
-
-        #msg.extend(serder.raw)
-        #msg.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                           #version=Vrsn_1_0).qb64b)  # attach cnt
-        #for sig in sigers:
-            #msg.extend(sig.qb64b)  # attach sig
-
-        #if duple is not None:
-            #seqner, diger = duple
-            #msg.extend(Counter(Codens.SealSourceCouples, count=1,
-                               #version=Vrsn_1_0).qb64b)
-            #msg.extend(seqner.qb64b + diger.qb64b)
 
         seal = None
         if duple is not None:
@@ -2532,6 +2484,70 @@ class BaseHab:
         return self.makeOwnEvent(sn=0, allowPartiallySigned=allowPartiallySigned,
                                  framed=framed, nested=nested, gvrsn=gvrsn,
                                  genusify=genusify                                 )
+
+
+
+    def makeOtherEvent(self, pre, sn, framed=False, nested=False, gvrsn=Version,
+                                      genusify=False):
+        """Return messagized bytearray message with attached signatures of
+        the event at sequence number ``sn`` for ``pre``, retrieved from the
+        database.
+
+        Parameters::
+            pre (str): qb64 identifier prefix.
+            sn (int): sequence number of event.
+            framed (bool): True means may assume each message plus its attachments
+                                is isolated as frame when parsing so do not need
+                                attachment group when messagizing
+                           False means may not assume eash message plus its attachments
+                                is isolated as frame when parsing so do need
+                                attachment group when messagizing
+            nested (bool): True means messagize for non-top level
+                                This forces non-native serializion to be embedded
+                                in non-native group code
+                           False means messagize for top level of stream.
+                                This allows bare non-native serialization of message
+            gvrsn (Versionage): CESR Genus version for attachment group codes or
+                            nesting group code (useful when serder.gvrsn < 2)
+                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                                if serder.gvrsn else serder.pvrsn
+            genusify (bool): True means prepend genus version code from gvrsn before
+                            serder to override default stream genus version
+                         False means do nothing
+
+
+        Returns::
+            msg (bytearray |None): messagized event with attached signatures,
+                                   or None if ``pre`` is not in kevers.
+
+        Raises::
+            MissingEntryError: if no event is found for ``pre`` at ``sn``.
+        """
+        if pre not in self.kevers:
+            return None
+
+        dig = self.db.kels.getLast(keys=pre, on=sn)
+        if dig is None:
+            raise MissingEntryError("Missing event for pre={} at sn={}."
+                                          "".format(pre, sn))
+
+        #dig = dig.encode()
+        #dig = bytes(dig)
+        serder = self.db.evts.get(keys=(pre, dig))
+
+        #msg = bytearray()
+        #msg.extend(serder.raw)
+        #msg.extend(Counter(Codens.ControllerIdxSigs, count=self.db.sigs.cnt(keys=(pre, dig)),
+                           #version=Vrsn_1_0).qb64b)  # attach cnt
+        #for siger in self.db.sigs.getIter(keys=(pre, dig)):
+            #msg.extend(siger.qb64b)  # attach siger
+
+        sigers = [siger for siger in self.db.sigs.getIter(keys=(pre, dig))]
+
+        #return msg
+
+        return messagize(serder, sigers=sigers, framed=framed, nested=nested,
+                         gvrsn=gvrsn, genusify=genusify)
 
 
     def processCues(self, cues):

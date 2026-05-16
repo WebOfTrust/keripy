@@ -863,7 +863,7 @@ def test_make_other_event():
         hab.rotate(framed=True)
         hab.rotate(framed=True)
 
-        msg = hab.makeOtherEvent(hab.pre, sn=1)
+        msg = hab.makeOtherEvent(hab.pre, sn=1, framed=True)
         assert msg == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EGnFNzw2UJKpQZYJj_xhcFYW'
                        b'E7prFWFBbghgcMuJ4VeM","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2Q'
                        b'V8dDjI3","s":"1","p":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDj'
@@ -872,7 +872,7 @@ def test_make_other_event():
                        b'"bt":"0","br":[],"ba":[],"a":[]}-AABAAC2DAJCt6KLh442NsGVLE0pYKvL'
                        b'-3MVh-kWcBWWqpVmXbhlQ3oGHD5h4jUY7Trw2jFvsQyC4A_1kJpmNP1AgXcM')
 
-        msg = hab.makeOtherEvent(hab.pre, sn=2)
+        msg = hab.makeOtherEvent(hab.pre, sn=2, framed=True)
         assert msg == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EJCaUsmfvR35xZxpenqEWCtX'
                        b'sXnD_efjlvvRd1hEvu5d","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2Q'
                        b'V8dDjI3","s":"2","p":"EGnFNzw2UJKpQZYJj_xhcFYWE7prFWFBbghgcMuJ4V'
