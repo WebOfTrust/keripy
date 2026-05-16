@@ -168,7 +168,7 @@ def test_stream_cesr_request(mockHelpingNowUTC):
                                               b'qSTBmJzI8RvIezsJ')
 
         msgs = hab.query(pre=hab.pre, src=wit, route="logs", query=dict(s=0))
-        msgs.extend(hab.makeOwnEvent(sn=0, framed=True))
+        msgs.extend(hab.msgOwnEvent(sn=0, framed=True))
 
         client = MockClient()
         streamCESRRequests(client, msgs, dest=wit)

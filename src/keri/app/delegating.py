@@ -76,7 +76,7 @@ class Anchorer(doing.DoDoer):
         self.auths = auths if auths is not None else self.auths
 
         # load the event and signatures
-        evt = hab.makeOwnEvent(sn=sn)
+        evt = hab.msgOwnEvent(sn=sn)
 
         # Send exn message for notification purposes
         srdr = SerderKERI(raw=evt)

@@ -20,7 +20,7 @@ def test_querying():
         subHab = hby1.makeHab(name="subject")
         qdoer = QueryDoer(hby=hby, hab=inqHab, kvy=hby.kvy, pre=subHab.pre)
 
-        icp = subHab.makeOwnInception(framed=True)
+        icp = subHab.msgOwnInception(framed=True)
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(icp), kvy=inqHab.kvy)
 
         assert qdoer is not None
@@ -157,7 +157,7 @@ def test_query_not_found_escrow():
         inqHab = hby.makeHab(name="inquisitor")
         subHab = hby1.makeHab(name="subject")
 
-        icp = inqHab.makeOwnInception(framed=True)
+        icp = inqHab.msgOwnInception(framed=True)
         subHab.psr.parseOne(ims=icp)
         assert inqHab.pre in subHab.kevers
 

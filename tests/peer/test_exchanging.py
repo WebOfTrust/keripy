@@ -56,7 +56,7 @@ def test_essrs():
     with openHab(name="sid", base="test", salt=b'0123456789abcdef') as (hby, hab), \
             openHab(name="rec", base="test", salt=b'0123456789abcdef') as (recHby, recHab):
 
-        ims = hab.makeOwnInception(framed=True)
+        ims = hab.msgOwnInception(framed=True)
         Parser(version=Vrsn_1_0).parse(ims=ims, kvy=recHby.kvy)
         # create the test message with essr attachment
         msg = dict(msg="This is a test message that must be secured", i=hab.pre)

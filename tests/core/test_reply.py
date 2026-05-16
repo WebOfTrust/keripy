@@ -689,7 +689,7 @@ def test_reply(mockHelpingNowUTC):
         serder1 = serderR
 
         # add tam kel to nel and process escrows
-        tamicp = tamHab.makeOwnInception(framed=True)
+        tamicp = tamHab.msgOwnInception(framed=True)
         nelPrs.parse(bytearray(tamicp), local=True)
         assert tamHab.pre not in nelKvy.kevers
         wesPrs.parse(bytearray(tamicp), local=True)
@@ -1327,10 +1327,10 @@ def test_watcher_add_cut():
         obv2kvy = Kevery(db=obv2hab.db, lax=False, local=False)
 
         for hab in [wat0hab, wat1hab, wat2hab, obv0hab, obv1hab, obv2hab]:
-            msg = hab.makeOwnInception(framed=True)
+            msg = hab.msgOwnInception(framed=True)
             Parser(version=Vrsn_1_0).parseOne(ims=msg, kvy=conKvy)
 
-        conIcp = conHab.makeOwnInception(framed=True)
+        conIcp = conHab.msgOwnInception(framed=True)
         for kvy in [wat0kvy, wat1kvy, wat2kvy, obv0kvy, obv1kvy, obv2kvy]:
             Parser(version=Vrsn_1_0).parseOne(ims=bytes(conIcp), kvy=kvy)  # make copy so we don't clobber it
 
@@ -1352,7 +1352,7 @@ def test_watcher_add_cut():
         assert ender.allowed is True
 
         for hab in [obv0hab, obv1hab, obv2hab]:
-            icp = hab.makeOwnInception(framed=True)
+            icp = hab.msgOwnInception(framed=True)
             conHab.psr.parseOne(ims=bytes(icp))
             wat0hab.psr.parseOne(ims=bytes(icp))
             wat1hab.psr.parseOne(ims=bytes(icp))

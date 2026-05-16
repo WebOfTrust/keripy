@@ -318,7 +318,7 @@ def test_delegation_supersede():
         # Create Wan the witness
         wanHab = wanHby.makeHab(name="wan", transferable=False)
         assert wanHab.pre == "BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP"
-        msg = wanHab.makeOwnEvent(sn=0)
+        msg = wanHab.msgOwnEvent(sn=0)
         parsing.Parser(version=Vrsn_1_0).parse(ims=msg, kvy=torKvy)
 
         # Create Wil the witness, we'll use him later
@@ -327,7 +327,7 @@ def test_delegation_supersede():
         # Create Tor the delegaTOR and pass to witness Wan
         torHab = torHby.makeHab(name="tor", icount=1, isith='1', ncount=1, nsith='1', wits=[wanHab.pre], toad=1)
         assert torHab.pre == "EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP"
-        torIcp = torHab.makeOwnEvent(sn=0)
+        torIcp = torHab.msgOwnEvent(sn=0)
 
         wanKvy = Kevery(db=wanHby.db, lax=False, local=False)  # remote events
         torKvy = Kevery(db=torHby.db, lax=False, local=False)  # remote events
@@ -365,7 +365,7 @@ def test_delegation_supersede():
 
         # be witness to controller's inception
         # first make inception
-        stream = topHab.makeOwnInception(framed=True)
+        stream = topHab.msgOwnInception(framed=True)
         assert stream == (b'{"v":"KERI10JSON000159_","t":"icp","d":"EJcCaHg3AtW_gRzpaz6Pw03Y'
                         b'v49is2IJDRwYE7ey91KE","i":"EJcCaHg3AtW_gRzpaz6Pw03Yv49is2IJDRwYE'
                         b'7ey91KE","s":"0","kt":"1","k":["DPJVPYS9efLUHDOqxwG6pxISZSRACgNf'
@@ -417,7 +417,7 @@ def test_delegation_supersede():
 
         # be witness to controller's inception.
         # first  make inception
-        stream = midHab.makeOwnInception(framed=True)
+        stream = midHab.msgOwnInception(framed=True)
 
         # add test fail process as remote since since witness of controller
 
@@ -457,7 +457,7 @@ def test_delegation_supersede():
 
         # be witness to controller's inception.
         # first  make inception
-        stream = botHab.makeOwnInception(framed=True)
+        stream = botHab.msgOwnInception(framed=True)
 
         # add test fail process as remote since since witness of controller
 
@@ -758,7 +758,7 @@ def test_delegables_escrow():
         gateHab = gateHby.makeHab(name="repTest", transferable=True, delpre=torHab.pre)
         assert gateHab.pre == "EFqw1EgGdd2B6MgNLJaNO13_JoQpxAtasIjySDzGm9pd"
 
-        gateIcp = gateHab.makeOwnEvent(sn=0, framed=True)
+        gateIcp = gateHab.msgOwnEvent(sn=0, framed=True)
         torKvy = Kevery(db=torHab.db, lax=False, local=False)
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(gateIcp), kvy=torKvy, local=True)
         assert gateHab.pre not in torKvy.kevers

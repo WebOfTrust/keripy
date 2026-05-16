@@ -82,7 +82,7 @@ class NoticeDoer(doing.DoDoer):
         if hab.group:
             (smids, rmids) = hab.members()
             serder = hab.kever.serder
-            rot = hab.makeOwnEvent(sn=hab.kever.sn, framed=True)
+            rot = hab.msgOwnEvent(sn=hab.kever.sn, framed=True)
             eserder = SerderKERI(raw=rot)
             del rot[:eserder.size]
 

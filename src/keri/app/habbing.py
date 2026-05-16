@@ -2409,7 +2409,7 @@ class BaseHab:
         return serder, sigers, duple
 
 
-    def makeOwnEvent(self, sn, allowPartiallySigned=False, framed=False, nested=False,
+    def msgOwnEvent(self, sn, allowPartiallySigned=False, framed=False, nested=False,
                               gvrsn=Version, genusify=False):
         """Messagize own event at sn with attachments if any.
 
@@ -2451,7 +2451,7 @@ class BaseHab:
                             nested=nested, gvrsn=gvrsn, genusify=genusify)
 
 
-    def makeOwnInception(self, allowPartiallySigned=False, framed=False, nested=False,
+    def msgOwnInception(self, allowPartiallySigned=False, framed=False, nested=False,
                               gvrsn=Version, genusify=False):
         """Return messagized own inception event with attached signatures,
         retrieved from the database.
@@ -2481,13 +2481,13 @@ class BaseHab:
         Returns::
             msg (bytearray): messagized inception event with attached signatures.
         """
-        return self.makeOwnEvent(sn=0, allowPartiallySigned=allowPartiallySigned,
+        return self.msgOwnEvent(sn=0, allowPartiallySigned=allowPartiallySigned,
                                  framed=framed, nested=nested, gvrsn=gvrsn,
                                  genusify=genusify                                 )
 
 
 
-    def makeOtherEvent(self, pre, sn, framed=False, nested=False, gvrsn=Version,
+    def msgOtherEvent(self, pre, sn, framed=False, nested=False, gvrsn=Version,
                                       genusify=False):
         """Return messagized bytearray message with attached signatures of
         the event at sequence number ``sn`` for ``pre``, retrieved from the
@@ -2515,7 +2515,6 @@ class BaseHab:
                             serder to override default stream genus version
                          False means do nothing
 
-
         Returns::
             msg (bytearray |None): messagized event with attached signatures,
                                    or None if ``pre`` is not in kevers.
@@ -2531,21 +2530,8 @@ class BaseHab:
             raise MissingEntryError("Missing event for pre={} at sn={}."
                                           "".format(pre, sn))
 
-        #dig = dig.encode()
-        #dig = bytes(dig)
         serder = self.db.evts.get(keys=(pre, dig))
-
-        #msg = bytearray()
-        #msg.extend(serder.raw)
-        #msg.extend(Counter(Codens.ControllerIdxSigs, count=self.db.sigs.cnt(keys=(pre, dig)),
-                           #version=Vrsn_1_0).qb64b)  # attach cnt
-        #for siger in self.db.sigs.getIter(keys=(pre, dig)):
-            #msg.extend(siger.qb64b)  # attach siger
-
         sigers = [siger for siger in self.db.sigs.getIter(keys=(pre, dig))]
-
-        #return msg
-
         return messagize(serder, sigers=sigers, framed=framed, nested=nested,
                          gvrsn=gvrsn, genusify=genusify)
 
@@ -2601,7 +2587,7 @@ class BaseHab:
 
                     if not found:  # no receipt from remote so send own inception
                         # no vrcs or rct of own icp from remote so send own inception
-                        msgs.extend(self.makeOwnInception(framed=True))
+                        msgs.extend(self.msgOwnInception(framed=True))
 
                 msgs.extend(self.receipt(cuedSerder, framed=True))
                 yield msgs

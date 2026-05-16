@@ -147,7 +147,7 @@ class PublishDoer(doing.DoDoer):
         self.tock = tock
         yield self.tock
 
-        msg = self.palHab.makeOwnEvent(sn=0, framed=True)
+        msg = self.palHab.msgOwnEvent(sn=0, framed=True)
         self.witDoer.msgs.append(dict(pre=self.palHab.pre, msg=msg))
 
         for hab in [self.wanHab, self.wilHab, self.wesHab]:

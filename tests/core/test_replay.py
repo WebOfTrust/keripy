@@ -66,7 +66,7 @@ def test_replay():
         # first setup disjoint replay then conjoint replay
         # Create series of event for Deb
         debMsgs = bytearray()
-        debMsgs.extend(debHab.makeOwnInception(framed=True))
+        debMsgs.extend(debHab.msgOwnInception(framed=True))
         debMsgs.extend(debHab.interact(framed=True))
         debMsgs.extend(debHab.rotate(framed=True))
         debMsgs.extend(debHab.interact(framed=True))
@@ -473,7 +473,7 @@ def test_replay():
                                     lax=False,
                                     local=False)
         # process Cam's inception so Art will proces Cam's vrcs without escrowing
-        camIcpMsg = camHab.makeOwnInception(framed=True)
+        camIcpMsg = camHab.msgOwnInception(framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(camIcpMsg), kvy=artKevery)
         # artKevery.process(ims=bytearray(camIcpMsg))
         assert camHab.pre in artKevery.kevers
@@ -545,7 +545,7 @@ def test_replay_all():
 
         # Create series of event for Deb
         debMsgs = bytearray()
-        debMsgs.extend(debHab.makeOwnInception(framed=True))
+        debMsgs.extend(debHab.msgOwnInception(framed=True))
         debMsgs.extend(debHab.interact(framed=True))
         debMsgs.extend(debHab.rotate(framed=True))
         debMsgs.extend(debHab.interact(framed=True))
@@ -626,7 +626,7 @@ def test_replay_all():
                                     lax=False,
                                     local=False)
         # process Cam's inception so Art will proces Cam's vrcs without escrowing
-        camIcpMsg = camHab.makeOwnInception(framed=True)
+        camIcpMsg = camHab.msgOwnInception(framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(camIcpMsg), kvy=artKevery)
         assert camHab.pre in artKevery.kevers
         assert len(artKevery.cues) == 1

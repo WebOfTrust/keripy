@@ -81,7 +81,7 @@ class RequestDoer(doing.DoDoer):
             raise ValueError(f"no escrowed events for {self.alias} ({hab.pre})")
 
         (seqner, saider) = esc[0]
-        evt = hab.makeOwnEvent(sn=seqner.sn)
+        evt = hab.msgOwnEvent(sn=seqner.sn)
         delpre = hab.kever.delpre  # get the delegator identifier
 
         if isinstance(hab, GroupHab):
