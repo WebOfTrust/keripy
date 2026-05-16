@@ -51,7 +51,7 @@ class Parser:
         tvy (Tevery): route TEL message types to this instance
         exc (Exchanger): route EXN message types to this instance
         rvy (Revery): reply (RPY) message handler
-        vry (Verfifier): credential verifier with wallet storage
+        vry (``Verfifier``): credential verifier with wallet storage
         local (bool): True means event source is local (protected) for validation
                          False means event source is remote (unprotected) for validation
 
@@ -158,7 +158,7 @@ class Parser:
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger): route EXN message types to this instance
             rvy (Revery): reply (RPY) message handler
-            vry (Verfifier): credential verifier with wallet storage
+            vry (``Verfifier``): credential verifier with wallet storage
             local (bool): True means event source is local (protected) for validation
                          False means event source is remote (unprotected) for validation
             version (Versionage): instance of version portion of genus version code
@@ -837,10 +837,11 @@ class Parser:
             local (bool): True means event source is local (protected) for validation
                           False means event source is remote (unprotected) for validation
                           None means use default .local
-            version (Versionage): default version of CESR to use.
+            version (``Versionage``): default version of CESR to use.
                                   None means do not change default
 
-        Logic:
+        Logic::
+
             Currently only support couters on attachments not on combined or
             on message
             Attachments must all have counters so know if txt or bny format for
