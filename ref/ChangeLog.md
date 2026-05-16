@@ -2,6 +2,18 @@
 
 ## 2.0.0-dev6
 
+### app.habbing.BaseHab.makeOwnEvent has been changed to .msgOwnEvent because
+it better fits what is does is to messagize its own event.
+.makeOwnEvent is now deprecated
+
+### app.habbing.BaseHab.makeOwnInception has been change to .msgOwnInception
+because it better fits what is does is to messagize its own inception event.
+.makeOwnInception is now deprecated
+
+### app.habbing.BaseHab.makeOtherEvent has been changed to .msgOtherEvent because
+it better fits what is does is to messagize some other event.
+.makeOtherEvent is now deprecated
+
 ### core.eventing.messagize call signature changes: piplined parameter is replaced
 with framed and the default is framed=False. This is because the Parser meaning
 of piplined has evolved whereas messagize no longer tracks that meansing so
