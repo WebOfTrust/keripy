@@ -1557,19 +1557,19 @@ class Parser:
                                                   klas=Prefixer,
                                                   cold=cold,
                                                   abort=abort)
-            seqner = yield from self._extractor(ims=ims,
-                                                klas=Seqner,
+            number = yield from self._extractor(ims=ims,
+                                                klas=Number,
                                                 cold=cold,
                                                 abort=abort)
-            saider = yield from self._extractor(ims=ims,
-                                                klas=Saider,
+            diger = yield from self._extractor(ims=ims,
+                                                klas=Diger,
                                                 cold=cold,
                                                 abort=abort)
             siger = yield from self._extractor(ims=ims,
                                                klas=Siger,
                                                cold=cold,
                                                abort=abort)
-            trqs.append((prefixer, seqner, saider, siger))
+            trqs.append((prefixer, number, diger, siger))
         try:
             exts['trqs'].extend(trqs)
         except KeyError:
@@ -1614,10 +1614,10 @@ class Parser:
         trqs = []
         while gims:   # extract each attached quadruple and strip from gims
             prefixer = self.extract(ims=gims, klas=Prefixer, cold=cold)
-            seqner = self.extract(ims=gims, klas=Seqner, cold=cold)
-            saider = self.extract(ims=gims, klas=Saider, cold=cold)
+            number = self.extract(ims=gims, klas=Number, cold=cold)
+            diger = self.extract(ims=gims, klas=Diger, cold=cold)
             siger = self.extract(ims=gims, klas=Siger, cold=cold)
-            trqs.append((prefixer, seqner, saider, siger))
+            trqs.append((prefixer, number, diger, siger))
         try:
             exts['trqs'].extend(trqs)
         except KeyError:

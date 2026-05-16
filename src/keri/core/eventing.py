@@ -4677,8 +4677,7 @@ class Kevery:
 
     def processAttachedReceiptQuadruples(self, serder, trqs, *, firner=None,
                                          local=None, **kwa):
-        """
-        Process one attachment quadruple that represents an endorsement from
+        """Process one attachment quadruple that represents an endorsement from
         a transferable AID that is not the controller. Maybe a watcher.
         Originally may have been a transferable receipt or key event attachment
 
@@ -4687,7 +4686,7 @@ class Kevery:
         Parameters:
             serder (serderKERI):  instance serialized event message to which
                 attachments come from replay (clone)
-            trqs (list[tuple]): quadruples of (prefixer, seqner, diger, siger)
+            trqs (list[tuple]): quadruples of (prefixer, number, diger, siger)
             firner (Seqner): instance of first seen ordinal,
                if provided lookup event by fn = firner.sn
                used when in cloned replay mode
@@ -4695,16 +4694,11 @@ class Kevery:
                                False means remote (unprotected).
                                None means use default .local .
 
-        Seal labels
-            i pre  # qb64 prefix of receipter
-            s sn   # hex of sequence number of est event for receipter keys
-            d dig  # qb64 digest of est event for receipter keys
-
         """
         local = local if local is not None else self.local
         local = True if local else False  # force boolean
 
-        # fetch  pre, dig,seal to process
+        # fetch  ldig to process
         ked = serder.ked
         pre = serder.pre
         sn = serder.sn
@@ -4715,7 +4709,7 @@ class Kevery:
             # Only accept receipt if for last seen version of receipted event at sn
             ldig = self.db.kels.getLast(keys=pre, on=sn)  # retrieve dig of last event at sn.
 
-        for sprefixer, snumber, saider, siger in trqs:  # iterate over each trq
+        for sprefixer, snumber, diger, siger in trqs:  # iterate over each trq
             if not self.lax and sprefixer.qb64 in self.prefixes:  # own trans receipt quadruple (chit)
                 if pre in self.prefixes:  # skip own trans receipts of own events
                     raise ValidationError("Own pre={} replay attached transferable "
@@ -4740,7 +4734,7 @@ class Kevery:
                 if sdig is None:
                     # receipter's est event not yet in receipter's KEL
                     # receipter's seal event not in receipter's KEL
-                    self.escrowTRQuadruple(serder, sprefixer, snumber, saider, siger)
+                    self.escrowTRQuadruple(serder, sprefixer, snumber, diger, siger)
                     raise UnverifiedTransferableReceiptError("Unverified receipt: "
                                                              "missing establishment event of transferable "
                                                              "validator receipt quadruple for event={}."
@@ -4749,7 +4743,7 @@ class Kevery:
                 # retrieve last event itself of receipter
                 sserder = self.db.evts.get(keys=(sprefixer.qb64b, bytes(sdig)))
                 # assumes db ensures that sserder must not be none because sdig was in KE
-                if not sserder.compare(said=saider.qb64):  # seal dig not match event
+                if not sserder.compare(said=diger.qb64):  # seal dig not match event
                     raise ValidationError("Bad trans receipt quadruple at sn = {}"
                                           " for rct = {}."
                                           "".format(snumber.sn, sserder.ked))
@@ -4760,7 +4754,7 @@ class Kevery:
                     raise ValidationError("Invalid trans receipt quad est. event"
                                           " dig = {} for receipt from pre ={}, "
                                           "no keys."
-                                          "".format(saider.qb64, sprefixer.qb64))
+                                          "".format(diger.qb64, sprefixer.qb64))
 
                 if siger.index >= len(sverfers):
                     raise ValidationError("Index = {} to large for keys."
@@ -4775,12 +4769,12 @@ class Kevery:
                 # good sig so write receipt quadruple to database
 
                 # Set up quadruple
-                quadruple = (sprefixer, snumber, saider, siger)
+                quadruple = (sprefixer, snumber, diger, siger)
                 self.db.vrcs.add(keys=dgKey(pre, serder.said), val=quadruple)
 
 
             else:  # escrow  either receiptor or receipted event not yet in database
-                self.escrowTRQuadruple(serder, sprefixer, snumber, saider, siger)
+                self.escrowTRQuadruple(serder, sprefixer, snumber, diger, siger)
                 msg = (f"Unverified receipt: missing associated event for transferable validator"
                        f"receipt quadruple for event {serder.said}")
                 logger.info(msg)
@@ -5749,9 +5743,8 @@ class Kevery:
                     "of pre=%s sn=%x dig=%s by pre=%s", serder.pre,
                     serder.sn, serder.ked["d"], prefixer.qb64)
 
-    def escrowTRQuadruple(self, serder, sprefixer, snumber, saider, siger):
-        """
-        Update associated logs for escrow of Unverified Transferable Receipt
+    def escrowTRQuadruple(self, serder, sprefixer, snumber, diger, siger):
+        """Update associated logs for escrow of Unverified Transferable Receipt
         (transferable)
 
         escrow quintuple made from quadruple where:
@@ -5759,10 +5752,11 @@ class Kevery:
             quintuple = edig+spre+ssnu+sdig+sig  (edig is signed event digest)
 
         Parameters:
-            serder instance of receipt message not receipted event
-            sigers is list of Siger instances attached to receipt message
-            seal is SealEvent instance (namedTuple)
-            saider is digest of receipted event provided in receipt
+            serder (SerderKERI):  instance of receipt message not receipted event
+            sprefixer (Prefixer): instance receiptor AID
+            snumber (Number):  instance of sn of est event for receiptor key state
+            diger (Diger): instance said digest est event or receipt key state
+            siger (Siger): instance of signature of receiptor
 
         """
         # Receipt dig algo may not match database dig. So must always
@@ -5776,10 +5770,10 @@ class Kevery:
         self.db.dtss.put(keys=dgKey(serder.preb, serder.said), val=Dater())
         quintuple = (
             Diger(qb64=serder.said),     # event digest
-            sprefixer,                          # Prefixer
-            Number(num=snumber.sn),        # Number
-            Diger(qb64=saider.qb64),     # est event digest
-            siger,                              # Siger
+            sprefixer,                  # Prefixer receiptor
+            Number(num=snumber.sn),     # SN of est event of receiptor key state
+            Diger(qb64=diger.qb64), # est event said of receiptro key state
+            siger,                  # signature of receiptor using est event key state
         )
         self.db.vres.add(keys=snKey(serder.preb, serder.sn), val=quintuple)
         # log escrowed
