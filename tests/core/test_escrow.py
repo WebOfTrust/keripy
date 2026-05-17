@@ -895,8 +895,8 @@ def test_misfit_escrow_valSigsWigsDel():
                                  wigers=wigers,
                                  toader=toader,
                                  wits=wits,
-                                 delnum=None,
-                                 deldiger=None,
+                                 delsner=None,
+                                 delsger=None,
                                  eager=False,
                                  local=False)
 
