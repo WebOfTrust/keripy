@@ -1832,7 +1832,7 @@ class Kever:
     DoNotDelegate = False
 
     def __init__(self, *, state=None, serder=None, sigers=None, wigers=None,
-                 db=None, estOnly=None, delseqner=None, deldiger=None, firner=None,
+                 db=None, estOnly=None, delsner=None, delsger=None, firner=None,
                  dater=None, cues=None, eager=False, local=True, check=False):
         """
         Create incepting kever and state from inception serder
@@ -1848,9 +1848,9 @@ class Kever:
             db (Baser | None): instance of lmdb database
             estOnly (bool | None): True means establishment only events allowed 'EO'.
                             False all events allowed.
-            delseqner (Seqner | None): instance of delegating event sequence number.
+            delsner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            deldiger (Diger | None): instance of of delegating event SAID.
+            delsger (Diger | None): instance of of delegating event SAID diger.
                 If this event is not delegated then saider is ignored
             firner (Seqner | None): instance optional of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
@@ -1905,8 +1905,8 @@ class Kever:
 
         # Validates signers, delegation if any, and witnessing when applicable
         # If does not validate then escrows as needed and raises ValidationError
-        delnum = Number(num=delseqner.sn) if delseqner is not None else None
-        sigers, wigers, delpre, delnum, deldiger = self.valSigsWigsDel(
+        delnum = Number(num=delsner.sn) if delsner is not None else None
+        sigers, wigers, delpre, delnum, delsger = self.valSigsWigsDel(
                                                         serder=serder,
                                                         sigers=sigers,
                                                         verfers=serder.verfers,
@@ -1915,7 +1915,7 @@ class Kever:
                                                         toader=self.toader,
                                                         wits=self.wits,
                                                         delnum=delnum,
-                                                        deldiger=deldiger,
+                                                        deldiger=delsger,
                                                         eager=eager,
                                                         local=local)
 
@@ -1929,7 +1929,7 @@ class Kever:
         fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
                                 wits=wits,
                                 first=True if not check else False,
-                                delnum=delnum, diger=deldiger,
+                                delnum=delnum, diger=delsger,
                                 firner=firner, dater=dater, local=local)
         if fn is not None:  # first is non-idempotent for fn check mode fn is None
             self.fner = Number(num=fn)
@@ -2266,7 +2266,7 @@ class Kever:
             self.doNotDelegate = True
 
 
-    def update(self, serder, sigers, wigers=None, delseqner=None, deldiger=None,
+    def update(self, serder, sigers, wigers=None, delsner=None, delsger=None,
                firner=None, dater=None, eager=False, local=True, check=False):
         """
         Not an inception event. Verify event serder and indexed signatures
@@ -2280,9 +2280,9 @@ class Kever:
                 from prior next est event to latest est event.
             wigers (list | None): of Siger instances of indexed witness signatures of
                 event. Index is offset into wits list from latest est event
-            delseqner (Seqner | None): instance of delegating event sequence number.
+            delsner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            deldiger (Diger | None): instance of of delegating event said.
+            delsger (Diger | None): instance of of delegating event said diger.
                 If this event is not delegated then diger is ignored
             firner (Seqner | None): Seqner instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
@@ -2333,8 +2333,8 @@ class Kever:
             # Validates signers, delegation if any, and witnessing when applicable
             # returned sigers and wigers are verified signatures
             # If does not validate then escrows as needed and raises ValidationError
-            delnum = Number(num=delseqner.sn) if delseqner is not None else None
-            sigers, wigers, delpre, delnum, deldiger = self.valSigsWigsDel(
+            delnum = Number(num=delsner.sn) if delsner is not None else None
+            sigers, wigers, delpre, delnum, delsger = self.valSigsWigsDel(
                                                         serder=serder,
                                                         sigers=sigers,
                                                         verfers=serder.verfers,
@@ -2343,7 +2343,7 @@ class Kever:
                                                         toader=toader,
                                                         wits=wits,
                                                         delnum=delnum,
-                                                        deldiger=deldiger,
+                                                        deldiger=delsger,
                                                         eager=eager,
                                                         local=local)
 
@@ -2354,7 +2354,7 @@ class Kever:
             fn, dts = self.logEvent(serder=serder, sigers=sigers, wigers=wigers,
                                     wits=wits,
                                     first=True if not check else False,
-                                    delnum=delnum, diger=deldiger,
+                                    delnum=delnum, diger=delsger,
                                     firner=firner, dater=dater, local=local)
 
             # nxt and signatures verify so update state
@@ -4100,7 +4100,7 @@ class Kevery:
                 otherwise None
             delsner (Number|None): instance of delegating event sequence number.
                 If this event is not delegated then delnumber is ignored
-            deldiger (Diger|None): instance of of delegating event SAID diger.
+            delsger (Diger|None): instance of of delegating event SAID diger.
                 If this event is not delegated then deldiger is ignored
             firner (Seqner|None): instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
@@ -4147,8 +4147,8 @@ class Kevery:
                               sigers=sigers,
                               wigers=wigers,
                               db=self.db,
-                              delseqner=delsner,
-                              deldiger=delsger,
+                              delsner=delsner,
+                              delsger=delsger,
                               firner=firner if self.cloned else None,
                               dater=dater if self.cloned else None,
                               cues=self.cues,
@@ -4182,7 +4182,7 @@ class Kevery:
 
             else:  # not inception so can't verify sigs etc, add to out-of-order escrow
                 self.escrowOOEvent(serder=serder, sigers=sigers,
-                                   number=delsner, diger=delsger, wigers=wigers, local=local)
+                                   delsner=delsner, delsger=delsger, wigers=wigers, local=local)
                 raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
         else:  # already accepted inception event for pre so already first seen
@@ -4226,7 +4226,7 @@ class Kevery:
                 if sn > sno:  # sn later than sno so out of order escrow
                     # escrow out-of-order event
                     self.escrowOOEvent(serder=serder, sigers=sigers,
-                                       number=delsner, diger=delsger, wigers=wigers, local=local)
+                                       delsner=delsner, delsger=delsger, wigers=wigers, local=local)
                     msg = f"Out-of-order event sn={serder.sn} type={serder.ilk} SAID={serder.said}"
                     logger.debug(msg)
                     logger.debug("Out-of-order event body=\n%s\n", serder.pretty())
@@ -4242,7 +4242,7 @@ class Kevery:
                     # raise exception if problem.
                     # Otherwise adds to KELs
                     kever.update(serder=serder, sigers=sigers, wigers=wigers,
-                                 delseqner=delsner, deldiger=delsger,
+                                 delsner=delsner, delsger=delsger,
                                  firner=firner if self.cloned else None,
                                  dater=dater if self.cloned else None,
                                  eager=eager, local=local, check=self.check)
@@ -5485,7 +5485,7 @@ class Kevery:
         logger.debug("Kevery process: escrowed misfit event=\n%s", serder.pretty())
 
 
-    def escrowOOEvent(self, serder, sigers, number=None, diger=None, wigers=None, local=True):
+    def escrowOOEvent(self, serder, sigers, delsner=None, delsger=None, wigers=None, local=True):
         """Update associated logs for escrow of Out-of-Order event
 
         Parameters:
@@ -5515,8 +5515,8 @@ class Kevery:
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
             self.db.wigs.put(keys=dgkey, vals=wigers)
-        if number and diger:
-            self.db.udes.put(keys=dgkey, val=(number, diger))  # idempotent
+        if delsner and delsger:
+            self.db.udes.put(keys=dgkey, val=(delsner, delsger))  # idempotent
         self.db.ooes.add(keys=serder.preb, on=serder.sn, val=serder.saidb)
         # log escrowed
         logger.debug("Kevery process: escrowed out of order event=\n%s", serder.pretty())
