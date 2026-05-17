@@ -4099,9 +4099,9 @@ class Kevery:
             wigers (list[Siger]|None): instances of attached witness indexed sigs
                 otherwise None
             delnum (Number|None): instance of delegating event sequence number.
-                If this event is not delegated then ignored
+                If this event is not delegated then delnumber is ignored
             deldiger (Diger|None): instance of of delegating event SAID.
-                If this event is not delegated then saider is ignored
+                If this event is not delegated then deldiger is ignored
             firner (Seqner|None): instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
                 When firner provided then compare fn of dater and database and

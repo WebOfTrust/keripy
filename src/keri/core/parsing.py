@@ -1850,12 +1850,12 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            frcs (list[tuple]): [(firner, dater)]
+            frcs (list[tuple]): [(number, dater)]  first seen sn
         """
         frcs = []
         for i in range(ctr.count):  # extract each attached group
             firner = yield from self._extractor(ims=ims,
-                                                klas=Seqner,
+                                                klas=Number,
                                                 cold=cold,
                                                 abort=abort)
             dater = yield from self._extractor(ims=ims,
@@ -1885,7 +1885,7 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            frcs (list[tuple]): [(firner, dater)]
+            frcs (list[tuple]): [(number, dater)]  first seen sn
 
         """
         gs = ctr.byteCount(cold=cold)
@@ -1899,7 +1899,7 @@ class Parser:
         del ims[:gs]  # strip off from ims
         frcs = []
         while gims:   # extract each attached group and strip from gims
-            firner = self.extract(ims=gims, klas=Seqner, cold=cold)
+            firner = self.extract(ims=gims, klas=Number, cold=cold)
             dater = self.extract(ims=gims, klas=Dater, cold=cold)
             frcs.append((firner, dater))
         try:
