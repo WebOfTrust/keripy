@@ -872,7 +872,7 @@ class Parser:
         # wigers (list[Siger]): attached indexed witness signatures
         # cigars (list[Cigar]): attached non-transferable from couple (verfer, sig)
         # trqs (list[tuple]): (prefixer, number, diger, siger)
-        # tsgs (list[tuple]): (prefixer, seqner, saider, [Sigers]) triple plus list of sigs
+        # tsgs (list[tuple]): (prefixer, number, diger, [Sigers]) triple plus list of sigs
         # ssgs (list[tuple]): (prefixer,[Sigers]) single plus list of sigs
         # frcs (list[tuple]): (seqner, dater)
         # sscs (list[tuple]): (seqner, saider) issuing or delegating
@@ -1156,7 +1156,7 @@ class Parser:
             if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
                 firner, dater = exts['frcs'][-1] if exts['frcs'] else (None, None)  # use last one if more than one
                 # when present assumes this is source seal of delegating event in delegator's KEL
-                delseqner, deldiger = exts['sscs'][-1] if exts['sscs'] else (None, None)  # use last one if more than one
+                delnumber, deldiger = exts['sscs'][-1] if exts['sscs'] else (None, None)  # use last one if more than one
                 if not exts['sigers']: # sigers:
                     msg = f"Missing attached signature(s) for evt = {serder.ked['d']}"
                     logger.info(msg)
@@ -1165,7 +1165,7 @@ class Parser:
                 try:
                     exts['firner'] = firner
                     exts['dater'] = dater
-                    exts['delnum'] = Number(num=delseqner.sn) if delseqner is not None else None
+                    exts['delnum'] = Number(num=delnumber.sn) if delnumber is not None else None
                     exts['deldiger'] = deldiger
 
                     kvy.processEvent(**exts)
@@ -1266,9 +1266,9 @@ class Parser:
                 # TEL msg
                 # get transaction event seal ref to Issuer's KEL
                 # use last one if more than one
-                seqner, saider = exts['sscs'][-1] if exts['sscs'] else (None, None)
-                exts['seqner'] = seqner
-                exts['saider'] = saider
+                number, diger = exts['sscs'][-1] if exts['sscs'] else (None, None)
+                exts['seqner'] = number
+                exts['saider'] = diger
                 try:
                     tvy.processEvent(**exts)
 
@@ -1924,19 +1924,19 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            sscs (list[tuple]): [(seqner, saider)]
+            sscs (list[tuple]): [(seqner, number)]
         """
         sscs = []
         for i in range(ctr.count):  # extract each attached group
-            seqner = yield from self._extractor(ims=ims,
-                                                klas=Seqner,
+            number = yield from self._extractor(ims=ims,
+                                                klas=Number,
                                                 cold=cold,
                                                 abort=abort)
-            saider = yield from self._extractor(ims=ims,
-                                                klas=Saider,
+            diger = yield from self._extractor(ims=ims,
+                                                klas=Diger,
                                                 cold=cold,
                                                 abort=abort)
-            sscs.append((seqner, saider))
+            sscs.append((number, diger))
         try:
             exts['sscs'].extend(sscs)
         except KeyError:
@@ -1959,7 +1959,7 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            sscs (list[tuple]): [(seqner, saider)]
+            sscs (list[tuple]): [(seqner, number)]
 
         """
         gs = ctr.byteCount(cold=cold)
@@ -1973,9 +1973,9 @@ class Parser:
         del ims[:gs]  # strip off from ims
         sscs = []
         while gims:   # extract each attached group and strip from gims
-            seqner = self.extract(ims=gims, klas=Seqner, cold=cold)
-            saider = self.extract(ims=gims, klas=Saider, cold=cold)
-            sscs.append((seqner, saider))
+            number = self.extract(ims=gims, klas=Number, cold=cold)
+            diger = self.extract(ims=gims, klas=Diger, cold=cold)
+            sscs.append((number, diger))
         try:
             exts['sscs'].extend(sscs)
         except KeyError:
