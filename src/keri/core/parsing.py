@@ -1163,9 +1163,9 @@ class Parser:
                     logger.debug("Event Body = \n%s\n", serder.pretty())
                     raise ValidationError(msg)
                 try:
-                    exts['firner'] = firner
+                    exts['firner'] = firner  # first seen number
                     exts['dater'] = dater
-                    exts['delnum'] = Number(num=delnumber.sn) if delnumber is not None else None
+                    exts['delnumber'] = Number(num=delnumber.sn) if delnumber is not None else None
                     exts['deldiger'] = deldiger
 
                     kvy.processEvent(**exts)

@@ -940,7 +940,7 @@ def test_misfit_escrow_kevery():
         kvy.escrowMFEvent(serder=srdr,
                           sigers=sigers,
                           wigers=None,
-                          delnum=delnum,
+                          number=delnum,
                           diger=diger,
                           local=False)
 

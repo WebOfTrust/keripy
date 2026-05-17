@@ -4088,7 +4088,7 @@ class Kevery:
         return []
 
 
-    def processEvent(self, serder, sigers, *, wigers=None, delnum=None, deldiger=None,
+    def processEvent(self, serder, sigers, *, wigers=None, delnumber=None, deldiger=None,
                      firner=None, dater=None, eager=False, local=None, **kwa):
         """
         Process one event serder with attached indexd signatures sigers
@@ -4098,7 +4098,7 @@ class Kevery:
             sigers (list[Siger]): instances of attached controller indexed sigs
             wigers (list[Siger]|None): instances of attached witness indexed sigs
                 otherwise None
-            delnum (Number|None): instance of delegating event sequence number.
+            delnumber (Number|None): instance of delegating event sequence number.
                 If this event is not delegated then delnumber is ignored
             deldiger (Diger|None): instance of of delegating event SAID.
                 If this event is not delegated then deldiger is ignored
@@ -4147,7 +4147,7 @@ class Kevery:
                               sigers=sigers,
                               wigers=wigers,
                               db=self.db,
-                              delseqner=delnum,
+                              delseqner=delnumber,
                               deldiger=deldiger,
                               firner=firner if self.cloned else None,
                               dater=dater if self.cloned else None,
@@ -4182,7 +4182,7 @@ class Kevery:
 
             else:  # not inception so can't verify sigs etc, add to out-of-order escrow
                 self.escrowOOEvent(serder=serder, sigers=sigers,
-                                   delnum=delnum, diger=deldiger, wigers=wigers, local=local)
+                                   number=delnumber, diger=deldiger, wigers=wigers, local=local)
                 raise OutOfOrderError("Out-of-order event={}.".format(ked))
 
         else:  # already accepted inception event for pre so already first seen
@@ -4226,7 +4226,7 @@ class Kevery:
                 if sn > sno:  # sn later than sno so out of order escrow
                     # escrow out-of-order event
                     self.escrowOOEvent(serder=serder, sigers=sigers,
-                                       delnum=delnum, diger=deldiger, wigers=wigers, local=local)
+                                       number=delnumber, diger=deldiger, wigers=wigers, local=local)
                     msg = f"Out-of-order event sn={serder.sn} type={serder.ilk} SAID={serder.said}"
                     logger.debug(msg)
                     logger.debug("Out-of-order event body=\n%s\n", serder.pretty())
@@ -4242,7 +4242,7 @@ class Kevery:
                     # raise exception if problem.
                     # Otherwise adds to KELs
                     kever.update(serder=serder, sigers=sigers, wigers=wigers,
-                                 delseqner=delnum, deldiger=deldiger,
+                                 delseqner=delnumber, deldiger=deldiger,
                                  firner=firner if self.cloned else None,
                                  dater=dater if self.cloned else None,
                                  eager=eager, local=local, check=self.check)
@@ -5447,15 +5447,15 @@ class Kevery:
 
 
     def escrowMFEvent(self, serder, sigers, wigers=None,
-                      delnum=None, diger=None, local=True):
+                      number=None, diger=None, local=True):
         """
         Update associated logs for escrow of MisFit event
 
         Parameters:
             serder (SerderKERI): instance of  event
             sigers (list): of Siger instance for  event
-            delnum (Number): instance of sn of event delegatint/issuing event if any
-            diger (Diger): instance of dig of event delegatint/issuing event if any
+            number (Number): instance of sn of delegating/issuing event if any
+            diger (Diger): instance of dig of delegating/issuing event if any
             wigers (list): of witness signatures
             local (bool): event source for validation logic
                 True means event source is local (protected).
@@ -5478,22 +5478,21 @@ class Kevery:
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
             self.db.wigs.put(keys=dgkey, vals=wigers)
-        if delnum and diger:
-            self.db.udes.put(keys=dgkey, val=(delnum, diger))  # idempotent
+        if number and diger:
+            self.db.udes.put(keys=dgkey, val=(number, diger))  # idempotent
         self.db.misfits.add(keys=(serder.pre, serder.snh), val=serder.saidb)
         # log escrowed
         logger.debug("Kevery process: escrowed misfit event=\n%s", serder.pretty())
 
 
-    def escrowOOEvent(self, serder, sigers, delnum=None, diger=None, wigers=None, local=True):
-        """
-        Update associated logs for escrow of Out-of-Order event
+    def escrowOOEvent(self, serder, sigers, number=None, diger=None, wigers=None, local=True):
+        """Update associated logs for escrow of Out-of-Order event
 
         Parameters:
             serder (SerderKERI): instance of  event
             sigers (list): of Siger instance for  event
-            delnum (Number): instance of sn of event delegatint/issuing event if any
-            diger (Diger): instance of dig of event delegatint/issuing event if any
+            delnumber (Number): instance of sn of delegating/issuing event if any
+            diger (Diger): instance of said of delegating/issuing event if any
             wigers (list): of witness signatures
             local (bool): event source for validation logic
                 True means event source is local (protected).
@@ -5516,8 +5515,8 @@ class Kevery:
         self.db.evts.put(keys=(serder.preb, serder.saidb), val=serder)
         if wigers:
             self.db.wigs.put(keys=dgkey, vals=wigers)
-        if delnum and diger:
-            self.db.udes.put(keys=dgkey, val=(delnum, diger))  # idempotent
+        if number and diger:
+            self.db.udes.put(keys=dgkey, val=(number, diger))  # idempotent
         self.db.ooes.add(keys=serder.preb, on=serder.sn, val=serder.saidb)
         # log escrowed
         logger.debug("Kevery process: escrowed out of order event=\n%s", serder.pretty())
@@ -6022,16 +6021,16 @@ class Kevery:
                     logger.debug("Kevery unescrow wigs: No event wigs yet at."
                                  "dig = %s", edig.decode())
 
-                # seal source (delegator issuer if any)
-                delnum, deldiger = None, None
+                # seal source (delegator/issuer if any)
+                number, diger = None, None
                 if (couple := self.db.udes.get(keys=dgkey)):
-                    delnum, deldiger = couple
+                    number, diger = couple
 
                 # process event
                 sigers = self.db.sigs.get(keys=(pre, edig))
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
-                                  delnum=delnum,
-                                  deldiger=deldiger,
+                                  delnumber=number,
+                                  deldiger=diger,
                                   eager=True, local=esr.local)
 
                 # If process does NOT validate sigs or delegation seal (when delegated),
@@ -6185,14 +6184,14 @@ class Kevery:
                 # process event
                 sigers = self.db.sigs.get(keys=(pre, edig))
 
-                # seal source (delegator issuer if any)
-                delnum = deldiger = None
+                # seal source (delegator/issuer if any)
+                number = diger = None
                 if (couple := self.db.udes.get(keys=(pre, bytes(edig)))):
-                    delnum, deldiger = couple
+                    number, diger = couple
 
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
-                                  delnum=delnum,
-                                  deldiger=deldiger,
+                                  delnumber=number,
+                                  deldiger=diger,
                                   eager=True, local=esr.local)
 
                 # If process does NOT validate wigs then process will attempt
@@ -6326,12 +6325,12 @@ class Kevery:
                 # setup parameters to process event
                 sigers = self.db.sigs.get(keys=dgkey)
 
-                # seal source (delegator issuer if any)
+                # seal source (delegator/issuer if any)
                 # If delegator KEL not available should also cue a trigger to
                 # get it if still missing when processing escrow.
-                delnum = deldiger = None
+                number = diger = None
                 if (couple := self.db.udes.get(keys=(epre, edig))):
-                    delnum, deldiger = couple  # provided
+                    number, diger = couple  # provided
 
                 #elif eserder.ked["t"] in (Ilks.dip, Ilks.drt,): # walk kel to find
                     #if eserder.pre in self.kevers:
@@ -6341,13 +6340,13 @@ class Kevery:
                     #seal = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
                     #srdr = self.db.findAnchoringSealEvent(pre=delpre, seal=seal)
                     #if srdr is not None:  # found seal in srdr
-                        #delseqner = Seqner(sn=srdr.sn)
-                        #delsaider = Saider(qb64=srdr.said)
-                        #self.db.udes.put(keys=dgkey, val=(delseqner, delsaider))
+                        #number = Number(sn=srdr.sn)
+                        #diger = Diger(qb64=srdr.said)
+                        #self.db.udes.put(keys=dgkey, val=(number, diger))
 
                 self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
-                                  delnum=delnum,
-                                  deldiger=deldiger,
+                                  delnumber=number,
+                                  deldiger=diger,
                                   eager=True, local=esr.local)
 
                 # If process does NOT validate delegation then process will attempt
@@ -6727,12 +6726,11 @@ class Kevery:
 
                 # parse the event if we have a delegate seal
                 if (duple := self.db.aess.get(keys=(pre.encode("utf-8"), edig))) is not None:
-                    delnum, diger = duple  # delnum is Number from aess
+                    number, diger = duple  #  Number from aess
 
                     # process event
                     self.processEvent(serder=eserder, sigers=sigers, wigers=wigers,
-                                      delnum=delnum,
-                                      deldiger=diger, local=esr.local)
+                                      delnumber=number, deldiger=diger, local=esr.local)
                 else:
                     raise MissingDelegableApprovalError("No delegation seal found for event.")
 
