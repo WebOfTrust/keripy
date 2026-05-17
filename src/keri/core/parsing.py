@@ -1285,12 +1285,11 @@ class Parser:
             if ilk is None:  # default for ACDC
                 try:
                     # use last one if more than one
-                    prefixer, seqner, saider = exts['ssts'][-1] if exts['ssts'] else (None, None, None)
+                    prefixer, number, diger = exts['ssts'][-1] if exts['ssts'] else (None, None, None)
                     exts['prefixer'] = prefixer
-                    exts['seqner'] = seqner
-                    exts['saider'] = saider
+                    exts['seqner'] = number
+                    exts['saider'] = diger
                     vry.processACDC(**exts)
-                    #vry.processACDC(serder=serder, prefixer=prefixer, seqner=seqner, saider=saider)
                 except AttributeError as ex:
                     raise ValidationError(f"No verifier to process so "
                                         f"dropped ACDC={serder.pretty()}") from ex
@@ -2006,15 +2005,15 @@ class Parser:
                                                   klas=Prefixer,
                                                   cold=cold,
                                                   abort=abort)
-            seqner = yield from self._extractor(ims=ims,
-                                                klas=Seqner,
+            number = yield from self._extractor(ims=ims,
+                                                klas=Number,
                                                 cold=cold,
                                                 abort=abort)
-            saider = yield from self._extractor(ims=ims,
-                                                klas=Saider,
+            diger = yield from self._extractor(ims=ims,
+                                                klas=Diger,
                                                 cold=cold,
                                                 abort=abort)
-            ssts.append((prefixer, seqner, saider))
+            ssts.append((prefixer, number, diger))
         try:
             exts['ssts'].extend(ssts)
         except KeyError:
@@ -2052,9 +2051,9 @@ class Parser:
         ssts = []
         while gims:   # extract each attached group and strip from gims
             prefixer = self.extract(ims=gims, klas=Prefixer, cold=cold)
-            seqner = self.extract(ims=gims, klas=Seqner, cold=cold)
-            saider = self.extract(ims=gims, klas=Saider, cold=cold)
-            ssts.append((prefixer, seqner, saider))
+            number = self.extract(ims=gims, klas=Number, cold=cold)
+            diger = self.extract(ims=gims, klas=Diger, cold=cold)
+            ssts.append((prefixer, number, diger))
         try:
             exts['ssts'].extend(ssts)
         except KeyError:
