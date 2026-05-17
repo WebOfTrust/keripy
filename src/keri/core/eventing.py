@@ -4410,7 +4410,7 @@ class Kevery:
                     # write receipt indexed sig to database
                     self.db.wigs.add(keys=dgkey, val=wiger)
 
-            for sprefixer, snumber, saider, sigers in tsgs:  # iterate over each tsg
+            for sprefixer, snumber, sdiger, sigers in tsgs:  # iterate over each tsg
                 if not self.lax and sprefixer.qb64 in self.prefixes:  # own is receipter
                     if pre in self.prefixes:  # skip own receipter of own event
                         # sign own events as controller not endorse them via receipt
@@ -4426,7 +4426,7 @@ class Kevery:
                 if sdig is None:
                     # receiptor's est event not yet in receiptors's KEL
                     # so need cue to discover est evt KEL for receipter from watcher etc
-                    self.escrowTReceipts(serder, sprefixer, snumber, saider, sigers)
+                    self.escrowTReceipts(serder, sprefixer, snumber, sdiger, sigers)
                     raise UnverifiedTransferableReceiptError("Unverified receipt: "
                                                              "missing establishment event of transferable "
                                                              "receipter for event={}."
@@ -4435,7 +4435,7 @@ class Kevery:
                 # retrieve last event itself of receiptor est evt from sdig.
                 sserder = self.db.evts.get(keys=(sprefixer.qb64b, bytes(sdig)))
                 # assumes db ensures that sserder must not be none because sdig was in KE
-                if not sserder.compare(said=saider.qb64):  # endorser's dig not match event
+                if not sserder.compare(said=sdiger.qb64):  # endorser's dig not match event
                     raise ValidationError("Bad trans indexed sig group at sn = {}"
                                           " for ksn = {}."
                                           "".format(snumber.sn, sserder.ked))
@@ -4445,7 +4445,7 @@ class Kevery:
                 if not sverfers:
                     raise ValidationError("Invalid receipter's est. event"
                                           " dig = {}  from pre ={}, no keys."
-                                          "".format(saider.qb64, sprefixer.qb64))
+                                          "".format(sdiger.qb64, sprefixer.qb64))
 
                 for siger in sigers:  # endorser (non-controller) signatures
                     if siger.index >= len(sverfers):
@@ -4454,7 +4454,7 @@ class Kevery:
                     siger.verfer = sverfers[siger.index]  # assign verfer
                     if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
                         # good sig so write receipt quadruple to database
-                        quadruple = (sprefixer, snumber, saider, siger)
+                        quadruple = (sprefixer, snumber, sdiger, siger)
                         self.db.vrcs.add(keys=dgKey(pre=pre, dig=ldig),
                                        val=quadruple)  # dups kept
 

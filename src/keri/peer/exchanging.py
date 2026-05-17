@@ -86,7 +86,7 @@ class Exchanger:
 
         behavior = self.routes[route] if route in self.routes else None
         if tsgs:
-            for prefixer, seqner, ssaider, sigers in tsgs:  # iterate over each tsg
+            for prefixer, snumber, sdiger, sigers in tsgs:  # iterate over each tsg
                 if sender != prefixer.qb64:  # sig not by aid
                     msg = (f"Skipped signature not from aid = "
                            f"{sender}, from {prefixer.qb64} on exn msg = {serder.said}")
@@ -94,21 +94,21 @@ class Exchanger:
                     logger.debug("Exchange message body=\n%s\n", serder.pretty())
                     raise MissingSignatureError(msg)
 
-                if prefixer.qb64 not in self.kevers or self.kevers[prefixer.qb64].sn < seqner.sn:
+                if prefixer.qb64 not in self.kevers or self.kevers[prefixer.qb64].sn < snumber.sn:
                     if self.escrowPSEvent(serder=serder, tsgs=tsgs, pathed=ptds):
-                        self.cues.append(dict(kin="query", q=dict(r="logs", pre=prefixer.qb64, sn=seqner.snh)))
+                        self.cues.append(dict(kin="query", q=dict(r="logs", pre=prefixer.qb64, sn=snumber.snh)))
                     msg = f"Unable to find sender {prefixer.qb64} in kevers for evt = {serder.said}"
                     logger.info(msg)
                     logger.debug("Exchange message body=\n%s\n", serder.pretty())
                     raise MissingSignatureError(msg)
 
                 # Verify the signatures are valid and that the signature threshold as of the signing event is met
-                tholder, verfers = self.hby.db.resolveVerifiers(pre=prefixer.qb64, sn=seqner.sn, dig=ssaider.qb64)
+                tholder, verfers = self.hby.db.resolveVerifiers(pre=prefixer.qb64, sn=snumber.sn, dig=sdiger.qb64)
                 _, indices = verifySigs(serder.raw, sigers, verfers)
 
                 if not tholder.satisfy(indices):  # We still don't have all the sigers, need to escrow
                     if self.escrowPSEvent(serder=serder, tsgs=tsgs, pathed=ptds):
-                        self.cues.append(dict(kin="query", q=dict(r="logs", pre=prefixer.qb64, sn=seqner.snh)))
+                        self.cues.append(dict(kin="query", q=dict(r="logs", pre=prefixer.qb64, sn=snumber.snh)))
                     msg = (f"Not enough signatures in idx={indices} route={route} "
                            f"for evt = {serder.said} recipient={serder.ked.get('rp', '')}")
                     logger.info(msg)

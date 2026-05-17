@@ -871,7 +871,7 @@ class Parser:
         # sigers (list[Siger]): attached indexed controller signatures
         # wigers (list[Siger]): attached indexed witness signatures
         # cigars (list[Cigar]): attached non-transferable from couple (verfer, sig)
-        # trqs (list[tuple]): (prefixer, seqner, saider, siger)
+        # trqs (list[tuple]): (prefixer, number, diger, siger)
         # tsgs (list[tuple]): (prefixer, seqner, saider, [Sigers]) triple plus list of sigs
         # ssgs (list[tuple]): (prefixer,[Sigers]) single plus list of sigs
         # frcs (list[tuple]): (seqner, dater)
@@ -1592,7 +1592,7 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            trqs (list[tuple]): [(prefixer,seqner,saider,siger)]
+            trqs (list[tuple]): [(prefixer,number,diger,siger)]
 
         extract attaced trans receipt vrc quadruple
         spre+ssnu+sdig+sig
@@ -1640,7 +1640,7 @@ class Parser:
                             another already extracted group.
 
         Returns:
-             tsgs (list[tuple]): [(prefixer,seqner,saider,[isigers])]
+             tsgs (list[tuple]): [(prefixer,number,diger,[isigers])]
 
         """
         tsgs = []
@@ -1649,12 +1649,12 @@ class Parser:
                                                   klas=Prefixer,
                                                   cold=cold,
                                                   abort=abort)
-            seqner = yield from self._extractor(ims=ims,
-                                                klas=Seqner,
+            number = yield from self._extractor(ims=ims,
+                                                klas=Number,
                                                 cold=cold,
                                                 abort=abort)
-            saider = yield from self._extractor(ims=ims,
-                                                klas=Saider,
+            diger = yield from self._extractor(ims=ims,
+                                                klas=Diger,
                                                 cold=cold,
                                                 abort=abort)
             ictr = yield from self._extractor(ims=ims,
@@ -1671,7 +1671,7 @@ class Parser:
                                                cold=cold,
                                                abort=abort)
                 isigers.append(isiger)
-            tsgs.append((prefixer, seqner, saider, isigers))
+            tsgs.append((prefixer, number, diger, isigers))
         try:
             exts['tsgs'].extend(tsgs)
         except KeyError:
@@ -1694,7 +1694,7 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            tsgs (list[tuple]): [(prefixer,seqner,saider,[isigers])]
+            tsgs (list[tuple]): [(prefixer,number,diger,[isigers])]
 
         """
         gs = ctr.byteCount(cold=cold)
@@ -1710,8 +1710,8 @@ class Parser:
         isigers = []
         while gims:   # extract each attached group and strip from gims
             prefixer = self.extract(ims=gims, klas=Prefixer, cold=cold)
-            seqner = self.extract(ims=gims, klas=Seqner, cold=cold)
-            saider = self.extract(ims=gims, klas=Saider, cold=cold)
+            number = self.extract(ims=gims, klas=Number, cold=cold)
+            diger = self.extract(ims=gims, klas=Diger, cold=cold)
             ictr = self.extract(ims=gims, klas=Counter, cold=cold)
             if ictr.code != CtrDex_2_0.ControllerIdxSigs:
                 raise UnexpectedCountCodeError(f"Expected count code="
@@ -1727,7 +1727,7 @@ class Parser:
             while igims:
                 isiger = self.extract(ims=igims, klas=Siger, cold=cold)
                 isigers.append(isiger)
-            tsgs.append((prefixer, seqner, saider, isigers))  # tuple
+            tsgs.append((prefixer, number, diger, isigers))  # tuple
         try:
             exts['tsgs'].extend(tsgs)
         except KeyError:
