@@ -1156,7 +1156,7 @@ class Parser:
             if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
                 firner, dater = exts['frcs'][-1] if exts['frcs'] else (None, None)  # use last one if more than one
                 # when present assumes this is source seal of delegating event in delegator's KEL
-                delnumber, deldiger = exts['sscs'][-1] if exts['sscs'] else (None, None)  # use last one if more than one
+                delsner, delsger = exts['sscs'][-1] if exts['sscs'] else (None, None)  # use last one if more than one
                 if not exts['sigers']: # sigers:
                     msg = f"Missing attached signature(s) for evt = {serder.ked['d']}"
                     logger.info(msg)
@@ -1165,8 +1165,8 @@ class Parser:
                 try:
                     exts['firner'] = firner  # first seen number
                     exts['dater'] = dater
-                    exts['delnumber'] = Number(num=delnumber.sn) if delnumber is not None else None
-                    exts['deldiger'] = deldiger
+                    exts['delsner'] = Number(num=delsner.sn) if delsner is not None else None
+                    exts['delsger'] = delsger
 
                     kvy.processEvent(**exts)
 

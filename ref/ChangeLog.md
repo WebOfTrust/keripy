@@ -2,6 +2,10 @@
 
 ## 2.0.0-dev6
 
+### Kevery.processEvent signature change
+    delnum is now delsner  short for delegating sequence number
+    deldiger is now delsger short for delegating said diger
+
 ### app.habbing.BaseHab.makeOwnEvent has been changed to .msgOwnEvent because
 it better fits what is does is to messagize its own event.
 .makeOwnEvent is now deprecated
