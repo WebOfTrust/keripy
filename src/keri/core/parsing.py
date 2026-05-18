@@ -874,9 +874,9 @@ class Parser:
         # trqs (list[tuple]): (prefixer, number, diger, siger)
         # tsgs (list[tuple]): (prefixer, number, diger, [Sigers]) triple plus list of sigs
         # ssgs (list[tuple]): (prefixer,[Sigers]) single plus list of sigs
-        # frcs (list[tuple]): (seqner, dater)
-        # sscs (list[tuple]): (seqner, saider) issuing or delegating
-        # ssts (list[tuple]): (prefixer, seqner, saider) issued or delegated
+        # frcs (list[tuple]): (number, dater)
+        # sscs (list[tuple]): (number, diger) issuing or delegating
+        # ssts (list[tuple]): (prefixer, number, diger) issued or delegated
         # tdcs (list[tuple]): (verser, diger) SealKind TypedDigestSealCouples
         # ptds (list[bytes]): pathed streams
         # essrs (list[Texter]): essr encapsulations as Texters

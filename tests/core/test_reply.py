@@ -601,13 +601,13 @@ def test_reply(mockHelpingNowUTC):
                     b'ZlO96AX0Jh-dUD42QLDA","dt":"2021-01-01T00:00:00.000000+00:00","r'
                     b'":"/end/role/add","a":{"cid":"ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CK'
                     b'HG4-mHua6e","role":"witness","eid":"BBVDlgWic_rAf-m_v7vz_VvIYAUP'
-                    b'ErvZgLTfXGNrFRom"}}-VBg-FABED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4'
-                    b'-mHua6e0AAAAAAAAAAAAAAAAAAAAAAAED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-C'
-                    b'KHG4-mHua6e-AADAABAppmVvSGqtmE4Esa87Etz1nEFpyxGSqVaOCOJ-yvNs_EqH'
-                    b'NRXwBmIgTHb9J36eKuUh2IyiTPGFsJcfKbIo5QNABBWpvKJtVJvSt575kmW9PVl8'
-                    b'UoojGp3AnFnFjmgxwZhvbBTrp9iSFZ5XeeR-vRV3BztCBKSlw3eQWOLhbFUydIFA'
-                    b'CD9cNMh0xdMIf_YEpjyg9I0hIC1kO6CktzTLURCBjJNAuzOxp1NRn-8ujWYmXrNN'
-                    b'73t4gdsnZwIFn8z57XeKW0G')
+                    b'ErvZgLTfXGNrFRom"}}-VBb-FABED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4'
+                    b'-mHua6eMAAAED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e-AADAABAp'
+                    b'pmVvSGqtmE4Esa87Etz1nEFpyxGSqVaOCOJ-yvNs_EqHNRXwBmIgTHb9J36eKuUh'
+                    b'2IyiTPGFsJcfKbIo5QNABBWpvKJtVJvSt575kmW9PVl8UoojGp3AnFnFjmgxwZhv'
+                    b'bBTrp9iSFZ5XeeR-vRV3BztCBKSlw3eQWOLhbFUydIFACD9cNMh0xdMIf_YEpjyg'
+                    b'9I0hIC1kO6CktzTLURCBjJNAuzOxp1NRn-8ujWYmXrNN73t4gdsnZwIFn8z57XeK'
+                    b'W0G')
 
         # use Nel's parser and kevery to authZ wes as tam end witness
         nelPrs.parse(ims=bytearray(msg))  # no kel for tam so escrow
@@ -660,13 +660,12 @@ def test_reply(mockHelpingNowUTC):
                     b'CgtDOHKXL8GxdIt5ZGtf","dt":"2021-01-01T00:00:00.000000+00:00","r'
                     b'":"/loc/scheme","a":{"eid":"ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG'
                     b'4-mHua6e","scheme":"http","url":"http://localhost:8080/controlle'
-                    b'r/tam"}}-VBg-FABED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e0AAA'
-                    b'AAAAAAAAAAAAAAAAAAAAED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e'
-                    b'-AADAAAE-R2roSYmjUEkk44DwNh26bYZvacAsLaOIzgAC47coa0bOk4KdLYyfy-t'
-                    b'AmUMQ7QY0Dp87Ks7tFnW-8SWjMQJABCPas0sa6FAQre8TEbvavW5ip00DnifkeRU'
-                    b'9wQOsjomEIsccSeoDYEeIEKPiAO2zRCsxqlPfgsgPFH1jeaWUFQAACD9pt3Ijcc0'
-                    b'_7fcemVbCID_n8DOWTHhwWZ6K_xRQ_9bb6RHGzVJNWtxO-gI_A7eBt1yE76uLVCA'
-                    b'dXTHHDvmhH4A')
+                    b'r/tam"}}-VBb-FABED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6eMAAA'
+                    b'ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e-AADAAAE-R2roSYmjUEk'
+                    b'k44DwNh26bYZvacAsLaOIzgAC47coa0bOk4KdLYyfy-tAmUMQ7QY0Dp87Ks7tFnW'
+                    b'-8SWjMQJABCPas0sa6FAQre8TEbvavW5ip00DnifkeRU9wQOsjomEIsccSeoDYEe'
+                    b'IEKPiAO2zRCsxqlPfgsgPFH1jeaWUFQAACD9pt3Ijcc0_7fcemVbCID_n8DOWTHh'
+                    b'wWZ6K_xRQ_9bb6RHGzVJNWtxO-gI_A7eBt1yE76uLVCAdXTHHDvmhH4A')
 
         # use Tam's parser and kevery to process
         nelPrs.parse(ims=bytearray(msg))  # no kel for tam so escrow

@@ -123,7 +123,7 @@ def test_direct_mode_with_manager():
 
         # attach signatures
         rmsg = messagize(reserder, sigers=sigers, source=seal, framed=True)
-        assert len(rmsg) == 353
+        assert len(rmsg) == 333
 
         # process own validator receipt in validator's Kevery so have copy in own log
         # also server to validate receipt

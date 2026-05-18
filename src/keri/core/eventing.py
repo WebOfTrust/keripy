@@ -1580,7 +1580,7 @@ def messagize(serder, *, sigers=None, source=None, seal=None, wigers=None, cigar
                 aims.extend(Counter(Codens.TransIdxSigGroups, count=1,
                                         version=Vrsn_1_0).qb64b)
                 aims.extend(source.i.encode())
-                aims.extend(Seqner(snh=source.s).qb64b)
+                aims.extend(Number(snh=source.s).qb64b)
                 aims.extend(source.d.encode())
 
             elif isinstance(source, SealLast):
@@ -1602,14 +1602,14 @@ def messagize(serder, *, sigers=None, source=None, seal=None, wigers=None, cigar
                 aims.extend(Counter(Codens.SealSourceTriples, count=1,
                                         version=Vrsn_1_0).qb64b)
                 aims.extend(seal.i.encode())
-                aims.extend(Seqner(snh=seal.s).qb64b)
+                aims.extend(Number(snh=seal.s).qb64b)
                 aims.extend(seal.d.encode())
 
             elif isinstance(seal, SealSource):  # authenticator is last seal
                 aims.extend(Counter(Codens.SealSourceCouples, count=1,
                                         version=Vrsn_1_0).qb64b)
 
-                aims.extend(Seqner(snh=seal.s).qb64b)
+                aims.extend(Number(snh=seal.s).qb64b)
                 aims.extend(seal.d.encode())
 
             elif isinstance(seal, SealLast):  # authenticator is last seal
@@ -1659,7 +1659,7 @@ def messagize(serder, *, sigers=None, source=None, seal=None, wigers=None, cigar
             if isinstance(source, SealEvent):  # composed idx sig group
                 coden = Codens.TransIdxSigGroups
                 eims.extend(source.i.encode())
-                eims.extend(Seqner(snh=source.s).qb64b)
+                eims.extend(Number(snh=source.s).qb64b)
                 eims.extend(source.d.encode())
 
             elif isinstance(source, SealLast):  # composed idx sig group
@@ -1682,28 +1682,26 @@ def messagize(serder, *, sigers=None, source=None, seal=None, wigers=None, cigar
                 aims.extend(eims)
 
         if seal:
-            # in order to use Sealer instead need to fix parser to allow Number
-            # in attached seals with sn
-            #aims.extend(Sealer.enclose([Sealer(crew=seal)]))
+            aims.extend(Sealer.enclose([Sealer(crew=seal)]))
 
-            eims = bytearray() # enclosed incoming message stream
-            coden = None
-            if isinstance(seal, SealEvent):  # authenticator is event seal
-                coden = Codens.SealSourceTriples
-                eims.extend(seal.i.encode())
-                eims.extend(Seqner(snh=seal.s).qb64b)
-                eims.extend(seal.d.encode())
+            #eims = bytearray() # enclosed incoming message stream
+            #coden = None
+            #if isinstance(seal, SealEvent):  # authenticator is event seal
+                #coden = Codens.SealSourceTriples
+                #eims.extend(seal.i.encode())
+                #eims.extend(Number(snh=seal.s).qb64b)
+                #eims.extend(seal.d.encode())
 
-            elif isinstance(seal, SealSource):  # authenticator is event seal
-                coden = Codens.SealSourceCouples
-                eims.extend(Seqner(snh=seal.s).qb64b)
-                eims.extend(seal.d.encode())
+            #elif isinstance(seal, SealSource):  # authenticator is event seal
+                #coden = Codens.SealSourceCouples
+                #eims.extend(Number(snh=seal.s).qb64b)
+                #eims.extend(seal.d.encode())
 
-            elif isinstance(seal, SealLast):  # authenticator is last seal
-                coden = Codens.SealSourceLastSingles
-                eims.extend(seal.i.encode("utf-8"))
+            #elif isinstance(seal, SealLast):  # authenticator is last seal
+                #coden = Codens.SealSourceLastSingles
+                #eims.extend(seal.i.encode("utf-8"))
 
-            aims.extend(Counter.enclose(qb64=eims, code=coden, version=gvrsn))
+            #aims.extend(Counter.enclose(qb64=eims, code=coden, version=gvrsn))
 
         if wigers:
             eims = bytearray()
