@@ -31,7 +31,8 @@ from .coring import (PreDex, DigDex, NonTransDex, NumDex, Prefixer,
                      Verfer, Diger, Prefixer, Tholder, Texter)
 
 from .counting import Counter, Codens
-from .structing import SealEvent, SealSource, SealLast, StateEstEvent, Sealer
+from .structing import (Structor, Sealer, SealEvent, SealSource, SealLast, BlindState,
+                        BoundState, TypeMedia, StateEstEvent)
 from .indexing import Siger
 from .serdering import SerderKERI
 
@@ -1501,7 +1502,7 @@ def exchange(sender="",
     return SerderKERI(sad=sad, makify=True)
 
 
-def messagize(serder, *, sigers=None, source=None, seal=None, wigers=None, cigars=None,
+def messagize(serder, *, sigers=None, source=None, seals=None, wigers=None, cigars=None,
               framed=False, nested=False, gvrsn=Version, genusify=False):
     """Attaches authenticator from sigers and/or cigars and/or wigers and/or seal
     to KERI message data from serder
@@ -1518,7 +1519,10 @@ def messagize(serder, *, sigers=None, source=None, seal=None, wigers=None, cigar
                     attach uniple pre made from (i,) of seal plus ControllerIdxSigs
                     plus attached indexed sigs in sigers
                 Else None use ControllerIdxSigs plus attached indexed sigs in sigers
-        seal (SealEvent|SealSource|SealLast|None):
+        seal (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
+            Only v2 supports BlindState|BoundState|TypeMedia
+            if seals is not list convert to list.
+            for each seal in seals
                 If SealEvent
                     Attach SealSourceTriples group with triple pre+snu+dig made
                     from (i,s,d) of seal
@@ -1555,7 +1559,7 @@ def messagize(serder, *, sigers=None, source=None, seal=None, wigers=None, cigar
         msg (bytearray): KERI event with attachments if any
 
     """
-    if not (sigers or cigars or wigers or seal):
+    if not (sigers or cigars or wigers or seals):
         raise ValueError(f"Missing authenticator for msg={serder.pretty()}")
 
     svrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn  # effective serder gvrsn
@@ -1597,29 +1601,46 @@ def messagize(serder, *, sigers=None, source=None, seal=None, wigers=None, cigar
             for siger in sigers:
                 aims.extend(siger.qb64b)
 
-        if seal:
-            if isinstance(seal, SealEvent):  # authenticator is event seal
-                aims.extend(Counter(Codens.SealSourceTriples, count=1,
-                                        version=Vrsn_1_0).qb64b)
-                aims.extend(seal.i.encode())
-                aims.extend(Number(snh=seal.s).qb64b)
-                aims.extend(seal.d.encode())
+        if seals:
+            if isinstance(seals, tuple):
+                seals = [seals]  # convert to list
 
-            elif isinstance(seal, SealSource):  # authenticator is last seal
-                aims.extend(Counter(Codens.SealSourceCouples, count=1,
-                                        version=Vrsn_1_0).qb64b)
+            clans = {}
+            for seal in seals: # collate seals into groups by clan
+                if (seal.__class__ not in (SealEvent, SealSource, SealLast)):
+                    raise ValueError(f"Unsupported authenticator {seal} kind for "
+                                     f"version={gvrsn} msg={serder.pretty()}")
 
-                aims.extend(Number(snh=seal.s).qb64b)
-                aims.extend(seal.d.encode())
+                if seal.__class__ not in clans:  # zeroth one in group
+                    clans[seal.__class__] = [seal]  # make list
+                else:
+                    clans[seal.__class__].append(seal)
 
-            elif isinstance(seal, SealLast):  # authenticator is last seal
-                aims.extend(Counter(Codens.SealSourceLastSingles, count=1,
-                                        version=Vrsn_1_0).qb64b)
-                aims.extend(seal.i.encode())
+            for clan, group in clans.items():
+                if issubclass(clan, SealEvent):  # authenticator is event seal
+                    aims.extend(Counter(Codens.SealSourceTriples, count=len(group),
+                                            version=Vrsn_1_0).qb64b)
+                    for seal in group:
+                        aims.extend(seal.i.encode())
+                        aims.extend(Number(snh=seal.s).qb64b)
+                        aims.extend(seal.d.encode())
 
-            else:
-                raise ValueError(f"Invalid authenticator {seal} for "
-                                 f"msg={serder.pretty()}")
+                elif issubclass(clan, SealSource):  # authenticator is last seal
+                    aims.extend(Counter(Codens.SealSourceCouples, count=len(group),
+                                            version=Vrsn_1_0).qb64b)
+                    for seal in group:
+                        aims.extend(Number(snh=seal.s).qb64b)
+                        aims.extend(seal.d.encode())
+
+                elif issubclass(clan, SealLast):  # authenticator is last seal
+                    aims.extend(Counter(Codens.SealSourceLastSingles, count=len(group),
+                                            version=Vrsn_1_0).qb64b)
+                    for seal in group:
+                        aims.extend(seal.i.encode())
+
+                else:
+                    raise ValueError(f"Unsupported authenticator {clan} kind for "
+                                     f"version={gvrsn} msg={serder.pretty()}")
 
         if wigers:
             aims.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
@@ -1667,7 +1688,7 @@ def messagize(serder, *, sigers=None, source=None, seal=None, wigers=None, cigar
                 eims.extend(source.i.encode("utf-8"))
 
             elif source:
-                raise ValueError(f"Invalid trans modifier {source} for "
+                raise ValueError(f"Unsupported trans modifier {source} for "
                                  f"sigers on msg={serder.pretty()}")
 
             for siger in sigers:
@@ -1681,27 +1702,24 @@ def messagize(serder, *, sigers=None, source=None, seal=None, wigers=None, cigar
             else:
                 aims.extend(eims)
 
-        if seal:
-            aims.extend(Sealer.enclose([Sealer(crew=seal)]))
+        if seals:
+            if isinstance(seals, tuple):
+                seals = [seals]  # convert to list
 
-            #eims = bytearray() # enclosed incoming message stream
-            #coden = None
-            #if isinstance(seal, SealEvent):  # authenticator is event seal
-                #coden = Codens.SealSourceTriples
-                #eims.extend(seal.i.encode())
-                #eims.extend(Number(snh=seal.s).qb64b)
-                #eims.extend(seal.d.encode())
+            clans = {}  # dict of sealer lists keyed by clan
+            for seal in seals:  # collate sealers by clan group
+                sealer = Structor(crew=seal)
+                if (sealer.clan not in (SealEvent, SealSource, SealLast,
+                                        BlindState, BoundState, TypeMedia)):
+                    raise ValueError(f"Unsupported authenticator {seal} kind for "
+                                     f"version={gvrsn} msg={serder.pretty()}")
+                if sealer.clan not in clans:
+                    clans[sealer.clan] = [sealer]
+                else:
+                    clans[sealer.clan].append(sealer)
 
-            #elif isinstance(seal, SealSource):  # authenticator is event seal
-                #coden = Codens.SealSourceCouples
-                #eims.extend(Number(snh=seal.s).qb64b)
-                #eims.extend(seal.d.encode())
-
-            #elif isinstance(seal, SealLast):  # authenticator is last seal
-                #coden = Codens.SealSourceLastSingles
-                #eims.extend(seal.i.encode("utf-8"))
-
-            #aims.extend(Counter.enclose(qb64=eims, code=coden, version=gvrsn))
+            for sealers in clans.values():
+                aims.extend(Structor.enclose(sealers))
 
         if wigers:
             eims = bytearray()

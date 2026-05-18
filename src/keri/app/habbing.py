@@ -2447,7 +2447,7 @@ class BaseHab:
         if duple is not None:
             seal = SealSource(s=seqner.snh, d=diger.qb64)
 
-        return messagize(serder, sigers=sigers, seal=seal, framed=framed,
+        return messagize(serder, sigers=sigers, seals=seal, framed=framed,
                             nested=nested, gvrsn=gvrsn, genusify=genusify)
 
 

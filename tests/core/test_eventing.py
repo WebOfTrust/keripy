@@ -19,7 +19,8 @@ from keri.core import (Signer, Counter, Codens, Kever, Parser,
                        Verfer, Prefixer, Number, Saider, Seqner,
                        DigDex, MtrDex, PreDex, NumDex, IdrDex, IdxSigDex,
                        Siger, SealDigest, SealRoot, SealBack, SealEvent,
-                       SealSource, SealLast, StateEvent, StateEstEvent,
+                       SealSource, SealLast, BlindState, BoundState, TypeMedia,
+                       StateEvent, StateEstEvent,
                        Kever, Kevery,
                        LastEstLoc, simple, ample, deWitnessCouple,
                        deReceiptCouple, deSourceCouple, deReceiptTriple,
@@ -1832,7 +1833,7 @@ def test_messagize_v1():
                     b'juEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyClVTLoD')
 
          # Test with seal SealEvent Only
-        msg = messagize(serder, seal=seal, framed=True, gvrsn=Vrsn_1_0)
+        msg = messagize(serder, seals=seal, framed=True, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
@@ -1841,7 +1842,7 @@ def test_messagize_v1():
                     b'G7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
         # Test with not framed
-        msg = messagize(serder, seal=seal, framed=False, gvrsn=Vrsn_1_0)
+        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
@@ -1876,17 +1877,41 @@ def test_messagize_v1():
         # Test with seal only SealLast only raises error since not supported in v1
 
         with pytest.raises(InvalidCodeError):
-            msg = messagize(serder, seal=seal, framed=True, gvrsn=Vrsn_1_0)
+            msg = messagize(serder, seals=seal, framed=True, gvrsn=Vrsn_1_0)
 
         # test with seal SealSource only
         seal = SealSource(s='0',
                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-        msg = messagize(serder, seal=seal, framed=False, gvrsn=Vrsn_1_0)
+        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
                     b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
                     b'N-GABMAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+
+        # test with multiple seals so collated
+        seal0 = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
+                         s='0',
+                         d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal1 = SealSource(s='1',
+                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal2 = SealSource(s='2',
+                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal3 = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
+                         s='3',
+                         d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seals = [seal0, seal1, seal2, seal3]
+
+        msg = messagize(serder, seals=seals, framed=False, gvrsn=Vrsn_1_0)
+        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
+                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
+                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VB'
+                    b'I-IACDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_'
+                    b'kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2zDAvCLRr5luWmp7keDvDuLP0kIqcyBYq'
+                    b'79b3Dho1QvrjIMAADEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-GA'
+                    b'CMAABEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2zMAACEMuNWHss_H_'
+                    b'kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
         # Test with wigers
         verfers, digers = mgr.incept(icount=1, ncount=0, transferable=False, stem="W")
@@ -1991,7 +2016,7 @@ def test_messagize_v1():
                          s='0',
                          d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
-        msg = messagize(serder, sigers=sigers, source=source, seal=seal,
+        msg = messagize(serder, sigers=sigers, source=source, seals=seal,
                         wigers=wigers, cigars=cigars, framed=False, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
@@ -2165,7 +2190,7 @@ def test_messagize_v1_mix_v2():
                     b'juEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyClVTLoD')
 
          # Test with seal SealEvent Only
-        msg = messagize(serder, seal=seal, framed=True, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, seals=seal, framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
@@ -2174,7 +2199,7 @@ def test_messagize_v1_mix_v2():
                     b'G7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
         # Test with not framed
-        msg = messagize(serder, seal=seal, framed=False, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
@@ -2207,7 +2232,7 @@ def test_messagize_v1_mix_v2():
                     b'jyZLHyClVTLoD')
 
         # Test with seal SealLast only
-        msg = messagize(serder, seal=seal, framed=True, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, seals=seal, framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
@@ -2215,7 +2240,7 @@ def test_messagize_v1_mix_v2():
                     b'LDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI')
 
         # Test with not framed
-        msg = messagize(serder, seal=seal, framed=False, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
@@ -2225,12 +2250,62 @@ def test_messagize_v1_mix_v2():
         # test with seal SealSource only
         seal = SealSource(s='0',
                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-        msg = messagize(serder, seal=seal, framed=False, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
                     b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-CA'
                     b'N-SAMMAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+
+        # test with multiple seals so collated
+        seal0 = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
+                         s='0',
+                         d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal1 = SealSource(s='1',
+                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal2 = SealSource(s='2',
+                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal3 = BlindState(d='EGhjWjnjDTBTQ5uZ-17_nipeMzaCaADNeMBXa8QmmBev',
+                                      u='aB3RS8CZP2ds_ZgUyJBuJyim8P8qLRG9wMANIkWPGzev',
+                                      td='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+                                      ts='revoked')
+        seal4 = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
+                         s='3',
+                         d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal5 = BlindState(d='ECVr7QWEp_aqVQuz4yprRFXVxJ-9uWLx_d6oDinlHU6J',
+                            u='aG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv8',
+                            td='',
+                            ts='')
+        seal6 = BoundState(d='EFaQ00QW-ZeoMxE9baWcpJbAFXrs5h0ya-wpKnHvMQ0c',
+                                      u='aJxtoz6qVeJxPCZvP-qBJifRfIxP3itQBVAAu7JJHxMa',
+                                      td='',
+                                      ts='',
+                                      bn='0',
+                                      bd='')
+        seal7 = TypeMedia(d='EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE',
+                         u='0ABtZWRpYXJyYXdub25jZV8w',
+                         mt='application/json',
+                         mv='{"name":"Sue","food":"Pizza"}')
+        seals = [seal0, seal1, seal2, seal3, seal4, seal5, seal6, seal7]
+
+        msg = messagize(serder, seals=seals, framed=False, gvrsn=Vrsn_2_0)
+        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
+                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
+                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-CD'
+                    b'D-TAuDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_'
+                    b'kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2zDAvCLRr5luWmp7keDvDuLP0kIqcyBYq'
+                    b'79b3Dho1QvrjIMAADEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-SA'
+                    b'YMAABEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2zMAACEMuNWHss_H_'
+                    b'kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-aA7EGhjWjnjDTBTQ5uZ-17_nipeMza'
+                    b'CaADNeMBXa8QmmBevaB3RS8CZP2ds_ZgUyJBuJyim8P8qLRG9wMANIkWPGzevEBj'
+                    b'u1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQYrevokedECVr7QWEp_aqVQu'
+                    b'z4yprRFXVxJ-9uWLx_d6oDinlHU6JaG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPl'
+                    b'L7Lh4ukv81AAP1AAP-bAaEFaQ00QW-ZeoMxE9baWcpJbAFXrs5h0ya-wpKnHvMQ0'
+                    b'caJxtoz6qVeJxPCZvP-qBJifRfIxP3itQBVAAu7JJHxMa1AAP1AAPMAAA1AAP-cA'
+                    b'jEHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE0ABtZWRpYXJyYXdub25'
+                    b'jZV8w6BAGAABhcHBsaWNhdGlvbi9qc29u5BAKAHsibmFtZSI6IlN1ZSIsImZvb2Q'
+                    b'iOiJQaXp6YSJ9')
 
         # Test with wigers
         verfers, digers = mgr.incept(icount=1, ncount=0, transferable=False, stem="W")
@@ -2332,7 +2407,7 @@ def test_messagize_v1_mix_v2():
                          s='0',
                          d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
-        msg = messagize(serder, sigers=sigers, source=source, seal=seal, wigers=wigers,
+        msg = messagize(serder, sigers=sigers, source=source, seals=seal, wigers=wigers,
                         cigars=cigars, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
@@ -2506,7 +2581,7 @@ def test_messagize_v2():
                     b'aK-9U_31Hsvt57_duHbLVlG50kep74k6uFccMbXLqxMI0dAMAPDisFFvBcb6qEC')
 
          # Test with seal SealEvent Only
-        msg = messagize(serder, seal=seal, framed=True, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, seals=seal, framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERICAACAAJSONAAD_.","t":"icp","d":"ECtGzXBDhYAOdKeQcTgBr4'
                     b'agqy06IN7jaKc3OIQLyLWU","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
                     b'3OIQLyLWU","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX'
@@ -2515,7 +2590,7 @@ def test_messagize_v2():
                     b'4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
         # Test with not framed
-        msg = messagize(serder, seal=seal, framed=False, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERICAACAAJSONAAD_.","t":"icp","d":"ECtGzXBDhYAOdKeQcTgBr4'
                     b'agqy06IN7jaKc3OIQLyLWU","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
                     b'3OIQLyLWU","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX'
@@ -2548,7 +2623,7 @@ def test_messagize_v2():
                     b'APDisFFvBcb6qEC')
 
         # Test with seal SealLast only
-        msg = messagize(serder, seal=seal, framed=True, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, seals=seal, framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERICAACAAJSONAAD_.","t":"icp","d":"ECtGzXBDhYAOdKeQcTgBr4'
                     b'agqy06IN7jaKc3OIQLyLWU","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
                     b'3OIQLyLWU","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX'
@@ -2556,7 +2631,7 @@ def test_messagize_v2():
                     b'UALDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI')
 
         # Test with not framed
-        msg = messagize(serder, seal=seal, framed=False, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERICAACAAJSONAAD_.","t":"icp","d":"ECtGzXBDhYAOdKeQcTgBr4'
                     b'agqy06IN7jaKc3OIQLyLWU","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
                     b'3OIQLyLWU","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX'
@@ -2566,7 +2641,7 @@ def test_messagize_v2():
         # test with seal SealSource only
         seal = SealSource(s='0',
                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-        msg = messagize(serder, seal=seal, framed=False, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERICAACAAJSONAAD_.","t":"icp","d":"ECtGzXBDhYAOdKeQcTgBr4'
                     b'agqy06IN7jaKc3OIQLyLWU","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
                     b'3OIQLyLWU","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX'
@@ -2674,7 +2749,7 @@ def test_messagize_v2():
                          s='0',
                          d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
-        msg = messagize(serder, sigers=sigers, source=source, seal=seal,
+        msg = messagize(serder, sigers=sigers, source=source, seals=seal,
                         wigers=wigers, cigars=cigars, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERICAACAAJSONAAD_.","t":"icp","d":"ECtGzXBDhYAOdKeQcTgBr4'
                     b'agqy06IN7jaKc3OIQLyLWU","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
@@ -2689,6 +2764,57 @@ def test_messagize_v2():
                     b'JjH1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BBnxvPGzvJf8d6hzfDR6'
                     b'2RMk0aX0T-MhgqJqgvO4z672OO2RDC3t_b__1HuqAIG1kTGrkhpBDyuOpknkW-xY'
                     b'kcG')
+
+        # test with multiple seals so collated
+        seal0 = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
+                         s='0',
+                         d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal1 = SealSource(s='1',
+                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal2 = SealSource(s='2',
+                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal3 = BlindState(d='EGhjWjnjDTBTQ5uZ-17_nipeMzaCaADNeMBXa8QmmBev',
+                                      u='aB3RS8CZP2ds_ZgUyJBuJyim8P8qLRG9wMANIkWPGzev',
+                                      td='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+                                      ts='revoked')
+        seal4 = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
+                         s='3',
+                         d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal5 = BlindState(d='ECVr7QWEp_aqVQuz4yprRFXVxJ-9uWLx_d6oDinlHU6J',
+                            u='aG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv8',
+                            td='',
+                            ts='')
+        seal6 = BoundState(d='EFaQ00QW-ZeoMxE9baWcpJbAFXrs5h0ya-wpKnHvMQ0c',
+                                      u='aJxtoz6qVeJxPCZvP-qBJifRfIxP3itQBVAAu7JJHxMa',
+                                      td='',
+                                      ts='',
+                                      bn='0',
+                                      bd='')
+        seal7 = TypeMedia(d='EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE',
+                         u='0ABtZWRpYXJyYXdub25jZV8w',
+                         mt='application/json',
+                         mv='{"name":"Sue","food":"Pizza"}')
+        seals = [seal0, seal1, seal2, seal3, seal4, seal5, seal6, seal7]
+
+        msg = messagize(serder, seals=seals, framed=False, gvrsn=Vrsn_2_0)
+        assert msg == (b'{"v":"KERICAACAAJSONAAD_.","t":"icp","d":"ECtGzXBDhYAOdKeQcTgBr4'
+                    b'agqy06IN7jaKc3OIQLyLWU","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
+                    b'3OIQLyLWU","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX'
+                    b'0bqN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-'
+                    b'CDD-TAuDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_'
+                    b'H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2zDAvCLRr5luWmp7keDvDuLP0kIqcyB'
+                    b'Yq79b3Dho1QvrjIMAADEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-'
+                    b'SAYMAABEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2zMAACEMuNWHss_'
+                    b'H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-aA7EGhjWjnjDTBTQ5uZ-17_nipeM'
+                    b'zaCaADNeMBXa8QmmBevaB3RS8CZP2ds_ZgUyJBuJyim8P8qLRG9wMANIkWPGzevE'
+                    b'Bju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQYrevokedECVr7QWEp_aqV'
+                    b'Quz4yprRFXVxJ-9uWLx_d6oDinlHU6JaG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6b'
+                    b'PlL7Lh4ukv81AAP1AAP-bAaEFaQ00QW-ZeoMxE9baWcpJbAFXrs5h0ya-wpKnHvM'
+                    b'Q0caJxtoz6qVeJxPCZvP-qBJifRfIxP3itQBVAAu7JJHxMa1AAP1AAPMAAA1AAP-'
+                    b'cAjEHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE0ABtZWRpYXJyYXdub'
+                    b'25jZV8w6BAGAABhcHBsaWNhdGlvbi9qc29u5BAKAHsibmFtZSI6IlN1ZSIsImZvb'
+                    b'2QiOiJQaXp6YSJ9')
+
 
         # Test with receipt message with wigers and or cigars on prior message
         wigers = mgr.sign(ser=serder.raw, verfers=verfers, indexed=True)
@@ -2846,7 +2972,7 @@ def test_messagize_v2_native():
                     b'BxNhLRnrXTrKiyi5qhjQ5YKU4SbDFjVdGoUoN3u5gfn6dHBVwvnBkr96OPwM')
 
          # Test with seal SealEvent Only
-        msg = messagize(serder, seal=seal, framed=True, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, seals=seal, framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
                     b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
                     b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-TAX'
@@ -2854,7 +2980,7 @@ def test_messagize_v2_native():
                     b'7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
         # Test with not framed
-        msg = messagize(serder, seal=seal, framed=False, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
                     b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
                     b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-CAY'
@@ -2884,14 +3010,14 @@ def test_messagize_v2_native():
                     b'wvnBkr96OPwM')
 
         # Test with seal SealLast only
-        msg = messagize(serder, seal=seal, framed=True, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, seals=seal, framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
                     b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
                     b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-UAL'
                     b'DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI')
 
         # Test with not framed
-        msg = messagize(serder, seal=seal, framed=False, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
                     b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
                     b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-CAM'
@@ -2900,7 +3026,7 @@ def test_messagize_v2_native():
         # test with seal SealSource only
         seal = SealSource(s='0',
                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-        msg = messagize(serder, seal=seal, framed=False, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
                     b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
                     b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-CAN'
@@ -2998,7 +3124,7 @@ def test_messagize_v2_native():
                                  s='0',
                                  d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
-        msg = messagize(serder, sigers=sigers, source=source, seal=seal, wigers=wigers,
+        msg = messagize(serder, sigers=sigers, source=source, seals=seal, wigers=wigers,
                         cigars=cigars, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
                     b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
@@ -3012,6 +3138,54 @@ def test_messagize_v2_native():
                     b'1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BDB0Tz52RRyT-CFE6zboIEk'
                     b'rJI87RfIltfOiYBZLcrdK2Sk3aCRrg3185PzzR1XGd9asEEG6l3zejhFHaA91O8M')
 
+        # test with multiple seals so collated
+        seal0 = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
+                         s='0',
+                         d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal1 = SealSource(s='1',
+                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal2 = SealSource(s='2',
+                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal3 = BlindState(d='EGhjWjnjDTBTQ5uZ-17_nipeMzaCaADNeMBXa8QmmBev',
+                                      u='aB3RS8CZP2ds_ZgUyJBuJyim8P8qLRG9wMANIkWPGzev',
+                                      td='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+                                      ts='revoked')
+        seal4 = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
+                         s='3',
+                         d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal5 = BlindState(d='ECVr7QWEp_aqVQuz4yprRFXVxJ-9uWLx_d6oDinlHU6J',
+                            u='aG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv8',
+                            td='',
+                            ts='')
+        seal6 = BoundState(d='EFaQ00QW-ZeoMxE9baWcpJbAFXrs5h0ya-wpKnHvMQ0c',
+                                      u='aJxtoz6qVeJxPCZvP-qBJifRfIxP3itQBVAAu7JJHxMa',
+                                      td='',
+                                      ts='',
+                                      bn='0',
+                                      bd='')
+        seal7 = TypeMedia(d='EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE',
+                         u='0ABtZWRpYXJyYXdub25jZV8w',
+                         mt='application/json',
+                         mv='{"name":"Sue","food":"Pizza"}')
+        seals = [seal0, seal1, seal2, seal3, seal4, seal5, seal6, seal7]
+
+        msg = messagize(serder, seals=seals, framed=False, gvrsn=Vrsn_2_0)
+        assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
+                    b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-CDD'
+                    b'-TAuDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_k'
+                    b'H4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2zDAvCLRr5luWmp7keDvDuLP0kIqcyBYq7'
+                    b'9b3Dho1QvrjIMAADEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-SAY'
+                    b'MAABEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2zMAACEMuNWHss_H_k'
+                    b'H4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-aA7EGhjWjnjDTBTQ5uZ-17_nipeMzaC'
+                    b'aADNeMBXa8QmmBevaB3RS8CZP2ds_ZgUyJBuJyim8P8qLRG9wMANIkWPGzevEBju'
+                    b'1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQYrevokedECVr7QWEp_aqVQuz'
+                    b'4yprRFXVxJ-9uWLx_d6oDinlHU6JaG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL'
+                    b'7Lh4ukv81AAP1AAP-bAaEFaQ00QW-ZeoMxE9baWcpJbAFXrs5h0ya-wpKnHvMQ0c'
+                    b'aJxtoz6qVeJxPCZvP-qBJifRfIxP3itQBVAAu7JJHxMa1AAP1AAPMAAA1AAP-cAj'
+                    b'EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE0ABtZWRpYXJyYXdub25j'
+                    b'ZV8w6BAGAABhcHBsaWNhdGlvbi9qc29u5BAKAHsibmFtZSI6IlN1ZSIsImZvb2Qi'
+                    b'OiJQaXp6YSJ9')
 
         # Test with receipt message with wigers and or cigars on prior message
         wigers = mgr.sign(ser=serder.raw, verfers=verfers, indexed=True)
@@ -3151,7 +3325,7 @@ def test_messagize_v1_nested():
                     b'PfPQQkQkxI862_XjyZLHyClVTLoD')
 
          # Test with seal SealEvent Only
-        msg = messagize(serder, seal=seal, nested=True)
+        msg = messagize(serder, seals=seal, nested=True)
         assert msg == (b'-BBv-HBW6BBVAAB7InYiOiJLRVJJMTBKU09OMDAwMGZkXyIsInQiOiJpY3AiLCJk'
                     b'IjoiRUZ5enpnMk1wNUEzZWNDaGM2QWhTTFRRc3NCWkFtTnZQbkd4akp5SHhsNEYi'
                     b'LCJpIjoiRUZ5enpnMk1wNUEzZWNDaGM2QWhTTFRRc3NCWkFtTnZQbkd4akp5SHhs'
@@ -3176,7 +3350,7 @@ def test_messagize_v1_nested():
                     b'N_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyClVTLoD')
 
         # Test with seal SealLast only
-        msg = messagize(serder, seal=seal, nested=True)
+        msg = messagize(serder, seals=seal, nested=True)
         assert msg == (b'-BBj-HBW6BBVAAB7InYiOiJLRVJJMTBKU09OMDAwMGZkXyIsInQiOiJpY3AiLCJk'
                     b'IjoiRUZ5enpnMk1wNUEzZWNDaGM2QWhTTFRRc3NCWkFtTnZQbkd4akp5SHhsNEYi'
                     b'LCJpIjoiRUZ5enpnMk1wNUEzZWNDaGM2QWhTTFRRc3NCWkFtTnZQbkd4akp5SHhs'
@@ -3188,7 +3362,7 @@ def test_messagize_v1_nested():
         # test with seal SealSource only
         seal = SealSource(s='0',
                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-        msg = messagize(serder, seal=seal, nested=True)
+        msg = messagize(serder, seals=seal, nested=True)
         assert msg == (b'-BBk-HBW6BBVAAB7InYiOiJLRVJJMTBKU09OMDAwMGZkXyIsInQiOiJpY3AiLCJk'
                     b'IjoiRUZ5enpnMk1wNUEzZWNDaGM2QWhTTFRRc3NCWkFtTnZQbkd4akp5SHhsNEYi'
                     b'LCJpIjoiRUZ5enpnMk1wNUEzZWNDaGM2QWhTTFRRc3NCWkFtTnZQbkd4akp5SHhs'
@@ -3275,7 +3449,7 @@ def test_messagize_v1_nested():
                          s='0',
                          d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
-        msg = messagize(serder, sigers=sigers, source=source, seal=seal, wigers=wigers,
+        msg = messagize(serder, sigers=sigers, source=source, seals=seal, wigers=wigers,
                         cigars=cigars, nested=True)
         assert msg == (b'-BDX-HBW6BBVAAB7InYiOiJLRVJJMTBKU09OMDAwMGZkXyIsInQiOiJpY3AiLCJk'
                     b'IjoiRUZ5enpnMk1wNUEzZWNDaGM2QWhTTFRRc3NCWkFtTnZQbkd4akp5SHhsNEYi'
@@ -3291,6 +3465,57 @@ def test_messagize_v1_nested():
                     b'0VJYa4947ZMVrOxKhzI6EqUH-MAhBJjH1MCDssEZMnORskF34AwOFDgDL47513Gi'
                     b'vRvd_QKz0BDwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa0rUVX'
                     b'2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF')
+
+        # test with multiple seals so collated
+        seal0 = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
+                         s='0',
+                         d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal1 = SealSource(s='1',
+                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal2 = SealSource(s='2',
+                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal3 = BlindState(d='EGhjWjnjDTBTQ5uZ-17_nipeMzaCaADNeMBXa8QmmBev',
+                                      u='aB3RS8CZP2ds_ZgUyJBuJyim8P8qLRG9wMANIkWPGzev',
+                                      td='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+                                      ts='revoked')
+        seal4 = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
+                         s='3',
+                         d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal5 = BlindState(d='ECVr7QWEp_aqVQuz4yprRFXVxJ-9uWLx_d6oDinlHU6J',
+                            u='aG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv8',
+                            td='',
+                            ts='')
+        seal6 = BoundState(d='EFaQ00QW-ZeoMxE9baWcpJbAFXrs5h0ya-wpKnHvMQ0c',
+                                      u='aJxtoz6qVeJxPCZvP-qBJifRfIxP3itQBVAAu7JJHxMa',
+                                      td='',
+                                      ts='',
+                                      bn='0',
+                                      bd='')
+        seal7 = TypeMedia(d='EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE',
+                         u='0ABtZWRpYXJyYXdub25jZV8w',
+                         mt='application/json',
+                         mv='{"name":"Sue","food":"Pizza"}')
+        seals = [seal0, seal1, seal2, seal3, seal4, seal5, seal6, seal7]
+
+        msg = messagize(serder, seals=seals, nested=True)
+        assert msg == (b'-BEa-HBW6BBVAAB7InYiOiJLRVJJMTBKU09OMDAwMGZkXyIsInQiOiJpY3AiLCJk'
+                    b'IjoiRUZ5enpnMk1wNUEzZWNDaGM2QWhTTFRRc3NCWkFtTnZQbkd4akp5SHhsNEYi'
+                    b'LCJpIjoiRUZ5enpnMk1wNUEzZWNDaGM2QWhTTFRRc3NCWkFtTnZQbkd4akp5SHhs'
+                    b'NEYiLCJzIjoiMCIsImt0IjoiMSIsImsiOlsiRE9pZjQ4d2hBbXBiXzRreWtzTWN6'
+                    b'NTdzbk1SSXVYMGJxTjFGRGUwOUFsUmoiXSwibnQiOiIwIiwibiI6W10sImJ0Ijoi'
+                    b'MCIsImIiOltdLCJjIjpbXSwiYSI6W119-TAuDAvCLRr5luWmp7keDvDuLP0kIqcy'
+                    b'BYq79b3Dho1QvrjIMAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'
+                    b'DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAADEMuNWHss_H_kH4cG'
+                    b'7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-SAYMAABEMuNWHss_H_kH4cG7Li1jn2DXfrE'
+                    b'aqN7zhqTEhkeDZ2zMAACEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'
+                    b'-aA7EGhjWjnjDTBTQ5uZ-17_nipeMzaCaADNeMBXa8QmmBevaB3RS8CZP2ds_ZgU'
+                    b'yJBuJyim8P8qLRG9wMANIkWPGzevEBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbY'
+                    b'GGCUQgqQYrevokedECVr7QWEp_aqVQuz4yprRFXVxJ-9uWLx_d6oDinlHU6JaG1l'
+                    b'SjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv81AAP1AAP-bAaEFaQ00QW-Zeo'
+                    b'MxE9baWcpJbAFXrs5h0ya-wpKnHvMQ0caJxtoz6qVeJxPCZvP-qBJifRfIxP3itQ'
+                    b'BVAAu7JJHxMa1AAP1AAPMAAA1AAP-cAjEHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4'
+                    b'fNmuu1ZAvyTE0ABtZWRpYXJyYXdub25jZV8w6BAGAABhcHBsaWNhdGlvbi9qc29u'
+                    b'5BAKAHsibmFtZSI6IlN1ZSIsImZvb2QiOiJQaXp6YSJ9')
 
         # Test receipt message with wigers and/or cigars on prior message
         wigers = mgr.sign(ser=serder.raw, verfers=verfers, indexed=True)
@@ -3417,7 +3642,7 @@ def test_messagize_v2_nested():
                     b'cMbXLqxMI0dAMAPDisFFvBcb6qEC')
 
          # Test with seal SealEvent Only
-        msg = messagize(serder, seal=seal, nested=True)
+        msg = messagize(serder, seals=seal, nested=True)
         assert msg == (b'-BBv-HBW4BBVeyJ2IjoiS0VSSUNBQUNBQUpTT05BQURfLiIsInQiOiJpY3AiLCJk'
                     b'IjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlMV1Ui'
                     b'LCJpIjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlM'
@@ -3442,7 +3667,7 @@ def test_messagize_v2_nested():
                     b'LVlG50kep74k6uFccMbXLqxMI0dAMAPDisFFvBcb6qEC')
 
         # Test with SealLast only
-        msg = messagize(serder, seal=seal, nested=True)
+        msg = messagize(serder, seals=seal, nested=True)
         assert msg == (b'-BBj-HBW4BBVeyJ2IjoiS0VSSUNBQUNBQUpTT05BQURfLiIsInQiOiJpY3AiLCJk'
                     b'IjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlMV1Ui'
                     b'LCJpIjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlM'
@@ -3454,7 +3679,7 @@ def test_messagize_v2_nested():
         # test with seal SealSource only
         seal = SealSource(s='0',
                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-        msg = messagize(serder, seal=seal, nested=True)
+        msg = messagize(serder, seals=seal, nested=True)
         assert msg == (b'-BBk-HBW4BBVeyJ2IjoiS0VSSUNBQUNBQUpTT05BQURfLiIsInQiOiJpY3AiLCJk'
                     b'IjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlMV1Ui'
                     b'LCJpIjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlM'
@@ -3541,7 +3766,7 @@ def test_messagize_v2_nested():
                          s='0',
                          d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
-        msg = messagize(serder, sigers=sigers, source=source, seal=seal, wigers=wigers,
+        msg = messagize(serder, sigers=sigers, source=source, seals=seal, wigers=wigers,
                         cigars=cigars, nested=True)
         assert msg == (b'-BDX-HBW4BBVeyJ2IjoiS0VSSUNBQUNBQUpTT05BQURfLiIsInQiOiJpY3AiLCJk'
                     b'IjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlMV1Ui'
@@ -3557,6 +3782,57 @@ def test_messagize_v2_nested():
                     b'CJFrCkHGNGseQYrrVYc59BwL-MAhBJjH1MCDssEZMnORskF34AwOFDgDL47513Gi'
                     b'vRvd_QKz0BBnxvPGzvJf8d6hzfDR62RMk0aX0T-MhgqJqgvO4z672OO2RDC3t_b_'
                     b'_1HuqAIG1kTGrkhpBDyuOpknkW-xYkcG')
+
+        # test with multiple seals so collated
+        seal0 = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
+                         s='0',
+                         d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal1 = SealSource(s='1',
+                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal2 = SealSource(s='2',
+                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal3 = BlindState(d='EGhjWjnjDTBTQ5uZ-17_nipeMzaCaADNeMBXa8QmmBev',
+                                      u='aB3RS8CZP2ds_ZgUyJBuJyim8P8qLRG9wMANIkWPGzev',
+                                      td='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+                                      ts='revoked')
+        seal4 = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
+                         s='3',
+                         d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal5 = BlindState(d='ECVr7QWEp_aqVQuz4yprRFXVxJ-9uWLx_d6oDinlHU6J',
+                            u='aG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv8',
+                            td='',
+                            ts='')
+        seal6 = BoundState(d='EFaQ00QW-ZeoMxE9baWcpJbAFXrs5h0ya-wpKnHvMQ0c',
+                                      u='aJxtoz6qVeJxPCZvP-qBJifRfIxP3itQBVAAu7JJHxMa',
+                                      td='',
+                                      ts='',
+                                      bn='0',
+                                      bd='')
+        seal7 = TypeMedia(d='EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE',
+                         u='0ABtZWRpYXJyYXdub25jZV8w',
+                         mt='application/json',
+                         mv='{"name":"Sue","food":"Pizza"}')
+        seals = [seal0, seal1, seal2, seal3, seal4, seal5, seal6, seal7]
+
+        msg = messagize(serder, seals=seals, nested=True)
+        assert msg == (b'-BEa-HBW4BBVeyJ2IjoiS0VSSUNBQUNBQUpTT05BQURfLiIsInQiOiJpY3AiLCJk'
+                    b'IjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlMV1Ui'
+                    b'LCJpIjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlM'
+                    b'V1UiLCJzIjoiMCIsImt0IjoiMSIsImsiOlsiRE9pZjQ4d2hBbXBiXzRreWtzTWN6'
+                    b'NTdzbk1SSXVYMGJxTjFGRGUwOUFsUmoiXSwibnQiOiIwIiwibiI6W10sImJ0Ijoi'
+                    b'MCIsImIiOltdLCJjIjpbXSwiYSI6W119-TAuDAvCLRr5luWmp7keDvDuLP0kIqcy'
+                    b'BYq79b3Dho1QvrjIMAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'
+                    b'DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAADEMuNWHss_H_kH4cG'
+                    b'7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-SAYMAABEMuNWHss_H_kH4cG7Li1jn2DXfrE'
+                    b'aqN7zhqTEhkeDZ2zMAACEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'
+                    b'-aA7EGhjWjnjDTBTQ5uZ-17_nipeMzaCaADNeMBXa8QmmBevaB3RS8CZP2ds_ZgU'
+                    b'yJBuJyim8P8qLRG9wMANIkWPGzevEBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbY'
+                    b'GGCUQgqQYrevokedECVr7QWEp_aqVQuz4yprRFXVxJ-9uWLx_d6oDinlHU6JaG1l'
+                    b'SjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv81AAP1AAP-bAaEFaQ00QW-Zeo'
+                    b'MxE9baWcpJbAFXrs5h0ya-wpKnHvMQ0caJxtoz6qVeJxPCZvP-qBJifRfIxP3itQ'
+                    b'BVAAu7JJHxMa1AAP1AAPMAAA1AAP-cAjEHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4'
+                    b'fNmuu1ZAvyTE0ABtZWRpYXJyYXdub25jZV8w6BAGAABhcHBsaWNhdGlvbi9qc29u'
+                    b'5BAKAHsibmFtZSI6IlN1ZSIsImZvb2QiOiJQaXp6YSJ9')
 
         # Test receipt message with wigers and/or cigars on prior message
         wigers = mgr.sign(ser=serder.raw, verfers=verfers, indexed=True)
@@ -3676,7 +3952,7 @@ def test_messagize_v2_native_nested():
                     b'BxNhLRnrXTrKiyi5qhjQ5YKU4SbDFjVdGoUoN3u5gfn6dHBVwvnBkr96OPwM')
 
          # Test with seal SealEvent Only
-        msg = messagize(serder, seal=seal, nested=True)
+        msg = messagize(serder, seals=seal, nested=True)
         assert msg == (b'-BBH-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2'
                     b'NfHnEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif'
                     b'48whAmpb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA'
@@ -3697,7 +3973,7 @@ def test_messagize_v2_native_nested():
                     b'wvnBkr96OPwM')
 
         # Test with SealLast only
-        msg = messagize(serder, seal=seal, nested=True)
+        msg = messagize(serder, seals=seal, nested=True)
         assert msg == (b'-BA7-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2'
                     b'NfHnEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif'
                     b'48whAmpb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA'
@@ -3706,7 +3982,7 @@ def test_messagize_v2_native_nested():
         # test with seal SealSource only
         seal = SealSource(s='0',
                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-        msg = messagize(serder, seal=seal, nested=True)
+        msg = messagize(serder, seals=seal, nested=True)
         assert msg == (b'-BA8-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2'
                     b'NfHnEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif'
                     b'48whAmpb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA'
@@ -3777,7 +4053,7 @@ def test_messagize_v2_native_nested():
                          s='0',
                          d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
-        msg = messagize(serder, sigers=sigers, source=source, seal=seal, wigers=wigers,
+        msg = messagize(serder, sigers=sigers, source=source, seals=seal, wigers=wigers,
                         cigars=cigars, nested=True)
         assert msg == (b'-BCv-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2'
                     b'NfHnEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif'
@@ -3790,6 +4066,55 @@ def test_messagize_v2_native_nested():
                     b'a_SEP4Q97wL32P1oItaECL2m9egSKBGeLofMC1tL22Mvz2RICLDUvbsA-MAhBJjH'
                     b'1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BDB0Tz52RRyT-CFE6zboIEk'
                     b'rJI87RfIltfOiYBZLcrdK2Sk3aCRrg3185PzzR1XGd9asEEG6l3zejhFHaA91O8M')
+
+        # test with multiple seals so collated
+        seal0 = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
+                         s='0',
+                         d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal1 = SealSource(s='1',
+                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal2 = SealSource(s='2',
+                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal3 = BlindState(d='EGhjWjnjDTBTQ5uZ-17_nipeMzaCaADNeMBXa8QmmBev',
+                                      u='aB3RS8CZP2ds_ZgUyJBuJyim8P8qLRG9wMANIkWPGzev',
+                                      td='EBju1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQ',
+                                      ts='revoked')
+        seal4 = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
+                         s='3',
+                         d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        seal5 = BlindState(d='ECVr7QWEp_aqVQuz4yprRFXVxJ-9uWLx_d6oDinlHU6J',
+                            u='aG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL7Lh4ukv8',
+                            td='',
+                            ts='')
+        seal6 = BoundState(d='EFaQ00QW-ZeoMxE9baWcpJbAFXrs5h0ya-wpKnHvMQ0c',
+                                      u='aJxtoz6qVeJxPCZvP-qBJifRfIxP3itQBVAAu7JJHxMa',
+                                      td='',
+                                      ts='',
+                                      bn='0',
+                                      bd='')
+        seal7 = TypeMedia(d='EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE',
+                         u='0ABtZWRpYXJyYXdub25jZV8w',
+                         mt='application/json',
+                         mv='{"name":"Sue","food":"Pizza"}')
+        seals = [seal0, seal1, seal2, seal3, seal4, seal5, seal6, seal7]
+
+        msg = messagize(serder, seals=seals, nested=True)
+        assert msg == (b'-BDy-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2'
+                    b'NfHnEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif'
+                    b'48whAmpb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA'
+                    b'-TAuDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_k'
+                    b'H4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2zDAvCLRr5luWmp7keDvDuLP0kIqcyBYq7'
+                    b'9b3Dho1QvrjIMAADEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-SAY'
+                    b'MAABEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2zMAACEMuNWHss_H_k'
+                    b'H4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-aA7EGhjWjnjDTBTQ5uZ-17_nipeMzaC'
+                    b'aADNeMBXa8QmmBevaB3RS8CZP2ds_ZgUyJBuJyim8P8qLRG9wMANIkWPGzevEBju'
+                    b'1o4x1Ud-z2sL-uxLC5L3iBVD77d_MYbYGGCUQgqQYrevokedECVr7QWEp_aqVQuz'
+                    b'4yprRFXVxJ-9uWLx_d6oDinlHU6JaG1lSjdJSNl7TiroPl67Uqzd5eFvzmr6bPlL'
+                    b'7Lh4ukv81AAP1AAP-bAaEFaQ00QW-ZeoMxE9baWcpJbAFXrs5h0ya-wpKnHvMQ0c'
+                    b'aJxtoz6qVeJxPCZvP-qBJifRfIxP3itQBVAAu7JJHxMa1AAP1AAPMAAA1AAP-cAj'
+                    b'EHYFmR_QWCLz8gZyhc4BQ8xJ-ftZ6OA4fNmuu1ZAvyTE0ABtZWRpYXJyYXdub25j'
+                    b'ZV8w6BAGAABhcHBsaWNhdGlvbi9qc29u5BAKAHsibmFtZSI6IlN1ZSIsImZvb2Qi'
+                    b'OiJQaXp6YSJ9')
 
         # Test receipt message with wigers and/or cigars on prior message
         wigers = mgr.sign(ser=serder.raw, verfers=verfers, indexed=True)
