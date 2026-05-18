@@ -107,8 +107,8 @@ class ConfirmDoer(doing.DoDoer):
         wigers = self.hby.db.wigs.get(keys=(pre, bytes(edig)))
         sner = Number(num=anchorSn, code=NumDex.Huge)
         saider = Saider(qb64=anchorSaid)
-        self.hby.kvy.processEvent(serder=eserder, sigers=sigers, wigers=wigers, delseqner=sner,
-                                      delsaider=saider, local=True)
+        self.hby.kvy.processEvent(serder=eserder, sigers=sigers, wigers=wigers, delsner=sner,
+                                      delsger=saider, local=True)
 
     def confirmDo(self, tymth, tock=0.0, **kwa):
         """

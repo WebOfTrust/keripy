@@ -465,14 +465,12 @@ class Structor:
                 computed from serialized dummied .mad
         Dummy (str): dummy character for computing SAIDs
 
-
     When known casts or provided in .Clans/.Casts then more flexible creation
     is supported for different types of provided cast and crew.
     When no clan is provided and an unknown cast and/or crew are provided as
     Mappings then Structor may create custom clan from the names given by the
     cast and/or crew keys(). Subclasses may override this behavior by raising
     an exception for unknown or custom clans.
-
 
     Properties:
         data (NamedTuple): instance whose fields are named instances of CESR primitives
@@ -552,7 +550,8 @@ class Structor:
     def enclose(cls, structors, cold=Colds.txt):
         """Serializes structors with prepended counter code in either text or binary
         domain as bytes determined by cold where text='txt' or binary='bny'
-        Uses .clan to determine counter.code from .ClanCodes
+        Uses .clan of zeroth structure to determine counter.code from .ClanCodes
+        All structors must be of the same clan to join into one group.
 
         Returns:
             enclosure (bytearray): enclosure serialized structors with
@@ -570,10 +569,10 @@ class Structor:
         buf = bytearray()
         clan = None
         for structor in structors:
-            if clan is None:
-                clan = structor.clan
+            if clan is None:  # zeroth structor
+                clan = structor.clan # uses clan from zeroth structor
             else:
-                if structor.clan != clan:
+                if structor.clan != clan:  # all structors must be same clan
                     raise InvalidValueError(f"Invalid  as clan={structor.clan.__name__}"
                                             f" not sames as clan={clan.__name__}")
             if cold == Colds.txt:
@@ -1252,7 +1251,7 @@ class Blinder(Structor):
     """Blinder is Structor subclass each instance holds a namedtuple .data of
     named values belonging to ACDC blinded state attribute for blindable state
     registry for TEL for ACDC to unblind the state attribute via a message
-    attachment.
+    attachment. Supports both BlindState and BoundState blinded state.
 
     See Structor class for more details.
 

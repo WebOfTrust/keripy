@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-tests.core.test_eventing module
+tests.core.test_parsing module
 
 """
 import os

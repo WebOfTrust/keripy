@@ -871,12 +871,12 @@ class Parser:
         # sigers (list[Siger]): attached indexed controller signatures
         # wigers (list[Siger]): attached indexed witness signatures
         # cigars (list[Cigar]): attached non-transferable from couple (verfer, sig)
-        # trqs (list[tuple]): (prefixer, seqner, saider, siger)
-        # tsgs (list[tuple]): (prefixer, seqner, saider, [Sigers]) triple plus list of sigs
+        # trqs (list[tuple]): (prefixer, number, diger, siger)
+        # tsgs (list[tuple]): (prefixer, number, diger, [Sigers]) triple plus list of sigs
         # ssgs (list[tuple]): (prefixer,[Sigers]) single plus list of sigs
-        # frcs (list[tuple]): (seqner, dater)
-        # sscs (list[tuple]): (seqner, saider) issuing or delegating
-        # ssts (list[tuple]): (prefixer, seqner, saider) issued or delegated
+        # frcs (list[tuple]): (number, dater)
+        # sscs (list[tuple]): (number, diger) issuing or delegating
+        # ssts (list[tuple]): (prefixer, number, diger) issued or delegated
         # tdcs (list[tuple]): (verser, diger) SealKind TypedDigestSealCouples
         # ptds (list[bytes]): pathed streams
         # essrs (list[Texter]): essr encapsulations as Texters
@@ -1156,17 +1156,17 @@ class Parser:
             if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
                 firner, dater = exts['frcs'][-1] if exts['frcs'] else (None, None)  # use last one if more than one
                 # when present assumes this is source seal of delegating event in delegator's KEL
-                delseqner, deldiger = exts['sscs'][-1] if exts['sscs'] else (None, None)  # use last one if more than one
+                delsner, delsger = exts['sscs'][-1] if exts['sscs'] else (None, None)  # use last one if more than one
                 if not exts['sigers']: # sigers:
                     msg = f"Missing attached signature(s) for evt = {serder.ked['d']}"
                     logger.info(msg)
                     logger.debug("Event Body = \n%s\n", serder.pretty())
                     raise ValidationError(msg)
                 try:
-                    exts['firner'] = firner
+                    exts['firner'] = firner  # first seen number
                     exts['dater'] = dater
-                    exts['delnum'] = Number(num=delseqner.sn) if delseqner is not None else None
-                    exts['deldiger'] = deldiger
+                    exts['delsner'] = Number(num=delsner.sn) if delsner is not None else None
+                    exts['delsger'] = delsger
 
                     kvy.processEvent(**exts)
 
@@ -1266,9 +1266,9 @@ class Parser:
                 # TEL msg
                 # get transaction event seal ref to Issuer's KEL
                 # use last one if more than one
-                seqner, saider = exts['sscs'][-1] if exts['sscs'] else (None, None)
-                exts['seqner'] = seqner
-                exts['saider'] = saider
+                number, diger = exts['sscs'][-1] if exts['sscs'] else (None, None)
+                exts['seqner'] = number
+                exts['saider'] = diger
                 try:
                     tvy.processEvent(**exts)
 
@@ -1285,12 +1285,11 @@ class Parser:
             if ilk is None:  # default for ACDC
                 try:
                     # use last one if more than one
-                    prefixer, seqner, saider = exts['ssts'][-1] if exts['ssts'] else (None, None, None)
+                    prefixer, number, diger = exts['ssts'][-1] if exts['ssts'] else (None, None, None)
                     exts['prefixer'] = prefixer
-                    exts['seqner'] = seqner
-                    exts['saider'] = saider
+                    exts['seqner'] = number
+                    exts['saider'] = diger
                     vry.processACDC(**exts)
-                    #vry.processACDC(serder=serder, prefixer=prefixer, seqner=seqner, saider=saider)
                 except AttributeError as ex:
                     raise ValidationError(f"No verifier to process so "
                                         f"dropped ACDC={serder.pretty()}") from ex
@@ -1557,19 +1556,19 @@ class Parser:
                                                   klas=Prefixer,
                                                   cold=cold,
                                                   abort=abort)
-            seqner = yield from self._extractor(ims=ims,
-                                                klas=Seqner,
+            number = yield from self._extractor(ims=ims,
+                                                klas=Number,
                                                 cold=cold,
                                                 abort=abort)
-            saider = yield from self._extractor(ims=ims,
-                                                klas=Saider,
+            diger = yield from self._extractor(ims=ims,
+                                                klas=Diger,
                                                 cold=cold,
                                                 abort=abort)
             siger = yield from self._extractor(ims=ims,
                                                klas=Siger,
                                                cold=cold,
                                                abort=abort)
-            trqs.append((prefixer, seqner, saider, siger))
+            trqs.append((prefixer, number, diger, siger))
         try:
             exts['trqs'].extend(trqs)
         except KeyError:
@@ -1592,7 +1591,7 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            trqs (list[tuple]): [(prefixer,seqner,saider,siger)]
+            trqs (list[tuple]): [(prefixer,number,diger,siger)]
 
         extract attaced trans receipt vrc quadruple
         spre+ssnu+sdig+sig
@@ -1614,10 +1613,10 @@ class Parser:
         trqs = []
         while gims:   # extract each attached quadruple and strip from gims
             prefixer = self.extract(ims=gims, klas=Prefixer, cold=cold)
-            seqner = self.extract(ims=gims, klas=Seqner, cold=cold)
-            saider = self.extract(ims=gims, klas=Saider, cold=cold)
+            number = self.extract(ims=gims, klas=Number, cold=cold)
+            diger = self.extract(ims=gims, klas=Diger, cold=cold)
             siger = self.extract(ims=gims, klas=Siger, cold=cold)
-            trqs.append((prefixer, seqner, saider, siger))
+            trqs.append((prefixer, number, diger, siger))
         try:
             exts['trqs'].extend(trqs)
         except KeyError:
@@ -1640,7 +1639,7 @@ class Parser:
                             another already extracted group.
 
         Returns:
-             tsgs (list[tuple]): [(prefixer,seqner,saider,[isigers])]
+             tsgs (list[tuple]): [(prefixer,number,diger,[isigers])]
 
         """
         tsgs = []
@@ -1649,12 +1648,12 @@ class Parser:
                                                   klas=Prefixer,
                                                   cold=cold,
                                                   abort=abort)
-            seqner = yield from self._extractor(ims=ims,
-                                                klas=Seqner,
+            number = yield from self._extractor(ims=ims,
+                                                klas=Number,
                                                 cold=cold,
                                                 abort=abort)
-            saider = yield from self._extractor(ims=ims,
-                                                klas=Saider,
+            diger = yield from self._extractor(ims=ims,
+                                                klas=Diger,
                                                 cold=cold,
                                                 abort=abort)
             ictr = yield from self._extractor(ims=ims,
@@ -1671,7 +1670,7 @@ class Parser:
                                                cold=cold,
                                                abort=abort)
                 isigers.append(isiger)
-            tsgs.append((prefixer, seqner, saider, isigers))
+            tsgs.append((prefixer, number, diger, isigers))
         try:
             exts['tsgs'].extend(tsgs)
         except KeyError:
@@ -1694,7 +1693,7 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            tsgs (list[tuple]): [(prefixer,seqner,saider,[isigers])]
+            tsgs (list[tuple]): [(prefixer,number,diger,[isigers])]
 
         """
         gs = ctr.byteCount(cold=cold)
@@ -1710,8 +1709,8 @@ class Parser:
         isigers = []
         while gims:   # extract each attached group and strip from gims
             prefixer = self.extract(ims=gims, klas=Prefixer, cold=cold)
-            seqner = self.extract(ims=gims, klas=Seqner, cold=cold)
-            saider = self.extract(ims=gims, klas=Saider, cold=cold)
+            number = self.extract(ims=gims, klas=Number, cold=cold)
+            diger = self.extract(ims=gims, klas=Diger, cold=cold)
             ictr = self.extract(ims=gims, klas=Counter, cold=cold)
             if ictr.code != CtrDex_2_0.ControllerIdxSigs:
                 raise UnexpectedCountCodeError(f"Expected count code="
@@ -1727,7 +1726,7 @@ class Parser:
             while igims:
                 isiger = self.extract(ims=igims, klas=Siger, cold=cold)
                 isigers.append(isiger)
-            tsgs.append((prefixer, seqner, saider, isigers))  # tuple
+            tsgs.append((prefixer, number, diger, isigers))  # tuple
         try:
             exts['tsgs'].extend(tsgs)
         except KeyError:
@@ -1850,12 +1849,12 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            frcs (list[tuple]): [(firner, dater)]
+            frcs (list[tuple]): [(number, dater)]  first seen sn
         """
         frcs = []
         for i in range(ctr.count):  # extract each attached group
             firner = yield from self._extractor(ims=ims,
-                                                klas=Seqner,
+                                                klas=Number,
                                                 cold=cold,
                                                 abort=abort)
             dater = yield from self._extractor(ims=ims,
@@ -1885,7 +1884,7 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            frcs (list[tuple]): [(firner, dater)]
+            frcs (list[tuple]): [(number, dater)]  first seen sn
 
         """
         gs = ctr.byteCount(cold=cold)
@@ -1899,7 +1898,7 @@ class Parser:
         del ims[:gs]  # strip off from ims
         frcs = []
         while gims:   # extract each attached group and strip from gims
-            firner = self.extract(ims=gims, klas=Seqner, cold=cold)
+            firner = self.extract(ims=gims, klas=Number, cold=cold)
             dater = self.extract(ims=gims, klas=Dater, cold=cold)
             frcs.append((firner, dater))
         try:
@@ -1924,19 +1923,19 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            sscs (list[tuple]): [(seqner, saider)]
+            sscs (list[tuple]): [(seqner, number)]
         """
         sscs = []
         for i in range(ctr.count):  # extract each attached group
-            seqner = yield from self._extractor(ims=ims,
-                                                klas=Seqner,
+            number = yield from self._extractor(ims=ims,
+                                                klas=Number,
                                                 cold=cold,
                                                 abort=abort)
-            saider = yield from self._extractor(ims=ims,
-                                                klas=Saider,
+            diger = yield from self._extractor(ims=ims,
+                                                klas=Diger,
                                                 cold=cold,
                                                 abort=abort)
-            sscs.append((seqner, saider))
+            sscs.append((number, diger))
         try:
             exts['sscs'].extend(sscs)
         except KeyError:
@@ -1959,7 +1958,7 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            sscs (list[tuple]): [(seqner, saider)]
+            sscs (list[tuple]): [(seqner, number)]
 
         """
         gs = ctr.byteCount(cold=cold)
@@ -1973,9 +1972,9 @@ class Parser:
         del ims[:gs]  # strip off from ims
         sscs = []
         while gims:   # extract each attached group and strip from gims
-            seqner = self.extract(ims=gims, klas=Seqner, cold=cold)
-            saider = self.extract(ims=gims, klas=Saider, cold=cold)
-            sscs.append((seqner, saider))
+            number = self.extract(ims=gims, klas=Number, cold=cold)
+            diger = self.extract(ims=gims, klas=Diger, cold=cold)
+            sscs.append((number, diger))
         try:
             exts['sscs'].extend(sscs)
         except KeyError:
@@ -2006,15 +2005,15 @@ class Parser:
                                                   klas=Prefixer,
                                                   cold=cold,
                                                   abort=abort)
-            seqner = yield from self._extractor(ims=ims,
-                                                klas=Seqner,
+            number = yield from self._extractor(ims=ims,
+                                                klas=Number,
                                                 cold=cold,
                                                 abort=abort)
-            saider = yield from self._extractor(ims=ims,
-                                                klas=Saider,
+            diger = yield from self._extractor(ims=ims,
+                                                klas=Diger,
                                                 cold=cold,
                                                 abort=abort)
-            ssts.append((prefixer, seqner, saider))
+            ssts.append((prefixer, number, diger))
         try:
             exts['ssts'].extend(ssts)
         except KeyError:
@@ -2052,9 +2051,9 @@ class Parser:
         ssts = []
         while gims:   # extract each attached group and strip from gims
             prefixer = self.extract(ims=gims, klas=Prefixer, cold=cold)
-            seqner = self.extract(ims=gims, klas=Seqner, cold=cold)
-            saider = self.extract(ims=gims, klas=Saider, cold=cold)
-            ssts.append((prefixer, seqner, saider))
+            number = self.extract(ims=gims, klas=Number, cold=cold)
+            diger = self.extract(ims=gims, klas=Diger, cold=cold)
+            ssts.append((prefixer, number, diger))
         try:
             exts['ssts'].extend(ssts)
         except KeyError:

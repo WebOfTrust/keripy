@@ -116,13 +116,13 @@ def test_bare():
                      d='EAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
     msg = messagize(serderE, sigers=[sigerC], source=seal, framed=True)
     assert msg == (b'{"v":"KERI10JSON000121_","t":"bar","d":"EGPY61eN5zhw7nnlra3bQL8x'
-                    b'apaMhP4I_0yihFOLXNgH","dt":"2023-06-26T22:22:13.416766+00:00","r'
-                    b'":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6l'
-                    b'lSvWQTWZN","role":"watcher","eid":"EAoTNZH3ULvYAfSVPzhzS6baU6JR2'
-                    b'nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDN6WBhWqp6wC08no2iWhgFYTaUg'
-                    b'rasnqz6llSvWQTWZN0AAAAAAAAAAAAAAAAAAAAAAAEAuNWHss_H_kH4cG7Li1jn2'
-                    b'DXfrEaqN7zhqTEhkeDZ2z-AABAAACsAGVg747fc-61v64LuAa6WbfCKjKgH6Xo0t'
-                    b'1wz2X7E51I_aWCTSU3KIhqkZirj7aYK__AIy_UvC8Tub7APwH')
+                b'apaMhP4I_0yihFOLXNgH","dt":"2023-06-26T22:22:13.416766+00:00","r'
+                b'":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6l'
+                b'lSvWQTWZN","role":"watcher","eid":"EAoTNZH3ULvYAfSVPzhzS6baU6JR2'
+                b'nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDN6WBhWqp6wC08no2iWhgFYTaUg'
+                b'rasnqz6llSvWQTWZNMAAAEAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2'
+                b'z-AABAAACsAGVg747fc-61v64LuAa6WbfCKjKgH6Xo0t1wz2X7E51I_aWCTSU3KI'
+                b'hqkZirj7aYK__AIy_UvC8Tub7APwH')
 
     # create endorsed bar with trans endorser
     # create trans key pair for endorser
@@ -144,10 +144,9 @@ def test_bare():
                 b'":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6l'
                 b'lSvWQTWZN","role":"watcher","eid":"EAoTNZH3ULvYAfSVPzhzS6baU6JR2'
                 b'nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDMrwi0a-Zblpqe5Hg7w7iz9JCKn'
-                b'MgWKu_W9w4aNUL64y0AAAAAAAAAAAAAAAAAAAAAAAEAuNWHss_H_kH4cG7Li1jn2'
-                b'DXfrEaqN7zhqTEhkeDZ2z-AABAAAqSbIUsv723owtCsHk4ltmzhf0leA4BXxJiC3'
-                b'ZBD3jZzbVPwxKTv8cY1z-RnpS6gW1xgeL__Lb0Cr4p8ZisvEI')
-
+                b'MgWKu_W9w4aNUL64yMAAAEAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2'
+                b'z-AABAAAqSbIUsv723owtCsHk4ltmzhf0leA4BXxJiC3ZBD3jZzbVPwxKTv8cY1z'
+                b'-RnpS6gW1xgeL__Lb0Cr4p8ZisvEI')
 
     # create endorsed bar with nontrans endorser
     # create nontrans key pair for endorder

@@ -168,7 +168,7 @@ class Revery:
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
                 prefixer is pre of trans endorser
-                seqner is sequence number of trans endorser's est evt for keys for sigs
+                number is sequence number of trans endorser's est evt for keys for sigs
                 diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
@@ -214,7 +214,7 @@ class Revery:
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
                 prefixer is pre of trans endorser
-                seqner is sequence number of trans endorser's est evt for keys for sigs
+                number is sequence number of trans endorser's est evt for keys for sigs
                 diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
@@ -313,7 +313,7 @@ class Revery:
             accepted = True
             break  # first valid cigar sufficient ignore any duplicates in cigars
 
-        for prefixer, seqner, ssaider, sigers in tsgs:  # iterate over each tsg
+        for prefixer, snumber, sdiger, sigers in tsgs:  # iterate over each tsg
             if not self.lax and prefixer.qb64 in self.prefixes:  # own sig
                 if not self.local:  # own sig when not local so ignore
                     logger.debug(
@@ -337,19 +337,19 @@ class Revery:
                 if otsgs := fetchTsgs(db=self.db.ssgs, diger=osaider):
                     _, osqr, _, _ = otsgs[0]  # zeroth should be authoritative
 
-                    if seqner.sn < osqr.sn:  # sn earlier
+                    if snumber.sn < osqr.sn:  # sn earlier
                         logger.info(
                             "Revery: skipped stale key state sig "
                             "from %s sn=%s<%s on reply said=%s",
                             aid,
-                            seqner.sn,
+                            snumber.sn,
                             osqr.sn,
                             serder.said,
                         )
                         logger.debug("event=\n%s\n", serder.pretty())
                         continue  # skip if sn earlier
 
-                    if seqner.sn == osqr.sn:  # sn same so check datetime
+                    if snumber.sn == osqr.sn:  # sn same so check datetime
                         if odater:
                             if dater.datetime <= odater.datetime:
                                 logger.info(
@@ -362,7 +362,7 @@ class Revery:
                                 continue  # skip if not later
 
             # retrieve sdig of last event at sn of signer.
-            sdig = self.db.kels.getLast(keys=spre, on=seqner.sn)
+            sdig = self.db.kels.getLast(keys=spre, on=snumber.sn)
             if sdig is None:
                 # create cue here to request key state for sprefixer signer
                 # signer's est event not yet in signer's KEL
@@ -376,8 +376,8 @@ class Revery:
                     dater=dater,
                     route=route,
                     prefixer=prefixer,
-                    seqner=seqner,
-                    ssaider=ssaider,
+                    snumber=snumber,
+                    sdiger=sdiger,
                     sigers=sigers,
                 )
                 self.cues.append(dict(kin="query", q=dict(pre=spre)))
@@ -386,21 +386,21 @@ class Revery:
             # retrieve last event itself of signer given sdig
             sserder = self.db.evts.get(keys=(spre, bytes(sdig)))
             # assumes db ensures that sserder must not be none because sdig was in KE
-            if sserder.said != ssaider.qb64:  # signer's dig not match est evt
+            if sserder.said != sdiger.qb64:  # signer's dig not match est evt
                 raise ValidationError(
                     f"Bad trans indexed sig group at sn = "
-                    f"{seqner.sn} for reply = {serder.ked}."
+                    f"{snumber.sn} for reply = {serder.ked}."
                 )
             # verify sigs
             if not (sverfers := sserder.verfers):
                 raise ValidationError(
                     f"Invalid reply from signer={spre}, no "
-                    f"keys at signer's est. event sn={seqner.sn}."
+                    f"keys at signer's est. event sn={snumber.sn}."
                 )
 
             # fetch any escrowed sigs, extract just the siger from each quad
             # want sn in numerical order so use hex
-            quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", ssaider.qb64)
+            quadkeys = (saider.qb64, prefixer.qb64, f"{snumber.sn:032x}", sdiger.qb64)
             esigers = self.db.ssgs.get(keys=quadkeys)
             sigers.extend(esigers)
             sigers, valid = validateSigs(
@@ -415,18 +415,18 @@ class Revery:
                     saider=saider,
                     dater=dater,
                     prefixer=prefixer,
-                    seqner=seqner,
-                    diger=ssaider,
+                    seqner=snumber,
+                    diger=sdiger,
                     sigers=sigers,
                 )
                 self.removeReply(saider=osaider)  # remove obsoleted reply artifacts
                 # remove stale signatures .ssgs for this saider
                 # this ensures that zeroth tsg is authoritative
                 for prr, snr, dgr, _ in fetchTsgs(
-                    db=self.db.ssgs, diger=saider, snh=seqner.snh
+                    db=self.db.ssgs, diger=saider, snh=snumber.snh
                 ):
-                    if (snr.sn < seqner.sn) or (
-                        snr.sn == seqner.sn and dgr.qb64 != ssaider.qb64
+                    if (snr.sn < snumber.sn) or (
+                        snr.sn == snumber.sn and dgr.qb64 != sdiger.qb64
                     ):
                         self.db.ssgs.trim(
                             keys=(prr.qb64, f"{snr.sn:032h}", dgr.qb64, "")
@@ -441,8 +441,8 @@ class Revery:
                     dater=dater,
                     route=route,
                     prefixer=prefixer,
-                    seqner=seqner,
-                    ssaider=ssaider,
+                    snumber=snumber,
+                    sdiger=sdiger,
                     sigers=sigers,
                 )
 
@@ -503,7 +503,7 @@ class Revery:
             self.db.sdts.rem(keys=keys)
 
     def escrowReply(
-        self, *, serder, saider, dater, route, prefixer, seqner, ssaider, sigers
+        self, *, serder, saider, dater, route, prefixer, snumber, sdiger, sigers
     ):
         """Escrow reply by route
 
@@ -513,8 +513,8 @@ class Revery:
             dater (Dater): instance from date-time in serder (SAD)
             route (str): reply route
             prefixer (Prefixer): is pre of trans endorser
-            seqner (Seqner): is sequence number of trans endorser's est evt for keys for sigs
-            ssaider (Saider) is said of trans endorser's est evt for keys for sigs
+            snumber (Number): is sequence number of trans endorser's est evt for keys for sigs
+            sdiger (Diger) is said of trans endorser's est evt for keys for sigs
             sigers (list): is indexed sigs from trans endorser's key from est evt
 
         """
@@ -523,7 +523,7 @@ class Revery:
         keys = (saider.qb64,)
         self.db.sdts.put(keys=keys, val=dater)  # first one idempotent
         self.db.rpys.put(keys=keys, val=serder)  # first one idempotent
-        quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", ssaider.qb64)
+        quadkeys = (saider.qb64, prefixer.qb64, f"{snumber.sn:032x}", sdiger.qb64)
         self.db.ssgs.put(keys=quadkeys, vals=sigers)
         self.db.rpes.put(keys=(route,), vals=[saider])
 
