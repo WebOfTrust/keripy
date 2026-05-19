@@ -1502,16 +1502,18 @@ def exchange(sender="",
     return SerderKERI(sad=sad, makify=True)
 
 
-def messagize(serder, *, sigers=None, source=None, seals=None, wigers=None, cigars=None,
+def messagize(serder, *, sigers=None, source=None, bonds=None, wigers=None, cigars=None,
               framed=False, nested=False, gvrsn=Version, genusify=False):
-    """Attaches authenticator from sigers and/or cigars and/or wigers and/or seal
-    to KERI message data from serder
+    """Attaches authenticator(s) from sigers (with or without source as seal) and/or
+    cigars and/or wigers and/or bonds. A bond is typically a seal reference to
+    an event with anchoring seal of message as authenticator. In v2 bonds may
+    also include any Structor subclass not simply seal references.
 
     Parameters::
         serder (SerderKERI): instance containing the event
         sigers (list): of Siger instances (optional) to create indexed signatures
                        based on seal type if any
-        source (SealEvent|SealLast|None): optional when sigers provided
+        source (SealEvent|SealLast|None): optiona modifier to sigers when provided
                 If SealEvent use attachment group code TransIdxSigGroups plus attach
                     triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
                     plus attached indexed sigs in sigers
@@ -1519,20 +1521,10 @@ def messagize(serder, *, sigers=None, source=None, seals=None, wigers=None, ciga
                     attach uniple pre made from (i,) of seal plus ControllerIdxSigs
                     plus attached indexed sigs in sigers
                 Else None use ControllerIdxSigs plus attached indexed sigs in sigers
-        seal (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
+        bonds (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
+            Non signature based authenticator typically an event reference or may
             Only v2 supports BlindState|BoundState|TypeMedia
-            if seals is not list convert to list.
-            for each seal in seals
-                If SealEvent
-                    Attach SealSourceTriples group with triple pre+snu+dig made
-                    from (i,s,d) of seal
-                Elif SealSource
-                    Attach SealSourceCouples group with couple snu+dig made from
-                    (s,d) of seal
-                Elif SealLast
-                    Attach SealSourceLastSingles group with single pre made from
-                    (i) of seal
-                Else raise error
+            if bonds is not list convert to list.
         wigers (list): optional list of Siger instances of witness index signatures
         cigars (list): optional list of Cigars instances of non-transferable non indexed
             signatures from  which to form receipt couples.
@@ -1559,7 +1551,7 @@ def messagize(serder, *, sigers=None, source=None, seals=None, wigers=None, ciga
         msg (bytearray): KERI event with attachments if any
 
     """
-    if not (sigers or cigars or wigers or seals):
+    if not (sigers or cigars or wigers or bonds):
         raise ValueError(f"Missing authenticator for msg={serder.pretty()}")
 
     svrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn  # effective serder gvrsn
@@ -1601,46 +1593,46 @@ def messagize(serder, *, sigers=None, source=None, seals=None, wigers=None, ciga
             for siger in sigers:
                 aims.extend(siger.qb64b)
 
-        if seals:
-            if isinstance(seals, tuple):
-                seals = [seals]  # convert to list
+        if bonds:
+            if isinstance(bonds, tuple):
+                bonds = [bonds]  # convert to list
 
             clans = {}
-            for seal in seals: # collate seals into groups by clan
-                if (seal.__class__ not in (SealEvent, SealSource, SealLast)):
-                    raise ValueError(f"Unsupported authenticator {seal} kind for "
+            for bond in bonds: # collate seals from bonds into groups by clan
+                if (bond.__class__ not in (SealEvent, SealSource, SealLast)):
+                    raise ValueError(f"Unsupported authenticator {bond} kind for "
                                      f"version={gvrsn} msg={serder.pretty()}")
 
-                if seal.__class__ not in clans:  # zeroth one in group
-                    clans[seal.__class__] = [seal]  # make list
+                if bond.__class__ not in clans:  # zeroth one in group
+                    clans[bond.__class__] = [bond]  # make list
                 else:
-                    clans[seal.__class__].append(seal)
+                    clans[bond.__class__].append(bond)
 
             for clan, group in clans.items():
                 if issubclass(clan, SealEvent):  # authenticator is event seal
                     aims.extend(Counter(Codens.SealSourceTriples, count=len(group),
                                             version=Vrsn_1_0).qb64b)
-                    for seal in group:
-                        aims.extend(seal.i.encode())
-                        aims.extend(Number(snh=seal.s).qb64b)
-                        aims.extend(seal.d.encode())
+                    for bond in group:
+                        aims.extend(bond.i.encode())
+                        aims.extend(Number(snh=bond.s).qb64b)
+                        aims.extend(bond.d.encode())
 
                 elif issubclass(clan, SealSource):  # authenticator is last seal
                     aims.extend(Counter(Codens.SealSourceCouples, count=len(group),
                                             version=Vrsn_1_0).qb64b)
-                    for seal in group:
-                        aims.extend(Number(snh=seal.s).qb64b)
-                        aims.extend(seal.d.encode())
+                    for bond in group:
+                        aims.extend(Number(snh=bond.s).qb64b)
+                        aims.extend(bond.d.encode())
 
                 elif issubclass(clan, SealLast):  # authenticator is last seal
                     aims.extend(Counter(Codens.SealSourceLastSingles, count=len(group),
                                             version=Vrsn_1_0).qb64b)
-                    for seal in group:
-                        aims.extend(seal.i.encode())
+                    for bond in group:
+                        aims.extend(bond.i.encode())
 
                 else:
-                    raise ValueError(f"Unsupported authenticator {clan} kind for "
-                                     f"version={gvrsn} msg={serder.pretty()}")
+                    raise ValueError(f"Unsupported authenticator {clan} for"
+                                     f" version={gvrsn} msg={serder.pretty()}")
 
         if wigers:
             aims.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
@@ -1702,24 +1694,24 @@ def messagize(serder, *, sigers=None, source=None, seals=None, wigers=None, ciga
             else:
                 aims.extend(eims)
 
-        if seals:
-            if isinstance(seals, tuple):
-                seals = [seals]  # convert to list
+        if bonds:
+            if isinstance(bonds, tuple):
+                bonds = [bonds]  # convert to list
 
-            clans = {}  # dict of sealer lists keyed by clan
-            for seal in seals:  # collate sealers by clan group
-                sealer = Structor(crew=seal)
-                if (sealer.clan not in (SealEvent, SealSource, SealLast,
+            clans = {}  # dict of structor lists keyed by clan
+            for bond in bonds:  # collate structors made from bonds by clan group
+                structor = Structor(crew=bond)
+                if (structor.clan not in (SealEvent, SealSource, SealLast,
                                         BlindState, BoundState, TypeMedia)):
-                    raise ValueError(f"Unsupported authenticator {seal} kind for "
-                                     f"version={gvrsn} msg={serder.pretty()}")
-                if sealer.clan not in clans:
-                    clans[sealer.clan] = [sealer]
+                    raise ValueError(f"Unsupported authenticator {structor.clan}"
+                                     f" for version={gvrsn} msg={serder.pretty()}")
+                if structor.clan not in clans:
+                    clans[structor.clan] = [structor]
                 else:
-                    clans[sealer.clan].append(sealer)
+                    clans[structor.clan].append(structor)
 
-            for sealers in clans.values():
-                aims.extend(Structor.enclose(sealers))
+            for structors in clans.values():
+                aims.extend(Structor.enclose(structors))
 
         if wigers:
             eims = bytearray()
