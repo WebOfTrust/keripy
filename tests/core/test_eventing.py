@@ -1350,7 +1350,7 @@ def test_keyeventfuncs_v1(mockHelpingNowUTC):
 
     # Interaction:
     serder2 = interact(pre=pre, dig=serder1.said, sn=2, kind=Kinds.json,
-                       version=Vrsn_2_0)
+                       version=Vrsn_1_0)
     assert serder2.ked["t"] == Ilks.ixn
     assert serder2.ked["i"] == pre
     assert serder2.ked["s"] == '2'
@@ -1359,7 +1359,8 @@ def test_keyeventfuncs_v1(mockHelpingNowUTC):
                            b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"2","p":"EHc84kDs5EsLQYVLkP7fe-7DUfCQ7jFY69Zqq2UfmvTe","a":[]}')
 
     # Receipt
-    serder3 = receipt(pre=pre, sn=0, said=serder2.said, kind=Kinds.cesr, version=Vrsn_2_0)
+    serder3 = receipt(pre=pre, sn=0, said=serder2.said, kind=Kinds.json,
+                      version=Vrsn_1_0)
     assert serder3.ked["i"] == pre
     assert serder3.ked["s"] == "0"
     assert serder3.ked["t"] == Ilks.rct
@@ -1368,7 +1369,8 @@ def test_keyeventfuncs_v1(mockHelpingNowUTC):
                            b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"0"}')
 
 
-    serder4 = receipt(pre=pre, sn=2, said=serder2.said, kind=Kinds.cesr, version=Vrsn_2_0)
+    serder4 = receipt(pre=pre, sn=2, said=serder2.said, kind=Kinds.json,
+                      version=Vrsn_1_0)
     assert serder4.ked["i"] == pre
     assert serder4.ked["s"] == "2"
     assert serder4.ked["t"] == Ilks.rct
