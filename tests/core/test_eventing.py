@@ -670,9 +670,9 @@ def test_seals_states():
     """End Test """
 
 
-def test_keyeventfuncs(mockHelpingNowUTC):
-    """
-    Test the support functionality for key event generation functions
+def test_keyeventfuncs_v1(mockHelpingNowUTC):
+    """Test the support functionality for key event generation functions for
+    version 1 KERI
 
     """
     # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
@@ -685,7 +685,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer0.code == MtrDex.Ed25519_Seed
     assert signer0.verfer.code == MtrDex.Ed25519N
     keys0 = [signer0.verfer.qb64]
-    serder = incept(keys=keys0)  # default nxt is empty so abandoned
+    serder = incept(keys=keys0, version=Vrsn_1_0)  # default nxt is empty so abandoned
     assert serder.ked["i"] == 'BFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
     assert serder.ked["n"] == []
     assert serder.raw == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EMW0zK3bagYPO6gx3w7Ua90f-I7x5kGIaI4X'
@@ -695,22 +695,22 @@ def test_keyeventfuncs(mockHelpingNowUTC):
 
     with pytest.raises(ValidationError):
         # non-empty ndigs with non-transferable code
-        serder = incept(keys=keys0, code=MtrDex.Ed25519N, ndigs=["ABCDE"])
+        serder = incept(keys=keys0, code=MtrDex.Ed25519N, ndigs=["ABCDE"], version=Vrsn_1_0)
 
     with pytest.raises(ValidationError):
         # non-empty backers with non-transferable code
-        serder = incept(keys=keys0, code=MtrDex.Ed25519N, wits=["ABCDE"])
+        serder = incept(keys=keys0, code=MtrDex.Ed25519N, wits=["ABCDE"], version=Vrsn_1_0)
 
     with pytest.raises(ValidationError):
         # non-empty seals with non-transferable code
-        serder = incept(keys=keys0, code=MtrDex.Ed25519N, data=[{"i": "ABCDE"}])
+        serder = incept(keys=keys0, code=MtrDex.Ed25519N, data=[{"i": "ABCDE"}], version=Vrsn_1_0)
 
     # Inception: Transferable Case but abandoned in incept so equivalent
     signer0 = Signer(raw=seed)  # original signing keypair transferable default
     assert signer0.code == MtrDex.Ed25519_Seed
     assert signer0.verfer.code == MtrDex.Ed25519
     keys0 = [signer0.verfer.qb64]
-    serder = incept(keys=keys0)  # default nxt is empty so abandoned
+    serder = incept(keys=keys0, version=Vrsn_1_0)  # default nxt is empty so abandoned
     assert serder.ked["i"] == 'DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
     assert serder.ked["n"] == []
     assert serder.raw == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EPLRRJFe2FHdXKVTkSEX4xb4x-YaPFJ2Xds1'
@@ -729,7 +729,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
-    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256)  # intive false
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, version=Vrsn_1_0)  # intive false
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked['d'] == serder0.ked["i"] == 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C'
@@ -755,7 +755,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
-    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True)  # intive true
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True, version=Vrsn_1_0)  # intive true
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked['d'] == pre == 'EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL'
@@ -781,7 +781,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
-    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True)  # intive true
+    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True, version=Vrsn_1_0)  # intive true
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked["i"] == 'DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
@@ -806,7 +806,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
-    serder0 = incept(keys=keys0, ndigs=nxt1)
+    serder0 = incept(keys=keys0, ndigs=nxt1, version=Vrsn_1_0)
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked["i"] == 'DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
@@ -829,7 +829,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer2.verfer.code == MtrDex.Ed25519
     keys2 = [Diger(ser=signer2.verfer.qb64b).qb64]
     # compute nxt digest
-    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1)
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1, version=Vrsn_1_0)
     assert serder1.ked["t"] == Ilks.rot
     assert serder1.ked["i"] == pre
     assert serder1.ked["s"] == '1'
@@ -853,7 +853,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer2.verfer.code == MtrDex.Ed25519
     keys2 = [Diger(ser=signer2.verfer.qb64b).qb64]
     # compute nxt digest
-    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1, intive=True)  # intive
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1, intive=True, version=Vrsn_1_0)  # intive
     assert serder1.ked["t"] == Ilks.rot
     assert serder1.ked["i"] == pre
     assert serder1.ked["s"] == '1'
@@ -869,7 +869,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                         b'n21c2zVaU"],"bt":0,"br":[],"ba":[],"a":[]}')
 
     # Interaction:
-    serder2 = interact(pre=pre, dig=serder1.said, sn=2)
+    serder2 = interact(pre=pre, dig=serder1.said, sn=2, version=Vrsn_1_0)
     assert serder2.ked["t"] == Ilks.ixn
     assert serder2.ked["i"] == pre
     assert serder2.ked["s"] == '2'
@@ -879,7 +879,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                            b'auhEzA4DJDXVDnNQiGQ0sKXa6sx_GgS8Ebdzm4E-kQ","a":[]}')
 
     # Receipt
-    serder3 = receipt(pre=pre, sn=0, said=serder2.said)
+    serder3 = receipt(pre=pre, sn=0, said=serder2.said, version=Vrsn_1_0)
     assert serder3.ked["i"] == pre
     assert serder3.ked["s"] == "0"
     assert serder3.ked["t"] == Ilks.rct
@@ -889,7 +889,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
 
 
 
-    serder4 = receipt(pre=pre, sn=2, said=serder2.said)
+    serder4 = receipt(pre=pre, sn=2, said=serder2.said, version=Vrsn_1_0)
 
     assert serder4.ked["i"] == pre
     assert serder4.ked["s"] == "2"
@@ -900,7 +900,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
 
 
     # Receipt  transferable identifier
-    serderA = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256)
+    serderA = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, version=Vrsn_1_0)
     assert serderA.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2'
                         b'QtV8BB0C","i":"EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C","s":"0","kt":"1'
                         b'","k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"1","n":["EIf-EN'
@@ -932,7 +932,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # transferable so nxt is not empty
 
     delpre = 'EAdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd'
-    serderD = delcept(keys=keysD, delpre=delpre, ndigs=nxtD)
+    serderD = delcept(keys=keysD, delpre=delpre, ndigs=nxtD, version=Vrsn_1_0)
     pre = serderD.ked["i"]
     assert serderD.ked["i"] == 'EN3PglLbr4mJblS4dyqbqlpUa735hVmLOhYUbUztxaiH'
     assert serderD.ked["s"] == '0'
@@ -962,7 +962,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                       keys=keysR,
                       dig='EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30',
                       sn=4,
-                      ndigs=nxtR)
+                      ndigs=nxtR,
+                      version=Vrsn_1_0)
 
     assert serderR.ked["i"] == pre
     assert serderR.ked["s"] == '4'
@@ -984,7 +985,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer0.code == MtrDex.ECDSA_256r1_Seed
     assert signer0.verfer.code == MtrDex.ECDSA_256r1N
     keys0 = [signer0.verfer.qb64]
-    serder = incept(keys=keys0)  # default nxt is empty so abandoned
+    serder = incept(keys=keys0, version=Vrsn_1_0)  # default nxt is empty so abandoned
     assert serder.ked["i"] == '1AAIA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ'
     assert serder.ked["n"] == []
     assert serder.raw == (b'{"v":"KERI10JSON000105_","t":"icp","d":"ELIz2CFNp4vCTJkCKYzqkv1tJeqaPiwhHkNuWA0tKfxo",'
@@ -993,22 +994,22 @@ def test_keyeventfuncs(mockHelpingNowUTC):
 
     with pytest.raises(ValidationError):
         # non-empty nxt with non-transferable code
-        serder = incept(keys=keys0, code=MtrDex.ECDSA_256r1N, ndigs=["ABCDE"])
+        serder = incept(keys=keys0, code=MtrDex.ECDSA_256r1N, ndigs=["ABCDE"], version=Vrsn_1_0)
 
     with pytest.raises(ValidationError):
         # non-empty witnesses with non-transferable code
-        serder = incept(keys=keys0, code=MtrDex.ECDSA_256r1N, wits=["ABCDE"])
+        serder = incept(keys=keys0, code=MtrDex.ECDSA_256r1N, wits=["ABCDE"], version=Vrsn_1_0)
 
     with pytest.raises(ValidationError):
         # non-empty witnesses with non-transferable code
-        serder = incept(keys=keys0, code=MtrDex.ECDSA_256r1N, data=[{"i": "ABCDE"}])
+        serder = incept(keys=keys0, code=MtrDex.ECDSA_256r1N, data=[{"i": "ABCDE"}], version=Vrsn_1_0)
 
     # Inception: Transferable Case but abandoned in incept so equivalent
     signer0 = Signer(raw=seed, code=MtrDex.ECDSA_256r1_Seed)  # original signing keypair transferable default
     assert signer0.code == MtrDex.ECDSA_256r1_Seed
     assert signer0.verfer.code == MtrDex.ECDSA_256r1
     keys0 = [signer0.verfer.qb64]
-    serder = incept(keys=keys0)  # default nxt is empty so abandoned
+    serder = incept(keys=keys0, version=Vrsn_1_0)  # default nxt is empty so abandoned
     assert serder.ked["i"] == '1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ'
     assert serder.ked["n"] == []
     assert serder.raw == (b'{"v":"KERI10JSON000105_","t":"icp","d":"EPqQeDE6eoawHEwQjyB4kwLTwZ2VV6jDz_TXWFV7sE8T",'
@@ -1027,7 +1028,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
-    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256)  # intive false
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, version=Vrsn_1_0)  # intive false
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked['d'] == serder0.ked["i"] == 'EFEscYZrbSsAPJq_OhGt19qb-ci1AtZTqwGqZ5FypKVd'
@@ -1054,7 +1055,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
-    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True)  # intive true
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True, version=Vrsn_1_0)  # intive true
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked['d'] == pre == 'EJcQxvzMr3xaxa6rlXvPguII45JMmoRENnKFAsUS9Mx0'
@@ -1080,7 +1081,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
-    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True)  # intive true
+    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True, version=Vrsn_1_0)  # intive true
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked["i"] == '1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ'
@@ -1106,7 +1107,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
-    serder0 = incept(keys=keys0, ndigs=nxt1)
+    serder0 = incept(keys=keys0, ndigs=nxt1, version=Vrsn_1_0)
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked["i"] == '1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ'
@@ -1130,7 +1131,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer2.verfer.code == MtrDex.ECDSA_256r1
     keys2 = [Diger(ser=signer2.verfer.qb64b).qb64]
     # compute nxt digest
-    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1)
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1, version=Vrsn_1_0)
     # print(f'evnt {serder1.raw}')
     assert serder1.ked["t"] == Ilks.rot
     assert serder1.ked["i"] == pre
@@ -1151,7 +1152,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer0.code == MtrDex.ECDSA_256k1_Seed
     assert signer0.verfer.code == MtrDex.ECDSA_256k1N
     keys0 = [signer0.verfer.qb64]
-    serder = incept(keys=keys0)  # default nxt is empty so abandoned
+    serder = incept(keys=keys0, version=Vrsn_1_0)  # default nxt is empty so abandoned
     assert serder.ked["i"] == '1AAAAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk'
     assert serder.ked["n"] == []
     assert serder.raw == (b'{"v":"KERI10JSON000105_","t":"icp","d":"EGEP0h6tTUUOeIK4ApGlnLl2lwD0lbaQGBfL9'
@@ -1163,7 +1164,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer0.code == MtrDex.ECDSA_256k1_Seed
     assert signer0.verfer.code == MtrDex.ECDSA_256k1
     keys0 = [signer0.verfer.qb64]
-    serder = incept(keys=keys0)  # default nxt is empty so abandoned
+    serder = incept(keys=keys0, version=Vrsn_1_0)  # default nxt is empty so abandoned
     assert serder.ked["i"] == '1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk'
     assert serder.ked["n"] == []
     assert serder.raw == (b'{"v":"KERI10JSON000105_","t":"icp","d":"EO3M4d4pvQu2SXFLaXEy05ey80d71gbEakA2TgCTnJtN",'
@@ -1182,7 +1183,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
-    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256)  # intive false
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, version=Vrsn_1_0)  # intive false
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked['d'] == serder0.ked["i"] == 'EBTJs_972Mh0Q2raFOINbmgtdtT0Od4VJm6aNd4xVW9u'
@@ -1208,7 +1209,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
-    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True)  # intive true
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True, version=Vrsn_1_0)  # intive true
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked['d'] == pre == 'ECzQWBHMIRJpUhrIB2sn4YUsb0HL-wE1wErVcQnkme5z'
@@ -1234,7 +1235,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
-    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True)  # intive true
+    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True, version=Vrsn_1_0)  # intive true
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked["i"] == '1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk'
@@ -1261,7 +1262,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
-    serder0 = incept(keys=keys0, ndigs=nxt1)
+    serder0 = incept(keys=keys0, ndigs=nxt1, version=Vrsn_1_0)
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked["i"] == '1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk'
@@ -1285,7 +1286,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer2.verfer.code == MtrDex.ECDSA_256k1
     keys2 = [Diger(ser=signer2.verfer.qb64b).qb64]
     # compute nxt digest
-    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1)
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1, version=Vrsn_1_0)
     assert serder1.ked["t"] == Ilks.rot
     assert serder1.ked["i"] == pre
     assert serder1.ked["s"] == '1'
@@ -1309,7 +1310,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer2.verfer.code == MtrDex.ECDSA_256k1
     keys2 = [Diger(ser=signer2.verfer.qb64b).qb64]
     # compute nxt digest
-    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1, intive=True)  # intive
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1, intive=True, version=Vrsn_1_0)  # intive
     assert serder1.ked["t"] == Ilks.rot
     assert serder1.ked["i"] == pre
     assert serder1.ked["s"] == '1'
@@ -1325,7 +1326,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                            b'"bt":0,"br":[],"ba":[],"a":[]}')
 
     # Interaction:
-    serder2 = interact(pre=pre, dig=serder1.said, sn=2)
+    serder2 = interact(pre=pre, dig=serder1.said, sn=2, version=Vrsn_1_0)
     assert serder2.ked["t"] == Ilks.ixn
     assert serder2.ked["i"] == pre
     assert serder2.ked["s"] == '2'
@@ -1334,7 +1335,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                            b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"2","p":"EHc84kDs5EsLQYVLkP7fe-7DUfCQ7jFY69Zqq2UfmvTe","a":[]}')
 
     # Receipt
-    serder3 = receipt(pre=pre, sn=0, said=serder2.said)
+    serder3 = receipt(pre=pre, sn=0, said=serder2.said, version=Vrsn_1_0)
     assert serder3.ked["i"] == pre
     assert serder3.ked["s"] == "0"
     assert serder3.ked["t"] == Ilks.rct
@@ -1343,7 +1344,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                            b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"0"}')
 
 
-    serder4 = receipt(pre=pre, sn=2, said=serder2.said)
+    serder4 = receipt(pre=pre, sn=2, said=serder2.said, version=Vrsn_1_0)
     assert serder4.ked["i"] == pre
     assert serder4.ked["s"] == "2"
     assert serder4.ked["t"] == Ilks.rct
@@ -1366,7 +1367,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # transferable so nxt is not empty
 
     delpre = 'EAdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd'
-    serderD = delcept(keys=keysD, delpre=delpre, ndigs=nxtD)
+    serderD = delcept(keys=keysD, delpre=delpre, ndigs=nxtD, version=Vrsn_1_0)
     pre = serderD.ked["i"]
     assert serderD.ked["i"] == 'EFVACrfsy2Ke_tjqq-wroc-TE0IFZ-QNwQwuMVzl0rgj'
     assert serderD.ked["s"] == '0'
@@ -1397,7 +1398,753 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                       keys=keysR,
                       dig='EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30',
                       sn=4,
-                      ndigs=nxtR)
+                      ndigs=nxtR,
+                      version=Vrsn_1_0)
+
+    assert serderR.ked["i"] == pre
+    assert serderR.ked["s"] == '4'
+    assert serderR.ked["t"] == Ilks.drt
+    assert serderR.ked["n"] == nxtR
+    assert serderR.raw == (b'{"v":"KERI10JSON000164_","t":"drt","d":"EMN4ZdZEZzB0FyHzAOKehHTa6WvvBfK3xwylPuxoJ4sO",'
+                           b'"i":"EFVACrfsy2Ke_tjqq-wroc-TE0IFZ-QNwQwuMVzl0rgj","s":"4","p":"EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30",'
+                           b'"kt":"1","k":["1AABAh-zxZOUdAZwXBhbtZQgzD3LLPMYxF7HgsPbd2mILaPc"],'
+                           b'"nt":"1","n":["EDn6z-KqmwcDVCql1CkMkvSNbNghhMF2TwsdllyP4a07"],'
+                           b'"bt":"0","br":[],"ba":[],"a":[]}')
+
+    assert serderR.said == 'EMN4ZdZEZzB0FyHzAOKehHTa6WvvBfK3xwylPuxoJ4sO'
+
+    """ Done Test """
+
+
+def test_keyeventfuncs_v2(mockHelpingNowUTC):
+    """Test the support functionality for key event generation functions for
+    version 1 KERI
+
+    """
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    # print()
+    seed = (b'\x9f{\xa8\xa7\xa8C9\x96&\xfa\xb1\x99\xeb\xaa \xc4\x1bG\x11\xc4\xaeSAR'
+            b'\xc9\xbd\x04\x9d\x85)~\x93')
+
+    # Inception: Non-transferable (ephemeral) case
+    signer0 = Signer(raw=seed, transferable=False)  # original signing keypair non transferable
+    assert signer0.code == MtrDex.Ed25519_Seed
+    assert signer0.verfer.code == MtrDex.Ed25519N
+    keys0 = [signer0.verfer.qb64]
+    serder = incept(keys=keys0, version=Vrsn_2_0)  # default nxt is empty so abandoned
+    assert serder.ked["i"] == 'BFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
+    assert serder.ked["n"] == []
+    assert serder.raw == (b'{"v":"KERICAACAAJSONAAD_.","t":"icp","d":"EIkcf7goaBTtM2yAOk6hOOhHQzauTdn9nR'
+                        b'0Bz3qPrtPn","i":"BFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"0","kt":'
+                        b'"1","k":["BFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"0","n":[],"bt'
+                        b'":"0","b":[],"c":[],"a":[]}')
+
+    with pytest.raises(ValidationError):
+        # non-empty ndigs with non-transferable code
+        serder = incept(keys=keys0, code=MtrDex.Ed25519N, ndigs=["ABCDE"], version=Vrsn_1_0)
+
+    with pytest.raises(ValidationError):
+        # non-empty backers with non-transferable code
+        serder = incept(keys=keys0, code=MtrDex.Ed25519N, wits=["ABCDE"], version=Vrsn_1_0)
+
+    with pytest.raises(ValidationError):
+        # non-empty seals with non-transferable code
+        serder = incept(keys=keys0, code=MtrDex.Ed25519N, data=[{"i": "ABCDE"}], version=Vrsn_1_0)
+
+    # Inception: Transferable Case but abandoned in incept so equivalent
+    signer0 = Signer(raw=seed)  # original signing keypair transferable default
+    assert signer0.code == MtrDex.Ed25519_Seed
+    assert signer0.verfer.code == MtrDex.Ed25519
+    keys0 = [signer0.verfer.qb64]
+    serder = incept(keys=keys0, version=Vrsn_2_0)  # default nxt is empty so abandoned
+    assert serder.ked["i"] == 'DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
+    assert serder.ked["n"] == []
+    assert serder.raw == (b'{"v":"KERICAACAAJSONAAD_.","t":"icp","d":"EAsLDnzpLlBIxULjSLtcgfw1yyJMsCZyUU'
+                        b'770TzSuclq","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"0","kt":'
+                        b'"1","k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"0","n":[],"bt'
+                        b'":"0","b":[],"c":[],"a":[]}')
+
+    # Inception: Transferable not abandoned i.e. next not empty,Self-Addressing
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signer1 = Signer(raw=seed1)  # next signing keypair transferable is default
+    assert signer1.code == MtrDex.Ed25519_Seed
+    assert signer1.verfer.code == MtrDex.Ed25519
+    keys1 = [signer1.verfer.qb64]
+    # compute nxt digest
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, version=Vrsn_2_0)  # intive false
+    pre = serder0.ked["i"]
+    assert serder0.ked["t"] == Ilks.icp
+    assert serder0.ked['d'] == serder0.ked["i"] == 'EL0Ud9vbK-CCIzzu1WpsSkZh56_dNxfduqnq24tSZvgX'
+    assert serder0.ked["s"] == '0'
+    assert serder0.ked["kt"] == "1"
+    assert serder0.ked["nt"] == "1"
+    assert serder0.ked["n"] == nxt1
+    assert serder0.ked["bt"] == '0'  # hex str
+    assert serder0.raw == (b'{"v":"KERICAACAAJSONAAEt.","t":"icp","d":"EL0Ud9vbK-CCIzzu1WpsSkZh56_dNxfduq'
+                        b'nq24tSZvgX","i":"EL0Ud9vbK-CCIzzu1WpsSkZh56_dNxfduqnq24tSZvgX","s":"0","kt":'
+                        b'"1","k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"1","n":["EIf-'
+                        b'ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":"0","b":[],"c":[],"a":[]}')
+
+    # Inception: Transferable not abandoned i.e. next not empty,Self-Addressing, intive
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signer1 = Signer(raw=seed1)  # next signing keypair transferable is default
+    assert signer1.code == MtrDex.Ed25519_Seed
+    assert signer1.verfer.code == MtrDex.Ed25519
+    keys1 = [signer1.verfer.qb64]
+    # compute nxt digest
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True, version=Vrsn_1_0)  # intive true
+    pre = serder0.ked["i"]
+    assert serder0.ked["t"] == Ilks.icp
+    assert serder0.ked['d'] == pre == 'EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL'
+    assert serder0.ked["s"] == '0'
+    assert serder0.ked["kt"] == 1
+    assert serder0.ked["nt"] == 1
+    assert serder0.ked["n"] == nxt1
+    assert serder0.ked["bt"] == 0
+    assert serder0.raw == (b'{"v":"KERI10JSON000125_","t":"icp","d":"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5u'
+                        b'k-WxvhsL","i":"EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL","s":"0","kt":1,'
+                        b'"k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":1,"n":["EIf-ENw7Pr'
+                        b'M52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":0,"b":[],"c":[],"a":[]}')
+
+
+    # Inception: Transferable not abandoned i.e. next not empty, Intive True
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signer1 = Signer(raw=seed1)  # next signing keypair transferable is default
+    assert signer1.code == MtrDex.Ed25519_Seed
+    assert signer1.verfer.code == MtrDex.Ed25519
+    keys1 = [signer1.verfer.qb64]
+    # compute nxt digest
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
+    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True, version=Vrsn_1_0)  # intive true
+    pre = serder0.ked["i"]
+    assert serder0.ked["t"] == Ilks.icp
+    assert serder0.ked["i"] == 'DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
+    assert serder0.ked["s"] == '0'
+    assert serder0.ked["kt"] == 1
+    assert serder0.ked["nt"] == 1
+    assert serder0.ked["n"] == nxt1
+    assert serder0.ked["bt"] == 0  # int not hex str
+    assert serder0.raw == (b'{"v":"KERI10JSON000125_","t":"icp","d":"EFSJqZE0K0WU95dmccrg_8EKSuVSrt4kGIZN'
+                        b'jqWFA_HL","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"0","kt":1,'
+                        b'"k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":1,"n":["EIf-ENw7Pr'
+                        b'M52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":0,"b":[],"c":[],"a":[]}')
+
+    # Inception: Transferable not abandoned i.e. next not empty
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signer1 = Signer(raw=seed1)  # next signing keypair transferable is default
+    assert signer1.code == MtrDex.Ed25519_Seed
+    assert signer1.verfer.code == MtrDex.Ed25519
+    keys1 = [signer1.verfer.qb64]
+    # compute nxt digest
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
+    serder0 = incept(keys=keys0, ndigs=nxt1, version=Vrsn_1_0)
+    pre = serder0.ked["i"]
+    assert serder0.ked["t"] == Ilks.icp
+    assert serder0.ked["i"] == 'DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
+    assert serder0.ked["s"] == '0'
+    assert serder0.ked["kt"] == "1"
+    assert serder0.ked["nt"] == "1"
+    assert serder0.ked["n"] == nxt1
+    assert serder0.ked["bt"] == "0"  # hex str
+    assert serder0.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EJQUyxnzIAtmZPoq9f4fExeGN0qfJmaFnUEK'
+                        b'TwIiTBPj","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"0","kt":"1'
+                        b'","k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"1","n":["EIf-EN'
+                        b'w7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":"0","b":[],"c":[],"a":[]}')
+
+    # Rotation: Transferable not abandoned i.e. next not empty
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed2 = (b'\xbe\x96\x02\xa9\x88\xce\xf9O\x1e\x0fo\xc0\xff\x98\xb6\xfa\x1e\xa2y\xf2'
+             b'e\xf9AL\x1aeK\xafj\xa1pB')
+    signer2 = Signer(raw=seed2)  # next signing keypair transferable is default
+    assert signer2.code == MtrDex.Ed25519_Seed
+    assert signer2.verfer.code == MtrDex.Ed25519
+    keys2 = [Diger(ser=signer2.verfer.qb64b).qb64]
+    # compute nxt digest
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1, version=Vrsn_1_0)
+    assert serder1.ked["t"] == Ilks.rot
+    assert serder1.ked["i"] == pre
+    assert serder1.ked["s"] == '1'
+    assert serder1.ked["p"] == serder0.said
+    assert serder1.ked["kt"] == "1"
+    assert serder1.ked["nt"] == "1"
+    assert serder1.ked["n"] == keys2
+    assert serder1.ked["bt"] == '0'  # hex str
+    assert serder1.raw == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EFl8nvRCbN2xQJI75nBXp-gaXuHJw8zheVjw'
+                        b'MN_rB-pb","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"1","p":"EJ'
+                        b'QUyxnzIAtmZPoq9f4fExeGN0qfJmaFnUEKTwIiTBPj","kt":"1","k":["DB4GWvru73jWZKpNg'
+                        b'MQp8ayDRin0NG0Ymn_RXQP_v-PQ"],"nt":"1","n":["EIsKL3B6Zz5ICGxCQp-SoLXjwOrdlSb'
+                        b'LJrEn21c2zVaU"],"bt":"0","br":[],"ba":[],"a":[]}')
+
+    # Rotation: Transferable not abandoned i.e. next not empty  Intive
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed2 = (b'\xbe\x96\x02\xa9\x88\xce\xf9O\x1e\x0fo\xc0\xff\x98\xb6\xfa\x1e\xa2y\xf2'
+             b'e\xf9AL\x1aeK\xafj\xa1pB')
+    signer2 = Signer(raw=seed2)  # next signing keypair transferable is default
+    assert signer2.code == MtrDex.Ed25519_Seed
+    assert signer2.verfer.code == MtrDex.Ed25519
+    keys2 = [Diger(ser=signer2.verfer.qb64b).qb64]
+    # compute nxt digest
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1, intive=True, version=Vrsn_1_0)  # intive
+    assert serder1.ked["t"] == Ilks.rot
+    assert serder1.ked["i"] == pre
+    assert serder1.ked["s"] == '1'
+    assert serder1.ked["p"] == serder0.said
+    assert serder1.ked["kt"] == 1
+    assert serder1.ked["nt"] == 1
+    assert serder1.ked["n"] == keys2
+    assert serder1.ked["bt"] == 0
+    assert serder1.raw == (b'{"v":"KERI10JSON00015a_","t":"rot","d":"ECauhEzA4DJDXVDnNQiGQ0sKXa6sx_GgS8Eb'
+                        b'dzm4E-kQ","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"1","p":"EJ'
+                        b'QUyxnzIAtmZPoq9f4fExeGN0qfJmaFnUEKTwIiTBPj","kt":1,"k":["DB4GWvru73jWZKpNgMQ'
+                        b'p8ayDRin0NG0Ymn_RXQP_v-PQ"],"nt":1,"n":["EIsKL3B6Zz5ICGxCQp-SoLXjwOrdlSbLJrE'
+                        b'n21c2zVaU"],"bt":0,"br":[],"ba":[],"a":[]}')
+
+    # Interaction:
+    serder2 = interact(pre=pre, dig=serder1.said, sn=2, version=Vrsn_1_0)
+    assert serder2.ked["t"] == Ilks.ixn
+    assert serder2.ked["i"] == pre
+    assert serder2.ked["s"] == '2'
+    assert serder2.ked["p"] == serder1.said
+    assert serder2.raw == (b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EKKccCumVQdgxvsrSXvuTtjmS28Xqf3zRJ8T'
+                           b'6peKgl9J","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"2","p":"EC'
+                           b'auhEzA4DJDXVDnNQiGQ0sKXa6sx_GgS8Ebdzm4E-kQ","a":[]}')
+
+    # Receipt
+    serder3 = receipt(pre=pre, sn=0, said=serder2.said, version=Vrsn_1_0)
+    assert serder3.ked["i"] == pre
+    assert serder3.ked["s"] == "0"
+    assert serder3.ked["t"] == Ilks.rct
+    assert serder3.ked["d"] == serder2.said
+    assert serder3.raw == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EKKccCumVQdgxvsrSXvuTtjmS28Xqf3zRJ8T'
+                           b'6peKgl9J","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"0"}')
+
+
+
+    serder4 = receipt(pre=pre, sn=2, said=serder2.said, version=Vrsn_1_0)
+
+    assert serder4.ked["i"] == pre
+    assert serder4.ked["s"] == "2"
+    assert serder4.ked["t"] == Ilks.rct
+    assert serder4.ked["d"] == serder2.said
+    assert serder4.raw == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EKKccCumVQdgxvsrSXvuTtjmS28Xqf3zRJ8T'
+                           b'6peKgl9J","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH","s":"2"}')
+
+
+    # Receipt  transferable identifier
+    serderA = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, version=Vrsn_1_0)
+    assert serderA.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2'
+                        b'QtV8BB0C","i":"EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C","s":"0","kt":"1'
+                        b'","k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"1","n":["EIf-EN'
+                        b'w7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":"0","b":[],"c":[],"a":[]}')
+    seal = SealEvent(i=serderA.ked["i"], s=serderA.ked["s"], d=serderA.said)
+    assert seal.i == serderA.ked["i"]
+    assert seal.d == serderA.said
+
+    siger = signer0.sign(ser=serderA.raw, index=0)
+    msg = messagize(serder=serder4, sigers=[siger], source=seal, framed=True)
+    assert msg == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EKKccCumVQdgxvsrSXvuTtjm'
+                b'S28Xqf3zRJ8T6peKgl9J","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpN'
+                b'ceHo4XH","s":"2"}-FABEAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0'
+                b'CMAAAEAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C-AABAAAPitVKfl6'
+                b'dG9dY4-7Ppg5tAANHsqEUptTfR05wLb0fbmKFt4DbZdBNjJaCDrEc7kAIqbLsCMC'
+                b'Kf26-Onxz-DoP')
+
+    # Delegated Inception:
+    # Transferable not abandoned i.e. next not empty
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seedD = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signerD = Signer(raw=seedD)  # next signing keypair transferable is default
+    assert signerD.code == MtrDex.Ed25519_Seed
+    assert signerD.verfer.code == MtrDex.Ed25519
+    keysD = [signerD.verfer.qb64]
+    # compute nxt digest
+    nxtD = [Diger(ser=key.encode("utf-8")).qb64 for key in keysD]  # default sith is 1
+    # transferable so nxt is not empty
+
+    delpre = 'EAdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd'
+    serderD = delcept(keys=keysD, delpre=delpre, ndigs=nxtD, version=Vrsn_1_0)
+    pre = serderD.ked["i"]
+    assert serderD.ked["i"] == 'EN3PglLbr4mJblS4dyqbqlpUa735hVmLOhYUbUztxaiH'
+    assert serderD.ked["s"] == '0'
+    assert serderD.ked["t"] == Ilks.dip
+    assert serderD.ked["n"] == nxtD
+    assert serderD.raw == (b'{"v":"KERI10JSON00015f_","t":"dip","d":"EN3PglLbr4mJblS4dyqbqlpUa735hVmLOhYU'
+                        b'bUztxaiH","i":"EN3PglLbr4mJblS4dyqbqlpUa735hVmLOhYUbUztxaiH","s":"0","kt":"1'
+                        b'","k":["DB4GWvru73jWZKpNgMQp8ayDRin0NG0Ymn_RXQP_v-PQ"],"nt":"1","n":["EIf-EN'
+                        b'w7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":"0","b":[],"c":[],"a":[],"di":'
+                        b'"EAdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd"}')
+    assert serderD.said == 'EN3PglLbr4mJblS4dyqbqlpUa735hVmLOhYUbUztxaiH'
+
+    # Delegated Rotation:
+    # Transferable not abandoned i.e. next not empty
+    seedR = (b'\xbe\x96\x02\xa9\x88\xce\xf9O\x1e\x0fo\xc0\xff\x98\xb6\xfa\x1e\xa2y\xf2'
+             b'e\xf9AL\x1aeK\xafj\xa1pB')
+    signerR = Signer(raw=seedR)  # next signing keypair transferable is default
+    assert signerR.code == MtrDex.Ed25519_Seed
+    assert signerR.verfer.code == MtrDex.Ed25519
+    keysR = [signerR.verfer.qb64]
+    # compute nxt digest
+    # default sith is 1
+    nxtR = [Diger(ser=signerR.verfer.qb64b).qb64]  # transferable so nxt is not empty
+
+    delpre = 'EAdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd'
+    serderR = deltate(pre=pre,
+                      keys=keysR,
+                      dig='EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30',
+                      sn=4,
+                      ndigs=nxtR,
+                      version=Vrsn_1_0)
+
+    assert serderR.ked["i"] == pre
+    assert serderR.ked["s"] == '4'
+    assert serderR.ked["t"] == Ilks.drt
+    assert serderR.ked["n"] == nxtR
+    assert serderR.raw == (b'{"v":"KERI10JSON000160_","t":"drt","d":"EMBBBkaLV7i6wNgfz3giib2ItrHsr548mtIf'
+                        b'lW0Hrbuv","i":"EN3PglLbr4mJblS4dyqbqlpUa735hVmLOhYUbUztxaiH","s":"4","p":"EA'
+                        b'Nkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30","kt":"1","k":["DPLt4YqQsWZ5DPztI'
+                        b'32mSyTJPRESONvE9KbETtCVYIeH"],"nt":"1","n":["EIsKL3B6Zz5ICGxCQp-SoLXjwOrdlSb'
+                        b'LJrEn21c2zVaU"],"bt":"0","br":[],"ba":[],"a":[]}')
+    assert serderR.said == 'EMBBBkaLV7i6wNgfz3giib2ItrHsr548mtIflW0Hrbuv'
+
+
+    seed = (b'\x9f{\xa8\xa7\xa8C9\x96&\xfa\xb1\x99\xeb\xaa \xc4\x1bG\x11\xc4\xaeSAR'
+            b'\xc9\xbd\x04\x9d\x85)~\x93')
+
+    #  Secp256r1 Inception: Non-transferable (ephemeral) case
+    signer0 = Signer(raw=seed, transferable=False, code=MtrDex.ECDSA_256r1_Seed)  # original signing keypair non transferable
+    assert signer0.code == MtrDex.ECDSA_256r1_Seed
+    assert signer0.verfer.code == MtrDex.ECDSA_256r1N
+    keys0 = [signer0.verfer.qb64]
+    serder = incept(keys=keys0, version=Vrsn_1_0)  # default nxt is empty so abandoned
+    assert serder.ked["i"] == '1AAIA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ'
+    assert serder.ked["n"] == []
+    assert serder.raw == (b'{"v":"KERI10JSON000105_","t":"icp","d":"ELIz2CFNp4vCTJkCKYzqkv1tJeqaPiwhHkNuWA0tKfxo",'
+                          b'"i":"1AAIA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ","s":"0","kt":"1",'
+                          b'"k":["1AAIA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}')
+
+    with pytest.raises(ValidationError):
+        # non-empty nxt with non-transferable code
+        serder = incept(keys=keys0, code=MtrDex.ECDSA_256r1N, ndigs=["ABCDE"], version=Vrsn_1_0)
+
+    with pytest.raises(ValidationError):
+        # non-empty witnesses with non-transferable code
+        serder = incept(keys=keys0, code=MtrDex.ECDSA_256r1N, wits=["ABCDE"], version=Vrsn_1_0)
+
+    with pytest.raises(ValidationError):
+        # non-empty witnesses with non-transferable code
+        serder = incept(keys=keys0, code=MtrDex.ECDSA_256r1N, data=[{"i": "ABCDE"}], version=Vrsn_1_0)
+
+    # Inception: Transferable Case but abandoned in incept so equivalent
+    signer0 = Signer(raw=seed, code=MtrDex.ECDSA_256r1_Seed)  # original signing keypair transferable default
+    assert signer0.code == MtrDex.ECDSA_256r1_Seed
+    assert signer0.verfer.code == MtrDex.ECDSA_256r1
+    keys0 = [signer0.verfer.qb64]
+    serder = incept(keys=keys0, version=Vrsn_1_0)  # default nxt is empty so abandoned
+    assert serder.ked["i"] == '1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ'
+    assert serder.ked["n"] == []
+    assert serder.raw == (b'{"v":"KERI10JSON000105_","t":"icp","d":"EPqQeDE6eoawHEwQjyB4kwLTwZ2VV6jDz_TXWFV7sE8T",'
+                          b'"i":"1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ","s":"0","kt":"1",'
+                          b'"k":["1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ"],"nt":"0","n":[],'
+                          b'"bt":"0","b":[],"c":[],"a":[]}')
+
+    # Inception: Transferable not abandoned i.e. next not empty,Self-Addressing
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signer1 = Signer(raw=seed1, code=MtrDex.ECDSA_256r1_Seed)  # next signing keypair transferable is default
+    assert signer1.code == MtrDex.ECDSA_256r1_Seed
+    assert signer1.verfer.code == MtrDex.ECDSA_256r1
+    keys1 = [signer1.verfer.qb64]
+    # compute nxt digest
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, version=Vrsn_1_0)  # intive false
+    pre = serder0.ked["i"]
+    assert serder0.ked["t"] == Ilks.icp
+    assert serder0.ked['d'] == serder0.ked["i"] == 'EFEscYZrbSsAPJq_OhGt19qb-ci1AtZTqwGqZ5FypKVd'
+    assert serder0.ked["s"] == '0'
+    assert serder0.ked["kt"] == "1"
+    assert serder0.ked["nt"] == "1"
+    assert serder0.ked["n"] == nxt1
+    assert serder0.ked["bt"] == '0'  # hex str
+
+    assert serder0.raw == (b'{"v":"KERI10JSON00012f_","t":"icp","d":"EFEscYZrbSsAPJq_OhGt19qb-ci1AtZTqwGqZ5FypKVd",'
+                          b'"i":"EFEscYZrbSsAPJq_OhGt19qb-ci1AtZTqwGqZ5FypKVd","s":"0",'
+                          b'"kt":"1","k":["1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ"],'
+                          b'"nt":"1","n":["EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4"],'
+                          b'"bt":"0","b":[],"c":[],"a":[]}')
+
+    # Inception: Transferable not abandoned i.e. next not empty,Self-Addressing, intive
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signer1 = Signer(raw=seed1, code=MtrDex.ECDSA_256r1_Seed)  # next signing keypair transferable is default
+    assert signer1.code == MtrDex.ECDSA_256r1_Seed
+    assert signer1.verfer.code == MtrDex.ECDSA_256r1
+    keys1 = [signer1.verfer.qb64]
+    # compute nxt digest
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True, version=Vrsn_1_0)  # intive true
+    pre = serder0.ked["i"]
+    assert serder0.ked["t"] == Ilks.icp
+    assert serder0.ked['d'] == pre == 'EJcQxvzMr3xaxa6rlXvPguII45JMmoRENnKFAsUS9Mx0'
+    assert serder0.ked["s"] == '0'
+    assert serder0.ked["kt"] == 1
+    assert serder0.ked["nt"] == 1
+    assert serder0.ked["n"] == nxt1
+    assert serder0.ked["bt"] == 0
+    assert serder0.raw == (b'{"v":"KERI10JSON000129_","t":"icp","d":"EJcQxvzMr3xaxa6rlXvPguII45JMmoRENnKFAsUS9Mx0",'
+                           b'"i":"EJcQxvzMr3xaxa6rlXvPguII45JMmoRENnKFAsUS9Mx0","s":"0",'
+                           b'"kt":1,"k":["1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ"],'
+                           b'"nt":1,"n":["EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4"],'
+                           b'"bt":0,"b":[],"c":[],"a":[]}')
+
+    # Inception: Transferable not abandoned i.e. next not empty, Intive True
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signer1 = Signer(raw=seed1, code=MtrDex.ECDSA_256r1_Seed)  # next signing keypair transferable is default
+    assert signer1.code == MtrDex.ECDSA_256r1_Seed
+    assert signer1.verfer.code == MtrDex.ECDSA_256r1
+    keys1 = [signer1.verfer.qb64]
+    # compute nxt digest
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
+    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True, version=Vrsn_1_0)  # intive true
+    pre = serder0.ked["i"]
+    assert serder0.ked["t"] == Ilks.icp
+    assert serder0.ked["i"] == '1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ'
+    assert serder0.ked["s"] == '0'
+    assert serder0.ked["kt"] == 1
+    assert serder0.ked["nt"] == 1
+    assert serder0.ked["n"] == nxt1
+    assert serder0.ked["bt"] == 0  # int not hex str
+    assert serder0.raw == (b'{"v":"KERI10JSON00012d_","t":"icp","d":"ECMsDN8WUWcKGe7X0GNrecOgtrTkuHTfoo7YoQ4TIOLS",'
+                           b'"i":"1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ","s":"0",'
+                           b'"kt":1,"k":["1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ"],'
+                           b'"nt":1,"n":["EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4"],'
+                           b'"bt":0,"b":[],"c":[],"a":[]}')
+
+    # Inception: Transferable not abandoned i.e. next not empty
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signer1 = Signer(raw=seed1, code=MtrDex.ECDSA_256r1_Seed)  # next signing keypair transferable is default
+    assert signer1.code == MtrDex.ECDSA_256r1_Seed
+    assert signer1.verfer.code == MtrDex.ECDSA_256r1
+    keys1 = [signer1.verfer.qb64]
+    # compute nxt digest
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
+    serder0 = incept(keys=keys0, ndigs=nxt1, version=Vrsn_1_0)
+    pre = serder0.ked["i"]
+    assert serder0.ked["t"] == Ilks.icp
+    assert serder0.ked["i"] == '1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ'
+    assert serder0.ked["s"] == '0'
+    assert serder0.ked["kt"] == "1"
+    assert serder0.ked["nt"] == "1"
+    assert serder0.ked["n"] == nxt1
+    assert serder0.ked["bt"] == "0"  # hex str
+    assert serder0.raw == (b'{"v":"KERI10JSON000133_","t":"icp","d":"EF8tNYXNKPjByUNg2s7zEhEKKl39COxwOYA1CpqvxB_J",'
+                           b'"i":"1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ","s":"0",'
+                           b'"kt":"1","k":["1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ"],'
+                           b'"nt":"1","n":["EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4"],'
+                           b'"bt":"0","b":[],"c":[],"a":[]}')
+
+    # Rotation: Transferable not abandoned i.e. next not empty
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed2 = (b'\xbe\x96\x02\xa9\x88\xce\xf9O\x1e\x0fo\xc0\xff\x98\xb6\xfa\x1e\xa2y\xf2'
+             b'e\xf9AL\x1aeK\xafj\xa1pB')
+    signer2 = Signer(raw=seed2, code=MtrDex.ECDSA_256r1_Seed)  # next signing keypair transferable is default
+    assert signer2.code == MtrDex.ECDSA_256r1_Seed
+    assert signer2.verfer.code == MtrDex.ECDSA_256r1
+    keys2 = [Diger(ser=signer2.verfer.qb64b).qb64]
+    # compute nxt digest
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1, version=Vrsn_1_0)
+    # print(f'evnt {serder1.raw}')
+    assert serder1.ked["t"] == Ilks.rot
+    assert serder1.ked["i"] == pre
+    assert serder1.ked["s"] == '1'
+    assert serder1.ked["p"] == serder0.said
+    assert serder1.ked["kt"] == "1"
+    assert serder1.ked["nt"] == "1"
+    assert serder1.ked["n"] == keys2
+    assert serder1.ked["bt"] == '0'  # hex str
+    assert serder1.raw == (b'{"v":"KERI10JSON000168_","t":"rot","d":"ENsyn8FRcmd9N3Dhi_kRdWcnI_AIa7yhDNsHXycclSXQ",'
+                           b'"i":"1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ","s":"1","p":"EF8tNYXNKPjByUNg2s7zEhEKKl39COxwOYA1CpqvxB_J",'
+                           b'"kt":"1","k":["1AAJAtrK9Q8IqgO3B4IKY4m8Dl7dp1fC77dNCsHP2aWctria"],'
+                           b'"nt":"1","n":["EIkmr0Ne3wbNvTKRU-A9NLmCL-RYgu2SZuzIb3n-9xFH"],'
+                           b'"bt":"0","br":[],"ba":[],"a":[]}')
+
+    #  Secp256k1 Inception: Non-transferable (ephemeral) case
+    signer0 = Signer(raw=seed, transferable=False, code=MtrDex.ECDSA_256k1_Seed)  # original signing keypair non transferable
+    assert signer0.code == MtrDex.ECDSA_256k1_Seed
+    assert signer0.verfer.code == MtrDex.ECDSA_256k1N
+    keys0 = [signer0.verfer.qb64]
+    serder = incept(keys=keys0, version=Vrsn_1_0)  # default nxt is empty so abandoned
+    assert serder.ked["i"] == '1AAAAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk'
+    assert serder.ked["n"] == []
+    assert serder.raw == (b'{"v":"KERI10JSON000105_","t":"icp","d":"EGEP0h6tTUUOeIK4ApGlnLl2lwD0lbaQGBfL9'
+                         b'pM2v0J0","i":"1AAAAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"0","kt":"1"'
+                         b',"k":["1AAAAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}')
+
+    # Inception: Transferable Case but abandoned in incept so equivalent
+    signer0 = Signer(raw=seed, code=MtrDex.ECDSA_256k1_Seed)  # original signing keypair transferable default
+    assert signer0.code == MtrDex.ECDSA_256k1_Seed
+    assert signer0.verfer.code == MtrDex.ECDSA_256k1
+    keys0 = [signer0.verfer.qb64]
+    serder = incept(keys=keys0, version=Vrsn_1_0)  # default nxt is empty so abandoned
+    assert serder.ked["i"] == '1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk'
+    assert serder.ked["n"] == []
+    assert serder.raw == (b'{"v":"KERI10JSON000105_","t":"icp","d":"EO3M4d4pvQu2SXFLaXEy05ey80d71gbEakA2TgCTnJtN",'
+                          b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"0","kt":"1",'
+                          b'"k":["1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk"],"nt":"0","n":[],'
+                          b'"bt":"0","b":[],"c":[],"a":[]}')
+
+    # Inception: Transferable not abandoned i.e. next not empty,Self-Addressing
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signer1 = Signer(raw=seed1, code=MtrDex.ECDSA_256k1_Seed)  # next signing keypair transferable is default
+    assert signer1.code == MtrDex.ECDSA_256k1_Seed
+    assert signer1.verfer.code == MtrDex.ECDSA_256k1
+    keys1 = [signer1.verfer.qb64]
+    # compute nxt digest
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, version=Vrsn_1_0)  # intive false
+    pre = serder0.ked["i"]
+    assert serder0.ked["t"] == Ilks.icp
+    assert serder0.ked['d'] == serder0.ked["i"] == 'EBTJs_972Mh0Q2raFOINbmgtdtT0Od4VJm6aNd4xVW9u'
+    assert serder0.ked["s"] == '0'
+    assert serder0.ked["kt"] == "1"
+    assert serder0.ked["nt"] == "1"
+    assert serder0.ked["n"] == nxt1
+    assert serder0.ked["bt"] == '0'  # hex str
+    assert serder0.raw == (b'{"v":"KERI10JSON00012f_","t":"icp","d":"EBTJs_972Mh0Q2raFOINbmgtdtT0Od4VJm6aNd4xVW9u",'
+                           b'"i":"EBTJs_972Mh0Q2raFOINbmgtdtT0Od4VJm6aNd4xVW9u","s":"0","kt":"1",'
+                           b'"k":["1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk"],'
+                           b'"nt":"1","n":["EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO"],'
+                           b'"bt":"0","b":[],"c":[],"a":[]}')
+
+    # Inception: Transferable not abandoned i.e. next not empty,Self-Addressing, intive
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signer1 = Signer(raw=seed1, code=MtrDex.ECDSA_256k1_Seed)  # next signing keypair transferable is default
+    assert signer1.code == MtrDex.ECDSA_256k1_Seed
+    assert signer1.verfer.code == MtrDex.ECDSA_256k1
+    keys1 = [signer1.verfer.qb64]
+    # compute nxt digest
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True, version=Vrsn_1_0)  # intive true
+    pre = serder0.ked["i"]
+    assert serder0.ked["t"] == Ilks.icp
+    assert serder0.ked['d'] == pre == 'ECzQWBHMIRJpUhrIB2sn4YUsb0HL-wE1wErVcQnkme5z'
+    assert serder0.ked["s"] == '0'
+    assert serder0.ked["kt"] == 1
+    assert serder0.ked["nt"] == 1
+    assert serder0.ked["n"] == nxt1
+    assert serder0.ked["bt"] == 0
+    assert serder0.raw == (b'{"v":"KERI10JSON000129_","t":"icp","d":"ECzQWBHMIRJpUhrIB2sn4YUsb0HL-wE1wErVcQnkme5z",'
+                           b'"i":"ECzQWBHMIRJpUhrIB2sn4YUsb0HL-wE1wErVcQnkme5z","s":"0","kt":1,'
+                           b'"k":["1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk"],'
+                           b'"nt":1,"n":["EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO"],'
+                           b'"bt":0,"b":[],"c":[],"a":[]}')
+
+    # Inception: Transferable not abandoned i.e. next not empty, Intive True
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signer1 = Signer(raw=seed1, code=MtrDex.ECDSA_256k1_Seed)  # next signing keypair transferable is default
+    assert signer1.code == MtrDex.ECDSA_256k1_Seed
+    assert signer1.verfer.code == MtrDex.ECDSA_256k1
+    keys1 = [signer1.verfer.qb64]
+    # compute nxt digest
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
+    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True, version=Vrsn_1_0)  # intive true
+    pre = serder0.ked["i"]
+    assert serder0.ked["t"] == Ilks.icp
+    assert serder0.ked["i"] == '1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk'
+    assert serder0.ked["s"] == '0'
+    assert serder0.ked["kt"] == 1
+    assert serder0.ked["nt"] == 1
+    assert serder0.ked["n"] == nxt1
+    assert serder0.ked["bt"] == 0  # int not hex str
+    assert serder0.raw == (b'{"v":"KERI10JSON00012d_","t":"icp","d":"EJR4ywPEpo08A10s8Eq8MGIRtmQx_D6szqYKGOl7jSpY",'
+                          b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"0","kt":1,'
+                          b'"k":["1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk"],'
+                          b'"nt":1,"n":["EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO"],'
+                          b'"bt":0,"b":[],"c":[],"a":[]}')
+
+
+    # Inception: Transferable not abandoned i.e. next not empty
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signer1 = Signer(raw=seed1, code=MtrDex.ECDSA_256k1_Seed)  # next signing keypair transferable is default
+    assert signer1.code == MtrDex.ECDSA_256k1_Seed
+    assert signer1.verfer.code == MtrDex.ECDSA_256k1
+    keys1 = [signer1.verfer.qb64]
+    # compute nxt digest
+    nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
+    assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
+    serder0 = incept(keys=keys0, ndigs=nxt1, version=Vrsn_1_0)
+    pre = serder0.ked["i"]
+    assert serder0.ked["t"] == Ilks.icp
+    assert serder0.ked["i"] == '1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk'
+    assert serder0.ked["s"] == '0'
+    assert serder0.ked["kt"] == "1"
+    assert serder0.ked["nt"] == "1"
+    assert serder0.ked["n"] == nxt1
+    assert serder0.ked["bt"] == "0"  # hex str
+    assert serder0.raw == (b'{"v":"KERI10JSON000133_","t":"icp","d":"EJZHJo2S1oESDhtadHN-RUV4J3DM9xlWHdsi2TI8ztZ6",'
+                           b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"0","kt":"1",'
+                           b'"k":["1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk"],'
+                           b'"nt":"1","n":["EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO"],'
+                           b'"bt":"0","b":[],"c":[],"a":[]}')
+
+    # Rotation: Transferable not abandoned i.e. next not empty
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed2 = (b'\xbe\x96\x02\xa9\x88\xce\xf9O\x1e\x0fo\xc0\xff\x98\xb6\xfa\x1e\xa2y\xf2'
+             b'e\xf9AL\x1aeK\xafj\xa1pB')
+    signer2 = Signer(raw=seed2, code=MtrDex.ECDSA_256k1_Seed)  # next signing keypair transferable is default
+    assert signer2.code == MtrDex.ECDSA_256k1_Seed
+    assert signer2.verfer.code == MtrDex.ECDSA_256k1
+    keys2 = [Diger(ser=signer2.verfer.qb64b).qb64]
+    # compute nxt digest
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1, version=Vrsn_1_0)
+    assert serder1.ked["t"] == Ilks.rot
+    assert serder1.ked["i"] == pre
+    assert serder1.ked["s"] == '1'
+    assert serder1.ked["p"] == serder0.said
+    assert serder1.ked["kt"] == "1"
+    assert serder1.ked["nt"] == "1"
+    assert serder1.ked["n"] == keys2
+    assert serder1.ked["bt"] == '0'  # hex str
+    assert serder1.raw == (b'{"v":"KERI10JSON000168_","t":"rot","d":"EKpAPAgfGLxzXuusVQJ4uTuSOzt1mm3a8K1VPRnJOufJ",'
+                           b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"1","p":"EJZHJo2S1oESDhtadHN-RUV4J3DM9xlWHdsi2TI8ztZ6",'
+                           b'"kt":"1","k":["1AABA7KZA_wxPCXJ5BgZ9jjdrMIy3OQKgHfa6eKyLcZpEn26"],'
+                           b'"nt":"1","n":["EDn6z-KqmwcDVCql1CkMkvSNbNghhMF2TwsdllyP4a07"],'
+                           b'"bt":"0","br":[],"ba":[],"a":[]}')
+
+    # Rotation: Transferable not abandoned i.e. next not empty  Intive
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seed2 = (b'\xbe\x96\x02\xa9\x88\xce\xf9O\x1e\x0fo\xc0\xff\x98\xb6\xfa\x1e\xa2y\xf2'
+             b'e\xf9AL\x1aeK\xafj\xa1pB')
+    signer2 = Signer(raw=seed2, code=MtrDex.ECDSA_256k1_Seed)  # next signing keypair transferable is default
+    assert signer2.code == MtrDex.ECDSA_256k1_Seed
+    assert signer2.verfer.code == MtrDex.ECDSA_256k1
+    keys2 = [Diger(ser=signer2.verfer.qb64b).qb64]
+    # compute nxt digest
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1, intive=True, version=Vrsn_1_0)  # intive
+    assert serder1.ked["t"] == Ilks.rot
+    assert serder1.ked["i"] == pre
+    assert serder1.ked["s"] == '1'
+    assert serder1.ked["p"] == serder0.said
+    assert serder1.ked["kt"] == 1
+    assert serder1.ked["nt"] == 1
+    assert serder1.ked["n"] == keys2
+    assert serder1.ked["bt"] == 0
+    assert serder1.raw == (b'{"v":"KERI10JSON000162_","t":"rot","d":"EHc84kDs5EsLQYVLkP7fe-7DUfCQ7jFY69Zqq2UfmvTe",'
+                           b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"1","p":"EJZHJo2S1oESDhtadHN-RUV4J3DM9xlWHdsi2TI8ztZ6",'
+                           b'"kt":1,"k":["1AABA7KZA_wxPCXJ5BgZ9jjdrMIy3OQKgHfa6eKyLcZpEn26"],'
+                           b'"nt":1,"n":["EDn6z-KqmwcDVCql1CkMkvSNbNghhMF2TwsdllyP4a07"],'
+                           b'"bt":0,"br":[],"ba":[],"a":[]}')
+
+    # Interaction:
+    serder2 = interact(pre=pre, dig=serder1.said, sn=2, version=Vrsn_1_0)
+    assert serder2.ked["t"] == Ilks.ixn
+    assert serder2.ked["i"] == pre
+    assert serder2.ked["s"] == '2'
+    assert serder2.ked["p"] == serder1.said
+    assert serder2.raw == (b'{"v":"KERI10JSON0000cf_","t":"ixn","d":"EGa_yUkSwFvJTbFnEBosvpIkJ_AkyY5E3XdU7fqhtErf",'
+                           b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"2","p":"EHc84kDs5EsLQYVLkP7fe-7DUfCQ7jFY69Zqq2UfmvTe","a":[]}')
+
+    # Receipt
+    serder3 = receipt(pre=pre, sn=0, said=serder2.said, version=Vrsn_1_0)
+    assert serder3.ked["i"] == pre
+    assert serder3.ked["s"] == "0"
+    assert serder3.ked["t"] == Ilks.rct
+    assert serder3.ked["d"] == serder2.said
+    assert serder3.raw == (b'{"v":"KERI10JSON000095_","t":"rct","d":"EGa_yUkSwFvJTbFnEBosvpIkJ_AkyY5E3XdU7fqhtErf",'
+                           b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"0"}')
+
+
+    serder4 = receipt(pre=pre, sn=2, said=serder2.said, version=Vrsn_1_0)
+    assert serder4.ked["i"] == pre
+    assert serder4.ked["s"] == "2"
+    assert serder4.ked["t"] == Ilks.rct
+    assert serder4.ked["d"] == serder2.said
+    assert serder4.raw == (b'{"v":"KERI10JSON000095_","t":"rct","d":"EGa_yUkSwFvJTbFnEBosvpIkJ_AkyY5E3XdU7fqhtErf",'
+                           b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"2"}')
+
+
+    # Delegated Inception:
+    # Transferable not abandoned i.e. next not empty
+    # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
+    seedD = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
+             b'\x98Y\xdd\xe8')
+    signerD = Signer(raw=seedD, code=MtrDex.ECDSA_256k1_Seed)  # next signing keypair transferable is default
+    assert signerD.code == MtrDex.ECDSA_256k1_Seed
+    assert signerD.verfer.code == MtrDex.ECDSA_256k1
+    keysD = [signerD.verfer.qb64]
+    # compute nxt digest
+    nxtD = [Diger(ser=key.encode("utf-8")).qb64 for key in keysD]  # default sith is 1
+    # transferable so nxt is not empty
+
+    delpre = 'EAdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd'
+    serderD = delcept(keys=keysD, delpre=delpre, ndigs=nxtD, version=Vrsn_1_0)
+    pre = serderD.ked["i"]
+    assert serderD.ked["i"] == 'EFVACrfsy2Ke_tjqq-wroc-TE0IFZ-QNwQwuMVzl0rgj'
+    assert serderD.ked["s"] == '0'
+    assert serderD.ked["t"] == Ilks.dip
+    assert serderD.ked["n"] == nxtD
+    assert serderD.raw == (b'{"v":"KERI10JSON000163_","t":"dip","d":"EFVACrfsy2Ke_tjqq-wroc-TE0IFZ-QNwQwuMVzl0rgj",'
+                           b'"i":"EFVACrfsy2Ke_tjqq-wroc-TE0IFZ-QNwQwuMVzl0rgj","s":"0",'
+                           b'"kt":"1","k":["1AABA7KZA_wxPCXJ5BgZ9jjdrMIy3OQKgHfa6eKyLcZpEn26"],'
+                           b'"nt":"1","n":["EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO"],'
+                           b'"bt":"0","b":[],"c":[],"a":[],"di":"EAdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd"}')
+
+    assert serderD.said == 'EFVACrfsy2Ke_tjqq-wroc-TE0IFZ-QNwQwuMVzl0rgj'
+
+    # Delegated Rotation:
+    # Transferable not abandoned i.e. next not empty
+    seedR = (b'\xbe\x96\x02\xa9\x88\xce\xf9O\x1e\x0fo\xc0\xff\x98\xb6\xfa\x1e\xa2y\xf2'
+             b'e\xf9AL\x1aeK\xafj\xa1pB')
+    signerR = Signer(raw=seedR, code=MtrDex.ECDSA_256k1_Seed)  # next signing keypair transferable is default
+    assert signerR.code == MtrDex.ECDSA_256k1_Seed
+    assert signerR.verfer.code == MtrDex.ECDSA_256k1
+    keysR = [signerR.verfer.qb64]
+    # compute nxt digest
+    # default sith is 1
+    nxtR = [Diger(ser=signerR.verfer.qb64b).qb64]  # transferable so nxt is not empty
+
+    delpre = 'EAdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd'
+    serderR = deltate(pre=pre,
+                      keys=keysR,
+                      dig='EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30',
+                      sn=4,
+                      ndigs=nxtR,
+                      version=Vrsn_1_0)
 
     assert serderR.ked["i"] == pre
     assert serderR.ked["s"] == '4'
@@ -1833,7 +2580,7 @@ def test_messagize_v1():
                     b'juEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyClVTLoD')
 
          # Test with seal SealEvent Only
-        msg = messagize(serder, seals=seal, framed=True, gvrsn=Vrsn_1_0)
+        msg = messagize(serder, bonds=seal, framed=True, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
@@ -1842,7 +2589,7 @@ def test_messagize_v1():
                     b'G7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
         # Test with not framed
-        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_1_0)
+        msg = messagize(serder, bonds=seal, framed=False, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
@@ -1877,12 +2624,12 @@ def test_messagize_v1():
         # Test with seal only SealLast only raises error since not supported in v1
 
         with pytest.raises(InvalidCodeError):
-            msg = messagize(serder, seals=seal, framed=True, gvrsn=Vrsn_1_0)
+            msg = messagize(serder, bonds=seal, framed=True, gvrsn=Vrsn_1_0)
 
         # test with seal SealSource only
         seal = SealSource(s='0',
                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_1_0)
+        msg = messagize(serder, bonds=seal, framed=False, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
@@ -1902,7 +2649,7 @@ def test_messagize_v1():
                          d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
         seals = [seal0, seal1, seal2, seal3]
 
-        msg = messagize(serder, seals=seals, framed=False, gvrsn=Vrsn_1_0)
+        msg = messagize(serder, bonds=seals, framed=False, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
@@ -2016,7 +2763,7 @@ def test_messagize_v1():
                          s='0',
                          d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
-        msg = messagize(serder, sigers=sigers, source=source, seals=seal,
+        msg = messagize(serder, sigers=sigers, source=source, bonds=seal,
                         wigers=wigers, cigars=cigars, framed=False, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
@@ -2190,7 +2937,7 @@ def test_messagize_v1_mix_v2():
                     b'juEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyClVTLoD')
 
          # Test with seal SealEvent Only
-        msg = messagize(serder, seals=seal, framed=True, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, bonds=seal, framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
@@ -2199,7 +2946,7 @@ def test_messagize_v1_mix_v2():
                     b'G7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
         # Test with not framed
-        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, bonds=seal, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
@@ -2232,7 +2979,7 @@ def test_messagize_v1_mix_v2():
                     b'jyZLHyClVTLoD')
 
         # Test with seal SealLast only
-        msg = messagize(serder, seals=seal, framed=True, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, bonds=seal, framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
@@ -2240,7 +2987,7 @@ def test_messagize_v1_mix_v2():
                     b'LDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI')
 
         # Test with not framed
-        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, bonds=seal, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
@@ -2250,7 +2997,7 @@ def test_messagize_v1_mix_v2():
         # test with seal SealSource only
         seal = SealSource(s='0',
                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, bonds=seal, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
@@ -2288,7 +3035,7 @@ def test_messagize_v1_mix_v2():
                          mv='{"name":"Sue","food":"Pizza"}')
         seals = [seal0, seal1, seal2, seal3, seal4, seal5, seal6, seal7]
 
-        msg = messagize(serder, seals=seals, framed=False, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, bonds=seals, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
@@ -2407,7 +3154,7 @@ def test_messagize_v1_mix_v2():
                          s='0',
                          d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
-        msg = messagize(serder, sigers=sigers, source=source, seals=seal, wigers=wigers,
+        msg = messagize(serder, sigers=sigers, source=source, bonds=seal, wigers=wigers,
                         cigars=cigars, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
@@ -2581,7 +3328,7 @@ def test_messagize_v2():
                     b'aK-9U_31Hsvt57_duHbLVlG50kep74k6uFccMbXLqxMI0dAMAPDisFFvBcb6qEC')
 
          # Test with seal SealEvent Only
-        msg = messagize(serder, seals=seal, framed=True, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, bonds=seal, framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERICAACAAJSONAAD_.","t":"icp","d":"ECtGzXBDhYAOdKeQcTgBr4'
                     b'agqy06IN7jaKc3OIQLyLWU","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
                     b'3OIQLyLWU","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX'
@@ -2590,7 +3337,7 @@ def test_messagize_v2():
                     b'4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
         # Test with not framed
-        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, bonds=seal, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERICAACAAJSONAAD_.","t":"icp","d":"ECtGzXBDhYAOdKeQcTgBr4'
                     b'agqy06IN7jaKc3OIQLyLWU","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
                     b'3OIQLyLWU","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX'
@@ -2623,7 +3370,7 @@ def test_messagize_v2():
                     b'APDisFFvBcb6qEC')
 
         # Test with seal SealLast only
-        msg = messagize(serder, seals=seal, framed=True, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, bonds=seal, framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERICAACAAJSONAAD_.","t":"icp","d":"ECtGzXBDhYAOdKeQcTgBr4'
                     b'agqy06IN7jaKc3OIQLyLWU","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
                     b'3OIQLyLWU","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX'
@@ -2631,7 +3378,7 @@ def test_messagize_v2():
                     b'UALDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI')
 
         # Test with not framed
-        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, bonds=seal, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERICAACAAJSONAAD_.","t":"icp","d":"ECtGzXBDhYAOdKeQcTgBr4'
                     b'agqy06IN7jaKc3OIQLyLWU","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
                     b'3OIQLyLWU","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX'
@@ -2641,7 +3388,7 @@ def test_messagize_v2():
         # test with seal SealSource only
         seal = SealSource(s='0',
                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, bonds=seal, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERICAACAAJSONAAD_.","t":"icp","d":"ECtGzXBDhYAOdKeQcTgBr4'
                     b'agqy06IN7jaKc3OIQLyLWU","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
                     b'3OIQLyLWU","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX'
@@ -2749,7 +3496,7 @@ def test_messagize_v2():
                          s='0',
                          d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
-        msg = messagize(serder, sigers=sigers, source=source, seals=seal,
+        msg = messagize(serder, sigers=sigers, source=source, bonds=seal,
                         wigers=wigers, cigars=cigars, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERICAACAAJSONAAD_.","t":"icp","d":"ECtGzXBDhYAOdKeQcTgBr4'
                     b'agqy06IN7jaKc3OIQLyLWU","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
@@ -2796,7 +3543,7 @@ def test_messagize_v2():
                          mv='{"name":"Sue","food":"Pizza"}')
         seals = [seal0, seal1, seal2, seal3, seal4, seal5, seal6, seal7]
 
-        msg = messagize(serder, seals=seals, framed=False, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, bonds=seals, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERICAACAAJSONAAD_.","t":"icp","d":"ECtGzXBDhYAOdKeQcTgBr4'
                     b'agqy06IN7jaKc3OIQLyLWU","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
                     b'3OIQLyLWU","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX'
@@ -2972,7 +3719,7 @@ def test_messagize_v2_native():
                     b'BxNhLRnrXTrKiyi5qhjQ5YKU4SbDFjVdGoUoN3u5gfn6dHBVwvnBkr96OPwM')
 
          # Test with seal SealEvent Only
-        msg = messagize(serder, seals=seal, framed=True, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, bonds=seal, framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
                     b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
                     b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-TAX'
@@ -2980,7 +3727,7 @@ def test_messagize_v2_native():
                     b'7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
         # Test with not framed
-        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, bonds=seal, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
                     b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
                     b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-CAY'
@@ -3010,14 +3757,14 @@ def test_messagize_v2_native():
                     b'wvnBkr96OPwM')
 
         # Test with seal SealLast only
-        msg = messagize(serder, seals=seal, framed=True, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, bonds=seal, framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
                     b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
                     b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-UAL'
                     b'DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI')
 
         # Test with not framed
-        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, bonds=seal, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
                     b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
                     b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-CAM'
@@ -3026,7 +3773,7 @@ def test_messagize_v2_native():
         # test with seal SealSource only
         seal = SealSource(s='0',
                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-        msg = messagize(serder, seals=seal, framed=False, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, bonds=seal, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
                     b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
                     b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-CAN'
@@ -3124,7 +3871,7 @@ def test_messagize_v2_native():
                                  s='0',
                                  d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
-        msg = messagize(serder, sigers=sigers, source=source, seals=seal, wigers=wigers,
+        msg = messagize(serder, sigers=sigers, source=source, bonds=seal, wigers=wigers,
                         cigars=cigars, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
                     b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
@@ -3169,7 +3916,7 @@ def test_messagize_v2_native():
                          mv='{"name":"Sue","food":"Pizza"}')
         seals = [seal0, seal1, seal2, seal3, seal4, seal5, seal6, seal7]
 
-        msg = messagize(serder, seals=seals, framed=False, gvrsn=Vrsn_2_0)
+        msg = messagize(serder, bonds=seals, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
                     b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
                     b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-CDD'
@@ -3325,7 +4072,7 @@ def test_messagize_v1_nested():
                     b'PfPQQkQkxI862_XjyZLHyClVTLoD')
 
          # Test with seal SealEvent Only
-        msg = messagize(serder, seals=seal, nested=True)
+        msg = messagize(serder, bonds=seal, nested=True)
         assert msg == (b'-BBv-HBW6BBVAAB7InYiOiJLRVJJMTBKU09OMDAwMGZkXyIsInQiOiJpY3AiLCJk'
                     b'IjoiRUZ5enpnMk1wNUEzZWNDaGM2QWhTTFRRc3NCWkFtTnZQbkd4akp5SHhsNEYi'
                     b'LCJpIjoiRUZ5enpnMk1wNUEzZWNDaGM2QWhTTFRRc3NCWkFtTnZQbkd4akp5SHhs'
@@ -3350,7 +4097,7 @@ def test_messagize_v1_nested():
                     b'N_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyClVTLoD')
 
         # Test with seal SealLast only
-        msg = messagize(serder, seals=seal, nested=True)
+        msg = messagize(serder, bonds=seal, nested=True)
         assert msg == (b'-BBj-HBW6BBVAAB7InYiOiJLRVJJMTBKU09OMDAwMGZkXyIsInQiOiJpY3AiLCJk'
                     b'IjoiRUZ5enpnMk1wNUEzZWNDaGM2QWhTTFRRc3NCWkFtTnZQbkd4akp5SHhsNEYi'
                     b'LCJpIjoiRUZ5enpnMk1wNUEzZWNDaGM2QWhTTFRRc3NCWkFtTnZQbkd4akp5SHhs'
@@ -3362,7 +4109,7 @@ def test_messagize_v1_nested():
         # test with seal SealSource only
         seal = SealSource(s='0',
                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-        msg = messagize(serder, seals=seal, nested=True)
+        msg = messagize(serder, bonds=seal, nested=True)
         assert msg == (b'-BBk-HBW6BBVAAB7InYiOiJLRVJJMTBKU09OMDAwMGZkXyIsInQiOiJpY3AiLCJk'
                     b'IjoiRUZ5enpnMk1wNUEzZWNDaGM2QWhTTFRRc3NCWkFtTnZQbkd4akp5SHhsNEYi'
                     b'LCJpIjoiRUZ5enpnMk1wNUEzZWNDaGM2QWhTTFRRc3NCWkFtTnZQbkd4akp5SHhs'
@@ -3449,7 +4196,7 @@ def test_messagize_v1_nested():
                          s='0',
                          d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
-        msg = messagize(serder, sigers=sigers, source=source, seals=seal, wigers=wigers,
+        msg = messagize(serder, sigers=sigers, source=source, bonds=seal, wigers=wigers,
                         cigars=cigars, nested=True)
         assert msg == (b'-BDX-HBW6BBVAAB7InYiOiJLRVJJMTBKU09OMDAwMGZkXyIsInQiOiJpY3AiLCJk'
                     b'IjoiRUZ5enpnMk1wNUEzZWNDaGM2QWhTTFRRc3NCWkFtTnZQbkd4akp5SHhsNEYi'
@@ -3497,7 +4244,7 @@ def test_messagize_v1_nested():
                          mv='{"name":"Sue","food":"Pizza"}')
         seals = [seal0, seal1, seal2, seal3, seal4, seal5, seal6, seal7]
 
-        msg = messagize(serder, seals=seals, nested=True)
+        msg = messagize(serder, bonds=seals, nested=True)
         assert msg == (b'-BEa-HBW6BBVAAB7InYiOiJLRVJJMTBKU09OMDAwMGZkXyIsInQiOiJpY3AiLCJk'
                     b'IjoiRUZ5enpnMk1wNUEzZWNDaGM2QWhTTFRRc3NCWkFtTnZQbkd4akp5SHhsNEYi'
                     b'LCJpIjoiRUZ5enpnMk1wNUEzZWNDaGM2QWhTTFRRc3NCWkFtTnZQbkd4akp5SHhs'
@@ -3642,7 +4389,7 @@ def test_messagize_v2_nested():
                     b'cMbXLqxMI0dAMAPDisFFvBcb6qEC')
 
          # Test with seal SealEvent Only
-        msg = messagize(serder, seals=seal, nested=True)
+        msg = messagize(serder, bonds=seal, nested=True)
         assert msg == (b'-BBv-HBW4BBVeyJ2IjoiS0VSSUNBQUNBQUpTT05BQURfLiIsInQiOiJpY3AiLCJk'
                     b'IjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlMV1Ui'
                     b'LCJpIjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlM'
@@ -3667,7 +4414,7 @@ def test_messagize_v2_nested():
                     b'LVlG50kep74k6uFccMbXLqxMI0dAMAPDisFFvBcb6qEC')
 
         # Test with SealLast only
-        msg = messagize(serder, seals=seal, nested=True)
+        msg = messagize(serder, bonds=seal, nested=True)
         assert msg == (b'-BBj-HBW4BBVeyJ2IjoiS0VSSUNBQUNBQUpTT05BQURfLiIsInQiOiJpY3AiLCJk'
                     b'IjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlMV1Ui'
                     b'LCJpIjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlM'
@@ -3679,7 +4426,7 @@ def test_messagize_v2_nested():
         # test with seal SealSource only
         seal = SealSource(s='0',
                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-        msg = messagize(serder, seals=seal, nested=True)
+        msg = messagize(serder, bonds=seal, nested=True)
         assert msg == (b'-BBk-HBW4BBVeyJ2IjoiS0VSSUNBQUNBQUpTT05BQURfLiIsInQiOiJpY3AiLCJk'
                     b'IjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlMV1Ui'
                     b'LCJpIjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlM'
@@ -3766,7 +4513,7 @@ def test_messagize_v2_nested():
                          s='0',
                          d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
-        msg = messagize(serder, sigers=sigers, source=source, seals=seal, wigers=wigers,
+        msg = messagize(serder, sigers=sigers, source=source, bonds=seal, wigers=wigers,
                         cigars=cigars, nested=True)
         assert msg == (b'-BDX-HBW4BBVeyJ2IjoiS0VSSUNBQUNBQUpTT05BQURfLiIsInQiOiJpY3AiLCJk'
                     b'IjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlMV1Ui'
@@ -3814,7 +4561,7 @@ def test_messagize_v2_nested():
                          mv='{"name":"Sue","food":"Pizza"}')
         seals = [seal0, seal1, seal2, seal3, seal4, seal5, seal6, seal7]
 
-        msg = messagize(serder, seals=seals, nested=True)
+        msg = messagize(serder, bonds=seals, nested=True)
         assert msg == (b'-BEa-HBW4BBVeyJ2IjoiS0VSSUNBQUNBQUpTT05BQURfLiIsInQiOiJpY3AiLCJk'
                     b'IjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlMV1Ui'
                     b'LCJpIjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlM'
@@ -3952,7 +4699,7 @@ def test_messagize_v2_native_nested():
                     b'BxNhLRnrXTrKiyi5qhjQ5YKU4SbDFjVdGoUoN3u5gfn6dHBVwvnBkr96OPwM')
 
          # Test with seal SealEvent Only
-        msg = messagize(serder, seals=seal, nested=True)
+        msg = messagize(serder, bonds=seal, nested=True)
         assert msg == (b'-BBH-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2'
                     b'NfHnEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif'
                     b'48whAmpb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA'
@@ -3973,7 +4720,7 @@ def test_messagize_v2_native_nested():
                     b'wvnBkr96OPwM')
 
         # Test with SealLast only
-        msg = messagize(serder, seals=seal, nested=True)
+        msg = messagize(serder, bonds=seal, nested=True)
         assert msg == (b'-BA7-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2'
                     b'NfHnEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif'
                     b'48whAmpb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA'
@@ -3982,7 +4729,7 @@ def test_messagize_v2_native_nested():
         # test with seal SealSource only
         seal = SealSource(s='0',
                           d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-        msg = messagize(serder, seals=seal, nested=True)
+        msg = messagize(serder, bonds=seal, nested=True)
         assert msg == (b'-BA8-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2'
                     b'NfHnEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif'
                     b'48whAmpb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA'
@@ -4053,7 +4800,7 @@ def test_messagize_v2_native_nested():
                          s='0',
                          d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
-        msg = messagize(serder, sigers=sigers, source=source, seals=seal, wigers=wigers,
+        msg = messagize(serder, sigers=sigers, source=source, bonds=seal, wigers=wigers,
                         cigars=cigars, nested=True)
         assert msg == (b'-BCv-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2'
                     b'NfHnEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif'
@@ -4098,7 +4845,7 @@ def test_messagize_v2_native_nested():
                          mv='{"name":"Sue","food":"Pizza"}')
         seals = [seal0, seal1, seal2, seal3, seal4, seal5, seal6, seal7]
 
-        msg = messagize(serder, seals=seals, nested=True)
+        msg = messagize(serder, bonds=seals, nested=True)
         assert msg == (b'-BDy-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2'
                     b'NfHnEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif'
                     b'48whAmpb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA'
@@ -7125,6 +7872,7 @@ if __name__ == "__main__":
     test_messagize_v2_nested()
     test_messagize_v2_native_nested()
     test_keyeventsequence_0()
+    test_keyeventsequence_1()
     test_process_manual()
     test_process_transferable()
     test_direct_mode()
