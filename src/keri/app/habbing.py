@@ -2070,10 +2070,14 @@ class BaseHab:
 
         Args:
             **kwa: keyword arguments forwarded to ``replyEvent``, including:
+                pre (str): qb64 identifier prefix of sender (AID). Required for
+                    version 2 reply messages (``i`` field); ignored in version 1
+                    top-level SAD (sender comes from signature attachment).
                 route (str): route path string indicating the data flow handler.
                 data (list): dicts of committed data such as seals.
-                dts (str): date-time-stamp of message at time of creation.
-                version (Version): version instance.
+                stamp (str): date-time-stamp RFC-3339 profile of iso8601 datetime
+                    at message creation. None means use now.
+                version (Versionage): KERI protocol version instance.
                 kind (str): serialization kind.
 
         Returns:
@@ -2103,7 +2107,7 @@ class BaseHab:
         """
         data = dict(cid=self.pre, role=role, eid=eid)
         route = "/end/role/add" if allow else "/end/role/cut"
-        return self.reply(route=route, data=data, stamp=stamp,
+        return self.reply(route=route, data=data, stamp=stamp, pre=self.pre,
                           version=version, kind=kind)
 
 
@@ -2195,7 +2199,7 @@ class BaseHab:
         """
         eid = eid if eid is not None else self.pre
         data = dict(eid=eid, scheme=scheme, url=url)
-        return self.reply(route="/loc/scheme", data=data, stamp=stamp,
+        return self.reply(route="/loc/scheme", data=data, stamp=stamp, pre=self.pre,
                           version=version, kind=kind)
 
 
