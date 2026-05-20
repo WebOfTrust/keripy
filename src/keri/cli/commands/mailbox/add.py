@@ -5,6 +5,7 @@ keri.kli.commands module
 
 """
 import argparse
+from urllib import parse
 
 from hio.base import doing
 from hio.help import Hict, ogler
@@ -88,7 +89,10 @@ class AddDoer(doing.DoDoer):
         if isinstance(self.hab, GroupHab):
             raise ValueError("watchers for multisig AIDs not currently supported")
 
-        kel = self.hab.replay()
+        kel = bytearray(self.hab.replay())
+        delkel = bytearray()
+        for dmsg in self.hab.db.cloneDelegation(self.hab.kever):
+            delkel.extend(dmsg)
         data = dict(cid=self.hab.pre,
                     role=Roles.mailbox,
                     eid=self.mailbox)
@@ -96,9 +100,12 @@ class AddDoer(doing.DoDoer):
         route = "/end/role/add"
         msg = self.hab.reply(route=route, data=data)
         self.hab.psr.parseOne(ims=(bytes(msg)))  # make copy to preserve
-
-        fargs = dict([("kel", kel.decode("utf-8")),
-                      ("rpy", msg.decode("utf-8"))])
+        fargs = dict([
+            ("kel", kel.decode("utf-8")),
+            ("rpy", bytes(msg).decode("utf-8")),
+        ])
+        if delkel:
+            fargs["delkel"] = delkel.decode("utf-8")
 
         headers = (Hict([
             ("Content-Type", "multipart/form-data"),
@@ -107,9 +114,10 @@ class AddDoer(doing.DoDoer):
         client, clientDoer = httpClient(self.hab, self.mailbox)
         self.extend([clientDoer])
 
+        path = parse.urljoin(f"{client.requester.path.rstrip('/')}/", "mailboxes")
         client.request(
             method="POST",
-            path=f"{client.requester.path}/mailboxes",
+            path=path,
             headers=headers,
             fargs=fargs
         )
