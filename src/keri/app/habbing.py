@@ -2530,7 +2530,6 @@ class BaseHab:
         if dig is None:
             raise MissingEntryError("Missing event for pre={} at sn={}."
                                           "".format(pre, sn))
-        dig = dig.encode("utf-8")
 
         serder = self.db.evts.get(keys=(pre, dig))
         sigers = [siger for siger in self.db.sigs.getIter(keys=(pre, dig))]
