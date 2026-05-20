@@ -17,9 +17,9 @@ from .keeping import Keeper, Manager
 from ..peer import Exchanger, exchange
 from ..db import Baser, dgKey, fetchTsgs
 from ..help import fromIso8601, toIso8601
-from ..kering import (Version, Vrsn_1_0, Vrsn_2_0, Ilks, ClosedError, AuthError,
-                ConfigurationError, ValidationError, MissingEntryError,
-                KeriError, MissingSignatureError, Roles, Schemes)
+from ..kering import (Version, Vrsn_1_0, Vrsn_2_0, Ilks, Kinds, Roles, Schemes,
+                      ClosedError, AuthError, ConfigurationError, KeriError,
+                      ValidationError, MissingEntryError, MissingSignatureError)
 from ..core import (Tholder, Diger, Prefixer, Kevery, Parser, Revery,
                     Router, Counter, Salter, SealEvent, SealSource, SealLast,
                     Codens, MtrDex, TraitDex, messagize)
@@ -477,6 +477,7 @@ class Habery:
         hab.incept(**kwa)  # finish making group hab with injected pass throughs
         self.habs[hab.pre] = hab
         return hab
+
 
     def joinGroupHab(self, pre, group, mhab, smids, rmids=None, ns=None):
         """Join an existing multisig group as a participant without creating a
@@ -1074,7 +1075,7 @@ class BaseHab:
 
 
     def incept(self, DnD, code, data, delpre, estOnly, isith, verfers, nsith,
-               digers, toad, wits):
+               digers, toad, wits, kind=Kinds.json, version=Version):
         """Creates Serder of inception event for provided parameters.
         Assumes injected dependencies were already setup.
 
@@ -1101,6 +1102,9 @@ class BaseHab:
                 specified, else compute default based on number of wits
                 (backers).
             wits (list or None): qb64 prefixes of witnesses if any.
+            kind (str): serialization for key event message
+                        one of Kinds ("json","cbor","mgpk","cesr")
+            version (Versionage): version for key event message
 
         Returns:
             Serder: inception event serder.
@@ -1129,7 +1133,9 @@ class BaseHab:
                                       toad=toad,
                                       wits=wits,
                                       cnfg=cnfg,
-                                      code=code)
+                                      code=code,
+                                      kind=kind,
+                                      version=version)
         else:
             serder = eventing.incept(keys=keys,
                                  isith=cst,
@@ -1139,7 +1145,9 @@ class BaseHab:
                                  wits=wits,
                                  cnfg=cnfg,
                                  code=code,
-                                 data=data)
+                                 data=data,
+                                 kind=kind,
+                                 version=version                                 )
         return serder
 
 
@@ -1286,7 +1294,8 @@ class BaseHab:
 
 
     def rotate(self, *, verfers=None, digers=None, isith=None, nsith=None,
-                        toad=None, cuts=None, adds=None, data=None, framed=False,
+                        toad=None, cuts=None, adds=None, data=None,
+                        kind=Kinds.json, version=Version, framed=False,
                         nested=False, gvrsn=Version, genusify=False):
         """Perform rotation operation. Register rotation in database.
 
@@ -1305,6 +1314,9 @@ class BaseHab:
             adds (list or None): qb64 prefixes of witnesses to be added to the
                 witness list.
             data (list or None): dicts of committed data such as seals.
+            kind (str): serialization for key event message
+                        one of Kinds ("json","cbor","mgpk","cesr")
+            version (Versionage): version for key event message
             framed (bool): True means may assume each message plus its attachments
                                 is isolated as frame when parsing so do not need
                                 attachment group when messagizing
@@ -1373,7 +1385,9 @@ class BaseHab:
                                       wits=kever.wits,
                                       cuts=cuts,
                                       adds=adds,
-                                      data=data)
+                                      data=data,
+                                      kind=kind,
+                                      version=version)
         else:
             serder = eventing.rotate(pre=kever.prefixer.qb64,
                                      keys=keys,
@@ -1386,7 +1400,9 @@ class BaseHab:
                                      wits=kever.wits,
                                      cuts=cuts,
                                      adds=adds,
-                                     data=data)
+                                     data=data,
+                                     kind=kind,
+                                     version=version)
 
         # sign handles group hab with .mhab case
         sigers = self.sign(ser=serder.raw, verfers=verfers, rotated=True)
@@ -1405,12 +1421,15 @@ class BaseHab:
 
         return msg
 
-    def interact(self, *, data=None, framed=False, nested=False, gvrsn=Version,
-                          genusify=False):
+    def interact(self, *, data=None, kind=Kinds.json, version=Version,
+                framed=False, nested=False, gvrsn=Version, genusify=False):
         """Perform interaction operation. Register interaction in database.
 
         Parameters::
             data (list or None): dicts of committed data such as seals.
+            kind (str): serialization for key event message
+                        one of Kinds ("json","cbor","mgpk","cesr")
+            version (Versionage): version for key event message
             framed (bool): True means may assume each message plus its attachments
                                 is isolated as frame when parsing so do not need
                                 attachment group when messagizing
@@ -1440,7 +1459,9 @@ class BaseHab:
         serder = eventing.interact(pre=kever.prefixer.qb64,
                                    dig=kever.serder.said,
                                    sn=kever.sner.num + 1,
-                                   data=data)
+                                   data=data,
+                                   kind=kind,
+                                   version=version)
 
         sigers = self.sign(ser=serder.raw)
 
@@ -1523,7 +1544,7 @@ class BaseHab:
             src (str): qb64 identifier prefix of attester being queried.
             query (dict or None): additional query modifiers to include in
                 ``q``.
-            **kwa: keyword arguments passed to ``queryEvent``.
+            **kwa: keyword arguments passed to ``eventing.query``.
 
         Returns:
             bytearray: signed query event.
@@ -1602,9 +1623,12 @@ class BaseHab:
                  modifiers=None,
                  embeds=None,
                  save=False,
+                 kind=Kinds.json,
+                 version=Version,
+                 pvrsn=None,
+                 gvrsn=Version,
                  framed=False,
                  nested=False,
-                 gvrsn=Version,
                  genusify=False):
         """Build and return a signed ``exn`` message, optionally saving it to
         own db.
@@ -1619,6 +1643,14 @@ class BaseHab:
             modifiers (dict or None): additional modifiers for the exchange.
             embeds (dict or None): embedded message serders if any.
             save (bool): True means process local copy into db after building.
+            kind (str): serialization for key event message
+                        one of Kinds ("json","cbor","mgpk","cesr")
+            version (Versionage): KERI protocol default version if psvrsn is None
+            pvrsn (Versionage): KERI protocol version
+            gvrsn (Versionage): CESR Genus version for attachment group codes or
+                            nesting group code (useful when serder.gvrsn < 2)
+                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                                if serder.gvrsn else serder.pvrsn
             framed (bool): True means may assume each message plus its attachments
                                 is isolated as frame when parsing so do not need
                                 attachment group when messagizing
@@ -1630,10 +1662,7 @@ class BaseHab:
                                 in non-native group code
                            False means messagize for top level of stream.
                                 This allows bare non-native serialization of message
-            gvrsn (Versionage): CESR Genus version for attachment group codes or
-                            nesting group code (useful when serder.gvrsn < 2)
-                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
-                                if serder.gvrsn else serder.pvrsn
+
             genusify (bool): True means prepend genus version code from gvrsn before
                             serder to override default stream genus version
                          False means do nothing
@@ -1651,7 +1680,9 @@ class BaseHab:
                                date=date,
                                dig=dig,
                                modifiers=modifiers,
-                               embeds=embeds)
+                               embeds=embeds,
+                               kind=kind,
+                               version=version)
 
         if self.kever.prefixer.transferable:
             msg = self.endorse(serder=serder, framed=True)
@@ -1668,13 +1699,16 @@ class BaseHab:
 
         return msg
 
-    def receipt(self, serder, framed=False, nested=False, gvrsn=Version,
-                      genusify=False):
+    def receipt(self, serder, kind=Kinds.json, version=Version, framed=False,
+                    nested=False, gvrsn=Version, genusify=False):
         """Build own receipt ``rct`` message of serder with count code and
         receipt couples (pre+cig). Processes local copy into db to validate.
 
         Parameters::
             serder (Serder): event serder to receipt.
+            kind (str): serialization for receipt message
+                        one of Kinds ("json","cbor","mgpk","cesr")
+            version (Versionage): KERI protocol default version for receipt
             framed (bool): True means may assume each message plus its attachments
                                 is isolated as frame when parsing so do not need
                                 attachment group when messagizing
@@ -1700,7 +1734,9 @@ class BaseHab:
         ked = serder.ked
         reserder = eventing.receipt(pre=ked["i"],
                                     sn=int(ked["s"], 16),
-                                    said=serder.said)
+                                    said=serder.said,
+                                    kind=kind,
+                                    version=version)
 
         # sign serder event
         if self.kever.prefixer.transferable:
@@ -1722,8 +1758,8 @@ class BaseHab:
         return msg
 
 
-    def witness(self, serder, framed=False, nested=False, gvrsn=Version,
-                              genusify=False):
+    def witness(self, serder, kind=Kinds.json, version=Version, framed=False,
+                      nested=False, gvrsn=Version, genusify=False):
         """Build own witness receipt ``rct`` message of serder with count code
         and witness indexed receipt signatures, if the key state of
         ``serder.pre`` shows that own pre is a current witness of the event in
@@ -1736,6 +1772,9 @@ class BaseHab:
 
         Parameters::
             serder (Serder): event serder to witness.
+            kind (str): serialization for receipt message
+                        one of Kinds ("json","cbor","mgpk","cesr")
+            version (Versionage): KERI protocol default version for receipt
             framed (bool): True means may assume each message plus its attachments
                                 is isolated as frame when parsing so do not need
                                 attachment group when messagizing
@@ -1781,7 +1820,9 @@ class BaseHab:
 
         reserder = eventing.receipt(pre=ked["i"],
                                     sn=int(ked["s"], 16),
-                                    said=serder.said)
+                                    said=serder.said,
+                                    kind=kind,
+                                    version=version)
 
         # assumes witness id is nontrans so public key is same as pre
         wigers = self.mgr.sign(ser=serder.raw,
@@ -2062,10 +2103,28 @@ class BaseHab:
         return ends
 
 
-    def reply(self, **kwa):
+    def reply(self, framed=False, nested=False, gvrsn=Version, genusify=False, **kwa):
         """Return own endorsed reply message.
 
-        Args:
+        Parameters::
+            framed (bool): True means may assume each message plus its attachments
+                                is isolated as frame when parsing so do not need
+                                attachment group when messagizing
+                           False means may not assume eash message plus its attachments
+                                is isolated as frame when parsing so do need
+                                attachment group when messagizing
+            nested (bool): True means messagize for non-top level
+                                This forces non-native serializion to be embedded
+                                in non-native group code
+                           False means messagize for top level of stream.
+                                This allows bare non-native serialization of message
+            gvrsn (Versionage): CESR Genus version for attachment group codes or
+                            nesting group code (useful when serder.gvrsn < 2)
+                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                                if serder.gvrsn else serder.pvrsn
+            genusify (bool): True means prepend genus version code from gvrsn before
+                            serder to override default stream genus version
+                         False means do nothing
             **kwa: keyword arguments forwarded to ``eventing.reply``, including:
                 route (str): route path string indicating the data flow handler.
                 data (list): dicts of committed data such as seals.
@@ -2073,10 +2132,11 @@ class BaseHab:
                 version (Version): version instance.
                 kind (str): serialization kind.
 
-        Returns:
+        Returns::
             bytearray: reply message.
         """
-        return self.endorse(eventing.reply(**kwa), framed=False)
+        return self.endorse(eventing.reply(**kwa), framed=framed, nested=nested,
+                            gvrsn=gvrsn, genusify=genusify)
 
 
     def makeEndRole(self, eid, role=Roles.controller, allow=True, stamp=None):
@@ -2167,10 +2227,10 @@ class BaseHab:
         return msgs
 
 
-    def makeLocScheme(self, url, eid=None, scheme="http", stamp=None):
+    def makeLocScheme(self, url, eid=None, scheme="http", stamp=None, **kwa):
         """Return a reply message of own url service endpoint at ``scheme``.
 
-        Args:
+        Parameters::
             url (str): url of endpoint. May have scheme missing or not. An
                 empty url nullifies the location.
             eid (str or None): qb64 of endpoint provider to be authorized.
@@ -2179,16 +2239,23 @@ class BaseHab:
                 Default is ``"http"``.
             stamp (str or None): date-time-stamp RFC-3339 profile of iso8601
                 datetime. None means use now.
+            **kwa: keyword arguments forwarded to ``eventing.reply``, including:
+                route (str): route path string indicating the data flow handler.
+                data (list): dicts of committed data such as seals.
+                dts (str): date-time-stamp of message at time of creation.
+                version (Version): version instance.
+                kind (str): serialization kind.
 
-        Returns:
+
+        Returns::
             bytearray: reply message.
         """
         eid = eid if eid is not None else self.pre
         data = dict(eid=eid, scheme=scheme, url=url)
-        return self.reply(route="/loc/scheme", data=data, stamp=stamp)
+        return self.reply(route="/loc/scheme", data=data, stamp=stamp, **kwa)
 
 
-    def replyLocScheme(self, eid, scheme=""):
+    def replyLocScheme(self, eid, scheme="", **kwa):
         """Return a reply message stream of location scheme entries authed by
         the given ``eid`` from the reply database, including associated
         attachments, for dissemination of BADA reply data authentication
@@ -2199,18 +2266,25 @@ class BaseHab:
             discovery. Future versions will use an identity constraint graph
             to constrain discovery.
 
-        Args:
+        Parameters::
             eid (str): endpoint provider id.
             scheme (str): url scheme filter. Empty string means all schemes.
+            **kwa: keyword arguments forwarded to ``eventing.reply``, including:
+                route (str): route path string indicating the data flow handler.
+                data (list): dicts of committed data such as seals.
+                dts (str): date-time-stamp of message at time of creation.
+                version (Version): version instance.
+                kind (str): serialization kind.
 
-        Returns:
+
+        Returns::
             bytearray: reply message stream for location scheme entries.
         """
         msgs = bytearray()
 
         urls = self.fetchUrls(eid=eid, scheme=scheme)
         for rscheme, url in urls.firsts():
-            msgs.extend(self.makeLocScheme(eid=eid, url=url, scheme=rscheme))
+            msgs.extend(self.makeLocScheme(eid=eid, url=url, scheme=rscheme, **kwa))
 
         return msgs
 
@@ -2279,7 +2353,7 @@ class BaseHab:
         return msgs
 
 
-    def replyEndRole(self, cid, role=None, eids=None, scheme=""):
+    def replyEndRole(self, cid, role=None, eids=None, scheme="", **kwa):
         """Return a reply message stream of end role authorization entries
         authed by the given ``cid`` from the reply database, including
         associated attachments, for dissemination of BADA reply data
@@ -2301,15 +2375,21 @@ class BaseHab:
         - ``cid`` + ``role`` + ``scheme``: end authz for all eids in ``role``
           and loc url for ``scheme`` at each eid.
 
-        Args:
+        Parameters::
             cid (str): qb64 identifier prefix of controller authorizing
                 endpoint provider ``eid``.
             role (str or None): endpoint role filter. None means all roles.
             eids (list or None): when provided, restrict results to only eids
                 in this list.
             scheme (str): url scheme filter. Empty string means all schemes.
+            **kwa: keyword arguments forwarded to ``eventing.reply``, including:
+                route (str): route path string indicating the data flow handler.
+                data (list): dicts of committed data such as seals.
+                dts (str): date-time-stamp of message at time of creation.
+                version (Version): version instance.
+                kind (str): serialization kind.
 
-        Returns:
+        Returns::
             bytearray: reply message stream for end role entries.
         """
         msgs = bytearray()
@@ -2338,13 +2418,13 @@ class BaseHab:
 
         for (_, erole, eid), end in self.db.ends.getTopItemIter(keys=(cid,)):
             if (end.enabled or end.allowed) and (not role or role == erole) and (not eids or eid in eids):
-                msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
-                msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole))
+                msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme, **kwa))
+                msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole, **kwa))
 
         return msgs
 
 
-    def replyToOobi(self, aid, role, eids=None):
+    def replyToOobi(self, aid, role, eids=None, **kwa):
         """Return a reply message stream of entries authed by the given ``aid``
         for OOBI-initiated endpoint discovery, including associated
         attachments, for dissemination of BADA reply data authentication
@@ -2358,19 +2438,25 @@ class BaseHab:
             This method is the entry point for initiating replies generated by
             :meth:`replyEndRole` and/or :meth:`replyLocScheme`.
 
-        Args:
+        Parameters::
             aid (str): qb64 of identifier in oobi; may be cid or eid.
             role (str): authorized role for eid.
             eids (list or None): when provided, restrict results to only eids
                 in this list.
+            **kwa: keyword arguments forwarded to ``eventing.reply``, including:
+                route (str): route path string indicating the data flow handler.
+                data (list): dicts of committed data such as seals.
+                dts (str): date-time-stamp of message at time of creation.
+                version (Version): version instance.
+                kind (str): serialization kind.
 
-        Returns:
+        Returns::
             bytearray: reply message stream for OOBI endpoint entries.
         """
         # default logic is that if self.pre is witness of aid and has a loc url
         # for self then reply with loc scheme for all witnesses even if self
         # not permiteed in .habs.oobis
-        return self.replyEndRole(cid=aid, role=role, eids=eids)
+        return self.replyEndRole(cid=aid, role=role, eids=eids, **kwa)
 
 
     def getOwnEvent(self, sn, allowPartiallySigned=False):
@@ -2699,10 +2785,12 @@ class Hab(BaseHab):
     def __init__(self, **kwa):
         super(Hab, self).__init__(**kwa)
 
-    def incept(self, *, secrecies=None, iridx=0, code=MtrDex.Blake3_256, dcode=MtrDex.Blake3_256,
-             icode=MtrDex.Ed25519_Seed, transferable=True, isith=None, icount=1, nsith=None, ncount=None,
-             toad=None, wits=None, delpre=None, estOnly=False, DnD=False, hidden=False, data=None, algo=None,
-             salt=None, tier=None):
+    def incept(self, *, secrecies=None, iridx=0, code=MtrDex.Blake3_256,
+               dcode=MtrDex.Blake3_256, icode=MtrDex.Ed25519_Seed,
+               transferable=True, isith=None, icount=1, nsith=None, ncount=None,
+             toad=None, wits=None, delpre=None, estOnly=False, DnD=False,
+             hidden=False, data=None, algo=None, salt=None, tier=None,
+             kind=Kinds.json, version=Version):
         """Finish setting up or making this Hab from parameters, including inception.
 
         Assumes injected dependencies have already been set up. When
@@ -2755,6 +2843,8 @@ class Hab(BaseHab):
                 algorithm is used.
             tier (str or None): Security-criticality tier code used with the
                 salty algorithm.
+            kind (str): serialization value of Kinds ("json","cbor","mgpk","cesr")
+            version (Versionage): version for incept key event message
 
         Raises:
             ClosedError: If the key store, database, or config file is not
@@ -2806,7 +2896,9 @@ class Hab(BaseHab):
                                        estOnly=estOnly,
                                        DnD=DnD,
                                        delpre=delpre,
-                                       data=data)
+                                       data=data,
+                                       kind=kind,
+                                       version=Version)
 
         self.pre = serder.ked["i"]  # new pre
 
@@ -2847,7 +2939,7 @@ class Hab(BaseHab):
         return pp.algo
 
     def rotate(self, *, isith=None, nsith=None, ncount=None, toad=None,
-               cuts=None, adds=None, data=None, **kwargs):
+               cuts=None, adds=None, data=None, **kwa):
         """Perform a rotation operation and register it in the database.
 
         Advances the key state by replaying the pre-committed next keys
@@ -2906,7 +2998,7 @@ class Hab(BaseHab):
                                           toad=toad,
                                           cuts=cuts,
                                           adds=adds,
-                                          data=data, **kwargs)
+                                          data=data, **kwa)
         except Exception:
             # Rotation event validation failed. Rollback key state to
             # pre-rotation snapshot so KEL and key store stay in sync.
@@ -2954,7 +3046,8 @@ class SignifyHab(BaseHab):
     def __init__(self, **kwa):
         super(SignifyHab, self).__init__(**kwa)
 
-    def incept(self, *, serder, sigers, **kwargs):
+
+    def incept(self, *, serder, sigers, **kwa):
         """Finish setting up this SignifyHab from a pre-built inception event.
 
         Registers the prefix, processes the inception event through the local
@@ -2965,7 +3058,7 @@ class SignifyHab(BaseHab):
                 ``serder.ked["i"]`` is assigned to ``self.pre``.
             sigers (list[Siger]): Siger instances carrying the remote
                 agent's signatures over ``serder.raw``.
-            **kwargs: Absorbed for API compatibility; not used.
+            **kwas: Absorbed for API compatibility; not used.
         """
         self.pre = serder.ked["i"]  # new pre
         self.prefixes.add(self.pre)
@@ -2983,7 +3076,7 @@ class SignifyHab(BaseHab):
         Private keys are held by the remote Signify agent, so local signing is
         intentionally disabled.
 
-        Args:
+        Parameters::
             ser (bytes): Serialization to sign.
             verfers (list or None): Ignored.
             indexed (bool): Ignored.
@@ -2991,13 +3084,13 @@ class SignifyHab(BaseHab):
             ondices (list or None): Ignored.
             **kwa: Ignored.
 
-        Raises:
+        Raises::
             KeriError: Always because local signing is not permitted for this hab type.
         """
         raise KeriError("Signify hab does not support local signing")
 
     def rotate(self, *, serder=None, sigers=None, framed=False,
-                        nested=False, gvrsn=Version, genusify=False, **kwargs):
+                        nested=False, gvrsn=Version, genusify=False, **kwa):
         """Perform a rotation operation from a pre-built, pre-signed event.
 
         Packages the provided serder and sigers into a message and processes
@@ -3025,7 +3118,7 @@ class SignifyHab(BaseHab):
             genusify (bool): True means prepend genus version code from gvrsn before
                             serder to override default stream genus version
                          False means do nothing
-            **kwargs: Absorbed for API compatibility; not used.
+            **kwa: Absorbed for API compatibility; not used.
 
         Returns::
             bytearray: Rotation message with attached signatures.
@@ -3036,7 +3129,7 @@ class SignifyHab(BaseHab):
         return msg
 
     def interact(self, *, serder=None, sigers=None, framed=False, nested=False,
-                          gvrsn=Version, genusify=False, **kwargs):
+                          gvrsn=Version, genusify=False, **kwa):
         """Perform an interaction operation from a pre-built, pre-signed event.
 
         Packages the provided serder and sigers into a message and processes
@@ -3064,7 +3157,7 @@ class SignifyHab(BaseHab):
             genusify (bool): True means prepend genus version code from gvrsn before
                             serder to override default stream genus version
                          False means do nothing
-            **kwargs: Absorbed for API compatibility; not used.
+            **kwa: Absorbed for API compatibility; not used.
 
         Returns::
             bytearray: Interaction message with attached signatures.
@@ -3076,7 +3169,7 @@ class SignifyHab(BaseHab):
 
 
     def exchange(self, serder, seal=None, sigers=None, save=False, framed=False,
-                          nested=False,gvrsn=Version, genusify=False, **kwargs):
+                          nested=False,gvrsn=Version, genusify=False, **kwa):
         """Build and optionally persist a signed ``exn`` exchange message.
 
         Assembles a peer-to-peer exchange message from the pre-built serder
@@ -3108,7 +3201,7 @@ class SignifyHab(BaseHab):
             genusify (bool): True means prepend genus version code from gvrsn before
                             serder to override default stream genus version
                          False means do nothing
-            **kwargs: Absorbed for API compatibility; not used.
+            **kwa: Absorbed for API compatibility; not used.
 
         Returns:
             bytearray: Exchange message with count code and attached
@@ -3150,7 +3243,7 @@ class SignifyHab(BaseHab):
                                             f"pre={self.pre}.")
 
 
-    def replyEndRole(self, cid, role=None, eids=None, scheme=""):
+    def replyEndRole(self, cid, role=None, eids=None, scheme="", **kwa):
         """Build a reply message stream for endpoint role authorisations.
 
         Assembles a ``rpy`` message stream containing the KEL replay for
@@ -3175,7 +3268,7 @@ class SignifyHab(BaseHab):
         ``cid``'s witnesses, the KEL replay is used as the authorisation
         instead of explicit end-role records.
 
-        Args:
+        Parameters::
             cid (str): qb64 identifier prefix of the controller whose
                 endpoint authorisations are being requested.
             role (str or None): Authorised role to filter by. ``None`` means
@@ -3184,8 +3277,14 @@ class SignifyHab(BaseHab):
                 only the endpoint identifiers listed here.
             scheme (str): URL scheme to filter location records by. An empty
                 string (default) means all schemes.
+            **kwa: keyword arguments forwarded to ``eventing.reply``, including:
+                route (str): route path string indicating the data flow handler.
+                data (list): dicts of committed data such as seals.
+                dts (str): date-time-stamp of message at time of creation.
+                version (Version): version instance.
+                kind (str): serialization kind.
 
-        Returns:
+        Returns::
             bytearray: Concatenated reply message stream containing KEL
             replay, location scheme records, and end-role records.
         """
@@ -3213,8 +3312,8 @@ class SignifyHab(BaseHab):
         for (_, erole, eid), end in self.db.ends.getTopItemIter(keys=(cid,)):
             if (end.enabled or end.allowed) and (not role or role == erole) and (not eids or eid in eids):
                 msgs.extend(self.replay(eid))
-                msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
-                msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole))
+                msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme, **kwa))
+                msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole, **kwa))
 
         return msgs
 
@@ -3243,7 +3342,7 @@ class SignifyGroupHab(SignifyHab):
         super(SignifyGroupHab, self).__init__(**kwa)
 
 
-    def incept(self, *, serder, sigers, **kwargs):
+    def incept(self, *, serder, sigers, **kwa):
         """Finish setting up this SignifyGroupHab from a pre-built inception event.
 
         Registers the group prefix, processes the inception event, persists the
@@ -3255,7 +3354,7 @@ class SignifyGroupHab(SignifyHab):
                 ``serder.ked["i"]`` is assigned to ``self.pre``.
             sigers (list[Siger]): Siger instances carrying the remote
                 agent's signatures over ``serder.raw``.
-            **kwargs: Absorbed for API compatibility; not used.
+            **kwa: Absorbed for API compatibility; not used.
         """
         self.pre = serder.ked["i"]  # new pre
         self.prefixes.add(self.pre)
@@ -3292,7 +3391,7 @@ class SignifyGroupHab(SignifyHab):
             raise ValidationError(f"Improper Habitat event type={serder.ked['t']} for "
                                          f"pre={self.pre}.")
 
-    def rotate(self, *, smids=None, rmids=None, serder=None, sigers=None, **kwargs):
+    def rotate(self, *, smids=None, rmids=None, serder=None, sigers=None, **kwa):
         """Perform a rotation operation and update group member lists.
 
         Delegates the core rotation to ``SignifyHab.rotate``, then updates the
@@ -3307,7 +3406,7 @@ class SignifyGroupHab(SignifyHab):
             serder (SerderKERI): Pre-built rotation event serder.
             sigers (list[Siger]): Siger instances carrying the remote
                 agent's signatures over ``serder.raw``.
-            **kwargs: Absorbed for API compatibility; not used.
+            **kwa:  passed through to superclass rotate
 
         Raises:
             ValidationError: If the habitat record for ``self.pre`` does not
@@ -3317,7 +3416,7 @@ class SignifyGroupHab(SignifyHab):
         if (habord := self.db.habs.get(keys=(self.pre,))) is None:
             raise ValidationError(f"Missing HabitatRecord for pre={self.pre}")
 
-        super(SignifyGroupHab, self).rotate(serder=serder, sigers=sigers, **kwargs)
+        super(SignifyGroupHab, self).rotate(serder=serder, sigers=sigers, **kwa)
 
         self.smids = smids
         self.rmids = rmids
@@ -3394,7 +3493,7 @@ class GroupHab(BaseHab):
 
     def incept(self, *, code=MtrDex.Blake3_256, transferable=True, isith=None, nsith=None,
              toad=None, wits=None, delpre=None, estOnly=False, DnD=False,
-             merfers, migers=None, data=None):
+             merfers, migers=None, data=None, kind=Kinds.json, version=Version):
         """Finish setting up or making this GroupHab from parameters, including inception.
 
         Assembles the group inception event from the collected member key
@@ -3432,6 +3531,8 @@ class GroupHab(BaseHab):
                 next-key digests contributed by each multisig group member.
                 ``None`` means no pre-rotation material is included.
             data (list or None): Seal dicts to embed in the inception event.
+            kind (str): serialization value of Kinds ("json","cbor","mgpk","cesr")
+            version (Versionage): version for incept key event message
 
         Raises:
             ClosedError: If the key store, database, or config file is not
@@ -3461,7 +3562,9 @@ class GroupHab(BaseHab):
                                             estOnly=estOnly,
                                             DnD=DnD,
                                             delpre=delpre,
-                                            data=data)
+                                            data=data,
+                                            kind=kind,
+                                            version=version)
 
         self.pre = serder.ked["i"]  # new pre
 
@@ -3491,11 +3594,11 @@ class GroupHab(BaseHab):
         self.inited = True
 
     def rotate(self, smids=None, rmids=None, serder=None, framed=False,
-                        nested=False, gvrsn=Version, genusify=False, **kwargs):
+                        nested=False, gvrsn=Version, genusify=False, **kwa):
         """Perform a rotation operation and update group member lists.
 
         When ``serder`` is ``None``, delegates entirely to
-        ``BaseHab.rotate(**kwargs)`` for a locally-driven rotation.  When a
+        ``BaseHab.rotate(**kwa)`` for a locally-driven rotation.  When a
         pre-built rotation ``serder`` is provided, the local member hab signs
         it, the result is processed through the local Kevery, and the
         ``smids``/``rmids`` member lists are updated on both the instance and
@@ -3527,7 +3630,7 @@ class GroupHab(BaseHab):
                             serder to override default stream genus version
                          False means do nothing
 
-            **kwargs: Keyword arguments forwarded to ``BaseHab.rotate`` when
+            **kwa: Keyword arguments forwarded to ``BaseHab.rotate`` when
                 ``serder`` is ``None``.
 
         Returns:
@@ -3542,7 +3645,7 @@ class GroupHab(BaseHab):
         if serder is None:
             return super(GroupHab, self).rotate(framed=framed, nested=nested,
                                                 gvrsn=gvrsn, genusify=genusify,
-                                                **kwargs)
+                                                **kwa)
 
         if (habord := self.db.habs.get(keys=(self.pre,))) is None:
             raise ValidationError(f"Missing HabitatRecord for pre={self.pre}")
@@ -3570,7 +3673,8 @@ class GroupHab(BaseHab):
 
         return msg
 
-    def sign(self, ser, verfers=None, indexed=True, rotated=False, indices=None, ondices=None):
+    def sign(self, ser, verfers=None, indexed=True, rotated=False,
+                        indices=None, ondices=None):
         """Sign a serialisation using the local member hab's key material.
 
         Walks the member hab's (``mhab``) KEL to locate the latest event at
@@ -3676,7 +3780,8 @@ class GroupHab(BaseHab):
         """
         raise ValueError("Attempt to witness by group hab ={self.pre}.")
 
-    def query(self, pre, src, query=None, **kwa):
+    def query(self, pre, src, framed=False, nested=False, gvrsn=Version,
+                              genusify=False, query=None, **kwa):
         """Create, sign, and return a signed ``qry`` query message.
 
         Builds a query event for ``pre`` directed at attester ``src``, then
@@ -3688,7 +3793,7 @@ class GroupHab(BaseHab):
             src (str): qb64 identifier prefix of the attester being queried.
             query (dict or None): Additional query modifiers to include in the
                 ``q`` field. Defaults to an empty dict when ``None``.
-            **kwa: Keyword arguments forwarded to ``queryEvent``.
+            **kwa: Keyword arguments forwarded to ``query``.
 
         Returns:
             bytearray: Signed query message endorsed by ``mhab``.
@@ -3699,7 +3804,8 @@ class GroupHab(BaseHab):
         query["src"] = src
         serder = eventing.query(query=query, **kwa)
 
-        return self.mhab.endorse(serder, last=True, framed=False)
+        return self.mhab.endorse(serder, last=True, framed=framed, nested=nested,
+                                 gvrsn=gvrsn, genusify=genusify)
 
 
     def witnesser(self):
