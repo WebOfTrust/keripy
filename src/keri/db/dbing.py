@@ -344,13 +344,11 @@ class LMDBer(filing.Filer):
         headDirPath is head directory path
         path is full directory path
         perm is numeric os permissions for directory and/or file(s)
-        filed (bool): True means .path ends in file.
-                       False means .path ends in directory
+        filed (bool): True means .path ends in file; False means .path ends in directory
         mode (str): file open mode if filed
         fext (str): file extension if filed
         file (File)
-        opened is Boolean, True means directory created and if file then file
-                is opened. False otherwise
+        opened is Boolean, True means directory created and if file then file is opened. False otherwise
 
     Attributes:
         env (lmdb.env): LMDB main (super) database environment
@@ -1087,7 +1085,7 @@ class LMDBer(filing.Filer):
         numbered keys with same key  and on >= on.
         When on = 0, default, then iterates over all on at key
         When key is empty then iterates over all on for all keys, whole db.
-         Returned items are triples of (key, on, val).
+        Returned items are triples of (key, on, val).
 
         Entries are sorted by onKey(key, on) where on is ordinal number int and
         key is prefix sans on.
@@ -1371,7 +1369,7 @@ class LMDBer(filing.Filer):
         When value is None then removes all set members at key
         When key is empty or missing returns False.
         Uses hidden ordinal key suffix for insertion ordering.
-           The suffix is suffixed and unsuffixed transparently.
+        The suffix is suffixed and unsuffixed transparently.
 
         Because the insertion order of val is not provided must perform a linear
         search over set of values.
