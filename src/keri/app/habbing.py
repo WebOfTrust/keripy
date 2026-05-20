@@ -2445,6 +2445,7 @@ class BaseHab:
 
         seal = None
         if duple is not None:
+            seqner, diger = duple
             seal = SealSource(s=seqner.snh, d=diger.qb64)
 
         return messagize(serder, sigers=sigers, seals=seal, framed=framed,
@@ -2529,6 +2530,7 @@ class BaseHab:
         if dig is None:
             raise MissingEntryError("Missing event for pre={} at sn={}."
                                           "".format(pre, sn))
+        dig = dig.encode("utf-8")
 
         serder = self.db.evts.get(keys=(pre, dig))
         sigers = [siger for siger in self.db.sigs.getIter(keys=(pre, dig))]
