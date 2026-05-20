@@ -22,14 +22,8 @@ from ..kering import (Version, Vrsn_1_0, Vrsn_2_0, Ilks, ClosedError, AuthError,
                 KeriError, MissingSignatureError, Roles, Schemes)
 from ..core import (Tholder, Diger, Prefixer, Kevery, Parser, Revery,
                     Router, Counter, Salter, SealEvent, SealSource, SealLast,
-                    Codens, MtrDex, TraitDex,
-                    deltate, messagize, delcept,
-                    rotate as rotateEvent,
-                    incept as inceptEvent,
-                    interact as interactEvent,
-                    query as queryEvent,
-                    receipt as receiptEvent,
-                    reply as replyEvent)
+                    Codens, MtrDex, TraitDex, messagize)
+from ..core import eventing
 from ..recording import HabitatRecord, OobiRecord
 
 
@@ -1079,7 +1073,8 @@ class BaseHab:
         self.delpre = None  # assigned laster if delegated
 
 
-    def make(self, DnD, code, data, delpre, estOnly, isith, verfers, nsith, digers, toad, wits):
+    def incept(self, DnD, code, data, delpre, estOnly, isith, verfers, nsith,
+               digers, toad, wits):
         """Creates Serder of inception event for provided parameters.
         Assumes injected dependencies were already setup.
 
@@ -1126,7 +1121,7 @@ class BaseHab:
         self.delpre = delpre
         keys = [verfer.qb64 for verfer in verfers]
         if self.delpre:
-            serder = delcept(keys=keys,
+            serder = eventing.delcept(keys=keys,
                                       delpre=self.delpre,
                                       isith=cst,
                                       nsith=nst,
@@ -1136,7 +1131,7 @@ class BaseHab:
                                       cnfg=cnfg,
                                       code=code)
         else:
-            serder = inceptEvent(keys=keys,
+            serder = eventing.incept(keys=keys,
                                  isith=cst,
                                  nsith=nst,
                                  ndigs=[diger.qb64 for diger in digers],
@@ -1146,6 +1141,16 @@ class BaseHab:
                                  code=code,
                                  data=data)
         return serder
+
+
+    def make(self, **kwa):
+        """Alias for ``.incept``.
+
+        Args:
+            **kwa: keyword arguments forwarded to :meth:`incept`.
+        """
+        self.incept(**kwa)
+
 
 
     def save(self, habord):
@@ -1280,15 +1285,6 @@ class BaseHab:
         return self.db.prefixes
 
 
-    def incept(self, **kwa):
-        """Alias for ``.make``.
-
-        Args:
-            **kwa: keyword arguments forwarded to :meth:`make`.
-        """
-        self.make(**kwa)
-
-
     def rotate(self, *, verfers=None, digers=None, isith=None, nsith=None,
                         toad=None, cuts=None, adds=None, data=None, framed=False,
                         nested=False, gvrsn=Version, genusify=False):
@@ -1366,7 +1362,7 @@ class BaseHab:
             raise ValidationError("invalid rotation, new key set unable to satisfy prior next signing threshold")
 
         if kever.delpre is not None:  # delegator only shows up in delcept
-            serder = deltate(pre=kever.prefixer.qb64,
+            serder = eventing.deltate(pre=kever.prefixer.qb64,
                                       keys=keys,
                                       dig=kever.serder.said,
                                       sn=kever.sner.num + 1,
@@ -1379,7 +1375,7 @@ class BaseHab:
                                       adds=adds,
                                       data=data)
         else:
-            serder = rotateEvent(pre=kever.prefixer.qb64,
+            serder = eventing.rotate(pre=kever.prefixer.qb64,
                                      keys=keys,
                                      dig=kever.serder.said,
                                      sn=kever.sner.num + 1,
@@ -1396,7 +1392,7 @@ class BaseHab:
         sigers = self.sign(ser=serder.raw, verfers=verfers, rotated=True)
 
         # update own key event verifier state
-        msg = messagize(serder, sigers=sigers, framed=framed, nested=nested,
+        msg = eventing.messagize(serder, sigers=sigers, framed=framed, nested=nested,
                         gvrsn=gvrsn, genusify=genusify)
 
         try:
@@ -1441,15 +1437,15 @@ class BaseHab:
             ValidationError: if the interaction event is improper.
         """
         kever = self.kever
-        serder = interactEvent(pre=kever.prefixer.qb64,
+        serder = eventing.interact(pre=kever.prefixer.qb64,
                                    dig=kever.serder.said,
                                    sn=kever.sner.num + 1,
                                    data=data)
 
         sigers = self.sign(ser=serder.raw)
 
-        msg = messagize(serder, sigers=sigers, framed=framed, nested=nested,
-                        gvrsn=gvrsn, genusify=genusify)
+        msg = eventing.messagize(serder, sigers=sigers, framed=framed,
+                                 nested=nested, gvrsn=gvrsn, genusify=genusify)
         try:
             # verify event, update kever state, and escrow if group
             self.kvy.processEvent(serder=serder, sigers=sigers)
@@ -1536,7 +1532,7 @@ class BaseHab:
         query = query if query is not None else dict()
         query['i'] = pre
         query["src"] = src
-        serder = queryEvent(query=query, **kwa)
+        serder = eventing.query(query=query, **kwa)
         return self.endorse(serder, last=True, framed=False)  # was framed=False
 
 
@@ -1585,13 +1581,14 @@ class BaseHab:
                                           s="{:x}".format(kever.lastEst.s),
                                           d=kever.lastEst.d)
             sigers = self.sign(ser=serder.raw, indexed=True)
-            msg = messagize(serder=serder, sigers=sigers, source=seal, framed=framed,
-                            nested=nested, gvrsn=gvrsn, genusify=genusify)
+            msg = eventing.messagize(serder=serder, sigers=sigers, source=seal,
+                                     framed=framed,nested=nested, gvrsn=gvrsn,
+                                     genusify=genusify)
 
         else:
             cigars = self.sign(ser=serder.raw, indexed=False)
-            msg = messagize(serder=serder, cigars=cigars, framed=framed,
-                            nested=nested, gvrsn=gvrsn, genusify=genusify)
+            msg = eventing.messagize(serder=serder, cigars=cigars, framed=framed,
+                                     nested=nested, gvrsn=gvrsn, genusify=genusify)
 
         return msg
 
@@ -1661,8 +1658,8 @@ class BaseHab:
         else:
             cigars = self.sign(ser=serder.raw,
                                indexed=False)
-            msg = messagize(serder, cigars=cigars, framed=framed, nested=nested,
-                            gvrsn=gvrsn, genusify=genusify)
+            msg = eventing.messagize(serder, cigars=cigars, framed=framed,
+                                     nested=nested, gvrsn=gvrsn, genusify=genusify)
 
         msg.extend(end)
 
@@ -1701,7 +1698,7 @@ class BaseHab:
             bytearray: receipt message with attached signatures.
         """
         ked = serder.ked
-        reserder = receiptEvent(pre=ked["i"],
+        reserder = eventing.receipt(pre=ked["i"],
                                     sn=int(ked["s"], 16),
                                     said=serder.said)
 
@@ -1712,14 +1709,14 @@ class BaseHab:
                                       d=self.kever.lastEst.d)
             sigers = self.sign(ser=serder.raw,
                                indexed=True)
-            msg = messagize(serder=reserder, sigers=sigers, source=seal,
-                            framed=framed, nested=nested, gvrsn=gvrsn,
-                            genusify=genusify)
+            msg = eventing.messagize(serder=reserder, sigers=sigers, source=seal,
+                                     framed=framed, nested=nested, gvrsn=gvrsn,
+                                     genusify=genusify)
         else:
             cigars = self.sign(ser=serder.raw,
                                indexed=False)
-            msg = messagize(reserder, cigars=cigars, framed=framed, nested=nested,
-                        gvrsn=gvrsn, genusify=genusify)
+            msg = eventing.messagize(reserder, cigars=cigars, framed=framed,
+                                     nested=nested, gvrsn=gvrsn, genusify=genusify)
 
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
@@ -1782,7 +1779,7 @@ class BaseHab:
                                                kever.wits))
         index = kever.wits.index(self.pre)
 
-        reserder = receiptEvent(pre=ked["i"],
+        reserder = eventing.receipt(pre=ked["i"],
                                     sn=int(ked["s"], 16),
                                     said=serder.said)
 
@@ -1791,8 +1788,8 @@ class BaseHab:
                                pubs=[self.pre],
                                indices=[index])
 
-        msg = messagize(reserder, wigers=wigers, framed=framed, nested=nested,
-                        gvrsn=gvrsn, genusify=genusify)
+        msg = eventing.messagize(reserder, wigers=wigers, framed=framed,
+                                 nested=nested,gvrsn=gvrsn, genusify=genusify)
         self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
         return msg
 
@@ -2069,7 +2066,7 @@ class BaseHab:
         """Return own endorsed reply message.
 
         Args:
-            **kwa: keyword arguments forwarded to ``replyEvent``, including:
+            **kwa: keyword arguments forwarded to ``eventing.reply``, including:
                 route (str): route path string indicating the data flow handler.
                 data (list): dicts of committed data such as seals.
                 dts (str): date-time-stamp of message at time of creation.
@@ -2079,7 +2076,7 @@ class BaseHab:
         Returns:
             bytearray: reply message.
         """
-        return self.endorse(replyEvent(**kwa), framed=False)
+        return self.endorse(eventing.reply(**kwa), framed=False)
 
 
     def makeEndRole(self, eid, role=Roles.controller, allow=True, stamp=None):
@@ -2159,7 +2156,7 @@ class BaseHab:
                 sigers = None
                 seal = None
 
-            msgs.extend(messagize(serder=serder,
+            msgs.extend(eventing.messagize(serder=serder,
                                            cigars=[cigar] if cigar else [],
                                            sigers=sigers,
                                            source=seal,
@@ -2271,7 +2268,7 @@ class BaseHab:
                 sigers = None
                 seal = None
 
-            msgs.extend(messagize(serder=serder,
+            msgs.extend(eventing.messagize(serder=serder,
                                            cigars=[cigar] if cigar else [],
                                            sigers=sigers,
                                            source=seal,
@@ -2448,8 +2445,8 @@ class BaseHab:
             number, diger = duple
             seal = SealSource(s=number.snh, d=diger.qb64)
 
-        return messagize(serder, sigers=sigers, bonds=seal, framed=framed,
-                            nested=nested, gvrsn=gvrsn, genusify=genusify)
+        return eventing.messagize(serder, sigers=sigers, bonds=seal, framed=framed,
+                                  nested=nested, gvrsn=gvrsn, genusify=genusify)
 
 
     def msgOwnInception(self, allowPartiallySigned=False, framed=False, nested=False,
@@ -2533,8 +2530,8 @@ class BaseHab:
 
         serder = self.db.evts.get(keys=(pre, dig))
         sigers = [siger for siger in self.db.sigs.getIter(keys=(pre, dig))]
-        return messagize(serder, sigers=sigers, framed=framed, nested=nested,
-                         gvrsn=gvrsn, genusify=genusify)
+        return eventing.messagize(serder, sigers=sigers, framed=framed,
+                                   nested=nested, gvrsn=gvrsn, genusify=genusify)
 
 
     def processCues(self, cues):
@@ -2702,7 +2699,7 @@ class Hab(BaseHab):
     def __init__(self, **kwa):
         super(Hab, self).__init__(**kwa)
 
-    def make(self, *, secrecies=None, iridx=0, code=MtrDex.Blake3_256, dcode=MtrDex.Blake3_256,
+    def incept(self, *, secrecies=None, iridx=0, code=MtrDex.Blake3_256, dcode=MtrDex.Blake3_256,
              icode=MtrDex.Ed25519_Seed, transferable=True, isith=None, icount=1, nsith=None, ncount=None,
              toad=None, wits=None, delpre=None, estOnly=False, DnD=False, hidden=False, data=None, algo=None,
              salt=None, tier=None):
@@ -2799,7 +2796,7 @@ class Hab(BaseHab):
                                               tier=tier,
                                               temp=self.temp)
 
-        serder = super(Hab, self).make(isith=isith,
+        serder = super(Hab, self).incept(isith=isith,
                                        verfers=verfers,
                                        nsith=nsith,
                                        digers=digers,
@@ -2957,7 +2954,7 @@ class SignifyHab(BaseHab):
     def __init__(self, **kwa):
         super(SignifyHab, self).__init__(**kwa)
 
-    def make(self, *, serder, sigers, **kwargs):
+    def incept(self, *, serder, sigers, **kwargs):
         """Finish setting up this SignifyHab from a pre-built inception event.
 
         Registers the prefix, processes the inception event through the local
@@ -3033,8 +3030,8 @@ class SignifyHab(BaseHab):
         Returns::
             bytearray: Rotation message with attached signatures.
         """
-        msg = messagize(serder, sigers=sigers, framed=framed, nested=nested,
-                        gvrsn=gvrsn, genusify=genusify)
+        msg = eventing.messagize(serder, sigers=sigers, framed=framed,
+                                 nested=nested, gvrsn=gvrsn, genusify=genusify)
         self.processEvent(serder, sigers)
         return msg
 
@@ -3072,8 +3069,8 @@ class SignifyHab(BaseHab):
         Returns::
             bytearray: Interaction message with attached signatures.
         """
-        msg = messagize(serder, sigers=sigers, framed=framed, nested=nested,
-                                gvrsn=gvrsn, genusify=genusify)
+        msg = evening.messagize(serder, sigers=sigers, framed=framed,
+                                nested=nested, gvrsn=gvrsn, genusify=genusify)
         self.processEvent(serder, sigers)
         return msg
 
@@ -3118,8 +3115,9 @@ class SignifyHab(BaseHab):
             signatures.
         """
         # sign serder event
-        msg = messagize(serder=serder, sigers=sigers, source=seal, framed=framed,
-                        nested=nested, gvrsn=gvrsn, genusify=genusify)
+        msg = eventing.messagize(serder=serder, sigers=sigers, source=seal,
+                                 framed=framed, nested=nested, gvrsn=gvrsn,
+                                 genusify=genusify)
 
         if save:
             self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
@@ -3394,7 +3392,7 @@ class GroupHab(BaseHab):
 
         super(GroupHab, self).__init__(**kwa)
 
-    def make(self, *, code=MtrDex.Blake3_256, transferable=True, isith=None, nsith=None,
+    def incept(self, *, code=MtrDex.Blake3_256, transferable=True, isith=None, nsith=None,
              toad=None, wits=None, delpre=None, estOnly=False, DnD=False,
              merfers, migers=None, data=None):
         """Finish setting up or making this GroupHab from parameters, including inception.
@@ -3453,7 +3451,7 @@ class GroupHab(BaseHab):
         verfers = merfers
         digers = migers
 
-        serder = super(GroupHab, self).make(isith=isith,
+        serder = super(GroupHab, self).incept(isith=isith,
                                             verfers=verfers,
                                             nsith=nsith,
                                             digers=digers,
@@ -3553,8 +3551,8 @@ class GroupHab(BaseHab):
         sigers = self.sign(ser=serder.raw, verfers=serder.verfers, rotated=True)
 
         # update own key event verifier state
-        msg = messagize(serder, sigers=sigers, framed=framed, nested=nested,
-                        gvrsn=gvrsn, genusify=genusify)
+        msg = eventing.messagize(serder, sigers=sigers, framed=framed,
+                                 nested=nested, gvrsn=gvrsn, genusify=genusify)
 
         try:
             self.kvy.processEvent(serder=serder, sigers=sigers)
@@ -3699,7 +3697,7 @@ class GroupHab(BaseHab):
         query = query if query is not None else dict()
         query['i'] = pre
         query["src"] = src
-        serder = queryEvent(query=query, **kwa)
+        serder = eventing.query(query=query, **kwa)
 
         return self.mhab.endorse(serder, last=True, framed=False)
 
