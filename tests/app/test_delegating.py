@@ -6,7 +6,7 @@ tests.app.delegating module
 import time
 from hio.base import doing, tyming
 
-from keri.kering import Schemes, Vrsn_1_0
+from keri.kering import Schemes, Vrsn_1_0, Kinds
 from keri.core import Salter, Kevery, Parser, Seqner, Diger, delcept
 
 from keri.app import (Anchorer, DelegateRequestHandler, Receiptor,
@@ -24,8 +24,10 @@ def test_anchorer(seeder):
         bts = Anchorer(hby=delHby)
 
         wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[Schemes.http])
-        seeder.seedWitEnds(delHby.db, witHabs=[wesHab], protocols=[Schemes.http])
+        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[Schemes.http],
+                           version=Vrsn_1_0, kind=Kinds.json)
+        seeder.seedWitEnds(delHby.db, witHabs=[wesHab], protocols=[Schemes.http],
+                           version=Vrsn_1_0, kind=Kinds.json)
 
         opts = dict(
             wesHab=wesHab,

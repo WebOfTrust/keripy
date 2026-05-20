@@ -16,7 +16,7 @@ from hio.core import http
 from hio.base import doing
 from hio.help import decking
 
-from keri.kering import Schemes
+from keri.kering import Schemes, Vrsn_1_0, Kinds
 from keri.core import SerderKERI, Salter
 from keri.db import basing
 from keri.app import (MailboxIterable, QryRpyMailboxIterable,
@@ -170,7 +170,8 @@ def test_wit_query_ends(seeder):
         witDoer = Receiptor(hby=palHby)
 
         wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[Schemes.http])
+        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[Schemes.http],
+                           version=Vrsn_1_0, kind=Kinds.json)
 
         app = falcon.App()
         query_endpoint = QueryEnd(wesHab, reger=wesReger)

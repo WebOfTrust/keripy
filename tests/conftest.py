@@ -8,14 +8,13 @@ https://docs.pytest.org/en/latest/pythonpath.html
 import os
 import shutil
 import multicommand
-import datetime
 
 import pytest
 
 from hio.base import doing
 
 from keri import help, Schemes, Roles
-from keri.kering import Vrsn_1_0
+from keri.kering import Vrsn_1_0, Kinds
 from keri.core import scheming, coring, routing, eventing, parsing, signing
 from keri.help import helping
 from keri.recording import EndpointRecord, LocationRecord
@@ -125,14 +124,15 @@ def seeder():
 
 class DbSeed:
     @staticmethod
-    def seedWitEnds(db, witHabs, protocols=None):
-        """ Add endpoint and location records for well known test witnesses
+    def seedWitEnds(db, witHabs, protocols=None, version=Vrsn_1_0, kind=Kinds.json):
+        """ Add endpoint and location records for well-known test witnesses
 
         Args:
             db (Baser): database to add records
             witHabs (list): list of witness Habs for whom to create Ends
-            protocols (list) array of str protocol names to load URLs for.
-        Returns:
+            protocols (list): array of str protocol names to load URLs for.
+            version (Versionage): KERI protocol version; must match ``witHabs``.
+            kind (str): serialization kind; must match ``witHabs``.
 
         """
 
@@ -140,7 +140,7 @@ class DbSeed:
         rvy = routing.Revery(db=db, rtr=rtr)
         kvy = eventing.Kevery(db=db, lax=False, local=True, rvy=rvy)
         kvy.registerReplyRoutes(router=rtr)
-        psr = parsing.Parser(framed=True, kvy=kvy, rvy=rvy, version=Vrsn_1_0)
+        psr = parsing.Parser(framed=True, kvy=kvy, rvy=rvy, version=version)
 
         if protocols is None:
             protocols = [Schemes.tcp, Schemes.http]
@@ -151,11 +151,15 @@ class DbSeed:
                 url = WitnessUrls[f"{hab.name}:{scheme}"]
                 msgs.extend(hab.makeEndRole(eid=hab.pre,
                                             role=Roles.controller,
-                                            stamp=help.nowIso8601()))
+                                            stamp=help.nowIso8601(),
+                                            version=version,
+                                            kind=kind))
 
                 msgs.extend(hab.makeLocScheme(url=url,
                                               scheme=scheme,
-                                              stamp=help.nowIso8601()))
+                                              stamp=help.nowIso8601(),
+                                              version=version,
+                                              kind=kind))
                 psr.parse(ims=msgs)
 
     @staticmethod
