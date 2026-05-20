@@ -13,7 +13,7 @@ from hio.core import http
 from keri import help
 from keri.core import (Salter, Pather, Prefixer,
                        Bexter, Kevery, Parser, SerderKERI)
-from keri.kering import Vrsn_1_0, Ilks, Roles, Schemes
+from keri.kering import Vrsn_1_0, Kinds, Ilks, Roles, Schemes
 
 from keri.app import (Mailboxer, ForwardHandler, Poster,
                       StreamPoster, HttpEnd,
@@ -31,9 +31,9 @@ def test_postman(seeder):
         mbx = Mailboxer(name="wes", temp=True)
         wesDoers = setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644)
         wesHab = wesHby.habByName("wes")
-        seeder.seedWitEnds(hby.db, witHabs=[wesHab])
-        seeder.seedWitEnds(wesHby.db, witHabs=[wesHab])
-        seeder.seedWitEnds(recpHby.db, witHabs=[wesHab])
+        seeder.seedWitEnds(hby.db, witHabs=[wesHab], version=Vrsn_1_0, kind=Kinds.json)
+        seeder.seedWitEnds(wesHby.db, witHabs=[wesHab], version=Vrsn_1_0, kind=Kinds.json)
+        seeder.seedWitEnds(recpHby.db, witHabs=[wesHab], version=Vrsn_1_0, kind=Kinds.json)
 
         recpHab = recpHby.makeHab(name="repTest", transferable=True, wits=[wesHab.pre])
 
@@ -317,9 +317,9 @@ def test_essr_mbx(seeder):
         mbx = Mailboxer(name="wes", temp=True)
         wesDoers = setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644)
         wesHab = wesHby.habByName("wes")
-        seeder.seedWitEnds(hby.db, witHabs=[wesHab])
-        seeder.seedWitEnds(wesHby.db, witHabs=[wesHab])
-        seeder.seedWitEnds(recpHby.db, witHabs=[wesHab])
+        seeder.seedWitEnds(hby.db, witHabs=[wesHab], version=Vrsn_1_0, kind=Kinds.json)
+        seeder.seedWitEnds(wesHby.db, witHabs=[wesHab], version=Vrsn_1_0, kind=Kinds.json)
+        seeder.seedWitEnds(recpHby.db, witHabs=[wesHab], version=Vrsn_1_0, kind=Kinds.json)
 
         recpHab = recpHby.makeHab(name="repTest", transferable=True, wits=[wesHab.pre])
 

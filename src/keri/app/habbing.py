@@ -17,7 +17,7 @@ from .keeping import Keeper, Manager
 from ..peer import Exchanger, exchange
 from ..db import Baser, dgKey, fetchTsgs
 from ..help import fromIso8601, toIso8601
-from ..kering import (Version, Vrsn_1_0, Vrsn_2_0, Ilks, ClosedError, AuthError,
+from ..kering import (Version, Vrsn_1_0, Vrsn_2_0, Kinds, Ilks, ClosedError, AuthError,
                 ConfigurationError, ValidationError, MissingEntryError,
                 KeriError, MissingSignatureError, Roles, Schemes)
 from ..core import (Tholder, Diger, Prefixer, Kevery, Parser, Revery,
@@ -2070,10 +2070,14 @@ class BaseHab:
 
         Args:
             **kwa: keyword arguments forwarded to ``replyEvent``, including:
+                pre (str): qb64 identifier prefix of sender (AID). Required for
+                    version 2 reply messages (``i`` field); ignored in version 1
+                    top-level SAD (sender comes from signature attachment).
                 route (str): route path string indicating the data flow handler.
                 data (list): dicts of committed data such as seals.
-                dts (str): date-time-stamp of message at time of creation.
-                version (Version): version instance.
+                stamp (str): date-time-stamp RFC-3339 profile of iso8601 datetime
+                    at message creation. None means use now.
+                version (Versionage): KERI protocol version instance.
                 kind (str): serialization kind.
 
         Returns:
@@ -2082,7 +2086,8 @@ class BaseHab:
         return self.endorse(replyEvent(**kwa), framed=False)
 
 
-    def makeEndRole(self, eid, role=Roles.controller, allow=True, stamp=None):
+    def makeEndRole(self, eid, role=Roles.controller, allow=True, stamp=None,
+                    version=Version, kind=Kinds.json):
         """Return a reply message allowing or disallowing endpoint provider
         ``eid`` in ``role``.
 
@@ -2094,13 +2099,16 @@ class BaseHab:
                 False means cut ``eid`` at ``role`` as unauthorized.
             stamp (str or None): date-time-stamp RFC-3339 profile of iso8601
                 datetime. None means use now.
+            version (Versionage): KERI protocol version for reply message.
+            kind (str): serialization kind for reply message.
 
         Returns:
             bytearray: reply message.
         """
         data = dict(cid=self.pre, role=role, eid=eid)
         route = "/end/role/add" if allow else "/end/role/cut"
-        return self.reply(route=route, data=data, stamp=stamp)
+        return self.reply(route=route, data=data, stamp=stamp, pre=self.pre,
+                          version=version, kind=kind)
 
 
     def loadEndRole(self, cid, eid, role=Roles.controller, framed=False,
@@ -2170,7 +2178,8 @@ class BaseHab:
         return msgs
 
 
-    def makeLocScheme(self, url, eid=None, scheme="http", stamp=None):
+    def makeLocScheme(self, url, eid=None, scheme="http", stamp=None,
+                     version=Version, kind=Kinds.json):
         """Return a reply message of own url service endpoint at ``scheme``.
 
         Args:
@@ -2182,13 +2191,16 @@ class BaseHab:
                 Default is ``"http"``.
             stamp (str or None): date-time-stamp RFC-3339 profile of iso8601
                 datetime. None means use now.
+            version (Versionage): KERI protocol version for reply message.
+            kind (str): serialization kind for reply message.
 
         Returns:
             bytearray: reply message.
         """
         eid = eid if eid is not None else self.pre
         data = dict(eid=eid, scheme=scheme, url=url)
-        return self.reply(route="/loc/scheme", data=data, stamp=stamp)
+        return self.reply(route="/loc/scheme", data=data, stamp=stamp, pre=self.pre,
+                          version=version, kind=kind)
 
 
     def replyLocScheme(self, eid, scheme=""):

@@ -7,7 +7,7 @@ import time
 
 from hio.base import doing, tyming
 
-from keri.kering import Schemes
+from keri.kering import Schemes, Vrsn_1_0, Kinds
 from keri.core import Salter
 from keri.app import (WitnessReceiptor, WitnessPublisher, WitnessInquisitor,
                       runController, openHby, setupWitness)
@@ -27,7 +27,8 @@ def test_withness_receiptor(seeder):
         wanHab = wanHby.habByName(name="wan")
         wilHab = wilHby.habByName(name="wil")
         wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[Schemes.tcp])
+        seeder.seedWitEnds(palHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[Schemes.tcp],
+                           version=Vrsn_1_0, kind=Kinds.json)
 
         rctDoer = ReceiptDoer(hby=palHby, wanHab=wanHab, wilHab=wilHab, wesHab=wesHab)
 
@@ -130,7 +131,8 @@ class PublishDoer(doing.DoDoer):
         self.wanHab = wanHby.habByName(name="wan")
         self.wilHab = wilHby.habByName(name="wil")
         self.wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[self.wanHab, self.wilHab, self.wesHab], protocols=[Schemes.tcp])
+        seeder.seedWitEnds(palHby.db, witHabs=[self.wanHab, self.wilHab, self.wesHab], protocols=[Schemes.tcp],
+                           version=Vrsn_1_0, kind=Kinds.json)
 
         self.palHab = palHby.makeHab(name="pal", wits=[self.wanHab.pre, self.wilHab.pre, self.wesHab.pre], transferable=True)
 
@@ -173,8 +175,10 @@ def test_witness_inquisitor(mockHelpingNowUTC, seeder):
         wanHab = wanHby.habByName(name="wan")
         wilHab = wilHby.habByName(name="wil")
         wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[Schemes.tcp])
-        seeder.seedWitEnds(qinHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[Schemes.tcp])
+        seeder.seedWitEnds(palHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[Schemes.tcp],
+                           version=Vrsn_1_0, kind=Kinds.json)
+        seeder.seedWitEnds(qinHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[Schemes.tcp],
+                           version=Vrsn_1_0, kind=Kinds.json)
 
         palHab = palHby.makeHab(name="pal", wits=[wanHab.pre, wilHab.pre, wesHab.pre], transferable=True)
         qinHab = qinHby.makeHab(name="qin", wits=[wanHab.pre, wilHab.pre, wesHab.pre], transferable=True)
