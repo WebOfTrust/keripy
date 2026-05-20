@@ -34,7 +34,7 @@ def openHby(*, name="test", base="", temp=True, salt=None, **kwa):
     """Context manager that creates and yields a ``Habery`` instance, closing
     and optionally clearing it on exit.
 
-    Args:
+    Parameters::
         name (str): Name used for the shared databases and config file path.
         base (str): Optional path component inserted before ``name`` for
             further hierarchical differentiation of databases. Empty string
@@ -49,7 +49,7 @@ def openHby(*, name="test", base="", temp=True, salt=None, **kwa):
             See ``Habery`` for the full list (``seed``, ``aeid``, ``bran``,
             ``pidx``, ``algo``, ``tier``, ``free``).
 
-    Yields:
+    Yields::
         Habery: Fully initialised ``Habery`` instance.
     """
     habery = None
@@ -72,7 +72,7 @@ def openHab(name="test", base="", salt=None, temp=True, cf=None, **kwa):
     otherwise a new single-key ``Hab`` (``icount=1, isith='1', ncount=1,
     nsith='1'``) is created via ``Habery.makeHab``.
 
-    Args:
+    Parameters::
         name (str): Name of the ``Hab`` (and the underlying shared databases).
         base (str): Optional path component for shared resources.  See
             ``openHby``.
@@ -84,7 +84,7 @@ def openHab(name="test", base="", salt=None, temp=True, cf=None, **kwa):
             configuration data.
         **kwa: Additional keyword arguments forwarded to ``Habery.makeHab``.
 
-    Yields:
+    Yields::
         tuple[Habery, Hab]: The shared ``Habery`` environment and the named
             ``Hab`` instance.
     """
@@ -401,7 +401,7 @@ class Habery:
                   rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                   name=name, ns=ns, temp=self.temp)
 
-        hab.make(**kwa)
+        hab.incept(**kwa)
 
         self.habs[hab.pre] = hab
         return hab
@@ -474,7 +474,7 @@ class Habery:
                        rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                        name=group, ns=ns, mhab=mhab, smids=smids, rmids=rmids, temp=self.temp)
 
-        hab.make(**kwa)  # finish making group hab with injected pass throughs
+        hab.incept(**kwa)  # finish making group hab with injected pass throughs
         self.habs[hab.pre] = hab
         return hab
 
@@ -563,7 +563,7 @@ class Habery:
                          rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                          name=name, ns=ns, temp=self.temp)
 
-        hab.make(**kwa)  # finish making group hab with injected pass throughs
+        hab.incept(**kwa)  # finish making group hab with injected pass throughs
         self.habs[hab.pre] = hab
         return hab
 
@@ -590,7 +590,7 @@ class Habery:
                               rtr=self.rtr, rvy=self.rvy, kvy=self.kvy, psr=self.psr,
                               name=name, mhab=mhab, smids=smids, rmids=rmids, ns=ns, temp=self.temp)
 
-        hab.make(**kwa)  # finish making group hab with injected pass throughs
+        hab.incept(**kwa)  # finish making group hab with injected pass throughs
 
         self.habs[hab.pre] = hab
         return hab
@@ -911,7 +911,7 @@ class Signator:
         spre = self.db.hbys.get(name)
         if not spre:
             self._hab = Hab(name=name, db=db, **kwa)
-            self._hab.make(transferable=False, hidden=True)
+            self._hab.incept(transferable=False, hidden=True)
             self.pre = self._hab.pre
             self.db.hbys.pin(name, self.pre)
         else:
@@ -3243,7 +3243,7 @@ class SignifyGroupHab(SignifyHab):
         super(SignifyGroupHab, self).__init__(**kwa)
 
 
-    def make(self, *, serder, sigers, **kwargs):
+    def incept(self, *, serder, sigers, **kwargs):
         """Finish setting up this SignifyGroupHab from a pre-built inception event.
 
         Registers the group prefix, processes the inception event, persists the
