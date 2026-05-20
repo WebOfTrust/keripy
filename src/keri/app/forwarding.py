@@ -191,7 +191,7 @@ class Poster(doing.DoDoer):
         evt.extend(atc)
         fwd, atc = exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
                             payload={}, embeds=dict(evt=evt), sender=hab.pre)
-        ims = hab.endorse(serder=fwd, last=False, framed=False)
+        ims = hab.endorse(serder=fwd, last=False, framed=True)
 
         # Transpose the signatures to point to the new location
         witer = messengerFrom(hab=hab, pre=mbx, urls=mailbox)
