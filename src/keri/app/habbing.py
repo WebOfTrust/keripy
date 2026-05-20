@@ -2397,7 +2397,7 @@ class BaseHab:
         dig = dig.encode("utf-8") if dig else None
         if dig is None and allowPartiallySigned:
             vals = self.db.pses.getLast(keys=self.pre, on=sn)
-            dig = vals.encode("utf-8") if vals else None
+            dig = vals.encode() if vals else None
 
         if dig is None:
             raise MissingEntryError("Missing event for pre={} at sn={}."
@@ -2445,8 +2445,8 @@ class BaseHab:
 
         seal = None
         if duple is not None:
-            seqner, diger = duple
-            seal = SealSource(s=seqner.snh, d=diger.qb64)
+            number, diger = duple
+            seal = SealSource(s=number.snh, d=diger.qb64)
 
         return messagize(serder, sigers=sigers, bonds=seal, framed=framed,
                             nested=nested, gvrsn=gvrsn, genusify=genusify)
