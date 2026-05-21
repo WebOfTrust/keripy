@@ -2144,7 +2144,7 @@ class BaseHab:
         """Return a reply message allowing or disallowing endpoint provider
         ``eid`` in ``role``.
 
-        Args:
+        Parameters::
             eid (str): qb64 of endpoint provider to be authorized.
             role (str): authorized role for ``eid``. Default is
                 ``Roles.controller``.
@@ -2155,7 +2155,8 @@ class BaseHab:
             version (Versionage): KERI protocol version for reply message.
             kind (str): serialization kind for reply message.
 
-        Returns:
+
+        Returns::
             bytearray: reply message.
         """
         data = dict(cid=self.pre, role=role, eid=eid)
