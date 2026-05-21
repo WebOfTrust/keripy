@@ -622,135 +622,6 @@ def test_habery_signatory():
         assert len(hby.prefixes) == 0
 
 
-def test_habery_reconfigure(mockHelpingNowUTC):
-    """
-    Test   .reconfigure method using .cf for config file
-
-     conf
-    {
-      dt: "isodatetime",
-      curls: ["tcp://localhost:5620/"],
-      iurls: ["ftp://localhost:5621/?name=eve"],
-    }
-
-    """
-    # use same salter but with different path from name for each
-    # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
-    # raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
-    # salter = Salter(raw=raw)
-    # salt = salter.qb64
-    # assert salt == '0ABaqPLVOa6fpVnAKcmwhIdQ'
-
-    salt = Salter(raw=b'0123456789abcdef').qb64
-
-    cname = "tam"  # controller name
-    cbase = "main"  # controller base shared
-    pname = "nel"  # peer name
-    pbase = "head"  # peer base shared
-
-    with (openHby(name='wes', base=cbase, salt=salt) as wesHby,
-          openHby(name='wok', base=cbase, salt=salt) as wokHby,
-          openHby(name=cname, base=cbase, salt=salt) as tamHby,
-          openHby(name='wat', base=cbase, salt=salt) as watHby,
-          openHby(name=pname, base=pbase, salt=salt) as nelHby):
-        # witnesses first so can setup inception event for tam
-        wsith = '1'
-
-        # setup Wes's habitat nontrans
-        wesHab = wesHby.makeHab(name="wes", isith=wsith, icount=1, transferable=False)
-        assert not wesHab.kever.prefixer.transferable
-
-        # setup Wok's habitat nontrans
-        wokHab = wokHby.makeHab(name="wok", isith=wsith, icount=1, transferable=False)
-        assert not wokHab.kever.prefixer.transferable
-
-        # setup Tam's config
-        curls = ["tcp://localhost:5620/"]
-        iurls = [f"tcp://localhost:5621/?role={Roles.peer}&name={pname}"]
-        assert tamHby.cf.get() == {}
-        conf = dict(dt=helping.nowIso8601(), tam=dict(dt=helping.nowIso8601(), curls=curls), iurls=iurls)
-        tamHby.cf.put(conf)
-
-        assert tamHby.cf.get() == {'dt': '2021-01-01T00:00:00.000000+00:00',
-                                   'tam': {
-                                       'dt': '2021-01-01T00:00:00.000000+00:00',
-                                       'curls': ['tcp://localhost:5620/']
-                                   },
-                                   'iurls': ['tcp://localhost:5621/?role=peer&name=nel']}
-
-        # setup Tam's habitat trans multisig
-        wits = [wesHab.pre, wokHab.pre]
-        tsith = '1'  # hex str of threshold int
-        tamHab = tamHby.makeHab(name=cname, isith=tsith, icount=3, toad=2, wits=wits)
-        assert tamHab.kever.prefixer.transferable
-        assert len(tamHab.iserder.berfers) == len(wits)
-        for werfer in tamHab.iserder.berfers:
-            assert werfer.qb64 in wits
-        assert tamHab.kever.wits == wits
-        assert tamHab.kever.toader.num == 2
-        assert tamHab.kever.sn == 0
-        assert tamHab.kever.tholder.thold == 1 == int(tsith, 16)
-        # create non-local kevery for Tam to process non-local msgs
-
-        # check tamHab.cf config setup
-        ender = tamHab.db.ends.get(keys=(tamHab.pre, "controller", tamHab.pre))
-        assert ender.allowed
-        assert not ender.name
-        locer = tamHab.db.locs.get(keys=(tamHab.pre, Schemes.tcp))
-        assert locer.url == 'tcp://localhost:5620/'
-
-        # setup Wat's habitat nontrans
-        watHab = watHby.makeHab(name="wat", isith=wsith, icount=1, transferable=False, )
-        assert not watHab.kever.prefixer.transferable
-
-        # setup Nel's config
-        curls = ["tcp://localhost:5621/"]
-        iurls = [f"tcp://localhost:5620/?role={Roles.peer}&name={cname}"]
-        assert nelHby.cf.get() == {}
-        conf = dict(dt=helping.nowIso8601(), nel=dict(dt=helping.nowIso8601(), curls=curls), iurls=iurls)
-        nelHby.cf.put(conf)
-
-        assert nelHby.cf.get() == {'dt': '2021-01-01T00:00:00.000000+00:00',
-                                   'nel': {
-                                       'dt': '2021-01-01T00:00:00.000000+00:00',
-                                       'curls': ['tcp://localhost:5621/'],
-                                   },
-                                   'iurls': ['tcp://localhost:5620/?role=peer&name=tam']}
-
-        # setup Nel's habitat nontrans
-        nelHab = nelHby.makeHab(name=pname, isith=wsith, icount=1, transferable=False)
-        assert not nelHab.kever.prefixer.transferable
-        # create non-local parer for Nel to process non-local msgs
-
-        assert nelHab.pre == 'BBWmLeVPY4obmPkyBGCsmysDmhbe017t6gS7v6B_ogV9'
-        assert nelHab.kever.prefixer.code == MtrDex.Ed25519N
-        assert nelHab.kever.verfers[0].qb64 == nelHab.pre
-
-        # check nelHab.cf config setup
-        ender = nelHab.db.ends.get(keys=(nelHab.pre, "controller", nelHab.pre))
-        assert ender.allowed
-        assert not ender.name
-        locer = nelHab.db.locs.get(keys=(nelHab.pre, Schemes.tcp))
-        assert locer.url == 'tcp://localhost:5621/'
-
-    assert not os.path.exists(nelHby.cf.path)
-    assert not os.path.exists(nelHby.db.path)
-    assert not os.path.exists(nelHby.ks.path)
-    assert not os.path.exists(watHby.cf.path)
-    assert not os.path.exists(watHby.db.path)
-    assert not os.path.exists(watHby.ks.path)
-    assert not os.path.exists(wokHby.cf.path)
-    assert not os.path.exists(wokHby.db.path)
-    assert not os.path.exists(wokHby.ks.path)
-    assert not os.path.exists(wesHby.cf.path)
-    assert not os.path.exists(wesHby.db.path)
-    assert not os.path.exists(wesHby.ks.path)
-    assert not os.path.exists(tamHby.cf.path)
-    assert not os.path.exists(tamHby.db.path)
-    assert not os.path.exists(tamHby.ks.path)
-    """Done Test"""
-
-
 def test_namespaced_habs():
     with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
         hab = hby.makeHab(name="test")
@@ -855,33 +726,6 @@ def test_join_group_hab_persists_group_name_on_reload():
     hby.cf.close(clear=True)
 
 
-def test_make_other_event():
-    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
-        hab = hby.makeHab(name="test")
-        assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
-
-        hab.rotate(framed=True)
-        hab.rotate(framed=True)
-
-        msg = hab.msgOtherEvent(hab.pre, sn=1, framed=True)
-        assert msg == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EGnFNzw2UJKpQZYJj_xhcFYW'
-                       b'E7prFWFBbghgcMuJ4VeM","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2Q'
-                       b'V8dDjI3","s":"1","p":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDj'
-                       b'I3","kt":"1","k":["DGgN_X4ZJvgAMQpD3CqI5bidKkgkCLc_yk-Pk1culnXP"'
-                       b'],"nt":"1","n":["EOh7LXjpAqsP6YNGOMVFjn02yCpXfGVsHbSYIQ5Ul7Ax"],'
-                       b'"bt":"0","br":[],"ba":[],"a":[]}-AABAAC2DAJCt6KLh442NsGVLE0pYKvL'
-                       b'-3MVh-kWcBWWqpVmXbhlQ3oGHD5h4jUY7Trw2jFvsQyC4A_1kJpmNP1AgXcM')
-
-        msg = hab.msgOtherEvent(hab.pre, sn=2, framed=True)
-        assert msg == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EJCaUsmfvR35xZxpenqEWCtX'
-                       b'sXnD_efjlvvRd1hEvu5d","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2Q'
-                       b'V8dDjI3","s":"2","p":"EGnFNzw2UJKpQZYJj_xhcFYWE7prFWFBbghgcMuJ4V'
-                       b'eM","kt":"1","k":["DPjsUEx6Nqby9-yUO1DtExQ81CRYdvpwQZufBRzBM5yk"'
-                       b'],"nt":"1","n":["EIraDaPWlGBU9DnwCaNQ2XVaX8zQQFhnkj8Ir4R5R-Yh"],'
-                       b'"bt":"0","br":[],"ba":[],"a":[]}-AABAADGsMs4ifEPuBH9vApQTnJyGCXm'
-                       b'p8Sc4CcESKA-q5O0O5CmpCbSrA29UpqZnfvUagrwm8w3M1a1WJKy64OQYXIG')
-
-
 def test_get_own_event():
     """Test Hab.getOwnEvent: happy path sn=0 and sn=1, delegated duple, error path missing event."""
     with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
@@ -952,6 +796,33 @@ def test_msg_own_event():
         serder = SerderKERI(raw=bytes(msg1))
         assert serder.sad["t"] == "rot"
         assert serder.sad["s"] == "1"
+
+
+def test_msg_other_event():
+    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+        hab = hby.makeHab(name="test")
+        assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
+
+        hab.rotate(framed=True)
+        hab.rotate(framed=True)
+
+        msg = hab.msgOtherEvent(hab.pre, sn=1, framed=True)
+        assert msg == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EGnFNzw2UJKpQZYJj_xhcFYW'
+                       b'E7prFWFBbghgcMuJ4VeM","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2Q'
+                       b'V8dDjI3","s":"1","p":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDj'
+                       b'I3","kt":"1","k":["DGgN_X4ZJvgAMQpD3CqI5bidKkgkCLc_yk-Pk1culnXP"'
+                       b'],"nt":"1","n":["EOh7LXjpAqsP6YNGOMVFjn02yCpXfGVsHbSYIQ5Ul7Ax"],'
+                       b'"bt":"0","br":[],"ba":[],"a":[]}-AABAAC2DAJCt6KLh442NsGVLE0pYKvL'
+                       b'-3MVh-kWcBWWqpVmXbhlQ3oGHD5h4jUY7Trw2jFvsQyC4A_1kJpmNP1AgXcM')
+
+        msg = hab.msgOtherEvent(hab.pre, sn=2, framed=True)
+        assert msg == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EJCaUsmfvR35xZxpenqEWCtX'
+                       b'sXnD_efjlvvRd1hEvu5d","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2Q'
+                       b'V8dDjI3","s":"2","p":"EGnFNzw2UJKpQZYJj_xhcFYWE7prFWFBbghgcMuJ4V'
+                       b'eM","kt":"1","k":["DPjsUEx6Nqby9-yUO1DtExQ81CRYdvpwQZufBRzBM5yk"'
+                       b'],"nt":"1","n":["EIraDaPWlGBU9DnwCaNQ2XVaX8zQQFhnkj8Ir4R5R-Yh"],'
+                       b'"bt":"0","br":[],"ba":[],"a":[]}-AABAADGsMs4ifEPuBH9vApQTnJyGCXm'
+                       b'p8Sc4CcESKA-q5O0O5CmpCbSrA29UpqZnfvUagrwm8w3M1a1WJKy64OQYXIG')
 
 
 def test_hab_by_pre():
@@ -1115,12 +986,6 @@ def test_rotate_preserves_toad():
         assert hab.kever.toader.num == 2  # must stay 2, not recalculate to ample(3)
 
 
-if __name__ == "__main__":
-    pass
-    test_habery()
-    # pytest.main(['-vv', 'test_habbing.py::test_habery_reconfigure'])
-
-
 def test_failed_rotation_rollback():
     """Test that a failed rotation does not mutate key store state.
 
@@ -1263,3 +1128,150 @@ def test_cues():
         kvy.cues.push(dict(kin="invalid", serder=camHab.iserder))
         assert camHab.processCues(kvy.cues) == b""
         assert not kvy.cues
+
+
+def test_habery_reconfigure(mockHelpingNowUTC):
+    """
+    Test   .reconfigure method using .cf for config file
+
+     conf
+    {
+      dt: "isodatetime",
+      curls: ["tcp://localhost:5620/"],
+      iurls: ["ftp://localhost:5621/?name=eve"],
+    }
+
+    """
+    # use same salter but with different path from name for each
+    # salt = pysodium.randombytes(pysodium.crypto_pwhash_SALTBYTES)
+    # raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
+    # salter = Salter(raw=raw)
+    # salt = salter.qb64
+    # assert salt == '0ABaqPLVOa6fpVnAKcmwhIdQ'
+
+    salt = Salter(raw=b'0123456789abcdef').qb64
+
+    cname = "tam"  # controller name
+    cbase = "main"  # controller base shared
+    pname = "nel"  # peer name
+    pbase = "head"  # peer base shared
+
+    with (openHby(name='wes', base=cbase, salt=salt) as wesHby,
+          openHby(name='wok', base=cbase, salt=salt) as wokHby,
+          openHby(name=cname, base=cbase, salt=salt) as tamHby,
+          openHby(name='wat', base=cbase, salt=salt) as watHby,
+          openHby(name=pname, base=pbase, salt=salt) as nelHby):
+        # witnesses first so can setup inception event for tam
+        wsith = '1'
+
+        # setup Wes's habitat nontrans
+        wesHab = wesHby.makeHab(name="wes", isith=wsith, icount=1, transferable=False)
+        assert not wesHab.kever.prefixer.transferable
+
+        # setup Wok's habitat nontrans
+        wokHab = wokHby.makeHab(name="wok", isith=wsith, icount=1, transferable=False)
+        assert not wokHab.kever.prefixer.transferable
+
+        # setup Tam's config
+        curls = ["tcp://localhost:5620/"]
+        iurls = [f"tcp://localhost:5621/?role={Roles.peer}&name={pname}"]
+        assert tamHby.cf.get() == {}
+        conf = dict(dt=helping.nowIso8601(), tam=dict(dt=helping.nowIso8601(), curls=curls), iurls=iurls)
+        tamHby.cf.put(conf)
+
+        assert tamHby.cf.get() == {'dt': '2021-01-01T00:00:00.000000+00:00',
+                                   'tam': {
+                                       'dt': '2021-01-01T00:00:00.000000+00:00',
+                                       'curls': ['tcp://localhost:5620/']
+                                   },
+                                   'iurls': ['tcp://localhost:5621/?role=peer&name=nel']}
+
+        # setup Tam's habitat trans multisig
+        wits = [wesHab.pre, wokHab.pre]
+        tsith = '1'  # hex str of threshold int
+        tamHab = tamHby.makeHab(name=cname, isith=tsith, icount=3, toad=2, wits=wits)
+        assert tamHab.kever.prefixer.transferable
+        assert len(tamHab.iserder.berfers) == len(wits)
+        for werfer in tamHab.iserder.berfers:
+            assert werfer.qb64 in wits
+        assert tamHab.kever.wits == wits
+        assert tamHab.kever.toader.num == 2
+        assert tamHab.kever.sn == 0
+        assert tamHab.kever.tholder.thold == 1 == int(tsith, 16)
+        # create non-local kevery for Tam to process non-local msgs
+
+        # check tamHab.cf config setup
+        ender = tamHab.db.ends.get(keys=(tamHab.pre, "controller", tamHab.pre))
+        assert ender.allowed
+        assert not ender.name
+        locer = tamHab.db.locs.get(keys=(tamHab.pre, Schemes.tcp))
+        assert locer.url == 'tcp://localhost:5620/'
+
+        # setup Wat's habitat nontrans
+        watHab = watHby.makeHab(name="wat", isith=wsith, icount=1, transferable=False, )
+        assert not watHab.kever.prefixer.transferable
+
+        # setup Nel's config
+        curls = ["tcp://localhost:5621/"]
+        iurls = [f"tcp://localhost:5620/?role={Roles.peer}&name={cname}"]
+        assert nelHby.cf.get() == {}
+        conf = dict(dt=helping.nowIso8601(), nel=dict(dt=helping.nowIso8601(), curls=curls), iurls=iurls)
+        nelHby.cf.put(conf)
+
+        assert nelHby.cf.get() == {'dt': '2021-01-01T00:00:00.000000+00:00',
+                                   'nel': {
+                                       'dt': '2021-01-01T00:00:00.000000+00:00',
+                                       'curls': ['tcp://localhost:5621/'],
+                                   },
+                                   'iurls': ['tcp://localhost:5620/?role=peer&name=tam']}
+
+        # setup Nel's habitat nontrans
+        nelHab = nelHby.makeHab(name=pname, isith=wsith, icount=1, transferable=False)
+        assert not nelHab.kever.prefixer.transferable
+        # create non-local parer for Nel to process non-local msgs
+
+        assert nelHab.pre == 'BBWmLeVPY4obmPkyBGCsmysDmhbe017t6gS7v6B_ogV9'
+        assert nelHab.kever.prefixer.code == MtrDex.Ed25519N
+        assert nelHab.kever.verfers[0].qb64 == nelHab.pre
+
+        # check nelHab.cf config setup
+        ender = nelHab.db.ends.get(keys=(nelHab.pre, "controller", nelHab.pre))
+        assert ender.allowed
+        assert not ender.name
+        locer = nelHab.db.locs.get(keys=(nelHab.pre, Schemes.tcp))
+        assert locer.url == 'tcp://localhost:5621/'
+
+    assert not os.path.exists(nelHby.cf.path)
+    assert not os.path.exists(nelHby.db.path)
+    assert not os.path.exists(nelHby.ks.path)
+    assert not os.path.exists(watHby.cf.path)
+    assert not os.path.exists(watHby.db.path)
+    assert not os.path.exists(watHby.ks.path)
+    assert not os.path.exists(wokHby.cf.path)
+    assert not os.path.exists(wokHby.db.path)
+    assert not os.path.exists(wokHby.ks.path)
+    assert not os.path.exists(wesHby.cf.path)
+    assert not os.path.exists(wesHby.db.path)
+    assert not os.path.exists(wesHby.ks.path)
+    assert not os.path.exists(tamHby.cf.path)
+    assert not os.path.exists(tamHby.db.path)
+    assert not os.path.exists(tamHby.ks.path)
+    """Done Test"""
+
+
+if __name__ == "__main__":
+    test_habery()
+    test_make_load_hab_with_habery()
+    test_hab_rotate_with_witness()
+    test_habery_reinitialization()
+    test_habery_signatory()
+    test_namespaced_habs()
+    test_join_group_hab_persists_group_name_on_reload()
+    test_get_own_event()
+    test_msg_own_event()
+    test_msg_other_event()
+    test_hab_by_pre()
+    test_postman_endsfor()
+    test_rotate_preserves_toad()
+    test_cues()
+    test_failed_rotation_rollback()

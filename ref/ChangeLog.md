@@ -2,6 +2,8 @@
 
 ## 2.0.0-dev6
 
+*** BaseHab and subclasses .incept alias for .make promoted to default and .make
+is alias. Future deprecate .make
 
 *** Kever .init and .update refactored signature to use delsner and delsger instead
 of delnum (which was not per convention) and deldiger to better match new convention

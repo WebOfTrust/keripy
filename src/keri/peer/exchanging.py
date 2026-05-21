@@ -429,10 +429,10 @@ def exchange(route,
              xid="",
              modifiers=None,
              embeds=None,
+             kind=Kinds.json,
              version=Version,
              pvrsn=None,
-             gvrsn=None,
-             kind=Kinds.json):
+             gvrsn=None):
     """ Create an `exn` message with the specified route and payload
 
     Parameters:
@@ -447,10 +447,11 @@ def exchange(route,
         modifiers (dict): equivalent of query string of uri, modifiers for the request that are not
                          part of the payload
         embeds (dict): named embeded KERI event CESR stream with attachments
+        kind (str): serialization for key event message
+                        one of Kinds ("json","cbor","mgpk","cesr")
         version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
         gvrsn (Versionage): CESR genus vrsion
-        kind (Serials): is serialization kind
 
     """
     pvrsn = pvrsn if pvrsn is not None else version
