@@ -832,8 +832,9 @@ class Credentialer(doing.DoDoer):
                                             "issuing credentials".format(schema))
 
         schemer = scheming.Schemer(raw=scraw)
+        typ = scheming.JSONSchema(resolver=self.verifier.resolver)
         try:
-            schemer.verify(creder.raw)
+            schemer.verify(raw=creder.raw, typ=typ)
         except kering.ValidationError as ex:
             raise kering.ConfigurationError(f"Credential schema validation failed for {schema}: {ex}")
 
