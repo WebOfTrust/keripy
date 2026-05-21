@@ -127,18 +127,21 @@ def test_witness_sender(seeder):
 class PublishDoer(doing.DoDoer):
 
     def __init__(self, wanHby, wilHby, wesHby, palHby, seeder):
-        wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642)
-        wilDoers = indirecting.setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643)
-        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
-
-        wanHab = wanHby.habByName(name="wan")
-        wilHab = wilHby.habByName(name="wil")
-        wesHab = wesHby.habByName(name="wes")
+        wanHab = wanHby.makeHab(name="wan", transferable=False)
+        wilHab = wilHby.makeHab(name="wil", transferable=False)
+        wesHab = wesHby.makeHab(name="wes", transferable=False)
+        self.wanReger = viring.Reger(name=wanHab.name, db=wanHab.db)
+        self.wilReger = viring.Reger(name=wilHab.name, db=wilHab.db)
+        self.wesReger = viring.Reger(name=wesHab.name, db=wesHab.db)
+        wanDoers = indirecting.setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642, reger=self.wanReger)
+        wilDoers = indirecting.setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643, reger=self.wilReger)
+        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644, reger=self.wesReger)
         seeder.seedWitEnds(palHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[kering.Schemes.tcp])
 
         self.palHab = palHby.makeHab(name="pal", wits=[wanHab.pre, wilHab.pre, wesHab.pre], transferable=True)
 
         self.witDoer = agenting.WitnessPublisher(hby=palHby)
+
         doers = wanDoers + wilDoers + wesDoers + [self.witDoer]
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.testDo)])
@@ -169,8 +172,7 @@ class PublishDoer(doing.DoDoer):
         assert cue["pre"] == self.palHab.pre
         assert cue["msg"] == msg
 
-        for name in ["wes", "wil", "wan"]:
-            reger = viring.Reger(name=name)
+        for reger in [self.wanReger, self.wilReger, self.wesReger]:
             while True:
                 raw = reger.getTvt(dbing.dgKey(serder.preb, serder.saidb))
                 if raw:

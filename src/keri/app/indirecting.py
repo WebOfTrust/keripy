@@ -37,7 +37,7 @@ logger = help.ogler.getLogger()
 
 
 def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPort=5632,
-                 keypath=None, certpath=None, cafilepath=None):
+                 keypath=None, certpath=None, cafilepath=None, reger=None):
     """
     Setup witness controller and doers
 
@@ -53,7 +53,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     if hab is None:
         hab = hby.makeHab(name=alias, transferable=False)
 
-    reger = viring.Reger(name=hab.name, db=hab.db, temp=False)
+    reger = reger if reger is not None else viring.Reger(name=hab.name, db=hab.db, temp=False)
     verfer = verifying.Verifier(hby=hby, reger=reger)
 
     mbx = mbx if mbx is not None else storing.Mailboxer(name=alias, temp=hby.temp)
@@ -91,7 +91,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     app.add_route("/", httpEnd)
     receiptEnd = ReceiptEnd(hab=hab, inbound=cues, aids=aids)
     app.add_route("/receipts", receiptEnd)
-    queryEnd = QueryEnd(hab=hab)
+    queryEnd = QueryEnd(hab=hab, reger=reger)
     app.add_route("/query", queryEnd)
     metricsEnd = EscrowEnd(hby=hby, reger=reger)
     app.add_route("/metrics", metricsEnd)
@@ -1195,16 +1195,16 @@ class QueryEnd:
 
      """
 
-    def __init__(self, hab):
+    def __init__(self, hab, reger=None):
         self.hab = hab
-        self.reger = viring.Reger(name=hab.name, db=hab.db, temp=False)
+        self.reger = reger if reger is not None else viring.Reger(name=hab.name, db=hab.db, temp=False)
 
     def on_get(self, req, rep):
         """ Handles GET requests to query KEL or TEL events of a pre from a witness.
 
             Parameters:
                 req (Request) Falcon HTTP request
-                rep (Response) Falcon HTTP response
+                rep (Response) Falcon\ HTTP response
 
             Query Parameters:
                 typ (string): The type of event data to query for. Accepted values are:
