@@ -1382,6 +1382,7 @@ def exchept(sender="",
             attributes=None,
             nonce=None,
             stamp=None,
+            version=Vrsn_2_0,
             pvrsn=Vrsn_2_0,
             gvrsn=None,
             kind=Kinds.json):
@@ -1406,6 +1407,7 @@ def exchept(sender="",
         nonce (str|None): qb64 of UUID salty nonce. When None generate nonce.
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
                       creation of message or data, default is now.
+        version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
@@ -1431,7 +1433,7 @@ def exchept(sender="",
       }
     }
     """
-    pvrsn = pvrsn if pvrsn is not None else Vrsn_2_0
+    pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = Ilks.xip
@@ -1460,6 +1462,7 @@ def exchange(sender="",
              modifiers=None,
              attributes=None,
              stamp=None,
+             version=Vrsn_2_0,
              pvrsn=Vrsn_2_0,
              gvrsn=None,
              kind=Kinds.json):
@@ -1476,12 +1479,14 @@ def exchange(sender="",
         attributes (dict): attributes
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
                       creation of message or data, default is now.
+        version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
 
     """
+    pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     ilk = Ilks.exn
