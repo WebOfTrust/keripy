@@ -163,14 +163,16 @@ def test_qrymailbox_iter():
 def test_wit_query_ends(seeder):
     with habbing.openHby(name="wes", salt=core.Salter(raw=b'wess-the-witness').qb64) as wesHby, \
             habbing.openHby(name="pal", salt=core.Salter(raw=b'0123456789abcdef').qb64) as palHby:
-        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
+
+        wesHab = wesHby.makeHab(name="wes", transferable=False)
+        wesReger = viring.Reger(name=wesHab.name, db=wesHab.db)
+        wesDoers = indirecting.setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644, reger=wesReger)
         witDoer = agenting.Receiptor(hby=palHby)
 
-        wesHab = wesHby.habByName(name="wes")
         seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[kering.Schemes.http])
 
         app = falcon.App()
-        query_endpoint = indirecting.QueryEnd(wesHab)
+        query_endpoint = indirecting.QueryEnd(wesHab, reger=wesReger)
         app.add_route("/query", query_endpoint)
 
         wesClient = testing.TestClient(app)
