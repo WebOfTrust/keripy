@@ -403,7 +403,7 @@ class Schemer:
         """ said property getter, relies on saider """
         return self.saider.qb64
 
-    def verify(self, raw=b''):
+    def verify(self, raw=b'', typ=None):
         """
         Returns True if derivation from ked for .code matches .qb64 and
                 If prefixed also verifies ked["i"] matches .qb64
@@ -411,8 +411,10 @@ class Schemer:
 
         Parameters:
             raw (bytes): is serialised JSON content to verify against schema
+            typ (JSONSchema): type of schema to use for verification
         """
-
+        if typ is not None:
+            return typ.verify_json(schema=self.sed, raw=raw)
         return self.typ.verify_json(schema=self.sed, raw=raw)
 
     def pretty(self, *, size=1024):
