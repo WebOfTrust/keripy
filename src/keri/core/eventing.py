@@ -564,7 +564,7 @@ def incept(keys,
            version=Version,
            pvrsn=None,
            gvrsn=None,
-           kind=Kinds.json,
+           kind=Kinds.cesr,
            code=None,
            intive=False,
            delpre=None,
@@ -725,7 +725,7 @@ def rotate(pre,
            version=Version,
            pvrsn=None,
            gvrsn=None,
-           kind=Kinds.json,
+           kind=Kinds.cesr,
            intive = False,
            ):
     """
@@ -909,7 +909,7 @@ def interact(pre,
              version=Version,
              pvrsn=None,
              gvrsn=None,
-             kind=Kinds.json,
+             kind=Kinds.cesr,
              ):
     """
     Returns serder of interaction event message.
@@ -958,7 +958,7 @@ def receipt(pre,
             version=Version,
             pvrsn=None,
             gvrsn=None,
-            kind=Kinds.json
+            kind=Kinds.cesr
             ):
     """
     Returns serder of event receipt message. Used for both non-trans and trans
@@ -3817,6 +3817,7 @@ class Kever:
                       wits=self.wits,
                       cnfg=cnfg,
                       dpre=self.delpre,
+                      version=self.serder.pvrsn,
                       )
                 )
 

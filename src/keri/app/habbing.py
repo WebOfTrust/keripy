@@ -2620,26 +2620,37 @@ class BaseHab:
                                    nested=nested, gvrsn=gvrsn, genusify=genusify)
 
 
-    def processCues(self, cues):
+    def processCues(self, cues, gvrsn=Version, version=Version,
+                    kind=Kinds.json):
         """Return bytearray of messages resulting from processing all cues.
 
         Args:
             cues (deque): cue dicts to process.
+            gvrsn (Versionage): CESR genus version for attachment group codes.
+            version (Versionage): KERI protocol version for generated receipt
+                events.
+            kind (str): Serialization kind for generated receipt events.
 
         Returns:
             bytearray: concatenated outgoing messages.
         """
         msgs = bytearray()  # outgoing messages
-        for msg in self.processCuesIter(cues):
+        for msg in self.processCuesIter(cues, gvrsn=gvrsn,
+                                        version=version, kind=kind):
             msgs.extend(msg)
         return msgs
 
 
-    def processCuesIter(self, cues):
+    def processCuesIter(self, cues, gvrsn=Version, version=Version,
+                        kind=Kinds.json):
         """Iterate through cues and yield one or more msgs for each cue.
 
         Args:
             cues (deque): cue dicts to process.
+            gvrsn (Versionage): CESR genus version for attachment group codes.
+            version (Versionage): KERI protocol version for generated receipt
+                events.
+            kind (str): Serialization kind for generated receipt events.
 
         Yields:
             bytearray: message(s) produced for each cue.
@@ -2671,9 +2682,12 @@ class BaseHab:
 
                     if not found:  # no receipt from remote so send own inception
                         # no vrcs or rct of own icp from remote so send own inception
-                        msgs.extend(self.msgOwnInception(framed=True))
+                        msgs.extend(self.msgOwnInception(framed=True,
+                                                         gvrsn=gvrsn))
 
-                msgs.extend(self.receipt(cuedSerder, framed=True))
+                msgs.extend(self.receipt(cuedSerder, framed=True,
+                                         gvrsn=gvrsn, version=version,
+                                         kind=kind))
                 yield msgs
 
             elif cueKin in ("replay",):
@@ -2691,7 +2705,9 @@ class BaseHab:
                 logger.info("%s got cue: kin=%s %s", self.pre, cueKin,
                             cuedSerder.said)
                 logger.debug(f"event=\n{cuedSerder.pretty()}\n")
-                msgs.extend(self.witness(cuedSerder, framed=True))
+                msgs.extend(self.witness(cuedSerder, framed=True,
+                                         gvrsn=gvrsn, version=version,
+                                         kind=kind))
                 yield msgs
 
             elif cueKin in ("query",):  # cue to send a query message
@@ -2898,7 +2914,7 @@ class Hab(BaseHab):
                                        delpre=delpre,
                                        data=data,
                                        kind=kind,
-                                       version=Version)
+                                       version=version)
 
         self.pre = serder.ked["i"]  # new pre
 
