@@ -4362,7 +4362,7 @@ def test_keri_native_dumps_loads():
                      route="/away",
                      modifiers=modifiers,
                      payload=attributes,
-                    date=dts,
+                    stamp=dts,
                     pvrsn=Vrsn_2_0,
                     kind=Kinds.cesr)
 

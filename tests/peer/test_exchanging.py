@@ -213,3 +213,9 @@ def test_hab_exchange(mockHelpingNowUTC):
                        b'vcp-CABBJZ_LF61JTCCSCIw2Q4ozE2MsbRC4m-N6-tFVlCeiZPG0BDjOC4j0Co6P'
                        b'0giMylR47149eJ8Yf_hO-32_TpY77KMVCWCf0U8GuZPIN76R2zsyT_eARvS_zQsX'
                        b'1ebjl3PMP0D')
+
+
+if __name__ == "__main__":
+    test_nesting()
+    test_essrs()
+    #test_hab_exchange(mockHelpingNowUTC)

@@ -419,34 +419,38 @@ def exincept(sender="",
     return serder
 
 
-def exchange(route,
-             sender,
+def exchange(*, route="",
+             sender="",
              payload=None,
              diger=None,
              recipient=None,
-             date=None,
              dig="",
              xid="",
              modifiers=None,
              embeds=None,
-             kind=Kinds.json,
+             stamp=None,
              version=Version,
              pvrsn=None,
-             gvrsn=None):
+             gvrsn=None,
+             kind=Kinds.json,):
     """ Create an `exn` message with the specified route and payload
 
     Parameters:
-        route (str): to destination route of the message
         sender (str): qb64 AID of sender of the exn
+        recipient (str) optional qb64 AID recipient of exn
+        xid (str): qb64 of exchange ID  SAID of exchange inception 'xip' if any
+        route (str): to destination route of the message
+
         payload (list | dict): body of message to deliver to route
         diger (Diger): qb64 digest of payload
-        xid (str): qb64 of exchange ID  SAID of exchange inception 'xip' if any
-        recipient (str) optional qb64 AID recipient of exn
-        date (str): Iso8601 formatted date string to use for this request
+
+
+
         dig (str) qb64 SAID of previous event if any
         modifiers (dict): equivalent of query string of uri, modifiers for the request that are not
                          part of the payload
         embeds (dict): named embeded KERI event CESR stream with attachments
+        stamp (str): Iso8601 formatted date string to use for this request
         kind (str): serialization for key event message
                         one of Kinds ("json","cbor","mgpk","cesr")
         version (Versionage): KERI protocol default version if psvrsn is None
@@ -458,7 +462,7 @@ def exchange(route,
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
 
     ilk = Ilks.exn
-    dt = date if date is not None else helping.nowIso8601()
+    dt = stamp if stamp is not None else helping.nowIso8601()
     xid = xid if xid is not None else ""
     p = dig if dig is not None else ""
     ri = recipient if recipient is not None else ""

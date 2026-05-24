@@ -1677,7 +1677,7 @@ class BaseHab:
                                payload=payload,
                                sender=self.pre,
                                recipient=recipient,
-                               date=date,
+                               stamp=date,
                                dig=dig,
                                modifiers=modifiers,
                                embeds=embeds,

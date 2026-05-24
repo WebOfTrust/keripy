@@ -1465,7 +1465,7 @@ def exchange(sender="",
              version=Vrsn_2_0,
              pvrsn=Vrsn_2_0,
              gvrsn=None,
-             kind=Kinds.json):
+             kind=Kinds.json,):
     """ Create an `exn` message with the specified route and payload
 
     Parameters:
@@ -1491,18 +1491,23 @@ def exchange(sender="",
 
     ilk = Ilks.exn
 
-    sad = dict(v=vs,
-               t=ilk,
-               d="",
-               i=sender,
-               ri=receiver,
-               x=xid if xid is not None else "",
-               p=prior if prior is not None else "",
-               dt=stamp if stamp is not None else helping.nowIso8601(),
-               r=route if route is not None else "",
-               q=modifiers if modifiers is not None else {},  # q field required
-               a=attributes if attributes is not None else {}
-               )
+    if pvrsn.major < 2:
+        raise ValueError(f"Unsupported version {pvrsn=}")
+
+    else:
+
+        sad = dict(v=vs,
+                   t=ilk,
+                   d="",
+                   i=sender,
+                   ri=receiver,
+                   x=xid if xid is not None else "",
+                   p=prior if prior is not None else "",
+                   dt=stamp if stamp is not None else helping.nowIso8601(),
+                   r=route if route is not None else "",
+                   q=modifiers if modifiers is not None else {},  # q field required
+                   a=attributes if attributes is not None else {}
+                   )
 
     return SerderKERI(sad=sad, makify=True)
 
