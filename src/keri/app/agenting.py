@@ -895,7 +895,21 @@ class HTTPMessenger(doing.DoDoer):
             yield self.tock
 
     def responseDo(self, tymth=None, tock=0.0, **kwa):
-        """Doer loop that processes HTTP responses from the client and adds them into `sent` cues."""
+        """Doer loop that processes HTTP responses from the client.
+
+        Appends each response to ``self.sent`` (so callers inspecting raw
+        responses still work) and, when the response carries a CESR body,
+        routes it through ``self.hab.psr`` so witness receipts land in
+        ``hab.db.wigs``.
+
+        Without this routing, callers that drive an HTTPMessenger via
+        ``WitnessReceiptor`` (witnesses reached over HTTP) never see the
+        receipts the witness actually returned, and their busy-wait loop
+        on ``len(wigers) == len(wits)`` never exits. Mirrors the canonical
+        pattern in ``Receiptor.receiptDo`` and closes the structural gap
+        with ``TCPMessenger`` which already parses inbound CESR via its
+        own ``Kevery``.
+        """
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -904,6 +918,11 @@ class HTTPMessenger(doing.DoDoer):
             while self.client.responses:
                 rep = self.client.respond()
                 self.sent.append(rep)
+                if rep.status == 200 and rep.body:
+                    try:
+                        self.hab.psr.parseOne(ims=bytearray(rep.body))
+                    except Exception as ex:
+                        logger.warning("HTTPMessenger response parse failed: %s", ex)
                 yield
             yield
 

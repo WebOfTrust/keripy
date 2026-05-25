@@ -237,6 +237,86 @@ def test_witness_inquisitor(mockHelpingNowUTC, seeder):
         doist.exit()
 
 
+def test_http_messenger_routes_response_through_parser():
+    """HTTPMessenger.responseDo routes CESR response bodies through the
+    hab's parser so witness receipts land in db.wigs.
+
+    Regression guard for issue #1422: HTTPMessenger previously only
+    appended raw responses to ``self.sent`` and never fed them through
+    Kevery. Callers driving an HTTPMessenger via WitnessReceiptor would
+    receive the receipt body in ``self.sent`` but ``baser.wigs`` stayed
+    empty — busy-wait loops on ``len(wigers) == len(wits)`` would never
+    exit. This mirrors what TCPMessenger and Receiptor already do.
+    """
+    from types import SimpleNamespace
+    from hio.help import decking
+    from keri.app.agenting import HTTPMessenger
+
+    # Witness and controller live in separate Haberies so the receipt
+    # crosses a real "process" boundary — the same shape as production
+    # where the witness is a remote service.
+    with openHby(name="wit-hby", salt=Salter(raw=b'wit-hby-issue1422-').qb64) as wit_hby, \
+            openHby(name="ctrl-hby", salt=Salter(raw=b'ctrl-hby-issue1422').qb64) as ctrl_hby:
+        wit = wit_hby.makeHab(name="wit", transferable=False, isith="1",
+                              icount=1, ncount=0, nsith="0")
+
+        # Controller's hby learns the witness's KEL via OOBI in real life;
+        # here we just parse the witness's inception into ctrl_hby.
+        ctrl_hby.psr.parse(ims=bytearray(wit.msgOwnInception()))
+        ctrl = ctrl_hby.makeHab(name="ctrl", transferable=True, isith="1",
+                                icount=1, ncount=1, nsith="1",
+                                toad=1, wits=[wit.pre])
+
+        # Witness side must have seen ctrl's inception to build a wig.
+        wit_hby.psr.parse(ims=bytearray(ctrl.msgOwnInception()))
+        rct_bytes = wit.witness(serder=wit_hby.kevers[ctrl.pre].serder)
+
+        # Sanity: receipt was built and ctrl_hby has no wig yet for it.
+        dgkey = (ctrl.pre.encode(), ctrl.kever.serder.saidb)
+        assert len(ctrl_hby.db.wigs.get(keys=dgkey)) == 0, (
+            "ctrl_hby unexpectedly has a wig before the messenger runs"
+        )
+
+        # Build an HTTPMessenger but replace its live client with a
+        # test-double exposing only the responseDo surface we exercise:
+        # .responses (a Deck) and .respond() (pop one).
+        msgr = HTTPMessenger(hab=ctrl, wit=wit.pre, url="http://localhost:9/")
+
+        fake_rep = SimpleNamespace(status=200, body=bytes(rct_bytes))
+        responses = decking.Deck([fake_rep])
+
+        class _StubClient:
+            def __init__(self, deck):
+                self.responses = deck
+            def respond(self):
+                return self.responses.popleft()
+
+        msgr.client = _StubClient(responses)
+
+        # Drive responseDo as a generator. First next() primes past the
+        # initial `_ = (yield self.tock)`. Second next() enters the inner
+        # `while self.client.responses` loop, pops fake_rep, appends to
+        # self.sent, runs hab.psr.parseOne(rep.body), then yields.
+        gen = msgr.responseDo(tymth=lambda: 0.0, tock=0.0)
+        next(gen)
+        next(gen)
+
+        wigs = ctrl_hby.db.wigs.get(keys=dgkey)
+        assert len(wigs) == 1, (
+            f"expected 1 wig in ctrl_hby.db.wigs after HTTPMessenger "
+            f"parsed the response body; got {len(wigs)}. "
+            f"len(msgr.sent)={len(msgr.sent)}, "
+            f"len(msgr.client.responses)={len(msgr.client.responses)}"
+        )
+
+        # Raw response is still preserved on self.sent for callers that
+        # inspect bodies directly (no behavioral regression).
+        assert len(msgr.sent) == 1
+
+
+
+
+
 def test_messenger_prefers_https():
     """Verify messengerFrom and streamMessengerFrom prefer HTTPS over HTTP.
 
