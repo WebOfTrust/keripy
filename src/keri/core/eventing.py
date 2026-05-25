@@ -1454,7 +1454,8 @@ def exchept(sender="",
     return serder
 
 
-def exchange(sender="",
+def exchange(*,
+             sender="",
              receiver="",
              xid="",
              prior="",
@@ -1514,8 +1515,9 @@ def exchange(sender="",
     return SerderKERI(sad=sad, makify=True)
 
 
-def messagize(serder, *, sigers=None, source=None, bonds=None, wigers=None, cigars=None,
-              framed=False, nested=False, gvrsn=Version, genusify=False):
+def messagize(serder, *, sigers=None, source=None, bonds=None, wigers=None,
+                         cigars=None, framed=False, nested=False, gvrsn=Version,
+                         genusify=False):
     """Attaches authenticator(s) from sigers (with or without source as seal) and/or
     cigars and/or wigers and/or bonds. A bond is typically a seal reference to
     an event with anchoring seal of message as authenticator. In v2 bonds may
@@ -4111,7 +4113,7 @@ class Kevery:
 
         Parameters:
             serder (SerderKERI): instance of event to process
-            sigers (list[Siger]): instances of attached controller indexed sigs
+            sigers (list[Siger]|None): instances of attached controller indexed sigs
             wigers (list[Siger]|None): instances of attached witness indexed sigs
                 otherwise None
             delsner (Number|None): instance of delegating event sequence number.
@@ -4152,6 +4154,7 @@ class Kevery:
         ilk = serder.ilk  # ked["t"]
         said = serder.said
 
+        sigers = sigers if sigers is not None else []
 
         if pre not in self.kevers:  # first seen event for pre
             if ilk in (Ilks.icp, Ilks.dip):  # first seen and inception so verify event keys

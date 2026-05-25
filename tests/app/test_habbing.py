@@ -701,6 +701,10 @@ def test_join_group_hab_persists_group_name_on_reload():
     group_name = "test_group_4"
     group_pre = Salter(raw=b'fedcba9876543210').signer(transferable=False).verfer.qb64
 
+    # since not using temp need to clean up old path on all platforms linx, macOS, Win
+    # oldPath = '/usr/local/var/keri/ks/test/multisig-join'
+    # shutil.rmtree(oldPath)
+
     with openHby(name=hby_name, base="test", temp=False, clear=True,
                          salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
         mhab = hby.makeHab(name="member1")
