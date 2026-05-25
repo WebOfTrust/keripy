@@ -1676,7 +1676,7 @@ class BaseHab:
         serder, end = exchange(route=route,
                                payload=payload,
                                sender=self.pre,
-                               recipient=recipient,
+                               receiver=recipient,
                                stamp=date,
                                dig=dig,
                                modifiers=modifiers,

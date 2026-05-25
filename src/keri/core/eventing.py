@@ -1472,11 +1472,13 @@ def exchange(sender="",
         sender (str): qb64 of sender identifier (AID)
         receiver (str): qb64 of receiver identifier (AID)
         route (str):  '/' delimited path identifier of data flow handler
-               (behavior) to processs the reply if any
+                      (behavior) to processs the reply if any (equivalent of
+                      url path to resource)
         xid (str): qb64 of exchange ID which is SAID of exchange inception 'xip'
-        prior (str): qb64 of prior exchange event including 'xip"
-        modifiers (dict): modifiers
-        attributes (dict): attributes
+                   if any
+        prior (str): qb64 of prior exchange event including 'xip" if any
+        modifiers (dict): modifiers field map (equvalent of http query string)
+        attributes (dict): attributes field map (payload body)
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
                       creation of message or data, default is now.
         version (Versionage): KERI protocol default version if psvrsn is None

@@ -9,7 +9,7 @@ request and must be inside the host time window.
 
 Full KRAM employs a strictly monotonically ordered timeliness cache to protect
 from replay attacks. It includes protection from retrograde attacks on the
-recipient's clock.
+receiver's clock.
 """
 from collections import namedtuple, defaultdict
 from dataclasses import dataclass, astuple
