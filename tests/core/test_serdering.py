@@ -4358,7 +4358,7 @@ def test_keri_native_dumps_loads():
     serder, end = exchanging.exchange(sender=sender,
                      receiver=receiver,
                      xid='EFPs8lNTVLRs6xjs5reB_wKbYxqgMR3fdARfH0Ndcws4',
-                     dig='EFPs8lNTVLRs6xjs5reB_wKbYxqgMR3fdARfH0Ndcws4',
+                     prior='EFPs8lNTVLRs6xjs5reB_wKbYxqgMR3fdARfH0Ndcws4',
                      route="/away",
                      modifiers=modifiers,
                      payload=attributes,

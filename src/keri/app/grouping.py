@@ -521,7 +521,9 @@ def multisigExn(ghab, exn):
         exn=exn
     )
 
-    wexn, end = exchange(route="/multisig/exn", payload={'gid': ghab.pre}, sender=ghab.mhab.pre,
+    wexn, end = exchange(route="/multisig/exn",
+                         payload={'gid': ghab.pre},
+                         sender=ghab.mhab.pre,
                          embeds=embeds)
     evt = ghab.mhab.endorse(serder=wexn, last=False, framed=True)
     atc = bytearray(evt[wexn.size:])

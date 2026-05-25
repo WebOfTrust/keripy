@@ -423,7 +423,7 @@ def exchange(*,
              sender="",
              receiver=None,
              xid="",
-             dig="",
+             prior="",
              route="",
              modifiers=None,
              payload=None,
@@ -477,7 +477,7 @@ def exchange(*,
     ilk = Ilks.exn
     dt = stamp if stamp is not None else helping.nowIso8601()
     xid = xid if xid is not None else ""
-    p = dig if dig is not None else ""
+    p = prior if prior is not None else ""
     ri = receiver if receiver is not None else ""
     embeds = embeds if embeds is not None else {}
 

@@ -61,7 +61,8 @@ def test_remote_salty_hab():
         assert tsig0.qb64b == (b'AAB0ewd_rP91-GX9d943r48qWXThuHpHbqMwJT92jFJWbbynC-QGXVRPaSX5DGAI4Bqyviw4zsz-'
                                b'uEAxo9HwEucF')
 
-        hab = remote.makeSignifyHab(name, serder=icp, sigers=[tsig0], stem="test", pidx=pidx, tier=tier, temp=True)
+        hab = remote.makeSignifyHab(name, serder=icp, sigers=[tsig0],
+                                    stem="test", pidx=pidx, tier=tier, temp=True)
         assert hab.pre == lhab.pre  # we have recreated the local hab with the remote hab
 
         kever = hab.kever

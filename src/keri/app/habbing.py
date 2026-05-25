@@ -1622,7 +1622,7 @@ class BaseHab:
                                sender=self.pre,
                                receiver=recipient,
                                stamp=stamp,
-                               dig=dig,
+                               prior=dig,
                                modifiers=modifiers,
                                embeds=embeds,
                                kind=kind,
@@ -3069,7 +3069,7 @@ class SignifyHab(BaseHab):
         raise KeriError("Signify hab does not support local signing")
 
 
-    def incept(self, *, serder=None, sigers=None, ource=None, bonds=None,
+    def incept(self, *, serder=None, sigers=None, source=None, bonds=None,
                         wigers=None, cigars=None, framed=False, nested=False,
                         gvrsn=Version, genusify=False, **kwa):
         """Finish setting up this SignifyHab from a pre-built inception event.
