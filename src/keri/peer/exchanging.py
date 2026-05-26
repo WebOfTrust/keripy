@@ -427,9 +427,9 @@ def exchange(*,
              route="",
              modifiers=None,
              payload=None,
-             stamp=None,
              diger=None,
              embeds=None,
+             stamp=None,
              version=Version,
              pvrsn=None,
              gvrsn=None,
@@ -454,21 +454,12 @@ def exchange(*,
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
-        recipient (str) optional qb64 AID recipient of exn
-
-        dig (str) qb64 SAID of previous event if any
-        route (str): to destination route of the message
 
         payload (list | dict): body of message to deliver to route
         diger (Diger): qb64 digest of payload
 
         embeds (dict): named embeded KERI event CESR stream with attachments
-        stamp (str): Iso8601 formatted date string to use for this request
-        kind (str): serialization for key event message
-                        one of Kinds ("json","cbor","mgpk","cesr")
-        version (Versionage): KERI protocol default version if psvrsn is None
-        pvrsn (Versionage): KERI protocol version
-        gvrsn (Versionage): CESR genus vrsion
+
 
     """
     pvrsn = pvrsn if pvrsn is not None else version

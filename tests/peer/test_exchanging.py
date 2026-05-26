@@ -123,7 +123,7 @@ def test_hab_exchange(mockHelpingNowUTC):
         )
 
         data = dict(m="Let's create a registry")
-        msg = hab.exchange(route="/multisig/registry/incept", recipient="",
+        msg = hab.exchange(route="/multisig/registry/incept", receiver="",
                            payload=data, embeds=embeds, framed=True)
         assert msg == (b'{"v":"KERI10JSON0003a0_","t":"exn","d":"ELkHqph-Tj4LGHYfFfoVmJJo'
                     b'09S2gp6ci8rK96upIAKE","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2Q'
@@ -166,7 +166,7 @@ def test_hab_exchange(mockHelpingNowUTC):
 
         data = dict(m="Lets create this registry instead")
         msg = hab2.exchange(route="/multisig/registry/incept", payload=data,
-                            recipient="", prior=exn.said,
+                            receiver="", prior=exn.said,
                             embeds=embeds, framed=True)
         assert msg == (b'{"v":"KERI10JSON0003d6_","t":"exn","d":"EPO_XC9nwSixqSoOvsHymFr-'
                     b'l3udclHBdOh4OUEqZ33P","i":"EIREQlatUJODbKogZfa3IqXZ90XdZA0qJMVli'
@@ -197,7 +197,7 @@ def test_hab_exchange(mockHelpingNowUTC):
             vcp=hab.endorse(regser, framed=True)
         )
         msg = hab.exchange(route="/multisig/registry/incept", payload=data,
-                           embeds=embeds, recipient="", framed=True)
+                           embeds=embeds, receiver="", framed=True)
         assert msg == (b'{"v":"KERI10JSON00026b_","t":"exn","d":"EMBm0p7fCIqJrP4Z-PBI-yEv'
                        b'Xin_-eY1dU4XTCM9ykRC","i":"BJZ_LF61JTCCSCIw2Q4ozE2MsbRC4m-N6-tFV'
                        b'lCeiZPG","rp":"","p":"","dt":"2021-01-01T00:00:00.000000+00:00",'
