@@ -2,6 +2,12 @@
 
 ## 2.0.0-dev6
 
+*** peer.exchanging.exchange  normalizing call signature with core.eventing.exchange
+so that all KERI message function call signatures are aligned. currently
+peer.exchanging.exchange uses a differe signature. So to better support v2 with
+backwards compat for v1 want one exchange function.
+parameters changes:  date -> stamp,
+
 *** BaseHab and subclasses .incept alias for .make promoted to default and .make
 is alias. Future deprecate .make
 

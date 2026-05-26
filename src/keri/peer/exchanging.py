@@ -110,7 +110,7 @@ class Exchanger:
                     if self.escrowPSEvent(serder=serder, tsgs=tsgs, pathed=ptds):
                         self.cues.append(dict(kin="query", q=dict(r="logs", pre=prefixer.qb64, sn=snumber.snh)))
                     msg = (f"Not enough signatures in idx={indices} route={route} "
-                           f"for evt = {serder.said} recipient={serder.ked.get('rp', '')}")
+                           f"for evt = {serder.said} receiver={serder.ked.get('rp', '')}")
                     logger.info(msg)
                     logger.debug("Exchange message body=\n%s\n", serder.pretty())
                     raise MissingSignatureError(msg)
@@ -119,14 +119,14 @@ class Exchanger:
             for cigar in cigars:
                 if sender != cigar.verfer.qb64:  # cig not by aid
                     msg = (f"Skipped cig not from aid={sender} route={route} "
-                           f"for exn evt = {serder.said} recipient={serder.ked.get('rp', '')}")
+                           f"for exn evt = {serder.said} receiver={serder.ked.get('rp', '')}")
                     logger.info(msg)
                     logger.debug("Exchange message body=\n%s\n", serder.pretty())
                     raise MissingSignatureError(msg)
 
                 if not cigar.verfer.verify(cigar.raw, serder.raw):  # cig not verify
                     msg = (f"Failure satisfying exn on cigs for {cigar} route={route} "
-                           f"for evt = {serder.said} recipient={serder.ked.get('rp', '')}")
+                           f"for evt = {serder.said} receiver={serder.ked.get('rp', '')}")
                     logger.info(msg)
                     logger.debug("Exchange message body=\n%s\n", serder.pretty())
                     raise MissingSignatureError(msg)
@@ -134,7 +134,7 @@ class Exchanger:
             self.escrowPSEvent(serder=serder, tsgs=[], pathed=ptds)
             msg = (
                 f"Failure satisfying exn, no cigs or sigs for evt = {serder.said} "
-                f"on route {route} recipient = {serder.ked.get('rp', '')}")
+                f"on route {route} receiver = {serder.ked.get('rp', '')}")
             logger.info(msg)
             logger.debug("Exchange message body=\n%s\n", serder.pretty())
             raise MissingSignatureError(msg)
@@ -320,7 +320,7 @@ class Exchanger:
         (_, _, _, sigers) = tsgs[0]
         windex = min([siger.index for siger in sigers])
 
-        # True if Elected to send an EXN to its recipient
+        # True if Elected to send an EXN to its receiver
         return hab.mhab.kever.verfers[0].qb64 == keys[windex]
 
     def complete(self, said):
@@ -419,49 +419,57 @@ def exincept(sender="",
     return serder
 
 
-def exchange(route,
-             sender,
+def exchange(*,
+             sender="",
+             receiver=None,
+             xid="",
+             prior="",
+             route="",
+             modifiers=None,
              payload=None,
              diger=None,
-             recipient=None,
-             date=None,
-             dig="",
-             xid="",
-             modifiers=None,
              embeds=None,
-             kind=Kinds.json,
+             stamp=None,
              version=Version,
              pvrsn=None,
-             gvrsn=None):
+             gvrsn=None,
+             kind=Kinds.json,):
     """ Create an `exn` message with the specified route and payload
 
     Parameters:
-        route (str): to destination route of the message
-        sender (str): qb64 AID of sender of the exn
-        payload (list | dict): body of message to deliver to route
-        diger (Diger): qb64 digest of payload
-        xid (str): qb64 of exchange ID  SAID of exchange inception 'xip' if any
-        recipient (str) optional qb64 AID recipient of exn
-        date (str): Iso8601 formatted date string to use for this request
-        dig (str) qb64 SAID of previous event if any
-        modifiers (dict): equivalent of query string of uri, modifiers for the request that are not
-                         part of the payload
-        embeds (dict): named embeded KERI event CESR stream with attachments
-        kind (str): serialization for key event message
-                        one of Kinds ("json","cbor","mgpk","cesr")
+        sender (str): qb64 of sender identifier (AID)
+        receiver (str): qb64 of receiver identifier (AID)
+        route (str):  '/' delimited path identifier of data flow handler
+                      (behavior) to processs the reply if any (equivalent of
+                      url path to resource)
+        xid (str): qb64 of exchange ID which is SAID of exchange inception 'xip'
+                   if any
+        prior (str): qb64 of prior exchange event including 'xip" if any
+        modifiers (dict): modifiers field map (equvalent of http query string)
+        attributes (dict): attributes field map (payload body)
+        stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
+                      creation of message or data, default is now.
         version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
         gvrsn (Versionage): CESR genus vrsion
+        kind (str): serialization kind value of Serials
+
+
+        payload (list | dict): body of message to deliver to route
+        diger (Diger): qb64 digest of payload
+
+        embeds (dict): named embeded KERI event CESR stream with attachments
+
 
     """
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
 
     ilk = Ilks.exn
-    dt = date if date is not None else helping.nowIso8601()
+    dt = stamp if stamp is not None else helping.nowIso8601()
     xid = xid if xid is not None else ""
-    p = dig if dig is not None else ""
-    ri = recipient if recipient is not None else ""
+    p = prior if prior is not None else ""
+    ri = receiver if receiver is not None else ""
     embeds = embeds if embeds is not None else {}
 
     e = dict()
@@ -499,8 +507,8 @@ def exchange(route,
         if diger is None:
             attrs = dict()
 
-            if recipient is not None:
-                attrs['i'] = recipient
+            if receiver is not None:
+                attrs['i'] = receiver
 
             attrs |= payload
 

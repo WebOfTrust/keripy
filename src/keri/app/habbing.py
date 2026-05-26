@@ -1557,6 +1557,106 @@ class BaseHab:
         return self.endorse(serder, last=True, framed=False)  # was framed=False
 
 
+    def exchange(self, *,
+                 route,
+                 payload,
+                 receiver,
+                 stamp=None,
+                 eid=None,
+                 prior=None,
+                 modifiers=None,
+                 embeds=None,
+                 save=False,
+                 kind=Kinds.json,
+                 version=Version,
+                 pvrsn=None,
+                 gvrsn=Version,
+                 framed=False,
+                 nested=False,
+                 genusify=False):
+        """Build and return a signed ``exn`` message, optionally saving it to
+        own db.
+
+        Parameters::
+            sender (str): qb64 of sender identifier (AID)
+            receiver (str): qb64 of receiver identifier (AID)
+            route (str):  '/' delimited path identifier of data flow handler
+                          (behavior) to processs the reply if any (equivalent of
+                          url path to resource)
+            xid (str): qb64 of exchange ID which is SAID of exchange inception 'xip'
+                       if any
+            prior (str): qb64 of prior exchange event including 'xip" if any
+            modifiers (dict): modifiers field map (equvalent of http query string)
+            attributes (dict): attributes field map (payload body)
+            stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
+                          creation of message or data, default is now.
+
+            route (str): route path string indicating the data flow handler.
+            payload (dict): payload data for the exchange message.
+            recipient (str): qb64 identifier prefix of the recipient.
+
+            eid (str or None): qb64 of endpoint provider identifier if any.
+            dig (str or None): qb64 digest if any.
+            modifiers (dict or None): additional modifiers for the exchange.
+            embeds (dict or None): embedded message serders if any.
+            save (bool): True means process local copy into db after building.
+            version (Versionage): KERI protocol default version if psvrsn is None
+            pvrsn (Versionage): KERI protocol version
+            gvrsn (Versionage): CESR Genus version for attachment group codes or
+                            nesting group code (useful when serder.gvrsn < 2)
+                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                                if serder.gvrsn else serder.pvrsn
+            kind (str): serialization for key event message
+                        one of Kinds ("json","cbor","mgpk","cesr")
+            framed (bool): True means may assume each message plus its attachments
+                                is isolated as frame when parsing so do not need
+                                attachment group when messagizing
+                           False means may not assume eash message plus its attachments
+                                is isolated as frame when parsing so do need
+                                attachment group when messagizing
+            nested (bool): True means messagize for non-top level
+                                This forces non-native serializion to be embedded
+                                in non-native group code
+                           False means messagize for top level of stream.
+                                This allows bare non-native serialization of message
+
+            genusify (bool): True means prepend genus version code from gvrsn before
+                            serder to override default stream genus version
+                         False means do nothing
+
+        Returns::
+            bytearray: signed exchange message with count code and receipt
+            couples (pre+cig).
+        """
+        # sign serder event
+
+        serder, end = exchange(route=route,
+                               payload=payload,
+                               sender=self.pre,
+                               receiver=receiver,
+                               stamp=stamp,
+                               prior=prior,
+                               modifiers=modifiers,
+                               embeds=embeds,
+                               kind=kind,
+                               version=version)
+
+        if self.kever.prefixer.transferable:
+            msg = self.endorse(serder=serder, framed=True)
+        else:
+            cigars = self.sign(ser=serder.raw,
+                               indexed=False)
+            msg = eventing.messagize(serder, cigars=cigars, framed=framed,
+                                     nested=nested, gvrsn=gvrsn, genusify=genusify)
+
+        msg.extend(end)
+
+        if save:
+            self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
+
+        return msg
+
+
     def endorse(self, serder, last=False, framed=False, nested=False,
                               gvrsn=Version, genusify=False):
         """Return msg with own endorsement of msg from serder with attached
@@ -1596,13 +1696,13 @@ class BaseHab:
             # used to sign to indicate to messagize which type sig group to use
             kever = self.kever
             if last:
-                seal = SealLast(i=kever.prefixer.qb64)
+                source = SealLast(i=kever.prefixer.qb64)
             else:
-                seal = SealEvent(i=kever.prefixer.qb64,
+                source = SealEvent(i=kever.prefixer.qb64,
                                           s="{:x}".format(kever.lastEst.s),
                                           d=kever.lastEst.d)
             sigers = self.sign(ser=serder.raw, indexed=True)
-            msg = eventing.messagize(serder=serder, sigers=sigers, source=seal,
+            msg = eventing.messagize(serder=serder, sigers=sigers, source=source,
                                      framed=framed,nested=nested, gvrsn=gvrsn,
                                      genusify=genusify)
 
@@ -1613,91 +1713,6 @@ class BaseHab:
 
         return msg
 
-
-    def exchange(self, route,
-                 payload,
-                 recipient,
-                 date=None,
-                 eid=None,
-                 dig=None,
-                 modifiers=None,
-                 embeds=None,
-                 save=False,
-                 kind=Kinds.json,
-                 version=Version,
-                 pvrsn=None,
-                 gvrsn=Version,
-                 framed=False,
-                 nested=False,
-                 genusify=False):
-        """Build and return a signed ``exn`` message, optionally saving it to
-        own db.
-
-        Parameters::
-            route (str): route path string indicating the data flow handler.
-            payload (dict): payload data for the exchange message.
-            recipient (str): qb64 identifier prefix of the recipient.
-            date (str or None): date-time-stamp string. None means use now.
-            eid (str or None): qb64 of endpoint provider identifier if any.
-            dig (str or None): qb64 digest if any.
-            modifiers (dict or None): additional modifiers for the exchange.
-            embeds (dict or None): embedded message serders if any.
-            save (bool): True means process local copy into db after building.
-            kind (str): serialization for key event message
-                        one of Kinds ("json","cbor","mgpk","cesr")
-            version (Versionage): KERI protocol default version if psvrsn is None
-            pvrsn (Versionage): KERI protocol version
-            gvrsn (Versionage): CESR Genus version for attachment group codes or
-                            nesting group code (useful when serder.gvrsn < 2)
-                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
-                                if serder.gvrsn else serder.pvrsn
-            framed (bool): True means may assume each message plus its attachments
-                                is isolated as frame when parsing so do not need
-                                attachment group when messagizing
-                           False means may not assume eash message plus its attachments
-                                is isolated as frame when parsing so do need
-                                attachment group when messagizing
-            nested (bool): True means messagize for non-top level
-                                This forces non-native serializion to be embedded
-                                in non-native group code
-                           False means messagize for top level of stream.
-                                This allows bare non-native serialization of message
-
-            genusify (bool): True means prepend genus version code from gvrsn before
-                            serder to override default stream genus version
-                         False means do nothing
-
-        Returns::
-            bytearray: signed exchange message with count code and receipt
-            couples (pre+cig).
-        """
-        # sign serder event
-
-        serder, end = exchange(route=route,
-                               payload=payload,
-                               sender=self.pre,
-                               recipient=recipient,
-                               date=date,
-                               dig=dig,
-                               modifiers=modifiers,
-                               embeds=embeds,
-                               kind=kind,
-                               version=version)
-
-        if self.kever.prefixer.transferable:
-            msg = self.endorse(serder=serder, framed=True)
-        else:
-            cigars = self.sign(ser=serder.raw,
-                               indexed=False)
-            msg = eventing.messagize(serder, cigars=cigars, framed=framed,
-                                     nested=nested, gvrsn=gvrsn, genusify=genusify)
-
-        msg.extend(end)
-
-        if save:
-            self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
-
-        return msg
 
     def receipt(self, serder, kind=Kinds.json, version=Version, framed=False,
                     nested=False, gvrsn=Version, genusify=False):
@@ -1740,12 +1755,12 @@ class BaseHab:
 
         # sign serder event
         if self.kever.prefixer.transferable:
-            seal = SealEvent(i=self.pre,
+            source = SealEvent(i=self.pre,
                                       s="{:x}".format(self.kever.lastEst.s),
                                       d=self.kever.lastEst.d)
             sigers = self.sign(ser=serder.raw,
                                indexed=True)
-            msg = eventing.messagize(serder=reserder, sigers=sigers, source=seal,
+            msg = eventing.messagize(serder=reserder, sigers=sigers, source=source,
                                      framed=framed, nested=nested, gvrsn=gvrsn,
                                      genusify=genusify)
         else:
@@ -3047,31 +3062,8 @@ class SignifyHab(BaseHab):
         super(SignifyHab, self).__init__(**kwa)
 
 
-    def incept(self, *, serder, sigers, **kwa):
-        """Finish setting up this SignifyHab from a pre-built inception event.
-
-        Registers the prefix, processes the inception event through the local
-        Kevery, persists the habitat record, and marks the hab as initialised.
-
-        Args:
-            serder (SerderKERI): Pre-built inception event serder. The prefix
-                ``serder.ked["i"]`` is assigned to ``self.pre``.
-            sigers (list[Siger]): Siger instances carrying the remote
-                agent's signatures over ``serder.raw``.
-            **kwas: Absorbed for API compatibility; not used.
-        """
-        self.pre = serder.ked["i"]  # new pre
-        self.prefixes.add(self.pre)
-
-        self.processEvent(serder, sigers)
-
-        habord = HabitatRecord(hid=self.pre, sid=self.pre, name=self.name, domain=self.ns)
-        self.save(habord)
-
-        self.inited = True
-
     def sign(self, ser, verfers=None, indexed=True, indices=None, ondices=None, **kwa):
-        """Signing is not supported for SignifyHab.
+        """Signing is not supported for SignifyHab. So raises error.
 
         Private keys are held by the remote Signify agent, so local signing is
         intentionally disabled.
@@ -3089,17 +3081,103 @@ class SignifyHab(BaseHab):
         """
         raise KeriError("Signify hab does not support local signing")
 
-    def rotate(self, *, serder=None, sigers=None, framed=False,
-                        nested=False, gvrsn=Version, genusify=False, **kwa):
-        """Perform a rotation operation from a pre-built, pre-signed event.
+
+    def incept(self, *, serder=None, sigers=None, source=None, bonds=None,
+                        wigers=None, cigars=None, framed=False, nested=False,
+                        gvrsn=Version, genusify=False, **kwa):
+        """Finish setting up this SignifyHab from a pre-built inception event.
+
+        Registers the prefix, processes the inception event through the local
+        Kevery, persists the habitat record, and marks the hab as initialised.
+
+        Args:
+            serder (SerderKERI): Pre-built inception event serder. The prefix
+                ``serder.ked["i"]`` is assigned to ``self.pre``.
+            sigers (list[Siger]|None): Siger instances carrying the remote
+                agent's signatures over ``serder.raw``.
+            source (SealEvent|SealLast|None): optiona modifier to sigers when provided
+                If SealEvent use attachment group code TransIdxSigGroups plus attach
+                    triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
+                    plus attached indexed sigs in sigers
+                Elif SealLast use attachment group code TransLastIdxSigGroups plus
+                    attach uniple pre made from (i,) of seal plus ControllerIdxSigs
+                    plus attached indexed sigs in sigers
+                Else None use ControllerIdxSigs plus attached indexed sigs in sigers
+            bonds (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
+                Non signature based authenticator typically an event reference or may
+                Only v2 supports BlindState|BoundState|TypeMedia
+                if bonds is not list convert to list.
+            wigers (list): optional list of Siger instances of witness index signatures
+            cigars (list): optional list of Cigars instances of non-transferable non indexed
+                signatures from  which to form receipt couples.
+                Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
+            framed (bool): True means may assume each message plus its attachments
+                                is isolated as frame when parsing so do not need
+                                attachment group when messagizing
+                           False means may not assume eash message plus its attachments
+                                is isolated as frame when parsing so do need
+                                attachment group when messagizing
+            nested (bool): True means messagize for non-top level
+                                This forces non-native serializion to be embedded
+                                in non-native group code
+                           False means messagize for top level of stream.
+                                This allows bare non-native serialization of message
+            gvrsn (Versionage): CESR Genus version for attachment group codes or
+                            nesting group code (useful when serder.gvrsn < 2)
+                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                                if serder.gvrsn else serder.pvrsn
+            genusify (bool): True means prepend genus version code from gvrsn before
+                            serder to override default stream genus version
+                         False means do nothing
+            **kwas: Absorbed for API compatibility; not used.
+        """
+        if not serder:
+            raise KeriError("Missing serder from remote .incept")
+
+        self.pre = serder.ked["i"]  # new pre
+        self.prefixes.add(self.pre)
+
+        self.processEvent(serder, sigers)
+
+        habord = HabitatRecord(hid=self.pre, sid=self.pre, name=self.name, domain=self.ns)
+        self.save(habord)
+
+        self.inited = True
+
+        msg = eventing.messagize(serder, sigers=sigers, source=source, bonds=bonds,
+                                 wigers=wigers, cigars=cigars, framed=framed,
+                                 nested=nested, gvrsn=gvrsn, genusify=genusify)
+        return msg
+
+
+    def rotate(self, *, serder=None, sigers=None, source=None, bonds=None,
+                        wigers=None, cigars=None, framed=False, nested=False,
+                        gvrsn=Version, genusify=False, **kwa):
+        """Messagize a rotation operation from a pre-built, pre-signed event.
 
         Packages the provided serder and sigers into a message and processes
         it through the local Kevery to update key state.
 
         Parameters::
             serder (SerderKERI): Pre-built rotation event serder.
-            sigers (list[Siger]): Siger instances carrying the remote
+            sigers (list[Siger]|None): Siger instances carrying the remote
                 agent's signatures over ``serder.raw``.
+            source (SealEvent|SealLast|None): optiona modifier to sigers when provided
+                If SealEvent use attachment group code TransIdxSigGroups plus attach
+                    triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
+                    plus attached indexed sigs in sigers
+                Elif SealLast use attachment group code TransLastIdxSigGroups plus
+                    attach uniple pre made from (i,) of seal plus ControllerIdxSigs
+                    plus attached indexed sigs in sigers
+                Else None use ControllerIdxSigs plus attached indexed sigs in sigers
+            bonds (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
+                Non signature based authenticator typically an event reference or may
+                Only v2 supports BlindState|BoundState|TypeMedia
+                if bonds is not list convert to list.
+            wigers (list): optional list of Siger instances of witness index signatures
+            cigars (list): optional list of Cigars instances of non-transferable non indexed
+                signatures from  which to form receipt couples.
+                Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
             framed (bool): True means may assume each message plus its attachments
                                 is isolated as frame when parsing so do not need
                                 attachment group when messagizing
@@ -3123,12 +3201,20 @@ class SignifyHab(BaseHab):
         Returns::
             bytearray: Rotation message with attached signatures.
         """
-        msg = eventing.messagize(serder, sigers=sigers, framed=framed,
+        if not serder:
+            raise KeriError("Missing serder from remote .rotate")
+
+        msg = eventing.messagize(serder, sigers=sigers, source=source, bonds=bonds,
+                                 wigers=wigers, cigars=cigars, framed=framed,
                                  nested=nested, gvrsn=gvrsn, genusify=genusify)
-        self.processEvent(serder, sigers)
+
+        self.processEvent(serder, sigers)  # maybe should parse msg here
+
         return msg
 
-    def interact(self, *, serder=None, sigers=None, framed=False, nested=False,
+
+    def interact(self, *, serder=None, sigers=None, source=None, bonds=None,
+                          wigers=None, cigars=None, framed=False, nested=False,
                           gvrsn=Version, genusify=False, **kwa):
         """Perform an interaction operation from a pre-built, pre-signed event.
 
@@ -3139,6 +3225,22 @@ class SignifyHab(BaseHab):
             serder (SerderKERI): Pre-built interaction event serder.
             sigers (list[Siger]): Siger instances carrying the remote
                 agent's signatures over ``serder.raw``.
+            source (SealEvent|SealLast|None): optiona modifier to sigers when provided
+                If SealEvent use attachment group code TransIdxSigGroups plus attach
+                    triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
+                    plus attached indexed sigs in sigers
+                Elif SealLast use attachment group code TransLastIdxSigGroups plus
+                    attach uniple pre made from (i,) of seal plus ControllerIdxSigs
+                    plus attached indexed sigs in sigers
+                Else None use ControllerIdxSigs plus attached indexed sigs in sigers
+            bonds (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
+                Non signature based authenticator typically an event reference or may
+                Only v2 supports BlindState|BoundState|TypeMedia
+                if bonds is not list convert to list.
+            wigers (list): optional list of Siger instances of witness index signatures
+            cigars (list): optional list of Cigars instances of non-transferable non indexed
+                signatures from  which to form receipt couples.
+                Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
             framed (bool): True means may assume each message plus its attachments
                                 is isolated as frame when parsing so do not need
                                 attachment group when messagizing
@@ -3162,27 +3264,47 @@ class SignifyHab(BaseHab):
         Returns::
             bytearray: Interaction message with attached signatures.
         """
-        msg = evening.messagize(serder, sigers=sigers, framed=framed,
-                                nested=nested, gvrsn=gvrsn, genusify=genusify)
-        self.processEvent(serder, sigers)
+        if not serder:
+            raise KeriError("Missing serder from remote .interact")
+
+        msg = eventing.messagize(serder, sigers=sigers, source=source, bonds=bonds,
+                                 cigars=cigars, wigers=wigers, framed=framed,
+                                 nested=nested, gvrsn=gvrsn, genusify=genusify)
+
+        self.processEvent(serder, sigers)  # maybe should parse msg here
+
         return msg
 
 
-    def exchange(self, serder, seal=None, sigers=None, save=False, framed=False,
-                          nested=False,gvrsn=Version, genusify=False, **kwa):
-        """Build and optionally persist a signed ``exn`` exchange message.
-
-        Assembles a peer-to-peer exchange message from the pre-built serder
-        and provided signatures.  When ``save`` is ``True`` a local copy is
+    def exchange(self, *, serder=None, save=False, sigers=None, source=None,
+                    bonds=None, wigers=None, cigars=None, framed=False,
+                    nested=False, gvrsn=Version, genusify=False, **kwa):
+        """Messagize peer-to-peer exchange message from exchange msg serder
+        with provided signatures.  When ``save`` is ``True`` a local copy is
         parsed into the database for record keeping.
 
-        Args:
+        Parameters::
             serder (SerderKERI): Pre-built exchange event serder.
-            seal (Seal or None): Optional seal to attach to the message.
-            sigers (list or None): Siger instances carrying signatures
-                over ``serder.raw``.
             save (bool): When ``True``, parse a copy of the assembled message
                 into the local database. Defaults to ``False``.
+            sigers (list or None): Siger instances carrying signatures
+                over ``serder.raw``.
+            source (SealEvent|SealLast|None): optiona modifier to sigers when provided
+                If SealEvent use attachment group code TransIdxSigGroups plus attach
+                    triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
+                    plus attached indexed sigs in sigers
+                Elif SealLast use attachment group code TransLastIdxSigGroups plus
+                    attach uniple pre made from (i,) of seal plus ControllerIdxSigs
+                    plus attached indexed sigs in sigers
+                Else None use ControllerIdxSigs plus attached indexed sigs in sigers
+            bonds (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
+                Non signature based authenticator typically an event reference or may
+                Only v2 supports BlindState|BoundState|TypeMedia
+                if bonds is not list convert to list.
+            wigers (list): optional list of Siger instances of witness index signatures
+            cigars (list): optional list of Cigars instances of non-transferable non indexed
+                signatures from  which to form receipt couples.
+                Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
             framed (bool): True means may assume each message plus its attachments
                                 is isolated as frame when parsing so do not need
                                 attachment group when messagizing
@@ -3203,17 +3325,22 @@ class SignifyHab(BaseHab):
                          False means do nothing
             **kwa: Absorbed for API compatibility; not used.
 
-        Returns:
-            bytearray: Exchange message with count code and attached
-            signatures.
+        Returns::
+            msg (bytearray): Exchange message with count code and attached
+                             signatures.
         """
-        # sign serder event
-        msg = eventing.messagize(serder=serder, sigers=sigers, source=seal,
+        if not serder:
+            raise KeriError("Missing serder from remote .exchange")
+
+        msg = eventing.messagize(serder=serder, sigers=sigers, source=source,
+                                 bonds=bonds, cigars=cigars, wigers=wigers,
                                  framed=framed, nested=nested, gvrsn=gvrsn,
                                  genusify=genusify)
 
-        if save:
+        if save:  # this parses not .processEvent why different?
             self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
+
+        # maybe not being able to do messagize with source seal.
 
         return msg
 
@@ -3225,12 +3352,12 @@ class SignifyHab(BaseHab):
         ``MissingSignatureError``; any exception from the Kevery is wrapped
         in a ``ConfigurationError`` and re-raised.
 
-        Args:
+        Parameters::
             serder (SerderKERI): Event serder to process.
-            sigers (list): Signature instances over
+            sigers (list[Siger]| None): Signature instances over
                 ``serder.raw``.
 
-        Raises:
+        Raises::
             ConfigurationError: If the Kevery raises any exception during
                 event processing.
         """

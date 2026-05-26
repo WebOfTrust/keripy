@@ -28,8 +28,8 @@ logger = ogler.getLogger()
 class Poster(doing.DoDoer):
     """
     DoDoer that wraps any KERI event (KEL, TEL, Peer to Peer) in a /fwd `exn` envelope and
-    delivers them to one of the target recipient's witnesses for store and forward
-    to the intended recipient
+    delivers them to one of the target receiver's witnesses for store and forward
+    to the intended receiver
 
     """
 
@@ -46,7 +46,7 @@ class Poster(doing.DoDoer):
         """
         Returns:  doifiable Doist compatible generator method that processes
                    a queue of messages and envelopes them in a `fwd` message
-                   and sends them to one of the witnesses of the recipient for
+                   and sends them to one of the witnesses of the receiver for
                    store and forward.
 
         Usage:
@@ -93,7 +93,7 @@ class Poster(doing.DoDoer):
                 except ConfigurationError as e:
                     logger.error(f"Error sending to {recp} with ends={ends}.  Err={e}")
                     continue
-                # Get the kever of the recipient and choose a witness
+                # Get the kever of the receiver and choose a witness
 
                 self.cues.append(dict(dest=recp, topic=tpc, said=srdr.said))
 
@@ -109,7 +109,7 @@ class Poster(doing.DoDoer):
         Parameters:
             src (str): qb64 identifier prefix of sender
             hab (Hab): Sender identifier habitat
-            dest (str) is identifier prefix qb64 of the intended recipient
+            dest (str) is identifier prefix qb64 of the intended receiver
             topic (str): topic of message
             serder (Serder) KERI event message to envelope and forward:
             attachment (bytes): attachment bytes
@@ -241,8 +241,8 @@ class Poster(doing.DoDoer):
 class StreamPoster:
     """
     DoDoer that wraps any KERI event (KEL, TEL, Peer to Peer) in a /fwd `exn` envelope and
-    delivers them to one of the target recipient's witnesses for store and forward
-    to the intended recipient
+    delivers them to one of the target receiver's witnesses for store and forward
+    to the intended receiver
 
     """
 
@@ -267,7 +267,7 @@ class StreamPoster:
         """
         Returns:  doifiable Doist compatible generator method that processes
                    a queue of messages and envelopes them in a `fwd` message
-                   and sends them to one of the witnesses of the recipient for
+                   and sends them to one of the witnesses of the receiver for
                    store and forward.
 
         Usage:
@@ -439,7 +439,7 @@ class StreamPoster:
 
 class ForwardHandler:
     """
-    Handler for forward `exn` messages used to envelope other KERI messages intended for another recipient.
+    Handler for forward `exn` messages used to envelope other KERI messages intended for another receiver.
     This handler acts as a mailbox for other identifiers and stores the messages in a local database.
 
     Example message::\n\n        {
@@ -495,9 +495,9 @@ class ForwardHandler:
         embeds = serder.ked['e']
         modifiers = serder.ked['q'] if 'q' in serder.ked else {}
 
-        recipient = modifiers["pre"]
+        receiver = modifiers["pre"]
         topic = modifiers["topic"]
-        resource = f"{recipient}/{topic}"
+        resource = f"{receiver}/{topic}"
 
         pevt = bytearray()
         for pather, atc in attachments:
@@ -522,7 +522,7 @@ def introduce(hab, wit):
 
     Parameters:
         hab (Hab): local environment for the identifier to propagate
-        wit (str): qb64 identifier prefix of the recipient of KEL if not already receipted
+        wit (str): qb64 identifier prefix of the receiver of KEL if not already receipted
 
     Returns:
         bytearray: cloned KEL of hab

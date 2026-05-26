@@ -1454,7 +1454,8 @@ def exchept(sender="",
     return serder
 
 
-def exchange(sender="",
+def exchange(*,
+             sender="",
              receiver="",
              xid="",
              prior="",
@@ -1465,18 +1466,20 @@ def exchange(sender="",
              version=Vrsn_2_0,
              pvrsn=Vrsn_2_0,
              gvrsn=None,
-             kind=Kinds.json):
+             kind=Kinds.json,):
     """ Create an `exn` message with the specified route and payload
 
     Parameters:
         sender (str): qb64 of sender identifier (AID)
         receiver (str): qb64 of receiver identifier (AID)
         route (str):  '/' delimited path identifier of data flow handler
-               (behavior) to processs the reply if any
+                      (behavior) to processs the reply if any (equivalent of
+                      url path to resource)
         xid (str): qb64 of exchange ID which is SAID of exchange inception 'xip'
-        prior (str): qb64 of prior exchange event including 'xip"
-        modifiers (dict): modifiers
-        attributes (dict): attributes
+                   if any
+        prior (str): qb64 of prior exchange event including 'xip" if any
+        modifiers (dict): modifiers field map (equvalent of http query string)
+        attributes (dict): attributes field map (payload body)
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
                       creation of message or data, default is now.
         version (Versionage): KERI protocol default version if psvrsn is None
@@ -1491,24 +1494,30 @@ def exchange(sender="",
 
     ilk = Ilks.exn
 
-    sad = dict(v=vs,
-               t=ilk,
-               d="",
-               i=sender,
-               ri=receiver,
-               x=xid if xid is not None else "",
-               p=prior if prior is not None else "",
-               dt=stamp if stamp is not None else helping.nowIso8601(),
-               r=route if route is not None else "",
-               q=modifiers if modifiers is not None else {},  # q field required
-               a=attributes if attributes is not None else {}
-               )
+    if pvrsn.major < 2:
+        raise ValueError(f"Unsupported version {pvrsn=}")
+
+    else:
+
+        sad = dict(v=vs,
+                   t=ilk,
+                   d="",
+                   i=sender,
+                   ri=receiver,
+                   x=xid if xid is not None else "",
+                   p=prior if prior is not None else "",
+                   dt=stamp if stamp is not None else helping.nowIso8601(),
+                   r=route if route is not None else "",
+                   q=modifiers if modifiers is not None else {},  # q field required
+                   a=attributes if attributes is not None else {}
+                   )
 
     return SerderKERI(sad=sad, makify=True)
 
 
-def messagize(serder, *, sigers=None, source=None, bonds=None, wigers=None, cigars=None,
-              framed=False, nested=False, gvrsn=Version, genusify=False):
+def messagize(serder, *, sigers=None, source=None, bonds=None, wigers=None,
+                         cigars=None, framed=False, nested=False, gvrsn=Version,
+                         genusify=False):
     """Attaches authenticator(s) from sigers (with or without source as seal) and/or
     cigars and/or wigers and/or bonds. A bond is typically a seal reference to
     an event with anchoring seal of message as authenticator. In v2 bonds may
@@ -4104,7 +4113,7 @@ class Kevery:
 
         Parameters:
             serder (SerderKERI): instance of event to process
-            sigers (list[Siger]): instances of attached controller indexed sigs
+            sigers (list[Siger]|None): instances of attached controller indexed sigs
             wigers (list[Siger]|None): instances of attached witness indexed sigs
                 otherwise None
             delsner (Number|None): instance of delegating event sequence number.
@@ -4145,6 +4154,7 @@ class Kevery:
         ilk = serder.ilk  # ked["t"]
         said = serder.said
 
+        sigers = sigers if sigers is not None else []
 
         if pre not in self.kevers:  # first seen event for pre
             if ilk in (Ilks.icp, Ilks.dip):  # first seen and inception so verify event keys
