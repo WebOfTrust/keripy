@@ -1563,7 +1563,7 @@ class BaseHab:
                  recipient,
                  stamp=None,
                  eid=None,
-                 dig=None,
+                 prior=None,
                  modifiers=None,
                  embeds=None,
                  save=False,
@@ -1578,23 +1578,36 @@ class BaseHab:
         own db.
 
         Parameters::
+            sender (str): qb64 of sender identifier (AID)
+            receiver (str): qb64 of receiver identifier (AID)
+            route (str):  '/' delimited path identifier of data flow handler
+                          (behavior) to processs the reply if any (equivalent of
+                          url path to resource)
+            xid (str): qb64 of exchange ID which is SAID of exchange inception 'xip'
+                       if any
+            prior (str): qb64 of prior exchange event including 'xip" if any
+            modifiers (dict): modifiers field map (equvalent of http query string)
+            attributes (dict): attributes field map (payload body)
+            stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
+                          creation of message or data, default is now.
+
             route (str): route path string indicating the data flow handler.
             payload (dict): payload data for the exchange message.
             recipient (str): qb64 identifier prefix of the recipient.
-            stamp (str| None): date-time-stamp string. None means use now.
+
             eid (str or None): qb64 of endpoint provider identifier if any.
             dig (str or None): qb64 digest if any.
             modifiers (dict or None): additional modifiers for the exchange.
             embeds (dict or None): embedded message serders if any.
             save (bool): True means process local copy into db after building.
-            kind (str): serialization for key event message
-                        one of Kinds ("json","cbor","mgpk","cesr")
             version (Versionage): KERI protocol default version if psvrsn is None
             pvrsn (Versionage): KERI protocol version
             gvrsn (Versionage): CESR Genus version for attachment group codes or
                             nesting group code (useful when serder.gvrsn < 2)
                             gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
                                 if serder.gvrsn else serder.pvrsn
+            kind (str): serialization for key event message
+                        one of Kinds ("json","cbor","mgpk","cesr")
             framed (bool): True means may assume each message plus its attachments
                                 is isolated as frame when parsing so do not need
                                 attachment group when messagizing
@@ -1622,7 +1635,7 @@ class BaseHab:
                                sender=self.pre,
                                receiver=recipient,
                                stamp=stamp,
-                               prior=dig,
+                               prior=prior,
                                modifiers=modifiers,
                                embeds=embeds,
                                kind=kind,

@@ -166,7 +166,7 @@ def test_hab_exchange(mockHelpingNowUTC):
 
         data = dict(m="Lets create this registry instead")
         msg = hab2.exchange(route="/multisig/registry/incept", payload=data,
-                            recipient="", dig=exn.said,
+                            recipient="", prior=exn.said,
                             embeds=embeds, framed=True)
         assert msg == (b'{"v":"KERI10JSON0003d6_","t":"exn","d":"EPO_XC9nwSixqSoOvsHymFr-'
                     b'l3udclHBdOh4OUEqZ33P","i":"EIREQlatUJODbKogZfa3IqXZ90XdZA0qJMVli'
