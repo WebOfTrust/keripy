@@ -166,6 +166,13 @@ def escrows(tymth, tock=0.0, **opts):
             if (not escrow) or escrow == "delegated-unanchored":
                 escrows["delegated-unanchored"] = sum(1 for key, _ in hby.db.dune.getItemIter())
 
+            if (not escrow) or escrow == "delegatables":
+                delegables = list()
+                for (pre, sn), edig in hby.db.delegables.getItemIter():
+                    delegables.append(eventing.loadEvent(hby.db, pre, edig))
+
+                escrows["delegables"] = delegables
+
             # TEL / Reger escrows
 
             if (not escrow) or escrow == "tel-out-of-order":

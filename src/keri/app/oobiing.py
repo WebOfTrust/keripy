@@ -274,6 +274,7 @@ class Oobiery:
     """
 
     RetryDelay = 30
+    MaxRetries = 3
 
     def __init__(self, hby, rvy=None, clienter=None, cues=None):
         """  DoDoer to handle the request and parsing of OOBIs
@@ -368,6 +369,9 @@ class Oobiery:
         cid = cider.qb64  # controller authorizing eid at role
         aid = cid  # authorizing attribution id
 
+        eider = coring.Prefixer(qb64=data["eid"])  # raises error if unsupported code
+        eid = eider.qb64  # endpoint eid at role
+
         oobi = data["oobi"]
         url = urlparse(oobi)
         if url.scheme not in ("http", "https"):
@@ -383,7 +387,7 @@ class Oobiery:
         if not accepted:
             raise UnverifiedReplyError(f"Unverified introduction reply. {serder.ked}")
 
-        obr = basing.OobiRecord(cid=cid, date=dt)
+        obr = basing.OobiRecord(cid=eid, date=dt)
         self.hby.db.oobis.put(keys=(oobi,), val=obr)
 
     def scoobiDo(self, tymth=None, tock=0.0, **kwa):
@@ -602,7 +606,9 @@ class Oobiery:
             if (now - last) > datetime.timedelta(seconds=self.RetryDelay):
                 obr.date = helping.toIso8601(now)
                 self.hby.db.eoobi.rem(keys=(url,))
-                self.hby.db.oobis.pin(keys=(url,), val=obr)
+                if obr.retries < self.MaxRetries:
+                    obr.retries += 1
+                    self.hby.db.oobis.pin(keys=(url,), val=obr)
 
     def request(self, url, obr):
         client = self.clienter.request("GET", url=url)

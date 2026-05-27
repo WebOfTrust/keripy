@@ -16,6 +16,7 @@ from hio.help import decking, Hict
 from socket import gaierror
 
 from . import httping, forwarding
+from .httping import CESR_DESTINATION_HEADER
 from .. import help
 from .. import kering
 from .. import core
@@ -173,7 +174,11 @@ class Receiptor(doing.DoDoer):
         base = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
         url = urljoin(base, f"/receipts?pre={pre}&sn={sn}")
 
-        client = self.clienter.request("GET", url)
+        headers = (Hict([
+            (CESR_DESTINATION_HEADER, wit)
+        ]))
+
+        client = self.clienter.request("GET", url, headers=headers)
         while not client.responses:
             yield self.tock
 
@@ -181,6 +186,115 @@ class Receiptor(doing.DoDoer):
         if rep.status == 200:
             rct = bytearray(rep.body)
             hab.psr.parseOne(bytearray(rct))
+
+        self.clienter.remove(client)
+        return rep.status == 200
+
+
+    def ksn(self, pre, wit, src):
+        """ Returns a generator for witness key state notice querying
+
+        The returns a generator that will request receipts for event identified by pre and sn
+
+
+        Parameters:
+            pre (str): qualified base64 identifier to gather receipts for
+            wit (str): qualified base64 identifier of the witness to query
+            src: (str): the source qualified base64 identifier of the source of the query
+
+        Returns:
+            bool: True if the witness responded with a key state notice
+
+        """
+        if src not in self.hby.prefixes:
+            raise kering.MissingEntryError(f"{pre} not a valid AID")
+
+        hab = self.hby.habs[src]
+        kever = hab.kevers[pre]
+        wits = kever.wits
+
+        if wit not in wits:
+            return
+
+        urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
+        if not urls:
+            raise kering.MissingEntryError(f"unable to query witness {wit}, no http endpoint")
+
+        base = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
+        url = urljoin(base, f"/ksn?pre={pre}&src={src}")
+
+        headers = (Hict([
+            (CESR_DESTINATION_HEADER, wit)
+        ]))
+
+        client = self.clienter.request("GET", url, headers=headers)
+        while not client.responses:
+            yield self.tock
+
+        rep = client.respond()
+        if rep.status == 200:
+            rct = bytearray(rep.body)
+            hab.psr.parseOne(bytearray(rct))
+
+        self.clienter.remove(client)
+        return rep.status == 200
+
+    def logs(self, pre, wit, src, sn=None, fn=None, anchor=None):
+        """ Returns a generator for witness key state notice querying
+
+        The returns a generator that will request receipts for event identified by pre and sn
+
+
+        Parameters:
+            pre (str): qualified base64 identifier to gather receipts for
+            wit (str): qualified base64 identifier of the witness to query
+            src: (str): the source qualified base64 identifier of the source of the query
+
+        Returns:
+            bool: True if the witness responded with a key state notice
+
+        """
+        if src not in self.hby.prefixes:
+            raise kering.MissingEntryError(f"{pre} not a valid AID")
+
+        hab = self.hby.habs[src]
+        kever = hab.kevers[pre]
+        wits = kever.wits
+
+        if wit not in wits:
+            return
+
+        urls = hab.fetchUrls(eid=wit, scheme=kering.Schemes.http) or hab.fetchUrls(eid=wit, scheme=kering.Schemes.https)
+        if not urls:
+            raise kering.MissingEntryError(f"unable to query witness {wit}, no http endpoint")
+
+        params = list()
+        params.append(f"pre={pre}")
+        if sn:
+            params.append(f"s={sn:X}")
+        if fn:
+            params.append(f"fn={fn:X}")
+        if anchor:
+            params.append(f"a={anchor}")
+
+        params = "&".join(params)
+        base = urls[kering.Schemes.http] if kering.Schemes.http in urls else urls[kering.Schemes.https]
+        url = urljoin(base, f"/log?{params}")
+
+        headers = (Hict([
+            (CESR_DESTINATION_HEADER, wit)
+        ]))
+
+        client = self.clienter.request("GET", url, headers=headers)
+        while not client.responses:
+            yield self.tock
+
+        rep = client.respond()
+        if rep.status == 200:
+            ims = bytearray(rep.body)
+            hab.psr.parse(bytearray(ims))
+        else:
+            logger.info(f"Failed to retrieve log from {wit}: {rep.status} {rep.body}")
 
         self.clienter.remove(client)
         return rep.status == 200

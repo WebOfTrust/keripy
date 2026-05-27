@@ -4644,7 +4644,7 @@ class Kevery:
                     aid not in baks and \
                     aid not in wats:
                 raise kering.UntrustedKeyStateSource("key state notice for {} from untrusted source {} "
-                                                     .format(ksr.pre, aid))
+                                                     .format(ksr.i, aid))
 
         if ksr.i in self.kevers:
             kever = self.kevers[ksr.i]

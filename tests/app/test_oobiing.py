@@ -159,17 +159,19 @@ def test_introduce(mockHelpingNowUTC):
         oobi = f"https://localhost:8989/oobi/{watHab.pre}/controller"
         data = dict(
             cid=watHab.pre,
+            eid=watHab.pre,
             oobi=oobi
         )
 
         msg = watHab.reply(route="/introduce", data=data)
-        assert msg == (b'{"v":"KERI10JSON000127_","t":"rpy","d":"EPEU3V7e2d2mhMWVFDS-oC9z'
-                       b'Q8DX8t6ELkhINIaYGFNZ","dt":"2021-01-01T00:00:00.000000+00:00","r'
+        assert msg == (b'{"v":"KERI10JSON00015c_","t":"rpy","d":"EMJ-UlxNcc_RXkdQJcwIp2W-'
+                       b'tAagEie_jLuxLHKQtT4h","dt":"2021-01-01T00:00:00.000000+00:00","r'
                        b'":"/introduce","a":{"cid":"BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfX'
-                       b'GNrFRom","oobi":"https://localhost:8989/oobi/BBVDlgWic_rAf-m_v7v'
-                       b'z_VvIYAUPErvZgLTfXGNrFRom/controller"}}-VAi-CABBBVDlgWic_rAf-m_v'
-                       b'7vz_VvIYAUPErvZgLTfXGNrFRom0BBqF8yHDeXpzDUNIOsDBGezNBdgHafmOYbQ7'
-                       b'qw0R5t89FbLA26RwaA3NF9-dU0JpbNuJs7jiEBYbSGeDkbBDDEM')
+                       b'GNrFRom","eid":"BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfXGNrFRom","o'
+                       b'obi":"https://localhost:8989/oobi/BBVDlgWic_rAf-m_v7vz_VvIYAUPEr'
+                       b'vZgLTfXGNrFRom/controller"}}-VAi-CABBBVDlgWic_rAf-m_v7vz_VvIYAUP'
+                       b'ErvZgLTfXGNrFRom0BCWcS7M6pHProPVv1cGuzRkPU70HItqoA0ja6E1Bkw4XIk7'
+                       b'u7SLUxSoX7LI-ea76MnCEn3CNKTBK6fxMQSuPNII')
 
         witPsr.parseOne(ims=msg)
         assert witHby.db.oobis.cntAll() == 1
