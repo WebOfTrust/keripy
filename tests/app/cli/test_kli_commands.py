@@ -262,6 +262,7 @@ def test_standalone_kli_commands(helpers, capsys):
                           '  "group-partial-signed": 0,\n'
                           '  "exchange-partial-signed": 0,\n'
                           '  "delegated-unanchored": 0,\n'
+                          '  "delegables": [],\n'
                           '  "tel-out-of-order": 0,\n'
                           '  "tel-partially-witnessed": 0,\n'
                           '  "tel-anchorless": 0,\n'
