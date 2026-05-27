@@ -13,7 +13,7 @@ from hio.core import http
 from keri import help
 from keri.core import (Salter, Pather, Prefixer,
                        Bexter, Kevery, Parser, SerderKERI)
-from keri.kering import Vrsn_1_0, Ilks, Roles, Schemes
+from keri.kering import Vrsn_1_0, Ilks, Roles, Schemes, Kinds
 
 from keri.app import (Mailboxer, ForwardHandler, Poster,
                       StreamPoster, HttpEnd,
@@ -28,26 +28,28 @@ def test_postman(seeder):
             openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=True) as wesHby, \
             openHby(name="repTest", temp=True) as recpHby:
 
+        version = Vrsn_1_0
+        kwa = dict(version=version, kind=Kinds.json)
         mbx = Mailboxer(name="wes", temp=True)
-        wesDoers = setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644)
+        wesDoers = setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644, **kwa)
         wesHab = wesHby.habByName("wes")
-        seeder.seedWitEnds(hby.db, witHabs=[wesHab])
-        seeder.seedWitEnds(wesHby.db, witHabs=[wesHab])
-        seeder.seedWitEnds(recpHby.db, witHabs=[wesHab])
+        seeder.seedWitEnds(hby.db, witHabs=[wesHab], **kwa)
+        seeder.seedWitEnds(wesHby.db, witHabs=[wesHab], **kwa)
+        seeder.seedWitEnds(recpHby.db, witHabs=[wesHab], **kwa)
 
-        recpHab = recpHby.makeHab(name="repTest", transferable=True, wits=[wesHab.pre])
+        recpHab = recpHby.makeHab(name="repTest", transferable=True, wits=[wesHab.pre], **kwa)
 
-        recpIcp = recpHab.msgOwnEvent(sn=0, framed=True)
+        recpIcp = recpHab.msgOwnEvent(sn=0, framed=True, gvrsn=version)
         wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(recpIcp), kvy=wesKvy, local=True)
+        Parser(version=version).parse(ims=bytearray(recpIcp), kvy=wesKvy, local=True)
         assert recpHab.pre in wesKvy.kevers
 
         serder = SerderKERI(raw=recpIcp)
         rct = wesHab.receipt(serder, framed=True)
 
         kvy = Kevery(db=hab.db)
-        Parser(version=Vrsn_1_0).parseOne(bytearray(recpIcp), kvy=kvy, local=True)
-        Parser(version=Vrsn_1_0).parseOne(bytearray(rct), kvy=kvy, local=True)
+        Parser(version=version).parseOne(bytearray(recpIcp), kvy=kvy, local=True)
+        Parser(version=version).parseOne(bytearray(rct), kvy=kvy, local=True)
         kvy.processEscrows()
         assert recpHab.pre in kvy.kevers
 
@@ -213,7 +215,8 @@ def test_forward_handler():
 def test_essr_stream(seeder):
     with openHab(name="test", transferable=True, temp=True) as (hby, hab), \
             openHab(name="test", transferable=True, temp=True) as (recpHby, recpHab):
-
+        version = Vrsn_1_0
+        kwa = dict(version=version, kind=Kinds.json)
         app = falcon.App()
         httpEnd = HttpEnd(rxbs=recpHab.psr.ims)
         app.add_route("/", httpEnd)
@@ -221,25 +224,25 @@ def test_essr_stream(seeder):
         httpServerDoer = http.ServerDoer(server=server)
 
         kvy = Kevery(db=hab.db)
-        Parser(version=Vrsn_1_0).parseOne(recpHab.msgOwnEvent(sn=0, framed=True),
+        Parser(version=version).parseOne(recpHab.msgOwnEvent(sn=0, framed=True, gvrsn=version),
                                           kvy=kvy, local=True)
         kvy.processEscrows()
         assert recpHab.pre in kvy.kevers
 
         recpKvy = Kevery(db=recpHab.db)
-        icp = hab.msgOwnEvent(sn=0, framed=True)
-        Parser(version=Vrsn_1_0).parseOne(bytearray(icp), kvy=recpKvy, local=True)
+        icp = hab.msgOwnEvent(sn=0, framed=True, gvrsn=version)
+        Parser(version=version).parseOne(bytearray(icp), kvy=recpKvy, local=True)
         kvy.processEscrows()
         assert hab.pre in recpKvy.kevers
 
         msgs = bytearray()
         msgs.extend(recpHab.makeEndRole(eid=recpHab.pre,
                                         role=Roles.controller,
-                                        stamp=help.nowIso8601()))
+                                        stamp=help.nowIso8601(), **kwa))
 
         msgs.extend(recpHab.makeLocScheme(url='http://127.0.0.1:5555',
                                           scheme=Schemes.http,
-                                          stamp=help.nowIso8601()))
+                                          stamp=help.nowIso8601(), **kwa))
         hab.psr.parse(ims=msgs)
 
         postman = StreamPoster(hby=hby, hab=hab, recp=recpHab.pre, essr=True)
@@ -320,33 +323,34 @@ def test_essr_mbx(seeder):
     with openHab(name="test", transferable=True, temp=True) as (hby, hab), \
             openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=True) as wesHby, \
             openHby(name="repTest", temp=True) as recpHby:
-
+        version = Vrsn_1_0
+        kwa = dict(version=version, kind=Kinds.json)
         mbx = Mailboxer(name="wes", temp=True)
-        wesDoers = setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644)
+        wesDoers = setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644, **kwa)
         wesHab = wesHby.habByName("wes")
-        seeder.seedWitEnds(hby.db, witHabs=[wesHab])
-        seeder.seedWitEnds(wesHby.db, witHabs=[wesHab])
-        seeder.seedWitEnds(recpHby.db, witHabs=[wesHab])
+        seeder.seedWitEnds(hby.db, witHabs=[wesHab], **kwa)
+        seeder.seedWitEnds(wesHby.db, witHabs=[wesHab], **kwa)
+        seeder.seedWitEnds(recpHby.db, witHabs=[wesHab], **kwa)
 
-        recpHab = recpHby.makeHab(name="repTest", transferable=True, wits=[wesHab.pre])
+        recpHab = recpHby.makeHab(name="repTest", transferable=True, wits=[wesHab.pre], **kwa)
 
-        recpIcp = recpHab.msgOwnEvent(sn=0, framed=True)
+        recpIcp = recpHab.msgOwnEvent(sn=0, framed=True, gvrsn=version)
         wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(recpIcp), kvy=wesKvy, local=True)
+        Parser(version=version).parse(ims=bytearray(recpIcp), kvy=wesKvy, local=True)
         assert recpHab.pre in wesKvy.kevers
 
         serder = SerderKERI(raw=recpIcp)
         rct = wesHab.receipt(serder, framed=True)
 
         kvy = Kevery(db=hab.db)
-        Parser(version=Vrsn_1_0).parseOne(bytearray(recpIcp), kvy=kvy, local=True)
-        Parser(version=Vrsn_1_0).parseOne(bytearray(rct), kvy=kvy, local=True)
+        Parser(version=version).parseOne(bytearray(recpIcp), kvy=kvy, local=True)
+        Parser(version=version).parseOne(bytearray(rct), kvy=kvy, local=True)
         kvy.processEscrows()
         assert recpHab.pre in kvy.kevers
 
         recpKvy = Kevery(db=recpHab.db)
-        icp = hab.msgOwnEvent(sn=0)
-        Parser(version=Vrsn_1_0).parseOne(bytearray(icp), kvy=recpKvy, local=True)
+        icp = hab.msgOwnEvent(sn=0, gvrsn=version)
+        Parser(version=version).parseOne(bytearray(icp), kvy=recpKvy, local=True)
         kvy.processEscrows()
         assert hab.pre in recpKvy.kevers
 

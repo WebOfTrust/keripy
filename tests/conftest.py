@@ -15,7 +15,7 @@ import pytest
 from hio.base import doing
 
 from keri import help, Schemes, Roles
-from keri.kering import Vrsn_1_0
+from keri.kering import Vrsn_1_0, Kinds
 from keri.core import scheming, coring, routing, eventing, parsing, signing
 from keri.help import helping
 from keri.recording import EndpointRecord, LocationRecord
@@ -125,7 +125,7 @@ def seeder():
 
 class DbSeed:
     @staticmethod
-    def seedWitEnds(db, witHabs, protocols=None):
+    def seedWitEnds(db, witHabs, protocols=None, version=Vrsn_1_0, kind=Kinds.json):
         """ Add endpoint and location records for well known test witnesses
 
         Args:
@@ -151,11 +151,15 @@ class DbSeed:
                 url = WitnessUrls[f"{hab.name}:{scheme}"]
                 msgs.extend(hab.makeEndRole(eid=hab.pre,
                                             role=Roles.controller,
-                                            stamp=help.nowIso8601()))
+                                            stamp=help.nowIso8601(),
+                                            version=version,
+                                            kind=kind,))
 
                 msgs.extend(hab.makeLocScheme(url=url,
                                               scheme=scheme,
-                                              stamp=help.nowIso8601()))
+                                              stamp=help.nowIso8601(),
+                                              version=version,
+                                              kind=kind,))
                 psr.parse(ims=msgs)
 
     @staticmethod

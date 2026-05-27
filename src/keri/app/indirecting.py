@@ -40,7 +40,7 @@ logger = ogler.getLogger()
 
 
 def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPort=5632,
-                 keypath=None, certpath=None, cafilepath=None):
+                 keypath=None, certpath=None, cafilepath=None, **kwa):
     """
     Setup witness controller and doers
 
@@ -54,7 +54,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     # make hab
     hab = hby.habByName(name=alias)
     if hab is None:
-        hab = hby.makeHab(name=alias, transferable=False)
+        hab = hby.makeHab(name=alias, transferable=False, **kwa)
 
     from ..vdr import Reger,Verifier  # dynamic import because of circular import
 

@@ -6,7 +6,7 @@ tests.app.delegating module
 import time
 from hio.base import doing, tyming
 
-from keri.kering import Schemes, Vrsn_1_0
+from keri.kering import Schemes, Vrsn_1_0, Kinds
 from keri.core import Salter, Kevery, Parser, Seqner, Diger, delcept
 
 from keri.app import (Anchorer, DelegateRequestHandler, Receiptor,
@@ -19,13 +19,16 @@ def test_anchorer(seeder):
             openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64) as palHby, \
             openHby(name="del", salt=Salter(raw=b'0123456789ghijkl').qb64) as delHby:
 
-        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
+        version = Vrsn_1_0
+        kwa = dict(version=version, kind=Kinds.json)
+        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644, **kwa)
         witDoer = Receiptor(hby=palHby)
+
         bts = Anchorer(hby=delHby)
 
         wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[Schemes.http])
-        seeder.seedWitEnds(delHby.db, witHabs=[wesHab], protocols=[Schemes.http])
+        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[Schemes.http], **kwa)
+        seeder.seedWitEnds(delHby.db, witHabs=[wesHab], protocols=[Schemes.http], **kwa)
 
         opts = dict(
             wesHab=wesHab,
