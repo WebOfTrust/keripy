@@ -500,12 +500,13 @@ class Registrar(doing.DoDoer):
 
         super(Registrar, self).__init__(doers=doers)
 
-    def incept(self, iserder, anc):
+    def incept(self, iserder, anc, auths=None):
         """
 
         Parameters:
             iserder (SerderKERI): Serder object of TEL iss event
             anc (SerderKERI): Serder object of anchoring event
+            auths (dict): authentication codes for witnesses
 
         Returns:
             Registry:  created registry
@@ -524,7 +525,7 @@ class Registrar(doing.DoDoer):
                                saider=saider)
 
             print("Waiting for TEL event witness receipts")
-            self.receiptor.msgs.append(dict(pre=anc.pre, sn=seqner.sn))
+            self.receiptor.msgs.append(dict(pre=anc.pre, sn=seqner.sn, auths=auths))
 
             self.rgy.reger.tpwe.add(keys=(registry.regk, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
 
@@ -541,7 +542,7 @@ class Registrar(doing.DoDoer):
             print("Waiting for TEL registry vcp event multisig anchoring event")
             self.rgy.reger.tmse.add(keys=(registry.regk, rseq.qb64, registry.regd), val=(prefixer, seqner, saider))
 
-    def issue(self, creder, iserder, anc):
+    def issue(self, creder, iserder, anc, auths=None):
         """
         Create and process the credential issuance TEL events on the given registry
 
@@ -549,6 +550,7 @@ class Registrar(doing.DoDoer):
             creder (SerderACDC): credential to issue
             iserder (SerderKERI): Serder object of TEL iss event
             anc (SerderKERI): Serder object of anchoring event
+            auths (dict): authentication codes for witnesses
 
         """
         regk = creder.regi
@@ -565,7 +567,7 @@ class Registrar(doing.DoDoer):
             registry.anchorMsg(pre=vcid, regd=iserder.said, seqner=seqner, saider=saider)
 
             print("Waiting for TEL event witness receipts")
-            self.receiptor.msgs.append(dict(pre=hab.pre, sn=seqner.sn))
+            self.receiptor.msgs.append(dict(pre=hab.pre, sn=seqner.sn, auths=auths))
 
             self.rgy.reger.tpwe.add(keys=(vcid, rseq.qb64), val=(hab.kever.prefixer, seqner, saider))
 
@@ -774,7 +776,7 @@ class Credentialer(doing.DoDoer):
 
         super(Credentialer, self).__init__(doers=doers)
 
-    def create(self, regname, recp: str, schema, source, rules, data, private: bool = False,
+    def create(self, regname, recp: Optional[str], schema, source, rules, data, private: bool = False,
                private_credential_nonce: Optional[str] = None, private_subject_nonce: Optional[str] = None):
         """  Create and validate a credential returning the fully populated Creder
 

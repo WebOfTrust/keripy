@@ -20,9 +20,11 @@ from hio.help import decking
 
 import keri.app.oobiing
 from . import directing, storing, httping, forwarding, agenting, oobiing
+from ..core.eventing import reply
+from ..db.dbing import dgKey
 from ..metric import EscrowEnd
 from .habbing import GroupHab
-from .. import help, kering
+from .. import help, kering, core
 from ..core import (eventing, parsing, routing, coring, serdering,
                     Counter, Codens)
 from ..core.coring import Ilks
@@ -95,6 +97,11 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     app.add_route("/query", queryEnd)
     metricsEnd = EscrowEnd(hby=hby, reger=reger)
     app.add_route("/metrics", metricsEnd)
+
+    ksnEnd = KeyStateEnd(hab=hab)
+    app.add_route("/ksn", ksnEnd)
+    klogEnd = KeyLogEnd(hab=hab)
+    app.add_route("/log", klogEnd)
 
     server = createHttpServer(host, httpPort, app, keypath, certpath, cafilepath)
     if not server.reopen():
@@ -794,7 +801,7 @@ class Poller(doing.DoDoer):
                     topics[topic] = 0
 
             if isinstance(self.hab, GroupHab):
-                msg = self.hab.mhab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
+                msg = self.hab.mhab.query(pre=self.pre, src=self.witness, route="mbx", query=q)  # type: ignore
             else:
                 msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
 
@@ -1289,3 +1296,92 @@ class QueryEnd:
             rep.set_header('Content-Type', "application/json")
             rep.text = "unkown query type."
             rep.status = falcon.HTTP_400
+
+
+
+
+class KeyStateEnd:
+    """ Key State Query endpoint handler """
+    def __init__(self, hab):
+        self.hab = hab
+
+    def on_get(self, req, rep):
+        """  Key State Query endpoint handler"""
+
+        pre = req.get_param("pre")
+
+        if pre not in self.hab.kevers:
+            msg = f"Query not found error on event pre={pre}"
+            logger.debug(msg)
+            raise falcon.HTTPNotFound(title="AID not found", description=msg)
+
+        kever = self.hab.kevers[pre]
+
+        # get list of witness signatures to ensure we are presenting a fully witnessed event
+        wigs = self.hab.db.getWigs(dgKey(pre, kever.serder.saidb))  # list of wigs
+        wigers = [core.Siger(qb64b=bytes(wig)) for wig in wigs]
+
+        if len(wigers) < kever.toader.num:
+            msg = f"Witness receipts not found error on event pre={pre}"
+            logger.debug(msg)
+            raise falcon.HTTPNotFound(title="Witness receipts not found", description=msg)
+
+        rserder = reply(route=f"/ksn/{self.hab.pre}", data=kever.state()._asdict())
+
+        atc = self.hab.endorse(rserder)
+        rep.set_header('Content-Type', "application/cesr")
+        rep.status = falcon.HTTP_200
+        rep.data = atc
+
+
+class KeyLogEnd:
+    """ Key State Query endpoint handler """
+    def __init__(self, hab):
+        self.hab = hab
+
+    def on_get(self, req, rep):
+        """  Key State Query endpoint handler"""
+        pre = req.get_param("pre")
+
+        anchor = req.get_param("a", None)
+        sn = req.get_param("s", None)
+        sn = int(sn, 16) if sn else None
+        fn = req.get_param("fn", None)
+        fn = int(fn, 16) if fn else 0
+
+        if pre not in self.hab.kevers:
+            msg = f"Query not found error on pre={pre}"
+            logger.debug(msg)
+            raise falcon.HTTPNotFound(title="AID not found", description=msg)
+
+        kever = self.hab.kevers[pre]
+        if anchor:
+            if not self.hab.db.fetchAllSealingEventByEventSeal(pre=pre, seal=anchor):
+                msg = f"Query not found error on pre={pre} and anchor={anchor}"
+                logger.debug(msg)
+                raise falcon.HTTPNotFound(title="AID not found", description=msg)
+
+
+        elif sn is not None:
+            if kever.sner.num < sn or not self.hab.db.fullyWitnessed(kever.serder):
+                msg = f"Query not found error on pre={pre} and sn={sn}"
+                logger.debug(msg)
+                raise falcon.HTTPNotFound(title="AID not found", description=msg)
+
+        msgs = bytearray()  # outgoing messages
+        for msg in self.hab.db.clonePreIter(pre=pre, fn=fn):
+            msgs.extend(msg)
+
+        if kever.delpre:
+            cloner = self.hab.db.clonePreIter(pre=kever.delpre, fn=0)  # create iterator at 0
+            for msg in cloner:
+                msgs.extend(msg)
+
+        if not msgs:
+            msg = f"No events found on pre={pre}"
+            logger.debug(msg)
+            raise falcon.HTTPNotFound(title="AID not found", description=msg)
+
+        rep.set_header('Content-Type', "application/cesr")
+        rep.status = falcon.HTTP_200
+        rep.data = bytes(msgs)

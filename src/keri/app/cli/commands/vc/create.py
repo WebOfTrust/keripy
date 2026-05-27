@@ -42,6 +42,9 @@ parser.add_argument("--private-subject-nonce", help="nonce for subject",
 parser.add_argument('--passcode', '-p', help='21 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument("--time", help="timestamp for the credential creation", required=False, default=None)
+parser.add_argument("--authenticate", '-z', help="Prompt the controller for authentication codes for each witness",
+                    action='store_true')
+
 
 
 def issueCredential(args):
@@ -105,6 +108,7 @@ def issueCredential(args):
                                  private=args.private,
                                  private_credential_nonce=args.private_credential_nonce,
                                  private_subject_nonce=args.private_subject_nonce,
+                                 authenticate=args.authenticate,
                                  )
 
     doers = [issueDoer]
@@ -119,26 +123,29 @@ class CredentialIssuer(doing.DoDoer):
 
     def __init__(self, name, alias, base, bran, registryName=None, schema=None, edges=None, recipient=None, data=None,
                  rules=None, credential=None, timestamp=None, private:bool=False, private_credential_nonce:Optional[str]=None,
-                 private_subject_nonce:Optional[str]=None,):
+                 private_subject_nonce:Optional[str]=None, authenticate:bool=False):
         """ Create DoDoer for issuing a credential and managing the processes needed to complete issuance
 
         Parameters:
-             name:
-             registryName:
-             schema:
-             edges:
-             recipient:
+             name: Habery database environment name
+             alias: Hab alias
+             registryName: Registry name
+             schema: qb64 SAID of credential schema to issue against
+             edges: JSON data or file of edges
+             recipient: Recipient AID
              data: (dict) credential data dict
              credential: (dict) full credential to issue when joining a multisig issuance
-             out (str): Filename for credential output
              private (bool): apply nonce used for privacy preserving ACDC
              private_credential_nonce (Optional[str]): nonce used for privacy vc
              private_subject_nonce (Optional[str]): nonce used for subject
+             authenticate (bool): Prompt the controller for authentication codes for each witness
 
         """
         self.name = name
         self.registryName = registryName
         self.timestamp = timestamp
+        self.authenticate = authenticate
+
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
         if self.hab is None:
@@ -227,9 +234,17 @@ class CredentialIssuer(doing.DoDoer):
         else:
             anc = hab.interact(data=[rseal])
 
+        auths = {}
+        if self.authenticate:
+            for wit in hab.kever.wits:
+                if wit in auths:
+                    continue
+                code = input(f"Entire code for {wit}: ")
+                auths[wit] = f"{code}#{helping.nowIso8601()}"
+
         aserder = serdering.SerderKERI(raw=anc)
         self.credentialer.issue(self.creder, iserder)
-        self.registrar.issue(self.creder, iserder, aserder)
+        self.registrar.issue(self.creder, iserder, aserder, auths=auths)
 
         acdc = signing.serialize(self.creder, coring.Prefixer(qb64=iserder.pre),
                                  core.Number(num=iserder.sn, code=core.NumDex.Huge),

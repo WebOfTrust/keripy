@@ -12,7 +12,7 @@ from keri import kering
 from keri.app import forwarding, connecting, habbing, grouping, indirecting, signing
 from keri.app.cli.common import existing
 from keri.app.notifying import Notifier
-from keri.core import coring, parsing, serdering, Salter
+from keri.core import coring, parsing, serdering
 from keri.peer import exchanging
 from keri.vc import protocoling
 from keri.vdr import credentialing
