@@ -1109,7 +1109,8 @@ class ReceiptEnd(doing.DoDoer):
                 raise falcon.HTTPBadRequest(description=f"{self.hab.pre} is not a valid witness for {pre} event at "
                                                         f"{serder.sn}: wits={wits}")
 
-            rct = self.hab.receipt(serder, framed=True)
+            rct = self.hab.receipt(serder, framed=True,
+                                   version=serder.pvrsn, kind=serder.kind)
 
             self.psr.parseOne(bytes(rct))
 
@@ -1156,11 +1157,13 @@ class ReceiptEnd(doing.DoDoer):
                                                     f"{serder.sn}, {wits}")
         rserder = receipt(pre=pre,
                           sn=sn,
-                          said=said.decode("utf-8"))
+                          said=said.decode("utf-8"),
+                          version=serder.pvrsn,
+                          kind=serder.kind)
         rct = bytearray(rserder.raw)
         if wigers := self.hab.db.wigs.get(keys=(preb, said)):
             rct.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
-                               version=Vrsn_1_0).qb64b)
+                               version=serder.pvrsn).qb64b)
             for wiger in wigers:
                 rct.extend(wiger.qb64b)
 
