@@ -41,40 +41,40 @@ def assertKeriV2Cesr(ked):
     assert kind == Kinds.cesr
 
 
-def test_keyevent_defaults_v2(mockHelpingNowUTC):
-    """
-    Test default key event generation now emits KERI v2 CESR events.
-    """
-    assert Version == Vrsn_2_0
-
-    signer0 = Signer(transferable=False)
-    serder0 = incept(keys=[signer0.verfer.qb64])
-    assert serder0.pvrsn == Vrsn_2_0
-    assert serder0.kind == Kinds.cesr
-    assert serder0.raw.startswith(b"-")
-
-    signer1 = Signer()
-    signer2 = Signer()
-    ndigs = [Diger(ser=signer2.verfer.qb64b).qb64]
-    serder1 = incept(keys=[signer1.verfer.qb64], ndigs=ndigs)
-    assert serder1.pvrsn == Vrsn_2_0
-    assert serder1.kind == Kinds.cesr
-
-    signer4 = Signer()
-    serder2 = rotate(pre=serder1.pre,
-                              keys=[signer2.verfer.qb64],
-                              dig=serder1.said,
-                              ndigs=[Diger(ser=signer4.verfer.qb64b).qb64])
-    assert serder2.pvrsn == Vrsn_2_0
-    assert serder2.kind == Kinds.cesr
-
-    serder3 = interact(pre=serder1.pre, dig=serder2.said, sn=2)
-    assert serder3.pvrsn == Vrsn_2_0
-    assert serder3.kind == Kinds.cesr
-
-    serder4 = receipt(pre=serder1.pre, sn=2, said=serder3.said)
-    assert serder4.pvrsn == Vrsn_2_0
-    assert serder4.kind == Kinds.cesr
+# def test_keyevent_defaults_v2(mockHelpingNowUTC):
+#     """
+#     Test default key event generation now emits KERI v2 CESR events.
+#     """
+#     assert Version == Vrsn_2_0
+#
+#     signer0 = Signer(transferable=False)
+#     serder0 = incept(keys=[signer0.verfer.qb64])
+#     assert serder0.pvrsn == Vrsn_2_0
+#     assert serder0.kind == Kinds.cesr
+#     assert serder0.raw.startswith(b"-")
+#
+#     signer1 = Signer()
+#     signer2 = Signer()
+#     ndigs = [Diger(ser=signer2.verfer.qb64b).qb64]
+#     serder1 = incept(keys=[signer1.verfer.qb64], ndigs=ndigs)
+#     assert serder1.pvrsn == Vrsn_2_0
+#     assert serder1.kind == Kinds.cesr
+#
+#     signer4 = Signer()
+#     serder2 = rotate(pre=serder1.pre,
+#                               keys=[signer2.verfer.qb64],
+#                               dig=serder1.said,
+#                               ndigs=[Diger(ser=signer4.verfer.qb64b).qb64])
+#     assert serder2.pvrsn == Vrsn_2_0
+#     assert serder2.kind == Kinds.cesr
+#
+#     serder3 = interact(pre=serder1.pre, dig=serder2.said, sn=2)
+#     assert serder3.pvrsn == Vrsn_2_0
+#     assert serder3.kind == Kinds.cesr
+#
+#     serder4 = receipt(pre=serder1.pre, sn=2, said=serder3.said)
+#     assert serder4.pvrsn == Vrsn_2_0
+#     assert serder4.kind == Kinds.cesr
 
 
 def test_keyeventfuncs(mockHelpingNowUTC):

@@ -571,6 +571,8 @@ def test_replay_all():
         debMsgs.extend(debHab.rotate(framed=True, gvrsn=V1, **KWA))
         debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
         debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
+        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
+        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
 
         # Play debMsgs to Cam
         # create non-local kevery for Cam to process msgs from Deb

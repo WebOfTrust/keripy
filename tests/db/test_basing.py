@@ -1828,7 +1828,7 @@ def test_clean_baser():
     version = Vrsn_1_0
     # with openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
     with openHby(name=name, salt=Salter(raw=b'0123456789abcdef').qb64) as hby:  # default is temp=True
-        kwa = dict(version=version, kind=Kinds.json, gvrsn=version)
+        kwa = dict(version=version, kind=Kinds.json)
         natHab = hby.makeHab(name=name, isith='2', icount=3, **kwa)  # default Hab
         # setup Nat's habitat using default salt multisig already incepts
         #natHab = habbing.Habitat(name='nat', ks=natKS, db=natDB,
@@ -1886,7 +1886,7 @@ def test_clean_baser():
                              sn=natHab.kever.sn+1,
                              isith='2',
                              ndigs=[diger.qb64 for diger in natHab.kever.ndigers],
-                             version=version)
+                             **kwa)
             fn, dts = natHab.kever.logEvent(serder=badsrdr, first=True)
             natHab.db.states.pin(keys=natHab.pre,
                                  val=datify(KeyStateRecord,
@@ -2051,6 +2051,8 @@ def test_usebaser():
     """
     Test using Baser
     """
+    kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
+
     raw = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
     salter = Salter(raw=raw)
 
@@ -2068,7 +2070,7 @@ def test_usebaser():
         serder = incept(keys=keys,
                         code=code,
                         isith=sith,
-                        ndigs=[Diger(ser=key).qb64 for key in nxtkeys])
+                        ndigs=[Diger(ser=key).qb64 for key in nxtkeys], **kwa)
 
 
         # sign serialization
@@ -2084,7 +2086,7 @@ def test_usebaser():
                         isith=sith,
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=key).qb64 for key in nxtkeys],
-                        sn=1)
+                        sn=1, **kwa)
 
         # sign serialization
         sigers = [signers[i].sign(serder.raw, index=i-count) for i in range(count, count+count)]
@@ -2095,7 +2097,7 @@ def test_usebaser():
         # Event 2 Interaction
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=2)
+                          sn=2, **kwa)
 
         # sign serialization  (keys don't change for signing)
         sigers = [signers[i].sign(serder.raw, index=i-count) for i in range(count, count+count)]
@@ -2244,6 +2246,8 @@ def test_statedict():
     """
     Test custom statedict subclass of dict
     """
+    kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
+
     dbd = statedict(a=1, b=2, c=3)  # init in memory so never acesses db
     assert dbd.db == None
     assert 'a' in dbd
@@ -2284,7 +2288,7 @@ def test_statedict():
 
         assert pre not in dbd
         dig = 'EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30'
-        serder = interact(pre=pre, dig=dig, sn=4)
+        serder = interact(pre=pre, dig=dig, sn=4, **kwa)
 
         eevt = StateEstEvent(s='3', d=dig, br=[], ba=[])
 

@@ -131,9 +131,11 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
 def test_delegation_request(mockHelpingNowUTC):
     with openHab(name="test", temp=True, salt=b'0123456789abcdef') as (hby, hab):
 
+        version = Vrsn_1_0
         delpre = "EArzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"
         serder = delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=delpre,
-                                  ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
+                                  ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"],
+                                  version=version, kind=Kinds.json)
         evt = hab.endorse(serder=serder, framed=False)
         exn, atc = delegateRequestExn(hab=hab, delpre=delpre, evt=evt)
 
@@ -156,7 +158,8 @@ def test_delegation_request_handler(mockHelpingNowUTC):
     with openHab(name="test", temp=True) as (hby, hab):
 
         serder = delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=hab.pre,
-                                  ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
+                                  ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"],
+                                  version=Vrsn_1_0, kind=Kinds.json)
 
         evt = hab.endorse(serder=serder, framed=False)
         notifier = Notifier(hby=hby)

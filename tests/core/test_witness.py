@@ -142,8 +142,7 @@ def test_indexed_witness_replay():
         assert len(wigers) == 3
         rserder = receipt(pre=camHab.pre,
                           sn=camHab.kever.sn,
-                          said=camHab.kever.serder.said,
-                          version=Vrsn_1_0)
+                          said=camHab.kever.serder.said, **kwa)
         camIcpWitRctMsg = messagize(serder=rserder, wigers=wigers, framed=True,
                                     gvrsn=Vrsn_1_0)
         assert len(camIcpWitRctMsg) == 413
@@ -192,8 +191,7 @@ def test_indexed_witness_replay():
         assert len(wigers) == 3
         rserder = receipt(pre=camHab.pre,
                           sn=camHab.kever.sn,
-                          said=camHab.kever.serder.said,
-                          version=Vrsn_1_0)
+                          said=camHab.kever.serder.said, **kwa)
         camIxnWitRctMsg = messagize(serder=rserder, wigers=wigers, framed=True,
                                     gvrsn=Vrsn_1_0)
         assert len(camIxnWitRctMsg) == 413
@@ -262,8 +260,7 @@ def test_indexed_witness_replay():
         assert len(wigers) == 3
         rserder = receipt(pre=camHab.pre,
                           sn=camHab.kever.sn,
-                          said=camHab.kever.serder.said,
-                          version=Vrsn_1_0)
+                          said=camHab.kever.serder.said, **kwa)
         camRotWitRctMsg = messagize(serder=rserder, wigers=wigers, framed=True,
                                     gvrsn=Vrsn_1_0)
         assert len(camRotWitRctMsg) == 413

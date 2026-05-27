@@ -4,7 +4,7 @@ import pytest
 
 from hio.help import ogler
 
-from keri.kering import Vrsn_1_0, ValidationError
+from keri.kering import Vrsn_1_0, ValidationError, Kinds
 from keri.core import (Salter, Parser, Diger, SerderKERI,
                        Counter, Kever, Kevery, Codens,
                        incept, rotate, interact)
@@ -22,6 +22,8 @@ def test_kevery():
     """
     logger.setLevel("ERROR")
 
+    kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
+
     #  create signers
     raw = b"ABCDEFGH01234567"
     signers = Salter(raw=raw).signers(count=8, path='kev', temp=True)
@@ -34,7 +36,7 @@ def test_kevery():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers[0].verfer.qb64],
-                        ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64], **kwa)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -60,7 +62,7 @@ def test_kevery():
                         keys=[signers[1].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers[2].verfer.qb64b).qb64],
-                        sn=1)
+                        sn=1, **kwa)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -78,7 +80,7 @@ def test_kevery():
                         keys=[signers[2].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers[3].verfer.qb64b).qb64],
-                        sn=2)
+                        sn=2, **kwa)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -94,7 +96,7 @@ def test_kevery():
         # Event 3 Interaction
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=3)
+                          sn=3, **kwa)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -110,7 +112,7 @@ def test_kevery():
         # Event 4 Interaction
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=4)
+                          sn=4, **kwa)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -128,7 +130,7 @@ def test_kevery():
                         keys=[signers[3].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers[4].verfer.qb64b).qb64],
-                        sn=5)
+                        sn=5, **kwa)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -144,7 +146,7 @@ def test_kevery():
         # Event 6 Interaction
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=6)
+                          sn=6, **kwa)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -162,7 +164,7 @@ def test_kevery():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[4].verfer.qb64],
                         dig=kever.serder.said,
-                        sn=7)
+                        sn=7, **kwa)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -178,7 +180,7 @@ def test_kevery():
         # Event 8 Interaction
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=8)
+                          sn=8, **kwa)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
@@ -196,7 +198,7 @@ def test_kevery():
                         keys=[signers[4].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers[5].verfer.qb64b).qb64],
-                        sn=8)
+                        sn=8, **kwa)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization

@@ -39,7 +39,7 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
             wits=[],
             isith='3',
             nsith='3',
-            **v1
+            **kwa
         )
 
         ghab1 = hby1.makeGroupHab(group=f"{prefix}_group1", mhab=hab1,

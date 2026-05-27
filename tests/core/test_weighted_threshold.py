@@ -7,7 +7,7 @@ import os
 
 from keri import help
 
-from keri.kering import Vrsn_1_0
+from keri.kering import Vrsn_1_0, Kinds
 from keri.core import (Salter, Counter, Kevery, Parser,
                        Codens, MtrDex,
                        incept, interact, rotate)
@@ -24,6 +24,8 @@ def test_weighted():
     Test multisig with weighted threshold
 
     """
+    kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
+
     wesSalt = Salter(raw=b'0123456789abcdef').qb64  # init wes Salter
 
     # init event DB and keep DB
@@ -44,7 +46,7 @@ def test_weighted():
                          isith=sith,
                          nsith=nxtsith,
                          ndigs=[diger.qb64 for diger in digers],
-                         code=MtrDex.Blake3_256)
+                         code=MtrDex.Blake3_256, **kwa)
 
         wesPre = wesSrdr.ked["i"]
 
@@ -84,7 +86,7 @@ def test_weighted():
         wesSrdr = interact(pre=wesK.prefixer.qb64,
                            dig=wesK.serder.said,
                            sn=wesK.sn + 1,
-                           data=[])
+                           data=[], **kwa)
 
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=wesK.verfers)
 
@@ -121,7 +123,7 @@ def test_weighted():
                                   nsith=nxtsith,
                                   ndigs=[diger.qb64 for diger in digers],
                                   sn=wesK.sn + 1,
-                                  data=[])
+                                  data=[], **kwa)
 
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=verfers)
 
@@ -167,7 +169,7 @@ def test_weighted():
                                   nsith=nxtsith,
                                   ndigs=[diger.qb64 for diger in digers],
                                   sn=wesK.sn + 1,
-                                  data=[])
+                                  data=[], **kwa)
 
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=verfers)
 
@@ -213,7 +215,7 @@ def test_weighted():
                                   nsith=nxtsith,
                                   ndigs=[diger.qb64 for diger in digers],
                                   sn=wesK.sn + 1,
-                                  data=[])
+                                  data=[], **kwa)
 
         sigers = wesMgr.sign(ser=wesSrdr.raw, verfers=verfers)
 

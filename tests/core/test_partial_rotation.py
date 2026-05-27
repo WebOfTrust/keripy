@@ -7,12 +7,15 @@ import pytest
 
 from keri import MissingSignatureError
 
+from keri.kering import Vrsn_1_0, Kinds
 from keri.core import Salter, Diger, Kever, MtrDex, incept, rotate
 
 from keri.db import openDB
 
 
 def test_partial_rotation():
+
+    kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
 
     #  create signers
     raw = b"ABCDEFGH01234567"
@@ -28,7 +31,7 @@ def test_partial_rotation():
             _ = incept(keys=[signers[0].verfer.qb64],
                                 nsith='2',
                                 ndigs=ndigs,
-                                code=MtrDex.Blake3_256)
+                                code=MtrDex.Blake3_256, **kwa)
 
         # 5 keys for the next rotation
         ndigs = [
@@ -42,7 +45,7 @@ def test_partial_rotation():
         serder = incept(keys=[signers[0].verfer.qb64],
                                  nsith='2',  # next signed event must satisfy this along with the new `kt`
                                  ndigs=ndigs,
-                                 code=MtrDex.Blake3_256)
+                                 code=MtrDex.Blake3_256, **kwa)
 
         siger = signers[0].sign(serder.raw, index=0)  # return siger
 
@@ -70,7 +73,7 @@ def test_partial_rotation():
                                  dig=kever.serder.said,
                                  nsith='4',
                                  ndigs=ndigs,
-                                 sn=1)
+                                 sn=1, **kwa)
 
         # sign serialization
         siger0 = signers[2].sign(rotser.raw, index=0, ondex=1)  # returns siger
@@ -105,7 +108,7 @@ def test_partial_rotation():
                                  dig=kever.serder.said,
                                  nsith='2',
                                  ndigs=ndigs,
-                                 sn=2)
+                                 sn=2, **kwa)
 
         # sign serialization
         siger0 = signers[6].sign(rotser.raw, index=0)  # returns siger
@@ -131,7 +134,7 @@ def test_partial_rotation():
         serder = incept(keys=[signers[0].verfer.qb64],
                                  nsith=["1/2", "1/2", "1/3", "1/3", "1/3"],
                                  ndigs=ndigs,
-                                 code=MtrDex.Blake3_256)
+                                 code=MtrDex.Blake3_256, **kwa)
 
         siger = signers[0].sign(serder.raw, index=0)  # return siger
 
@@ -159,7 +162,7 @@ def test_partial_rotation():
                                  dig=kever.serder.said,
                                  nsith=["1/2", "1/2", "1/3", "1/3", "1/3"],
                                  ndigs=ndigs,
-                                 sn=1)
+                                 sn=1, **kwa)
 
         # sign serialization
         siger0 = signers[3].sign(rotser.raw, index=0, ondex=2)  # returns siger
@@ -187,7 +190,7 @@ def test_partial_rotation():
                                  dig=kever.serder.said,
                                  nsith='0',
                                  ndigs=ndigs,
-                                 sn=2)
+                                 sn=2, **kwa)
 
         # sign serialization
         siger0 = signers[13].sign(rotser.raw, index=0, ondex=2)  # returns siger
