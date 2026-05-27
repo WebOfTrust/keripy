@@ -1172,7 +1172,7 @@ class BaseHab:
                           val=self.pre)
 
 
-    def reconfigure(self):
+    def reconfigure(self, **kwa):
         """Apply configuration from config file managed by ``.cf`` to this Hab.
         Assumes that ``.pre`` and signing keys have been set up in order to
         create own endpoint auth when provided in ``.cf``.
@@ -1208,6 +1208,10 @@ class BaseHab:
             multiple writers to ``.cf``. Use the config file to preload the
             database, not as a database. Config file may have named sections
             for Habery or individual Habs as needed.
+
+        Parameters::
+            **kwa: keyword arguments forwarded to ``makeEndRole`` and
+                ``makeLocScheme``, including ``version`` and ``kind``.
         """
 
         conf = self.cf.get()
@@ -1220,7 +1224,8 @@ class BaseHab:
             msgs = bytearray()
             msgs.extend(self.makeEndRole(eid=self.pre,
                                          role=Roles.controller,
-                                         stamp=toIso8601(dt=dt)))
+                                         stamp=toIso8601(dt=dt),
+                                         **kwa))
             if "curls" in conf:
                 curls = conf["curls"]
                 for url in curls:
@@ -1229,7 +1234,8 @@ class BaseHab:
                               else Schemes.http)
                     msgs.extend(self.makeLocScheme(url=url,
                                                    scheme=scheme,
-                                                   stamp=toIso8601(dt=dt)))
+                                                   stamp=toIso8601(dt=dt),
+                                                   **kwa))
             self.psr.parse(ims=msgs)
 
     @property
@@ -2154,7 +2160,8 @@ class BaseHab:
                             gvrsn=gvrsn, genusify=genusify)
 
 
-    def makeEndRole(self, eid, role=Roles.controller, allow=True, stamp=None):
+    def makeEndRole(self, eid, role=Roles.controller, allow=True, stamp=None,
+                    **kwa):
         """Return a reply message allowing or disallowing endpoint provider
         ``eid`` in ``role``.
 
@@ -2166,13 +2173,16 @@ class BaseHab:
                 False means cut ``eid`` at ``role`` as unauthorized.
             stamp (str or None): date-time-stamp RFC-3339 profile of iso8601
                 datetime. None means use now.
+            **kwa: keyword arguments forwarded to ``eventing.reply``, including:
+                version (Version): version instance.
+                kind (str): serialization kind.
 
         Returns:
             bytearray: reply message.
         """
         data = dict(cid=self.pre, role=role, eid=eid)
         route = "/end/role/add" if allow else "/end/role/cut"
-        return self.reply(route=route, data=data, stamp=stamp)
+        return self.reply(route=route, data=data, stamp=stamp, **kwa)
 
 
     def loadEndRole(self, cid, eid, role=Roles.controller, framed=False,
@@ -2425,16 +2435,16 @@ class BaseHab:
             for eid in kever.wits:
                 if not eids or eid in eids:
                     if eid == self.pre:
-                        msgs.extend(self.replyLocScheme(eid=eid, scheme=scheme))
+                        msgs.extend(self.replyLocScheme(eid=eid, scheme=scheme, **kwa))
                     else:
                         msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
                     if not witness:  # we are not witness, send auth records
-                        msgs.extend(self.makeEndRole(eid=eid, role=role))
+                        msgs.extend(self.makeEndRole(eid=eid, role=role, **kwa))
 
         for (_, erole, eid), end in self.db.ends.getTopItemIter(keys=(cid,)):
             if (end.enabled or end.allowed) and (not role or role == erole) and (not eids or eid in eids):
-                msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme, **kwa))
-                msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole, **kwa))
+                msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
+                msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole))
 
         return msgs
 
@@ -2913,7 +2923,7 @@ class Hab(BaseHab):
                                        delpre=delpre,
                                        data=data,
                                        kind=kind,
-                                       version=Version)
+                                       version=version)
 
         self.pre = serder.ked["i"]  # new pre
 
@@ -2944,7 +2954,7 @@ class Hab(BaseHab):
                                             "pre={} {}".format(self.pre, ex))
 
         # read in self.cf config file and process any oobis or endpoints
-        self.reconfigure()  # should we do this for new Habs not loaded from db
+        self.reconfigure(version=version, kind=kind)  # should we do this for new Habs not loaded from db
 
         self.inited = True
 
@@ -3432,15 +3442,15 @@ class SignifyHab(BaseHab):
                     if not eids or eid in eids:
                         msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
                         if not witness:  # we are not witness, send auth records
-                            msgs.extend(self.makeEndRole(eid=eid, role=role))
+                            msgs.extend(self.makeEndRole(eid=eid, role=role, **kwa))
                 if witness:  # we are witness, set KEL as authz
                     msgs.extend(self.replay(cid))
 
         for (_, erole, eid), end in self.db.ends.getTopItemIter(keys=(cid,)):
             if (end.enabled or end.allowed) and (not role or role == erole) and (not eids or eid in eids):
                 msgs.extend(self.replay(eid))
-                msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme, **kwa))
-                msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole, **kwa))
+                msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
+                msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole))
 
         return msgs
 

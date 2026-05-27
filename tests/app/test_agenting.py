@@ -14,7 +14,7 @@ from keri.app import (WitnessReceiptor, WitnessPublisher, WitnessInquisitor,
 from keri.help import nowIso8601
 
 
-def test_withness_receiptor(seeder):
+def test_witness_receiptor(seeder):
     with openHby(name="wan1", salt=Salter(raw=b'wann-the-witness').qb64) as wanHby, \
             openHby(name="wil1", salt=Salter(raw=b'will-the-witness').qb64) as wilHby, \
             openHby(name="wes1", salt=Salter(raw=b'wess-the-witness').qb64) as wesHby, \

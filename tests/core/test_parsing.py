@@ -2404,7 +2404,8 @@ def test_parser_v2_mix():
                         keys=[signers2[1].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers2[2].verfer.qb64b).qb64],
-                        sn=1)
+                        sn=1,
+                        version=Vrsn_1_0)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -2440,7 +2441,8 @@ def test_parser_v2_mix():
         # Event 3 Interaction  event is V1 attachements V2
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=3)
+                          sn=3,
+                          version=Vrsn_1_0)
         event_digs.append(serder.said)
         # sign serialization
         siger = signers2[2].sign(serder.raw, index=0)  # returns siger
@@ -2457,7 +2459,8 @@ def test_parser_v2_mix():
         # Event 4 Interaction
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=4)
+                          sn=4,
+                          version=Vrsn_1_0)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -2531,7 +2534,8 @@ def test_parser_v2_mix():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers2[4].verfer.qb64],
                         dig=kever.serder.said,
-                        sn=7)
+                        sn=7,
+                        version=Vrsn_1_0)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -2547,7 +2551,8 @@ def test_parser_v2_mix():
         # Event 8 Interaction but already abandoned
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=8)
+                          sn=8,
+                          version=Vrsn_1_0)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
@@ -2565,7 +2570,8 @@ def test_parser_v2_mix():
                         keys=[signers2[4].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers2[5].verfer.qb64b).qb64],
-                        sn=8)
+                        sn=8,
+                        version=Vrsn_1_0)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization

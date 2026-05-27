@@ -805,6 +805,7 @@ def test_fetch_delegating_event():
     """
     bobSalt = Salter(raw=b'0123456789abcdef').qb64
     delSalt = Salter(raw=b'abcdef0123456789').qb64
+    version = Vrsn_1_0
 
     with (openDB(name="bob") as bobDB,
           openKS(name="bob") as bobKS,
@@ -821,7 +822,8 @@ def test_fetch_delegating_event():
         verfers, digers = bobMgr.incept(stem='bob', temp=True)
         bobSrdr = incept(keys=[verfer.qb64 for verfer in verfers],
                                   ndigs=[diger.qb64 for diger in digers],
-                                  code=MtrDex.Blake3_256)
+                                  code=MtrDex.Blake3_256,
+                                  version=version)
         bob = bobSrdr.ked["i"]
         bobMgr.move(old=verfers[0].qb64, new=bob)
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=verfers)
@@ -838,7 +840,8 @@ def test_fetch_delegating_event():
         verfers, digers = delMgr.incept(stem='del', temp=True)
         delSrdr = delcept(keys=[verfer.qb64 for verfer in verfers],
                                    delpre=bobK.prefixer.qb64,
-                                   ndigs=[diger.qb64 for diger in digers])
+                                   ndigs=[diger.qb64 for diger in digers],
+                                   version=version)
         delPre = delSrdr.ked["i"]
         delMgr.move(old=verfers[0].qb64, new=delPre)
 
@@ -846,7 +849,8 @@ def test_fetch_delegating_event():
         bobIxnSrdr = interact(pre=bobK.prefixer.qb64,
                                       dig=bobK.serder.said,
                                       sn=bobK.sn + 1,
-                                      data=[seal._asdict()])
+                                      data=[seal._asdict()],
+                                      version=version)
         sigers = bobMgr.sign(ser=bobIxnSrdr.raw, verfers=bobK.verfers)
         msg = bytearray(bobIxnSrdr.raw)
         msg.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
