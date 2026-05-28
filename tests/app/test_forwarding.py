@@ -55,7 +55,7 @@ def test_postman(seeder):
 
         pman = Poster(hby=hby)
 
-        exn, _ = exchanging.exchange(route="/echo", payload=dict(msg="test"),
+        exn, _ = exchanging.exchange(route="/echo", attributes=dict(msg="test"),
                                      sender=hab.pre)
         atc = hab.endorse(exn, last=False, framed=False)
         del atc[:exn.size]
@@ -98,7 +98,7 @@ def test_forward_handler():
 
         # Happy path: single embed
         inner_exn, _ = exchanging.exchange(route="/echo",
-                                           payload=dict(msg="hello"),
+                                           attributes=dict(msg="hello"),
                                            sender=hab.pre)
         inner_atc = hab.endorse(inner_exn, last=False, framed=False)
         del inner_atc[:inner_exn.size]
@@ -107,7 +107,7 @@ def test_forward_handler():
         evt.extend(inner_atc)
         fwd, _ = exchanging.exchange(route='/fwd',
                                      modifiers=dict(pre=recpHab.pre, topic="echo"),
-                                     payload={},
+                                     attributes={},
                                      embeds=dict(evt=evt),
                                      sender=hab.pre)
         pather = Pather(path=["evt"])
@@ -131,7 +131,7 @@ def test_forward_handler():
         # Topic/recipient routing isolation
         # Same recipient, different topic
         inner_exn2, _ = exchanging.exchange(route="/delegate",
-                                            payload=dict(msg="delegate"),
+                                            attributes=dict(msg="delegate"),
                                             sender=hab.pre)
         inner_atc2 = hab.endorse(inner_exn2, last=False, framed=False)
         del inner_atc2[:inner_exn2.size]
@@ -141,7 +141,7 @@ def test_forward_handler():
         fwd2, _ = exchanging.exchange(route='/fwd',
                                       modifiers=dict(pre=recpHab.pre,
                                                      topic="delegate"),
-                                      payload={},
+                                      attributes={},
                                       embeds=dict(evt=evt2),
                                       sender=hab.pre)
 
@@ -154,7 +154,7 @@ def test_forward_handler():
 
         # Different recipient, same topic
         inner_exn3, _ = exchanging.exchange(route="/echo",
-                                            payload=dict(msg="other"),
+                                            attributes=dict(msg="other"),
                                             sender=hab.pre)
         inner_atc3 = hab.endorse(inner_exn3, last=False, framed=False)
         del inner_atc3[:inner_exn3.size]
@@ -164,7 +164,7 @@ def test_forward_handler():
         fwd3, _ = exchanging.exchange(route='/fwd',
                                       modifiers=dict(pre=recp2Hab.pre,
                                                      topic="echo"),
-                                      payload={},
+                                      attributes={},
                                       embeds=dict(evt=evt3),
                                       sender=hab.pre)
         forwarder.handle(serder=fwd3, attachments=[(Pather(path=["evt"]), inner_atc3)])
@@ -176,12 +176,12 @@ def test_forward_handler():
 
         # Multiple attachments in one call
         # Two embeds in a single /fwd: both must appear in the stored blob
-        inner_exnA, _ = exchanging.exchange(route="/echo", payload=dict(msg="A"),
+        inner_exnA, _ = exchanging.exchange(route="/echo", attributes=dict(msg="A"),
                                             sender=hab.pre)
         inner_atcA = hab.endorse(inner_exnA, last=False, framed=False)
         del inner_atcA[:inner_exnA.size]
 
-        inner_exnB, _ = exchanging.exchange(route="/echo", payload=dict(msg="B"),
+        inner_exnB, _ = exchanging.exchange(route="/echo", attributes=dict(msg="B"),
                                             sender=hab.pre)
         inner_atcB = hab.endorse(inner_exnB, last=False, framed=False)
         del inner_atcB[:inner_exnB.size]
@@ -191,7 +191,7 @@ def test_forward_handler():
         fwd_multi, _ = exchanging.exchange(route='/fwd',
                                            modifiers=dict(pre=recpHab.pre,
                                                           topic="multi"),
-                                           payload={},
+                                           attributes={},
                                            embeds=dict(evtA=evtA, evtB=evtB),
                                            sender=hab.pre)
         patherA = Pather(path=["evtA"])
@@ -251,7 +251,7 @@ def test_essr_stream(seeder):
         saids = []
         for i in range(0, 40):
             exn, _ = exchanging.exchange(route="/echo",
-                                         payload=dict(msg="test", i=i),
+                                         attributes=dict(msg="test", i=i),
                                          sender=hab.pre)
             atc = hab.endorse(exn, last=False, framed=False)
             del atc[:exn.size]
@@ -360,7 +360,7 @@ def test_essr_mbx(seeder):
         saids = []
         for i in range(0, 15):
             exn, _ = exchanging.exchange(route="/echo",
-                                         payload=dict(msg="test", i=i),
+                                         attributes=dict(msg="test", i=i),
                                          sender=hab.pre)
             atc = hab.endorse(exn, last=False, framed=False)
             del atc[:exn.size]

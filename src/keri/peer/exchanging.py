@@ -426,7 +426,7 @@ def exchange(*,
              prior="",
              route="",
              modifiers=None,
-             payload=None,
+             attributes=None,
              diger=None,
              embeds=None,
              stamp=None,
@@ -513,7 +513,7 @@ def exchange(*,
             if receiver:  # is not None
                 attrs['i'] = receiver
 
-            attrs |= payload
+            attrs |= attributes
 
         else:
             attrs = diger.qb64
@@ -534,7 +534,7 @@ def exchange(*,
         if e:
             attrs['e'] = e
 
-        attrs |= payload
+        attrs |= attributes
 
         sad = dict(v=vs,
                    t=ilk,

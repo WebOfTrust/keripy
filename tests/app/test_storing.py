@@ -83,7 +83,7 @@ def test_mailboxing():
             dest = Prefixer(qb64="EAD919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I")
 
             exn, _ = exchange(route="/credential/issue",
-                              payload=d,
+                              attributes=d,
                               stamp="2021-07-15T13:01:37.624492+00:00",
                               sender=dest.qb64)
             mber.storeMsg(topic=dest.qb64b, msg=exn.raw)
