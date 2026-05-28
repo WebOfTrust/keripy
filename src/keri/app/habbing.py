@@ -1649,7 +1649,8 @@ class BaseHab:
                                kind=kind,)
 
         if self.kever.prefixer.transferable:
-            msg = self.endorse(serder=serder, framed=True)
+            msg = self.endorse(serder=serder, framed=framed, nested=nested,
+                               gvrsn=gvrsn,  genusify=genusify)
         else:
             cigars = self.sign(ser=serder.raw,
                                indexed=False)
