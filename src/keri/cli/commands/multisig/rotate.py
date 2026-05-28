@@ -202,7 +202,7 @@ class GroupMultisigRotate(doing.DoDoer):
         number = Number(sn=ghab.kever.sn+1)
         rot = ghab.rotate(isith=self.isith, nsith=self.nsith,
                           toad=self.toad, cuts=list(self.cuts), adds=list(self.adds), data=self.data,
-                          verfers=merfers, digers=migers)
+                          verfers=merfers, digers=migers, framed=True)
 
         rserder = SerderKERI(raw=rot)
         # Create a notification EXN message to send to the other agents

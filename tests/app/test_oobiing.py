@@ -69,10 +69,9 @@ def test_oobi_share(mockHelpingNowUTC):
                            'rp': '',
                            't': 'exn',
                            'v': 'KERI10JSON000136_'}
-        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAABdw3eS'
-                       b'w_7BW2o3z1ufxxs1CPgX1TgtJzn-MxvMjLYTidUd8KSxNKbPU9M3A4orYJDMGMIz'
-                       b'habHJmKA4ZIGbcgK')
+        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3MAAAEIaGMMWJFPmt'
+                    b'XznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAABdw3eSw_7BW2o3z1ufxxs1CPgX'
+                    b'1TgtJzn-MxvMjLYTidUd8KSxNKbPU9M3A4orYJDMGMIzhabHJmKA4ZIGbcgK')
 
 
 def test_oobiery():

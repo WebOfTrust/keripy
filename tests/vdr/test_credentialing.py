@@ -36,7 +36,7 @@ def test_tpwe():
         # issue: anchor vcp so iss is valid, inject into tpwe
         reg_iss = rgy.makeRegistry(name="tpwe_iss", prefix=hab.pre, noBackers=True)
         rseal = SealEvent(i=reg_iss.vcp.pre, s=reg_iss.vcp.ked["s"], d=reg_iss.vcp.said)
-        rot = hab.rotate(data=[rseal._asdict()])
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=reg_iss.vcp,
                              seqner=Number(num=rotser.sn),
@@ -50,14 +50,14 @@ def test_tpwe():
         # revoke: anchor vcp+iss, inject rev into tpwe, verify number value
         reg_rev = rgy.makeRegistry(name="tpwe_rev", prefix=hab.pre, noBackers=True)
         rseal = SealEvent(i=reg_rev.vcp.pre, s=reg_rev.vcp.ked["s"], d=reg_rev.vcp.said)
-        rot = hab.rotate(data=[rseal._asdict()])
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=reg_rev.vcp,
                              seqner=Number(num=rotser.sn),
                              saider=Saider(qb64=rotser.said))
         iss2 = reg_rev.issue(said=vcdig)
         rseal = SealEvent(iss2.ked["i"], iss2.ked["s"], iss2.said)
-        rot = hab.rotate(data=[rseal._asdict()])
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=iss2,
                              seqner=Number(num=rotser.sn),
@@ -109,7 +109,7 @@ def test_tmse():
         # issue
         reg_iss = rgy.makeRegistry(name="tmse_iss", prefix=hab.pre, noBackers=True)
         rseal = SealEvent(i=reg_iss.vcp.pre, s=reg_iss.vcp.ked["s"], d=reg_iss.vcp.said)
-        rot = hab.rotate(data=[rseal._asdict()])
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=reg_iss.vcp,
                              seqner=Number(num=rotser.sn),
@@ -123,14 +123,14 @@ def test_tmse():
         # revoke
         reg_rev = rgy.makeRegistry(name="tmse_rev", prefix=hab.pre, noBackers=True)
         rseal = SealEvent(i=reg_rev.vcp.pre, s=reg_rev.vcp.ked["s"], d=reg_rev.vcp.said)
-        rot = hab.rotate(data=[rseal._asdict()])
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=reg_rev.vcp,
                              seqner=Number(num=rotser.sn),
                              saider=Saider(qb64=rotser.said))
         iss2 = reg_rev.issue(said=vcdig)
         rseal = SealEvent(iss2.ked["i"], iss2.ked["s"], iss2.said)
-        rot = hab.rotate(data=[rseal._asdict()])
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=iss2,
                              seqner=Number(num=rotser.sn),
@@ -261,7 +261,7 @@ def test_tede():
         # anchor reg_drain so tels has a digest at sn=0
         reg_drain = rgy.makeRegistry(name="diss_drain", prefix=hab.pre, noBackers=True)
         rseal = SealEvent(i=reg_drain.vcp.pre, s=reg_drain.vcp.ked["s"], d=reg_drain.vcp.said)
-        rot = hab.rotate(data=[rseal._asdict()])
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
         rgy.tvy.processEvent(serder=reg_drain.vcp,
                              seqner=Number(num=rotser.sn),

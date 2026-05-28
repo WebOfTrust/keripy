@@ -13,7 +13,7 @@ import msgpack
 import pytest
 
 from keri import (Protocols, ColdDex, TraitDex, Kinds,
-                  Version, Vrsn_1_0, Vrsn_2_0, Rever,
+                  Version, Vrsn_1_0, Vrsn_2_0, GVC_1_0, GVC_2_0, Rever,
                   versify, deversify, smell,
                   MAXVERFULLSPAN,
                   VER1FULLSPAN, VER1TERM, VEREX,
@@ -21,6 +21,17 @@ from keri import (Protocols, ColdDex, TraitDex, Kinds,
                   Protocolage, Ilkage, ColdCodex,TraitCodex, Kindage,
                   Versionage, Smellage,
                   VersionError, ProtocolError, KindError)
+
+
+def test_constants():
+    """Test constant values"""
+
+    assert Vrsn_1_0 == Versionage(1, 0)
+    assert Vrsn_2_0 == Versionage(2, 0)
+    assert Version == Vrsn_1_0
+
+    assert GVC_1_0 == '-_AAABAA'
+    assert GVC_2_0 == '-_AAACAA'
 
 
 def test_protocols():
@@ -758,8 +769,8 @@ def test_traitdex():
 
 
 if __name__ == "__main__":
+    test_constants()
     test_protocols()
-
     test_version_regex()
     test_smell()
     test_serials()

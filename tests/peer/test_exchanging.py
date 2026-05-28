@@ -7,15 +7,17 @@ import json
 
 import pysodium
 
-from keri import Vrsn_1_0
+from keri import Kinds, Vrsn_1_0
 from keri.core import (Salter, Counter, Texter,
                        Diger, SerderKERI, Parser,
-                       MtrDex, Codens, MtrDex)
+                       MtrDex, Codens)
 
 from keri.app import openHab, openHby
 
 from keri.peer import Exchanger, nesting, exchange
 from keri.vdr import incept
+
+TEST_VERSION = Vrsn_1_0
 
 
 def test_nesting():
@@ -53,11 +55,12 @@ def test_nesting():
 
 
 def test_essrs():
-    with openHab(name="sid", base="test", salt=b'0123456789abcdef') as (hby, hab), \
-            openHab(name="rec", base="test", salt=b'0123456789abcdef') as (recHby, recHab):
+    kwa = dict(version=TEST_VERSION, kind=Kinds.json)
+    with openHab(name="sid", base="test", salt=b'0123456789abcdef', **kwa) as (hby, hab), \
+            openHab(name="rec", base="test", salt=b'0123456789abcdef', **kwa) as (recHby, recHab):
 
-        ims = hab.makeOwnInception()
-        Parser(version=Vrsn_1_0).parse(ims=ims, kvy=recHby.kvy)
+        ims = hab.msgOwnInception(framed=True, gvrsn=TEST_VERSION)
+        Parser(version=TEST_VERSION).parse(ims=ims, kvy=recHby.kvy)
         # create the test message with essr attachment
         msg = dict(msg="This is a test message that must be secured", i=hab.pre)
         rkever = recHab.kever
@@ -67,17 +70,16 @@ def test_essrs():
         texter = Texter(raw=raw)
         diger = Diger(ser=raw, code=MtrDex.Blake3_256)
         essr, _ = exchange(route='/essr/req', sender=hab.pre, diger=diger,
-                                      modifiers=dict(src=hab.pre, dest=recHab.pre))
-        ims = hab.endorse(serder=essr, pipelined=False)
+                                      modifiers=dict(src=hab.pre, dest=recHab.pre), **kwa)
+        ims = hab.endorse(serder=essr, framed=True, gvrsn=TEST_VERSION)
         ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
-                                version=Vrsn_1_0).qb64b)
+                                version=TEST_VERSION).qb64b)
         ims.extend(texter.qb64b)
 
         exc = Exchanger(hby=recHby, handlers=[])
-        Parser(version=Vrsn_1_0).parse(ims=ims,
+        Parser(version=TEST_VERSION).parse(ims=ims,
                                kvy=recHby.kvy,
-                               exc=exc,
-                               version=Vrsn_1_0)  # parser does not support version2 count codes
+                               exc=exc)
 
         # Pull the logged exn and verify the attributes digest matches the attachment
         serder = recHby.db.exns.get(keys=(essr.said,))
@@ -91,20 +93,20 @@ def test_essrs():
         # Test with invalid diger
         diger = Diger(qb64="EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o")
         essr, _ = exchange(route='/essr/req', sender=hab.pre, diger=diger,
-                                      modifiers=dict(src=hab.pre, dest=recHab.pre))
-        ims = hab.endorse(serder=essr, pipelined=False)
+                                      modifiers=dict(src=hab.pre, dest=recHab.pre), **kwa)
+        ims = hab.endorse(serder=essr, framed=True, gvrsn=TEST_VERSION)
         ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
-                                version=Vrsn_1_0).qb64b)
+                                version=TEST_VERSION).qb64b)
         ims.extend(texter[0].qb64b)
 
-        Parser(version=Vrsn_1_0).parse(ims=ims, kvy=recHby.kvy, exc=exc)
+        Parser(version=TEST_VERSION).parse(ims=ims, kvy=recHby.kvy, exc=exc)
         assert recHby.db.exns.get(keys=(essr.said,)) is None
 
 
-
 def test_hab_exchange(mockHelpingNowUTC):
+    kwa = dict(version=TEST_VERSION, kind=Kinds.json)
     with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
-        hab = hby.makeHab(name="test")
+        hab = hby.makeHab(name="test", **kwa)
         assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
 
         nonce = "AH3-1EZWXU9I0fv3Iz_9ZIhjj13JO7u4GNFYC3-l8_K-"
@@ -113,9 +115,10 @@ def test_hab_exchange(mockHelpingNowUTC):
                         toad=0,
                         cnfg=[],
                         nonce=nonce,
-                        code=MtrDex.Blake3_256)
+                        code=MtrDex.Blake3_256,
+                        **kwa)
         seal = dict(i=regser.pre, s=regser.sn, d=regser.said)
-        msg = hab.interact(data=[seal])
+        msg = hab.interact(data=[seal], framed=True, gvrsn=TEST_VERSION, **kwa)
 
         embeds = dict(
             vcp=regser.raw,
@@ -123,41 +126,42 @@ def test_hab_exchange(mockHelpingNowUTC):
         )
 
         data = dict(m="Let's create a registry")
-        msg = hab.exchange(route="/multisig/registry/incept", recipient="",
-                           payload=data, embeds=embeds)
+        msg = hab.exchange(route="/multisig/registry/incept", receiver="",
+                           payload=data, embeds=embeds, framed=True, gvrsn=TEST_VERSION, **kwa)
         assert msg == (b'{"v":"KERI10JSON0003a0_","t":"exn","d":"ELkHqph-Tj4LGHYfFfoVmJJo'
-                       b'09S2gp6ci8rK96upIAKE","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2Q'
-                       b'V8dDjI3","rp":"","p":"","dt":"2021-01-01T00:00:00.000000+00:00",'
-                       b'"r":"/multisig/registry/incept","q":{},"a":{"i":"","m":"Let\'s cr'
-                       b'eate a registry"},"e":{"vcp":{"v":"KERI10JSON00010f_","t":"vcp",'
-                       b'"d":"EI6hBlgkWoJgkZyfLW35_UyM4nIK44OgsSwFR_WOfvVB","i":"EI6hBlgk'
-                       b'WoJgkZyfLW35_UyM4nIK44OgsSwFR_WOfvVB","ii":"EIaGMMWJFPmtXznY1IIi'
-                       b'KDIrg-vIyge6mBl2QV8dDjI3","s":"0","c":[],"bt":"0","b":[],"n":"AH'
-                       b'3-1EZWXU9I0fv3Iz_9ZIhjj13JO7u4GNFYC3-l8_K-"},"ixn":{"v":"KERI10J'
-                       b'SON000138_","t":"ixn","d":"EFuFnevyDFfpWG6il-6Qcv0ne0ZIItLwanCwI'
-                       b'-SU8A9j","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","s":'
-                       b'"1","p":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","a":[{"i"'
-                       b':"EI6hBlgkWoJgkZyfLW35_UyM4nIK44OgsSwFR_WOfvVB","s":0,"d":"EI6hB'
-                       b'lgkWoJgkZyfLW35_UyM4nIK44OgsSwFR_WOfvVB"}]},"d":"EL5Nkm6T7HG_0GW'
-                       b'6uwqYSZwlH23khtXvsVE-dq8eO_eE"}}-FABEIaGMMWJFPmtXznY1IIiKDIrg-vI'
-                       b'yge6mBl2QV8dDjI30AAAAAAAAAAAAAAAAAAAAAAAEIaGMMWJFPmtXznY1IIiKDIr'
-                       b'g-vIyge6mBl2QV8dDjI3-AABAAB-teJc_7zot5TAZT6lQi2-GlBzMHXICvt3tIYo'
-                       b'Po2gYXF7PpWDozo3y3wVW9mgHln-1DvQlqn9Aip1YnBgKUQB-LAa5AACAA-e-ixn'
-                       b'-AABAADprTWp4llIzVzBM7VVsDOgXVJdoiVXutsWJEbDJ2pMdjXjNi1xKALBSZ1Z'
-                       b'gRoUsD--LgUQkXIdjLoQ19XPvJMJ')
+                    b'09S2gp6ci8rK96upIAKE","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2Q'
+                    b'V8dDjI3","rp":"","p":"","dt":"2021-01-01T00:00:00.000000+00:00",'
+                    b'"r":"/multisig/registry/incept","q":{},"a":{"i":"","m":"Let\'s cr'
+                    b'eate a registry"},"e":{"vcp":{"v":"KERI10JSON00010f_","t":"vcp",'
+                    b'"d":"EI6hBlgkWoJgkZyfLW35_UyM4nIK44OgsSwFR_WOfvVB","i":"EI6hBlgk'
+                    b'WoJgkZyfLW35_UyM4nIK44OgsSwFR_WOfvVB","ii":"EIaGMMWJFPmtXznY1IIi'
+                    b'KDIrg-vIyge6mBl2QV8dDjI3","s":"0","c":[],"bt":"0","b":[],"n":"AH'
+                    b'3-1EZWXU9I0fv3Iz_9ZIhjj13JO7u4GNFYC3-l8_K-"},"ixn":{"v":"KERI10J'
+                    b'SON000138_","t":"ixn","d":"EFuFnevyDFfpWG6il-6Qcv0ne0ZIItLwanCwI'
+                    b'-SU8A9j","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","s":'
+                    b'"1","p":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","a":[{"i"'
+                    b':"EI6hBlgkWoJgkZyfLW35_UyM4nIK44OgsSwFR_WOfvVB","s":0,"d":"EI6hB'
+                    b'lgkWoJgkZyfLW35_UyM4nIK44OgsSwFR_WOfvVB"}]},"d":"EL5Nkm6T7HG_0GW'
+                    b'6uwqYSZwlH23khtXvsVE-dq8eO_eE"}}-FABEIaGMMWJFPmtXznY1IIiKDIrg-vI'
+                    b'yge6mBl2QV8dDjI3MAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
+                    b'-AABAAB-teJc_7zot5TAZT6lQi2-GlBzMHXICvt3tIYoPo2gYXF7PpWDozo3y3wV'
+                    b'W9mgHln-1DvQlqn9Aip1YnBgKUQB-LAa5AACAA-e-ixn-AABAADprTWp4llIzVzB'
+                    b'M7VVsDOgXVJdoiVXutsWJEbDJ2pMdjXjNi1xKALBSZ1ZgRoUsD--LgUQkXIdjLoQ'
+                    b'19XPvJMJ')
 
         exn = SerderKERI(raw=msg)
 
-        hab2 = hby.makeHab(name="respondant")
+        hab2 = hby.makeHab(name="respondant", **kwa)
         regser = incept(hab2.pre,
                         baks=[],
                         toad=0,
                         cnfg=[],
                         nonce=nonce,
-                        code=MtrDex.Blake3_256)
+                        code=MtrDex.Blake3_256,
+                        **kwa)
 
         seal = dict(i=regser.pre, s=regser.sn, d=regser.said)
-        msg = hab2.interact(data=[seal])
+        msg = hab2.interact(data=[seal], framed=True, gvrsn=TEST_VERSION, **kwa)
 
         embeds = dict(
             vcp=regser.raw,
@@ -165,39 +169,39 @@ def test_hab_exchange(mockHelpingNowUTC):
         )
 
         data = dict(m="Lets create this registry instead")
-        msg = hab2.exchange(route="/multisig/registry/incept", payload=data, recipient="", dig=exn.said,
-                            embeds=embeds)
+        msg = hab2.exchange(route="/multisig/registry/incept", payload=data,
+                            receiver="", prior=exn.said,
+                            embeds=embeds, framed=True, gvrsn=TEST_VERSION, **kwa)
         assert msg == (b'{"v":"KERI10JSON0003d6_","t":"exn","d":"EPO_XC9nwSixqSoOvsHymFr-'
-                       b'l3udclHBdOh4OUEqZ33P","i":"EIREQlatUJODbKogZfa3IqXZ90XdZA0qJMVli'
-                       b'I61Bcc2","rp":"","p":"ELkHqph-Tj4LGHYfFfoVmJJo09S2gp6ci8rK96upIA'
-                       b'KE","dt":"2021-01-01T00:00:00.000000+00:00","r":"/multisig/regis'
-                       b'try/incept","q":{},"a":{"i":"","m":"Lets create this registry in'
-                       b'stead"},"e":{"vcp":{"v":"KERI10JSON00010f_","t":"vcp","d":"EB5mt'
-                       b's6qrWOZrxjma6lSTjAdPZ0NSHM1HC3IndbS_giB","i":"EB5mts6qrWOZrxjma6'
-                       b'lSTjAdPZ0NSHM1HC3IndbS_giB","ii":"EIREQlatUJODbKogZfa3IqXZ90XdZA'
-                       b'0qJMVliI61Bcc2","s":"0","c":[],"bt":"0","b":[],"n":"AH3-1EZWXU9I'
-                       b'0fv3Iz_9ZIhjj13JO7u4GNFYC3-l8_K-"},"ixn":{"v":"KERI10JSON000138_'
-                       b'","t":"ixn","d":"EOek9JVKNeuW-5UNeHYCTDe70_GtvRwP672oWMNBJpA5","'
-                       b'i":"EIREQlatUJODbKogZfa3IqXZ90XdZA0qJMVliI61Bcc2","s":"1","p":"E'
-                       b'IREQlatUJODbKogZfa3IqXZ90XdZA0qJMVliI61Bcc2","a":[{"i":"EB5mts6q'
-                       b'rWOZrxjma6lSTjAdPZ0NSHM1HC3IndbS_giB","s":0,"d":"EB5mts6qrWOZrxj'
-                       b'ma6lSTjAdPZ0NSHM1HC3IndbS_giB"}]},"d":"EM3gLTzQ9GmKd50Rlm_kiIkeY'
-                       b'kxb004eoOsWahz70TqJ"}}-FABEIREQlatUJODbKogZfa3IqXZ90XdZA0qJMVliI'
-                       b'61Bcc20AAAAAAAAAAAAAAAAAAAAAAAEIREQlatUJODbKogZfa3IqXZ90XdZA0qJM'
-                       b'VliI61Bcc2-AABAADY5nUsBgL23ulcrTgkV09hSzktNHZSlEH1zmVpEggrGgQUq0'
-                       b'tLQeOXztUFDxNQ4Kq2ddIYDVz6d_y0kkU3__YJ-LAa5AACAA-e-ixn-AABAACaox'
-                       b'fQp5L_Gd0nKqJXMbLTXzkrJJDd8RFxWdTSesAMydUzmJQlGt0T9h8L7SwIrq8yBi'
-                       b'nj990PLJHl7sXmq04I')
+                    b'l3udclHBdOh4OUEqZ33P","i":"EIREQlatUJODbKogZfa3IqXZ90XdZA0qJMVli'
+                    b'I61Bcc2","rp":"","p":"ELkHqph-Tj4LGHYfFfoVmJJo09S2gp6ci8rK96upIA'
+                    b'KE","dt":"2021-01-01T00:00:00.000000+00:00","r":"/multisig/regis'
+                    b'try/incept","q":{},"a":{"i":"","m":"Lets create this registry in'
+                    b'stead"},"e":{"vcp":{"v":"KERI10JSON00010f_","t":"vcp","d":"EB5mt'
+                    b's6qrWOZrxjma6lSTjAdPZ0NSHM1HC3IndbS_giB","i":"EB5mts6qrWOZrxjma6'
+                    b'lSTjAdPZ0NSHM1HC3IndbS_giB","ii":"EIREQlatUJODbKogZfa3IqXZ90XdZA'
+                    b'0qJMVliI61Bcc2","s":"0","c":[],"bt":"0","b":[],"n":"AH3-1EZWXU9I'
+                    b'0fv3Iz_9ZIhjj13JO7u4GNFYC3-l8_K-"},"ixn":{"v":"KERI10JSON000138_'
+                    b'","t":"ixn","d":"EOek9JVKNeuW-5UNeHYCTDe70_GtvRwP672oWMNBJpA5","'
+                    b'i":"EIREQlatUJODbKogZfa3IqXZ90XdZA0qJMVliI61Bcc2","s":"1","p":"E'
+                    b'IREQlatUJODbKogZfa3IqXZ90XdZA0qJMVliI61Bcc2","a":[{"i":"EB5mts6q'
+                    b'rWOZrxjma6lSTjAdPZ0NSHM1HC3IndbS_giB","s":0,"d":"EB5mts6qrWOZrxj'
+                    b'ma6lSTjAdPZ0NSHM1HC3IndbS_giB"}]},"d":"EM3gLTzQ9GmKd50Rlm_kiIkeY'
+                    b'kxb004eoOsWahz70TqJ"}}-FABEIREQlatUJODbKogZfa3IqXZ90XdZA0qJMVliI'
+                    b'61Bcc2MAAAEIREQlatUJODbKogZfa3IqXZ90XdZA0qJMVliI61Bcc2-AABAADY5n'
+                    b'UsBgL23ulcrTgkV09hSzktNHZSlEH1zmVpEggrGgQUq0tLQeOXztUFDxNQ4Kq2dd'
+                    b'IYDVz6d_y0kkU3__YJ-LAa5AACAA-e-ixn-AABAACaoxfQp5L_Gd0nKqJXMbLTXz'
+                    b'krJJDd8RFxWdTSesAMydUzmJQlGt0T9h8L7SwIrq8yBinj990PLJHl7sXmq04I')
 
         # Test exn from non-transferable AID
-        hab = hby.makeHab(name="test1", transferable=False)
+        hab = hby.makeHab(name="test1", transferable=False, **kwa)
         assert hab.pre == "BJZ_LF61JTCCSCIw2Q4ozE2MsbRC4m-N6-tFVlCeiZPG"
 
         embeds = dict(
-            vcp=hab.endorse(regser, pipelined=False)
+            vcp=hab.endorse(regser, framed=True, gvrsn=TEST_VERSION)
         )
-        msg = hab.exchange(route="/multisig/registry/incept", payload=data, embeds=embeds,
-                           recipient="")
+        msg = hab.exchange(route="/multisig/registry/incept", payload=data,
+                           embeds=embeds, receiver="", framed=True, gvrsn=TEST_VERSION, **kwa)
         assert msg == (b'{"v":"KERI10JSON00026b_","t":"exn","d":"EMBm0p7fCIqJrP4Z-PBI-yEv'
                        b'Xin_-eY1dU4XTCM9ykRC","i":"BJZ_LF61JTCCSCIw2Q4ozE2MsbRC4m-N6-tFV'
                        b'lCeiZPG","rp":"","p":"","dt":"2021-01-01T00:00:00.000000+00:00",'
@@ -213,3 +217,9 @@ def test_hab_exchange(mockHelpingNowUTC):
                        b'vcp-CABBJZ_LF61JTCCSCIw2Q4ozE2MsbRC4m-N6-tFVlCeiZPG0BDjOC4j0Co6P'
                        b'0giMylR47149eJ8Yf_hO-32_TpY77KMVCWCf0U8GuZPIN76R2zsyT_eARvS_zQsX'
                        b'1ebjl3PMP0D')
+
+
+if __name__ == "__main__":
+    test_nesting()
+    test_essrs()
+    #test_hab_exchange(mockHelpingNowUTC)

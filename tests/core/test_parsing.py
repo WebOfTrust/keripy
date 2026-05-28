@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-tests.core.test_eventing module
+tests.core.test_parsing module
 
 """
 import os
@@ -20,6 +20,10 @@ from keri.db import openDB
 
 
 logger = ogler.getLogger()
+
+V1_KWA = dict(version=Vrsn_1_0, kind=Kinds.json)
+V2_KWA = dict(version=Vrsn_2_0, kind=Kinds.json)
+V2_CESR_KWA = dict(version=Vrsn_2_0, kind=Kinds.cesr)
 
 
 def test_parser_v1_basic():
@@ -68,7 +72,7 @@ def test_parser_v1_basic():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers[0].verfer.qb64],
-                        ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64], **V1_KWA)
         event_digs.append(serder.said)
         # extend key event stream with msg
         msgs.extend(serder.raw)
@@ -197,7 +201,7 @@ def test_parser_v1_basic():
                         keys=[signers[1].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers[2].verfer.qb64b).qb64],
-                        sn=1)
+                        sn=1, **V1_KWA)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -215,7 +219,7 @@ def test_parser_v1_basic():
                         keys=[signers[2].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers[3].verfer.qb64b).qb64],
-                        sn=2)
+                        sn=2, **V1_KWA)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -231,7 +235,7 @@ def test_parser_v1_basic():
         # Event 3 Interaction
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=3)
+                          sn=3, **V1_KWA)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -247,7 +251,7 @@ def test_parser_v1_basic():
         # Event 4 Interaction
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=4)
+                          sn=4, **V1_KWA)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -265,7 +269,7 @@ def test_parser_v1_basic():
                         keys=[signers[3].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers[4].verfer.qb64b).qb64],
-                        sn=5)
+                        sn=5, **V1_KWA)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -281,7 +285,7 @@ def test_parser_v1_basic():
         # Event 6 Interaction
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=6)
+                          sn=6, **V1_KWA)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -299,7 +303,7 @@ def test_parser_v1_basic():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers[4].verfer.qb64],
                         dig=kever.serder.said,
-                        sn=7)
+                        sn=7, **V1_KWA)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -315,7 +319,7 @@ def test_parser_v1_basic():
         # Event 8 Interaction but already abandoned
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=8)
+                          sn=8, **V1_KWA)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
@@ -333,7 +337,7 @@ def test_parser_v1_basic():
                         keys=[signers[4].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers[5].verfer.qb64b).qb64],
-                        sn=8)
+                        sn=8, **V1_KWA)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
@@ -443,7 +447,7 @@ def test_parser_v1_version():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers1[0].verfer.qb64],
-                        ndigs=[Diger(ser=signers1[1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=signers1[1].verfer.qb64b).qb64], **V1_KWA)
         pre = serder.pre
         event_digs.append(serder.said)
         # extend key event stream with msg
@@ -622,7 +626,7 @@ def test_parser_v1_enclosed_attachments():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers[0].verfer.qb64],
-                        ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64], **V1_KWA)
         pre = serder.pre
         # extend key event stream with msg
         msgs.extend(serder.raw)
@@ -761,7 +765,7 @@ def test_parser_v1_enclosed_attachments():
                         keys=[signers[1].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers[2].verfer.qb64b).qb64],
-                        sn=1)
+                        sn=1, **V1_KWA)
 
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -778,7 +782,7 @@ def test_parser_v1_enclosed_attachments():
                         keys=[signers[2].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers[3].verfer.qb64b).qb64],
-                        sn=2)
+                        sn=2, **V1_KWA)
 
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -793,7 +797,7 @@ def test_parser_v1_enclosed_attachments():
         # Event 3 Interaction
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=3)
+                          sn=3, **V1_KWA)
 
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -808,7 +812,7 @@ def test_parser_v1_enclosed_attachments():
         # Event 4 Interaction
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=4)
+                          sn=4, **V1_KWA)
 
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -825,7 +829,7 @@ def test_parser_v1_enclosed_attachments():
                         keys=[signers[3].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers[4].verfer.qb64b).qb64],
-                        sn=5)
+                        sn=5, **V1_KWA)
 
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -840,7 +844,7 @@ def test_parser_v1_enclosed_attachments():
         # Event 6 Interaction
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=6)
+                          sn=6, **V1_KWA)
 
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -857,7 +861,7 @@ def test_parser_v1_enclosed_attachments():
         serder = rotate(pre=pre,
                         keys=[signers[4].verfer.qb64],
                         dig=serder.said,
-                        sn=7)
+                        sn=7, **V1_KWA)
 
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -872,7 +876,7 @@ def test_parser_v1_enclosed_attachments():
         # Event 8 Interaction but already abandoned
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=8)
+                          sn=8, **V1_KWA)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
@@ -888,7 +892,7 @@ def test_parser_v1_enclosed_attachments():
                         keys=[signers[4].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers[5].verfer.qb64b).qb64],
-                        sn=8)
+                        sn=8, **V1_KWA)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
@@ -969,7 +973,7 @@ def test_parser_v1_enclosed_message():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers[0].verfer.qb64],
-                        ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64], **V1_KWA)
         pre = serder.pre
         assert serder.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EIcca2-uqsicYK7-q5gxlZXu'
                         b'zOkqrNSL3JIaLflSOOgF","i":"DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIW'
@@ -1106,7 +1110,7 @@ def test_parser_v1_enclosed_message():
                         keys=[signers[1].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers[2].verfer.qb64b).qb64],
-                        sn=1)
+                        sn=1, **V1_KWA)
 
         # since enclosed in group must convert serder to texter so aligned on
         # 24 bit boundaries and then include in NonNativeBodyGroup
@@ -1139,7 +1143,7 @@ def test_parser_v1_enclosed_message():
                         keys=[signers[2].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers[3].verfer.qb64b).qb64],
-                        sn=2)
+                        sn=2, **V1_KWA)
 
         # since enclosed in group must convert serder to texter so aligned on
         # 24 bit boundaries and then include in NonNativeBodyGroup
@@ -1185,7 +1189,7 @@ def test_parser_v1_enclosed_message():
         # Event 3 Interaction
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=3)
+                          sn=3, **V1_KWA)
 
         # since enclosed in group must convert serder to texter so aligned on
         # 24 bit boundaries and then include in NonNativeBodyGroup
@@ -1221,7 +1225,7 @@ def test_parser_v1_enclosed_message():
         # Event 4 Interaction
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=4)
+                          sn=4, **V1_KWA)
 
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -1238,7 +1242,7 @@ def test_parser_v1_enclosed_message():
                         keys=[signers[3].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers[4].verfer.qb64b).qb64],
-                        sn=5)
+                        sn=5, **V1_KWA)
 
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -1253,7 +1257,7 @@ def test_parser_v1_enclosed_message():
         # Event 6 Interaction
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=6)
+                          sn=6, **V1_KWA)
 
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -1270,7 +1274,7 @@ def test_parser_v1_enclosed_message():
         serder = rotate(pre=pre,
                         keys=[signers[4].verfer.qb64],
                         dig=serder.said,
-                        sn=7)
+                        sn=7, **V1_KWA)
 
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -1285,7 +1289,7 @@ def test_parser_v1_enclosed_message():
         # Event 8 Interaction but already abandoned
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=8)
+                          sn=8, **V1_KWA)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
@@ -1301,7 +1305,7 @@ def test_parser_v1_enclosed_message():
                         keys=[signers[4].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers[5].verfer.qb64b).qb64],
-                        sn=8)
+                        sn=8, **V1_KWA)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
@@ -1378,7 +1382,7 @@ def test_parser_v1_non_native_message():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers[0].verfer.qb64],
-                        ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=signers[1].verfer.qb64b).qb64], **V1_KWA)
         pre = serder.pre
         assert serder.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EIcca2-uqsicYK7-q5gxlZXu'
                         b'zOkqrNSL3JIaLflSOOgF","i":"DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIW'
@@ -1510,7 +1514,7 @@ def test_parser_v1_non_native_message():
                         keys=[signers[1].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers[2].verfer.qb64b).qb64],
-                        sn=1)
+                        sn=1, **V1_KWA)
 
         # since enclosed in group must convert serder to texter so aligned on
         # 24 bit boundaries and then include in NonNativeBodyGroup
@@ -1543,7 +1547,7 @@ def test_parser_v1_non_native_message():
                         keys=[signers[2].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers[3].verfer.qb64b).qb64],
-                        sn=2)
+                        sn=2, **V1_KWA)
 
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -1558,7 +1562,7 @@ def test_parser_v1_non_native_message():
         # Event 3 Interaction
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=3)
+                          sn=3, **V1_KWA)
 
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -1573,7 +1577,7 @@ def test_parser_v1_non_native_message():
         # Event 4 Interaction
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=4)
+                          sn=4, **V1_KWA)
 
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -1590,7 +1594,7 @@ def test_parser_v1_non_native_message():
                         keys=[signers[3].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers[4].verfer.qb64b).qb64],
-                        sn=5)
+                        sn=5, **V1_KWA)
 
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -1605,7 +1609,7 @@ def test_parser_v1_non_native_message():
         # Event 6 Interaction
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=6)
+                          sn=6, **V1_KWA)
 
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -1622,7 +1626,7 @@ def test_parser_v1_non_native_message():
         serder = rotate(pre=pre,
                         keys=[signers[4].verfer.qb64],
                         dig=serder.said,
-                        sn=7)
+                        sn=7, **V1_KWA)
 
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -1637,7 +1641,7 @@ def test_parser_v1_non_native_message():
         # Event 8 Interaction but already abandoned
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=8)
+                          sn=8, **V1_KWA)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
@@ -1653,7 +1657,7 @@ def test_parser_v1_non_native_message():
                         keys=[signers[4].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers[5].verfer.qb64b).qb64],
-                        sn=8)
+                        sn=8, **V1_KWA)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
@@ -1757,8 +1761,7 @@ def test_parser_v2_basic():
         # Start stream
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers2[0].verfer.qb64],
-                        ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64],
-                        version=Vrsn_2_0)
+                        ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64], **V2_KWA)
 
         pre = serder.pre
 
@@ -1975,8 +1978,7 @@ def test_parser_v2_basic():
                         keys=[signers2[1].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers2[2].verfer.qb64b).qb64],
-                        sn=1,
-                        version=Vrsn_2_0)
+                        sn=1, **V2_KWA)
         event_digs.append(serder.said)
         # sign serialization
         siger = signers2[1].sign(serder.raw, index=0)  # returns siger
@@ -1994,8 +1996,7 @@ def test_parser_v2_basic():
                         keys=[signers2[2].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers2[3].verfer.qb64b).qb64],
-                        sn=2,
-                        version=Vrsn_2_0)
+                        sn=2, **V2_KWA)
         event_digs.append(serder.said)
         # sign serialization
         siger = signers2[2].sign(serder.raw, index=0)  # returns siger
@@ -2010,8 +2011,7 @@ def test_parser_v2_basic():
         # Event 3 Interaction
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=3,
-                          version=Vrsn_2_0)
+                          sn=3, **V2_KWA)
         event_digs.append(serder.said)
         # sign serialization
         siger = signers2[2].sign(serder.raw, index=0)  # returns siger
@@ -2028,7 +2028,7 @@ def test_parser_v2_basic():
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
                           sn=4,
-                          version=Vrsn_1_0)
+                          **V1_KWA)
         event_digs.append(serder.said)
         # sign serialization
         siger = signers2[2].sign(serder.raw, index=0)  # returns siger
@@ -2045,8 +2045,7 @@ def test_parser_v2_basic():
                         keys=[signers2[3].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers2[4].verfer.qb64b).qb64],
-                        sn=5,
-                        version=Vrsn_2_0)
+                        sn=5, **V2_KWA)
         event_digs.append(serder.said)
         # sign serialization
         siger = signers2[3].sign(serder.raw, index=0)  # returns siger
@@ -2062,8 +2061,7 @@ def test_parser_v2_basic():
         # Event 6 Interaction
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=6,
-                          version=Vrsn_2_0)
+                          sn=6, **V2_KWA)
         event_digs.append(serder.said)
         # sign serialization
         siger = signers2[3].sign(serder.raw, index=0)  # returns siger
@@ -2080,8 +2078,7 @@ def test_parser_v2_basic():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers2[4].verfer.qb64],
                         dig=kever.serder.said,
-                        sn=7,
-                        version=Vrsn_2_0)
+                        sn=7, **V2_KWA)
         event_digs.append(serder.said)
         # sign serialization
         siger = signers2[4].sign(serder.raw, index=0)  # returns siger
@@ -2096,8 +2093,7 @@ def test_parser_v2_basic():
         # Event 8 Interaction but already abandoned
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=8,
-                          version=Vrsn_2_0)
+                          sn=8, **V2_KWA)
         #event_digs.append(serder.said)  # bad event so don't append
         # sign serialization
         siger = signers2[4].sign(serder.raw, index=0)  # returns siger
@@ -2117,8 +2113,7 @@ def test_parser_v2_basic():
                         keys=[signers2[4].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers2[5].verfer.qb64b).qb64],
-                        sn=8,
-                        version=Vrsn_2_0)
+                        sn=8, **V2_KWA)
         #event_digs.append(serder.said)  # bad event so don't append
         # sign serialization
         siger = signers2[4].sign(serder.raw, index=0)  # returns siger
@@ -2131,9 +2126,6 @@ def test_parser_v2_basic():
         aims = bytearray()
         aims.extend(siger.qb64b)
         msgs.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
-
-        # Switch back to version 1,  gvrsn of 1 will fail when serder pvrsn is 2
-        #msgs.extend(gvc1.qb64b)
 
         assert pre == kever.prefixer.qb64
 
@@ -2241,8 +2233,7 @@ def test_parser_v2_mix():
         # Start stream
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers2[0].verfer.qb64],
-                        ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64],
-                        version=Vrsn_2_0)
+                        ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64], **V2_KWA)
 
         pre = serder.pre
 
@@ -2407,7 +2398,8 @@ def test_parser_v2_mix():
                         keys=[signers2[1].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers2[2].verfer.qb64b).qb64],
-                        sn=1)
+                        sn=1,
+                        **V1_KWA)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -2427,8 +2419,7 @@ def test_parser_v2_mix():
                         keys=[signers2[2].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers2[3].verfer.qb64b).qb64],
-                        sn=2,
-                        version=Vrsn_2_0)
+                        sn=2, **V2_KWA)
         event_digs.append(serder.said)
         # sign serialization
         siger = signers2[2].sign(serder.raw, index=0)  # returns siger
@@ -2443,7 +2434,8 @@ def test_parser_v2_mix():
         # Event 3 Interaction  event is V1 attachements V2
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=3)
+                          sn=3,
+                          **V1_KWA)
         event_digs.append(serder.said)
         # sign serialization
         siger = signers2[2].sign(serder.raw, index=0)  # returns siger
@@ -2460,7 +2452,8 @@ def test_parser_v2_mix():
         # Event 4 Interaction
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=4)
+                          sn=4,
+                          **V1_KWA)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -2481,8 +2474,7 @@ def test_parser_v2_mix():
                     keys=[signers2[3].verfer.qb64],
                     dig=kever.serder.said,
                     ndigs=[Diger(ser=signers2[4].verfer.qb64b).qb64],
-                    sn=5,
-                    version=Vrsn_2_0)
+                    sn=5, **V2_KWA)
         event_digs.append(serder.said)
         # sign serialization
         siger = signers2[3].sign(serder.raw, index=0)  # returns siger
@@ -2499,7 +2491,7 @@ def test_parser_v2_mix():
         #serder = interact(pre=kever.prefixer.qb64,
                           #dig=kever.serder.said,
                           #sn=6,
-                          #version=Vrsn_1_0)
+                          #**V1_KWA)
         ##event_digs.append(serder.said)
         ## sign serialization
         #siger = signers2[3].sign(serder.raw, index=0)  # returns siger
@@ -2514,8 +2506,7 @@ def test_parser_v2_mix():
         # Event 6 again but V2
         serder = interact(pre=kever.prefixer.qb64,
                               dig=kever.serder.said,
-                              sn=6,
-                              version=Vrsn_2_0)
+                              sn=6, **V2_KWA)
         event_digs.append(serder.said)
         # sign serialization
         siger = signers2[3].sign(serder.raw, index=0)  # returns siger
@@ -2534,7 +2525,8 @@ def test_parser_v2_mix():
         serder = rotate(pre=kever.prefixer.qb64,
                         keys=[signers2[4].verfer.qb64],
                         dig=kever.serder.said,
-                        sn=7)
+                        sn=7,
+                        **V1_KWA)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -2550,7 +2542,8 @@ def test_parser_v2_mix():
         # Event 8 Interaction but already abandoned
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=8)
+                          sn=8,
+                          **V1_KWA)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
@@ -2568,7 +2561,8 @@ def test_parser_v2_mix():
                         keys=[signers2[4].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers2[5].verfer.qb64b).qb64],
-                        sn=8)
+                        sn=8,
+                        **V1_KWA)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
@@ -2629,7 +2623,7 @@ def test_parser_v2_mix():
 
 def test_parser_v2_enclosed_attachments():
     """Test the support functionality for Parser stream processor with CESRv2
-    with versioned and enclosed attachments
+    and v1 mix but all with versioned and enclosed attachments
 
     """
 
@@ -2669,8 +2663,7 @@ def test_parser_v2_enclosed_attachments():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers2[0].verfer.qb64],
-                        ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64],
-                        version=Vrsn_2_0)
+                        ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64], **V2_KWA)
 
         pre = serder.pre
 
@@ -2811,14 +2804,12 @@ def test_parser_v2_enclosed_attachments():
         # enclose  message attachements and add to msgs
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
 
-
         # Event 1 Rotation Transferable
         serder = rotate(pre=pre,
                         keys=[signers2[1].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers2[2].verfer.qb64b).qb64],
-                        sn=1,
-                        version=Vrsn_2_0)
+                        sn=1, **V2_KWA)
         msgs.extend(serder.raw)  # extend key event stream
         # sign serialization
         siger = signers2[1].sign(serder.raw, index=0)  # returns siger
@@ -2831,14 +2822,12 @@ def test_parser_v2_enclosed_attachments():
         # enclose  message attachements and add to msgs
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
 
-
         # Event 2 Rotation Transferable
         serder = rotate(pre=pre,
                         keys=[signers2[2].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers2[3].verfer.qb64b).qb64],
-                        sn=2,
-                        version=Vrsn_2_0)
+                        sn=2, **V2_KWA)
         msgs.extend(serder.raw)  # extend key event stream
         # sign serialization
         siger = signers2[2].sign(serder.raw, index=0)  # returns siger
@@ -2849,13 +2838,11 @@ def test_parser_v2_enclosed_attachments():
         emas.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
         # enclose  message attachements and add to msgs
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
-
 
         # Event 3 Interaction
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=3,
-                          version=Vrsn_2_0)
+                          sn=3, **V2_KWA)
         msgs.extend(serder.raw)  # extend key event stream
         # sign serialization
         siger = signers2[2].sign(serder.raw, index=0)  # returns siger
@@ -2867,13 +2854,12 @@ def test_parser_v2_enclosed_attachments():
         # enclose  message attachements and add to msgs
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
 
-
-
-        # Event 4 Interaction  with version 1 psvrsn for serder
+        # Event 4 Interaction  with version 1 psvrsn for serder but attachments
+        # use gvrsn of stream
         serder = interact(pre=pre,
                           dig=serder.said,
                           sn=4,
-                          version=Vrsn_1_0)
+                          **V1_KWA)
         msgs.extend(serder.raw)  # extend key event stream
         # sign serialization
         siger = signers2[2].sign(serder.raw, index=0)  # returns siger
@@ -2884,15 +2870,13 @@ def test_parser_v2_enclosed_attachments():
         emas.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
         # enclose  message attachements and add to msgs
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
-
 
         # Event 5 Rotation Transferable
         serder = rotate(pre=pre,
                         keys=[signers2[3].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers2[4].verfer.qb64b).qb64],
-                        sn=5,
-                        version=Vrsn_2_0)
+                        sn=5, **V2_KWA)
         msgs.extend(serder.raw)  # extend key event stream
         # sign serialization
         siger = signers2[3].sign(serder.raw, index=0)  # returns siger
@@ -2903,14 +2887,11 @@ def test_parser_v2_enclosed_attachments():
         emas.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
         # enclose  message attachements and add to msgs
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
-
-
 
         # Event 6 Interaction
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=6,
-                          version=Vrsn_2_0)
+                          sn=6, **V2_KWA)
         msgs.extend(serder.raw)  # extend key event stream
         # sign serialization
         siger = signers2[3].sign(serder.raw, index=0)  # returns siger
@@ -2921,15 +2902,13 @@ def test_parser_v2_enclosed_attachments():
         emas.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
         # enclose  message attachements and add to msgs
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
-
 
         # Event 7 Rotation to null NonTransferable Abandon
         # nxt digest is empty
         serder = rotate(pre=pre,
                         keys=[signers2[4].verfer.qb64],
                         dig=serder.said,
-                        sn=7,
-                        version=Vrsn_2_0)
+                        sn=7, **V2_KWA)
 
         msgs.extend(serder.raw)  # extend key event stream
         # sign serialization
@@ -2945,8 +2924,7 @@ def test_parser_v2_enclosed_attachments():
         # Event 8 Interaction but already abandoned
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=8,
-                          version=Vrsn_2_0)
+                          sn=8, **V2_KWA)
 
         msgs.extend(serder.raw)  # extend key event stream
         # sign serialization
@@ -2958,15 +2936,13 @@ def test_parser_v2_enclosed_attachments():
         emas.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
         # enclose  message attachements and add to msgs
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
-
 
         # Event 8 Rotation override interaction but already abandoned
         serder = rotate(pre=pre,
                         keys=[signers2[4].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers2[5].verfer.qb64b).qb64],
-                        sn=8,
-                        version=Vrsn_2_0)
+                        sn=8, **V2_KWA)
 
         msgs.extend(serder.raw)  # extend key event stream
         # sign serialization
@@ -2978,7 +2954,6 @@ def test_parser_v2_enclosed_attachments():
         emas.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
         # enclose  message attachements and add to msgs
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.AttachmentGroup))
-
 
         kevery = Kevery(db=valDB)
         parser = Parser(kvy=kevery)  # default is Vrsn_2_0_
@@ -3061,13 +3036,12 @@ def test_parser_v2_enclosed_message():
         emas.extend(gvc2.qb64b)  # add genus-version code at front of message+attach group
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers2[0].verfer.qb64],
-                        ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64], **V2_KWA)
         pre = serder.pre
-        assert serder.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EIcca2-uqsicYK7-q5gxlZXu'
-                        b'zOkqrNSL3JIaLflSOOgF","i":"DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIW'
-                        b'DiXp4Hx","s":"0","kt":"1","k":["DNG2arBDtHK_JyHRAq-emRdC6UM-yIpC'
-                        b'AeJIWDiXp4Hx"],"nt":"1","n":["EFXIx7URwmw7AVQTBcMxPXfOOJ2YYA1SJA'
-                        b'am69DXV8D2"],"bt":"0","b":[],"c":[],"a":[]}')
+        assert serder.raw == (b'{"v":"KERICAACAAJSONAAEt.","t":"icp","d":"EAAaPtGJw566KVqqKQvVu2GKViXDzQCJWe'
+                            b'QWhy4tdujg","i":"DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4Hx","s":"0","kt":'
+                            b'"1","k":["DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4Hx"],"nt":"1","n":["EFXI'
+                            b'x7URwmw7AVQTBcMxPXfOOJ2YYA1SJAam69DXV8D2"],"bt":"0","b":[],"c":[],"a":[]}')
 
         # since enclosed in group must convert serder to texter so aligned on
         # 24 bit boundaries and then include in NonNativeBodyGroup
@@ -3205,8 +3179,7 @@ def test_parser_v2_enclosed_message():
                         keys=[signers2[1].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers2[2].verfer.qb64b).qb64],
-                        sn=1,
-                        version=Vrsn_2_0)
+                        sn=1, **V2_KWA)
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
@@ -3226,28 +3199,31 @@ def test_parser_v2_enclosed_message():
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
-        # Event 2 Rotation Transferable
+        # Event 2 Rotation Transferable v1 serder inside v1 group body+attach
+        # prepend stream genus code override to force stream to v1 so can use v1 group
         emas = bytearray()  # message + attachement substream
-        emas.extend(gvc1.qb64b)  # V1 message insize v1 message group
+        emas.extend(gvc1.qb64b)  # V1 message inside v1 message group
         serder = rotate(pre=pre,
                         keys=[signers2[2].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers2[3].verfer.qb64b).qb64],
                         sn=2,
-                        version=Vrsn_1_0)
+                        **V1_KWA)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
                                     code=Codens.NonNativeBodyGroup,
                                     version=Vrsn_1_0))
         # sign serialization
         siger = signers2[2].sign(serder.raw, index=0)  # returns siger
-        # Attachment group  V1 that overrides to V2
+        # genus  V2 that overrides v1 for attach group inside v1 body + attach group
         eims = bytearray()  # enclosed message attachment stream
         eims.extend(gvc2.qb64b)  # insert genus-version V2 code in attachment group
         aims = bytearray()
         aims.extend(siger.qb64b)
+        # v2 idxsigs group
         eims.extend(Counter.enclose(qb64=aims, code=Codens.ControllerIdxSigs))
-        # enclose  attachments and add to emas use V1 attachment group
+        # enclose  attachments and add to emas use V1 attachment group inside
+        # v1 attach group inside v2 body+attachment group with v1 genus override
         emas.extend(Counter.enclose(qb64=eims,
                                     code=Codens.AttachmentGroup,
                                     version=Vrsn_1_0))
@@ -3255,12 +3231,11 @@ def test_parser_v2_enclosed_message():
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
-        # Event 3 Interaction  default V2 set at top level
+        # Event 3 Interaction  with v2 serder and v2 body attachments
         emas = bytearray()  # message + attachement substream
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=3,
-                          version=Vrsn_2_0)
+                          sn=3, **V2_KWA)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
                                     code=Codens.NonNativeBodyGroup,
@@ -3277,15 +3252,12 @@ def test_parser_v2_enclosed_message():
         # enclose message + attachments and add to msgs
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
-
-
-        # Event 4 Interaction  with version 2 serder and V1 attachements
+        # Event 4 Interaction  with version 2 serder and V1 override attachements
         emas = bytearray()  # message + attachement substream
-        emas.extend(gvc2.qb64b)  # insert genus-version V2 code in attachment group
+        emas.extend(gvc2.qb64b)  # insert genus-version V2 code override in body group
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=4,
-                          version=Vrsn_2_0)
+                          sn=4, **V2_KWA)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
                                     code=Codens.NonNativeBodyGroup,
@@ -3298,20 +3270,19 @@ def test_parser_v2_enclosed_message():
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
         aims.extend(counter.qb64b)
         aims.extend(siger.qb64b)
-        # enclose  message attachements with v2 counter
+        # enclose  message attachements with v2 counter inside v2 body+attach group
         emas.extend(Counter.enclose(qb64=aims, code=Codens.AttachmentGroup))
         # enclose message plus attachments with v2
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
-        # Event 5 Rotation Transferable
+        # Event 5 Rotation Transferable all v2
         emas = bytearray()  # message + attachement substream
         serder = rotate(pre=pre,
                         keys=[signers2[3].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers2[4].verfer.qb64b).qb64],
-                        sn=5,
-                        version=Vrsn_2_0)
+                        sn=5, **V2_KWA)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
                                     code=Codens.NonNativeBodyGroup,
@@ -3329,13 +3300,11 @@ def test_parser_v2_enclosed_message():
         msgs.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
 
-
-        # Event 6 Interaction
+        # Event 6 Interaction all v2
         emas = bytearray()  # message + attachement substream
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=6,
-                          version=Vrsn_2_0)
+                          sn=6, **V2_KWA)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
                                     code=Codens.NonNativeBodyGroup,
@@ -3359,8 +3328,7 @@ def test_parser_v2_enclosed_message():
         serder = rotate(pre=pre,
                         keys=[signers2[4].verfer.qb64],
                         dig=serder.said,
-                        sn=7,
-                        version=Vrsn_2_0)
+                        sn=7, **V2_KWA)
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
@@ -3383,8 +3351,7 @@ def test_parser_v2_enclosed_message():
         emas = bytearray()  # message + attachement substream
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=8,
-                          version=Vrsn_2_0)
+                          sn=8, **V2_KWA)
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
@@ -3409,8 +3376,7 @@ def test_parser_v2_enclosed_message():
                         keys=[signers2[4].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers2[5].verfer.qb64b).qb64],
-                        sn=8,
-                        version=Vrsn_2_0)
+                        sn=8, **V2_KWA)
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
@@ -3457,8 +3423,9 @@ def test_parser_v2_enclosed_message():
 
     """ Done Test """
 
+
 def test_parse_generic_group():
-    """Test parse with nested GenericGroups """
+    """Test parse with nested GenericGroups with v1 v2 mix"""
 
     logger.setLevel("ERROR")
 
@@ -3505,7 +3472,7 @@ def test_parse_generic_group():
         emas.extend(gvc2.qb64b)  # add genus-version code at front of message+attach group
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers2[0].verfer.qb64],
-                        ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64], **V1_KWA)
         pre = serder.pre
         assert serder.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EIcca2-uqsicYK7-q5gxlZXu'
                         b'zOkqrNSL3JIaLflSOOgF","i":"DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIW'
@@ -3644,6 +3611,7 @@ def test_parse_generic_group():
 
         ngms0 = bytearray()  # nested generic group
         ngms1 = bytearray()  # coubly nested generic group
+
         # Event 1 Rotation Transferable
         emas = bytearray()  # message + attachement substream
         emas.extend(gvc2.qb64b)  # insert genus-version V2 code in message-attachment group
@@ -3651,8 +3619,7 @@ def test_parse_generic_group():
                         keys=[signers2[1].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers2[2].verfer.qb64b).qb64],
-                        sn=1,
-                        version=Vrsn_2_0)
+                        sn=1, **V2_KWA)
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
@@ -3672,15 +3639,15 @@ def test_parse_generic_group():
         ngms1.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
         ngms0.extend(Counter.enclose(qb64=ngms1, code=Codens.GenericGroup))
 
-        # Event 2 Rotation Transferable
+        # Event 2 Rotation Transferable v1 override body, v2 override attach
         emas = bytearray()  # message + attachement substream
-        emas.extend(gvc1.qb64b)  # V1 message insize v1 message group
+        emas.extend(gvc1.qb64b)  # V1 message inside v1 override in message group
         serder = rotate(pre=pre,
                         keys=[signers2[2].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers2[3].verfer.qb64b).qb64],
                         sn=2,
-                        version=Vrsn_1_0)
+                        **V1_KWA)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
                                     code=Codens.NonNativeBodyGroup,
@@ -3701,13 +3668,11 @@ def test_parse_generic_group():
         ngms0.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
         ggms.extend(Counter.enclose(qb64=ngms0, code=Codens.GenericGroup))
 
-
         # Event 3 Interaction  default V2 set at top level
         emas = bytearray()  # message + attachement substream
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=3,
-                          version=Vrsn_2_0)
+                          sn=3, **V2_KWA)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
                                     code=Codens.NonNativeBodyGroup,
@@ -3724,15 +3689,14 @@ def test_parse_generic_group():
         # enclose message + attachments and add to enclosing group
         ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
-
         ngms0 = bytearray()
+
         # Event 4 Interaction  with version 2 serder and V1 attachements
         emas = bytearray()  # message + attachement substream
         emas.extend(gvc2.qb64b)  # insert genus-version V2 code in attachment group
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=4,
-                          version=Vrsn_2_0)
+                          sn=4, **V2_KWA)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
                                     code=Codens.NonNativeBodyGroup,
@@ -3751,16 +3715,13 @@ def test_parse_generic_group():
         ngms0.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
         ggms.extend(Counter.enclose(qb64=ngms0, code=Codens.GenericGroup))
 
-
-
         # Event 5 Rotation Transferable
         emas = bytearray()  # message + attachement substream
         serder = rotate(pre=pre,
                         keys=[signers2[3].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers2[4].verfer.qb64b).qb64],
-                        sn=5,
-                        version=Vrsn_2_0)
+                        sn=5, **V2_KWA)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
                                     code=Codens.NonNativeBodyGroup,
@@ -3781,8 +3742,7 @@ def test_parse_generic_group():
         emas = bytearray()  # message + attachement substream
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=6,
-                          version=Vrsn_2_0)
+                          sn=6, **V2_KWA)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
                                     code=Codens.NonNativeBodyGroup,
@@ -3799,15 +3759,13 @@ def test_parse_generic_group():
         # enclose message + attachments and add to enclosing group
         ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
 
-
         # Event 7 Rotation to null NonTransferable Abandon
         # nxt digest is empty
         emas = bytearray()  # message + attachement substream
         serder = rotate(pre=pre,
                         keys=[signers2[4].verfer.qb64],
                         dig=serder.said,
-                        sn=7,
-                        version=Vrsn_2_0)
+                        sn=7, **V2_KWA)
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
@@ -3824,14 +3782,12 @@ def test_parse_generic_group():
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to enclosing group
         ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
-
 
         # Event 8 Interaction but already abandoned
         emas = bytearray()  # message + attachement substream
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=8,
-                          version=Vrsn_2_0)
+                          sn=8, **V2_KWA)
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
@@ -3848,7 +3804,6 @@ def test_parse_generic_group():
         emas.extend(Counter.enclose(qb64=eims, code=Codens.AttachmentGroup))
         # enclose message + attachments and add to enclosing group
         ggms.extend(Counter.enclose(qb64=emas, code=Codens.BodyWithAttachmentGroup))
-
 
         # Event 8 Rotation override interaction but already abandoned
         emas = bytearray()  # message + attachement substream
@@ -3856,8 +3811,7 @@ def test_parse_generic_group():
                         keys=[signers2[4].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers2[5].verfer.qb64b).qb64],
-                        sn=8,
-                        version=Vrsn_2_0)
+                        sn=8, **V2_KWA)
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
@@ -3908,7 +3862,7 @@ def test_parse_generic_group():
 
 
 def test_group_parsator():
-    """Test groupParsator """
+    """Test groupParsator with mix v1 v2"""
 
     logger.setLevel("ERROR")
 
@@ -3955,7 +3909,7 @@ def test_group_parsator():
         emas.extend(gvc2.qb64b)  # add genus-version code at front of message+attach group
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers2[0].verfer.qb64],
-                        ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64], **V1_KWA)
         pre = serder.pre
         assert serder.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EIcca2-uqsicYK7-q5gxlZXu'
                         b'zOkqrNSL3JIaLflSOOgF","i":"DNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIW'
@@ -4101,8 +4055,7 @@ def test_group_parsator():
                         keys=[signers2[1].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers2[2].verfer.qb64b).qb64],
-                        sn=1,
-                        version=Vrsn_2_0)
+                        sn=1, **V2_KWA)
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
@@ -4130,7 +4083,7 @@ def test_group_parsator():
                         dig=serder.said,
                         ndigs=[Diger(ser=signers2[3].verfer.qb64b).qb64],
                         sn=2,
-                        version=Vrsn_1_0)
+                        **V1_KWA)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
                                     code=Codens.NonNativeBodyGroup,
@@ -4156,8 +4109,7 @@ def test_group_parsator():
         emas = bytearray()  # message + attachement substream
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=3,
-                          version=Vrsn_2_0)
+                          sn=3, **V2_KWA)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
                                     code=Codens.NonNativeBodyGroup,
@@ -4181,8 +4133,7 @@ def test_group_parsator():
         emas.extend(gvc2.qb64b)  # insert genus-version V2 code in attachment group
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=4,
-                          version=Vrsn_2_0)
+                          sn=4, **V2_KWA)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
                                     code=Codens.NonNativeBodyGroup,
@@ -4209,8 +4160,7 @@ def test_group_parsator():
                         keys=[signers2[3].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers2[4].verfer.qb64b).qb64],
-                        sn=5,
-                        version=Vrsn_2_0)
+                        sn=5, **V2_KWA)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
                                     code=Codens.NonNativeBodyGroup,
@@ -4231,8 +4181,7 @@ def test_group_parsator():
         emas = bytearray()  # message + attachement substream
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=6,
-                          version=Vrsn_2_0)
+                          sn=6, **V2_KWA)
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
                                     code=Codens.NonNativeBodyGroup,
@@ -4256,8 +4205,7 @@ def test_group_parsator():
         serder = rotate(pre=pre,
                         keys=[signers2[4].verfer.qb64],
                         dig=serder.said,
-                        sn=7,
-                        version=Vrsn_2_0)
+                        sn=7, **V2_KWA)
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
@@ -4280,8 +4228,7 @@ def test_group_parsator():
         emas = bytearray()  # message + attachement substream
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=8,
-                          version=Vrsn_2_0)
+                          sn=8, **V2_KWA)
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
@@ -4306,8 +4253,7 @@ def test_group_parsator():
                         keys=[signers2[4].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers2[5].verfer.qb64b).qb64],
-                        sn=8,
-                        version=Vrsn_2_0)
+                        sn=8, **V2_KWA)
 
         texter = Texter(raw=serder.raw)
         emas.extend(Counter.enclose(qb64=texter.qb64b,
@@ -4439,7 +4385,7 @@ def test_parse_native_cesr_fixed_field():
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers2[0].verfer.qb64],
                         ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64],
-                        version=Vrsn_2_0, kind=Kinds.cesr)
+                        **V2_CESR_KWA)
         pre = serder.pre
 
         assert serder.raw == (b'-FA50OKERICAACAAXicpEFaYE2LTv8dItUgQzIHKRA9FaHDrHtIHNs-m5DJKWXRNDNG2arBDtHK_'
@@ -4582,9 +4528,7 @@ def test_parse_native_cesr_fixed_field():
                         keys=[signers2[1].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers2[2].verfer.qb64b).qb64],
-                        sn=1,
-                        version=Vrsn_2_0,
-                        kind=Kinds.cesr)
+                        sn=1, **V2_CESR_KWA)
 
         emas.extend(serder.raw)
 
@@ -4609,9 +4553,7 @@ def test_parse_native_cesr_fixed_field():
                         keys=[signers2[2].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers2[3].verfer.qb64b).qb64],
-                        sn=2,
-                        version=Vrsn_2_0,
-                        kind=Kinds.cesr)
+                        sn=2, **V2_CESR_KWA)
         emas.extend(serder.raw)
 
         # sign serialization
@@ -4635,9 +4577,7 @@ def test_parse_native_cesr_fixed_field():
         emas = bytearray()  # message + attachement substream
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=3,
-                          version=Vrsn_2_0,
-                          kind=Kinds.cesr)
+                          sn=3, **V2_CESR_KWA)
         emas.extend(serder.raw)
 
         # sign serialization
@@ -4659,9 +4599,7 @@ def test_parse_native_cesr_fixed_field():
         emas.extend(gvc2.qb64b)  # insert genus-version V2 code in attachment group
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=4,
-                          version=Vrsn_2_0,
-                          kind=Kinds.cesr)
+                          sn=4, **V2_CESR_KWA)
 
         emas.extend(serder.raw)
 
@@ -4687,9 +4625,7 @@ def test_parse_native_cesr_fixed_field():
                         keys=[signers2[3].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers2[4].verfer.qb64b).qb64],
-                        sn=5,
-                        version=Vrsn_2_0,
-                        kind=Kinds.cesr)
+                        sn=5, **V2_CESR_KWA)
         emas.extend(serder.raw)
 
         # sign serialization
@@ -4708,9 +4644,7 @@ def test_parse_native_cesr_fixed_field():
         emas = bytearray()  # message + attachement substream
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=6,
-                          version=Vrsn_2_0,
-                          kind=Kinds.cesr)
+                          sn=6, **V2_CESR_KWA)
         emas.extend(serder.raw)
 
         # sign serialization
@@ -4732,9 +4666,7 @@ def test_parse_native_cesr_fixed_field():
         serder = rotate(pre=pre,
                         keys=[signers2[4].verfer.qb64],
                         dig=serder.said,
-                        sn=7,
-                        version=Vrsn_2_0,
-                        kind=Kinds.cesr)
+                        sn=7, **V2_CESR_KWA)
 
         emas.extend(serder.raw)
 
@@ -4755,9 +4687,7 @@ def test_parse_native_cesr_fixed_field():
         emas = bytearray()  # message + attachement substream
         serder = interact(pre=pre,
                           dig=serder.said,
-                          sn=8,
-                          version=Vrsn_2_0,
-                          kind=Kinds.cesr)
+                          sn=8, **V2_CESR_KWA)
 
         emas.extend(serder.raw)
 
@@ -4780,9 +4710,7 @@ def test_parse_native_cesr_fixed_field():
                         keys=[signers2[4].verfer.qb64],
                         dig=serder.said,
                         ndigs=[Diger(ser=signers2[5].verfer.qb64b).qb64],
-                        sn=8,
-                        version=Vrsn_2_0,
-                        kind=Kinds.cesr)
+                        sn=8, **V2_CESR_KWA)
 
         emas.extend(serder.raw)
 

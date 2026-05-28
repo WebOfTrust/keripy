@@ -112,7 +112,7 @@ def test_mailbox_multiple_iter():
 def test_qrymailbox_iter():
     with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
         assert hab.pre == 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
-        icp = hab.makeOwnInception()
+        icp = hab.msgOwnInception(framed=True)
         icpSrdr = SerderKERI(raw=icp)
         qry = hab.query(pre=hab.pre, src=hab.pre, route="/mbx")
         srdr = SerderKERI(raw=qry)

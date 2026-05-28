@@ -97,18 +97,20 @@ class ConfirmDoer(doing.DoDoer):
 
     def _addAuthorizerSeal(self, pre, edig, anchorSn, anchorSaid):
         """Save the authorizer (delegator) event seal of the anchoring IXN event for an approved delegation."""
+        edig = edig.encode("utf-8")
         sner = Number(num=anchorSn, code=NumDex.Huge)
         diger = Diger(qb64=anchorSaid)
         self.hby.db.aess.pin(keys=(pre, edig), val=(sner, diger))
 
     def _processEvent(self, pre, edig, eserder, anchorSn, anchorSaid):
         """Process the DIP or DRT event so it appears in the delegator's hby.kevers."""
+        edig = edig.encode("utf-8")
         sigers = self.hby.db.sigs.get(keys=(pre, edig))
-        wigers = self.hby.db.wigs.get(keys=(pre, bytes(edig)))
+        wigers = self.hby.db.wigs.get(keys=(pre, edig))
         sner = Number(num=anchorSn, code=NumDex.Huge)
         saider = Saider(qb64=anchorSaid)
-        self.hby.kvy.processEvent(serder=eserder, sigers=sigers, wigers=wigers, delseqner=sner,
-                                      delsaider=saider, local=True)
+        self.hby.kvy.processEvent(serder=eserder, sigers=sigers, wigers=wigers, delsner=sner,
+                                      delsger=saider, local=True)
 
     def confirmDo(self, tymth, tock=0.0, **kwa):
         """
@@ -201,9 +203,9 @@ class ConfirmDoer(doing.DoDoer):
 
                         anchor = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
                         if self.interact:
-                            hab.interact(data=[anchor])
+                            hab.interact(data=[anchor], framed=True)
                         else:
-                            hab.rotate(data=[anchor])
+                            hab.rotate(data=[anchor], framed=True)
 
                         auths = {}
                         if self.authenticate:

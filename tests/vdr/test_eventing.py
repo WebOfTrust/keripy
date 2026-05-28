@@ -385,7 +385,7 @@ def test_tever_escrow(mockCoringRandomNonce):
         # successfully anchor to a rotation event
         rseal = SealEvent(regk, vcp.ked["s"], vcp.said)
 
-        rot = hab.rotate(data=[rseal._asdict()])
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
 
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
@@ -427,7 +427,7 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         # successfully anchor to a rotation event
         rseal = SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
 
-        rot = hab.rotate(data=[rseal._asdict()])
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
 
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
@@ -457,7 +457,7 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         # try to rotate a backerless registry
         vrt = rotate(regk, dig=vcp.said)
         rseal = SealEvent(regk, vrt.ked["s"], vrt.said)
-        rot = hab.rotate(data=[rseal._asdict()])
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
@@ -473,7 +473,7 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
 
         # successfully anchor to a rotation event
         rseal = SealEvent(iss.ked["i"], iss.ked["s"], iss.said)
-        rot = hab.rotate(data=[rseal._asdict()])
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
@@ -497,7 +497,7 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
 
         # successfully anchor to a rotation event
         rseal = SealEvent(rev.ked["i"], rev.ked["s"], rev.said)
-        rot = hab.rotate(data=[rseal._asdict()])
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
@@ -537,7 +537,7 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         # successfully anchor to a rotation event
         rseal = SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
 
-        rot = hab.rotate(data=[rseal._asdict()])
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
 
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
@@ -574,7 +574,7 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
 
         # successfully anchor to a rotation event
         rseal = SealEvent(regk, vrt.ked["s"], vrt.said)
-        rot = hab.rotate(data=[rseal._asdict()])
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
@@ -593,7 +593,7 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
 
         # successfully anchor to a rotation event
         rseal = SealEvent(bis.ked["i"], bis.ked["s"], bis.said)
-        rot = hab.rotate(data=[rseal._asdict()])
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
@@ -624,7 +624,7 @@ def test_tevery():
         # successfully anchor to a rotation event
         rseal = SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
 
-        rot = hab.rotate(data=[rseal._asdict()])
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
 
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
@@ -651,7 +651,7 @@ def test_tevery():
 
         # successfully anchor to a rotation event
         rseal = SealEvent(iss.ked["i"], iss.ked["s"], iss.said)
-        rot = hab.rotate(data=[rseal._asdict()])
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
@@ -667,7 +667,7 @@ def test_tevery():
 
         # successfully anchor to a rotation event
         rseal = SealEvent(rev.ked["i"], rev.ked["s"], rev.said)
-        rot = hab.rotate(data=[rseal._asdict()])
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)
         rotser = SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
@@ -705,7 +705,7 @@ def test_tevery_process_escrow(mockCoringRandomNonce):
 
         assert regk not in tvy.tevers
 
-        rot = hab.rotate(data=[rseal._asdict()])  # Now rotate so the achoring KEL event gets into the database
+        rot = hab.rotate(data=[rseal._asdict()], framed=True)  # Now rotate so the achoring KEL event gets into the database
         rotser = SerderKERI(raw=rot)
         assert rotser.saidb == diger.qb64b
 
@@ -734,7 +734,7 @@ def test_tevery_process_escrow_anchorless_with_bigers(mockHelpingNowUTC, mockCor
         regk = vcp.pre
 
         rseal1 = SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
-        rot1 = hab.rotate(data=[rseal1._asdict()])
+        rot1 = hab.rotate(data=[rseal1._asdict()], framed=True)
         rotser1 = SerderKERI(raw=rot1)
         seqner1 = Seqner(sn=int(rotser1.ked["s"], 16))
         diger1 = Diger(qb64=rotser1.said)
@@ -750,7 +750,7 @@ def test_tevery_process_escrow_anchorless_with_bigers(mockHelpingNowUTC, mockCor
         biger = valSigner.sign(ser=bis.raw, index=0)
 
         rseal2 = SealEvent(i=bis.ked["i"], s=bis.ked["s"], d=bis.said)
-        rot2 = hab.rotate(data=[rseal2._asdict()])
+        rot2 = hab.rotate(data=[rseal2._asdict()], framed=True)
         rotser2 = SerderKERI(raw=rot2)
         rotsaid2 = rotser2.saidb
 

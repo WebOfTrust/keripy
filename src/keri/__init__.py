@@ -2,7 +2,8 @@
 
 __version__ = '2.0.0-dev6' # also change in setup.py
 
-from .kering import (Vrsn_1_0, Vrsn_2_0, Kinds, Protocols, Schemes, Rever,
+from .kering import (Vrsn_1_0, Vrsn_2_0, GVC_1_0, GVC_2_0,
+                     Kinds, Protocols, Schemes, Rever,
                      Colds, Ilks, ColdDex, Roles, TraitDex, Version, MaxON,
                      VER1FULLSPAN, VER1TERM, VEREX1, VEREX,
                      VER2FULLSPAN, VER2TERM, VEREX2, MAXVERFULLSPAN,
@@ -41,7 +42,7 @@ from .kering import (Vrsn_1_0, Vrsn_2_0, Kinds, Protocols, Schemes, Rever,
 
 from .recording import (RawRecord, StateEERecord, KeyStateRecord,
                         EventSourceRecord, HabitatRecord, TopicsRecord,
-                        OobiQueryRecord, OobiRecord, EndpointRecord, 
-                        EndAuthRecord, LocationRecord, ObservedRecord, 
+                        OobiQueryRecord, OobiRecord, EndpointRecord,
+                        EndAuthRecord, LocationRecord, ObservedRecord,
                         CacheTypeRecord, MsgCacheRecord, TxnMsgCacheRecord,
                         WellKnownAuthN)

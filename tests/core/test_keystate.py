@@ -81,11 +81,11 @@ def test_keystate(mockHelpingNowUTC):
 
         # Create Bob's icp, pass to Wes.
         wesKvy = Kevery(db=wesHby.db)
-        bobIcp = bobHab.makeOwnEvent(sn=0)
+        bobIcp = bobHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
         assert bobHab.pre in wesHab.kevers
         iserder = SerderKERI(raw=bytearray(bobIcp))
-        wesHab.receipt(serder=iserder)
+        wesHab.receipt(serder=iserder, framed=True)
 
         # Get key state record (ksr) from Bob and verify
         ksr = bobHab.kever.state()
@@ -144,7 +144,7 @@ def test_keystate(mockHelpingNowUTC):
 
         # Create Bob's icp, pass to Wes.
         wesKvy = Kevery(db=wesHby.db)
-        bobIcp = bobHab.makeOwnEvent(sn=0)
+        bobIcp = bobHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
         assert bobHab.pre in wesHab.kevers
 
@@ -210,7 +210,7 @@ def test_keystate(mockHelpingNowUTC):
 
         # Create Bob's icp, pass to Wes.
         wesKvy = Kevery(db=wesHby.db)
-        bobIcp = bobHab.makeOwnEvent(sn=0)
+        bobIcp = bobHab.msgOwnEvent(sn=0, framed=True)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
         assert bobHab.pre in wesHab.kevers
 
@@ -252,7 +252,7 @@ def test_keystate(mockHelpingNowUTC):
         assert ksr.d == bobHab.kever.serder.said
 
         for _ in range(3):
-            bobHab.rotate()
+            bobHab.rotate(framed=True)
 
         # Get ksr key state record from Bob and verify
         ksr = bobHab.kever.state()
@@ -269,7 +269,7 @@ def test_keystate(mockHelpingNowUTC):
         Parser(version=Vrsn_1_0).parse(ims=bytearray(staleKsn), kvy=bamKvy, rvy=bamRvy, local=True)
 
         for _ in range(5):
-            bobHab.rotate()
+            bobHab.rotate(framed=True)
 
         # Get ksn from Bob and verify
         ksr = bobHab.kever.state()

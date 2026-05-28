@@ -127,10 +127,8 @@ class SendDoer(doing.DoDoer):
         senderHab = hab.mhab if isinstance(hab, GroupHab) else hab
 
         payload = dict(data)
-        exn, _ = exchange(
-            route=self.route, payload=payload, sender=senderHab.pre
-        )
-        ims = hab.endorse(serder=exn, last=False, pipelined=False)
+        exn, _ = exchange(route=self.route, payload=payload, sender=senderHab.pre)
+        ims = hab.endorse(serder=exn, last=False, framed=True)
         del ims[: exn.size]
         self.postman.send(
             src=senderHab.pre,

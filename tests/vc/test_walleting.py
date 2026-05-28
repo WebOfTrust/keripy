@@ -29,7 +29,7 @@ def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
         verifier = Verifier(hby=sidHby, reger=sidReg.reger)
         issuer = sidReg.makeRegistry(prefix=sidHab.pre, name="bob")
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        sidHab.interact(data=[rseal])
+        sidHab.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=sidHab.kever.sn)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
@@ -46,7 +46,7 @@ def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
 
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        sidHab.interact(data=[rseal])
+        sidHab.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=sidHab.kever.sn)
         issuer.anchorMsg(pre=iss.pre,
                          regd=iss.said,

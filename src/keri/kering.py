@@ -21,10 +21,11 @@ Protocolage = namedtuple("Protocolage", "keri acdc")
 Protocols = Protocolage(keri="KERI", acdc="ACDC")
 
 Versionage = namedtuple("Versionage", "major minor")
-Version = Versionage(major=1, minor=0)  # KERI Protocol Version
-Vrsn_1_0 = Versionage(major=1, minor=0)  # KERI Protocol Version Specific
-Vrsn_2_0 = Versionage(major=2, minor=0)  # KERI Protocol Version Specific
-
+Version = Versionage(major=1, minor=0)  # Default KERI Protocol, CESR Genus Version
+Vrsn_1_0 = Versionage(major=1, minor=0)  # Protocol/Genus Version 1 Specific
+Vrsn_2_0 = Versionage(major=2, minor=0)  # Protocol/Genus Version 2 Specific
+GVC_1_0 = '-_AAABAA'
+GVC_2_0 = '-_AAACAA'
 
 # "{:0{}x}".format(300, 6)  # make num char in hex a variable
 # '00012c'

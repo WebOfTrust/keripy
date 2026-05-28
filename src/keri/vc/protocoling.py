@@ -153,7 +153,7 @@ def ipexApplyExn(hab, recp, message, schema, attrs):
     )
 
     exn, end = exchange(route="/ipex/apply", payload=data, sender=hab.pre)
-    ims = hab.endorse(serder=exn, last=False, pipelined=False)
+    ims = hab.endorse(serder=exn, last=False, framed=True)
     del ims[:exn.size]
     ims.extend(end)
 
@@ -184,10 +184,11 @@ def ipexOfferExn(hab, message, acdc, apply=None):
 
     kwa = dict()
     if apply is not None:
-        kwa["dig"] = apply.said
+        kwa['prior'] = apply.said
 
-    exn, end = exchange(route="/ipex/offer", payload=data, sender=hab.pre, embeds=embeds, **kwa)
-    ims = hab.endorse(serder=exn, last=False, pipelined=False)
+    exn, end = exchange(route="/ipex/offer", payload=data, sender=hab.pre,
+                        embeds=embeds, **kwa)
+    ims = hab.endorse(serder=exn, last=False,framed=True)
     del ims[:exn.size]
     ims.extend(end)
 
@@ -211,8 +212,9 @@ def ipexAgreeExn(hab, message, offer):
         m=message
     )
 
-    exn, end = exchange(route="/ipex/agree", payload=data, sender=hab.pre, dig=offer.said)
-    ims = hab.endorse(serder=exn, last=False, pipelined=False)
+    exn, end = exchange(route="/ipex/agree", payload=data, sender=hab.pre,
+                        prior=offer.said)
+    ims = hab.endorse(serder=exn, last=False, framed=True)
     del ims[:exn.size]
     ims.extend(end)
 
@@ -254,10 +256,11 @@ def ipexGrantExn(hab, recp, message, acdc, iss=None, anc=None, agree=None, dt=No
 
     kwa = dict()
     if agree is not None:
-        kwa['dig'] = agree.said
+        kwa['prior'] = agree.said
 
-    exn, end = exchange(route="/ipex/grant", payload=data, sender=hab.pre, embeds=embeds, date=dt, **kwa)
-    ims = hab.endorse(serder=exn, last=False, pipelined=False)
+    exn, end = exchange(route="/ipex/grant", payload=data, sender=hab.pre,
+                        embeds=embeds, stamp=dt, **kwa)
+    ims = hab.endorse(serder=exn, last=False, framed=True)
     del ims[:exn.size]
     ims.extend(end)
 
@@ -282,8 +285,9 @@ def ipexAdmitExn(hab, message, grant, dt=None):
         m=message,
     )
 
-    exn, end = exchange(route="/ipex/admit", payload=data, sender=hab.pre, dig=grant.said, date=dt)
-    ims = hab.endorse(serder=exn, last=False, pipelined=False)
+    exn, end = exchange(route="/ipex/admit", payload=data, sender=hab.pre,
+                        prior=grant.said, stamp=dt)
+    ims = hab.endorse(serder=exn, last=False, framed=True)
     del ims[:exn.size]
     ims.extend(end)
 
@@ -307,8 +311,9 @@ def ipexSpurnExn(hab, message, spurned):
         m=message
     )
 
-    exn, end = exchange(route="/ipex/spurn", payload=data, sender=hab.pre, dig=spurned.said)
-    ims = hab.endorse(serder=exn, last=False, pipelined=False)
+    exn, end = exchange(route="/ipex/spurn", payload=data, sender=hab.pre,
+                        prior=spurned.said)
+    ims = hab.endorse(serder=exn, last=False, framed=True)
     del ims[:exn.size]
     ims.extend(end)
 

@@ -220,7 +220,7 @@ class Respondant(doing.DoDoer):
                     forwardHab = senderHab
 
                 # sign the exn to get the signature
-                eattach = senderHab.endorse(exn, last=False, pipelined=False)
+                eattach = senderHab.endorse(exn, last=False, framed=True)
                 del eattach[:exn.size]
                 logger.info("Sending exn on %s from %s to %s", topic, sender, recipient)
                 logger.debug("xn body=\n%s\n", exn.pretty())
@@ -267,7 +267,7 @@ class Respondant(doing.DoDoer):
                         if hab is None:
                             continue
 
-                        raw = hab.receipt(serder)
+                        raw = hab.receipt(serder, framed=True)
                         rserder = SerderKERI(raw=raw)
                         del raw[:rserder.size]
                         self.postman.send(serder.pre, topic="receipt", serder=rserder, hab=hab, attachment=raw)
@@ -303,7 +303,7 @@ class Respondant(doing.DoDoer):
                 if hab is None:
                     continue
 
-                atc = hab.endorse(serder)
+                atc = hab.endorse(serder, framed=False)
                 del atc[:serder.size]
                 self.postman.send(hab=hab, dest=dest, topic="reply", serder=serder, attachment=atc)
 

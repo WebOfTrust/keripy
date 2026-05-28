@@ -6,7 +6,7 @@ tests.app.delegating module
 import time
 from hio.base import doing, tyming
 
-from keri.kering import Schemes, Vrsn_1_0
+from keri.kering import Schemes, Vrsn_1_0, Kinds
 from keri.core import Salter, Kevery, Parser, Seqner, Diger, delcept
 
 from keri.app import (Anchorer, DelegateRequestHandler, Receiptor,
@@ -19,13 +19,16 @@ def test_anchorer(seeder):
             openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64) as palHby, \
             openHby(name="del", salt=Salter(raw=b'0123456789ghijkl').qb64) as delHby:
 
-        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
+        version = Vrsn_1_0
+        kwa = dict(version=version, kind=Kinds.json)
+        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644, **kwa)
         witDoer = Receiptor(hby=palHby)
+
         bts = Anchorer(hby=delHby)
 
         wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[Schemes.http])
-        seeder.seedWitEnds(delHby.db, witHabs=[wesHab], protocols=[Schemes.http])
+        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[Schemes.http], **kwa)
+        seeder.seedWitEnds(delHby.db, witHabs=[wesHab], protocols=[Schemes.http], **kwa)
 
         opts = dict(
             wesHab=wesHab,
@@ -100,7 +103,7 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
     assert delHab.pre == "EGyXT1FmEeI05xmaBsYs2H4v8bazCy-JClB21rAfvXZu"
 
     bts.delegation(pre=delHab.pre, proxy=proxyHab)
-    palHab.rotate(data=[dict(i=delHab.pre, s="0", d=delHab.kever.serder.said)])
+    palHab.rotate(data=[dict(i=delHab.pre, s="0", d=delHab.kever.serder.said)], framed=True)
     witDoer.msgs.append(dict(pre=palHab.pre))
     while not witDoer.cues:
         yield tock
@@ -128,23 +131,23 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
 def test_delegation_request(mockHelpingNowUTC):
     with openHab(name="test", temp=True, salt=b'0123456789abcdef') as (hby, hab):
 
+        version = Vrsn_1_0
         delpre = "EArzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"
         serder = delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=delpre,
-                                  ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
-        evt = hab.endorse(serder=serder)
+                                  ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"],
+                                  version=version, kind=Kinds.json)
+        evt = hab.endorse(serder=serder, framed=False)
         exn, atc = delegateRequestExn(hab=hab, delpre=delpre, evt=evt)
 
-        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACzeUyP'
-                       b'6__0oDca-Oiv2iGXKghBw_8sI4ZHyyeMedvz0iZIIQYqJd2Zt7cDHRh7xBGWI85J'
-                       b'_oOixLET3mFZUu0A')
+        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3MAAAEIaGMMWJFPmt'
+                    b'XznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACzeUyP6__0oDca-Oiv2iGXKghB'
+                    b'w_8sI4ZHyyeMedvz0iZIIQYqJd2Zt7cDHRh7xBGWI85J_oOixLET3mFZUu0A')
 
         assert exn.ked["r"] == '/delegate/request'
         assert exn.saidb == b'EHPkcmdLGql9_1WD0wl0OalYk8PcF4HMMd7gGi-iqfSe'
-        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAA'
-                       b'AAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACzeUyP'
-                       b'6__0oDca-Oiv2iGXKghBw_8sI4ZHyyeMedvz0iZIIQYqJd2Zt7cDHRh7xBGWI85J'
-                       b'_oOixLET3mFZUu0A')
+        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3MAAAEIaGMMWJFPmt'
+                    b'XznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACzeUyP6__0oDca-Oiv2iGXKghB'
+                    b'w_8sI4ZHyyeMedvz0iZIIQYqJd2Zt7cDHRh7xBGWI85J_oOixLET3mFZUu0A')
         data = exn.ked["a"]
         assert data["delpre"] == delpre
         embeds = exn.ked['e']
@@ -155,9 +158,10 @@ def test_delegation_request_handler(mockHelpingNowUTC):
     with openHab(name="test", temp=True) as (hby, hab):
 
         serder = delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=hab.pre,
-                                  ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
+                                  ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"],
+                                  version=Vrsn_1_0, kind=Kinds.json)
 
-        evt = hab.endorse(serder=serder)
+        evt = hab.endorse(serder=serder, framed=False)
         notifier = Notifier(hby=hby)
         handler = DelegateRequestHandler(hby=hby, notifier=notifier)
         exn, _ = delegateRequestExn(hab, hab.pre, evt=evt)

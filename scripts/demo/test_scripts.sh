@@ -42,6 +42,7 @@ run_with_retry() {
     local script="$1"
     local t="${2:-$SCRIPT_TIMEOUT}"
     local name
+    local exit_code
     name=$(basename "$script")
 
     for attempt in $(seq 1 "$MAX_RETRIES"); do
@@ -57,9 +58,9 @@ run_with_retry() {
 
         if timeout "$t" "$script"; then
             return 0
+        else
+            exit_code=$?
         fi
-
-        local exit_code=$?
         if [ "$attempt" -lt "$MAX_RETRIES" ]; then
             local delay=$(( 2 ** attempt ))
             printf "\e[33m%s failed (exit %d). Retrying in %ds...\e[0m\n" "$name" "$exit_code" "$delay"
@@ -84,4 +85,3 @@ run_with_retry "${script_dir}/basic/multisig-delegate-delegator.sh"
 run_with_retry "${script_dir}/basic/challenge.sh"
 run_with_retry "${script_dir}/basic/multisig-join.sh"
 run_with_retry "${script_dir}/basic/rename-alias.sh"
-

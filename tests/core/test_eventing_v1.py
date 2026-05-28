@@ -1,6 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
-tests.core.test_eventing module
+tests.core.test_eventing_v1 module
 
 """
 import os
@@ -9,16 +9,19 @@ import blake3
 import pysodium
 import pytest
 
-from keri.kering import (ValidationError, UnverifiedReceiptError,
-                         Ilks, TraitDex, Vrsn_1_0, Ilks, Kinds,
+from keri import (ValidationError, UnverifiedReceiptError, InvalidCodeError,
+                         Ilks, TraitDex, Vrsn_1_0, Vrsn_2_0, Ilks, Kinds,
                          versify)
+
 from keri.app import habbing, openKS, Manager
 from keri.core import (Signer, Counter, Codens, Kever, Parser,
                        SerderKERI, Salter, Diger, Matter, Cigar, Seqner,
                        Verfer, Prefixer, Number, Saider, Seqner,
                        DigDex, MtrDex, PreDex, NumDex, IdrDex, IdxSigDex,
                        Siger, SealDigest, SealRoot, SealBack, SealEvent,
-                       SealLast, StateEvent, StateEstEvent, Kever, Kevery,
+                       SealSource, SealLast, BlindState, BoundState, TypeMedia,
+                       StateEvent, StateEstEvent,
+                       Kever, Kevery,
                        LastEstLoc, simple, ample, deWitnessCouple,
                        deReceiptCouple, deSourceCouple, deReceiptTriple,
                        deTransReceiptQuadruple, deTransReceiptQuintuple,
@@ -668,8 +671,8 @@ def test_seals_states():
 
 
 def test_keyeventfuncs(mockHelpingNowUTC):
-    """
-    Test the support functionality for key event generation functions
+    """Test the support functionality for key event generation functions for
+    version 1 KERI
 
     """
     # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
@@ -682,7 +685,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer0.code == MtrDex.Ed25519_Seed
     assert signer0.verfer.code == MtrDex.Ed25519N
     keys0 = [signer0.verfer.qb64]
-    serder = incept(keys=keys0)  # default nxt is empty so abandoned
+    serder = incept(keys=keys0, kind=Kinds.json, version=Vrsn_1_0)  # default nxt is empty so abandoned
     assert serder.ked["i"] == 'BFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
     assert serder.ked["n"] == []
     assert serder.raw == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EMW0zK3bagYPO6gx3w7Ua90f-I7x5kGIaI4X'
@@ -692,22 +695,25 @@ def test_keyeventfuncs(mockHelpingNowUTC):
 
     with pytest.raises(ValidationError):
         # non-empty ndigs with non-transferable code
-        serder = incept(keys=keys0, code=MtrDex.Ed25519N, ndigs=["ABCDE"])
+        serder = incept(keys=keys0, code=MtrDex.Ed25519N, ndigs=["ABCDE"],
+                        kind=Kinds.json, version=Vrsn_1_0)
 
     with pytest.raises(ValidationError):
         # non-empty backers with non-transferable code
-        serder = incept(keys=keys0, code=MtrDex.Ed25519N, wits=["ABCDE"])
+        serder = incept(keys=keys0, code=MtrDex.Ed25519N, wits=["ABCDE"],
+                        kind=Kinds.json, version=Vrsn_1_0)
 
     with pytest.raises(ValidationError):
         # non-empty seals with non-transferable code
-        serder = incept(keys=keys0, code=MtrDex.Ed25519N, data=[{"i": "ABCDE"}])
+        serder = incept(keys=keys0, code=MtrDex.Ed25519N, data=[{"i": "ABCDE"}],
+                        kind=Kinds.json, version=Vrsn_1_0)
 
     # Inception: Transferable Case but abandoned in incept so equivalent
     signer0 = Signer(raw=seed)  # original signing keypair transferable default
     assert signer0.code == MtrDex.Ed25519_Seed
     assert signer0.verfer.code == MtrDex.Ed25519
     keys0 = [signer0.verfer.qb64]
-    serder = incept(keys=keys0)  # default nxt is empty so abandoned
+    serder = incept(keys=keys0, kind=Kinds.json, version=Vrsn_1_0)  # default nxt is empty so abandoned
     assert serder.ked["i"] == 'DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
     assert serder.ked["n"] == []
     assert serder.raw == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EPLRRJFe2FHdXKVTkSEX4xb4x-YaPFJ2Xds1'
@@ -726,7 +732,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
-    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256)  # intive false
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256,
+                     kind=Kinds.json, version=Vrsn_1_0)  # intive false
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked['d'] == serder0.ked["i"] == 'EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C'
@@ -752,7 +759,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
-    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True)  # intive true
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True,
+                     kind=Kinds.json, version=Vrsn_1_0)  # intive true
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked['d'] == pre == 'EIflL4H4134zYoRM6ls6Q086RLC_BhfNFh5uk-WxvhsL'
@@ -766,7 +774,6 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                         b'"k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":1,"n":["EIf-ENw7Pr'
                         b'M52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W"],"bt":0,"b":[],"c":[],"a":[]}')
 
-
     # Inception: Transferable not abandoned i.e. next not empty, Intive True
     # seed = pysodium.randombytes(pysodium.crypto_sign_SEEDBYTES)
     seed1 = (b'\x83B~\x04\x94\xe3\xceUQy\x11f\x0c\x93]\x1e\xbf\xacQ\xb5\xd6Y^\xa2E\xfa\x015'
@@ -778,7 +785,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
-    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True)  # intive true
+    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True, kind=Kinds.json,
+                     version=Vrsn_1_0)  # intive true
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked["i"] == 'DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
@@ -803,7 +811,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EIf-ENw7PrM52w4H-S7NGU2qVIfraXVIlV9hEAaMHg7W']
-    serder0 = incept(keys=keys0, ndigs=nxt1)
+    serder0 = incept(keys=keys0, ndigs=nxt1, kind=Kinds.json, version=Vrsn_1_0)
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked["i"] == 'DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH'
@@ -826,7 +834,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer2.verfer.code == MtrDex.Ed25519
     keys2 = [Diger(ser=signer2.verfer.qb64b).qb64]
     # compute nxt digest
-    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1)
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1,
+                     kind=Kinds.json, version=Vrsn_1_0)
     assert serder1.ked["t"] == Ilks.rot
     assert serder1.ked["i"] == pre
     assert serder1.ked["s"] == '1'
@@ -850,7 +859,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer2.verfer.code == MtrDex.Ed25519
     keys2 = [Diger(ser=signer2.verfer.qb64b).qb64]
     # compute nxt digest
-    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1, intive=True)  # intive
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1,
+                     intive=True, kind=Kinds.json, version=Vrsn_1_0)  # intive
     assert serder1.ked["t"] == Ilks.rot
     assert serder1.ked["i"] == pre
     assert serder1.ked["s"] == '1'
@@ -866,7 +876,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                         b'n21c2zVaU"],"bt":0,"br":[],"ba":[],"a":[]}')
 
     # Interaction:
-    serder2 = interact(pre=pre, dig=serder1.said, sn=2)
+    serder2 = interact(pre=pre, dig=serder1.said, sn=2, kind=Kinds.json,
+                       version=Vrsn_1_0)
     assert serder2.ked["t"] == Ilks.ixn
     assert serder2.ked["i"] == pre
     assert serder2.ked["s"] == '2'
@@ -876,7 +887,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                            b'auhEzA4DJDXVDnNQiGQ0sKXa6sx_GgS8Ebdzm4E-kQ","a":[]}')
 
     # Receipt
-    serder3 = receipt(pre=pre, sn=0, said=serder2.said)
+    serder3 = receipt(pre=pre, sn=0, said=serder2.said, version=Vrsn_1_0, kind=Kinds.json)
     assert serder3.ked["i"] == pre
     assert serder3.ked["s"] == "0"
     assert serder3.ked["t"] == Ilks.rct
@@ -886,7 +897,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
 
 
 
-    serder4 = receipt(pre=pre, sn=2, said=serder2.said)
+    serder4 = receipt(pre=pre, sn=2, said=serder2.said, version=Vrsn_1_0, kind=Kinds.json)
 
     assert serder4.ked["i"] == pre
     assert serder4.ked["s"] == "2"
@@ -897,7 +908,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
 
 
     # Receipt  transferable identifier
-    serderA = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256)
+    serderA = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256,
+                     kind=Kinds.json, version=Vrsn_1_0)
     assert serderA.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2'
                         b'QtV8BB0C","i":"EAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C","s":"0","kt":"1'
                         b'","k":["DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpNceHo4XH"],"nt":"1","n":["EIf-EN'
@@ -907,13 +919,13 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert seal.d == serderA.said
 
     siger = signer0.sign(ser=serderA.raw, index=0)
-    msg = messagize(serder=serder4, sigers=[siger], seal=seal)
+    msg = messagize(serder=serder4, sigers=[siger], source=seal, framed=True, gvrsn=Vrsn_1_0)
     assert msg == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EKKccCumVQdgxvsrSXvuTtjm'
                 b'S28Xqf3zRJ8T6peKgl9J","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpN'
                 b'ceHo4XH","s":"2"}-FABEAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0'
-                b'C0AAAAAAAAAAAAAAAAAAAAAAAEAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV'
-                b'8BB0C-AABAAAPitVKfl6dG9dY4-7Ppg5tAANHsqEUptTfR05wLb0fbmKFt4DbZdB'
-                b'NjJaCDrEc7kAIqbLsCMCKf26-Onxz-DoP')
+                b'CMAAAEAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C-AABAAAPitVKfl6'
+                b'dG9dY4-7Ppg5tAANHsqEUptTfR05wLb0fbmKFt4DbZdBNjJaCDrEc7kAIqbLsCMC'
+                b'Kf26-Onxz-DoP')
 
     # Delegated Inception:
     # Transferable not abandoned i.e. next not empty
@@ -929,7 +941,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # transferable so nxt is not empty
 
     delpre = 'EAdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd'
-    serderD = delcept(keys=keysD, delpre=delpre, ndigs=nxtD)
+    serderD = delcept(keys=keysD, delpre=delpre, ndigs=nxtD, kind=Kinds.json,
+                      version=Vrsn_1_0)
     pre = serderD.ked["i"]
     assert serderD.ked["i"] == 'EN3PglLbr4mJblS4dyqbqlpUa735hVmLOhYUbUztxaiH'
     assert serderD.ked["s"] == '0'
@@ -959,7 +972,9 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                       keys=keysR,
                       dig='EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30',
                       sn=4,
-                      ndigs=nxtR)
+                      ndigs=nxtR,
+                      kind=Kinds.json,
+                      version=Vrsn_1_0)
 
     assert serderR.ked["i"] == pre
     assert serderR.ked["s"] == '4'
@@ -981,7 +996,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer0.code == MtrDex.ECDSA_256r1_Seed
     assert signer0.verfer.code == MtrDex.ECDSA_256r1N
     keys0 = [signer0.verfer.qb64]
-    serder = incept(keys=keys0)  # default nxt is empty so abandoned
+    serder = incept(keys=keys0, kind=Kinds.json, version=Vrsn_1_0)  # default nxt is empty so abandoned
     assert serder.ked["i"] == '1AAIA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ'
     assert serder.ked["n"] == []
     assert serder.raw == (b'{"v":"KERI10JSON000105_","t":"icp","d":"ELIz2CFNp4vCTJkCKYzqkv1tJeqaPiwhHkNuWA0tKfxo",'
@@ -990,22 +1005,25 @@ def test_keyeventfuncs(mockHelpingNowUTC):
 
     with pytest.raises(ValidationError):
         # non-empty nxt with non-transferable code
-        serder = incept(keys=keys0, code=MtrDex.ECDSA_256r1N, ndigs=["ABCDE"])
+        serder = incept(keys=keys0, code=MtrDex.ECDSA_256r1N, ndigs=["ABCDE"],
+                        kind=Kinds.json, version=Vrsn_1_0)
 
     with pytest.raises(ValidationError):
         # non-empty witnesses with non-transferable code
-        serder = incept(keys=keys0, code=MtrDex.ECDSA_256r1N, wits=["ABCDE"])
+        serder = incept(keys=keys0, code=MtrDex.ECDSA_256r1N, wits=["ABCDE"],
+                        kind=Kinds.json, version=Vrsn_1_0)
 
     with pytest.raises(ValidationError):
         # non-empty witnesses with non-transferable code
-        serder = incept(keys=keys0, code=MtrDex.ECDSA_256r1N, data=[{"i": "ABCDE"}])
+        serder = incept(keys=keys0, code=MtrDex.ECDSA_256r1N, data=[{"i": "ABCDE"}],
+                        kind=Kinds.json, version=Vrsn_1_0)
 
     # Inception: Transferable Case but abandoned in incept so equivalent
     signer0 = Signer(raw=seed, code=MtrDex.ECDSA_256r1_Seed)  # original signing keypair transferable default
     assert signer0.code == MtrDex.ECDSA_256r1_Seed
     assert signer0.verfer.code == MtrDex.ECDSA_256r1
     keys0 = [signer0.verfer.qb64]
-    serder = incept(keys=keys0)  # default nxt is empty so abandoned
+    serder = incept(keys=keys0, kind=Kinds.json, version=Vrsn_1_0)  # default nxt is empty so abandoned
     assert serder.ked["i"] == '1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ'
     assert serder.ked["n"] == []
     assert serder.raw == (b'{"v":"KERI10JSON000105_","t":"icp","d":"EPqQeDE6eoawHEwQjyB4kwLTwZ2VV6jDz_TXWFV7sE8T",'
@@ -1024,7 +1042,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
-    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256)  # intive false
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256,
+                     kind=Kinds.json, version=Vrsn_1_0)  # intive false
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked['d'] == serder0.ked["i"] == 'EFEscYZrbSsAPJq_OhGt19qb-ci1AtZTqwGqZ5FypKVd'
@@ -1051,7 +1070,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
-    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True)  # intive true
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True,
+                     kind=Kinds.json, version=Vrsn_1_0)  # intive true
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked['d'] == pre == 'EJcQxvzMr3xaxa6rlXvPguII45JMmoRENnKFAsUS9Mx0'
@@ -1077,7 +1097,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
-    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True)  # intive true
+    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True, kind=Kinds.json,
+                     version=Vrsn_1_0)  # intive true
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked["i"] == '1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ'
@@ -1103,7 +1124,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EDCWQzPSj3zZBKMZ-_FAckxIMFM25ITsEwD72psBYak4']
-    serder0 = incept(keys=keys0, ndigs=nxt1)
+    serder0 = incept(keys=keys0, ndigs=nxt1, kind=Kinds.json, version=Vrsn_1_0)
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked["i"] == '1AAJA3cK_P2CDlh-_EMFPvyqTPI1POkw-dr14DANx5JEXDCZ'
@@ -1127,7 +1148,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer2.verfer.code == MtrDex.ECDSA_256r1
     keys2 = [Diger(ser=signer2.verfer.qb64b).qb64]
     # compute nxt digest
-    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1)
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1,
+                     kind=Kinds.json, version=Vrsn_1_0)
     # print(f'evnt {serder1.raw}')
     assert serder1.ked["t"] == Ilks.rot
     assert serder1.ked["i"] == pre
@@ -1148,7 +1170,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer0.code == MtrDex.ECDSA_256k1_Seed
     assert signer0.verfer.code == MtrDex.ECDSA_256k1N
     keys0 = [signer0.verfer.qb64]
-    serder = incept(keys=keys0)  # default nxt is empty so abandoned
+    serder = incept(keys=keys0, kind=Kinds.json, version=Vrsn_1_0)  # default nxt is empty so abandoned
     assert serder.ked["i"] == '1AAAAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk'
     assert serder.ked["n"] == []
     assert serder.raw == (b'{"v":"KERI10JSON000105_","t":"icp","d":"EGEP0h6tTUUOeIK4ApGlnLl2lwD0lbaQGBfL9'
@@ -1160,7 +1182,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer0.code == MtrDex.ECDSA_256k1_Seed
     assert signer0.verfer.code == MtrDex.ECDSA_256k1
     keys0 = [signer0.verfer.qb64]
-    serder = incept(keys=keys0)  # default nxt is empty so abandoned
+    serder = incept(keys=keys0, kind=Kinds.json, version=Vrsn_1_0)  # default nxt is empty so abandoned
     assert serder.ked["i"] == '1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk'
     assert serder.ked["n"] == []
     assert serder.raw == (b'{"v":"KERI10JSON000105_","t":"icp","d":"EO3M4d4pvQu2SXFLaXEy05ey80d71gbEakA2TgCTnJtN",'
@@ -1179,7 +1201,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
-    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256)  # intive false
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256,
+                     kind=Kinds.json, version=Vrsn_1_0)  # intive false
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked['d'] == serder0.ked["i"] == 'EBTJs_972Mh0Q2raFOINbmgtdtT0Od4VJm6aNd4xVW9u'
@@ -1205,7 +1228,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
-    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True)  # intive true
+    serder0 = incept(keys=keys0, ndigs=nxt1, code=MtrDex.Blake3_256, intive=True,
+                     kind=Kinds.json, version=Vrsn_1_0)  # intive true
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked['d'] == pre == 'ECzQWBHMIRJpUhrIB2sn4YUsb0HL-wE1wErVcQnkme5z'
@@ -1231,7 +1255,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
-    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True)  # intive true
+    serder0 = incept(keys=keys0, ndigs=nxt1, intive=True, kind=Kinds.json,
+                     version=Vrsn_1_0)  # intive true
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked["i"] == '1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk'
@@ -1258,7 +1283,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # compute nxt digest
     nxt1 = [Diger(ser=signer1.verfer.qb64b).qb64]  # dfault sith is 1
     assert nxt1 == ['EJ6Ycs7kho8XRxiq3DK37jiJ8mU9RP9HpSYnARm26EnO']
-    serder0 = incept(keys=keys0, ndigs=nxt1)
+    serder0 = incept(keys=keys0, ndigs=nxt1, kind=Kinds.json, version=Vrsn_1_0)
     pre = serder0.ked["i"]
     assert serder0.ked["t"] == Ilks.icp
     assert serder0.ked["i"] == '1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk'
@@ -1282,7 +1307,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer2.verfer.code == MtrDex.ECDSA_256k1
     keys2 = [Diger(ser=signer2.verfer.qb64b).qb64]
     # compute nxt digest
-    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1)
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1,
+                     kind=Kinds.json, version=Vrsn_1_0)
     assert serder1.ked["t"] == Ilks.rot
     assert serder1.ked["i"] == pre
     assert serder1.ked["s"] == '1'
@@ -1306,7 +1332,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert signer2.verfer.code == MtrDex.ECDSA_256k1
     keys2 = [Diger(ser=signer2.verfer.qb64b).qb64]
     # compute nxt digest
-    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1, intive=True)  # intive
+    serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=keys2, sn=1,
+                     intive=True, kind=Kinds.json, version=Vrsn_1_0)  # intive
     assert serder1.ked["t"] == Ilks.rot
     assert serder1.ked["i"] == pre
     assert serder1.ked["s"] == '1'
@@ -1322,7 +1349,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                            b'"bt":0,"br":[],"ba":[],"a":[]}')
 
     # Interaction:
-    serder2 = interact(pre=pre, dig=serder1.said, sn=2)
+    serder2 = interact(pre=pre, dig=serder1.said, sn=2, kind=Kinds.json,
+                       version=Vrsn_1_0)
     assert serder2.ked["t"] == Ilks.ixn
     assert serder2.ked["i"] == pre
     assert serder2.ked["s"] == '2'
@@ -1331,7 +1359,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                            b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"2","p":"EHc84kDs5EsLQYVLkP7fe-7DUfCQ7jFY69Zqq2UfmvTe","a":[]}')
 
     # Receipt
-    serder3 = receipt(pre=pre, sn=0, said=serder2.said)
+    serder3 = receipt(pre=pre, sn=0, said=serder2.said, version=Vrsn_1_0, kind=Kinds.json)
     assert serder3.ked["i"] == pre
     assert serder3.ked["s"] == "0"
     assert serder3.ked["t"] == Ilks.rct
@@ -1340,7 +1368,7 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                            b'"i":"1AABAg299p5IMvuw71HW_TlbzGq5cVOQ7bRbeDuhheF-DPYk","s":"0"}')
 
 
-    serder4 = receipt(pre=pre, sn=2, said=serder2.said)
+    serder4 = receipt(pre=pre, sn=2, said=serder2.said, version=Vrsn_1_0, kind=Kinds.json)
     assert serder4.ked["i"] == pre
     assert serder4.ked["s"] == "2"
     assert serder4.ked["t"] == Ilks.rct
@@ -1363,7 +1391,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     # transferable so nxt is not empty
 
     delpre = 'EAdHxtdjCQUM-TVO8CgJAKb8ykXsFe4u9epTUQFCL7Yd'
-    serderD = delcept(keys=keysD, delpre=delpre, ndigs=nxtD)
+    serderD = delcept(keys=keysD, delpre=delpre, ndigs=nxtD, kind=Kinds.json,
+                      version=Vrsn_1_0)
     pre = serderD.ked["i"]
     assert serderD.ked["i"] == 'EFVACrfsy2Ke_tjqq-wroc-TE0IFZ-QNwQwuMVzl0rgj'
     assert serderD.ked["s"] == '0'
@@ -1394,7 +1423,9 @@ def test_keyeventfuncs(mockHelpingNowUTC):
                       keys=keysR,
                       dig='EANkcl_QewzrRSKH2p9zUskHI462CuIMS_HQIO132Z30',
                       sn=4,
-                      ndigs=nxtR)
+                      ndigs=nxtR,
+                      kind=Kinds.json,
+                      version=Vrsn_1_0)
 
     assert serderR.ked["i"] == pre
     assert serderR.ked["s"] == '4'
@@ -1409,6 +1440,8 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     assert serderR.said == 'EMN4ZdZEZzB0FyHzAOKehHTa6WvvBfK3xwylPuxoJ4sO'
 
     """ Done Test """
+
+
 
 
 def test_state(mockHelpingNowUTC):
@@ -1524,7 +1557,8 @@ def test_state(mockHelpingNowUTC):
                     ndigs=nxt,
                     toad=toad,
                     wits=wits,
-                    )
+                    version=Vrsn_1_0,
+                    kind=Kinds.json)
 
     raw = ksr._asjson()
     assert raw == (b'{"vn":[1,0],"i":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN","s":"4","p":"'
@@ -1662,8 +1696,9 @@ def test_state(mockHelpingNowUTC):
                     ndigs=nxt,
                     toad=toad,
                     wits=wits,
-                    dpre=preD
-                    )
+                    dpre=preD,
+                    version=Vrsn_1_0,
+                    kind=Kinds.json)
 
     raw = ksr._asjson()
     assert raw == (b'{"vn":[1,0],"i":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN","s":"4","p":"'
@@ -1742,259 +1777,6 @@ def test_state(mockHelpingNowUTC):
           #b'5IbuhSHfo-maDh4EG')
 
     """Done Test"""
-
-
-def test_messagize():
-    """
-    Test messagize utility function
-    """
-    salter = Salter(raw=b'0123456789abcdef')
-    with openDB(name="edy") as db, openKS(name="edy") as ks:
-        # Init key pair manager
-        mgr = Manager(ks=ks, salt=salter.qb64)
-        verfers, digers = mgr.incept(icount=1, ncount=0, transferable=True, stem="C")
-
-        # Test with inception message
-        serder = incept(keys=[verfers[0].qb64], code=MtrDex.Blake3_256)
-
-        sigers = mgr.sign(ser=serder.raw, verfers=verfers)  # default indexed True
-        assert isinstance(sigers[0], Siger)
-        msg = messagize(serder, sigers=sigers)
-        assert isinstance(msg, bytearray)
-        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
-                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
-                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-AA'
-                    b'BAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfP'
-                    b'QQkQkxI862_XjyZLHyClVTLoD')
-
-        # Test with pipelined
-        msg = messagize(serder, sigers=sigers, pipelined=True)
-        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
-                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
-                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
-                    b'X-AABAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5'
-                    b'lPfPQQkQkxI862_XjyZLHyClVTLoD')
-
-        # Test with seal
-        # create SealEvent for endorsers est evt whose keys use to sign
-        seal = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
-                         s='0',
-                         d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-        msg = messagize(serder, sigers=sigers, seal=seal)
-        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
-                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
-                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-FA'
-                    b'BDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAAAA'
-                    b'AAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAB1DuEfnZZ'
-                    b'6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_X'
-                    b'jyZLHyClVTLoD')
-
-        # Test with pipelined
-        msg = messagize(serder, sigers=sigers, seal=seal, pipelined=True)
-        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
-                b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
-                b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
-                b'0-FABDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAA'
-                b'AAAAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAB1DuE'
-                b'fnZZ6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI8'
-                b'62_XjyZLHyClVTLoD')
-
-        # Test with wigers
-        verfers, digers = mgr.incept(icount=1, ncount=0, transferable=False, stem="W")
-        wigers = mgr.sign(ser=serder.raw, verfers=verfers)  # default indexed True
-        assert isinstance(wigers[0], Siger)
-        msg = messagize(serder, wigers=wigers)
-        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
-                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
-                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-BA'
-                    b'BAABtOhjlKo8WhJQ3EXMIMaQ_IH6yeyxs7_JuO4RioH1NUTtzTuV1bbuB7eoNhEj'
-                    b'20VJYa4947ZMVrOxKhzI6EqUH')
-
-        # Test with wigers and pipelined
-        msg = messagize(serder, wigers=wigers, pipelined=True)
-        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
-                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
-                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
-                    b'X-BABAABtOhjlKo8WhJQ3EXMIMaQ_IH6yeyxs7_JuO4RioH1NUTtzTuV1bbuB7eo'
-                    b'NhEj20VJYa4947ZMVrOxKhzI6EqUH')
-
-        # Test with cigars
-        verfers, digers = mgr.incept(icount=1, ncount=0, transferable=False, stem="R")
-        cigars = mgr.sign(ser=serder.raw, verfers=verfers, indexed=False)
-        assert isinstance(cigars[0], Cigar)
-        msg = messagize(serder, cigars=cigars)
-        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
-                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
-                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-CA'
-                    b'BBJjH1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BDwWrxO8RItpgGFtFi'
-                    b'DF7QoVas-6Bzvj0xtOfbsh31jjtshcEa0rUVX2xsyyH1US2fBWe7FNpn6xko5EVw'
-                    b'g_TwF')
-
-        # Test with cigars and pipelined
-        msg = messagize(serder, cigars=cigars, pipelined=True)
-        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
-                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
-                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
-                    b'i-CABBJjH1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BDwWrxO8RItpgG'
-                    b'FtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa0rUVX2xsyyH1US2fBWe7FNpn6xko'
-                    b'5EVwg_TwF')
-
-
-        # Test with wigers and cigars
-        msg = messagize(serder, wigers=wigers, cigars=cigars)
-        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
-                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
-                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-BA'
-                    b'BAABtOhjlKo8WhJQ3EXMIMaQ_IH6yeyxs7_JuO4RioH1NUTtzTuV1bbuB7eoNhEj'
-                    b'20VJYa4947ZMVrOxKhzI6EqUH-CABBJjH1MCDssEZMnORskF34AwOFDgDL47513G'
-                    b'ivRvd_QKz0BDwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa0rUV'
-                    b'X2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF')
-
-
-        # Test with wigers and cigars and pipelined
-        msg = messagize(serder, cigars=cigars, wigers=wigers, pipelined=True)
-        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
-                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
-                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
-                    b'5-BABAABtOhjlKo8WhJQ3EXMIMaQ_IH6yeyxs7_JuO4RioH1NUTtzTuV1bbuB7eo'
-                    b'NhEj20VJYa4947ZMVrOxKhzI6EqUH-CABBJjH1MCDssEZMnORskF34AwOFDgDL47'
-                    b'513GivRvd_QKz0BDwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa'
-                    b'0rUVX2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF')
-
-
-        # Test with sigers and wigers and cigars
-        msg = messagize(serder, sigers=sigers, cigars=cigars, wigers=wigers)
-        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
-                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
-                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-AA'
-                    b'BAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfP'
-                    b'QQkQkxI862_XjyZLHyClVTLoD-BABAABtOhjlKo8WhJQ3EXMIMaQ_IH6yeyxs7_J'
-                    b'uO4RioH1NUTtzTuV1bbuB7eoNhEj20VJYa4947ZMVrOxKhzI6EqUH-CABBJjH1MC'
-                    b'DssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BDwWrxO8RItpgGFtFiDF7QoVas'
-                    b'-6Bzvj0xtOfbsh31jjtshcEa0rUVX2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF')
-
-        # Test with sigers and wigers and cigars and pipelines
-        msg = messagize(serder, sigers=sigers, cigars=cigars, wigers=wigers, pipelined=True)
-        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
-                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
-                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VB'
-                    b'Q-AABAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5'
-                    b'lPfPQQkQkxI862_XjyZLHyClVTLoD-BABAABtOhjlKo8WhJQ3EXMIMaQ_IH6yeyx'
-                    b's7_JuO4RioH1NUTtzTuV1bbuB7eoNhEj20VJYa4947ZMVrOxKhzI6EqUH-CABBJj'
-                    b'H1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BDwWrxO8RItpgGFtFiDF7Q'
-                    b'oVas-6Bzvj0xtOfbsh31jjtshcEa0rUVX2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF')
-
-        # Test with receipt message
-        ked = serder.ked
-        reserder = receipt(pre=ked["i"],
-                           sn=int(ked["s"], 16),
-                           said=serder.said)
-
-        # Test with wigers
-        wigers = mgr.sign(ser=serder.raw, verfers=verfers, indexed=True)
-        assert isinstance(wigers[0], Siger)
-        msg = messagize(serder, wigers=wigers)
-        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
-                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
-                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-BA'
-                    b'BAADwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa0rUVX2xsyyH1'
-                    b'US2fBWe7FNpn6xko5EVwg_TwF')
-
-        # Test with cigars
-        cigars = mgr.sign(ser=serder.raw, verfers=verfers, indexed=False)  # sign event not receipt
-        msg = messagize(reserder, cigars=cigars)
-        assert msg == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
-                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
-                    b'JyHxl4F","s":"0"}-CABBJjH1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QK'
-                    b'z0BDwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa0rUVX2xsyyH1'
-                    b'US2fBWe7FNpn6xko5EVwg_TwF')
-
-        # Test with wigers and cigars
-        msg = messagize(serder, wigers=wigers, cigars=cigars, )
-        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
-                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
-                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-BA'
-                    b'BAADwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa0rUVX2xsyyH1'
-                    b'US2fBWe7FNpn6xko5EVwg_TwF-CABBJjH1MCDssEZMnORskF34AwOFDgDL47513G'
-                    b'ivRvd_QKz0BDwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa0rUV'
-                    b'X2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF')
-
-        # Test with wigers and cigars and pipelined
-        msg = messagize(serder, wigers=wigers, cigars=cigars, pipelined=True)
-        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
-                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
-                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
-                    b'5-BABAADwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa0rUVX2xs'
-                    b'yyH1US2fBWe7FNpn6xko5EVwg_TwF-CABBJjH1MCDssEZMnORskF34AwOFDgDL47'
-                    b'513GivRvd_QKz0BDwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa'
-                    b'0rUVX2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF')
-
-        # Test with sigers and seal and wigers and cigars and pipelined
-        msg = messagize(serder, sigers=sigers, seal=seal, wigers=wigers,
-                        cigars=cigars, pipelined=True)
-        assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
-                    b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
-                    b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VB'
-                    b't-FABDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAA'
-                    b'AAAAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAB1DuE'
-                    b'fnZZ6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI8'
-                    b'62_XjyZLHyClVTLoD-BABAADwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31'
-                    b'jjtshcEa0rUVX2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF-CABBJjH1MCDssEZMnO'
-                    b'RskF34AwOFDgDL47513GivRvd_QKz0BDwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0x'
-                    b'tOfbsh31jjtshcEa0rUVX2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF')
-
-        # Test with query message
-        ked = serder.ked
-        qserder = query(route="log",
-                        query=dict(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
-                        stamp=helping.DTS_BASE_0)
-
-        # create SealEvent for endorsers est evt whose keys use to sign
-        seal = SealLast(i=ked["i"])
-        msg = messagize(qserder, sigers=sigers, seal=seal)
-        assert msg == (b'{"v":"KERI10JSON0000c9_","t":"qry","d":"EGN68_seecuzXQO15FFGJLVw'
-                    b'ZCBCPYW-hy29fjWWPQbp","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                    b'":"log","rr":"","q":{"i":"DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho'
-                    b'1QvrjI"}}-HABEFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxjJyHxl4F-AABAAB'
-                    b'1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQ'
-                    b'kxI862_XjyZLHyClVTLoD')
-
-        # create SealEvent for endorsers est evt whose keys use to sign
-        msg = messagize(qserder, sigers=sigers, seal=seal, pipelined=True)
-        assert msg == (b'{"v":"KERI10JSON0000c9_","t":"qry","d":"EGN68_seecuzXQO15FFGJLVw'
-                    b'ZCBCPYW-hy29fjWWPQbp","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                    b'":"log","rr":"","q":{"i":"DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho'
-                    b'1QvrjI"}}-VAj-HABEFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxjJyHxl4F-AA'
-                    b'BAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfP'
-                    b'QQkQkxI862_XjyZLHyClVTLoD')
-
-        """ Done Test """
-
-
-def test_messagize_with_prior_next():
-    """
-    Test messagize utility function with prior next modifier on indexed signatures
-    """
-    pass
-
-    """ Done Test """
-
 
 
 def test_kever(mockHelpingNowUTC):
@@ -2420,7 +2202,7 @@ def test_keyeventsequence_0():
         ndiger1 = Diger(ser=signers[1].verfer.qb64b)
         nxt1 = [ndiger1.qb64]  # transferable so nxt is not empty
         assert nxt1 == ['EIQsSW4KMrLzY1HQI9H_XxY6MyzhaFFXhG6fdBb5Wxta']
-        serder0 = incept(keys=keys0, ndigs=nxt1)
+        serder0 = incept(keys=keys0, ndigs=nxt1, version=Vrsn_1_0, kind=Kinds.json)
         pre = serder0.ked["i"]
         event_digs.append(serder0.said)
         assert serder0.ked["i"] == signers[0].verfer.qb64
@@ -2454,7 +2236,7 @@ def test_keyeventsequence_0():
         ndiger2 = Diger(ser=signers[2].verfer.qb64b)
         nxt2 = [ndiger2.qb64]  # transferable so nxt is not empty
         assert nxt2 == ['EHuvLs1hmwxo4ImDoCpaAermYVQhiPsPDNaZsz4bcgko']
-        serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=nxt2, sn=1)
+        serder1 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=nxt2, sn=1, version=Vrsn_1_0, kind=Kinds.json)
         event_digs.append(serder1.said)
         assert serder1.ked["i"] == pre
         assert serder1.ked["s"] == '1'
@@ -2485,7 +2267,7 @@ def test_keyeventsequence_0():
         keys3 = [signers[3].verfer.qb64]
         ndiger3 = Diger(ser=signers[3].verfer.qb64b)
         nxt3 = [ndiger3.qb64]  # transferable so nxt is not empty
-        serder2 = rotate(pre=pre, keys=keys2, dig=serder1.said, ndigs=nxt3, sn=2)
+        serder2 = rotate(pre=pre, keys=keys2, dig=serder1.said, ndigs=nxt3, sn=2, version=Vrsn_1_0, kind=Kinds.json)
         event_digs.append(serder2.said)
         assert serder2.ked["i"] == pre
         assert serder2.ked["s"] == '2'
@@ -2510,7 +2292,7 @@ def test_keyeventsequence_0():
         assert [diger.qb64 for diger in pigers] == nxt2
 
         # Event 3 Interaction
-        serder3 = interact(pre=pre, dig=serder2.said, sn=3)
+        serder3 = interact(pre=pre, dig=serder2.said, sn=3, version=Vrsn_1_0, kind=Kinds.json)
         event_digs.append(serder3.said)
         assert serder3.ked["i"] == pre
         assert serder3.ked["s"] == '3'
@@ -2533,7 +2315,7 @@ def test_keyeventsequence_0():
         assert [diger.qb64 for diger in pigers] == nxt2  # digs from rot before rot before ixn
 
         # Event 4 Interaction
-        serder4 = interact(pre=pre, dig=serder3.said, sn=4)
+        serder4 = interact(pre=pre, dig=serder3.said, sn=4, version=Vrsn_1_0, kind=Kinds.json)
         event_digs.append(serder4.said)
         assert serder4.ked["i"] == pre
         assert serder4.ked["s"] == '4'
@@ -2560,7 +2342,7 @@ def test_keyeventsequence_0():
         keys4 = [signers[4].verfer.qb64]
         ndiger4 = Diger(ser=signers[4].verfer.qb64b)
         nxt4 = [ndiger4.qb64]  # transferable so nxt is not empty
-        serder5 = rotate(pre=pre, keys=keys3, dig=serder4.said, ndigs=nxt4, sn=5)
+        serder5 = rotate(pre=pre, keys=keys3, dig=serder4.said, ndigs=nxt4, sn=5, version=Vrsn_1_0, kind=Kinds.json)
         event_digs.append(serder5.said)
         assert serder5.ked["i"] == pre
         assert serder5.ked["s"] == '5'
@@ -2585,7 +2367,7 @@ def test_keyeventsequence_0():
         assert [diger.qb64 for diger in pigers] == nxt3
 
         # Event 6 Interaction
-        serder6 = interact(pre=pre, dig=serder5.said, sn=6)
+        serder6 = interact(pre=pre, dig=serder5.said, sn=6, version=Vrsn_1_0, kind=Kinds.json)
         event_digs.append(serder6.said)
         assert serder6.ked["i"] == pre
         assert serder6.ked["s"] == '6'
@@ -2604,7 +2386,7 @@ def test_keyeventsequence_0():
         assert kever.ndigs  == nxt4  # no change
 
         # Event 7 Rotation to null NonTransferable Abandon
-        serder7 = rotate(pre=pre, keys=keys4, dig=serder6.said, sn=7)
+        serder7 = rotate(pre=pre, keys=keys4, dig=serder6.said, sn=7, version=Vrsn_1_0, kind=Kinds.json)
         event_digs.append(serder7.said)
         assert serder7.ked["i"] == pre
         assert serder7.ked["s"] == '7'
@@ -2626,7 +2408,7 @@ def test_keyeventsequence_0():
         assert not kever.transferable
 
         # Event 8 Interaction
-        serder8 = interact(pre=pre, dig=serder7.said, sn=8)
+        serder8 = interact(pre=pre, dig=serder7.said, sn=8, version=Vrsn_1_0, kind=Kinds.json)
         assert serder8.ked["i"] == pre
         assert serder8.ked["s"] == '8'
         assert serder8.ked["p"] == serder7.said
@@ -2642,7 +2424,7 @@ def test_keyeventsequence_0():
         keys5 = [signers[5].verfer.qb64]
         nexter5 = Diger(ser=signers[5].verfer.qb64b)
         nxt5 = [ndiger4.qb64]  # transferable so nxt is not empty
-        serder8 = rotate(pre=pre, keys=keys5, dig=serder7.said, ndigs=nxt5, sn=8)
+        serder8 = rotate(pre=pre, keys=keys5, dig=serder7.said, ndigs=nxt5, sn=8, version=Vrsn_1_0, kind=Kinds.json)
         assert serder8.ked["i"] == pre
         assert serder8.ked["s"] == '8'
         assert serder8.ked["p"] == serder7.said
@@ -2691,7 +2473,7 @@ def test_keyeventsequence_1():
         ndiger1 = Diger(ser=signers[1].verfer.qb64b)
         nxt1 = [ndiger1.qb64]  # transferable so nxt is not empty
         cnfg = [TraitDex.EstOnly]  # EstOnly
-        serder0 = incept(keys=keys0, ndigs=nxt1, cnfg=cnfg)
+        serder0 = incept(keys=keys0, ndigs=nxt1, cnfg=cnfg, version=Vrsn_1_0, kind=Kinds.json)
         event_digs.append(serder0.said)
         pre = serder0.ked["i"]
         assert serder0.ked["i"] == signers[0].verfer.qb64
@@ -2716,7 +2498,7 @@ def test_keyeventsequence_1():
         assert kever.transferable is True
 
         # Event 1 Interaction. Because EstOnly, this event not included in KEL
-        serder1 = interact(pre=pre, dig=serder0.said, sn=1)
+        serder1 = interact(pre=pre, dig=serder0.said, sn=1, version=Vrsn_1_0, kind=Kinds.json)
         assert serder1.ked["i"] == pre
         assert serder1.ked["s"] == '1'
         assert serder1.ked["p"] == serder0.said
@@ -2731,7 +2513,7 @@ def test_keyeventsequence_1():
         # compute nxt digest from keys2  but from event0
         ndiger2 = Diger(ser=signers[2].verfer.qb64b)
         nxt2 = [ndiger2.qb64]  # transferable so nxt is not empty
-        serder2 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=nxt2, sn=1)
+        serder2 = rotate(pre=pre, keys=keys1, dig=serder0.said, ndigs=nxt2, sn=1, version=Vrsn_1_0, kind=Kinds.json)
         event_digs.append(serder2.said)
         assert serder2.ked["i"] == pre
         assert serder2.ked["s"] == '1'
@@ -2792,7 +2574,7 @@ def test_multisig_digprefix():
         serder = incept(keys=keys,
                         code=code,
                         isith=sith,
-                        ndigs=[Diger(ser=sig).qb64 for sig in nxtkeys])
+                        ndigs=[Diger(ser=sig).qb64 for sig in nxtkeys], version=Vrsn_1_0, kind=Kinds.json)
 
         # create sig counter
         count = len(keys)
@@ -2829,7 +2611,7 @@ def test_multisig_digprefix():
                         isith=sith,
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=sig).qb64 for sig in nxtkeys],
-                        sn=1)
+                        sn=1, version=Vrsn_1_0, kind=Kinds.json)
         # create sig counter
         count = len(keys)
         counter = Counter(Codens.ControllerIdxSigs, count=count, version=Vrsn_1_0)  # default is count = 1
@@ -2846,7 +2628,7 @@ def test_multisig_digprefix():
         # Event 2 Interaction
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=2)
+                          sn=2, version=Vrsn_1_0, kind=Kinds.json)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, count=count, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
@@ -2862,7 +2644,7 @@ def test_multisig_digprefix():
         # Event 4 Interaction
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=3)
+                          sn=3, version=Vrsn_1_0, kind=Kinds.json)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, count=count, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
@@ -2882,7 +2664,7 @@ def test_multisig_digprefix():
                         keys=keys,
                         isith="2",
                         dig=kever.serder.said,
-                        sn=4)
+                        sn=4, version=Vrsn_1_0, kind=Kinds.json)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, count=count, version=Vrsn_1_0)  # default is count = 1
         # sign serialization
@@ -2930,7 +2712,7 @@ def test_recovery():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[signers[esn].verfer.qb64],
-                        ndigs=[Diger(ser=signers[esn + 1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=signers[esn + 1].verfer.qb64b).qb64], version=Vrsn_1_0, kind=Kinds.json)
 
         assert sn == int(serder.ked["s"], 16) == 0
 
@@ -2954,7 +2736,7 @@ def test_recovery():
                         keys=[signers[esn].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers[esn + 1].verfer.qb64b).qb64],
-                        sn=sn)
+                        sn=sn, version=Vrsn_1_0, kind=Kinds.json)
 
         event_digs.append(serder.said)
         # create sig counter
@@ -2974,7 +2756,7 @@ def test_recovery():
         assert esn == 1
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=sn)
+                          sn=sn, version=Vrsn_1_0, kind=Kinds.json)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -2996,7 +2778,7 @@ def test_recovery():
                         keys=[signers[esn].verfer.qb64],
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=signers[esn + 1].verfer.qb64b).qb64],
-                        sn=sn)
+                        sn=sn, version=Vrsn_1_0, kind=Kinds.json)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -3015,7 +2797,7 @@ def test_recovery():
         assert esn == 2
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=sn)
+                          sn=sn, version=Vrsn_1_0, kind=Kinds.json)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -3034,7 +2816,7 @@ def test_recovery():
         assert esn == 2
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=sn)
+                          sn=sn, version=Vrsn_1_0, kind=Kinds.json)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -3053,7 +2835,7 @@ def test_recovery():
         assert esn == 2
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=sn)
+                          sn=sn, version=Vrsn_1_0, kind=Kinds.json)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -3076,7 +2858,7 @@ def test_recovery():
                         keys=[signers[esn].verfer.qb64],
                         dig=event_digs[sn - 1],
                         ndigs=[Diger(ser=signers[esn + 1].verfer.qb64b).qb64],
-                        sn=sn)
+                        sn=sn, version=Vrsn_1_0, kind=Kinds.json)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -3095,7 +2877,7 @@ def test_recovery():
         assert esn == 3
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=sn)
+                          sn=sn, version=Vrsn_1_0, kind=Kinds.json)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -3181,7 +2963,7 @@ def test_receipt():
 
         # Event 0  Inception Transferable (nxt digest not empty)
         serder = incept(keys=[coeSigners[esn].verfer.qb64],
-                        ndigs=[Diger(ser=coeSigners[esn + 1].verfer.qb64b).qb64])
+                        ndigs=[Diger(ser=coeSigners[esn + 1].verfer.qb64b).qb64], version=Vrsn_1_0, kind=Kinds.json)
 
         assert sn == int(serder.ked["s"], 16) == 0
         coepre = serder.ked["i"]
@@ -3213,7 +2995,7 @@ def test_receipt():
         # create receipt from val to coe
         reserder = receipt(pre=coeKever.prefixer.qb64,
                            sn=coeKever.sn,
-                           said=coeKever.serder.said)
+                           said=coeKever.serder.said, version=Vrsn_1_0, kind=Kinds.json)
         # sign event not receipt
         valCigar = valSigner.sign(ser=serder.raw)  # returns Cigar cause no index
         assert valCigar.qb64 == ('0BADE2aOlwLi6OCF-jzRWSPuaOo916ADjwhA92hBQ1km'
@@ -3245,7 +3027,7 @@ def test_receipt():
         fake = reserder.said  # some other dig
         reserder = receipt(pre=coeKever.prefixer.qb64,
                            sn=2,
-                           said=fake)
+                           said=fake, version=Vrsn_1_0, kind=Kinds.json)
         # sign event not receipt
         valCigar = valSigner.sign(ser=serder.raw)  # returns Cigar cause no index
         recnt = Counter(code=Codens.NonTransReceiptCouples, count=1, version=Vrsn_1_0)
@@ -3270,7 +3052,7 @@ def test_receipt():
         fake = Diger(qb64="EAdapdcC6XR1KWmWDsNl4J_OxcGxNZw1Xd95JH5a34fI").qb64
         reserder = receipt(pre=coeKever.prefixer.qb64,
                            sn=coeKever.sn,
-                           said=fake)
+                           said=fake, version=Vrsn_1_0, kind=Kinds.json)
         # sign event not receipt
         valCigar = valSigner.sign(ser=serder.raw)  # returns Cigar cause no index
         recnt = Counter(code=Codens.NonTransReceiptCouples, count=1, version=Vrsn_1_0)
@@ -3297,7 +3079,7 @@ def test_receipt():
                         keys=[coeSigners[esn].verfer.qb64],
                         dig=coeKever.serder.said,
                         ndigs=[Diger(ser=coeSigners[esn + 1].verfer.qb64b).qb64],
-                        sn=sn)
+                        sn=sn, version=Vrsn_1_0, kind=Kinds.json)
 
         event_digs.append(serder.said)
         # create sig counter
@@ -3319,7 +3101,7 @@ def test_receipt():
         assert esn == 1
         serder = interact(pre=coeKever.prefixer.qb64,
                           dig=coeKever.serder.said,
-                          sn=sn)
+                          sn=sn, version=Vrsn_1_0, kind=Kinds.json)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -3344,7 +3126,7 @@ def test_receipt():
                         keys=[coeSigners[esn].verfer.qb64],
                         dig=coeKever.serder.said,
                         ndigs=[Diger(ser=coeSigners[esn + 1].verfer.qb64b).qb64],
-                        sn=sn)
+                        sn=sn, version=Vrsn_1_0, kind=Kinds.json)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -3366,7 +3148,7 @@ def test_receipt():
         assert esn == 2
         serder = interact(pre=coeKever.prefixer.qb64,
                           dig=coeKever.serder.said,
-                          sn=sn)
+                          sn=sn, version=Vrsn_1_0, kind=Kinds.json)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -3388,7 +3170,7 @@ def test_receipt():
         assert esn == 2
         serder = interact(pre=coeKever.prefixer.qb64,
                           dig=coeKever.serder.said,
-                          sn=sn)
+                          sn=sn, version=Vrsn_1_0, kind=Kinds.json)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -3410,7 +3192,7 @@ def test_receipt():
         assert esn == 2
         serder = interact(pre=coeKever.prefixer.qb64,
                           dig=coeKever.serder.said,
-                          sn=sn)
+                          sn=sn, version=Vrsn_1_0, kind=Kinds.json)
         event_digs.append(serder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -3451,7 +3233,7 @@ def test_process_attached_receipt_couples_firner_missing_fels():
     signer = salter.signers(count=1, path="ctl", temp=True)[0]
     valSigner = salter.signers(count=1, path="val", transferable=False, temp=True)[0]
 
-    serder = incept(keys=[signer.verfer.qb64], ndigs=[Diger(ser=signer.verfer.qb64b).qb64])
+    serder = incept(keys=[signer.verfer.qb64], ndigs=[Diger(ser=signer.verfer.qb64b).qb64], version=Vrsn_1_0, kind=Kinds.json)
     valCigar = valSigner.sign(ser=serder.raw)
 
     with openDB(name="firner_test") as db:
@@ -3508,7 +3290,7 @@ def test_direct_mode():
         # Coe Event 0  Inception Transferable (nxt digest not empty)
         coeSerder = incept(keys=[coeSigners[cesn].verfer.qb64],
                            ndigs=[Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
-                           code=MtrDex.Blake3_256)
+                           code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
 
         assert csn == int(coeSerder.ked["s"], 16) == 0
         coepre = coeSerder.ked["i"]
@@ -3541,7 +3323,7 @@ def test_direct_mode():
         # Val Event 0  Inception Transferable (nxt digest not empty)
         valSerder = incept(keys=[valSigners[vesn].verfer.qb64],
                            ndigs=[Diger(ser=valSigners[vesn + 1].verfer.qb64b).qb64],
-                           code=MtrDex.Blake3_256)
+                           code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
 
         assert vsn == int(valSerder.ked["s"], 16) == 0
         valpre = valSerder.ked["i"]
@@ -3585,7 +3367,7 @@ def test_direct_mode():
         # create validator receipt
         reserder = receipt(pre=coeK.prefixer.qb64,
                            sn=coeK.sn,
-                           said=coeK.serder.said)
+                           said=coeK.serder.said, version=Vrsn_1_0, kind=Kinds.json)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
         coeIcpDig = valKevery.db.kels.getLast(keys=coepre, on=csn)
@@ -3599,13 +3381,13 @@ def test_direct_mode():
         siger = valSigners[vesn].sign(ser=s.raw, index=0)  # return Siger if index
         assert siger.qb64 == ('AAD-iI61odpZQjzm0fN9ZATjHx-KjQ9W3-CIlvhowwUaPC5K'
                               'nQAIGYFuWJyRgAQalYVSEWoyMK2id_ONTFUE-NcF')
-        rmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
+        rmsg = messagize(serder=reserder, sigers=[siger], source=seal, framed=True, gvrsn=Vrsn_1_0)
         assert rmsg == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EJe_sKQb1otKrz6COIL8VFvB'
                     b'v3DEFvtKaVFGn1vm0IlL","i":"EJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn'
                     b'1vm0IlL","s":"0"}-FABEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNod'
-                    b'z0AAAAAAAAAAAAAAAAAAAAAAAEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9v'
-                    b'nNodz-AABAAD-iI61odpZQjzm0fN9ZATjHx-KjQ9W3-CIlvhowwUaPC5KnQAIGYF'
-                    b'uWJyRgAQalYVSEWoyMK2id_ONTFUE-NcF')
+                    b'zMAAAEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNodz-AABAAD-iI61odp'
+                    b'ZQjzm0fN9ZATjHx-KjQ9W3-CIlvhowwUaPC5KnQAIGYFuWJyRgAQalYVSEWoyMK2'
+                    b'id_ONTFUE-NcF')
 
         # process own Val receipt in Val's Kevery so have copy in own log
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(rmsg), kvy=valKevery)
@@ -3637,24 +3419,19 @@ def test_direct_mode():
         fake = reserder.said  # some other dig
         reserder = receipt(pre=coeK.prefixer.qb64,
                            sn=10,
-                           said=fake)
+                           said=fake, version=Vrsn_1_0, kind=Kinds.json)
         # sign event not receipt
         siger = valSigners[vesn].sign(ser=s.raw, index=0)  # return Siger if index
 
         # create message
-        vmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
-        assert vmsg == bytearray(b'{"v":"KERI10JSON000091_","t":"rct","d":"EJe_sKQb1otKrz6COIL8VFvB'
-                            b'v3DEFvtKaVFGn1vm0IlL","i":"EJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn'
-                            b'1vm0IlL","s":"a"}-FABEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNod'
-                            b'z0AAAAAAAAAAAAAAAAAAAAAAAEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9v'
-                            b'nNodz-AABAAD-iI61odpZQjzm0fN9ZATjHx-KjQ9W3-CIlvhowwUaPC5KnQAIGYF'
-                            b'uWJyRgAQalYVSEWoyMK2id_ONTFUE-NcF')
+        vmsg = messagize(serder=reserder, sigers=[siger], source=seal, framed=True, gvrsn=Vrsn_1_0)
+        assert vmsg == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EJe_sKQb1otKrz6COIL8VFvB'
+                    b'v3DEFvtKaVFGn1vm0IlL","i":"EJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn'
+                    b'1vm0IlL","s":"a"}-FABEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNod'
+                    b'zMAAAEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNodz-AABAAD-iI61odp'
+                    b'ZQjzm0fN9ZATjHx-KjQ9W3-CIlvhowwUaPC5KnQAIGYFuWJyRgAQalYVSEWoyMK2'
+                    b'id_ONTFUE-NcF')
 
-        #bytearray(b'{"v":"KERI10JSON000067_","t":"rct","d":null,"i":"EJe_sKQb1otKrz6'
-                                 #b'COIL8VFvBv3DEFvtKaVFGn1vm0IlL","s":"a"}-FABEAzjKx3hSVJArKpIOVt2K'
-                                 #b'fTRjq8st22hL25Ho9vnNodz0AAAAAAAAAAAAAAAAAAAAAAAEAzjKx3hSVJArKpIO'
-                                 #b'Vt2KfTRjq8st22hL25Ho9vnNodz-AABAAD-iI61odpZQjzm0fN9ZATjHx-KjQ9W3'
-                                 #b'-CIlvhowwUaPC5KnQAIGYFuWJyRgAQalYVSEWoyMK2id_ONTFUE-NcF')
         Parser(version=Vrsn_1_0).parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process the escrow receipt from val
         #  check if receipt quadruple in escrow database
@@ -3678,7 +3455,7 @@ def test_direct_mode():
         # create validator receipt
         reserder = receipt(pre=valK.prefixer.qb64,
                            sn=valK.sn,
-                           said=valK.serder.said)
+                           said=valK.serder.said, version=Vrsn_1_0, kind=Kinds.json)
         # sign vals's event not receipt
         # look up event to sign from coe's kever for val
         valIcpDig = coeKevery.db.kels.getLast(keys=valpre, on=vsn)
@@ -3690,18 +3467,17 @@ def test_direct_mode():
                         b'","k":["BF5b1hKlY38RoAhR7G8CExP4qjHFvbHx25Drp5Jj2j4p"],"nt":"1","n":["ECoxJf'
                         b'QH0GUrlDKoC3U-neGY1CJib7VyZGh6QhdJtWoT"],"bt":"0","b":[],"c":[],"a":[]}')
 
-
         siger = coeSigners[vesn].sign(ser=s.raw, index=0)  # return Siger if index
         assert siger.qb64 == ('AACRmy9_dCMi45BSI89fGeM_ktOTWQctSGrVsZtQMm1RtJZY'
                               '31xaNoEN-GJ0c5UrNbNuSyT-wkeit0AeYsPWLEYG')
         # create receipt message
-        cmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
+        cmsg = messagize(serder=reserder, sigers=[siger], source=seal, framed=True, gvrsn=Vrsn_1_0)
         assert cmsg == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EAzjKx3hSVJArKpIOVt2KfTR'
                     b'jq8st22hL25Ho9vnNodz","i":"EAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho'
                     b'9vnNodz","s":"0"}-FABEJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn1vm0Il'
-                    b'L0AAAAAAAAAAAAAAAAAAAAAAAEJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn1v'
-                    b'm0IlL-AABAACRmy9_dCMi45BSI89fGeM_ktOTWQctSGrVsZtQMm1RtJZY31xaNoE'
-                    b'N-GJ0c5UrNbNuSyT-wkeit0AeYsPWLEYG')
+                    b'LMAAAEJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn1vm0IlL-AABAACRmy9_dCM'
+                    b'i45BSI89fGeM_ktOTWQctSGrVsZtQMm1RtJZY31xaNoEN-GJ0c5UrNbNuSyT-wke'
+                    b'it0AeYsPWLEYG')
 
         # coe process own receipt in own Kevery so have copy in own log
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
@@ -3733,7 +3509,7 @@ def test_direct_mode():
                            keys=[coeSigners[cesn].verfer.qb64],
                            dig=coeKever.serder.said,
                            ndigs=[Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
-                           sn=csn)
+                           sn=csn, version=Vrsn_1_0, kind=Kinds.json)
         coe_event_digs.append(coeSerder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -3774,7 +3550,7 @@ def test_direct_mode():
         # create validator receipt
         reserder = receipt(pre=coeK.prefixer.qb64,
                            sn=coeK.sn,
-                           said=coeK.serder.said)
+                           said=coeK.serder.said, version=Vrsn_1_0, kind=Kinds.json)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
         coeRotDig = valKevery.db.kels.getLast(keys=coepre, on=csn)
@@ -3791,13 +3567,13 @@ def test_direct_mode():
         assert siger.qb64 == ('AAANSIICz13kvy4hk2bvTCr2b2uePn4uTf4_nwdolkI77Voq'
                               'sm5QFtF6z6sjJK7_oTLY36k2VigSExx0UgGQV7YL')
         # val create receipt message
-        vmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
+        vmsg = messagize(serder=reserder, sigers=[siger], source=seal, framed=True, gvrsn=Vrsn_1_0)
         assert vmsg == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EKlC013XEpwYuCQ84aVnEAqz'
                     b'NurjAJDN6ayK-9NxggAr","i":"EJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn'
                     b'1vm0IlL","s":"1"}-FABEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNod'
-                    b'z0AAAAAAAAAAAAAAAAAAAAAAAEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9v'
-                    b'nNodz-AABAAANSIICz13kvy4hk2bvTCr2b2uePn4uTf4_nwdolkI77Voqsm5QFtF'
-                    b'6z6sjJK7_oTLY36k2VigSExx0UgGQV7YL')
+                    b'zMAAAEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNodz-AABAAANSIICz13'
+                    b'kvy4hk2bvTCr2b2uePn4uTf4_nwdolkI77Voqsm5QFtF6z6sjJK7_oTLY36k2Vig'
+                    b'SExx0UgGQV7YL')
 
         # val process own receipt in own kevery so have copy in own log
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
@@ -3828,7 +3604,7 @@ def test_direct_mode():
         assert cesn == 1
         coeSerder = interact(pre=coeKever.prefixer.qb64,
                              dig=coeKever.serder.said,
-                             sn=csn)
+                             sn=csn, version=Vrsn_1_0, kind=Kinds.json)
         coe_event_digs.append(coeSerder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -3866,7 +3642,7 @@ def test_direct_mode():
         # create validator receipt
         reserder = receipt(pre=coeK.prefixer.qb64,
                            sn=coeK.sn,
-                           said=coeK.serder.said)
+                           said=coeK.serder.said, version=Vrsn_1_0, kind=Kinds.json)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
         coeIxnDig = valKevery.db.kels.getLast(keys=coepre, on=csn)
@@ -3880,13 +3656,13 @@ def test_direct_mode():
         assert siger.qb64 == ('AABP_iABSPKxN2_pcedeIu1qb9rIj5nLaGaiPOW2BFSUQQ7C'
                               'SL9IW1s9_wVAxv2idySMjiGuLOZk8qI2thqMZ3ED')
         # create receipt message
-        vmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
+        vmsg = messagize(serder=reserder, sigers=[siger], source=seal, framed=True, gvrsn=Vrsn_1_0)
         assert vmsg == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EG3O9AV3lhySOadwTn810vHO'
                     b'ZDc6B8TZY_u_4_iy_ono","i":"EJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn'
                     b'1vm0IlL","s":"2"}-FABEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNod'
-                    b'z0AAAAAAAAAAAAAAAAAAAAAAAEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9v'
-                    b'nNodz-AABAABP_iABSPKxN2_pcedeIu1qb9rIj5nLaGaiPOW2BFSUQQ7CSL9IW1s'
-                    b'9_wVAxv2idySMjiGuLOZk8qI2thqMZ3ED')
+                    b'zMAAAEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNodz-AABAABP_iABSPK'
+                    b'xN2_pcedeIu1qb9rIj5nLaGaiPOW2BFSUQQ7CSL9IW1s9_wVAxv2idySMjiGuLOZ'
+                    b'k8qI2thqMZ3ED')
 
         # val process own receipt in own kevery so have copy in own log
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
@@ -3983,7 +3759,7 @@ def test_direct_mode_cbor_mgpk():
         coeSerder = incept(keys=[coeSigners[cesn].verfer.qb64],
                            ndigs=[Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
                            code=MtrDex.Blake3_256,
-                           kind=Kinds.cbor)
+                           kind=Kinds.cbor, version=Vrsn_1_0)
 
         assert csn == int(coeSerder.ked["s"], 16) == 0
         coepre = coeSerder.ked["i"]
@@ -4015,7 +3791,7 @@ def test_direct_mode_cbor_mgpk():
         valSerder = incept(keys=[valSigners[vesn].verfer.qb64],
                            ndigs=[Diger(ser=valSigners[vesn + 1].verfer.qb64b).qb64],
                            code=MtrDex.Blake3_256,
-                           kind=Kinds.mgpk)
+                           kind=Kinds.mgpk, version=Vrsn_1_0)
 
         assert vsn == int(valSerder.ked["s"], 16) == 0
         valpre = valSerder.ked["i"]
@@ -4059,7 +3835,7 @@ def test_direct_mode_cbor_mgpk():
         reserder = receipt(pre=coeK.prefixer.qb64,
                            sn=coeK.sn,
                            said=coeK.serder.said,
-                           kind=Kinds.mgpk)
+                           kind=Kinds.mgpk, version=Vrsn_1_0)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
         coeIcpDig = valKevery.db.kels.getLast(keys=coepre, on=csn)
@@ -4073,13 +3849,13 @@ def test_direct_mode_cbor_mgpk():
 
         siger = valSigners[vesn].sign(ser=s.raw, index=0)  # return Siger if index
         # process own Val receipt in Val's Kevery so have copy in own log
-        rmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
+        rmsg = messagize(serder=reserder, sigers=[siger], source=seal, framed=True, gvrsn=Vrsn_1_0)
         assert rmsg == (b'\x85\xa1v\xb1KERI10MGPK00007f_\xa1t\xa3rct\xa1d\xd9,EDTOWE_oHAO7j'
                     b'6rhUMGfQ_kX8GJbpaAhO-luqqsp5mK-\xa1i\xd9,EDTOWE_oHAO7j6rhUMGfQ_kX8'
                     b'GJbpaAhO-luqqsp5mK-\xa1s\xa10-FABEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_'
-                    b'r9i1nVdqMZX0AAAAAAAAAAAAAAAAAAAAAAAEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1'
-                    b'dgA_r9i1nVdqMZX-AABAADk55HF23ePK4g9Mmxxi4o7Pfn3VsPrtpWR3l5wGNQT3'
-                    b'cJ7LrFYTE-Xjt72WVu2cbKjVLf9GAIGixpzh11tlCUD')
+                    b'r9i1nVdqMZXMAAAEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nVdqMZX-AABA'
+                    b'ADk55HF23ePK4g9Mmxxi4o7Pfn3VsPrtpWR3l5wGNQT3cJ7LrFYTE-Xjt72WVu2c'
+                    b'bKjVLf9GAIGixpzh11tlCUD')
 
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(rmsg), kvy=valKevery)
         # valKevery.processOne(ims=bytearray(rmsg))  # process copy of rmsg
@@ -4112,18 +3888,18 @@ def test_direct_mode_cbor_mgpk():
         reserder = receipt(pre=coeK.prefixer.qb64,
                            sn=10,
                            said=fake,
-                           kind=Kinds.mgpk)
+                           kind=Kinds.mgpk, version=Vrsn_1_0)
         # sign event not receipt
         siger = valSigners[vesn].sign(ser=s.raw, index=0)  # return Siger if index
 
         # create message
-        vmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
+        vmsg = messagize(serder=reserder, sigers=[siger], source=seal, framed=True, gvrsn=Vrsn_1_0)
         assert vmsg ==(b'\x85\xa1v\xb1KERI10MGPK00007f_\xa1t\xa3rct\xa1d\xd9,EDTOWE_oHAO7j'
                     b'6rhUMGfQ_kX8GJbpaAhO-luqqsp5mK-\xa1i\xd9,EDTOWE_oHAO7j6rhUMGfQ_kX8'
                     b'GJbpaAhO-luqqsp5mK-\xa1s\xa1a-FABEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_'
-                    b'r9i1nVdqMZX0AAAAAAAAAAAAAAAAAAAAAAAEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1'
-                    b'dgA_r9i1nVdqMZX-AABAADk55HF23ePK4g9Mmxxi4o7Pfn3VsPrtpWR3l5wGNQT3'
-                    b'cJ7LrFYTE-Xjt72WVu2cbKjVLf9GAIGixpzh11tlCUD')
+                    b'r9i1nVdqMZXMAAAEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nVdqMZX-AABA'
+                    b'ADk55HF23ePK4g9Mmxxi4o7Pfn3VsPrtpWR3l5wGNQT3cJ7LrFYTE-Xjt72WVu2c'
+                    b'bKjVLf9GAIGixpzh11tlCUD')
 
         Parser(version=Vrsn_1_0).parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process the escrow receipt from val
@@ -4149,7 +3925,7 @@ def test_direct_mode_cbor_mgpk():
         reserder = receipt(pre=valK.prefixer.qb64,
                            sn=valK.sn,
                            said=valK.serder.said,
-                           kind=Kinds.cbor)
+                           kind=Kinds.cbor, version=Vrsn_1_0)
         # sign vals's event not receipt
         # look up event to sign from coe's kever for val
         valIcpDig = coeKevery.db.kels.getLast(keys=valpre, on=vsn)
@@ -4164,14 +3940,12 @@ def test_direct_mode_cbor_mgpk():
 
         siger = coeSigners[vesn].sign(ser=s.raw, index=0)  # return Siger if index
         # create receipt message
-        cmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
+        cmsg = messagize(serder=reserder, sigers=[siger], source=seal, framed=True, gvrsn=Vrsn_1_0)
         assert cmsg == (b'\xa5avqKERI10CBOR00007f_atcrctadx,EFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_'
-                        b'r9i1nVdqMZXaix,EFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nVdqMZXasa0-'
-                        b'FABEDTOWE_oHAO7j6rhUMGfQ_kX8GJbpaAhO-luqqsp5mK-0AAAAAAAAAAAAAAAA'
-                        b'AAAAAAAEDTOWE_oHAO7j6rhUMGfQ_kX8GJbpaAhO-luqqsp5mK--AABAABZtKLct'
-                        b'VcqHwMjVhYwdwQphN0HqilToRc-fE1YDDWlxXWa7Q-GAzpFBLYYdfCLuruDzDC0t'
-                        b'EG3wSGDDj-GKfgB')
-
+                    b'r9i1nVdqMZXaix,EFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nVdqMZXasa0-'
+                    b'FABEDTOWE_oHAO7j6rhUMGfQ_kX8GJbpaAhO-luqqsp5mK-MAAAEDTOWE_oHAO7j'
+                    b'6rhUMGfQ_kX8GJbpaAhO-luqqsp5mK--AABAABZtKLctVcqHwMjVhYwdwQphN0Hq'
+                    b'ilToRc-fE1YDDWlxXWa7Q-GAzpFBLYYdfCLuruDzDC0tEG3wSGDDj-GKfgB')
 
         # coe process own receipt in own Kevery so have copy in own log
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
@@ -4204,7 +3978,7 @@ def test_direct_mode_cbor_mgpk():
                            dig=coeKever.serder.said,
                            ndigs=[Diger(ser=coeSigners[cesn + 1].verfer.qb64b).qb64],
                            sn=csn,
-                           kind=Kinds.cbor)
+                           kind=Kinds.cbor, version=Vrsn_1_0)
         coe_event_digs.append(coeSerder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -4246,7 +4020,7 @@ def test_direct_mode_cbor_mgpk():
         reserder = receipt(pre=coeK.prefixer.qb64,
                            sn=coeK.sn,
                            said=coeK.serder.said,
-                           kind=Kinds.mgpk)
+                           kind=Kinds.mgpk, version=Vrsn_1_0)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
         coeRotDig = valKevery.db.kels.getLast(keys=coepre, on=csn)
@@ -4261,13 +4035,13 @@ def test_direct_mode_cbor_mgpk():
 
         siger = valSigners[vesn].sign(ser=s.raw, index=0)  # return Siger if index
         # create receipt message
-        vmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
+        vmsg = messagize(serder=reserder, sigers=[siger], source=seal, framed=True, gvrsn=Vrsn_1_0)
         assert vmsg == (b'\x85\xa1v\xb1KERI10MGPK00007f_\xa1t\xa3rct\xa1d\xd9,EN4m9YLkeBgWV'
                     b'Ivwmj45_qdnBBBY61NVZbwOe__MAsYM\xa1i\xd9,EDTOWE_oHAO7j6rhUMGfQ_kX8'
                     b'GJbpaAhO-luqqsp5mK-\xa1s\xa11-FABEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_'
-                    b'r9i1nVdqMZX0AAAAAAAAAAAAAAAAAAAAAAAEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1'
-                    b'dgA_r9i1nVdqMZX-AABAABgKgla6y-DWqKIuSzV5iqPacG_ckEQOO7w2osmn1YYx'
-                    b'TIq0aVELDNwXt1mnqWJw73-UVekqTtrU1jWgekCx0cF')
+                    b'r9i1nVdqMZXMAAAEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nVdqMZX-AABA'
+                    b'ABgKgla6y-DWqKIuSzV5iqPacG_ckEQOO7w2osmn1YYxTIq0aVELDNwXt1mnqWJw'
+                    b'73-UVekqTtrU1jWgekCx0cF')
 
         # val process own receipt in own kevery so have copy in own log
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
@@ -4298,7 +4072,7 @@ def test_direct_mode_cbor_mgpk():
         coeSerder = interact(pre=coeKever.prefixer.qb64,
                              dig=coeKever.serder.said,
                              sn=csn,
-                             kind=Kinds.cbor)
+                             kind=Kinds.cbor, version=Vrsn_1_0)
         coe_event_digs.append(coeSerder.said)
         # create sig counter
         counter = Counter(Codens.ControllerIdxSigs, version=Vrsn_1_0)  # default is count = 1
@@ -4338,7 +4112,7 @@ def test_direct_mode_cbor_mgpk():
         reserder = receipt(pre=coeK.prefixer.qb64,
                            sn=coeK.sn,
                            said=coeK.serder.said,
-                           kind=Kinds.mgpk)
+                           kind=Kinds.mgpk, version=Vrsn_1_0)
         # sign coe's event not receipt
         # look up event to sign from val's kever for coe
         coeIxnDig = valKevery.db.kels.getLast(keys=coepre, on=csn)
@@ -4353,13 +4127,13 @@ def test_direct_mode_cbor_mgpk():
 
         siger = valSigners[vesn].sign(ser=s.raw, index=0)  # return Siger if index
         # create receipt message
-        vmsg = messagize(serder=reserder, sigers=[siger], seal=seal)
+        vmsg = messagize(serder=reserder, sigers=[siger], source=seal, framed=True, gvrsn=Vrsn_1_0)
         assert vmsg == (b'\x85\xa1v\xb1KERI10MGPK00007f_\xa1t\xa3rct\xa1d\xd9,EEobyRfni6TAn'
                     b'EROE5yL9sC6lhKEbpbmXyeqSZ1QjAKM\xa1i\xd9,EDTOWE_oHAO7j6rhUMGfQ_kX8'
                     b'GJbpaAhO-luqqsp5mK-\xa1s\xa12-FABEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_'
-                    b'r9i1nVdqMZX0AAAAAAAAAAAAAAAAAAAAAAAEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1'
-                    b'dgA_r9i1nVdqMZX-AABAADxJgKTEqP-yWJrKuEB9X8ZBkozW_t0v1alMYouOPQn6'
-                    b'Fp2IT_ZSwWmk26Bxj5PPB4qiJmJ7LwbfQvJZLxgMUQC')
+                    b'r9i1nVdqMZXMAAAEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nVdqMZX-AABA'
+                    b'ADxJgKTEqP-yWJrKuEB9X8ZBkozW_t0v1alMYouOPQn6Fp2IT_ZSwWmk26Bxj5PP'
+                    b'B4qiJmJ7LwbfQvJZLxgMUQC')
 
         # val process own receipt in own kevery so have copy in own log
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
@@ -4438,7 +4212,7 @@ def test_process_nontransferable():
     nsigs = 1  # one attached signature unspecified index
 
     #["v", "t", "d", "i", "s",  "kt", "k", "nt", "n","bt", "b", "c", "a"]
-    ked0 = dict(v=versify(kind=Kinds.json, size=0),
+    ked0 = dict(v=versify(pvrsn=Vrsn_1_0, kind=Kinds.json, size=0),
                 t=Ilks.icp,
                 d="",
                 i=aid0.qb64,  # qual base 64 prefix
@@ -4452,11 +4226,10 @@ def test_process_nontransferable():
                 c=[],  # list of config ordered mappings may be empty
                 a=[],
                 )
-    _, ked0 = Saider.saidify(sad=ked0)
-
-
     # Serialize ked0
-    tser0 = SerderKERI(sad=ked0)
+    tser0 = SerderKERI(sad=ked0, kind=Kinds.json,
+                       pvrsn=Vrsn_1_0, makify=True)
+    ked0 = tser0.ked
 
     # sign serialization
     tsig0 = skp0.sign(tser0.raw, index=0)
@@ -4521,7 +4294,7 @@ def test_process_transferable():
     nsigs = 1  # one attached signature unspecified index
 
 
-    ked0 = dict(v=versify(kind=Kinds.json, size=0),  # version string
+    ked0 = dict(v=versify(pvrsn=Vrsn_1_0, kind=Kinds.json, size=0),  # version string
                t=Ilks.icp,
                d="",  # SAID
                i="",  # qb64 prefix
@@ -4544,10 +4317,10 @@ def test_process_transferable():
     assert aid0.qb64 == skp0.verfer.qb64
     # update ked with pre
     ked0["i"] = aid0.qb64
-    _, ked0 = Saider.saidify(sad=ked0)
-
     # Serialize ked0
-    tser0 = SerderKERI(sad=ked0)
+    tser0 = SerderKERI(sad=ked0, kind=Kinds.json,
+                       pvrsn=Vrsn_1_0, makify=True)
+    ked0 = tser0.ked
 
     # sign serialization
     tsig0 = skp0.sign(tser0.raw, index=0)
@@ -4645,7 +4418,7 @@ def test_process_manual():
     index = 0
 
     # create key event dict
-    ked0 = dict(v=versify(kind=Kinds.json, size=0),
+    ked0 = dict(v=versify(pvrsn=Vrsn_1_0, kind=Kinds.json, size=0),
                 t=Ilks.icp,
                 d="",
                 i=aidmat.qb64,  # qual base 64 prefix
@@ -4659,9 +4432,9 @@ def test_process_manual():
                 c=[],  # list of config traits may be empty
                 a=[],  # list of seals ordered mappings may be empty
                 )
-    _, ked0 = Saider.saidify(sad=ked0)
-
-    txsrdr = SerderKERI(sad=ked0, kind=Kinds.json)
+    txsrdr = SerderKERI(sad=ked0, kind=Kinds.json,
+                        pvrsn=Vrsn_1_0, makify=True)
+    ked0 = txsrdr.ked
     assert txsrdr.raw == (b'{"v":"KERI10JSON00012b_","t":"icp","d":"EKYHED-wvkYDZv4tNUF9qiC1kgnnGLS9YUU8'
                         b'PCWig_n4","i":"DK-WsHD7MKfQpBjJ3B2GwjqY9z90G94uzMs7irCiT-dL","s":"0","kt":"1'
                         b'","k":["DK-WsHD7MKfQpBjJ3B2GwjqY9z90G94uzMs7irCiT-dL"],"nt":"1","n":["EDcWJG'
@@ -4669,7 +4442,7 @@ def test_process_manual():
 
     assert txsrdr.size == 299
 
-    txdigmat = Saider(sad=ked0, code=MtrDex.Blake3_256)
+    txdigmat = Saider(qb64=txsrdr.said)
     assert txdigmat.qb64 == 'EKYHED-wvkYDZv4tNUF9qiC1kgnnGLS9YUU8PCWig_n4'
 
     assert txsrdr.said == txdigmat.qb64
@@ -4720,7 +4493,8 @@ def test_reload_kever(mockHelpingNowUTC):
 
     with habbing.openHby(name="nat", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as natHby:
         # setup Nat's habitat using default salt multisig already incepts
-        natHab = natHby.makeHab(name="nat", isith='2', icount=3)
+        natHab = natHby.makeHab(name="nat", isith='2', icount=3,
+                                version=Vrsn_1_0, kind=Kinds.json)
         assert natHab.name == 'nat'
         assert natHab.ks == natHby.ks
         assert natHab.db == natHby.db
@@ -4732,12 +4506,18 @@ def test_reload_kever(mockHelpingNowUTC):
         path = natHab.db.path  # save for later
 
         # Create series of events for Nat
-        natHab.interact()
-        natHab.rotate()
-        natHab.interact()
-        natHab.interact()
-        natHab.interact()
-        natHab.interact()
+        natHab.interact(framed=True, gvrsn=Vrsn_1_0,
+                        version=Vrsn_1_0, kind=Kinds.json)
+        natHab.rotate(framed=True, gvrsn=Vrsn_1_0,
+                      version=Vrsn_1_0, kind=Kinds.json)
+        natHab.interact(framed=True, gvrsn=Vrsn_1_0,
+                        version=Vrsn_1_0, kind=Kinds.json)
+        natHab.interact(framed=True, gvrsn=Vrsn_1_0,
+                        version=Vrsn_1_0, kind=Kinds.json)
+        natHab.interact(framed=True, gvrsn=Vrsn_1_0,
+                        version=Vrsn_1_0, kind=Kinds.json)
+        natHab.interact(framed=True, gvrsn=Vrsn_1_0,
+                        version=Vrsn_1_0, kind=Kinds.json)
 
         assert natHab.kever.sn == 6
         assert natHab.kever.fn == 6
@@ -4797,19 +4577,23 @@ def test_load_event(mockHelpingNowUTC):
         torKvy = Kevery(db=torHby.db, lax=False, local=False)
 
         # Create Wan the witness
-        wanHab = wanHby.makeHab(name="wan", transferable=False)
+        wanHab = wanHby.makeHab(name="wan", transferable=False,
+                                version=Vrsn_1_0, kind=Kinds.json)
         assert wanHab.pre == "BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP"
-        msg = wanHab.makeOwnEvent(sn=0)
+        msg = wanHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
         Parser(version=Vrsn_1_0).parse(ims=msg, kvy=torKvy)
         assert wanHab.pre in torKvy.kevers
 
         # Create Wil the witness, we'll use him later
-        wilHab = wilHby.makeHab(name="wil", transferable=False)
+        wilHab = wilHby.makeHab(name="wil", transferable=False,
+                                version=Vrsn_1_0, kind=Kinds.json)
 
         # Create Tor the delegaTOR and pass to witness Wan
-        torHab = torHby.makeHab(name="tor", icount=1, isith='1', ncount=1, nsith='1', wits=[wanHab.pre], toad=1)
+        torHab = torHby.makeHab(name="tor", icount=1, isith='1', ncount=1, nsith='1',
+                                wits=[wanHab.pre], toad=1, version=Vrsn_1_0,
+                                kind=Kinds.json)
         assert torHab.pre == "EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP"
-        torIcp = torHab.makeOwnEvent(sn=0)
+        torIcp = torHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
         assert torHab.pre in torHab.kvy.kevers
 
         # Try to load event before Wan has seen it
@@ -4819,7 +4603,8 @@ def test_load_event(mockHelpingNowUTC):
         # tor events are locallyWitnessed by wan so must process as local
         Parser(version=Vrsn_1_0).parse(ims=bytearray(torIcp), kvy=wanHab.kvy, local=True) # process as local
 
-        wanHab.processCues(wanHab.kvy.cues)  # process cue returns rct msg
+        wanHab.processCues(wanHab.kvy.cues, gvrsn=Vrsn_1_0,
+                           version=Vrsn_1_0, kind=Kinds.json)  # process cue returns rct msg
         evt = loadEvent(wanHab.db, torHab.pre, torHab.pre)
         assert evt == {'ked': {'a': [],
                                'b': ['BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP'],
@@ -4847,14 +4632,17 @@ def test_load_event(mockHelpingNowUTC):
 
         # Create Tee the delegaTEE and pass to witness Wan
         teeHab = teeHby.makeHab(name="tee", delpre=torHab.pre, icount=1, isith='1', ncount=1, nsith='1',
-                                wits=[wanHab.pre], toad=1)
+                                wits=[wanHab.pre], toad=1, version=Vrsn_1_0, kind=Kinds.json)
         assert teeHab.pre == "EDnrWpxagMvr5BBCwCOh3q5M9lvurboZ66vxR-GnIgQo"
-        teeIcp = teeHab.makeOwnEvent(sn=0)
+        teeIcp = teeHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
 
         # Anchor Tee's inception event in Tor's KEL
-        ixn = torHab.interact(data=[dict(i=teeHab.pre, s='0', d=teeHab.kever.serder.said)])
+        ixn = torHab.interact(data=[dict(i=teeHab.pre, s='0', d=teeHab.kever.serder.said)],
+                              framed=True, gvrsn=Vrsn_1_0,
+                              version=Vrsn_1_0, kind=Kinds.json)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(ixn), kvy=wanHab.kvy, local=True)  # give to wan must be local
-        wanHab.processCues(wanHab.kvy.cues)  # process cue returns rct msg
+        wanHab.processCues(wanHab.kvy.cues, gvrsn=Vrsn_1_0,
+                           version=Vrsn_1_0, kind=Kinds.json)  # process cue returns rct msg
 
         evt = loadEvent(wanHab.db, torHab.pre, torHab.kever.serder.said)
         assert evt == {'ked': {'a': [{'d': 'EDnrWpxagMvr5BBCwCOh3q5M9lvurboZ66vxR-GnIgQo',
@@ -4886,8 +4674,12 @@ def test_load_event(mockHelpingNowUTC):
         teeIcp.extend(torHab.kever.serder.saidb)
 
         # Endorse Tee's inception event with Tor's Hab just so we have trans receipts
-        rct = torHab.receipt(serder=teeHab.kever.serder)
-        nrct = wilHab.receipt(serder=teeHab.kever.serder)
+        rct = torHab.receipt(serder=teeHab.kever.serder, framed=True,
+                             gvrsn=Vrsn_1_0, version=Vrsn_1_0,
+                             kind=Kinds.json)
+        nrct = wilHab.receipt(serder=teeHab.kever.serder, framed=True,
+                              gvrsn=Vrsn_1_0, version=Vrsn_1_0,
+                              kind=Kinds.json)
 
         # Now Wan should be ready for Tee's inception
         Parser(version=Vrsn_1_0).parse(ims=bytearray(teeIcp), kvy=wanKvy, local=True)  # local
@@ -4895,45 +4687,15 @@ def test_load_event(mockHelpingNowUTC):
         Parser(version=Vrsn_1_0).parse(ims=bytearray(nrct), kvy=wanHab.kvy, local=True)  # local
         # ToDo XXXX fix it so cues are durable in db so can process cues from
         # both and remote sources
-        wanHab.processCues(wanHab.kvy.cues)  # process cue returns rct msg
-        wanHab.processCues(wanKvy.cues)  # process cue returns rct msg
+        wanHab.processCues(wanHab.kvy.cues, gvrsn=Vrsn_1_0,
+                           version=Vrsn_1_0, kind=Kinds.json)  # process cue returns rct msg
+        wanHab.processCues(wanKvy.cues, gvrsn=Vrsn_1_0,
+                           version=Vrsn_1_0, kind=Kinds.json)  # process cue returns rct msg
 
         # Endorse Tee's inception event with Wan's Hab just so we have non-trans receipts
 
         evt = loadEvent(wanHab.db, teeHab.pre, teeHab.pre)
-        #assert evt == {'ked': {'a': [],
-                               #'b': ['BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP'],
-                               #'bt': '1',
-                               #'c': [],
-                               #'d': 'EDnrWpxagMvr5BBCwCOh3q5M9lvurboZ66vxR-GnIgQo',
-                               #'di': 'EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP',
-                               #'i': 'EDnrWpxagMvr5BBCwCOh3q5M9lvurboZ66vxR-GnIgQo',
-                               #'k': ['DLDlVl1H2Q138A5tftVRpyy834ejsY33BB71kXLRNP2h'],
-                               #'kt': '1',
-                               #'n': ['EBTtZqMkJOO4nf3cCt6SdezwkoCKtx2fGUKHeFApj_Yx'],
-                               #'nt': '1',
-                               #'s': '0',
-                               #'t': 'dip',
-                               #'v': 'KERI10JSON00018d_'},
-                       #'receipts': {'nontransferable': [{'prefix': 'BEXrSXVksXpnfno_Di6RBX2Lsr9VWRAihjLhowfjNOQQ',
-                                                         #'signature': '0BCQOeNT3mwAHxh6mYU9K_B2VmbtjJh7_8115k4JrBPR3c4'
-                                                                      #'3jUSO197H2J73vWMi61qzOovNkSWQbnRx3NFnrk8I'}],
-                                    #'transferable': [{'prefix': 'EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP',
-                                                      #'said': 'EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP',
-                                                      #'sequence': '0AAAAAAAAAAAAAAAAAAAAAAA',
-                                                      #'signature': 'AADGbcmUNw_SX7OVNX-PQYl41UZx_pgJXHOoMWrcfmCDGgkc1-'
-                                                                   #'MqXJjMD9S9moJ-lpPL9-AiXgITemMZL_QYGzIA'}]},
-                       #'signatures': [{'index': 0,
-                                       #'signature': 'AAC1-NTntZ0xkgHwooNcKxe9G4XC-rgkSryVz0B_QrZR2kkv4IKi7DMkfMBd4Eck-'
-                                                    #'2NAi0DMuZeXnlvch6ZP0coO'}],
-                       #'source_seal': {'said': 'EF7pHYN6XABC9znRdzprt5frW-MMry9rfrCI-_t5Y8VD',
-                                       #'sequence': 1},
-                       #'stored': True,
-                       #'timestamp': '2021-01-01T00:00:00.000000+00:00',
-                       #'witness_signatures': [{'index': 0,
-                                               #'signature': 'AABPMW3J1iZyMC-elPOkdIhddhZB_BJYHTdYv5SxcrOfJL_5igDVB6zKD'
-                                                            #'AQiTj_cNa7oP-l6xSRRxwlHDwqgSwcB'}],
-                       #'witnesses': ['BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP']}
+
         # no source seal in load
         assert evt == {'ked': {'a': [],
                                'b': ['BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP'],
@@ -4954,7 +4716,7 @@ def test_load_event(mockHelpingNowUTC):
                                                                       '3jUSO197H2J73vWMi61qzOovNkSWQbnRx3NFnrk8I'}],
                                     'transferable': [{'prefix': 'EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP',
                                                       'said': 'EBOVJXs0trI76PRfvJB2fsZ56PrtyR6HrUT9LOBra8VP',
-                                                      'sequence': '0AAAAAAAAAAAAAAAAAAAAAAA',
+                                                      'sequence': 'MAAA',
                                                       'signature': 'AADGbcmUNw_SX7OVNX-PQYl41UZx_pgJXHOoMWrcfmCDGgkc1-'
                                                                    'MqXJjMD9S9moJ-lpPL9-AiXgITemMZL_QYGzIA'}]},
                        'signatures': [{'index': 0,
@@ -4971,10 +4733,10 @@ def test_load_event(mockHelpingNowUTC):
 
 
 if __name__ == "__main__":
-    # pytest.main(['-vv', 'test_eventing.py::test_keyeventfuncs'])
-    #test_process_manual()
+    # pytest.main(['-vv', 'test_eventing_v1.py::test_keyeventfuncs'])
     test_keyeventsequence_0()
-    #test_process_transferable()
-    #test_messagize()
+    test_keyeventsequence_1()
+    test_process_manual()
+    test_process_transferable()
     test_direct_mode()
     test_recovery()

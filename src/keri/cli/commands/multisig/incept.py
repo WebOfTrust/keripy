@@ -25,7 +25,7 @@ from ....peer import Exchanger
 
 logger = ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Initialize a group identifier prefix', 
+parser = argparse.ArgumentParser(description='Initialize a group identifier prefix',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: inceptMultisig(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the local identifier prefix', required=True)
@@ -137,7 +137,7 @@ class GroupMultisigIncept(doing.DoDoer):
             ghab = self.hby.makeGroupHab(group=self.group, mhab=hab, smids=smids,
                                          rmids=rmids, **self.inits)
 
-            icp = ghab.makeOwnInception(allowPartiallySigned=True)
+            icp = ghab.msgOwnInception(allowPartiallySigned=True)
 
             # Create a notification EXN message to send to the other agents
             exn, ims = multisigInceptExn(ghab.mhab,

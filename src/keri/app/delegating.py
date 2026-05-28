@@ -76,7 +76,7 @@ class Anchorer(doing.DoDoer):
         self.auths = auths if auths is not None else self.auths
 
         # load the event and signatures
-        evt = hab.makeOwnEvent(sn=sn)
+        evt = hab.msgOwnEvent(sn=sn)
 
         # Send exn message for notification purposes
         srdr = SerderKERI(raw=evt)
@@ -333,7 +333,7 @@ def delegateRequestExn(hab, delpre, evt, aids=None):
     # Create `exn` peer to peer message to notify other participants UI
     exn, _ = exchange(route=DelegateRequestHandler.resource, modifiers=dict(),
                                  payload=data, sender=hab.pre, embeds=embeds)
-    ims = hab.endorse(serder=exn, last=False, pipelined=False)
+    ims = hab.endorse(serder=exn, last=False, framed=True)
     del ims[:exn.size]
 
     return exn, ims

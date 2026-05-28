@@ -6,7 +6,7 @@ tests.vdr.verifying module
 
 import pytest
 
-from keri import (MissingRegistryError, MissingEntryError, 
+from keri import (MissingRegistryError, MissingEntryError,
                   MissingChainError, RevokedChainError, Vrsn_1_0)
 from keri.app import openHab
 from keri.core import (Saider, Kevery, Seqner,
@@ -45,7 +45,7 @@ def test_verifier(seeder):
         regery = Regery(hby=hby, name="test", temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name="test")
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        hab.interact(data=[rseal])
+        hab.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
@@ -84,7 +84,7 @@ def test_verifier(seeder):
         assert q["ri"] == issuer.regk
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        hab.interact(data=[rseal])
+        hab.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=iss.pre,
@@ -150,7 +150,7 @@ def test_verifier_chained_credential(seeder):
         vicreg = Regery(hby=vicHby, name="vic", temp=True)
         roniss = ronreg.makeRegistry(prefix=ron.pre, name="test")
         rseal = SealEvent(roniss.regk, "0", roniss.regd)._asdict()
-        ron.interact(data=[rseal])
+        ron.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=ron.kever.sn)
         diger = Diger(qb64=ron.kever.serder.said)
         roniss.anchorMsg(pre=roniss.regk,
@@ -190,7 +190,7 @@ def test_verifier_chained_credential(seeder):
 
         iss = roniss.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        ron.interact(data=[rseal])
+        ron.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=ron.kever.sn)
         diger = Diger(qb64=ron.kever.serder.said)
         roniss.anchorMsg(pre=iss.pre,
@@ -219,7 +219,7 @@ def test_verifier_chained_credential(seeder):
 
         ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian")
         rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
-        ian.interact(data=[rseal])
+        ian.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=ian.kever.sn)
         diger = Diger(qb64=ian.kever.serder.said)
         ianiss.anchorMsg(pre=ianiss.regk,
@@ -270,7 +270,7 @@ def test_verifier_chained_credential(seeder):
 
         iss = ianiss.issue(said=vLeiCreder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        ian.interact(data=[rseal])
+        ian.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=ian.kever.sn)
         diger = Diger(qb64=ian.kever.serder.said)
         ianiss.anchorMsg(pre=iss.pre,
@@ -358,7 +358,7 @@ def test_verifier_chained_credential(seeder):
 
         iss = ianiss.issue(said=untargetedCreder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        ian.interact(data=[rseal])
+        ian.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=ian.kever.sn)
         diger = Diger(qb64=ian.kever.serder.said)
         ianiss.anchorMsg(pre=iss.pre,
@@ -408,7 +408,7 @@ def test_verifier_chained_credential(seeder):
 
         iss = ianiss.issue(said=chainedCreder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        ian.interact(data=[rseal])
+        ian.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=ian.kever.sn)
         diger = Diger(qb64=ian.kever.serder.said)
         ianiss.anchorMsg(pre=iss.pre,
@@ -466,7 +466,7 @@ def test_verifier_chained_credential(seeder):
         rev = roniss.revoke(said=creder.said)
         rseq = Seqner(sn=rev.sn)
         rseal = SealEvent(rev.pre, rseq.snh, rev.said)._asdict()
-        ron.interact(data=[rseal])
+        ron.interact(data=[rseal], framed=True)
         seqner = Seqner(sn=ron.kever.sn)
         diger = Diger(qb64=ron.kever.serder.said)
         roniss.anchorMsg(pre=rev.pre,

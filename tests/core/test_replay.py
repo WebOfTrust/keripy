@@ -5,17 +5,31 @@ tests delegation primaily from keri.core.eventing
 """
 import datetime
 import os
+from functools import partial
 
 from hio.help import ogler
 
 
-from keri.kering import Vrsn_1_0, Ilks
+from keri.kering import Vrsn_1_0, Ilks, Kinds
 from keri.help import helping
 from keri.core import (Salter, Counter, Seqner, Dater, Kevery,
                        Parser, SerderKERI, Siger, CtrDex_1_0,
                        deTransReceiptQuadruple, deReceiptCouple)
 
 from keri.app import openHby
+from keri.app.habbing import BaseHab
+
+V1 = Vrsn_1_0
+KWA = dict(version=V1, kind=Kinds.json)
+
+
+def _pin_hab_msgs_v1(hab):
+    """Force v1 on Hab message helpers (defaults follow global Version 2.0)."""
+    hab.receipt = partial(BaseHab.receipt, hab, gvrsn=V1, **KWA)
+    hab.reply = partial(BaseHab.reply, hab, gvrsn=V1, **KWA)
+    hab.query = partial(BaseHab.query, hab, gvrsn=V1, **KWA)
+    hab.witness = partial(BaseHab.witness, hab, gvrsn=V1, **KWA)
+    hab.msgOwnInception = partial(BaseHab.msgOwnInception, hab, gvrsn=V1)
 
 
 logger = ogler.getLogger()
@@ -41,38 +55,42 @@ def test_replay():
 
         # setup Deb's habitat using default salt multisig already incepts
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
-        debHab = debHby.makeHab(name="deb", isith=sith, icount=3)
+        debHab = debHby.makeHab(name="deb", isith=sith, icount=3, **KWA)
+        _pin_hab_msgs_v1(debHab)
         assert debHab.kever.prefixer.transferable
 
         # setup Cam's habitat using default salt multisig already incepts
         # Cam's receipts will be vrcs with 3 indexed sigantures attached
         sith = '2'  # hex str of threshold int
-        camHab = camHby.makeHab(name="cam", isith=sith, icount=3)
+        camHab = camHby.makeHab(name="cam", isith=sith, icount=3, **KWA)
+        _pin_hab_msgs_v1(camHab)
         assert camHab.kever.prefixer.transferable
 
         # setup Bev's habitat using default salt nonstransferable already incepts
         # Bev's receipts will be rcts with a receipt couple attached
         sith = '1'  # hex str of threshold int
-        bevHab = bevHby.makeHab(name="bev", isith=sith, icount=1, transferable=False)
+        bevHab = bevHby.makeHab(name="bev", isith=sith, icount=1, transferable=False, **KWA)
+        _pin_hab_msgs_v1(bevHab)
         assert not bevHab.kever.prefixer.transferable
 
         # setup Art's habitat using custom salt nonstransferable so not match Bev
         # already incepts
         # Art's receipts will be rcts with a receipt couple attached
         sith = '1'  # hex str of threshold int
-        artHab = artHby.makeHab(name="art", isith=sith, icount=1, transferable=False)
+        artHab = artHby.makeHab(name="art", isith=sith, icount=1, transferable=False, **KWA)
+        _pin_hab_msgs_v1(artHab)
         assert not artHab.kever.prefixer.transferable
 
         # first setup disjoint replay then conjoint replay
         # Create series of event for Deb
         debMsgs = bytearray()
-        debMsgs.extend(debHab.makeOwnInception())
-        debMsgs.extend(debHab.interact())
-        debMsgs.extend(debHab.rotate())
-        debMsgs.extend(debHab.interact())
-        debMsgs.extend(debHab.interact())
-        debMsgs.extend(debHab.interact())
-        debMsgs.extend(debHab.interact())
+        debMsgs.extend(debHab.msgOwnInception(framed=True))
+        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
+        debMsgs.extend(debHab.rotate(framed=True, gvrsn=V1, **KWA))
+        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
+        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
+        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
+        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
 
         assert debMsgs == (b'{"v":"KERI10JSON000207_","t":"icp","d":"ELfp9ZhqQCGov3wPRLa6vn5V'
             b'kIQjug2sb2QD17T-TIpY","i":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD1'
@@ -149,7 +167,7 @@ def test_replay():
         camKevery = Kevery(db=camHab.db,
                                     lax=False,
                                     local=False)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(debMsgs), kvy=camKevery)
+        Parser(version=V1).parse(ims=bytearray(debMsgs), kvy=camKevery)
         # camKevery.process(ims=bytearray(debMsgs))  # give copy to process
         assert debHab.pre in camKevery.kevers
         assert camKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
@@ -157,82 +175,80 @@ def test_replay():
         # get disjoints receipts (vrcs) from Cam of Deb's events by processing Cam's cues
         camMsgs = camHab.processCues(camKevery.cues)
         assert camMsgs == (b'{"v":"KERI10JSON0001e7_","t":"icp","d":"EBp-SQb9fTgeoQkIkOd2xegv'
-                    b'Xy3epjOskiPrf6JDIEuj","i":"EBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf'
-                    b'6JDIEuj","s":"0","kt":"2","k":["DCQbRBx58zbRPs8R9cXl-MMbPaxH1EPH'
-                    b'dWp3ICSdQSyp","DDLusjyE46zgaEz37GPq9UXNHmnfBipqAsQPwboCnoYG","DH'
-                    b'4ab2zcmLtX8UwU18vHgoIITHDmJ8ZIKBjwa9GQWT0A"],"nt":"2","n":["EGSF'
-                    b'aY2-o3mAVN1iq23SovuMY34VCNcsot4WhS-JXGgf","EOHL9prk6Um5CxeoofhVV'
-                    b'Nik0DRhrHZQWX3k_whUf49Y","EID2f_sJoa-DJSmOlYvxuofE0Zzp_qningHCJ5'
-                    b'X-gZIG"],"bt":"0","b":[],"c":[],"a":[]}-AADAACLbBvicsgapBJU2I7gJ'
-                    b'iqY_h4X-zTu61aUl-qBMxKoFYPP_YX2Cl94ck580dD0T1uVj8s_qxtCm1LAEa5bG'
-                    b'Z0FABAbmupsT6XzfUNWO3B0jQFbVppgyfvEwLERSnw6XKQZKoH7EqQdIQN3GF7U9'
-                    b'Bk6yWCGjTcsSvpiKXi3Bnw1CiYCACD50cKv4w8L14pJSVCKPrMO5EOqZo3dQan5j'
-                    b'-GY8LfZ_z441iTzf53acNZQXEMXhS4fStYgz0RY3DT9r0rtth4I{"v":"KERI10J'
-                    b'SON000091_","t":"rct","d":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD1'
-                    b'7T-TIpY","i":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIpY","s":'
-                    b'"0"}-FABEBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEuj0AAAAAAAAAAA'
-                    b'AAAAAAAAAAAAEBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEuj-AADAADL'
-                    b'Qfvb0b5TiD4Y-4wjaTMJGTYW4CyEL2tPhwgvbuWt3JV7e_qsaPszYE17QqR3WiOL'
-                    b'lQ1mCCAzsYuIT2CGvYoMABCc4h6BKn6u-FODICsn7JhhIv16bdWjPRLZ_wpvlpsG'
-                    b'YQE8_hNebpOyKMeeqbkmNimbQUbyBZAO2-3w9dVFDXUBACCVRnaFk5BTNKXD8Hpe'
-                    b'IVIEgpnu6BJLZ9C5VYAc1-kS7HTuSCc5ZMZRRFid8Ugt8SWLTbDYpLSMFVYy0VQq'
-                    b'IcYB{"v":"KERI10JSON000091_","t":"rct","d":"EFECUzlLZ3IKG9Kvkj51'
-                    b'a0RYPYXnUeZ5SIpw8x3SPS1E","i":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb'
-                    b'2QD17T-TIpY","s":"1"}-FABEBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6J'
-                    b'DIEuj0AAAAAAAAAAAAAAAAAAAAAAAEBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiP'
-                    b'rf6JDIEuj-AADAABGTRtvtT_fwczryJNP8wVxFog46GK_aM2PV2BKrx6NnXKcG40'
-                    b'0u_0RtWmf4HfcbIgShjLciuD8-8prdczzLKoLABBwRzBuX1yXl7gqGBuw9vmfx2c'
-                    b'nLEfnNnuF6KlgvGrGuaaNvMWtMC4jAyPFYdrcGwSG_Akg3zXW3GSrVgossNAEACA'
-                    b'6LncYgxQiJ_HTAQARynrd4H53gf4VvLYVI4XZaEgiQi_HA3QV-CxTA2uNLTYo-j8'
-                    b'4CtpUxrmA23NY3JPgmUMJ{"v":"KERI10JSON000091_","t":"rct","d":"EEL'
-                    b'HnIwzGaJ-twKTfXtsPMteqsIVmDpiwVO574h6LRXD","i":"ELfp9ZhqQCGov3wP'
-                    b'RLa6vn5VkIQjug2sb2QD17T-TIpY","s":"2"}-FABEBp-SQb9fTgeoQkIkOd2xe'
-                    b'gvXy3epjOskiPrf6JDIEuj0AAAAAAAAAAAAAAAAAAAAAAAEBp-SQb9fTgeoQkIkO'
-                    b'd2xegvXy3epjOskiPrf6JDIEuj-AADAAC8ionj_ZwUG9TVkLEtvamimUtttkyPWJ'
-                    b'YziFgppcJo0D7NqrI68irp5t1Jx6tHhXnYdp6p_MySoFdHphInUQENABAC9GbBib'
-                    b't14SbKyzktfn0xurSNHwhV1D61rgKPjoM6HIhJ7J171SZpIyT9ppraWJEMcRI4cD'
-                    b'WkC3FWFLoVXo4HACAvxzyZMpnEVzxt56SZhDwE_aa2jma4ge_Lw3fODzT0VqLa6W'
-                    b'DBn5ChZwExXaTm3DtH0bCai0WdBX4_SLT2qS0O{"v":"KERI10JSON000091_","'
-                    b't":"rct","d":"ECWvVQFFqxmAW-vpSLwWj4yPO04nGA-6l8cifNBlc3gK","i":'
-                    b'"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIpY","s":"3"}-FABEBp-S'
-                    b'Qb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEuj0AAAAAAAAAAAAAAAAAAAAAAAE'
-                    b'Bp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEuj-AADAAATkvw3JirYUej9y'
-                    b'P58hEu0mb5klkMAHXHnVocUInjkJe2dY-TQi0LsmRdA4-Atr0Ys4iT0uqyEsOoHk'
-                    b'Dch4EMBABCRvib0dz7KqpOS17MbWixJHxeLt0shgNBuXFXyFP5NrZdXRWuJ-z6jb'
-                    b'H4hlO_hXrBdfK4CXTegUuBxqZiT3g8PACDWPPS-lBg7PvPcfus4ahRYCEWK-kNya'
-                    b'RCJ3BiFDbEb1YTV2sFJliZ3Rnt7-_YBHUtLIS-ScgBG_HanGwQV9JEM{"v":"KER'
-                    b'I10JSON000091_","t":"rct","d":"EFcoQIrpd4_NMcnL7SvVqUSLfPZOzkAGb'
-                    b'tQcE3JVMn7D","i":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIpY",'
-                    b'"s":"4"}-FABEBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEuj0AAAAAAA'
-                    b'AAAAAAAAAAAAAAAAEBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEuj-AAD'
-                    b'AAATnbaIYocPQWSwn26FGE9gLLxybf_kYLlM38itDL_udjJ1tYICFzdfUj_n7rEs'
-                    b'_e2gz72NHSpfFCdmSbTafXUDABCMcU34uYKjh3USDhllvTTTl-QXzbf7o5OITfaU'
-                    b'ZEMnPXssMi6XbV1Oifu7JS-nZGpkXAPM2HqQd3Nzgx9WV8AHACCbzy5FlSMUjWm7'
-                    b'mfCK_2Eo-scJNXdcncjeNNcr3I_CbZlOukmY3vPZzydQyMxEKzgMyUwjKlx5QsCh'
-                    b'tl_Z6J0N{"v":"KERI10JSON000091_","t":"rct","d":"ELVXLfglCimN6Y-H'
-                    b'kpoLoLiQkR1v65rrg7JRDhcToXVn","i":"ELfp9ZhqQCGov3wPRLa6vn5VkIQju'
-                    b'g2sb2QD17T-TIpY","s":"5"}-FABEBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiP'
-                    b'rf6JDIEuj0AAAAAAAAAAAAAAAAAAAAAAAEBp-SQb9fTgeoQkIkOd2xegvXy3epjO'
-                    b'skiPrf6JDIEuj-AADAACs4ZBIRuqeLb89OzIA-yVqvYdgwT5d5MZ7T-chrjkKKKr'
-                    b'G2-93TqJv5DQoQ1H4Co18CvLjy0vj0odggJby5N4NABB6sAy89h4uU9viuDSzKBw'
-                    b'88SYCy1OiiTPqV6kpucYIVcKkF_yYGfB-QXPuwCrQr-xN572CyRE0PxecMFa-Yog'
-                    b'IACCKOoOQex0AUWu4YmlLo4RF2-hkaNsuVyP8aviudTV4Io7fYLnpV5hd3X9_7P4'
-                    b'6lZJSvDMll30AVq8sAtiLp4sJ{"v":"KERI10JSON000091_","t":"rct","d":'
-                    b'"ECSAoB-QcY3Vnia2G80NLVMkiGssUV70JoWxwJbqx9gL","i":"ELfp9ZhqQCGo'
-                    b'v3wPRLa6vn5VkIQjug2sb2QD17T-TIpY","s":"6"}-FABEBp-SQb9fTgeoQkIkO'
-                    b'd2xegvXy3epjOskiPrf6JDIEuj0AAAAAAAAAAAAAAAAAAAAAAAEBp-SQb9fTgeoQ'
-                    b'kIkOd2xegvXy3epjOskiPrf6JDIEuj-AADAAANnzuJ_wzxPKRggIpkqC9LFCZ-AR'
-                    b'AB_JzKcuFh261zS-1uUmyoAEH6tKeG2dWv5xfLhjziVaeip4cMmvwrC5EIABC_5l'
-                    b'osjcTe4ka6aGks_xt1q3qv5hIJzwluyqwBtRDK-oCDnsHfJiZCFi6Fd4OnYkW5tg'
-                    b'9F85etul09EsqbQ60NACA4ZILmT9YYliUbdNivmu8AeXFzSN5T5sDSrOT79J5Rcb'
-                    b'P6oJidhYCNIhUB5bKmsuEnWda_NXXwJCsklQbQDGUL')
+                        b'Xy3epjOskiPrf6JDIEuj","i":"EBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf'
+                        b'6JDIEuj","s":"0","kt":"2","k":["DCQbRBx58zbRPs8R9cXl-MMbPaxH1EPH'
+                        b'dWp3ICSdQSyp","DDLusjyE46zgaEz37GPq9UXNHmnfBipqAsQPwboCnoYG","DH'
+                        b'4ab2zcmLtX8UwU18vHgoIITHDmJ8ZIKBjwa9GQWT0A"],"nt":"2","n":["EGSF'
+                        b'aY2-o3mAVN1iq23SovuMY34VCNcsot4WhS-JXGgf","EOHL9prk6Um5CxeoofhVV'
+                        b'Nik0DRhrHZQWX3k_whUf49Y","EID2f_sJoa-DJSmOlYvxuofE0Zzp_qningHCJ5'
+                        b'X-gZIG"],"bt":"0","b":[],"c":[],"a":[]}-AADAACLbBvicsgapBJU2I7gJ'
+                        b'iqY_h4X-zTu61aUl-qBMxKoFYPP_YX2Cl94ck580dD0T1uVj8s_qxtCm1LAEa5bG'
+                        b'Z0FABAbmupsT6XzfUNWO3B0jQFbVppgyfvEwLERSnw6XKQZKoH7EqQdIQN3GF7U9'
+                        b'Bk6yWCGjTcsSvpiKXi3Bnw1CiYCACD50cKv4w8L14pJSVCKPrMO5EOqZo3dQan5j'
+                        b'-GY8LfZ_z441iTzf53acNZQXEMXhS4fStYgz0RY3DT9r0rtth4I{"v":"KERI10J'
+                        b'SON000091_","t":"rct","d":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD1'
+                        b'7T-TIpY","i":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIpY","s":'
+                        b'"0"}-FABEBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEujMAAAEBp-SQb9'
+                        b'fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEuj-AADAADLQfvb0b5TiD4Y-4wjaTMJ'
+                        b'GTYW4CyEL2tPhwgvbuWt3JV7e_qsaPszYE17QqR3WiOLlQ1mCCAzsYuIT2CGvYoM'
+                        b'ABCc4h6BKn6u-FODICsn7JhhIv16bdWjPRLZ_wpvlpsGYQE8_hNebpOyKMeeqbkm'
+                        b'NimbQUbyBZAO2-3w9dVFDXUBACCVRnaFk5BTNKXD8HpeIVIEgpnu6BJLZ9C5VYAc'
+                        b'1-kS7HTuSCc5ZMZRRFid8Ugt8SWLTbDYpLSMFVYy0VQqIcYB{"v":"KERI10JSON'
+                        b'000091_","t":"rct","d":"EFECUzlLZ3IKG9Kvkj51a0RYPYXnUeZ5SIpw8x3S'
+                        b'PS1E","i":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIpY","s":"1"'
+                        b'}-FABEBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEujMAAAEBp-SQb9fTg'
+                        b'eoQkIkOd2xegvXy3epjOskiPrf6JDIEuj-AADAABGTRtvtT_fwczryJNP8wVxFog'
+                        b'46GK_aM2PV2BKrx6NnXKcG400u_0RtWmf4HfcbIgShjLciuD8-8prdczzLKoLABB'
+                        b'wRzBuX1yXl7gqGBuw9vmfx2cnLEfnNnuF6KlgvGrGuaaNvMWtMC4jAyPFYdrcGwS'
+                        b'G_Akg3zXW3GSrVgossNAEACA6LncYgxQiJ_HTAQARynrd4H53gf4VvLYVI4XZaEg'
+                        b'iQi_HA3QV-CxTA2uNLTYo-j84CtpUxrmA23NY3JPgmUMJ{"v":"KERI10JSON000'
+                        b'091_","t":"rct","d":"EELHnIwzGaJ-twKTfXtsPMteqsIVmDpiwVO574h6LRX'
+                        b'D","i":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIpY","s":"2"}-F'
+                        b'ABEBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEujMAAAEBp-SQb9fTgeoQ'
+                        b'kIkOd2xegvXy3epjOskiPrf6JDIEuj-AADAAC8ionj_ZwUG9TVkLEtvamimUtttk'
+                        b'yPWJYziFgppcJo0D7NqrI68irp5t1Jx6tHhXnYdp6p_MySoFdHphInUQENABAC9G'
+                        b'bBibt14SbKyzktfn0xurSNHwhV1D61rgKPjoM6HIhJ7J171SZpIyT9ppraWJEMcR'
+                        b'I4cDWkC3FWFLoVXo4HACAvxzyZMpnEVzxt56SZhDwE_aa2jma4ge_Lw3fODzT0Vq'
+                        b'La6WDBn5ChZwExXaTm3DtH0bCai0WdBX4_SLT2qS0O{"v":"KERI10JSON000091'
+                        b'_","t":"rct","d":"ECWvVQFFqxmAW-vpSLwWj4yPO04nGA-6l8cifNBlc3gK",'
+                        b'"i":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIpY","s":"3"}-FABE'
+                        b'Bp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEujMAAAEBp-SQb9fTgeoQkIk'
+                        b'Od2xegvXy3epjOskiPrf6JDIEuj-AADAAATkvw3JirYUej9yP58hEu0mb5klkMAH'
+                        b'XHnVocUInjkJe2dY-TQi0LsmRdA4-Atr0Ys4iT0uqyEsOoHkDch4EMBABCRvib0d'
+                        b'z7KqpOS17MbWixJHxeLt0shgNBuXFXyFP5NrZdXRWuJ-z6jbH4hlO_hXrBdfK4CX'
+                        b'TegUuBxqZiT3g8PACDWPPS-lBg7PvPcfus4ahRYCEWK-kNyaRCJ3BiFDbEb1YTV2'
+                        b'sFJliZ3Rnt7-_YBHUtLIS-ScgBG_HanGwQV9JEM{"v":"KERI10JSON000091_",'
+                        b'"t":"rct","d":"EFcoQIrpd4_NMcnL7SvVqUSLfPZOzkAGbtQcE3JVMn7D","i"'
+                        b':"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIpY","s":"4"}-FABEBp-'
+                        b'SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEujMAAAEBp-SQb9fTgeoQkIkOd2'
+                        b'xegvXy3epjOskiPrf6JDIEuj-AADAAATnbaIYocPQWSwn26FGE9gLLxybf_kYLlM'
+                        b'38itDL_udjJ1tYICFzdfUj_n7rEs_e2gz72NHSpfFCdmSbTafXUDABCMcU34uYKj'
+                        b'h3USDhllvTTTl-QXzbf7o5OITfaUZEMnPXssMi6XbV1Oifu7JS-nZGpkXAPM2HqQ'
+                        b'd3Nzgx9WV8AHACCbzy5FlSMUjWm7mfCK_2Eo-scJNXdcncjeNNcr3I_CbZlOukmY'
+                        b'3vPZzydQyMxEKzgMyUwjKlx5QsChtl_Z6J0N{"v":"KERI10JSON000091_","t"'
+                        b':"rct","d":"ELVXLfglCimN6Y-HkpoLoLiQkR1v65rrg7JRDhcToXVn","i":"E'
+                        b'Lfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIpY","s":"5"}-FABEBp-SQb'
+                        b'9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEujMAAAEBp-SQb9fTgeoQkIkOd2xeg'
+                        b'vXy3epjOskiPrf6JDIEuj-AADAACs4ZBIRuqeLb89OzIA-yVqvYdgwT5d5MZ7T-c'
+                        b'hrjkKKKrG2-93TqJv5DQoQ1H4Co18CvLjy0vj0odggJby5N4NABB6sAy89h4uU9v'
+                        b'iuDSzKBw88SYCy1OiiTPqV6kpucYIVcKkF_yYGfB-QXPuwCrQr-xN572CyRE0Pxe'
+                        b'cMFa-YogIACCKOoOQex0AUWu4YmlLo4RF2-hkaNsuVyP8aviudTV4Io7fYLnpV5h'
+                        b'd3X9_7P46lZJSvDMll30AVq8sAtiLp4sJ{"v":"KERI10JSON000091_","t":"r'
+                        b'ct","d":"ECSAoB-QcY3Vnia2G80NLVMkiGssUV70JoWxwJbqx9gL","i":"ELfp'
+                        b'9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIpY","s":"6"}-FABEBp-SQb9fT'
+                        b'geoQkIkOd2xegvXy3epjOskiPrf6JDIEujMAAAEBp-SQb9fTgeoQkIkOd2xegvXy'
+                        b'3epjOskiPrf6JDIEuj-AADAAANnzuJ_wzxPKRggIpkqC9LFCZ-ARAB_JzKcuFh26'
+                        b'1zS-1uUmyoAEH6tKeG2dWv5xfLhjziVaeip4cMmvwrC5EIABC_5losjcTe4ka6aG'
+                        b'ks_xt1q3qv5hIJzwluyqwBtRDK-oCDnsHfJiZCFi6Fd4OnYkW5tg9F85etul09Es'
+                        b'qbQ60NACA4ZILmT9YYliUbdNivmu8AeXFzSN5T5sDSrOT79J5RcbP6oJidhYCNIh'
+                        b'UB5bKmsuEnWda_NXXwJCsklQbQDGUL')
 
         # Play camMsgs to Deb
         # create non-local kevery for Deb to process msgs from Cam
         debKevery = Kevery(db=debHab.db,
                                     lax=False,
                                     local=False)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(camMsgs), kvy=debKevery)
+        Parser(version=V1).parse(ims=bytearray(camMsgs), kvy=debKevery)
         # debKevery.process(ims=bytearray(camMsgs))  # give copy to process
         assert camHab.pre in debKevery.kevers
         assert debKevery.kevers[camHab.pre].sn == camHab.kever.sn == 0
@@ -242,17 +258,17 @@ def test_replay():
         debCamVrcs = debHab.processCues(debKevery.cues)
         assert len(debKevery.cues) == 0
         assert debCamVrcs == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EBp-SQb9fTgeoQkIkOd2xegv'
-                        b'Xy3epjOskiPrf6JDIEuj","i":"EBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf'
-                        b'6JDIEuj","s":"0"}-FABELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIp'
-                        b'Y0AAAAAAAAAAAAAAAAAAAAAACEELHnIwzGaJ-twKTfXtsPMteqsIVmDpiwVO574h'
-                        b'6LRXD-AADAAA_RaT3MzW-uI6Y7CTpooCRyvVV9LIDCjTGw8Nz1EqRmR_dvjIQwoN'
-                        b'QklDujYn1eTxVAc9-fTYMlpk7ZWWOSDYBABA9QRnuSlET3mU45BtJm9HY655bt8Z'
-                        b'sEUUw5Ke8l5KHn4hl5GfZH8aHDnVY1SiQnZrKu7W4MeOsazhF8waHZbcHACCFEDA'
-                        b'_jO-u0WccqVdffVc_xmrl9LYAinzPLJNx_XxVlf2Z5DHFBZM-Usq9Wb5-dvlDaR8'
-                        b'GhGTKOxFbTcCwnnkL')
+                            b'Xy3epjOskiPrf6JDIEuj","i":"EBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf'
+                            b'6JDIEuj","s":"0"}-FABELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIp'
+                            b'YMAACEELHnIwzGaJ-twKTfXtsPMteqsIVmDpiwVO574h6LRXD-AADAAA_RaT3MzW'
+                            b'-uI6Y7CTpooCRyvVV9LIDCjTGw8Nz1EqRmR_dvjIQwoNQklDujYn1eTxVAc9-fTY'
+                            b'Mlpk7ZWWOSDYBABA9QRnuSlET3mU45BtJm9HY655bt8ZsEUUw5Ke8l5KHn4hl5Gf'
+                            b'ZH8aHDnVY1SiQnZrKu7W4MeOsazhF8waHZbcHACCFEDA_jO-u0WccqVdffVc_xmr'
+                            b'l9LYAinzPLJNx_XxVlf2Z5DHFBZM-Usq9Wb5-dvlDaR8GhGTKOxFbTcCwnnkL')
+
 
         # Play disjoints debCamVrcs to Cam
-        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(debCamVrcs), kvy=camKevery)
+        Parser(version=V1).parseOne(ims=bytearray(debCamVrcs), kvy=camKevery)
         # camKevery.processOne(ims=bytearray(debCamVrcs))  # give copy to process
 
         # Play debMsgs to Bev
@@ -260,7 +276,7 @@ def test_replay():
         bevKevery = Kevery(db=bevHab.db,
                                     lax=False,
                                     local=False)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(debMsgs), kvy=bevKevery)
+        Parser(version=V1).parse(ims=bytearray(debMsgs), kvy=bevKevery)
         # bevKevery.process(ims=bytearray(debMsgs))  # give copy to process
         assert debHab.pre in bevKevery.kevers
         assert bevKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
@@ -308,7 +324,7 @@ def test_replay():
                         b'uro0ISwG')
 
         # Play bevMsgs to Deb
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(bevMsgs), kvy=debKevery)
+        Parser(version=V1).parse(ims=bytearray(bevMsgs), kvy=debKevery)
         # debKevery.process(ims=bytearray(bevMsgs))  # give copy to process
         assert bevHab.pre in debKevery.kevers
         assert debKevery.kevers[bevHab.pre].sn == bevHab.kever.sn == 0
@@ -320,15 +336,14 @@ def test_replay():
         assert debBevVrcs == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EBXqe7Xzsw2aolT09Ouh5Zw9'
                         b'kNn2sgoHmo4zCn7Q7ZSC","i":"BAqph4mAWcf7mkIgk1Xrpvr7dWT7YvHIam_hq'
                         b'UAT2rqw","s":"0"}-FABELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIp'
-                        b'Y0AAAAAAAAAAAAAAAAAAAAAACEELHnIwzGaJ-twKTfXtsPMteqsIVmDpiwVO574h'
-                        b'6LRXD-AADAABjgf8tiPVfvviaQ60CY9rJR-Nigj4paeIrFr87mnU-3Z2VKHFo6rp'
-                        b'FyQfd5Za_M3gEbcjf3OtB718M7M6WFf4CABCz83_zL8bZM8wxQB4kQrJ4GatYSOg'
-                        b'5UpphulR3lhkbV3imD4ZXJJF_v6D-Zcq0I1PluxUTMYsHYGoaXvLSWpkFACBdhdP'
-                        b'iqPfy30Oxt_LshbISGHxPCyOBucKLfhkFqvTd21GhJQZ_LlUy0q-mGUtM_PAStYW'
-                        b'00VuA1RMj1p6COtQC')
+                        b'YMAACEELHnIwzGaJ-twKTfXtsPMteqsIVmDpiwVO574h6LRXD-AADAABjgf8tiPV'
+                        b'fvviaQ60CY9rJR-Nigj4paeIrFr87mnU-3Z2VKHFo6rpFyQfd5Za_M3gEbcjf3Ot'
+                        b'B718M7M6WFf4CABCz83_zL8bZM8wxQB4kQrJ4GatYSOg5UpphulR3lhkbV3imD4Z'
+                        b'XJJF_v6D-Zcq0I1PluxUTMYsHYGoaXvLSWpkFACBdhdPiqPfy30Oxt_LshbISGHx'
+                        b'PCyOBucKLfhkFqvTd21GhJQZ_LlUy0q-mGUtM_PAStYW00VuA1RMj1p6COtQC')
 
         # Play disjoints debBevVrcs to Bev
-        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(debBevVrcs), kvy=bevKevery)
+        Parser(version=V1).parseOne(ims=bytearray(debBevVrcs), kvy=bevKevery)
         # bevKevery.processOne(ims=bytearray(debBevVrcs))  # give copy to process
 
         # now setup conjoint replay
@@ -340,7 +355,7 @@ def test_replay():
         fn = 0
         cloner = debHab.db.clonePreIter(pre=debHab.pre, fn=fn)  # create iterator
         msg = next(cloner)  # get zeroth event with attachments
-        assert len(msg) == 1595
+        assert len(msg) == 1535
         debFelMsgs.extend(msg)
 
         # parse msg
@@ -349,37 +364,37 @@ def test_replay():
         assert serder.sn == fn  # no recovery forks so sn == fn
         assert serder.ked["t"] == Ilks.icp
         del msg[:len(serder.raw)]
-        assert len(msg) == 1076
+        assert len(msg) == 1016
 
-        counter = Counter(qb64b=msg, version=Vrsn_1_0)  # attachment length quadlets counter
+        counter = Counter(qb64b=msg, version=V1)  # attachment length quadlets counter
         assert counter.code == CtrDex_1_0.AttachmentGroup
-        assert counter.count == (len(msg) - len(counter.qb64b)) // 4 == 268
+        assert counter.count == (len(msg) - len(counter.qb64b)) // 4 == 253
         del msg[:len(counter.qb64b)]
-        assert len(msg) == 1072 == 268 * 4
+        assert len(msg) == 1012 == 253 * 4
 
-        counter = Counter(qb64b=msg, version=Vrsn_1_0)  # indexed signatures counter
+        counter = Counter(qb64b=msg, version=V1)  # indexed signatures counter
         assert counter.code == CtrDex_1_0.ControllerIdxSigs
         assert counter.count == 3  # multisig deb
         del msg[:len(counter.qb64b)]
-        assert len(msg) == 1068
+        assert len(msg) == 1008
 
         for i in range(counter.count):  # parse signatures
             siger = Siger(qb64b=msg)
             del msg[:len(siger.qb64b)]
-        assert len(msg) == 1068 - 3 * len(siger.qb64b) == 804
+        assert len(msg) == 1008 - 3 * len(siger.qb64b) == 744
 
-        counter = Counter(qb64b=msg, version=Vrsn_1_0)  # trans receipt (vrc) counter
+        counter = Counter(qb64b=msg, version=V1)  # trans receipt (vrc) counter
         assert counter.code == CtrDex_1_0.TransReceiptQuadruples
         assert counter.count == 3  # multisig cam
         del msg[:len(counter.qb64b)]
-        assert len(msg) == 800
+        assert len(msg) == 740
 
         for i in range(counter.count):  # parse receipt quadruples
             prefixer, seqner, diger, siger = deTransReceiptQuadruple(msg, strip=True)
-        assert len(msg) == 800 - 3 * (len(prefixer.qb64b) + len(seqner.qb64b) +
+        assert len(msg) == 740 - 3 * (len(prefixer.qb64b) + len(seqner.qb64b) +
                                       len(diger.qb64b) + len(siger.qb64b)) == 200
 
-        counter = Counter(qb64b=msg, version=Vrsn_1_0)  # nontrans receipt (rct) counter
+        counter = Counter(qb64b=msg, version=V1)  # nontrans receipt (rct) counter
         assert counter.code == CtrDex_1_0.NonTransReceiptCouples
         assert counter.count == 1  # single sig bev
         del msg[:len(counter.qb64b)]
@@ -389,7 +404,7 @@ def test_replay():
             prefixer, cigar = deReceiptCouple(msg, strip=True)
         assert len(msg) == 196 - 1 * (len(prefixer.qb64b) + len(cigar.qb64b)) == 64
 
-        counter = Counter(qb64b=msg, version=Vrsn_1_0)  # first seen replay couple counter
+        counter = Counter(qb64b=msg, version=V1)  # first seen replay couple counter
         assert counter.code == CtrDex_1_0.FirstSeenReplayCouples
         assert counter.count == 1
         del msg[:len(counter.qb64b)]
@@ -417,7 +432,7 @@ def test_replay():
         fn += 1
         cloner = debHab.db.clonePreIter(pre=debHab.pre, fn=fn)  # create iterator not at 0
         msg = next(cloner)  # next event with attachments
-        assert len(msg) == 1279
+        assert len(msg) == 1219
         serder = SerderKERI(raw=msg)
         assert serder.sn == fn  # no recovery forks so sn == fn
         assert serder.ked["t"] == Ilks.ixn
@@ -428,7 +443,7 @@ def test_replay():
         serder = SerderKERI(raw=msg)
         assert serder.sn == fn  # no recovery forks so sn == fn
         assert serder.ked["t"] == Ilks.rot
-        assert len(msg) == 1648
+        assert len(msg) == 1588
         assert ([verfer.qb64 for verfer in serder.verfers] ==
                 [verfer.qb64 for verfer in debHab.kever.verfers])
         debFelMsgs.extend(msg)
@@ -439,25 +454,25 @@ def test_replay():
             serder = SerderKERI(raw=msg)
             assert serder.sn == fn  # no recovery forks so sn == fn
             assert serder.ked["t"] == Ilks.ixn
-            assert len(msg) == 1279
+            assert len(msg) == 1219
             debFelMsgs.extend(msg)
             fn += 1
 
-        assert len(debFelMsgs) == 9638
+        assert len(debFelMsgs) == 9218
         cloner.close()  # must close or get lmdb error upon with exit
 
         msgs = debHab.replay()
         assert msgs == debFelMsgs
 
         # Play Cam's messages to Bev
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(camMsgs), kvy=bevKevery)
+        Parser(version=V1).parse(ims=bytearray(camMsgs), kvy=bevKevery)
         # bevKevery.process(ims=bytearray(camMsgs))  # give copy to process
         assert camHab.pre in bevKevery.kevers
         assert bevKevery.kevers[camHab.pre].sn == camHab.kever.sn == 0
         assert len(bevKevery.cues) == 1
 
         # Play Bev's messages to Cam
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(bevMsgs), kvy=camKevery)
+        Parser(version=V1).parse(ims=bytearray(bevMsgs), kvy=camKevery)
         # camKevery.process(ims=bytearray(bevMsgs))  # give copy to process
         assert bevHab.pre in camKevery.kevers
         assert camKevery.kevers[bevHab.pre].sn == bevHab.kever.sn == 0
@@ -466,22 +481,22 @@ def test_replay():
         camDebFelMsgs = camHab.replay(pre=debHab.pre)
         bevDebFelMsgs = bevHab.replay(pre=debHab.pre)
 
-        assert len(bevDebFelMsgs) == len(camDebFelMsgs) == len(debFelMsgs) == 9638
+        assert len(bevDebFelMsgs) == len(camDebFelMsgs) == len(debFelMsgs) == 9218
 
         # create non-local kevery for Art to process conjoint replay msgs from Deb
         artKevery = Kevery(db=artHab.db,
                                     lax=False,
                                     local=False)
         # process Cam's inception so Art will proces Cam's vrcs without escrowing
-        camIcpMsg = camHab.makeOwnInception()
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(camIcpMsg), kvy=artKevery)
+        camIcpMsg = camHab.msgOwnInception(framed=True)
+        Parser(version=V1).parse(ims=bytearray(camIcpMsg), kvy=artKevery)
         # artKevery.process(ims=bytearray(camIcpMsg))
         assert camHab.pre in artKevery.kevers
         assert len(artKevery.cues) == 1
 
         # process in cloned mode
         artKevery.cloned = True
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(debFelMsgs), kvy=artKevery)
+        Parser(version=V1).parse(ims=bytearray(debFelMsgs), kvy=artKevery)
         assert debHab.pre in artKevery.kevers
         assert artKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
         assert len(artKevery.cues) == 8
@@ -489,7 +504,7 @@ def test_replay():
         # fels.getOn(keys=pre, on=firner.sn) to look up the event digest.
         assert artHab.db.fels.get(keys=debHab.pre, on=0) == debHab.iserder.said
         artDebFelMsgs = artHab.replay(pre=debHab.pre)
-        assert len(artDebFelMsgs) == 9638
+        assert len(artDebFelMsgs) == 9218
 
     assert not os.path.exists(artHby.ks.path)
     assert not os.path.exists(artHby.db.path)
@@ -521,44 +536,50 @@ def test_replay_all():
 
         # setup Deb's habitat using default salt multisig already incepts
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
-        debHab = debHby.makeHab(name='test', isith=sith, icount=3)
+        debHab = debHby.makeHab(name='test', isith=sith, icount=3, **KWA)
+        _pin_hab_msgs_v1(debHab)
         assert debHab.kever.prefixer.transferable
 
         # setup Cam's habitat using default salt multisig already incepts
         # Cam's receipts will be vrcs with 3 indexed sigantures attached
         sith = '2'  # hex str of threshold int
-        camHab = camHby.makeHab(name='test', isith=sith, icount=3)
+        camHab = camHby.makeHab(name='test', isith=sith, icount=3, **KWA)
+        _pin_hab_msgs_v1(camHab)
         assert camHab.kever.prefixer.transferable
 
         # setup Bev's habitat using default salt nonstransferable already incepts
         # Bev's receipts will be rcts with a receipt couple attached
         sith = '1'  # hex str of threshold int
-        bevHab = bevHby.makeHab(name='test', isith=sith, icount=1, transferable=False)
+        bevHab = bevHby.makeHab(name='test', isith=sith, icount=1,
+                                transferable=False, **KWA)
+        _pin_hab_msgs_v1(bevHab)
         assert not bevHab.kever.prefixer.transferable
 
         # setup Art's habitat using custom salt nonstransferable so not match Bev
         # already incepts
         # Art's receipts will be rcts with a receipt couple attached
         sith = '1'  # hex str of threshold int
-        artHab = artHby.makeHab(name='test', isith=sith, icount=1, transferable=False)
+        artHab = artHby.makeHab(name='test', isith=sith, icount=1,
+                                transferable=False, **KWA)
+        _pin_hab_msgs_v1(artHab)
         assert not artHab.kever.prefixer.transferable
 
         # Create series of event for Deb
         debMsgs = bytearray()
-        debMsgs.extend(debHab.makeOwnInception())
-        debMsgs.extend(debHab.interact())
-        debMsgs.extend(debHab.rotate())
-        debMsgs.extend(debHab.interact())
-        debMsgs.extend(debHab.interact())
-        debMsgs.extend(debHab.interact())
-        debMsgs.extend(debHab.interact())
+        debMsgs.extend(debHab.msgOwnInception(framed=True))
+        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
+        debMsgs.extend(debHab.rotate(framed=True, gvrsn=V1, **KWA))
+        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
+        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
+        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
+        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
 
         # Play debMsgs to Cam
         # create non-local kevery for Cam to process msgs from Deb
         camKevery = Kevery(db=camHab.db,
                                     lax=False,
                                     local=False)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(debMsgs), kvy=camKevery)
+        Parser(version=V1).parse(ims=bytearray(debMsgs), kvy=camKevery)
         # camKevery.process(ims=bytearray(debMsgs))  # give copy to process
         assert debHab.pre in camKevery.kevers
         assert camKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
@@ -573,7 +594,7 @@ def test_replay_all():
         debKevery = Kevery(db=debHab.db,
                                     lax=False,
                                     local=False)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(camMsgs), kvy=debKevery)
+        Parser(version=V1).parse(ims=bytearray(camMsgs), kvy=debKevery)
         # debKevery.process(ims=bytearray(camMsgs))  # give copy to process
         assert camHab.pre in debKevery.kevers
         assert debKevery.kevers[camHab.pre].sn == camHab.kever.sn == 0
@@ -584,7 +605,7 @@ def test_replay_all():
         assert len(debKevery.cues) == 0
 
         # Play disjoints debCamVrcs to Cam
-        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(debCamVrcs), kvy=camKevery)
+        Parser(version=V1).parseOne(ims=bytearray(debCamVrcs), kvy=camKevery)
         # camKevery.processOne(ims=bytearray(debCamVrcs))  # give copy to process
 
         # Play debMsgs to Bev
@@ -592,7 +613,7 @@ def test_replay_all():
         bevKevery = Kevery(db=bevHab.db,
                                     lax=False,
                                     local=False)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(debMsgs), kvy=bevKevery)
+        Parser(version=V1).parse(ims=bytearray(debMsgs), kvy=bevKevery)
         # bevKevery.process(ims=bytearray(debMsgs))  # give copy to process
         assert debHab.pre in bevKevery.kevers
         assert bevKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
@@ -603,7 +624,7 @@ def test_replay_all():
         assert len(bevKevery.cues) == 0
 
         # Play bevMsgs to Deb
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(bevMsgs), kvy=debKevery)
+        Parser(version=V1).parse(ims=bytearray(bevMsgs), kvy=debKevery)
         # debKevery.process(ims=bytearray(bevMsgs))  # give copy to process
         assert bevHab.pre in debKevery.kevers
         assert debKevery.kevers[bevHab.pre].sn == bevHab.kever.sn == 0
@@ -614,7 +635,7 @@ def test_replay_all():
         assert len(debKevery.cues) == 0
 
         # Play disjoints debBevVrcs to Bev
-        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(debBevVrcs), kvy=bevKevery)
+        Parser(version=V1).parseOne(ims=bytearray(debBevVrcs), kvy=bevKevery)
         # bevKevery.processOne(ims=bytearray(debBevVrcs))  # give copy to process
 
         # now setup replay
@@ -626,20 +647,20 @@ def test_replay_all():
                                     lax=False,
                                     local=False)
         # process Cam's inception so Art will proces Cam's vrcs without escrowing
-        camIcpMsg = camHab.makeOwnInception()
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(camIcpMsg), kvy=artKevery)
+        camIcpMsg = camHab.msgOwnInception(framed=True)
+        Parser(version=V1).parse(ims=bytearray(camIcpMsg), kvy=artKevery)
         assert camHab.pre in artKevery.kevers
         assert len(artKevery.cues) == 1
         # give copy to process in cloned mode
         artKevery.cloned = True
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(debAllFelMsgs), kvy=artKevery)
+        Parser(version=V1).parse(ims=bytearray(debAllFelMsgs), kvy=artKevery)
         assert debHab.pre in artKevery.kevers
         assert artKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
         assert len(artKevery.cues) == 10
         # Explicit receipt+firner path: fels.getOn(keys=pre, on=firner.sn) in clone replay
         assert artHab.db.fels.get(keys=debHab.pre, on=0) == debHab.iserder.said
         artAllFelMsgs = artHab.replayAll()
-        assert len(artAllFelMsgs) == 12717 #12113
+        assert len(artAllFelMsgs) == 12237
 
     assert not os.path.exists(artHby.ks.path)
     assert not os.path.exists(artHby.db.path)

@@ -24,7 +24,7 @@ from ....peer import Exchanger
 
 logger = ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Begin or join a rotation of a group identifier', 
+parser = argparse.ArgumentParser(description='Begin or join a rotation of a group identifier',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: interactGroupIdentifier(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the local identifier prefix', required=True)
@@ -112,7 +112,7 @@ class GroupMultisigInteract(doing.DoDoer):
 
         aids = self.aids if self.aids is not None else ghab.smids
 
-        ixn = ghab.interact(data=self.data)
+        ixn = ghab.interact(data=self.data, framed=True)
         serder = SerderKERI(raw=ixn)
 
         exn, ims = multisigInteractExn(ghab=ghab, aids=aids, ixn=ixn)

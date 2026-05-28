@@ -660,6 +660,82 @@ class Counter:
         },
     }
 
+    @classmethod
+    def makeGVC(cls, version):
+        """Makes genus version code from Versionage version
+
+        Parameters::
+            version (Versionage): version portion of Genus Version Code
+
+        Returns::
+            qb64b (bytes):  qb64b serialized genus version counter for KERI/ACDC genus
+
+        """
+        return cls(countB64=cls.verToB64(major=version.major,
+                                         minor=version.minor),
+                    code=Codens.KERIACDCGenusVersion,
+                    version=version).qb64b
+
+
+    @classmethod
+    def enclose(cls, *, qb64=None, qb2=None, code=Codens.AttachmentGroup,
+                version=Vrsn_2_0):
+        """Encloses (frames) CESR stream in qb64 (as bytes) or qb2 (as bytes)
+        with prepended counter of type code. Assumes counter in quadlets/triplets.
+        In V2 CESR, will work with all counters which must count quadlets/triplets)
+        In V1 CESR, will only work with counters that count quadlets/triplets
+
+        Returns:
+            enclosure (bytearray): stream in qb64 or qb2 with prepended counter
+                of type code. If both qb64 and qb2 are None then empty counter.
+                If qb64 then returns enclosure as bytearray in qb64 text domain
+                If qb2 then returns enclosure as bytearray in qb2 binary domain
+
+        Parameters:
+            qb64 (str|bytes|bytearray|memoryview|None): qualified Base64 sub-stream
+                to be enclosed. May be empty. None means use qb2 if provided.
+            qb2 (bytes|bytearray|memoryview|None): qualified Base2 sub-stream
+                to be enclosed. May be empty. None means ignore
+            code (str):  either stable (hard) part of derivation code or code name.
+                When code name then look up code from ._codes. This allows
+                versioning to change code but keep stable code name.
+        """
+        if qb64 is None and qb2 is None:
+            qb64 = b''  # default counter of empty content
+
+        enclosure = bytearray()
+        if qb64 is not None:  # process qb64 in text domain
+            if hasattr(qb64, "encode"):
+                qb64 = qb64.encode()  # convert to bytes
+            if isinstance(qb64, memoryview):
+                qb64 = bytearray(qb64)  # converts memoryview to bytearray
+            length = len(qb64)
+            if length % 4:  # invalid sized qb64 not aligned on 24 bit boundaries
+                raise ValueError(f"Bad enclosed qb64 {length=}")
+            count = length // 4
+            # processes code as codens code name
+            counter = cls(code=code, count=count, version=version)
+            if version.major < Vrsn_2_0.major and counter.code not in (QTDex_1_0):
+                raise ValueError(f"Non V1 quadlet/triplet counter code={counter.code}")
+            enclosure.extend(counter.qb64b)
+            enclosure.extend(qb64)
+
+        else:  # process qb2 in binary domain
+            if isinstance(qb2, memoryview):
+                qb2 = bytearray(qb2)  # converts memoryview to bytearray
+            length = len(qb2)
+            if length % 3:  # invalid sized qb64 not aligned on 24 bit boundaries
+                raise ValueError(f"Bad enclosed qb2 {length=}")
+            count = length // 3
+            # processes code as codens code name
+            counter = cls(code=code, count=count, version=version)
+            if version.major < Vrsn_2_0.major and counter.code not in (QTDex_1_0):
+                raise ValueError(f"Non V1 quadlet/triplet counter code={counter.code}")
+            enclosure.extend(counter.qb2)
+            enclosure.extend(qb2)
+
+        return enclosure
+
 
     def __init__(self, code=None, *, count=None, countB64=None,
                  qb64b=None, qb64=None, qb2=None, strip=False,
@@ -768,66 +844,6 @@ class Counter:
                                      "qb64 or qb2.")
 
         self._name = self.Names[version.major][latest][self.code]
-
-
-    @classmethod
-    def enclose(cls, *, qb64=None, qb2=None, code=Codens.AttachmentGroup,
-                version=Vrsn_2_0):
-        """Encloses (frames) CESR stream in qb64 (as bytes) or qb2 (as bytes)
-        with prepended counter of type code. Assumes counter in quadlets/triplets.
-        In V2 CESR, will work with all counters which must count quadlets/triplets)
-        In V1 CESR, will only work with counters that count quadlets/triplets
-
-        Returns:
-            enclosure (bytearray): stream in qb64 or qb2 with prepended counter
-                of type code. If both qb64 and qb2 are None then empty counter.
-                If qb64 then returns enclosure as bytearray in qb64 text domain
-                If qb2 then returns enclosure as bytearray in qb2 binary domain
-
-        Parameters:
-            qb64 (str|bytes|bytearray|memoryview|None): qualified Base64 sub-stream
-                to be enclosed. May be empty. None means use qb2 if provided.
-            qb2 (bytes|bytearray|memoryview|None): qualified Base2 sub-stream
-                to be enclosed. May be empty. None means ignore
-            code (str):  either stable (hard) part of derivation code or code name.
-                When code name then look up code from ._codes. This allows
-                versioning to change code but keep stable code name.
-        """
-        if qb64 is None and qb2 is None:
-            qb64 = b''
-
-        if qb64 is not None:  # process qb64 in text domain
-            if hasattr(qb64, "encode"):
-                qb64 = qb64.encode()  # convert to bytes
-            if isinstance(qb64, memoryview):
-                qb64 = bytearray(qb64)  # converts memoryview to bytearray
-            length = len(qb64)
-            if length % 4:  # invalid sized qb64 not aligned on 24 bit boundaries
-                raise ValueError(f"Bad enclosed qb64 {length=}")
-            count = length // 4
-            # processes code as codens code name
-            counter = cls(code=code, count=count, version=version)
-            if version.major < Vrsn_2_0.major and counter.code not in (QTDex_1_0):
-                raise ValueError("Non V1 quadlet/triplet counter code={counter.code}")
-            enclosure = bytearray(counter.qb64b)
-            enclosure.extend(qb64)
-            return enclosure
-
-        # process qb2 in binary domain
-        if isinstance(qb2, memoryview):
-            qb2 = bytearray(qb2)  # converts memoryview to bytearray
-        length = len(qb2)
-        if length % 3:  # invalid sized qb64 not aligned on 24 bit boundaries
-            raise ValueError(f"Bad enclosed qb2 {length=}")
-        count = length // 3
-        # processes code as codens code name
-        counter = cls(code=code, count=count, version=version)
-        if version.major < Vrsn_2_0.major and counter.code not in (QTDex_1_0):
-            raise ValueError("Non V1 quadlet/triplet counter code={counter.code}")
-        enclosure = bytearray(counter.qb2)
-        enclosure.extend(qb2)
-        return enclosure
-
 
 
     @property

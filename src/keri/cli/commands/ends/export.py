@@ -17,7 +17,7 @@ from ....core import messagize
 
 logger = ogler.getLogger()
 
-parser = argparse.ArgumentParser(description='Export end points', 
+parser = argparse.ArgumentParser(description='Export end points',
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: export_ends(args))
 parser.add_argument("--aid", "-a", help="qualified base64 of AID to export rpy messages for all endpoints.",
@@ -78,6 +78,6 @@ class ExportDoer(doing.DoDoer):
                 print(messagize(serder=serder,
                                 cigars=[cigar],
                                 sigers=sigers,
-                                pipelined=True))
+                                framed=False))
 
         return True

@@ -151,7 +151,7 @@ class AdmitDoer(doing.DoDoer):
             print(f"Sending admit message to {recp}")
             postman = StreamPoster(hby=self.hby, hab=sender, recp=recp, topic="credential")
 
-            atc = serializeMessage(self.hby, exn.said)
+            atc = serializeMessage(self.hby, exn.said, framed=True)
             del atc[:exn.size]
             postman.send(serder=exn,
                          attachment=atc)

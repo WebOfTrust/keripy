@@ -20,7 +20,7 @@ def test_querying():
         subHab = hby1.makeHab(name="subject")
         qdoer = QueryDoer(hby=hby, hab=inqHab, kvy=hby.kvy, pre=subHab.pre)
 
-        icp = subHab.makeOwnInception()
+        icp = subHab.msgOwnInception(framed=True)
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(icp), kvy=inqHab.kvy)
 
         assert qdoer is not None
@@ -65,7 +65,7 @@ def test_querying():
         doist = doing.Doist(limit=limit, tock=tock, real=True)
 
         # rotate AID and submit as a new keyStateSave
-        rot = subHab.rotate()
+        rot = subHab.rotate(framed=True)
         ksr = subHab.kever.state()
         rpy = reply(route="/ksn", data=ksr._asdict())
         cue = dict(kin="keyStateSaved", ksn=ksr._asdict())
@@ -157,7 +157,7 @@ def test_query_not_found_escrow():
         inqHab = hby.makeHab(name="inquisitor")
         subHab = hby1.makeHab(name="subject")
 
-        icp = inqHab.makeOwnInception()
+        icp = inqHab.msgOwnInception(framed=True)
         subHab.psr.parseOne(ims=icp)
         assert inqHab.pre in subHab.kevers
 

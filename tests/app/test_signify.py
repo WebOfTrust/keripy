@@ -5,7 +5,8 @@ tests.app.habbing remote module
 """
 import pytest
 
-from keri.kering import KeriError, Ilks
+from keri import Vrsn_1_0
+from keri.kering import KeriError, Ilks, Kinds
 
 from keri.core import Salter, Diger, Tiers, MtrDex, incept, rotate
 
@@ -55,13 +56,14 @@ def test_remote_salty_hab():
 
         toad = 0  # no witnesses
 
-        icp = incept(keys, isith=sith, ndigs=nxt, toad=toad, code=MtrDex.Blake3_256)
+        icp = incept(keys, isith=sith, ndigs=nxt, toad=toad, code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
         assert icp.raw == lhab.kever.serder.raw
         tsig0 = skp0.sign(icp.raw, index=0)
         assert tsig0.qb64b == (b'AAB0ewd_rP91-GX9d943r48qWXThuHpHbqMwJT92jFJWbbynC-QGXVRPaSX5DGAI4Bqyviw4zsz-'
                                b'uEAxo9HwEucF')
 
-        hab = remote.makeSignifyHab(name, serder=icp, sigers=[tsig0], stem="test", pidx=pidx, tier=tier, temp=True)
+        hab = remote.makeSignifyHab(name, serder=icp, sigers=[tsig0],
+                                    stem="test", pidx=pidx, tier=tier, temp=True)
         assert hab.pre == lhab.pre  # we have recreated the local hab with the remote hab
 
         kever = hab.kever
@@ -76,7 +78,7 @@ def test_remote_salty_hab():
         assert habord.hid == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
         assert habord.sid == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
 
-        lhab.rotate()
+        lhab.rotate(framed=True)
 
         ridx = ridx + 1
         kidx = kidx + 1
@@ -90,14 +92,15 @@ def test_remote_salty_hab():
         nxt1 = [ndiger1.qb64]
         assert nxt1 == ['EKNg5bhKpDTv_DixBKYfOHHl1omtvQ06UD3Nf40JUsQ-']
 
-        rot = rotate(pre=hab.pre, keys=keys1, dig=icp.said, sn=1, isith=sith, ndigs=nxt1, toad=toad)
+        rot = rotate(pre=hab.pre, keys=keys1, dig=icp.said, sn=1, isith=sith, ndigs=nxt1, toad=toad,
+                     version=Vrsn_1_0, kind=Kinds.json)
         assert rot.raw == lhab.kever.serder.raw
 
         tsig1 = skp1.sign(rot.raw, index=0)
         assert tsig1.qb64b == (b'AAAGWYaw6N_4Wk2IBVOaPGb-rnuj1ys5xSHjfYnAzTRdBN8VzT9GVkBE8CLxLp0iSQ_SCRNpKQEV'
                                b'6BIwPVyJS0cA')
 
-        msg = hab.rotate(serder=rot, sigers=[tsig1])
+        msg = hab.rotate(serder=rot, sigers=[tsig1], framed=True)
         assert msg == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EEZTwrSQdE6QXDNHGMVDf8Zc'
                        b'fA-us9tavFORrBaorrtf","i":"EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiy'
                        b'ZCcDH7N","s":"1","p":"EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH'

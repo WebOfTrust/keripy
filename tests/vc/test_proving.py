@@ -8,7 +8,7 @@ import pytest
 from keri import (InvalidValueError, Versionage,
                   Vrsn_1_0, Kinds, Protocols, versify)
 from keri.core import (Prefixer, Seqner, Diger, Siger,
-                       Saider, Seqner, Parser, Salter,
+                       Saider, Number, Seqner, Parser, Salter,
                        Counter, scheming, Schemer,
                        JSONSchema, SerderACDC, CacheResolver,
                        CtrDex_1_0, Codens, MtrDex)
@@ -58,24 +58,24 @@ def test_proving(mockHelpingNowIso8601):
                             schema=schemer.said,
                             data=credSubject)
 
-        msg = sidHab.endorse(serder=creder)
+        msg = sidHab.endorse(serder=creder, framed=False)
         assert msg == (b'{"v":"ACDC10JSON000195_","d":"EPVHgaM_Yad1b5VHs6SIZyqF72m_byxSYU'
-                       b'w3VNx5Ubqt","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","'
-                       b's":"EHggmYtUecR1JYbMkDZv-za1EExCmR-T_bwaJp3PQIoW","a":{"d":"EO-m'
-                       b'lywujxMkv1yLxir1m5c0p-fZLuprOrgZAIohJdmQ","dt":"2021-06-27T21:26'
-                       b':21.233257+00:00","i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh'
-                       b'0nc","lei":"254900OPPU84GM83MG36","issuanceDate":"2021-06-27T21:'
-                       b'26:21.233257+00:00"}}-VA0-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl'
-                       b'2QV8dDjI30AAAAAAAAAAAAAAAAAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge'
-                       b'6mBl2QV8dDjI3-AABAAAmfpF4BjMS3b4kzvPdOpkSlH3PiVx7MSySulPyKFxtaS3'
-                       b'oxH45Y3kIvZg67u2DyxtUqVixVzRhOOTnMAB_SowI')
+                    b'w3VNx5Ubqt","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","'
+                    b's":"EHggmYtUecR1JYbMkDZv-za1EExCmR-T_bwaJp3PQIoW","a":{"d":"EO-m'
+                    b'lywujxMkv1yLxir1m5c0p-fZLuprOrgZAIohJdmQ","dt":"2021-06-27T21:26'
+                    b':21.233257+00:00","i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh'
+                    b'0nc","lei":"254900OPPU84GM83MG36","issuanceDate":"2021-06-27T21:'
+                    b'26:21.233257+00:00"}}-VAv-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl'
+                    b'2QV8dDjI3MAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAAA'
+                    b'mfpF4BjMS3b4kzvPdOpkSlH3PiVx7MSySulPyKFxtaS3oxH45Y3kIvZg67u2Dyxt'
+                    b'UqVixVzRhOOTnMAB_SowI')
 
         creder = SerderACDC(raw=msg) # Creder(raw=msg)
         proof = msg[creder.size:]
 
         ctr = Counter(qb64b=proof, strip=True, version=Vrsn_1_0)
         assert ctr.code == CtrDex_1_0.AttachmentGroup
-        assert ctr.count == 52
+        assert ctr.count == 47
 
         pags = ctr.count * 4
         assert len(proof) == pags
@@ -87,8 +87,8 @@ def test_proving(mockHelpingNowIso8601):
         prefixer = Prefixer(qb64b=proof, strip=True)
         assert prefixer.qb64 == sidHab.pre
 
-        seqner = Seqner(qb64b=proof, strip=True)
-        assert seqner.sn == sidHab.kever.sn
+        sner = Number(qb64b=proof, strip=True)
+        assert sner.sn == sidHab.kever.sn
 
         diger = Diger(qb64b=proof, strip=True)
         assert diger.qb64 == sidHab.kever.serder.said
