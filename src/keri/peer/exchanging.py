@@ -464,85 +464,203 @@ def exchange(*,
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
 
-    ilk = Ilks.exn
-    dt = stamp if stamp is not None else helping.nowIso8601()
-    xid = xid if xid is not None else ""
-    p = prior if prior is not None else ""
-    ri = receiver if receiver is not None else ""
-    embeds = embeds if embeds is not None else {}
+    #ilk = Ilks.exn
+    #dt = stamp if stamp is not None else helping.nowIso8601()
+    #xid = xid if xid is not None else ""
+    #p = prior if prior is not None else ""
+    #ri = receiver if receiver is not None else ""
+    #modifiers = modifiers if modifiers is not None else {}
 
-    e = dict()
     end = bytearray()
-    for label, msg in embeds.items():
-        serder = Sadder(raw=msg)
-        e[label] = serder.ked
-        atc = bytes(msg[serder.size:])
-        if not atc:
-            continue
 
-        pathed = bytearray()
-        pather = Pather(parts=["e", label])
-        pathed.extend(pather.qb64b)
-        pathed.extend(atc)
-        if len(pathed) // 4 < 4096:
-            end.extend(Counter(Codens.PathedMaterialCouples,
-                                      count=(len(pathed) // 4),
-                                      version=Vrsn_1_0).qb64b)
-        else:
-            end.extend(Counter(Codens.BigPathedMaterialCouples,
-                                      count=(len(pathed) // 4),
-                                      version=Vrsn_1_0).qb64b)
-        end.extend(pathed)
-
-    if e:
-        e["d"] = ""
-        _, e = Saider.saidify(sad=e, label=Saids.d)
-
-    modifiers = modifiers if modifiers is not None else {}
-
-    # Attr field 'a' can be either a said or a nested block and the fields
-    # of the nested block can be saids of further nested block or nested blocks
     if pvrsn.major == Vrsn_1_0.major:
+        embeds = embeds if embeds is not None else {}
+        e = dict()
+        for label, msg in embeds.items():
+            serder = Sadder(raw=msg)
+            e[label] = serder.ked
+            atc = bytes(msg[serder.size:])
+            if not atc:
+                continue
+
+            pathed = bytearray()
+            pather = Pather(parts=["e", label])
+            pathed.extend(pather.qb64b)
+            pathed.extend(atc)
+            if len(pathed) // 4 < 4096:
+                end.extend(Counter(Codens.PathedMaterialCouples,
+                                   count=(len(pathed) // 4),
+                                          version=Vrsn_1_0).qb64b)
+            else:
+                end.extend(Counter(Codens.BigPathedMaterialCouples,
+                                   count=(len(pathed) // 4),
+                                          version=Vrsn_1_0).qb64b)
+            end.extend(pathed)
+
+        if e:
+            e["d"] = ""
+            _, e = Saider.saidify(sad=e, label=Saids.d)
+
         if diger is None:
-            attrs = dict()
-
-            if receiver:  # is not None
-                attrs['i'] = receiver
-
-            attrs |= attributes
+            #attrs = dict()
+            if receiver:  # not (empty or None)
+                attributes = attributes if attributes is not None else {}
+                attributes['i'] = receiver
+                #attrs['i'] = receiver
+            #attrs |= attributes
 
         else:
-            attrs = diger.qb64
+            # only in v1 exn can the attributes field 'a' be either a said or
+            # a field map.  In v2 it must be a field map.
+            attributes = diger.qb64  # SAID of ESSR encrypted attachment
 
         sad = dict(v=vs,
-                   t=ilk,
-                   d="",
-                   i=sender,
-                   rp=ri,
-                   p=p,
-                   dt=dt,
-                   r=route,
+                   t=Ilks.exn,
+                   d="", # computed by SerderKERI init
+                   i=sender if sender is not None else "",
+                   rp=receiver if receiver is not None else "",
+                   p=prior if prior is not None else "",
+                   dt=stamp if stamp is not None else helping.nowIso8601(),
+                   r=route if route is not None else "",
                    q=modifiers if modifiers is not None else {},  # q field required
-                   a=attrs,
+                   a=attributes if attributes is not None else {},
                    e=e)
     else:
-        attrs = {}
-        if e:
-            attrs['e'] = e
-
-        attrs |= attributes
+        if end or diger:
+            raise ValueError(f"Invalid diger or embeds not supported in "
+                             f"version {pvrsn.major} exchange")
 
         sad = dict(v=vs,
-                   t=ilk,
-                   d="",
-                   i=sender,
-                   ri=ri,
-                   x=xid,
-                   p=p,
-                   dt=dt,
-                   r=route,
+                   t=Ilks.exn,
+                   d="",  # computed by SerderKERI init
+                   i=sender if sender is not None else "",
+                   ri=receiver if receiver is not None else "",
+                   x=xid if xid is not None else "",
+                   p=prior if prior is not None else "",
+                   dt=stamp if stamp is not None else helping.nowIso8601(),
+                   r=route if route is not None else "",
                    q=modifiers if modifiers is not None else {},  # q field required
-                   a=attrs)
+                   a=attributes if attributes is not None else {}
+                   )
+
+    return SerderKERI(sad=sad, makify=True), end  # return serialized ked
+
+
+def specialExchange(*,
+             sender="",
+             receiver="",
+             xid="",
+             prior="",
+             route="",
+             modifiers=None,
+             attributes=None,
+             diger=None,
+             embeds=None,
+             stamp=None,
+             version=Version,
+             pvrsn=None,
+             gvrsn=None,
+             kind=Kinds.json,):
+    """Create an `exn` with either an ESSR attachment or embeds with path
+    attachment as determined by the presence of diger or embeds parameters
+    repectively
+
+    Parameters::
+        sender (str): qb64 of sender identifier (AID)
+        receiver (str): qb64 of receiver identifier (AID)
+        xid (str): qb64 of exchange ID which is SAID of exchange inception 'xip'
+                   if any
+        prior (str): qb64 of prior exchange event including 'xip" if any
+        route (str):  '/' delimited path identifier of data flow handler
+                      (behavior) to processs the reply if any (equivalent of
+                      url path to resource)
+        modifiers (dict): modifiers field map (equvalent of http query string)
+        attributes (dict): attributes field map (payload body)
+        stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
+                      creation of message or data, default is now.
+        version (Versionage): KERI protocol default version if psvrsn is None
+        pvrsn (Versionage): KERI protocol version
+        gvrsn (Versionage): CESR Genus version for attachment group codes or
+                        nesting group code (useful when serder.gvrsn < 2)
+                        gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                            if serder.gvrsn else serder.pvrsn
+        kind (str): serialization for key event message
+                    one of Kinds ("json","cbor","mgpk","cesr")
+        diger (Diger): qb64 digest of attributes section (payload)
+        embeds (dict): named embeded KERI event CESR stream with attachments
+
+    Returns::
+        embedded (SerderKeri, bytearray): of form (exchange, attachments) where
+            exchange is serder of exchange message and atc is serialized path
+            attachments of embeds
+
+    """
+    pvrsn = pvrsn if pvrsn is not None else version
+    vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
+
+    #ilk = Ilks.exn
+    #dt = stamp if stamp is not None else helping.nowIso8601()
+    #xid = xid if xid is not None else ""
+    #p = prior if prior is not None else ""
+    #ri = receiver if receiver is not None else ""
+    #modifiers = modifiers if modifiers is not None else {}
+
+    if pvrsn.major == Vrsn_1_0.major:
+        end = bytearray()
+        embeds = embeds if embeds is not None else {}
+        e = dict()
+
+        for label, msg in embeds.items():
+            serder = Sadder(raw=msg)
+            e[label] = serder.ked
+            atc = bytes(msg[serder.size:])
+            if not atc:
+                continue
+
+            pathed = bytearray()
+            pather = Pather(parts=["e", label])
+            pathed.extend(pather.qb64b)
+            pathed.extend(atc)
+            if len(pathed) // 4 < 4096:
+                end.extend(Counter(Codens.PathedMaterialCouples,
+                                          count=(len(pathed) // 4),
+                                          version=Vrsn_1_0).qb64b)
+            else:
+                end.extend(Counter(Codens.BigPathedMaterialCouples,
+                                          count=(len(pathed) // 4),
+                                          version=Vrsn_1_0).qb64b)
+            end.extend(pathed)
+
+        if e:
+            e["d"] = ""
+            _, e = Saider.saidify(sad=e, label=Saids.d)
+
+
+        if diger is None:
+            if receiver:  # not (empty or None)
+                attributes = attributes if attributes is not None else {}
+                attributes['i'] = receiver
+
+        else:
+            # only in v1 exn can the attributes field 'a' be either a said or
+            # a field map.  In v2 it must be a field map.
+            attributes = diger.qb64  # SAID of ESSR encrypted attachment
+
+        sad = dict(v=vs,
+                   t=Ilks.exn,
+                   d="",  # computed by SerderKERI init
+                   i=sender if sender is not None else "",
+                   rp=receiver if receiver is not None else "",
+                   p=prior if prior is not None else "",
+                   dt=stamp if stamp is not None else helping.nowIso8601(),
+                   r=route if route is not None else "",
+                   q=modifiers if modifiers is not None else {},  # q field required
+                   a=attributes if attributes is not None else {},
+                   e=e)
+    else:
+        raise ValueError(f"Invalid specialExchange not supported in version"
+                             f" {pvrsn.major} exchange")
+
 
     return SerderKERI(sad=sad, makify=True), end  # return serialized ked
 

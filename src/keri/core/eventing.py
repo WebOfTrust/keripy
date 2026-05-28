@@ -1495,16 +1495,14 @@ def exchange(*,
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
-    ilk = Ilks.exn
-
     if pvrsn.major < 2:
         raise ValueError(f"Unsupported version {pvrsn=}")
 
     else:
 
         sad = dict(v=vs,
-                   t=ilk,
-                   d="",
+                   t=Ilks.exn,
+                   d="",  # computed by SerderKERI init
                    i=sender if sender is not None else "",
                    ri=receiver if receiver is not None else "",
                    x=xid if xid is not None else "",

@@ -14,7 +14,7 @@ from hio.help import hicting, ogler
 from .configing import Configer
 from .keeping import Keeper, Manager
 
-from ..peer import Exchanger, exchange
+from ..peer import Exchanger, exchange, specialExchange
 from ..db import Baser, dgKey, fetchTsgs
 from ..help import fromIso8601, toIso8601
 from ..kering import (Version, Vrsn_1_0, Vrsn_2_0, Ilks, Kinds, Roles, Schemes,
@@ -1630,8 +1630,8 @@ class BaseHab:
         """
         pvrsn = pvrsn if pvrsn is not None else version
 
-        # generate exchange with attachments in end
-        serder, end = exchange(sender=self.pre,
+        # generate exchange with pathed embed attachments in end
+        serder, end = specialExchange(sender=self.pre,
                                receiver=receiver,
                                xid=xid,
                                prior=prior,
