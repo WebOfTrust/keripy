@@ -1564,48 +1564,43 @@ class BaseHab:
 
 
     def exchange(self, *,
-                 route,
-                 payload,
-                 receiver,
-                 stamp=None,
-                 eid=None,
-                 prior=None,
+                 receiver="",
+                 prior="",
+                 xid="",
+                 route="",
                  modifiers=None,
+                 payload=None,
                  embeds=None,
-                 save=False,
-                 kind=Kinds.json,
+                 stamp=None,
                  version=Version,
                  pvrsn=None,
-                 gvrsn=Version,
+                 gvrsn=None,
+                 kind=Kinds.json,
                  framed=False,
                  nested=False,
-                 genusify=False):
+                 genusify=False,
+                 eid=None,
+                 save=False):
         """Build and return a signed ``exn`` message, optionally saving it to
         own db.
 
         Parameters::
             sender (str): qb64 of sender identifier (AID)
             receiver (str): qb64 of receiver identifier (AID)
-            route (str):  '/' delimited path identifier of data flow handler
-                          (behavior) to processs the reply if any (equivalent of
-                          url path to resource)
             xid (str): qb64 of exchange ID which is SAID of exchange inception 'xip'
                        if any
             prior (str): qb64 of prior exchange event including 'xip" if any
+            route (str):  '/' delimited path identifier of data flow handler
+                          (behavior) to processs the reply if any (equivalent of
+                          url path to resource)
             modifiers (dict): modifiers field map (equvalent of http query string)
             attributes (dict): attributes field map (payload body)
+
+            payload (dict): payload data for the exchange message.
+            embeds (dict or None): embedded message serders if any.
+
             stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
                           creation of message or data, default is now.
-
-            route (str): route path string indicating the data flow handler.
-            payload (dict): payload data for the exchange message.
-            recipient (str): qb64 identifier prefix of the recipient.
-
-            eid (str or None): qb64 of endpoint provider identifier if any.
-            dig (str or None): qb64 digest if any.
-            modifiers (dict or None): additional modifiers for the exchange.
-            embeds (dict or None): embedded message serders if any.
-            save (bool): True means process local copy into db after building.
             version (Versionage): KERI protocol default version if psvrsn is None
             pvrsn (Versionage): KERI protocol version
             gvrsn (Versionage): CESR Genus version for attachment group codes or
@@ -1629,29 +1624,37 @@ class BaseHab:
             genusify (bool): True means prepend genus version code from gvrsn before
                             serder to override default stream genus version
                          False means do nothing
+            eid (str or None): qb64 of endpoint provider identifier if any.
+            save (bool): True means process local copy into db after building.
 
         Returns::
             bytearray: signed exchange message with count code and receipt
             couples (pre+cig).
         """
-        # sign serder event
+        pvrsn = pvrsn if pvrsn is not None else version
 
-        serder, end = exchange(route=route,
-                               payload=payload,
-                               sender=self.pre,
+        # generate exchange with attachments in end
+        serder, end = exchange(sender=self.pre,
                                receiver=receiver,
-                               stamp=stamp,
+                               xid=xid,
                                prior=prior,
+                               route=route,
                                modifiers=modifiers,
+                               payload=payload,
                                embeds=embeds,
-                               kind=kind,
-                               version=version)
+                               stamp=stamp,
+                               version=version,
+                               pvrsn=pvrsn,
+                               gvrsn=gvrsn,
+                               kind=kind,)
 
         if self.kever.prefixer.transferable:
-            msg = self.endorse(serder=serder, framed=True)
+            msg = self.endorse(serder=serder, framed=framed, nested=nested,
+                               gvrsn=gvrsn,  genusify=genusify)
         else:
             cigars = self.sign(ser=serder.raw,
                                indexed=False)
+            gvrsn = gvrsn if gvrsn is not None else version
             msg = eventing.messagize(serder, cigars=cigars, framed=framed,
                                      nested=nested, gvrsn=gvrsn, genusify=genusify)
 

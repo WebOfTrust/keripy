@@ -158,9 +158,10 @@ def versify(proto=Protocols.keri, pvrsn=Version, kind=Kinds.json, size=0, gvrsn=
 
     if pvrsn.major < 2:  # version1 version string
         if gvrsn is not None:
-            raise VersionError(f"Invalid (not None) CESR genus version="
-                               f"{gvrsn.major}.{gvrsn.minor} for pvrsn="
-                               f"{pvrsn.major}.{pvrsn.minor} ")
+            if gvrsn.major != pvrsn.major or gvrsn.minor != pvrsn.minor:
+                raise VersionError(f"Invalid CESR genus version="
+                                   f"{gvrsn.major}.{gvrsn.minor} for pvrsn="
+                                   f"{pvrsn.major}.{pvrsn.minor} ")
         if kind == Kinds.cesr:
             raise KindError(f"Invalid serialization {kind=} for message protocol"
                             f"  major version={pvrsn.major}")

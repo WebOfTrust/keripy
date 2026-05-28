@@ -421,7 +421,7 @@ def exincept(sender="",
 
 def exchange(*,
              sender="",
-             receiver=None,
+             receiver="",
              xid="",
              prior="",
              route="",
@@ -439,21 +439,24 @@ def exchange(*,
     Parameters:
         sender (str): qb64 of sender identifier (AID)
         receiver (str): qb64 of receiver identifier (AID)
-        route (str):  '/' delimited path identifier of data flow handler
-                      (behavior) to processs the reply if any (equivalent of
-                      url path to resource)
         xid (str): qb64 of exchange ID which is SAID of exchange inception 'xip'
                    if any
         prior (str): qb64 of prior exchange event including 'xip" if any
+        route (str):  '/' delimited path identifier of data flow handler
+                      (behavior) to processs the reply if any (equivalent of
+                      url path to resource)
         modifiers (dict): modifiers field map (equvalent of http query string)
         attributes (dict): attributes field map (payload body)
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
                       creation of message or data, default is now.
         version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
-        gvrsn (Versionage): CESR genus vrsion
-        kind (str): serialization kind value of Serials
-
+        gvrsn (Versionage): CESR Genus version for attachment group codes or
+                        nesting group code (useful when serder.gvrsn < 2)
+                        gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                            if serder.gvrsn else serder.pvrsn
+        kind (str): serialization for key event message
+                    one of Kinds ("json","cbor","mgpk","cesr")
 
         payload (list | dict): body of message to deliver to route
         diger (Diger): qb64 digest of payload
@@ -507,7 +510,7 @@ def exchange(*,
         if diger is None:
             attrs = dict()
 
-            if receiver is not None:
+            if receiver:  # is not None
                 attrs['i'] = receiver
 
             attrs |= payload
