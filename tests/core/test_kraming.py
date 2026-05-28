@@ -442,7 +442,7 @@ def test_scrub_invalid_pool_sigs():
         receiverHby.makeHab(name="receiver", isith='1', icount=1,
                             transferable=True)
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(senderHab.makeOwnEvent(sn=0)),
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(senderHab.msgOwnEvent(sn=0)),
                                        kvy=crossKvy)
         kever = receiverHby.db.kevers.get(senderHab.pre)
         assert kever is not None
@@ -1769,7 +1769,7 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
                                       transferable=True, **KWA)
         assert len(senderHab.kever.verfers) == 3
 
-        receiverHby.makeHab(name="naaReceiver", isith='1', icount=1,
+        receiverHab = receiverHby.makeHab(name="naaReceiver", isith='1', icount=1,
                             transferable=True, **KWA)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
@@ -1860,7 +1860,7 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
             kramPMKS = receiverHby.db.kramPMKS.get(keys=partialKey)
             assert len(kramPMKS) == 1
 
-            # Non-auth attachment dbs populated (not sscs / not sender ssts)
+            # Non-auth attachment dbs populated (not sscs)
             assert receiverHby.db.kramSSCS.get(keys=partialKey) == []
             assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) == 1
@@ -1879,9 +1879,9 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
 
             kvy.processMsg(msg, kwa)
 
+            assert receiverHby.db.kramSSCS.get(keys=partialKey) == []
             assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) == 1
-            assert receiverHby.db.kramSSCS.get(keys=partialKey) == []
             assert len(receiverHby.db.kramSSTS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramFRCS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramTDCS.get(keys=partialKey)) == 1
@@ -1906,9 +1906,9 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
             assert cue["kin"] == "reply"
 
             # Non-auth attachments persist (pruner cleans up, not kramit)
+            assert receiverHby.db.kramSSCS.get(keys=partialKey) == []
             assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) >= 1
             assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) >= 1
-            assert receiverHby.db.kramSSCS.get(keys=partialKey) == []
             assert len(receiverHby.db.kramSSTS.get(keys=partialKey)) >= 1
             assert len(receiverHby.db.kramFRCS.get(keys=partialKey)) >= 1
             assert len(receiverHby.db.kramTDCS.get(keys=partialKey)) >= 1
@@ -1939,7 +1939,7 @@ def test_multisig_kwa_rehydration_after_threshold(mockHelpingNowUTC):
                                           transferable=True)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
-        senderIcp = senderHab.makeOwnEvent(sn=0)
+        senderIcp = senderHab.msgOwnEvent(sn=0)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
 
         with openCF(name="rehKram", base="test") as cf:
@@ -2429,7 +2429,7 @@ def test_cigar_scrubs_same_sender_prior_tsgs(mockHelpingNowUTC):
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
         Parser(version=Vrsn_1_0).parse(
-            ims=bytearray(senderNTHab.makeOwnEvent(sn=0)), kvy=crossKvy)
+            ims=bytearray(senderNTHab.msgOwnEvent(sn=0)), kvy=crossKvy)
         kever = receiverHby.db.kevers[senderNTHab.pre]
         assert kever is not None
 
@@ -4683,7 +4683,7 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
         assert len(senderHab.kever.verfers) == 3
 
         # Create receiver hab for db context
-        receiverHby.makeHab(name="mkReceiver", isith='1', icount=1,
+        receiverHab = receiverHby.makeHab(name="mkReceiver", isith='1', icount=1,
                             transferable=True, **KWA)
 
         # Cross-feed sender ICP to receiver
@@ -4935,7 +4935,6 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
             assert receiverHby.db.kramSSCS.get(keys=partialKey) == []
             assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) == 1
-            assert len(receiverHby.db.kramSSCS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramSSTS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramFRCS.get(keys=partialKey)) == 1
             assert len(receiverHby.db.kramTDCS.get(keys=partialKey)) == 1
@@ -4960,10 +4959,10 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
             cue = kvy.cues.popleft()
             assert cue["kin"] == "reply"
 
-            # Non-auth attachments persist
+            # Non-auth attachments persist (not sscs)
+            assert receiverHby.db.kramSSCS.get(keys=partialKey) == []
             assert len(receiverHby.db.kramTRQS.get(keys=partialKey)) >= 1
             assert len(receiverHby.db.kramTSGS.get(keys=partialKey)) >= 1
-            assert len(receiverHby.db.kramSSCS.get(keys=partialKey)) >= 1
             assert len(receiverHby.db.kramSSTS.get(keys=partialKey)) >= 1
             assert len(receiverHby.db.kramFRCS.get(keys=partialKey)) >= 1
             assert len(receiverHby.db.kramTDCS.get(keys=partialKey)) >= 1
@@ -5007,7 +5006,7 @@ def test_strict_monotonicity_existing_cache(mockHelpingNowUTC):
                                           transferable=True)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
-        senderIcp = senderHab.makeOwnEvent(sn=0)
+        senderIcp = senderHab.msgOwnEvent(sn=0)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
         assert senderHab.pre in crossKvy.kevers
 
@@ -5262,7 +5261,7 @@ def test_pruning_exchanges_cleans_transactional_partial_multisig(fakeHelpingCloc
                                           transferable=True)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
-        mkIcp = mkHab.makeOwnEvent(sn=0)
+        mkIcp = mkHab.msgOwnEvent(sn=0)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(mkIcp), kvy=crossKvy)
         assert mkHab.pre in crossKvy.kevers
 
@@ -5342,7 +5341,7 @@ def test_assk_timeliness_boundaries_and_future_reject(fakeHelpingClock):
                             transferable=True)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
-        senderIcp = senderHab.makeOwnEvent(sn=0)
+        senderIcp = senderHab.msgOwnEvent(sn=0)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
         assert senderHab.pre in crossKvy.kevers
 
@@ -5397,7 +5396,7 @@ def test_transactioned_exchange_window_boundaries(fakeHelpingClock):
                                           transferable=True)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
-        senderIcp = senderHab.makeOwnEvent(sn=0)
+        senderIcp = senderHab.msgOwnEvent(sn=0)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
         assert senderHab.pre in crossKvy.kevers
 
@@ -5467,7 +5466,7 @@ def test_invalid_signature_attachments_rejected(mockHelpingNowUTC):
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
         for hab in (skHab, ntHab, mkHab):
-            icp = hab.makeOwnEvent(sn=0)
+            icp = hab.msgOwnEvent(sn=0)
             Parser(version=Vrsn_1_0).parse(ims=bytearray(icp), kvy=crossKvy)
             assert hab.pre in crossKvy.kevers
 
