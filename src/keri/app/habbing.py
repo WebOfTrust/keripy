@@ -1569,8 +1569,7 @@ class BaseHab:
                  xid="",
                  route="",
                  modifiers=None,
-                 payload=None,
-                 embeds=None,
+                 attributes=None,
                  stamp=None,
                  version=Version,
                  pvrsn=None,
@@ -1579,6 +1578,7 @@ class BaseHab:
                  framed=False,
                  nested=False,
                  genusify=False,
+                 embeds=None,
                  eid=None,
                  save=False):
         """Build and return a signed ``exn`` message, optionally saving it to
@@ -1595,10 +1595,6 @@ class BaseHab:
                           url path to resource)
             modifiers (dict): modifiers field map (equvalent of http query string)
             attributes (dict): attributes field map (payload body)
-
-            payload (dict): payload data for the exchange message.
-            embeds (dict or None): embedded message serders if any.
-
             stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
                           creation of message or data, default is now.
             version (Versionage): KERI protocol default version if psvrsn is None
@@ -1624,6 +1620,7 @@ class BaseHab:
             genusify (bool): True means prepend genus version code from gvrsn before
                             serder to override default stream genus version
                          False means do nothing
+            embeds (dict or None): embedded message serders if any.
             eid (str or None): qb64 of endpoint provider identifier if any.
             save (bool): True means process local copy into db after building.
 
@@ -1640,7 +1637,7 @@ class BaseHab:
                                prior=prior,
                                route=route,
                                modifiers=modifiers,
-                               attributes=payload,
+                               attributes=attributes,
                                embeds=embeds,
                                stamp=stamp,
                                version=version,
