@@ -126,28 +126,28 @@ def test_hab_exchange(mockHelpingNowUTC):
         )
 
         data = dict(m="Let's create a registry")
-        msg = hab.exchange(route="/multisig/registry/incept", receiver="",
-                           payload=data, embeds=embeds, framed=True, gvrsn=TEST_VERSION, **kwa)
-        assert msg == (b'{"v":"KERI10JSON0003a0_","t":"exn","d":"ELkHqph-Tj4LGHYfFfoVmJJo'
-                    b'09S2gp6ci8rK96upIAKE","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2Q'
+        msg = hab.exchange(route="/multisig/registry/incept",
+                           payload=data, embeds=embeds, framed=True,
+                           gvrsn=TEST_VERSION, **kwa)
+        assert msg == (b'{"v":"KERI10JSON000399_","t":"exn","d":"EFKuL1JIrM6WMwjzL5YVmEyc'
+                    b'aAUGQJ7JYYx5Bjx7f70f","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2Q'
                     b'V8dDjI3","rp":"","p":"","dt":"2021-01-01T00:00:00.000000+00:00",'
-                    b'"r":"/multisig/registry/incept","q":{},"a":{"i":"","m":"Let\'s cr'
-                    b'eate a registry"},"e":{"vcp":{"v":"KERI10JSON00010f_","t":"vcp",'
-                    b'"d":"EI6hBlgkWoJgkZyfLW35_UyM4nIK44OgsSwFR_WOfvVB","i":"EI6hBlgk'
-                    b'WoJgkZyfLW35_UyM4nIK44OgsSwFR_WOfvVB","ii":"EIaGMMWJFPmtXznY1IIi'
-                    b'KDIrg-vIyge6mBl2QV8dDjI3","s":"0","c":[],"bt":"0","b":[],"n":"AH'
-                    b'3-1EZWXU9I0fv3Iz_9ZIhjj13JO7u4GNFYC3-l8_K-"},"ixn":{"v":"KERI10J'
-                    b'SON000138_","t":"ixn","d":"EFuFnevyDFfpWG6il-6Qcv0ne0ZIItLwanCwI'
-                    b'-SU8A9j","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","s":'
-                    b'"1","p":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","a":[{"i"'
-                    b':"EI6hBlgkWoJgkZyfLW35_UyM4nIK44OgsSwFR_WOfvVB","s":0,"d":"EI6hB'
-                    b'lgkWoJgkZyfLW35_UyM4nIK44OgsSwFR_WOfvVB"}]},"d":"EL5Nkm6T7HG_0GW'
-                    b'6uwqYSZwlH23khtXvsVE-dq8eO_eE"}}-FABEIaGMMWJFPmtXznY1IIiKDIrg-vI'
-                    b'yge6mBl2QV8dDjI3MAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
-                    b'-AABAAB-teJc_7zot5TAZT6lQi2-GlBzMHXICvt3tIYoPo2gYXF7PpWDozo3y3wV'
-                    b'W9mgHln-1DvQlqn9Aip1YnBgKUQB-LAa5AACAA-e-ixn-AABAADprTWp4llIzVzB'
-                    b'M7VVsDOgXVJdoiVXutsWJEbDJ2pMdjXjNi1xKALBSZ1ZgRoUsD--LgUQkXIdjLoQ'
-                    b'19XPvJMJ')
+                    b'"r":"/multisig/registry/incept","q":{},"a":{"m":"Let\'s create a '
+                    b'registry"},"e":{"vcp":{"v":"KERI10JSON00010f_","t":"vcp","d":"EI'
+                    b'6hBlgkWoJgkZyfLW35_UyM4nIK44OgsSwFR_WOfvVB","i":"EI6hBlgkWoJgkZy'
+                    b'fLW35_UyM4nIK44OgsSwFR_WOfvVB","ii":"EIaGMMWJFPmtXznY1IIiKDIrg-v'
+                    b'Iyge6mBl2QV8dDjI3","s":"0","c":[],"bt":"0","b":[],"n":"AH3-1EZWX'
+                    b'U9I0fv3Iz_9ZIhjj13JO7u4GNFYC3-l8_K-"},"ixn":{"v":"KERI10JSON0001'
+                    b'38_","t":"ixn","d":"EFuFnevyDFfpWG6il-6Qcv0ne0ZIItLwanCwI-SU8A9j'
+                    b'","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","s":"1","p"'
+                    b':"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","a":[{"i":"EI6hB'
+                    b'lgkWoJgkZyfLW35_UyM4nIK44OgsSwFR_WOfvVB","s":0,"d":"EI6hBlgkWoJg'
+                    b'kZyfLW35_UyM4nIK44OgsSwFR_WOfvVB"}]},"d":"EL5Nkm6T7HG_0GW6uwqYSZ'
+                    b'wlH23khtXvsVE-dq8eO_eE"}}-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl'
+                    b'2QV8dDjI3MAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAAA'
+                    b'B3Gc71DLRGTOLayjcb3G3ILgHKiG1SOij8J3ce2q5fL-RV1hLc4VhmEEe81tJRmi'
+                    b'3Mois0N0sO-5j5RUTZFoO-LAa5AACAA-e-ixn-AABAADprTWp4llIzVzBM7VVsDO'
+                    b'gXVJdoiVXutsWJEbDJ2pMdjXjNi1xKALBSZ1ZgRoUsD--LgUQkXIdjLoQ19XPvJMJ')
 
         exn = SerderKERI(raw=msg)
 
@@ -172,26 +172,26 @@ def test_hab_exchange(mockHelpingNowUTC):
         msg = hab2.exchange(route="/multisig/registry/incept", payload=data,
                             receiver="", prior=exn.said,
                             embeds=embeds, framed=True, gvrsn=TEST_VERSION, **kwa)
-        assert msg == (b'{"v":"KERI10JSON0003d6_","t":"exn","d":"EPO_XC9nwSixqSoOvsHymFr-'
-                    b'l3udclHBdOh4OUEqZ33P","i":"EIREQlatUJODbKogZfa3IqXZ90XdZA0qJMVli'
-                    b'I61Bcc2","rp":"","p":"ELkHqph-Tj4LGHYfFfoVmJJo09S2gp6ci8rK96upIA'
-                    b'KE","dt":"2021-01-01T00:00:00.000000+00:00","r":"/multisig/regis'
-                    b'try/incept","q":{},"a":{"i":"","m":"Lets create this registry in'
-                    b'stead"},"e":{"vcp":{"v":"KERI10JSON00010f_","t":"vcp","d":"EB5mt'
-                    b's6qrWOZrxjma6lSTjAdPZ0NSHM1HC3IndbS_giB","i":"EB5mts6qrWOZrxjma6'
-                    b'lSTjAdPZ0NSHM1HC3IndbS_giB","ii":"EIREQlatUJODbKogZfa3IqXZ90XdZA'
-                    b'0qJMVliI61Bcc2","s":"0","c":[],"bt":"0","b":[],"n":"AH3-1EZWXU9I'
-                    b'0fv3Iz_9ZIhjj13JO7u4GNFYC3-l8_K-"},"ixn":{"v":"KERI10JSON000138_'
-                    b'","t":"ixn","d":"EOek9JVKNeuW-5UNeHYCTDe70_GtvRwP672oWMNBJpA5","'
-                    b'i":"EIREQlatUJODbKogZfa3IqXZ90XdZA0qJMVliI61Bcc2","s":"1","p":"E'
-                    b'IREQlatUJODbKogZfa3IqXZ90XdZA0qJMVliI61Bcc2","a":[{"i":"EB5mts6q'
-                    b'rWOZrxjma6lSTjAdPZ0NSHM1HC3IndbS_giB","s":0,"d":"EB5mts6qrWOZrxj'
-                    b'ma6lSTjAdPZ0NSHM1HC3IndbS_giB"}]},"d":"EM3gLTzQ9GmKd50Rlm_kiIkeY'
-                    b'kxb004eoOsWahz70TqJ"}}-FABEIREQlatUJODbKogZfa3IqXZ90XdZA0qJMVliI'
-                    b'61Bcc2MAAAEIREQlatUJODbKogZfa3IqXZ90XdZA0qJMVliI61Bcc2-AABAADY5n'
-                    b'UsBgL23ulcrTgkV09hSzktNHZSlEH1zmVpEggrGgQUq0tLQeOXztUFDxNQ4Kq2dd'
-                    b'IYDVz6d_y0kkU3__YJ-LAa5AACAA-e-ixn-AABAACaoxfQp5L_Gd0nKqJXMbLTXz'
-                    b'krJJDd8RFxWdTSesAMydUzmJQlGt0T9h8L7SwIrq8yBinj990PLJHl7sXmq04I')
+        assert msg == (b'{"v":"KERI10JSON0003cf_","t":"exn","d":"EGSdBnzfHi8z6pG2yuEwquSu'
+                    b'Ygw53yEbyucL70aDH1mL","i":"EIREQlatUJODbKogZfa3IqXZ90XdZA0qJMVli'
+                    b'I61Bcc2","rp":"","p":"EFKuL1JIrM6WMwjzL5YVmEycaAUGQJ7JYYx5Bjx7f7'
+                    b'0f","dt":"2021-01-01T00:00:00.000000+00:00","r":"/multisig/regis'
+                    b'try/incept","q":{},"a":{"m":"Lets create this registry instead"}'
+                    b',"e":{"vcp":{"v":"KERI10JSON00010f_","t":"vcp","d":"EB5mts6qrWOZ'
+                    b'rxjma6lSTjAdPZ0NSHM1HC3IndbS_giB","i":"EB5mts6qrWOZrxjma6lSTjAdP'
+                    b'Z0NSHM1HC3IndbS_giB","ii":"EIREQlatUJODbKogZfa3IqXZ90XdZA0qJMVli'
+                    b'I61Bcc2","s":"0","c":[],"bt":"0","b":[],"n":"AH3-1EZWXU9I0fv3Iz_'
+                    b'9ZIhjj13JO7u4GNFYC3-l8_K-"},"ixn":{"v":"KERI10JSON000138_","t":"'
+                    b'ixn","d":"EOek9JVKNeuW-5UNeHYCTDe70_GtvRwP672oWMNBJpA5","i":"EIR'
+                    b'EQlatUJODbKogZfa3IqXZ90XdZA0qJMVliI61Bcc2","s":"1","p":"EIREQlat'
+                    b'UJODbKogZfa3IqXZ90XdZA0qJMVliI61Bcc2","a":[{"i":"EB5mts6qrWOZrxj'
+                    b'ma6lSTjAdPZ0NSHM1HC3IndbS_giB","s":0,"d":"EB5mts6qrWOZrxjma6lSTj'
+                    b'AdPZ0NSHM1HC3IndbS_giB"}]},"d":"EM3gLTzQ9GmKd50Rlm_kiIkeYkxb004e'
+                    b'oOsWahz70TqJ"}}-FABEIREQlatUJODbKogZfa3IqXZ90XdZA0qJMVliI61Bcc2M'
+                    b'AAAEIREQlatUJODbKogZfa3IqXZ90XdZA0qJMVliI61Bcc2-AABAAByi9jCGR7BZ'
+                    b's5iB0K8eyCbrhPZIwTQISa2Hy2uE9ws5YKZfIGgmG9zElwaWgbaH9muZe4N8KahQ'
+                    b'Y7T8KVvAnIN-LAa5AACAA-e-ixn-AABAACaoxfQp5L_Gd0nKqJXMbLTXzkrJJDd8'
+                    b'RFxWdTSesAMydUzmJQlGt0T9h8L7SwIrq8yBinj990PLJHl7sXmq04I')
 
         # Test exn from non-transferable AID
         hab = hby.makeHab(name="test1", transferable=False, **kwa)
@@ -202,21 +202,21 @@ def test_hab_exchange(mockHelpingNowUTC):
         )
         msg = hab.exchange(route="/multisig/registry/incept", payload=data,
                            embeds=embeds, receiver="", framed=True, gvrsn=TEST_VERSION, **kwa)
-        assert msg == (b'{"v":"KERI10JSON00026b_","t":"exn","d":"EMBm0p7fCIqJrP4Z-PBI-yEv'
-                       b'Xin_-eY1dU4XTCM9ykRC","i":"BJZ_LF61JTCCSCIw2Q4ozE2MsbRC4m-N6-tFV'
-                       b'lCeiZPG","rp":"","p":"","dt":"2021-01-01T00:00:00.000000+00:00",'
-                       b'"r":"/multisig/registry/incept","q":{},"a":{"i":"","m":"Lets cre'
-                       b'ate this registry instead"},"e":{"vcp":{"v":"KERI10JSON00010f_",'
-                       b'"t":"vcp","d":"EB5mts6qrWOZrxjma6lSTjAdPZ0NSHM1HC3IndbS_giB","i"'
-                       b':"EB5mts6qrWOZrxjma6lSTjAdPZ0NSHM1HC3IndbS_giB","ii":"EIREQlatUJ'
-                       b'ODbKogZfa3IqXZ90XdZA0qJMVliI61Bcc2","s":"0","c":[],"bt":"0","b":'
-                       b'[],"n":"AH3-1EZWXU9I0fv3Iz_9ZIhjj13JO7u4GNFYC3-l8_K-"},"d":"ENC6'
-                       b'w8wUj-Gp_RpAJN5q4Lf00IHstzNLUvkh3ZvgHGP_"}}-CABBJZ_LF61JTCCSCIw2'
-                       b'Q4ozE2MsbRC4m-N6-tFVlCeiZPG0BB-sQs0WS9wsyuT4hXQD7rbczSfpnQz21wZG'
-                       b'YucRkE0ynKy5draELEKBsckeD0Im1i-kIfMEdbY08YqVfSrEoAA-LAl5AACAA-e-'
-                       b'vcp-CABBJZ_LF61JTCCSCIw2Q4ozE2MsbRC4m-N6-tFVlCeiZPG0BDjOC4j0Co6P'
-                       b'0giMylR47149eJ8Yf_hO-32_TpY77KMVCWCf0U8GuZPIN76R2zsyT_eARvS_zQsX'
-                       b'1ebjl3PMP0D')
+        assert msg == (b'{"v":"KERI10JSON000264_","t":"exn","d":"EHpPvOzki6YEh7vtcTQUx3rI'
+                    b'CVCGyrE9WxYAaJIvDJDU","i":"BJZ_LF61JTCCSCIw2Q4ozE2MsbRC4m-N6-tFV'
+                    b'lCeiZPG","rp":"","p":"","dt":"2021-01-01T00:00:00.000000+00:00",'
+                    b'"r":"/multisig/registry/incept","q":{},"a":{"m":"Lets create thi'
+                    b's registry instead"},"e":{"vcp":{"v":"KERI10JSON00010f_","t":"vc'
+                    b'p","d":"EB5mts6qrWOZrxjma6lSTjAdPZ0NSHM1HC3IndbS_giB","i":"EB5mt'
+                    b's6qrWOZrxjma6lSTjAdPZ0NSHM1HC3IndbS_giB","ii":"EIREQlatUJODbKogZ'
+                    b'fa3IqXZ90XdZA0qJMVliI61Bcc2","s":"0","c":[],"bt":"0","b":[],"n":'
+                    b'"AH3-1EZWXU9I0fv3Iz_9ZIhjj13JO7u4GNFYC3-l8_K-"},"d":"ENC6w8wUj-G'
+                    b'p_RpAJN5q4Lf00IHstzNLUvkh3ZvgHGP_"}}-CABBJZ_LF61JTCCSCIw2Q4ozE2M'
+                    b'sbRC4m-N6-tFVlCeiZPG0BAcmtiiDc82NMYkbVb70WBkekCt8YUEXEaWKeSOMRKb'
+                    b'dTcWbEvopiman-9jhv9ck2NgZhmy25zgpCSIliWgUnwO-LAl5AACAA-e-vcp-CAB'
+                    b'BJZ_LF61JTCCSCIw2Q4ozE2MsbRC4m-N6-tFVlCeiZPG0BDjOC4j0Co6P0giMylR'
+                    b'47149eJ8Yf_hO-32_TpY77KMVCWCf0U8GuZPIN76R2zsyT_eARvS_zQsX1ebjl3P'
+                    b'MP0D')
 
 
 if __name__ == "__main__":
