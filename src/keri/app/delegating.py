@@ -332,7 +332,7 @@ def delegateRequestExn(hab, delpre, evt, aids=None):
 
     # Create `exn` peer to peer message to notify other participants UI
     exn, _ = exchange(route=DelegateRequestHandler.resource, modifiers=dict(),
-                                 payload=data, sender=hab.pre, embeds=embeds)
+                                 attributes=data, sender=hab.pre, embeds=embeds)
     ims = hab.endorse(serder=exn, last=False, framed=True)
     del ims[:exn.size]
 

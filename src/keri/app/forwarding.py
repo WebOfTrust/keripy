@@ -190,7 +190,7 @@ class Poster(doing.DoDoer):
         evt = bytearray(serder.raw)
         evt.extend(atc)
         fwd, atc = exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
-                            payload={}, embeds=dict(evt=evt), sender=hab.pre)
+                            attributes={}, embeds=dict(evt=evt), sender=hab.pre)
         ims = hab.endorse(serder=fwd, last=False, framed=True)
 
         # Transpose the signatures to point to the new location
@@ -223,7 +223,7 @@ class Poster(doing.DoDoer):
         evt = bytearray(serder.raw)
         evt.extend(atc)
         fwd, atc = exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
-                            payload={}, embeds=dict(evt=evt), sender=hab.pre)
+                            attributes={}, embeds=dict(evt=evt), sender=hab.pre)
         ims = hab.endorse(serder=fwd, last=False, framed=True)
 
         # Transpose the signatures to point to the new location
@@ -407,7 +407,7 @@ class StreamPoster:
         evt = bytearray(serder.raw)
         evt.extend(atc)
         fwd, atc = exchange(route='/fwd', modifiers=dict(pre=self.recp, topic=topic),
-                            payload={}, embeds=dict(evt=evt), sender=hab.pre)
+                            attributes={}, embeds=dict(evt=evt), sender=hab.pre)
         ims = hab.endorse(serder=fwd, last=False, framed=True)
         return fwd, ims + atc
 

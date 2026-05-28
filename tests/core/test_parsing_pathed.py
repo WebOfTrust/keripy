@@ -40,7 +40,7 @@ def test_pathed_material(mockHelpingNowUTC):
                        ixn1=debHab.interact(framed=True))
         fwd, end = exchange(route='/fwd',
                             modifiers=dict(pre=palHab.pre, topic="replay"),
-                            payload={},
+                            attributes={},
                             embeds=debMsgs,
                             sender=debHab.pre)
         fwd = debHab.endorse(fwd, last=False, framed=True)

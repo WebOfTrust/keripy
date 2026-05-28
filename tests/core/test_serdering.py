@@ -4361,7 +4361,7 @@ def test_keri_native_dumps_loads():
                      prior='EFPs8lNTVLRs6xjs5reB_wKbYxqgMR3fdARfH0Ndcws4',
                      route="/away",
                      modifiers=modifiers,
-                     payload=attributes,
+                     attributes=attributes,
                     stamp=dts,
                     pvrsn=Vrsn_2_0,
                     kind=Kinds.cesr)

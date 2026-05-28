@@ -426,7 +426,7 @@ def exchange(*,
              prior="",
              route="",
              modifiers=None,
-             payload=None,
+             attributes=None,
              diger=None,
              embeds=None,
              stamp=None,
@@ -457,12 +457,8 @@ def exchange(*,
                             if serder.gvrsn else serder.pvrsn
         kind (str): serialization for key event message
                     one of Kinds ("json","cbor","mgpk","cesr")
-
-        payload (list | dict): body of message to deliver to route
-        diger (Diger): qb64 digest of payload
-
+        diger (Diger): qb64 digest of attributes section (payload)
         embeds (dict): named embeded KERI event CESR stream with attachments
-
 
     """
     pvrsn = pvrsn if pvrsn is not None else version
@@ -513,7 +509,7 @@ def exchange(*,
             if receiver:  # is not None
                 attrs['i'] = receiver
 
-            attrs |= payload
+            attrs |= attributes
 
         else:
             attrs = diger.qb64
@@ -534,7 +530,7 @@ def exchange(*,
         if e:
             attrs['e'] = e
 
-        attrs |= payload
+        attrs |= attributes
 
         sad = dict(v=vs,
                    t=ilk,
