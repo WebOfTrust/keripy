@@ -7,7 +7,7 @@ import os
 
 from hio.help import ogler
 
-from keri.kering import Vrsn_1_0
+from keri.kering import Vrsn_1_0, Kinds
 from keri.core import (Number, Seqner, Diger, Kevery,
                        SealEvent, Salter, Counter, parsing,
                        NumDex, MtrDex, Codens,
@@ -28,6 +28,7 @@ def test_delegation():
 
     bobSalt = Salter(raw=b'0123456789abcdef').qb64
     delSalt = Salter(raw=b'abcdef0123456789').qb64
+    version = Vrsn_1_0
 
     with (openDB(name="bob") as bobDB, \
             openKS(name="bob") as bobKS, \
@@ -46,7 +47,7 @@ def test_delegation():
         verfers, digers = bobMgr.incept(stem='bob', temp=True)  # algo default salty and rooted
         bobSrdr = incept(keys=[verfer.qb64 for verfer in verfers],
                                   ndigs=[diger.qb64 for diger in digers],
-                                  code=MtrDex.Blake3_256)
+                                  code=MtrDex.Blake3_256, version=version, kind=Kinds.json)
 
         bob = bobSrdr.ked["i"]
         assert bob == 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH'
@@ -57,7 +58,7 @@ def test_delegation():
 
         msg = bytearray(bobSrdr.raw)
         counter = Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                               version=Vrsn_1_0)
+                               version=version)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -71,7 +72,7 @@ def test_delegation():
                     b'-nlhHEE')
 
         # apply msg to bob's Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=bobKvy)
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         bobK = bobKvy.kevers[bob]
         assert bobK.prefixer.qb64 == bob
@@ -79,7 +80,7 @@ def test_delegation():
         assert bobK.serder.said == 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH'
 
         # apply msg to del's Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=delKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=delKvy)
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert bob in delKvy.kevers
 
@@ -88,7 +89,8 @@ def test_delegation():
 
         delSrdr = delcept(keys=[verfer.qb64 for verfer in verfers],
                                    delpre=bobK.prefixer.qb64,
-                                   ndigs=[diger.qb64 for diger in digers])
+                                   ndigs=[diger.qb64 for diger in digers],
+                          version=version, kind=Kinds.json)
 
         delPre = delSrdr.ked["i"]
         assert delPre == 'EHng2fV42DdKb5TLMIs6bbjFkPNmIdQ5mSFn6BTnySJj'
@@ -103,14 +105,16 @@ def test_delegation():
         bobSrdr = interact(pre=bobK.prefixer.qb64,
                                     dig=bobK.serder.said,
                                     sn=bobK.sn + 1,
-                                    data=[seal._asdict()])
+                                    data=[seal._asdict()],
+                                    version=version,
+                                    kind=Kinds.json)
 
         assert bobSrdr.said == 'EJtQndkvwnMpVGE5oVVbLWSCm-jLviGw1AOOkzBvNwsS'
 
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
         msg = bytearray(bobSrdr.raw)
         counter = Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                               version=Vrsn_1_0)
+                               version=version)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -124,12 +128,12 @@ def test_delegation():
                     b'DrCxa_0IOp906gYqDPXIwG')
 
         # apply msg to bob's Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=bobKvy)
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert bobK.serder.said == bobSrdr.said  # key state updated so event was validated
 
         # apply msg to del's Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=delKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=delKvy)
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert delKvy.kevers[bob].serder.said == bobSrdr.said
 
@@ -138,12 +142,12 @@ def test_delegation():
 
         msg = bytearray(delSrdr.raw)
         counter = Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                               version=Vrsn_1_0)
+                               version=version)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
         counter = Counter(Codens.SealSourceCouples, count=1,
-                               version=Vrsn_1_0)
+                               version=version)
         msg.extend(counter.qb64b)
         seqner = Seqner(sn=bobK.sn)
         msg.extend(seqner.qb64b)
@@ -161,7 +165,7 @@ def test_delegation():
 
 
         # apply Del's delegated inception event message to Del's own Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=delKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=delKvy)
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert delPre in delKvy.kevers
         delK = delKvy.kevers[delPre]
@@ -174,7 +178,7 @@ def test_delegation():
         assert rdiger.qb64b == bobSrdr.saidb
 
         # apply Del's delegated inception event message to bob's Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=bobKvy)
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert delPre in bobKvy.kevers  # successfully validated
         bobDelK = bobKvy.kevers[delPre]
@@ -193,7 +197,8 @@ def test_delegation():
                                    keys=[verfer.qb64 for verfer in verfers],
                                    dig=bobDelK.serder.said,
                                    sn=bobDelK.sn + 1,
-                                   ndigs=[diger.qb64 for diger in digers])
+                                   ndigs=[diger.qb64 for diger in digers],
+                                   version=version, kind=Kinds.json)
 
         assert delSrdr.said == 'EM5fj7YtOQYH3iLyWJr6HZVVxrY5t46LRL2vkNpdnPi0'
 
@@ -204,13 +209,15 @@ def test_delegation():
         bobSrdr = interact(pre=bobK.prefixer.qb64,
                                     dig=bobK.serder.said,
                                     sn=bobK.sn + 1,
-                                    data=[seal._asdict()])
+                                    data=[seal._asdict()],
+                                   version=version,
+                                   kind=Kinds.json)
 
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
 
         msg = bytearray(bobSrdr.raw)
         counter = Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                               version=Vrsn_1_0)
+                               version=version)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -260,7 +267,7 @@ def test_delegation():
                     b'iMVs')
 
         # apply msg to del's Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=delKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=delKvy)
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert bobDelK.delegated
         assert delK.serder.said == delSrdr.said
@@ -271,7 +278,7 @@ def test_delegation():
         assert rdiger.qb64b == bobSrdr.saidb
 
         # apply Del's delegated inception event message to bob's Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=bobKvy)
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert bobDelK.delegated
         assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
@@ -484,6 +491,8 @@ def test_delegation_supersede():
             openDB(name="del") as delDB,
             openKS(name="del") as delKS):
 
+        version = Vrsn_1_0
+
         # Init key pair managers
         bobMgr = Manager(ks=bobKS, salt=topSalt)
         delMgr = Manager(ks=delKS, salt=midSalt)
@@ -496,7 +505,8 @@ def test_delegation_supersede():
         verfers, digers = bobMgr.incept(stem='bob', temp=True)  # algo default salty and rooted
         bobSrdr = incept(keys=[verfer.qb64 for verfer in verfers],
                                   ndigs=[diger.qb64 for diger in digers],
-                                  code=MtrDex.Blake3_256)
+                                  code=MtrDex.Blake3_256,
+                                  version=version, kind=Kinds.json)
 
         bob = bobSrdr.ked["i"]
         assert bob == 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH'
@@ -507,7 +517,7 @@ def test_delegation_supersede():
 
         msg = bytearray(bobSrdr.raw)
         counter = Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                               version=Vrsn_1_0)
+                               version=version)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -521,7 +531,7 @@ def test_delegation_supersede():
                     b'-nlhHEE')
 
         # apply msg to bob's Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=bobKvy)
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         bobK = bobKvy.kevers[bob]
         assert bobK.prefixer.qb64 == bob
@@ -529,7 +539,7 @@ def test_delegation_supersede():
         assert bobK.serder.said == 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH'
 
         # apply msg to del's Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=delKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=delKvy)
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert bob in delKvy.kevers
 
@@ -538,7 +548,8 @@ def test_delegation_supersede():
 
         delSrdr = delcept(keys=[verfer.qb64 for verfer in verfers],
                                    delpre=bobK.prefixer.qb64,
-                                   ndigs=[diger.qb64 for diger in digers])
+                                   ndigs=[diger.qb64 for diger in digers],
+                                   version=version, kind=Kinds.json)
 
         delPre = delSrdr.ked["i"]
         assert delPre == 'EHng2fV42DdKb5TLMIs6bbjFkPNmIdQ5mSFn6BTnySJj'
@@ -553,14 +564,16 @@ def test_delegation_supersede():
         bobSrdr = interact(pre=bobK.prefixer.qb64,
                                     dig=bobK.serder.said,
                                     sn=bobK.sn + 1,
-                                    data=[seal._asdict()])
+                                    data=[seal._asdict()],
+                                    version=version,
+                                    kind=Kinds.json)
 
         assert bobSrdr.said == 'EJtQndkvwnMpVGE5oVVbLWSCm-jLviGw1AOOkzBvNwsS'
 
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
         msg = bytearray(bobSrdr.raw)
         counter = Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                               version=Vrsn_1_0)
+                               version=version)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -574,12 +587,12 @@ def test_delegation_supersede():
                     b'DrCxa_0IOp906gYqDPXIwG')
 
         # apply msg to bob's Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=bobKvy)
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert bobK.serder.said == bobSrdr.said  # key state updated so event was validated
 
         # apply msg to del's Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=delKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=delKvy)
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert delKvy.kevers[bob].serder.said == bobSrdr.said
 
@@ -588,12 +601,12 @@ def test_delegation_supersede():
 
         msg = bytearray(delSrdr.raw)
         counter = Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                               version=Vrsn_1_0)
+                               version=version)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
         counter = Counter(Codens.SealSourceCouples, count=1,
-                               version=Vrsn_1_0)
+                               version=version)
         msg.extend(counter.qb64b)
         seqner = Seqner(sn=bobK.sn)
         msg.extend(seqner.qb64b)
@@ -611,7 +624,7 @@ def test_delegation_supersede():
 
 
         # apply Del's delegated inception event message to Del's own Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=delKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=delKvy)
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert delPre in delKvy.kevers
         delK = delKvy.kevers[delPre]
@@ -624,7 +637,7 @@ def test_delegation_supersede():
         assert rdiger.qb64b == bobSrdr.saidb
 
         # apply Del's delegated inception event message to bob's Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=bobKvy)
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert delPre in bobKvy.kevers  # successfully validated
         bobDelK = bobKvy.kevers[delPre]
@@ -643,7 +656,8 @@ def test_delegation_supersede():
                                    keys=[verfer.qb64 for verfer in verfers],
                                    dig=bobDelK.serder.said,
                                    sn=bobDelK.sn + 1,
-                                   ndigs=[diger.qb64 for diger in digers])
+                                   ndigs=[diger.qb64 for diger in digers],
+                                   version=version, kind=Kinds.json)
 
         assert delSrdr.said == 'EM5fj7YtOQYH3iLyWJr6HZVVxrY5t46LRL2vkNpdnPi0'
 
@@ -654,13 +668,15 @@ def test_delegation_supersede():
         bobSrdr = interact(pre=bobK.prefixer.qb64,
                                     dig=bobK.serder.said,
                                     sn=bobK.sn + 1,
-                                    data=[seal._asdict()])
+                                    data=[seal._asdict()],
+                                    version=version,
+                                    kind=Kinds.json)
 
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
 
         msg = bytearray(bobSrdr.raw)
         counter = Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                               version=Vrsn_1_0)
+                               version=version)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
@@ -674,12 +690,12 @@ def test_delegation_supersede():
                     b'7n1u44IyfsiKrB2R_UeUIK')
 
         # apply msg to bob's Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=bobKvy)
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert bobK.serder.said == bobSrdr.said  # key state updated so event was validated
 
         # apply msg to del's Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=delKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=delKvy)
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert delKvy.kevers[bob].serder.said == bobSrdr.said
 
@@ -688,12 +704,12 @@ def test_delegation_supersede():
 
         msg = bytearray(delSrdr.raw)
         counter = Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                               version=Vrsn_1_0)
+                               version=version)
         msg.extend(counter.qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
         counter = Counter(Codens.SealSourceCouples, count=1,
-                               version=Vrsn_1_0)
+                               version=version)
         msg.extend(counter.qb64b)
         seqner = Seqner(sn=bobK.sn)
         msg.extend(seqner.qb64b)
@@ -710,7 +726,7 @@ def test_delegation_supersede():
                     b'iMVs')
 
         # apply msg to del's Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=delKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=delKvy)
         # delKvy.process(ims=bytearray(msg))  # process remote copy of msg
         assert bobDelK.delegated
         assert delK.serder.said == delSrdr.said
@@ -721,7 +737,7 @@ def test_delegation_supersede():
         assert rdiger.qb64b == bobSrdr.saidb
 
         # apply Del's delegated inception event message to bob's Kevery
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=bobKvy)
         # bobKvy.process(ims=bytearray(msg))  # process local copy of msg
         assert bobDelK.delegated
         assert bobDelK.serder.said == delSrdr.said  # key state updated so event was validated
@@ -805,6 +821,7 @@ def test_fetch_delegating_event():
     """
     bobSalt = Salter(raw=b'0123456789abcdef').qb64
     delSalt = Salter(raw=b'abcdef0123456789').qb64
+    version = Vrsn_1_0
 
     with (openDB(name="bob") as bobDB,
           openKS(name="bob") as bobKS,
@@ -821,24 +838,26 @@ def test_fetch_delegating_event():
         verfers, digers = bobMgr.incept(stem='bob', temp=True)
         bobSrdr = incept(keys=[verfer.qb64 for verfer in verfers],
                                   ndigs=[diger.qb64 for diger in digers],
-                                  code=MtrDex.Blake3_256)
+                                  code=MtrDex.Blake3_256,
+                                  version=version, kind=Kinds.json)
         bob = bobSrdr.ked["i"]
         bobMgr.move(old=verfers[0].qb64, new=bob)
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=verfers)
         msg = bytearray(bobSrdr.raw)
         msg.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                                version=Vrsn_1_0).qb64b)
+                                version=version).qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=delKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=bobKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=delKvy)
         bobK = bobKvy.kevers[bob]
 
         # Del delegated inception: first create delegating ixn on Bob
         verfers, digers = delMgr.incept(stem='del', temp=True)
         delSrdr = delcept(keys=[verfer.qb64 for verfer in verfers],
                                    delpre=bobK.prefixer.qb64,
-                                   ndigs=[diger.qb64 for diger in digers])
+                                   ndigs=[diger.qb64 for diger in digers],
+                                   version=version, kind=Kinds.json)
         delPre = delSrdr.ked["i"]
         delMgr.move(old=verfers[0].qb64, new=delPre)
 
@@ -846,31 +865,32 @@ def test_fetch_delegating_event():
         bobIxnSrdr = interact(pre=bobK.prefixer.qb64,
                                       dig=bobK.serder.said,
                                       sn=bobK.sn + 1,
-                                      data=[seal._asdict()])
+                                      data=[seal._asdict()],
+                                      version=version, kind=Kinds.json)
         sigers = bobMgr.sign(ser=bobIxnSrdr.raw, verfers=bobK.verfers)
         msg = bytearray(bobIxnSrdr.raw)
         msg.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                                version=Vrsn_1_0).qb64b)
+                                version=version).qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=delKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=bobKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=delKvy)
 
         # Del's dip with seal source couple
         sigers = delMgr.sign(ser=delSrdr.raw, verfers=verfers)
         msg = bytearray(delSrdr.raw)
         msg.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                                version=Vrsn_1_0).qb64b)
+                                version=version).qb64b)
         for siger in sigers:
             msg.extend(siger.qb64b)
         msg.extend(Counter(Codens.SealSourceCouples, count=1,
-                                version=Vrsn_1_0).qb64b)
+                                version=version).qb64b)
         seqner = Seqner(sn=bobK.sn)
         msg.extend(seqner.qb64b)
         msg.extend(bobIxnSrdr.saidb)
 
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=delKvy)
-        parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bobKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=delKvy)
+        parsing.Parser(version=version).parse(ims=bytearray(msg), kvy=bobKvy)
 
         assert delPre in delKvy.kevers
         delK = delKvy.kevers[delPre]

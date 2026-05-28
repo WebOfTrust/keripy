@@ -2,7 +2,7 @@
 
 import os
 
-from keri.kering import Vrsn_1_0, Vrsn_2_0
+from keri.kering import Vrsn_1_0, Vrsn_2_0, Kinds
 from keri.core import (Kevery, Salter, SealEvent, Parser, MtrDex,
                        incept, rotate, interact, messagize, receipt)
 
@@ -29,6 +29,7 @@ def test_direct_mode_with_manager():
     # set of secrets (seeds for private keys)
     valSalt = Salter(raw=b'1123456789abcdea').qb64
 
+    kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
 
     with openDB(name="controller") as coeLogger, openDB(name="validator") as valLogger, \
          openKS(name="controller") as coeKpr, openKS(name="validator") as valKpr:
@@ -50,7 +51,7 @@ def test_direct_mode_with_manager():
         # Controller Event 0  Inception Transferable (nxt digest not empty)
         coeSerder = incept(keys=[coeVerfers[0].qb64],
                            ndigs=[coeDigers[0].qb64],
-                           code=MtrDex.Blake3_256)
+                           code=MtrDex.Blake3_256, **kwa)
 
         assert csn == int(coeSerder.ked["s"], 16) == 0
         coepre = coeSerder.ked["i"]
@@ -75,7 +76,7 @@ def test_direct_mode_with_manager():
 
         valSerder = incept(keys=[valVerfers[0].qb64],
                            ndigs=[valDigers[0].qb64],
-                           code=MtrDex.Blake3_256)
+                           code=MtrDex.Blake3_256, **kwa)
 
         assert vsn == int(valSerder.ked["s"], 16) == 0
         valpre = valSerder.ked["i"]
@@ -108,7 +109,7 @@ def test_direct_mode_with_manager():
         # create trans receipt by attaching siger to recipt msg
         reserder = receipt(pre=coeK.prefixer.qb64,
                            sn=coeK.sn,
-                           said=coeK.serder.said)
+                           said=coeK.serder.said, **kwa)
 
         # sign controller's event not receipt
         # look up event to sign from validator's kever for coe
@@ -156,7 +157,7 @@ def test_direct_mode_with_manager():
         fake = reserder.said  # some other digest
         reserder = receipt(pre=coeK.prefixer.qb64,
                            sn=10,
-                           said=fake)
+                           said=fake, **kwa)
         # sign event not receipt
         sigers = valMgr.sign(ser=s.raw, verfers=valVerfers)  # return Siger if index
         # create receipt message
@@ -185,7 +186,7 @@ def test_direct_mode_with_manager():
         # create trans receipt
         reserder = receipt(pre=valK.prefixer.qb64,
                            sn=valK.sn,
-                           said=valK.serder.said, )
+                           said=valK.serder.said, **kwa)
         # sign validator's event not receipt
         # look up event to sign from controller's kever for validator
         valIcpDig = coeKevery.db.kels.getLast(keys=valpre, on=vsn)
@@ -222,7 +223,7 @@ def test_direct_mode_with_manager():
                            keys=[coeVerfers[0].qb64],
                            dig=coeKever.serder.said,
                            ndigs=[coeDigers[0].qb64],
-                           sn=csn)
+                           sn=csn, **kwa)
         coe_event_digs.append(coeSerder.said)
 
         # sign serialization
@@ -253,7 +254,7 @@ def test_direct_mode_with_manager():
         # create validator receipt
         reserder = receipt(pre=coeK.prefixer.qb64,
                            sn=coeK.sn,
-                           said=coeK.serder.said)
+                           said=coeK.serder.said, **kwa)
         # sign controller's event not receipt
         # look up event to sign from validator's kever for controller
         coeRotDig = valKevery.db.kels.getLast(keys=coepre, on=csn)
@@ -288,7 +289,7 @@ def test_direct_mode_with_manager():
         assert cesn == 1
         coeSerder = interact(pre=coeKever.prefixer.qb64,
                              dig=coeKever.serder.said,
-                             sn=csn)
+                             sn=csn, **kwa)
         coe_event_digs.append(coeSerder.said)
 
         # sign serialization
@@ -319,7 +320,7 @@ def test_direct_mode_with_manager():
         # create validator receipt
         reserder = receipt(pre=coeK.prefixer.qb64,
                            sn=coeK.sn,
-                           said=coeK.serder.said)
+                           said=coeK.serder.said, **kwa)
         # sign controller's event not receipt
         # look up event to sign from validator's kever for controller
         coeIxnDig = valKevery.db.kels.getLast(keys=coepre, on=csn)

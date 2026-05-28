@@ -7,25 +7,27 @@ from contextlib import contextmanager
 from keri.app import habbing
 from keri import kering, core
 from keri.core import eventing, parsing
-from keri.kering import Vrsn_1_0
+from keri.kering import Vrsn_1_0, Kinds, Vrsn_2_0
+
 
 @contextmanager
 def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
-    with (habbing.openHab(name=f"{prefix}_1", salt=salt, transferable=True, temp=temp) as (hby1, hab1),
-          habbing.openHab(name=f"{prefix}_2", salt=salt, transferable=True, temp=temp) as (hby2, hab2),
-          habbing.openHab(name=f"{prefix}_3", salt=salt, transferable=True, temp=temp) as (hby3, hab3)):
+    version = kwa.get("version", Vrsn_2_0)
+    with (habbing.openHab(name=f"{prefix}_1", salt=salt, transferable=True, temp=temp, **kwa) as (hby1, hab1),
+          habbing.openHab(name=f"{prefix}_2", salt=salt, transferable=True, temp=temp, **kwa) as (hby2, hab2),
+          habbing.openHab(name=f"{prefix}_3", salt=salt, transferable=True, temp=temp, **kwa) as (hby3, hab3)):
         # Keverys so we can process each other's inception messages.
         kev1 = eventing.Kevery(db=hab1.db, lax=True, local=False)
         kev2 = eventing.Kevery(db=hab2.db, lax=True, local=False)
         kev3 = eventing.Kevery(db=hab3.db, lax=True, local=False)
 
-        icp1 = hab1.msgOwnEvent(sn=0, framed=True)
+        icp1 = hab1.msgOwnEvent(sn=0, framed=True, gvrsn=version)
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(icp1), kvy=kev2)
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(icp1), kvy=kev3)
-        icp2 = hab2.msgOwnEvent(sn=0, framed=True)
+        icp2 = hab2.msgOwnEvent(sn=0, framed=True, gvrsn=version)
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(icp2), kvy=kev1)
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(icp2), kvy=kev3)
-        icp3 = hab3.msgOwnEvent(sn=0, framed=True)
+        icp3 = hab3.msgOwnEvent(sn=0, framed=True, gvrsn=version)
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(icp3), kvy=kev1)
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(icp3), kvy=kev2)
 
@@ -36,7 +38,8 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
             toad=0,
             wits=[],
             isith='3',
-            nsith='3'
+            nsith='3',
+            **kwa
         )
 
         ghab1 = hby1.makeGroupHab(group=f"{prefix}_group1", mhab=hab1,

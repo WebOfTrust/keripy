@@ -11,6 +11,7 @@ from hio.base import doing
 from hio.help import ogler
 from hio.core.tcp import clienting, serving
 
+from keri import Vrsn_1_0, Kinds
 from keri.core import Salter, Diger, MtrDex, incept
 from keri.app import Director, Directant, Reactor, openHby, runController
 from keri.demo import setupDemoController
@@ -23,6 +24,8 @@ def test_directing_basic():
     ogler.resetLevel(level=logging.INFO)
 
     raw = b"raw salt to test"
+    version = Vrsn_1_0
+    kwa = dict(version=version, kind=Kinds.json)
 
     #  create bob signers and secrecies
     bobSigners = Salter(raw=raw).signers(count=8, path="bob", temp=True)
@@ -31,7 +34,7 @@ def test_directing_basic():
     # bob inception transferable (nxt digest not empty)
     bobSerder = incept(keys=[bobSigners[0].verfer.qb64],
                                 ndigs=[Diger(ser=bobSigners[1].verfer.qb64b).qb64],
-                                code=MtrDex.Blake3_256)
+                                code=MtrDex.Blake3_256, **kwa)
 
     bob = bobSerder.ked["i"]
     assert bob == 'EFa1wAk_coghxxGCID6jEN79Kmvyj0Y1wWN_ndUv3LjW'
@@ -44,7 +47,7 @@ def test_directing_basic():
     # eve inception transferable (nxt digest not empty)
     eveSerder = incept(keys=[eveSigners[0].verfer.qb64],
                                 ndigs=[Diger(ser=eveSigners[1].verfer.qb64b).qb64],
-                                code=MtrDex.Blake3_256)
+                                code=MtrDex.Blake3_256, **kwa)
 
     eve = eveSerder.ked["i"]
     assert eve == 'EFhg5my9DuMU6gw1CVk6QgkmZKBttWSXDzVzWVmxh0_K'
@@ -61,7 +64,7 @@ def test_directing_basic():
         evePort = 5621  # eve's TCP listneing port for server
 
         # setup bob
-        bobHab = bobHby.makeHab(name="Bob", secrecies=bobSecrecies)
+        bobHab = bobHby.makeHab(name="Bob", secrecies=bobSecrecies, **kwa)
         assert bobHab.iserder.said == bobSerder.said
         assert bobHab.pre == bob
 
@@ -91,7 +94,7 @@ def test_directing_basic():
         # Bob's Reactants created on demand
 
         # setup eve
-        eveHab = eveHby.makeHab(name="Eve", secrecies=eveSecrecies)
+        eveHab = eveHby.makeHab(name="Eve", secrecies=eveSecrecies, **kwa)
         print(eveHab.iserder.pretty())
         print(eveSerder.pretty())
         assert eveHab.iserder.said == eveSerder.said

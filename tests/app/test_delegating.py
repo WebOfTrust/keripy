@@ -6,7 +6,7 @@ tests.app.delegating module
 import time
 from hio.base import doing, tyming
 
-from keri.kering import Schemes, Vrsn_1_0
+from keri.kering import Schemes, Vrsn_1_0, Kinds
 from keri.core import Salter, Kevery, Parser, Seqner, Diger, delcept
 
 from keri.app import (Anchorer, DelegateRequestHandler, Receiptor,
@@ -19,13 +19,16 @@ def test_anchorer(seeder):
             openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64) as palHby, \
             openHby(name="del", salt=Salter(raw=b'0123456789ghijkl').qb64) as delHby:
 
-        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
+        version = Vrsn_1_0
+        kwa = dict(version=version, kind=Kinds.json)
+        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644, **kwa)
         witDoer = Receiptor(hby=palHby)
+
         bts = Anchorer(hby=delHby)
 
         wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[Schemes.http])
-        seeder.seedWitEnds(delHby.db, witHabs=[wesHab], protocols=[Schemes.http])
+        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[Schemes.http], **kwa)
+        seeder.seedWitEnds(delHby.db, witHabs=[wesHab], protocols=[Schemes.http], **kwa)
 
         opts = dict(
             wesHab=wesHab,
@@ -128,9 +131,11 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
 def test_delegation_request(mockHelpingNowUTC):
     with openHab(name="test", temp=True, salt=b'0123456789abcdef') as (hby, hab):
 
+        version = Vrsn_1_0
         delpre = "EArzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"
         serder = delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=delpre,
-                                  ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
+                                  ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"],
+                                  version=version, kind=Kinds.json)
         evt = hab.endorse(serder=serder, framed=False)
         exn, atc = delegateRequestExn(hab=hab, delpre=delpre, evt=evt)
 
@@ -153,7 +158,8 @@ def test_delegation_request_handler(mockHelpingNowUTC):
     with openHab(name="test", temp=True) as (hby, hab):
 
         serder = delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=hab.pre,
-                                  ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"])
+                                  ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"],
+                                  version=Vrsn_1_0, kind=Kinds.json)
 
         evt = hab.endorse(serder=serder, framed=False)
         notifier = Notifier(hby=hby)

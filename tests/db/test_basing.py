@@ -14,7 +14,7 @@ import pytest
 import lmdb
 from hio.base import doing
 
-from keri.kering import Kinds, Ilks, versify
+from keri.kering import Kinds, Ilks, Vrsn_1_0, versify
 from keri.app import openHby
 from keri.core import (Seqner, Diger, Number, Kever, Serder,
                        Signer, Siger, Salter, Dater, Prefixer,
@@ -1825,9 +1825,11 @@ def test_clean_baser():
     Test Baser db clean clone method
     """
     name = "nat"
+    version = Vrsn_1_0
     # with openDB(name="nat") as natDB, keeping.openKS(name="nat") as natKS:
     with openHby(name=name, salt=Salter(raw=b'0123456789abcdef').qb64) as hby:  # default is temp=True
-        natHab = hby.makeHab(name=name, isith='2', icount=3)  # default Hab
+        kwa = dict(version=version, kind=Kinds.json)
+        natHab = hby.makeHab(name=name, isith='2', icount=3, **kwa)  # default Hab
         # setup Nat's habitat using default salt multisig already incepts
         #natHab = habbing.Habitat(name='nat', ks=natKS, db=natDB,
                                 #isith='2', icount=3, temp=True)
@@ -1842,12 +1844,12 @@ def test_clean_baser():
         path = natHab.db.path  # save for later
 
         # Create series of events for Nat
-        natHab.interact(framed=True)
-        natHab.rotate(framed=True)
-        natHab.interact(framed=True)
-        natHab.interact(framed=True)
-        natHab.interact(framed=True)
-        natHab.interact(framed=True)
+        natHab.interact(framed=True, **kwa)
+        natHab.rotate(framed=True, **kwa)
+        natHab.interact(framed=True, **kwa)
+        natHab.interact(framed=True, **kwa)
+        natHab.interact(framed=True, **kwa)
+        natHab.interact(framed=True, **kwa)
 
         assert natHab.kever.sn == 6
         assert natHab.kever.fn == 6
@@ -1883,7 +1885,8 @@ def test_clean_baser():
                              dig=natHab.kever.serder.said,
                              sn=natHab.kever.sn+1,
                              isith='2',
-                             ndigs=[diger.qb64 for diger in natHab.kever.ndigers])
+                             ndigs=[diger.qb64 for diger in natHab.kever.ndigers],
+                             **kwa)
             fn, dts = natHab.kever.logEvent(serder=badsrdr, first=True)
             natHab.db.states.pin(keys=natHab.pre,
                                  val=datify(KeyStateRecord,
@@ -2048,6 +2051,8 @@ def test_usebaser():
     """
     Test using Baser
     """
+    kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
+
     raw = b'g\x15\x89\x1a@\xa4\xa47\x07\xb9Q\xb8\x18\xcdJW'
     salter = Salter(raw=raw)
 
@@ -2065,7 +2070,7 @@ def test_usebaser():
         serder = incept(keys=keys,
                         code=code,
                         isith=sith,
-                        ndigs=[Diger(ser=key).qb64 for key in nxtkeys])
+                        ndigs=[Diger(ser=key).qb64 for key in nxtkeys], **kwa)
 
 
         # sign serialization
@@ -2081,7 +2086,7 @@ def test_usebaser():
                         isith=sith,
                         dig=kever.serder.said,
                         ndigs=[Diger(ser=key).qb64 for key in nxtkeys],
-                        sn=1)
+                        sn=1, **kwa)
 
         # sign serialization
         sigers = [signers[i].sign(serder.raw, index=i-count) for i in range(count, count+count)]
@@ -2092,7 +2097,7 @@ def test_usebaser():
         # Event 2 Interaction
         serder = interact(pre=kever.prefixer.qb64,
                           dig=kever.serder.said,
-                          sn=2)
+                          sn=2, **kwa)
 
         # sign serialization  (keys don't change for signing)
         sigers = [signers[i].sign(serder.raw, index=i-count) for i in range(count, count+count)]
@@ -2241,6 +2246,8 @@ def test_statedict():
     """
     Test custom statedict subclass of dict
     """
+    kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
+
     dbd = statedict(a=1, b=2, c=3)  # init in memory so never acesses db
     assert dbd.db == None
     assert 'a' in dbd
@@ -2281,7 +2288,7 @@ def test_statedict():
 
         assert pre not in dbd
         dig = 'EAskHI462CuIMS_gNkcl_QewzrRSKH2p9zHQIO132Z30'
-        serder = interact(pre=pre, dig=dig, sn=4)
+        serder = interact(pre=pre, dig=dig, sn=4, **kwa)
 
         eevt = StateEstEvent(s='3', d=dig, br=[], ba=[])
 
@@ -2396,7 +2403,7 @@ def test_baserdoer():
 
 
 def test_group_members():
-    with openMultiSig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (hby3, ghab3)):
+    with openMultiSig(prefix="test", version=Vrsn_1_0, kind=Kinds.json) as ((hby1, ghab1), (hby2, ghab2), (hby3, ghab3)):
         keys = hby1.db.signingMembers(pre=ghab1.pre)
         assert len(keys) == 3
         assert ghab1.mhab.pre in keys

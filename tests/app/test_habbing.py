@@ -4,6 +4,7 @@ tests.app.apping module
 
 """
 import pytest
+from functools import partial
 
 import os
 import platform
@@ -12,7 +13,7 @@ import shutil
 from hio.base import doing
 
 from keri.kering import (ConfigurationError, MissingEntryError,
-                         Vrsn_1_0, Roles, Schemes)
+                         Vrsn_1_0, Kinds, Roles, Schemes)
 
 from keri.help import helping
 
@@ -22,7 +23,7 @@ from keri.core import (Kevery, Salter, Seqner, Number,
 
 from keri.app import (Configer, ConfigerDoer, Habery,
                       Hab, HaberyDoer, Keeper, KeeperDoer,
-                      openHab, openHby, Algos)
+                      BaseHab, openHab, openHby, Algos)
 
 from keri.db import Baser, BaserDoer
 
@@ -862,17 +863,21 @@ def test_hab_by_pre():
 
 
 def test_postman_endsfor():
+    kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
     with openHby(name="test", temp=True, salt=Salter(raw=b'0123456789abcdef').qb64) as hby, \
             openHby(name="wes", temp=True, salt=Salter(raw=b'wess-the-witness').qb64) as wesHby, \
-            openHab(name="agent", temp=True, salt=b'0123456789abcdef') as (agentHby, agentHab):
+            openHab(name="agent", temp=True, salt=b'0123456789abcdef', **kwa) as (agentHby, agentHab):
 
-        wesHab = wesHby.makeHab(name='wes', isith="1", icount=1, transferable=False)
+        wesHab = wesHby.makeHab(name='wes', isith="1", icount=1, transferable=False, **kwa)
         assert not wesHab.kever.prefixer.transferable
         # create non-local kevery for Wes to process nonlocal msgs
         wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
 
         wits = [wesHab.pre]
-        hab = hby.makeHab(name='cam', isith="1", icount=1, toad=1, wits=wits, )
+        hab = hby.makeHab(name='cam', isith="1", icount=1, toad=1, wits=wits, **kwa)
+        _pin_hab_msgs_v1(wesHab)
+        _pin_hab_msgs_v1(hab)
+        _pin_hab_msgs_v1(agentHab)
         assert hab.kever.prefixer.transferable
         assert len(hab.iserder.berfers) == len(wits)
         for werfer in hab.iserder.berfers:
@@ -903,39 +908,47 @@ def test_postman_endsfor():
         msgs = bytearray()
         msgs.extend(wesHab.makeEndRole(eid=wesHab.pre,
                                        role=Roles.controller,
-                                       stamp=helping.nowIso8601()))
+                                       stamp=helping.nowIso8601(),
+                                       **kwa))
 
         msgs.extend(wesHab.makeLocScheme(url='http://127.0.0.1:8888',
                                          scheme=Schemes.http,
-                                         stamp=helping.nowIso8601()))
+                                         stamp=helping.nowIso8601(),
+                                         **kwa))
         wesHab.psr.parse(ims=bytearray(msgs))
 
         # Set up
         msgs.extend(hab.makeEndRole(eid=hab.pre,
                                     role=Roles.controller,
-                                    stamp=helping.nowIso8601()))
+                                    stamp=helping.nowIso8601(),
+                                    **kwa))
 
         msgs.extend(hab.makeLocScheme(url='http://127.0.0.1:7777',
                                       scheme=Schemes.http,
-                                      stamp=helping.nowIso8601()))
+                                      stamp=helping.nowIso8601(),
+                                      **kwa))
         hab.psr.parse(ims=msgs)
 
         msgs = bytearray()
         msgs.extend(agentHab.makeEndRole(eid=agentHab.pre,
                                          role=Roles.controller,
-                                         stamp=helping.nowIso8601()))
+                                         stamp=helping.nowIso8601(),
+                                         **kwa))
 
         msgs.extend(agentHab.makeLocScheme(url='http://127.0.0.1:6666',
                                            scheme=Schemes.http,
-                                           stamp=helping.nowIso8601()))
+                                           stamp=helping.nowIso8601(),
+                                           **kwa))
 
         msgs.extend(hab.makeEndRole(eid=agentHab.pre,
                                     role=Roles.agent,
-                                    stamp=helping.nowIso8601()))
+                                    stamp=helping.nowIso8601(),
+                                    **kwa))
 
         msgs.extend(hab.makeEndRole(eid=agentHab.pre,
                                     role=Roles.mailbox,
-                                    stamp=helping.nowIso8601()))
+                                    stamp=helping.nowIso8601(),
+                                    **kwa))
 
         agentHab.psr.parse(ims=bytearray(msgs))
         hab.psr.parse(ims=bytearray(msgs))
@@ -1032,6 +1045,16 @@ def test_failed_rotation_rollback():
         assert hab.kever.sn == 1
 
 
+def _pin_hab_msgs_v1(hab):
+    """Force v1 on Hab message helpers (defaults follow global Version 2.0)."""
+    kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
+    hab.receipt = partial(BaseHab.receipt, hab, **kwa)
+    hab.reply = partial(BaseHab.reply, hab, gvrsn=Vrsn_1_0, **kwa)
+    hab.query = partial(BaseHab.query, hab, **kwa)
+    hab.witness = partial(BaseHab.witness, hab, **kwa)
+    hab.msgOwnInception = partial(BaseHab.msgOwnInception, hab, gvrsn=Vrsn_1_0)
+
+
 def test_cues():
     """
     Test BaseHab.processCuesIter and GroupHab.processCuesIter cue handlers.
@@ -1041,6 +1064,7 @@ def test_cues():
         notice, noticeBadCloneFN, keyStateSaved, stream, invalid,
         remoteMemberedSig (GroupHab only)
     """
+    v1 = dict(version=Vrsn_1_0, kind=Kinds.json)
     with openHby(name="cam", temp=True,
                          salt=Salter(raw=b'camcamcamcamcamc').qb64) as camHby, \
          openHby(name="wes", temp=True,
@@ -1049,12 +1073,14 @@ def test_cues():
                          salt=Salter(raw=b'bobbobbobbobbobb').qb64) as bobHby:
 
         # shared habs
-        wesHab = wesHby.makeHab(name='wes', isith="1", icount=1, transferable=False)
+        wesHab = wesHby.makeHab(name='wes', isith="1", icount=1, transferable=False, **v1)
         assert not wesHab.kever.prefixer.transferable
 
         camHab = camHby.makeHab(name='cam', isith="1", icount=1,
-                                toad=1, wits=[wesHab.pre])
-        bobHab = bobHby.makeHab(name='bob', isith="1", icount=1)
+                                toad=1, wits=[wesHab.pre], **v1)
+        bobHab = bobHby.makeHab(name='bob', isith="1", icount=1, **v1)
+        _pin_hab_msgs_v1(wesHab)
+        _pin_hab_msgs_v1(camHab)
 
         wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
         camKvy = Kevery(db=camHab.db, lax=False, local=False)

@@ -5,7 +5,8 @@ tests.app.habbing remote module
 """
 import pytest
 
-from keri.kering import KeriError, Ilks
+from keri import Vrsn_1_0
+from keri.kering import KeriError, Ilks, Kinds
 
 from keri.core import Salter, Diger, Tiers, MtrDex, incept, rotate
 
@@ -55,7 +56,7 @@ def test_remote_salty_hab():
 
         toad = 0  # no witnesses
 
-        icp = incept(keys, isith=sith, ndigs=nxt, toad=toad, code=MtrDex.Blake3_256)
+        icp = incept(keys, isith=sith, ndigs=nxt, toad=toad, code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
         assert icp.raw == lhab.kever.serder.raw
         tsig0 = skp0.sign(icp.raw, index=0)
         assert tsig0.qb64b == (b'AAB0ewd_rP91-GX9d943r48qWXThuHpHbqMwJT92jFJWbbynC-QGXVRPaSX5DGAI4Bqyviw4zsz-'
@@ -91,7 +92,8 @@ def test_remote_salty_hab():
         nxt1 = [ndiger1.qb64]
         assert nxt1 == ['EKNg5bhKpDTv_DixBKYfOHHl1omtvQ06UD3Nf40JUsQ-']
 
-        rot = rotate(pre=hab.pre, keys=keys1, dig=icp.said, sn=1, isith=sith, ndigs=nxt1, toad=toad)
+        rot = rotate(pre=hab.pre, keys=keys1, dig=icp.said, sn=1, isith=sith, ndigs=nxt1, toad=toad,
+                     version=Vrsn_1_0, kind=Kinds.json)
         assert rot.raw == lhab.kever.serder.raw
 
         tsig1 = skp1.sign(rot.raw, index=0)

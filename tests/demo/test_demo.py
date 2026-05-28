@@ -11,7 +11,10 @@ from hio.base import doing
 from hio.help import ogler
 from hio.core.tcp import clienting, serving
 
+from keri.kering import Vrsn_1_0, Kinds
 from keri.core import Salter, Diger, MtrDex, incept
+
+KWA = dict(version=Vrsn_1_0, kind=Kinds.json)
 from keri.app import Reactor, Directant, openHby
 from keri.demo import (BobDirector, EveDirector,
                        SamDirector, CamDirector, setupDemoController)
@@ -32,7 +35,7 @@ def test_direct_mode_bob_eve_demo():
     # bob inception transferable (nxt digest not empty)
     bobSerder = incept(keys=[bobSigners[0].verfer.qb64],
                                 ndigs=[Diger(ser=bobSigners[1].verfer.qb64b).qb64],
-                                code=MtrDex.Blake3_256)
+                                code=MtrDex.Blake3_256, **KWA)
 
     bob = bobSerder.ked["i"]
     assert bob == 'EFa1wAk_coghxxGCID6jEN79Kmvyj0Y1wWN_ndUv3LjW'
@@ -44,7 +47,7 @@ def test_direct_mode_bob_eve_demo():
     # eve inception transferable (nxt digest not empty)
     eveSerder = incept(keys=[eveSigners[0].verfer.qb64],
                                 ndigs=[Diger(ser=eveSigners[1].verfer.qb64b).qb64],
-                                code=MtrDex.Blake3_256)
+                                code=MtrDex.Blake3_256, **KWA)
 
     eve = eveSerder.ked["i"]
     assert eve == 'EFhg5my9DuMU6gw1CVk6QgkmZKBttWSXDzVzWVmxh0_K'
@@ -163,7 +166,7 @@ def test_direct_mode_sam_eve_demo():
     # sam inception transferable (nxt digest not empty)
     samSerder = incept(keys=[samSigners[0].verfer.qb64],
                                 ndigs=[Diger(ser=samSigners[1].verfer.qb64b).qb64],
-                                code=MtrDex.Blake3_256)
+                                code=MtrDex.Blake3_256, **KWA)
 
     sam = samSerder.ked["i"]
     assert sam == 'EDkU2U_TPKca14VElEItpj7twohQL60GIaUPvSHAghga'
@@ -175,7 +178,7 @@ def test_direct_mode_sam_eve_demo():
     # eve inception transferable (nxt digest not empty)
     eveSerder = incept(keys=[eveSigners[0].verfer.qb64],
                                 ndigs=[Diger(ser=eveSigners[1].verfer.qb64b).qb64],
-                                code=MtrDex.Blake3_256)
+                                code=MtrDex.Blake3_256, **KWA)
 
     eve = eveSerder.ked["i"]
     assert eve == 'EFhg5my9DuMU6gw1CVk6QgkmZKBttWSXDzVzWVmxh0_K'
@@ -446,7 +449,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         # sam inception transferable (nxt digest not empty)
         serder = incept(keys=[samSigners[0].verfer.qb64], wits=[wit],
                                      ndigs=[Diger(ser=samSigners[1].verfer.qb64b).qb64],
-                                            code=MtrDex.Blake3_256)
+                                            code=MtrDex.Blake3_256, **KWA)
 
         assert samHab.iserder.said == serder.said  # same setup
         assert serder.ked["i"] == sam
@@ -486,7 +489,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         # cam inception transferable (nxt digest not empty)
         serder = incept(keys=[camSigners[0].verfer.qb64],
                                         ndigs=[Diger(ser=camSigners[1].verfer.qb64b).qb64],
-                                        code=MtrDex.Blake3_256)
+                                        code=MtrDex.Blake3_256, **KWA)
 
         assert camHab.iserder.said == serder.said  # same setup
         assert cam == serder.ked["i"] == 'EB1f36VmoizOIpBIBv3X4ZiWJQWjtKJ7TMmsZltT0B32'

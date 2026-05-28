@@ -137,7 +137,9 @@ class Receiptor(doing.DoDoer):
 
             rserder = eventing.receipt(pre=hab.pre,
                                        sn=sn,
-                                       said=ser.said)
+                                       said=ser.said,
+                                       version=ser.pvrsn,
+                                       kind=ser.kind)
             msg.extend(rserder.raw)
             msg.extend(Counter(Codens.NonTransReceiptCouples,
                                     count=len(wigers), version=Vrsn_1_0).qb64b)
@@ -417,7 +419,9 @@ class WitnessReceiptor(doing.DoDoer):
 
                     rserder = eventing.receipt(pre=ser.pre,
                                                sn=sn,
-                                               said=ser.said)
+                                               said=ser.said,
+                                               version=ser.pvrsn,
+                                               kind=ser.kind)
                     rctMsg.extend(eventing.messagize(serder=rserder, wigers=wigers, framed=True))
 
                     witer.msgs.append(rctMsg)

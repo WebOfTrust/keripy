@@ -7,15 +7,17 @@ import json
 
 import pysodium
 
-from keri import Vrsn_1_0
+from keri import Kinds, Vrsn_1_0
 from keri.core import (Salter, Counter, Texter,
                        Diger, SerderKERI, Parser,
-                       MtrDex, Codens, MtrDex)
+                       MtrDex, Codens)
 
 from keri.app import openHab, openHby
 
 from keri.peer import Exchanger, nesting, exchange
 from keri.vdr import incept
+
+TEST_VERSION = Vrsn_1_0
 
 
 def test_nesting():
@@ -53,11 +55,12 @@ def test_nesting():
 
 
 def test_essrs():
-    with openHab(name="sid", base="test", salt=b'0123456789abcdef') as (hby, hab), \
-            openHab(name="rec", base="test", salt=b'0123456789abcdef') as (recHby, recHab):
+    kwa = dict(version=TEST_VERSION, kind=Kinds.json)
+    with openHab(name="sid", base="test", salt=b'0123456789abcdef', **kwa) as (hby, hab), \
+            openHab(name="rec", base="test", salt=b'0123456789abcdef', **kwa) as (recHby, recHab):
 
-        ims = hab.msgOwnInception(framed=True)
-        Parser(version=Vrsn_1_0).parse(ims=ims, kvy=recHby.kvy)
+        ims = hab.msgOwnInception(framed=True, gvrsn=TEST_VERSION)
+        Parser(version=TEST_VERSION).parse(ims=ims, kvy=recHby.kvy)
         # create the test message with essr attachment
         msg = dict(msg="This is a test message that must be secured", i=hab.pre)
         rkever = recHab.kever
@@ -67,17 +70,16 @@ def test_essrs():
         texter = Texter(raw=raw)
         diger = Diger(ser=raw, code=MtrDex.Blake3_256)
         essr, _ = exchange(route='/essr/req', sender=hab.pre, diger=diger,
-                                      modifiers=dict(src=hab.pre, dest=recHab.pre))
-        ims = hab.endorse(serder=essr, framed=True)
+                                      modifiers=dict(src=hab.pre, dest=recHab.pre), **kwa)
+        ims = hab.endorse(serder=essr, framed=True, gvrsn=TEST_VERSION)
         ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
-                                version=Vrsn_1_0).qb64b)
+                                version=TEST_VERSION).qb64b)
         ims.extend(texter.qb64b)
 
         exc = Exchanger(hby=recHby, handlers=[])
-        Parser(version=Vrsn_1_0).parse(ims=ims,
+        Parser(version=TEST_VERSION).parse(ims=ims,
                                kvy=recHby.kvy,
-                               exc=exc,
-                               version=Vrsn_1_0)  # parser does not support version2 count codes
+                               exc=exc)
 
         # Pull the logged exn and verify the attributes digest matches the attachment
         serder = recHby.db.exns.get(keys=(essr.said,))
@@ -91,20 +93,20 @@ def test_essrs():
         # Test with invalid diger
         diger = Diger(qb64="EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o")
         essr, _ = exchange(route='/essr/req', sender=hab.pre, diger=diger,
-                                      modifiers=dict(src=hab.pre, dest=recHab.pre))
-        ims = hab.endorse(serder=essr, framed=True)
+                                      modifiers=dict(src=hab.pre, dest=recHab.pre), **kwa)
+        ims = hab.endorse(serder=essr, framed=True, gvrsn=TEST_VERSION)
         ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
-                                version=Vrsn_1_0).qb64b)
+                                version=TEST_VERSION).qb64b)
         ims.extend(texter[0].qb64b)
 
-        Parser(version=Vrsn_1_0).parse(ims=ims, kvy=recHby.kvy, exc=exc)
+        Parser(version=TEST_VERSION).parse(ims=ims, kvy=recHby.kvy, exc=exc)
         assert recHby.db.exns.get(keys=(essr.said,)) is None
 
 
-
 def test_hab_exchange(mockHelpingNowUTC):
+    kwa = dict(version=TEST_VERSION, kind=Kinds.json)
     with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
-        hab = hby.makeHab(name="test")
+        hab = hby.makeHab(name="test", **kwa)
         assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
 
         nonce = "AH3-1EZWXU9I0fv3Iz_9ZIhjj13JO7u4GNFYC3-l8_K-"
@@ -113,9 +115,10 @@ def test_hab_exchange(mockHelpingNowUTC):
                         toad=0,
                         cnfg=[],
                         nonce=nonce,
-                        code=MtrDex.Blake3_256)
+                        code=MtrDex.Blake3_256,
+                        **kwa)
         seal = dict(i=regser.pre, s=regser.sn, d=regser.said)
-        msg = hab.interact(data=[seal], framed=True)
+        msg = hab.interact(data=[seal], framed=True, gvrsn=TEST_VERSION, **kwa)
 
         embeds = dict(
             vcp=regser.raw,
@@ -124,7 +127,7 @@ def test_hab_exchange(mockHelpingNowUTC):
 
         data = dict(m="Let's create a registry")
         msg = hab.exchange(route="/multisig/registry/incept", receiver="",
-                           payload=data, embeds=embeds, framed=True)
+                           payload=data, embeds=embeds, framed=True, gvrsn=TEST_VERSION, **kwa)
         assert msg == (b'{"v":"KERI10JSON0003a0_","t":"exn","d":"ELkHqph-Tj4LGHYfFfoVmJJo'
                     b'09S2gp6ci8rK96upIAKE","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2Q'
                     b'V8dDjI3","rp":"","p":"","dt":"2021-01-01T00:00:00.000000+00:00",'
@@ -148,16 +151,17 @@ def test_hab_exchange(mockHelpingNowUTC):
 
         exn = SerderKERI(raw=msg)
 
-        hab2 = hby.makeHab(name="respondant")
+        hab2 = hby.makeHab(name="respondant", **kwa)
         regser = incept(hab2.pre,
                         baks=[],
                         toad=0,
                         cnfg=[],
                         nonce=nonce,
-                        code=MtrDex.Blake3_256)
+                        code=MtrDex.Blake3_256,
+                        **kwa)
 
         seal = dict(i=regser.pre, s=regser.sn, d=regser.said)
-        msg = hab2.interact(data=[seal], framed=True)
+        msg = hab2.interact(data=[seal], framed=True, gvrsn=TEST_VERSION, **kwa)
 
         embeds = dict(
             vcp=regser.raw,
@@ -167,7 +171,7 @@ def test_hab_exchange(mockHelpingNowUTC):
         data = dict(m="Lets create this registry instead")
         msg = hab2.exchange(route="/multisig/registry/incept", payload=data,
                             receiver="", prior=exn.said,
-                            embeds=embeds, framed=True)
+                            embeds=embeds, framed=True, gvrsn=TEST_VERSION, **kwa)
         assert msg == (b'{"v":"KERI10JSON0003d6_","t":"exn","d":"EPO_XC9nwSixqSoOvsHymFr-'
                     b'l3udclHBdOh4OUEqZ33P","i":"EIREQlatUJODbKogZfa3IqXZ90XdZA0qJMVli'
                     b'I61Bcc2","rp":"","p":"ELkHqph-Tj4LGHYfFfoVmJJo09S2gp6ci8rK96upIA'
@@ -190,14 +194,14 @@ def test_hab_exchange(mockHelpingNowUTC):
                     b'krJJDd8RFxWdTSesAMydUzmJQlGt0T9h8L7SwIrq8yBinj990PLJHl7sXmq04I')
 
         # Test exn from non-transferable AID
-        hab = hby.makeHab(name="test1", transferable=False)
+        hab = hby.makeHab(name="test1", transferable=False, **kwa)
         assert hab.pre == "BJZ_LF61JTCCSCIw2Q4ozE2MsbRC4m-N6-tFVlCeiZPG"
 
         embeds = dict(
-            vcp=hab.endorse(regser, framed=True)
+            vcp=hab.endorse(regser, framed=True, gvrsn=TEST_VERSION)
         )
         msg = hab.exchange(route="/multisig/registry/incept", payload=data,
-                           embeds=embeds, receiver="", framed=True)
+                           embeds=embeds, receiver="", framed=True, gvrsn=TEST_VERSION, **kwa)
         assert msg == (b'{"v":"KERI10JSON00026b_","t":"exn","d":"EMBm0p7fCIqJrP4Z-PBI-yEv'
                        b'Xin_-eY1dU4XTCM9ykRC","i":"BJZ_LF61JTCCSCIw2Q4ozE2MsbRC4m-N6-tFV'
                        b'lCeiZPG","rp":"","p":"","dt":"2021-01-01T00:00:00.000000+00:00",'

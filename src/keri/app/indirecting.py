@@ -40,7 +40,7 @@ logger = ogler.getLogger()
 
 
 def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPort=5632,
-                 keypath=None, certpath=None, cafilepath=None):
+                 keypath=None, certpath=None, cafilepath=None, **kwa):
     """
     Setup witness controller and doers
 
@@ -54,7 +54,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     # make hab
     hab = hby.habByName(name=alias)
     if hab is None:
-        hab = hby.makeHab(name=alias, transferable=False)
+        hab = hby.makeHab(name=alias, transferable=False, **kwa)
 
     from ..vdr import Reger,Verifier  # dynamic import because of circular import
 
@@ -1109,7 +1109,8 @@ class ReceiptEnd(doing.DoDoer):
                 raise falcon.HTTPBadRequest(description=f"{self.hab.pre} is not a valid witness for {pre} event at "
                                                         f"{serder.sn}: wits={wits}")
 
-            rct = self.hab.receipt(serder, framed=True)
+            rct = self.hab.receipt(serder, framed=True,
+                                   version=serder.pvrsn, kind=serder.kind)
 
             self.psr.parseOne(bytes(rct))
 
@@ -1156,11 +1157,13 @@ class ReceiptEnd(doing.DoDoer):
                                                     f"{serder.sn}, {wits}")
         rserder = receipt(pre=pre,
                           sn=sn,
-                          said=said.decode("utf-8"))
+                          said=said.decode("utf-8"),
+                          version=serder.pvrsn,
+                          kind=serder.kind)
         rct = bytearray(rserder.raw)
         if wigers := self.hab.db.wigs.get(keys=(preb, said)):
             rct.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
-                               version=Vrsn_1_0).qb64b)
+                               version=serder.pvrsn).qb64b)
             for wiger in wigers:
                 rct.extend(wiger.qb64b)
 

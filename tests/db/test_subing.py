@@ -8,6 +8,7 @@ import os
 import pytest
 
 from keri import help
+from keri.kering import Vrsn_1_0, Kinds
 from keri.core import (SerderKERI, Siger, Schemer, Signer,
                        Salter, Decrypter, Encrypter, Cipher,
                        Saider, Seqner, Diger, Prefixer,
@@ -3371,6 +3372,7 @@ def test_serder_suber():
     """
     Test SerderSuber LMDBer sub database class
     """
+    kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
 
     with openLMDB() as db:
         assert isinstance(db, LMDBer)
@@ -3383,7 +3385,7 @@ def test_serder_suber():
         assert serber.klas == SerderKERI
 
         pre = "BDzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
-        srdr0 = incept(keys=[pre])
+        srdr0 = incept(keys=[pre], **kwa)
 
         keys = (pre, srdr0.said)
         serber.put(keys=keys, val=srdr0)
@@ -3400,7 +3402,7 @@ def test_serder_suber():
         assert isinstance(actual, SerderKERI)
         assert actual.said == srdr0.said
 
-        srdr1 = rotate(pre=pre, keys=[pre], dig=srdr0.said)
+        srdr1 = rotate(pre=pre, keys=[pre], dig=srdr0.said, **kwa)
         result = serber.put(keys=keys, val=srdr1)
         assert not result
         actual = serber.get(keys=keys)
@@ -3456,6 +3458,7 @@ def test_serder_ioset_suber():
     """
     Test SerderIoSetSuber LMDBer sub database class
     """
+    kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
 
     with openLMDB() as db:
         assert isinstance(db, LMDBer)
@@ -3468,7 +3471,7 @@ def test_serder_ioset_suber():
         assert serber.klas == SerderKERI
 
         pre = "BDzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc"
-        srdr0 = incept(keys=[pre])
+        srdr0 = incept(keys=[pre], **kwa)
 
         keys = (pre, srdr0.said)
         serber.put(keys=keys, vals=(srdr0, ))
@@ -3487,7 +3490,7 @@ def test_serder_ioset_suber():
             assert isinstance(actual, SerderKERI)
             assert actual.said == srdr0.said
 
-        srdr1 = rotate(pre=pre, keys=[pre], dig=srdr0.said)
+        srdr1 = rotate(pre=pre, keys=[pre], dig=srdr0.said, **kwa)
 
         result = serber.put(keys=keys, vals=(srdr1, ))
         assert result
