@@ -7,7 +7,7 @@ import os
 from collections import namedtuple
 from hio.help import ogler
 
-from ..peer import cloneMessage, exchange
+from ..peer import cloneMessage, exchange, specialExchange
 
 logger = ogler.getLogger()
 
@@ -186,8 +186,10 @@ def ipexOfferExn(hab, message, acdc, apply=None):
     if apply is not None:
         kwa['prior'] = apply.said
 
-    exn, end = exchange(route="/ipex/offer", attributes=data, sender=hab.pre,
-                        embeds=embeds, **kwa)
+    exn, end = specialExchange(sender=hab.pre,
+                               route="/ipex/offer",
+                               attributes=data,
+                               embeds=embeds, **kwa)
     ims = hab.endorse(serder=exn, last=False,framed=True)
     del ims[:exn.size]
     ims.extend(end)
@@ -258,8 +260,12 @@ def ipexGrantExn(hab, recp, message, acdc, iss=None, anc=None, agree=None, dt=No
     if agree is not None:
         kwa['prior'] = agree.said
 
-    exn, end = exchange(route="/ipex/grant", attributes=data, sender=hab.pre,
-                        embeds=embeds, stamp=dt, **kwa)
+    exn, end = specialExchange(sender=hab.pre,
+                               route="/ipex/grant",
+                               stamp=dt,
+                               attributes=data,
+                               embeds=embeds,
+                               **kwa)
     ims = hab.endorse(serder=exn, last=False, framed=True)
     del ims[:exn.size]
     ims.extend(end)

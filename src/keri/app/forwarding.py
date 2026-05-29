@@ -19,7 +19,7 @@ from ..core import (Bexter, Prefixer, Verfer, Texter, Diger,
                     Sadder, Counter, SerderKERI,
                     MtrDex, Codens, NonTransDex)
 from ..db import dgKey
-from ..peer import exchange
+from ..peer import exchange, specialExchange
 from ..spac import PayloadTyper, PayloadTypes
 
 logger = ogler.getLogger()
@@ -189,8 +189,11 @@ class Poster(doing.DoDoer):
 
         evt = bytearray(serder.raw)
         evt.extend(atc)
-        fwd, atc = exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
-                            attributes={}, embeds=dict(evt=evt), sender=hab.pre)
+        fwd, atc = specialExchange(sender=hab.pre,
+                                   route='/fwd',
+                                   modifiers=dict(pre=recp, topic=topic),
+                                   attributes={},
+                                   embeds=dict(evt=evt), )
         ims = hab.endorse(serder=fwd, last=False, framed=True)
 
         # Transpose the signatures to point to the new location
@@ -406,8 +409,11 @@ class StreamPoster:
         # Its not us, randomly select a mailbox and forward it on
         evt = bytearray(serder.raw)
         evt.extend(atc)
-        fwd, atc = exchange(route='/fwd', modifiers=dict(pre=self.recp, topic=topic),
-                            attributes={}, embeds=dict(evt=evt), sender=hab.pre)
+        fwd, atc = specialExchange(sender=hab.pre,
+                                   route='/fwd',
+                                   modifiers=dict(pre=self.recp, topic=topic),
+                                   attributes={},
+                                   embeds=dict(evt=evt))
         ims = hab.endorse(serder=fwd, last=False, framed=True)
         return fwd, ims + atc
 

@@ -105,11 +105,12 @@ def test_forward_handler():
 
         evt = bytearray(inner_exn.raw)
         evt.extend(inner_atc)
-        fwd, _ = exchanging.exchange(route='/fwd',
-                                     modifiers=dict(pre=recpHab.pre, topic="echo"),
-                                     attributes={},
-                                     embeds=dict(evt=evt),
-                                     sender=hab.pre)
+        fwd, _ = exchanging.specialExchange(sender=hab.pre,
+                                            route='/fwd',
+                                            modifiers=dict(pre=recpHab.pre,
+                                                           topic="echo"),
+                                            attributes={},
+                                            embeds=dict(evt=evt))
         pather = Pather(path=["evt"])
         forwarder.handle(serder=fwd, attachments=[(pather, inner_atc)])
 
@@ -138,12 +139,12 @@ def test_forward_handler():
 
         evt2 = bytearray(inner_exn2.raw)
         evt2.extend(inner_atc2)
-        fwd2, _ = exchanging.exchange(route='/fwd',
-                                      modifiers=dict(pre=recpHab.pre,
-                                                     topic="delegate"),
-                                      attributes={},
-                                      embeds=dict(evt=evt2),
-                                      sender=hab.pre)
+        fwd2, _ = exchanging.specialExchange(sender=hab.pre,
+                                             route='/fwd',
+                                             modifiers=dict(pre=recpHab.pre,
+                                                            topic="delegate"),
+                                             attributes={},
+                                             embeds=dict(evt=evt2))
 
         forwarder.handle(serder=fwd2, attachments=[(Pather(path=["evt"]), inner_atc2)])
 
@@ -161,12 +162,12 @@ def test_forward_handler():
 
         evt3 = bytearray(inner_exn3.raw)
         evt3.extend(inner_atc3)
-        fwd3, _ = exchanging.exchange(route='/fwd',
-                                      modifiers=dict(pre=recp2Hab.pre,
-                                                     topic="echo"),
-                                      attributes={},
-                                      embeds=dict(evt=evt3),
-                                      sender=hab.pre)
+        fwd3, _ = exchanging.specialExchange(sender=hab.pre,
+                                             route='/fwd',
+                                             modifiers=dict(pre=recp2Hab.pre,
+                                                            topic="echo"),
+                                             attributes={},
+                                             embeds=dict(evt=evt3))
         forwarder.handle(serder=fwd3, attachments=[(Pather(path=["evt"]), inner_atc3)])
 
         recp1_echo = list(mbx.cloneTopicIter(topic=f"{recpHab.pre}/echo"))
@@ -188,12 +189,13 @@ def test_forward_handler():
 
         evtA = bytearray(inner_exnA.raw); evtA.extend(inner_atcA)
         evtB = bytearray(inner_exnB.raw); evtB.extend(inner_atcB)
-        fwd_multi, _ = exchanging.exchange(route='/fwd',
-                                           modifiers=dict(pre=recpHab.pre,
-                                                          topic="multi"),
-                                           attributes={},
-                                           embeds=dict(evtA=evtA, evtB=evtB),
-                                           sender=hab.pre)
+        fwd_multi, _ = exchanging.specialExchange(sender=hab.pre,
+                                                  route='/fwd',
+                                                  modifiers=dict(pre=recpHab.pre,
+                                                                 topic="multi"),
+                                                  attributes={},
+                                                  embeds=dict(evtA=evtA,
+                                                              evtB=evtB))
         patherA = Pather(path=["evtA"])
         patherB = Pather(path=["evtB"])
         forwarder.handle(serder=fwd_multi, attachments=[(patherA, inner_atcA), (patherB, inner_atcB)])

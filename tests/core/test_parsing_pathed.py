@@ -8,7 +8,7 @@ from hio.help import decking, ogler
 
 from keri.kering import Vrsn_1_0, Ilks
 from keri.core import Salter, Parser
-from keri.peer import Exchanger, exchange
+from keri.peer import Exchanger, exchange, specialExchange
 from keri.app import openHby
 
 
@@ -38,11 +38,12 @@ def test_pathed_material(mockHelpingNowUTC):
                        ixn0=debHab.interact(framed=True),
                        rot=debHab.rotate(framed=True),
                        ixn1=debHab.interact(framed=True))
-        fwd, end = exchange(route='/fwd',
-                            modifiers=dict(pre=palHab.pre, topic="replay"),
-                            attributes={},
-                            embeds=debMsgs,
-                            sender=debHab.pre)
+        fwd, end = specialExchange(sender=debHab.pre,
+                                   route='/fwd',
+                                   modifiers=dict(pre=palHab.pre,
+                                                  topic="replay"),
+                                   attributes={},
+                                   embeds=debMsgs)
         fwd = debHab.endorse(fwd, last=False, framed=True)
         fwd.extend(end)
         handler = MockHandler()

@@ -4356,15 +4356,15 @@ def test_keri_native_dumps_loads():
     dts = '2020-08-22T17:50:09.988921+00:00'
 
     serder, end = exchanging.exchange(sender=sender,
-                     receiver=receiver,
-                     xid='EFPs8lNTVLRs6xjs5reB_wKbYxqgMR3fdARfH0Ndcws4',
-                     prior='EFPs8lNTVLRs6xjs5reB_wKbYxqgMR3fdARfH0Ndcws4',
-                     route="/away",
-                     modifiers=modifiers,
-                     attributes=attributes,
-                    stamp=dts,
-                    pvrsn=Vrsn_2_0,
-                    kind=Kinds.cesr)
+                        receiver=receiver,
+                        xid='EFPs8lNTVLRs6xjs5reB_wKbYxqgMR3fdARfH0Ndcws4',
+                        prior='EFPs8lNTVLRs6xjs5reB_wKbYxqgMR3fdARfH0Ndcws4',
+                        route="/away",
+                        modifiers=modifiers,
+                        attributes=attributes,
+                        stamp=dts,
+                        pvrsn=Vrsn_2_0,
+                        kind=Kinds.cesr)
 
     said = serder.said
     assert said == 'ECdPE-1NCEjFow09-x-0huj19mpaDI2qXZEO5Sc6frzp'

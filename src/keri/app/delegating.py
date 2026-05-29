@@ -15,7 +15,7 @@ from .habbing import GroupHab
 
 from ..kering import ValidationError
 from ..core import Number, Diger, Seqner, SerderKERI, NumDex
-from ..peer import exchange
+from ..peer import exchange, specialExchange
 
 logger = ogler.getLogger()
 
@@ -331,8 +331,11 @@ def delegateRequestExn(hab, delpre, evt, aids=None):
         data["aids"] = aids
 
     # Create `exn` peer to peer message to notify other participants UI
-    exn, _ = exchange(route=DelegateRequestHandler.resource, modifiers=dict(),
-                                 attributes=data, sender=hab.pre, embeds=embeds)
+    exn, _ = specialExchange(sender=hab.pre,
+                             route=DelegateRequestHandler.resource,
+                             modifiers=dict(),
+                             attributes=data,
+                             embeds=embeds)
     ims = hab.endorse(serder=exn, last=False, framed=True)
     del ims[:exn.size]
 

@@ -1496,10 +1496,18 @@ def exchange(*,
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
     if pvrsn.major < 2:
-        raise ValueError(f"Unsupported version {pvrsn=}")
+        sad = dict(v=vs,
+                  t=Ilks.exn,
+                  d="", # computed by SerderKERI init
+                  i=sender if sender is not None else "",
+                  rp=receiver if receiver is not None else "",
+                  p=prior if prior is not None else "",
+                  dt=stamp if stamp is not None else helping.nowIso8601(),
+                  r=route if route is not None else "",
+                  q=modifiers if modifiers is not None else {},
+                  a=attributes if attributes is not None else {})
 
-    else:
-
+    else:  # v2
         sad = dict(v=vs,
                    t=Ilks.exn,
                    d="",  # computed by SerderKERI init
@@ -1509,7 +1517,7 @@ def exchange(*,
                    p=prior if prior is not None else "",
                    dt=stamp if stamp is not None else helping.nowIso8601(),
                    r=route if route is not None else "",
-                   q=modifiers if modifiers is not None else {},  # q field required
+                   q=modifiers if modifiers is not None else {},
                    a=attributes if attributes is not None else {}
                    )
 
