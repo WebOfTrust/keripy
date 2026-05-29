@@ -134,8 +134,9 @@ class Verifier:
             raise kering.MissingSchemaError("schema {} not in cache".format(schema))
 
         schemer = scheming.Schemer(raw=scraw)
+        typ = scheming.JSONSchema(resolver=self.resolver)
         try:
-            schemer.verify(creder.raw)
+            schemer.verify(raw=creder.raw, typ=typ)
         except kering.ValidationError as ex:
             print("Credential {} is not valid against schema {}: {}"
                   .format(creder.said, schema, ex))
