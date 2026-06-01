@@ -176,11 +176,12 @@ class Revery:
         Latest-Seen-Signed Pairwise comparison of new update reply compared to
         old already accepted reply from same source for same route (same data).
         Accept new reply (update) if new reply is later than old reply where:
-            1) Later means date-time-stamp of new is greater than old
-        If non-trans signer then also (AND)
-            2) Later means sn (sequence number) of last (if forked) Est evt that
-               provides keys for signature(s) of new is greater than or equal to
-               sn of last Est evt that provides keys for signature(s) of new.
+
+            1. Later means date-time-stamp of new is greater than old.
+            2. If non-trans signer, later also means the sn (sequence number)
+               of the last (if forked) Est evt that provides keys for
+               signature(s) of new is greater than or equal to the sn of the
+               last Est evt that provides keys for signature(s) of new.
 
         If nontrans and last Est Evt is not yet accepted then escrow.
         If nontrans and partially signed then escrow.
@@ -222,20 +223,19 @@ class Revery:
         Latest-Seen-Signed Pairwise comparison of new update reply compared to
         old already accepted reply from same source for same route (same data).
         Accept new reply (update) if new reply is later than old reply where:
-            1) If transferable: Later is True
-                 A) If sn (sequence number) of last (if forked) Est evt that provides
-                 keys for signature(s) of new is greater than sn of last Est evt
-                 that provides keys for signature(s) of old.
 
-                 Or
+                        1. If transferable, later is true when either:
 
-                 B) If sn of new equals sn of old And date-time-stamp of new is
-                    greater than old
+                                - the sn (sequence number) of the last (if forked) Est evt that
+                                    provides keys for signature(s) of new is greater than the sn
+                                    of the last Est evt that provides keys for signature(s) of old.
+                                - the sn of new equals the sn of old and the date-time-stamp of
+                                    new is greater than old.
 
-            2) Else If non-transferable: Later it True
-                 If date-time-stamp of new is greater than old
+                        2. If non-transferable, later is true if the date-time-stamp of
+                             new is greater than old.
 
-            4) Else Later is False
+                        3. Otherwise, later is false.
 
 
         If nontrans and last Est Evt is not yet accepted then escrow.
