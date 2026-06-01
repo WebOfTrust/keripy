@@ -225,8 +225,11 @@ class Poster(doing.DoDoer):
 
         evt = bytearray(serder.raw)
         evt.extend(atc)
-        fwd, atc = exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
-                            attributes={}, embeds=dict(evt=evt), sender=hab.pre)
+        fwd, atc = specialExchange(sender=hab.pre,
+                                   route='/fwd',
+                                   modifiers=dict(pre=recp, topic=topic),
+                                   attributes={},
+                                   embeds=dict(evt=evt))
         ims = hab.endorse(serder=fwd, last=False, framed=True)
 
         # Transpose the signatures to point to the new location
@@ -388,8 +391,10 @@ class StreamPoster:
 
         texter = Texter(raw=raw)
         diger = Diger(ser=raw, code=MtrDex.Blake3_256)
-        essr, _ = exchange(route='/essr/req', sender=hab.pre, diger=diger,
-                           modifiers=dict(src=hab.pre, dest=ctrl))
+        essr, _ = specialExchange(sender=hab.pre,
+                                  route='/essr/req',
+                                  modifiers=dict(src=hab.pre, dest=ctrl),
+                                  diger=diger,)
         ims = hab.endorse(serder=essr, framed=True)
         ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
                            gvrsn=Vrsn_1_0).qb64b)

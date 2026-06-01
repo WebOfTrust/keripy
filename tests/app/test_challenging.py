@@ -15,7 +15,9 @@ def test_challenge_handler():
         handler = ChallengeHandler(db=hab.db, signaler=signaler)
 
         payload = dict(i=hab.pre, words=["the", "test", "words", "that", "are", "not", "sufficient"])
-        exn, _ = exchange(route="/challenge/response", attributes=payload, sender=hab.pre)
+        exn, _ = exchange(route="/challenge/response",
+                          attributes=payload,
+                          sender=hab.pre)
 
         handler.handle(serder=exn)
 

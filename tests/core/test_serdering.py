@@ -4355,7 +4355,7 @@ def test_keri_native_dumps_loads():
     attributes = dict(name="Sue")
     dts = '2020-08-22T17:50:09.988921+00:00'
 
-    serder, end = exchanging.exchange(sender=sender,
+    serder, _ = exchanging.exchange(sender=sender,
                         receiver=receiver,
                         xid='EFPs8lNTVLRs6xjs5reB_wKbYxqgMR3fdARfH0Ndcws4',
                         prior='EFPs8lNTVLRs6xjs5reB_wKbYxqgMR3fdARfH0Ndcws4',

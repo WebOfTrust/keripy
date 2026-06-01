@@ -55,7 +55,8 @@ def test_postman(seeder):
 
         pman = Poster(hby=hby)
 
-        exn, _ = exchanging.exchange(route="/echo", attributes=dict(msg="test"),
+        exn, _ = exchanging.exchange(route="/echo",
+                                     attributes=dict(msg="test"),
                                      sender=hab.pre)
         atc = hab.endorse(exn, last=False, framed=False)
         del atc[:exn.size]
