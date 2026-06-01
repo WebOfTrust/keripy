@@ -34,9 +34,10 @@ class Signer(Matter):
     """
     Signer is Matter subclass with method to create signature of serialization
     using:
-        .raw as signing (private) key seed,
-        .code as cipher suite for signing
-        .verfer whose property .raw is public key for signing.
+
+    - .raw as signing (private) key seed,
+    - .code as cipher suite for signing
+    - .verfer whose property .raw is public key for signing.
 
     If not provided .verfer is generated from private key seed using .code
     as cipher suite for creating key-pair.
@@ -44,41 +45,42 @@ class Signer(Matter):
 
     See Matter for inherited attributes and properties:
 
-    Attributes:
+        Inherited Properties:
 
-    Properties:  (inherited)
-        code (str): hard part of derivation code to indicate cypher suite
-        both (int): hard and soft parts of full text code
-        size (int): Number of triplets of bytes including lead bytes
+        - code (str): hard part of derivation code to indicate cypher suite
+        - both (int): hard and soft parts of full text code
+        - size (int): Number of triplets of bytes including lead bytes
             (quadlets of chars) of variable sized material. Value of soft size,
             ss, part of full text code.
             Otherwise None.
-        rize (int): number of bytes of raw material not including
-                    lead bytes
-        raw (bytes): private signing key crypto material only without code
-        qb64 (str): private signing key Base64 fully qualified with
-                    derivation code + crypto mat
-        qb64b (bytes): private signing keyBase64 fully qualified with
+        - rize (int): number of bytes of raw material not including lead bytes
+        - raw (bytes): private signing key crypto material only without code
+        - qb64 (str): private signing key Base64 fully qualified with
             derivation code + crypto mat
-        qb2  (bytes): private signing key binary with
-            derivation code + crypto material
-        transferable (bool): True means transferable derivation code False otherwise
-        digestive (bool): True means digest derivation code False otherwise
+        - qb64b (bytes): private signing keyBase64 fully qualified with
+            derivation code + crypto mat
+        - qb2  (bytes): private signing key binary with derivation code +
+            crypto material
+        - transferable (bool): True means transferable derivation code False otherwise
+        - digestive (bool): True means digest derivation code False otherwise
 
     Properties:
 
-        .verfer is Verfer object instance of public key derived from private key
+        - .verfer is Verfer object instance of public key derived from private key
             seed which is .raw
 
     Methods:
-        sign: create signature
+
+        - sign: create signature
 
     """
 
     def __init__(self, raw=None, code=MtrDex.Ed25519_Seed, transferable=True, **kwa):
         """Assign signing cipher suite function to ._sign
 
-        Parameters:  See Matter for inherted parameters
+        Parameters:
+            See Matter for inherted parameters.
+
             raw (bytes): crypto material for signing seed from which to generate
                          private key
             code (str): derivation code of signing seed
@@ -334,7 +336,8 @@ class Salter(Matter):
         salter = Salter(raw=b'0123456789abcdef')
 
     To create a deterministic secret, seed, or private key from salt
-    call .signer:
+    call .signer::
+
         signer = salter.signer(code=MtrDex.Ed25519_Seed,
                                transferable=True,
                                path="",
@@ -342,7 +345,8 @@ class Salter(Matter):
                                temp=False)
 
     To create a deterministic set of secrets or seeds or private keys from salt
-    call signers:
+    call signers::
+
         signers = salter.signers(count=1,
                                  start=0,
                                  path="",
@@ -718,12 +722,12 @@ class Cipher(Matter):
 
         Returns:
             decrypted (Matter | Indexer | Streamer): instance of decrypted
-               cipher text of .raw which is encrypted qb64, qb2, or sniffable
-               stream depending on .code when bare is False. Otherwise returns
-               plaintext itself.
+                cipher text of .raw which is encrypted qb64, qb2, or sniffable
+                stream depending on .code when bare is False. Otherwise returns
+                plaintext itself.
 
         Keyword Parameters:
-            (see Matter because created Decrypter is Matter subclass)
+            See Matter because created Decrypter is Matter subclass.
 
         Parameters:
             prikey (str | bytes): qb64 or qb64b serialization of private
@@ -733,12 +737,12 @@ class Cipher(Matter):
                 fully qualified with code.
             klas (Matter | Indexer | Streamer): Class used to create instance from
                 decrypted serialization.
-            transferable (bool): Modifier of klas instance creation.
-                When klas init (such as Signer) supports transferabe parm;
-                   True means verfer of returned signer is transferable.
-                   False means non-transferable
-            bare (bool): False (default) means returns instance holding plaintext
-                         True means returns plaintext itself
+            transferable (bool): Modifier of klas instance creation. When klas
+                init (such as Signer) supports transferabe parm, True means
+                verfer of returned signer is transferable. False means
+                non-transferable.
+            bare (bool): False (default) means returns instance holding
+                plaintext. True means returns plaintext itself.
         """
         decrypter = Decrypter(qb64b=prikey, seed=seed, **kwa)
         return decrypter.decrypt(cipher=self,
@@ -919,7 +923,9 @@ class Decrypter(Matter):
         Inherited Parameters:
             (see Matter)
 
-        Parameters:  See Matter for inherited parameters
+        Parameters:
+            See Matter for inherited parameters.
+
             code (str): derivation code for private decryption key
             seed (str | bytes | bytearray | memoryview | None): qb64b or qb64
                 of signing key seed used to derive raw which is private
@@ -958,13 +964,13 @@ class Decrypter(Matter):
 
         Returns:
             decrypted (Matter | Indexer | Streamer | bytes): When bare is False
-               returns instance of decrypted cipher text of .raw which is
-               encrypted qb64, qb2, or sniffable stream depending on .code
-               hhen Bare is True. Otherwise returns decrypted serialization
-               plaintext whatever that may be.
+                returns instance of decrypted cipher text of .raw which is
+                encrypted qb64, qb2, or sniffable stream depending on .code
+                hhen Bare is True. Otherwise returns decrypted serialization
+                plaintext whatever that may be.
 
         Keyword Parameters:
-            (see Matter because created Decrypter is Matter subclass)
+            See Matter because created Decrypter is Matter subclass.
 
         Parameters:
             cipher (Cipher): instance. One of cipher, qb64, or qb2 required.
@@ -976,12 +982,12 @@ class Decrypter(Matter):
                 and strip in kwa is True.
             klas (Matter | Indexer | Streamer): Class used to create instance from
                 decrypted serialization.
-            transferable (bool): Modifier of klas instance creation.
-                When klas init (such as Signer) supports transferabe parm;
-                   True means verfer of returned signer is transferable.
-                   False means non-transferable
-            bare (bool): False (default) means returns instance holding plaintext
-                         True means returns plaintext itself
+            transferable (bool): Modifier of klas instance creation. When klas
+                init (such as Signer) supports transferabe parm, True means
+                verfer of returned signer is transferable. False means
+                non-transferable.
+            bare (bool): False (default) means returns instance holding
+                plaintext. True means returns plaintext itself.
         """
         if not cipher:
             if qb64:  # create cipher from qb64
@@ -1139,7 +1145,9 @@ class Streamer:
     @property
     def texter(self):
         """stream as Texter instance.
-            Texter(text=self.stream)
+
+        Texter(text=self.stream)
+
         Returns:
            texter (Texter): Texter primitive of stream suitable wrapping
 
@@ -1150,8 +1158,10 @@ class Streamer:
     def bexter(self):
         """stream as Bexter instance.
         Bexter of expanded text version of stream.
-        First expand  to text which requires parsing then create bexter
+        First expand  to text which requires parsing then create bexter::
+
             Bexter(bext=self.text)
+
         Because sniffable stream MUST NOT start with 'A' then there is no
         length ambiguity. The only tritet collison of 'A' is with '-' but the
         remaining 5 bits are guaranteed to always be different. So bexter must
