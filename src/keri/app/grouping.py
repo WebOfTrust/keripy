@@ -506,7 +506,8 @@ def multisigRpyExn(ghab, rpy):
     )
 
     exn, end = specialExchange(sender=ghab.mhab.pre,
-                               route="/multisig/rpy", attributes={'gid': ghab.pre},
+                               route="/multisig/rpy",
+                               attributes={'gid': ghab.pre},
                                embeds=embeds)
     evt = ghab.mhab.endorse(serder=exn, last=False, framed=True)
     atc = bytearray(evt[exn.size:])

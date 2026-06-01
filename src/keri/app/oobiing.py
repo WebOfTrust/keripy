@@ -263,7 +263,7 @@ def oobiRequestExn(hab, dest, oobi):
     )
 
     # Create `exn` peer to peer message to notify other participants UI
-    exn, _ = exchange(sender=hab.pre,
+    exn = exchange(sender=hab.pre,
                       route=OobiRequestHandler.resource,
                       modifiers=dict(),
                       attributes=data)

@@ -55,7 +55,7 @@ def test_postman(seeder):
 
         pman = Poster(hby=hby)
 
-        exn, _ = exchanging.exchange(route="/echo",
+        exn = exchanging.exchange(route="/echo",
                                      attributes=dict(msg="test"),
                                      sender=hab.pre)
         atc = hab.endorse(exn, last=False, framed=False)
@@ -98,7 +98,7 @@ def test_forward_handler():
         forwarder = ForwardHandler(hby=hby, mbx=mbx)
 
         # Happy path: single embed
-        inner_exn, _ = exchanging.exchange(route="/echo",
+        inner_exn = exchanging.exchange(route="/echo",
                                            attributes=dict(msg="hello"),
                                            sender=hab.pre)
         inner_atc = hab.endorse(inner_exn, last=False, framed=False)
@@ -132,7 +132,7 @@ def test_forward_handler():
 
         # Topic/recipient routing isolation
         # Same recipient, different topic
-        inner_exn2, _ = exchanging.exchange(route="/delegate",
+        inner_exn2 = exchanging.exchange(route="/delegate",
                                             attributes=dict(msg="delegate"),
                                             sender=hab.pre)
         inner_atc2 = hab.endorse(inner_exn2, last=False, framed=False)
@@ -155,7 +155,7 @@ def test_forward_handler():
         assert len(delegate_msgs) == 1
 
         # Different recipient, same topic
-        inner_exn3, _ = exchanging.exchange(route="/echo",
+        inner_exn3 = exchanging.exchange(route="/echo",
                                             attributes=dict(msg="other"),
                                             sender=hab.pre)
         inner_atc3 = hab.endorse(inner_exn3, last=False, framed=False)
@@ -178,12 +178,12 @@ def test_forward_handler():
 
         # Multiple attachments in one call
         # Two embeds in a single /fwd: both must appear in the stored blob
-        inner_exnA, _ = exchanging.exchange(route="/echo", attributes=dict(msg="A"),
+        inner_exnA = exchanging.exchange(route="/echo", attributes=dict(msg="A"),
                                             sender=hab.pre)
         inner_atcA = hab.endorse(inner_exnA, last=False, framed=False)
         del inner_atcA[:inner_exnA.size]
 
-        inner_exnB, _ = exchanging.exchange(route="/echo", attributes=dict(msg="B"),
+        inner_exnB = exchanging.exchange(route="/echo", attributes=dict(msg="B"),
                                             sender=hab.pre)
         inner_atcB = hab.endorse(inner_exnB, last=False, framed=False)
         del inner_atcB[:inner_exnB.size]
@@ -253,7 +253,7 @@ def test_essr_stream(seeder):
         # Test chunking
         saids = []
         for i in range(0, 40):
-            exn, _ = exchanging.exchange(route="/echo",
+            exn = exchanging.exchange(route="/echo",
                                          attributes=dict(msg="test", i=i),
                                          sender=hab.pre)
             atc = hab.endorse(exn, last=False, framed=False)
@@ -362,7 +362,7 @@ def test_essr_mbx(seeder):
         # Test chunking
         saids = []
         for i in range(0, 15):
-            exn, _ = exchanging.exchange(route="/echo",
+            exn = exchanging.exchange(route="/echo",
                                          attributes=dict(msg="test", i=i),
                                          sender=hab.pre)
             atc = hab.endorse(exn, last=False, framed=False)

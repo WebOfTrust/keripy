@@ -82,7 +82,7 @@ def test_mailboxing():
             d = dict(a="b", b=idx)
             dest = Prefixer(qb64="EAD919wF4oiG7ck6mnBWTRD_Z-Io0wZKCxL0zjx5je9I")
 
-            exn, _ = exchange(route="/credential/issue",
+            exn = exchange(route="/credential/issue",
                               attributes=d,
                               stamp="2021-07-15T13:01:37.624492+00:00",
                               sender=dest.qb64)

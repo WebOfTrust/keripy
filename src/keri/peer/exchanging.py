@@ -543,7 +543,8 @@ def exchange(*,
                    a=attributes if attributes is not None else {}
                    )
 
-    return SerderKERI(sad=sad, makify=True), end  # return serialized ked
+    return SerderKERI(sad=sad, makify=True)  # return serialized ked
+    #return SerderKERI(sad=sad, makify=True), end  # return serialized ked
 
 
 def specialExchange(*,
