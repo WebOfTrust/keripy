@@ -59,8 +59,10 @@ LastEstLoc = namedtuple("LastEstLoc", 's d')
 def simple(n):
     """
     Returns int as simple majority of n when n >=1
-        otherwise returns 0
-    Parameters:
+    otherwise returns 0
+
+    Parameters::
+
         n is int total number of elements
     """
     return min(max(0, n), (max(0, n) // 2) + 1)
@@ -69,8 +71,10 @@ def simple(n):
 def ample(n, f=None, weak=True):
     """
     Returns int as sufficient immune (ample) majority of n when n >=1
-        otherwise returns 0
-    Parameters:
+    otherwise returns 0
+
+    Parameters::
+
         n is int total number of elements
         f is int optional fault number
         weak is Boolean
@@ -113,16 +117,20 @@ def ample(n, f=None, weak=True):
 def deWitnessCouple(data, strip=False):
     """
     Returns tuple of (diger, wiger) extracted from bytes or bytearray
-    that hold concatenated data couple where:
+    that hold concatenated data couple where::
+
         diger is Diger instance
         wiger is Siger instance
-    Couple is dig+wig  where:
+
+    Couple is dig+wig  where::
+
         dig is receipted event digest
         wig is indexed signature made with key pair derived from witness nontrans
             identifier prefix from witness list. Index is offset into witness
             list of latest establishment event for receipted event.
 
-    Parameters:
+    Parameters::
+
         data is couple of bytes concatenation of dig+wig from receipt
         deletive is Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream
@@ -132,8 +140,6 @@ def deWitnessCouple(data, strip=False):
     is offset into associated witness list. At time of escrow receipted event
     may not be in KEL so need the dig to look up event and then look up witness
     list from key state.
-
-
     """
     if isinstance(data, memoryview):
         data = bytes(data)
@@ -150,13 +156,16 @@ def deWitnessCouple(data, strip=False):
 def deReceiptCouple(data, strip=False):
     """
     Returns tuple of (prefixer, cigar) from concatenated bytes or bytearray
-    of data couple made up of qb64 or qb64b versions of pre+cig where:
+    of data couple made up of qb64 or qb64b versions of pre+cig where::
+
        pre is nontransferable identifier prefix of receiptor
        cig is nonindexed signature made with key pair derived from pre
+
     Couple is used for receipts signed by nontransferable prefix keys
 
-    Parameters:
-        data is couple of bytes concatenation of pre+sig from receipt
+    Parameters::
+
+        data is couple of bytes concatenation of snu+dig from source event
         strip is Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream
             Raises error if not bytearray
@@ -176,12 +185,15 @@ def deReceiptCouple(data, strip=False):
 def deSourceCouple(data, strip=False):
     """
     Returns tuple of (number, diger) from concatenated bytes or bytearray
-    of data couple made up of qb64 or qb64b versions of snu+dig where:
+    of data couple made up of qb64 or qb64b versions of snu+dig where::
+
        snu is sn of delegator/issuer source event
        dig is digest of delegator/issuer source event
+
     Couple is used for delegated/issued event attachment of delegator/issuer evt
 
-    Parameters:
+    Parameters::
+
         data is couple of bytes concatenation of pre+sig from receipt
         strip is Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream
@@ -202,7 +214,8 @@ def deSourceCouple(data, strip=False):
 def deReceiptTriple(data, strip=False):
     """
     Returns tuple of (diger, prefixer, cigar) from concatenated bytes or bytearray
-    of data triple made up of qb64 or qb64b versions of dig+pre+cig where:
+    of data triple made up of qb64 or qb64b versions of dig+pre+cig where::
+
         dig is receipted event digest
         pre is nontransferable identifier prefix of receiptor
         cig is nonindexed signature made with key pair derived from pre
@@ -210,7 +223,8 @@ def deReceiptTriple(data, strip=False):
     Triple is used for escrows of unverified receipts signed by nontransferable
     prefix keys
 
-    Parameters:
+    Parameters::
+
         data is triple of bytes concatenation of dig+pre+cig from receipt
         deletive is Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream
@@ -876,7 +890,8 @@ def deltate(pre,
     Syntactic suger that calls rotate but with ilk set to drt.
 
 
-    Inherited Parameters:
+    Inherited Parameters::
+
         pre (str): identifier prefix qb64
         keys  (list): current signing keys qb64
         dig (str): said of previous event qb64
@@ -1023,38 +1038,40 @@ def query(pre="",
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
-    Version 1.0
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "qry",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "logs",
-      "rr": "log/processor",
-      "q" :
-      {
-        "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-        "sn": "5",
-        "dt": "2020-08-01T12:20:05.123456+00:00",
-      }
-    }
+                Version 1.0::
 
-    Version 2.0
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "qry",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "logs",
-      "rr": "log/processor",
-      "q" :
-      {
-        "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-        "sn": "5",
-        "dt": "2020-08-01T12:20:05.123456+00:00",
-      }
-    }
+                                {
+                                    "v" : "KERI10JSON00011c_",
+                                    "t" : "qry",
+                                    "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                                    "dt": "2020-08-22T17:50:12.988921+00:00",
+                                    "r" : "logs",
+                                    "rr": "log/processor",
+                                    "q" :
+                                    {
+                                        "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                                        "sn": "5",
+                                        "dt": "2020-08-01T12:20:05.123456+00:00"
+                                    }
+                                }
+
+                Version 2.0::
+
+                                {
+                                    "v" : "KERI10JSON00011c_",
+                                    "t" : "qry",
+                                    "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                                    "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                                    "dt": "2020-08-22T17:50:12.988921+00:00",
+                                    "r" : "logs",
+                                    "rr": "log/processor",
+                                    "q" :
+                                    {
+                                        "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                                        "sn": "5",
+                                        "dt": "2020-08-01T12:20:05.123456+00:00"
+                                    }
+                                }
 
     """
     pvrsn = pvrsn if pvrsn is not None else version
@@ -1113,38 +1130,40 @@ def reply(pre="",
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
-    Version 1:
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "rpy",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "logs/processor",
-      "a" :
-      {
-         "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-         "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-         "name": "John Jones",
-         "role": "Founder",
-      }
-    }
+                Version 1::
 
-    Version 2:
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "rpy",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "logs/processor",
-      "a" :
-      {
-         "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-         "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-         "name": "John Jones",
-         "role": "Founder",
-      }
-    }
+                                {
+                                    "v" : "KERI10JSON00011c_",
+                                    "t" : "rpy",
+                                    "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                                    "dt": "2020-08-22T17:50:12.988921+00:00",
+                                    "r" : "logs/processor",
+                                    "a" :
+                                    {
+                                         "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                                         "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+                                         "name": "John Jones",
+                                         "role": "Founder"
+                                    }
+                                }
+
+                Version 2::
+
+                                {
+                                    "v" : "KERI10JSON00011c_",
+                                    "t" : "rpy",
+                                    "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                                    "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+                                    "dt": "2020-08-22T17:50:12.988921+00:00",
+                                    "r" : "logs/processor",
+                                    "a" :
+                                    {
+                                         "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                                         "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+                                         "name": "John Jones",
+                                         "role": "Founder"
+                                    }
+                                }
 
 
     """
@@ -1190,8 +1209,8 @@ def prod(pre="",
 
     Returns:
         prod (SerderKERI):  of prod, 'pro', msg to request disclosure via bare, 'bar' msg
-    of data anchored via seal(s) on KEL for identifier prefix, pre, when given
-    by all SAIDs given in digs list.
+            of data anchored via seal(s) on KEL for identifier prefix, pre, when given
+            by all SAIDs given in digs list.
 
     Parameters:
         pre (str): Identifier prefix (AID) of sender controller (Version 2)
@@ -1207,35 +1226,36 @@ def prod(pre="",
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
-    Version 1
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "pro",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "data",
-      "rr": "data/processor",
-      "q":
-      {
-        "d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
-      }
-    }
+                Version 1::
 
-    Version 2
+                                {
+                                    "v" : "KERI10JSON00011c_",
+                                    "t" : "pro",
+                                    "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                                    "dt": "2020-08-22T17:50:12.988921+00:00",
+                                    "r" : "data",
+                                    "rr": "data/processor",
+                                    "q":
+                                    {
+                                        "d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
+                                    }
+                                }
 
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "pro",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "data",
-      "rr": "data/processor",
-      "q":
-      {
-        "d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
-      }
-    }
+                Version 2::
+
+                                {
+                                    "v" : "KERI10JSON00011c_",
+                                    "t" : "pro",
+                                    "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                                    "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                                    "dt": "2020-08-22T17:50:12.988921+00:00",
+                                    "r" : "data",
+                                    "rr": "data/processor",
+                                    "q":
+                                    {
+                                        "d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
+                                    }
+                                }
 
     """
     pvrsn = pvrsn if pvrsn is not None else version
@@ -1299,55 +1319,47 @@ def bare(pre="",
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
+        Examples:
 
-       route is route path string that indicates data flow handler (behavior)
-           to processs the exposure
-       data is dict of dicts of comitted SADS for SAIDs in seals keyed by SAID
-       stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                     creation of message or data
-       version is Version instance
-       kind is serialization kind
+            Version 1::
 
-    Version 1
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "bar",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "sealed/processor",
-      "a" :
-        {
-          "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM":
-            {
-               "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-               "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-               "dt": "2020-08-22T17:50:12.988921+00:00",
-               "name": "John Jones",
-               "role": "Founder",
-            }
-        }
-    }
+                {
+                    "v": "KERI10JSON00011c_",
+                    "t": "bar",
+                    "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                    "dt": "2020-08-22T17:50:12.988921+00:00",
+                    "r": "sealed/processor",
+                    "a": {
+                        "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM": {
+                            "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                            "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+                            "dt": "2020-08-22T17:50:12.988921+00:00",
+                            "name": "John Jones",
+                            "role": "Founder"
+                        }
+                    }
+                }
 
-    Version 2
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "bar",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "sealed/processor",
-      "a" :
-        {
-          "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM":
-            {
-               "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-               "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-               "dt": "2020-08-22T17:50:12.988921+00:00",
-               "name": "John Jones",
-               "role": "Founder",
-            }
-        }
-    }
+            Version 2::
+
+                {
+                    "v": "KERI10JSON00011c_",
+                    "t": "bar",
+                    "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                    "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                    "dt": "2020-08-22T17:50:12.988921+00:00",
+                    "r": "sealed/processor",
+                    "a": {
+                        "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM": {
+                            "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                            "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+                            "dt": "2020-08-22T17:50:12.988921+00:00",
+                            "name": "John Jones",
+                            "role": "Founder"
+                        }
+                    }
+                }
+
     """
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
@@ -1394,7 +1406,7 @@ def exchept(sender="",
         exchept (SerderKERI):  'xip' message.
 
     Fields in order:
-    (v, t, d, u, ri, dt, r, q, a),
+        (v, t, d, u, ri, dt, r, q, a),
 
 
     Parameters:
@@ -1407,31 +1419,32 @@ def exchept(sender="",
         nonce (str|None): qb64 of UUID salty nonce. When None generate nonce.
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
                       creation of message or data, default is now.
-        version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
-    Version 2:
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "rpy",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "u": '0AAwMTIzNDU2Nzg5YWJjZGVm',
-      "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-      "ri": "EBPzhzS6baU6JR2nmwyZ-i0d8JZ5CMAoTNZH3ULvYAfS",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "/logs/processor",
-      "q":
-      {
-           "name": "Zoe",
-           "color": "Blue"
-      }
-      "a":
-      {
-          "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
-      }
-    }
+        Examples:
+
+            Version 2::
+
+                {
+                    "v": "KERI10JSON00011c_",
+                    "t": "rpy",
+                    "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                    "u": "0AAwMTIzNDU2Nzg5YWJjZGVm",
+                    "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+                    "ri": "EBPzhzS6baU6JR2nmwyZ-i0d8JZ5CMAoTNZH3ULvYAfS",
+                    "dt": "2020-08-22T17:50:12.988921+00:00",
+                    "r": "/logs/processor",
+                    "q": {
+                        "name": "Zoe",
+                        "color": "Blue"
+                    },
+                    "a": {
+                        "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
+                    }
+                }
+
     """
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
@@ -1472,24 +1485,18 @@ def exchange(*,
     Parameters:
         sender (str): qb64 of sender identifier (AID)
         receiver (str): qb64 of receiver identifier (AID)
-        xid (str): qb64 of exchange ID which is SAID of exchange inception 'xip'
-                   if any
-        prior (str): qb64 of prior exchange event including 'xip" if any
         route (str):  '/' delimited path identifier of data flow handler
-                      (behavior) to processs the reply if any (equivalent of
-                      url path to resource)
-        modifiers (dict): modifiers field map (equvalent of http query string)
-        attributes (dict): attributes field map (payload body)
+               (behavior) to processs the reply if any
+        xid (str): qb64 of exchange ID which is SAID of exchange inception 'xip'
+        prior (str): qb64 of prior exchange event including 'xip"
+        modifiers (dict): modifiers
+        attributes (dict): attributes
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
                       creation of message or data, default is now.
-        version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
-        gvrsn (Versionage): CESR Genus version for attachment group codes or
-                        nesting group code (useful when serder.gvrsn < 2)
-                        gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
-                            if serder.gvrsn else serder.pvrsn
-        kind (str): serialization for key event message
-                    one of Kinds ("json","cbor","mgpk","cesr")
+        gvrsn (Versionage): CESR genus vrsion
+        kind (str): serialization kind value of Serials
+
 
     """
     pvrsn = pvrsn if pvrsn is not None else version
@@ -1521,52 +1528,32 @@ def exchange(*,
 def messagize(serder, *, sigers=None, source=None, bonds=None, wigers=None,
                          cigars=None, framed=False, nested=False, gvrsn=Version,
                          genusify=False):
-    """Attaches authenticator(s) from sigers (with or without source as seal) and/or
-    cigars and/or wigers and/or bonds. A bond is typically a seal reference to
-    an event with anchoring seal of message as authenticator. In v2 bonds may
-    also include any Structor subclass not simply seal references.
+    """
+    Attaches indexed signatures from sigers and/or cigars and/or wigers to
+    KERI message data from serder
 
     Parameters::
+
         serder (SerderKERI): instance containing the event
         sigers (list): of Siger instances (optional) to create indexed signatures
-                       based on seal type if any
-        source (SealEvent|SealLast|None): optiona modifier to sigers when provided
-                If SealEvent use attachment group code TransIdxSigGroups plus attach
-                    triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
-                    plus attached indexed sigs in sigers
-                Elif SealLast use attachment group code TransLastIdxSigGroups plus
-                    attach uniple pre made from (i,) of seal plus ControllerIdxSigs
-                    plus attached indexed sigs in sigers
-                Else None use ControllerIdxSigs plus attached indexed sigs in sigers
-        bonds (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
-            Non signature based authenticator typically an event reference or may
-            Only v2 supports BlindState|BoundState|TypeMedia
-            if bonds is not list convert to list.
+        seal (Union[SealEvent, SealLast]): optional if sigers and
+            If SealEvent use attachment group code TransIdxSigGroups plus attach
+                triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
+                plus attached indexed sigs in sigers
+            Else If SealLast use attachment group code TransLastIdxSigGroups plus
+                attach uniple pre made from (i,) of seal plus ControllerIdxSigs
+                plus attached indexed sigs in sigers
+            Else use ControllerIdxSigs plus attached indexed sigs in sigers
         wigers (list): optional list of Siger instances of witness index signatures
         cigars (list): optional list of Cigars instances of non-transferable non indexed
             signatures from  which to form receipt couples.
             Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
-        framed (bool): True means each message plus attachments may be assumed to
-                            be isolated as frame when parsing so do not need
-                            attachment group
-                       False means use attachment group since message plus
-                            attachments may not be isolated as frame when parsing
-        nested (bool): True means messagize for non-top level
-                            This forces non-native serializion to be embedded
-                            in non-native group code
-                       False means messagize for top level of stream.
-                            This allows bare non-native serialization of message
-        gvrsn (Versionage): CESR Genus version for attachment group codes or
-                            nesting group code (useful when serder.gvrsn < 2)
-                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
-                                if serder.gvrsn else serder.pvrsn
-        genusify (bool): True means prepend genus version code from gvrsn before
-                            serder to override default stream genus version
-                         False means do nothing
+        pipelined (bool), True means prepend pipelining count code to attachemnts
+            False means to not prepend pipelining count code
 
     Returns::
-        msg (bytearray): KERI event with attachments if any
 
+        bytearray KERI event message
     """
     if not (sigers or cigars or wigers or bonds):
         raise ValueError(f"Missing authenticator for msg={serder.pretty()}")
@@ -1794,6 +1781,7 @@ class Kever:
     Has the following public attributes and properties:
 
     Class Attributes:
+
         EstOnly (bool):
                 True means allow only establishment events
                 False means allow all events
@@ -1802,6 +1790,7 @@ class Kever:
                 False means allow delegation of delegated identifiers
 
     Attributes:
+
         db (Baser | None): instance that manages the LMDB database when provided.
             When None provided then create and assign vacuous instance of Baser.
         cues (deque | None): Injected Kevery.cues when provided. Default None.
@@ -1838,6 +1827,7 @@ class Kever:
 
 
     Properties:
+
         sn (int): sequence number property that returns .sner.num
         fn (int): first seen ordinal number property the returns .fner.num
         ndigs (list): of digests qb64 of .digers
@@ -1846,8 +1836,9 @@ class Kever:
 
 
 
-    ToDo:
-       Add Registrar Backer support:
+    ToDo
+
+        Add Registrar Backer support:
         Class variable, instance variable and parse support config trait.
         raise error for now
 
@@ -1873,9 +1864,9 @@ class Kever:
             db (Baser | None): instance of lmdb database
             estOnly (bool | None): True means establishment only events allowed 'EO'.
                             False all events allowed.
-            delsner (Seqner | None): instance of delegating event sequence number.
+            delseqner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            delsger (Diger | None): instance of of delegating event SAID diger.
+            deldiger (Diger | None): instance of of delegating event SAID.
                 If this event is not delegated then saider is ignored
             firner (Seqner | None): instance optional of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
@@ -2017,9 +2008,10 @@ class Kever:
     def transferable(self):
         """
         Property transferable:
+
         Returns True if identifier does not have non-transferable derivation code
-                and .nextor is not None
-                False otherwise
+        and .nextor is not None
+        False otherwise
         """
         return True if self.ndigers and self.prefixer.transferable else False
 
@@ -2074,7 +2066,9 @@ class Kever:
             pre (str): qb64 identifier prefix if any.
 
 
-        ToDo: this code does not account for stale group members as delegators.
+        ToDo:
+
+        this code does not account for stale group members as delegators.
         i.e. a stale group membed is a member AID for a group AID in .groups
         for which the member AID was a signing (smids) or rotating (rmids) member
         in the past but is no longer. For delegation approval there must be
@@ -2086,7 +2080,8 @@ class Kever:
         That later approval must detect and properly handle the staleness.
 
         Alternatively the logic could be changed to short circut that later
-        work by checking here for staleness. For example:
+        work by checking here for staleness. For example::
+
             delpre.mhab.pre in delpre's hab.smids  (not stale )
 
 
@@ -2304,9 +2299,9 @@ class Kever:
                 from prior next est event to latest est event.
             wigers (list | None): of Siger instances of indexed witness signatures of
                 event. Index is offset into wits list from latest est event
-            delsner (Seqner | None): instance of delegating event sequence number.
+            delseqner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            delsger (Diger | None): instance of of delegating event said diger.
+            deldiger (Diger | None): instance of of delegating event said.
                 If this event is not delegated then diger is ignored
             firner (Seqner | None): Seqner instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
@@ -2614,14 +2609,15 @@ class Kever:
                                 local=True):
         """
         Returns triple (sigers, wigers, delegator) where:
+
         sigers is unique validated signature verified members of inputed sigers
         wigers is unique validated signature verified members of inputed wigers
         delegator is qb64 delegator prefix if delegated else None
 
         Validates sigers signatures by validating indexes, verifying signatures, and
-            validating threshold sith.
+        validating threshold sith.
         Validate witness receipts by validating indexes, verifying
-            witness signatures and validating toad.
+        witness signatures and validating toad.
         Witness validation is a function of wits .prefixes and .local
 
         Parameters:
@@ -2636,9 +2632,9 @@ class Kever:
             toader (Number): instance of backer witness threshold
             wits (list): of qb64 non-transferable prefixes of witnesses used to
                 derive werfers for wigers
-            delsner (Number | None): instance of delegating event sequence number.
+            delnum (Number | None): instance of delegating event sequence number.
                 If this event is not delegated then ignored
-            delsger (Diger | None): instance of delegating event said diger.
+            deldiger (Diger | None): instance of delegating event digest.
                 If this event is not delegated then diger is ignored
             eager (bool): True means try harder to find validate events by
                             walking KELs. Enables only being eager
@@ -2872,11 +2868,12 @@ class Kever:
         this function is called.
 
         Rules:
-            If event is not a delegated event then not valid delegation
-            If delegatee's own event (.mine) then valid delegation
-            If delegation seal found in delgator's KEL then valid delegation given
-                valid superseding rules below
-            Otherwise escrow or reject if error condition
+
+            - If event is not a delegated event then not valid delegation
+            - If delegatee's own event (.mine) then valid delegation
+            - If delegation seal found in delgator's KEL then valid delegation given
+              valid superseding rules below
+            - Otherwise escrow or reject if error condition
 
         seal validates with respect to Delegator's KEL
         Location Seal is from Delegate's establishment event
@@ -2894,11 +2891,11 @@ class Kever:
             wits (list[str]): of qb64 non-transferable prefixes of witnesses used to
                 derive werfers for wigers
             delpre (str): qb64 prefix of delegator
-            delsner (Number | None): instance of delegating event sequence number.
+            delnum (Number | None): instance of delegating event sequence number.
                 If this event is not delegated then ignored
-            delsger (Diger | None): instance of delegating event said diger.
+            deldiger (Diger | None): instance of delegating event digest.
                 If this event is not delegated ignored
-                local (bool): event source for validation logic
+            local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
                 Event validation logic is a function of local or remote
@@ -2916,6 +2913,7 @@ class Kever:
             None
 
         Process Logic:
+
             A delegative event is processed differently for each of four different
             parties, namely, controller of event, witness to controller of event,
             delegator of event , and validator of event that is not controller,
@@ -3014,7 +3012,7 @@ class Kever:
             remote event because the validator is not one of the protected parties
             to the event.
 
-        Superseding Recovery:
+        Superseding Recovery
 
         Supersede means that after an event has already been accepted as first seen
         into a KEL that a different event with the same sequence number is accepted
@@ -3085,7 +3083,7 @@ class Kever:
             A. or B. must be satisfied, or else the superseding rotation must
             be discarded.
 
-        Note: The latest seen delegated rotation constraint means that any earlier
+        Note. The latest seen delegated rotation constraint means that any earlier
         delegated rotations CAN NOT be superseded. This greatly simplifies the
         validation logic and avoids a potential infinite regress of forks in the
         delegated identifier's KEL while allowing the delegate to
@@ -3117,7 +3115,7 @@ class Kever:
         to detect a comprimised or duplicitious superseding rotation and
         prevent the additional verification from proceding.
 
-        Mitigations of malicious source seal couples:
+        Mitigations of malicious source seal couples
 
         Repair the approval source seal couple in the 'aess' database on recursive
         climb the kel tree.  Once an event has been accepted into its kel.
@@ -3582,8 +3580,8 @@ class Kever:
             serder (SerderKERI): instance of  event
             sigers (list): of Siger instance for  event
             wigers (list): of witness signatures
-            delsner (Number): instance of sn of delegating event if any
-            delsger (Diger): instance of said digest of delegating event if any
+            delnum (Number): instance of sn of event delegatint/issuing event if any
+            diger (Diger): instance of digest of delegating/issuing event if any
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -3658,8 +3656,8 @@ class Kever:
             serder is SerderKERI instance of event
             sigers is list of Siger instances of indexed controller sigs
             wigers is optional list of Siger instance of indexed witness sigs
-            delsner (Number): instance of sn of delegating event if any
-            delsger (Diger): instance of said digest of delegating event if any
+            delnum is Number instance of sn of seal source event of delegator/issuer
+            diger is Diger instance of digest of delegator/issuer
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -3700,8 +3698,8 @@ class Kever:
             serder is SerderKERI instance of  event
             sigers is optional list of Siger instances of indexed controller sigs
             wigers is list of Siger instance of indexed witness sigs
-            delsner (Number): instance of sn of delegating event if any
-            delsger (Diger): instance of said digest of delegating event if any
+            delnum is Number instance of sn of seal source event of delegator/issuer
+            diger is Diger instance of digest of delegator/issuer
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -3737,7 +3735,9 @@ class Kever:
 
     def escrowPDEvent(self, serder, *, sigers=None, wigers=None,
                       delsner=None, delsger=None, local=True):
-        """Update associated logs for escrow of partially delegated event.
+        """
+        Update associated logs for escrow of partially delegated or otherwise
+        authorized issued event.
         Assumes sigs (controller signatures) and wigs (witness signatures)  are
         provided elsewhere. Partial authentication occurs once an event is
         fully signed and witnessed but the authorizing (delegating) source
@@ -3754,8 +3754,8 @@ class Kever:
             serder is SerderKERI instance of  event
             sigers is optional list of Siger instances of indexed controller sigs
             wigers is list of Siger instance of indexed witness sigs
-            delsner is Number instance of sn of seal source delegating event sn
-            delsger is Diger instance of digest of delegating event said
+            delnum is Number instance of sn of seal source event of delegator/issuer
+            diger is Diger instance of digest of delegator/issuer
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -3943,7 +3943,8 @@ class Kever:
           verfer (Verfer): instance of verfer
           sn (int | None): sn to start searching. If None then start at .lastEst.s
 
-        Returns:
+        Returns::
+
             tuple(int, int, list[Verfer]) | None: where tuple is of form
             (sn, index, verfers)
                 sn is sequence number
@@ -3983,7 +3984,8 @@ class Kevery:
 
     Has the following public attributes and properties:
 
-    Attributes:
+    Attributes::
+
         cues (Deck):  of Cues i.e. notices of events needing receipt or
                       requests needing response
         db (Baser): instance of LMDB Baser object
@@ -4004,7 +4006,8 @@ class Kevery:
                 and timestamps.
 
 
-    Properties:
+    Properties::
+
         .kevers is dict of db kevers indexed by pre (qb64) of each Kever
         .prefixes is OrderedSet of fully qualified base64 identifier prefixes of db
             local habitats if any.
@@ -4027,7 +4030,8 @@ class Kevery:
         """
         Initialize instance:
 
-        Parameters:
+        Parameters::
+
             cues (Deck)  notices to create responses to evts
             kevers is dict of Kever instances of key state in db
             db (Baser): instance of database
@@ -4117,13 +4121,13 @@ class Kevery:
 
         Parameters:
             serder (SerderKERI): instance of event to process
-            sigers (list[Siger]|None): instances of attached controller indexed sigs
+            sigers (list[Siger]): instances of attached controller indexed sigs
             wigers (list[Siger]|None): instances of attached witness indexed sigs
                 otherwise None
-            delsner (Number|None): instance of delegating event sequence number.
-                If this event is not delegated then delnumber is ignored
-            delsger (Diger|None): instance of of delegating event SAID diger.
-                If this event is not delegated then deldiger is ignored
+            delnum (Number|None): instance of delegating event sequence number.
+                If this event is not delegated then ignored
+            deldiger (Diger|None): instance of of delegating event SAID.
+                If this event is not delegated then saider is ignored
             firner (Seqner|None): instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
                 When firner provided then compare fn of dater and database and
@@ -4504,16 +4508,15 @@ class Kevery:
         qry, rpy, pro, bar, xip, exn.
 
         Processing order:
-            1. AID-based allow/deny logic
+            1. AID-based allow/deny logic 
             2. KRAM processing via self.kramer.intake()
             3. Message-type-specific processing delegation
 
         Parameters:
             serder (SerderKERI): message instance
-            kwa (dict | None): parser exts / attachment dict (sigers, cigars, tsgs,
+            **kwa: keyword arguments from parser exts dict (sigers, cigars, tsgs,
                    ssgs, sscs, ssts, tdcs, wigers, trqs, frcs, ptds, essrs,
-                   bsqs, bsss, tmqs, local, etc.); mutated in place (KRAM
-                   normalization, rvy/exc/tvy pops, qry source/sigers).
+                   bsqs, bsss, tmqs, local, etc.)
                    Also accepts processor overrides injected by parser:
                    rvy (Revery), exc (Exchanger), tvy (Tevery)
         """
@@ -4724,7 +4727,8 @@ class Kevery:
 
     def processAttachedReceiptQuadruples(self, serder, trqs, *, firner=None,
                                          local=None, **kwa):
-        """Process one attachment quadruple that represents an endorsement from
+        """
+        Process one attachment quadruple that represents an endorsement from
         a transferable AID that is not the controller. Maybe a watcher.
         Originally may have been a transferable receipt or key event attachment
 
@@ -4733,13 +4737,18 @@ class Kevery:
         Parameters:
             serder (serderKERI):  instance serialized event message to which
                 attachments come from replay (clone)
-            trqs (list[tuple]): quadruples of (prefixer, number, diger, siger)
+            trqs (list[tuple]): quadruples of (prefixer, seqner, diger, siger)
             firner (Seqner): instance of first seen ordinal,
                if provided lookup event by fn = firner.sn
                used when in cloned replay mode
             local (bool|None): True means local (protected) event source.
                                False means remote (unprotected).
                                None means use default .local .
+
+        Seal labels
+            i pre  # qb64 prefix of receipter
+            s sn   # hex of sequence number of est event for receipter keys
+            d dig  # qb64 digest of est event for receipter keys
 
         """
         local = local if local is not None else self.local
@@ -4876,38 +4885,40 @@ class Kevery:
                 diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
-        EndpointRecord:
-            allowed: bool = False  # True eid allowed (add), False eid disallowed (cut)
-            name: str = ""  # optional user friendly name of endpoint
+                EndpointRecord::
 
-        Reply Message:
-        {
-          "v" : "KERI10JSON00011c_",
-          "t" : "rpy",
-          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-          "dt": "2020-08-22T17:50:12.988921+00:00",
-          "r" : "/end/role/add",
-          "a" :
-          {
-             "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-             "role": "watcher",  # one of Roles
-             "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
-          }
-        }
+                        allowed: bool = False  # True eid allowed (add), False eid disallowed (cut)
+                        name: str = ""  # optional user friendly name of endpoint
 
-        {
-          "v" : "KERI10JSON00011c_",
-          "t" : "rpy",
-          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-          "dt": "2020-08-22T17:50:12.988921+00:00",
-          "r" : "/end/role/cut",
-          "a" :
-          {
-             "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-             "role": "watcher",  # one of Roles
-             "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
-          }
-        }
+                Reply Message::
+
+                        {
+                          "v" : "KERI10JSON00011c_",
+                          "t" : "rpy",
+                          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                          "dt": "2020-08-22T17:50:12.988921+00:00",
+                          "r" : "/end/role/add",
+                          "a" :
+                          {
+                             "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                             "role": "watcher",  # one of Roles
+                             "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+                          }
+                        }
+
+                        {
+                          "v" : "KERI10JSON00011c_",
+                          "t" : "rpy",
+                          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                          "dt": "2020-08-22T17:50:12.988921+00:00",
+                          "r" : "/end/role/cut",
+                          "a" :
+                          {
+                             "cid":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                             "role": "watcher",  # one of Roles
+                             "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+                          }
+                        }
 
         """
         # reply specific logic
@@ -4973,43 +4984,45 @@ class Kevery:
                 diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
-        EndAuthRecord
-             cid: str = ""  # identifier prefix of controller that authorizes endpoint
-             roles: list[str] = field(default_factory=list)  # str endpoint roles such as watcher, witness etc
+                EndAuthRecord::
 
-        LocationRecord:
-            url: str  # full url including host:port/path?query scheme is optional
-            cids: list[EndAuthRecord] = field(default_factory=list)  # optional authorization record references
+                    cid: str = ""  # identifier prefix of controller that authorizes endpoint
+                    roles: list[str] = field(default_factory=list)  # str endpoint roles such as watcher, witness etc
 
-        Reply Message:
+                LocationRecord::
 
-        {
-          "v" : "KERI10JSON00011c_",
-          "t" : "rpy",
-          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-          "dt": "2020-08-22T17:50:12.988921+00:00",
-          "r" : "/loc/scheme",
-          "a" :
-          {
-             "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
-             "scheme": "http",  # one of Schemes
-             "url":  "http://localhost:8080/watcher/wilma",
-          }
-        }
+                    url: str  # full url including host:port/path?query scheme is optional
+                    cids: list[EndAuthRecord] = field(default_factory=list)  # optional authorization record references
 
-        {
-          "v" : "KERI10JSON00011c_",
-          "t" : "rpy",
-          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-          "dt": "2020-08-22T17:50:12.988921+00:00",
-          "r" : "/loc/scheme",
-          "a" :
-          {
-             "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
-             "scheme": "http",  # one of Schemes
-             "url":  "",  # Nullifies
-          }
-        }
+                Reply Message::
+
+                        {
+                      "v" : "KERI10JSON00011c_",
+                      "t" : "rpy",
+                      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                      "dt": "2020-08-22T17:50:12.988921+00:00",
+                      "r" : "/loc/scheme",
+                      "a" :
+                      {
+                         "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+                         "scheme": "http",  # one of Schemes
+                         "url":  "http://localhost:8080/watcher/wilma",
+                      }
+                        }
+
+                        {
+                      "v" : "KERI10JSON00011c_",
+                      "t" : "rpy",
+                      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                      "dt": "2020-08-22T17:50:12.988921+00:00",
+                      "r" : "/loc/scheme",
+                      "a" :
+                      {
+                         "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
+                         "scheme": "http",  # one of Schemes
+                         "url":  "",  # Nullifies
+                      }
+                        }
 
 
         """
@@ -5075,45 +5088,45 @@ class Kevery:
                 diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
-        Reply Message:
-        {
-          "v" : "KERI10JSON00011c_",
-          "t" : "rpy",
-          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-          "dt": "2020-08-22T17:50:12.988921+00:00",
-          "r" : "/ksn/EeS834LMlGVEOGR8WU3rzZ9M6HUv_vtF32pSXQXKP7jg",
-          "a" :
-          {
-            "v": "KERI10JSON000274_",
-            "i": "EeS834LMlGVEOGR8WU3rzZ9M6HUv_vtF32pSXQXKP7jg",
-            "s": "1",
-            "t": "ksn",
-            "p": "ESORkffLV3qHZljOcnijzhCyRT0aXM2XHGVoyd5ST-Iw",
-            "d": "EtgNGVxYd6W0LViISr7RSn6ul8Yn92uyj2kiWzt51mHc",
-            "f": "1",
-            "dt": "2021-11-04T12:55:14.480038+00:00",
-            "et": "ixn",
-            "kt": "1",
-            "k": [
-              "DTH0PwWwsrcO_4zGe7bUR-LJX_ZGBTRsmP-ZeJ7fVg_4"
-            ],
-            "n": "E6qpfz7HeczuU3dAd1O9gPPS6-h_dCxZGYhU8UaDY2pc",
-            "bt": "3",
-            "b": [
-              "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo",
-              "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
-              "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"
-            ],
-            "c": [],
-            "ee": {
-              "s": "0",
-              "d": "ESORkffLV3qHZljOcnijzhCyRT0aXM2XHGVoyd5ST-Iw",
-              "br": [],
-              "ba": []
-            },
-            "di": ""
-          }
-        }
+                Reply message example::
+
+                                {
+                                        "v": "KERI10JSON00011c_",
+                                        "t": "rpy",
+                                        "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                                        "dt": "2020-08-22T17:50:12.988921+00:00",
+                                        "r": "/ksn/EeS834LMlGVEOGR8WU3rzZ9M6HUv_vtF32pSXQXKP7jg",
+                                        "a": {
+                                                "v": "KERI10JSON000274_",
+                                                "i": "EeS834LMlGVEOGR8WU3rzZ9M6HUv_vtF32pSXQXKP7jg",
+                                                "s": "1",
+                                                "t": "ksn",
+                                                "p": "ESORkffLV3qHZljOcnijzhCyRT0aXM2XHGVoyd5ST-Iw",
+                                                "d": "EtgNGVxYd6W0LViISr7RSn6ul8Yn92uyj2kiWzt51mHc",
+                                                "f": "1",
+                                                "dt": "2021-11-04T12:55:14.480038+00:00",
+                                                "et": "ixn",
+                                                "kt": "1",
+                                                "k": [
+                                                        "DTH0PwWwsrcO_4zGe7bUR-LJX_ZGBTRsmP-ZeJ7fVg_4"
+                                                ],
+                                                "n": "E6qpfz7HeczuU3dAd1O9gPPS6-h_dCxZGYhU8UaDY2pc",
+                                                "bt": "3",
+                                                "b": [
+                                                        "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo",
+                                                        "BuyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw",
+                                                        "Bgoq68HCmYNUDgOz4Skvlu306o_NY-NrYuKAVhk3Zh9c"
+                                                ],
+                                                "c": [],
+                                                "ee": {
+                                                        "s": "0",
+                                                        "d": "ESORkffLV3qHZljOcnijzhCyRT0aXM2XHGVoyd5ST-Iw",
+                                                        "br": [],
+                                                        "ba": []
+                                                },
+                                                "di": ""
+                                        }
+                                }
 
         """
         cigars = cigars if cigars is not None else []
@@ -5269,20 +5282,20 @@ class Kevery:
                 diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
-        Reply Message:
-        {
-          "v" : "KERI10JSON00011c_",
-          "t" : "rpy",
-          "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-          "dt": "2020-08-22T17:50:12.988921+00:00",
-          "r" : "/watcher/BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE/add",
-          "a" :
-          {
-            "cid": "EyX-zd8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM"
-            "oid": "EM0-i05TNZJZAoH3UR2nmLaU6JwyvPzhzS6YAfSVbMC5"
-            "oobi": "http://example.com/oobi/EyX-zd8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM"
-          }
-        }
+                Reply message example::
+
+                                {
+                                        "v": "KERI10JSON00011c_",
+                                        "t": "rpy",
+                                        "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                                        "dt": "2020-08-22T17:50:12.988921+00:00",
+                                        "r": "/watcher/BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE/add",
+                                        "a": {
+                                                "cid": "EyX-zd8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+                                                "oid": "EM0-i05TNZJZAoH3UR2nmLaU6JwyvPzhzS6YAfSVbMC5",
+                                                "oobi": "http://example.com/oobi/EyX-zd8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM"
+                                        }
+                                }
 
         """
         aid = kwa["aid"]
@@ -5501,8 +5514,8 @@ class Kevery:
         Parameters:
             serder (SerderKERI): instance of  event
             sigers (list): of Siger instance for  event
-            number (Number): instance of sn of delegating/issuing event if any
-            diger (Diger): instance of dig of delegating/issuing event if any
+            delnum (Number): instance of sn of event delegatint/issuing event if any
+            diger (Diger): instance of dig of event delegatint/issuing event if any
             wigers (list): of witness signatures
             local (bool): event source for validation logic
                 True means event source is local (protected).
@@ -5533,13 +5546,14 @@ class Kevery:
 
 
     def escrowOOEvent(self, serder, sigers, delsner=None, delsger=None, wigers=None, local=True):
-        """Update associated logs for escrow of Out-of-Order event
+        """
+        Update associated logs for escrow of Out-of-Order event
 
         Parameters:
             serder (SerderKERI): instance of  event
             sigers (list): of Siger instance for  event
-            delnumber (Number): instance of sn of delegating/issuing event if any
-            diger (Diger): instance of said of delegating/issuing event if any
+            delnum (Number): instance of sn of event delegatint/issuing event if any
+            diger (Diger): instance of dig of event delegatint/issuing event if any
             wigers (list): of witness signatures
             local (bool): event source for validation logic
                 True means event source is local (protected).
@@ -5626,7 +5640,8 @@ class Kevery:
         """
         Update associated logs for escrow of Unverified Event Witness Receipt
         (non-transferable)
-        Escrowed value is couple edig+wig where:
+        Escrowed value is couple edig+wig where::
+
            edig is receipted event dig not serder.dig
            wig is witness indexed signature on receipted event with key pair
                 derived from witness nontrans identifier prefix in witness list.
@@ -5661,7 +5676,8 @@ class Kevery:
     def escrowUReceipt(self, serder, cigars, said):
         """
         Update associated logs for escrow of Unverified Event Receipt (non-transferable)
-        Escrowed value is triple edig+rpre+cig where:
+        Escrowed value is triple edig+rpre+cig where::
+
            edig is event dig
            rpre is nontrans receiptor prefix
            cig is non-indexed signature on event with key pair derived from rpre
@@ -5706,7 +5722,8 @@ class Kevery:
                 diger is Diger instance of digest of est event of receiptor
                 sigers is list of Siger instances of multi-sig of receiptor
 
-        escrow quintuple for each siger
+        escrow quintuple for each siger::
+
             quintuple = edig+pre+snu+dig+sig
             where:
                 edig is receipted event dig (serder.dig)
@@ -5754,7 +5771,8 @@ class Kevery:
             saider is Saider instance of said of est event of receiptor
             igers is list of Siger instances of multi-sig of receiptor
 
-        escrow quintuple for each siger
+        escrow quintuple for each siger::
+
             quintuple = edig+pre+snu+dig+sig
             where:
                 edig is receipted event dig (serder.dig)
@@ -5790,7 +5808,8 @@ class Kevery:
                     serder.sn, serder.ked["d"], prefixer.qb64)
 
     def escrowTRQuadruple(self, serder, sprefixer, snumber, diger, siger):
-        """Update associated logs for escrow of Unverified Transferable Receipt
+        """
+        Update associated logs for escrow of Unverified Transferable Receipt
         (transferable)
 
         escrow quintuple made from quadruple where:
@@ -5798,11 +5817,10 @@ class Kevery:
             quintuple = edig+spre+ssnu+sdig+sig  (edig is signed event digest)
 
         Parameters:
-            serder (SerderKERI):  instance of receipt message not receipted event
-            sprefixer (Prefixer): instance receiptor AID
-            snumber (Number):  instance of sn of est event for receiptor key state
-            diger (Diger): instance said digest est event or receipt key state
-            siger (Siger): instance of signature of receiptor
+            serder instance of receipt message not receipted event
+            sigers is list of Siger instances attached to receipt message
+            seal is SealEvent instance (namedTuple)
+            saider is digest of receipted event provided in receipt
 
         """
         # Receipt dig algo may not match database dig. So must always
@@ -5991,7 +6009,8 @@ class Kevery:
 
         Value is dgkey for event stored in .Evt where .Evt has serder.raw of event.
 
-        Original Escrow steps:
+        Original Escrow steps::
+
             dgkey = dgKey(pre, serder.digb)
             .db.dtss.put(keys=dgkey, val=Dater())
             self.db.sigs.put(keys=dgkey, vals=sigers)
@@ -6003,7 +6022,8 @@ class Kevery:
                 pre is str qb64 of identifier prefix of event
                 sn is int sequence number of event
 
-        Steps:
+        Steps::
+
             Each pass  (walk index table)
                 For each prefix,sn
                     For each escrow item dup at prefix,sn:
@@ -6142,12 +6162,14 @@ class Kevery:
         Escrowed items in .pwes are indexed in database table keyed by prefix and
         sequence number with duplicates inserted in insertion order. This allows
         FIFO processing of events with same prefix and sn.
-        Reads db.pwes .db.getPwe put there by  .db.pwes.addOn(keys, on, val)
+        Reads db.pwes .db.getPwe put there by  .db.pwes.addOn(keys, on, val)::
+
             which is IOVal with dups.
 
         Value is dgkey for event stored in .Evt where .Evt has serder.raw of event.
 
-        Original Escrow steps:
+        Original Escrow steps::
+
             dgkey = dgKey(pre, serder.digb)
             .db.dtss.put(keys=dgkey, val=Dater())
             .db.putWigs(dgkey, [siger.qb64b for siger in sigers])
@@ -6159,7 +6181,8 @@ class Kevery:
                 pre is str qb64 of identifier prefix of event
                 sn is int sequence number of event
 
-        Steps:
+        Steps::
+
             Each pass  (walk index table)
                 For each prefix,sn
                     For each escrow item dup at prefix,sn:
@@ -6450,7 +6473,8 @@ class Kevery:
         signatures neither to look up the witness list to verify the indexed
         signatures.
 
-        The escrow is a couple with edig+wig where:
+        The escrow is a couple with edig+wig where::
+
             edig is receipted event digest
             wig is witness indexed signature by key-pair derived from witness
                 prefix in associated witness list. Index is offset into witness
@@ -6467,7 +6491,8 @@ class Kevery:
 
         Value is couple
 
-        Original Escrow steps:
+        Original Escrow steps::
+
             self.db.dtss.put(keys=dgKey(pre, dig), val=Dater())
             for wiger in wigers:  # escrow each couple
                 couple = dig.encode("utf-8") + wiger.qb64b
@@ -6479,7 +6504,8 @@ class Kevery:
                 pre is str qb64 of identifier prefix of receipted event
                 sn is int sequence number of receipted event
 
-        Steps:
+        Steps::
+
             Each pass  (walk index table)
                 For each prefix,sn
                     For each escrow item dup at prefix,sn:
@@ -6554,7 +6580,8 @@ class Kevery:
         into its KEL.
         Without the event, there is no way to know where to store the receipts.
 
-        The escrow is a triple with edig+rpre+cig where:
+        The escrow is a triple with edig+rpre+cig where::
+
            edig is event digest
            rpre is receiptor (signer) of event
            cig is non-indexed signature by key-pair derived from rpre of event
@@ -6571,7 +6598,8 @@ class Kevery:
 
         Value is triple
 
-        Original Escrow steps:
+        Original Escrow steps::
+
             self.db.dtss.put(keys=dgKey(pre, dig), val=Dater())
             for cigar in cigars:  # escrow each triple
                 if cigar.verfer.transferable:  # skip transferable verfers
@@ -6584,7 +6612,8 @@ class Kevery:
                 pre is str qb64 of identifier prefix of receipted event
                 sn is int sequence number of receipted event
 
-        Steps:
+        Steps::
+
             Each pass  (walk index table)
                 For each prefix,sn
                     For each escrow item dup at prefix,sn:
@@ -7038,7 +7067,8 @@ class Kevery:
 
         Value is quintuple
 
-        Original Escrow steps:
+        Original Escrow steps::
+
             self.db.dtss.put(keys=dgKey(serder.preb, dig), val=Dater())
             prelet = (dig.encode("utf-8") + seal.i.encode("utf-8") +
                   Seqner(sn=int(seal.s, 16)).qb64b + seal.d.encode("utf-8"))
@@ -7050,7 +7080,8 @@ class Kevery:
                 sigers is list of Siger instances for receipted event
 
 
-        Steps:
+        Steps::
+
             Each pass  (walk index table)
                 For each prefix,sn
                     For each escrow item dup at prefix,sn:
@@ -7190,7 +7221,8 @@ class Kevery:
 
         Value is dgkey for event stored in .Evt where .Evt has serder.raw of event.
 
-        Original Escrow steps:
+        Original Escrow steps::
+
             dgkey = dgKey(pre, serder.dig)
             self.db.dtss.put(keys=dgkey, val=Dater())
             self.db.sigs.put(keys=dgkey, vals=sigers)
@@ -7202,7 +7234,8 @@ class Kevery:
                 pre is str qb64 of identifier prefix of event
                 sn is int sequence number of event
 
-        Steps:
+        Steps::
+
             Each pass  (walk index table)
                 For each prefix,sn
                     For each escrow item dup at prefix,sn:
