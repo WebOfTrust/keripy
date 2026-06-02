@@ -281,12 +281,11 @@ class Schemer:
         .said  (qb64): digest from .saider
 
     Hidden Attributes:
-          ._raw (bytes): of serialized schema only
-          ._sed (JSON): schema dict
-          ._kind (schema): kind string value (see namedtuple coring.Serials)
-            supported kinds are 'JSONSchema'
-          ._code (default): code for .saider
-          ._saider (Saider): instance of digest of .raw
+        ._raw (bytes): of serialized schema only
+        ._sed (JSON): schema dict
+        ._kind (schema): kind string value (see namedtuple coring.Serials), supported kinds are 'JSONSchema'
+        ._code (default): code for .saider
+        ._saider (Saider): instance of digest of .raw
 
 
     """
@@ -302,11 +301,11 @@ class Schemer:
         Parameters:
             raw (bytes): of serialized schema
             sed (dict): dict or None
-                  if None its deserialized from raw
+                if None its deserialized from raw
             typ (JSONSchema): type of schema
             kind (serialization): kind string value or None (see namedtuple coring.Serials)
                 supported kinds are 'json', 'cbor', 'msgpack', 'binary'
-                 if kind (None): then its extracted from ked or raw
+                if kind (None): then its extracted from ked or raw
             code (MtrDex): default digest code
             verify (bool): True means verify said(s) of given raw or sad.
                            Raises ValidationError if verification fails
