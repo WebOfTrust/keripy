@@ -17,7 +17,6 @@ from ..core import (Counter, Pather, Dater, Diger,
                     Noncer, Sadder, SerderKERI,
                     NonTransDex, Saids, Codens,
                     verifySigs)
-from ..core.eventing import exchange
 from ..db import fetchTsgs
 from ..help import helping
 

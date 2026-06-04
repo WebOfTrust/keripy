@@ -10,7 +10,7 @@ from hio.base import doing
 from ...common import Parsery, setupHby, aliasInput
 
 from ....app import Poster, Organizer, GroupHab, HaberyDoer
-from ....peer import exchange
+from ....core import exchange
 
 
 parser = argparse.ArgumentParser(description='Respond to a list of challenge words by signing and sending an EXN '

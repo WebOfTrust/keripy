@@ -7,8 +7,8 @@ tests.core.test_eventing module
 from hio.help import decking, ogler
 
 from keri.kering import Vrsn_1_0, Ilks, Kinds
-from keri.core import Salter, Parser
-from keri.peer import Exchanger, exchange, specialExchange
+from keri.core import Salter, Parser, exchange
+from keri.peer import Exchanger, specialExchange
 from keri.app import openHby
 
 

@@ -2,6 +2,12 @@
 
 ## 2.0.0-dev6
 
+*** peer.exchange has been replaced with a combination of either core.eventing.exchange
+or peer.specialExhange. peer.specialExchange supports the embeds and diger parameters
+and returns a tuple of (exn, atc) exn Serder instance and atc attachments bytearray.
+Whereas eventing.exchange just returns the exchange Serder instance.
+
+
 *** peer.exchanging.exchange  normalizing call signature with core.eventing.exchange
 so that all KERI message function call signatures are aligned. currently
 peer.exchanging.exchange uses a differe signature. So to better support v2 with

@@ -5,7 +5,7 @@ tests.app.challenging module
 """
 
 from keri.app import ChallengeHandler, Signaler, openHab
-from keri.peer import exchange
+from keri.core import exchange
 
 
 def test_challenge_handler():

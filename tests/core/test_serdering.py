@@ -24,8 +24,6 @@ from keri.core import (Salter, Diger, Number, FieldDom,
                        deltate, receipt, query, reply, prod, bare,
                        exchept, exchange, GenDex, PreDex, MtrDex)
 
-from keri.peer import exchanging
-
 from keri.app import openHby
 
 
@@ -4348,14 +4346,14 @@ def test_keri_native_dumps_loads():
 
 
 
-    # Test exchange exn from exchanging
+    # Test exchange
     sender = 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
     receiver =  'EJJkRAwNy0yHZeIzeuHq_OKRiQeenIKhxGU3gDQlMM4U'
     modifiers = dict(role="crew", motto="Be Prepared")
     attributes = dict(name="Sue")
     dts = '2020-08-22T17:50:09.988921+00:00'
 
-    serder = exchanging.exchange(sender=sender,
+    serder = exchange(sender=sender,
                         receiver=receiver,
                         xid='EFPs8lNTVLRs6xjs5reB_wKbYxqgMR3fdARfH0Ndcws4',
                         prior='EFPs8lNTVLRs6xjs5reB_wKbYxqgMR3fdARfH0Ndcws4',

@@ -4,6 +4,6 @@ KERI
 keri.peer Package
 Exchange Messages
 """
-from .exchanging import (Exchanger, exchange, specialExchange,
+from .exchanging import (Exchanger, specialExchange,
                          cloneMessage, serializeMessage,
                          nesting, verify)

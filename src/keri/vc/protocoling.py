@@ -9,7 +9,8 @@ from hio.help import ogler
 
 from ..kering import Vrsn_1_0, Vrsn_2_0, Version
 
-from ..peer import cloneMessage, exchange, specialExchange
+from ..peer import cloneMessage, specialExchange
+from ..core import exchange
 
 logger = ogler.getLogger()
 

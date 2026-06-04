@@ -10,11 +10,11 @@ import pysodium
 from keri import Kinds, Vrsn_1_0
 from keri.core import (Salter, Counter, Texter,
                        Diger, SerderKERI, Parser,
-                       MtrDex, Codens)
+                       MtrDex, Codens, exchange)
 
 from keri.app import openHab, openHby
 
-from keri.peer import Exchanger, nesting, exchange, specialExchange
+from keri.peer import Exchanger, nesting, specialExchange
 from keri.vdr import incept
 
 TEST_VERSION = Vrsn_1_0

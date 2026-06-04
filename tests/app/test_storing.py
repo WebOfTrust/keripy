@@ -8,9 +8,8 @@ import os
 import lmdb
 
 from keri.app import Mailboxer, openKS
-from keri.core import Prefixer, SerderKERI
+from keri.core import Prefixer, SerderKERI, exchange
 from keri.db import OnSuber, openLMDB, openDB
-from keri.peer import exchange
 
 
 def test_mailboxing():

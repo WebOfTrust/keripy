@@ -21,9 +21,8 @@ from .. import (Vrsn_1_0, Vrsn_2_0, Version, Roles, Schemes, Ilks,
                 ConfigurationError)
 from ..help import nowIso8601, fromIso8601, toIso8601, nowUTC
 from ..core import (Prefixer, Router, Revery, Kevery,
-                    Parser, Schemer, SerderKERI)
+                    Parser, Schemer, SerderKERI, exchange)
 from ..end import OOBI_RE, DOOBI_RE, WOOBI_RE, OOBI_AID_HEADER
-from ..peer import exchange
 from ..recording import OobiRecord, WellKnownAuthN
 
 logger = ogler.getLogger()

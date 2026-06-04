@@ -12,14 +12,14 @@ from hio.core import http
 
 from keri import help
 from keri.core import (Salter, Pather, Prefixer,
-                       Bexter, Kevery, Parser, SerderKERI)
+                       Bexter, Kevery, Parser, SerderKERI, exchange)
 from keri.kering import Vrsn_1_0, Vrsn_2_0, Version, Ilks, Roles, Schemes, Kinds
 
 from keri.app import (Mailboxer, ForwardHandler, Poster,
                       StreamPoster, HttpEnd,
                       openHab, openHby, setupWitness)
 
-from keri.peer import exchanging
+from keri.peer import specialExchange, Exchanger
 from keri.spac import payloading
 
 
@@ -63,7 +63,7 @@ def test_postman(seeder):
 
         pman = Poster(hby=hby)
 
-        exn = exchanging.exchange(route="/echo",
+        exn = exchange(route="/echo",
                                      attributes=dict(msg="test"),
                                      sender=hab.pre,
                                      **kwa)
@@ -114,7 +114,7 @@ def test_forward_handler():
         forwarder = ForwardHandler(hby=hby, mbx=mbx)
 
         # Happy path: single embed
-        inner_exn = exchanging.exchange(route="/echo",
+        inner_exn = exchange(route="/echo",
                                            attributes=dict(msg="hello"),
                                            sender=hab.pre,
                                            **kwa)
@@ -123,7 +123,7 @@ def test_forward_handler():
 
         evt = bytearray(inner_exn.raw)
         evt.extend(inner_atc)
-        fwd, _ = exchanging.specialExchange(sender=hab.pre,
+        fwd, _ = specialExchange(sender=hab.pre,
                                             route='/fwd',
                                             modifiers=dict(pre=recpHab.pre,
                                                            topic="echo"),
@@ -149,7 +149,7 @@ def test_forward_handler():
 
         # Topic/recipient routing isolation
         # Same recipient, different topic
-        inner_exn2 = exchanging.exchange(route="/delegate",
+        inner_exn2 = exchange(route="/delegate",
                                             attributes=dict(msg="delegate"),
                                             sender=hab.pre,
                                             **kwa)
@@ -158,7 +158,7 @@ def test_forward_handler():
 
         evt2 = bytearray(inner_exn2.raw)
         evt2.extend(inner_atc2)
-        fwd2, _ = exchanging.specialExchange(sender=hab.pre,
+        fwd2, _ = specialExchange(sender=hab.pre,
                                              route='/fwd',
                                              modifiers=dict(pre=recpHab.pre,
                                                             topic="delegate"),
@@ -173,7 +173,7 @@ def test_forward_handler():
         assert len(delegate_msgs) == 1
 
         # Different recipient, same topic
-        inner_exn3 = exchanging.exchange(route="/echo",
+        inner_exn3 = exchange(route="/echo",
                                             attributes=dict(msg="other"),
                                             sender=hab.pre,
                                             **kwa)
@@ -182,7 +182,7 @@ def test_forward_handler():
 
         evt3 = bytearray(inner_exn3.raw)
         evt3.extend(inner_atc3)
-        fwd3, _ = exchanging.specialExchange(sender=hab.pre,
+        fwd3, _ = specialExchange(sender=hab.pre,
                                              route='/fwd',
                                              modifiers=dict(pre=recp2Hab.pre,
                                                             topic="echo"),
@@ -197,14 +197,14 @@ def test_forward_handler():
 
         # Multiple attachments in one call
         # Two embeds in a single /fwd: both must appear in the stored blob
-        inner_exnA = exchanging.exchange(route="/echo",
+        inner_exnA = exchange(route="/echo",
                                          attributes=dict(msg="A"),
                                         sender=hab.pre,
                                         **kwa)
         inner_atcA = hab.endorse(inner_exnA, last=False, framed=False)
         del inner_atcA[:inner_exnA.size]
 
-        inner_exnB = exchanging.exchange(route="/echo",
+        inner_exnB = exchange(route="/echo",
                                          attributes=dict(msg="B"),
                                         sender=hab.pre,
                                         **kwa)
@@ -213,7 +213,7 @@ def test_forward_handler():
 
         evtA = bytearray(inner_exnA.raw); evtA.extend(inner_atcA)
         evtB = bytearray(inner_exnB.raw); evtB.extend(inner_atcB)
-        fwd_multi, _ = exchanging.specialExchange(sender=hab.pre,
+        fwd_multi, _ = specialExchange(sender=hab.pre,
                                                   route='/fwd',
                                                   modifiers=dict(pre=recpHab.pre,
                                                                  topic="multi"),
@@ -277,7 +277,7 @@ def test_essr_stream(seeder):
         # Test chunking
         saids = []
         for i in range(0, 40):
-            exn = exchanging.exchange(route="/echo",
+            exn = exchange(route="/echo",
                                          attributes=dict(msg="test", i=i),
                                          sender=hab.pre,
                                          **kwa)
@@ -388,7 +388,7 @@ def test_essr_mbx(seeder):
         # Test chunking
         saids = []
         for i in range(0, 15):
-            exn = exchanging.exchange(route="/echo",
+            exn = exchange(route="/echo",
                                          attributes=dict(msg="test", i=i),
                                          sender=hab.pre,
                                          **kwa)
@@ -435,7 +435,7 @@ def test_essr_mbx(seeder):
         assert pad.bext == ""
 
         forwarder = ForwardHandler(hby=hby, mbx=mbx)
-        exchanger = exchanging.Exchanger(hby=hby, handlers=[forwarder])
+        exchanger = Exchanger(hby=hby, handlers=[forwarder])
         parser = Parser(framed=True,
                                 kvy=wesHby.kvy,
                                 exc=exchanger,

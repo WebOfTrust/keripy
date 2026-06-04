@@ -13,8 +13,8 @@ from ..kering import ValidationError, Vrsn_1_0, Ilks
 from ..core import (Counter, Number, Diger, Saider,
                     Prefixer, Sadder, Kevery, Router,
                     Revery, Parser, SerderKERI,
-                    Codens, NumDex)
-from ..peer import Exchanger, exchange, specialExchange, cloneMessage
+                    Codens, NumDex, exchange)
+from ..peer import Exchanger, specialExchange, cloneMessage
 
 from .delegating import Anchorer
 from .agenting import Receiptor, WitnessInquisitor

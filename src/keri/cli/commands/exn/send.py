@@ -17,7 +17,7 @@ from hio.base import doing
 from ...common import Parsery, setupHby, parseDataItems
 
 from ....app import HaberyDoer, Poster, Organizer, GroupHab
-from ....peer import exchange
+from ....core import exchange
 
 
 parser = argparse.ArgumentParser(

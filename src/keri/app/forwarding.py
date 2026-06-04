@@ -17,9 +17,9 @@ from ..kering import (Roles, Vrsn_1_0, Kinds,
 from .agenting import messengerFrom, streamMessengerFrom
 from ..core import (Bexter, Prefixer, Verfer, Texter, Diger,
                     Sadder, Counter, SerderKERI,
-                    MtrDex, Codens, NonTransDex)
+                    MtrDex, Codens, NonTransDex, exchange)
 from ..db import dgKey
-from ..peer import exchange, specialExchange
+from ..peer import specialExchange
 from ..spac import PayloadTyper, PayloadTypes
 
 logger = ogler.getLogger()
