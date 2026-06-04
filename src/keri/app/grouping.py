@@ -13,8 +13,8 @@ from ..kering import ValidationError, Vrsn_1_0, Ilks
 from ..core import (Counter, Number, Diger, Saider,
                     Prefixer, Sadder, Kevery, Router,
                     Revery, Parser, SerderKERI,
-                    Codens, NumDex)
-from ..peer import Exchanger, exchange, cloneMessage
+                    Codens, NumDex, exchange)
+from ..peer import Exchanger, specialExchange, cloneMessage
 
 from .delegating import Anchorer
 from .agenting import Receiptor, WitnessInquisitor
@@ -319,8 +319,11 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None):
         data |= dict(delegator=delegator)
 
     # Create `exn` peer to peer message to notify other participants UI
-    exn, end = exchange(route="/multisig/icp", modifiers=dict(),
-                        attributes=data, embeds=embeds, sender=hab.pre)
+    exn, end = specialExchange(sender=hab.pre,
+                               route="/multisig/icp",
+                               modifiers=dict(),
+                               attributes=data,
+                               embeds=embeds)
     ims = hab.endorse(serder=exn, last=False, framed=True)
     del ims[:exn.size]
     ims.extend(end)
@@ -345,12 +348,12 @@ def multisigRotateExn(ghab, smids, rmids, rot):
         rot=rot,
     )
 
-    exn, end = exchange(route="/multisig/rot", modifiers=dict(),
-                        attributes=dict(gid=ghab.pre,
-                                     smids=smids,
-                                     rmids=rmids),
-                        sender=ghab.mhab.pre,
-                        embeds=embeds)
+    exn, end = specialExchange(sender=ghab.mhab.pre,
+                               route="/multisig/rot", modifiers=dict(),
+                               attributes=dict(gid=ghab.pre,
+                                               smids=smids,
+                                               rmids=rmids),
+                               embeds=embeds)
     ims = ghab.mhab.endorse(serder=exn, last=False, framed=True)
     atc = bytearray(ims[exn.size:])
     atc.extend(end)
@@ -374,11 +377,12 @@ def multisigInteractExn(ghab, aids, ixn):
         ixn=ixn,
     )
 
-    exn, end = exchange(route="/multisig/ixn", modifiers=dict(),
-                        attributes=dict(gid=ghab.pre,
+    exn, end = specialExchange(sender=ghab.mhab.pre,
+                               route="/multisig/ixn",
+                               modifiers=dict(),
+                               attributes=dict(gid=ghab.pre,
                                      smids=aids),
-                        sender=ghab.mhab.pre,
-                        embeds=embeds)
+                               embeds=embeds)
     ims = ghab.mhab.endorse(serder=exn, last=False, framed=True)
     atc = bytearray(ims[exn.size:])
     atc.extend(end)
@@ -407,8 +411,10 @@ def multisigRegistryInceptExn(ghab, usage, vcp, anc):
         anc=anc
     )
 
-    exn, end = exchange(route="/multisig/vcp", attributes={'gid': ghab.pre, 'usage': usage},
-                        sender=ghab.mhab.pre, embeds=embeds)
+    exn, end = specialExchange(sender=ghab.mhab.pre,
+                               route="/multisig/vcp",
+                               attributes={'gid': ghab.pre, 'usage': usage},
+                               embeds=embeds)
     evt = ghab.mhab.endorse(serder=exn, last=False, framed=True)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
@@ -438,8 +444,10 @@ def multisigIssueExn(ghab, acdc, iss, anc):
         anc=anc
     )
 
-    exn, end = exchange(route="/multisig/iss", attributes={'gid': ghab.pre},
-                        sender=ghab.mhab.pre, embeds=embeds)
+    exn, end = specialExchange(sender=ghab.mhab.pre,
+                               route="/multisig/iss",
+                               attributes={'gid': ghab.pre},
+                               embeds=embeds)
     evt = ghab.mhab.endorse(serder=exn, last=False, framed=True)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
@@ -468,8 +476,10 @@ def multisigRevokeExn(ghab, said, rev, anc):
         anc=anc
     )
 
-    exn, end = exchange(route="/multisig/rev", attributes={'gid': ghab.pre, 'said': said},
-                        sender=ghab.mhab.pre, embeds=embeds)
+    exn, end = specialExchange(sender=ghab.mhab.pre,
+                               route="/multisig/rev",
+                               attributes={'gid': ghab.pre, 'said': said},
+                               embeds=embeds)
     evt = ghab.mhab.endorse(serder=exn, last=False, framed=True)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
@@ -495,8 +505,10 @@ def multisigRpyExn(ghab, rpy):
         rpy=rpy
     )
 
-    exn, end = exchange(route="/multisig/rpy", attributes={'gid': ghab.pre},
-                        sender=ghab.mhab.pre, embeds=embeds)
+    exn, end = specialExchange(sender=ghab.mhab.pre,
+                               route="/multisig/rpy",
+                               attributes={'gid': ghab.pre},
+                               embeds=embeds)
     evt = ghab.mhab.endorse(serder=exn, last=False, framed=True)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
@@ -521,10 +533,10 @@ def multisigExn(ghab, exn):
         exn=exn
     )
 
-    wexn, end = exchange(route="/multisig/exn",
-                         attributes={'gid': ghab.pre},
-                         sender=ghab.mhab.pre,
-                         embeds=embeds)
+    wexn, end = specialExchange(sender=ghab.mhab.pre,
+                                route="/multisig/exn",
+                                attributes={'gid': ghab.pre},
+                                embeds=embeds)
     evt = ghab.mhab.endorse(serder=wexn, last=False, framed=True)
     atc = bytearray(evt[wexn.size:])
     atc.extend(end)

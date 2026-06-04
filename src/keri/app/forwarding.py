@@ -17,9 +17,9 @@ from ..kering import (Roles, Vrsn_1_0, Kinds,
 from .agenting import messengerFrom, streamMessengerFrom
 from ..core import (Bexter, Prefixer, Verfer, Texter, Diger,
                     Sadder, Counter, SerderKERI,
-                    MtrDex, Codens, NonTransDex)
+                    MtrDex, Codens, NonTransDex, exchange)
 from ..db import dgKey
-from ..peer import exchange
+from ..peer import specialExchange
 from ..spac import PayloadTyper, PayloadTypes
 
 logger = ogler.getLogger()
@@ -80,13 +80,23 @@ class Poster(doing.DoDoer):
                         for role in (Roles.controller, Roles.agent, Roles.mailbox):
                             if role in ends:
                                 if role == Roles.mailbox:
-                                    yield from self.forward(hab, ends[role], recp=recp, serder=srdr, atc=atc, topic=tpc)
+                                    yield from self.forward(hab,
+                                                            ends[role],
+                                                            recp=recp,
+                                                            serder=srdr,
+                                                            atc=atc,
+                                                            topic=tpc)
                                 else:
                                     yield from self.sendDirect(hab, ends[role], serder=srdr, atc=atc)
 
                     # otherwise send to one witness
                     elif Roles.witness in ends:
-                        yield from self.forwardToWitness(hab, ends[Roles.witness], recp=recp, serder=srdr, atc=atc, topic=tpc)
+                        yield from self.forwardToWitness(hab,
+                                                         ends[Roles.witness],
+                                                         recp=recp,
+                                                         serder=srdr,
+                                                         atc=atc,
+                                                         topic=tpc)
                     else:
                         logger.info(f"No end roles for {recp} to send evt={srdr.said}")
                         continue
@@ -189,8 +199,11 @@ class Poster(doing.DoDoer):
 
         evt = bytearray(serder.raw)
         evt.extend(atc)
-        fwd, atc = exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
-                            attributes={}, embeds=dict(evt=evt), sender=hab.pre)
+        fwd, atc = specialExchange(sender=hab.pre,
+                                   route='/fwd',
+                                   modifiers=dict(pre=recp, topic=topic),
+                                   attributes={},
+                                   embeds=dict(evt=evt), )
         ims = hab.endorse(serder=fwd, last=False, framed=True)
 
         # Transpose the signatures to point to the new location
@@ -222,8 +235,11 @@ class Poster(doing.DoDoer):
 
         evt = bytearray(serder.raw)
         evt.extend(atc)
-        fwd, atc = exchange(route='/fwd', modifiers=dict(pre=recp, topic=topic),
-                            attributes={}, embeds=dict(evt=evt), sender=hab.pre)
+        fwd, atc = specialExchange(sender=hab.pre,
+                                   route='/fwd',
+                                   modifiers=dict(pre=recp, topic=topic),
+                                   attributes={},
+                                   embeds=dict(evt=evt))
         ims = hab.endorse(serder=fwd, last=False, framed=True)
 
         # Transpose the signatures to point to the new location
@@ -385,8 +401,10 @@ class StreamPoster:
 
         texter = Texter(raw=raw)
         diger = Diger(ser=raw, code=MtrDex.Blake3_256)
-        essr, _ = exchange(route='/essr/req', sender=hab.pre, diger=diger,
-                           modifiers=dict(src=hab.pre, dest=ctrl))
+        essr, _ = specialExchange(sender=hab.pre,
+                                  route='/essr/req',
+                                  modifiers=dict(src=hab.pre, dest=ctrl),
+                                  diger=diger,)
         ims = hab.endorse(serder=essr, framed=True)
         ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
                            gvrsn=Vrsn_1_0).qb64b)
@@ -406,8 +424,11 @@ class StreamPoster:
         # Its not us, randomly select a mailbox and forward it on
         evt = bytearray(serder.raw)
         evt.extend(atc)
-        fwd, atc = exchange(route='/fwd', modifiers=dict(pre=self.recp, topic=topic),
-                            attributes={}, embeds=dict(evt=evt), sender=hab.pre)
+        fwd, atc = specialExchange(sender=hab.pre,
+                                   route='/fwd',
+                                   modifiers=dict(pre=self.recp, topic=topic),
+                                   attributes={},
+                                   embeds=dict(evt=evt))
         ims = hab.endorse(serder=fwd, last=False, framed=True)
         return fwd, ims + atc
 

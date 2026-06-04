@@ -16,14 +16,13 @@ from hio.help import decking, ogler
 
 from .httping import Clienter,CESR_CONTENT_TYPE
 from .organizing import Organizer
-from .. import (Vrsn_1_0, Roles, Schemes, Ilks,
+from .. import (Vrsn_1_0, Vrsn_2_0, Version, Roles, Schemes, Ilks,
                 ValidationError, UnverifiedReplyError,
                 ConfigurationError)
 from ..help import nowIso8601, fromIso8601, toIso8601, nowUTC
 from ..core import (Prefixer, Router, Revery, Kevery,
-                    Parser, Schemer, SerderKERI)
+                    Parser, Schemer, SerderKERI, exchange)
 from ..end import OOBI_RE, DOOBI_RE, WOOBI_RE, OOBI_AID_HEADER
-from ..peer import exchange
 from ..recording import OobiRecord, WellKnownAuthN
 
 logger = ogler.getLogger()
@@ -256,16 +255,51 @@ class OobiRequestHandler:
         self.notifier.add(attrs=data)
 
 
-def oobiRequestExn(hab, dest, oobi):
+def oobiRequestExn(hab, dest, oobi, version=Version, pvrsn=None, gvrsn=Version,
+                   framed=True, nested=False, genusify=False):
+    """Create oobi request exn and attachments
+
+    Parameters::
+        dest
+        oobi
+        version (Versionage): KERI protocol default version if psvrsn is None
+        pvrsn (Versionage): KERI protocol version
+        gvrsn (Versionage): CESR Genus version for attachment group codes or
+                        nesting group code (useful when serder.gvrsn < 2)
+                        gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                            if serder.gvrsn else serder.pvrsn
+        framed (bool): True means may assume each message plus its attachments
+                                is isolated as frame when parsing so do not need
+                                attachment group when messagizing
+                           False means may not assume eash message plus its attachments
+                                is isolated as frame when parsing so do need
+                                attachment group when messagizing
+        nested (bool): True means messagize for non-top level
+                            This forces non-native serializion to be embedded
+                            in non-native group code
+                       False means messagize for top level of stream.
+                            This allows bare non-native serialization of message
+        genusify (bool): True means prepend genus version code from gvrsn before
+                        serder to override default stream genus version
+                     False means do nothing
+
+    """
+
     data = dict(
         dest=dest,
         oobi=oobi
     )
 
     # Create `exn` peer to peer message to notify other participants UI
-    exn, _ = exchange(route=OobiRequestHandler.resource, modifiers=dict(),
-                                 attributes=data, sender=hab.pre)
-    ims = hab.endorse(serder=exn, last=False, framed=True)
+    exn = exchange(sender=hab.pre,
+                      route=OobiRequestHandler.resource,
+                      modifiers=dict(),
+                      attributes=data,
+                      version=version,
+                      pvrsn=pvrsn,
+                      gvrsn=gvrsn)
+    ims = hab.endorse(serder=exn, last=False, gvrsn=gvrsn, framed=framed,
+                      nested=nested, genusify=genusify)
     del ims[:exn.size]
 
     return exn, ims

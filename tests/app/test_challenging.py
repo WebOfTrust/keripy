@@ -5,7 +5,7 @@ tests.app.challenging module
 """
 
 from keri.app import ChallengeHandler, Signaler, openHab
-from keri.peer import exchange
+from keri.core import exchange
 
 
 def test_challenge_handler():
@@ -15,7 +15,9 @@ def test_challenge_handler():
         handler = ChallengeHandler(db=hab.db, signaler=signaler)
 
         payload = dict(i=hab.pre, words=["the", "test", "words", "that", "are", "not", "sufficient"])
-        exn, _ = exchange(route="/challenge/response", attributes=payload, sender=hab.pre)
+        exn = exchange(route="/challenge/response",
+                          attributes=payload,
+                          sender=hab.pre)
 
         handler.handle(serder=exn)
 

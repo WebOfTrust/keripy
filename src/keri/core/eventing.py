@@ -1383,7 +1383,7 @@ def exchept(sender="",
             nonce=None,
             stamp=None,
             version=Vrsn_2_0,
-            pvrsn=Vrsn_2_0,
+            pvrsn=None,
             gvrsn=None,
             kind=Kinds.json):
     """Utility function to automate creation of exchange incept, exchept, 'xip',
@@ -1463,8 +1463,8 @@ def exchange(*,
              modifiers=None,
              attributes=None,
              stamp=None,
-             version=Vrsn_2_0,
-             pvrsn=Vrsn_2_0,
+             version=Version,
+             pvrsn=None,
              gvrsn=None,
              kind=Kinds.json,):
     """ Create an `exn` message with the specified route and payload
@@ -1495,23 +1495,29 @@ def exchange(*,
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
-    ilk = Ilks.exn
-
     if pvrsn.major < 2:
-        raise ValueError(f"Unsupported version {pvrsn=}")
-
-    else:
-
         sad = dict(v=vs,
-                   t=ilk,
-                   d="",
+                  t=Ilks.exn,
+                  d="", # computed by SerderKERI init
+                  i=sender if sender is not None else "",
+                  rp=receiver if receiver is not None else "",
+                  p=prior if prior is not None else "",
+                  dt=stamp if stamp is not None else helping.nowIso8601(),
+                  r=route if route is not None else "",
+                  q=modifiers if modifiers is not None else {},
+                  a=attributes if attributes is not None else {})
+
+    else:  # v2
+        sad = dict(v=vs,
+                   t=Ilks.exn,
+                   d="",  # computed by SerderKERI init
                    i=sender if sender is not None else "",
                    ri=receiver if receiver is not None else "",
                    x=xid if xid is not None else "",
                    p=prior if prior is not None else "",
                    dt=stamp if stamp is not None else helping.nowIso8601(),
                    r=route if route is not None else "",
-                   q=modifiers if modifiers is not None else {},  # q field required
+                   q=modifiers if modifiers is not None else {},
                    a=attributes if attributes is not None else {}
                    )
 

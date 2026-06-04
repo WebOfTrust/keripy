@@ -10,11 +10,11 @@ import pysodium
 from keri import Kinds, Vrsn_1_0
 from keri.core import (Salter, Counter, Texter,
                        Diger, SerderKERI, Parser,
-                       MtrDex, Codens)
+                       MtrDex, Codens, exchange)
 
 from keri.app import openHab, openHby
 
-from keri.peer import Exchanger, nesting, exchange
+from keri.peer import Exchanger, nesting, specialExchange
 from keri.vdr import incept
 
 TEST_VERSION = Vrsn_1_0
@@ -69,8 +69,12 @@ def test_essrs():
 
         texter = Texter(raw=raw)
         diger = Diger(ser=raw, code=MtrDex.Blake3_256)
-        essr, _ = exchange(route='/essr/req', sender=hab.pre, diger=diger,
-                                      modifiers=dict(src=hab.pre, dest=recHab.pre), **kwa)
+        essr, _ = specialExchange(sender=hab.pre,
+                                  route='/essr/req',
+                                  modifiers=dict(src=hab.pre,
+                                                 dest=recHab.pre),
+                                  diger=diger,
+                                  **kwa)
         ims = hab.endorse(serder=essr, framed=True, gvrsn=TEST_VERSION)
         ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
                                 version=TEST_VERSION).qb64b)
@@ -92,8 +96,11 @@ def test_essrs():
 
         # Test with invalid diger
         diger = Diger(qb64="EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o")
-        essr, _ = exchange(route='/essr/req', sender=hab.pre, diger=diger,
-                                      modifiers=dict(src=hab.pre, dest=recHab.pre), **kwa)
+        essr, _ = specialExchange(sender=hab.pre,
+                                  route='/essr/req',
+                                  modifiers=dict(src=hab.pre, dest=recHab.pre),
+                                  diger=diger,
+                                  **kwa)
         ims = hab.endorse(serder=essr, framed=True, gvrsn=TEST_VERSION)
         ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
                                 version=TEST_VERSION).qb64b)
@@ -127,8 +134,11 @@ def test_hab_exchange(mockHelpingNowUTC):
 
         data = dict(m="Let's create a registry")
         msg = hab.exchange(route="/multisig/registry/incept",
-                           attributes=data, embeds=embeds, framed=True,
-                           gvrsn=TEST_VERSION, **kwa)
+                           attributes=data,
+                           embeds=embeds,
+                           framed=True,
+                           gvrsn=TEST_VERSION,
+                           **kwa)
         assert msg == (b'{"v":"KERI10JSON000399_","t":"exn","d":"EFKuL1JIrM6WMwjzL5YVmEyc'
                     b'aAUGQJ7JYYx5Bjx7f70f","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2Q'
                     b'V8dDjI3","rp":"","p":"","dt":"2021-01-01T00:00:00.000000+00:00",'
@@ -169,9 +179,14 @@ def test_hab_exchange(mockHelpingNowUTC):
         )
 
         data = dict(m="Lets create this registry instead")
-        msg = hab2.exchange(route="/multisig/registry/incept", attributes=data,
-                            receiver="", prior=exn.said,
-                            embeds=embeds, framed=True, gvrsn=TEST_VERSION, **kwa)
+        msg = hab2.exchange(receiver="",
+                            prior=exn.said,
+                            route="/multisig/registry/incept",
+                            attributes=data,
+                            embeds=embeds,
+                            framed=True,
+                            gvrsn=TEST_VERSION,
+                            **kwa)
         assert msg == (b'{"v":"KERI10JSON0003cf_","t":"exn","d":"EGSdBnzfHi8z6pG2yuEwquSu'
                     b'Ygw53yEbyucL70aDH1mL","i":"EIREQlatUJODbKogZfa3IqXZ90XdZA0qJMVli'
                     b'I61Bcc2","rp":"","p":"EFKuL1JIrM6WMwjzL5YVmEycaAUGQJ7JYYx5Bjx7f7'

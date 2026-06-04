@@ -6,9 +6,9 @@ tests.core.test_eventing module
 
 from hio.help import decking, ogler
 
-from keri.kering import Vrsn_1_0, Ilks
-from keri.core import Salter, Parser
-from keri.peer import Exchanger, exchange
+from keri.kering import Vrsn_1_0, Ilks, Kinds
+from keri.core import Salter, Parser, exchange
+from keri.peer import Exchanger, specialExchange
 from keri.app import openHby
 
 
@@ -30,6 +30,10 @@ def test_pathed_material(mockHelpingNowUTC):
 
     with (openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64) as hby,
           openHby(name="deb", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as debHby):
+
+        version = Vrsn_1_0
+        kind = Kinds.json
+
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
         palHab = hby.makeHab(name="pal")
         debHab = debHby.makeHab(name="deb", isith=sith, icount=3)
@@ -38,11 +42,12 @@ def test_pathed_material(mockHelpingNowUTC):
                        ixn0=debHab.interact(framed=True),
                        rot=debHab.rotate(framed=True),
                        ixn1=debHab.interact(framed=True))
-        fwd, end = exchange(route='/fwd',
-                            modifiers=dict(pre=palHab.pre, topic="replay"),
-                            attributes={},
-                            embeds=debMsgs,
-                            sender=debHab.pre)
+        fwd, end = specialExchange(sender=debHab.pre,
+                                   route='/fwd',
+                                   modifiers=dict(pre=palHab.pre,
+                                                  topic="replay"),
+                                   attributes={},
+                                   embeds=debMsgs)
         fwd = debHab.endorse(fwd, last=False, framed=True)
         fwd.extend(end)
         handler = MockHandler()

@@ -10,7 +10,7 @@ from hio.base import doing
 from ...common import Parsery, setupHby, aliasInput
 
 from ....app import Poster, Organizer, GroupHab, HaberyDoer
-from ....peer import exchange
+from ....core import exchange
 
 
 parser = argparse.ArgumentParser(description='Respond to a list of challenge words by signing and sending an EXN '
@@ -106,7 +106,7 @@ class RespondDoer(doing.DoDoer):
         recp = recp[0]['id']
 
         payload = dict(i=hab.pre, words=self.words)
-        exn, _ = exchange(route="/challenge/response", attributes=payload,
+        exn = exchange(route="/challenge/response", attributes=payload,
                           sender=hab.pre)
         ims = hab.endorse(serder=exn, last=False, framed=True)
         del ims[:exn.size]

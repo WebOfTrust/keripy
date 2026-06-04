@@ -17,7 +17,7 @@ from hio.base import doing
 from ...common import Parsery, setupHby, parseDataItems
 
 from ....app import HaberyDoer, Poster, Organizer, GroupHab
-from ....peer import exchange
+from ....core import exchange
 
 
 parser = argparse.ArgumentParser(
@@ -127,7 +127,7 @@ class SendDoer(doing.DoDoer):
         senderHab = hab.mhab if isinstance(hab, GroupHab) else hab
 
         payload = dict(data)
-        exn, _ = exchange(route=self.route, attributes=payload, sender=senderHab.pre)
+        exn = exchange(route=self.route, attributes=payload, sender=senderHab.pre)
         ims = hab.endorse(serder=exn, last=False, framed=True)
         del ims[: exn.size]
         self.postman.send(
