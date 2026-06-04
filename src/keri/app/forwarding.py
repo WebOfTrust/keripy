@@ -80,13 +80,23 @@ class Poster(doing.DoDoer):
                         for role in (Roles.controller, Roles.agent, Roles.mailbox):
                             if role in ends:
                                 if role == Roles.mailbox:
-                                    yield from self.forward(hab, ends[role], recp=recp, serder=srdr, atc=atc, topic=tpc)
+                                    yield from self.forward(hab,
+                                                            ends[role],
+                                                            recp=recp,
+                                                            serder=srdr,
+                                                            atc=atc,
+                                                            topic=tpc)
                                 else:
                                     yield from self.sendDirect(hab, ends[role], serder=srdr, atc=atc)
 
                     # otherwise send to one witness
                     elif Roles.witness in ends:
-                        yield from self.forwardToWitness(hab, ends[Roles.witness], recp=recp, serder=srdr, atc=atc, topic=tpc)
+                        yield from self.forwardToWitness(hab,
+                                                         ends[Roles.witness],
+                                                         recp=recp,
+                                                         serder=srdr,
+                                                         atc=atc,
+                                                         topic=tpc)
                     else:
                         logger.info(f"No end roles for {recp} to send evt={srdr.said}")
                         continue

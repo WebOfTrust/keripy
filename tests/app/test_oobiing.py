@@ -8,7 +8,7 @@ import falcon
 from hio.base import doing
 from hio.core import http
 
-from keri.kering import Vrsn_1_0, Roles, Schemes
+from keri.kering import Vrsn_1_0, Vrsn_2_0, Version, Roles, Schemes
 from keri.app import (Notifier, Oobiery, Authenticator,
                       Result, openHab, openHby,
                       oobiRequestExn)
@@ -24,7 +24,7 @@ from keri.peer import Exchanger
 from keri.recording import OobiRecord
 
 
-def test_oobi_share(mockHelpingNowUTC):
+def test_oobi_share_v1(mockHelpingNowUTC):
     oobi = "http://127.0.0.1:5642/oobi/Egw3N07Ajdkjvv4LB2Mhx2qxl6TOCFdWNJU6cYR_ImFg/witness" \
            "/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo?name=Phil"
     with openHab(name="test", temp=True, salt=b'0123456789abcdef') as (hby, hab):
@@ -36,7 +36,7 @@ def test_oobi_share(mockHelpingNowUTC):
         assert "/oobis" in exc.routes
         handler = exc.routes["/oobis"]
 
-        exn, _ = oobiRequestExn(hab, hab.pre, oobi)
+        exn, _ = oobiRequestExn(hab, hab.pre, oobi, version=Vrsn_1_0, gvrsn=Vrsn_1_0)
 
         handler.handle(serder=exn)
 
@@ -72,6 +72,62 @@ def test_oobi_share(mockHelpingNowUTC):
         assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3MAAAEIaGMMWJFPmt'
                     b'XznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAABdw3eSw_7BW2o3z1ufxxs1CPgX'
                     b'1TgtJzn-MxvMjLYTidUd8KSxNKbPU9M3A4orYJDMGMIzhabHJmKA4ZIGbcgK')
+
+def test_oobi_share_v2(mockHelpingNowUTC):
+    oobi = "http://127.0.0.1:5642/oobi/Egw3N07Ajdkjvv4LB2Mhx2qxl6TOCFdWNJU6cYR_ImFg/witness" \
+           "/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo?name=Phil"
+
+    with openHab(name="test", temp=True, salt=b'0123456789abcdef') as (hby, hab):
+        exc = Exchanger(hby=hby, handlers=[])
+        notifier = Notifier(hby=hby)
+
+        loadOobiingHandlers(hby=hby, exc=exc, notifier=notifier)
+
+        assert "/oobis" in exc.routes
+        handler = exc.routes["/oobis"]
+
+        exn, _ = oobiRequestExn(hab, hab.pre, oobi, version=Vrsn_2_0, gvrsn=Vrsn_2_0)
+
+        handler.handle(serder=exn)
+
+        obr = hby.db.oobis.get(keys=(oobi,))
+        assert obr is not None
+
+        assert len(notifier.signaler.signals) == 1
+        signal = notifier.signaler.signals.popleft()
+        assert signal.pad['r'] == '/notification'
+        rid = signal.attrs['note']['i']
+
+        note, _ = notifier.noter.get(rid)
+        assert note.attrs == {'oobi': 'http://127.0.0.1:5642/oobi/Egw3N07Ajdkjvv4LB2Mhx2qxl6TOCFdWNJU6cYR_ImFg/witness/'
+                                      'BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo?name=Phil',
+                              'oobialias': 'Phil',
+                              'r': '/oobi',
+                              'src': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'}
+
+        exn, atc = oobiRequestExn(hab=hab,
+                                  dest="EO2kxXW0jifQmuPevqg6Zpi3vE-WYoj65i_XhpruWtOg",
+                                  oobi="http://127.0.0.1/oobi",
+                                  version=Vrsn_2_0,
+                                  gvrsn=Vrsn_2_0)
+        assert exn.ked == \
+        {
+            'v': 'KERICAACAAJSONAAE4.',
+            't': 'exn',
+            'd': 'EKmU06gR91hRDT9AY2L4kGB-wr0qg8hJHA0oUNWeEYhS',
+            'i': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
+            'ri': '',
+            'x': '',
+            'p': '',
+            'dt': '2021-01-01T00:00:00.000000+00:00',
+            'r': '/oobis',
+            'q': {},
+            'a': {'dest': 'EO2kxXW0jifQmuPevqg6Zpi3vE-WYoj65i_XhpruWtOg',
+                  'oobi': 'http://127.0.0.1/oobi'}
+        }
+        assert atc ==(b'-XAuEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3MAAAEIaGMMWJFPmt'
+          b'XznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-KAWAAAb7Ny66Nwq-BIXtcnkQWJbHmmy'
+          b'9zOATFgtrqNf28LlurqjZm8B5mkJ9M1gc53qKd1GPCb12qxeDb75DcffidgB')
 
 
 def test_oobiery():

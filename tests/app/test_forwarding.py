@@ -13,7 +13,7 @@ from hio.core import http
 from keri import help
 from keri.core import (Salter, Pather, Prefixer,
                        Bexter, Kevery, Parser, SerderKERI)
-from keri.kering import Vrsn_1_0, Ilks, Roles, Schemes, Kinds
+from keri.kering import Vrsn_1_0, Vrsn_2_0, Version, Ilks, Roles, Schemes, Kinds
 
 from keri.app import (Mailboxer, ForwardHandler, Poster,
                       StreamPoster, HttpEnd,
@@ -31,13 +31,21 @@ def test_postman(seeder):
         version = Vrsn_1_0
         kwa = dict(version=version, kind=Kinds.json)
         mbx = Mailboxer(name="wes", temp=True)
-        wesDoers = setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644, **kwa)
+        wesDoers = setupWitness(alias="wes",
+                                hby=wesHby,
+                                mbx=mbx,
+                                tcpPort=5634,
+                                httpPort=5644,
+                                **kwa)
         wesHab = wesHby.habByName("wes")
         seeder.seedWitEnds(hby.db, witHabs=[wesHab], **kwa)
         seeder.seedWitEnds(wesHby.db, witHabs=[wesHab], **kwa)
         seeder.seedWitEnds(recpHby.db, witHabs=[wesHab], **kwa)
 
-        recpHab = recpHby.makeHab(name="repTest", transferable=True, wits=[wesHab.pre], **kwa)
+        recpHab = recpHby.makeHab(name="repTest",
+                                  transferable=True,
+                                  wits=[wesHab.pre],
+                                  **kwa)
 
         recpIcp = recpHab.msgOwnEvent(sn=0, framed=True, gvrsn=version)
         wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
@@ -45,7 +53,7 @@ def test_postman(seeder):
         assert recpHab.pre in wesKvy.kevers
 
         serder = SerderKERI(raw=recpIcp)
-        rct = wesHab.receipt(serder, framed=True)
+        rct = wesHab.receipt(serder, framed=True, **kwa)
 
         kvy = Kevery(db=hab.db)
         Parser(version=version).parseOne(bytearray(recpIcp), kvy=kvy, local=True)
@@ -57,10 +65,15 @@ def test_postman(seeder):
 
         exn = exchanging.exchange(route="/echo",
                                      attributes=dict(msg="test"),
-                                     sender=hab.pre)
+                                     sender=hab.pre,
+                                     **kwa)
         atc = hab.endorse(exn, last=False, framed=False)
         del atc[:exn.size]
-        pman.send(src=hab.pre, dest=recpHab.pre, topic="echo", serder=exn, attachment=atc)
+        pman.send(src=hab.pre,
+                  dest=recpHab.pre,
+                  topic="echo",
+                  serder=exn,
+                  attachment=atc)
 
         doers = wesDoers + [pman]
         limit = 1.0
@@ -94,13 +107,17 @@ def test_forward_handler():
          openHab(name="recp", transferable=True, temp=True) as (recpHby, recpHab), \
          openHab(name="recp2", transferable=True, temp=True) as (recp2Hby, recp2Hab):
 
+        version = Vrsn_1_0
+        kwa = dict(version=version, kind=Kinds.json)
+
         mbx = Mailboxer(temp=True)
         forwarder = ForwardHandler(hby=hby, mbx=mbx)
 
         # Happy path: single embed
         inner_exn = exchanging.exchange(route="/echo",
                                            attributes=dict(msg="hello"),
-                                           sender=hab.pre)
+                                           sender=hab.pre,
+                                           **kwa)
         inner_atc = hab.endorse(inner_exn, last=False, framed=False)
         del inner_atc[:inner_exn.size]
 
@@ -134,7 +151,8 @@ def test_forward_handler():
         # Same recipient, different topic
         inner_exn2 = exchanging.exchange(route="/delegate",
                                             attributes=dict(msg="delegate"),
-                                            sender=hab.pre)
+                                            sender=hab.pre,
+                                            **kwa)
         inner_atc2 = hab.endorse(inner_exn2, last=False, framed=False)
         del inner_atc2[:inner_exn2.size]
 
@@ -157,7 +175,8 @@ def test_forward_handler():
         # Different recipient, same topic
         inner_exn3 = exchanging.exchange(route="/echo",
                                             attributes=dict(msg="other"),
-                                            sender=hab.pre)
+                                            sender=hab.pre,
+                                            **kwa)
         inner_atc3 = hab.endorse(inner_exn3, last=False, framed=False)
         del inner_atc3[:inner_exn3.size]
 
@@ -178,13 +197,17 @@ def test_forward_handler():
 
         # Multiple attachments in one call
         # Two embeds in a single /fwd: both must appear in the stored blob
-        inner_exnA = exchanging.exchange(route="/echo", attributes=dict(msg="A"),
-                                            sender=hab.pre)
+        inner_exnA = exchanging.exchange(route="/echo",
+                                         attributes=dict(msg="A"),
+                                        sender=hab.pre,
+                                        **kwa)
         inner_atcA = hab.endorse(inner_exnA, last=False, framed=False)
         del inner_atcA[:inner_exnA.size]
 
-        inner_exnB = exchanging.exchange(route="/echo", attributes=dict(msg="B"),
-                                            sender=hab.pre)
+        inner_exnB = exchanging.exchange(route="/echo",
+                                         attributes=dict(msg="B"),
+                                        sender=hab.pre,
+                                        **kwa)
         inner_atcB = hab.endorse(inner_exnB, last=False, framed=False)
         del inner_atcB[:inner_exnB.size]
 
@@ -218,6 +241,7 @@ def test_forward_handler():
 def test_essr_stream(seeder):
     with openHab(name="test", transferable=True, temp=True) as (hby, hab), \
             openHab(name="test", transferable=True, temp=True) as (recpHby, recpHab):
+
         version = Vrsn_1_0
         kwa = dict(version=version, kind=Kinds.json)
         app = falcon.App()
@@ -255,7 +279,8 @@ def test_essr_stream(seeder):
         for i in range(0, 40):
             exn = exchanging.exchange(route="/echo",
                                          attributes=dict(msg="test", i=i),
-                                         sender=hab.pre)
+                                         sender=hab.pre,
+                                         **kwa)
             atc = hab.endorse(exn, last=False, framed=False)
             del atc[:exn.size]
 
@@ -326,6 +351,7 @@ def test_essr_mbx(seeder):
     with openHab(name="test", transferable=True, temp=True) as (hby, hab), \
             openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=True) as wesHby, \
             openHby(name="repTest", temp=True) as recpHby:
+
         version = Vrsn_1_0
         kwa = dict(version=version, kind=Kinds.json)
         mbx = Mailboxer(name="wes", temp=True)
@@ -364,7 +390,8 @@ def test_essr_mbx(seeder):
         for i in range(0, 15):
             exn = exchanging.exchange(route="/echo",
                                          attributes=dict(msg="test", i=i),
-                                         sender=hab.pre)
+                                         sender=hab.pre,
+                                         **kwa)
             atc = hab.endorse(exn, last=False, framed=False)
             del atc[:exn.size]
 

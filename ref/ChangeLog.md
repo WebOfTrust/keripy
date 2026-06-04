@@ -6,7 +6,13 @@
 so that all KERI message function call signatures are aligned. currently
 peer.exchanging.exchange uses a differe signature. So to better support v2 with
 backwards compat for v1 want one exchange function.
-parameters changes:  date -> stamp,
+parameters changes:  date -> stamp, recipient->receiver payload->attributes
+No longer has embeds and diger this is for specialExchange
+return type is no longer tuple just SerderKERI
+
+*** peer.exchanging.specialExchange  now handles the special exchange with embeds
+and or diger  use this for v1 compatibility with old exchange.
+
 
 *** BaseHab and subclasses .incept alias for .make promoted to default and .make
 is alias. Future deprecate .make

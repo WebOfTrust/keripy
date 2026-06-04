@@ -2549,7 +2549,7 @@ class BaseHab:
                         optionally attached signatures and seal source couple.
         """
         serder, sigers, duple = self.getOwnEvent(sn=sn,
-                                                allowPartiallySigned=allowPartiallySigned)
+                                    allowPartiallySigned=allowPartiallySigned)
 
         seal = None
         if duple is not None:

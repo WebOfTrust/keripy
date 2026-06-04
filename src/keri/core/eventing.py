@@ -1464,7 +1464,7 @@ def exchange(*,
              attributes=None,
              stamp=None,
              version=Vrsn_2_0,
-             pvrsn=Vrsn_2_0,
+             pvrsn=None,
              gvrsn=None,
              kind=Kinds.json,):
     """ Create an `exn` message with the specified route and payload

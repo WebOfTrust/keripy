@@ -6,7 +6,7 @@ tests.core.test_eventing module
 
 from hio.help import decking, ogler
 
-from keri.kering import Vrsn_1_0, Ilks
+from keri.kering import Vrsn_1_0, Ilks, Kinds
 from keri.core import Salter, Parser
 from keri.peer import Exchanger, exchange, specialExchange
 from keri.app import openHby
@@ -30,6 +30,10 @@ def test_pathed_material(mockHelpingNowUTC):
 
     with (openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64) as hby,
           openHby(name="deb", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as debHby):
+
+        version = Vrsn_1_0
+        kind = Kinds.json
+
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
         palHab = hby.makeHab(name="pal")
         debHab = debHby.makeHab(name="deb", isith=sith, icount=3)
