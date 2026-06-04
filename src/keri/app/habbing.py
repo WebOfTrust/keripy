@@ -47,7 +47,7 @@ def openHby(*, name="test", base="", temp=True, salt=None, **kwa):
             random salt is generated when ``None``.
         **kwa: Additional keyword arguments forwarded to ``Habery.__init__``.
             See ``Habery`` for the full list (``seed``, ``aeid``, ``bran``,
-            ``pidx``, ``algo``, ``tier``, ``free``).
+            ``pidx``, ``algo``, ``tier``, ``free``, ``version``).
 
     Yields::
         Habery: Fully initialised ``Habery`` instance.
@@ -83,6 +83,8 @@ def openHab(name="test", base="", salt=None, temp=True, cf=None, **kwa):
         cf (Configer | None): Optional ``Configer`` instance for loading
             configuration data.
         **kwa: Additional keyword arguments forwarded to ``Habery.makeHab``.
+            When ``version`` is provided, it is also used for the shared
+            ``Habery`` parser.
 
     Yields::
         tuple[Habery, Hab]: The shared ``Habery`` environment and the named
@@ -91,7 +93,8 @@ def openHab(name="test", base="", salt=None, temp=True, cf=None, **kwa):
 
     salt = Salter(raw=salt).qb64
 
-    with openHby(name=name, base=base, salt=salt, temp=temp, cf=cf) as hby:
+    with openHby(name=name, base=base, salt=salt, temp=temp, cf=cf,
+                 version=kwa.get("version", Version)) as hby:
         if (hab := hby.habByName(name)) is None:
             hab = hby.makeHab(name=name, icount=1, isith='1', ncount=1, nsith='1', cf=cf, **kwa)
 
@@ -133,7 +136,8 @@ class Habery:
     """
 
     def __init__(self, *, name='test', base="", temp=False,
-                 ks=None, db=None, cf=None, clear=False, headDirPath=None, **kwa):
+                 ks=None, db=None, cf=None, clear=False, headDirPath=None,
+                 version=Version, **kwa):
         """Initialise a ``Habery`` instance.
 
         Opens (or reuses) the keystore, event database, and config file, then
@@ -158,6 +162,7 @@ class Habery:
                 ``close``.
             headDirPath (str | None): Override for the top-level directory path
                 used when creating ``ks`` and ``db``.
+            version (Versionage): Parser attachment code table version.
             **kwa: Keyword arguments forwarded to ``setup`` and stored in
                 ``_inits`` for deferred initialisation.  See ``setup`` for the
                 full parameter list (``seed``, ``aeid``, ``bran``, ``pidx``,
@@ -192,7 +197,7 @@ class Habery:
         self.kvy = Kevery(db=self.db, lax=False, local=True, rvy=self.rvy)
         self.kvy.registerReplyRoutes(router=self.rtr)
         self.psr = Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
-                                  exc=self.exc, local=True, version=Vrsn_1_0)
+                                  exc=self.exc, local=True, version=version)
         self.habs = {}  # empty .habs
         self._signator = None
         self.inited = False
@@ -1559,7 +1564,7 @@ class BaseHab:
         query = query if query is not None else dict()
         query['i'] = pre
         query["src"] = src
-        serder = eventing.query(query=query, **kwa)
+        serder = eventing.query(pre=self.pre, query=query, **kwa)
         return self.endorse(serder, last=True, framed=False)  # was framed=False
 
 
@@ -2156,6 +2161,7 @@ class BaseHab:
         Returns::
             bytearray: reply message.
         """
+        kwa["pre"] = self.pre
         return self.endorse(eventing.reply(**kwa), framed=framed, nested=nested,
                             gvrsn=gvrsn, genusify=genusify)
 
@@ -2722,7 +2728,8 @@ class BaseHab:
             elif cueKin in ("reply",):
                 data = cue["data"]
                 route = cue["route"]
-                msg = self.reply(data=data, route=route)
+                msg = self.reply(data=data, route=route,
+                                 gvrsn=gvrsn, version=version, kind=kind)
                 yield msg
 
             elif cueKin in ("witness",):  # cue to witness a received event, own pre must be a witness
@@ -2743,7 +2750,9 @@ class BaseHab:
                 kwa = dict()
                 if route is not None:
                     kwa["route"] = route
-                msg = self.query(pre=pre, src=src, query=query, **kwa)
+                msg = self.query(pre=pre, src=src, query=query,
+                                 gvrsn=gvrsn, version=version, kind=kind,
+                                 **kwa)
                 yield msg
 
             elif cueKin in ("notice",):  # cue to notify of new own event accepted into KEL
@@ -3955,7 +3964,7 @@ class GroupHab(BaseHab):
         query = query if query is not None else dict()
         query['i'] = pre
         query["src"] = src
-        serder = eventing.query(query=query, **kwa)
+        serder = eventing.query(pre=self.mhab.pre, query=query, **kwa)
 
         return self.mhab.endorse(serder, last=True, framed=framed, nested=nested,
                                  gvrsn=gvrsn, genusify=genusify)

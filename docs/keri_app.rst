@@ -1,6 +1,8 @@
 KERI App API
 ============
 
+.. |str| replace:: ``str``
+
 keri.app.agenting
 -----------------
 
