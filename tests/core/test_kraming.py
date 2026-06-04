@@ -1356,7 +1356,8 @@ def test_transactioned(mockHelpingNowUTC):
                            xid=xip.said,
                            route="/test/exchange",
                            attributes=dict(n='5c'),
-                           stamp=stamp)
+                           stamp=stamp,
+                           version=Vrsn_2_0)
 
             sigers = skHab.mgr.sign(ser=exn.raw,
                                     verfers=skHab.kever.verfers,
@@ -1382,7 +1383,8 @@ def test_transactioned(mockHelpingNowUTC):
                             xid=fakeXid,
                             route="/test/exchange",
                             attributes=dict(n='5d'),
-                            stamp=stamp)
+                            stamp=stamp,
+                            version=Vrsn_2_0)
 
             sigers = skHab.mgr.sign(ser=msg3.raw,
                                     verfers=skHab.kever.verfers,
@@ -1415,7 +1417,8 @@ def test_transactioned(mockHelpingNowUTC):
                             xid=oldXipSaid,
                             route="/test/exchange",
                             attributes=dict(n='5e'),
-                            stamp=stamp)
+                            stamp=stamp,
+                            version=Vrsn_2_0)
 
             sigers = skHab.mgr.sign(ser=msg4.raw,
                                     verfers=skHab.kever.verfers,
@@ -1458,7 +1461,8 @@ def test_transactioned(mockHelpingNowUTC):
                              xid=mkXip.said,
                              route="/test/exchange",
                              attributes=dict(n='5f'),
-                             stamp=stamp)
+                             stamp=stamp,
+                             version=Vrsn_2_0)
 
             allSigers = mkHab.mgr.sign(ser=mkExn.raw,
                                        verfers=mkHab.kever.verfers,
@@ -1515,7 +1519,8 @@ def test_transactioned(mockHelpingNowUTC):
                             xid=xip8.said,
                             route="/test/exchange",
                             attributes=dict(n='5h'),
-                            stamp=stamp)
+                            stamp=stamp,
+                            version=Vrsn_2_0)
 
             # Sign exn8 for both KRAM (ssgs) and downstream exn handler (tsgs)
             sigers8 = skHab.mgr.sign(ser=exn8.raw,
@@ -1558,7 +1563,8 @@ def test_transactioned(mockHelpingNowUTC):
                             xid=xip8.said,
                             route="/test/exchange",
                             attributes=dict(n='5h'),
-                            stamp=stamp)
+                            stamp=stamp,
+                            version=Vrsn_2_0)
 
             # Sign exn8 for both KRAM (ssgs) and downstream exn handler (tsgs)
             sigers8 = skHab.mgr.sign(ser=exn8.raw,
@@ -1722,7 +1728,8 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
                              xid=v2Xip.said,
                              route="/test/exchange",
                              attributes=dict(n='v2x'),
-                             stamp=stamp)
+                             stamp=stamp,
+                             version=Vrsn_2_0)
 
             # Confirm x field present in v2 ked
             assert v2Exn.ked.get('x', None) is not None
@@ -3496,7 +3503,8 @@ def test_new_cache_type(fakeHelpingClock):
                            xid=xip.said,
                            route="route1",
                            attributes=dict(n='5c'),
-                           stamp=stamp)
+                           stamp=stamp,
+                           version=Vrsn_2_0)
 
             sigers = senderHab.mgr.sign(ser=exn.raw,
                                     verfers=senderHab.kever.verfers,
@@ -3539,7 +3547,8 @@ def test_new_cache_type(fakeHelpingClock):
                            xid=xip.said,
                            route="route1",
                            attributes=dict(n='5c'),
-                           stamp=stamp)
+                           stamp=stamp,
+                           version=Vrsn_2_0)
 
             sigers = senderHab.mgr.sign(ser=exn.raw,
                                     verfers=senderHab.kever.verfers,
@@ -3578,7 +3587,8 @@ def test_new_cache_type(fakeHelpingClock):
                                     xid=xip.said,
                                     route="offroad",
                                     attributes=dict(n='5c'),
-                                    stamp=stamp)
+                                    stamp=stamp,
+                                    version=Vrsn_2_0)
 
             sigers = senderHab.mgr.sign(ser=exn.raw,
                                     verfers=senderHab.kever.verfers,
@@ -3805,7 +3815,8 @@ def test_multiple_new_cache_type(fakeHelpingClock):
                            xid=xip.said,
                            route="route1",
                            attributes=dict(n='5c'),
-                           stamp=stamp)
+                           stamp=stamp,
+                           version=Vrsn_2_0)
 
             sigers = senderHab.mgr.sign(ser=exn.raw,
                                     verfers=senderHab.kever.verfers,
@@ -3889,7 +3900,8 @@ def test_multiple_new_cache_type(fakeHelpingClock):
                            xid=xip.said,
                            route="route1",
                            attributes=dict(n='5c'),
-                           stamp=stamp)
+                           stamp=stamp,
+                           version=Vrsn_2_0)
 
             sigers = senderHab.mgr.sign(ser=exn.raw,
                                     verfers=senderHab.kever.verfers,
@@ -4390,7 +4402,7 @@ def test_modify_cache_types(fakeHelpingClock):
             kwa = dict(ssgs=[(prefixer, sigers)])
 
             kvy.processMsg(msg, kwa)
-            
+
             # Assert "qry" was processed and removed
             assert "qry.R.logs" not in kramer._pending
 
@@ -5175,7 +5187,8 @@ def test_pruning_exchanges(fakeHelpingClock):
                            xid=xip.said,
                            route="/test/exchange",
                            attributes=dict(n='5c'),
-                           stamp=firstStamp)
+                           stamp=firstStamp,
+                           version=Vrsn_2_0)
 
             sigers = senderHab.mgr.sign(ser=exn.raw,
                                     verfers=senderHab.kever.verfers,
@@ -5209,7 +5222,8 @@ def test_pruning_exchanges(fakeHelpingClock):
                             xid=xip.said,
                             route="/test/exchange",
                             attributes=dict(n='5c'),
-                            stamp=secondStamp)
+                            stamp=secondStamp,
+                            version=Vrsn_2_0)
 
             sigers = senderHab.mgr.sign(ser=exn2.raw,
                                     verfers=senderHab.kever.verfers,
@@ -5293,7 +5307,8 @@ def test_pruning_exchanges_cleans_transactional_partial_multisig(fakeHelpingCloc
                              xid=mkXip.said,
                              route="/test/exchange",
                              attributes=dict(n='prune-partial'),
-                             stamp=stamp)
+                             stamp=stamp,
+                             version=Vrsn_2_0)
             allSigers = mkHab.mgr.sign(ser=mkExn.raw,
                                        verfers=mkHab.kever.verfers,
                                        indexed=True)
@@ -5434,7 +5449,9 @@ def test_transactioned_exchange_window_boundaries(fakeHelpingClock):
                                xid=xip.said,
                                route="/test/exchange",
                                attributes=dict(n=nonce),
-                               stamp=stamp)
+                               stamp=stamp,
+                               version=Vrsn_2_0)
+
                 sigers = senderHab.mgr.sign(ser=exn.raw,
                                             verfers=senderHab.kever.verfers,
                                             indexed=True)
