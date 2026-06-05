@@ -5834,10 +5834,11 @@ class Kevery:
             quintuple = edig+spre+ssnu+sdig+sig  (edig is signed event digest)
 
         Parameters:
-            serder instance of receipt message not receipted event
-            sigers is list of Siger instances attached to receipt message
-            seal is SealEvent instance (namedTuple)
-            saider is digest of receipted event provided in receipt
+            serder (SerderKERI): instance of receipt message not receipted event
+            sprefixer (Prefixer): instance of receiptor AID
+            snumber (Number): instance of sn of est event for receiptor key state
+            diger (Diger): instance of said digest of est event or receipt key state
+            siger (Siger): instance of signature of receiptor
 
         """
         # Receipt dig algo may not match database dig. So must always
