@@ -1882,9 +1882,9 @@ class Kever:
             db (Baser | None): instance of lmdb database
             estOnly (bool | None): True means establishment only events allowed 'EO'.
                             False all events allowed.
-            delseqner (Seqner | None): instance of delegating event sequence number.
+            delsner (Seqner | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
-            deldiger (Diger | None): instance of of delegating event SAID.
+            delsger (Diger | None): instance of delegating event SAID.
                 If this event is not delegated then saider is ignored
             firner (Seqner | None): instance optional of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
