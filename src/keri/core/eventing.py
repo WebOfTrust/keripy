@@ -1536,20 +1536,38 @@ def messagize(serder, *, sigers=None, source=None, bonds=None, wigers=None,
 
         serder (SerderKERI): instance containing the event
         sigers (list): of Siger instances (optional) to create indexed signatures
-        seal (Union[SealEvent, SealLast]): optional if sigers and
-            If SealEvent use attachment group code TransIdxSigGroups plus attach
-                triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
-                plus attached indexed sigs in sigers
-            Else If SealLast use attachment group code TransLastIdxSigGroups plus
-                attach uniple pre made from (i,) of seal plus ControllerIdxSigs
-                plus attached indexed sigs in sigers
-            Else use ControllerIdxSigs plus attached indexed sigs in sigers
+        source (SealEvent|SealLast|None): optional modifier to sigers when provided
+                If SealEvent use attachment group code TransIdxSigGroups plus attach
+                    triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
+                    plus attached indexed sigs in sigers
+                Elif SealLast use attachment group code TransLastIdxSigGroups plus
+                    attach uniple pre made from (i,) of seal plus ControllerIdxSigs
+                    plus attached indexed sigs in sigers
+                Else None use ControllerIdxSigs plus attached indexed sigs in sigers
+        bonds (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
+            Non signature based authenticator typically an event reference or may
+            Only v2 supports BlindState|BoundState|TypeMedia
+            if bonds is not list convert to list.
         wigers (list): optional list of Siger instances of witness index signatures
         cigars (list): optional list of Cigars instances of non-transferable non indexed
             signatures from  which to form receipt couples.
             Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
-        pipelined (bool), True means prepend pipelining count code to attachemnts
-            False means to not prepend pipelining count code
+        framed (bool): True means each message plus attachments may be assumed to
+                            be isolated as frame when parsing so do not need
+                            attachment group
+                       False means use attachment group since message plus
+                            attachments may not be isolated as frame when parsing
+        nested (bool): True means messagize for non-top level
+                            This forces non-native serializion to be embedded
+                            in non-native group code
+                       False means messagize for top level of stream.
+                            This allows bare non-native serialization of message
+        gvrsn (Versionage): CESR Genus version for attachment group codes or
+            nesting group code (useful when serder.gvrsn < 2)
+            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+            if serder.gvrsn else serder.pvrsn
+        genusify (bool): True means prepend genus version code to stream
+                      False means do not prepend genus version code
 
     Returns::
 
