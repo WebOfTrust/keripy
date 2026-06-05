@@ -4532,11 +4532,10 @@ class Kevery:
 
         Parameters:
             serder (SerderKERI): message instance
-            **kwa: keyword arguments from parser exts dict (sigers, cigars, tsgs,
-                   ssgs, sscs, ssts, tdcs, wigers, trqs, frcs, ptds, essrs,
-                   bsqs, bsss, tmqs, local, etc.)
-                   Also accepts processor overrides injected by parser:
-                   rvy (Revery), exc (Exchanger), tvy (Tevery)
+            kwa: keyword arguments from parser exts dict (sigers, cigars, tsgs,
+                ssgs, sscs, ssts, tdcs, wigers, trqs, frcs, ptds, essrs,
+                bsqs, bsss, tmqs, local, etc.); mutated in place (KRAM
+                normalization, rvy/exc/tvy pops, qry source/sigers).
         """
         if kwa is None:
             kwa = {}
