@@ -16,19 +16,40 @@ from keri.kering import (ConfigurationError, MissingEntryError,
 
 from keri.help import helping
 
-from keri.core import (Kevery, Salter, Seqner, Number,
+from keri.core import (Kevery, Kramer, Router, Revery,
+                       Salter, Seqner, Number,
                        Diger, Dater, Parser, SerderKERI,
                        Tiers, MtrDex, NumDex)
 
 from keri.app import (Configer, ConfigerDoer, Habery,
                       Hab, HaberyDoer, Keeper, KeeperDoer,
-                      openHab, openHby, Algos)
+                      openCF, openHab, openHby, Algos)
 
 from keri.db import Baser, BaserDoer
 
 TEST_VERSION = Vrsn_2_0
 KWA = dict(version=TEST_VERSION, kind=Kinds.cesr)
 CUE_KWA = dict(**KWA, gvrsn=TEST_VERSION)
+
+KRAM_HABBING_V2_CONFIG = {
+    "kram": {
+        "enabled": True,
+        "denials": [],
+        "caches": {
+            "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000],
+        },
+    }
+}
+
+
+def _make_kram_kevery(hby, cf):
+    cf.put(KRAM_HABBING_V2_CONFIG)
+    rtr = Router()
+    rvy = Revery(db=hby.db, rtr=rtr, local=True)
+    kramer = Kramer(db=hby.db, cf=cf)
+    kvy = Kevery(db=hby.db, lax=False, local=True, rvy=rvy, kramer=kramer)
+    kvy.registerReplyRoutes(router=rtr)
+    return kvy, rvy
 
 
 def test_habery():
@@ -916,53 +937,59 @@ def test_postman_endsfor_v2():
         Parser(version=TEST_VERSION).parse(ims=bytearray(agentIcpMsg), kvy=kvy, local=True)
         assert agentHab.pre in kvy.kevers
 
-        msgs = bytearray()
-        msgs.extend(wesHab.makeEndRole(eid=wesHab.pre,
-                                       role=Roles.controller,
-                                       stamp=helping.nowIso8601(),
-                                       **CUE_KWA))
-
-        msgs.extend(wesHab.makeLocScheme(url='http://127.0.0.1:8888',
-                                         scheme=Schemes.http,
-                                         stamp=helping.nowIso8601(),
-                                         **CUE_KWA))
-        wesHab.psr.parse(ims=bytearray(msgs))
-
-        # Set up
-        msgs.extend(hab.makeEndRole(eid=hab.pre,
-                                    role=Roles.controller,
-                                    stamp=helping.nowIso8601(),
-                                    **CUE_KWA))
-
-        msgs.extend(hab.makeLocScheme(url='http://127.0.0.1:7777',
-                                      scheme=Schemes.http,
-                                      stamp=helping.nowIso8601(),
-                                      **CUE_KWA))
-        hab.psr.parse(ims=msgs)
-
-        msgs = bytearray()
-        msgs.extend(agentHab.makeEndRole(eid=agentHab.pre,
-                                         role=Roles.controller,
-                                         stamp=helping.nowIso8601(),
-                                         **CUE_KWA))
-
-        msgs.extend(agentHab.makeLocScheme(url='http://127.0.0.1:6666',
-                                           scheme=Schemes.http,
+        wesEndRoleMsg = wesHab.makeEndRole(eid=wesHab.pre,
+                                           role=Roles.controller,
                                            stamp=helping.nowIso8601(),
-                                           **CUE_KWA))
+                                           **CUE_KWA)
+        wesLocSchemeMsg = wesHab.makeLocScheme(url='http://127.0.0.1:8888',
+                                               scheme=Schemes.http,
+                                               stamp=helping.nowIso8601(),
+                                               **CUE_KWA)
+        habEndRoleMsg = hab.makeEndRole(eid=hab.pre,
+                                        role=Roles.controller,
+                                        stamp=helping.nowIso8601(),
+                                        **CUE_KWA)
+        habLocSchemeMsg = hab.makeLocScheme(url='http://127.0.0.1:7777',
+                                            scheme=Schemes.http,
+                                            stamp=helping.nowIso8601(),
+                                            **CUE_KWA)
+        agentEndRoleMsg = agentHab.makeEndRole(eid=agentHab.pre,
+                                               role=Roles.controller,
+                                               stamp=helping.nowIso8601(),
+                                               **CUE_KWA)
+        agentLocSchemeMsg = agentHab.makeLocScheme(url='http://127.0.0.1:6666',
+                                                   scheme=Schemes.http,
+                                                   stamp=helping.nowIso8601(),
+                                                   **CUE_KWA)
+        habAgentEndRoleMsg = hab.makeEndRole(eid=agentHab.pre,
+                                             role=Roles.agent,
+                                             stamp=helping.nowIso8601(),
+                                             **CUE_KWA)
+        habMailboxEndRoleMsg = hab.makeEndRole(eid=agentHab.pre,
+                                               role=Roles.mailbox,
+                                               stamp=helping.nowIso8601(),
+                                               **CUE_KWA)
 
-        msgs.extend(hab.makeEndRole(eid=agentHab.pre,
-                                    role=Roles.agent,
-                                    stamp=helping.nowIso8601(),
-                                    **CUE_KWA))
+        endpointMsgs = [
+            (wesHab.pre, wesEndRoleMsg),
+            (wesHab.pre, wesLocSchemeMsg),
+            (hab.pre, habEndRoleMsg),
+            (hab.pre, habLocSchemeMsg),
+            (agentHab.pre, agentEndRoleMsg),
+            (agentHab.pre, agentLocSchemeMsg),
+            (hab.pre, habAgentEndRoleMsg),
+            (hab.pre, habMailboxEndRoleMsg),
+        ]
+        with openCF(name="habbing-v2-endsfor-kram", base="test", temp=True) as cf:
+            kramKvy, kramRvy = _make_kram_kevery(hby, cf)
+            for _, msg in endpointMsgs:
+                Parser(version=TEST_VERSION).parse(ims=bytearray(msg),
+                                                   kvy=kramKvy, rvy=kramRvy)
 
-        msgs.extend(hab.makeEndRole(eid=agentHab.pre,
-                                    role=Roles.mailbox,
-                                    stamp=helping.nowIso8601(),
-                                    **CUE_KWA))
-
-        agentHab.psr.parse(ims=bytearray(msgs))
-        hab.psr.parse(ims=bytearray(msgs))
+        for aid, msg in (endpointMsgs[0], endpointMsgs[3],
+                         endpointMsgs[5], endpointMsgs[7]):
+            serder = SerderKERI(raw=bytes(msg))
+            assert hby.db.kramMSGC.get(keys=(aid, serder.said)) is not None
 
         ends = hab.endsFor(hab.pre)
         assert ends == {
@@ -1087,6 +1114,11 @@ def test_cues_v2():
         assert camHab.pre in wesKvy.kevers
         assert wesHab.pre in wesKvy.kevers[camHab.pre].wits
 
+        bobIcpMsg = bobHab.msgOwnInception(framed=True, gvrsn=TEST_VERSION)
+        Parser(version=TEST_VERSION).parse(ims=bytearray(bobIcpMsg),
+                                           kvy=wesKvy, local=True)
+        assert bobHab.pre in wesKvy.kevers
+
         # receipt
         assert any(c["kin"] == "receipt" for c in wesKvy.cues)
         rctMsg = wesHab.processCues(wesKvy.cues, **CUE_KWA)
@@ -1115,6 +1147,14 @@ def test_cues_v2():
         assert rpySerder.gvrsn == TEST_VERSION
         assert rpySerder.ked["i"] == camHab.pre
 
+        with openCF(name="habbing-v2-cues-rpy-kram", base="test", temp=True) as cf:
+            kramKvy, kramRvy = _make_kram_kevery(wesHby, cf)
+            Parser(version=TEST_VERSION).parse(ims=bytearray(rpyMsg),
+                                               kvy=kramKvy, rvy=kramRvy)
+            endKeys = (camHab.pre, Roles.controller, camHab.pre)
+            assert wesHby.db.ends.get(keys=endKeys) is not None
+            assert wesHby.db.kramMSGC.get(keys=(camHab.pre, rpySerder.said)) is not None
+
         # witness
         # drain incidental cues from parsing above, then push witness cue
         while wesKvy.cues:
@@ -1123,7 +1163,8 @@ def test_cues_v2():
         assert len(wesHab.processCues(wesKvy.cues, **CUE_KWA)) > 0
 
         # query
-        kvy.cues.push(dict(kin="query", pre=bobHab.pre, src=camHab.pre))
+        kvy.cues.push(dict(kin="query", pre=bobHab.pre,
+                           src=camHab.pre, route="ksn"))
         qryMsg = camHab.processCues(kvy.cues, **CUE_KWA)
         assert len(qryMsg) > 0
         qrySerder = SerderKERI(raw=bytes(qryMsg))
@@ -1131,7 +1172,25 @@ def test_cues_v2():
         assert qrySerder.pvrsn == TEST_VERSION
         assert qrySerder.gvrsn == TEST_VERSION
         assert qrySerder.ked["i"] == camHab.pre
+        assert qrySerder.ked["r"] == "ksn"
         assert qrySerder.ked["q"]["i"] == bobHab.pre
+
+        with openCF(name="habbing-v2-cues-qry-kram", base="test", temp=True) as cf:
+            kramKvy, kramRvy = _make_kram_kevery(wesHby, cf)
+            Parser(version=TEST_VERSION).parse(ims=bytearray(qryMsg),
+                                               kvy=kramKvy, rvy=kramRvy)
+            qryCache = wesHby.db.kramMSGC.get(keys=(camHab.pre, qrySerder.said))
+            assert qryCache is not None
+            assert kramKvy.cues
+            qryCue = kramKvy.cues.popleft()
+            assert qryCue["kin"] == "reply"
+            assert qryCue["src"] == camHab.pre
+            assert qryCue["route"] == "/ksn"
+
+            Parser(version=TEST_VERSION).parse(ims=bytearray(qryMsg),
+                                               kvy=kramKvy, rvy=kramRvy)
+            assert not kramKvy.cues
+            assert wesHby.db.kramMSGC.get(keys=(camHab.pre, qrySerder.said)) == qryCache
 
         # notice
         kvy.cues.push(dict(kin="notice", serder=camHab.iserder))

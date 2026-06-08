@@ -855,6 +855,7 @@ class Parser:
                 if group counter extract and discard but keep track of count
                 so if error while processing attachments then only need to flush
                 attachment count not full stream.
+                dispatch msg (route to kvy.processMsg if kvy has a kramer, otherwise direct)
 
 
         """
@@ -1205,7 +1206,13 @@ class Parser:
                                                  f"to reply msg = {serder.pretty()}.")
 
                 try:
-                    rvy.processReply(**exts)
+                    if kvy is not None and getattr(kvy, "kramer", None) is not None:
+                        kwa = dict(exts)
+                        kwa.pop("serder", None)
+                        kwa["rvy"] = rvy
+                        kvy.processMsg(serder, kwa)
+                    else:
+                        rvy.processReply(**exts)
 
                 except AttributeError as ex:
                     raise ValidationError(f"No revery to process so dropped msg"
@@ -1229,7 +1236,13 @@ class Parser:
                 route = serder.ked["r"]
                 if route in ["logs", "ksn", "mbx"]:
                     try:
-                        kvy.processQuery(**exts)
+                        if kvy is not None and getattr(kvy, "kramer", None) is not None:
+                            kwa = dict(exts)
+                            kwa.pop("serder", None)
+                            kwa["tvy"] = tvy
+                            kvy.processMsg(serder, kwa)
+                        else:
+                            kvy.processQuery(**exts)
                     except AttributeError as ex:
                         raise ValidationError(f"No kevery to process so "
                                     f" dropped msg={serder.pretty()}") from ex
@@ -1242,7 +1255,13 @@ class Parser:
 
                 elif route in ["tels", "tsn"]:
                     try:
-                        tvy.processQuery(**exts)
+                        if kvy is not None and getattr(kvy, "kramer", None) is not None:
+                            kwa = dict(exts)
+                            kwa.pop("serder", None)
+                            kwa["tvy"] = tvy
+                            kvy.processMsg(serder, kwa)
+                        else:
+                            tvy.processQuery(**exts)
                     except AttributeError as ex:
                         raise ValidationError(f"No tevery to process so dropped msg"
                                                      f"={serder.pretty()}") from ex
@@ -1257,7 +1276,13 @@ class Parser:
                                         f"signatures for msg={serder.pretty()}")
 
                 try:
-                    exc.processEvent(**exts)
+                    if kvy is not None and getattr(kvy, "kramer", None) is not None:
+                        kwa = dict(exts)
+                        kwa.pop("serder", None)
+                        kwa["exc"] = exc
+                        kvy.processMsg(serder, kwa)
+                    else:
+                        exc.processEvent(**exts)
 
                 except AttributeError as ex:
                     raise ValidationError(f"No Exchange to process so "
