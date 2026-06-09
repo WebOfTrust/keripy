@@ -51,6 +51,8 @@ MaxIntThold = 2 ** 32 - 1
 # Location of last establishment key event: sn is int, dig is qb64 digest
 LastEstLoc = namedtuple("LastEstLoc", 's d')
 
+Kind = Kinds.cesr
+
 
 # Future make Cues dataclasses  instead of dicts. Dataclasses so may be converted
 # to/from dicts easily  example: dict(kin="receipt", serder=serder)
@@ -410,7 +412,7 @@ def state(pre,
           cnfg=None,  # default to []
           dpre=None,
           version=Version,
-          kind=Kinds.json,
+          kind=Kind,
           intive = False,
           ):
     """
@@ -564,7 +566,7 @@ def incept(keys,
            version=Version,
            pvrsn=None,
            gvrsn=None,
-           kind=Kinds.cesr,
+           kind=Kind,
            code=None,
            intive=False,
            delpre=None,
@@ -725,7 +727,7 @@ def rotate(pre,
            version=Version,
            pvrsn=None,
            gvrsn=None,
-           kind=Kinds.cesr,
+           kind=Kind,
            intive = False,
            ):
     """
@@ -909,7 +911,7 @@ def interact(pre,
              version=Version,
              pvrsn=None,
              gvrsn=None,
-             kind=Kinds.cesr,
+             kind=Kind,
              ):
     """
     Returns serder of interaction event message.
@@ -958,7 +960,7 @@ def receipt(pre,
             version=Version,
             pvrsn=None,
             gvrsn=None,
-            kind=Kinds.cesr
+            kind=Kind
             ):
     """
     Returns serder of event receipt message. Used for both non-trans and trans
@@ -1003,7 +1005,7 @@ def query(pre="",
           version=Version,
           pvrsn=None,
           gvrsn=None,
-          kind=Kinds.json):
+          kind=Kind):
     """
     Returns serder of query 'qry' message.
     Utility function to automate creation of query messages.
@@ -1095,7 +1097,7 @@ def reply(pre="",
           version=Version,
           pvrsn=None,
           gvrsn=None,
-          kind=Kinds.json):
+          kind=Kind):
     """Returns serder of reply 'rpy' message.
     Utility function to automate creation of reply messages.
     Reply 'rpy' message is a SAD item with an associated derived SAID in its
@@ -1185,7 +1187,7 @@ def prod(pre="",
           version=Version,
           pvrsn=None,
           gvrsn=None,
-          kind=Kinds.json):
+          kind=Kind):
     """Prod message
 
     Returns:
@@ -1274,7 +1276,7 @@ def bare(pre="",
            version=Version,
            pvrsn=None,
            gvrsn=None,
-           kind=Kinds.json):
+           kind=Kind):
     """Bare message
 
 
@@ -1385,7 +1387,7 @@ def exchept(sender="",
             version=Vrsn_2_0,
             pvrsn=None,
             gvrsn=None,
-            kind=Kinds.json):
+            kind=Kind):
     """Utility function to automate creation of exchange incept, exchept, 'xip',
     message. The exchept 'xip' message is a SAD item with an associated derived
     SAID in its 'd' field.  Only defined for KERI v2.
@@ -1466,7 +1468,7 @@ def exchange(*,
              version=Version,
              pvrsn=None,
              gvrsn=None,
-             kind=Kinds.json,):
+             kind=Kind,):
     """ Create an `exn` message with the specified route and payload
 
     Parameters:
