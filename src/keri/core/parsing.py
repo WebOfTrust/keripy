@@ -1206,7 +1206,7 @@ class Parser:
                                                  f"to reply msg = {serder.pretty()}.")
 
                 try:
-                    if kvy is not None and getattr(kvy, "kramer", None) is not None:
+                    if kvy is not None and kvy.kramer is not None:
                         kwa = dict(exts)
                         kwa.pop("serder", None)
                         kwa["rvy"] = rvy
@@ -1236,7 +1236,7 @@ class Parser:
                 route = serder.ked["r"]
                 if route in ["logs", "ksn", "mbx"]:
                     try:
-                        if kvy is not None and getattr(kvy, "kramer", None) is not None:
+                        if kvy is not None and kvy.kramer is not None:
                             kwa = dict(exts)
                             kwa.pop("serder", None)
                             kwa["tvy"] = tvy
@@ -1255,7 +1255,7 @@ class Parser:
 
                 elif route in ["tels", "tsn"]:
                     try:
-                        if kvy is not None and getattr(kvy, "kramer", None) is not None:
+                        if kvy is not None and kvy.kramer is not None:
                             kwa = dict(exts)
                             kwa.pop("serder", None)
                             kwa["tvy"] = tvy
@@ -1276,7 +1276,7 @@ class Parser:
                                         f"signatures for msg={serder.pretty()}")
 
                 try:
-                    if kvy is not None and getattr(kvy, "kramer", None) is not None:
+                    if kvy is not None and kvy.kramer is not None:
                         kwa = dict(exts)
                         kwa.pop("serder", None)
                         kwa["exc"] = exc
