@@ -27,6 +27,9 @@ parser.add_argument('--base', '-b', help='additional optional prefix to file loc
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
+parser.add_argument('--dry-run', dest="dryRun", action="store_true",
+                    help="print the delegated event and exn that would be resubmitted, then exit "
+                         "without sending anything")
 
 def request(args):
     """
@@ -40,14 +43,14 @@ def request(args):
     bran = args.bran
     alias = args.alias
 
-    requestDoer = RequestDoer(name=name, base=base, alias=alias, bran=bran)
+    requestDoer = RequestDoer(name=name, base=base, alias=alias, bran=bran, dryRun=args.dryRun)
 
     doers = [requestDoer]
     return doers
 
 
 class RequestDoer(doing.DoDoer):
-    def __init__(self, name, base, alias, bran):
+    def __init__(self, name, base, alias, bran, dryRun=False):
         hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
         self.witq = agenting.WitnessInquisitor(hby=hby)
@@ -58,6 +61,7 @@ class RequestDoer(doing.DoDoer):
         doers.extend([doing.doify(self.requestDo)])
 
         self.alias = alias
+        self.dryRun = dryRun
         self.hby = hby
 
         super(RequestDoer, self).__init__(doers=doers)
@@ -98,6 +102,13 @@ class RequestDoer(doing.DoDoer):
         # delegate AID ICP and exn of delegation request EXN
         srdr = serdering.SerderKERI(raw=evt) # coring.Serder(raw=evt)
         del evt[:srdr.size]
+
+        if self.dryRun:
+            self.printPreview(hab=hab, phab=phab, delpre=delpre, srdr=srdr, evtatc=evt,
+                              exn=exn, exnatc=atc)
+            self.remove(self.toRemove)
+            return True
+
         self.postman.send(src=phab.pre, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
         self.postman.send(src=phab.pre, dest=hab.kever.delegator, topic="delegate", serder=exn, attachment=atc)
 
@@ -110,3 +121,28 @@ class RequestDoer(doing.DoDoer):
                     return True
                 yield self.tock
             yield self.tock
+
+    def printPreview(self, hab, phab, delpre, srdr, evtatc, exn, exnatc):
+        """ Print the delegated event and exn a resubmit would send, without sending. """
+        smids = hab.smids if isinstance(hab, GroupHab) else None
+        print("DRY RUN — nothing submitted. `kli delegate request` would resend:\n")
+        print(f"delegate       : {self.alias} ({hab.pre})  sn={hab.kever.sn}")
+        print(f"signing member : {phab.pre}")
+        print(f"delegator      : {delpre}")
+        if smids is not None:
+            print(f"smids          : {smids}")
+
+        print("\n--- delegated event to resubmit (fully signed, unchanged SAID) ---")
+        print(srdr.pretty())
+        print(f"event attachment (signatures/seals): {len(evtatc)} bytes")
+
+        print("\n--- /delegate/request exn (freshly built + signed each run) ---")
+        print(exn.pretty())
+        print(f"exn said : {exn.said}")
+        print(f"exn dt   : {exn.ked['dt']}")
+        print(f"exn attachment: {len(exnatc)} bytes")
+
+        print(f"\n--- would POST to delegator {delpre} (topic 'delegate') ---")
+        print(f"  1. event {srdr.said} (sn {srdr.sn})")
+        print(f"  2. exn   {exn.said}")
+        print("\nDRY RUN complete. Re-run without --dry-run to actually resubmit.")
