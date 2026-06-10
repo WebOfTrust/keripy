@@ -1565,7 +1565,8 @@ class BaseHab:
         query['i'] = pre
         query["src"] = src
         serder = eventing.query(pre=self.pre, query=query, **kwa)
-        return self.endorse(serder, last=True, framed=False)  # was framed=False
+        gvrsn = kwa.get("gvrsn", serder.pvrsn)
+        return self.endorse(serder, last=True, framed=False, gvrsn=gvrsn)
 
 
     def exchange(self, *,
@@ -2162,6 +2163,11 @@ class BaseHab:
             bytearray: reply message.
         """
         kwa["pre"] = self.pre
+        if gvrsn is Version:
+            if "gvrsn" in kwa:
+                gvrsn = kwa["gvrsn"]
+            elif "version" in kwa:
+                gvrsn = kwa["version"]
         return self.endorse(eventing.reply(**kwa), framed=framed, nested=nested,
                             gvrsn=gvrsn, genusify=genusify)
 
@@ -2557,6 +2563,9 @@ class BaseHab:
         serder, sigers, duple = self.getOwnEvent(sn=sn,
                                     allowPartiallySigned=allowPartiallySigned)
 
+        if gvrsn is Version:
+            gvrsn = serder.pvrsn
+
         seal = None
         if duple is not None:
             number, diger = duple
@@ -2647,6 +2656,8 @@ class BaseHab:
 
         serder = self.db.evts.get(keys=(pre, dig))
         sigers = [siger for siger in self.db.sigs.getIter(keys=(pre, dig))]
+        if gvrsn is Version:
+            gvrsn = serder.pvrsn
         return eventing.messagize(serder, sigers=sigers, framed=framed,
                                    nested=nested, gvrsn=gvrsn, genusify=genusify)
 
@@ -2714,11 +2725,12 @@ class BaseHab:
                     if not found:  # no receipt from remote so send own inception
                         # no vrcs or rct of own icp from remote so send own inception
                         msgs.extend(self.msgOwnInception(framed=True,
-                                                         gvrsn=gvrsn))
+                                                         gvrsn=cuedSerder.pvrsn))
 
                 msgs.extend(self.receipt(cuedSerder, framed=True,
-                                         gvrsn=gvrsn, version=version,
-                                         kind=kind))
+                                         gvrsn=cuedSerder.pvrsn,
+                                         version=cuedSerder.pvrsn,
+                                         kind=cuedSerder.kind))
                 yield msgs
 
             elif cueKin in ("replay",):
@@ -3965,6 +3977,8 @@ class GroupHab(BaseHab):
         query['i'] = pre
         query["src"] = src
         serder = eventing.query(pre=self.mhab.pre, query=query, **kwa)
+        if gvrsn is Version:
+            gvrsn = kwa.get("gvrsn", serder.pvrsn)
 
         return self.mhab.endorse(serder, last=True, framed=framed, nested=nested,
                                  gvrsn=gvrsn, genusify=genusify)
