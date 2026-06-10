@@ -2317,10 +2317,10 @@ class Kever:
                 from prior next est event to latest est event.
             wigers (list | None): of Siger instances of indexed witness signatures of
                 event. Index is offset into wits list from latest est event
-            delseqner (Seqner | None): instance of delegating event sequence number.
-                If this event is not delegated then seqner is ignored
-            deldiger (Diger | None): instance of of delegating event said.
-                If this event is not delegated then diger is ignored
+            delsner (Seqner | None): instance of delegating event sequence number.
+                If this event is not delegated then delsner is ignored
+            delsger (Diger | None): instance of delegating event said diger.
+                If this event is not delegated then delsger is ignored
             firner (Seqner | None): Seqner instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
                 When firner provided then compare fn of dater and database and
@@ -2650,10 +2650,10 @@ class Kever:
             toader (Number): instance of backer witness threshold
             wits (list): of qb64 non-transferable prefixes of witnesses used to
                 derive werfers for wigers
-            delnum (Number | None): instance of delegating event sequence number.
-                If this event is not delegated then ignored
-            deldiger (Diger | None): instance of delegating event digest.
-                If this event is not delegated then diger is ignored
+            delsner (Number | None): instance of delegating event sequence number.
+                If this event is not delegated then delsner is ignored
+            delsger (Diger | None): instance of delegating event digest.
+                If this event is not delegated then delsger is ignored
             eager (bool): True means try harder to find validate events by
                             walking KELs. Enables only being eager
                             in escrow processing not initial parsing.
@@ -2909,9 +2909,9 @@ class Kever:
             wits (list[str]): of qb64 non-transferable prefixes of witnesses used to
                 derive werfers for wigers
             delpre (str): qb64 prefix of delegator
-            delnum (Number | None): instance of delegating event sequence number.
+            delsner (Number | None): instance of delegating event sequence number.
                 If this event is not delegated then ignored
-            deldiger (Diger | None): instance of delegating event digest.
+            delsger (Diger | None): instance of delegating event digest.
                 If this event is not delegated ignored
             local (bool): event source for validation logic
                 True means event source is local (protected).
@@ -3598,8 +3598,8 @@ class Kever:
             serder (SerderKERI): instance of  event
             sigers (list): of Siger instance for  event
             wigers (list): of witness signatures
-            delnum (Number): instance of sn of event delegatint/issuing event if any
-            diger (Diger): instance of digest of delegating/issuing event if any
+            delsner (Number): instance of sn of event delegatint/issuing event if any
+            delsger (Diger): instance of digest of delegating/issuing event if any
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -3674,8 +3674,8 @@ class Kever:
             serder is SerderKERI instance of event
             sigers is list of Siger instances of indexed controller sigs
             wigers is optional list of Siger instance of indexed witness sigs
-            delnum is Number instance of sn of seal source event of delegator/issuer
-            diger is Diger instance of digest of delegator/issuer
+            delsner is Number instance of sn of seal source event of delegator/issuer
+            delsger is Diger instance of digest of delegator/issuer
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -4142,10 +4142,10 @@ class Kevery:
             sigers (list[Siger]): instances of attached controller indexed sigs
             wigers (list[Siger]|None): instances of attached witness indexed sigs
                 otherwise None
-            delnum (Number|None): instance of delegating event sequence number.
-                If this event is not delegated then ignored
-            deldiger (Diger|None): instance of of delegating event SAID.
-                If this event is not delegated then saider is ignored
+            delsner (Number|None): instance of delegating event sequence number.
+                If this event is not delegated then delsner is ignored
+            delsger (Diger|None): instance of delegating event SAID.
+                If this event is not delegated then delsger is ignored
             firner (Seqner|None): instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
                 When firner provided then compare fn of dater and database and
@@ -5531,8 +5531,8 @@ class Kevery:
         Parameters:
             serder (SerderKERI): instance of  event
             sigers (list): of Siger instance for  event
-            delnum (Number): instance of sn of event delegatint/issuing event if any
-            diger (Diger): instance of dig of event delegatint/issuing event if any
+            number (Number): instance of sn of delegatint/issuing event if any
+            diger (Diger): instance of dig of delegatint/issuing event if any
             wigers (list): of witness signatures
             local (bool): event source for validation logic
                 True means event source is local (protected).
@@ -5569,8 +5569,8 @@ class Kevery:
         Parameters:
             serder (SerderKERI): instance of  event
             sigers (list): of Siger instance for  event
-            delnum (Number): instance of sn of event delegatint/issuing event if any
-            diger (Diger): instance of dig of event delegatint/issuing event if any
+            delsner (Number): instance of sn of event delegatint/issuing event if any
+            delsger (Diger): instance of dig of event delegatint/issuing event if any
             wigers (list): of witness signatures
             local (bool): event source for validation logic
                 True means event source is local (protected).
