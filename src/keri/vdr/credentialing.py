@@ -364,13 +364,16 @@ class Registry(BaseRegistry):
             SerderKERI: The SerderKERI of the credential issuance event
         """
         if self.noBackers:
-            serder = issueEvent(vcdig=said, regk=self.regk, dt=dt)
+            serder = issueEvent(vcdig=said, regk=self.regk, dt=dt,
+                                version=self.vcp.pvrsn, kind=self.vcp.kind)
         else:
             serder = backerIssue(vcdig=said,
                                           regk=self.regk,
                                           regsn=self.regi,
                                           regd=self.regser.said,
-                                          dt=dt)
+                                          dt=dt,
+                                          version=self.vcp.pvrsn,
+                                          kind=self.vcp.kind)
 
         self.processEvent(serder=serder)
         return serder
