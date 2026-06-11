@@ -11,9 +11,13 @@ from falcon.testing import helpers
 from keri.app import (openHab, parseCesrHttpRequest,
                       createCESRRequest, streamCESRRequests,
                       CESR_CONTENT_TYPE)
-from keri.kering import Ilks
+from keri.kering import Ilks, Vrsn_1_0, Kinds
 from keri.core import SerderKERI
 from keri.vdr import Regery, Verifier
+
+V1 = Vrsn_1_0
+KWA = dict(version=V1, kind=Kinds.json)
+CUE_KWA = dict(**KWA, gvrsn=V1)
 
 
 def test_parse_cesr_request():
@@ -74,15 +78,15 @@ class MockClient:
 
 
 def test_create_cesr_request(mockHelpingNowUTC):
-    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
+    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab):
         wit = "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"
         regery = Regery(hby=hby, name="test", temp=True)
-        issuer = regery.makeRegistry(prefix=hab.pre, name="test")
+        issuer = regery.makeRegistry(prefix=hab.pre, name="test", **KWA)
 
         verfer = Verifier(hby=hby)
         msg = verfer.query(hab.pre, issuer.regk,
                            "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
-                           route="tels")
+                           route="tels", **KWA)
         client = MockClient()
 
         createCESRRequest(msg, client, dest=wit, path="/qry/tels")
@@ -99,7 +103,7 @@ def test_create_cesr_request(mockHelpingNowUTC):
         assert headers["Content-Length"] == 254
         assert len(headers["CESR-ATTACHMENT"]) == 144
 
-        msg = hab.query(pre=hab.pre, src=wit, route="mbx", query=dict(s=0))
+        msg = hab.query(pre=hab.pre, src=wit, route="mbx", query=dict(s=0), **KWA)
         client = MockClient()
 
         createCESRRequest(msg, client, dest=wit, path="/qry/mbx")
@@ -122,15 +126,15 @@ def test_create_cesr_request(mockHelpingNowUTC):
 
 
 def test_stream_cesr_request(mockHelpingNowUTC):
-    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
+    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab):
         wit = "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"
         regery = Regery(hby=hby, name="test", temp=True)
-        issuer = regery.makeRegistry(prefix=hab.pre, name="test")
+        issuer = regery.makeRegistry(prefix=hab.pre, name="test", **KWA)
 
         verfer = Verifier(hby=hby)
         msg = verfer.query(hab.pre, issuer.regk,
                            "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
-                           route="tels")
+                           route="tels", **KWA)
         client = MockClient()
 
         streamCESRRequests(client, msg, dest=wit, path="/qry/tels")
@@ -147,7 +151,7 @@ def test_stream_cesr_request(mockHelpingNowUTC):
         assert headers["Content-Length"] == 254
         assert len(headers["CESR-ATTACHMENT"]) == 144
 
-        msg = hab.query(pre=hab.pre, src=wit, route="mbx", query=dict(s=0))
+        msg = hab.query(pre=hab.pre, src=wit, route="mbx", query=dict(s=0), **KWA)
         client = MockClient()
 
         streamCESRRequests(client, msg, dest=wit, path="/qry/mbx")
@@ -167,8 +171,8 @@ def test_stream_cesr_request(mockHelpingNowUTC):
                                               b'Z3al3V3z3VstRtHRPeOrotuqZZUgBl2yHzgpGyOjAXYGinVqWLAMhdmQ089FTSAz'
                                               b'qSTBmJzI8RvIezsJ')
 
-        msgs = hab.query(pre=hab.pre, src=wit, route="logs", query=dict(s=0))
-        msgs.extend(hab.msgOwnEvent(sn=0, framed=True))
+        msgs = hab.query(pre=hab.pre, src=wit, route="logs", query=dict(s=0), **KWA)
+        msgs.extend(hab.msgOwnEvent(sn=0, framed=True, gvrsn=V1))
 
         client = MockClient()
         streamCESRRequests(client, msgs, dest=wit)

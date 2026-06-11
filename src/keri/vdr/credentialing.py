@@ -282,7 +282,8 @@ class Registry(BaseRegistry):
     issuance and revocation.
     """
 
-    def make(self, *, nonce=None, noBackers=True, baks=None, toad=None, estOnly=False, vcp=None):
+    def make(self, *, nonce=None, noBackers=True, baks=None, toad=None, estOnly=False, vcp=None,
+             version=None, kind=None):
         """ Delayed initialization of Issuer.
 
         Actual initialization of Issuer from properties or loaded from .reger.  Should
@@ -305,12 +306,16 @@ class Registry(BaseRegistry):
             if estOnly:
                 self.cnfg.append(TraitDex.EstOnly)
 
+            version = version if version is not None else self.hab.kever.serder.pvrsn
+            kind = kind if kind is not None else self.hab.kever.serder.kind
             self.vcp = inceptEvent(pre,
                                     baks=baks,
                                     toad=toad,
                                     nonce=nonce,
                                     cnfg=self.cnfg,
-                                    code=MtrDex.Blake3_256)
+                                    code=MtrDex.Blake3_256,
+                                    version=version,
+                                    kind=kind)
         else:
             self.vcp = vcp
 
