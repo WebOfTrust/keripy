@@ -16,12 +16,15 @@ from hio.core import http
 from hio.base import doing
 from hio.help import decking
 
-from keri.kering import Schemes
+from keri.kering import Schemes, Vrsn_1_0, Kinds
 from keri.core import SerderKERI, Salter
 from keri.db import basing
 from keri.app import (MailboxIterable, QryRpyMailboxIterable,
                       QueryEnd, Mailboxer, Receiptor,
                       setupWitness, createHttpServer, openHab, openHby)
+
+V1 = Vrsn_1_0
+KWA = dict(version=V1, kind=Kinds.json)
 
 
 def test_mailbox_iter():
@@ -110,11 +113,11 @@ def test_mailbox_multiple_iter():
 
 
 def test_qrymailbox_iter():
-    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
+    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab):
         assert hab.pre == 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
-        icp = hab.msgOwnInception(framed=True)
+        icp = hab.msgOwnInception(framed=True, gvrsn=V1)
         icpSrdr = SerderKERI(raw=icp)
-        qry = hab.query(pre=hab.pre, src=hab.pre, route="/mbx")
+        qry = hab.query(pre=hab.pre, src=hab.pre, route="/mbx", **KWA)
         srdr = SerderKERI(raw=qry)
 
         cues = decking.Deck()
@@ -162,15 +165,15 @@ def test_qrymailbox_iter():
 
 
 def test_wit_query_ends(seeder):
-    with openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64) as wesHby, \
-            openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64) as palHby:
-        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
+    with openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, version=V1) as wesHby, \
+            openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64, version=V1) as palHby:
+        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644, **KWA)
         # Pull the reger out of the Doers so the reger is reused and does not trigger an LMDB error on reuse
         wesReger = next(doer.baser for doer in wesDoers if isinstance(doer, basing.BaserDoer))
         witDoer = Receiptor(hby=palHby)
 
         wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[Schemes.http])
+        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[Schemes.http], **KWA)
 
         app = falcon.App()
         query_endpoint = QueryEnd(wesHab, reger=wesReger)
@@ -212,7 +215,7 @@ class QueryTestDoer(doing.Doer):
         witDoer = self.options["witDoer"]
         wesClient = self.options["wesClient"]
 
-        palHab = palHby.makeHab(name="pal", wits=[wesHab.pre], transferable=True)
+        palHab = palHby.makeHab(name="pal", wits=[wesHab.pre], transferable=True, **KWA)
 
         assert palHab.pre == "EEWz3RVIvbGWw4VJC7JEZnGCLPYx4-QgWOwAzGnw-g8y"
 
