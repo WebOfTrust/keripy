@@ -171,6 +171,7 @@ class Habery:
         self.name = name
         self.base = base
         self.temp = temp
+        self.version = version
 
         self.ks = ks if ks is not None else Keeper(name=self.name,
                                                            base=self.base,
@@ -287,7 +288,8 @@ class Habery:
             raise ex
 
         self._signator = Signator(db=self.db, mgr=self.mgr, temp=self.temp, ks=self.ks, cf=self.cf,
-                                  rtr=self.rtr, kvy=self.kvy, psr=self.psr, rvy=self.rvy)
+                                  rtr=self.rtr, kvy=self.kvy, psr=self.psr, rvy=self.rvy,
+                                  version=self.version)
 
         self.loadHabs()
         self.inited = True
@@ -915,9 +917,11 @@ class Signator:
         """
         self.db = db
         spre = self.db.hbys.get(name)
+        incept_kwa = dict(version=kwa.pop('version', Version),
+                          kind=kwa.pop('kind', Kinds.json))
         if not spre:
             self._hab = Hab(name=name, db=db, **kwa)
-            self._hab.incept(transferable=False, hidden=True)
+            self._hab.incept(transferable=False, hidden=True, **incept_kwa)
             self.pre = self._hab.pre
             self.db.hbys.pin(name, self.pre)
         else:

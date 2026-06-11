@@ -889,7 +889,7 @@ class Parser:
                     tsgs=[], ssgs=[], frcs=[], sscs=[], ssts=[], tdcs=[],
                     ptds=[], essrs=[], bsqs=[], bsss=[], tmqs=[], local=local)
 
-        serdery = Serdery(version=Version)
+        serdery = Serdery(version=self.version)
 
 
         try:

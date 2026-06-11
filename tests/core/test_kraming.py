@@ -28,6 +28,7 @@ from keri.help import helping
 
 V2 = Vrsn_2_0
 KWA = dict(version=V2, kind=Kinds.cesr)
+EXN_KWA = dict(version=V2, kind=Kinds.json)  # xip/exn in kramPMKM must json round-trip
 
 
 def test_auth_type_codex():
@@ -434,16 +435,16 @@ def test_scrub_invalid_pool_sigs():
     """_verifyAttachedSigs removes unverifiable signatures from kwa in place."""
     salt1 = Salter(raw=b'\xc1\x00' * 8).qb64
     salt2 = Salter(raw=b'\xc2\x00' * 8).qb64
-    with (openHby(name="sender", base="test", salt=salt1) as senderHby,
-          openHby(name="receiver", base="test", salt=salt2) as receiverHby):
+    with (openHby(name="sender", base="test", salt=salt1, version=V2) as senderHby,
+          openHby(name="receiver", base="test", salt=salt2, version=V2) as receiverHby):
 
         senderHab = senderHby.makeHab(name="sender", isith='1', icount=1,
-                                      transferable=True)
+                                      transferable=True, **KWA)
         receiverHby.makeHab(name="receiver", isith='1', icount=1,
-                            transferable=True)
+                            transferable=True, **KWA)
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(senderHab.msgOwnEvent(sn=0)),
-                                       kvy=crossKvy)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)
+        Parser(version=V2).parse(ims=bytearray(senderIcp), kvy=crossKvy)
         kever = receiverHby.db.kevers.get(senderHab.pre)
         assert kever is not None
 
@@ -457,7 +458,7 @@ def test_scrub_invalid_pool_sigs():
             route="ksn",
             query=dict(i=senderHab.pre, src=senderHab.pre, n='scrub-kwa'),
             stamp=stamp,
-            pvrsn=Vrsn_2_0,
+            **KWA,
         )
         good = senderHab.mgr.sign(
             ser=msg.raw, verfers=senderHab.kever.verfers, indexed=True)
@@ -932,9 +933,9 @@ def test_asr(mockHelpingNowUTC):
     salt2 = Salter(raw=b'0123456789abcdeg').qb64
     salt3 = Salter(raw=b'0123456789abcdeh').qb64
 
-    with (openHby(name="sender", base="test", salt=salt1) as senderHby,
-          openHby(name="mkSender", base="test", salt=salt2) as mkHby,
-          openHby(name="receiver", base="test", salt=salt3) as receiverHby):
+    with (openHby(name="sender", base="test", salt=salt1, version=V2) as senderHby,
+          openHby(name="mkSender", base="test", salt=salt2, version=V2) as mkHby,
+          openHby(name="receiver", base="test", salt=salt3, version=V2) as receiverHby):
 
         # Create transferable single-key sender
         senderHab = senderHby.makeHab(name="sender", isith='1', icount=1,
@@ -1330,7 +1331,7 @@ def test_transactioned(mockHelpingNowUTC):
             xip = exchept(sender=skHab.pre,
                           receiver=receiverHab.pre,
                           route="/test/exchange",
-                          stamp=stamp)
+                          stamp=stamp, **EXN_KWA)
 
             # Sign xip
             sigers = skHab.mgr.sign(ser=xip.raw,
@@ -1357,7 +1358,7 @@ def test_transactioned(mockHelpingNowUTC):
                            route="/test/exchange",
                            attributes=dict(n='5c'),
                            stamp=stamp,
-                           version=Vrsn_2_0)
+                           **EXN_KWA)
 
             sigers = skHab.mgr.sign(ser=exn.raw,
                                     verfers=skHab.kever.verfers,
@@ -1384,7 +1385,7 @@ def test_transactioned(mockHelpingNowUTC):
                             route="/test/exchange",
                             attributes=dict(n='5d'),
                             stamp=stamp,
-                            version=Vrsn_2_0)
+                            **EXN_KWA)
 
             sigers = skHab.mgr.sign(ser=msg3.raw,
                                     verfers=skHab.kever.verfers,
@@ -1418,7 +1419,7 @@ def test_transactioned(mockHelpingNowUTC):
                             route="/test/exchange",
                             attributes=dict(n='5e'),
                             stamp=stamp,
-                            version=Vrsn_2_0)
+                            **EXN_KWA)
 
             sigers = skHab.mgr.sign(ser=msg4.raw,
                                     verfers=skHab.kever.verfers,
@@ -1440,7 +1441,7 @@ def test_transactioned(mockHelpingNowUTC):
             mkXip = exchept(sender=mkHab.pre,
                             receiver=receiverHab.pre,
                             route="/test/exchange",
-                            stamp=stamp)
+                            stamp=stamp, **EXN_KWA)
 
             sigers = mkHab.mgr.sign(ser=mkXip.raw,
                                     verfers=mkHab.kever.verfers,
@@ -1462,7 +1463,7 @@ def test_transactioned(mockHelpingNowUTC):
                              route="/test/exchange",
                              attributes=dict(n='5f'),
                              stamp=stamp,
-                             version=Vrsn_2_0)
+                             **EXN_KWA)
 
             allSigers = mkHab.mgr.sign(ser=mkExn.raw,
                                        verfers=mkHab.kever.verfers,
@@ -1508,7 +1509,7 @@ def test_transactioned(mockHelpingNowUTC):
             xip8 = exchept(sender=skHab.pre,
                            receiver=receiverHab.pre,
                            route="/test/exchange",
-                           stamp=stamp)
+                           stamp=stamp, **EXN_KWA)
             sigers8 = skHab.mgr.sign(ser=xip8.raw,
                                      verfers=skHab.kever.verfers,
                                      indexed=True)
@@ -1520,7 +1521,7 @@ def test_transactioned(mockHelpingNowUTC):
                             route="/test/exchange",
                             attributes=dict(n='5h'),
                             stamp=stamp,
-                            version=Vrsn_2_0)
+                            **EXN_KWA)
 
             # Sign exn8 for both KRAM (ssgs) and downstream exn handler (tsgs)
             sigers8 = skHab.mgr.sign(ser=exn8.raw,
@@ -1552,7 +1553,7 @@ def test_transactioned(mockHelpingNowUTC):
             xip8 = exchept(sender=skHab.pre,
                            receiver=receiverHab.pre,
                            route="/test/exchange",
-                           stamp=stamp)
+                           stamp=stamp, **EXN_KWA)
             sigers8 = skHab.mgr.sign(ser=xip8.raw,
                                      verfers=skHab.kever.verfers,
                                      indexed=True)
@@ -1564,7 +1565,7 @@ def test_transactioned(mockHelpingNowUTC):
                             route="/test/exchange",
                             attributes=dict(n='5h'),
                             stamp=stamp,
-                            version=Vrsn_2_0)
+                            **EXN_KWA)
 
             # Sign exn8 for both KRAM (ssgs) and downstream exn handler (tsgs)
             sigers8 = skHab.mgr.sign(ser=exn8.raw,
@@ -1604,8 +1605,8 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
     salt1 = Salter(raw=b'0123456789abcdef').qb64
     salt2 = Salter(raw=b'0123456789abcdeg').qb64
 
-    with (openHby(name="v1exnSender", base="test", salt=salt1) as senderHby,
-          openHby(name="v1exnReceiver", base="test", salt=salt2) as receiverHby):
+    with (openHby(name="v1exnSender", base="test", salt=salt1, version=Vrsn_1_0) as senderHby,
+          openHby(name="v1exnReceiver", base="test", salt=salt2, version=Vrsn_1_0) as receiverHby):
 
         senderHab = senderHby.makeHab(name="v1exnSender", isith='1', icount=1,
                                       transferable=True, **v1Kwa)
@@ -1715,7 +1716,7 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
             v2Xip = exchept(sender=senderHab.pre,
                             receiver=receiverHab.pre,
                             route="/test/exchange",
-                            stamp=stamp)
+                            stamp=stamp, **EXN_KWA)
 
             xipSigers = senderHab.mgr.sign(ser=v2Xip.raw,
                                             verfers=senderHab.kever.verfers,
@@ -1729,7 +1730,7 @@ def test_v1_exn_non_transactioned(mockHelpingNowUTC):
                              route="/test/exchange",
                              attributes=dict(n='v2x'),
                              stamp=stamp,
-                             version=Vrsn_2_0)
+                             **EXN_KWA)
 
             # Confirm x field present in v2 ked
             assert v2Exn.ked.get('x', None) is not None
@@ -1937,17 +1938,17 @@ def test_multisig_kwa_rehydration_after_threshold(mockHelpingNowUTC):
     salt1 = Salter(raw=b'0123456789abcdef').qb64
     salt2 = Salter(raw=b'0123456789abcdeg').qb64
 
-    with (openHby(name="rehSender", base="test", salt=salt1) as senderHby,
-          openHby(name="rehReceiver", base="test", salt=salt2) as receiverHby):
+    with (openHby(name="rehSender", base="test", salt=salt1, version=V2) as senderHby,
+          openHby(name="rehReceiver", base="test", salt=salt2, version=V2) as receiverHby):
 
         senderHab = senderHby.makeHab(name="rehSender", isith='2', icount=3,
-                                      transferable=True)
+                                      transferable=True, **KWA)
         receiverHab = receiverHby.makeHab(name="rehReceiver", isith='1', icount=1,
-                                          transferable=True)
+                                          transferable=True, **KWA)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
-        senderIcp = senderHab.msgOwnEvent(sn=0)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)
+        Parser(version=V2).parse(ims=bytearray(senderIcp), kvy=crossKvy)
 
         with openCF(name="rehKram", base="test") as cf:
             cf.put(KRAM_INTEGRATION_CONFIG)
@@ -1960,7 +1961,7 @@ def test_multisig_kwa_rehydration_after_threshold(mockHelpingNowUTC):
                         route="ksn",
                         query=dict(i=senderHab.pre, src=senderHab.pre),
                         stamp=stamp,
-                        pvrsn=Vrsn_2_0)
+                        **KWA)
 
             allSigers = senderHab.mgr.sign(ser=msg.raw,
                                            verfers=senderHab.kever.verfers,
@@ -2426,17 +2427,17 @@ def test_cigar_scrubs_same_sender_prior_tsgs(mockHelpingNowUTC):
     salt1 = Salter(raw=b'0123456789abcdef').qb64
     salt2 = Salter(raw=b'0123456789abcdeg').qb64
 
-    with (openHby(name="cigarSenderNT", base="test", salt=salt1) as senderHby,
-          openHby(name="cigarReceiver", base="test", salt=salt2) as receiverHby):
+    with (openHby(name="cigarSenderNT", base="test", salt=salt1, version=V2) as senderHby,
+          openHby(name="cigarReceiver", base="test", salt=salt2, version=V2) as receiverHby):
 
         senderNTHab = senderHby.makeHab(name="nt", isith='1', icount=1,
-                                        transferable=False)
+                                        transferable=False, **KWA)
         receiverHby.makeHab(name="rcv", isith='1', icount=1,
-                            transferable=True)
+                            transferable=True, **KWA)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
-        Parser(version=Vrsn_1_0).parse(
-            ims=bytearray(senderNTHab.msgOwnEvent(sn=0)), kvy=crossKvy)
+        senderIcp = senderNTHab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)
+        Parser(version=V2).parse(ims=bytearray(senderIcp), kvy=crossKvy)
         kever = receiverHby.db.kevers[senderNTHab.pre]
         assert kever is not None
 
@@ -2450,7 +2451,7 @@ def test_cigar_scrubs_same_sender_prior_tsgs(mockHelpingNowUTC):
                     query=dict(i=senderNTHab.pre, src=senderNTHab.pre,
                                n='cigar-stale'),
                     stamp=stamp,
-                    pvrsn=Vrsn_2_0)
+                    **KWA)
 
         cigars = senderNTHab.mgr.sign(ser=msg.raw,
                                       verfers=senderNTHab.kever.verfers,
@@ -2668,7 +2669,7 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
             xip = exchept(sender=senderSkHab.pre,
                           receiver=receiverHab.pre,
                           route="/test/exchange",
-                          stamp=stamp)
+                          stamp=stamp, **EXN_KWA)
 
             # Sign xip
             sigers = senderSkHab.mgr.sign(ser=xip.raw,
@@ -2695,7 +2696,7 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
             xip = exchept(sender=senderMkHab.pre,
                           receiver=receiverHab.pre,
                           route="/test/exchange",
-                          stamp=stamp)
+                          stamp=stamp, **EXN_KWA)
 
             # Sign xip
             sigers = senderMkHab.mgr.sign(ser=xip.raw,
@@ -2720,7 +2721,7 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
             xip = exchept(sender=kownSenderHab.pre,
                           receiver=receiverHab.pre,
                           route="/test/exchange",
-                          stamp=stamp)
+                          stamp=stamp, **EXN_KWA)
 
             # Build sscs referencing the ixn event
             ixnSaid = kownSenderHab.kever.serder.said
@@ -3485,7 +3486,7 @@ def test_new_cache_type(fakeHelpingClock):
             xip = exchept(sender=senderHab.pre,
                           receiver=receiverHab.pre,
                           route="route1",
-                          stamp=stamp)
+                          stamp=stamp, **EXN_KWA)
 
             # Sign xip
             sigers = senderHab.mgr.sign(ser=xip.raw,
@@ -3504,7 +3505,7 @@ def test_new_cache_type(fakeHelpingClock):
                            route="route1",
                            attributes=dict(n='5c'),
                            stamp=stamp,
-                           version=Vrsn_2_0)
+                           **EXN_KWA)
 
             sigers = senderHab.mgr.sign(ser=exn.raw,
                                     verfers=senderHab.kever.verfers,
@@ -3548,7 +3549,7 @@ def test_new_cache_type(fakeHelpingClock):
                            route="route1",
                            attributes=dict(n='5c'),
                            stamp=stamp,
-                           version=Vrsn_2_0)
+                           **EXN_KWA)
 
             sigers = senderHab.mgr.sign(ser=exn.raw,
                                     verfers=senderHab.kever.verfers,
@@ -3588,7 +3589,7 @@ def test_new_cache_type(fakeHelpingClock):
                                     route="offroad",
                                     attributes=dict(n='5c'),
                                     stamp=stamp,
-                                    version=Vrsn_2_0)
+                                    **EXN_KWA)
 
             sigers = senderHab.mgr.sign(ser=exn.raw,
                                     verfers=senderHab.kever.verfers,
@@ -3797,7 +3798,7 @@ def test_multiple_new_cache_type(fakeHelpingClock):
             xip = exchept(sender=senderHab.pre,
                           receiver=receiverHab.pre,
                           route="route1",
-                          stamp=stamp)
+                          stamp=stamp, **EXN_KWA)
 
             # Sign xip
             sigers = senderHab.mgr.sign(ser=xip.raw,
@@ -3816,7 +3817,7 @@ def test_multiple_new_cache_type(fakeHelpingClock):
                            route="route1",
                            attributes=dict(n='5c'),
                            stamp=stamp,
-                           version=Vrsn_2_0)
+                           **EXN_KWA)
 
             sigers = senderHab.mgr.sign(ser=exn.raw,
                                     verfers=senderHab.kever.verfers,
@@ -3901,7 +3902,7 @@ def test_multiple_new_cache_type(fakeHelpingClock):
                            route="route1",
                            attributes=dict(n='5c'),
                            stamp=stamp,
-                           version=Vrsn_2_0)
+                           **EXN_KWA)
 
             sigers = senderHab.mgr.sign(ser=exn.raw,
                                     verfers=senderHab.kever.verfers,
@@ -5009,17 +5010,17 @@ def test_strict_monotonicity_existing_cache(mockHelpingNowUTC):
     salt1 = Salter(raw=b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Iu').qb64
     salt2 = Salter(raw=b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Iv').qb64
 
-    with (openHby(name="senderMonotonic", base="test", salt=salt1) as senderHby,
-          openHby(name="receiverMonotonic", base="test", salt=salt2) as receiverHby):
+    with (openHby(name="senderMonotonic", base="test", salt=salt1, version=V2) as senderHby,
+          openHby(name="receiverMonotonic", base="test", salt=salt2, version=V2) as receiverHby):
 
         senderHab = senderHby.makeHab(name="senderMonotonic", isith='1', icount=1,
-                                      transferable=True)
+                                      transferable=True, **KWA)
         receiverHab = receiverHby.makeHab(name="receiverMonotonic", isith='1', icount=1,
-                                          transferable=True)
+                                          transferable=True, **KWA)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
-        senderIcp = senderHab.msgOwnEvent(sn=0)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)
+        Parser(version=V2).parse(ims=bytearray(senderIcp), kvy=crossKvy)
         assert senderHab.pre in crossKvy.kevers
 
         with openCF(name="kram", base="test") as cf:
@@ -5038,7 +5039,7 @@ def test_strict_monotonicity_existing_cache(mockHelpingNowUTC):
                         route="ksn",
                         query=dict(i=senderHab.pre, src=receiverHab.pre, n='8a'),
                         stamp=stamp,
-                        pvrsn=Vrsn_2_0)
+                        **KWA)
             qrySigers = senderHab.mgr.sign(ser=qry.raw,
                                            verfers=senderHab.kever.verfers,
                                            indexed=True)
@@ -5065,7 +5066,7 @@ def test_strict_monotonicity_existing_cache(mockHelpingNowUTC):
             xip = exchept(sender=senderHab.pre,
                           receiver=receiverHab.pre,
                           route="/test/monotonic",
-                          stamp=stamp)
+                          stamp=stamp, **EXN_KWA)
             xipSigers = senderHab.mgr.sign(ser=xip.raw,
                                            verfers=senderHab.kever.verfers,
                                            indexed=True)
@@ -5160,7 +5161,7 @@ def test_pruning_exchanges(fakeHelpingClock):
             xip = exchept(sender=senderHab.pre,
                           receiver=receiverHab.pre,
                           route="/test/exchange",
-                          stamp=stamp)
+                          stamp=stamp, **EXN_KWA)
 
             # Sign xip
             sigers = senderHab.mgr.sign(ser=xip.raw,
@@ -5188,7 +5189,7 @@ def test_pruning_exchanges(fakeHelpingClock):
                            route="/test/exchange",
                            attributes=dict(n='5c'),
                            stamp=firstStamp,
-                           version=Vrsn_2_0)
+                           **EXN_KWA)
 
             sigers = senderHab.mgr.sign(ser=exn.raw,
                                     verfers=senderHab.kever.verfers,
@@ -5223,7 +5224,7 @@ def test_pruning_exchanges(fakeHelpingClock):
                             route="/test/exchange",
                             attributes=dict(n='5c'),
                             stamp=secondStamp,
-                            version=Vrsn_2_0)
+                            **EXN_KWA)
 
             sigers = senderHab.mgr.sign(ser=exn2.raw,
                                     verfers=senderHab.kever.verfers,
@@ -5266,17 +5267,17 @@ def test_pruning_exchanges_cleans_transactional_partial_multisig(fakeHelpingCloc
     salt_mk = Salter(raw=b'0123456789abcdek').qb64
     salt_rx = Salter(raw=b'0123456789abcdel').qb64
 
-    with (openHby(name="mkPruneSender", base="test", salt=salt_mk) as mkHby,
-          openHby(name="mkPruneReceiver", base="test", salt=salt_rx) as receiverHby):
+    with (openHby(name="mkPruneSender", base="test", salt=salt_mk, version=V2) as mkHby,
+          openHby(name="mkPruneReceiver", base="test", salt=salt_rx, version=V2) as receiverHby):
 
         mkHab = mkHby.makeHab(name="mkSender", isith='2', icount=3,
-                              transferable=True)
+                              transferable=True, **KWA)
         receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1,
-                                          transferable=True)
+                                          transferable=True, **KWA)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
-        mkIcp = mkHab.msgOwnEvent(sn=0)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(mkIcp), kvy=crossKvy)
+        mkIcp = mkHab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)
+        Parser(version=V2).parse(ims=bytearray(mkIcp), kvy=crossKvy)
         assert mkHab.pre in crossKvy.kevers
 
         with openCF(name="kram", base="test") as cf:
@@ -5296,7 +5297,7 @@ def test_pruning_exchanges_cleans_transactional_partial_multisig(fakeHelpingCloc
             mkXip = exchept(sender=mkHab.pre,
                             receiver=receiverHab.pre,
                             route="/test/exchange",
-                            stamp=stamp)
+                            stamp=stamp, **EXN_KWA)
             sigers = mkHab.mgr.sign(ser=mkXip.raw,
                                     verfers=mkHab.kever.verfers,
                                     indexed=True)
@@ -5308,7 +5309,7 @@ def test_pruning_exchanges_cleans_transactional_partial_multisig(fakeHelpingCloc
                              route="/test/exchange",
                              attributes=dict(n='prune-partial'),
                              stamp=stamp,
-                             version=Vrsn_2_0)
+                             **EXN_KWA)
             allSigers = mkHab.mgr.sign(ser=mkExn.raw,
                                        verfers=mkHab.kever.verfers,
                                        indexed=True)
@@ -5348,16 +5349,16 @@ def test_assk_timeliness_boundaries_and_future_reject(fakeHelpingClock):
     salt1 = Salter(raw=b'0123456789abcdef').qb64
     salt2 = Salter(raw=b'0123456789abcdeg').qb64
 
-    with (openHby(name="timingSender", base="test", salt=salt1) as senderHby,
-          openHby(name="timingReceiver", base="test", salt=salt2) as receiverHby):
+    with (openHby(name="timingSender", base="test", salt=salt1, version=V2) as senderHby,
+          openHby(name="timingReceiver", base="test", salt=salt2, version=V2) as receiverHby):
         senderHab = senderHby.makeHab(name="timingSender", isith='1', icount=1,
-                                      transferable=True)
+                                      transferable=True, **KWA)
         receiverHby.makeHab(name="timingReceiver", isith='1', icount=1,
-                            transferable=True)
+                            transferable=True, **KWA)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
-        senderIcp = senderHab.msgOwnEvent(sn=0)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)
+        Parser(version=V2).parse(ims=bytearray(senderIcp), kvy=crossKvy)
         assert senderHab.pre in crossKvy.kevers
 
         with openCF(name="timingKram", base="test") as cf:
@@ -5381,7 +5382,7 @@ def test_assk_timeliness_boundaries_and_future_reject(fakeHelpingClock):
                             route="ksn",
                             query=dict(i=senderHab.pre, src=senderHab.pre, n=nonce),
                             stamp=stamp,
-                            pvrsn=Vrsn_2_0)
+                            **KWA)
                 sigers = senderHab.mgr.sign(ser=msg.raw,
                                             verfers=senderHab.kever.verfers,
                                             indexed=True)
@@ -5403,16 +5404,16 @@ def test_transactioned_exchange_window_boundaries(fakeHelpingClock):
     salt1 = Salter(raw=b'0123456789abcdeh').qb64
     salt2 = Salter(raw=b'0123456789abcdei').qb64
 
-    with (openHby(name="xwinSender", base="test", salt=salt1) as senderHby,
-          openHby(name="xwinReceiver", base="test", salt=salt2) as receiverHby):
+    with (openHby(name="xwinSender", base="test", salt=salt1, version=V2) as senderHby,
+          openHby(name="xwinReceiver", base="test", salt=salt2, version=V2) as receiverHby):
         senderHab = senderHby.makeHab(name="xwinSender", isith='1', icount=1,
-                                      transferable=True)
+                                      transferable=True, **KWA)
         receiverHab = receiverHby.makeHab(name="xwinReceiver", isith='1', icount=1,
-                                          transferable=True)
+                                          transferable=True, **KWA)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
-        senderIcp = senderHab.msgOwnEvent(sn=0)
-        Parser(version=Vrsn_1_0).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)
+        Parser(version=V2).parse(ims=bytearray(senderIcp), kvy=crossKvy)
         assert senderHab.pre in crossKvy.kevers
 
         with openCF(name="xwinKram", base="test") as cf:
@@ -5424,7 +5425,7 @@ def test_transactioned_exchange_window_boundaries(fakeHelpingClock):
             xip = exchept(sender=senderHab.pre,
                           receiver=receiverHab.pre,
                           route="/test/exchange",
-                          stamp=helping.toIso8601(xdt))
+                          stamp=helping.toIso8601(xdt), **EXN_KWA)
             xipSigers = senderHab.mgr.sign(ser=xip.raw,
                                            verfers=senderHab.kever.verfers,
                                            indexed=True)
@@ -5450,7 +5451,7 @@ def test_transactioned_exchange_window_boundaries(fakeHelpingClock):
                                route="/test/exchange",
                                attributes=dict(n=nonce),
                                stamp=stamp,
-                               version=Vrsn_2_0)
+                               **EXN_KWA)
 
                 sigers = senderHab.mgr.sign(ser=exn.raw,
                                             verfers=senderHab.kever.verfers,
@@ -5472,19 +5473,19 @@ def test_invalid_signature_attachments_rejected(mockHelpingNowUTC):
     salt3 = Salter(raw=b'0123456789abcdel').qb64
     salt4 = Salter(raw=b'0123456789abcdem').qb64
 
-    with (openHby(name="badSigSk", base="test", salt=salt1) as skHby,
-          openHby(name="badSigNt", base="test", salt=salt2) as ntHby,
-          openHby(name="badSigMk", base="test", salt=salt3) as mkHby,
-          openHby(name="badSigReceiver", base="test", salt=salt4) as receiverHby):
-        skHab = skHby.makeHab(name="badSigSk", isith='1', icount=1, transferable=True)
-        ntHab = ntHby.makeHab(name="badSigNt", isith='1', icount=1, transferable=False)
-        mkHab = mkHby.makeHab(name="badSigMk", isith='2', icount=3, transferable=True)
-        receiverHby.makeHab(name="badSigReceiver", isith='1', icount=1, transferable=True)
+    with (openHby(name="badSigSk", base="test", salt=salt1, version=V2) as skHby,
+          openHby(name="badSigNt", base="test", salt=salt2, version=V2) as ntHby,
+          openHby(name="badSigMk", base="test", salt=salt3, version=V2) as mkHby,
+          openHby(name="badSigReceiver", base="test", salt=salt4, version=V2) as receiverHby):
+        skHab = skHby.makeHab(name="badSigSk", isith='1', icount=1, transferable=True, **KWA)
+        ntHab = ntHby.makeHab(name="badSigNt", isith='1', icount=1, transferable=False, **KWA)
+        mkHab = mkHby.makeHab(name="badSigMk", isith='2', icount=3, transferable=True, **KWA)
+        receiverHby.makeHab(name="badSigReceiver", isith='1', icount=1, transferable=True, **KWA)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
         for hab in (skHab, ntHab, mkHab):
-            icp = hab.msgOwnEvent(sn=0)
-            Parser(version=Vrsn_1_0).parse(ims=bytearray(icp), kvy=crossKvy)
+            icp = hab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)
+            Parser(version=V2).parse(ims=bytearray(icp), kvy=crossKvy)
             assert hab.pre in crossKvy.kevers
 
         with openCF(name="badSigKram", base="test") as cf:
@@ -5497,7 +5498,7 @@ def test_invalid_signature_attachments_rejected(mockHelpingNowUTC):
                           route="ksn",
                           query=dict(i=skHab.pre, src=skHab.pre, n="bad-ssgs"),
                           stamp=stamp,
-                          pvrsn=Vrsn_2_0)
+                          **KWA)
             wrongSkSigs = skHab.mgr.sign(ser=b'not-the-message',
                                          verfers=skHab.kever.verfers,
                                          indexed=True)
@@ -5510,7 +5511,7 @@ def test_invalid_signature_attachments_rejected(mockHelpingNowUTC):
                           route="ksn",
                           query=dict(i=ntHab.pre, src=ntHab.pre, n="bad-cigar"),
                           stamp=stamp,
-                          pvrsn=Vrsn_2_0)
+                          **KWA)
             wrongCigars = ntHab.mgr.sign(ser=b'not-the-message',
                                          verfers=ntHab.kever.verfers,
                                          indexed=False)
@@ -5522,7 +5523,7 @@ def test_invalid_signature_attachments_rejected(mockHelpingNowUTC):
                           route="ksn",
                           query=dict(i=mkHab.pre, src=mkHab.pre, n="bad-tsgs"),
                           stamp=stamp,
-                          pvrsn=Vrsn_2_0)
+                          **KWA)
             mkPrefixer = Prefixer(qb64=mkHab.pre)
             mkKever = receiverHby.db.kevers[mkHab.pre]
             seqner = Seqner(sn=mkKever.sner.num)

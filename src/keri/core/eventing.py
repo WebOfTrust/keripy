@@ -5442,7 +5442,8 @@ class Kevery:
                 logger.debug("Query Body=\n%s\n", serder.pretty())
                 raise QueryNotFoundError(msg)
 
-            rserder = reply(route=f"/ksn/{src}", data=kever.state()._asdict())
+            rserder = reply(route=f"/ksn/{src}", data=kever.state()._asdict(),
+                            pre=pre, version=serder.pvrsn, kind=serder.kind)
             self.cues.push(dict(kin="reply", src=src, route="/ksn", serder=rserder,
                                 dest=dest))
 
