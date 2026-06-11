@@ -17,7 +17,6 @@ from keri.vdr import Regery, Verifier
 
 V1 = Vrsn_1_0
 KWA = dict(version=V1, kind=Kinds.json)
-CUE_KWA = dict(**KWA, gvrsn=V1)
 
 
 def test_parse_cesr_request():

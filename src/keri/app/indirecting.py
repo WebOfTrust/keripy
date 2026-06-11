@@ -58,7 +58,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
 
     from ..vdr import Reger,Verifier  # dynamic import because of circular import
 
-    reger = Reger(name=hab.name, db=hab.db, temp=False)
+    reger = Reger(name=hab.name, db=hab.db, temp=hby.temp)
     verfer = Verifier(hby=hby, reger=reger)
 
     mbx = mbx if mbx is not None else Mailboxer(name=alias, temp=hby.temp)
@@ -913,17 +913,17 @@ class HttpEnd:
         rep.set_header('connection', "close")
 
         cr = parseCesrHttpRequest(req=req)
-        sadder = coring.Sadder(ked=cr.payload, kind=Kinds.json)
-        msg = bytearray(sadder.raw)
+        serder = serdering.SerderKERI(sad=cr.payload, verify=False)
+        msg = bytearray(serder.raw)
         msg.extend(cr.attachments.encode("utf-8"))
 
         self.rxbs.extend(msg)
 
-        if sadder.proto in ("ACDC",):
+        if serder.proto in ("ACDC",):
             rep.set_header('Content-Type', "application/json")
             rep.status = falcon.HTTP_204
         else:
-            ilk = sadder.ked["t"]
+            ilk = serder.sad["t"]
             if ilk in (Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt, Ilks.exn, Ilks.rpy):
                 rep.set_header('Content-Type', "application/json")
                 rep.status = falcon.HTTP_204
@@ -931,10 +931,10 @@ class HttpEnd:
                 rep.set_header('Content-Type', "application/json")
                 rep.status = falcon.HTTP_204
             elif ilk in (Ilks.qry,):
-                if sadder.ked["r"] in ("mbx",):
+                if serder.sad["r"] in ("mbx",):
                     rep.set_header('Content-Type', "text/event-stream")
                     rep.status = falcon.HTTP_200
-                    rep.stream = QryRpyMailboxIterable(mbx=self.mbx, cues=self.qrycues, said=sadder.said)
+                    rep.stream = QryRpyMailboxIterable(mbx=self.mbx, cues=self.qrycues, said=serder.said)
                 else:
                     rep.set_header('Content-Type', "application/json")
                     rep.status = falcon.HTTP_204

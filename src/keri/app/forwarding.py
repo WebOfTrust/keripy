@@ -16,7 +16,7 @@ from ..kering import (Roles, Vrsn_1_0, Kinds,
                       ConfigurationError, ValidationError)
 from .agenting import messengerFrom, streamMessengerFrom
 from ..core import (Bexter, Prefixer, Verfer, Texter, Diger,
-                    Sadder, Counter, SerderKERI,
+                    Counter, SerderKERI,
                     MtrDex, Codens, NonTransDex, exchange)
 from ..db import dgKey
 from ..peer import specialExchange
@@ -203,8 +203,10 @@ class Poster(doing.DoDoer):
                                    route='/fwd',
                                    modifiers=dict(pre=recp, topic=topic),
                                    attributes={},
-                                   embeds=dict(evt=evt), )
-        ims = hab.endorse(serder=fwd, last=False, framed=True)
+                                   embeds=dict(evt=evt),
+                                   version=hab.kever.serder.pvrsn,
+                                   kind=hab.kever.serder.kind)
+        ims = hab.endorse(serder=fwd, last=False, framed=True, gvrsn=fwd.pvrsn)
 
         # Transpose the signatures to point to the new location
         witer = messengerFrom(hab=hab, pre=mbx, urls=mailbox)
@@ -239,8 +241,10 @@ class Poster(doing.DoDoer):
                                    route='/fwd',
                                    modifiers=dict(pre=recp, topic=topic),
                                    attributes={},
-                                   embeds=dict(evt=evt))
-        ims = hab.endorse(serder=fwd, last=False, framed=True)
+                                   embeds=dict(evt=evt),
+                                   version=hab.kever.serder.pvrsn,
+                                   kind=hab.kever.serder.kind)
+        ims = hab.endorse(serder=fwd, last=False, framed=True, gvrsn=fwd.pvrsn)
 
         # Transpose the signatures to point to the new location
         witer = messengerFrom(hab=hab, pre=mbx, urls=mailbox)
@@ -404,8 +408,10 @@ class StreamPoster:
         essr, _ = specialExchange(sender=hab.pre,
                                   route='/essr/req',
                                   modifiers=dict(src=hab.pre, dest=ctrl),
-                                  diger=diger,)
-        ims = hab.endorse(serder=essr, framed=True)
+                                  diger=diger,
+                                  version=hab.kever.serder.pvrsn,
+                                  kind=hab.kever.serder.kind)
+        ims = hab.endorse(serder=essr, framed=True, gvrsn=essr.pvrsn)
         ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
                            gvrsn=Vrsn_1_0).qb64b)
         ims.extend(texter.qb64b)
@@ -428,8 +434,10 @@ class StreamPoster:
                                    route='/fwd',
                                    modifiers=dict(pre=self.recp, topic=topic),
                                    attributes={},
-                                   embeds=dict(evt=evt))
-        ims = hab.endorse(serder=fwd, last=False, framed=True)
+                                   embeds=dict(evt=evt),
+                                   version=hab.kever.serder.pvrsn,
+                                   kind=hab.kever.serder.kind)
+        ims = hab.endorse(serder=fwd, last=False, framed=True, gvrsn=fwd.pvrsn)
         return fwd, ims + atc
 
     def forward(self, hab, ends, msg, topic):
@@ -523,8 +531,8 @@ class ForwardHandler:
         pevt = bytearray()
         for pather, atc in attachments:
             ked = pather.resolve(embeds)
-            sadder = Sadder(ked=ked, kind=Kinds.json)
-            pevt.extend(sadder.raw)
+            serder = SerderKERI(sad=ked, verify=False)
+            pevt.extend(serder.raw)
             pevt.extend(atc)
 
         if not pevt:
