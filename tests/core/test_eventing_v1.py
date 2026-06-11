@@ -4568,10 +4568,10 @@ def test_reload_kever(mockHelpingNowUTC):
 
 
 def test_load_event(mockHelpingNowUTC):
-    with habbing.openHby(name="tor", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as torHby, \
-         habbing.openHby(name="wil", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as wilHby, \
-         habbing.openHby(name="wan", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as wanHby, \
-         habbing.openHby(name="tee", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as teeHby:
+    with habbing.openHby(name="tor", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as torHby, \
+         habbing.openHby(name="wil", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as wilHby, \
+         habbing.openHby(name="wan", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as wanHby, \
+         habbing.openHby(name="tee", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as teeHby:
 
         wanKvy = Kevery(db=wanHby.db, lax=False, local=False)
         torKvy = Kevery(db=torHby.db, lax=False, local=False)
