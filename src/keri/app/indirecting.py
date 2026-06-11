@@ -1110,7 +1110,8 @@ class ReceiptEnd(doing.DoDoer):
                                                         f"{serder.sn}: wits={wits}")
 
             rct = self.hab.receipt(serder, framed=True,
-                                   version=serder.pvrsn, kind=serder.kind)
+                                   version=serder.pvrsn, kind=serder.kind,
+                                   gvrsn=serder.pvrsn)
 
             self.psr.parseOne(bytes(rct))
 

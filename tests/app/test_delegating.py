@@ -13,29 +13,33 @@ from keri.app import (Anchorer, DelegateRequestHandler, Receiptor,
                       Notifier, setupWitness, openHby,
                       openHab, delegateRequestExn)
 
+V1 = Vrsn_1_0
+KWA = dict(version=V1, kind=Kinds.json)
+CUE_KWA = dict(**KWA, gvrsn=V1)
+
 
 def test_anchorer(seeder):
-    with openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64) as wesHby, \
-            openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64) as palHby, \
-            openHby(name="del", salt=Salter(raw=b'0123456789ghijkl').qb64) as delHby:
+    with openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, version=V1) as wesHby, \
+            openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64, version=V1) as palHby, \
+            openHby(name="del", salt=Salter(raw=b'0123456789ghijkl').qb64, version=V1) as delHby:
 
-        version = Vrsn_1_0
-        kwa = dict(version=version, kind=Kinds.json)
-        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644, **kwa)
+        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644, **KWA)
         witDoer = Receiptor(hby=palHby)
 
         bts = Anchorer(hby=delHby)
 
         wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[Schemes.http], **kwa)
-        seeder.seedWitEnds(delHby.db, witHabs=[wesHab], protocols=[Schemes.http], **kwa)
+        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[Schemes.http], **KWA)
+        seeder.seedWitEnds(delHby.db, witHabs=[wesHab], protocols=[Schemes.http], **KWA)
 
         opts = dict(
             wesHab=wesHab,
             palHby=palHby,
             delHby=delHby,
             witDoer=witDoer,
-            bts=bts
+            bts=bts,
+            kwa=KWA,
+            cue_kwa=CUE_KWA,
         )
 
         doers = wesDoers + [witDoer, bts, doing.doify(anchorer_test_do, **opts)]
@@ -76,8 +80,10 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
     delHby = opts["delHby"]
     witDoer = opts["witDoer"]
     bts = opts["bts"]
+    kwa = opts["kwa"]
+    cue_kwa = opts["cue_kwa"]
 
-    palHab = palHby.makeHab(name="pal", wits=[wesHab.pre], transferable=True)
+    palHab = palHby.makeHab(name="pal", wits=[wesHab.pre], transferable=True, **kwa)
 
     assert palHab.pre == "EEWz3RVIvbGWw4VJC7JEZnGCLPYx4-QgWOwAzGnw-g8y"
 
@@ -88,22 +94,23 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
     witDoer.cues.popleft()
     msg = next(wesHab.db.clonePreIter(pre=palHab.pre))
     kvy = Kevery(db=delHby.db, local=True)
-    Parser(version=Vrsn_1_0).parseOne(ims=bytearray(msg), kvy=kvy, local=True)
+    Parser(version=V1).parseOne(ims=bytearray(msg), kvy=kvy, local=True)
 
     while palHab.pre not in delHby.kevers:
         yield tock
 
     proxyHab = delHby.makeHab(name="proxy", icount=1, isith='1', ncount=1, nsith='1',
-                              wits=[wesHab.pre])
+                              wits=[wesHab.pre], **kwa)
     assert proxyHab.pre == "EIQ9wnMWGxZHlontoBMp5-GPyVecLL99XrCVxmTCO22b"
 
     delHab = delHby.makeHab(name="del", icount=1, isith='1', ncount=1, nsith='1',
                             wits=[wesHab.pre],
-                            delpre=palHab.pre)
+                            delpre=palHab.pre, **kwa)
     assert delHab.pre == "EGyXT1FmEeI05xmaBsYs2H4v8bazCy-JClB21rAfvXZu"
 
     bts.delegation(pre=delHab.pre, proxy=proxyHab)
-    palHab.rotate(data=[dict(i=delHab.pre, s="0", d=delHab.kever.serder.said)], framed=True)
+    palHab.rotate(data=[dict(i=delHab.pre, s="0", d=delHab.kever.serder.said)],
+                  framed=True, **cue_kwa)
     witDoer.msgs.append(dict(pre=palHab.pre))
     while not witDoer.cues:
         yield tock
@@ -114,7 +121,7 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
 
     msg = next(wesHab.db.clonePreIter(pre=palHab.pre, fn=1))
     kvy = Kevery(db=delHby.db, local=True)
-    Parser(version=Vrsn_1_0).parseOne(ims=bytearray(msg), kvy=kvy, local=True)
+    Parser(version=V1).parseOne(ims=bytearray(msg), kvy=kvy, local=True)
 
     # Wait for the anchor.  If we timeout before that happens, assertion in test will fail
     seqner = Seqner(sn=palHab.kever.sn)
@@ -129,14 +136,13 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
 
 
 def test_delegation_request(mockHelpingNowUTC):
-    with openHab(name="test", temp=True, salt=b'0123456789abcdef') as (hby, hab):
+    with openHab(name="test", temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab):
 
-        version = Vrsn_1_0
         delpre = "EArzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"
         serder = delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=delpre,
                                   ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"],
-                                  version=version, kind=Kinds.json)
-        evt = hab.endorse(serder=serder, framed=False)
+                                  **KWA)
+        evt = hab.endorse(serder=serder, framed=False, gvrsn=V1)
         exn, atc = delegateRequestExn(hab=hab, delpre=delpre, evt=evt)
 
         assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3MAAAEIaGMMWJFPmt'
@@ -155,13 +161,13 @@ def test_delegation_request(mockHelpingNowUTC):
 
 
 def test_delegation_request_handler(mockHelpingNowUTC):
-    with openHab(name="test", temp=True) as (hby, hab):
+    with openHab(name="test", temp=True, **KWA) as (hby, hab):
 
         serder = delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=hab.pre,
                                   ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"],
-                                  version=Vrsn_1_0, kind=Kinds.json)
+                                  **KWA)
 
-        evt = hab.endorse(serder=serder, framed=False)
+        evt = hab.endorse(serder=serder, framed=False, gvrsn=V1)
         notifier = Notifier(hby=hby)
         handler = DelegateRequestHandler(hby=hby, notifier=notifier)
         exn, _ = delegateRequestExn(hab, hab.pre, evt=evt)

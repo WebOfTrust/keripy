@@ -119,7 +119,7 @@ class Receiptor(doing.DoDoer):
                 del rct[:rserder.size]
 
                 # pull off the count code
-                Counter(qb64b=rct, strip=True, version=Vrsn_1_0)
+                Counter(qb64b=rct, strip=True, version=rserder.pvrsn)
                 rcts[wit] = rct
             else:
                 print(f"invalid response {rep.status} from witnesses {wit}")
@@ -143,7 +143,7 @@ class Receiptor(doing.DoDoer):
                                        kind=ser.kind)
             msg.extend(rserder.raw)
             msg.extend(Counter(Codens.NonTransReceiptCouples,
-                                    count=len(wigers), version=Vrsn_1_0).qb64b)
+                                    count=len(wigers), version=ser.pvrsn).qb64b)
             for wiger in wigers:
                 msg.extend(wiger)
 
@@ -514,6 +514,11 @@ class WitnessInquisitor(doing.DoDoer):
                 hab = evt["hab"]
             elif (hab := self.hby.habByPre(src)) is None:
                 continue
+
+            if "version" not in kwa:
+                kwa = dict(**kwa,
+                           version=hab.kever.serder.pvrsn,
+                           kind=hab.kever.serder.kind)
 
             if not wits and pre not in self.hby.kevers:
                 logger.error(f"must have KEL for identifier to query {pre}")
