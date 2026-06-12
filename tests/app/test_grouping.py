@@ -702,7 +702,7 @@ def test_multisig_interact(mockHelpingNowUTC):
 
 def test_multisig_registry_incept(mockHelpingNowUTC, mockCoringRandomNonce):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
-        vcp = incept(ghab1.pre)
+        vcp = incept(ghab1.pre, **KWA)
         ixn = ghab1.mhab.interact(data=[dict(i=vcp.pre, s="0", d=vcp.said)],
                                   framed=True, **KWA, gvrsn=TEST_VERSION)
         exn, atc = multisigRegistryInceptExn(ghab=ghab1, vcp=vcp.raw, anc=ixn,
