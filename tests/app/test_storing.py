@@ -8,8 +8,13 @@ import os
 import lmdb
 
 from keri.app import Mailboxer, openKS
+from keri import Vrsn_1_0
+from keri.kering import Kinds
 from keri.core import Prefixer, SerderKERI, exchange
 from keri.db import OnSuber, openLMDB, openDB
+
+V1 = Vrsn_1_0
+KWA = dict(version=V1, kind=Kinds.json)
 
 
 def test_mailboxing():
@@ -84,7 +89,8 @@ def test_mailboxing():
             exn = exchange(route="/credential/issue",
                               attributes=d,
                               stamp="2021-07-15T13:01:37.624492+00:00",
-                              sender=dest.qb64)
+                              sender=dest.qb64,
+                              **KWA)
             mber.storeMsg(topic=dest.qb64b, msg=exn.raw)
 
         msgs = []
