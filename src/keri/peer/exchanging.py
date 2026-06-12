@@ -401,8 +401,8 @@ def exchangeOld(*,
         embeds = embeds if embeds is not None else {}
         e = dict()
         for label, msg in embeds.items():
-            serder = Sadder(raw=msg)
-            e[label] = serder.ked
+            serder = SerderKERI(raw=msg)
+            e[label] = serder.sad
             atc = bytes(msg[serder.size:])
             if not atc:
                 continue
@@ -536,8 +536,8 @@ def specialExchange(*,
         e = dict()
 
         for label, msg in embeds.items():
-            serder = Sadder(raw=msg)
-            e[label] = serder.ked
+            serder = SerderKERI(raw=msg)
+            e[label] = serder.sad
             atc = bytes(msg[serder.size:])
             if not atc:
                 continue

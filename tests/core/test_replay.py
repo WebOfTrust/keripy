@@ -5,7 +5,6 @@ tests delegation primaily from keri.core.eventing
 """
 import datetime
 import os
-from functools import partial
 
 from hio.help import ogler
 
@@ -17,19 +16,10 @@ from keri.core import (Salter, Counter, Seqner, Dater, Kevery,
                        deTransReceiptQuadruple, deReceiptCouple)
 
 from keri.app import openHby
-from keri.app.habbing import BaseHab
 
 V1 = Vrsn_1_0
 KWA = dict(version=V1, kind=Kinds.json)
-
-
-def _pin_hab_msgs_v1(hab):
-    """Force v1 on Hab message helpers (defaults follow global Version 2.0)."""
-    hab.receipt = partial(BaseHab.receipt, hab, gvrsn=V1, **KWA)
-    hab.reply = partial(BaseHab.reply, hab, gvrsn=V1, **KWA)
-    hab.query = partial(BaseHab.query, hab, gvrsn=V1, **KWA)
-    hab.witness = partial(BaseHab.witness, hab, gvrsn=V1, **KWA)
-    hab.msgOwnInception = partial(BaseHab.msgOwnInception, hab, gvrsn=V1)
+CUE_KWA = dict(**KWA, gvrsn=V1)
 
 
 logger = ogler.getLogger()
@@ -48,29 +38,26 @@ def test_replay():
     artSalt = Salter(raw=b'abcdef0123456789').qb64
     default_salt = Salter(raw=b'0123456789abcdef').qb64
 
-    with (openHby(name="deb", base="test", salt=default_salt) as debHby,
-         openHby(name="cam", base="test", salt=default_salt) as camHby,
-         openHby(name="bev", base="test", salt=default_salt) as bevHby,
-         openHby(name="art", base="test", salt=artSalt) as artHby):
+    with (openHby(name="deb", base="test", salt=default_salt, version=V1) as debHby,
+         openHby(name="cam", base="test", salt=default_salt, version=V1) as camHby,
+         openHby(name="bev", base="test", salt=default_salt, version=V1) as bevHby,
+         openHby(name="art", base="test", salt=artSalt, version=V1) as artHby):
 
         # setup Deb's habitat using default salt multisig already incepts
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
         debHab = debHby.makeHab(name="deb", isith=sith, icount=3, **KWA)
-        _pin_hab_msgs_v1(debHab)
         assert debHab.kever.prefixer.transferable
 
         # setup Cam's habitat using default salt multisig already incepts
         # Cam's receipts will be vrcs with 3 indexed sigantures attached
         sith = '2'  # hex str of threshold int
         camHab = camHby.makeHab(name="cam", isith=sith, icount=3, **KWA)
-        _pin_hab_msgs_v1(camHab)
         assert camHab.kever.prefixer.transferable
 
         # setup Bev's habitat using default salt nonstransferable already incepts
         # Bev's receipts will be rcts with a receipt couple attached
         sith = '1'  # hex str of threshold int
         bevHab = bevHby.makeHab(name="bev", isith=sith, icount=1, transferable=False, **KWA)
-        _pin_hab_msgs_v1(bevHab)
         assert not bevHab.kever.prefixer.transferable
 
         # setup Art's habitat using custom salt nonstransferable so not match Bev
@@ -78,19 +65,17 @@ def test_replay():
         # Art's receipts will be rcts with a receipt couple attached
         sith = '1'  # hex str of threshold int
         artHab = artHby.makeHab(name="art", isith=sith, icount=1, transferable=False, **KWA)
-        _pin_hab_msgs_v1(artHab)
         assert not artHab.kever.prefixer.transferable
 
-        # first setup disjoint replay then conjoint replay
         # Create series of event for Deb
         debMsgs = bytearray()
-        debMsgs.extend(debHab.msgOwnInception(framed=True))
-        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
-        debMsgs.extend(debHab.rotate(framed=True, gvrsn=V1, **KWA))
-        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
-        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
-        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
-        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
+        debMsgs.extend(debHab.msgOwnInception(framed=True, gvrsn=V1))
+        debMsgs.extend(debHab.interact(framed=True, **CUE_KWA))
+        debMsgs.extend(debHab.rotate(framed=True, **CUE_KWA))
+        debMsgs.extend(debHab.interact(framed=True, **CUE_KWA))
+        debMsgs.extend(debHab.interact(framed=True, **CUE_KWA))
+        debMsgs.extend(debHab.interact(framed=True, **CUE_KWA))
+        debMsgs.extend(debHab.interact(framed=True, **CUE_KWA))
 
         assert debMsgs == (b'{"v":"KERI10JSON000207_","t":"icp","d":"ELfp9ZhqQCGov3wPRLa6vn5V'
             b'kIQjug2sb2QD17T-TIpY","i":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD1'
@@ -173,7 +158,7 @@ def test_replay():
         assert camKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
         assert len(camKevery.cues) == 7
         # get disjoints receipts (vrcs) from Cam of Deb's events by processing Cam's cues
-        camMsgs = camHab.processCues(camKevery.cues)
+        camMsgs = camHab.processCues(camKevery.cues, **CUE_KWA)
         assert camMsgs == (b'{"v":"KERI10JSON0001e7_","t":"icp","d":"EBp-SQb9fTgeoQkIkOd2xegv'
                         b'Xy3epjOskiPrf6JDIEuj","i":"EBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf'
                         b'6JDIEuj","s":"0","kt":"2","k":["DCQbRBx58zbRPs8R9cXl-MMbPaxH1EPH'
@@ -255,7 +240,7 @@ def test_replay():
         assert len(debKevery.cues) == 1
 
         # get disjoints receipts (vrcs) from Deb of Cam's events by processing Deb's cues
-        debCamVrcs = debHab.processCues(debKevery.cues)
+        debCamVrcs = debHab.processCues(debKevery.cues, **CUE_KWA)
         assert len(debKevery.cues) == 0
         assert debCamVrcs == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EBp-SQb9fTgeoQkIkOd2xegv'
                             b'Xy3epjOskiPrf6JDIEuj","i":"EBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf'
@@ -283,7 +268,7 @@ def test_replay():
         assert len(bevKevery.cues) == 7
 
         # get disjoints receipts (rcts) from Bev of Deb's events by processing Bevs's cues
-        bevMsgs = bevHab.processCues(bevKevery.cues)
+        bevMsgs = bevHab.processCues(bevKevery.cues, **CUE_KWA)
         assert len(bevKevery.cues) == 0
         assert bevMsgs == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EBXqe7Xzsw2aolT09Ouh5Zw9'
                         b'kNn2sgoHmo4zCn7Q7ZSC","i":"BAqph4mAWcf7mkIgk1Xrpvr7dWT7YvHIam_hq'
@@ -331,7 +316,7 @@ def test_replay():
         assert len(debKevery.cues) == 1
 
         # get disjoints receipts (vrcs) from Deb of Bev's events by processing Deb's cues
-        debBevVrcs = debHab.processCues(debKevery.cues)
+        debBevVrcs = debHab.processCues(debKevery.cues, **CUE_KWA)
         assert len(debKevery.cues) == 0
         assert debBevVrcs == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EBXqe7Xzsw2aolT09Ouh5Zw9'
                         b'kNn2sgoHmo4zCn7Q7ZSC","i":"BAqph4mAWcf7mkIgk1Xrpvr7dWT7YvHIam_hq'
@@ -488,7 +473,7 @@ def test_replay():
                                     lax=False,
                                     local=False)
         # process Cam's inception so Art will proces Cam's vrcs without escrowing
-        camIcpMsg = camHab.msgOwnInception(framed=True)
+        camIcpMsg = camHab.msgOwnInception(framed=True, gvrsn=V1)
         Parser(version=V1).parse(ims=bytearray(camIcpMsg), kvy=artKevery)
         # artKevery.process(ims=bytearray(camIcpMsg))
         assert camHab.pre in artKevery.kevers
@@ -529,22 +514,20 @@ def test_replay_all():
     artSalt = Salter(raw=b'abcdef0123456789').qb64
     default_salt = Salter(raw=b'0123456789abcdef').qb64
 
-    with (openHby(name="deb", base="test", salt=default_salt) as debHby,
-         openHby(name="cam", base="test", salt=default_salt) as camHby,
-         openHby(name="bev", base="test", salt=default_salt) as bevHby,
-         openHby(name="art", base="test", salt=artSalt) as artHby):
+    with (openHby(name="deb", base="test", salt=default_salt, version=V1) as debHby,
+         openHby(name="cam", base="test", salt=default_salt, version=V1) as camHby,
+         openHby(name="bev", base="test", salt=default_salt, version=V1) as bevHby,
+         openHby(name="art", base="test", salt=artSalt, version=V1) as artHby):
 
         # setup Deb's habitat using default salt multisig already incepts
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
         debHab = debHby.makeHab(name='test', isith=sith, icount=3, **KWA)
-        _pin_hab_msgs_v1(debHab)
         assert debHab.kever.prefixer.transferable
 
         # setup Cam's habitat using default salt multisig already incepts
         # Cam's receipts will be vrcs with 3 indexed sigantures attached
         sith = '2'  # hex str of threshold int
         camHab = camHby.makeHab(name='test', isith=sith, icount=3, **KWA)
-        _pin_hab_msgs_v1(camHab)
         assert camHab.kever.prefixer.transferable
 
         # setup Bev's habitat using default salt nonstransferable already incepts
@@ -552,7 +535,6 @@ def test_replay_all():
         sith = '1'  # hex str of threshold int
         bevHab = bevHby.makeHab(name='test', isith=sith, icount=1,
                                 transferable=False, **KWA)
-        _pin_hab_msgs_v1(bevHab)
         assert not bevHab.kever.prefixer.transferable
 
         # setup Art's habitat using custom salt nonstransferable so not match Bev
@@ -561,18 +543,17 @@ def test_replay_all():
         sith = '1'  # hex str of threshold int
         artHab = artHby.makeHab(name='test', isith=sith, icount=1,
                                 transferable=False, **KWA)
-        _pin_hab_msgs_v1(artHab)
         assert not artHab.kever.prefixer.transferable
 
         # Create series of event for Deb
         debMsgs = bytearray()
-        debMsgs.extend(debHab.msgOwnInception(framed=True))
-        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
-        debMsgs.extend(debHab.rotate(framed=True, gvrsn=V1, **KWA))
-        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
-        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
-        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
-        debMsgs.extend(debHab.interact(framed=True, gvrsn=V1, **KWA))
+        debMsgs.extend(debHab.msgOwnInception(framed=True, gvrsn=V1))
+        debMsgs.extend(debHab.interact(framed=True, **CUE_KWA))
+        debMsgs.extend(debHab.rotate(framed=True, **CUE_KWA))
+        debMsgs.extend(debHab.interact(framed=True, **CUE_KWA))
+        debMsgs.extend(debHab.interact(framed=True, **CUE_KWA))
+        debMsgs.extend(debHab.interact(framed=True, **CUE_KWA))
+        debMsgs.extend(debHab.interact(framed=True, **CUE_KWA))
 
         # Play debMsgs to Cam
         # create non-local kevery for Cam to process msgs from Deb
@@ -586,7 +567,7 @@ def test_replay_all():
         assert len(camKevery.cues) == 7
 
         # get disjoints receipts (vrcs) from Cam of Deb's events by processing Cam's cues
-        camMsgs = camHab.processCues(camKevery.cues)
+        camMsgs = camHab.processCues(camKevery.cues, **CUE_KWA)
         assert len(camKevery.cues) == 0
 
         # Play camMsgs to Deb
@@ -601,7 +582,7 @@ def test_replay_all():
         assert len(debKevery.cues) == 1
 
         # get disjoints receipts (vrcs) from Deb of Cam's events by processing Deb's cues
-        debCamVrcs = debHab.processCues(debKevery.cues)
+        debCamVrcs = debHab.processCues(debKevery.cues, **CUE_KWA)
         assert len(debKevery.cues) == 0
 
         # Play disjoints debCamVrcs to Cam
@@ -620,7 +601,7 @@ def test_replay_all():
         assert len(bevKevery.cues) == 7
 
         # get disjoints receipts (rcts) from Bev of Deb's events by processing Bevs's cues
-        bevMsgs = bevHab.processCues(bevKevery.cues)
+        bevMsgs = bevHab.processCues(bevKevery.cues, **CUE_KWA)
         assert len(bevKevery.cues) == 0
 
         # Play bevMsgs to Deb
@@ -631,7 +612,7 @@ def test_replay_all():
         assert len(debKevery.cues) == 1
 
         # get disjoints receipts (vrcs) from Deb of Bev's events by processing Deb's cues
-        debBevVrcs = debHab.processCues(debKevery.cues)
+        debBevVrcs = debHab.processCues(debKevery.cues, **CUE_KWA)
         assert len(debKevery.cues) == 0
 
         # Play disjoints debBevVrcs to Bev
@@ -647,7 +628,7 @@ def test_replay_all():
                                     lax=False,
                                     local=False)
         # process Cam's inception so Art will proces Cam's vrcs without escrowing
-        camIcpMsg = camHab.msgOwnInception(framed=True)
+        camIcpMsg = camHab.msgOwnInception(framed=True, gvrsn=V1)
         Parser(version=V1).parse(ims=bytearray(camIcpMsg), kvy=artKevery)
         assert camHab.pre in artKevery.kevers
         assert len(artKevery.cues) == 1
