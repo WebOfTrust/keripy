@@ -13,15 +13,13 @@ from keri.app import (Anchorer, DelegateRequestHandler, Receiptor,
                       Notifier, setupWitness, openHby,
                       openHab, delegateRequestExn)
 
-V1 = Vrsn_1_0
-KWA = dict(version=V1, kind=Kinds.json)
-CUE_KWA = dict(**KWA, gvrsn=V1)
+from tests.common import CUE_KWA, KWA
 
 
 def test_anchorer(seeder):
-    with openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, version=V1) as wesHby, \
-            openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64, version=V1) as palHby, \
-            openHby(name="del", salt=Salter(raw=b'0123456789ghijkl').qb64, version=V1) as delHby:
+    with openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, version=Vrsn_1_0) as wesHby, \
+            openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as palHby, \
+            openHby(name="del", salt=Salter(raw=b'0123456789ghijkl').qb64, version=Vrsn_1_0) as delHby:
 
         wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644, **KWA)
         witDoer = Receiptor(hby=palHby)
@@ -94,7 +92,7 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
     witDoer.cues.popleft()
     msg = next(wesHab.db.clonePreIter(pre=palHab.pre))
     kvy = Kevery(db=delHby.db, local=True)
-    Parser(version=V1).parseOne(ims=bytearray(msg), kvy=kvy, local=True)
+    Parser(version=Vrsn_1_0).parseOne(ims=bytearray(msg), kvy=kvy, local=True)
 
     while palHab.pre not in delHby.kevers:
         yield tock
@@ -121,7 +119,7 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
 
     msg = next(wesHab.db.clonePreIter(pre=palHab.pre, fn=1))
     kvy = Kevery(db=delHby.db, local=True)
-    Parser(version=V1).parseOne(ims=bytearray(msg), kvy=kvy, local=True)
+    Parser(version=Vrsn_1_0).parseOne(ims=bytearray(msg), kvy=kvy, local=True)
 
     # Wait for the anchor.  If we timeout before that happens, assertion in test will fail
     seqner = Seqner(sn=palHab.kever.sn)
@@ -142,7 +140,7 @@ def test_delegation_request(mockHelpingNowUTC):
         serder = delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=delpre,
                                   ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"],
                                   **KWA)
-        evt = hab.endorse(serder=serder, framed=False, gvrsn=V1)
+        evt = hab.endorse(serder=serder, framed=False, gvrsn=Vrsn_1_0)
         exn, atc = delegateRequestExn(hab=hab, delpre=delpre, evt=evt)
 
         assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3MAAAEIaGMMWJFPmt'
@@ -167,7 +165,7 @@ def test_delegation_request_handler(mockHelpingNowUTC):
                                   ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"],
                                   **KWA)
 
-        evt = hab.endorse(serder=serder, framed=False, gvrsn=V1)
+        evt = hab.endorse(serder=serder, framed=False, gvrsn=Vrsn_1_0)
         notifier = Notifier(hby=hby)
         handler = DelegateRequestHandler(hby=hby, notifier=notifier)
         exn, _ = delegateRequestExn(hab, hab.pre, evt=evt)

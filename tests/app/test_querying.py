@@ -12,19 +12,17 @@ from keri.app import (QueryDoer, KeyStateNoticer, LogQuerier,
 from keri.core import SerderKERI, Parser, reply
 from keri.db import dgKey
 
-V1 = Vrsn_1_0
-KWA = dict(version=V1, kind=Kinds.json)
-CUE_KWA = dict(**KWA, gvrsn=V1)
+from tests.common import CUE_KWA, KWA
 
 
 def test_querying():
-    with openHby(version=V1) as hby, \
-            openHby(version=V1) as hby1:
+    with openHby(version=Vrsn_1_0) as hby, \
+            openHby(version=Vrsn_1_0) as hby1:
         inqHab = hby.makeHab(name="inquisitor", **KWA)
         subHab = hby1.makeHab(name="subject", **KWA)
         qdoer = QueryDoer(hby=hby, hab=inqHab, kvy=hby.kvy, pre=subHab.pre)
 
-        icp = subHab.msgOwnInception(framed=True, gvrsn=V1)
+        icp = subHab.msgOwnInception(framed=True, gvrsn=Vrsn_1_0)
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(icp), kvy=inqHab.kvy)
 
         assert qdoer is not None
@@ -156,12 +154,12 @@ def test_querying():
         assert len(adoer.witq.msgs) == 1
 
 def test_query_not_found_escrow():
-    with openHby(version=V1) as hby, \
-            openHby(version=V1) as hby1:
+    with openHby(version=Vrsn_1_0) as hby, \
+            openHby(version=Vrsn_1_0) as hby1:
         inqHab = hby.makeHab(name="inquisitor", **KWA)
         subHab = hby1.makeHab(name="subject", **KWA)
 
-        icp = inqHab.msgOwnInception(framed=True, gvrsn=V1)
+        icp = inqHab.msgOwnInception(framed=True, gvrsn=Vrsn_1_0)
         subHab.psr.parseOne(ims=icp)
         assert inqHab.pre in subHab.kevers
 

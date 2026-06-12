@@ -6,6 +6,7 @@ tests.db.dbing module
 
 import logging
 import os
+import socket
 
 from hio.base import doing
 from hio.help import ogler
@@ -15,6 +16,22 @@ from keri import Vrsn_1_0, Kinds
 from keri.core import Salter, Diger, MtrDex, incept
 from keri.app import Director, Directant, Reactor, openHby, runController
 from keri.demo import setupDemoController
+from tests.common import KWA
+
+
+def _free_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return sock.getsockname()[1]
+
+
+def _free_ports(count):
+    ports = []
+    while len(ports) < count:
+        port = _free_port()
+        if port not in ports:
+            ports.append(port)
+    return ports
 
 
 def test_directing_basic():
@@ -24,8 +41,6 @@ def test_directing_basic():
     ogler.resetLevel(level=logging.INFO)
 
     raw = b"raw salt to test"
-    version = Vrsn_1_0
-    kwa = dict(version=version, kind=Kinds.json)
 
     #  create bob signers and secrecies
     bobSigners = Salter(raw=raw).signers(count=8, path="bob", temp=True)
@@ -34,7 +49,7 @@ def test_directing_basic():
     # bob inception transferable (nxt digest not empty)
     bobSerder = incept(keys=[bobSigners[0].verfer.qb64],
                                 ndigs=[Diger(ser=bobSigners[1].verfer.qb64b).qb64],
-                                code=MtrDex.Blake3_256, **kwa)
+                                code=MtrDex.Blake3_256, **KWA)
 
     bob = bobSerder.ked["i"]
     assert bob == 'EFa1wAk_coghxxGCID6jEN79Kmvyj0Y1wWN_ndUv3LjW'
@@ -47,24 +62,23 @@ def test_directing_basic():
     # eve inception transferable (nxt digest not empty)
     eveSerder = incept(keys=[eveSigners[0].verfer.qb64],
                                 ndigs=[Diger(ser=eveSigners[1].verfer.qb64b).qb64],
-                                code=MtrDex.Blake3_256, **kwa)
+                                code=MtrDex.Blake3_256, **KWA)
 
     eve = eveSerder.ked["i"]
     assert eve == 'EFhg5my9DuMU6gw1CVk6QgkmZKBttWSXDzVzWVmxh0_K'
 
 
-    with (openHby(name="eve", base="test") as eveHby,
-          openHby(name="bob", base="test") as bobHby):
+    with (openHby(name="eve", base="test", version=Vrsn_1_0) as eveHby,
+          openHby(name="bob", base="test", version=Vrsn_1_0) as bobHby):
 
         limit = 1.0
         tock = 0.03125
         doist = doing.Doist(limit=limit, tock=tock)
 
-        bobPort = 5620  # bob's TCP listening port for server
-        evePort = 5621  # eve's TCP listneing port for server
+        bobPort, evePort = _free_ports(2)
 
         # setup bob
-        bobHab = bobHby.makeHab(name="Bob", secrecies=bobSecrecies, **kwa)
+        bobHab = bobHby.makeHab(name="Bob", secrecies=bobSecrecies, **KWA)
         assert bobHab.iserder.said == bobSerder.said
         assert bobHab.pre == bob
 
@@ -94,7 +108,7 @@ def test_directing_basic():
         # Bob's Reactants created on demand
 
         # setup eve
-        eveHab = eveHby.makeHab(name="Eve", secrecies=eveSecrecies, **kwa)
+        eveHab = eveHby.makeHab(name="Eve", secrecies=eveSecrecies, **KWA)
         print(eveHab.iserder.pretty())
         print(eveSerder.pretty())
         assert eveHab.iserder.said == eveSerder.said
@@ -167,8 +181,7 @@ def test_runcontroller_demo():
     ogler.resetLevel(level=logging.DEBUG)
 
     name = "bob"  # must be one of 'bob', 'sam', 'eve'
-    remote = 5621
-    local = 5620
+    local, remote = _free_ports(2)
     expire = 1.0
 
     raw = b"raw salt to test"
@@ -182,7 +195,8 @@ def test_runcontroller_demo():
     doers = setupDemoController(secrecies=secrecies,
                                 name=name,
                                 remotePort=remote,
-                                localPort=local)
+                                localPort=local,
+                                **KWA)
 
     runController(doers=doers, expire=expire)
 

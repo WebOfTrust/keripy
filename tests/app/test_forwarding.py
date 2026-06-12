@@ -22,14 +22,13 @@ from keri.app import (Mailboxer, ForwardHandler, Poster,
 from keri.peer import specialExchange, Exchanger
 from keri.spac import payloading
 
-V1 = Vrsn_1_0
-KWA = dict(version=V1, kind=Kinds.json)
+from tests.common import KWA
 
 
 def test_postman(seeder):
     with openHab(name="test", transferable=True, temp=True, **KWA) as (hby, hab), \
-            openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=True, version=V1) as wesHby, \
-            openHby(name="repTest", temp=True, version=V1) as recpHby:
+            openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=True, version=Vrsn_1_0) as wesHby, \
+            openHby(name="repTest", temp=True, version=Vrsn_1_0) as recpHby:
 
         mbx = Mailboxer(name="wes", temp=True)
         wesDoers = setupWitness(alias="wes",
@@ -48,17 +47,17 @@ def test_postman(seeder):
                                   wits=[wesHab.pre],
                                   **KWA)
 
-        recpIcp = recpHab.msgOwnEvent(sn=0, framed=True, gvrsn=V1)
+        recpIcp = recpHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
         wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
-        Parser(version=V1).parse(ims=bytearray(recpIcp), kvy=wesKvy, local=True)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(recpIcp), kvy=wesKvy, local=True)
         assert recpHab.pre in wesKvy.kevers
 
         serder = SerderKERI(raw=recpIcp)
-        rct = wesHab.receipt(serder, framed=True, gvrsn=V1, **KWA)
+        rct = wesHab.receipt(serder, framed=True, gvrsn=Vrsn_1_0, **KWA)
 
         kvy = Kevery(db=hab.db)
-        Parser(version=V1).parseOne(bytearray(recpIcp), kvy=kvy, local=True)
-        Parser(version=V1).parseOne(bytearray(rct), kvy=kvy, local=True)
+        Parser(version=Vrsn_1_0).parseOne(bytearray(recpIcp), kvy=kvy, local=True)
+        Parser(version=Vrsn_1_0).parseOne(bytearray(rct), kvy=kvy, local=True)
         kvy.processEscrows()
         assert recpHab.pre in kvy.kevers
 
@@ -68,7 +67,7 @@ def test_postman(seeder):
                                      attributes=dict(msg="test"),
                                      sender=hab.pre,
                                      **KWA)
-        atc = hab.endorse(exn, last=False, framed=False, gvrsn=V1)
+        atc = hab.endorse(exn, last=False, framed=False, gvrsn=Vrsn_1_0)
         del atc[:exn.size]
         pman.send(src=hab.pre,
                   dest=recpHab.pre,
@@ -116,7 +115,7 @@ def test_forward_handler():
                                            attributes=dict(msg="hello"),
                                            sender=hab.pre,
                                            **KWA)
-        inner_atc = hab.endorse(inner_exn, last=False, framed=False, gvrsn=V1)
+        inner_atc = hab.endorse(inner_exn, last=False, framed=False, gvrsn=Vrsn_1_0)
         del inner_atc[:inner_exn.size]
 
         evt = bytearray(inner_exn.raw)
@@ -151,7 +150,7 @@ def test_forward_handler():
                                             attributes=dict(msg="delegate"),
                                             sender=hab.pre,
                                             **KWA)
-        inner_atc2 = hab.endorse(inner_exn2, last=False, framed=False, gvrsn=V1)
+        inner_atc2 = hab.endorse(inner_exn2, last=False, framed=False, gvrsn=Vrsn_1_0)
         del inner_atc2[:inner_exn2.size]
 
         evt2 = bytearray(inner_exn2.raw)
@@ -175,7 +174,7 @@ def test_forward_handler():
                                             attributes=dict(msg="other"),
                                             sender=hab.pre,
                                             **KWA)
-        inner_atc3 = hab.endorse(inner_exn3, last=False, framed=False, gvrsn=V1)
+        inner_atc3 = hab.endorse(inner_exn3, last=False, framed=False, gvrsn=Vrsn_1_0)
         del inner_atc3[:inner_exn3.size]
 
         evt3 = bytearray(inner_exn3.raw)
@@ -199,14 +198,14 @@ def test_forward_handler():
                                          attributes=dict(msg="A"),
                                         sender=hab.pre,
                                         **KWA)
-        inner_atcA = hab.endorse(inner_exnA, last=False, framed=False, gvrsn=V1)
+        inner_atcA = hab.endorse(inner_exnA, last=False, framed=False, gvrsn=Vrsn_1_0)
         del inner_atcA[:inner_exnA.size]
 
         inner_exnB = exchange(route="/echo",
                                          attributes=dict(msg="B"),
                                         sender=hab.pre,
                                         **KWA)
-        inner_atcB = hab.endorse(inner_exnB, last=False, framed=False, gvrsn=V1)
+        inner_atcB = hab.endorse(inner_exnB, last=False, framed=False, gvrsn=Vrsn_1_0)
         del inner_atcB[:inner_exnB.size]
 
         evtA = bytearray(inner_exnA.raw); evtA.extend(inner_atcA)
@@ -247,14 +246,14 @@ def test_essr_stream(seeder):
         httpServerDoer = http.ServerDoer(server=server)
 
         kvy = Kevery(db=hab.db)
-        Parser(version=V1).parseOne(recpHab.msgOwnEvent(sn=0, framed=True, gvrsn=V1),
+        Parser(version=Vrsn_1_0).parseOne(recpHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0),
                                           kvy=kvy, local=True)
         kvy.processEscrows()
         assert recpHab.pre in kvy.kevers
 
         recpKvy = Kevery(db=recpHab.db)
-        icp = hab.msgOwnEvent(sn=0, framed=True, gvrsn=V1)
-        Parser(version=V1).parseOne(bytearray(icp), kvy=recpKvy, local=True)
+        icp = hab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
+        Parser(version=Vrsn_1_0).parseOne(bytearray(icp), kvy=recpKvy, local=True)
         kvy.processEscrows()
         assert hab.pre in recpKvy.kevers
 
@@ -277,7 +276,7 @@ def test_essr_stream(seeder):
                                          attributes=dict(msg="test", i=i),
                                          sender=hab.pre,
                                          **KWA)
-            atc = hab.endorse(exn, last=False, framed=False, gvrsn=V1)
+            atc = hab.endorse(exn, last=False, framed=False, gvrsn=Vrsn_1_0)
             del atc[:exn.size]
 
             postman.send(exn, atc)
@@ -345,8 +344,8 @@ def test_essr_stream(seeder):
 
 def test_essr_mbx(seeder):
     with openHab(name="test", transferable=True, temp=True, **KWA) as (hby, hab), \
-            openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=True, version=V1) as wesHby, \
-            openHby(name="repTest", temp=True, version=V1) as recpHby:
+            openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=True, version=Vrsn_1_0) as wesHby, \
+            openHby(name="repTest", temp=True, version=Vrsn_1_0) as recpHby:
 
         mbx = Mailboxer(name="wes", temp=True)
         wesDoers = setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644, **KWA)
@@ -357,23 +356,23 @@ def test_essr_mbx(seeder):
 
         recpHab = recpHby.makeHab(name="repTest", transferable=True, wits=[wesHab.pre], **KWA)
 
-        recpIcp = recpHab.msgOwnEvent(sn=0, framed=True, gvrsn=V1)
+        recpIcp = recpHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
         wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
-        Parser(version=V1).parse(ims=bytearray(recpIcp), kvy=wesKvy, local=True)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(recpIcp), kvy=wesKvy, local=True)
         assert recpHab.pre in wesKvy.kevers
 
         serder = SerderKERI(raw=recpIcp)
-        rct = wesHab.receipt(serder, framed=True, gvrsn=V1, **KWA)
+        rct = wesHab.receipt(serder, framed=True, gvrsn=Vrsn_1_0, **KWA)
 
         kvy = Kevery(db=hab.db)
-        Parser(version=V1).parseOne(bytearray(recpIcp), kvy=kvy, local=True)
-        Parser(version=V1).parseOne(bytearray(rct), kvy=kvy, local=True)
+        Parser(version=Vrsn_1_0).parseOne(bytearray(recpIcp), kvy=kvy, local=True)
+        Parser(version=Vrsn_1_0).parseOne(bytearray(rct), kvy=kvy, local=True)
         kvy.processEscrows()
         assert recpHab.pre in kvy.kevers
 
         recpKvy = Kevery(db=recpHab.db)
-        icp = hab.msgOwnEvent(sn=0, gvrsn=V1)
-        Parser(version=V1).parseOne(bytearray(icp), kvy=recpKvy, local=True)
+        icp = hab.msgOwnEvent(sn=0, gvrsn=Vrsn_1_0)
+        Parser(version=Vrsn_1_0).parseOne(bytearray(icp), kvy=recpKvy, local=True)
         kvy.processEscrows()
         assert hab.pre in recpKvy.kevers
 
@@ -386,7 +385,7 @@ def test_essr_mbx(seeder):
                                          attributes=dict(msg="test", i=i),
                                          sender=hab.pre,
                                          **KWA)
-            atc = hab.endorse(exn, last=False, framed=False, gvrsn=V1)
+            atc = hab.endorse(exn, last=False, framed=False, gvrsn=Vrsn_1_0)
             del atc[:exn.size]
 
             postman.send(exn, atc)
@@ -433,7 +432,7 @@ def test_essr_mbx(seeder):
         parser = Parser(framed=True,
                                 kvy=wesHby.kvy,
                                 exc=exchanger,
-                                version=V1)
+                                version=Vrsn_1_0)
         parser.parse(ims=ims)
 
         texter = wesHby.db.essrs.get(essrSaidB)[0]

@@ -17,9 +17,7 @@ from keri.app import Manager, openKS, openHby, openHab
 from keri.db import snKey, openDB
 
 logger = ogler.getLogger()
-V1 = Vrsn_1_0
-KWA = dict(version=V1, kind=Kinds.json)
-CUE_KWA = dict(**KWA, gvrsn=V1)
+from tests.common import CUE_KWA, KWA
 
 
 def test_delegation():
@@ -351,12 +349,12 @@ def test_delegation_supersede():
     botSalt = Salter(raw=b'zyxwvutsrponmlkj').qb64
     wotSalt = Salter(raw=b'zyxwvutsrponmlkj').qb64
 
-    with (openHby(name="top", base="test", salt=topSalt, version=V1) as topHby,
-            openHby(name="wop", base="test", salt=wopSalt, version=V1) as wopHby,
-            openHby(name="mid", base="test", salt=midSalt, version=V1) as midHby,
-            openHby(name="wid", base="test", salt=widSalt, version=V1) as widHby,
-            openHby(name="bot", base="test", salt=botSalt, version=V1) as botHby,
-            openHby(name="wot", base="test", salt=wotSalt, version=V1) as wotHby):
+    with (openHby(name="top", base="test", salt=topSalt, version=Vrsn_1_0) as topHby,
+            openHby(name="wop", base="test", salt=wopSalt, version=Vrsn_1_0) as wopHby,
+            openHby(name="mid", base="test", salt=midSalt, version=Vrsn_1_0) as midHby,
+            openHby(name="wid", base="test", salt=widSalt, version=Vrsn_1_0) as widHby,
+            openHby(name="bot", base="test", salt=botSalt, version=Vrsn_1_0) as botHby,
+            openHby(name="wot", base="test", salt=wotSalt, version=Vrsn_1_0) as wotHby):
 
         # Create witness wop and controller top
         wopHab = wopHby.makeHab(name="wop", transferable=False, **KWA)  # witness nontrans
@@ -375,7 +373,7 @@ def test_delegation_supersede():
 
         # be witness to controller's inception
         # first make inception
-        stream = topHab.msgOwnInception(framed=True, gvrsn=V1)
+        stream = topHab.msgOwnInception(framed=True, gvrsn=Vrsn_1_0)
         assert stream == (b'{"v":"KERI10JSON000159_","t":"icp","d":"EJcCaHg3AtW_gRzpaz6Pw03Y'
                         b'v49is2IJDRwYE7ey91KE","i":"EJcCaHg3AtW_gRzpaz6Pw03Yv49is2IJDRwYE'
                         b'7ey91KE","s":"0","kt":"1","k":["DPJVPYS9efLUHDOqxwG6pxISZSRACgNf'
@@ -427,7 +425,7 @@ def test_delegation_supersede():
 
         # be witness to controller's inception.
         # first  make inception
-        stream = midHab.msgOwnInception(framed=True, gvrsn=V1)
+        stream = midHab.msgOwnInception(framed=True, gvrsn=Vrsn_1_0)
 
         # add test fail process as remote since since witness of controller
 
@@ -467,7 +465,7 @@ def test_delegation_supersede():
 
         # be witness to controller's inception.
         # first  make inception
-        stream = botHab.msgOwnInception(framed=True, gvrsn=V1)
+        stream = botHab.msgOwnInception(framed=True, gvrsn=Vrsn_1_0)
 
         # add test fail process as remote since since witness of controller
 
@@ -771,13 +769,13 @@ def test_delegables_escrow():
     gateSalt = Salter(raw=b'0123456789abcdef').qb64
     torSalt = Salter(raw=b'0123456789defabc').raw
 
-    with openHby(name="delegate", temp=True, salt=gateSalt, version=V1) as gateHby, \
+    with openHby(name="delegate", temp=True, salt=gateSalt, version=Vrsn_1_0) as gateHby, \
             openHab(name="delegator", temp=True, salt=torSalt, **KWA) as (torHby, torHab):
 
         gateHab = gateHby.makeHab(name="repTest", transferable=True, delpre=torHab.pre, **KWA)
         assert gateHab.pre == "EFqw1EgGdd2B6MgNLJaNO13_JoQpxAtasIjySDzGm9pd"
 
-        gateIcp = gateHab.msgOwnEvent(sn=0, framed=True, gvrsn=V1)
+        gateIcp = gateHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
         torKvy = Kevery(db=torHab.db, lax=False, local=False)
         parsing.Parser(version=Vrsn_1_0).parse(ims=bytearray(gateIcp), kvy=torKvy, local=True)
         assert gateHab.pre not in torKvy.kevers

@@ -14,9 +14,7 @@ from keri.db import (Broker, CesrIoSetSuber, CesrSuber,
 from keri.help import helping
 from keri.vdr import RegStateRecord, Regery
 
-V1 = Vrsn_1_0
-KWA = dict(version=V1, kind=Kinds.json)
-CUE_KWA = dict(**KWA, gvrsn=V1)
+from tests.common import CUE_KWA, KWA
 
 
 def test_broker():
@@ -39,8 +37,8 @@ def test_broker_nontrans():
     assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
 
     with openLMDB() as brokerdb, \
-         openHby(name="wes", base="test", salt=salt, version=V1) as wesHby, \
-         openHab(name="pal", version=V1, kind=Kinds.json) as (hby, hab):
+         openHby(name="wes", base="test", salt=salt, version=Vrsn_1_0) as wesHby, \
+         openHab(name="pal", version=Vrsn_1_0, kind=Kinds.json) as (hby, hab):
 
         regery = Regery(hby=hby, name=hab.name, temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name=hab.name, **KWA)
@@ -108,8 +106,8 @@ def test_broker_nontrans():
 def test_broker_trans():
 
     with openLMDB() as brokerdb, \
-         openHby(name="bob", base="test", version=V1) as bobHby, \
-         openHab(name="pal", version=V1, kind=Kinds.json) as (hby, hab):
+         openHby(name="bob", base="test", version=Vrsn_1_0) as bobHby, \
+         openHab(name="pal", version=Vrsn_1_0, kind=Kinds.json) as (hby, hab):
 
         regery = Regery(hby=hby, name=hab.name, temp=True)
         issuer = regery.makeRegistry(prefix=hab.pre, name=hab.name, **KWA)

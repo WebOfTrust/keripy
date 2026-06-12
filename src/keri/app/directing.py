@@ -64,6 +64,11 @@ class Director(doing.Doer):
         """
         self.sendOwnEvent(sn=0)
 
+    def _event_kwa(self):
+        """Use the habitat's own event version/kind for follow-on events"""
+        serder = self.hab.kever.serder
+        return dict(version=serder.pvrsn, kind=serder.kind, gvrsn=serder.pvrsn)
+
 
 class Reactor(doing.DoDoer):
     """

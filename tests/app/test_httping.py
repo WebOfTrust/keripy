@@ -15,8 +15,7 @@ from keri.kering import Ilks, Vrsn_1_0, Kinds
 from keri.core import SerderKERI
 from keri.vdr import Regery, Verifier
 
-V1 = Vrsn_1_0
-KWA = dict(version=V1, kind=Kinds.json)
+from tests.common import KWA
 
 
 def test_parse_cesr_request():
@@ -171,7 +170,7 @@ def test_stream_cesr_request(mockHelpingNowUTC):
                                               b'qSTBmJzI8RvIezsJ')
 
         msgs = hab.query(pre=hab.pre, src=wit, route="logs", query=dict(s=0), **KWA)
-        msgs.extend(hab.msgOwnEvent(sn=0, framed=True, gvrsn=V1))
+        msgs.extend(hab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0))
 
         client = MockClient()
         streamCESRRequests(client, msgs, dest=wit)

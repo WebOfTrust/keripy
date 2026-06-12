@@ -13,9 +13,7 @@ from keri.db import openDB
 
 
 logger = ogler.getLogger()
-V1 = Vrsn_1_0
-KWA = dict(version=V1, kind=Kinds.json)
-CUE_KWA = dict(**KWA, gvrsn=V1)
+from tests.common import CUE_KWA, KWA
 
 
 def test_kevery():
@@ -250,7 +248,7 @@ def test_witness_state():
     """
 
     # with basing.openDB(name="controller") as bobDB, keeping.openKS(name="controller") as bobKS:
-    with openHby(name="controller", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=V1) as hby:
+    with openHby(name="controller", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as hby:
 
         wits = [
             "BAMUu4hpUYY4FKd4LtsvpMN6claZKF2AUmXIgXiAI9ZQ",
@@ -340,11 +338,11 @@ def test_stale_event_receipts():
     Bam is verifying the key events with receipts from Bob
     """
     # openHby default temp=True
-    with (openHby(name="bob", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=V1) as bobHby,
-            openHby(name="bam", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=V1) as bamHby,
-            openHby(name="wes", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=V1) as wesHby,
-            openHby(name="wan", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=V1) as wanHby,
-            openHby(name="wil", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=V1) as wilHby):
+    with (openHby(name="bob", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as bobHby,
+            openHby(name="bam", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as bamHby,
+            openHby(name="wes", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as wesHby,
+            openHby(name="wan", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as wanHby,
+            openHby(name="wil", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as wilHby):
 
         # setup Wes's habitat nontrans
         wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False, **KWA)
@@ -367,7 +365,7 @@ def test_stale_event_receipts():
         bamKvy = Kevery(db=bamHby.db, lax=False, local=False)
 
         # Pass incept to witnesses, receipted event to bam
-        bobIcp = bobHab.msgOwnEvent(sn=0, framed=True, gvrsn=V1)
+        bobIcp = bobHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=bamKvy, local=True)
         assert bobHab.pre not in bamKvy.kevers
 

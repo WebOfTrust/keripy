@@ -23,9 +23,8 @@ from keri.help import helping
 from keri.peer import Exchanger
 from keri.recording import OobiRecord
 
-V1 = Vrsn_1_0
 V2 = Vrsn_2_0
-KWA = dict(version=V1, kind=Kinds.json)
+from tests.common import KWA
 
 
 def test_oobi_share_v1(mockHelpingNowUTC):
@@ -40,7 +39,7 @@ def test_oobi_share_v1(mockHelpingNowUTC):
         assert "/oobis" in exc.routes
         handler = exc.routes["/oobis"]
 
-        exn, _ = oobiRequestExn(hab, hab.pre, oobi, version=V1, gvrsn=V1)
+        exn, _ = oobiRequestExn(hab, hab.pre, oobi, version=Vrsn_1_0, gvrsn=Vrsn_1_0)
 
         handler.handle(serder=exn)
 
@@ -61,8 +60,8 @@ def test_oobi_share_v1(mockHelpingNowUTC):
 
         exn, atc = oobiRequestExn(hab=hab, dest="EO2kxXW0jifQmuPevqg6Zpi3vE-WYoj65i_XhpruWtOg",
                                           oobi="http://127.0.0.1/oobi",
-                                          version=V1,
-                                          gvrsn=V1)
+                                          version=Vrsn_1_0,
+                                          gvrsn=Vrsn_1_0)
         assert exn.ked == {'a': {'dest': 'EO2kxXW0jifQmuPevqg6Zpi3vE-WYoj65i_XhpruWtOg',
                                  'oobi': 'http://127.0.0.1/oobi'},
                            'd': 'EII7EvdWFqv0jkjRv10t01zAUcRYbjVhZ_yo3VPZEbpS',
@@ -136,7 +135,7 @@ def test_oobi_share_v2(mockHelpingNowUTC):
 
 
 def test_oobiery():
-    with openHby(name="oobi", version=V1) as hby:
+    with openHby(name="oobi", version=Vrsn_1_0) as hby:
         hab = hby.makeHab(name="oobi", **KWA)
         msgs = bytearray()
         msgs.extend(hab.makeEndRole(eid=hab.pre,
@@ -201,14 +200,14 @@ def test_introduce(mockHelpingNowUTC):
     salt = Salter(raw=raw).qb64
     assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
     # makHab uses stem=name to make different names have differnt AID pre
-    with (openHby(name="wat", base="test", salt=salt, version=V1) as watHby,
-          openHby(name="wit", base="test", salt=salt, version=V1) as witHby):
+    with (openHby(name="wat", base="test", salt=salt, version=Vrsn_1_0) as watHby,
+          openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as witHby):
         # setup Wes's habitat nontrans
         watHab = watHby.makeHab(name='wes', isith="1", icount=1, transferable=False, **KWA)
         assert not watHab.kever.prefixer.transferable
         assert watHab.pre == "BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfXGNrFRom"
         watKvy = Kevery(db=watHab.db, lax=False, local=False)
-        watPsr = Parser(kvy=watKvy, version=V1)
+        watPsr = Parser(kvy=watKvy, version=Vrsn_1_0)
 
         # setup Wok's habitat nontrans
         witHab = witHby.makeHab(name='wok', isith="1", icount=1, transferable=False, **KWA)
@@ -219,7 +218,7 @@ def test_introduce(mockHelpingNowUTC):
         rtr = Router()
         rvy = Revery(db=witHby.db, rtr=rtr)
         Oobiery(hby=witHby, rvy=rvy)
-        witPsr = Parser(kvy=witKvy, rvy=rvy, version=V1)
+        witPsr = Parser(kvy=witKvy, rvy=rvy, version=Vrsn_1_0)
         assert witHby.db.oobis.cnt() == 0
 
         oobi = f"https://localhost:8989/oobi/{watHab.pre}/controller"
@@ -228,7 +227,7 @@ def test_introduce(mockHelpingNowUTC):
             oobi=oobi
         )
 
-        msg = watHab.reply(route="/introduce", data=data, gvrsn=V1, **KWA)
+        msg = watHab.reply(route="/introduce", data=data, gvrsn=Vrsn_1_0, **KWA)
         assert msg == (b'{"v":"KERI10JSON000127_","t":"rpy","d":"EPEU3V7e2d2mhMWVFDS-oC9z'
                        b'Q8DX8t6ELkhINIaYGFNZ","dt":"2021-01-01T00:00:00.000000+00:00","r'
                        b'":"/introduce","a":{"cid":"BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfX'
@@ -244,13 +243,13 @@ def test_introduce(mockHelpingNowUTC):
 
         # Send one missing fields
         data = dict(cid=watHab.pre)
-        msg = watHab.reply(route="/introduce", data=data, gvrsn=V1, **KWA)
+        msg = watHab.reply(route="/introduce", data=data, gvrsn=Vrsn_1_0, **KWA)
         witPsr.parseOne(ims=msg)
         assert witHby.db.oobis.cnt() == 1  # Still one because of the missing 'oobi' field
 
         # Send one bad scheme
         data = dict(cid=watHab.pre, oobi="ftp://localhost")
-        msg = watHab.reply(route="/introduce", data=data, gvrsn=V1, **KWA)
+        msg = watHab.reply(route="/introduce", data=data, gvrsn=Vrsn_1_0, **KWA)
         witPsr.parseOne(ims=msg)
         assert witHby.db.oobis.cnt() == 1  # Still one because of the missing 'oobi' field
 
@@ -279,7 +278,7 @@ class MOOBIEnd:
             "aid": self.hab.pre
         }
 
-        rpy = self.hab.reply(route="/oobi/controller", data=a, gvrsn=V1, **KWA)
+        rpy = self.hab.reply(route="/oobi/controller", data=a, gvrsn=Vrsn_1_0, **KWA)
         ser = SerderKERI(raw=rpy)
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"

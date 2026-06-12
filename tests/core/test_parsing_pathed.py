@@ -13,9 +13,7 @@ from keri.app import openHby
 
 
 logger = ogler.getLogger()
-V1 = Vrsn_1_0
-KWA = dict(version=V1, kind=Kinds.json)
-CUE_KWA = dict(**KWA, gvrsn=V1)
+from tests.common import CUE_KWA, KWA
 
 
 def test_pathed_material(mockHelpingNowUTC):
@@ -31,14 +29,14 @@ def test_pathed_material(mockHelpingNowUTC):
             self.msgs.append(serder)
             self.atcs.append(attachments)
 
-    with (openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64, version=V1) as hby,
-          openHby(name="deb", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=V1) as debHby):
+    with (openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as hby,
+          openHby(name="deb", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as debHby):
 
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
         palHab = hby.makeHab(name="pal", **KWA)
         debHab = debHby.makeHab(name="deb", isith=sith, icount=3, **KWA)
         # Create series of events
-        debMsgs = dict(icp=debHab.msgOwnInception(framed=True, gvrsn=V1),
+        debMsgs = dict(icp=debHab.msgOwnInception(framed=True, gvrsn=Vrsn_1_0),
                        ixn0=debHab.interact(framed=True, **CUE_KWA),
                        rot=debHab.rotate(framed=True, **CUE_KWA),
                        ixn1=debHab.interact(framed=True, **CUE_KWA))
@@ -49,7 +47,7 @@ def test_pathed_material(mockHelpingNowUTC):
                                    attributes={},
                                    embeds=debMsgs,
                                    **CUE_KWA)
-        fwd = debHab.endorse(fwd, last=False, framed=True, gvrsn=V1)
+        fwd = debHab.endorse(fwd, last=False, framed=True, gvrsn=Vrsn_1_0)
         fwd.extend(end)
         handler = MockHandler()
         exc = Exchanger(hby=debHby, handlers=[handler])

@@ -12,9 +12,7 @@ from keri.core import (Salter, Kevery, Parser,
 from keri.kering import Vrsn_1_0, Kinds
 from keri.app import openHby
 
-V1 = Vrsn_1_0
-KWA = dict(version=V1, kind=Kinds.json)
-CUE_KWA = dict(**KWA, gvrsn=V1)
+from tests.common import CUE_KWA, KWA
 
 
 def test_keystate(mockHelpingNowUTC):
@@ -71,9 +69,9 @@ def test_keystate(mockHelpingNowUTC):
     # Bam is verifying the key state for Bob from Wes
 
     # default for openHby temp = True
-    with (openHby(name="bob", base="test", salt=default_salt, version=V1) as bobHby,
-         openHby(name="bam", base="test", salt=default_salt, version=V1) as bamHby,
-         openHby(name="wes", base="test", salt=salt, version=V1) as wesHby):
+    with (openHby(name="bob", base="test", salt=default_salt, version=Vrsn_1_0) as bobHby,
+         openHby(name="bam", base="test", salt=default_salt, version=Vrsn_1_0) as bamHby,
+         openHby(name="wes", base="test", salt=salt, version=Vrsn_1_0) as wesHby):
 
         # setup Wes's habitat nontrans
         wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False, **KWA)
@@ -85,7 +83,7 @@ def test_keystate(mockHelpingNowUTC):
 
         # Create Bob's icp, pass to Wes.
         wesKvy = Kevery(db=wesHby.db)
-        bobIcp = bobHab.msgOwnEvent(sn=0, framed=True, gvrsn=V1)
+        bobIcp = bobHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
         assert bobHab.pre in wesHab.kevers
         iserder = SerderKERI(raw=bytearray(bobIcp))
@@ -133,9 +131,9 @@ def test_keystate(mockHelpingNowUTC):
     # Bam is verifying the key state for Bob from Wes
     # Wes is Bam's watcher
 
-    with (openHby(name="bob", base="test", salt=default_salt, version=V1) as bobHby,
-         openHby(name="bam", base="test", salt=default_salt, version=V1) as bamHby,
-         openHby(name="wes", base="test",  salt=salt, version=V1) as wesHby):
+    with (openHby(name="bob", base="test", salt=default_salt, version=Vrsn_1_0) as bobHby,
+         openHby(name="bam", base="test", salt=default_salt, version=Vrsn_1_0) as bamHby,
+         openHby(name="wes", base="test",  salt=salt, version=Vrsn_1_0) as wesHby):
 
         # setup Wes's habitat nontrans
         wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False, **KWA)
@@ -148,7 +146,7 @@ def test_keystate(mockHelpingNowUTC):
 
         # Create Bob's icp, pass to Wes.
         wesKvy = Kevery(db=wesHby.db)
-        bobIcp = bobHab.msgOwnEvent(sn=0, framed=True, gvrsn=V1)
+        bobIcp = bobHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
         assert bobHab.pre in wesHab.kevers
 
@@ -201,9 +199,9 @@ def test_keystate(mockHelpingNowUTC):
     # Bam is verifying the key state for Bob from Wes
     # Wes is no one
 
-    with (openHby(name="bob", base="test", salt=default_salt, version=V1) as bobHby,
-         openHby(name="bam", base="test", salt=default_salt, version=V1) as bamHby,
-         openHby(name="wes", base="test",  salt=salt, version=V1) as wesHby):
+    with (openHby(name="bob", base="test", salt=default_salt, version=Vrsn_1_0) as bobHby,
+         openHby(name="bam", base="test", salt=default_salt, version=Vrsn_1_0) as bamHby,
+         openHby(name="wes", base="test",  salt=salt, version=Vrsn_1_0) as wesHby):
 
         # setup Wes's habitat nontrans
         wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False, **KWA)
@@ -214,7 +212,7 @@ def test_keystate(mockHelpingNowUTC):
 
         # Create Bob's icp, pass to Wes.
         wesKvy = Kevery(db=wesHby.db)
-        bobIcp = bobHab.msgOwnEvent(sn=0, framed=True, gvrsn=V1)
+        bobIcp = bobHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
         assert bobHab.pre in wesHab.kevers
 
@@ -243,8 +241,8 @@ def test_keystate(mockHelpingNowUTC):
     # Bob is the controller
     # Bam is verifying the key state for Bob with a stale key state in the way
 
-    with (openHby(name="bob", base="test", salt=default_salt, version=V1) as bobHby,
-         openHby(name="bam", base="test", salt=default_salt, version=V1) as bamHby):
+    with (openHby(name="bob", base="test", salt=default_salt, version=Vrsn_1_0) as bobHby,
+         openHby(name="bam", base="test", salt=default_salt, version=Vrsn_1_0) as bamHby):
 
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True, **KWA)
         assert bobHab.pre == bobpre

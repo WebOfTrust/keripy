@@ -17,8 +17,7 @@ from keri.app import openHab, openHby
 from keri.vc import credential
 from keri.vdr import Verifier, Regery
 
-V1 = Vrsn_1_0
-KWA = dict(version=V1, kind=Kinds.json)
+from tests.common import KWA
 
 
 def test_proving(mockHelpingNowIso8601):
@@ -26,7 +25,7 @@ def test_proving(mockHelpingNowIso8601):
 
     sidSalt = Salter(raw=b'0123456789abcdef').qb64
 
-    with openHby(name="sid", base="test", salt=sidSalt, version=V1) as sidHby:
+    with openHby(name="sid", base="test", salt=sidSalt, version=Vrsn_1_0) as sidHby:
         sidHab = sidHby.makeHab(name="test", **KWA)
         assert sidHab.pre == 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
         sed = dict()
@@ -62,7 +61,7 @@ def test_proving(mockHelpingNowIso8601):
                             data=credSubject,
                             **KWA)
 
-        msg = sidHab.endorse(serder=creder, framed=False, gvrsn=V1)
+        msg = sidHab.endorse(serder=creder, framed=False, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"ACDC10JSON000195_","d":"EPVHgaM_Yad1b5VHs6SIZyqF72m_byxSYU'
                     b'w3VNx5Ubqt","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","'
                     b's":"EHggmYtUecR1JYbMkDZv-za1EExCmR-T_bwaJp3PQIoW","a":{"d":"EO-m'
@@ -77,14 +76,14 @@ def test_proving(mockHelpingNowIso8601):
         creder = SerderACDC(raw=msg) # Creder(raw=msg)
         proof = msg[creder.size:]
 
-        ctr = Counter(qb64b=proof, strip=True, version=V1)
+        ctr = Counter(qb64b=proof, strip=True, version=Vrsn_1_0)
         assert ctr.code == CtrDex_1_0.AttachmentGroup
         assert ctr.count == 47
 
         pags = ctr.count * 4
         assert len(proof) == pags
 
-        ctr = Counter(qb64b=proof, strip=True, version=V1)
+        ctr = Counter(qb64b=proof, strip=True, version=Vrsn_1_0)
         assert ctr.code == CtrDex_1_0.TransIdxSigGroups
         assert ctr.count == 1
 
@@ -97,7 +96,7 @@ def test_proving(mockHelpingNowIso8601):
         diger = Diger(qb64b=proof, strip=True)
         assert diger.qb64 == sidHab.kever.serder.said
 
-        ictr = Counter(qb64b=proof, strip=True, version=V1)
+        ictr = Counter(qb64b=proof, strip=True, version=Vrsn_1_0)
         assert ictr.code == CtrDex_1_0.ControllerIdxSigs
 
         isigers = []
@@ -121,7 +120,7 @@ def test_credentialer():
 
     sub = dict(a=123, b="abc", issuanceDate="2021-06-27T21:26:21.233257+00:00")
     d = dict(
-        v=versify(proto=Protocols.acdc, pvrsn=V1, kind=Kinds.json, size=0),
+        v=versify(proto=Protocols.acdc, pvrsn=Vrsn_1_0, kind=Kinds.json, size=0),
         d="",
         i="EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi",
         s="abc",
@@ -161,7 +160,7 @@ def test_credentialer():
 
     d2 = dict(d)
     d2['d'] = ""
-    d2["v"] = versify(proto=Protocols.acdc, pvrsn=V1, kind=Kinds.cbor, size=0)
+    d2["v"] = versify(proto=Protocols.acdc, pvrsn=Vrsn_1_0, kind=Kinds.cbor, size=0)
     _, d2 = Saider.saidify(sad=d2)
 
     creder = SerderACDC(sad=d2)  # Creder(ked=d2)
@@ -187,7 +186,7 @@ def test_credentialer():
     assert creder.sad == d2
 
     d3 = dict(d)
-    d3["v"] = versify(proto=Protocols.acdc, pvrsn=V1, kind=Kinds.mgpk, size=0)
+    d3["v"] = versify(proto=Protocols.acdc, pvrsn=Vrsn_1_0, kind=Kinds.mgpk, size=0)
     _, d3 = Saider.saidify(sad=d3)
     creder = SerderACDC(sad=d3)  # Creder(ked=d3)
 
@@ -298,13 +297,13 @@ def test_credential_parsator():
                             **KWA)
 
         msg = bytearray(creder.raw)
-        msg.extend(Counter(Codens.SealSourceTriples, count=1, version=V1).qb64b)
+        msg.extend(Counter(Codens.SealSourceTriples, count=1, version=Vrsn_1_0).qb64b)
         msg.extend(hab.kever.prefixer.qb64b)
         msg.extend(Seqner(sn=hab.kever.sn).qb64b)
         msg.extend(hab.kever.serder.said.encode("utf-8"))
 
         verifier = Verifier(hby=hby)
-        Parser(version=V1).parse(ims=msg, vry=verifier)
+        Parser(version=Vrsn_1_0).parse(ims=msg, vry=verifier)
 
         assert len(verifier.cues) == 1
         cue = verifier.cues.popleft()

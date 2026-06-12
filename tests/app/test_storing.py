@@ -13,8 +13,7 @@ from keri.kering import Kinds
 from keri.core import Prefixer, SerderKERI, exchange
 from keri.db import OnSuber, openLMDB, openDB
 
-V1 = Vrsn_1_0
-KWA = dict(version=V1, kind=Kinds.json)
+from tests.common import KWA
 
 
 def test_mailboxing():
