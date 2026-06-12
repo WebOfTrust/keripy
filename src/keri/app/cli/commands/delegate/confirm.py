@@ -129,17 +129,25 @@ class ConfirmDoer(doing.DoDoer):
                         continue
 
                     if isinstance(hab, GroupHab):
-                        aids = hab.smids
+                        smids = hab.smids
+                        rmids = hab.rmids if hab.rmids is not None else smids
                         seqner = coring.Seqner(sn=eserder.sn)
                         anchor = dict(i=eserder.ked["i"], s=seqner.snh, d=eserder.said)
                         if self.interact:
                             msg = hab.interact(data=[anchor])
+                            exn, atc = grouping.multisigInteractExn(ghab=hab, aids=smids, ixn=bytearray(msg))
                         else:
-                            print("Confirm does not support rotation for delegation approval with group multisig")
-                            continue
+                            # Establishment-only anchor sthe approval in a group rotation. 
+                            # The group's new keys come from the members' current key state
+                            # Eeach member must have rotated locally first for the rotation to satisfy 
+                            # the prior next-key commitment.
+                            merfers = [self.hby.kevers[mid].verfers[0] for mid in smids]
+                            migers = [self.hby.kevers[mid].ndigers[0] for mid in rmids]
+                            msg = hab.rotate(smids=smids, rmids=rmids, data=[anchor],
+                                             verfers=merfers, digers=migers)
+                            exn, atc = grouping.multisigRotateExn(ghab=hab, smids=smids, rmids=rmids, rot=bytearray(msg))
 
                         serder = serdering.SerderKERI(raw=msg)
-                        exn, atc = grouping.multisigInteractExn(ghab=hab, aids=aids, ixn=bytearray(msg))
                         others = list(oset(hab.smids + (hab.rmids or [])))
                         others.remove(hab.mhab.pre)
 
