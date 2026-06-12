@@ -348,7 +348,9 @@ class Registry(BaseRegistry):
                              toad=toad,
                              baks=self.baks,
                              adds=adds,
-                             cuts=cuts)
+                             cuts=cuts,
+                             version=self.vcp.pvrsn,
+                             kind=self.vcp.kind)
 
         self.processEvent(serder=serder)
         return serder
@@ -399,13 +401,16 @@ class Registry(BaseRegistry):
         iserder = SerderKERI(raw=ievt.encode("utf-8"))
 
         if self.noBackers:
-            serder = revokeEvent(vcdig=vci, regk=self.regk, dig=iserder.said, dt=dt)
+            serder = revokeEvent(vcdig=vci, regk=self.regk, dig=iserder.said, dt=dt,
+                                 version=self.vcp.pvrsn, kind=self.vcp.kind)
         else:
             serder = backerRevoke(vcdig=vci,
                                   regk=self.regk,
                                   regsn=self.regi,
                                   regd=self.regser.said,
-                                  dig=iserder.said, dt=dt)
+                                  dig=iserder.said, dt=dt,
+                                  version=self.vcp.pvrsn,
+                                  kind=self.vcp.kind)
 
         self.processEvent(serder=serder)
         return serder
@@ -469,10 +474,13 @@ class SignifyRegistry(BaseRegistry):
             SerderKERI: The SerderKERI of the credential issuance event
         """
         if self.noBackers:
-            serder = issueEvent(vcdig=said, regk=self.regk, dt=dt)
+            serder = issueEvent(vcdig=said, regk=self.regk, dt=dt,
+                                version=self.vcp.pvrsn, kind=self.vcp.kind)
         else:
             serder = backerIssue(vcdig=said, regk=self.regk, regsn=self.regi, regd=self.regser.said,
-                                          dt=dt)
+                                          dt=dt,
+                                          version=self.vcp.pvrsn,
+                                          kind=self.vcp.kind)
 
         self.processEvent(serder=serder)
         return serder
@@ -498,10 +506,13 @@ class SignifyRegistry(BaseRegistry):
         iserder = SerderACDC(raw=ievt.encode("utf-8"))
 
         if self.noBackers:
-            serder = revokeEvent(vcdig=vci, regk=self.regk, dig=iserder.said, dt=dt)
+            serder = revokeEvent(vcdig=vci, regk=self.regk, dig=iserder.said, dt=dt,
+                                 version=self.vcp.pvrsn, kind=self.vcp.kind)
         else:
             serder = backerRevoke(vcdig=vci, regk=self.regk, regsn=self.regi, regd=self.regser.said,
-                                  dig=iserder.said, dt=dt)
+                                  dig=iserder.said, dt=dt,
+                                  version=self.vcp.pvrsn,
+                                  kind=self.vcp.kind)
 
         self.processEvent(serder=serder)
         return serder
