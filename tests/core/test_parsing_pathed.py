@@ -13,6 +13,9 @@ from keri.app import openHby
 
 
 logger = ogler.getLogger()
+V1 = Vrsn_1_0
+KWA = dict(version=V1, kind=Kinds.json)
+CUE_KWA = dict(**KWA, gvrsn=V1)
 
 
 def test_pathed_material(mockHelpingNowUTC):
@@ -28,27 +31,25 @@ def test_pathed_material(mockHelpingNowUTC):
             self.msgs.append(serder)
             self.atcs.append(attachments)
 
-    with (openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64) as hby,
-          openHby(name="deb", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as debHby):
-
-        version = Vrsn_1_0
-        kind = Kinds.json
+    with (openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64, version=V1) as hby,
+          openHby(name="deb", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=V1) as debHby):
 
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
-        palHab = hby.makeHab(name="pal")
-        debHab = debHby.makeHab(name="deb", isith=sith, icount=3)
+        palHab = hby.makeHab(name="pal", **KWA)
+        debHab = debHby.makeHab(name="deb", isith=sith, icount=3, **KWA)
         # Create series of events
-        debMsgs = dict(icp=debHab.msgOwnInception(framed=True),
-                       ixn0=debHab.interact(framed=True),
-                       rot=debHab.rotate(framed=True),
-                       ixn1=debHab.interact(framed=True))
+        debMsgs = dict(icp=debHab.msgOwnInception(framed=True, gvrsn=V1),
+                       ixn0=debHab.interact(framed=True, **CUE_KWA),
+                       rot=debHab.rotate(framed=True, **CUE_KWA),
+                       ixn1=debHab.interact(framed=True, **CUE_KWA))
         fwd, end = specialExchange(sender=debHab.pre,
                                    route='/fwd',
                                    modifiers=dict(pre=palHab.pre,
                                                   topic="replay"),
                                    attributes={},
-                                   embeds=debMsgs)
-        fwd = debHab.endorse(fwd, last=False, framed=True)
+                                   embeds=debMsgs,
+                                   **CUE_KWA)
+        fwd = debHab.endorse(fwd, last=False, framed=True, gvrsn=V1)
         fwd.extend(end)
         handler = MockHandler()
         exc = Exchanger(hby=debHby, handlers=[handler])

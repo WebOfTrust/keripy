@@ -13,7 +13,7 @@ import pytest
 from hio.help import ogler
 
 
-from keri.kering import Vrsn_1_0, Roles, Schemes
+from keri.kering import Vrsn_1_0, Roles, Schemes, Kinds
 from keri.recording import EndpointRecord, LocationRecord
 
 from keri.core import (Salter, Kevery, Parser, Router,
@@ -24,6 +24,9 @@ from keri.app import openHby
 
 
 logger = ogler.getLogger()
+V1 = Vrsn_1_0
+KWA = dict(version=V1, kind=Kinds.json)
+CUE_KWA = dict(**KWA, gvrsn=V1)
 
 
 def test_reply(mockHelpingNowUTC):
@@ -67,25 +70,25 @@ def test_reply(mockHelpingNowUTC):
     salt =  Salter(raw=raw).qb64
     assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
     # makHab uses stem=name to make different names have differnt AID pre
-    with (openHby(name="wes", base="test", salt=salt) as wesHby,
-         openHby(name="wok", base="test", salt=salt) as wokHby,
-         openHby(name="wam", base="test", salt=salt) as wamHby,
-         openHby(name="tam", base="test", salt=salt) as tamHby,
-         openHby(name="wat", base="test", salt=salt) as watHby,
-         openHby(name="wel", base="test", salt=salt) as welHby,
-         openHby(name="nel", base="test", salt=salt) as nelHby):
+    with (openHby(name="wes", base="test", salt=salt, version=V1) as wesHby,
+         openHby(name="wok", base="test", salt=salt, version=V1) as wokHby,
+         openHby(name="wam", base="test", salt=salt, version=V1) as wamHby,
+         openHby(name="tam", base="test", salt=salt, version=V1) as tamHby,
+         openHby(name="wat", base="test", salt=salt, version=V1) as watHby,
+         openHby(name="wel", base="test", salt=salt, version=V1) as welHby,
+         openHby(name="nel", base="test", salt=salt, version=V1) as nelHby):
 
         # witnesses first so can setup inception event for tam
         wsith = '1'
 
         # setup Wes's habitat nontrans
-        wesHab = wesHby.makeHab(name='wes', isith=wsith, icount=1, transferable=False)
+        wesHab = wesHby.makeHab(name='wes', isith=wsith, icount=1, transferable=False, **KWA)
         assert not wesHab.kever.prefixer.transferable
         wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
         wesPrs = Parser(kvy=wesKvy, version=Vrsn_1_0)
 
         # setup Wok's habitat nontrans
-        wokHab = wokHby.makeHab(name='wok', isith=wsith, icount=1, transferable=False)
+        wokHab = wokHby.makeHab(name='wok', isith=wsith, icount=1, transferable=False, **KWA)
         #assert wokHab.ks == wokKS
         #assert wokHab.db == wokDB
         assert not wokHab.kever.prefixer.transferable
@@ -93,7 +96,7 @@ def test_reply(mockHelpingNowUTC):
         wokPrs = Parser(kvy=wokKvy, version=Vrsn_1_0)
 
         # setup Wam's habitat nontrans
-        wamHab = wamHby.makeHab(name='wam', isith=wsith, icount=1, transferable=False)
+        wamHab = wamHby.makeHab(name='wam', isith=wsith, icount=1, transferable=False, **KWA)
         #assert wamHab.ks == wamKS
         #assert wamHab.db == wamDB
         assert not wamHab.kever.prefixer.transferable
@@ -107,7 +110,7 @@ def test_reply(mockHelpingNowUTC):
                                  #isith=tsith, icount=3,
                                  #toad=2, wits=wits,
                                  #salt=salt, temp=True)  # stem is .name
-        tamHab = tamHby.makeHab(name='cam', isith=tsith, icount=3, toad=2, wits=wits,)
+        tamHab = tamHby.makeHab(name='cam', isith=tsith, icount=3, toad=2, wits=wits, **KWA)
         #assert tamHab.ks == tamKS
         #assert tamHab.db == tamDB
         assert tamHab.kever.prefixer.transferable
@@ -131,7 +134,7 @@ def test_reply(mockHelpingNowUTC):
         #watHab = habbing.Habitat(name='wat', ks=watKS, db=watDB,
                                  #isith=wsith, icount=1,
                                  #salt=salt, transferable=False, temp=True)  # stem is .name
-        watHab = watHby.makeHab(name='wat', isith=wsith, icount=1, transferable=False)
+        watHab = watHby.makeHab(name='wat', isith=wsith, icount=1, transferable=False, **KWA)
         #assert watHab.ks == watKS
         #assert watHab.db == watDB
         assert not watHab.kever.prefixer.transferable
@@ -141,7 +144,7 @@ def test_reply(mockHelpingNowUTC):
         #welHab = habbing.Habitat(name='wel', ks=welKS, db=welDB,
                                  #isith=wsith, icount=1,
                                  #salt=salt, transferable=False, temp=True)  # stem is .name
-        welHab = welHby.makeHab(name='wel', isith=wsith, icount=1, transferable=False)
+        welHab = welHby.makeHab(name='wel', isith=wsith, icount=1, transferable=False, **KWA)
         #assert welHab.ks == welKS
         #assert welHab.db == welDB
         assert not welHab.kever.prefixer.transferable
@@ -151,7 +154,7 @@ def test_reply(mockHelpingNowUTC):
         #nelHab = habbing.Habitat(name='nel', ks=nelKS, db=nelDB,
                                  #isith=wsith, icount=1,
                                  #salt=salt, transferable=False, temp=True)  # stem is .name
-        nelHab = nelHby.makeHab(name='nel', isith=wsith, icount=1, transferable=False)
+        nelHab = nelHby.makeHab(name='nel', isith=wsith, icount=1, transferable=False, **KWA)
         #assert nelHab.ks == nelKS
         #assert nelHab.db == nelDB
         assert not nelHab.kever.prefixer.transferable
@@ -179,7 +182,7 @@ def test_reply(mockHelpingNowUTC):
                     eid=watHab.pre,
                     )
 
-        serderR = reply(route=route, data=data, )
+        serderR = reply(route=route, data=data, **KWA)
         assert serderR.stamp == helping.DTS_BASE_0
 
         assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EFlkeg-NociMRXHSGBSqARxV5y7zuT5z-ZpL'
@@ -190,7 +193,7 @@ def test_reply(mockHelpingNowUTC):
         assert serderR.said == 'EFlkeg-NociMRXHSGBSqARxV5y7zuT5z-ZpLZAkcoMkk'
 
         # Sign Reply
-        msg = nelHab.endorse(serder=serderR, framed=False)
+        msg = nelHab.endorse(serder=serderR, framed=False, gvrsn=V1)
         assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EFlkeg-NociMRXHSGBSqARxV'
                     b'5y7zuT5z-ZpLZAkcoMkk","dt":"2021-01-01T00:00:00.000000+00:00","r'
                     b'":"/end/role/add","a":{"cid":"BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuP'
@@ -245,7 +248,7 @@ def test_reply(mockHelpingNowUTC):
         route = "/end/role/cut"
 
         # stale datetime
-        serderR = reply(route=route, data=data, )
+        serderR = reply(route=route, data=data, **KWA)
         assert serderR.stamp == helping.DTS_BASE_0
 
         assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EM_AD-vVfhW-paUryMAZJKasyBuz_GoYIU_k'
@@ -256,7 +259,7 @@ def test_reply(mockHelpingNowUTC):
         assert serderR.said == 'EM_AD-vVfhW-paUryMAZJKasyBuz_GoYIU_kfp7hmqHY'
 
         # Sign Reply
-        msg = nelHab.endorse(serder=serderR, framed=False)
+        msg = nelHab.endorse(serder=serderR, framed=False, gvrsn=V1)
         assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EM_AD-vVfhW-paUryMAZJKas'
                     b'yBuz_GoYIU_kfp7hmqHY","dt":"2021-01-01T00:00:00.000000+00:00","r'
                     b'":"/end/role/cut","a":{"cid":"BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuP'
@@ -308,7 +311,7 @@ def test_reply(mockHelpingNowUTC):
         assert ender.name == ""
 
         # Redo with Updated not stale datetime
-        serderR = reply(route=route, data=data, stamp=helping.DTS_BASE_1)
+        serderR = reply(route=route, data=data, stamp=helping.DTS_BASE_1, **KWA)
         assert serderR.ked['dt'] == helping.DTS_BASE_1
 
         assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"ELGR7LbL2Ik4gd9Odc_BfmetxQKrnZawMwEP'
@@ -319,7 +322,7 @@ def test_reply(mockHelpingNowUTC):
         assert serderR.said == 'ELGR7LbL2Ik4gd9Odc_BfmetxQKrnZawMwEPNR5vBWrI'
 
         # Sign Reply
-        msg = nelHab.endorse(serder=serderR, framed=False)
+        msg = nelHab.endorse(serder=serderR, framed=False, gvrsn=V1)
         assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"ELGR7LbL2Ik4gd9Odc_Bfmet'
                     b'xQKrnZawMwEPNR5vBWrI","dt":"2021-01-01T00:00:01.000000+00:00","r'
                     b'":"/end/role/cut","a":{"cid":"BLK_YxcmK_sAsSW1CbNLJl_FA0gw0FKDuP'
@@ -395,9 +398,9 @@ def test_reply(mockHelpingNowUTC):
                     eid=welHab.pre,
                     )
 
-        serderR = reply(route=route, data=data, )
+        serderR = reply(route=route, data=data, **KWA)
         assert serderR.ked['dt'] == helping.DTS_BASE_0  # independent datetimes for each eid
-        msg = nelHab.endorse(serder=serderR, framed=False)
+        msg = nelHab.endorse(serder=serderR, framed=False, gvrsn=V1)
 
         # tam process for nel watcher wel
         tamPrs.parse(ims=bytearray(msg))
@@ -472,9 +475,9 @@ def test_reply(mockHelpingNowUTC):
                     eid=watHab.pre,
                     )
 
-        serderR = reply(route=route, data=data, stamp=helping.DTS_BASE_2)
+        serderR = reply(route=route, data=data, stamp=helping.DTS_BASE_2, **KWA)
         assert serderR.ked['dt'] == helping.DTS_BASE_2
-        msg = nelHab.endorse(serder=serderR, framed=False)
+        msg = nelHab.endorse(serder=serderR, framed=False, gvrsn=V1)
         # Tam process
         tamPrs.parse(ims=bytearray(msg))
 
@@ -508,7 +511,7 @@ def test_reply(mockHelpingNowUTC):
             url=url,
         )
 
-        serderR = reply(route=route, data=data, )
+        serderR = reply(route=route, data=data, **KWA)
         assert serderR.ked['dt'] == helping.DTS_BASE_0
 
         assert serderR.raw == (b'{"v":"KERI10JSON000105_","t":"rpy","d":"ECvGf7-4WSGJgpm1KvzD5_r5MDD6tcDvJ3JT'
@@ -520,7 +523,7 @@ def test_reply(mockHelpingNowUTC):
         assert serderR.said == 'ECvGf7-4WSGJgpm1KvzD5_r5MDD6tcDvJ3JTnmd8CRPp'
 
         # Sign Reply
-        msg = watHab.endorse(serder=serderR, framed=False)
+        msg = watHab.endorse(serder=serderR, framed=False, gvrsn=V1)
         assert msg == (b'{"v":"KERI10JSON000105_","t":"rpy","d":"ECvGf7-4WSGJgpm1KvzD5_r5'
                     b'MDD6tcDvJ3JTnmd8CRPp","dt":"2021-01-01T00:00:00.000000+00:00","r'
                     b'":"/loc/scheme","a":{"eid":"BF6YSJGAtVNmq3b7dpBi04Q0YdqvTfsk9PFk'
@@ -584,7 +587,7 @@ def test_reply(mockHelpingNowUTC):
                     eid=wesHab.pre,
                     )
 
-        serderR = reply(route=route, data=data, )
+        serderR = reply(route=route, data=data, **KWA)
         assert serderR.ked['dt'] == helping.DTS_BASE_0
 
         assert serderR.raw == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EHC0gHTxQ16xL9vT9n7OBu5sZlO96AX0Jh-d'
@@ -596,7 +599,7 @@ def test_reply(mockHelpingNowUTC):
         assert serderR.said == 'EHC0gHTxQ16xL9vT9n7OBu5sZlO96AX0Jh-dUD42QLDA'
 
         # Sign Reply
-        msg = tamHab.endorse(serder=serderR, framed=False)
+        msg = tamHab.endorse(serder=serderR, framed=False, gvrsn=V1)
         assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EHC0gHTxQ16xL9vT9n7OBu5s'
                     b'ZlO96AX0Jh-dUD42QLDA","dt":"2021-01-01T00:00:00.000000+00:00","r'
                     b'":"/end/role/add","a":{"cid":"ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CK'
@@ -644,7 +647,7 @@ def test_reply(mockHelpingNowUTC):
             url=url,
         )
 
-        serderR = reply(route=route, data=data, )
+        serderR = reply(route=route, data=data, **KWA)
         assert serderR.ked['dt'] == helping.DTS_BASE_0
 
         assert serderR.raw == (b'{"v":"KERI10JSON000108_","t":"rpy","d":"ELoGi_w2FKTRR2FU6UjclHJuCgtDOHKXL8Gx'
@@ -655,7 +658,7 @@ def test_reply(mockHelpingNowUTC):
         assert serderR.said == 'ELoGi_w2FKTRR2FU6UjclHJuCgtDOHKXL8GxdIt5ZGtf'
 
         # Sign Reply
-        msg = tamHab.endorse(serder=serderR, framed=False)
+        msg = tamHab.endorse(serder=serderR, framed=False, gvrsn=V1)
         assert msg == (b'{"v":"KERI10JSON000108_","t":"rpy","d":"ELoGi_w2FKTRR2FU6UjclHJu'
                     b'CgtDOHKXL8GxdIt5ZGtf","dt":"2021-01-01T00:00:00.000000+00:00","r'
                     b'":"/loc/scheme","a":{"eid":"ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG'
@@ -688,7 +691,7 @@ def test_reply(mockHelpingNowUTC):
         serder1 = serderR
 
         # add tam kel to nel and process escrows
-        tamicp = tamHab.msgOwnInception(framed=True)
+        tamicp = tamHab.msgOwnInception(framed=True, gvrsn=V1)
         nelPrs.parse(bytearray(tamicp), local=True)
         assert tamHab.pre not in nelKvy.kevers
         wesPrs.parse(bytearray(tamicp), local=True)
@@ -697,11 +700,11 @@ def test_reply(mockHelpingNowUTC):
         assert tamHab.pre in wokKvy.kevers
         wamPrs.parse(bytearray(tamicp), local=True)
         assert tamHab.pre in wamKvy.kevers
-        wittamicp = wesHab.witness(tamHab.iserder)
+        wittamicp = wesHab.witness(tamHab.iserder, **CUE_KWA)
         nelPrs.parse(bytearray(wittamicp), local=True)
-        wittamicp = wokHab.witness(tamHab.iserder)
+        wittamicp = wokHab.witness(tamHab.iserder, **CUE_KWA)
         nelPrs.parse(bytearray(wittamicp), local=True)
-        wittamicp = wamHab.witness(tamHab.iserder)
+        wittamicp = wamHab.witness(tamHab.iserder, **CUE_KWA)
         nelPrs.parse(bytearray(wittamicp), local=True)
         nelKvy.processEscrows()
         assert tamHab.pre in nelHab.kevers
@@ -762,11 +765,11 @@ def test_reply(mockHelpingNowUTC):
                     eid=wokHab.pre,
                     )
 
-        serderR = reply(route=route, data=data, )
+        serderR = reply(route=route, data=data, **KWA)
         assert serderR.ked['dt'] == helping.DTS_BASE_0
 
         # Sign Reply
-        msg = tamHab.endorse(serder=serderR, framed=False)
+        msg = tamHab.endorse(serder=serderR, framed=False, gvrsn=V1)
 
         # use Nel's parser and kevery to authZ wok as tam end witness
         nelPrs.parse(ims=bytearray(msg))
@@ -805,7 +808,7 @@ def test_reply(mockHelpingNowUTC):
             url=url,
         )
 
-        serderR = reply(route=route, data=data, )
+        serderR = reply(route=route, data=data, **KWA)
         assert serderR.ked['dt'] == helping.DTS_BASE_0
 
         assert serderR.raw == (b'{"v":"KERI10JSON000105_","t":"rpy","d":"EN0OizQsqguCvvhE4mkxn4anHCEBvEaRRjNv'
@@ -816,7 +819,7 @@ def test_reply(mockHelpingNowUTC):
         assert serderR.said == 'EN0OizQsqguCvvhE4mkxn4anHCEBvEaRRjNvfsffVzLv'
 
         # Sign Reply
-        msg = wokHab.endorse(serder=serderR, framed=False)
+        msg = wokHab.endorse(serder=serderR, framed=False, gvrsn=V1)
         assert msg == (b'{"v":"KERI10JSON000105_","t":"rpy","d":"EN0OizQsqguCvvhE4mkxn4an'
                     b'HCEBvEaRRjNvfsffVzLv","dt":"2021-01-01T00:00:00.000000+00:00","r'
                     b'":"/loc/scheme","a":{"eid":"BKVb58uITf48YoMPz8SBOTVwLgTO9BY4oEXR'
@@ -864,10 +867,10 @@ def test_reply(mockHelpingNowUTC):
             url=url,
         )
 
-        serderR = reply(route=route, data=data, stamp=helping.DTS_BASE_1)
+        serderR = reply(route=route, data=data, stamp=helping.DTS_BASE_1, **KWA)
         assert serderR.ked['dt'] == helping.DTS_BASE_1
         # Sign Reply
-        msg = tamHab.endorse(serder=serderR, framed=False)
+        msg = tamHab.endorse(serder=serderR, framed=False, gvrsn=V1)
 
         # use Nels's parser and kevery to process
         nelPrs.parse(ims=bytearray(msg))
@@ -925,11 +928,11 @@ def test_reply(mockHelpingNowUTC):
                     eid=tamHab.pre,
                     )
 
-        serderR = reply(route=route, data=data)
+        serderR = reply(route=route, data=data, **KWA)
         assert serderR.ked['dt'] == helping.DTS_BASE_0
 
         # Sign Reply
-        msg = tamHab.endorse(serder=serderR, framed=False)
+        msg = tamHab.endorse(serder=serderR, framed=False, gvrsn=V1)
 
         # use Nel's parser and kevery to authZ tam as tam end controller
         nelPrs.parse(ims=bytearray(msg))
@@ -1124,12 +1127,12 @@ def test_reply(mockHelpingNowUTC):
         assert rurls["witness"][wokHab.pre]['http'] == 'http://localhost:8080/witness/wok'
 
         msgs = bytearray()
-        msgs.extend(tamHab.makeEndRole(eid=wesHab.pre, role=Roles.witness))
-        msgs.extend(tamHab.makeEndRole(eid=wokHab.pre, role=Roles.witness))
-        msgs.extend(tamHab.makeEndRole(eid=wamHab.pre, role=Roles.witness))
-        msgs.extend(wesHab.makeLocScheme(url='http://localhost:8080/witness/wes'))
-        msgs.extend(wokHab.makeLocScheme(url='http://localhost:8080/witness/wok'))
-        msgs.extend(wamHab.makeLocScheme(url='http://localhost:8080/witness/wam'))
+        msgs.extend(tamHab.makeEndRole(eid=wesHab.pre, role=Roles.witness, **KWA))
+        msgs.extend(tamHab.makeEndRole(eid=wokHab.pre, role=Roles.witness, **KWA))
+        msgs.extend(tamHab.makeEndRole(eid=wamHab.pre, role=Roles.witness, **KWA))
+        msgs.extend(wesHab.makeLocScheme(url='http://localhost:8080/witness/wes', **KWA))
+        msgs.extend(wokHab.makeLocScheme(url='http://localhost:8080/witness/wok', **KWA))
+        msgs.extend(wamHab.makeLocScheme(url='http://localhost:8080/witness/wam', **KWA))
 
         tamHab.psr.parse(bytearray(msgs))
         wesHab.psr.parse(bytearray(msgs))
@@ -1141,12 +1144,12 @@ def test_reply(mockHelpingNowUTC):
         welHab.psr.parse(bytearray(msgs))
 
         msgs = bytearray()
-        msgs.extend(nelHab.makeEndRole(eid=nelHab.pre, role=Roles.controller))
-        msgs.extend(nelHab.makeEndRole(eid=watHab.pre, role=Roles.watcher))
-        msgs.extend(nelHab.makeEndRole(eid=welHab.pre, role=Roles.watcher))
-        msgs.extend(nelHab.makeLocScheme(url='http://localhost:8080/controller/nel'))
-        msgs.extend(watHab.makeLocScheme(url='http://localhost:8080/watcher/wat'))
-        msgs.extend(welHab.makeLocScheme(url='http://localhost:8080/watcher/wel'))
+        msgs.extend(nelHab.makeEndRole(eid=nelHab.pre, role=Roles.controller, **KWA))
+        msgs.extend(nelHab.makeEndRole(eid=watHab.pre, role=Roles.watcher, **KWA))
+        msgs.extend(nelHab.makeEndRole(eid=welHab.pre, role=Roles.watcher, **KWA))
+        msgs.extend(nelHab.makeLocScheme(url='http://localhost:8080/controller/nel', **KWA))
+        msgs.extend(watHab.makeLocScheme(url='http://localhost:8080/watcher/wat', **KWA))
+        msgs.extend(welHab.makeLocScheme(url='http://localhost:8080/watcher/wel', **KWA))
 
         tamHab.psr.parse(bytearray(msgs))
         wesHab.psr.parse(bytearray(msgs))
@@ -1283,53 +1286,53 @@ def test_reply(mockHelpingNowUTC):
 def test_watcher_add_cut():
     salt = Salter(raw=b'abcdef0123456789').qb64
 
-    with openHby(name="cont", base="test", salt=salt) as conHby, \
-            openHby(name="wat0", base="test", salt=salt) as wat0hby, \
-            openHby(name="wat1", base="test", salt=salt) as wat1hby, \
-            openHby(name="wat2", base="test", salt=salt) as wat2hby, \
-            openHby(name="obv0", base="test", salt=salt) as obv0hby, \
-            openHby(name="obv1", base="test", salt=salt) as obv1hby, \
-            openHby(name="obv2", base="test", salt=salt) as obv2hby:
+    with openHby(name="cont", base="test", salt=salt, version=V1) as conHby, \
+            openHby(name="wat0", base="test", salt=salt, version=V1) as wat0hby, \
+            openHby(name="wat1", base="test", salt=salt, version=V1) as wat1hby, \
+            openHby(name="wat2", base="test", salt=salt, version=V1) as wat2hby, \
+            openHby(name="obv0", base="test", salt=salt, version=V1) as obv0hby, \
+            openHby(name="obv1", base="test", salt=salt, version=V1) as obv1hby, \
+            openHby(name="obv2", base="test", salt=salt, version=V1) as obv2hby:
 
-        conHab = conHby.makeHab(name="cont", isith="1", icount=1, transferable=True)
+        conHab = conHby.makeHab(name="cont", isith="1", icount=1, transferable=True, **KWA)
         assert conHab.kever.prefixer.transferable
         conKvy = Kevery(db=conHab.db, lax=False, local=False)
 
-        wat0hab = wat0hby.makeHab(name='wat0', isith="1", icount=1, transferable=False)
+        wat0hab = wat0hby.makeHab(name='wat0', isith="1", icount=1, transferable=False, **KWA)
         assert not wat0hab.kever.prefixer.transferable
         # create non-local kevery for Wes to process nonlocal msgs
         wat0kvy = Kevery(db=wat0hab.db, lax=False, local=False)
 
-        wat1hab = wat1hby.makeHab(name='wat1', isith="1", icount=1, transferable=False)
+        wat1hab = wat1hby.makeHab(name='wat1', isith="1", icount=1, transferable=False, **KWA)
         assert not wat1hab.kever.prefixer.transferable
         # create non-local kevery for Wes to process nonlocal msgs
         wat1kvy = Kevery(db=wat1hab.db, lax=False, local=False)
 
-        wat2hab = wat2hby.makeHab(name='wat2', isith="1", icount=1, transferable=False)
+        wat2hab = wat2hby.makeHab(name='wat2', isith="1", icount=1, transferable=False, **KWA)
         assert not wat2hab.kever.prefixer.transferable
         # create non-local kevery for Wes to process nonlocal msgs
         wat2kvy = Kevery(db=wat2hab.db, lax=False, local=False)
 
-        obv0hab = obv0hby.makeHab(name='obv0', isith="1", icount=1, transferable=True)
+        obv0hab = obv0hby.makeHab(name='obv0', isith="1", icount=1, transferable=True, **KWA)
         assert obv0hab.kever.prefixer.transferable
         # create non-local kevery for Wes to process nonlocal msgs
         obv0kvy = Kevery(db=obv0hab.db, lax=False, local=False)
 
-        obv1hab = obv1hby.makeHab(name='obv1', isith="1", icount=1, transferable=True)
+        obv1hab = obv1hby.makeHab(name='obv1', isith="1", icount=1, transferable=True, **KWA)
         assert obv1hab.kever.prefixer.transferable
         # create non-local kevery for Wes to process nonlocal msgs
         obv1kvy = Kevery(db=obv1hab.db, lax=False, local=False)
 
-        obv2hab = obv2hby.makeHab(name='obv2', isith="1", icount=1, transferable=True)
+        obv2hab = obv2hby.makeHab(name='obv2', isith="1", icount=1, transferable=True, **KWA)
         assert obv2hab.kever.prefixer.transferable
         # create non-local kevery for Wes to process nonlocal msgs
         obv2kvy = Kevery(db=obv2hab.db, lax=False, local=False)
 
         for hab in [wat0hab, wat1hab, wat2hab, obv0hab, obv1hab, obv2hab]:
-            msg = hab.msgOwnInception(framed=True)
+            msg = hab.msgOwnInception(framed=True, gvrsn=V1)
             Parser(version=Vrsn_1_0).parseOne(ims=msg, kvy=conKvy)
 
-        conIcp = conHab.msgOwnInception(framed=True)
+        conIcp = conHab.msgOwnInception(framed=True, gvrsn=V1)
         for kvy in [wat0kvy, wat1kvy, wat2kvy, obv0kvy, obv1kvy, obv2kvy]:
             Parser(version=Vrsn_1_0).parseOne(ims=bytes(conIcp), kvy=kvy)  # make copy so we don't clobber it
 
@@ -1341,7 +1344,7 @@ def test_watcher_add_cut():
         assert obv2hab.pre in conHab.kevers
 
         data = dict(cid=conHab.pre, role=Roles.watcher, eid=wat0hab.pre)
-        rpy = conHab.reply(route="/end/role/add", data=data)
+        rpy = conHab.reply(route="/end/role/add", data=data, **CUE_KWA)
         conHab.psr.parseOne(ims=bytes(rpy))  # make copy so we don't clobber it
         wat0hab.psr.parseOne(ims=rpy)
 
@@ -1351,7 +1354,7 @@ def test_watcher_add_cut():
         assert ender.allowed is True
 
         for hab in [obv0hab, obv1hab, obv2hab]:
-            icp = hab.msgOwnInception(framed=True)
+            icp = hab.msgOwnInception(framed=True, gvrsn=V1)
             conHab.psr.parseOne(ims=bytes(icp))
             wat0hab.psr.parseOne(ims=bytes(icp))
             wat1hab.psr.parseOne(ims=bytes(icp))
@@ -1364,7 +1367,7 @@ def test_watcher_add_cut():
 
         route = f"/watcher/{wat0hab.pre}/add"
         data = dict(cid=conHab.pre, oid=obv0hab.pre)
-        rpy = conHab.reply(route=route, data=data)
+        rpy = conHab.reply(route=route, data=data, **CUE_KWA)
         conHab.psr.parseOne(ims=bytes(rpy))  # make copy so we don't clobber it
         wat0hab.psr.parseOne(ims=rpy)
 
@@ -1375,7 +1378,7 @@ def test_watcher_add_cut():
 
         route = f"/watcher/{wat0hab.pre}/add"
         data = dict(cid=conHab.pre, oid=obv1hab.pre)
-        rpy = conHab.reply(route=route, data=data)
+        rpy = conHab.reply(route=route, data=data, **CUE_KWA)
         conHab.psr.parseOne(ims=bytes(rpy))  # make copy so we don't clobber it
         wat0hab.psr.parseOne(ims=rpy)
 
@@ -1386,7 +1389,7 @@ def test_watcher_add_cut():
 
         route = f"/watcher/{wat0hab.pre}/add"
         data = dict(cid=conHab.pre, oid=obv2hab.pre)
-        rpy = conHab.reply(route=route, data=data)
+        rpy = conHab.reply(route=route, data=data, **CUE_KWA)
         conHab.psr.parseOne(ims=bytes(rpy))  # make copy so we don't clobber it
         wat0hab.psr.parseOne(ims=rpy)
 
@@ -1397,7 +1400,7 @@ def test_watcher_add_cut():
 
         route = f"/watcher/{wat0hab.pre}/cut"
         data = dict(cid=conHab.pre, oid=obv1hab.pre)
-        rpy = conHab.reply(route=route, data=data)
+        rpy = conHab.reply(route=route, data=data, **CUE_KWA)
         conHab.psr.parseOne(ims=bytes(rpy))  # make copy so we don't clobber it
         wat0hab.psr.parseOne(ims=rpy)
 
@@ -1408,7 +1411,7 @@ def test_watcher_add_cut():
 
         route = f"/watcher/{wat1hab.pre}/add"
         data = dict(cid=conHab.pre, oid=obv0hab.pre)
-        rpy = conHab.reply(route=route, data=data)
+        rpy = conHab.reply(route=route, data=data, **CUE_KWA)
         conHab.psr.parseOne(ims=bytes(rpy))  # make copy so we don't clobber it
         wat1hab.psr.parseOne(ims=rpy)
 
@@ -1419,7 +1422,7 @@ def test_watcher_add_cut():
 
         route = f"/watcher/{wat1hab.pre}/add"
         data = dict(cid=conHab.pre, oid=obv2hab.pre, oobi=f"http://example.com/oobi/{obv2hab.pre}")
-        rpy = conHab.reply(route=route, data=data)
+        rpy = conHab.reply(route=route, data=data, **CUE_KWA)
         conHab.psr.parseOne(ims=bytes(rpy))  # make copy so we don't clobber it
         wat1hab.psr.parseOne(ims=rpy)
 
