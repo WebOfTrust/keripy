@@ -43,12 +43,12 @@ def test_indexed_witness_replay():
     """
     salt = Salter(raw=b'abcdef0123456789').qb64
 
-    with openHby(name="cam", base="test", salt=salt) as camHby, \
-         openHby(name="van", base="test", salt=salt) as vanHby, \
-         openHby(name="wes", base="test", salt=salt) as wesHby, \
-         openHby(name="wak", base="test", salt=salt) as wokHby, \
-         openHby(name="wam", base="test", salt=salt) as wamHby, \
-         openHby(name="wil", base="test", salt=salt) as wilHby:
+    with openHby(name="cam", base="test", salt=salt, version=Vrsn_1_0) as camHby, \
+         openHby(name="van", base="test", salt=salt, version=Vrsn_1_0) as vanHby, \
+         openHby(name="wes", base="test", salt=salt, version=Vrsn_1_0) as wesHby, \
+         openHby(name="wak", base="test", salt=salt, version=Vrsn_1_0) as wokHby, \
+         openHby(name="wam", base="test", salt=salt, version=Vrsn_1_0) as wamHby, \
+         openHby(name="wil", base="test", salt=salt, version=Vrsn_1_0) as wilHby:
 
         kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
 
@@ -316,12 +316,12 @@ def test_nonindexed_witness_receipts():
     """
     salt = Salter(raw=b'abcdef0123456789').qb64
 
-    with openHby(name="cam", base="test", salt=salt) as camHby, \
-         openHby(name="van", base="test", salt=salt) as vanHby, \
-         openHby(name="wes", base="test", salt=salt) as wesHby, \
-         openHby(name="wak", base="test", salt=salt) as wokHby, \
-         openHby(name="wam", base="test", salt=salt) as wamHby, \
-         openHby(name="wil", base="test", salt=salt) as wilHby:
+    with openHby(name="cam", base="test", salt=salt, version=Vrsn_1_0) as camHby, \
+         openHby(name="van", base="test", salt=salt, version=Vrsn_1_0) as vanHby, \
+         openHby(name="wes", base="test", salt=salt, version=Vrsn_1_0) as wesHby, \
+         openHby(name="wak", base="test", salt=salt, version=Vrsn_1_0) as wokHby, \
+         openHby(name="wam", base="test", salt=salt, version=Vrsn_1_0) as wamHby, \
+         openHby(name="wil", base="test", salt=salt, version=Vrsn_1_0) as wilHby:
 
         kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
 
@@ -609,9 +609,9 @@ def test_out_of_order_witnessed_events():
     # Bam is verifying the key state for Bob from Wes
 
     default_salt = Salter(raw=b'0123456789abcdef').qb64
-    with openHby(name="wes", base="test", salt=default_salt) as wesHby, \
-         openHby(name="bob", base="test", salt=default_salt) as bobHby, \
-         openHby(name="bam", base="test", salt=default_salt) as bamHby:
+    with openHby(name="wes", base="test", salt=default_salt, version=Vrsn_1_0) as wesHby, \
+         openHby(name="bob", base="test", salt=default_salt, version=Vrsn_1_0) as bobHby, \
+         openHby(name="bam", base="test", salt=default_salt, version=Vrsn_1_0) as bamHby:
 
         kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
 
