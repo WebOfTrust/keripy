@@ -1955,7 +1955,7 @@ def test_fetchkeldel():
     preb = 'BWzwEHHzq7K0gzQPYGGwTmuupUhPx5_yZ-Wk1x4ejhcc'.encode("utf-8")
     digb = 'EGAPkzNZMtX-QiVgbRbyAIZGoXvbGv9IPb0foWTZvI_4'.encode("utf-8")
     sn = 3
-    vs = versify(kind=Kinds.json, size=20)
+    vs = versify(pvrsn=Vrsn_1_0, kind=Kinds.json, size=20)
     assert vs == 'KERI10JSON000014_'
 
     ked = dict(vs=vs, pre=preb.decode("utf-8"),
@@ -2300,6 +2300,8 @@ def test_statedict():
                            eilk=Ilks.ixn,
                            keys=[pre],
                            eevt=eevt,
+                           version=Vrsn_1_0,
+                           kind=Kinds.json,
                            )
 
         db.evts.put(keys=(pre, serder.said), val=serder)
