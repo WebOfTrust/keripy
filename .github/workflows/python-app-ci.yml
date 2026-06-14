@@ -98,6 +98,35 @@ jobs:
         run: |
           ./scripts/demo/test_scripts.sh
 
+  docs:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.14
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.14'
+      - name: Install keripy (required for autodoc imports)
+        run: |
+          python -m pip install --upgrade pip
+          python -m pip install .
+      - name: Install Sphinx dependencies
+        run: python -m pip install -r docs/requirements.txt
+      - name: Build Sphinx documentation
+        shell: bash
+        run: |
+          set -o pipefail
+          mkdir -p .tmp/sphinx-ci
+          sphinx-build -b dirhtml docs/ _build/dirhtml 2>&1 | tee .tmp/sphinx-ci/sphinx-build.log
+          {
+            echo "### Sphinx documentation build"
+            echo
+            echo "- Build command completed successfully."
+            echo "- Sphinx warnings are currently reported but not fatal."
+            echo "- Warning lines:"
+            grep -Ec "WARNING:|ERROR:|docstring of" .tmp/sphinx-ci/sphinx-build.log || true
+          } >> "$GITHUB_STEP_SUMMARY"
+
   interop-setup:
     runs-on: ubuntu-latest
     if: github.event_name == 'push' && github.ref == 'refs/heads/interop'
