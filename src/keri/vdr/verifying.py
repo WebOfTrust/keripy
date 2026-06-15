@@ -331,7 +331,7 @@ class Verifier:
         serder = query(regk=regk, vcid=vcid, dt=dt, dta=dta,
                                 dtb=dtb, **kwa)
         hab = self.hby.habs[pre]
-        return hab.endorse(serder, last=True, framed=False)
+        return hab.endorse(serder, last=True, framed=False, gvrsn=serder.pvrsn)
 
     def verifyChain(self, nodeSaid, op, issuer):
         """ Verifies the node credential at the end of an edge

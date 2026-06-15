@@ -25,6 +25,18 @@ PreviousRoutes = {
 }
 
 
+def _event_kwa(hab, version=Version, pvrsn=None, gvrsn=Version):
+    serder = hab.kever.serder
+
+    pvrsn = serder.pvrsn if pvrsn is None else pvrsn
+    if version == Version:
+        version = pvrsn
+    if gvrsn == Version:
+        gvrsn = pvrsn
+
+    return dict(version=version, pvrsn=pvrsn, gvrsn=gvrsn, kind=serder.kind)
+
+
 class IpexHandler:
     """ Processor of `exn` IPEX messages.
 
@@ -175,14 +187,13 @@ def ipexApplyExn(hab, recp, message, schema, attrs, version=Version, pvrsn=None,
         a=attrs,
         i=recp
     )
+    kwa = _event_kwa(hab=hab, version=version, pvrsn=pvrsn, gvrsn=gvrsn)
 
     exn = exchange(sender=hab.pre,
                    route="/ipex/apply",
                    attributes=data,
-                   version=Version,
-                   pvrsn=pvrsn,
-                   gvrsn=gvrsn)
-    ims = hab.endorse(serder=exn, last=False, gvrsn=gvrsn, framed=framed,
+                   **kwa)
+    ims = hab.endorse(serder=exn, last=False, gvrsn=kwa["gvrsn"], framed=framed,
                       nested=nested, genusify=genusify)
     del ims[:exn.size]
     #ims.extend(end)
@@ -236,15 +247,14 @@ def ipexOfferExn(hab, message, acdc, apply=None,  version=Version, pvrsn=None,
     kwa = dict()
     if apply is not None:
         kwa['prior'] = apply.said
+    kwa |= _event_kwa(hab=hab, version=version, pvrsn=pvrsn, gvrsn=gvrsn)
 
     exn, end = specialExchange(sender=hab.pre,
                                route="/ipex/offer",
                                attributes=data,
                                embeds=embeds,
-                               version=version,
-                               pvrsn=pvrsn,
-                               gvrsn=gvrsn, **kwa)
-    ims = hab.endorse(serder=exn, last=False, gvrsn=gvrsn, framed=framed,
+                               **kwa)
+    ims = hab.endorse(serder=exn, last=False, gvrsn=kwa["gvrsn"], framed=framed,
                       nested=nested, genusify=genusify)
     del ims[:exn.size]
     ims.extend(end)
@@ -290,14 +300,13 @@ def ipexAgreeExn(hab, message, offer, version=Version, pvrsn=None,
         m=message
     )
 
+    kwa = _event_kwa(hab=hab, version=version, pvrsn=pvrsn, gvrsn=gvrsn)
     exn = exchange(sender=hab.pre,
                                prior=offer.said,
                                route="/ipex/agree",
                                attributes=data,
-                               version=version,
-                               pvrsn=pvrsn,
-                               gvrsn=gvrsn)
-    ims = hab.endorse(serder=exn, last=False, gvrsn=gvrsn, framed=framed,
+                               **kwa)
+    ims = hab.endorse(serder=exn, last=False, gvrsn=kwa["gvrsn"], framed=framed,
                       nested=nested, genusify=genusify)
     del ims[:exn.size]
     #ims.extend(end)
@@ -363,17 +372,15 @@ def ipexGrantExn(hab, recp, message, acdc, iss=None, anc=None, agree=None,
     kwa = dict()
     if agree is not None:
         kwa['prior'] = agree.said
+    kwa |= _event_kwa(hab=hab, version=version, pvrsn=pvrsn, gvrsn=gvrsn)
 
     exn, end = specialExchange(sender=hab.pre,
                                route="/ipex/grant",
                                stamp=dt,
                                attributes=data,
                                embeds=embeds,
-                               version=version,
-                               pvrsn=pvrsn,
-                               gvrsn=gvrsn,
                                **kwa)
-    ims = hab.endorse(serder=exn, last=False, gvrsn=gvrsn, framed=framed,
+    ims = hab.endorse(serder=exn, last=False, gvrsn=kwa["gvrsn"], framed=framed,
                       nested=nested, genusify=genusify)
     del ims[:exn.size]
     ims.extend(end)
@@ -420,15 +427,14 @@ def ipexAdmitExn(hab, message, grant, dt=None, version=Version, pvrsn=None,
         m=message,
     )
 
+    kwa = _event_kwa(hab=hab, version=version, pvrsn=pvrsn, gvrsn=gvrsn)
     exn = exchange(sender=hab.pre,
                                prior=grant.said,
                                route="/ipex/admit",
                                stamp=dt,
                                attributes=data,
-                               version=version,
-                               pvrsn=pvrsn,
-                               gvrsn=gvrsn,                                )
-    ims = hab.endorse(serder=exn, last=False, gvrsn=gvrsn, framed=framed,
+                               **kwa)
+    ims = hab.endorse(serder=exn, last=False, gvrsn=kwa["gvrsn"], framed=framed,
                       nested=nested, genusify=genusify)
     del ims[:exn.size]
     #ims.extend(end)
@@ -474,14 +480,13 @@ def ipexSpurnExn(hab, message, spurned, version=Version, pvrsn=None,
         m=message
     )
 
+    kwa = _event_kwa(hab=hab, version=version, pvrsn=pvrsn, gvrsn=gvrsn)
     exn = exchange(sender=hab.pre,
                                prior=spurned.said,
                                route="/ipex/spurn",
                                attributes=data,
-                               version=version,
-                               pvrsn=pvrsn,
-                               gvrsn=gvrsn,                                )
-    ims = hab.endorse(serder=exn, last=False, gvrsn=gvrsn, framed=framed,
+                               **kwa)
+    ims = hab.endorse(serder=exn, last=False, gvrsn=kwa["gvrsn"], framed=framed,
                       nested=nested, genusify=genusify)
     del ims[:exn.size]
     #ims.extend(end)
