@@ -324,6 +324,7 @@ class Helpers:
 
     @staticmethod
     def remove_test_dirs(name):
+        home = os.path.expanduser("~")
         if os.path.exists(f'/usr/local/var/keri/db/{name}'):
             shutil.rmtree(f'/usr/local/var/keri/db/{name}')
         if os.path.exists(f'/usr/local/var/keri/ks/{name}'):
@@ -334,16 +335,16 @@ class Helpers:
             os.remove(f'/usr/local/var/keri/cf/{name}.json')
         if os.path.exists(f'/usr/local/var/keri/cf/{name}'):
             shutil.rmtree(f'/usr/local/var/keri/cf/{name}')
-        if os.path.exists(f'~/.keri/db/{name}'):
-            shutil.rmtree(f'~/.keri/db/{name}')
-        if os.path.exists(f'~/.keri/ks/{name}'):
-            shutil.rmtree(f'~/.keri/ks/{name}')
-        if os.path.exists(f'~/.keri/reg/{name}'):
-            shutil.rmtree(f'~/.keri/reg/{name}')
-        if os.path.exists(f'~/.keri/cf/{name}.json'):
-            os.remove(f'~/.keri/cf/{name}.json')
-        if os.path.exists(f'~/.keri/cf/{name}'):
-            shutil.rmtree(f'~/.keri/cf/{name}')
+        if os.path.exists(f'{home}/.keri/db/{name}'):
+            shutil.rmtree(f'{home}/.keri/db/{name}')
+        if os.path.exists(f'{home}/.keri/ks/{name}'):
+            shutil.rmtree(f'{home}/.keri/ks/{name}')
+        if os.path.exists(f'{home}/.keri/reg/{name}'):
+            shutil.rmtree(f'{home}/.keri/reg/{name}')
+        if os.path.exists(f'{home}/.keri/cf/{name}.json'):
+            os.remove(f'{home}/.keri/cf/{name}.json')
+        if os.path.exists(f'{home}/.keri/cf/{name}'):
+            shutil.rmtree(f'{home}/.keri/cf/{name}')
 
 
 @pytest.fixture
