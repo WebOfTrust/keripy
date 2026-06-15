@@ -3,6 +3,9 @@
 tests.vc.protocoling module
 
 """
+import pytest
+
+from keri.kering import Vrsn_2_0
 from keri.core import (Salter, Counter, SealEvent, Seqner,
                        Diger, Prefixer, Saider, Parser,
                        Saids, MtrDex, Codens)
@@ -16,6 +19,45 @@ from keri.vdr import Regery, Verifier
 from keri.app import Notifier, openHby
 
 from tests.common import CUE_KWA, KWA
+
+
+def test_ipex_version_overrides():
+    with openHby(name="sid", base="test", salt=Salter(raw=b'0123456789abcdef').qb64,
+                 version=KWA["version"]) as sidHby:
+        sidHab = sidHby.makeHab(name="test", **KWA)
+
+        apply_v1, _ = ipexApplyExn(sidHab, recp=sidHab.pre, message="Please", schema="schema", attrs={})
+        assert apply_v1.pvrsn == KWA["version"]
+        assert "rp" in apply_v1.ked
+        assert "ri" not in apply_v1.ked
+
+        apply_v2, _ = ipexApplyExn(sidHab, recp=sidHab.pre, message="Please", schema="schema", attrs={},
+                                   version=Vrsn_2_0)
+        assert apply_v2.pvrsn == Vrsn_2_0
+        assert "ri" in apply_v2.ked
+        assert "rp" not in apply_v2.ked
+
+        spurn_v2, _ = ipexSpurnExn(sidHab, "No thanks", spurned=apply_v2, version=Vrsn_2_0)
+        assert spurn_v2.pvrsn == Vrsn_2_0
+        assert "ri" in spurn_v2.ked
+        assert "rp" not in spurn_v2.ked
+
+        with pytest.raises(ValueError, match="version and pvrsn must match"):
+            ipexApplyExn(sidHab, recp=sidHab.pre, message="Please", schema="schema", attrs={},
+                         version=Vrsn_2_0, pvrsn=KWA["version"])
+
+
+def test_ipex_embedded_helpers_reject_v2_override():
+    with openHby(name="sid", base="test", salt=Salter(raw=b'0123456789abcdef').qb64,
+                 version=KWA["version"]) as sidHby:
+        sidHab = sidHby.makeHab(name="test", **KWA)
+
+        with pytest.raises(ValueError, match="not supported in version 2 exchange"):
+            ipexOfferExn(sidHab, "How about this", acdc=b"", version=Vrsn_2_0)
+
+        with pytest.raises(ValueError, match="not supported in version 2 exchange"):
+            ipexGrantExn(sidHab, recp=sidHab.pre, message="Here's a credential", acdc=b"",
+                         version=Vrsn_2_0)
 
 
 def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingNowUTC):
