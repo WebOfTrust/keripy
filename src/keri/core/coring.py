@@ -2864,10 +2864,18 @@ class Bexter(Matter):
 
     """
     @classmethod
-    def _derawify(cls, raw, code):
-        """Returns decoded raw as B64 str aka bext value
+    def _derawify(cls, raw, code, escaped=True):
+        """Returns bext as B64 str aka bext value from padded right aligned raw
 
-        Strips prefixed wad (pad)
+        Parameters::
+            raw (bytes): raw binary domain value
+            code (str): CESR code for encoding raw as CESR b2 or b64
+            escaped (bool): True means remove ambiguity for bext value by escaping
+                            leading 'A' or leading '-' with escape '-' when
+                            size of bext would create ambiguity
+
+        Returns::
+            bext (str): decoded raw as B64 str aka bext value
 
         When bext is multiple of 4 then aligned on 24 bit boundary so no
         prepadding needed. This means wad is empty and lead is empty.
@@ -2879,10 +2887,6 @@ class Bexter(Matter):
         requirement that bext cannot start with 'A', This way when ls (lead size)
         is zero but zeroth character in B64 is 'A' then we can safely assume that
         the zeroth 'A' was prepad wad for bext multiple of 3.
-
-
-        Returns:
-           bext (str): decoded raw as B64 str aka bext value
         """
         _, _, _, _, ls = cls.Sizes[code]
         bext = encodeB64(bytes([0] * ls) + raw)
@@ -2930,6 +2934,10 @@ class Bexter(Matter):
         """Returns raw value equivalent of Base64 text.
         Suitable for variable sized matter.
 
+        Parameters::
+            bext (bytes): Base64 bytes
+
+
         When bext is multiple of 4 then aligned on 24 bit boundary so no
         prepadding needed. This means wad is empty and lead is empty.
 
@@ -2942,8 +2950,9 @@ class Bexter(Matter):
         the zeroth 'A' was prepad wad for bext multiple of 3.
 
 
-        Parameters:
-            bext (bytes): Base64 bytes
+        Returns::
+            raw (bytes): raw value of bext with code and padding stripped off.
+
         """
         ts = len(bext) % 4  # bext remainder size mod 4
         ws = (4 - ts) % 4  # pre conv wad size in chars
