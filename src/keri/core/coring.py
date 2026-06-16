@@ -2799,26 +2799,25 @@ class Texter(Matter):
 
 
 class Bexter(Matter):
-    """
-    Bexter is subclass of Matter, cryptographic material, for variable length
+    """Bexter is subclass of Matter, cryptographic material, for variable length
     strings that only contain Base64 URL safe characters, i.e. Base64 text (bext).
-    When created using the 'bext' paramaeter, the encoded matter in qb64 format
+    When created using the 'bext' parameter, the encoded matter in qb64 format
     in the text domain is more compact than would be the case if the string were
     passed in as raw bytes. The text is used as is to form the value part of the
     qb64 version not including the leader.
 
     Due to ambiguity that arises from pre-padding bext whose length is a multiple of
-    three with one or more 'A' chars. Any bext that starts with an 'A' and whose length
-    is either a multiple of 3 or 4 may not round trip. Bext with a leading 'A'
-    whose length is a multiple of four may have the leading 'A' stripped when
-    round tripping.
+    three or four with one or more 'A' chars. Any bext that starts with an 'A'
+    and whose length is either a multiple of 3 or 4 may not round trip.
+    Bext with a leading 'A' whose length is a multiple of four may have its
+    leading 'A' incorrectly stripped when round tripping.
 
         Bexter(bext='ABBB').bext == 'BBB'
         Bexter(bext='BBB').bext == 'BBB'
         Bexter(bext='ABBB').qb64 == '4AABABBB' == Bexter(bext='BBB').qb64
 
-    To avoid this problem, only use for applications of base 64 strings that
-    never start with 'A'
+    To avoid this problem, only use Bexter for applications of base 64 strings
+    that never start with 'A'
 
     Examples: base64 text strings:
 
@@ -2868,23 +2867,38 @@ class Bexter(Matter):
     def _derawify(cls, raw, code):
         """Returns decoded raw as B64 str aka bext value
 
+        Strips prefixed wad (pad)
+
+        When bext is multiple of 4 then aligned on 24 bit boundary so no
+        prepadding needed. This means wad is empty and lead is empty.
+
+        When bext is multiple of 3 then not aligned on 24 bit boundary so need
+        one prepad (wad) of 'A' in B64 to get bext to align on 24 bit boundary.
+        But there is no lead size that maps to only one 6 bit wad padding. We
+        use lead of 0. This means that when prepadded with 'A' we must make the
+        requirement that bext cannot start with 'A', This way when ls (lead size)
+        is zero but zeroth character in B64 is 'A' then we can safely assume that
+        the zeroth 'A' was prepad wad for bext multiple of 3.
+
+
         Returns:
            bext (str): decoded raw as B64 str aka bext value
         """
         _, _, _, _, ls = cls.Sizes[code]
         bext = encodeB64(bytes([0] * ls) + raw)
-        ws = 0
-        if ls == 0 and bext:
-            if bext[0] == ord(b'A'):  # strip leading 'A' zero pad
-                ws = 1
+        ws = 0  # wad size (bext prepad)
+        if ls == 0 and bext:  # empty lead but not empty bext
+            if bext[0] == ord(b'A'):  # zeroth bext is 'A'
+                ws = 1  # ambiguity in text (b64) mode so assume is wad pad
         else:
-            ws = (ls + 1) % 4
-        return bext.decode('utf-8')[ws:]
+            ws = (ls + 1) % 4  # wad size as a function of lead size
+        return bext.decode('utf-8')[ws:]  # strip prefixed wad pad
 
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
                  code=MtrDex.StrB64_L0, bext=None, **kwa):
-        """
+        """Initialize Instance
+
         Inherited Parameters:  (see Matter)
             raw is bytes of unqualified crypto material usable for crypto operations
             qb64b is bytes of fully qualified crypto material
@@ -2914,14 +2928,28 @@ class Bexter(Matter):
     @staticmethod
     def _rawify(bext):
         """Returns raw value equivalent of Base64 text.
-        Suitable for variable sized matter
+        Suitable for variable sized matter.
+
+        When bext is multiple of 4 then aligned on 24 bit boundary so no
+        prepadding needed. This means wad is empty and lead is empty.
+
+        When bext is multiple of 3 then not aligned on 24 bit boundary so need
+        one prepad (wad) of 'A' in B64 to get bext to align on 24 bit boundary.
+        But there is no lead size that maps to only one 6 bit wad padding. We
+        use lead of 0. This means that when prepadded with 'A' we must make the
+        requirement that bext cannot start with 'A', This way when ls (lead size)
+        is zero but zeroth character in B64 is 'A' then we can safely assume that
+        the zeroth 'A' was prepad wad for bext multiple of 3.
+
 
         Parameters:
             bext (bytes): Base64 bytes
         """
-        ts = len(bext) % 4  # bext size mod 4
+        ts = len(bext) % 4  # bext remainder size mod 4
         ws = (4 - ts) % 4  # pre conv wad size in chars
-        ls = (3 - ts) % 3  # post conv lead size in bytes
+        ls = (3 - ts) % 3  # effective post conv lead size in bytes
+        # ls=0 when ts=0 or ts=3. But ws=0 when ts=0 and ws=1 when ts=3
+        # so ws ambiguity for ls = 0
         base = b'A' * ws + bext  # pre pad with wad of zeros in Base64 == 'A'
         raw = decodeB64(base)[ls:]  # convert and remove leader
         return raw  # raw binary equivalent of text
@@ -2941,11 +2969,15 @@ class Pather(Matter):
     It provides support for SAD Path language specific functionality. When path
     parts contain only Base64 characters not including '-', the path will be
     compactly encoded with special path separator '-' as a variable length
-    StrBase64. Otherwise paths are encoded as variable length Bytes.
+    StrBase64. Otherwise paths are encoded as variable length Bytes with no
+    substitution.
     Pather allows the specification of paths as a list of field parts which will
     be converted to the compact Base64 URL safe character representation when
-    possible. Paths may be relative or absolute. A special, escape secquence is
-    used to encode relative paths in Base64
+    possible.
+
+    Paths may be relative or absolute.
+    A special, escape secquence '--' is used to encode relative paths in Base64
+    that resolves the leading 'A' ambiguity for paths of length 3 or 4 characters.
 
     Pather can traverse paths that maintain Base64 URL character safety by
     leveraging the fact that SADs must have static field ordering.
@@ -3013,7 +3045,7 @@ class Pather(Matter):
 
             parts = [part.encode() if hasattr(part, 'encode') else part for part in parts]
 
-            bextable = True  # TRue means more compact b64 raw, otherwise raw is text
+            bextable = True  # True means more compact b64 raw, otherwise raw is text
             for part in parts:
                 if not Repath.match(part):  # matches empty
                     if pathive:  # pathive so parts MUST satisfy Repath
@@ -3253,12 +3285,15 @@ class Pather(Matter):
 
 
 class Labeler(Matter):
-    """
-    Labeler is subclass of Matter for CESR native field map labels and/or generic
+    """Labeler is subclass of Matter for CESR native field map labels and/or generic
     textual field values. Labeler auto sizes the instance code to minimize
     the total encoded size of associated field label or textual field value.
 
-
+    When labels are composed of valid Python attribute values which are a subset
+    of Base64, i.e. no leading numeral, no '-' then if the leading character
+    is 'A' an escape char '-' is used to ensure no length ambiguity with Base64
+    the starts with 'A". The excape character is prefized and stripped
+    transparently.
 
     Attributes:
 
@@ -3280,7 +3315,8 @@ class Labeler(Matter):
 
 
     def __init__(self, label=None, text=None, raw=None, code=None, soft=None, **kwa):
-        """
+        """Initialize Instance
+
         Inherited Parameters:
             (see Matter)
 
@@ -3305,7 +3341,7 @@ class Labeler(Matter):
 
             except InvalidSoftError as ex:  # too big
                 ws = (4 - (len(label) % 4)) % 4  # pre conv wad size in chars
-                if label[0] == ord(b'A') and (ws in (0, 1)):  # use excape code
+                if label[0] == ord(b'A') and (ws in (0, 1)):  # use escape code
                     label = b'-' + label
                 code = LabelDex.StrB64_L0
                 raw = Bexter._rawify(label)
