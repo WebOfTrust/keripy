@@ -17,6 +17,8 @@ from keri.core import scheming, coring, routing, eventing, parsing, signing
 from keri.db import basing
 from keri.help import helping
 from keri import help
+from keri.vc import proving
+from keri.vdr import credentialing, verifying
 
 from keri.app.cli import commands
 
@@ -321,6 +323,70 @@ class DbSeed:
 
 
 class Helpers:
+
+    @staticmethod
+    def makeRegistry(hby, hab, name="reg", rgy=None):
+        """Creates a registry for an AID."""
+        rgy = rgy if rgy is not None else credentialing.Regery(hby=hby, name=hby.name, base=hby.base, temp=True)
+        issuer = rgy.makeRegistry(prefix=hab.pre, name=name, noBackers=True)
+        rseal = eventing.SealEvent(issuer.regk, "0", issuer.regd)._asdict()
+        hab.interact(data=[rseal])
+        seqner = coring.Seqner(sn=hab.kever.sn)
+        issuer.anchorMsg(pre=issuer.regk,
+                         regd=issuer.regd,
+                         seqner=seqner,
+                         saider=coring.Saider(qb64=hab.kever.serder.said))
+        rgy.processEscrows()
+        assert issuer.regk in rgy.reger.tevers
+
+        return rgy, issuer
+
+    @staticmethod
+    def issueCredential(hby, hab, issuer, subject, revoked=False, source=None, rgy=None,
+                        schema="EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC"):
+        """Issues a credential witn a simple subject and schema. Can ask for revoked credential."""
+        rgy = rgy if rgy is not None else credentialing.Regery(hby=hby,
+                                                               name=hby.name,
+                                                               base=hby.base,
+                                                               reger=issuer.reger,
+                                                               temp=True)
+        subject = dict(subject)
+        subject.setdefault("d", "")
+        subject.setdefault("i", hab.pre)
+        subject.setdefault("dt", helping.nowIso8601())
+        _, data = coring.Saider.saidify(sad=subject, code=coring.MtrDex.Blake3_256, label=coring.Saids.d)
+        creder = proving.credential(issuer=hab.pre,
+                                    schema=schema,
+                                    data=data,
+                                    source=source or {},
+                                    status=issuer.regk)
+
+        iss = issuer.issue(said=creder.said)
+        rseal = eventing.SealEvent(iss.pre, "0", iss.said)._asdict()
+        hab.interact(data=[rseal])
+        issuer.anchorMsg(pre=iss.pre,
+                         regd=iss.said,
+                         seqner=coring.Seqner(sn=hab.kever.sn),
+                         saider=coring.Saider(qb64=hab.kever.serder.said))
+        rgy.processEscrows()
+
+        if revoked:
+            rev = issuer.revoke(said=creder.said)
+            rseal = eventing.SealEvent(rev.pre, "1", rev.said)._asdict()
+            hab.interact(data=[rseal])
+            issuer.anchorMsg(pre=rev.pre,
+                             regd=rev.said,
+                             seqner=coring.Seqner(sn=hab.kever.sn),
+                             saider=coring.Saider(qb64=hab.kever.serder.said))
+            rgy.processEscrows()
+
+        vry = verifying.Verifier(hby=hby, reger=rgy.reger)
+        prefixer = coring.Prefixer(qb64=creder.said)
+        seqner = coring.Seqner(sn=0)
+        saider = coring.Saider(qb64=iss.said)
+        vry.processCredential(creder, prefixer, seqner, saider)
+
+        return creder, prefixer, seqner, saider
 
     @staticmethod
     def remove_test_dirs(name):

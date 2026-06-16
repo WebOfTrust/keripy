@@ -5,17 +5,13 @@ keri.kli.commands module
 """
 import argparse
 import getpass
-import os
-import sys
 
 from keri import help
 from hio.base import doing
 
 import keri.app.oobiing
-from keri import kering
 from keri.app import habbing, configing, oobiing
 from keri.app.keeping import Algos
-from keri.db import basing
 from keri.kering import ConfigurationError
 from keri.vdr import credentialing
 
@@ -158,4 +154,5 @@ class InitDoer(doing.DoDoer):
 
             self.remove(authn.doers)
 
+        rgy.close()
         hby.close()
