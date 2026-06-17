@@ -2870,9 +2870,9 @@ class Bexter(Matter):
         Parameters::
             raw (bytes): raw binary domain value
             code (str): CESR code for encoding raw as CESR b2 or b64
-            escaped (bool): True means remove ambiguity for bext value by escaping
-                            leading 'A' or leading '-' with escape '-' when
-                            size of bext would create ambiguity
+            escaped (bool): True means ambiguity for bext value is handled  when
+                            size of bext would create ambiguity by escaping
+                            leading 'A' or leading '-' with escape '-'
 
         Returns::
             bext (str): decoded raw as B64 str aka bext value
@@ -2930,12 +2930,15 @@ class Bexter(Matter):
                                   "".format(self.code))
 
     @staticmethod
-    def _rawify(bext):
+    def _rawify(bext, excaped=True):
         """Returns raw value equivalent of Base64 text.
         Suitable for variable sized matter.
 
         Parameters::
-            bext (bytes): Base64 bytes
+            bext (bytes): Base64 bytes to be encoded as padded raw
+            escaped (bool): True means ambiguity for bext value is handled  when
+                            size of bext would create ambiguity by escaping
+                            leading 'A' or leading '-' with escape '-'
 
 
         When bext is multiple of 4 then aligned on 24 bit boundary so no
