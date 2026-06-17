@@ -2889,12 +2889,12 @@ class Bexter(Matter):
         the zeroth 'A' was prepad wad for bext multiple of 3.
         """
         _, _, _, _, ls = cls.Sizes[code]
-        bext = encodeB64(bytes([0] * ls) + raw)
+        bext = encodeB64(bytes([0] * ls) + raw)  # need lead to reverse
         ws = 0  # wad size (bext prepad)
-        if ls == 0 and bext:  # empty lead but not empty bext
-            if bext[0] == ord(b'A'):  # zeroth bext is 'A'
+        if ls == 0 and bext:  # ambiguity either wad empty ws=0 or ws=1 one wad
+            if bext[0] == ord(b'A'):  # zeroth bext is 'A' so assume ws=1
                 ws = 1  # ambiguity in text (b64) mode so assume is wad pad
-        else:
+        else:  # no ambiguity ws=ls+1
             ws = (ls + 1) % 4  # wad size as a function of lead size
         return bext.decode('utf-8')[ws:]  # strip prefixed wad pad
 
@@ -2959,11 +2959,13 @@ class Bexter(Matter):
         """
         ts = len(bext) % 4  # bext remainder size mod 4
         ws = (4 - ts) % 4  # pre conv wad size in chars
-        ls = (3 - ts) % 3  # effective post conv lead size in bytes
-        # ls=0 when ts=0 or ts=3. But ws=0 when ts=0 and ws=1 when ts=3
-        # so ws ambiguity for ls = 0
+        ls = (3 - ts) % 3  # lead size in bytes of fullly padded lead
+        # But ws could provide mid pad bits for right shifted raw. so ws must
+        # be ls+1 when ls not zero to ensure only pad in lead bytes
+        # ts=0, ws=0, ls=0: ts=1, ws=3, ls=2: ts=2, ws=2, ls=1: ts=3, ws=1, ls=0:
         base = b'A' * ws + bext  # pre pad with wad of zeros in Base64 == 'A'
-        raw = decodeB64(base)[ls:]  # convert and remove leader
+        raw = decodeB64(base)[ls:]  # convert and remove leader of full pad
+        #raw has mid pad bits mpb=4 for ls=1, ws=2: mpb=2 for ls=2 ws=3
         return raw  # raw binary equivalent of text
 
 
