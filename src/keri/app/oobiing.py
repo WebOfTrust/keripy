@@ -338,7 +338,7 @@ class Oobiery:
         rvy = Revery(db=self.hby.db, rtr=rtr)
         kvy = Kevery(db=self.hby.db, lax=True, local=False, rvy=rvy)
         kvy.registerReplyRoutes(router=rtr)
-        self.parser = Parser(framed=True, kvy=kvy, rvy=rvy, version=Vrsn_1_0)
+        self.parser = Parser(framed=True, kvy=kvy, rvy=rvy, version=Vrsn_2_0)
 
         self.cues = cues if cues is not None else decking.Deck()
         self.clients = dict()
