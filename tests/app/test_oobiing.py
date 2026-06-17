@@ -23,7 +23,6 @@ from keri.help import helping
 from keri.peer import Exchanger
 from keri.recording import OobiRecord
 
-V2 = Vrsn_2_0
 from tests.common import KWA
 
 
@@ -91,7 +90,7 @@ def test_oobi_share_v2(mockHelpingNowUTC):
         assert "/oobis" in exc.routes
         handler = exc.routes["/oobis"]
 
-        exn, _ = oobiRequestExn(hab, hab.pre, oobi, version=V2, gvrsn=V2)
+        exn, _ = oobiRequestExn(hab, hab.pre, oobi, version=Vrsn_2_0, gvrsn=Vrsn_2_0)
 
         handler.handle(serder=exn)
 
@@ -112,8 +111,8 @@ def test_oobi_share_v2(mockHelpingNowUTC):
 
         exn, atc = oobiRequestExn(hab=hab, dest="EO2kxXW0jifQmuPevqg6Zpi3vE-WYoj65i_XhpruWtOg",
                                           oobi="http://127.0.0.1/oobi",
-                                          version=V2,
-                                          gvrsn=V2)
+                                          version=Vrsn_2_0,
+                                          gvrsn=Vrsn_2_0)
         assert exn.ked == \
         {
             'v': 'KERICAACAACESRAAEA.',
