@@ -29,6 +29,8 @@ parser.add_argument('--group', '-g', help='human-readable name for the multisig 
 parser.add_argument('--passcode', '-p', help='22 character encryption passcode for keystore (is not saved)',
                     dest="bran", default=None)  # passcode => bran
 parser.add_argument("--auto", "-Y", help="auto approve any delegation request non-interactively", action="store_true")
+parser.add_argument('--registry-name', '-r', help='human-readable name for a registry inception approval',
+                    default=None)
 
 
 def join(args):
@@ -43,8 +45,9 @@ def join(args):
     bran = args.bran
     auto = args.auto
     group = args.group
+    registryName = args.registry_name
 
-    joinDoer = JoinDoer(name=name, base=base, bran=bran, group=group, auto=auto)
+    joinDoer = JoinDoer(name=name, base=base, bran=bran, group=group, auto=auto, registryName=registryName)
 
     doers = [joinDoer]
     return doers
@@ -55,7 +58,7 @@ class JoinDoer(doing.DoDoer):
 
     """
 
-    def __init__(self, name, base, bran, group, auto=False):
+    def __init__(self, name, base, bran, group, auto=False, registryName=None):
         """ Create doer for polling for group multisig events and either approve automatically or prompt user
 
         Parameters:
@@ -65,8 +68,10 @@ class JoinDoer(doing.DoDoer):
             group (str): human-readable name for the multisig identifier prefix
             auto (bool): non-interactively auto approve any inception, rotation, interaction, or other event
                          while using the default group of "default-group"
+            registryName (str): optional local registry name to use when approving a registry inception
         """
         self.group = group
+        self.registryName = registryName
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.rgy = credentialing.Regery(hby=self.hby, name=name, base=base)
         self.hbyDoer = habbing.HaberyDoer(habery=self.hby)  # setup doer
@@ -630,7 +635,7 @@ class JoinDoer(doing.DoDoer):
 
         if approve:
             # Create and parse the event with "their" signatures
-            registryName = input("Name for Registry: ")
+            registryName = self._registryName()
             anc = embeds["anc"]
             aserder = serdering.SerderKERI(sad=anc)
             anc = bytearray(aserder.raw) + pathed["anc"]
@@ -671,6 +676,12 @@ class JoinDoer(doing.DoDoer):
             return True
 
         return False
+
+    def _registryName(self):
+        if self.registryName is not None:
+            return self.registryName
+
+        return input("Name for Registry: ")
 
     def iss(self, attrs):
         """  Handle issue messages
