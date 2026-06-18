@@ -267,6 +267,7 @@ class MatterCodex:
     Tag7:                 str = 'Y'  # Tag7  7 B64 encoded chars for special values
     Tag11:                str = 'Z'  # Tag11  11 B64 encoded chars for special values
     Salt_256:             str = 'a'  # Salt/seed/nonce/blind 256 bits
+    GramHead:             str = 'b'  # Gram Head 8 chars, 3 special soft proto/ver/ilk PVI + 4 chars raw count/num
     Salt_128:             str = '0A'  # Salt/seed/nonce 128 bits or number of length 128 bits (Huge)
     Ed25519_Sig:          str = '0B'  # Ed25519 signature.
     ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
@@ -282,10 +283,6 @@ class MatterCodex:
     Tag6:                 str = '0M'  # Tag6 6 B64 encoded chars for special values
     Tag9:                 str = '0N'  # Tag9 9 B64 encoded chars + 1 prepad for special values
     Tag10:                str = '0O'  # Tag10 10 B64 encoded chars for special values
-    GramHeadNeck:         str = '0P'  # GramHeadNeck 32 B64 chars memogram head with neck
-    GramHead:             str = '0Q'  # GramHead 28 B64 chars memogram head only
-    GramHeadAIDNeck:      str = '0R'  # GramHeadAIDNeck 76 B64 chars memogram head with AID and neck
-    GramHeadAID:          str = '0S'  # GramHeadAID 72 B64 chars memogram head with AID only
     ECDSA_256k1N:         str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
     ECDSA_256k1:          str = '1AAB'  # ECDSA public verification or encryption key, basic derivation
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
@@ -793,6 +790,7 @@ class Matter:
         'Y': Sizage(hs=1, ss=7, xs=0, fs=8, ls=0),
         'Z': Sizage(hs=1, ss=11, xs=0, fs=12, ls=0),
         'a': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'b': Sizage(hs=1, ss=3, xs=0, fs=8, ls=0),
         '0A': Sizage(hs=2, ss=0, xs=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
         '0C': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
@@ -808,10 +806,6 @@ class Matter:
         '0M': Sizage(hs=2, ss=6, xs=0, fs=8, ls=0),
         '0N': Sizage(hs=2, ss=10, xs=1, fs=12, ls=0),
         '0O': Sizage(hs=2, ss=10, xs=0, fs=12, ls=0),
-        '0P': Sizage(hs=2, ss=22, xs=0, fs=32, ls=0),
-        '0Q': Sizage(hs=2, ss=22, xs=0, fs=28, ls=0),
-        '0R': Sizage(hs=2, ss=22, xs=0, fs=76, ls=0),
-        '0S': Sizage(hs=2, ss=22, xs=0, fs=72, ls=0),
         '1AAA': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, xs=0, fs=80, ls=0),
