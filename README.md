@@ -34,7 +34,7 @@ We use `--pull=never` to ensure that docker does not implicitly pull a remote im
 ### Dependencies
 #### Binaries
 
-python 3.12.1+
+python 3.14.0+ (Ubuntu 24.04's default Python 3.12.3 is too old for keripy's current `hio` dependency)
 libsodium 1.0.18+
 
 
@@ -75,7 +75,7 @@ $ pip3 install -U cbor2
 ## Development
 
 ### Setup
-* Ensure Python 3.12.1 is present along with venv and dev header files;
+* Ensure Python 3.14.0+ is present along with venv and dev header files;
 * Setup virtual environment: `python3 -m venv keripy`
 * Activate virtual environment: `source keripy/bin/activate`
 * Setup dependencies: `pip install -r requirements.txt`

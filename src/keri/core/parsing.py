@@ -847,14 +847,14 @@ class Parser:
             Attachments must all have counters so know if txt or bny format for
             attachments. So even when framed==True must still have counter.
             Do While loop
-               sniff to set up first extraction
-                  raise exception and flush full tream if stream start is counter
-                  must be message
-               extract message
-               sniff for counter
-               if group counter extract and discard but keep track of count
-               so if error while processing attachments then only need to flush
-               attachment count not full stream.
+                sniff to set up first extraction
+                    raise exception and flush full tream if stream start is counter
+                    must be message
+                extract message
+                sniff for counter
+                if group counter extract and discard but keep track of count
+                so if error while processing attachments then only need to flush
+                attachment count not full stream.
 
 
         """
