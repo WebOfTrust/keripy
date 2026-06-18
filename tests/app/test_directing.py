@@ -48,7 +48,7 @@ def test_directing_defaults_use_hab_version_and_kind():
         assert reactor.parser.version == Vrsn_1_0
 
 
-def test_directing_basic():
+def test_directing_basic(unused_tcp_port_factory):
     """
     Test directing
     """
@@ -89,7 +89,8 @@ def test_directing_basic():
         tock = 0.03125
         doist = doing.Doist(limit=limit, tock=tock)
 
-        bobPort, evePort = _free_ports(2)
+        bobPort = unused_tcp_port_factory()
+        evePort = unused_tcp_port_factory()
 
         # setup bob
         bobHab = bobHby.makeHab(name="Bob", secrecies=bobSecrecies, **KWA)
@@ -188,14 +189,15 @@ def test_directing_basic():
     """End Test"""
 
 
-def test_runcontroller_demo():
+def test_runcontroller_demo(unused_tcp_port_factory):
     """
     Test demo runController function
     """
     ogler.resetLevel(level=logging.DEBUG)
 
     name = "bob"  # must be one of 'bob', 'sam', 'eve'
-    local, remote = _free_ports(2)
+    remote = unused_tcp_port_factory()
+    local = unused_tcp_port_factory()
     expire = 1.0
 
     raw = b"raw salt to test"

@@ -14,6 +14,10 @@ from hio.help import ogling
 from keri import help
 
 
+def loggerHandlerCount(ogler):
+    return sum((ogler.consoled, ogler.syslogged, ogler.filed and ogler.opened))
+
+
 def test_openogler():
     """
     Test context manager openOgler
@@ -242,7 +246,7 @@ def test_ogler():
     assert not os.path.exists(path)
     assert ogler.opened == False
 
-    help.ogler = ogling.initOgler(prefix='keri')  # reset help.ogler to defaults
+    help.ogler = ogling.initOgler(prefix='keri', syslogged=False)  # reset help.ogler to defaults
     """End Test"""
 
 
@@ -258,18 +262,12 @@ def test_init_ogler():
     assert help.ogler.dirPath == None
     assert help.ogler.path == None
     logger = help.ogler.getLogger()
-    if platform.system() == "Windows":
-        assert len(logger.handlers) == 1
-    else:
-        assert len(logger.handlers) == 2
+    assert len(logger.handlers) == loggerHandlerCount(help.ogler)
 
     # nothing should log to file because .path not created and level critical
     # # nothing should log to console because level critical
     logger = help.ogler.getLogger()
-    if platform.system() == "Windows":
-        assert len(logger.handlers) == 1
-    else:
-        assert len(logger.handlers) == 2
+    assert len(logger.handlers) == loggerHandlerCount(help.ogler)
     logger.debug("Test logger at debug level")
     logger.info("Test logger at info level")
     logger.error("Test logger at error level")
@@ -277,10 +275,7 @@ def test_init_ogler():
     help.ogler.level = logging.DEBUG
     # nothing should log because .path not created despite loggin level debug
     logger = help.ogler.getLogger()
-    if platform.system() == "Windows":
-        assert len(logger.handlers) == 1
-    else:
-        assert len(logger.handlers) == 2
+    assert len(logger.handlers) == loggerHandlerCount(help.ogler)
     logger.debug("Test logger at debug level")
     logger.info("Test logger at info level")
     logger.error("Test logger at error level")
@@ -293,10 +288,7 @@ def test_init_ogler():
     assert help.ogler.dirPath.endswith("_temp")
     assert help.ogler.path.endswith(os.path.join(os.path.sep, "main.log"))
     logger = help.ogler.getLogger()
-    if platform.system() == "Windows":
-        assert len(logger.handlers) == 2
-    else:
-        assert len(logger.handlers) == 3
+    assert len(logger.handlers) == loggerHandlerCount(help.ogler)
     logger.debug("Test logger at debug level")
     logger.info("Test logger at info level")
     logger.error("Test logger at error level")
@@ -340,7 +332,7 @@ def test_init_ogler():
     ogler.close(clear=True)
     assert not os.path.exists(path)
 
-    help.ogler = ogling.initOgler(prefix='keri')  # reset help.ogler to defaults
+    help.ogler = ogling.initOgler(prefix='keri', syslogged=False)  # reset help.ogler to defaults
     """End Test"""
 
 
@@ -355,10 +347,7 @@ def test_reset_levels():
     assert help.ogler.level == logging.CRITICAL  # default
     assert help.ogler.path == None
     logger = help.ogler.getLogger()
-    if platform.system() == "Windows":
-        assert len(logger.handlers) == 1
-    else:
-        assert len(logger.handlers) == 2
+    assert len(logger.handlers) == loggerHandlerCount(help.ogler)
 
     # logger console: nothing should log  because level CRITICAL
     # logger file: nothing should log because .path not created
@@ -384,10 +373,7 @@ def test_reset_levels():
     assert help.ogler.path.endswith(os.path.join(os.path.sep, "main.log"))
     # recreate loggers to pick up file handler
     logger = help.ogler.getLogger()
-    if platform.system() == "Windows":
-        assert len(logger.handlers) == 2
-    else:
-        assert len(logger.handlers) == 3
+    assert len(logger.handlers) == loggerHandlerCount(help.ogler)
 
     # logger console: All should log  because level DEBUG
     # logger file: All should log because .path created
@@ -404,17 +390,15 @@ def test_reset_levels():
 
     # force reinit on different path
     ogler = help.ogler = ogling.initOgler(name="test", level=logging.DEBUG,
-                            temp=True, prefix='keri', reopen=True, clear=True)
+                            temp=True, prefix='keri', reopen=True, clear=True,
+                            syslogged=False)
     assert ogler.opened
     assert ogler.level == logging.DEBUG
     assert ogler.path.startswith(os.path.join(tempDirPath, "keri", "logs", "test_"))
     assert ogler.dirPath.endswith("_temp")
     assert ogler.path.endswith(os.path.join(os.path.sep, "test.log"))
-    # Still have 3 handlers
-    if platform.system() == "Windows":
-        assert len(logger.handlers) == 2
-    else:
-        assert len(logger.handlers) == 3
+    # Still has handlers from the previous logger until recreated.
+    assert len(logger.handlers) == loggerHandlerCount(ogler)
 
     with open(ogler.path, 'r') as logfile:
         contents = logfile.read()
@@ -432,10 +416,7 @@ def test_reset_levels():
 
     # recreate loggers to pick up new path
     logger = ogler.getLogger()
-    if platform.system() == "Windows":
-        assert len(logger.handlers) == 2
-    else:
-        assert len(logger.handlers) == 3
+    assert len(logger.handlers) == loggerHandlerCount(ogler)
 
     # logger console: All should log  because level DEBUG
     # logger file: All should log because new path on file handler
@@ -453,7 +434,7 @@ def test_reset_levels():
     ogler.close(clear=True)
     assert not os.path.exists(path)
 
-    help.ogler = ogling.initOgler(prefix='keri')  # reset help.ogler to defaults
+    help.ogler = ogling.initOgler(prefix='keri', syslogged=False)  # reset help.ogler to defaults
     """End Test"""
 
 
@@ -462,4 +443,3 @@ if __name__ == "__main__":
     test_ogler()
     test_init_ogler()
     test_reset_levels()
-

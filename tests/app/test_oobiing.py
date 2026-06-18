@@ -134,15 +134,17 @@ def test_oobi_share_v2(mockHelpingNowUTC):
           b'bPsKX1uF_zANa_6QBnjDl6L6k_VcMBPzNGDIGBU6N8xLbkYZNsH')
 
 
-def test_oobiery():
+def test_oobiery(unused_tcp_port_factory):
     with openHby(name="oobi", version=Vrsn_1_0) as hby:
+        locPort = unused_tcp_port_factory()
+        oobiPort = unused_tcp_port_factory()
         hab = hby.makeHab(name="oobi", **KWA)
         msgs = bytearray()
         msgs.extend(hab.makeEndRole(eid=hab.pre,
                                     role=Roles.controller,
                                     stamp=helping.nowIso8601(), **KWA))
 
-        msgs.extend(hab.makeLocScheme(url='http://127.0.0.1:5555',
+        msgs.extend(hab.makeLocScheme(url=f'http://127.0.0.1:{locPort}',
                                       scheme=Schemes.http,
                                       stamp=helping.nowIso8601(), **KWA))
         hab.psr.parse(ims=msgs)
@@ -150,20 +152,20 @@ def test_oobiery():
         oobiery = Oobiery(hby=hby)
 
         # Insert some that will fail
-        url = 'http://127.0.0.1:5644/oobi/EADqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness' \
-              '/BAyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw?name=jim'
+        url = f'http://127.0.0.1:{oobiPort}/oobi/EADqo6tHmYTuQ3Lope4mZF_4hBoGJl93cBHRekr_iD_A/witness' \
+              f'/BAyRFMideczFZoapylLIyCjSdhtqVb31wZkRKvPfNqkw?name=jim'
         obr = OobiRecord(date=helping.nowIso8601())
         hby.db.oobis.pin(keys=(url,), val=obr)
-        url = 'http://127.0.0.1:5644/oobi/EBRzmSCFmG2a5U2OqZF-yUobeSYkW-a3FsN82eZXMxY0'
+        url = f'http://127.0.0.1:{oobiPort}/oobi/EBRzmSCFmG2a5U2OqZF-yUobeSYkW-a3FsN82eZXMxY0'
         obr = OobiRecord(date=helping.nowIso8601())
         hby.db.oobis.pin(keys=(url,), val=obr)
-        url = 'http://127.0.0.1:5644/oobi?name=Blind'
+        url = f'http://127.0.0.1:{oobiPort}/oobi?name=Blind'
         obr = OobiRecord(date=helping.nowIso8601())
         hby.db.oobis.pin(keys=(url,), val=obr)
 
         # Configure the MOOBI rpy URL and the controller URL
-        curl = f'http://127.0.0.1:5644/oobi/{hab.pre}/controller'
-        murl = f'http://127.0.0.1:5644/.well-known/keri/oobi/{hab.pre}?name=Root'
+        curl = f'http://127.0.0.1:{oobiPort}/oobi/{hab.pre}/controller'
+        murl = f'http://127.0.0.1:{oobiPort}/.well-known/keri/oobi/{hab.pre}?name=Root'
         obr = OobiRecord(date=helping.nowIso8601())
         hby.db.oobis.pin(keys=(murl,), val=obr)
 
@@ -172,7 +174,7 @@ def test_oobiery():
         moobi = MOOBIEnd(hab=hab, url=curl)
         app.add_route(f"/.well-known/keri/oobi/{hab.pre}", moobi)
 
-        server = http.Server(port=5644, app=app)
+        server = http.Server(port=oobiPort, app=app)
         httpServerDoer = http.ServerDoer(server=server)
 
         limit = 2.0
