@@ -19,14 +19,17 @@ jobs:
       matrix:
         include:
           - os: macos-latest
-            pytest_args: "-n auto"
+            pytest_command: "pytest tests/ --ignore tests/demo/ --ignore test/scripts -n auto"
             pytest_mode: "auto workers"
           - os: ubuntu-latest
-            pytest_args: "-n auto"
+            pytest_command: "pytest tests/ --ignore tests/demo/ --ignore test/scripts -n auto"
             pytest_mode: "auto workers"
           - os: windows-latest
-            pytest_args: "-n auto"
-            pytest_mode: "auto workers"
+            pytest_command: "pytest tests/core"
+            pytest_mode: "serial core"
+          - os: windows-latest
+            pytest_command: "pytest tests/acdc tests/app tests/cli tests/comply tests/db tests/end tests/help tests/peer tests/spac tests/spec tests/test_kering.py tests/vc tests/vdr tests/wasm"
+            pytest_mode: "serial non-core"
     name: test (${{ matrix.os }}, ${{ matrix.pytest_mode }})
 
     steps:
@@ -63,7 +66,7 @@ jobs:
         shell: pwsh
       - name: Run core KERI tests
         run: |
-          pytest tests/ --ignore tests/demo/ --ignore test/scripts ${{ matrix.pytest_args }}
+          ${{ matrix.pytest_command }}
         shell: pwsh
       - name: Run KERI demo tests
         run: |
