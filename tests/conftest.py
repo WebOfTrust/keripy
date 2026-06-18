@@ -7,6 +7,7 @@ https://docs.pytest.org/en/latest/pythonpath.html
 """
 import os
 import shutil
+import socket
 import multicommand
 import datetime
 
@@ -123,9 +124,57 @@ def seeder():
     return DbSeed
 
 
+def _unused_tcp_port():
+    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
+        sock.bind(("127.0.0.1", 0))
+        return sock.getsockname()[1]
+
+
+@pytest.fixture(scope="session")
+def unused_tcp_port_factory():
+    """Return a callable that allocates currently free localhost TCP ports."""
+
+    produced = set()
+
+    def make():
+        for _ in range(100):
+            port = _unused_tcp_port()
+            if port not in produced:
+                produced.add(port)
+                return port
+
+        raise RuntimeError("unable to allocate an unused TCP port")
+
+    return make
+
+
+@pytest.fixture()
+def unused_tcp_port(unused_tcp_port_factory):
+    return unused_tcp_port_factory()
+
+
+@pytest.fixture()
+def witnessPorter(unused_tcp_port_factory):
+    """Allocate witness TCP/HTTP ports and matching endpoint URLs for one test."""
+
+    def make(*aliases):
+        ports = {}
+        urls = {}
+        for alias in aliases:
+            tcpPort = unused_tcp_port_factory()
+            httpPort = unused_tcp_port_factory()
+            ports[alias] = {"tcp": tcpPort, "http": httpPort}
+            urls[f"{alias}:tcp"] = f"tcp://127.0.0.1:{tcpPort}/"
+            urls[f"{alias}:http"] = f"http://127.0.0.1:{httpPort}/"
+
+        return ports, urls
+
+    return make
+
+
 class DbSeed:
     @staticmethod
-    def seedWitEnds(db, witHabs, protocols=None, version=Vrsn_1_0, kind=Kinds.json):
+    def seedWitEnds(db, witHabs, protocols=None, version=Vrsn_1_0, kind=Kinds.json, witnessUrls=None):
         """ Add endpoint and location records for well known test witnesses
 
         Args:
@@ -145,10 +194,12 @@ class DbSeed:
         if protocols is None:
             protocols = [Schemes.tcp, Schemes.http]
 
+        witnessUrls = witnessUrls if witnessUrls is not None else WitnessUrls
+
         for scheme in protocols:
             msgs = bytearray()
             for hab in witHabs:
-                url = WitnessUrls[f"{hab.name}:{scheme}"]
+                url = witnessUrls[f"{hab.name}:{scheme}"]
                 msgs.extend(hab.makeEndRole(eid=hab.pre,
                                             role=Roles.controller,
                                             stamp=help.nowIso8601(),

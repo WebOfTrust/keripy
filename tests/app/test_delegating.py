@@ -14,21 +14,26 @@ from keri.app import (Anchorer, DelegateRequestHandler, Receiptor,
                       openHab, delegateRequestExn)
 
 
-def test_anchorer(seeder):
+def test_anchorer(seeder, witnessPorter):
     with openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64) as wesHby, \
             openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64) as palHby, \
             openHby(name="del", salt=Salter(raw=b'0123456789ghijkl').qb64) as delHby:
 
         version = Vrsn_1_0
         kwa = dict(version=version, kind=Kinds.json)
-        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644, **kwa)
+        witnessPorts, witnessUrls = witnessPorter("wes")
+        wesDoers = setupWitness(alias="wes", hby=wesHby,
+                                tcpPort=witnessPorts["wes"]["tcp"],
+                                httpPort=witnessPorts["wes"]["http"], **kwa)
         witDoer = Receiptor(hby=palHby)
 
         bts = Anchorer(hby=delHby)
 
         wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[Schemes.http], **kwa)
-        seeder.seedWitEnds(delHby.db, witHabs=[wesHab], protocols=[Schemes.http], **kwa)
+        seeder.seedWitEnds(palHby.db, witHabs=[wesHab],
+                           protocols=[Schemes.http], witnessUrls=witnessUrls, **kwa)
+        seeder.seedWitEnds(delHby.db, witHabs=[wesHab],
+                           protocols=[Schemes.http], witnessUrls=witnessUrls, **kwa)
 
         opts = dict(
             wesHab=wesHab,

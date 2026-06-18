@@ -16,7 +16,13 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ macos-latest, ubuntu-latest, windows-latest ]
+        include:
+          - os: macos-latest
+            pytest_workers: 2
+          - os: ubuntu-latest
+            pytest_workers: 4
+          - os: windows-latest
+            pytest_workers: 4
 
     steps:
       - uses: actions/checkout@v4
@@ -40,7 +46,7 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 pytest
+          pip install flake8 pytest pytest-xdist
           if (Test-Path requirements.txt) { pip install -r requirements.txt }
         shell: pwsh
       - name: Lint changes
@@ -52,7 +58,7 @@ jobs:
         shell: pwsh
       - name: Run core KERI tests
         run: |
-          pytest tests/ --ignore tests/demo/ --ignore test/scripts
+          pytest tests/ --ignore tests/demo/ --ignore test/scripts -n ${{ matrix.pytest_workers }}
         shell: pwsh
       - name: Run KERI demo tests
         run: |
