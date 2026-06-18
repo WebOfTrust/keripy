@@ -678,7 +678,7 @@ PreNonDigDex = PreNonDigCodex()  # Make instance
 # namedtuple for size entries in Matter  and Counter derivation code tables
 # hs is the hard size int number of chars in hard (stable) part of code
 # ss is the soft size int number of chars in soft (unstable) part of code
-# xs is the xtra size int number of xtra (pre-pad) chars as part of soft
+# xs is the xtra size int number of xtra (pre-pad in soft) chars as part of soft
 # fs is the full size int number of chars in code plus appended material if any
 # ls is the lead size int number of bytes to pre-pad pre-converted raw binary
 Sizage = namedtuple("Sizage", "hs ss xs fs ls")
@@ -1150,7 +1150,7 @@ class Matter:
     def soft(self):
         """
         Returns:
-            soft (str): soft part only of full text code.
+            soft (str): soft part only of full text code without xtra.
 
         Getter for ._soft. Make ._soft read only
         """
@@ -1178,7 +1178,7 @@ class Matter:
     def both(self):
         """
         Returns:
-            both (str):  hard + soft parts of full text code
+            both (str):  hard + xtra + soft parts of full text code
         """
         #_, ss, _, _ = self.Sizes[self.code]
 
@@ -1307,7 +1307,7 @@ class Matter:
             primitive (bytes): fully qualified base64 characters.
         """
         code = self.code  # hard part of full code == codex value
-        both = self.both  # code + soft, soft may be empty
+        both = self.both  # code + soft including xtra, soft may be empty
         raw = self.raw  # bytes or bytearray, raw may be empty
         rs = len(raw)  # raw size
         hs, ss, xs, fs, ls = self.Sizes[code]

@@ -4158,22 +4158,23 @@ def test_tagger():
         assert tagger.tag == tag
         assert len(tagger.tag) == l
         assert tagger.code == astuple(TagDex)[l - 1]
-        alltags[l] = (tagger.tag, tagger.code)
+        alltags[l] = (tagger.tag, tagger.code, tagger.qb64)
 
     assert alltags == \
-        {
-            1: ('a', '0J'),
-            2: ('ab', '0K'),
-            3: ('abc', 'X'),
-            4: ('abcd', '1AAF'),
-            5: ('abcde', '0L'),
-            6: ('abcdef', '0M'),
-            7: ('abcdefg', 'Y'),
-            8: ('abcdefgh', '1AAN'),
-            9: ('abcdefghi', '0N'),
-            10: ('abcdefghij', '0O'),
-            11: ('abcdefghijk', 'Z'),
-         }
+    {
+        1: ('a', '0J', '0J_a'),
+        2: ('ab', '0K', '0Kab'),
+        3: ('abc', 'X', 'Xabc'),
+        4: ('abcd', '1AAF', '1AAFabcd'),
+        5: ('abcde', '0L', '0L_abcde'),
+        6: ('abcdef', '0M', '0Mabcdef'),
+        7: ('abcdefg', 'Y', 'Yabcdefg'),
+        8: ('abcdefgh', '1AAN', '1AANabcdefgh'),
+        9: ('abcdefghi', '0N', '0N_abcdefghi'),
+        10: ('abcdefghij', '0O', '0Oabcdefghij'),
+        11: ('abcdefghijk', 'Z', 'Zabcdefghijk')
+    }
+
     """ Done Test """
 
 
