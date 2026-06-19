@@ -48,10 +48,10 @@ jobs:
             pytest_command: "pytest tests/ --ignore tests/demo/ --ignore test/scripts -n auto"
           - os: windows-latest
             job_name: "test (windows-latest, core)"
-            pytest_command: "pytest tests/core -n auto"
+            pytest_command: "pytest tests/core"
           - os: windows-latest
             job_name: "test (windows-latest, non-core)"
-            pytest_command: "pytest tests/acdc tests/app tests/cli tests/comply tests/db tests/end tests/help tests/peer tests/spac tests/spec tests/test_kering.py tests/vc tests/vdr tests/wasm -n auto"
+            pytest_command: "pytest tests/acdc tests/app tests/cli tests/comply tests/db tests/end tests/help tests/peer tests/spac tests/spec tests/test_kering.py tests/vc tests/vdr tests/wasm"
     name: ${{ matrix.job_name }}
 
     steps:
