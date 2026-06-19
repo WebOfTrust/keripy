@@ -41,18 +41,18 @@ jobs:
       matrix:
         include:
           - os: macos-latest
+            job_name: "test (macos-latest)"
             pytest_command: "pytest tests/ --ignore tests/demo/ --ignore test/scripts -n auto"
-            pytest_mode: "auto workers"
           - os: ubuntu-latest
+            job_name: "test (ubuntu-latest)"
             pytest_command: "pytest tests/ --ignore tests/demo/ --ignore test/scripts -n auto"
-            pytest_mode: "auto workers"
           - os: windows-latest
+            job_name: "test (windows-latest, core)"
             pytest_command: "pytest tests/core"
-            pytest_mode: "serial core"
           - os: windows-latest
+            job_name: "test (windows-latest, non-core)"
             pytest_command: "pytest tests/acdc tests/app tests/cli tests/comply tests/db tests/end tests/help tests/peer tests/spac tests/spec tests/test_kering.py tests/vc tests/vdr tests/wasm"
-            pytest_mode: "serial non-core"
-    name: test (${{ matrix.os }}, ${{ matrix.pytest_mode }})
+    name: ${{ matrix.job_name }}
 
     steps:
       - uses: actions/checkout@v4
