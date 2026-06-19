@@ -682,7 +682,7 @@ class Parser:
                     tvy=None, exc=None, rvy=None, vry=None, local=None,
                     version=None):
         """Returns generator to parse nested GenericGroups whose outermost nesting
-        appears at the top-lever of an incoming message stream.
+        appears at the top-level of an incoming message stream.
 
         If ims not provided then parse messages from .ims
 
@@ -714,7 +714,7 @@ class Parser:
 
         self.version = version  # when not None which sets .methods .codes .mucodes .sucodes
 
-        stack = deque()  # (svrsn, ims) stack of nested substreams framed by generic groegups
+        stack = deque()  # (svrsn, ims) stack of nested substreams framed by generic groups
         svrsn = None
         eggs = None  # used in preflused error
         done = False
@@ -807,6 +807,502 @@ class Parser:
                 if svrsn:
                     self.version = svrsn
         return done
+
+
+    def msgParsatorNew(self, ims=None, framed=True, piped=False,
+                    kvy=None, tvy=None, exc=None, rvy=None, vry=None,
+                    local=None, version=None):
+        """Returns generator that upon each iteration extracts and parses msg
+        with attached crypto material (signature etc) from incoming message
+        stream, ims, and dispatches processing of message with attachments.
+
+        Uses .ims when ims is not provided.
+
+        Iterator yields when not enough bytes in ims to finish one msg plus
+        attachments. Returns (which raises StopIteration) when finished.
+
+        Parameters:
+            ims (bytearray): serialized incoming message stream.
+                May contain one or more sets each of a serialized message with
+                attached cryptographic material such as signatures or receipts.
+            framed (bool): True means ims contains only one frame of msg plus
+                counted attachments instead of stream with multiple messages
+            piped (bool): True means use pipeline processor to process
+                ims msgs when stream includes pipelineable count codes.
+            kvy (Kevery): route KERI KEL message types to this instance
+            tvy (Tevery): route TEL message types to this instance
+            exc (Exchanger): route EXN message types to this instance
+            rvy (Revery): reply (RPY) message handler
+            vry (Verifier): ACDC credential processor
+            local (bool): True means event source is local (protected) for validation
+                          False means event source is remote (unprotected) for validation
+                          None means use default .local
+            version (``Versionage``): default version of CESR to use.
+                                  None means do not change default
+
+        Logic::
+
+            Currently only support couters on attachments not on combined or
+            on message
+            Attachments must all have counters so know if txt or bny format for
+            attachments. So even when framed==True must still have counter.
+            Do While loop
+                sniff to set up first extraction
+                    raise exception and flush full tream if stream start is counter
+                    must be message
+                extract message
+                sniff for counter
+                if group counter extract and discard but keep track of count
+                so if error while processing attachments then only need to flush
+                attachment count not full stream.
+
+
+        """
+        if ims is None:
+            ims = self.ims
+
+        local = local if local is not None else self.local
+        local = True if local else False
+
+        self.version = version  # when not None which sets .codes .mucodes. .sucodes
+        verstack = deque()  # version stack append and pop
+
+        # create exts (extracts) keyword args dict with fields:
+        # serder (Serder): message instance
+        # sigers (list[Siger]): attached indexed controller signatures
+        # wigers (list[Siger]): attached indexed witness signatures
+        # cigars (list[Cigar]): attached non-transferable from couple (verfer, sig)
+        # trqs (list[tuple]): (prefixer, number, diger, siger)
+        # tsgs (list[tuple]): (prefixer, number, diger, [Sigers]) triple plus list of sigs
+        # ssgs (list[tuple]): (prefixer,[Sigers]) single plus list of sigs
+        # frcs (list[tuple]): (number, dater)
+        # sscs (list[tuple]): (number, diger) issuing or delegating
+        # ssts (list[tuple]): (prefixer, number, diger) issued or delegated
+        # tdcs (list[tuple]): (verser, diger) SealKind TypedDigestSealCouples
+        # ptds (list[bytes]): pathed streams
+        # essrs (list[Texter]): essr encapsulations as Texters
+        # bsqs (list[tuple]): (diger, noncer, noncer, labeler) BlindState
+        # bsss (list[tuple]): (diger, noncer, noncer, labeler, number, noncer) BoundState
+        # tmqs (list[tuple]): (diger, noncer, labeler, texter) TypeMedia
+        # local (bool): True if local source controller context for processing
+        exts = dict(serder=None, sigers=[], wigers=[], cigars=[], trqs=[],
+                    tsgs=[], ssgs=[], frcs=[], sscs=[], ssts=[], tdcs=[],
+                    ptds=[], essrs=[], bsqs=[], bsss=[], tmqs=[], local=local)
+
+        serdery = Serdery(version=Version)
+
+
+        try:
+            while not ims and not framed:
+                yield
+
+            emgs = None  # size of enclosing message group if any when is not None
+            ctr = None  # no counter to process when not None then extracted need to process
+
+            # Check for genus-version change
+            # Note: Genus-Version Counter count code and format is universal
+            # accross all genera and all versions of all genera. Therefore any
+            # version counter should work for parsing stream genus version
+            cold = sniff(ims)  # front of top level of this substream
+            if cold != Colds.msg:  # counter found so peek at it
+                ctr = yield from self._extractor(ims=ims,
+                                                 klas=Counter,
+                                                 cold=cold,
+                                                 abort=framed,
+                                                 strip=False)
+                if ctr.code == self.codes.KERIACDCGenusVersion:
+                    del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
+                    # change version at top level this persists is not stacked
+                    self.version = Counter.b64ToVer(ctr.countToB64(l=3))
+
+            # check for BodyWithAttachmentGroup or non-native message or native message groups
+            cold = sniff(ims)  # front of top level of this substream
+            if cold != Colds.msg:  # counter found so peek at it
+                ctr = yield from self._extractor(ims=ims,
+                                         klas=Counter,
+                                         cold=cold,
+                                         abort=framed,
+                                         strip=False)
+
+                if ctr and ctr.code in (self.sucodes.BodyWithAttachmentGroup,
+                                       self.sucodes.BigBodyWithAttachmentGroup):
+                    del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
+                    # compute enclosing group size based on txt or bny
+                    emgs = ctr.byteCount(cold=cold)
+                    while len(ims) < emgs and not framed:  # framed already in ims
+                        yield
+
+                    eims = ims[:emgs]  # copy out substream enclosed attachments
+                    del ims[:emgs]  # strip off from ims
+                    ims = eims  # replace since message group includes attachments
+                    framed = True  # since includes attachments so pre-extracted
+
+                    if piped:
+                        pass  # pass extracted ims to pipeline processor
+                        return
+
+                    # peek for version
+                    ctr = yield from self._extractor(ims=ims,
+                                                     klas=Counter,
+                                                     cold=cold,
+                                                     abort=framed,
+                                                     strip=False)
+                    if ctr.code == self.codes.KERIACDCGenusVersion:
+                        del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
+                        # change version
+                        verstack.append(self.version)  # push current onto stack
+                        self.version = Counter.b64ToVer(ctr.countToB64(l=3))
+                        # peek at next counter either native or non-native msg group
+                        ctr = yield from self._extractor(ims=ims,
+                                                        klas=Counter,
+                                                        cold=cold,
+                                                        abort=framed,
+                                                        strip=False)
+
+                # Check for message groups
+                if (ctr.code in (self.mucodes.NonNativeBodyGroup,
+                                 self.mucodes.BigNonNativeBodyGroup)):
+                    del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
+                    # process non-native message group with texter
+                    texter = yield from self._extractor(ims=ims,
+                                                        klas=Texter,
+                                                        cold=cold,
+                                                        abort=framed)
+                    serder = serdery.reap(ims=texter.raw,
+                                          genus=self.genus,
+                                          svrsn=self.version)
+                    exts['serder'] = serder
+
+                elif (ctr.code in (self.mucodes.FixBodyGroup,
+                                   self.mucodes.BigFixBodyGroup)): # native fixed field
+                    cbs = ctr.byteSize(cold=cold)  # counter size of counter itself
+                    fmgs = ctr.byteCount(cold=cold)  # fixed body content size
+                    size = cbs + fmgs  # size of ctr and its content
+                    while len(ims) < size and not framed:  # framed already in ims
+                        yield  # until full ctr and its content in ims
+
+                    fims = ims[:size]  # copy out ctr and its content
+                    del ims[:size]  # strip off from ims
+
+                    if cold == Colds.bny:  # tranform to text domain
+                        fims = encodeB64(fims)  # always process event in qb64 text domain
+                        size = (size * 4) // 3
+
+                    # fims includes full body with counter but no attachments
+                    serder = serdery.reap(ims=fims,
+                                          genus=self.genus,
+                                          svrsn=self.version,
+                                          ctr=ctr,
+                                          size=size,
+                                          fixed=True)
+                    exts['serder'] = serder
+
+                elif (ctr.code in (self.mucodes.MapBodyGroup,
+                                   self.mucodes.BigMapBodyGroup)):  # native field map
+                    cbs = ctr.byteSize(cold=cold)  # counter size of counter itself
+                    mmgs = ctr.byteCount(cold=cold)  # fixed body group size
+                    size = cbs + mmgs
+                    while len(ims) < size and not framed:  # framed already in ims
+                        yield  # until full ctr and its content in ims
+
+                    mims = ims[:size]  # copy out ctr and its content
+                    del ims[:size]  # strip off from ims
+
+                    if cold == Colds.bny:  # tranform to text domain
+                        mims = encodeB64(mims)  # always process event in qb64 text domain
+                        size = (size * 4) // 3
+
+                    # mims includes ctr and its content but no attachments
+                    serder = serdery.reap(ims=mims,
+                                          genus=self.genus,
+                                          svrsn=self.version,
+                                          ctr=ctr,
+                                          size=size,
+                                          fixed=False)
+                    exts['serder'] = serder
+
+                elif (ctr.code in (self.sucodes.GenericGroup,
+                                   self.sucodes.BigGenericGroup)):
+                    # return control to groupParsator
+                    raise TopLevelStreamError(f"Got GenericGroup so revisit.")
+
+                else:  # shouldn't be a counter of any other type here
+                    raise ColdStartError(f"Expected message counter code,"
+                                                f" got code={ctr.code}")
+
+            else:   # Otherwise its JSON, CBOR, or MGPK message at top level
+                while True:  # extract, deserialize, and strip message from ims
+                    try:
+                        serder = serdery.reap(ims=ims,
+                                              genus=self.genus,
+                                              svrsn=self.version)
+                    except ShortageError as ex:  # need more bytes
+                        if framed:  # pre-extracted
+                            raise  # incomplete frame or group so abort by raising error
+                        yield
+                    else: # extracted and stripped successfully
+                        exts['serder'] = serder
+                        break  # break out of while loop
+
+        except ExtractionError as ex:
+            if emgs is not None:  # extracted enclosed message group is preflushed
+                raise SizedGroupError(f"Error processing enclosing "
+                                             f"message group of size={emgs}")
+            raise  # no enclosing group so can't preflush, must flush stream
+
+
+        # Extract and deserialize attachments
+        enclosed = False  # True means all attachments enclosed in AttachmentGroup
+
+        try:  # catch errors here to flush only counted part of stream
+            # attachments must start with counter so know if txt or bny.
+            # if no attachments MUST have at least empty AttachmentGroup
+            while not ims and not framed:  # framed has everything already
+                yield  # when not framed at least empty AttachmentGroup follows
+
+            cold = sniff(ims)
+            if cold != Colds.msg:  # counter so peek at what it is
+                ctr = yield from self._extractor(ims=ims,
+                                                 klas=Counter,
+                                                 cold=cold,
+                                                 abort=framed,
+                                                 strip=False)
+                if ctr.code in (self.codes.AttachmentGroup, self.codes.BigAttachmentGroup):
+                    del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
+                    # compute enclosing attachment group size based on txt or bny
+                    eags = ctr.byteCount(cold=cold)
+                    while len(ims) < eags and not framed:
+                        yield
+                    eims = ims[:eags]  # copy out substream enclosed attachments
+                    del ims[:eags]  # strip off from ims consume contents from ims
+                    ims = eims  # now just process substream as one counted frame
+                    enclosed = True
+
+                    if piped:
+                        pass  # pass extracted ims to pipeline processor
+                        return
+
+                    # peek for version change
+                    ctr = yield from self._extractor(ims=ims,
+                                                     klas=Counter,
+                                                     cold=cold,
+                                                     abort=enclosed,
+                                                     strip=False)
+                    if ctr.code == self.codes.KERIACDCGenusVersion:
+                        del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
+                        # change version
+                        verstack.append(self.version)  # push current onto stack
+                        self.version = Counter.b64ToVer(ctr.countToB64(l=3))
+
+
+                while True:  # iteratively process attachment counters in stride
+                    ctr = yield from self._extractor(ims=ims,
+                                                     klas=Counter,
+                                                     cold=cold,
+                                                     abort=framed or enclosed,
+                                                     strip=False)  # peek at ctr
+
+                    # check if group belongs to top level group message in stream
+                    if (ctr.code in self.mucodes or ctr.code in self.sucodes or
+                        ctr.code == self.codes.KERIACDCGenusVersion):
+                        # do not consume leave belongs with new msg
+                        break  # not a valid attachment so done with attachments to this msg
+
+                    del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
+
+                    try:
+                        yield from getattr(self, self.methods[ctr.name])(exts=exts,
+                            ims=ims, ctr=ctr, cold=cold, abort=(framed or enclosed))
+                    except AttributeError as ex:
+                        raise UnexpectedCountCodeError(f"Unsupported count"
+                                                f" code={ctr.code}") from ex
+                    except Exception as ex:
+                        raise  # easier debug with breakpoint here
+
+                    if enclosed:  # attachments framed by enclosing AttachmentGroup
+                        # inside of group all contents must be same cold  .txt
+                        # or .bny so no need to sniff for new cold here.
+                        if not ims:  # end of attachment group
+                            break
+
+                    else:  # assumes that if attachments are not enclosed that
+                        # framed must be true, which means ims, message plus
+                        # attachments all provided at once
+                        # ims framed in some way, but not by enclosing AttachmentGroup
+                        # not all attachments in one enclosing group, each individual
+                        # attachment group may switch stream state txt or bny
+                        if not ims:  # end of frame
+                            break
+                        cold = sniff(ims)
+                        if cold == Colds.msg:  # new non-group message so attachments done
+                            break  # finished attachments since new message
+
+            #else:  # see next msg but with no attachments on current messge
+                # so just proceed to process current message
+
+
+        except ExtractionError as ex:
+            if enclosed:  # extracted enclosed attachment group is preflushed
+                raise SizedGroupError(f"Error processing attachment group"
+                                             " of size={eags}")
+            raise  # no enclosing attachment group so can't preflush, must flush stream
+
+        finally:
+            while verstack:  # restore version to what it was
+                self.version = verstack.pop()
+
+        if isinstance(serder, SerderKERI):
+            ilk = serder.ilk  # dispatch abased on ilk
+
+            if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
+                firner, dater = exts['frcs'][-1] if exts['frcs'] else (None, None)  # use last one if more than one
+                # when present assumes this is source seal of delegating event in delegator's KEL
+                delsner, delsger = exts['sscs'][-1] if exts['sscs'] else (None, None)  # use last one if more than one
+                if not exts['sigers']: # sigers:
+                    msg = f"Missing attached signature(s) for evt = {serder.ked['d']}"
+                    logger.info(msg)
+                    logger.debug("Event Body = \n%s\n", serder.pretty())
+                    raise ValidationError(msg)
+                try:
+                    exts['firner'] = firner  # first seen number
+                    exts['dater'] = dater
+                    exts['delsner'] = Number(num=delsner.sn) if delsner is not None else None
+                    exts['delsger'] = delsger
+
+                    kvy.processEvent(**exts)
+
+                    if exts['cigars']:  # cigars
+                        kvy.processAttachedReceiptCouples(**exts)
+
+                    if exts['trqs']:  # trqs
+                        kvy.processAttachedReceiptQuadruples(**exts)
+
+                except AttributeError as ex:
+                    msg = f"No kevery to process so dropped msg={serder.said}"
+                    logger.info(msg)
+                    logger.debug("Event Body = \n%s\n", serder.pretty())
+                    raise ValidationError(msg) from ex
+
+            elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
+                if not (exts['cigars'] or exts['wigers'] or exts['tsgs']):  # (cigars or wigers or tsgs)
+                    msg = f"Missing attached signatures on receipt msg sn={serder.sn} SAID={serder.said}"
+                    logger.info(msg)
+                    logger.debug("Receipt body=\n%s\n", serder.pretty())
+                    raise ValidationError(msg)
+
+                try:
+
+                    kvy.processReceipt(**exts)
+
+                except AttributeError as ex:
+                    raise ValidationError(f"No kevery to process so dropped msg"
+                                                 f"= {serder.pretty()}.") from ex
+
+
+            elif ilk in (Ilks.rpy,):  # reply message
+                if not (exts['cigars'] or exts['tsgs']):  # (cigars or tsgs)
+                    raise ValidationError(f"Missing attached endorser signature(s) "
+                                                 f"to reply msg = {serder.pretty()}.")
+
+                try:
+                    rvy.processReply(**exts)
+
+                except AttributeError as ex:
+                    raise ValidationError(f"No revery to process so dropped msg"
+                                                 f"= {serder.pretty()}.") from ex
+
+            elif ilk in (Ilks.qry,):  # query message
+                # ToDo neigher kvy.processQuery nor tvy.processQuery actually verify
+                if exts['ssgs']:
+                    # use last one if more than one
+                    pre, sigers = exts['ssgs'][-1] if exts['ssgs'] else (None, None)
+                    exts["source"] = pre
+                    exts["sigers"] = sigers
+                else:
+                    exts['sigers'] = []  # just in case sigers provided not by ssgs
+
+                if not (exts['source'] or exts['cigars']):  # need one or the other
+                    raise ValidationError(f"Missing attached requester "
+                                                 f"source for query"
+                                                 f" msg = {serder.pretty()}.")
+
+                route = serder.ked["r"]
+                if route in ["logs", "ksn", "mbx"]:
+                    try:
+                        kvy.processQuery(**exts)
+                    except AttributeError as ex:
+                        raise ValidationError(f"No kevery to process so "
+                                    f" dropped msg={serder.pretty()}") from ex
+                    except QueryNotFoundError as ex:  # catch escrow error and log it
+                        if logger.isEnabledFor(logging.TRACE):
+                            logger.exception("Error processing query = %s", ex)
+                            logger.trace("Query Body=\n%s\n", serder.pretty())
+                        else:
+                            logger.error("Error processing query = %s", ex)
+
+                elif route in ["tels", "tsn"]:
+                    try:
+                        tvy.processQuery(**exts)
+                    except AttributeError as ex:
+                        raise ValidationError(f"No tevery to process so dropped msg"
+                                                     f"={serder.pretty()}") from ex
+
+                else:
+                    raise ValidationError(f"Invalid resource type {route}"
+                                                 f"so dropped msg={serder.pretty()}.")
+
+            elif ilk in (Ilks.exn,):
+                if not (exts['cigars'] or exts['tsgs']):
+                    raise ValidationError(f"Missing attached exchanger "
+                                        f"signatures for msg={serder.pretty()}")
+
+                try:
+                    exc.processEvent(**exts)
+
+                except AttributeError as ex:
+                    raise ValidationError(f"No Exchange to process so "
+                                    f"dropped msg={serder.pretty()}.") from ex
+
+            elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
+                # TEL msg
+                # get transaction event seal ref to Issuer's KEL
+                # use last one if more than one
+                number, diger = exts['sscs'][-1] if exts['sscs'] else (None, None)
+                exts['seqner'] = number
+                exts['saider'] = diger
+                try:
+                    tvy.processEvent(**exts)
+
+                except AttributeError as ex:
+                    raise ValidationError(f"No tevery to process so dropped msg"
+                                                 f"={serder.pretty()}.") from ex
+            else:
+                raise ValidationError(f"Unexpected message {ilk=} for evt="
+                                             f"{serder.pretty()}")
+
+        elif isinstance(serder, SerderACDC):
+            ilk = serder.ilk  # dispatch based on ilk
+
+            if ilk is None:  # default for ACDC
+                try:
+                    # use last one if more than one
+                    prefixer, number, diger = exts['ssts'][-1] if exts['ssts'] else (None, None, None)
+                    exts['prefixer'] = prefixer
+                    exts['seqner'] = number
+                    exts['saider'] = diger
+                    vry.processACDC(**exts)
+                except AttributeError as ex:
+                    raise ValidationError(f"No verifier to process so "
+                                        f"dropped ACDC={serder.pretty()}") from ex
+            else:
+                raise ValidationError(f"Unexpected message ilk = {ilk} "
+                                             f"for evt={serder.pretty()}")
+
+        else:
+            raise ValidationError(f"Unexpected protocol type={serder.proto}"
+                                         f" for event message={serder.pretty()}.")
+
+        return True  # done state
 
 
     def msgParsator(self, ims=None, framed=True, piped=False,
