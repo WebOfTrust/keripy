@@ -38,7 +38,7 @@ logger = ogler.getLogger()
 
 
 @dataclass()
-class MsgParseDOM:
+class MsgParseDom:
     """Fields extracted when parsing a message substream where substream is
     a message plus attachments. The attachments include a nests field which is
     a list of nested (embedded) message substreams.
@@ -52,7 +52,7 @@ class MsgParseDOM:
     cigars: list[Cigar] = field(default_factory=list)  # NonTransReceiptCouples cigar with verfer from (pre+sig)
     trqs:   list[TransLastReceipts] = field(default_factory=list)  # TransReceiptQuadruples TransLastReceiptIdxSigGroups (prefixer, number, diger, siger)
     tsgs:   list[TransSigs] = field(default_factory=list)  # TransIdxSigGroups (prefixer, number, diger, [Sigers])
-    tlsgs:  list[TransLastSigs] = field(default_factory=list)  # ssgs TransLastIdxSigGroups (prefixer,[Sigers])
+    lsgs:   list[TransLastSigs] = field(default_factory=list)  # TransLastIdxSigGroups (prefixer,[Sigers]) (was ssgs)
     frcs:   list[FirstSeen] = field(default_factory=list)  # FirstSeenReplayCouples (number, dater)
     sscs:   list[SealSource] = field(default_factory=list)  # SealSourceCouples (number, diger) sealing or sealed event
     ssts:   list[SealEvent] = field(default_factory=list)  # SealSourceTriples (prefixer, number, diger) sealing or sealed event
@@ -874,30 +874,31 @@ class Parser:
         Returns::
             result (dict): parsed msg+attachments substream. Result is suitable
                            for ** expansion as keywords to subsequent processing
-                           of the msg substream. The dict items are defined below.
+                           of the msg substream. The dict is the asdict() of
+                           MsgParseDom dataclass
+                serder (Serder): message instance SerderKERI or SerderACDC
+                sigers (list[Siger]): ControllerIdxSigs
+                wigers (list[Siger]): WitnessIdxSigs
+                cigars (list[Cigar]): NonTransReceiptCouples cigar with verfer from (pre+sig)
+                trqs   (list[TransLastReceipts]): TransReceiptQuadruples TransLastReceiptIdxSigGroups (prefixer, number, diger, siger)
+                tsgs   (list[TransSigs]):TransIdxSigGroups (prefixer, number, diger, [Sigers])
+                lsgs   (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[Sigers]) (was ssgs)
+                frcs   (list[FirstSeen]): FirstSeenReplayCouples (number, dater)
+                sscs   (list[SealSource]): SealSourceCouples (number, diger) sealing or sealed event
+                ssts   (list[SealEvent]): SealSourceTriples (prefixer, number, diger) sealing or sealed event
+                tdcs   (list[SealKind]): TypedDigestSealCouples SealKind (verser, diger)
+                bsqs   (list[BlindState]): BlindedStateQuadruples BlindState (diger, noncer, noncer, labeler)
+                bsss   (list[BoundState]): BoundStateSextuples BoundState (diger, noncer, noncer, labeler, number, noncer)
+                tmqs   (list[TypeMedia]): TypedMediaQuadruples TypeMedia (diger, noncer, labeler, texter)
+                essrs  (list[Texter]): ESSR encapsulations as Texters
+                ptds   (list[bytes]): PathedMaterialCouples (path, text) -> concat path+text
+                nests  (list[dict]): asdict(MsgParseDOM) instance dicts recursively nested
+                local  (bool): True means treat as local source controller context for processing
+                               False means treat as remote controller context for processing
 
-                serder (Serder): message instance
-                sigers (list[Siger]): attached indexed controller signatures
-                wigers (list[Siger]): attached indexed witness signatures
-                cigars (list[Cigar]): attached non-transferable from couple (verfer, sig)
-                trqs (list[tuple]): (prefixer, number, diger, siger)
-                tsgs (list[tuple]): (prefixer, number, diger, [Sigers]) triple plus list of sigs
-                ssgs (list[tuple]): (prefixer,[Sigers]) single plus list of sigs
-                frcs (list[tuple]): (number, dater)
-                sscs (list[tuple]): (number, diger) issuing or delegating
-                ssts (list[tuple]): (prefixer, number, diger) issued or delegated
-                tdcs (list[tuple]): (verser, diger) SealKind TypedDigestSealCouples
-                ptds (list[bytes]): pathed streams
-                essrs (list[Texter]): essr encapsulations as Texters
-                bsqs (list[tuple]): (diger, noncer, noncer, labeler) BlindState
-                bsss (list[tuple]): (diger, noncer, noncer, labeler, number, noncer) BoundState
-                tmqs (list[tuple]): (diger, noncer, labeler, texter) TypeMedia
-                local (bool): True if local source controller context for processing
-                nests (list[dict]): recursively nested msg substreams where
-                                    each element is dict with these fields.
 
 
-        Parameters:
+        Parameters::
             ims (bytearray): serialized incoming message stream.
                 May contain one or more sets each of a serialized message with
                 attached cryptographic material such as signatures or receipts.
@@ -917,7 +918,6 @@ class Parser:
                                   None means do not change default
 
         Logic::
-
             Currently only support couters on attachments not on combined or
             on message
             Attachments must all have counters so know if txt or bny format for
@@ -942,28 +942,7 @@ class Parser:
 
         self.version = version  # when not None which sets .codes .mucodes. .sucodes
         verstack = deque()  # version stack append and pop
-
-        # create exts (extracts) keyword args dict with fields:
-        # serder (Serder): message instance
-        # sigers (list[Siger]): attached indexed controller signatures
-        # wigers (list[Siger]): attached indexed witness signatures
-        # cigars (list[Cigar]): attached non-transferable from couple (verfer, sig)
-        # trqs (list[tuple]): (prefixer, number, diger, siger)
-        # tsgs (list[tuple]): (prefixer, number, diger, [Sigers]) triple plus list of sigs
-        # ssgs (list[tuple]): (prefixer,[Sigers]) single plus list of sigs
-        # frcs (list[tuple]): (number, dater)
-        # sscs (list[tuple]): (number, diger) issuing or delegating
-        # ssts (list[tuple]): (prefixer, number, diger) issued or delegated
-        # tdcs (list[tuple]): (verser, diger) SealKind TypedDigestSealCouples
-        # ptds (list[bytes]): pathed streams
-        # essrs (list[Texter]): essr encapsulations as Texters
-        # bsqs (list[tuple]): (diger, noncer, noncer, labeler) BlindState
-        # bsss (list[tuple]): (diger, noncer, noncer, labeler, number, noncer) BoundState
-        # tmqs (list[tuple]): (diger, noncer, labeler, texter) TypeMedia
-        # local (bool): True if local source controller context for processing
-        exts = dict(serder=None, sigers=[], wigers=[], cigars=[], trqs=[],
-                    tsgs=[], ssgs=[], frcs=[], sscs=[], ssts=[], tdcs=[],
-                    ptds=[], essrs=[], bsqs=[], bsss=[], tmqs=[], local=local)
+        exts = MsgParseDom()  # create instance
 
         serdery = Serdery(version=Version)
 
@@ -1047,7 +1026,7 @@ class Parser:
                     serder = serdery.reap(ims=texter.raw,
                                           genus=self.genus,
                                           svrsn=self.version)
-                    exts['serder'] = serder
+                    exts.serder = serder
 
                 elif (ctr.code in (self.mucodes.FixBodyGroup,
                                    self.mucodes.BigFixBodyGroup)): # native fixed field
@@ -1071,7 +1050,7 @@ class Parser:
                                           ctr=ctr,
                                           size=size,
                                           fixed=True)
-                    exts['serder'] = serder
+                    exts.serder = serder
 
                 elif (ctr.code in (self.mucodes.MapBodyGroup,
                                    self.mucodes.BigMapBodyGroup)):  # native field map
@@ -1095,7 +1074,7 @@ class Parser:
                                           ctr=ctr,
                                           size=size,
                                           fixed=False)
-                    exts['serder'] = serder
+                    exts.serder = serder
 
                 elif (ctr.code in (self.sucodes.GenericGroup,
                                    self.sucodes.BigGenericGroup)):
@@ -1117,7 +1096,7 @@ class Parser:
                             raise  # incomplete frame or group so abort by raising error
                         yield
                     else: # extracted and stripped successfully
-                        exts['serder'] = serder
+                        exts.serder = serder
                         break  # break out of while loop
 
         except ExtractionError as ex:
@@ -1298,7 +1277,7 @@ class Parser:
         # cigars (list[Cigar]): attached non-transferable from couple (verfer, sig)
         # trqs (list[tuple]): (prefixer, number, diger, siger)
         # tsgs (list[tuple]): (prefixer, number, diger, [Sigers]) triple plus list of sigs
-        # ssgs (list[tuple]): (prefixer,[Sigers]) single plus list of sigs
+        # lsgs (list[tuple]): (prefixer,[Sigers]) single plus list of sigs (was ssgs)
         # frcs (list[tuple]): (number, dater)
         # sscs (list[tuple]): (number, diger) issuing or delegating
         # ssts (list[tuple]): (prefixer, number, diger) issued or delegated
@@ -1310,7 +1289,7 @@ class Parser:
         # tmqs (list[tuple]): (diger, noncer, labeler, texter) TypeMedia
         # local (bool): True if local source controller context for processing
         exts = dict(serder=None, sigers=[], wigers=[], cigars=[], trqs=[],
-                    tsgs=[], ssgs=[], frcs=[], sscs=[], ssts=[], tdcs=[],
+                    tsgs=[], lsgs=[], frcs=[], sscs=[], ssts=[], tdcs=[],
                     ptds=[], essrs=[], bsqs=[], bsss=[], tmqs=[], local=local)
 
         serdery = Serdery(version=Version)
@@ -1637,13 +1616,13 @@ class Parser:
 
             elif ilk in (Ilks.qry,):  # query message
                 # ToDo neigher kvy.processQuery nor tvy.processQuery actually verify
-                if exts['ssgs']:
+                if exts['lsgs']:
                     # use last one if more than one
-                    pre, sigers = exts['ssgs'][-1] if exts['ssgs'] else (None, None)
+                    pre, sigers = exts['lsgs'][-1] if exts['lsgs'] else (None, None)
                     exts["source"] = pre
                     exts["sigers"] = sigers
                 else:
-                    exts['sigers'] = []  # just in case sigers provided not by ssgs
+                    exts['sigers'] = []  # just in case sigers provided not by lsgs
 
                 if not (exts['source'] or exts['cigars']):  # need one or the other
                     raise ValidationError(f"Missing attached requester "
@@ -2174,10 +2153,10 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            ssgs (list[tuple]): [(prefixer, [isigers])]
+            lsgs (list[tuple]): [(prefixer, [isigers])]
 
         """
-        ssgs = []
+        lsgs = []
         for i in range(ctr.count):  # extract each attached group
             prefixer = yield from self._extractor(ims=ims,
                                                   klas=Prefixer,
@@ -2197,11 +2176,11 @@ class Parser:
                                                cold=cold,
                                                abort=abort)
                 isigers.append(isiger)
-            ssgs.append((prefixer, isigers))
+            lsgs.append((prefixer, isigers))
         try:
-            exts['ssgs'].extend(ssgs)
+            exts['lsgs'].extend(lsgs)
         except KeyError:
-            exts['ssgs'] = ssgs
+            exts['lsgs'] = lsgs
 
 
     def _TransLastIdxSigGroups2(self, exts, ims, ctr, cold, abort):
@@ -2220,7 +2199,7 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            ssgs (list[tuple]): [(prefixer, [isigers])]
+            lsgs (list[tuple]): [(prefixer, [isigers])]
 
         """
         gs = ctr.byteCount(cold=cold)
@@ -2232,7 +2211,7 @@ class Parser:
 
         gims = ims[:gs]  # copy out group sized substream
         del ims[:gs]  # strip off from ims
-        ssgs = []
+        lsgs = []
         isigers = []
         while gims:   # extract each attached group strip from gims
             prefixer = self.extract(ims=gims, klas=Prefixer, cold=cold)
@@ -2251,11 +2230,11 @@ class Parser:
             while igims:
                 isiger = self.extract(ims=igims, klas=Siger, cold=cold)
                 isigers.append(isiger)
-            ssgs.append((prefixer, isigers))  # tuple
+            lsgs.append((prefixer, isigers))  # tuple
         try:
-            exts['ssgs'].extend(ssgs)
+            exts['lsgs'].extend(lsgs)
         except KeyError:
-            exts['ssgs'] = ssgs
+            exts['lsgs'] = lsgs
 
 
     def _FirstSeenReplayCouples1(self, exts, ims, ctr, cold, abort):

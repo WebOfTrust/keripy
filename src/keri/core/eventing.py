@@ -4517,7 +4517,7 @@ class Kevery:
         Parameters:
             serder (SerderKERI): message instance
             kwa (dict | None): parser exts / attachment dict (sigers, cigars, tsgs,
-                   ssgs, sscs, ssts, tdcs, wigers, trqs, frcs, ptds, essrs,
+                   lsgs, sscs, ssts, tdcs, wigers, trqs, frcs, ptds, essrs,
                    bsqs, bsss, tmqs, local, etc.); mutated in place (KRAM
                    normalization, rvy/exc/tvy pops, qry source/sigers).
                    Also accepts processor overrides injected by parser:
@@ -4567,9 +4567,10 @@ class Kevery:
         # Step 3: Dispatch to message-specific processing
         match ilk:
             case Ilks.qry:
-                # Extract source and sigers from ssgs (like parser originally did)
-                if kwa.get('ssgs'):
-                    pre, sigers = kwa['ssgs'][-1]
+                # Extract source and sigers from lsgs (last sig groups)
+                # trans last indexed sig groups
+                if kwa.get('lsgs'):
+                    pre, sigers = kwa['lsgs'][-1]
                     kwa['source'] = pre
                     kwa['sigers'] = sigers
                 elif kwa['sigers'] and not kwa.get('source'):
