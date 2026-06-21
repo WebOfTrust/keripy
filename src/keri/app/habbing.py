@@ -34,7 +34,7 @@ def openHby(*, name="test", base="", temp=True, salt=None, **kwa):
     """Context manager that creates and yields a ``Habery`` instance, closing
     and optionally clearing it on exit.
 
-    Parameters::
+    Parameters:
         name (str): Name used for the shared databases and config file path.
         base (str): Optional path component inserted before ``name`` for
             further hierarchical differentiation of databases. Empty string

@@ -711,7 +711,7 @@ class Matter:
         code (str): hard part of derivation code to indicate cypher suite
         hard (str): hard part of derivation code. alias for code
         soft (str | bytes): soft part of full code exclusive of xs xtra prepad.
-                    Empty when ss = 0.
+        Empty when ss = 0.
         both (str): hard + soft parts of full text code
         size (int | None): Number of quadlets/triplets of chars/bytes including
                             lead bytes of variable sized material (fs = None).
@@ -2560,7 +2560,7 @@ class Verser(Tagger):
         code (str): hard part of derivation code to indicate cypher suite
         hard (str): hard part of derivation code. alias for code
         soft (str): soft part of derivation code fs any.
-                    Empty when ss = 0.
+            Empty when ss = 0.
         both (str): hard + soft parts of full text code
         size (int | None): Number of quadlets/triplets of chars/bytes including
                             lead bytes of variable sized material (fs = None).
@@ -3526,7 +3526,7 @@ class Cigar(Matter):
     Properties:  (Inherited)
         .code is str derivation code to indicate cypher suite
         .size is size (int): number of quadlets when variable sized material besides
-                        full derivation code else None
+                    full derivation code else None
         .raw is bytes crypto material only without code
         .qb64 is str in Base64 fully qualified with derivation code + crypto mat
         .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
