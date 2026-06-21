@@ -236,10 +236,10 @@ class CounterCodex_2_0(IceMapDom):
     BigBackerRegistrarSealCouples: str = '--V'  # Big Backer Registrar Seal Couple(s), brid+dig of sealed data.
     TypedDigestSealCouples: str = '-W'  # Typed Digest Seal Couple(s), type seal vers+dig of sealed data.
     BigTypedDigestSealCouples: str = '--W'  # Big Typed Digest Seal Couple(s), type seal vers+dig of sealed data.
-    TransIdxSigGroups: str = '-X'  # Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
-    BigTransIdxSigGroups: str = '--X'  # Big Trans Indexed Signature Group(s), pre+snu+dig+CtrControllerIdxSigs of qb64.
-    TransLastIdxSigGroups: str = '-Y'  # Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
-    BigTransLastIdxSigGroups: str = '--Y'  # Big Trans Last Est Evt Indexed Signature Group(s), pre+CtrControllerIdxSigs of qb64.
+    TransIdxSigGroups: str = '-X'  # Trans Indexed Signature Group(s), pre+snu+dig+ControllerIdxSigs of qb64.
+    BigTransIdxSigGroups: str = '--X'  # Big Trans Indexed Signature Group(s), pre+snu+dig+ControllerIdxSigs of qb64.
+    TransLastIdxSigGroups: str = '-Y'  # Trans Last Est Evt Indexed Signature Group(s), pre+ControllerIdxSigs of qb64.
+    BigTransLastIdxSigGroups: str = '--Y'  # Big Trans Last Est Evt Indexed Signature Group(s), pre+ControllerIdxSigs of qb64.
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group.
     BigESSRPayloadGroup: str = '--Z'  # Big ESSR Payload Group.
     BlindedStateQuadruples: str = '-a'  # Blinded transaction event state quadruples blid+uuid+said+state.
