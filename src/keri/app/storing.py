@@ -267,7 +267,10 @@ class Respondant(doing.DoDoer):
                         if hab is None:
                             continue
 
-                        raw = hab.receipt(serder, framed=True)
+                        raw = hab.receipt(serder, framed=True,
+                                          version=serder.pvrsn,
+                                          kind=serder.kind,
+                                          gvrsn=serder.pvrsn)
                         rserder = SerderKERI(raw=raw)
                         del raw[:rserder.size]
                         self.postman.send(serder.pre, topic="receipt", serder=rserder, hab=hab, attachment=raw)

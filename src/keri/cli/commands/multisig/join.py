@@ -188,6 +188,8 @@ class JoinDoer(doing.DoDoer):
         embeds = exn.ked['e']
         oicp = SerderKERI(sad=embeds["icp"])
 
+        inits["version"] = oicp.pvrsn
+        inits["kind"] = oicp.kind
         inits["isith"] = oicp.ked["kt"]
         inits["nsith"] = oicp.ked["nt"]
 

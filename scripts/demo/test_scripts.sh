@@ -11,29 +11,77 @@ SCRIPT_TIMEOUT="${KERI_SCRIPT_TIMEOUT:-300}"
 # Max retry attempts per script. Override with KERI_SCRIPT_RETRIES env var.
 MAX_RETRIES="${KERI_SCRIPT_RETRIES:-3}"
 
-clean_temp_state() {
+clean_all_temp_state() {
     local base="${KERI_TEMP_DIR}"
 
     rm -rf \
         "/usr/local/var/keri/db/${base}" \
         "/usr/local/var/keri/ks/${base}" \
+        "/usr/local/var/keri/mbx/${base}" \
         "/usr/local/var/keri/reg/${base}" \
         "/usr/local/var/keri/cf/${base}" \
         "/usr/local/var/keri/cf/${base}.json" \
         "$HOME/.keri/db/${base}" \
         "$HOME/.keri/ks/${base}" \
+        "$HOME/.keri/mbx/${base}" \
         "$HOME/.keri/reg/${base}" \
         "$HOME/.keri/cf/${base}" \
         "$HOME/.keri/cf/${base}.json"
 }
 
-# Launch witnesses in background using the same isolated base as the demo scripts.
-kli witness demo --base "${KERI_TEMP_DIR}" &
-wits=$!
-sleep 3
+wits=""
+witness_oobis=(
+    "http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller"
+    "http://127.0.0.1:5643/oobi/BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM/controller"
+    "http://127.0.0.1:5644/oobi/BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX/controller"
+)
+
+witnesses_ready() {
+    local url
+
+    if ! command -v curl > /dev/null 2>&1; then
+        sleep 5
+        return 0
+    fi
+
+    for url in "${witness_oobis[@]}"; do
+        curl -fsS --max-time 2 "$url" > /dev/null 2>&1 || return 1
+    done
+}
+
+start_witnesses() {
+    # Launch witnesses using the same isolated base and v1 protocol version as the scripts.
+    command kli witness demo --base "${KERI_TEMP_DIR}" --version 1.0 &
+    wits=$!
+
+    for _ in {1..30}; do
+        if ! kill -0 "$wits" > /dev/null 2>&1; then
+            wait "$wits" > /dev/null 2>&1 || true
+            wits=""
+            return 1
+        fi
+
+        if witnesses_ready; then
+            return 0
+        fi
+
+        sleep 1
+    done
+
+    return 1
+}
+
+stop_witnesses() {
+    if [ -n "${wits:-}" ]; then
+        kill -HUP "$wits" > /dev/null 2>&1 || true
+        wait "$wits" > /dev/null 2>&1 || true
+        wits=""
+        sleep 1
+    fi
+}
 
 # Ensure we kill the witnesses on exit
-trap 'kill -HUP $wits' EXIT
+trap 'stop_witnesses' EXIT
 
 # Run a script with a timeout and retry on failure.
 # Usage: run_with_retry <script_path> [timeout_seconds]
@@ -54,12 +102,28 @@ run_with_retry() {
         fi
         printf "************************************\n"
 
-        clean_temp_state
+        stop_witnesses
+        clean_all_temp_state
+        if ! start_witnesses; then
+            exit_code=1
+            stop_witnesses
+            if [ "$attempt" -lt "$MAX_RETRIES" ]; then
+                local delay=$(( 2 ** attempt ))
+                printf "\e[33m%s could not start witnesses. Retrying in %ds...\e[0m\n" "$name" "$delay"
+                sleep "$delay"
+                continue
+            else
+                printf "\e[31m%s failed after %d attempts: witnesses did not start.\e[0m\n" "$name" "$MAX_RETRIES"
+                return "$exit_code"
+            fi
+        fi
 
         if timeout "$t" "$script"; then
+            stop_witnesses
             return 0
         else
             exit_code=$?
+            stop_witnesses
         fi
         if [ "$attempt" -lt "$MAX_RETRIES" ]; then
             local delay=$(( 2 ** attempt ))

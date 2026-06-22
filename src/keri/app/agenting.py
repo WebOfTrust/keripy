@@ -19,7 +19,7 @@ from .httping import Clienter, streamCESRRequests, CESR_DESTINATION_HEADER
 from ..kering import (Schemes, Roles, Vrsn_1_0,
                       MissingEntryError, ConfigurationError,
                       MissingEntryError)
-from ..core import Counter, eventing, parsing, coring, serdering, Codens
+from ..core import Counter, eventing, parsing, coring, serdering, Codens, Cigar, Siger, Verfer
 
 
 logger = ogler.getLogger()
@@ -52,6 +52,73 @@ class Receiptor(doing.DoDoer):
         self.hby = hby
 
         super(Receiptor, self).__init__(doers=doers)
+
+    def _receiptFromResponse(self, hab, rep):
+        """Parse a witness receipt response and return its attachment bytes."""
+        if rep.status != 200:
+            return None
+
+        msg = bytearray(rep.body)
+        rserder = serdering.SerderKERI(raw=msg)
+        atc = bytearray(msg[rserder.size:])
+        if not atc:
+            return None
+
+        ctr = Counter(qb64b=atc, strip=True, version=rserder.pvrsn)
+        if ctr.name in (Codens.WitnessIdxSigs, Codens.BigWitnessIdxSigs):
+            wigers = []
+            couples = bytearray()
+            wits = [wit.qb64 for wit in hab.kvy.fetchWitnessState(rserder.pre, rserder.sn)]
+            for _ in range(ctr.count):
+                wiger = Siger(qb64b=atc, strip=True)
+                wigers.append(wiger)
+
+                if wiger.index < len(wits):
+                    verfer = Verfer(qb64=wits[wiger.index])
+                    cigar = Cigar(raw=wiger.raw, verfer=verfer)
+                    couples.extend(verfer.qb64b)
+                    couples.extend(cigar.qb64b)
+
+            hab.kvy.processReceipt(serder=rserder, wigers=wigers, cigars=[], tsgs=[])
+            return couples
+
+        if ctr.name in (Codens.NonTransReceiptCouples, Codens.BigNonTransReceiptCouples):
+            cigars = []
+            couples = bytearray()
+            for _ in range(ctr.count):
+                verfer = Verfer(qb64b=atc, strip=True)
+                cigar = Cigar(qb64b=atc, strip=True)
+                cigar.verfer = verfer
+                cigars.append(cigar)
+                couples.extend(verfer.qb64b)
+                couples.extend(cigar.qb64b)
+
+            hab.kvy.processReceipt(serder=rserder, cigars=cigars, wigers=[], tsgs=[])
+            return couples
+
+        hab.psr.parseOne(msg)
+        return atc
+
+    def _fetchReceipt(self, hab, wit, pre, sn):
+        """Fetch a receipt from a specific witness."""
+        urls = hab.fetchUrls(eid=wit, scheme=Schemes.https) or hab.fetchUrls(eid=wit, scheme=Schemes.http)
+        if not urls:
+            raise MissingEntryError(f"unable to query witness {wit}, no http endpoint")
+
+        base = urls[Schemes.https] if Schemes.https in urls else urls[Schemes.http]
+        url = urljoin(base, f"/receipts?pre={pre}&sn={sn}")
+        client = self.clienter.request("GET", url)
+        if client is None:
+            return None
+
+        try:
+            while not client.responses:
+                yield self.tock
+
+            rep = client.respond()
+            return self._receiptFromResponse(hab, rep)
+        finally:
+            self.clienter.remove(client)
 
     def receipt(self, pre, sn=None, auths=None):
         """Returns a generator performing witness receipting of KEL events.
@@ -113,15 +180,18 @@ class Receiptor(doing.DoDoer):
 
             rep = client.respond()
             if rep.status == 200:
-                rct = bytearray(rep.body)
-                hab.psr.parseOne(bytearray(rct))
-                rserder = serdering.SerderKERI(raw=rct)
-                del rct[:rserder.size]
-
-                # pull off the count code
-                Counter(qb64b=rct, strip=True, version=rserder.pvrsn)
-                rcts[wit] = rct
-            else:
+                if rct := self._receiptFromResponse(hab, rep):
+                    rcts[wit] = rct
+            if rep.status in (200, 202) and wit not in rcts:
+                # The witness accepted the event but did not have a receipt
+                # ready for the immediate POST response. Poll the same witness
+                # until the receipt is available instead of completing empty
+                while wit not in rcts:
+                    if rct := (yield from self._fetchReceipt(hab, wit, pre, sn)):
+                        rcts[wit] = rct
+                        break
+                    yield self.tock
+            elif rep.status != 200:
                 print(f"invalid response {rep.status} from witnesses {wit}")
 
         # send retrieved receipts to all other witnesses
@@ -192,8 +262,7 @@ class Receiptor(doing.DoDoer):
 
         rep = client.respond()
         if rep.status == 200:
-            rct = bytearray(rep.body)
-            hab.psr.parseOne(bytearray(rct))
+            self._receiptFromResponse(hab, rep)
 
         self.clienter.remove(client)
         return rep.status == 200

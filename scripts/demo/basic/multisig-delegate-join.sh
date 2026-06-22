@@ -20,14 +20,14 @@ kli oobi resolve --name "$delegator" --oobi "$delegator_witness_url"
 kli oobi resolve --name "$delegate_1" --oobi "$delegate_witness_url"
 kli oobi resolve --name "$delegate_2" --oobi "$delegate_witness_url"
 
-kli incept --name "$delegator" --alias delegator --icount 1 --ncount 1 --isith 1 --nsith 1 --transferable --toad 1 --wit "$delegator_witness_aid"
+kli incept --name "$delegator" --alias delegator --version 1.0 --icount 1 --ncount 1 --isith 1 --nsith 1 --transferable --toad 1 --wit "$delegator_witness_aid"
 kli ends add --name "$delegator" --alias delegator --eid "$delegator_witness_aid" --role mailbox
 
 delegator_aid=$(kli aid --name "$delegator" --alias delegator)
 delegator_oobi=$(kli oobi generate --name "$delegator" --alias delegator --role witness | tail -n 1)
 
-kli incept --name "$delegate_1" --alias member --icount 1 --ncount 1 --isith 1 --nsith 1 --transferable --toad 1 --wit "$delegate_witness_aid"
-kli incept --name "$delegate_2" --alias member --icount 1 --ncount 1 --isith 1 --nsith 1 --transferable --toad 1 --wit "$delegate_witness_aid"
+kli incept --name "$delegate_1" --alias member --version 1.0 --icount 1 --ncount 1 --isith 1 --nsith 1 --transferable --toad 1 --wit "$delegate_witness_aid"
+kli incept --name "$delegate_2" --alias member --version 1.0 --icount 1 --ncount 1 --isith 1 --nsith 1 --transferable --toad 1 --wit "$delegate_witness_aid"
 kli ends add --name "$delegate_1" --alias member --eid "$delegate_witness_aid" --role mailbox
 kli ends add --name "$delegate_2" --alias member --eid "$delegate_witness_aid" --role mailbox
 
@@ -46,6 +46,7 @@ kli oobi resolve --name "$delegator" --oobi-alias delegate_1 --oobi "${delegate_
 delegate_json=$(mktemp)
 cat << EOF > "$delegate_json"
 {
+    "version": [1, 0],
     "transferable": true,
     "toad": 1,
     "wits": ["$delegate_witness_aid"],
@@ -57,7 +58,7 @@ cat << EOF > "$delegate_json"
 EOF
 
 # Delegate 1 initiates the delegated identifier
-kli multisig incept --name "$delegate_1" --alias member --group delegate --file "$delegate_json" &
+kli multisig incept --name "$delegate_1" --alias member --group delegate --version 1.0 --file "$delegate_json" &
 PID_LIST="$!"
 kli delegate confirm --name "$delegator" --alias delegator --interact -Y &
 PID_LIST+=" $!"

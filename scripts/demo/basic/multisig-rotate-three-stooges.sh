@@ -12,15 +12,15 @@ echo
 
 kli init --name larry --salt 0ACDEyMzQ1Njc4OWxtbm9aBc --nopasscode --config-dir "${KERI_SCRIPT_DIR}" --config-file demo-witness-oobis
 # Prefix EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U
-kli incept --name larry --alias larry --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-1-sample.json
+kli incept --name larry --alias larry --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-1-sample.json
 
 kli init --name moe --salt 0ACDEyMzQ1Njc4OWdoaWpsaw --nopasscode --config-dir "${KERI_SCRIPT_DIR}" --config-file demo-witness-oobis
 # Prefix ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW
-kli incept --name moe --alias moe --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-2-sample.json
+kli incept --name moe --alias moe --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-2-sample.json
 
 kli init --name curly --salt 0ACDEyMzQ1Njc4OWdoaWpsaw --nopasscode --config-dir "${KERI_SCRIPT_DIR}" --config-file demo-witness-oobis
 # Prefix EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu
-kli incept --name curly --alias curly --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-3-sample.json
+kli incept --name curly --alias curly --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-3-sample.json
 
 # OOBI resolution does the initial discovery of key state
 echo
@@ -38,13 +38,13 @@ kli oobi resolve --name curly --oobi-alias moe --oobi http://127.0.0.1:5642/oobi
 echo
 print_yellow "Multisig Inception"
 # Follow commands run in parallel
-kli multisig incept --name larry --alias larry --group multisig --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-three-aids.json &
+kli multisig incept --name larry --alias larry --group multisig --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-three-aids.json &
 pid=$!
 PID_LIST+=" $pid"
-kli multisig incept --name moe --alias moe --group multisig --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-three-aids.json &
+kli multisig incept --name moe --alias moe --group multisig --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-three-aids.json &
 pid=$!
 PID_LIST+=" $pid"
-kli multisig incept --name curly --alias curly --group multisig --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-three-aids.json &
+kli multisig incept --name curly --alias curly --group multisig --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-three-aids.json &
 pid=$!
 PID_LIST+=" $pid"
 
@@ -67,17 +67,17 @@ kli rotate --name curly --alias curly
 echo
 print_yellow "Pull key state in from other multisig group participant identifiers"
 # 2 about 1
-kli query --name moe --alias moe --prefix EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U
+kli query --name moe --alias moe --prefix EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --sn 1
 # 2 about 3
-kli query --name moe --alias moe --prefix EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu
+kli query --name moe --alias moe --prefix EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu --sn 1
 # 1 about 2
-kli query --name larry --alias larry --prefix ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW
+kli query --name larry --alias larry --prefix ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --sn 1
 # 1 about 3
-kli query --name larry --alias larry --prefix EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu
+kli query --name larry --alias larry --prefix EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu --sn 1
 # 3 about 1
-kli query --name curly --alias curly --prefix EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U
+kli query --name curly --alias curly --prefix EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --sn 1
 # 3 about 2
-kli query --name curly --alias curly --prefix ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW
+kli query --name curly --alias curly --prefix ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --sn 1
 
 
 echo

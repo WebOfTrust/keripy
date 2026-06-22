@@ -195,6 +195,37 @@ def test_oobiery():
     """Done Test"""
 
 
+def test_loaded_v1_endpoint_replies_use_stored_reply_framing():
+    with openHby(name="oobi-src", version=Vrsn_1_0) as src, \
+            openHby(name="oobi-dst", version=Vrsn_1_0) as dst:
+        hab = src.makeHab(name="wit", isith="1", icount=1,
+                          transferable=False, **KWA)
+        msgs = bytearray()
+        msgs.extend(hab.makeEndRole(eid=hab.pre,
+                                    role=Roles.controller,
+                                    stamp=helping.nowIso8601(),
+                                    **KWA))
+        msgs.extend(hab.makeLocScheme(url="http://127.0.0.1:5555",
+                                      scheme=Schemes.http,
+                                      stamp=helping.nowIso8601(),
+                                      **KWA))
+        hab.psr.parse(ims=msgs)
+
+        oobi = bytearray()
+        oobi.extend(hab.replay())
+        oobi.extend(hab.loadEndRole(cid=hab.pre,
+                                    eid=hab.pre,
+                                    role=Roles.controller))
+        oobi.extend(hab.loadLocScheme(eid=hab.pre,
+                                      scheme=Schemes.http))
+
+        dst.psr.parse(ims=oobi)
+
+        locer = dst.db.locs.get(keys=(hab.pre, Schemes.http))
+        assert locer is not None
+        assert locer.url == "http://127.0.0.1:5555"
+
+
 def test_introduce(mockHelpingNowUTC):
     raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
     salt = Salter(raw=raw).qb64

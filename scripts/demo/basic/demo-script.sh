@@ -14,7 +14,7 @@ kli init --name test --base "${KERI_TEMP_DIR}"  --nopasscode --salt 0ACDEyMzQ1Nj
 isSuccess
 
 # NON-TRANSFERABLE
-kli incept --name test --base "${KERI_TEMP_DIR}"  --alias non-trans --file ${KERI_DEMO_SCRIPT_DIR}/data/non-transferable-sample.json
+kli incept --name test --base "${KERI_TEMP_DIR}"  --alias non-trans --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/non-transferable-sample.json
 isSuccess
 
 kli rotate --name test --base "${KERI_TEMP_DIR}"  --alias non-trans
@@ -26,7 +26,7 @@ fi
 
 
 # TRANSFERABLE
-kli incept --name test --base "${KERI_TEMP_DIR}"  --alias trans --file ${KERI_DEMO_SCRIPT_DIR}/data/transferable-sample.json
+kli incept --name test --base "${KERI_TEMP_DIR}"  --alias trans --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/transferable-sample.json
 isSuccess
 
 kli rotate --name test --base "${KERI_TEMP_DIR}"  --alias trans
@@ -66,7 +66,7 @@ fi
 
 
 # ESTABLISHMENT ONLY
-kli incept --name test --base "${KERI_TEMP_DIR}"  --alias est-only --file ${KERI_DEMO_SCRIPT_DIR}/data/estonly-sample.json
+kli incept --name test --base "${KERI_TEMP_DIR}"  --alias est-only --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/estonly-sample.json
 
 kli interact --name test --base "${KERI_TEMP_DIR}"  --alias est-only --data @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json
 ret=$?

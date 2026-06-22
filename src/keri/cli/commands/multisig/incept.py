@@ -14,12 +14,12 @@ import sys
 from hio.base import doing
 from hio.help import ogler
 
-from ....kering import ConfigurationError
+from ....kering import ConfigurationError, Versionage
 from ....app import (Notifier, MailboxDirector, Multiplexor,
                      Counselor, HaberyDoer, Poster,
                      multisigInceptExn)
 from ....app.grouping import loadHandlers
-from ...common import Parsery, setupHby, printIdentifier
+from ...common import Parsery, setupHby, printIdentifier, parseVersion
 from ....core import Prefixer, Number, Diger
 from ....peer import Exchanger
 
@@ -34,6 +34,16 @@ parser.add_argument("--wait", "-w", help="number of seconds to wait for other mu
 
 parser.add_argument('--group', '-g', help="Human readable environment reference for group identifier", required=True)
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=True)
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for the group inception event, such as 1.0 or 2.0')
+
+def normalizeOptions(opts):
+    """
+    Normalize JSON-loaded multisig inception options.
+    """
+    if isinstance(opts.get("version"), (list, tuple)):
+        opts["version"] = Versionage(*opts["version"])
+    return opts
 
 
 def inceptMultisig(args):
@@ -59,6 +69,10 @@ def inceptMultisig(args):
     except JSONDecodeError:
         print("config file", args.file, "not valid JSON")
         sys.exit(-1)
+
+    opts = normalizeOptions(opts)
+    if getattr(args, "version", None) is not None:
+        opts["version"] = args.version
 
     name = args.name
     alias = args.alias
@@ -92,6 +106,7 @@ class GroupMultisigIncept(doing.DoDoer):
         mux = Multiplexor(self.hby, notifier=notifier)
         exc = Exchanger(hby=self.hby, handlers=[])
         loadHandlers(exc, mux)
+        self.mux = mux
 
         self.mbx = MailboxDirector(hby=self.hby, topics=topics, exc=exc)
         self.counselor = Counselor(hby=self.hby)
@@ -144,6 +159,7 @@ class GroupMultisigIncept(doing.DoDoer):
                                          smids=ghab.smids,
                                          rmids=ghab.rmids,
                                          icp=icp)
+            self.mux.add(exn)
             others = list(oset(smids + (rmids or [])))
 
             others.remove(ghab.mhab.pre)
@@ -179,4 +195,3 @@ class GroupMultisigIncept(doing.DoDoer):
         print()
         printIdentifier(self.hby, ghab.pre)
         self.remove(self.toRemove)
-

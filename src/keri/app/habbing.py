@@ -29,6 +29,23 @@ from ..recording import HabitatRecord, OobiRecord
 
 logger = ogler.getLogger()
 
+
+def _defaultQueryKwa(hab, kwa):
+    """Default query framing to the Hab's established event framing"""
+    pvrsn = kwa.get("pvrsn", kwa.get("version"))
+    if pvrsn is None:
+        pvrsn = hab.kever.serder.pvrsn
+        kwa["pvrsn"] = pvrsn
+
+    if "kind" not in kwa:
+        if pvrsn == hab.kever.serder.pvrsn:
+            kwa["kind"] = hab.kever.serder.kind
+        elif pvrsn.major < Vrsn_2_0.major:
+            kwa["kind"] = Kinds.json
+
+    return kwa
+
+
 @contextmanager
 def openHby(*, name="test", base="", temp=True, salt=None, **kwa):
     """Context manager that creates and yields a ``Habery`` instance, closing
@@ -1310,7 +1327,7 @@ class BaseHab:
 
     def rotate(self, *, verfers=None, digers=None, isith=None, nsith=None,
                         toad=None, cuts=None, adds=None, data=None,
-                        kind=Kinds.json, version=Version, framed=False,
+                        kind=None, version=Version, framed=False,
                         nested=False, gvrsn=Version, genusify=False):
         """Perform rotation operation. Register rotation in database.
 
@@ -1361,6 +1378,11 @@ class BaseHab:
         """
         # recall that kever.pre == self.pre
         kever = self.kever  # before rotation kever is prior next
+        if version is Version:
+            version = kever.serder.pvrsn
+        kind = kind if kind is not None else kever.serder.kind
+        if gvrsn is Version:
+            gvrsn = version
 
         if isith is None:
             isith = kever.ntholder.sith  # use prior next sith as default
@@ -1436,7 +1458,7 @@ class BaseHab:
 
         return msg
 
-    def interact(self, *, data=None, kind=Kinds.json, version=Version,
+    def interact(self, *, data=None, kind=None, version=Version,
                 framed=False, nested=False, gvrsn=Version, genusify=False):
         """Perform interaction operation. Register interaction in database.
 
@@ -1471,6 +1493,12 @@ class BaseHab:
             ValidationError: if the interaction event is improper.
         """
         kever = self.kever
+        if version is Version:
+            version = kever.serder.pvrsn
+        kind = kind if kind is not None else kever.serder.kind
+        if gvrsn is Version:
+            gvrsn = version
+
         serder = eventing.interact(pre=kever.prefixer.qb64,
                                    dig=kever.serder.said,
                                    sn=kever.sner.num + 1,
@@ -1568,6 +1596,7 @@ class BaseHab:
         query = query if query is not None else dict()
         query['i'] = pre
         query["src"] = src
+        kwa = _defaultQueryKwa(self, kwa)
         serder = eventing.query(pre=self.pre, query=query, **kwa)
         gvrsn = kwa.get("gvrsn", serder.pvrsn)
         return self.endorse(serder, last=True, framed=False, gvrsn=gvrsn)
@@ -2166,12 +2195,19 @@ class BaseHab:
         Returns::
             bytearray: reply message.
         """
+        pvrsn = kwa.get("pvrsn", kwa.get("version"))
+        if pvrsn is None:
+            pvrsn = self.kever.serder.pvrsn
+            kwa["pvrsn"] = pvrsn
+        if "kind" not in kwa:
+            kwa["kind"] = self.kever.serder.kind
+
         kwa["pre"] = self.pre
         if gvrsn is Version:
             if "gvrsn" in kwa:
                 gvrsn = kwa["gvrsn"]
-            elif "version" in kwa:
-                gvrsn = kwa["version"]
+            else:
+                gvrsn = pvrsn
         return self.endorse(eventing.reply(**kwa), framed=framed, nested=nested,
                             gvrsn=gvrsn, genusify=genusify)
 
@@ -2202,7 +2238,7 @@ class BaseHab:
 
 
     def loadEndRole(self, cid, eid, role=Roles.controller, framed=False,
-                        nested=False, gvrsn=Version, genusify=False):
+                        nested=False, gvrsn=None, genusify=False):
         """Load and return the messagized end role authorization record for
         the given ``cid``, ``eid``, and ``role`` from the database, including
         associated attachments.
@@ -2239,6 +2275,7 @@ class BaseHab:
         if end and (end.enabled or end.allowed):
             said = self.db.eans.get(keys=(cid, role, eid))
             serder = self.db.rpys.get(keys=(said.qb64,))
+            gvrsn = gvrsn if gvrsn is not None else serder.pvrsn
             cigars = self.db.scgs.get(keys=(said.qb64,))
             tsgs = fetchTsgs(db=self.db.ssgs, diger=said)
 
@@ -2331,7 +2368,7 @@ class BaseHab:
 
 
     def loadLocScheme(self, eid, scheme=None, framed=False, nested=False,
-                                 gvrsn=Version, genusify=False):
+                                 gvrsn=None, genusify=False):
         """Load and return messagized location scheme records for the given
         ``eid`` and optional ``scheme`` from the database, including associated
         attachments.
@@ -2365,6 +2402,7 @@ class BaseHab:
         keys = (eid, scheme) if scheme else (eid,)
         for (pre, _), said in self.db.lans.getTopItemIter(keys=keys):
             serder = self.db.rpys.get(keys=(said.qb64,))
+            egvrsn = gvrsn if gvrsn is not None else serder.pvrsn
             cigars = self.db.scgs.get(keys=(said.qb64,))
             tsgs = fetchTsgs(db=self.db.ssgs, diger=said)
 
@@ -2389,7 +2427,7 @@ class BaseHab:
                                            source=seal,
                                            framed=framed,
                                            nested=nested,
-                                           gvrsn=gvrsn,
+                                           gvrsn=egvrsn,
                                            genusify=genusify))
         return msgs
 
@@ -3980,6 +4018,9 @@ class GroupHab(BaseHab):
         query = query if query is not None else dict()
         query['i'] = pre
         query["src"] = src
+        if gvrsn is not Version and "gvrsn" not in kwa:
+            kwa["gvrsn"] = gvrsn
+        kwa = _defaultQueryKwa(self.mhab, kwa)
         serder = eventing.query(pre=self.mhab.pre, query=query, **kwa)
         if gvrsn is Version:
             gvrsn = kwa.get("gvrsn", serder.pvrsn)

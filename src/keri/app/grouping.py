@@ -11,9 +11,9 @@ from hio.help import ogler
 
 from ..kering import ValidationError, Vrsn_1_0, Ilks
 from ..core import (Counter, Number, Diger, Saider,
-                    Prefixer, Sadder, Kevery, Router,
+                    Prefixer, Kevery, Router,
                     Revery, Parser, SerderKERI,
-                    Codens, NumDex, exchange)
+                    Serder, Codens, NumDex, exchange)
 from ..peer import Exchanger, specialExchange, cloneMessage
 
 from .delegating import Anchorer
@@ -717,8 +717,8 @@ class Multiplexor:
                     if not isinstance(val, dict):
                         continue
 
-                    sadder = Sadder(ked=val)
-                    ims.extend(sadder.raw)
+                    serder = Serder(sad=val)
+                    ims.extend(serder.raw)
                     if key in paths:
                         atc = paths[key]
                         ims.extend(atc)

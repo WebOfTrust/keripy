@@ -61,7 +61,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     reger = Reger(name=hab.name, db=hab.db, temp=hby.temp)
     verfer = Verifier(hby=hby, reger=reger)
 
-    mbx = mbx if mbx is not None else Mailboxer(name=alias, temp=hby.temp)
+    mbx = mbx if mbx is not None else Mailboxer(name=alias, base=hby.base, temp=hby.temp)
     forwarder = ForwardHandler(hby=hby, mbx=mbx)
     exchanger = Exchanger(hby=hby, handlers=[forwarder])
     clienter = Clienter()
@@ -1117,7 +1117,7 @@ class ReceiptEnd(doing.DoDoer):
 
             rep.set_header('Content-Type', CESR_CONTENT_TYPE)
             rep.status = falcon.HTTP_200
-            rep.data = rct
+            rep.data = bytes(rct)
         else:
             rep.status = falcon.HTTP_202
 
@@ -1170,7 +1170,7 @@ class ReceiptEnd(doing.DoDoer):
 
         rep.set_header('Content-Type', CESR_CONTENT_TYPE)
         rep.status = falcon.HTTP_200
-        rep.data = rct
+        rep.data = bytes(rct)
 
     def interceptDo(self, tymth=None, tock=0.0, **kwa):
         """

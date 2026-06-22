@@ -9,7 +9,7 @@ from dataclasses import dataclass
 from hio.base import doing
 from hio.help import ogler
 
-from ..common import Parsery, config, setupHby
+from ..common import Parsery, config, setupHby, parseVersion
 
 from ...app import (HaberyDoer, WitnessReceiptor, Receiptor,
                     MailboxDirector, Configer, Anchorer, Poster)
@@ -30,6 +30,8 @@ parser.add_argument("--receipt-endpoint", help="Attempt to connect to witness re
 parser.add_argument("--proxy", help="alias for delegation communication proxy", default="")
 
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=False)
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for the inception event, such as 1.0 or 2.0')
 
 parser.add_argument('--aeid', help='qualified base64 of non-transferable identifier prefix for  authentication '
                                    'and encryption of secrets in keystore', default=None)
@@ -121,6 +123,9 @@ def mergeArgsWithFile(args):
 
     if isinstance(incept_opts.version, (list, tuple)):
         incept_opts.version = Versionage(*incept_opts.version)
+
+    if getattr(args, "version", None) is not None:
+        incept_opts.version = args.version
 
     incept_opts.transferable = True if args.transferable else incept_opts.transferable
     if len(args.wits) > 0:

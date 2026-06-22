@@ -12,7 +12,7 @@ from hio.help import decking, ogler
 
 from ..common import Parsery, printExternal, setupHby
 
-from ...app import MailboxDirector, HaberyDoer, QueryDoer, AnchorQuerier
+from ...app import MailboxDirector, HaberyDoer, QueryDoer, SeqNoQuerier, AnchorQuerier
 from ...help import helping
 
 
@@ -23,20 +23,21 @@ parser = argparse.ArgumentParser(description='Request KEL from Witness',
 parser.set_defaults(handler=lambda args: query(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--prefix', help='QB64 identifier to query', default="", required=True)
+parser.add_argument('--sn', help='sequence number to query through', type=int, default=None, required=False)
 parser.add_argument('--anchor', help='JSON file containing the anchor to search for', default=None, required=False)
 
 
 def query(args):
     name = args.name
 
-    qryDoer = LaunchDoer(name=name, alias=args.alias, base=args.base, bran=args.bran, pre=args.prefix,
+    qryDoer = LaunchDoer(name=name, alias=args.alias, base=args.base, bran=args.bran, pre=args.prefix, sn=args.sn,
                          anchor=args.anchor)
     return [qryDoer]
 
 
 class LaunchDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, pre, anchor, **kwa):
+    def __init__(self, name, alias, base, bran, pre, sn, anchor, **kwa):
         doers = []
         self.hby = setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
@@ -46,6 +47,7 @@ class LaunchDoer(doing.DoDoer):
         self.logs = decking.Deck()
 
         self.pre = pre
+        self.sn = sn
         self.anchor = anchor
         self.loaded = False
 
@@ -74,6 +76,9 @@ class LaunchDoer(doing.DoDoer):
             anchor = json.load(f)
             print(f"Checking for anchor {anchor}...")
             doer = AnchorQuerier(hby=self.hby, hab=self.hab, pre=self.pre, anchor=anchor)
+        elif self.sn is not None:
+            print(f"Checking for updates through sequence number {self.sn}...")
+            doer = SeqNoQuerier(hby=self.hby, hab=self.hab, pre=self.pre, sn=self.sn)
         else:
             print(f"Checking for updates...")
             doer = QueryDoer(hby=self.hby, hab=self.hab, pre=self.pre, kvy=self.mbd.kvy)

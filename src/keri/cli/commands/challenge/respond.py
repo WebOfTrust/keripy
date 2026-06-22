@@ -105,10 +105,13 @@ class RespondDoer(doing.DoDoer):
 
         recp = recp[0]['id']
 
+        serder = hab.kever.serder
         payload = dict(i=hab.pre, words=self.words)
         exn = exchange(route="/challenge/response", attributes=payload,
-                          sender=hab.pre)
-        ims = hab.endorse(serder=exn, last=False, framed=True)
+                       sender=hab.pre, pvrsn=serder.pvrsn,
+                       gvrsn=serder.pvrsn, kind=serder.kind)
+        ims = hab.endorse(serder=exn, last=False, framed=True,
+                          gvrsn=serder.pvrsn)
         del ims[:exn.size]
 
         senderHab = hab.mhab if isinstance(hab, GroupHab) else hab

@@ -4,7 +4,7 @@
 kli init --name rename-test --base "${KERI_TEMP_DIR}" --nopasscode
 
 # Incept with the initial alias "sabbir"
-kli incept --name rename-test --base "${KERI_TEMP_DIR}" --alias sabbir --file ${KERI_DEMO_SCRIPT_DIR}/data/transferable-sample.json
+kli incept --name rename-test --base "${KERI_TEMP_DIR}" --alias sabbir --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/transferable-sample.json
 
 # Rename the alias from "sabbir" to "irfan"
 kli rename --name rename-test --base "${KERI_TEMP_DIR}" --alias sabbir irfan

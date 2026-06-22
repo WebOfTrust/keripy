@@ -748,6 +748,47 @@ def test_multisig_incept_handler(mockHelpingNowUTC):
         assert prefixers[0].qb64 == exn.pre
 
 
+def test_multisig_incept_handler_parses_approved_v1_embed(mockHelpingNowUTC):
+    with openHab(name="approved-embed1", salt=b'0123456789abcdef',
+                 transferable=True, temp=True, **KWA) as (hby1, hab1), \
+            openHab(name="approved-embed2", salt=b'abcdef0123456789',
+                    transferable=True, temp=True, **KWA) as (hby2, hab2):
+        Parser(version=TEST_VERSION).parse(ims=bytearray(hab2.msgOwnEvent(sn=0, framed=True,
+                                                                          gvrsn=TEST_VERSION)),
+                                           kvy=hby1.kvy, local=True)
+        Parser(version=TEST_VERSION).parse(ims=bytearray(hab1.msgOwnEvent(sn=0, framed=True,
+                                                                          gvrsn=TEST_VERSION)),
+                                           kvy=hby2.kvy, local=True)
+
+        smids = [hab1.pre, hab2.pre]
+        inits = dict(toad=0, wits=[], isith="2", nsith="2", **KWA)
+        ghab1 = hby1.makeGroupHab(group="approved-embed", mhab=hab1,
+                                  smids=smids, rmids=None, **inits)
+        ghab2 = hby2.makeGroupHab(group="approved-embed", mhab=hab2,
+                                  smids=smids, rmids=None, **inits)
+
+        icp1 = ghab1.msgOwnInception(allowPartiallySigned=True)
+        exn1, _ = multisigInceptExn(hab=ghab1.mhab, smids=ghab1.smids,
+                                    rmids=ghab1.rmids, icp=icp1)
+        icp2 = ghab2.msgOwnInception(allowPartiallySigned=True)
+        exn2, atc2 = multisigInceptExn(hab=ghab2.mhab, smids=ghab2.smids,
+                                       rmids=ghab2.rmids, icp=icp2)
+
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        mux.add(exn1)  # Record local approval before the matching peer proposal arrives.
+        ims = bytearray(exn2.raw)
+        ims.extend(atc2)
+        Parser(version=TEST_VERSION).parseOne(ims=ims, exc=exc)
+
+        serder = SerderKERI(raw=icp1)
+        sigers = hby1.db.sigs.get(keys=(serder.preb, serder.saidb))
+        assert [siger.index for siger in sigers] == [0, 1]
+
+
 def test_multisig_rotate_handler(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (_, _)):
         msg = ghab1.mhab.rotate(framed=True, **KWA, gvrsn=TEST_VERSION)

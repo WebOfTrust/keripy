@@ -26,3 +26,30 @@ random_name () {
    prefix="${1:-test}"
    echo "${prefix}_${suffix}"
 }
+
+kli () {
+  if [[ -n "${KERI_TEMP_DIR:-}" ]]; then
+    local arg
+    for arg in "$@"; do
+      case "$arg" in
+        --base|-b|--base=*)
+          command kli "$@"
+          return
+          ;;
+      esac
+    done
+
+    # Challenge generation is stateless and does not accept keystore options.
+    if [[ "${1:-}" == "challenge" && "${2:-}" == "generate" ]]; then
+      command kli "$@"
+      return
+    fi
+
+    command kli "$@" --base "$KERI_TEMP_DIR"
+    return
+  fi
+
+  command kli "$@"
+}
+
+export -f kli

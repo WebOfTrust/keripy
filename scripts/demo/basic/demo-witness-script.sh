@@ -25,10 +25,10 @@ kli oobi resolve --name witness-test --base "${KERI_TEMP_DIR}"  --oobi-alias wes
 isSuccess
 
 ## INCEPT AND PROPOGATE EVENTS AND RECEIPTS TO WITNESSES
-kli incept --name witness-test --base "${KERI_TEMP_DIR}" --receipt-endpoint --alias trans-wits --file "${KERI_DEMO_SCRIPT_DIR}/data/trans-wits-sample.json"
+kli incept --name witness-test --base "${KERI_TEMP_DIR}" --receipt-endpoint --alias trans-wits --version 1.0 --file "${KERI_DEMO_SCRIPT_DIR}/data/trans-wits-sample.json"
 isSuccess
 
-kli incept --name witness-test --base "${KERI_TEMP_DIR}"  --alias inquisitor --file "${KERI_DEMO_SCRIPT_DIR}/data/inquisitor-sample.json"
+kli incept --name witness-test --base "${KERI_TEMP_DIR}"  --alias inquisitor --version 1.0 --file "${KERI_DEMO_SCRIPT_DIR}/data/inquisitor-sample.json"
 isSuccess
 
 kli status --name witness-test --base "${KERI_TEMP_DIR}"  --alias trans-wits
