@@ -852,11 +852,8 @@ class Parser:
         return done
 
 
-
-
-    def msgParsatorNew(self, ims=None, framed=True, piped=False,
-                    kvy=None, tvy=None, exc=None, rvy=None, vry=None,
-                    local=None, version=None):
+    def msgSubParsator(self, ims=None, framed=True, piped=False, local=None,
+                       version=None):
         """Returns generator that upon each iteration extracts and parses msg
         with attached crypto material (signature etc) from incoming message
         stream, ims. Upon completion returns extracted parsed msg substream as
@@ -872,7 +869,7 @@ class Parser:
         attachments. Returns (which raises StopIteration) when finished.
 
         Returns::
-            result (dict): parsed msg+attachments substream. Result is suitable
+            exts (dict): parsed msg+attachments substream. Result is suitable
                            for ** expansion as keywords to subsequent processing
                            of the msg substream. The dict is the asdict() of
                            MsgParseDom dataclass
@@ -906,11 +903,6 @@ class Parser:
                 counted attachments instead of stream with multiple messages
             piped (bool): True means use pipeline processor to process
                 ims msgs when stream includes pipelineable count codes.
-            kvy (Kevery): route KERI KEL message types to this instance
-            tvy (Tevery): route TEL message types to this instance
-            exc (Exchanger): route EXN message types to this instance
-            rvy (Revery): reply (RPY) message handler
-            vry (Verifier): ACDC credential processor
             local (bool): True means event source is local (protected) for validation
                           False means event source is remote (unprotected) for validation
                           None means use default .local
@@ -940,9 +932,9 @@ class Parser:
         local = local if local is not None else self.local
         local = True if local else False
 
-        self.version = version  # when not None which sets .codes .mucodes. .sucodes
+        self.version = version  # sets .codes .mucodes. .sucodes when not None otherwise does nothing
         verstack = deque()  # version stack append and pop
-        exts = MsgParseDom()  # create instance
+        exts = asdict(MsgParseDom())  # create dict from instance (fix later to use instance)
 
         serdery = Serdery(version=Version)
 
@@ -1026,7 +1018,7 @@ class Parser:
                     serder = serdery.reap(ims=texter.raw,
                                           genus=self.genus,
                                           svrsn=self.version)
-                    exts.serder = serder
+                    exts['serder'] = serder
 
                 elif (ctr.code in (self.mucodes.FixBodyGroup,
                                    self.mucodes.BigFixBodyGroup)): # native fixed field
@@ -1050,7 +1042,7 @@ class Parser:
                                           ctr=ctr,
                                           size=size,
                                           fixed=True)
-                    exts.serder = serder
+                    exts['serder'] = serder
 
                 elif (ctr.code in (self.mucodes.MapBodyGroup,
                                    self.mucodes.BigMapBodyGroup)):  # native field map
@@ -1074,7 +1066,7 @@ class Parser:
                                           ctr=ctr,
                                           size=size,
                                           fixed=False)
-                    exts.serder = serder
+                    exts['serder'] = serder
 
                 elif (ctr.code in (self.sucodes.GenericGroup,
                                    self.sucodes.BigGenericGroup)):
@@ -1096,7 +1088,7 @@ class Parser:
                             raise  # incomplete frame or group so abort by raising error
                         yield
                     else: # extracted and stripped successfully
-                        exts.serder = serder
+                        exts['serder'] = serder
                         break  # break out of while loop
 
         except ExtractionError as ex:
@@ -1207,9 +1199,223 @@ class Parser:
                 self.version = verstack.pop()
 
 
+        return exts  # parsed substream as dict of MsgParseDom
+
+
+
+    def msgSubProcetor(self, exts, kvy, tvy, exc, rvy, vry):
+        """Returns generator that upon each iteration extracts and parses msg
+        with attached crypto material (signature etc) from incoming message
+        stream, ims, and dispatches processing of message with attachments.
+
+        Uses .ims when ims is not provided.
+
+        Iterator yields when not enough bytes in ims to finish one msg plus
+        attachments. Returns (which raises StopIteration) when finished.
+
+        Parameters:
+            exts (dict): parsed msg+attachments substream. Result is suitable
+                           for ** expansion as keywords to subsequent processing
+                           of the msg substream. The dict is the asdict() of
+                           MsgParseDom dataclass
+                serder (Serder): message instance SerderKERI or SerderACDC
+                sigers (list[Siger]): ControllerIdxSigs
+                wigers (list[Siger]): WitnessIdxSigs
+                cigars (list[Cigar]): NonTransReceiptCouples cigar with verfer from (pre+sig)
+                trqs   (list[TransLastReceipts]): TransReceiptQuadruples TransLastReceiptIdxSigGroups (prefixer, number, diger, siger)
+                tsgs   (list[TransSigs]):TransIdxSigGroups (prefixer, number, diger, [Sigers])
+                lsgs   (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[Sigers]) (was ssgs)
+                frcs   (list[FirstSeen]): FirstSeenReplayCouples (number, dater)
+                sscs   (list[SealSource]): SealSourceCouples (number, diger) sealing or sealed event
+                ssts   (list[SealEvent]): SealSourceTriples (prefixer, number, diger) sealing or sealed event
+                tdcs   (list[SealKind]): TypedDigestSealCouples SealKind (verser, diger)
+                bsqs   (list[BlindState]): BlindedStateQuadruples BlindState (diger, noncer, noncer, labeler)
+                bsss   (list[BoundState]): BoundStateSextuples BoundState (diger, noncer, noncer, labeler, number, noncer)
+                tmqs   (list[TypeMedia]): TypedMediaQuadruples TypeMedia (diger, noncer, labeler, texter)
+                essrs  (list[Texter]): ESSR encapsulations as Texters
+                ptds   (list[bytes]): PathedMaterialCouples (path, text) -> concat path+text
+                nests  (list[dict]): asdict(MsgParseDOM) instance dicts recursively nested
+                local  (bool): True means treat as local source controller context for processing
+                               False means treat as remote controller context for processing
+
+            kvy (Kevery): route KERI KEL message types to this instance
+            tvy (Tevery): route TEL message types to this instance
+            exc (Exchanger): route EXN message types to this instance
+            rvy (Revery): reply (RPY) message handler
+            vry (Verifier): ACDC credential processor
+
+
+        Logic::
+
+            Currently only support couters on attachments not on combined or
+            on message
+            Attachments must all have counters so know if txt or bny format for
+            attachments. So even when framed==True must still have counter.
+            Do While loop
+                sniff to set up first extraction
+                    raise exception and flush full tream if stream start is counter
+                    must be message
+                extract message
+                sniff for counter
+                if group counter extract and discard but keep track of count
+                so if error while processing attachments then only need to flush
+                attachment count not full stream.
+
+
+        """
+
+        if isinstance(serder, SerderKERI):
+            ilk = serder.ilk  # dispatch abased on ilk
+
+            if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
+                firner, dater = exts['frcs'][-1] if exts['frcs'] else (None, None)  # use last one if more than one
+                # when present assumes this is source seal of delegating event in delegator's KEL
+                delsner, delsger = exts['sscs'][-1] if exts['sscs'] else (None, None)  # use last one if more than one
+                if not exts['sigers']: # sigers:
+                    msg = f"Missing attached signature(s) for evt = {serder.ked['d']}"
+                    logger.info(msg)
+                    logger.debug("Event Body = \n%s\n", serder.pretty())
+                    raise ValidationError(msg)
+                try:
+                    exts['firner'] = firner  # first seen number
+                    exts['dater'] = dater
+                    exts['delsner'] = Number(num=delsner.sn) if delsner is not None else None
+                    exts['delsger'] = delsger
+
+                    kvy.processEvent(**exts)
+
+                    if exts['cigars']:  # cigars
+                        kvy.processAttachedReceiptCouples(**exts)
+
+                    if exts['trqs']:  # trqs
+                        kvy.processAttachedReceiptQuadruples(**exts)
+
+                except AttributeError as ex:
+                    msg = f"No kevery to process so dropped msg={serder.said}"
+                    logger.info(msg)
+                    logger.debug("Event Body = \n%s\n", serder.pretty())
+                    raise ValidationError(msg) from ex
+
+            elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
+                if not (exts['cigars'] or exts['wigers'] or exts['tsgs']):  # (cigars or wigers or tsgs)
+                    msg = f"Missing attached signatures on receipt msg sn={serder.sn} SAID={serder.said}"
+                    logger.info(msg)
+                    logger.debug("Receipt body=\n%s\n", serder.pretty())
+                    raise ValidationError(msg)
+
+                try:
+
+                    kvy.processReceipt(**exts)
+
+                except AttributeError as ex:
+                    raise ValidationError(f"No kevery to process so dropped msg"
+                                                 f"= {serder.pretty()}.") from ex
+
+
+            elif ilk in (Ilks.rpy,):  # reply message
+                if not (exts['cigars'] or exts['tsgs']):  # (cigars or tsgs)
+                    raise ValidationError(f"Missing attached endorser signature(s) "
+                                                 f"to reply msg = {serder.pretty()}.")
+
+                try:
+                    rvy.processReply(**exts)
+
+                except AttributeError as ex:
+                    raise ValidationError(f"No revery to process so dropped msg"
+                                                 f"= {serder.pretty()}.") from ex
+
+            elif ilk in (Ilks.qry,):  # query message
+                # ToDo neigher kvy.processQuery nor tvy.processQuery actually verify
+                if exts['lsgs']:
+                    # use last one if more than one
+                    pre, sigers = exts['lsgs'][-1] if exts['lsgs'] else (None, None)
+                    exts["source"] = pre
+                    exts["sigers"] = sigers
+                else:
+                    exts['sigers'] = []  # just in case sigers provided not by lsgs
+
+                if not (exts['source'] or exts['cigars']):  # need one or the other
+                    raise ValidationError(f"Missing attached requester "
+                                                 f"source for query"
+                                                 f" msg = {serder.pretty()}.")
+
+                route = serder.ked["r"]
+                if route in ["logs", "ksn", "mbx"]:
+                    try:
+                        kvy.processQuery(**exts)
+                    except AttributeError as ex:
+                        raise ValidationError(f"No kevery to process so "
+                                    f" dropped msg={serder.pretty()}") from ex
+                    except QueryNotFoundError as ex:  # catch escrow error and log it
+                        if logger.isEnabledFor(logging.TRACE):
+                            logger.exception("Error processing query = %s", ex)
+                            logger.trace("Query Body=\n%s\n", serder.pretty())
+                        else:
+                            logger.error("Error processing query = %s", ex)
+
+                elif route in ["tels", "tsn"]:
+                    try:
+                        tvy.processQuery(**exts)
+                    except AttributeError as ex:
+                        raise ValidationError(f"No tevery to process so dropped msg"
+                                                     f"={serder.pretty()}") from ex
+
+                else:
+                    raise ValidationError(f"Invalid resource type {route}"
+                                                 f"so dropped msg={serder.pretty()}.")
+
+            elif ilk in (Ilks.exn,):
+                if not (exts['cigars'] or exts['tsgs']):
+                    raise ValidationError(f"Missing attached exchanger "
+                                        f"signatures for msg={serder.pretty()}")
+
+                try:
+                    exc.processEvent(**exts)
+
+                except AttributeError as ex:
+                    raise ValidationError(f"No Exchange to process so "
+                                    f"dropped msg={serder.pretty()}.") from ex
+
+            elif ilk in (Ilks.vcp, Ilks.vrt, Ilks.iss, Ilks.rev, Ilks.bis, Ilks.brv):
+                # TEL msg
+                # get transaction event seal ref to Issuer's KEL
+                # use last one if more than one
+                number, diger = exts['sscs'][-1] if exts['sscs'] else (None, None)
+                exts['seqner'] = number
+                exts['saider'] = diger
+                try:
+                    tvy.processEvent(**exts)
+
+                except AttributeError as ex:
+                    raise ValidationError(f"No tevery to process so dropped msg"
+                                                 f"={serder.pretty()}.") from ex
+            else:
+                raise ValidationError(f"Unexpected message {ilk=} for evt="
+                                             f"{serder.pretty()}")
+
+        elif isinstance(serder, SerderACDC):
+            ilk = serder.ilk  # dispatch based on ilk
+
+            if ilk is None:  # default for ACDC
+                try:
+                    # use last one if more than one
+                    prefixer, number, diger = exts['ssts'][-1] if exts['ssts'] else (None, None, None)
+                    exts['prefixer'] = prefixer
+                    exts['seqner'] = number
+                    exts['saider'] = diger
+                    vry.processACDC(**exts)
+                except AttributeError as ex:
+                    raise ValidationError(f"No verifier to process so "
+                                        f"dropped ACDC={serder.pretty()}") from ex
+            else:
+                raise ValidationError(f"Unexpected message ilk = {ilk} "
+                                             f"for evt={serder.pretty()}")
+
+        else:
+            raise ValidationError(f"Unexpected protocol type={serder.proto}"
+                                         f" for event message={serder.pretty()}.")
+
         return True  # done state
-
-
 
 
     def msgParsator(self, ims=None, framed=True, piped=False,
@@ -1706,6 +1912,7 @@ class Parser:
                                          f" for event message={serder.pretty()}.")
 
         return True  # done state
+
 
     # Group parse/extract methods for dispatch based on CESR version
     def _ControllerIdxSigs1(self, exts, ims, ctr, cold, abort):
