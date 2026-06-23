@@ -334,7 +334,7 @@ class Revery:
                 continue  # skip invalid signature is not from aid
 
             if osaider:  # check if later logic  sn > or sn == and dt >
-                if otsgs := fetchTsgs(db=self.db.ssgs, diger=osaider):
+                if otsgs := fetchTsgs(db=self.db.tsgs, diger=osaider):
                     _, osqr, _, _ = otsgs[0]  # zeroth should be authoritative
 
                     if snumber.sn < osqr.sn:  # sn earlier
@@ -401,7 +401,7 @@ class Revery:
             # fetch any escrowed sigs, extract just the siger from each quad
             # want sn in numerical order so use hex
             quadkeys = (saider.qb64, prefixer.qb64, f"{snumber.sn:032x}", sdiger.qb64)
-            esigers = self.db.ssgs.get(keys=quadkeys)
+            esigers = self.db.tsgs.get(keys=quadkeys)
             sigers.extend(esigers)
             sigers, valid = validateSigs(
                 serder=serder, sigers=sigers, verfers=sverfers, tholder=sserder.tholder
@@ -420,15 +420,15 @@ class Revery:
                     sigers=sigers,
                 )
                 self.removeReply(saider=osaider)  # remove obsoleted reply artifacts
-                # remove stale signatures .ssgs for this saider
+                # remove stale signatures .tsgs for this saider
                 # this ensures that zeroth tsg is authoritative
                 for prr, snr, dgr, _ in fetchTsgs(
-                    db=self.db.ssgs, diger=saider, snh=snumber.snh
+                    db=self.db.tsgs, diger=saider, snh=snumber.snh
                 ):
                     if (snr.sn < snumber.sn) or (
                         snr.sn == snumber.sn and dgr.qb64 != sdiger.qb64
                     ):
-                        self.db.ssgs.trim(
+                        self.db.tsgs.trim(
                             keys=(prr.qb64, f"{snr.sn:032h}", dgr.qb64, "")
                         )
 
@@ -485,7 +485,7 @@ class Revery:
             self.db.scgs.put(keys=keys, vals=[(cigar.verfer, cigar)])
         if sigers:  # want sn in numerical order so use hex
             quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", diger.qb64)
-            self.db.ssgs.put(keys=quadkeys, vals=sigers)
+            self.db.tsgs.put(keys=quadkeys, vals=sigers)
 
     def removeReply(self, saider):
         """Remove Reply SAD artifacts given by saider.
@@ -497,7 +497,7 @@ class Revery:
         if saider:
             keys = (saider.qb64,)
 
-            self.db.ssgs.trim(keys=(saider.qb64, ""))  # remove whole branch
+            self.db.tsgs.trim(keys=(saider.qb64, ""))  # remove whole branch
             self.db.scgs.rem(keys=keys)
             self.db.rpys.rem(keys=keys)
             self.db.sdts.rem(keys=keys)
@@ -524,7 +524,7 @@ class Revery:
         self.db.sdts.put(keys=keys, val=dater)  # first one idempotent
         self.db.rpys.put(keys=keys, val=serder)  # first one idempotent
         quadkeys = (saider.qb64, prefixer.qb64, f"{snumber.sn:032x}", sdiger.qb64)
-        self.db.ssgs.put(keys=quadkeys, vals=sigers)
+        self.db.tsgs.put(keys=quadkeys, vals=sigers)
         self.db.rpes.put(keys=(route,), vals=[saider])
 
     def processEscrowReply(self):
@@ -538,7 +538,7 @@ class Revery:
         """
         for (route,), diger in self.db.rpes.getTopItemIter():
             try:
-                tsgs = fetchTsgs(db=self.db.ssgs, diger=diger)
+                tsgs = fetchTsgs(db=self.db.tsgs, diger=diger)
 
                 keys = (diger.qb64,)
                 dater = self.db.sdts.get(keys=keys)

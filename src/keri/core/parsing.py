@@ -52,7 +52,7 @@ class MsgParseDom:
     cigars: list[Cigar] = field(default_factory=list)  # NonTransReceiptCouples cigar with verfer from (pre+sig)
     trqs:   list[TransReceipts] = field(default_factory=list)  # TransReceiptQuadruples TransLastReceiptIdxSigGroups (prefixer, number, diger, siger)
     tsgs:   list[TransSigs] = field(default_factory=list)  # TransIdxSigGroups (prefixer, number, diger, [Sigers])
-    lsgs:   list[TransLastSigs] = field(default_factory=list)  # TransLastIdxSigGroups (prefixer,[Sigers]) (was ssgs)
+    lsgs:   list[TransLastSigs] = field(default_factory=list)  # TransLastIdxSigGroups (prefixer,[Sigers]) (was tsgs)
     frcs:   list[FirstSeen] = field(default_factory=list)  # FirstSeenReplayCouples (number, dater)
     sscs:   list[SealSource] = field(default_factory=list)  # SealSourceCouples (number, diger) sealing or sealed event
     ssts:   list[SealEvent] = field(default_factory=list)  # SealSourceTriples (prefixer, number, diger) sealing or sealed event
@@ -878,7 +878,7 @@ class Parser:
                 cigars (list[Cigar]): NonTransReceiptCouples cigar with verfer from (pre+sig)
                 trqs   (list[TransLastReceipts]): TransReceiptQuadruples TransLastReceiptIdxSigGroups (prefixer, number, diger, siger)
                 tsgs   (list[TransSigs]):TransIdxSigGroups (prefixer, number, diger, [Sigers])
-                lsgs   (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[Sigers]) (was ssgs)
+                lsgs   (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[Sigers]) (was tsgs)
                 frcs   (list[FirstSeen]): FirstSeenReplayCouples (number, dater)
                 sscs   (list[SealSource]): SealSourceCouples (number, diger) sealing or sealed event
                 ssts   (list[SealEvent]): SealSourceTriples (prefixer, number, diger) sealing or sealed event
@@ -1223,7 +1223,7 @@ class Parser:
                 cigars (list[Cigar]): NonTransReceiptCouples cigar with verfer from (pre+sig)
                 trqs   (list[TransLastReceipts]): TransReceiptQuadruples TransLastReceiptIdxSigGroups (prefixer, number, diger, siger)
                 tsgs   (list[TransSigs]):TransIdxSigGroups (prefixer, number, diger, [Sigers])
-                lsgs   (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[Sigers]) (was ssgs)
+                lsgs   (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[Sigers]) (was tsgs)
                 frcs   (list[FirstSeen]): FirstSeenReplayCouples (number, dater)
                 sscs   (list[SealSource]): SealSourceCouples (number, diger) sealing or sealed event
                 ssts   (list[SealEvent]): SealSourceTriples (prefixer, number, diger) sealing or sealed event
