@@ -584,29 +584,18 @@ class Parser:
         done = False
         while not done:
             try:
-                #done = yield from self.msgParsator(ims=ims,
-                                                   #framed=framed,
-                                                   #piped=piped,
-                                                   #kvy=kvy,
-                                                   #tvy=tvy,
-                                                   #exc=exc,
-                                                   #rvy=rvy,
-                                                   #vry=vry,
-                                                   #local=local,
-                                                   #version=version)
-
                 exts = yield from self.msgParsator(ims=ims,
                                                       framed=framed,
                                                       piped=piped,
                                                       local=local,
                                                       version=version)
 
-                self.msgProcess(exts=exts,
-                                    kvy=kvy,
-                                    tvy=tvy,
-                                    exc=exc,
-                                    rvy=rvy,
-                                    vry=vry)
+                done = self.msgProcess(exts=exts,
+                                        kvy=kvy,
+                                        tvy=tvy,
+                                        exc=exc,
+                                        rvy=rvy,
+                                        vry=vry)
 
             except SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -820,16 +809,6 @@ class Parser:
 
                 # process substream at current nesting level
                 try:
-                    #done = yield from self.msgParsator(ims=ims,
-                                                       #framed=framed,
-                                                       #piped=piped,
-                                                       #kvy=kvy,
-                                                       #tvy=tvy,
-                                                       #exc=exc,
-                                                       #rvy=rvy,
-                                                       #vry=vry,
-                                                       #local=local,
-                                                       #version=self.version)
 
 
                     exts = yield from self.msgParsator(ims=ims,
@@ -838,14 +817,12 @@ class Parser:
                                                           local=local,
                                                           version=self.version)
 
-                    self.msgProcess(exts=exts,
-                                       kvy=kvy,
-                                       tvy=tvy,
-                                       exc=exc,
-                                       rvy=rvy,
-                                       vry=vry)
-
-                    #done = True if exts else False
+                    done = self.msgProcess(exts=exts,
+                                            kvy=kvy,
+                                            tvy=tvy,
+                                            exc=exc,
+                                            rvy=rvy,
+                                            vry=vry)
 
                 except TopLevelStreamError as ex:  # encountered GenericGroup
                     continue  # so returns control here to parse that group
@@ -1434,6 +1411,8 @@ class Parser:
         else:
             raise ValidationError(f"Unexpected protocol type={serder.proto}"
                                          f" for event message={serder.pretty()}.")
+
+        return True  # done
 
 
     def msgParsatorOld(self, ims=None, framed=True, piped=False,
