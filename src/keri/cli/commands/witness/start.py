@@ -81,7 +81,7 @@ def launch(args):
 
 
 def runWitness(name="witness", base="", alias="witness", bran="", tcp=5631, http=5632, expire=0.0,
-               configDir="", configFile="", keypath=None, certpath=None, cafilepath=None):
+               configDir="", configFile=None, keypath=None, certpath=None, cafilepath=None):
     """
     Setup and run one witness
     """
