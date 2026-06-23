@@ -808,7 +808,7 @@ class Parser:
                         continue  # captures immediate further nested groups
 
                 # process substream at current nesting level
-                presize = len(ims)
+                #presize = len(ims)
                 try:
 
 
@@ -828,12 +828,12 @@ class Parser:
                 except TopLevelStreamError as ex:  # encountered GenericGroup
                     continue  # so returns control here to parse that group
 
-                except (ValidationError, Exception) as ex:  # non Extraction Error
+                except ValidationError as ex:  # non Extraction Error
                     # Non extraction errors happen after a message has been
                     # successfully extracted from stream
                     # so we don't flush rest of stream just resume
-                    if len(ims) == presize:
-                        raise ExtractionError(f"Parser made no progress on stream: {ex}") from ex
+                    #if len(ims) == presize:
+                        #raise ExtractionError(f"Parser made no progress on stream: {ex}") from ex
                     continue
 
 
@@ -1152,7 +1152,7 @@ class Parser:
                     # check if group belongs to top level group message in stream
                     if (ctr.code in self.mucodes or ctr.code in self.sucodes or
                         ctr.code == self.codes.KERIACDCGenusVersion):
-                        # do not consume leave belongs with new msg
+                        # do not consume because it belongs with new msg
                         break  # not a valid attachment so done with attachments to this msg
 
                     del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
