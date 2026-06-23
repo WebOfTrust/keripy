@@ -38,7 +38,7 @@ from .structing import (SealDigest, SealRoot, SealSource, SealEvent, SealLast,
                         SealDigest, SealRoot, SealBack, SealLast, SealSource,
                         SealEvent, SealKind,
                         BlindState, BoundState,
-                        FirstSeen, TransLastReceipts, TransSigs,TransLastSigs,
+                        FirstSeen, TransReceipts, TransSigs,TransLastSigs,
                         EClanDom, ECastDom, EmptyClanDom, EmptyCastDom, AClanDom,
                         ACastDom, SClanDom, SCastDom, SealClanDom, SealCastDom,
                         BSClanDom, BSCastDom, TMClanDom, TMCastDom)

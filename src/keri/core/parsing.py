@@ -24,7 +24,7 @@ from .indexing import Siger
 from .counting import Counter, Codens, CtrDex_1_0, CtrDex_2_0, GenDex
 from .serdering import Serdery, Serder, SerderKERI, SerderACDC
 from .structing import (SealSource, SealEvent, SealKind, BlindState, BoundState,
-                        TypeMedia, FirstSeen, TransLastReceipts, TransSigs,
+                        TypeMedia, FirstSeen, TransReceipts, TransSigs,
                         TransLastSigs)
 
 logger = ogler.getLogger()
@@ -50,7 +50,7 @@ class MsgParseDom:
     sigers: list[Siger] = field(default_factory=list)  # ControllerIdxSigs
     wigers: list[Siger] = field(default_factory=list)  # WitnessIdxSigs
     cigars: list[Cigar] = field(default_factory=list)  # NonTransReceiptCouples cigar with verfer from (pre+sig)
-    trqs:   list[TransLastReceipts] = field(default_factory=list)  # TransReceiptQuadruples TransLastReceiptIdxSigGroups (prefixer, number, diger, siger)
+    trqs:   list[TransReceipts] = field(default_factory=list)  # TransReceiptQuadruples TransLastReceiptIdxSigGroups (prefixer, number, diger, siger)
     tsgs:   list[TransSigs] = field(default_factory=list)  # TransIdxSigGroups (prefixer, number, diger, [Sigers])
     lsgs:   list[TransLastSigs] = field(default_factory=list)  # TransLastIdxSigGroups (prefixer,[Sigers]) (was ssgs)
     frcs:   list[FirstSeen] = field(default_factory=list)  # FirstSeenReplayCouples (number, dater)
