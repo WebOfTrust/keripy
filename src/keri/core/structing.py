@@ -70,6 +70,8 @@ SealBack = namedtuple("SealBack", 'bi d')
 # use TypedDigestSealCouples count code for CESR Native
 SealKind = namedtuple("SealKind", 't d')
 
+# following are attachments
+
 # Blinded State quadruple for Blindable State Update Event 'bup' for Transaction
 # Event Registry
 # d = SAID digest qb64 of blindable state (Noncer)
@@ -101,7 +103,35 @@ BoundState = namedtuple("BoundState", 'd u td ts bn bd')
 # use TypedMediaQuadruples count code for CESR native
 TypeMedia = namedtuple("TypeMedia", 'd u mt mv')
 
-# Following are not seals only used in database
+# FirstSeen
+# f = fn first seen number of event as lowercase hex string snh no leading zeros, (Number)
+# dt = date time stamp Base 64 CESR of RFC-3339 profile of ISO-8601 (Dater)
+# use FirstSeenReplayCouples count code for CESR native
+FirstSeen = namedtuple("FirstSeen", 'f, dt')
+
+# Transferable Last Receipts
+# ri = AID pre qb64 of receiptor (Prefixer)
+# n = sn of receipted event as lowercase hex string snh no leading zeros, (Number)
+# d = SAID digest qb64 of receipted event (Diger)
+# rss = receiptor indexed signatures qb64 list[Siger]
+# use TransLastReceiptIdxSigGroups count code for CESR native
+TransLastReceipts = namedtuple("Receipt", 'i, n, d, rss')
+
+# Transferable Signatures
+# i = AID pre qb64 of signer (Prefixer)
+# n = sn of signing est event as lowercase hex string snh no leading zeros, (Number)
+# d = SAID digest qb64 of signing est event (Diger)
+# iss = signer indexed signatures qb64 list[Siger]
+# use TransIdxSigGroups count code for CESR native
+TransSigs = namedtuple("TransSigs", 'i, n, d, iss')
+
+# Transferable Last Signatures
+# i = AID pre qb64 of signer (Prefixer)
+# iss = signer indexed signatures qb64 list[Siger]
+# use TransLastReceiptIdxSigGroups count code for CESR native
+TransLastSigs = namedtuple("TransLastSigs", 'i, iss')
+
+# Following are not seals or attachments only used in database
 
 # State Establishment Event (latest current) : quadruple (s, d, br, ba)
 # s = sn of latest est event as lowercase hex string  no leading zeros,

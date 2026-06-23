@@ -267,6 +267,7 @@ class MatterCodex:
     Tag7:                 str = 'Y'  # Tag7  7 B64 encoded chars for special values
     Tag11:                str = 'Z'  # Tag11  11 B64 encoded chars for special values
     Salt_256:             str = 'a'  # Salt/seed/nonce/blind 256 bits
+    GramHead:             str = 'b'  # Gram Head 8 chars, 3 special soft proto/ver/ilk PVI + 4 chars raw count/num
     Salt_128:             str = '0A'  # Salt/seed/nonce 128 bits or number of length 128 bits (Huge)
     Ed25519_Sig:          str = '0B'  # Ed25519 signature.
     ECDSA_256k1_Sig:      str = '0C'  # ECDSA secp256k1 signature.
@@ -282,10 +283,6 @@ class MatterCodex:
     Tag6:                 str = '0M'  # Tag6 6 B64 encoded chars for special values
     Tag9:                 str = '0N'  # Tag9 9 B64 encoded chars + 1 prepad for special values
     Tag10:                str = '0O'  # Tag10 10 B64 encoded chars for special values
-    GramHeadNeck:         str = '0P'  # GramHeadNeck 32 B64 chars memogram head with neck
-    GramHead:             str = '0Q'  # GramHead 28 B64 chars memogram head only
-    GramHeadAIDNeck:      str = '0R'  # GramHeadAIDNeck 76 B64 chars memogram head with AID and neck
-    GramHeadAID:          str = '0S'  # GramHeadAID 72 B64 chars memogram head with AID only
     ECDSA_256k1N:         str = '1AAA'  # ECDSA secp256k1 verification key non-transferable, basic derivation.
     ECDSA_256k1:          str = '1AAB'  # ECDSA public verification or encryption key, basic derivation
     Ed448N:               str = '1AAC'  # Ed448 non-transferable prefix public signing verification key. Basic derivation.
@@ -678,7 +675,7 @@ PreNonDigDex = PreNonDigCodex()  # Make instance
 # namedtuple for size entries in Matter  and Counter derivation code tables
 # hs is the hard size int number of chars in hard (stable) part of code
 # ss is the soft size int number of chars in soft (unstable) part of code
-# xs is the xtra size int number of xtra (pre-pad) chars as part of soft
+# xs is the xtra size int number of xtra (pre-pad in soft) chars as part of soft
 # fs is the full size int number of chars in code plus appended material if any
 # ls is the lead size int number of bytes to pre-pad pre-converted raw binary
 Sizage = namedtuple("Sizage", "hs ss xs fs ls")
@@ -793,6 +790,7 @@ class Matter:
         'Y': Sizage(hs=1, ss=7, xs=0, fs=8, ls=0),
         'Z': Sizage(hs=1, ss=11, xs=0, fs=12, ls=0),
         'a': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'b': Sizage(hs=1, ss=3, xs=0, fs=8, ls=0),
         '0A': Sizage(hs=2, ss=0, xs=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
         '0C': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
@@ -808,10 +806,6 @@ class Matter:
         '0M': Sizage(hs=2, ss=6, xs=0, fs=8, ls=0),
         '0N': Sizage(hs=2, ss=10, xs=1, fs=12, ls=0),
         '0O': Sizage(hs=2, ss=10, xs=0, fs=12, ls=0),
-        '0P': Sizage(hs=2, ss=22, xs=0, fs=32, ls=0),
-        '0Q': Sizage(hs=2, ss=22, xs=0, fs=28, ls=0),
-        '0R': Sizage(hs=2, ss=22, xs=0, fs=76, ls=0),
-        '0S': Sizage(hs=2, ss=22, xs=0, fs=72, ls=0),
         '1AAA': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, xs=0, fs=80, ls=0),
@@ -1150,7 +1144,7 @@ class Matter:
     def soft(self):
         """
         Returns:
-            soft (str): soft part only of full text code.
+            soft (str): soft part only of full text code without xtra.
 
         Getter for ._soft. Make ._soft read only
         """
@@ -1178,7 +1172,7 @@ class Matter:
     def both(self):
         """
         Returns:
-            both (str):  hard + soft parts of full text code
+            both (str):  hard + xtra + soft parts of full text code
         """
         #_, ss, _, _ = self.Sizes[self.code]
 
@@ -1307,7 +1301,7 @@ class Matter:
             primitive (bytes): fully qualified base64 characters.
         """
         code = self.code  # hard part of full code == codex value
-        both = self.both  # code + soft, soft may be empty
+        both = self.both  # code + soft including xtra, soft may be empty
         raw = self.raw  # bytes or bytearray, raw may be empty
         rs = len(raw)  # raw size
         hs, ss, xs, fs, ls = self.Sizes[code]
@@ -2799,61 +2793,48 @@ class Texter(Matter):
 
 
 class Bexter(Matter):
-    """
-    Bexter is subclass of Matter, cryptographic material, for variable length
+    """Bexter is subclass of Matter, cryptographic material, for variable length
     strings that only contain Base64 URL safe characters, i.e. Base64 text (bext).
-    When created using the 'bext' paramaeter, the encoded matter in qb64 format
+    When created using the 'bext' parameter, the encoded matter in qb64 format
     in the text domain is more compact than would be the case if the string were
     passed in as raw bytes. The text is used as is to form the value part of the
     qb64 version not including the leader.
 
-    Due to ambiguity that arises from pre-padding bext whose length is a multiple of
-    three with one or more 'A' chars. Any bext that starts with an 'A' and whose length
-    is either a multiple of 3 or 4 may not round trip. Bext with a leading 'A'
-    whose length is a multiple of four may have the leading 'A' stripped when
-    round tripping.
+    When bext is multiple of 3 then not aligned on 24 bit boundary so need
+    one prepad (wad) of 'A' but lead is still empty because one wad is only
+    6 bits so not enough to fill one lead of 8 bits.
+    This means that when prepadded with only one 'A' we have a potential
+    ambiguity when the zeroth character is the same as the prepad 'A'.
+    To resolve this ambiguity we either:
+        1) require that a valid bext cannot start with 'A'. This way when
+           ls (lead size) is zero but zeroth character in B64 is 'A'
+           then we can safely assume that the zeroth 'A' was prepad wad for
+           bext multiple of 3.
+        2)escape the zeroth 'A' by prepending the escape char '_'. Escaping
+        means that we must escape the escape when the zeroth char is '_'
 
-        Bexter(bext='ABBB').bext == 'BBB'
-        Bexter(bext='BBB').bext == 'BBB'
-        Bexter(bext='ABBB').qb64 == '4AABABBB' == Bexter(bext='BBB').qb64
-
-    To avoid this problem, only use for applications of base 64 strings that
-    never start with 'A'
-
-    Examples: base64 text strings:
-
-    bext = ""
-    qb64 = '4AAA'
-
-    bext = "-"
-    qb64 = '6AABAAA-'
-
-    bext = "-A"
-    qb64 = '5AABAA-A'
-
-    bext = "-A-"
-    qb64 = '4AABA-A-'
-
-    bext = "-A-B"
-    qb64 = '4AAB-A-B'
-
+    Default is escapive is True so that we don't have to restrict bext
+    zeroth character to not be 'A'
 
     Example uses:
         CESR encoded paths for nested SADs and SAIDs
         CESR encoded fractionally weighted threshold expressions
 
-
-    Attributes:
-
-    Inherited Properties:  (See Matter)
+    Inherited Attributes and Properties (See Matter):
 
     Properties:
-        .bext is the Base64 text value, .qb64 with text code and leader removed.
+        .bext (str): Base64 text value, .qb64 with text code and leader removed.
+        .escapive (bool): True use escape '-' either when bext[0] is '-'
+                          or when size ambiguity and bext[0] is 'A'
+                          False otherwise
 
     Inherited Hidden Properties:  (See Matter)
 
-    Methods:
-        ._rawify(self, bext)
+    ClassMethods:
+        ._derawify(self, bext, escapive=True)
+
+    StaticMethods:
+        ._rawify(self, bext, escapive=True)
 
     Codes:
         StrB64_L0:     str = '4A'  # String Base64 Only Leader Size 0
@@ -2864,27 +2845,62 @@ class Bexter(Matter):
         StrB64_Big_L2: str = '9AAA'  # String Base64 Only Big Leader Size 2
 
     """
-    @classmethod
-    def _derawify(cls, raw, code):
-        """Returns decoded raw as B64 str aka bext value
 
-        Returns:
-           bext (str): decoded raw as B64 str aka bext value
+
+    @classmethod
+    def _derawify(cls, raw, code, escapive=True):
+        """Returns bext as B64 str aka bext value from padded right aligned raw
+
+        Parameters::
+            raw (bytes): raw binary domain value
+            code (str): CESR code for encoding raw as CESR b2 or b64
+            escapive (bool): True use escape '-' either when bext[0] is '-'
+                              or when size ambiguity and bext[0] is 'A'
+                              False otherwise
+
+        Returns::
+            bext (str): decoded raw as B64 str aka bext value
+
+        When bext is multiple of 4 then aligned on 24 bit boundary so no
+        prepadding needed. This means both wad and lead are empty.
+
+        When bext is multiple of 3 then not aligned on 24 bit boundary so need
+        one prepad (wad) of 'A' but lead is still empty because one wad is only
+        6 bits so not enough to fill one lead of 8 bits.
+        This means that when prepadded with only one 'A' we have a potential
+        ambiguity when the zeroth character is the same as the prepad 'A'.
+        To resolve this ambiguity we either:
+            1) require that a valid bext cannot start with 'A'. This way when
+               ls (lead size) is zero but zeroth character in B64 is 'A'
+               then we can safely assume that the zeroth 'A' was prepad wad for
+               bext multiple of 3.
+            2)escape the zeroth 'A' by prepending the escape char '_'. Escaping
+            means that we must escape the escape when the zeroth char is '_'
+
+        Default is escapive is True so that we don't have to restrict bext
+        zeroth character to not be 'A'
         """
         _, _, _, _, ls = cls.Sizes[code]
-        bext = encodeB64(bytes([0] * ls) + raw)
-        ws = 0
-        if ls == 0 and bext:
-            if bext[0] == ord(b'A'):  # strip leading 'A' zero pad
-                ws = 1
-        else:
-            ws = (ls + 1) % 4
-        return bext.decode('utf-8')[ws:]
+        bext = encodeB64(bytes([0] * ls) + raw)  # need lead to reverse
+        ws = 0  # wad size (bext prepad)
+        if bext and ls == 0:  # ambiguity ls=0 when ws=0 or ws=1
+            if bext[0] == ord(b'A'):  # zeroth bext is 'A' so assume ws=1
+                ws = 1  # ambiguity in text (b64) mode so assume is wad pad
+        else:  # no ambiguity ws=ls+1
+            ws = (ls + 1) % 4  # wad size as a function of lead size
+        bext = bext[ws:]  # strip prefixed wad pad
+
+        if escapive:  # assume was escaped as needed
+            if bext and bext[0] == ord(b'-'):  # was escaped
+                bext = bext[1:]  # strip escape
+
+        return bext.decode()
 
 
     def __init__(self, raw=None, qb64b=None, qb64=None, qb2=None,
-                 code=MtrDex.StrB64_L0, bext=None, **kwa):
-        """
+                 code=MtrDex.StrB64_L0, bext=None, escapive=True, **kwa):
+        """Initialize Instance
+
         Inherited Parameters:  (see Matter)
             raw is bytes of unqualified crypto material usable for crypto operations
             qb64b is bytes of fully qualified crypto material
@@ -2895,7 +2911,13 @@ class Bexter(Matter):
 
         Parameters:
             bext is the variable sized Base64 text string
+            escapive (bool): True use escape '-' either when bext[0] is '-'
+                              or when size ambiguity and bext[0] is 'A'
+                              Assigns value of ._escapive for property .escapive
+                              False otherwise
         """
+        self._escapive = True if escapive else False
+
         if raw is None and qb64b is None and qb64 is None and qb2 is None:
             if bext is None:
                 raise EmptyMaterialError("Missing bext string.")
@@ -2903,7 +2925,7 @@ class Bexter(Matter):
                 bext = bext.encode("utf-8")  # convert to bytes
             if not Reb64.match(bext):
                 raise ValueError("Invalid Base64.")
-            raw = self._rawify(bext)  # convert bytes to raw with padding
+            raw = self._rawify(bext, escapive=self.escapive)  # convert bytes to raw with padding
 
         super(Bexter, self).__init__(raw=raw, qb64b=qb64b, qb64=qb64, qb2=qb2,
                                      code=code, **kwa)
@@ -2912,28 +2934,73 @@ class Bexter(Matter):
                                   "".format(self.code))
 
     @staticmethod
-    def _rawify(bext):
+    def _rawify(bext, escapive=True):
         """Returns raw value equivalent of Base64 text.
-        Suitable for variable sized matter
+        Suitable for variable sized matter.
 
-        Parameters:
-            bext (bytes): Base64 bytes
+        Parameters::
+            bext (bytes): Base64 bytes to be encoded as padded raw
+            escapive (bool): True use escape '-' either when bext[0] is '-'
+                              or when size ambiguity and bext[0] is 'A'
+                              False otherwise
+
+
+        When bext is multiple of 4 then aligned on 24 bit boundary so no
+        prepadding needed. This means both wad and lead are empty.
+
+        When bext is multiple of 4 then aligned on 24 bit boundary so no
+        prepadding needed. This means both wad and lead are empty.
+
+        When bext is multiple of 3 then not aligned on 24 bit boundary so need
+        one prepad (wad) of 'A' but lead is still empty because one wad is only
+        6 bits so not enough to fill one lead of 8 bits.
+        This means that when prepadded with only one 'A' we have a potential
+        ambiguity when the zeroth character is the same as the prepad 'A'.
+        To resolve this ambiguity we either:
+            1) require that a valid bext cannot start with 'A'. This way when
+               ls (lead size) is zero but zeroth character in B64 is 'A'
+               then we can safely assume that the zeroth 'A' was prepad wad for
+               bext multiple of 3.
+            2)escape the zeroth 'A' by prepending the escape char '_'. Escaping
+            means that we must escape the escape when the zeroth char is '_'
+
+        Default is escapive is True so that we don't have to restrict bext
+        zeroth character to not be 'A'
+
+        Returns::
+            raw (bytes): raw value of bext with code and padding stripped off.
+
         """
-        ts = len(bext) % 4  # bext size mod 4
-        ws = (4 - ts) % 4  # pre conv wad size in chars
-        ls = (3 - ts) % 3  # post conv lead size in bytes
+        ws = (4 - (len(bext) % 4)) % 4  # pre conv wad size in chars
+
+        if escapive:
+            if bext and ((bext[0] == ord(b'A') and ws in (0, 1))
+                         or bext[0] == ord(b'-')):
+                bext = b'-' + bext  # escape either 'A' ambiguity or '-' escape
+                ws = (4 - (len(bext) % 4)) % 4  # new ws with escape
+
         base = b'A' * ws + bext  # pre pad with wad of zeros in Base64 == 'A'
-        raw = decodeB64(base)[ls:]  # convert and remove leader
+        ls = (3 - (len(bext) % 4)) % 3  # lead size in bytes of fully padded lead
+        raw = decodeB64(base)[ls:]  # convert and remove leader of full pad
+        #raw has mid pad bits mpb=4 for ls=1, ws=2: mpb=2 for ls=2 ws=3
         return raw  # raw binary equivalent of text
 
 
     @property
     def bext(self):
-        """
-        Property bext: Base64 text value portion of qualified b64 str
+        """Property bext: Base64 text value portion of qualified b64 str
         Returns the value portion of .qb64 with text code and leader removed
         """
-        return self._derawify(raw=self.raw, code=self.code)
+        return self._derawify(raw=self.raw, code=self.code, escapive=self.escapive)
+
+    @property
+    def escapive(self):
+        """Property escapive: True use escape '-' either when bext[0] is '-'
+                              or when size ambiguity and bext[0] is 'A'
+                              False otherwise
+        Getter for ._escapive
+        """
+        return self._escapive
 
 
 class Pather(Matter):
@@ -2941,11 +3008,15 @@ class Pather(Matter):
     It provides support for SAD Path language specific functionality. When path
     parts contain only Base64 characters not including '-', the path will be
     compactly encoded with special path separator '-' as a variable length
-    StrBase64. Otherwise paths are encoded as variable length Bytes.
+    StrBase64. Otherwise paths are encoded as variable length Bytes with no
+    substitution.
     Pather allows the specification of paths as a list of field parts which will
     be converted to the compact Base64 URL safe character representation when
-    possible. Paths may be relative or absolute. A special, escape secquence is
-    used to encode relative paths in Base64
+    possible.
+
+    Paths may be relative or absolute.
+    A special, escape secquence '--' is used to encode relative paths in Base64
+    that resolves the leading 'A' ambiguity for paths of length 3 or 4 characters.
 
     Pather can traverse paths that maintain Base64 URL character safety by
     leveraging the fact that SADs must have static field ordering.
@@ -3013,7 +3084,7 @@ class Pather(Matter):
 
             parts = [part.encode() if hasattr(part, 'encode') else part for part in parts]
 
-            bextable = True  # TRue means more compact b64 raw, otherwise raw is text
+            bextable = True  # True means more compact b64 raw, otherwise raw is text
             for part in parts:
                 if not Repath.match(part):  # matches empty
                     if pathive:  # pathive so parts MUST satisfy Repath
@@ -3040,7 +3111,7 @@ class Pather(Matter):
                 ws = (4 - (len(path) % 4)) % 4  # pre conv wad size in chars
                 if path and path[0] == ord(b'A') and (ws in (0, 1)):  # use escape sequence
                     path = b'--' + path
-                raw = Bexter._rawify(path)
+                raw = Bexter._rawify(path, escapive=False)  # pather does own escaping
 
             else:  # use Bytes code
                 code = MtrDex.Bytes_L0
@@ -3059,7 +3130,8 @@ class Pather(Matter):
                         Relative paths do not.
         """
         if self.code in BexDex:  # bextable
-            path = Bexter._derawify(raw=self.raw, code=self.code)
+            # pather does own escaping
+            path = Bexter._derawify(raw=self.raw, code=self.code, escapive=False)
             path = path.removeprefix('--')  # escape sequence for relative pathive path
             parts = path.split("-")
             path = '/'.join(parts)
@@ -3082,7 +3154,8 @@ class Pather(Matter):
         """
 
         if self.code in BexDex:  # pathive
-            path = Bexter._derawify(raw=self.raw, code=self.code)
+            # pather does own escaping
+            path = Bexter._derawify(raw=self.raw, code=self.code, escapive=False)
             path = path.removeprefix('--')  # escape sequence for relative pathive path
             parts = path.split("-")
         else:
@@ -3104,7 +3177,8 @@ class Pather(Matter):
         """
 
         if self.code in BexDex:  # pathive
-            path = Bexter._derawify(raw=self.raw, code=self.code)
+            # pather does own escaping
+            path = Bexter._derawify(raw=self.raw, code=self.code, escapive=False)
             path = path.removeprefix('--')  # escape sequence for relative pathive path
             parts = path.split("-")
         else:
@@ -3253,12 +3327,15 @@ class Pather(Matter):
 
 
 class Labeler(Matter):
-    """
-    Labeler is subclass of Matter for CESR native field map labels and/or generic
+    """Labeler is subclass of Matter for CESR native field map labels and/or generic
     textual field values. Labeler auto sizes the instance code to minimize
     the total encoded size of associated field label or textual field value.
 
-
+    When labels are composed of valid Python attribute values which are a subset
+    of Base64, i.e. no leading numeral, no '-' then if the leading character
+    is 'A' an escape char '-' is used to ensure no length ambiguity with Base64
+    the starts with 'A". The excape character is prefized and stripped
+    transparently.
 
     Attributes:
 
@@ -3280,7 +3357,8 @@ class Labeler(Matter):
 
 
     def __init__(self, label=None, text=None, raw=None, code=None, soft=None, **kwa):
-        """
+        """Initialize Instance
+
         Inherited Parameters:
             (see Matter)
 
@@ -3295,7 +3373,7 @@ class Labeler(Matter):
             if hasattr(label, "encode"):  # make label bytes
                 label = label.encode()
 
-            if not Reatt.match(label):
+            if not Reatt.match(label):  # B64 but no '-' or leading numerals
                 raise InvalidValueError(f"Invalid {label=}")
 
             # candidate for Base64 compact encoding
@@ -3304,15 +3382,16 @@ class Labeler(Matter):
                 soft = label
 
             except InvalidSoftError as ex:  # too big
-                ws = (4 - (len(label) % 4)) % 4  # pre conv wad size in chars
-                if label[0] == ord(b'A') and (ws in (0, 1)):  # use excape code
-                    label = b'-' + label
-                code = LabelDex.StrB64_L0
-                raw = Bexter._rawify(label)
-
-                #else:  # use Texter code since ambiguity if starts with 'A' and ws in (0,1)
-                    #code = LabelDex.Bytes_L0
-                    #raw = label
+                raw = Bexter._rawify(label)  # converts with mid pad bits
+                ls = (3 - len(label) % 4) % 3  # rawify lead bytes equiv
+                if ls == 0:
+                    code = LabelDex.StrB64_L0
+                elif ls == 1:
+                    code = LabelDex.StrB64_L1
+                elif ls == 2:
+                    code = LabelDex.StrB64_L2
+                else:
+                    raise InvalidValueError(f"Invalid {ls=}")
 
         elif text is not None:  # text can be empty string since '' is Reb64
             if hasattr(text, "encode"):  # make text bytes
@@ -3329,15 +3408,17 @@ class Labeler(Matter):
                         soft = text
 
                     except InvalidSoftError as ex:  # too big
-                        ws = (4 - (len(text) % 4)) % 4  # pre conv wad size in chars
-                        if text[0] != ord(b'A') or not (ws in (0, 1)):  # use Bexter code
-                            # can't use escape code here because Reb64 allows all B64 chars.
+                        raw = Bexter._rawify(text)  # converts with mid pad bits
+                        ls = (3 - len(text) % 4) % 3  # rawify lead bytes equiv
+                        if ls == 0:
                             code = LabelDex.StrB64_L0
-                            raw = Bexter._rawify(text)
+                        elif ls == 1:
+                            code = LabelDex.StrB64_L1
+                        elif ls == 2:
+                            code = LabelDex.StrB64_L2
+                        else:
+                            raise InvalidValueError(f"Invalid {ls=}")
 
-                        else:  # use Texter code since ambiguity if starts with 'A' and ws in (0,1)
-                            code = LabelDex.Bytes_L0
-                            raw = text
 
             else:  # not Reb64
                 if len(text) == 1:
@@ -3372,8 +3453,6 @@ class Labeler(Matter):
 
         elif self.code in BexDex:  # bext
             label = Bexter._derawify(raw=self.raw, code=self.code)  # derawify
-            if label[0] == '-':  # excape code
-                label = label[1:]  # remove excape
 
         else:
             label = self.raw.decode()  # everything else is just raw as str
@@ -3396,9 +3475,6 @@ class Labeler(Matter):
 
         if self.code in BexDex:  # bext
             label = Bexter._derawify(raw=self.raw, code=self.code)  # derawify
-            if label[0] == '-':  # excape code see if Reatt
-                if Reatt.match(label[1:].encode()):  # so must have been escaped
-                    label = label[1:]  # remove excape
             return label
 
         return self.raw.decode()  # everything else is just raw as str

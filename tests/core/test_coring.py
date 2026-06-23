@@ -217,6 +217,7 @@ def test_matter_class():
         'Tag7': 'Y',
         'Tag11': 'Z',
         'Salt_256': 'a',
+        'GramHead': 'b',
         'Salt_128': '0A',
         'Ed25519_Sig': '0B',
         'ECDSA_256k1_Sig': '0C',
@@ -232,10 +233,6 @@ def test_matter_class():
         'Tag6': '0M',
         'Tag9': '0N',
         'Tag10': '0O',
-        'GramHeadNeck': '0P',
-        'GramHead': '0Q',
-        'GramHeadAIDNeck': '0R',
-        'GramHeadAID': '0S',
         'ECDSA_256k1N': '1AAA',
         'ECDSA_256k1': '1AAB',
         'Ed448N': '1AAC',
@@ -331,6 +328,7 @@ def test_matter_class():
         'Y': 'Tag7',
         'Z': 'Tag11',
         'a': 'Salt_256',
+        'b': 'GramHead',
         '0A': 'Salt_128',
         '0B': 'Ed25519_Sig',
         '0C': 'ECDSA_256k1_Sig',
@@ -346,10 +344,6 @@ def test_matter_class():
         '0M': 'Tag6',
         '0N': 'Tag9',
         '0O': 'Tag10',
-        '0P': 'GramHeadNeck',
-        '0Q': 'GramHead',
-        '0R': 'GramHeadAIDNeck',
-        '0S': 'GramHeadAID',
         '1AAA': 'ECDSA_256k1N',
         '1AAB': 'ECDSA_256k1',
         '1AAC': 'Ed448N',
@@ -459,6 +453,7 @@ def test_matter_class():
         'Y': Sizage(hs=1, ss=7, xs=0, fs=8, ls=0),
         'Z': Sizage(hs=1, ss=11, xs=0, fs=12, ls=0),
         'a': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'b': Sizage(hs=1, ss=3, xs=0, fs=8, ls=0),
         '0A': Sizage(hs=2, ss=0, xs=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
         '0C': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
@@ -474,10 +469,6 @@ def test_matter_class():
         '0M': Sizage(hs=2, ss=6, xs=0, fs=8, ls=0),
         '0N': Sizage(hs=2, ss=10, xs=1, fs=12, ls=0),
         '0O': Sizage(hs=2, ss=10, xs=0, fs=12, ls=0),
-        '0P': Sizage(hs=2, ss=22, xs=0, fs=32, ls=0),
-        '0Q': Sizage(hs=2, ss=22, xs=0, fs=28, ls=0),
-        '0R': Sizage(hs=2, ss=22, xs=0, fs=76, ls=0),
-        '0S': Sizage(hs=2, ss=22, xs=0, fs=72, ls=0),
         '1AAA': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, xs=0, fs=80, ls=0),
@@ -2023,169 +2014,81 @@ def test_matter_special():
     assert not matter.special
     assert matter.composable
 
-    # test PartHeadNeck
-    code = MtrDex.GramHeadNeck
-    assert code == '0P'
-    codeb = code.encode()
-
-    mid = 1
-    midb = mid.to_bytes(16)
-    assert midb == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01'
-    pn = 1
-    pnb = pn.to_bytes(3)
-    assert pnb == b'\x00\x00\x01'
-    pc = 2
-    pcb = pc.to_bytes(3)
-    assert pcb == b'\x00\x00\x02'
-
-    raw = pnb + pcb
-    assert raw == b'\x00\x00\x01\x00\x00\x02'
-
-    assert mid == int.from_bytes(midb[:16])
-    assert pn == int.from_bytes(raw[0:3])
-    assert pc == int.from_bytes(raw[3:6])
-
-    midb64 = encodeB64(bytes([0] * 2) + midb)[2:] # prepad convert and strip
-    soft = midb64.decode()
-    pnb64 = encodeB64(pnb)
-    pcb64 = encodeB64(pcb)
-
-    qb64b = codeb + midb64 + pnb64 + pcb64
-    assert qb64b == b'0PAAAAAAAAAAAAAAAAAAAAABAAABAAAC'
-    qb64 = qb64b.decode()
-    qb2 = decodeB64(qb64b)
-
-    assert mid == int.from_bytes(decodeB64(b'AA' + qb64b[2:24]))
-    assert pn == int.from_bytes(decodeB64(qb64b[24:28]))
-    assert pc == int.from_bytes(decodeB64(qb64b[28:32]))
-
-    matter = Matter(raw=raw, code=code, soft=soft)
-
-    assert matter.code == code
-    assert matter.soft == soft
-    assert matter.raw == raw
-    assert matter.qb64 == qb64
-    assert matter.qb64b == qb64b
-    assert matter.qb2 == qb2
-    assert matter.transferable == True
-    assert matter.digestive == False
-    assert matter.prefixive == False
-    assert matter.special
-    assert matter.composable
-
-    matter = Matter(qb64b=qb64b)
-    assert matter.raw == raw
-    assert matter.code == code
-    assert matter.qb64 == qb64
-    assert matter.qb64b == qb64b
-    assert matter.qb2 == qb2
-    assert matter.transferable == True
-    assert matter.digestive == False
-    assert matter.prefixive == False
-    assert matter.special
-    assert matter.composable
-
-    matter = Matter(qb64=qb64)
-    assert matter.raw == raw
-    assert matter.code == code
-    assert matter.qb64 == qb64
-    assert matter.qb64b == qb64b
-    assert matter.transferable == True
-    assert matter.digestive == False
-    assert matter.prefixive == False
-    assert matter.special
-    assert matter.composable
-
-    matter = Matter(qb2=qb2)
-    assert matter.raw == raw
-    assert matter.code ==code
-    assert matter.qb64 == qb64
-    assert matter.qb64b == qb64b
-    assert matter.qb2 == qb2
-    assert matter.transferable == True
-    assert matter.digestive == False
-    assert matter.prefixive == False
-    assert matter.special
-    assert matter.composable
-
-    # test PartHead
+    # test GramHead
     code = MtrDex.GramHead
-    assert code == '0Q'
+    assert code == 'b'
+
+    p = 'm'  # protocol
+    v = 'B' # version
+    i = 'D'  # ilk
+    soft = p + v + i
+    assert soft == 'mBD'
+
+    cnt = 37
+    raw = cnt.to_bytes(3)
+    assert raw == b'\x00\x00%'
+    textb = encodeB64(raw)
+    assert textb == b'AAAl'
     codeb = code.encode()
-
-    mid = 1
-    midb = mid.to_bytes(16)
-    assert midb == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01'
-    pn = 1
-    pnb = pn.to_bytes(3)
-    assert pnb == b'\x00\x00\x01'
-
-    raw = pnb
-    assert raw == b'\x00\x00\x01'
-
-    assert mid == int.from_bytes(midb[:16])
-    assert pn == int.from_bytes(raw[0:3])
-
-    midb64 = encodeB64(bytes([0] * 2) + midb)[2:] # prepad convert and strip
-    soft = midb64.decode()
-    pnb64 = encodeB64(pnb)
-
-    qb64b = codeb + midb64 + pnb64
-    assert qb64b == b'0QAAAAAAAAAAAAAAAAAAAAABAAAB'
+    softb = soft.encode()
+    qb64b = codeb + softb + textb
+    assert qb64b == b'bmBDAAAl'
     qb64 = qb64b.decode()
     qb2 = decodeB64(qb64b)
+    assert qb2 == b'n`C\x00\x00%'
 
-    assert mid == int.from_bytes(decodeB64(b'AA' + qb64b[2:24]))
-    assert pn == int.from_bytes(decodeB64(qb64b[24:28]))
+    header = Matter(raw=raw, code=code, soft=soft)
+    assert header.code == code
+    assert header.soft == soft
+    assert header.raw == raw
+    assert header.qb64 == qb64
+    assert header.qb64b == qb64b
+    assert header.qb2 == qb2
+    assert header.transferable
+    assert not header.digestive
+    assert not header.prefixive
+    assert header.special
+    assert header.composable
 
-    matter = Matter(raw=raw, code=code, soft=soft)
+    header = Matter(qb64b=qb64b)
+    assert header.code == code
+    assert header.soft == soft
+    assert header.raw == raw
+    assert header.qb64 == qb64
+    assert header.qb64b == qb64b
+    assert header.qb2 == qb2
+    assert header.transferable
+    assert not header.digestive
+    assert not header.prefixive
+    assert header.special
+    assert header.composable
 
-    assert matter.code == code
-    assert matter.soft == soft
-    assert matter.raw == raw
-    assert matter.qb64 == qb64
-    assert matter.qb64b == qb64b
-    assert matter.qb2 == qb2
-    assert matter.transferable == True
-    assert matter.digestive == False
-    assert matter.prefixive == False
-    assert matter.special
-    assert matter.composable
+    header = Matter(qb64=qb64)
+    assert header.code == code
+    assert header.soft == soft
+    assert header.raw == raw
+    assert header.qb64 == qb64
+    assert header.qb64b == qb64b
+    assert header.qb2 == qb2
+    assert header.transferable
+    assert not header.digestive
+    assert not header.prefixive
+    assert header.special
+    assert header.composable
 
-    matter = Matter(qb64b=qb64b)
-    assert matter.raw == raw
-    assert matter.code == code
-    assert matter.qb64 == qb64
-    assert matter.qb64b == qb64b
-    assert matter.qb2 == qb2
-    assert matter.transferable == True
-    assert matter.digestive == False
-    assert matter.prefixive == False
-    assert matter.special
-    assert matter.composable
+    header = Matter(qb2=qb2)
+    assert header.code == code
+    assert header.soft == soft
+    assert header.raw == raw
+    assert header.qb64 == qb64
+    assert header.qb64b == qb64b
+    assert header.qb2 == qb2
+    assert header.transferable
+    assert not header.digestive
+    assert not header.prefixive
+    assert header.special
+    assert header.composable
 
-    matter = Matter(qb64=qb64)
-    assert matter.raw == raw
-    assert matter.code == code
-    assert matter.qb64 == qb64
-    assert matter.qb64b == qb64b
-    assert matter.transferable == True
-    assert matter.digestive == False
-    assert matter.prefixive == False
-    assert matter.special
-    assert matter.composable
-
-    matter = Matter(qb2=qb2)
-    assert matter.raw == raw
-    assert matter.code ==code
-    assert matter.qb64 == qb64
-    assert matter.qb64b == qb64b
-    assert matter.qb2 == qb2
-    assert matter.transferable == True
-    assert matter.digestive == False
-    assert matter.prefixive == False
-    assert matter.special
-    assert matter.composable
 
     # Test escape code
     code = MtrDex.Escape
@@ -4158,22 +4061,23 @@ def test_tagger():
         assert tagger.tag == tag
         assert len(tagger.tag) == l
         assert tagger.code == astuple(TagDex)[l - 1]
-        alltags[l] = (tagger.tag, tagger.code)
+        alltags[l] = (tagger.tag, tagger.code, tagger.qb64)
 
     assert alltags == \
-        {
-            1: ('a', '0J'),
-            2: ('ab', '0K'),
-            3: ('abc', 'X'),
-            4: ('abcd', '1AAF'),
-            5: ('abcde', '0L'),
-            6: ('abcdef', '0M'),
-            7: ('abcdefg', 'Y'),
-            8: ('abcdefgh', '1AAN'),
-            9: ('abcdefghi', '0N'),
-            10: ('abcdefghij', '0O'),
-            11: ('abcdefghijk', 'Z'),
-         }
+    {
+        1: ('a', '0J', '0J_a'),
+        2: ('ab', '0K', '0Kab'),
+        3: ('abc', 'X', 'Xabc'),
+        4: ('abcd', '1AAF', '1AAFabcd'),
+        5: ('abcde', '0L', '0L_abcde'),
+        6: ('abcdef', '0M', '0Mabcdef'),
+        7: ('abcdefg', 'Y', 'Yabcdefg'),
+        8: ('abcdefgh', '1AAN', '1AANabcdefgh'),
+        9: ('abcdefghi', '0N', '0N_abcdefghi'),
+        10: ('abcdefghij', '0O', '0Oabcdefghij'),
+        11: ('abcdefghijk', 'Z', 'Zabcdefghijk')
+    }
+
     """ Done Test """
 
 
@@ -4806,8 +4710,55 @@ def test_bexter():
     assert bexter.qb2 == b'\xe0\x00\x00'
     assert bexter.bext == bext
 
+    # Escapive default
     bext = "-"
     bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L1
+    assert bexter.both == '5AAB'
+    assert bexter.raw == b'\x0f\xbe'
+    assert bexter.qb64 == '5AABAA--'
+    assert bexter.qb2 == b'\xe4\x00\x01\x00\x0f\xbe'
+    assert bexter.bext == bext
+
+    bext = "-A"
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L0
+    assert bexter.both == '4AAB'
+    assert bexter.raw == b'\x03\xef\x80'
+    assert bexter.qb64 == '4AABA--A'
+    assert bexter.qb2 == b'\xe0\x00\x01\x03\xef\x80'
+    assert bexter.bext == bext
+
+    bext = "-A-"
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L0
+    assert bexter.both == '4AAB'
+    assert bexter.raw == b'\xfb\xe0>'
+    assert bexter.qb64 == '4AAB--A-'
+    assert bexter.qb2 == b'\xe0\x00\x01\xfb\xe0>'
+    assert bexter.bext == bext
+
+    bext = "-A-B"
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L2
+    assert bexter.both == '6AAC'
+    assert bexter.raw == b'>\xf8\x0f\x81'
+    assert bexter.qb64 == '6AACAAA--A-B'
+    assert bexter.qb2 == b'\xe8\x00\x02\x00\x00>\xf8\x0f\x81'
+    assert bexter.bext == bext
+
+    bext = "-A-BC"
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L1
+    assert bexter.both == '5AAC'
+    assert bexter.raw == b'\x0f\xbe\x03\xe0B'
+    assert bexter.qb64 == '5AACAA--A-BC'
+    assert bexter.qb2 == b'\xe4\x00\x02\x00\x0f\xbe\x03\xe0B'
+    assert bexter.bext == bext
+
+    # not escapive
+    bext = "-"
+    bexter = Bexter(bext=bext, escapive=False)
     assert bexter.code == MtrDex.StrB64_L2
     assert bexter.both == '6AAB'
     assert bexter.raw == b'>'
@@ -4816,7 +4767,7 @@ def test_bexter():
     assert bexter.bext == bext
 
     bext = "-A"
-    bexter = Bexter(bext=bext)
+    bexter = Bexter(bext=bext, escapive=False)
     assert bexter.code == MtrDex.StrB64_L1
     assert bexter.both == '5AAB'
     assert bexter.raw == b'\x0f\x80'
@@ -4825,7 +4776,7 @@ def test_bexter():
     assert bexter.bext == bext
 
     bext = "-A-"
-    bexter = Bexter(bext=bext)
+    bexter = Bexter(bext=bext, escapive=False)
     assert bexter.code == MtrDex.StrB64_L0
     assert bexter.both == '4AAB'
     assert bexter.raw == b'\x03\xe0>'
@@ -4834,7 +4785,7 @@ def test_bexter():
     assert bexter.bext == bext
 
     bext = "-A-B"
-    bexter = Bexter(bext=bext)
+    bexter = Bexter(bext=bext, escapive=False)
     assert bexter.code == MtrDex.StrB64_L0
     assert bexter.both == '4AAB'
     assert bexter.raw == b'\xf8\x0f\x81'
@@ -4842,8 +4793,16 @@ def test_bexter():
     assert bexter.qb2 == b'\xe0\x00\x01\xf8\x0f\x81'
     assert bexter.bext == bext
 
+    bext = "-A-BC"
+    bexter = Bexter(bext=bext, escapive=False)
+    assert bexter.code == MtrDex.StrB64_L2
+    assert bexter.both == '6AAC'
+    assert bexter.raw == b'>\x03\xe0B'
+    assert bexter.qb64 == '6AACAAA-A-BC'
+    assert bexter.qb2 == b'\xe8\x00\x02\x00\x00>\x03\xe0B'
+    assert bexter.bext == bext
 
-
+    # Escapive
     bext = "A"
     bexter = Bexter(bext=bext)
     assert bexter.code == MtrDex.StrB64_L2
@@ -4863,8 +4822,65 @@ def test_bexter():
     assert bexter.bext == bext
 
     # test of ambiguity with bext that starts with "A" and is multiple of 3 or 4
-    bext = "AAA"  # multiple of three
+    bext = "AAA"  # multiple of three so will be escaped
     bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L0
+    assert bexter.both == '4AAB'
+    assert bexter.raw == b'\xf8\x00\x00'
+    assert bexter.qb64 == '4AAB-AAA'
+    assert bexter.qb2 == b'\xe0\x00\x01\xf8\x00\x00'
+    assert bexter.bext == bext
+
+    bext = "AAAA"  # multiple of four so will be escaped
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L2
+    assert bexter.both == '6AAC'
+    assert bexter.raw == b'>\x00\x00\x00'
+    assert bexter.qb64 == '6AACAAA-AAAA'
+    assert bexter.qb2 == b'\xe8\x00\x02\x00\x00>\x00\x00\x00'
+    assert bexter.bext == bext
+
+    bext = "ABB"  # multiple of three so will be escaped
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L0
+    assert bexter.both == '4AAB'
+    assert bexter.raw == b'\xf8\x00A'
+    assert bexter.qb64 == '4AAB-ABB'
+    assert bexter.qb2 == b'\xe0\x00\x01\xf8\x00A'
+    assert bexter.bext == bext
+
+    bext = "ABBB"  # multiple of four so will be escaped
+    bexter = Bexter(bext=bext)
+    assert bexter.code == MtrDex.StrB64_L2
+    assert bexter.both == '6AAC'
+    assert bexter.raw == b'>\x00\x10A'
+    assert bexter.qb64 == '6AACAAA-ABBB'
+    assert bexter.qb2 == b'\xe8\x00\x02\x00\x00>\x00\x10A'
+    assert bexter.bext == bext
+
+
+    # Not Escapive
+    bext = "A"
+    bexter = Bexter(bext=bext, escapive=False)
+    assert bexter.code == MtrDex.StrB64_L2
+    assert bexter.both == '6AAB'
+    assert bexter.raw == b'\x00'
+    assert bexter.qb64 == '6AABAAAA'
+    assert bexter.qb2 == b'\xe8\x00\x01\x00\x00\x00'
+    assert bexter.bext == bext
+
+    bext = "AA"
+    bexter = Bexter(bext=bext, escapive=False)
+    assert bexter.code == MtrDex.StrB64_L1
+    assert bexter.both == '5AAB'
+    assert bexter.raw == b'\x00\x00'
+    assert bexter.qb64 == '5AABAAAA'
+    assert bexter.qb2 ==b'\xe4\x00\x01\x00\x00\x00'
+    assert bexter.bext == bext
+
+    # test of ambiguity with bext that starts with "A" and is multiple of 3 or 4
+    bext = "AAA"  # multiple of three
+    bexter = Bexter(bext=bext, escapive=False)
     assert bexter.code == MtrDex.StrB64_L0
     assert bexter.both == '4AAB'
     assert bexter.raw == b'\x00\x00\x00'
@@ -4873,7 +4889,7 @@ def test_bexter():
     assert bexter.bext == bext
 
     bext = "AAAA"  # multiple of four loses leading 'A' for round trip of bext
-    bexter = Bexter(bext=bext)
+    bexter = Bexter(bext=bext, escapive=False)
     assert bexter.code == MtrDex.StrB64_L0
     assert bexter.both == '4AAB'
     assert bexter.raw == b'\x00\x00\x00'
@@ -4882,7 +4898,7 @@ def test_bexter():
     assert bexter.bext == 'AAA' != bext
 
     bext = "ABB"  # multiple of three
-    bexter = Bexter(bext=bext)
+    bexter = Bexter(bext=bext, escapive=False)
     assert bexter.code == MtrDex.StrB64_L0
     assert bexter.both == '4AAB'
     assert bexter.raw == b'\x00\x00A'
@@ -4890,6 +4906,17 @@ def test_bexter():
     assert bexter.qb2 == b'\xe0\x00\x01\x00\x00A'
     assert bexter.bext == bext
 
+    bext = "ABBB"  # multiple of four loses leading 'A' for round trip of bext
+    bexter = Bexter(bext=bext, escapive=False)
+    assert bexter.code == MtrDex.StrB64_L0
+    assert bexter.both == '4AAB'
+    assert bexter.raw == b'\x00\x10A'
+    assert bexter.qb64 == '4AABABBB'
+    assert bexter.qb2 == b'\xe0\x00\x01\x00\x10A'
+    assert bexter.bext == 'BBB' != bext
+
+
+    # doesn't matter if Escapive
     bext = "BBB"  # multiple of three
     bexter = Bexter(bext=bext)
     assert bexter.code == MtrDex.StrB64_L0
@@ -4899,14 +4926,6 @@ def test_bexter():
     assert bexter.qb2 == b'\xe0\x00\x01\x00\x10A'
     assert bexter.bext == bext
 
-    bext = "ABBB"  # multiple of four loses leading 'A' for round trip of bext
-    bexter = Bexter(bext=bext)
-    assert bexter.code == MtrDex.StrB64_L0
-    assert bexter.both == '4AAB'
-    assert bexter.raw == b'\x00\x10A'
-    assert bexter.qb64 == '4AABABBB'
-    assert bexter.qb2 == b'\xe0\x00\x01\x00\x10A'
-    assert bexter.bext == 'BBB' != bext
 
 
     x = b'\x00\x00\x40'
@@ -5502,7 +5521,7 @@ def test_labeler():
         assert labeler.label == label
         assert labeler.text == label
 
-    # test bextable labels
+    # test bextable labels no need to escape
     label = 'zyxwvutsrqponm'
     code = LabelDex.StrB64_L1
     qb64 = '5AAEAAzyxwvutsrqponm'
@@ -5605,14 +5624,12 @@ def test_labeler():
         assert labeler.label == label
     assert labeler.text == label
 
-
     # variable sized
     label = '#yxwvutsrqponm'
     code = LabelDex.Bytes_L1
     raw = label.encode()
     qb64 = '5BAFACN5eHd2dXRzcnFwb25t'
     qb2 = decodeB64(qb64)
-
 
     with pytest.raises(InvalidValueError):
         labeler = Labeler(label=label)
@@ -5642,10 +5659,13 @@ def test_labeler():
         assert labeler.label == label
     assert labeler.text == label
 
+    # Escaped labels start with `A` and length ws in (0,1) so ambiguity
     # test base64 that starts with 'A' and ws in (0,1) get encoded with escape
+    # ws == 1 but changes to 0 because of escape
     label = 'Ayxwvutsrqponmp'
     ws = (4 - (len(label) % 4)) % 4  # pre conv wad size in chars
     assert ws in (0, 1)
+    assert ws == 1
     code = LabelDex.StrB64_L0
     raw = b'\xf8\x0c\xb1\xc2\xfb\xad\xb2\xba\xa9\xa2y\xa9'
     qb64 = '4AAE-Ayxwvutsrqponmp'
@@ -5655,7 +5675,8 @@ def test_labeler():
     assert labeler.label == label
     assert labeler.text == label
     assert labeler.code == code
-    assert labeler.soft == 'AE'
+    assert len(label) == 15
+    assert labeler.soft == 'AE'  # 4 quadlets = 16 = 15 +1 for escape '-'
     assert labeler.raw == raw
     assert labeler.qb64 == qb64
     assert labeler.qb2 == qb2
@@ -5672,20 +5693,22 @@ def test_labeler():
     assert labeler.label == label
     assert labeler.text == label
 
-    # test base64 that starts with 'A' and ws  not in (0,1) get encoded as bextable,
-    label = 'Ayxwvutsrqpon'
+    # ws == 0 but changes to 3 because of escape
+    label = 'Ayxwvutsrqponmpq'
     ws = (4 - (len(label) % 4)) % 4  # pre conv wad size in chars
-    assert ws not in (0, 1)
+    assert ws in (0, 1)
+    assert ws == 0
     code = LabelDex.StrB64_L2
-    raw = b"\x00\xcb\x1c/\xba\xdb+\xaa\x9a'"
-    qb64 = '6AAEAAAAyxwvutsrqpon'
+    raw = b'>\x03,p\xbe\xebl\xae\xaah\x9ejj'
+    qb64 = '6AAFAAA-Ayxwvutsrqponmpq'
     qb2 = decodeB64(qb64)
 
     labeler = Labeler(label=label)
     assert labeler.label == label
     assert labeler.text == label
     assert labeler.code == code
-    assert labeler.soft == 'AE'
+    assert len(label) == 16
+    assert labeler.soft == 'AF'  # 5 quadlets = 20 = 16 + 1 for escape + 3 wad
     assert labeler.raw == raw
     assert labeler.qb64 == qb64
     assert labeler.qb2 == qb2
@@ -5701,6 +5724,72 @@ def test_labeler():
     labeler = Labeler(qb2=qb2)
     assert labeler.label == label
     assert labeler.text == label
+
+    # Non escaped Labels start with `A` and length ws not in (0,1) so no ambiguity
+    # ws == 3
+    label = 'Ayxwvutsrqponmpqr'
+    ws = (4 - (len(label) % 4)) % 4  # pre conv wad size in chars
+    assert ws not in (0, 1)
+    assert ws == 3
+    code = LabelDex.StrB64_L2
+    raw = b"\x00\xcb\x1c/\xba\xdb+\xaa\x9a'\x9a\x9a\xab"
+    qb64 = '6AAFAAAAyxwvutsrqponmpqr'
+    qb2 = decodeB64(qb64)
+
+    labeler = Labeler(label=label)
+    assert labeler.label == label
+    assert labeler.text == label
+    assert labeler.code == code
+    assert len(label) == 17
+    assert labeler.soft == 'AF'  # 5 quadlets = 20 = 17 + 3 wad
+    assert labeler.raw == raw
+    assert labeler.qb64 == qb64
+    assert labeler.qb2 == qb2
+
+    labeler = Labeler(raw=raw, code=code)
+    assert labeler.label == label
+    assert labeler.text == label
+
+    labeler = Labeler(qb64=qb64)
+    assert labeler.label == label
+    assert labeler.text == label
+
+    labeler = Labeler(qb2=qb2)
+    assert labeler.label == label
+    assert labeler.text == label
+
+    # ws == 2
+    label = 'Ayxwvutsrqponmpqrs'
+    ws = (4 - (len(label) % 4)) % 4  # pre conv wad size in chars
+    assert ws not in (0, 1)
+    assert ws == 2
+    code = LabelDex.StrB64_L1
+    raw = b'\x002\xc7\x0b\xee\xb6\xca\xea\xa6\x89\xe6\xa6\xaa\xec'
+    qb64 = '5AAFAAAyxwvutsrqponmpqrs'
+    qb2 = decodeB64(qb64)
+
+    labeler = Labeler(label=label)
+    assert labeler.label == label
+    assert labeler.text == label
+    assert labeler.code == code
+    assert len(label) == 18
+    assert labeler.soft == 'AF'  # 5 quadlets = 20 = 18 + 2 wad
+    assert labeler.raw == raw
+    assert labeler.qb64 == qb64
+    assert labeler.qb2 == qb2
+
+    labeler = Labeler(raw=raw, code=code)
+    assert labeler.label == label
+    assert labeler.text == label
+
+    labeler = Labeler(qb64=qb64)
+    assert labeler.label == label
+    assert labeler.text == label
+
+    labeler = Labeler(qb2=qb2)
+    assert labeler.label == label
+    assert labeler.text == label
+
 
     # empty
     label = ''
