@@ -39,8 +39,7 @@ logger = ogler.getLogger()
 
 @dataclass
 class FieldDom:
-    """
-    Field configuration dataclass for Serder messages. Provides field labels
+    """Field configuration dataclass for Serder messages. Provides field labels
     and default field values for a given ilk (message type).
 
     Attributes:

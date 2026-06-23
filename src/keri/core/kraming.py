@@ -321,7 +321,7 @@ class Kramer:
     def _hasSigs(senderId, kwa):
         """Check if kwa contains signature attachments applicable to sender.
 
-        Bare sigers always count. For cigars, ssgs, and tsgs, only entries
+        Bare sigers always count. For cigars, lsgs, and tsgs, only entries
         matching senderId are considered. No keystate check is performed
         here since the kever is not yet available at the call site.
 
@@ -337,7 +337,7 @@ class Kramer:
         for cigar in kwa.get('cigars', []):
             if cigar.verfer.qb64 == senderId:
                 return True
-        for prefixer, sigers in kwa.get('ssgs', []):
+        for prefixer, sigers in kwa.get('lsgs', []):
             if prefixer.qb64 == senderId:
                 return True
         for prefixer, number, sdiger, sigers in kwa.get('tsgs', []):
@@ -380,13 +380,13 @@ class Kramer:
             kwa.pop('ssts', None)
 
     @staticmethod
-    def _normalizeSenderSsgs(senderId, kwa):
-        """Move sender-matching last-sig groups (ssgs) into sigers.
+    def _normalizeSenderTlsgs(senderId, kwa):
+        """Move sender-matching last-sig groups (lsgs) into sigers.
 
-        Each ssgs entry is (prefixer, sigers). When prefixer.qb64 ==
+        Each lsgs entry is (prefixer, sigers). When prefixer.qb64 ==
         senderId, those signatures are authenticators for this message in
         the same way as bare sigers; folding them into sigers and removing
-        them from ssgs leaves only groups for other prefixers in ssgs for
+        them from lsgs leaves only groups for other prefixers in lsgs for
         non-auth forwarding / escrow.
 
         Parameters:
@@ -394,17 +394,17 @@ class Kramer:
             kwa (dict): parser attachment keyword arguments; ``sigers`` must
                 exist (``kramit`` ensures this before calling).
         """
-        ssgs = kwa.get('ssgs', [])
+        lsgs = kwa.get('lsgs', [])
         scrub = []
-        for prefixer, sigers in ssgs:
+        for prefixer, sigers in lsgs:
             if prefixer.qb64 == senderId:
                 kwa['sigers'].extend(sigers)
                 scrub.append((prefixer, sigers))
         if scrub:
             for pair in scrub:
-                ssgs.remove(pair)
-        if not ssgs:
-            kwa.pop('ssgs', None)
+                lsgs.remove(pair)
+        if not lsgs:
+            kwa.pop('lsgs', None)
 
     def _normalizeCurrentSenderTsgs(self, senderId, kever, kwa):
         """Fold sender-matching current-key trans last-sig groups into sigers.
@@ -414,7 +414,7 @@ class Kramer:
         sender's current establishment event, those sigers are also added
         to ``sigers`` so _hasSigs and signature auth paths see them.
 
-        Unlike :meth:`_normalizeSenderSsgs`, matching quads are **not**
+        Unlike :meth:`_normalizeSenderTlsgs`, matching quads are **not**
         removed from ``tsgs``; downstream exn/rpy handling still needs the
         full transferable-signature groups on the message.
 
@@ -552,7 +552,7 @@ class Kramer:
         """Drop sender-side pool signatures from kwa that did not verify.
 
         verified is the set of Siger.qb64 values that verified
-        against the sender's current establishment keys. Non-sender ssgs
+        against the sender's current establishment keys. Non-sender lsgs
         and tsgs rows are unchanged. Sender-matching tsgs quads that
         reference a non-current establishment event are dropped entirely
         (not forwarded).
@@ -565,18 +565,18 @@ class Kramer:
         """
         kwa['sigers'][:] = [s for s in kwa['sigers'] if s.qb64 in verified]
 
-        if kwa.get('ssgs'):
+        if kwa.get('lsgs'):
             newSsgs = []
-            for prefixer, sigers in kwa['ssgs']:
+            for prefixer, sigers in kwa['lsgs']:
                 if prefixer.qb64 != senderId:
                     newSsgs.append((prefixer, sigers))
                 else:
                     filtered = [s for s in sigers if s.qb64 in verified]
                     if filtered:
                         newSsgs.append((prefixer, filtered))
-            kwa['ssgs'] = newSsgs
-            if not kwa['ssgs']:
-                kwa.pop('ssgs', None)
+            kwa['lsgs'] = newSsgs
+            if not kwa['lsgs']:
+                kwa.pop('lsgs', None)
 
         curSn = kever.sner.num
         curSaid = kever.serder.said
@@ -601,22 +601,22 @@ class Kramer:
         Cigars are tried first (either-or). If a cigar from the matching
         sender verifies, returns immediately. If no cigar verifies, builds
         an oset pool of sigers from all applicable sources (bare sigers,
-        ssgs, tsgs) and verifies the pool in one pass against the sender's
+        lsgs, tsgs) and verifies the pool in one pass against the sender's
         current key state.
 
         Gating logic for pool contributions:
             - bare sigers: always included
-            - ssgs: prefixer must match senderId
+            - lsgs: prefixer must match senderId
             - tsgs: prefixer must match senderId AND (number, diger)
               must correspond to sender's current key state
 
         Signatures that fail crypto verification are dropped from the
         returned sigers and scrubbed from sender-side ``sigers``, sender
-        ``ssgs`` couples, and sender **current** ``tsgs`` quads in ``kwa``.
+        ``lsgs`` couples, and sender **current** ``tsgs`` quads in ``kwa``.
         Sender-matching ``tsgs`` for a **non-current** establishment event are
         removed from ``kwa`` entirely (historically verified tuples appear only
         in ``SigVerifyResult.stale_tsgs``). Signatures that don't apply
-        (non-matching tsgs, non-sender ssgs) remain in kwa for downstream
+        (non-matching tsgs, non-sender lsgs) remain in kwa for downstream
         forwarding but are not counted toward KRAM threshold.
 
         Parameters:
@@ -653,8 +653,8 @@ class Kramer:
         for siger in kwa['sigers']:
             pool.add(siger.qb64)
 
-        # ssgs gate: prefixer must match senderId
-        for prefixer, sigers in kwa.get('ssgs', []):
+        # lsgs gate: prefixer must match senderId
+        for prefixer, sigers in kwa.get('lsgs', []):
             if prefixer.qb64 != senderId:
                 continue
             for siger in sigers:
@@ -670,8 +670,8 @@ class Kramer:
             for siger in sigers:
                 pool.add(siger.qb64)
 
-        # Verify pool against current key state; 
-        # scrub using the verified qb64 set. 
+        # Verify pool against current key state;
+        # scrub using the verified qb64 set.
         poolSigers = [Siger(qb64=q) for q in pool]
         vsigers, _ = verifySigs(
             raw=msg.raw, sigers=poolSigers, verfers=kever.verfers)
@@ -753,7 +753,7 @@ class Kramer:
         """Idempotently store non-authenticator attachments for a partially
         signed multi-key message pending threshold satisfaction.
 
-        Handles parser kwa attachment keys except ssgs, essrs, sscs, and
+        Handles parser kwa attachment keys except lsgs, essrs, sscs, and
         sender-matching ssts. Seal couples (sscs) and source triples whose
         prefix is the message sender are anchoring-seal-reference material
         for this AID and are not stored here. Only ssts whose prefix differs
@@ -953,7 +953,7 @@ class Kramer:
         Parameters:
             msg (SerderKERI): message instance
             kwa (dict | None): parser exts / attachment dict; normalized and
-                otherwise mutated in place (e.g. seal and ssgs folding).
+                otherwise mutated in place (e.g. seal and lsgs folding).
 
         Returns:
             SerderKERI: the message if it passes KRAM
@@ -979,7 +979,7 @@ class Kramer:
         mdt = helping.fromIso8601(mdts).timestamp() * 1000  # ms
 
         self._normalizeSenderSeals(senderId, kwa)
-        self._normalizeSenderSsgs(senderId, kwa)
+        self._normalizeSenderTlsgs(senderId, kwa)
 
         hasSealRef = self._hasSeals(senderId, kwa)
         hasSigs = self._hasSigs(senderId, kwa)

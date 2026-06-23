@@ -217,6 +217,7 @@ def test_matter_class():
         'Tag7': 'Y',
         'Tag11': 'Z',
         'Salt_256': 'a',
+        'GramHead': 'b',
         'Salt_128': '0A',
         'Ed25519_Sig': '0B',
         'ECDSA_256k1_Sig': '0C',
@@ -232,10 +233,6 @@ def test_matter_class():
         'Tag6': '0M',
         'Tag9': '0N',
         'Tag10': '0O',
-        'GramHeadNeck': '0P',
-        'GramHead': '0Q',
-        'GramHeadAIDNeck': '0R',
-        'GramHeadAID': '0S',
         'ECDSA_256k1N': '1AAA',
         'ECDSA_256k1': '1AAB',
         'Ed448N': '1AAC',
@@ -331,6 +328,7 @@ def test_matter_class():
         'Y': 'Tag7',
         'Z': 'Tag11',
         'a': 'Salt_256',
+        'b': 'GramHead',
         '0A': 'Salt_128',
         '0B': 'Ed25519_Sig',
         '0C': 'ECDSA_256k1_Sig',
@@ -346,10 +344,6 @@ def test_matter_class():
         '0M': 'Tag6',
         '0N': 'Tag9',
         '0O': 'Tag10',
-        '0P': 'GramHeadNeck',
-        '0Q': 'GramHead',
-        '0R': 'GramHeadAIDNeck',
-        '0S': 'GramHeadAID',
         '1AAA': 'ECDSA_256k1N',
         '1AAB': 'ECDSA_256k1',
         '1AAC': 'Ed448N',
@@ -459,6 +453,7 @@ def test_matter_class():
         'Y': Sizage(hs=1, ss=7, xs=0, fs=8, ls=0),
         'Z': Sizage(hs=1, ss=11, xs=0, fs=12, ls=0),
         'a': Sizage(hs=1, ss=0, xs=0, fs=44, ls=0),
+        'b': Sizage(hs=1, ss=3, xs=0, fs=8, ls=0),
         '0A': Sizage(hs=2, ss=0, xs=0, fs=24, ls=0),
         '0B': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
         '0C': Sizage(hs=2, ss=0, xs=0, fs=88, ls=0),
@@ -474,10 +469,6 @@ def test_matter_class():
         '0M': Sizage(hs=2, ss=6, xs=0, fs=8, ls=0),
         '0N': Sizage(hs=2, ss=10, xs=1, fs=12, ls=0),
         '0O': Sizage(hs=2, ss=10, xs=0, fs=12, ls=0),
-        '0P': Sizage(hs=2, ss=22, xs=0, fs=32, ls=0),
-        '0Q': Sizage(hs=2, ss=22, xs=0, fs=28, ls=0),
-        '0R': Sizage(hs=2, ss=22, xs=0, fs=76, ls=0),
-        '0S': Sizage(hs=2, ss=22, xs=0, fs=72, ls=0),
         '1AAA': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
         '1AAB': Sizage(hs=4, ss=0, xs=0, fs=48, ls=0),
         '1AAC': Sizage(hs=4, ss=0, xs=0, fs=80, ls=0),
@@ -2023,169 +2014,81 @@ def test_matter_special():
     assert not matter.special
     assert matter.composable
 
-    # test PartHeadNeck
-    code = MtrDex.GramHeadNeck
-    assert code == '0P'
-    codeb = code.encode()
-
-    mid = 1
-    midb = mid.to_bytes(16)
-    assert midb == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01'
-    pn = 1
-    pnb = pn.to_bytes(3)
-    assert pnb == b'\x00\x00\x01'
-    pc = 2
-    pcb = pc.to_bytes(3)
-    assert pcb == b'\x00\x00\x02'
-
-    raw = pnb + pcb
-    assert raw == b'\x00\x00\x01\x00\x00\x02'
-
-    assert mid == int.from_bytes(midb[:16])
-    assert pn == int.from_bytes(raw[0:3])
-    assert pc == int.from_bytes(raw[3:6])
-
-    midb64 = encodeB64(bytes([0] * 2) + midb)[2:] # prepad convert and strip
-    soft = midb64.decode()
-    pnb64 = encodeB64(pnb)
-    pcb64 = encodeB64(pcb)
-
-    qb64b = codeb + midb64 + pnb64 + pcb64
-    assert qb64b == b'0PAAAAAAAAAAAAAAAAAAAAABAAABAAAC'
-    qb64 = qb64b.decode()
-    qb2 = decodeB64(qb64b)
-
-    assert mid == int.from_bytes(decodeB64(b'AA' + qb64b[2:24]))
-    assert pn == int.from_bytes(decodeB64(qb64b[24:28]))
-    assert pc == int.from_bytes(decodeB64(qb64b[28:32]))
-
-    matter = Matter(raw=raw, code=code, soft=soft)
-
-    assert matter.code == code
-    assert matter.soft == soft
-    assert matter.raw == raw
-    assert matter.qb64 == qb64
-    assert matter.qb64b == qb64b
-    assert matter.qb2 == qb2
-    assert matter.transferable == True
-    assert matter.digestive == False
-    assert matter.prefixive == False
-    assert matter.special
-    assert matter.composable
-
-    matter = Matter(qb64b=qb64b)
-    assert matter.raw == raw
-    assert matter.code == code
-    assert matter.qb64 == qb64
-    assert matter.qb64b == qb64b
-    assert matter.qb2 == qb2
-    assert matter.transferable == True
-    assert matter.digestive == False
-    assert matter.prefixive == False
-    assert matter.special
-    assert matter.composable
-
-    matter = Matter(qb64=qb64)
-    assert matter.raw == raw
-    assert matter.code == code
-    assert matter.qb64 == qb64
-    assert matter.qb64b == qb64b
-    assert matter.transferable == True
-    assert matter.digestive == False
-    assert matter.prefixive == False
-    assert matter.special
-    assert matter.composable
-
-    matter = Matter(qb2=qb2)
-    assert matter.raw == raw
-    assert matter.code ==code
-    assert matter.qb64 == qb64
-    assert matter.qb64b == qb64b
-    assert matter.qb2 == qb2
-    assert matter.transferable == True
-    assert matter.digestive == False
-    assert matter.prefixive == False
-    assert matter.special
-    assert matter.composable
-
-    # test PartHead
+    # test GramHead
     code = MtrDex.GramHead
-    assert code == '0Q'
+    assert code == 'b'
+
+    p = 'm'  # protocol
+    v = 'B' # version
+    i = 'D'  # ilk
+    soft = p + v + i
+    assert soft == 'mBD'
+
+    cnt = 37
+    raw = cnt.to_bytes(3)
+    assert raw == b'\x00\x00%'
+    textb = encodeB64(raw)
+    assert textb == b'AAAl'
     codeb = code.encode()
-
-    mid = 1
-    midb = mid.to_bytes(16)
-    assert midb == b'\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x00\x01'
-    pn = 1
-    pnb = pn.to_bytes(3)
-    assert pnb == b'\x00\x00\x01'
-
-    raw = pnb
-    assert raw == b'\x00\x00\x01'
-
-    assert mid == int.from_bytes(midb[:16])
-    assert pn == int.from_bytes(raw[0:3])
-
-    midb64 = encodeB64(bytes([0] * 2) + midb)[2:] # prepad convert and strip
-    soft = midb64.decode()
-    pnb64 = encodeB64(pnb)
-
-    qb64b = codeb + midb64 + pnb64
-    assert qb64b == b'0QAAAAAAAAAAAAAAAAAAAAABAAAB'
+    softb = soft.encode()
+    qb64b = codeb + softb + textb
+    assert qb64b == b'bmBDAAAl'
     qb64 = qb64b.decode()
     qb2 = decodeB64(qb64b)
+    assert qb2 == b'n`C\x00\x00%'
 
-    assert mid == int.from_bytes(decodeB64(b'AA' + qb64b[2:24]))
-    assert pn == int.from_bytes(decodeB64(qb64b[24:28]))
+    header = Matter(raw=raw, code=code, soft=soft)
+    assert header.code == code
+    assert header.soft == soft
+    assert header.raw == raw
+    assert header.qb64 == qb64
+    assert header.qb64b == qb64b
+    assert header.qb2 == qb2
+    assert header.transferable
+    assert not header.digestive
+    assert not header.prefixive
+    assert header.special
+    assert header.composable
 
-    matter = Matter(raw=raw, code=code, soft=soft)
+    header = Matter(qb64b=qb64b)
+    assert header.code == code
+    assert header.soft == soft
+    assert header.raw == raw
+    assert header.qb64 == qb64
+    assert header.qb64b == qb64b
+    assert header.qb2 == qb2
+    assert header.transferable
+    assert not header.digestive
+    assert not header.prefixive
+    assert header.special
+    assert header.composable
 
-    assert matter.code == code
-    assert matter.soft == soft
-    assert matter.raw == raw
-    assert matter.qb64 == qb64
-    assert matter.qb64b == qb64b
-    assert matter.qb2 == qb2
-    assert matter.transferable == True
-    assert matter.digestive == False
-    assert matter.prefixive == False
-    assert matter.special
-    assert matter.composable
+    header = Matter(qb64=qb64)
+    assert header.code == code
+    assert header.soft == soft
+    assert header.raw == raw
+    assert header.qb64 == qb64
+    assert header.qb64b == qb64b
+    assert header.qb2 == qb2
+    assert header.transferable
+    assert not header.digestive
+    assert not header.prefixive
+    assert header.special
+    assert header.composable
 
-    matter = Matter(qb64b=qb64b)
-    assert matter.raw == raw
-    assert matter.code == code
-    assert matter.qb64 == qb64
-    assert matter.qb64b == qb64b
-    assert matter.qb2 == qb2
-    assert matter.transferable == True
-    assert matter.digestive == False
-    assert matter.prefixive == False
-    assert matter.special
-    assert matter.composable
+    header = Matter(qb2=qb2)
+    assert header.code == code
+    assert header.soft == soft
+    assert header.raw == raw
+    assert header.qb64 == qb64
+    assert header.qb64b == qb64b
+    assert header.qb2 == qb2
+    assert header.transferable
+    assert not header.digestive
+    assert not header.prefixive
+    assert header.special
+    assert header.composable
 
-    matter = Matter(qb64=qb64)
-    assert matter.raw == raw
-    assert matter.code == code
-    assert matter.qb64 == qb64
-    assert matter.qb64b == qb64b
-    assert matter.transferable == True
-    assert matter.digestive == False
-    assert matter.prefixive == False
-    assert matter.special
-    assert matter.composable
-
-    matter = Matter(qb2=qb2)
-    assert matter.raw == raw
-    assert matter.code ==code
-    assert matter.qb64 == qb64
-    assert matter.qb64b == qb64b
-    assert matter.qb2 == qb2
-    assert matter.transferable == True
-    assert matter.digestive == False
-    assert matter.prefixive == False
-    assert matter.special
-    assert matter.composable
 
     # Test escape code
     code = MtrDex.Escape
@@ -4158,22 +4061,23 @@ def test_tagger():
         assert tagger.tag == tag
         assert len(tagger.tag) == l
         assert tagger.code == astuple(TagDex)[l - 1]
-        alltags[l] = (tagger.tag, tagger.code)
+        alltags[l] = (tagger.tag, tagger.code, tagger.qb64)
 
     assert alltags == \
-        {
-            1: ('a', '0J'),
-            2: ('ab', '0K'),
-            3: ('abc', 'X'),
-            4: ('abcd', '1AAF'),
-            5: ('abcde', '0L'),
-            6: ('abcdef', '0M'),
-            7: ('abcdefg', 'Y'),
-            8: ('abcdefgh', '1AAN'),
-            9: ('abcdefghi', '0N'),
-            10: ('abcdefghij', '0O'),
-            11: ('abcdefghijk', 'Z'),
-         }
+    {
+        1: ('a', '0J', '0J_a'),
+        2: ('ab', '0K', '0Kab'),
+        3: ('abc', 'X', 'Xabc'),
+        4: ('abcd', '1AAF', '1AAFabcd'),
+        5: ('abcde', '0L', '0L_abcde'),
+        6: ('abcdef', '0M', '0Mabcdef'),
+        7: ('abcdefg', 'Y', 'Yabcdefg'),
+        8: ('abcdefgh', '1AAN', '1AANabcdefgh'),
+        9: ('abcdefghi', '0N', '0N_abcdefghi'),
+        10: ('abcdefghij', '0O', '0Oabcdefghij'),
+        11: ('abcdefghijk', 'Z', 'Zabcdefghijk')
+    }
+
     """ Done Test """
 
 
