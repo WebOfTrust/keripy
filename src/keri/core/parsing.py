@@ -808,6 +808,7 @@ class Parser:
                         continue  # captures immediate further nested groups
 
                 # process substream at current nesting level
+                presize = len(ims)
                 try:
 
 
@@ -831,6 +832,8 @@ class Parser:
                     # Non extraction errors happen after a message has been
                     # successfully extracted from stream
                     # so we don't flush rest of stream just resume
+                    if len(ims) == presize:
+                        raise ExtractionError(f"Parser made no progress on stream: {ex}") from ex
                     continue
 
 
