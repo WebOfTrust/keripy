@@ -17,7 +17,7 @@ from keri.app import Director, Directant, Reactor, openHby, runController
 from keri.demo import setupDemoController
 
 
-def test_directing_basic():
+def test_directing_basic(unused_tcp_port_factory):
     """
     Test directing
     """
@@ -60,8 +60,8 @@ def test_directing_basic():
         tock = 0.03125
         doist = doing.Doist(limit=limit, tock=tock)
 
-        bobPort = 5620  # bob's TCP listening port for server
-        evePort = 5621  # eve's TCP listneing port for server
+        bobPort = unused_tcp_port_factory()  # bob's TCP listening port for server
+        evePort = unused_tcp_port_factory()  # eve's TCP listening port for server
 
         # setup bob
         bobHab = bobHby.makeHab(name="Bob", secrecies=bobSecrecies, **kwa)
@@ -160,15 +160,15 @@ def test_directing_basic():
     """End Test"""
 
 
-def test_runcontroller_demo():
+def test_runcontroller_demo(unused_tcp_port_factory):
     """
     Test demo runController function
     """
     ogler.resetLevel(level=logging.DEBUG)
 
     name = "bob"  # must be one of 'bob', 'sam', 'eve'
-    remote = 5621
-    local = 5620
+    remote = unused_tcp_port_factory()
+    local = unused_tcp_port_factory()
     expire = 1.0
 
     raw = b"raw salt to test"

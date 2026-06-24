@@ -20,7 +20,7 @@ from keri.demo import (BobDirector, EveDirector,
                        SamDirector, CamDirector, setupDemoController)
 
 
-def test_direct_mode_bob_eve_demo():
+def test_direct_mode_bob_eve_demo(unused_tcp_port_factory):
     """
     Test direct mode bob and eve
     """
@@ -59,8 +59,8 @@ def test_direct_mode_bob_eve_demo():
         tock = 0.03125
         doist = doing.Doist(limit=limit, tock=tock)
 
-        bobPort = 5620  # bob's TCP listening port for server
-        evePort = 5621  # eve's TCP listneing port for server
+        bobPort = unused_tcp_port_factory()  # bob's TCP listening port for server
+        evePort = unused_tcp_port_factory()  # eve's TCP listening port for server
 
         # setup bob
         bobHab = bobHby.makeHab(name="Bob", secrecies=bobSecrecies)
@@ -151,7 +151,7 @@ def test_direct_mode_bob_eve_demo():
 
 
 
-def test_direct_mode_sam_eve_demo():
+def test_direct_mode_sam_eve_demo(unused_tcp_port_factory):
     """
     Test direct mode sam and eve
     """
@@ -191,8 +191,8 @@ def test_direct_mode_sam_eve_demo():
         tock = 0.03125
         doist = doing.Doist(limit=limit, tock=tock)
 
-        samPort = 5620  # bob's TCP listening port for server
-        evePort = 5621  # eve's TCP listneing port for server
+        samPort = unused_tcp_port_factory()  # sam's TCP listening port for server
+        evePort = unused_tcp_port_factory()  # eve's TCP listening port for server
 
         # setup Sam
         samHab = samHby.makeHab(name="Sam", secrecies=samSecrecies)
@@ -295,7 +295,7 @@ def test_direct_mode_sam_eve_demo():
 
 
 
-def test_run_bob_eve_demo():
+def test_run_bob_eve_demo(unused_tcp_port_factory):
     """
     Test demo setupController and run with DoDoers and Doist
     """
@@ -307,9 +307,12 @@ def test_run_bob_eve_demo():
 
     raw = b"raw salt to test"
 
+    bobPort = unused_tcp_port_factory()
+    evePort = unused_tcp_port_factory()
+
     name = "bob"
-    remote = 5621
-    local = 5620
+    remote = evePort
+    local = bobPort
 
     #  create bob secrecies
     secrecies = [[signer.qb64] for signer in
@@ -324,8 +327,8 @@ def test_run_bob_eve_demo():
                                localPort=local)
 
     name = "eve"
-    remote = 5620
-    local = 5621
+    remote = bobPort
+    local = evePort
 
     #  create eve secrecies
     secrecies = [[signer.qb64] for signer in
@@ -349,7 +352,7 @@ def test_run_bob_eve_demo():
     """End Test"""
 
 
-def test_run_sam_eve_demo():
+def test_run_sam_eve_demo(unused_tcp_port_factory):
     """
     Test demo setupController and run with DoDoers and Doist
     """
@@ -361,9 +364,12 @@ def test_run_sam_eve_demo():
 
     raw = b"raw salt to test"
 
+    samPort = unused_tcp_port_factory()
+    evePort = unused_tcp_port_factory()
+
     name = "sam"
-    remote = 5621
-    local = 5620
+    remote = evePort
+    local = samPort
 
     #  create sam secrecies
     secrecies = [[signer.qb64] for signer in
@@ -379,8 +385,8 @@ def test_run_sam_eve_demo():
 
 
     name = "eve"
-    remote = 5620
-    local = 5621
+    remote = samPort
+    local = evePort
 
      #  create eve secrecies
     secrecies = [[signer.qb64] for signer in
@@ -406,7 +412,7 @@ def test_run_sam_eve_demo():
     """End Test"""
 
 
-def test_indirect_mode_sam_cam_wit_demo():
+def test_indirect_mode_sam_cam_wit_demo(unused_tcp_port_factory):
     """ Test indirect mode, sam and cam with witness """
 
     ogler.resetLevel(level=logging.DEBUG)
@@ -425,8 +431,8 @@ def test_indirect_mode_sam_cam_wit_demo():
           openHby(name="sam", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as samHby,
           openHby(name="wit", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as witHby):
 
-        samPort = 5620  # sam's TCP listening port for server
-        witPort = 5621  # wit' TCP listening port for server
+        samPort = unused_tcp_port_factory()  # sam's TCP listening port for server
+        witPort = unused_tcp_port_factory()  # wit' TCP listening port for server
 
         # setup the witness
         witHab = witHby.makeHab(name="Wit",
