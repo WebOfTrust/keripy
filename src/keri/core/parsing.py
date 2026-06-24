@@ -808,10 +808,7 @@ class Parser:
                         continue  # captures immediate further nested groups
 
                 # process substream at current nesting level
-                #presize = len(ims)
                 try:
-
-
                     exts = yield from self.msgParsator(ims=ims,
                                                           framed=framed,
                                                           piped=piped,
@@ -826,14 +823,21 @@ class Parser:
                                             vry=vry)
 
                 except TopLevelStreamError as ex:  # encountered GenericGroup
+                    # normal way to handle this so do not log
                     continue  # so returns control here to parse that group
 
-                except ValidationError as ex:  # non Extraction Error
-                    # Non extraction errors happen after a message has been
-                    # successfully extracted from stream
-                    # so we don't flush rest of stream just resume
-                    #if len(ims) == presize:
-                        #raise ExtractionError(f"Parser made no progress on stream: {ex}") from ex
+                except ValidationError as ex:  # post Extraction Error
+                    # Validation errors happen in msgProcess which is called
+                    # after a message+attachments has been successfully extracted
+                    # from stream so we drop extraction without flushing rest
+                    # of stream but resume extracting next message.
+                    if logger.isEnabledFor(logging.TRACE):
+                        logger.exception("GroupParsator error post extraction of"
+                                         "msg+atc : %s", ex)
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.error("GroupParsator error post extraction of "
+                                     "msg+atc : %s", ex)
+
                     continue
 
 
