@@ -13,7 +13,7 @@ from base64 import urlsafe_b64encode as encodeB64
 from hio.help import ogler
 
 from ..kering import (Colds, sniff, Vrsn_2_0, Version, Ilks,
-                      UnexpectedCountCodeError, ValidationError,
+                      UnexpectedCountCodeError, MaterialError, ValidationError,
                       QueryNotFoundError, ExtractionError, ShortageError,
                       ColdStartError, InvalidVersionError,
                       SizedGroupError, TopLevelStreamError)
@@ -826,6 +826,16 @@ class Parser:
                     # normal way to handle this so do not log
                     continue  # so returns control here to parse that group
 
+                except MaterialError as ex:  # invalid material while extracting
+                    # usually invalid counter code for version and such
+                    if logger.isEnabledFor(logging.TRACE):
+                        logger.exception("GroupParsator error during extraction of"
+                                         "msg+atc : %s", ex)
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.error("GroupParsator error during extraction of "
+                                     "msg+atc : %s", ex)
+                    raise ExtractionError from ex
+
                 except ValidationError as ex:  # post Extraction Error
                     # Validation errors happen in msgProcess which is called
                     # after a message+attachments has been successfully extracted
@@ -1152,6 +1162,12 @@ class Parser:
                                                      cold=cold,
                                                      abort=framed or enclosed,
                                                      strip=False)  # peek at ctr
+
+                    # check if group belongs to nested message in stream
+                    #if (ctr.code in (self.sucodes.GenericGroup, or ctr.code in self.sucodes or
+                        #ctr.code == self.codes.KERIACDCGenusVersion):
+                        ## do not consume because it belongs with new msg
+                        #break  # not a valid attachment so done with attachments to this msg
 
                     # check if group belongs to top level group message in stream
                     if (ctr.code in self.mucodes or ctr.code in self.sucodes or
