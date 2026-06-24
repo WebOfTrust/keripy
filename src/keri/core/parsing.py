@@ -824,7 +824,7 @@ class Parser:
 
                         continue  # captures immediate further nested groups
 
-                # process substream at current nesting level
+                # extract substream at current nesting level
                 try:
                     exts = yield from self.msgParsator(ims=ims,
                                                           framed=framed,
@@ -832,29 +832,30 @@ class Parser:
                                                           local=local,
                                                           version=self.version)
 
+                except TopLevelStreamError as ex:  # encountered GenericGroup
+                    # before getting a message so need to nest down into new
+                    # generic group which has been not extracted yet
+                    # this is the normal way to handle it, so do not log
+                    continue  # control thrown here to parse new generic group
+
+                except (ExtractionError, Exception) as ex:  # error while extracting
+                    if logger.isEnabledFor(logging.TRACE):
+                        logger.exception("GroupParsator error during extraction"
+                                                     " of msg+atc : %s", ex)
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.error("GroupParsator error during extraction of "
+                                                 "msg+atc : %s", ex)
+                    raise ExtractionError from ex
+
+
+                # process successful extraction at current nexting level)
+                try:
                     done = self.msgProcess(exts=asdict(exts),
                                             kvy=kvy,
                                             tvy=tvy,
                                             exc=exc,
                                             rvy=rvy,
                                             vry=vry)
-
-                except TopLevelStreamError as ex:  # encountered GenericGroup
-                    # normal way to handle this so do not log
-                    continue  # so returns control here to parse that group
-
-                except MaterialError as ex:  # invalid material while extracting
-                    # usually invalid counter code for version and such
-                    if logger.isEnabledFor(logging.TRACE):
-                        logger.exception("GroupParsator error during extraction of"
-                                         "msg+atc : %s", ex)
-                    if logger.isEnabledFor(logging.DEBUG):
-                        logger.error("GroupParsator error during extraction of "
-                                     "msg+atc : %s", ex)
-                    raise ExtractionError from ex
-
-                except ExtractionError as ex:  # invalid material while extracting
-                    raise  # so we can catch all other errors in next clause
 
                 except (ValidationError, Exception) as ex:  # post Extraction Error
                     # Validation errors happen in msgProcess which is called
@@ -1104,7 +1105,7 @@ class Parser:
 
                 elif (ctr.code in (self.sucodes.GenericGroup,
                                    self.sucodes.BigGenericGroup)):
-                    # return control to groupParsator
+                    # throw back control to groupParsator to nest into new generic group
                     raise TopLevelStreamError(f"Got GenericGroup so revisit.")
 
                 else:  # shouldn't be a counter of any other type here
@@ -1202,7 +1203,7 @@ class Parser:
                         # stream, group or tunnel
                         break  # done with attachments to this msg
 
-
+                    # Check for nested msg substreams or regular attachments
                     if (ctr.code in (self.sucodes.AttachmentGroup,
                                      self.sucodes.BigAttachmentGroup)):
                         # nested attachment group which is invalid here
@@ -1215,14 +1216,15 @@ class Parser:
 
                         del ims[:size]  # strip ctr and its content from ims
 
-
-                    # Check for nested msg substreams or regular attachments
                     elif (ctr.code in (self.sucodes.BodyWithAttachmentGroup,
                                        self.sucodes.BigBodyWithAttachmentGroup) or
                             ctr.code in self.bucodes):
 
                         # group belongs to nested message substream
                         break   # for now
+
+                        #try:
+                            #subexts = yield from self.
 
 
                     else:  # regular attachment counter code so extract
