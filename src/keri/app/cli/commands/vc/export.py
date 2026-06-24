@@ -36,6 +36,18 @@ parser.add_argument("--chains", help="export any chained credentials", action="s
 parser.add_argument("--full", help="export credential, signatures, tels, kels and full chains", action="store_true")
 parser.add_argument("--files", help="export artifacts to individual files keyed off of AIDs or SAIDS, default is "
                                     "stdout", action="store_true")
+# Supports full state sync for late-joining multisig members
+parser.add_argument("--all-registries", action="store_true",
+                    help="Export all registries the controller has for the --alias (the group or AID), "
+                         "along with their full registry TEL events (VCP + anc history). Combine with --kels "
+                         "to also pull anchoring KEL events.")
+parser.add_argument("--all-credentials", action="store_true",
+                    help="Export all credentials (ACDCs + ACDC TELs (ISS/REV) + anchors) the controller has "
+                         "for the --alias. Combine with --tels/--kels/--full as usual.")
+parser.add_argument("--include-revoked", action="store_true",
+                    help="When using --all-credentials (or the default all-creds walk), include revoked ACDCs "
+                         "and their REV TEL events. Default (flag absent): only un-revoked/current credentials. "
+                         "The default is the safe choice for bringing a new multisig member up to date.")
 
 
 def export_credentials(args):
@@ -57,18 +69,25 @@ def export_credentials(args):
                     tels=tels,
                     kels=kels,
                     chains=chains,
-                    files=args.files)
+                    files=args.files,
+                    allRegs=args.all_registries,
+                    allCreds=args.all_credentials,
+                    inclRev=args.include_revoked)
     return [ed]
 
 
 class ExportDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, said, tels, kels, chains, files):
+    def __init__(self, name, alias, base, bran, said, tels, kels, chains, files,
+                 allRegs=False, allCreds=False, inclRev=False):
         self.said = said
         self.tels = tels
         self.kels = kels
         self.chains = chains
         self.files = files
+        self.allRegs = allRegs
+        self.allCreds = allCreds
+        self.inclRev = inclRev
 
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
@@ -78,7 +97,24 @@ class ExportDoer(doing.DoDoer):
 
         super(ExportDoer, self).__init__(doers=doers)
 
-    def exportDo(self, tymth, tock=0.0):
+    def exit(self, deeds=None):
+        """Close command-owned resources on completion."""
+        super(ExportDoer, self).exit(deeds=deeds)
+        self.close()
+
+    def close(self):
+        """Release command-owned resources."""
+        if self.rgy is not None:
+            self.rgy.close()
+            self.rgy = None
+
+        if self.hby is not None:
+            self.hby.close(clear=self.hby.temp)
+            self.hby = None
+
+        self.hab = None
+
+    def exportDo(self, tymth, tock=0.0, **kwa):
         """ Export credential from store and any related material
 
         Parameters:
@@ -94,14 +130,29 @@ class ExportDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        if self.said is None:
-            for (said,), _ in self.rgy.reger.creds.getItemIter():
-                self.outputCred(said=said)
+        # walk registries for this hab, emit TELs (+ anchors via kels).
+        if self.allRegs:
+            self.outputAllRegistriesForHab()
 
-        else:
+        # walk credentials, respecting --include-revoked.
+        doAllCreds = self.allCreds or (self.said is None and not self.allRegs)
+        if doAllCreds:
+            for (said,), _ in self.rgy.reger.creds.getItemIter():
+                if not self.inclRev and self._isRevoked(said):
+                    continue
+                self.outputCred(said=said)
+        elif self.said is not None:
             self.outputCred(said=self.said)
 
     def outputCred(self, said):
+        """
+        Outputs the following for a single ACDC credential, depending on:
+        - issuer KEL events   (if --kels)
+        - registry TEL events (if --tels)
+        - ACDC TEL events     (if --tels)
+        - ACDCs chained on ACDC identified by SAID
+        - ACDC anchors for issuance and revocation events
+        """
         creder, *_ = self.rgy.reger.cloneCred(said=said)
 
         if self.kels:
@@ -130,12 +181,41 @@ class ExportDoer(doing.DoDoer):
 
         (prefixer, seqner, saider) = self.rgy.reger.cancs.get(keys=(creder.said,))
         if self.files:
-            f = open(f"{creder.said}-acdc.cesr", 'w')
-            f.write(signing.serialize(creder, prefixer, seqner, saider))
-            f.close()
+            with open(f"{creder.said}-acdc.cesr", 'wb') as f:
+                f.write(signing.serialize(creder, prefixer, seqner, saider))
         else:
             sys.stdout.write(signing.serialize(creder, prefixer, seqner, saider).decode("utf-8"))
             sys.stdout.flush()
+
+    def outputAllRegistriesForHab(self):
+        """Export all registries + full TELs accessible in target hab by walking Regery's
+        registry records, emitting TEL history, and anchoring KEL events if --kels or --full
+        """
+        if self.hab is None:
+            return
+        pre = self.hab.pre
+        # Walk regs Komer (name -> RegistryRecord with registryKey and prefix).
+        for (name,), regrec in self.rgy.reger.regs.getItemIter():
+            if regrec.prefix != pre:
+                continue
+            regk = regrec.registryKey
+            self.outputTEL(regk)
+            # If --kels, also emit gid's KEL to get IXNs for the VCP, ISS/REV, etc.
+            if self.kels:
+                self.outputKEL(pre)
+
+    def _isRevoked(self, said):
+        """Return True if the credential identified by said has a revocation event in its TEL."""
+        try:
+            for msg in self.rgy.reger.clonePreIter(pre=said):
+                serder = serdering.SerderKERI(raw=msg)
+                ilk = serder.ked.get("t")
+                if ilk in ("rev", "brv"):
+                    return True
+        except Exception:
+            # If we cannot walk the TEL for any reason, be conservative and do not filter it out.
+            return False
+        return False
 
     def outputTEL(self, regk):
         f = None
