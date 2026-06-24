@@ -997,6 +997,9 @@ class Parser:
                     # change version at top level this persists is not stacked
                     self.version = Counter.b64ToVer(ctr.countToB64(l=3))
 
+            enclosed = False  # True means all attachments enclosed in
+                               # BodyPlusAttachmentGroup or AttachmentGroup
+
             # check for BodyWithAttachmentGroup or non-native message or native message groups
             cold = sniff(ims)  # front of top level of this substream
             if cold != Colds.msg:  # counter found so peek at it
@@ -1018,6 +1021,7 @@ class Parser:
                     del ims[:emgs]  # strip off from ims
                     ims = eims  # replace since message group includes attachments
                     framed = True  # since includes attachments so pre-extracted
+                    enclosed = True  # attachments enclosed in group
 
                     if piped:
                         pass  # pass extracted ims to pipeline processor
@@ -1134,8 +1138,6 @@ class Parser:
 
 
         # Extract and deserialize attachments
-        enclosed = False  # True means all attachments enclosed in AttachmentGroup
-
         try:  # catch errors here to flush only counted part of stream
             # attachments must start with counter so know if txt or bny.
             # if no attachments MUST have at least empty AttachmentGroup
@@ -1193,17 +1195,23 @@ class Parser:
 
                     # check if group belongs to top level genus code or group or
                     # tunneled message in stream
+
                     if ((ctr.code == self.codes.KERIACDCGenusVersion) or
                             (ctr.code in (self.sucodes.GenericGroup,
                                       self.sucodes.BigGenericGroup) or
                             (ctr.code in self.mucodes and
                              ctr.code not in self.bucodes))):
 
-                        # do not consume because it starts a new top level
+                        if enclosed: # invalid codes inside of attachment enclosure
+                            raise SizedGroupError(f"Unexpected group code={ctr.code}"
+                                                  f" in enclosed attachment")
+
+                        # do not consume ctr because it starts a new top level
                         # stream, group or tunnel
                         break  # done with attachments to this msg
 
-                    # Check for nested msg substreams or regular attachments
+
+                    # Check for nested msg substreams, misplace code, or regular attachments
                     if (ctr.code in (self.sucodes.AttachmentGroup,
                                      self.sucodes.BigAttachmentGroup)):
                         # nested attachment group which is invalid here
@@ -1220,11 +1228,29 @@ class Parser:
                                        self.sucodes.BigBodyWithAttachmentGroup) or
                             ctr.code in self.bucodes):
 
-                        # group belongs to nested message substream
-                        break   # for now
+                        if not enclosed:  # starting new msg ends attachments
+                            # do not consume ctr because it starts a new top level
+                            # stream, group or tunnel
+                            break  # done with attachments to this msg
 
-                        #try:
-                            #subexts = yield from self.
+                        # enclosed so group belongs to nested message substream
+                        try:  # extract as nested msg+atc and append to exts.nests
+                            subexts = yield from self.msgParsator(ims=ims,
+                                                                  framed=framed,
+                                                                  piped=piped,
+                                                                  local=local,
+                                                                  version=self.version)
+
+                        except (ExtractionError, Exception) as ex:  # error while extracting
+                            if logger.isEnabledFor(logging.TRACE):
+                                logger.exception("MsgParsator error during substream"
+                                                 " extraction in atc : %s", ex)
+                            if logger.isEnabledFor(logging.DEBUG):
+                                logger.error("MsgParsator error during substream"
+                                             "extraction in atc : %s", ex)
+                            raise ExtractionError from ex
+
+                        exts.nests.append(subexts)
 
 
                     else:  # regular attachment counter code so extract
@@ -1239,8 +1265,9 @@ class Parser:
                         except Exception as ex:
                             raise  # easier debug with breakpoint here
 
-                    if enclosed:  # attachments framed by enclosing AttachmentGroup
-                        # inside of group all contents must be same cold  .txt
+                    if enclosed:  # attachments enclosed by group which frames
+                        # AttachmentGroup or BodyPlusAttachmentGroup
+                        # inside group all contents must be same cold  .txt
                         # or .bny so no need to sniff for new cold here.
                         if not ims:  # end of attachment group
                             break
