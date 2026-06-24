@@ -378,7 +378,8 @@ def test_parser_v1_basic():
         assert parser.rvy is None
         assert parser.vry is None
 
-        parser.parse(ims=msgs)
+        result = parser.parse(ims=msgs)
+        assert result == True
         assert msgs == bytearray(b'')  # emptied
         assert pre in kevery.kevers
         vkever = kevery.kevers[pre]

@@ -398,7 +398,6 @@ class Parser:
         local = local if local is not None else self.local
         local = True if local else False
 
-
         parsator = self.allParsator(ims=ims,
                                     framed=framed,
                                     piped=piped,
@@ -413,8 +412,11 @@ class Parser:
         while True:
             try:
                 next(parsator)
-            except StopIteration:
+            except StopIteration as ex:
+                result = ex.value
                 break
+
+        return result
 
 
     def parseOne(self, ims=None, framed=True, piped=False, kvy=None, tvy=None,
@@ -462,8 +464,11 @@ class Parser:
         while True:
             try:
                 next(parsator)
-            except StopIteration:
+            except StopIteration as ex:
+                result = ex.value
                 break
+
+        return result
 
 
     def allParsator(self, ims=None, framed=None, piped=None, kvy=None,
@@ -513,9 +518,10 @@ class Parser:
         local = local if local is not None else self.local
         local = True if local else False
 
+        result = None
         while ims:  # only process until ims empty (differs here from parsator)
             try:
-                done = yield from self.groupParsator(ims=ims,
+                result = yield from self.groupParsator(ims=ims,
                                                    framed=framed,
                                                    piped=piped,
                                                    kvy=kvy,
@@ -550,7 +556,7 @@ class Parser:
                     logger.error("Parser msg non-extraction error: %s", ex)
             yield
 
-        return True
+        return result
 
 
     def onceParsator(self, ims=None, framed=None, piped=None, kvy=None,
@@ -598,21 +604,14 @@ class Parser:
         local = local if local is not None else self.local
         local = True if local else False
 
-        done = False
-        while not done:
+        result = None
+        while not result:
             try:
                 exts = yield from self.msgParsator(ims=ims,
                                                       framed=framed,
                                                       piped=piped,
                                                       local=local,
                                                       version=version)
-
-                done = self.msgProcess(exts=asdict(exts),
-                                        kvy=kvy,
-                                        tvy=tvy,
-                                        exc=exc,
-                                        rvy=rvy,
-                                        vry=vry)
 
             except SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -621,12 +620,21 @@ class Parser:
                 else:
                     logger.error("Kevery sized group error: %s", ex.args[0])
 
-            except (ColdStartError, ExtractionError) as ex:  # some extraction error
+            except (ColdStartError, ExtractionError, Exception) as ex:  # some extraction error
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Kevery msg extraction error: %s", ex.args[0])
                 else:
                     logger.error("Kevery msg extraction error: %s", ex.args[0])
                 del ims[:]  # delete rest of stream to force cold restart
+
+
+            try:
+                result = self.msgProcess(exts=asdict(exts),
+                                        kvy=kvy,
+                                        tvy=tvy,
+                                        exc=exc,
+                                        rvy=rvy,
+                                        vry=vry)
 
             except (ValidationError, Exception) as ex:  # non Extraction Error
                 # Non extraction errors happen after successfully extracted from stream
@@ -636,9 +644,9 @@ class Parser:
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.error("Kevery msg non-extraction error: %s", ex)
             finally:
-                done = True
+                result = True
 
-        return done
+        return result
 
 
     def parsator(self, ims=None, framed=None, piped=None, kvy=None, tvy=None,
@@ -689,9 +697,10 @@ class Parser:
         local = local if local is not None else self.local
         local = True if local else False
 
+        result = None
         while True:  # continuous stream processing (differs here from allParsator)
             try:
-                done = yield from self.groupParsator(ims=ims,
+                result = yield from self.groupParsator(ims=ims,
                                                    framed=framed,
                                                    piped=piped,
                                                    kvy=kvy,
@@ -726,7 +735,7 @@ class Parser:
                     logger.error("Parser msg non-extraction error: %s", ex.args[0])
             yield
 
-        return True  # should never return
+        return result  # should never return
 
 
     def groupParsator(self, ims=None, framed=True, piped=False, kvy=None,
@@ -768,7 +777,7 @@ class Parser:
         stack = deque()  # (svrsn, ims) stack of nested substreams framed by generic groups
         svrsn = None
         eggs = None  # used in preflused error
-        done = False
+        result = None
         try:
             while True:  # process stream until done
                 while not ims and stack:  # happens when ascending (un-nesting)
@@ -839,18 +848,11 @@ class Parser:
                     continue  # control thrown here to parse new generic group
 
                 except (ExtractionError, Exception) as ex:  # error while extracting
-                    if logger.isEnabledFor(logging.TRACE):
-                        logger.exception("GroupParsator error during extraction"
-                                                     " of msg+atc : %s", ex)
-                    if logger.isEnabledFor(logging.DEBUG):
-                        logger.error("GroupParsator error during extraction of "
-                                                 "msg+atc : %s", ex)
                     raise ExtractionError from ex
-
 
                 # process successful extraction at current nexting level)
                 try:
-                    done = self.msgProcess(exts=asdict(exts),
+                    result = self.msgProcess(exts=asdict(exts),
                                             kvy=kvy,
                                             tvy=tvy,
                                             exc=exc,
@@ -873,6 +875,12 @@ class Parser:
 
 
         except ExtractionError as ex:  # maybe this needs to be more granular
+            if logger.isEnabledFor(logging.TRACE):
+                logger.exception("GroupParsator error during extraction"
+                                             " of msg+atc : %s", ex)
+            if logger.isEnabledFor(logging.DEBUG):
+                logger.error("GroupParsator error during extraction of "
+                                         "msg+atc : %s", ex)
             if eggs is not None:  # extracted enclosed message group is preflushed
                 raise SizedGroupError(f"Error processing generic group"
                                                  f" of size={eggs}")
@@ -883,7 +891,7 @@ class Parser:
                 svrsn, _ = stack.pop()
                 if svrsn:
                     self.version = svrsn
-        return done
+        return result
 
 
     def msgParsator(self, ims=None, framed=True, piped=False, local=None,
@@ -1234,24 +1242,14 @@ class Parser:
                             break  # done with attachments to this msg
 
                         # enclosed so group belongs to nested message substream
-                        try:  # extract as nested msg+atc and append to exts.nests
-                            subexts = yield from self.msgParsator(ims=ims,
-                                                                  framed=framed,
-                                                                  piped=piped,
-                                                                  local=local,
-                                                                  version=self.version)
-
-                        except (ExtractionError, Exception) as ex:  # error while extracting
-                            if logger.isEnabledFor(logging.TRACE):
-                                logger.exception("MsgParsator error during substream"
-                                                 " extraction in atc : %s", ex)
-                            if logger.isEnabledFor(logging.DEBUG):
-                                logger.error("MsgParsator error during substream"
-                                             "extraction in atc : %s", ex)
-                            raise ExtractionError from ex
+                        # extract as nested msg+atc and append to exts.nests
+                        subexts = yield from self.msgParsator(ims=ims,
+                                                              framed=framed,
+                                                              piped=piped,
+                                                              local=local,
+                                                              version=self.version)
 
                         exts.nests.append(subexts)
-
 
                     else:  # regular attachment counter code so extract
                         del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
