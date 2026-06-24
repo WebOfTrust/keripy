@@ -104,6 +104,7 @@ class Parser:
         codes (CtrDex): selected by .version from (CtrDex_1_0, CtrDex_2_0)
         sucodes (SUDex): selected by .version from  (SUDex_1_0, SUDex_2_0)
         mucodes (MUDex): selected by .version from  (MUDex_1_0, MUDex_2_0)
+        bucodes (BUDex): selected by .version from  (BUDex_1_0, BUDex_2_0)
 
 
     Hidden:
@@ -119,6 +120,7 @@ class Parser:
     Codes = Counter.Codes  # code tables from Counter
     SUCodes = Counter.SUCodes # special universal code tables from Counter
     MUCodes = Counter.MUCodes # message universal code tables from Counter
+    BUCodes = Counter.BUCodes # message universal code tables from Counter
     Methods = copy.deepcopy(Counter.Codes)  # make deep copy so not mutate Counter
     for minor in Methods.values():  # assign None as default val for all possible code names
         for key in minor:
@@ -237,6 +239,7 @@ class Parser:
         """
         return self._version
 
+
     @version.setter
     def version(self, version):
         """Property setter for .version
@@ -261,6 +264,8 @@ class Parser:
             self._codes = self.Codes[version.major][latest]
             self._sucodes = self.SUCodes[version.major][latest]
             self._mucodes = self.MUCodes[version.major][latest]
+            self._bucodes = self.BUCodes[version.major][latest]
+
 
     @property
     def methods(self):
@@ -270,6 +275,7 @@ class Parser:
         """
         return self._methods
 
+
     @property
     def codes(self):
         """Makes .codes read only
@@ -277,6 +283,7 @@ class Parser:
             _codes (CtrDex): selected by .version from (CtrDex_1_0, CtrDex_2_0)
         """
         return self._codes
+
 
     @property
     def sucodes(self):
@@ -286,6 +293,7 @@ class Parser:
         """
         return self._sucodes
 
+
     @property
     def mucodes(self):
         """Makes .mucodes read only
@@ -293,6 +301,15 @@ class Parser:
             _mucodes (MUDex): selected by .version from (MUDex_1_0, MUDex_2_0)
         """
         return self._mucodes
+
+
+    @property
+    def bucodes(self):
+        """Makes .bucodes read only
+        Returns:
+            _bucodes (BUDex): selected by .version from (BUDex_1_0, BUDex_2_0)
+        """
+        return self._bucodes
 
 
     def extract(self, ims, klas, cold=Colds.txt):
@@ -836,7 +853,10 @@ class Parser:
                                      "msg+atc : %s", ex)
                     raise ExtractionError from ex
 
-                except ValidationError as ex:  # post Extraction Error
+                except ExtractionError as ex:  # invalid material while extracting
+                    raise  # so we can catch all other errors in next clause
+
+                except (ValidationError, Exception) as ex:  # post Extraction Error
                     # Validation errors happen in msgProcess which is called
                     # after a message+attachments has been successfully extracted
                     # from stream so we drop extraction without flushing rest
@@ -1163,28 +1183,59 @@ class Parser:
                                                      abort=framed or enclosed,
                                                      strip=False)  # peek at ctr
 
-                    # check if group belongs to nested message in stream
-                    #if (ctr.code in (self.sucodes.GenericGroup, or ctr.code in self.sucodes or
+                    ## check if group belongs to top level group message in stream
+                    #if (ctr.code in self.mucodes or ctr.code in self.sucodes or
                         #ctr.code == self.codes.KERIACDCGenusVersion):
                         ## do not consume because it belongs with new msg
                         #break  # not a valid attachment so done with attachments to this msg
 
-                    # check if group belongs to top level group message in stream
-                    if (ctr.code in self.mucodes or ctr.code in self.sucodes or
-                        ctr.code == self.codes.KERIACDCGenusVersion):
-                        # do not consume because it belongs with new msg
-                        break  # not a valid attachment so done with attachments to this msg
 
-                    del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
+                    # check if group belongs to top level genus code or group or
+                    # tunneled message in stream
+                    if ((ctr.code == self.codes.KERIACDCGenusVersion) or
+                            (ctr.code in (self.sucodes.GenericGroup,
+                                      self.sucodes.BigGenericGroup) or
+                            (ctr.code in self.mucodes and
+                             ctr.code not in self.bucodes))):
 
-                    try:
-                        yield from getattr(self, self.methods[ctr.name])(exts=exts,
-                            ims=ims, ctr=ctr, cold=cold, abort=(framed or enclosed))
-                    except AttributeError as ex:
-                        raise UnexpectedCountCodeError(f"Unsupported count"
-                                                f" code={ctr.code}") from ex
-                    except Exception as ex:
-                        raise  # easier debug with breakpoint here
+                        # do not consume because it starts a new top level
+                        # stream, group or tunnel
+                        break  # done with attachments to this msg
+
+
+                    if (ctr.code in (self.sucodes.AttachmentGroup,
+                                     self.sucodes.BigAttachmentGroup)):
+                        # nested attachment group which is invalid here
+                        # so flush group contents from stream
+                        cbs = ctr.byteSize(cold=cold)  # counter size of counter itself
+                        fmgs = ctr.byteCount(cold=cold)  # fixed body content size
+                        size = cbs + fmgs  # size of ctr and its content
+                        while len(ims) < size and not framed:  # framed already in ims
+                            yield  # until full ctr and its content in ims
+
+                        del ims[:size]  # strip ctr and its content from ims
+
+
+                    # Check for nested msg substreams or regular attachments
+                    elif (ctr.code in (self.sucodes.BodyWithAttachmentGroup,
+                                       self.sucodes.BigBodyWithAttachmentGroup) or
+                            ctr.code in self.bucodes):
+
+                        # group belongs to nested message substream
+                        break   # for now
+
+
+                    else:  # regular attachment counter code so extract
+                        del ims[:ctr.byteSize(cold=cold)]  # consume ctr itself
+
+                        try:
+                            yield from getattr(self, self.methods[ctr.name])(exts=exts,
+                                ims=ims, ctr=ctr, cold=cold, abort=(framed or enclosed))
+                        except AttributeError as ex:
+                            raise UnexpectedCountCodeError(f"Unsupported count"
+                                                    f" code={ctr.code}") from ex
+                        except Exception as ex:
+                            raise  # easier debug with breakpoint here
 
                     if enclosed:  # attachments framed by enclosing AttachmentGroup
                         # inside of group all contents must be same cold  .txt
@@ -1194,7 +1245,7 @@ class Parser:
 
                     else:  # assumes that if attachments are not enclosed that
                         # framed must be true, which means ims, message plus
-                        # attachments all provided at once
+                        # attachments all provided at once at top level
                         # ims framed in some way, but not by enclosing AttachmentGroup
                         # not all attachments in one enclosing group, each individual
                         # attachment group may switch stream state txt or bny

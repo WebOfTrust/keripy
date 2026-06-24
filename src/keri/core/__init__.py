@@ -12,9 +12,9 @@ from .coring import (sizeify, dumps, loads, MtrDex, SmallVrzDex, LargeVrzDex,
                      Diger, Prefixer, Noncer, Saider, Sadder, Tholder, Dicter,
                      Saids, TraitDex, Versage, Sizage, MapDom, IceMapDom)
 from .counting import (GenDex, ProGen, CtrDex_1_0, CtrDex_2_0, QTDex_1_0,
-                       UniDex_1_0, SUDex_1_0, MUDex_1_0, CtrDex_2_0, UniDex_2_0,
-                        SUDex_2_0, MUDex_2_0, CodeNames, SealDex_2_0, Codens,
-                        Codenage, Cizage, Counter)
+                       UniDex_1_0, SUDex_1_0, MUDex_1_0, BUDex_1_0, CtrDex_2_0,
+                       UniDex_2_0, SUDex_2_0, MUDex_2_0, BUDex_2_0,
+                       CodeNames, SealDex_2_0, Codens, Codenage, Cizage, Counter)
 from .eventing import (simple, ample, deWitnessCouple, deReceiptCouple,
                        deSourceCouple, deReceiptTriple, deTransReceiptQuadruple,
                        deTransReceiptQuintuple, verifySigs, validateSigs,

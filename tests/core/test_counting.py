@@ -17,9 +17,9 @@ from keri.help import intToB64, b64ToInt, codeB64ToB2
 from keri.core import Texter
 from keri.core import (GenDex, Cizage, Counter, Codens, SUDex_1_0, CtrDex_1_0,
                        CtrDex_2_0, ProGen,GenDex, ProGen, CtrDex_1_0,
-                       CtrDex_2_0, QTDex_1_0, SUDex_1_0, MUDex_1_0, CtrDex_2_0,
-                       UniDex_2_0, SUDex_2_0, MUDex_2_0, CodeNames, Codens,
-                       SealDex_2_0, Codenage, Cizage, Counter)
+                       CtrDex_2_0, QTDex_1_0, SUDex_1_0, MUDex_1_0, BUDex_1_0,
+                       CtrDex_2_0, UniDex_2_0, SUDex_2_0, MUDex_2_0, BUDex_2_0,
+                       CodeNames, Codens, SealDex_2_0, Codenage, Cizage, Counter)
 
 
 def test_genus_codex_pro_gen():
@@ -125,6 +125,12 @@ def test_codexes_tags():
     }
 
     assert  asdict(MUDex_1_0) == \
+    {
+        'NonNativeBodyGroup': '-W',
+        'BigNonNativeBodyGroup': '--W',
+    }
+
+    assert  asdict(BUDex_1_0) == \
     {
         'NonNativeBodyGroup': '-W',
         'BigNonNativeBodyGroup': '--W',
@@ -236,6 +242,16 @@ def test_codexes_tags():
         'BigDatagramSegmentGroup': '--D',
         'ESSRWrapperGroup': '-E',
         'BigESSRWrapperGroup': '--E',
+        'FixBodyGroup': '-F',
+        'BigFixBodyGroup': '--F',
+        'MapBodyGroup': '-G',
+        'BigMapBodyGroup': '--G',
+        'NonNativeBodyGroup': '-H',
+        'BigNonNativeBodyGroup': '--H',
+    }
+
+    assert asdict(BUDex_2_0) == \
+    {
         'FixBodyGroup': '-F',
         'BigFixBodyGroup': '--F',
         'MapBodyGroup': '-G',
@@ -433,6 +449,18 @@ def test_counter_class():
         Vrsn_2_0.major: \
         {
             Vrsn_2_0.minor: MUDex_2_0,
+        },
+    }
+
+    assert Counter.BUCodes == \
+    {
+        Vrsn_1_0.major: \
+        {
+            Vrsn_1_0.minor: BUDex_1_0,
+        },
+        Vrsn_2_0.major: \
+        {
+            Vrsn_2_0.minor: BUDex_2_0,
         },
     }
 
