@@ -80,7 +80,7 @@ setup(
         'multidict>=6.0.5',
         'ordered-set>=4.1.0',
         'hio>=0.6.14,<0.6.18',
-        'multicommand>=1.0.0',
+        'multicommand==2.0.1',
         'jsonschema>=4.21.1',
         'falcon>=3.1.3',
         'hjson>=3.1.0',
@@ -111,4 +111,3 @@ setup(
         ]
     },
 )
-
