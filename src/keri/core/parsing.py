@@ -366,7 +366,8 @@ class Parser:
 
 
     def parse(self, ims=None, framed=None, piped=None, kvy=None, tvy=None,
-              exc=None, rvy=None, vry=None, local=None, version=None):
+              exc=None, rvy=None, vry=None, local=None, version=None,
+              processive=True):
         """Processes all messages from incoming message stream, ims,
         when provided. Otherwise process messages from .ims
         Returns when ims is empty.
@@ -390,6 +391,9 @@ class Parser:
                           None means use default .local
             version (Versionage): default version of CESR to use
                                   None means do not change default
+            processive (bool): True means process messages as they are parsed
+                               False means do not process parse only, useful for
+                                   testing and debugging
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -407,7 +411,8 @@ class Parser:
                                     rvy=rvy,
                                     vry=vry,
                                     local=local,
-                                    version=version)
+                                    version=version,
+                                    processive=processive)
 
         while True:
             try:
@@ -420,7 +425,8 @@ class Parser:
 
 
     def parseOne(self, ims=None, framed=True, piped=False, kvy=None, tvy=None,
-                 exc=None, rvy=None, vry=None, local=None, version=None):
+                 exc=None, rvy=None, vry=None, local=None, version=None,
+                 processive=True):
         """Processes one messages from incoming message stream, ims,
         when provided. Otherwise process message from .ims
         Returns once one message is processed.
@@ -443,6 +449,10 @@ class Parser:
                           None means use default .local
             version (Versionage): default genera version of CESR to use
                                   None means do not change default
+            processive (bool): True means process messages as they are parsed
+                               False means do not process parse only, useful for
+                                   testing and debugging
+
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -460,7 +470,8 @@ class Parser:
                                      rvy=rvy,
                                      vry=vry,
                                      local=local,
-                                     version=version)
+                                     version=version,
+                                     processive=processive)
         while True:
             try:
                 next(parsator)
@@ -473,7 +484,7 @@ class Parser:
 
     def allParsator(self, ims=None, framed=None, piped=None, kvy=None,
                     tvy=None, exc=None, rvy=None, vry=None, local=None,
-                    version=None):
+                    version=None, processive=True):
         """Returns generator to parse all messages from incoming message stream,
         ims until ims is exhausted (empty) then returns.
         Generator completes as soon as ims is empty.
@@ -497,6 +508,10 @@ class Parser:
                           None means use default .local
             version (Versionage): default version of CESR to use
                                 None means do not change default
+            processive (bool): True means process messages as they are parsed
+                               False means do not process parse only, useful for
+                                   testing and debugging
+
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -518,20 +533,23 @@ class Parser:
         local = local if local is not None else self.local
         local = True if local else False
 
+        results = []
         result = None
         while ims:  # only process until ims empty (differs here from parsator)
             try:
                 result = yield from self.groupParsator(ims=ims,
-                                                   framed=framed,
-                                                   piped=piped,
-                                                   kvy=kvy,
-                                                   tvy=tvy,
-                                                   exc=exc,
-                                                   rvy=rvy,
-                                                   vry=vry,
-                                                   local=local,
-                                                   version=version)
-
+                                                        framed=framed,
+                                                        piped=piped,
+                                                        kvy=kvy,
+                                                        tvy=tvy,
+                                                        exc=exc,
+                                                        rvy=rvy,
+                                                        vry=vry,
+                                                        local=local,
+                                                        version=version,
+                                                        processive=processive)
+                if not processive:
+                    results.append(result)
 
             except SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -556,12 +574,12 @@ class Parser:
                     logger.error("Parser msg non-extraction error: %s", ex)
             yield
 
-        return result
+        return result if processive else results  # debug parsing when not processive
 
 
     def onceParsator(self, ims=None, framed=None, piped=None, kvy=None,
                      tvy=None, exc=None, rvy=None, vry=None, local=None,
-                     version=None):
+                     version=None, processive=True):
         """Returns generator to parse one message from incoming message stream, ims.
         If ims not provided parse messages from .ims
 
@@ -583,6 +601,10 @@ class Parser:
                           None means use default .local
             version (Versionage): default version of CESR to use
                                   None means do not change default
+            processive (bool): True means process messages as they are parsed
+                               False means do not process parse only, useful for
+                                   testing and debugging
+
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -605,7 +627,7 @@ class Parser:
         local = True if local else False
 
         result = None
-        while not result:
+        while True:
             try:
                 exts = yield from self.msgParsator(ims=ims,
                                                       framed=framed,
@@ -627,30 +649,35 @@ class Parser:
                     logger.error("Kevery msg extraction error: %s", ex.args[0])
                 del ims[:]  # delete rest of stream to force cold restart
 
+            if processive:
+                try:
+                    result = self.msgProcess(exts=asdict(exts),
+                                            kvy=kvy,
+                                            tvy=tvy,
+                                            exc=exc,
+                                            rvy=rvy,
+                                            vry=vry)
 
-            try:
-                result = self.msgProcess(exts=asdict(exts),
-                                        kvy=kvy,
-                                        tvy=tvy,
-                                        exc=exc,
-                                        rvy=rvy,
-                                        vry=vry)
-
-            except (ValidationError, Exception) as ex:  # non Extraction Error
-                # Non extraction errors happen after successfully extracted from stream
-                # so we don't flush rest of stream just resume
-                if logger.isEnabledFor(logging.TRACE):
-                    logger.exception("Kevery msg non-extraction error: %s", ex)
-                if logger.isEnabledFor(logging.DEBUG):
-                    logger.error("Kevery msg non-extraction error: %s", ex)
-            finally:
-                result = True
+                except (ValidationError, Exception) as ex:  # non Extraction Error
+                    # Non extraction errors happen after successfully extracted from stream
+                    # so we don't flush rest of stream just resume
+                    if logger.isEnabledFor(logging.TRACE):
+                        logger.exception("Kevery msg non-extraction error: %s", ex)
+                    if logger.isEnabledFor(logging.DEBUG):
+                        logger.error("Kevery msg non-extraction error: %s", ex)
+                finally:
+                    result = True
+                    break
+            else:
+                result = exts
+                break
 
         return result
 
 
     def parsator(self, ims=None, framed=None, piped=None, kvy=None, tvy=None,
-                 exc=None, rvy=None, vry=None, local=None, version=None):
+                 exc=None, rvy=None, vry=None, local=None, version=None,
+                 processive=True):
         """Returns generator to continually parse messages from incoming message
         stream, ims. Empty yields when ims is emply. Does not return.
         Useful for always running servers.
@@ -676,6 +703,10 @@ class Parser:
                           None means use default .local
             version (Versionage): default version of CESR to use
                                   None means do not change default
+            processive (bool): True means process messages as they are parsed
+                               False means do not process parse only, useful for
+                                   testing and debugging
+
 
         New Logic:
             Attachments must all have counters so know if txt or bny format for
@@ -709,7 +740,8 @@ class Parser:
                                                    rvy=rvy,
                                                    vry=vry,
                                                    local=local,
-                                                   version=version)
+                                                   version=version,
+                                                   processive=processive)
 
 
             except SizedGroupError as ex:  # error inside sized group
@@ -740,7 +772,7 @@ class Parser:
 
     def groupParsator(self, ims=None, framed=True, piped=False, kvy=None,
                     tvy=None, exc=None, rvy=None, vry=None, local=None,
-                    version=None):
+                    version=None, processive=True):
         """Returns generator to parse nested GenericGroups whose outermost nesting
         appears at the top-level of an incoming message stream.
 
@@ -764,6 +796,10 @@ class Parser:
                           None means use default .local
             version (Versionage): default version of CESR to use
                                 None means do not change default
+            processive (bool): True means process messages as they are parsed
+                               False means do not process parse only, useful for
+                                   testing and debugging
+
 
         """
         if ims is None:
@@ -784,7 +820,7 @@ class Parser:
                     svrsn, ims = stack.pop()  # un-nest
                     self.version = svrsn  # only changes if svrsn is not None
 
-                if not ims:  # no stream and no stack
+                if not ims:  # no stream
                     break
 
                 # check front of stream for GenericGroup to nest down
@@ -851,27 +887,30 @@ class Parser:
                     raise ExtractionError from ex
 
                 # process successful extraction at current nexting level)
-                try:
-                    result = self.msgProcess(exts=asdict(exts),
-                                            kvy=kvy,
-                                            tvy=tvy,
-                                            exc=exc,
-                                            rvy=rvy,
-                                            vry=vry)
+                if processive:
+                    try:
+                        result = self.msgProcess(exts=asdict(exts),
+                                                kvy=kvy,
+                                                tvy=tvy,
+                                                exc=exc,
+                                                rvy=rvy,
+                                                vry=vry)
 
-                except (ValidationError, Exception) as ex:  # post Extraction Error
-                    # Validation errors happen in msgProcess which is called
-                    # after a message+attachments has been successfully extracted
-                    # from stream so we drop extraction without flushing rest
-                    # of stream but resume extracting next message.
-                    if logger.isEnabledFor(logging.TRACE):
-                        logger.exception("GroupParsator error post extraction of"
+                    except (ValidationError, Exception) as ex:  # post Extraction Error
+                        # Validation errors happen in msgProcess which is called
+                        # after a message+attachments has been successfully extracted
+                        # from stream so we drop extraction without flushing rest
+                        # of stream but resume extracting next message.
+                        if logger.isEnabledFor(logging.TRACE):
+                            logger.exception("GroupParsator error post extraction of"
+                                             "msg+atc : %s", ex)
+                        if logger.isEnabledFor(logging.DEBUG):
+                            logger.error("GroupParsator error post extraction of "
                                          "msg+atc : %s", ex)
-                    if logger.isEnabledFor(logging.DEBUG):
-                        logger.error("GroupParsator error post extraction of "
-                                     "msg+atc : %s", ex)
 
-                    continue
+                        continue
+                else:
+                    result = exts
 
 
         except ExtractionError as ex:  # maybe this needs to be more granular
