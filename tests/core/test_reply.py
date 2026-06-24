@@ -335,7 +335,7 @@ def test_reply(mockHelpingNowUTC):
         assert not tamHab.db.sdts.get(keys=saidkeys)  # old old saidkeys
         assert not tamHab.db.rpys.get(keys=saidkeys)
         assert tamHab.db.scgs.cnt(keys=saidkeys) == 0
-        assert tamHab.db.ssgs.cnt(keys=saidkeys) == 0
+        assert tamHab.db.tsgs.cnt(keys=saidkeys) == 0
         osaidkeys = saidkeys
 
         saidkeys = (serderR.said,)
@@ -363,7 +363,7 @@ def test_reply(mockHelpingNowUTC):
         assert not nelHab.db.sdts.get(keys=osaidkeys)  # old old saidkeys
         assert not nelHab.db.rpys.get(keys=osaidkeys)
         assert nelHab.db.scgs.cnt(keys=osaidkeys) == 0
-        assert nelHab.db.ssgs.cnt(keys=osaidkeys) == 0
+        assert nelHab.db.tsgs.cnt(keys=osaidkeys) == 0
 
         dater = nelHab.db.sdts.get(keys=saidkeys)
         assert dater.dts == helping.DTS_BASE_1
@@ -621,7 +621,7 @@ def test_reply(mockHelpingNowUTC):
                     tamHab.pre,
                     f"{tamHab.kever.lastEst.s:032x}",
                     tamHab.kever.lastEst.d)
-        sigers = nelHab.db.ssgs.get(keys=quadkeys)
+        sigers = nelHab.db.tsgs.get(keys=quadkeys)
         assert len(sigers) == 3 == len(tamHab.kever.verfers)
         escrowkeys = ("/end/role",)  # escrow route base not full route
         [saider] = nelHab.db.rpes.get(keys=escrowkeys)
@@ -679,7 +679,7 @@ def test_reply(mockHelpingNowUTC):
                     tamHab.pre,
                     f"{tamHab.kever.lastEst.s:032x}",
                     tamHab.kever.lastEst.d)
-        sigers = nelHab.db.ssgs.get(keys=quadkeys)
+        sigers = nelHab.db.tsgs.get(keys=quadkeys)
         assert len(sigers) == 3 == len(tamHab.kever.verfers)
         escrowkeys = ("/loc/scheme",)  # escrow route base not full route
         [saider] = nelHab.db.rpes.get(keys=escrowkeys)
@@ -719,7 +719,7 @@ def test_reply(mockHelpingNowUTC):
                     tamHab.pre,
                     f"{tamHab.kever.lastEst.s:032x}",
                     tamHab.kever.lastEst.d)
-        sigers = nelHab.db.ssgs.get(keys=quadkeys)
+        sigers = nelHab.db.tsgs.get(keys=quadkeys)
         assert len(sigers) == 3 == len(tamHab.kever.verfers)
         escrowkeys = ("/end/role",)  # escrow route base not full route
         assert not nelHab.db.rpes.get(keys=escrowkeys)
@@ -741,7 +741,7 @@ def test_reply(mockHelpingNowUTC):
                     tamHab.pre,
                     f"{tamHab.kever.lastEst.s:032x}",
                     tamHab.kever.lastEst.d)
-        sigers = nelHab.db.ssgs.get(keys=quadkeys)
+        sigers = nelHab.db.tsgs.get(keys=quadkeys)
         assert len(sigers) == 3 == len(tamHab.kever.verfers)
         escrowkeys = ("/loc/scheme",)  # escrow route base not full route
         assert not nelHab.db.rpes.get(keys=escrowkeys)
@@ -780,7 +780,7 @@ def test_reply(mockHelpingNowUTC):
                     tamHab.pre,
                     f"{tamHab.kever.lastEst.s:032x}",
                     tamHab.kever.lastEst.d)
-        sigers = nelHab.db.ssgs.get(keys=quadkeys)
+        sigers = nelHab.db.tsgs.get(keys=quadkeys)
         assert len(sigers) == 3 == len(tamHab.kever.verfers)
 
         endkeys = (tamHab.pre, role, wokHab.pre)
@@ -881,7 +881,7 @@ def test_reply(mockHelpingNowUTC):
                     tamHab.pre,
                     f"{tamHab.kever.lastEst.s:032x}",
                     tamHab.kever.lastEst.d)
-        sigers = nelHab.db.ssgs.get(keys=quadkeys)
+        sigers = nelHab.db.tsgs.get(keys=quadkeys)
         assert len(sigers) == 3 == len(tamHab.kever.verfers)
 
         lockeys = (tamHab.pre, scheme)
@@ -906,7 +906,7 @@ def test_reply(mockHelpingNowUTC):
                     tamHab.pre,
                     f"{tamHab.kever.lastEst.s:032x}",
                     tamHab.kever.lastEst.d)
-        sigers = tamHab.db.ssgs.get(keys=quadkeys)
+        sigers = tamHab.db.tsgs.get(keys=quadkeys)
         assert len(sigers) == 3 == len(tamHab.kever.verfers)
 
         lockeys = (tamHab.pre, scheme)
@@ -944,7 +944,7 @@ def test_reply(mockHelpingNowUTC):
                     tamHab.pre,
                     f"{tamHab.kever.lastEst.s:032x}",
                     tamHab.kever.lastEst.d)
-        sigers = nelHab.db.ssgs.get(keys=quadkeys)
+        sigers = nelHab.db.tsgs.get(keys=quadkeys)
         assert len(sigers) == 3 == len(tamHab.kever.verfers)
         escrowkeys = ("/end/role",)  # escrow route base not full route
         assert not nelHab.db.rpes.get(keys=escrowkeys)
@@ -969,7 +969,7 @@ def test_reply(mockHelpingNowUTC):
                     tamHab.pre,
                     f"{tamHab.kever.lastEst.s:032x}",
                     tamHab.kever.lastEst.d)
-        sigers = tamHab.db.ssgs.get(keys=quadkeys)
+        sigers = tamHab.db.tsgs.get(keys=quadkeys)
         assert len(sigers) == 3 == len(tamHab.kever.verfers)
         escrowkeys = ("/end/role",)  # escrow route base not full route
         assert not tamHab.db.rpes.get(keys=escrowkeys)

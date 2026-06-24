@@ -566,15 +566,15 @@ class Kramer:
         kwa['sigers'][:] = [s for s in kwa['sigers'] if s.qb64 in verified]
 
         if kwa.get('lsgs'):
-            newSsgs = []
+            newtsgs = []
             for prefixer, sigers in kwa['lsgs']:
                 if prefixer.qb64 != senderId:
-                    newSsgs.append((prefixer, sigers))
+                    newtsgs.append((prefixer, sigers))
                 else:
                     filtered = [s for s in sigers if s.qb64 in verified]
                     if filtered:
-                        newSsgs.append((prefixer, filtered))
-            kwa['lsgs'] = newSsgs
+                        newtsgs.append((prefixer, filtered))
+            kwa['lsgs'] = newtsgs
             if not kwa['lsgs']:
                 kwa.pop('lsgs', None)
 
