@@ -15,43 +15,29 @@ from keri.app.cli.commands.multisig import join as multisig_join_cmd
 TMP_BASE_PATH = "base-multisig-join"
 
 
-def isolatedBase(tmp_path):
-    """Return a relative KERI base namespace unique to each pytest test."""
-    return f"{TMP_BASE_PATH}-{tmp_path.parent.name}-{tmp_path.name}"
-
-
-def closeHby(hby, clear=True):
-    """Close Habery and its Configer."""
-    if hby is not None:
-        cf = getattr(hby, "cf", None)
-        hby.close(clear=clear)
-        if clear and cf is not None:
-            cf.close(clear=True)
-
-
-def closeJoinDoer(doer, clear=True):
+def closeJoinDoer(doer, helpers, clear=True):
     """Close resources opened by JoinDoer."""
     if getattr(doer, "rgy", None) is not None:
         doer.rgy.reger.close(clear=clear)
     if getattr(doer, "notifier", None) is not None:
         doer.notifier.noter.close(clear=clear)
-    closeHby(getattr(doer, "hby", None), clear=clear)
+    helpers.closeHby(getattr(doer, "hby", None), clear=clear)
 
 
 @contextmanager
-def openJoinDoers(args):
+def openJoinDoers(args, helpers):
     """Open JoinDoer through command handler and close its resources."""
     doers = args.handler(args)
     try:
         yield doers
     finally:
         for doer in doers:
-            closeJoinDoer(doer)
+            closeJoinDoer(doer, helpers)
 
 
-def test_multisig_join_registry_name_avoids_auto_prompt(tmp_path, monkeypatch):
+def test_multisig_join_registry_name_avoids_auto_prompt(tmp_path, monkeypatch, helpers):
     name = "prompt"
-    base = isolatedBase(tmp_path)
+    base = helpers.isolatedBase(TMP_BASE_PATH, tmp_path)
     salt = core.Salter(raw=b'0123456789abcdef').qb64
 
     with habbing.openHby(name=name, base=base, temp=False, clear=True, salt=salt):
@@ -65,7 +51,7 @@ def test_multisig_join_registry_name_avoids_auto_prompt(tmp_path, monkeypatch):
                               "--auto",
                               "--registry-name", "r1"])
 
-    with openJoinDoers(args) as doers:
+    with openJoinDoers(args, helpers) as doers:
         doer = doers[0]
         assert isinstance(doer, multisig_join_cmd.JoinDoer)
         assert doer.registryName == "r1"

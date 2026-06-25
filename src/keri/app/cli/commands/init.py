@@ -158,4 +158,5 @@ class InitDoer(doing.DoDoer):
 
             self.remove(authn.doers)
 
+        rgy.close()
         hby.close()

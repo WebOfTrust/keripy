@@ -8,6 +8,7 @@ https://docs.pytest.org/en/latest/pythonpath.html
 import os
 import shutil
 import multicommand
+from contextlib import contextmanager
 
 import pytest
 from hio.base import doing
@@ -323,6 +324,60 @@ class DbSeed:
 
 
 class Helpers:
+
+    @staticmethod
+    def isolatedBase(prefix, tmp_path):
+        """
+        Return a relative KERI base namespace string unique to this pytest test.
+        Supports parallelization.
+
+        pytest's tmp_path is a per-test filesystem path, for example:
+        /.../pytest-42/test_registry_rename_branches0
+
+        KERI's base must be relative, so this helper uses only the final directory names:
+            tmp_path.parent.name  # "pytest-42"
+            tmp_path.name         # "test_registry_rename_branches0"
+
+        Result:
+            base-reg-rename-pytest-42-test_registry_rename_branches0
+
+        When openHby(..., name="rename", base=<base>, temp=False) opens KERI resources,
+        KERI/HIO combines this relative base with each resource tail:
+          - /usr/local/var/keri/ks/<base>/rename/data.mdb
+          - /usr/local/var/keri/db/<base>/rename/data.mdb
+          - /usr/local/var/keri/cf/<base>/rename/rename.json
+          - /usr/local/var/keri/reg/<base>/rename/data.mdb
+          - and so forth
+        For temp=True paths get created under /tmp/...
+        """
+        return f"{prefix}-{tmp_path.parent.name}-{tmp_path.name}"
+
+    @staticmethod
+    def closeRegery(rgy, clear=True):
+        """Helper to close a Regery when is not closed by the cleanup process of a given DoDoer or Doer"""
+        reger = getattr(rgy, "reger", None)
+        if reger is not None and (reger.opened or clear):
+            reger.close(clear=clear)
+
+    @staticmethod
+    def closeHby(hby, clear=True):
+        """Helper to close a Habery and its Configer when not closed by a given DoDoer or Doer"""
+        if hby is not None:
+            cf = getattr(hby, "cf", None)
+            hby.close(clear=clear)
+            if clear and cf is not None:
+                cf.close(clear=True)
+
+    @staticmethod
+    @contextmanager
+    def pushd(path):
+        """Temporarily run file-writing command helpers from path."""
+        cwd = os.getcwd()
+        os.chdir(path)
+        try:
+            yield
+        finally:
+            os.chdir(cwd)
 
     @staticmethod
     def makeRegistry(hby, hab, name="reg", rgy=None):

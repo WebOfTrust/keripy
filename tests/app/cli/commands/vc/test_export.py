@@ -2,7 +2,6 @@
 """
 tests.app.cli.commands.vc.test_export module
 """
-import os
 from contextlib import contextmanager
 
 from keri import core
@@ -12,36 +11,6 @@ from keri.vdr import credentialing
 
 
 CLI_BASE = "test-vc-export"
-
-
-def isolatedBase(tmp_path):
-    """Return a command-addressable base namespace unique to this pytest test."""
-    return f"{CLI_BASE}-{tmp_path.parent.name}-{tmp_path.name}"
-
-
-def closeRegery(rgy, clear=True):
-    reger = getattr(rgy, "reger", None)
-    if reger is not None and (reger.opened or clear):
-        reger.close(clear=clear)
-
-
-def closeHby(hby, clear=True):
-    if hby is not None:
-        cf = getattr(hby, "cf", None)
-        hby.close(clear=clear)
-        if clear and cf is not None:
-            cf.close(clear=True)
-
-
-@contextmanager
-def pushd(path):
-    """Temporarily run file-writing command helpers from path."""
-    cwd = os.getcwd()
-    os.chdir(path)
-    try:
-        yield
-    finally:
-        os.chdir(cwd)
 
 
 @contextmanager
@@ -56,15 +25,15 @@ def openExportDoer(*args, **kwa):
             doer.close()
 
 
-def test_export_credentials_full_sets_related_flags(tmp_path, seeder):
+def test_export_credentials_full_sets_related_flags(tmp_path, seeder, helpers):
     # Purpose: keep parser-to-doer flag expansion honest for the new full state-sync export options.
-    with habbing.openHby(name="export-flags", base=isolatedBase(tmp_path),
+    with habbing.openHby(name="export-flags", base=helpers.isolatedBase(CLI_BASE, tmp_path),
                          temp=False, clear=True, salt=core.Salter(raw=b'0123456789abcdef').qb64) as source:
         doer = None
         try:
             source.makeHab(name="issuer", icount=1, isith="1", ncount=1, nsith="1")
             seeder.seedSchema(source.db)
-            closeHby(source, clear=False)
+            helpers.closeHby(source, clear=False)
 
             args = export_cmd.parser.parse_args(["--name", source.name,
                                                  "--base", source.base,
@@ -92,12 +61,12 @@ def test_export_credentials_full_sets_related_flags(tmp_path, seeder):
         finally:
             if doer is not None:
                 doer.close()
-            closeHby(source)
+            helpers.closeHby(source)
 
 
 def test_export_selection_revocation_and_registry_file_branches(tmp_path, seeder, helpers):
     # Purpose: verify ExportDoer selects the right registry and credential material for file bundles.
-    with habbing.openHby(name="export-selection", base=isolatedBase(tmp_path),
+    with habbing.openHby(name="export-selection", base=helpers.isolatedBase(CLI_BASE, tmp_path),
                          temp=False, clear=True, salt=core.Salter(raw=b'0123456789abcdef').qb64) as source:
         rgy = None
         try:
@@ -112,8 +81,8 @@ def test_export_selection_revocation_and_registry_file_branches(tmp_path, seeder
             revoked, *_ = helpers.issueCredential(source, hab, issuer=revoked_issuer,
                                                   subject=dict(LEI="revoked"), revoked=True, rgy=rgy)
             other_reg = rgy.makeRegistry(prefix=other.pre, name="other", noBackers=True)
-            closeRegery(rgy, clear=False)
-            closeHby(source, clear=False)
+            helpers.closeRegery(rgy, clear=False)
+            helpers.closeHby(source, clear=False)
 
             def acdcPath(out, creder):
                 return out / f"{creder.said}-acdc.cesr"
@@ -137,7 +106,7 @@ def test_export_selection_revocation_and_registry_file_branches(tmp_path, seeder
                             chains=False,
                             files=True)
                 opts.update(kwa)
-                with pushd(out):
+                with helpers.pushd(out):
                     doer = export_cmd.ExportDoer(**opts)
                     directing.runController(doers=[doer])
                     assert doer.hby is None
@@ -170,13 +139,13 @@ def test_export_selection_revocation_and_registry_file_branches(tmp_path, seeder
             assert acdcPath(selected, active).exists()
             assert not acdcPath(selected, revoked).exists()
         finally:
-            closeRegery(rgy)
-            closeHby(source)
+            helpers.closeRegery(rgy)
+            helpers.closeHby(source)
 
 
 def test_export_output_file_and_stdout_paths(tmp_path, capsys, seeder, helpers):
     # Purpose: cover the two operator-facing output modes for exported KEL/TEL/ACDC material.
-    with habbing.openHby(name="export-paths", base=isolatedBase(tmp_path),
+    with habbing.openHby(name="export-paths", base=helpers.isolatedBase(CLI_BASE, tmp_path),
                          temp=False, clear=True, salt=core.Salter(raw=b'0123456789abcdef').qb64) as source:
         rgy = None
         try:
@@ -186,8 +155,8 @@ def test_export_output_file_and_stdout_paths(tmp_path, capsys, seeder, helpers):
             rgy, issuer = helpers.makeRegistry(source, hab, rgy=rgy)
             creder, *_ = helpers.issueCredential(source, hab, issuer=issuer,
                                                  subject=dict(LEI="254900OPPU84GM83MG36"), rgy=rgy)
-            closeRegery(rgy, clear=False)
-            closeHby(source, clear=False)
+            helpers.closeRegery(rgy, clear=False)
+            helpers.closeHby(source, clear=False)
 
             with openExportDoer(name=source.name, alias="issuer", base=source.base, bran=None,
                                 said=None, tels=False, kels=False, chains=False, files=False) as doer:
@@ -200,7 +169,7 @@ def test_export_output_file_and_stdout_paths(tmp_path, capsys, seeder, helpers):
                 assert creder.said in out
 
                 doer.files = True
-                with pushd(tmp_path):
+                with helpers.pushd(tmp_path):
                     doer.outputTEL(issuer.regk)
                     doer.outputKEL(hab.pre)
                     doer.outputCred(creder.said)
@@ -208,13 +177,13 @@ def test_export_output_file_and_stdout_paths(tmp_path, capsys, seeder, helpers):
                 assert (tmp_path / f"{hab.pre}-kel.cesr").read_text()
                 assert (tmp_path / f"{creder.said}-acdc.cesr").read_bytes()
         finally:
-            closeRegery(rgy)
-            closeHby(source)
+            helpers.closeRegery(rgy)
+            helpers.closeHby(source)
 
 
 def test_export_output_credential_related_material_and_chain_branches(tmp_path, capsys, seeder, helpers):
     # Purpose: verify a credential export can include issuer KELs, registry/credential TELs, and chained ACDCs.
-    with habbing.openHby(name="export-chain-source", base=isolatedBase(tmp_path),
+    with habbing.openHby(name="export-chain-source", base=helpers.isolatedBase(CLI_BASE, tmp_path),
                          temp=False, clear=True, salt=core.Salter(raw=b'0123456789abcdef').qb64) as source:
         rgy = None
         try:
@@ -232,8 +201,8 @@ def test_export_output_credential_related_material_and_chain_branches(tmp_path, 
                                                        "child": {"n": child.said},
                                                        "o": "ignored"},
                                                rgy=rgy)
-            closeRegery(rgy, clear=False)
-            closeHby(source, clear=False)
+            helpers.closeRegery(rgy, clear=False)
+            helpers.closeHby(source, clear=False)
 
             with openExportDoer(name=source.name, alias="issuer", base=source.base, bran=None,
                                 said=None, tels=True, kels=True, chains=True, files=False) as doer:
@@ -246,5 +215,5 @@ def test_export_output_credential_related_material_and_chain_branches(tmp_path, 
                 assert root.regi in out
                 assert root.said in out
         finally:
-            closeRegery(rgy)
-            closeHby(source)
+            helpers.closeRegery(rgy)
+            helpers.closeHby(source)
