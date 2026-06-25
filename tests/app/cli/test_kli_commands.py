@@ -1,13 +1,15 @@
 import os
+from types import SimpleNamespace
 import multicommand
 import pytest
 
 
-from keri.kering import Ilks, ValidationError
+from keri.kering import Ilks, ValidationError, Vrsn_1_0
 from keri.core import Salter
 
 from keri.app import runController
 from keri.cli.commands.witness import start as witness_start
+from keri.cli.commands import init as init_command
 
 from keri.cli import commands
 from keri.cli.common import existingHab, existingHby
@@ -358,6 +360,69 @@ def test_incept_and_rotate_opts(helpers, capsys):
     doers = args.handler(args)
 
     runController(doers=doers)
+
+
+def test_init_passes_explicit_version_to_habery_and_oobiery(monkeypatch):
+    captured = {}
+
+    class FakeTable:
+        def __init__(self, count=0, items=()):
+            self._count = count
+            self._items = list(items)
+
+        def cnt(self):
+            return self._count
+
+        def getTopItemIter(self, keys=b''):
+            return iter(self._items)
+
+    class FakeHabery:
+        def __init__(self, *args, version=None, **kwargs):
+            captured["habery_version"] = version
+            self.ks = SimpleNamespace(path="/tmp/fake-ks")
+            self.db = SimpleNamespace(
+                path="/tmp/fake-db",
+                oobis=FakeTable(count=1),
+                roobi=FakeTable(count=1, items=[
+                    (("http://127.0.0.1:5642/oobi/fake/controller",),
+                     SimpleNamespace(state=init_command.Result.resolved))
+                ]),
+                woobi=FakeTable(),
+                wkas=FakeTable(),
+            )
+            self.mgr = SimpleNamespace(aeid=None)
+
+        def close(self):
+            captured["closed"] = True
+
+    class FakeRegery:
+        def __init__(self, *args, **kwargs):
+            self.reger = SimpleNamespace(path="/tmp/fake-reg")
+
+    class FakeOobiery:
+        def __init__(self, hby, version=None):
+            captured["oobiery_version"] = version
+            self.doers = []
+
+    monkeypatch.setattr(init_command, "Habery", FakeHabery)
+    monkeypatch.setattr(init_command, "Regery", FakeRegery)
+    monkeypatch.setattr(init_command, "Oobiery", FakeOobiery)
+
+    parser = multicommand.create_parser(commands)
+    salt = Salter(raw=b"0123456789abcdef").qb64
+    args = parser.parse_args([
+        "init",
+        "--name", "test-init-version",
+        "--nopasscode",
+        "--salt", salt,
+        "--version", "1.0",
+    ])
+
+    runController(doers=args.handler(args))
+
+    assert captured["habery_version"] == Vrsn_1_0
+    assert captured["oobiery_version"] == Vrsn_1_0
+    assert captured["closed"] is True
 
 
 def test_run_witness_closes_boot_keeper_before_reopen(monkeypatch):

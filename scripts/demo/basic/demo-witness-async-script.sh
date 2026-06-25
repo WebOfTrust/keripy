@@ -13,15 +13,15 @@ function isSuccess() {
 }
 
 # CREATE DATABASE AND KEYSTORE
-kli init --name async-witness-test --base "${KERI_TEMP_DIR}" --nopasscode
+kli init --name async-witness-test --base "${KERI_TEMP_DIR}" --nopasscode --version 1.0
 isSuccess
 
 # RESOLVE WITNESS OOBIs
-kli oobi resolve --name async-witness-test --base "${KERI_TEMP_DIR}" --oobi-alias wan --oobi http://127.0.0.1:5643/oobi/BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM/controller
+kli oobi resolve --version 1.0 --name async-witness-test --base "${KERI_TEMP_DIR}" --oobi-alias wan --oobi http://127.0.0.1:5643/oobi/BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM/controller
 isSuccess
-kli oobi resolve --name async-witness-test --base "${KERI_TEMP_DIR}"  --oobi-alias wil --oobi http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller
+kli oobi resolve --version 1.0 --name async-witness-test --base "${KERI_TEMP_DIR}"  --oobi-alias wil --oobi http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller
 isSuccess
-kli oobi resolve --name async-witness-test --base "${KERI_TEMP_DIR}"  --oobi-alias wes --oobi http://127.0.0.1:5644/oobi/BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX/controller
+kli oobi resolve --version 1.0 --name async-witness-test --base "${KERI_TEMP_DIR}"  --oobi-alias wes --oobi http://127.0.0.1:5644/oobi/BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX/controller
 isSuccess
 
 ## INCEPT AND PROPOGATE EVENTS AND RECEIPTS TO WITNESSES

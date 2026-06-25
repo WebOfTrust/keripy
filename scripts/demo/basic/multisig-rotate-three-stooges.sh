@@ -12,29 +12,29 @@ source "$(dirname "$0")/script-utils.sh"
 print_yellow "Multisig rotation with three AIDs"
 echo
 
-kli init --name larry --salt 0ACDEyMzQ1Njc4OWxtbm9aBc --nopasscode --config-dir "${KERI_SCRIPT_DIR}" --config-file demo-witness-oobis
+kli init --name larry --salt 0ACDEyMzQ1Njc4OWxtbm9aBc --nopasscode --config-dir "${KERI_SCRIPT_DIR}" --config-file demo-witness-oobis --version 1.0
 # Prefix EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U
 kli incept --name larry --alias larry --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-1-sample.json
 
-kli init --name moe --salt 0ACDEyMzQ1Njc4OWdoaWpsaw --nopasscode --config-dir "${KERI_SCRIPT_DIR}" --config-file demo-witness-oobis
+kli init --name moe --salt 0ACDEyMzQ1Njc4OWdoaWpsaw --nopasscode --config-dir "${KERI_SCRIPT_DIR}" --config-file demo-witness-oobis --version 1.0
 # Prefix ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW
 kli incept --name moe --alias moe --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-2-sample.json
 
-kli init --name curly --salt 0ACDEyMzQ1Njc4OWdoaWpsaw --nopasscode --config-dir "${KERI_SCRIPT_DIR}" --config-file demo-witness-oobis
+kli init --name curly --salt 0ACDEyMzQ1Njc4OWdoaWpsaw --nopasscode --config-dir "${KERI_SCRIPT_DIR}" --config-file demo-witness-oobis --version 1.0
 # Prefix EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu
 kli incept --name curly --alias curly --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-3-sample.json
 
 # OOBI resolution does the initial discovery of key state
 echo
 print_yellow "Resolve OOBIs"
-kli oobi resolve --name larry --oobi-alias moe --oobi http://127.0.0.1:5642/oobi/ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
-kli oobi resolve --name larry --oobi-alias curly --oobi http://127.0.0.1:5642/oobi/EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
+kli oobi resolve --version 1.0 --name larry --oobi-alias moe --oobi http://127.0.0.1:5642/oobi/ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
+kli oobi resolve --version 1.0 --name larry --oobi-alias curly --oobi http://127.0.0.1:5642/oobi/EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
 
-kli oobi resolve --name moe --oobi-alias larry --oobi http://127.0.0.1:5642/oobi/EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
-kli oobi resolve --name moe --oobi-alias curly --oobi http://127.0.0.1:5642/oobi/EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
+kli oobi resolve --version 1.0 --name moe --oobi-alias larry --oobi http://127.0.0.1:5642/oobi/EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
+kli oobi resolve --version 1.0 --name moe --oobi-alias curly --oobi http://127.0.0.1:5642/oobi/EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
 
-kli oobi resolve --name curly --oobi-alias larry --oobi http://127.0.0.1:5642/oobi/EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
-kli oobi resolve --name curly --oobi-alias moe --oobi http://127.0.0.1:5642/oobi/ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
+kli oobi resolve --version 1.0 --name curly --oobi-alias larry --oobi http://127.0.0.1:5642/oobi/EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
+kli oobi resolve --version 1.0 --name curly --oobi-alias moe --oobi http://127.0.0.1:5642/oobi/ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
 
 # Multisig Inception
 echo

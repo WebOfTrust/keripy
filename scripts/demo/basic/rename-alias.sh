@@ -2,7 +2,7 @@
 set -e
 
 # CREATE DATABASE AND KEYSTORE
-kli init --name rename-test --base "${KERI_TEMP_DIR}" --nopasscode
+kli init --name rename-test --base "${KERI_TEMP_DIR}" --nopasscode --version 1.0
 
 # Incept with the initial alias "sabbir"
 kli incept --name rename-test --base "${KERI_TEMP_DIR}" --alias sabbir --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/transferable-sample.json

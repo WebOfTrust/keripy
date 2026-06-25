@@ -4,10 +4,10 @@ set -e
 source "$(dirname "$0")/script-utils.sh"
 
 # ==================== Setup ====================
-kli init --name delegate --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis --salt 0ACDEyMzQ1Njc4OWxtbm9aBc
-kli init --name delegator --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis --salt 0ACDEyMzQ1Njc4OWdoaWpsaw
+kli init --name delegate --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis --salt 0ACDEyMzQ1Njc4OWxtbm9aBc --version 1.0
+kli init --name delegator --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis --salt 0ACDEyMzQ1Njc4OWdoaWpsaw --version 1.0
 kli incept --name delegator --alias delegator --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/delegator.json
-kli oobi resolve --name delegate --oobi-alias delegator --oobi http://127.0.0.1:5642/oobi/EHpD0-CDWOdu5RJ8jHBSUkOqBZ3cXeDVHWNb_Ul89VI7/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
+kli oobi resolve --version 1.0 --name delegate --oobi-alias delegator --oobi http://127.0.0.1:5642/oobi/EHpD0-CDWOdu5RJ8jHBSUkOqBZ3cXeDVHWNb_Ul89VI7/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
 
 # ==================== Delegated Inception ====================
 kli incept --name delegate --alias proxy --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/delegator.json
@@ -37,7 +37,7 @@ DELEGATE_AID=$(kli aid --name delegate --alias delegate)
 DELEGATOR_AID=$(kli aid --name delegator --alias delegator)
 OOBI=$(kli oobi generate --name delegate --alias delegate --role witness | head -n 1)
 echo "Delegator resolving delegate OOBI..."
-kli oobi resolve --name delegator --oobi-alias delegate --oobi "${OOBI}"
+kli oobi resolve --version 1.0 --name delegator --oobi-alias delegate --oobi "${OOBI}"
 
 echo ""
 echo "--- Verification: delegator views delegate keystate after inception (sn=0) ---"
@@ -81,7 +81,7 @@ echo ""
 # Re-resolve delegate OOBI to pick up rotation event
 echo "Re-resolving delegate OOBI after rotation..."
 OOBI=$(kli oobi generate --name delegate --alias delegate --role witness | head -n 1)
-kli oobi resolve --name delegator --oobi-alias delegate --oobi "${OOBI}"
+kli oobi resolve --version 1.0 --name delegator --oobi-alias delegate --oobi "${OOBI}"
 
 echo ""
 echo "--- Verification: delegator views delegate keystate after rotation (sn=1) ---"
@@ -96,15 +96,15 @@ echo ""
 echo "==================== Third-Party Validator ===================="
 echo ""
 
-kli init --name validator --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis --salt 0ACDEyMzQ1Njc4OWxtbm9vAl
+kli init --name validator --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis --salt 0ACDEyMzQ1Njc4OWxtbm9vAl --version 1.0
 
 echo "Validator resolving delegator OOBI..."
 OOBI=$(kli oobi generate --name delegator --alias delegator --role witness | head -n 1)
-kli oobi resolve --name validator --oobi-alias delegator --oobi "${OOBI}"
+kli oobi resolve --version 1.0 --name validator --oobi-alias delegator --oobi "${OOBI}"
 
 echo "Validator resolving delegate OOBI..."
 OOBI=$(kli oobi generate --name delegate --alias delegate --role witness | head -n 1)
-kli oobi resolve --name validator --oobi-alias delegate --oobi "${OOBI}"
+kli oobi resolve --version 1.0 --name validator --oobi-alias delegate --oobi "${OOBI}"
 
 echo ""
 echo "--- Verification: validator views delegate keystate (should show sn=1 after rotation) ---"

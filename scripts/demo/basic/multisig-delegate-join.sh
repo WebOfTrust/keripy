@@ -9,18 +9,18 @@ delegate_2=$(random_name delegate_2)
 delegate_json=""
 trap 'rm -f "$delegate_json"' EXIT
 
-kli init --name "$delegator" --nopasscode
-kli init --name "$delegate_1" --nopasscode
-kli init --name "$delegate_2" --nopasscode
+kli init --name "$delegator" --nopasscode --version 1.0
+kli init --name "$delegate_1" --nopasscode --version 1.0
+kli init --name "$delegate_2" --nopasscode --version 1.0
 
 delegator_witness_aid="BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM"
 delegator_witness_url="http://127.0.0.1:5643/oobi/$delegator_witness_aid/controller"
 delegate_witness_aid="BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha"
 delegate_witness_url="http://127.0.0.1:5642/oobi/$delegate_witness_aid/controller"
 
-kli oobi resolve --name "$delegator" --oobi "$delegator_witness_url"
-kli oobi resolve --name "$delegate_1" --oobi "$delegate_witness_url"
-kli oobi resolve --name "$delegate_2" --oobi "$delegate_witness_url"
+kli oobi resolve --version 1.0 --name "$delegator" --oobi "$delegator_witness_url"
+kli oobi resolve --version 1.0 --name "$delegate_1" --oobi "$delegate_witness_url"
+kli oobi resolve --version 1.0 --name "$delegate_2" --oobi "$delegate_witness_url"
 
 kli incept --name "$delegator" --alias delegator --version 1.0 --icount 1 --ncount 1 --isith 1 --nsith 1 --transferable --toad 1 --wit "$delegator_witness_aid"
 kli ends add --name "$delegator" --alias delegator --eid "$delegator_witness_aid" --role mailbox --version 1.0
@@ -38,10 +38,10 @@ delegate_2_oobi=$(kli oobi generate --name "$delegate_2" --alias member --role w
 delegate_1_aid=$(kli aid --name "$delegate_1" --alias member)
 delegate_2_aid=$(kli aid --name "$delegate_2" --alias member)
 
-kli oobi resolve --name "$delegate_1" --oobi-alias delegator --oobi "${delegator_oobi}"
-kli oobi resolve --name "$delegate_1" --oobi-alias delegate_2 --oobi "${delegate_2_oobi}"
-kli oobi resolve --name "$delegate_2" --oobi-alias delegate_1 --oobi "${delegate_1_oobi}"
-kli oobi resolve --name "$delegator" --oobi-alias delegate_1 --oobi "${delegate_1_oobi}"
+kli oobi resolve --version 1.0 --name "$delegate_1" --oobi-alias delegator --oobi "${delegator_oobi}"
+kli oobi resolve --version 1.0 --name "$delegate_1" --oobi-alias delegate_2 --oobi "${delegate_2_oobi}"
+kli oobi resolve --version 1.0 --name "$delegate_2" --oobi-alias delegate_1 --oobi "${delegate_1_oobi}"
+kli oobi resolve --version 1.0 --name "$delegator" --oobi-alias delegate_1 --oobi "${delegate_1_oobi}"
 
 delegate_json=$(mktemp)
 cat << EOF > "$delegate_json"
@@ -68,7 +68,7 @@ kli status --name "$delegate_1" --alias delegate
 delegate_aid_from_1=$(kli aid --name "$delegate_1" --alias delegate)
 
 # Delegate 2 now catches up by joining the inception event
-kli oobi resolve --name "$delegate_2" --oobi-alias delegator --oobi "${delegator_oobi}"
+kli oobi resolve --version 1.0 --name "$delegate_2" --oobi-alias delegator --oobi "${delegator_oobi}"
 kli multisig join --name "$delegate_2" --auto --group delegate --version 1.0
 kli status --name "$delegate_2" --alias delegate
 delegate_aid_from_2=$(kli aid --name "$delegate_2" --alias delegate)

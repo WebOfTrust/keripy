@@ -10,7 +10,7 @@ function isSuccess() {
 }
 
 # CREATE DATABASE AND KEYSTORE
-kli init --name test --base "${KERI_TEMP_DIR}"  --nopasscode --salt 0ACDEyMzQ1Njc4OWxtbm9aBc
+kli init --name test --base "${KERI_TEMP_DIR}"  --nopasscode --salt 0ACDEyMzQ1Njc4OWxtbm9aBc --version 1.0
 isSuccess
 
 # NON-TRANSFERABLE

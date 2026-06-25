@@ -8,7 +8,7 @@ import falcon
 from hio.base import doing
 from hio.core import http
 
-from keri.kering import Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Kinds
+from keri.kering import Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Kinds, Version
 from keri.app import (Notifier, Oobiery, Authenticator,
                       Result, openHab, openHby,
                       oobiRequestExn)
@@ -193,6 +193,23 @@ def test_oobiery():
         doist.exit()
 
     """Done Test"""
+
+
+def test_oobiery_parser_version_uses_explicit_or_habery_default():
+    with openHby(name="oobi-default") as hby:
+        oobiery = Oobiery(hby=hby)
+        assert oobiery.version == Version
+        assert oobiery.parser.version == Version
+
+    with openHby(name="oobi-hby-v1", version=Vrsn_1_0) as hby:
+        oobiery = Oobiery(hby=hby)
+        assert oobiery.version == Vrsn_1_0
+        assert oobiery.parser.version == Vrsn_1_0
+
+    with openHby(name="oobi-v1") as hby:
+        oobiery = Oobiery(hby=hby, version=Vrsn_1_0)
+        assert oobiery.version == Vrsn_1_0
+        assert oobiery.parser.version == Vrsn_1_0
 
 
 def test_loaded_v1_endpoint_replies_use_stored_reply_framing():

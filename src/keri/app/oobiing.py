@@ -316,7 +316,7 @@ class Oobiery:
 
     RetryDelay = 30
 
-    def __init__(self, hby, rvy=None, clienter=None, cues=None):
+    def __init__(self, hby, rvy=None, clienter=None, cues=None, version=None):
         """  DoDoer to handle the request and parsing of OOBIs
 
         Parameters:
@@ -332,13 +332,14 @@ class Oobiery:
 
         self.clienter = clienter or Clienter()
         self.org = Organizer(hby=self.hby)
+        self.version = version if version is not None else self.hby.version
 
         # Set up a local parser for returned events from OOBI queries.
         rtr = Router()
         rvy = Revery(db=self.hby.db, rtr=rtr)
         kvy = Kevery(db=self.hby.db, lax=True, local=False, rvy=rvy)
         kvy.registerReplyRoutes(router=rtr)
-        self.parser = Parser(framed=True, kvy=kvy, rvy=rvy, version=Vrsn_1_0)
+        self.parser = Parser(framed=True, kvy=kvy, rvy=rvy, version=self.version)
 
         self.cues = cues if cues is not None else decking.Deck()
         self.clients = dict()

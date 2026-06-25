@@ -8,14 +8,14 @@
 # the join process running indefinitely. The group rotation phase retries up to
 # ROTATE_MAX_ATTEMPTS on non-zero rotate exit (configurable via env).
 
-kli init --name multisigj1 --salt 0ACDEyMzQ1Njc4OWxtbm9aBc --nopasscode --config-dir "${KERI_SCRIPT_DIR}" --config-file demo-witness-oobis
+kli init --name multisigj1 --salt 0ACDEyMzQ1Njc4OWxtbm9aBc --nopasscode --config-dir "${KERI_SCRIPT_DIR}" --config-file demo-witness-oobis --version 1.0
 kli incept --name multisigj1 --alias multisigj1 --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-1-sample.json
 
-kli init --name multisigj2 --salt 0ACDEyMzQ1Njc4OWdoaWpsaw --nopasscode --config-dir "${KERI_SCRIPT_DIR}" --config-file demo-witness-oobis
+kli init --name multisigj2 --salt 0ACDEyMzQ1Njc4OWdoaWpsaw --nopasscode --config-dir "${KERI_SCRIPT_DIR}" --config-file demo-witness-oobis --version 1.0
 kli incept --name multisigj2 --alias multisigj2 --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-2-sample.json
 
-kli oobi resolve --name multisigj1 --oobi-alias multisigj2 --oobi http://127.0.0.1:5642/oobi/EKJ6tNVUGbdaiwx2nWDCFXG-_PY_AzESOcoKlm0kRNP3/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
-kli oobi resolve --name multisigj2 --oobi-alias multisigj1 --oobi http://127.0.0.1:5642/oobi/EFY7MixHb0so4WFFHw6btOPc5qeeWfPm7v5MJWcdcbyG/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
+kli oobi resolve --version 1.0 --name multisigj1 --oobi-alias multisigj2 --oobi http://127.0.0.1:5642/oobi/EKJ6tNVUGbdaiwx2nWDCFXG-_PY_AzESOcoKlm0kRNP3/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
+kli oobi resolve --version 1.0 --name multisigj2 --oobi-alias multisigj1 --oobi http://127.0.0.1:5642/oobi/EFY7MixHb0so4WFFHw6btOPc5qeeWfPm7v5MJWcdcbyG/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
 
 # --- Incept phase: initiator-first wait ---
 kli multisig incept --name multisigj1 --alias multisigj1 --group multisig --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-join-sample.json &

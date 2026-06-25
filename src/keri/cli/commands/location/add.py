@@ -13,7 +13,7 @@ from hio.help import ogler
 
 from ...common import Parsery, setupHby, parseVersion
 
-from .... import ConfigurationError, Kinds, Vrsn_1_0
+from .... import ConfigurationError, Kinds, Version
 
 from ....app import (GroupHab, Multiplexor, indirecting,
                      forwarding, WitnessPublisher, Notifier,
@@ -102,7 +102,8 @@ class LocationDoer(doing.DoDoer):
         eid = self.eid if self.eid is not None else self.hab.pre
 
         msg = self.hab.makeLocScheme(url=self.url, eid=eid, scheme=up.scheme, **self.replyKwargs)
-        parser = Parser(version=self.version if self.version is not None else Vrsn_1_0)
+        parser_version = self.version if self.version is not None else Version
+        parser = Parser(version=parser_version)
         parser.parse(ims=bytes(msg), kvy=self.hab.kvy, rvy=self.hab.rvy)
 
         if isinstance(self.hab, GroupHab):
@@ -110,7 +111,8 @@ class LocationDoer(doing.DoDoer):
             smids.remove(self.hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = multisigRpyExn(ghab=self.hab, rpy=msg)
+                exn, atc = multisigRpyExn(ghab=self.hab, rpy=msg,
+                                          version=self.version, kind=Kinds.json)
                 self.postman.send(src=self.hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",

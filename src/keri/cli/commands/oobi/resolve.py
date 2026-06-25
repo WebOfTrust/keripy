@@ -8,7 +8,7 @@ import argparse
 from hio.base import doing
 from hio.help import ogler
 
-from ...common import Parsery, setupHby
+from ...common import Parsery, setupHby, parseVersion
 
 from ....app import HaberyDoer, Authenticator, Oobiery
 from ....help import helping
@@ -24,6 +24,8 @@ parser.add_argument("--oobi-alias", dest="oobiAlias", help="alias for AID resolv
                     required=False, default=None)
 parser.add_argument('--force', action="store_true", required=False,
                     help='True means to resolve OOBI even if it has already been previously resolved')
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for OOBI parsing, such as 1.0 or 2.0')
 
 
 def resolve(args):
@@ -39,8 +41,10 @@ def resolve(args):
     oobi = args.oobi
     oobiAlias = args.oobiAlias
     force = args.force
+    version = args.version
 
-    icpDoer = OobiDoer(name=name, oobi=oobi, bran=bran, base=base, oobiAlias=oobiAlias, force=force)
+    icpDoer = OobiDoer(name=name, oobi=oobi, bran=bran, base=base, oobiAlias=oobiAlias,
+                       force=force, version=version)
 
     doers = [icpDoer]
     return doers
@@ -49,7 +53,7 @@ def resolve(args):
 class OobiDoer(doing.DoDoer):
     """ DoDoer for loading oobis and waiting for the results """
 
-    def __init__(self, name, oobi, oobiAlias, force=False, bran=None, base=None):
+    def __init__(self, name, oobi, oobiAlias, force=False, bran=None, base=None, version=None):
 
         self.processed = 0
         self.oobi = oobi
@@ -63,7 +67,7 @@ class OobiDoer(doing.DoDoer):
 
         self.hby.db.oobis.put(keys=(oobi,), val=obr)
 
-        self.obi = Oobiery(hby=self.hby)
+        self.obi = Oobiery(hby=self.hby, version=version)
         self.authn = Authenticator(hby=self.hby)
         doers = [self.hbyDoer, doing.doify(self.waitDo)]
 

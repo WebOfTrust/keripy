@@ -102,7 +102,7 @@ class GroupMultisigRotate(doing.DoDoer):
         kwa = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
         mbd = MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig', '/replay'], exc=exc,
                               **kwa)
-        self.counselor = Counselor(hby=self.hby)
+        self.counselor = Counselor(hby=self.hby, version=version, kind=Kinds.json)
         self.postman = Poster(hby=self.hby)
 
         doers = [mbd, self.hbyDoer, self.counselor, self.postman]
@@ -218,7 +218,9 @@ class GroupMultisigRotate(doing.DoDoer):
         exn, ims = multisigRotateExn(ghab=ghab,
                                      smids=smids,
                                      rmids=rmids,
-                                     rot=bytearray(rot))
+                                     rot=bytearray(rot),
+                                     version=self.version,
+                                     kind=Kinds.json)
         self.mux.add(exn)
         others = list(oset(smids + (rmids or [])))
 

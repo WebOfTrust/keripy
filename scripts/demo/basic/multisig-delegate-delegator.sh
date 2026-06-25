@@ -4,28 +4,28 @@ set -e
 source "$(dirname "$0")/script-utils.sh"
 
 echo "Creating delegate's first local identifier in delegate1 keystore"
-kli init --name delegate1 --salt 0ACDEyMzQ1Njc4OWxtbm9aBc --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis
+kli init --name delegate1 --salt 0ACDEyMzQ1Njc4OWxtbm9aBc --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis --version 1.0
 kli incept --name delegate1 --alias delegate1 --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/delegate-1.json
 
 echo "Creating delegate's second local identifier in delegate2 keystore"
-kli init --name delegate2 --salt 0ACDEyMzQ1Njc4OWdoaWpsaw --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis
+kli init --name delegate2 --salt 0ACDEyMzQ1Njc4OWdoaWpsaw --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis --version 1.0
 kli incept --name delegate2 --alias delegate2 --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/delegate-2.json
 
 echo "Creating delegator's first local identifier in delegator1 keystore"
-kli init --name delegator1 --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis --salt 0ACDEyMzQ1Njc4OWdoaWpdo1
+kli init --name delegator1 --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis --salt 0ACDEyMzQ1Njc4OWdoaWpdo1 --version 1.0
 kli incept --name delegator1 --alias delegator1 --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/delegator-1.json
 
 echo "Creating delegator's second local identifier in delegator2 keystore"
-kli init --name delegator2 --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis --salt 0ACDEyMzQ1Njc4OWdoaWpdo2
+kli init --name delegator2 --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis --salt 0ACDEyMzQ1Njc4OWdoaWpdo2 --version 1.0
 kli incept --name delegator2 --alias delegator2 --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/delegator-2.json
 
 
 echo "Sharing OOBIs between delegate's two local identifiers"
-kli oobi resolve --name delegate1 --oobi-alias delegate2 --oobi http://127.0.0.1:5642/oobi/ELZyCjnSL2Haors35LKM19T4qWT4K8Gfz1FPDD9oJN33/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
-kli oobi resolve --name delegate2 --oobi-alias delegate1 --oobi http://127.0.0.1:5642/oobi/EJ97lUuRH3xz0OMKhdMAU6V2TcSF9X6m1CKyIbIUcRxp/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
+kli oobi resolve --version 1.0 --name delegate1 --oobi-alias delegate2 --oobi http://127.0.0.1:5642/oobi/ELZyCjnSL2Haors35LKM19T4qWT4K8Gfz1FPDD9oJN33/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
+kli oobi resolve --version 1.0 --name delegate2 --oobi-alias delegate1 --oobi http://127.0.0.1:5642/oobi/EJ97lUuRH3xz0OMKhdMAU6V2TcSF9X6m1CKyIbIUcRxp/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
 echo "Sharing OOBIs between delegator's two local identifiers"
-kli oobi resolve --name delegator1 --oobi-alias delegator2 --oobi http://127.0.0.1:5642/oobi/EGv3deIs7pc01NnZZAhQ14Cbe9VGq4wF3n4oyhQfrB9j/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
-kli oobi resolve --name delegator2 --oobi-alias delegator1 --oobi http://127.0.0.1:5642/oobi/EIKUq-JkZGpgVZ_x9Hr2Gt_LLdPDzyI2JyGnHl3EBCPl/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
+kli oobi resolve --version 1.0 --name delegator1 --oobi-alias delegator2 --oobi http://127.0.0.1:5642/oobi/EGv3deIs7pc01NnZZAhQ14Cbe9VGq4wF3n4oyhQfrB9j/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
+kli oobi resolve --version 1.0 --name delegator2 --oobi-alias delegator1 --oobi http://127.0.0.1:5642/oobi/EIKUq-JkZGpgVZ_x9Hr2Gt_LLdPDzyI2JyGnHl3EBCPl/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
 
 # In 2 delegator terminal windows run the following
 PID_LIST=""
@@ -41,8 +41,8 @@ PID_LIST+=" $pid"
 wait_all $PID_LIST
 
 # Delegator does not need an oobi for delegate.
-kli oobi resolve --name delegate1 --oobi-alias delegator --oobi http://127.0.0.1:5642/oobi/EK7j7BobKFpH9yki4kwyIUuT-yQANSntS8u1hlhFYFcg/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
-kli oobi resolve --name delegate2 --oobi-alias delegator --oobi http://127.0.0.1:5642/oobi/EK7j7BobKFpH9yki4kwyIUuT-yQANSntS8u1hlhFYFcg/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
+kli oobi resolve --version 1.0 --name delegate1 --oobi-alias delegator --oobi http://127.0.0.1:5642/oobi/EK7j7BobKFpH9yki4kwyIUuT-yQANSntS8u1hlhFYFcg/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
+kli oobi resolve --version 1.0 --name delegate2 --oobi-alias delegator --oobi http://127.0.0.1:5642/oobi/EK7j7BobKFpH9yki4kwyIUuT-yQANSntS8u1hlhFYFcg/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
 
 # Run the delegate commands in parallel so they can collaborate and request delegation
 PID_LIST=""
@@ -94,22 +94,22 @@ DELEGATE1_OOBI=$(kli oobi generate --name delegate1 --alias delegate1 --role wit
 DELEGATE2_OOBI=$(kli oobi generate --name delegate2 --alias delegate2 --role witness | head -n 1)
 
 echo "Delegator1 resolving delegate1 member OOBI..."
-kli oobi resolve --name delegator1 --oobi-alias delegate1 --oobi "${DELEGATE1_OOBI}"
+kli oobi resolve --version 1.0 --name delegator1 --oobi-alias delegate1 --oobi "${DELEGATE1_OOBI}"
 echo "Delegator1 resolving delegate2 member OOBI..."
-kli oobi resolve --name delegator1 --oobi-alias delegate2 --oobi "${DELEGATE2_OOBI}"
+kli oobi resolve --version 1.0 --name delegator1 --oobi-alias delegate2 --oobi "${DELEGATE2_OOBI}"
 echo "Delegator2 resolving delegate1 member OOBI..."
-kli oobi resolve --name delegator2 --oobi-alias delegate1 --oobi "${DELEGATE1_OOBI}"
+kli oobi resolve --version 1.0 --name delegator2 --oobi-alias delegate1 --oobi "${DELEGATE1_OOBI}"
 echo "Delegator2 resolving delegate2 member OOBI..."
-kli oobi resolve --name delegator2 --oobi-alias delegate2 --oobi "${DELEGATE2_OOBI}"
+kli oobi resolve --version 1.0 --name delegator2 --oobi-alias delegate2 --oobi "${DELEGATE2_OOBI}"
 
 # --- Delegator resolves delegate multisig OOBI ---
 echo "Generating delegate multisig OOBI..."
 DELEGATE_OOBI=$(kli oobi generate --name delegate1 --alias delegate --role witness | head -n 1)
 
 echo "Delegator1 resolving delegate multisig OOBI..."
-kli oobi resolve --name delegator1 --oobi-alias delegate --oobi "${DELEGATE_OOBI}"
+kli oobi resolve --version 1.0 --name delegator1 --oobi-alias delegate --oobi "${DELEGATE_OOBI}"
 echo "Delegator2 resolving delegate multisig OOBI..."
-kli oobi resolve --name delegator2 --oobi-alias delegate --oobi "${DELEGATE_OOBI}"
+kli oobi resolve --version 1.0 --name delegator2 --oobi-alias delegate --oobi "${DELEGATE_OOBI}"
 
 # --- Verify delegate is known to delegator via kli kevers ---
 echo ""
@@ -198,8 +198,8 @@ echo ""
 # --- Delegator re-resolves delegate OOBI to pick up the rotation event ---
 echo "Re-resolving delegate multisig OOBI after rotation..."
 DELEGATE_OOBI=$(kli oobi generate --name delegate1 --alias delegate --role witness | head -n 1)
-kli oobi resolve --name delegator1 --oobi-alias delegate --oobi "${DELEGATE_OOBI}"
-kli oobi resolve --name delegator2 --oobi-alias delegate --oobi "${DELEGATE_OOBI}"
+kli oobi resolve --version 1.0 --name delegator1 --oobi-alias delegate --oobi "${DELEGATE_OOBI}"
+kli oobi resolve --version 1.0 --name delegator2 --oobi-alias delegate --oobi "${DELEGATE_OOBI}"
 
 # --- Verify delegator sees the rotated delegate (sn=1) ---
 echo ""

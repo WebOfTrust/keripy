@@ -10,18 +10,18 @@ delegator_json=""
 delegate_json=""
 trap 'rm -f "$delegator_json" "$delegate_json"' EXIT
 
-kli init --name "$delegator_1" --nopasscode
-kli init --name "$delegator_2" --nopasscode
-kli init --name "$delegate" --nopasscode
+kli init --name "$delegator_1" --nopasscode --version 1.0
+kli init --name "$delegator_2" --nopasscode --version 1.0
+kli init --name "$delegate" --nopasscode --version 1.0
 
 delegator_witness_aid="BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM"
 delegator_witness_url="http://127.0.0.1:5643/oobi/$delegator_witness_aid/controller"
 delegate_witness_aid="BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha"
 delegate_witness_url="http://127.0.0.1:5642/oobi/$delegate_witness_aid/controller"
 
-kli oobi resolve --name "$delegator_1" --oobi "$delegator_witness_url"
-kli oobi resolve --name "$delegator_2" --oobi "$delegator_witness_url"
-kli oobi resolve --name "$delegate" --oobi "$delegate_witness_url"
+kli oobi resolve --version 1.0 --name "$delegator_1" --oobi "$delegator_witness_url"
+kli oobi resolve --version 1.0 --name "$delegator_2" --oobi "$delegator_witness_url"
+kli oobi resolve --version 1.0 --name "$delegate" --oobi "$delegate_witness_url"
 
 kli incept --name "$delegator_1" --alias member --version 1.0 --icount 1 --ncount 1 --isith 1 --nsith 1 --transferable --toad 1 --wit "$delegator_witness_aid"
 kli incept --name "$delegator_2" --alias member --version 1.0 --icount 1 --ncount 1 --isith 1 --nsith 1 --transferable --toad 1 --wit "$delegator_witness_aid"
@@ -33,8 +33,8 @@ delegator_1_oobi=$(kli oobi generate --name "$delegator_1" --alias member --role
 delegator_2_aid=$(kli aid --name "$delegator_2" --alias member)
 delegator_2_oobi=$(kli oobi generate --name "$delegator_2" --alias member --role witness | tail -n 1)
 
-kli oobi resolve --name "$delegator_1" --oobi "$delegator_2_oobi"
-kli oobi resolve --name "$delegator_2" --oobi "$delegator_1_oobi"
+kli oobi resolve --version 1.0 --name "$delegator_1" --oobi "$delegator_2_oobi"
+kli oobi resolve --version 1.0 --name "$delegator_2" --oobi "$delegator_1_oobi"
 
 delegator_json=$(mktemp)
 cat << EOF > "$delegator_json"
@@ -61,9 +61,9 @@ proxy_oobi=$(kli oobi generate --name "$delegate" --alias proxy --role witness |
 delegator_oobi=$(kli oobi generate --name "$delegator_1" --alias delegator --role witness | tail -n 1)
 delegator_aid=$(kli aid --name "$delegator_1" --alias delegator)
 
-kli oobi resolve --name "$delegate" --oobi-alias delegator --oobi "${delegator_oobi}"
-kli oobi resolve --name "$delegator_1" --oobi-alias proxy --oobi "${proxy_oobi}"
-kli oobi resolve --name "$delegator_2" --oobi-alias proxy --oobi "${proxy_oobi}"
+kli oobi resolve --version 1.0 --name "$delegate" --oobi-alias delegator --oobi "${delegator_oobi}"
+kli oobi resolve --version 1.0 --name "$delegator_1" --oobi-alias proxy --oobi "${proxy_oobi}"
+kli oobi resolve --version 1.0 --name "$delegator_2" --oobi-alias proxy --oobi "${proxy_oobi}"
 
 delegate_json=$(mktemp)
 cat << EOF > "$delegate_json"

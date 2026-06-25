@@ -5,11 +5,12 @@ tests.app.grouping module
 """
 from contextlib import contextmanager
 
-from keri.kering import Vrsn_1_0, Kinds
+from keri.kering import Version, Vrsn_1_0, Kinds
 from keri.app import (Notifier, Counselor, Multiplexor,
                       openHab, multisigInceptExn,
                       multisigRotateExn, multisigInteractExn,
                       multisigRegistryInceptExn)
+from keri.app import grouping
 
 from keri.app.grouping import loadHandlers
 
@@ -29,7 +30,7 @@ def test_counselor():
     with openHab(name=f"{prefix}_1", salt=salt, transferable=True, **KWA) as (hby1, hab1), \
             openHab(name=f"{prefix}_2", salt=salt, transferable=True, **KWA) as (hby2, hab2), \
             openHab(name=f"{prefix}_3", salt=salt, transferable=True, **KWA) as (hby3, hab3):
-        counselor = Counselor(hby=hby1)
+        counselor = Counselor(hby=hby1, version=TEST_VERSION, kind=Kinds.json)
 
         # Keverys so we can process each other's inception messages.
         kev1 = Kevery(db=hab1.db, lax=True, local=False)
@@ -643,8 +644,10 @@ def test_multisig_incept(mockHelpingNowUTC):
     with openHab(name="test", temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab):
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
         exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids,
-                                    icp=hab.msgOwnEvent(sn=hab.kever.sn,
-                                                        framed=True, gvrsn=TEST_VERSION))
+                                     icp=hab.msgOwnEvent(sn=hab.kever.sn,
+                                                         framed=True, gvrsn=TEST_VERSION),
+                                     version=TEST_VERSION,
+                                     kind=Kinds.json)
 
         assert exn.ked["r"] == '/multisig/icp'
         assert exn.saidb == b'EJ6Kl50IBicAa8zND_3wMSQ5itw555V7NKid9y1SKobe'
@@ -658,6 +661,40 @@ def test_multisig_incept(mockHelpingNowUTC):
         assert "icp" in exn.ked['e']
 
 
+def test_multisig_incept_default_framing_uses_default_version_with_legacy_special_exn(mockHelpingNowUTC, monkeypatch):
+    with openHab(name="test", temp=True, salt=b'0123456789abcdef', **KWA) as (_, hab):
+        aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
+        icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=TEST_VERSION)
+        special_calls = {}
+        endorse_calls = {}
+        original_special_exchange = grouping.specialExchange
+        original_endorse = hab.endorse
+
+        def capture_special_exchange(*, sender, route, modifiers, attributes, embeds, version, kind):
+            special_calls["version"] = version
+            special_calls["kind"] = kind
+            return original_special_exchange(sender=sender,
+                                             route=route,
+                                             modifiers=modifiers,
+                                             attributes=attributes,
+                                             embeds=embeds,
+                                             version=version,
+                                             kind=kind)
+
+        def capture_endorse(*args, **kwargs):
+            endorse_calls["gvrsn"] = kwargs.get("gvrsn")
+            return original_endorse(*args, **kwargs)
+
+        monkeypatch.setattr(grouping, "specialExchange", capture_special_exchange)
+        monkeypatch.setattr(hab, "endorse", capture_endorse)
+
+        multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp)
+
+        assert special_calls["version"] == Vrsn_1_0
+        assert special_calls["kind"] == Kinds.json
+        assert endorse_calls["gvrsn"] == Version
+
+
 def test_multisig_rotate(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
         rot = (b'{"v":"KERI10JSON00023c_","t":"rot","d":"EGt_CZZASnY_iyB14ZXGQ4MxMtcSVW5oMHAu'
@@ -668,7 +705,8 @@ def test_multisig_rotate(mockHelpingNowUTC):
                b'"1/3","1/3"],"n":["EGX_K2uTEU6NOXfNo0VfhYLMrqADYHOoNk7WtT1SXOo2","EFl4us5uR0'
                b'hCiYcW7YyOaSAo-7zp8x1uBVU2E_tmhEwj","EMyxeTiM_cH5IHUI6nummgHMeW-_1oKw7rvqlDd'
                b'gha9v"],"bt":"0","br":[],"ba":[],"a":[]}')
-        exn, atc = multisigRotateExn(ghab=ghab1, smids=ghab1.smids, rmids=ghab1.rmids, rot=rot)
+        exn, atc = multisigRotateExn(ghab=ghab1, smids=ghab1.smids, rmids=ghab1.rmids, rot=rot,
+                                     version=TEST_VERSION, kind=Kinds.json)
 
         assert exn.ked["r"] == '/multisig/rot'
         assert exn.saidb == b'EL4LeEHvTiOxs1UDNTv5qWxCYVYojdpEMfKI62O-UsPm'
@@ -685,7 +723,9 @@ def test_multisig_interact(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
         ixn = ghab1.mhab.interact(framed=True, **KWA, gvrsn=TEST_VERSION)
         exn, atc = multisigInteractExn(ghab=ghab1, aids=ghab1.smids,
-                                                ixn=ixn)
+                                       ixn=ixn,
+                                       version=TEST_VERSION,
+                                       kind=Kinds.json)
 
         assert exn.ked["r"] == '/multisig/ixn'
         assert exn.saidb == b'EDF8o6SK-s2jxUVnlGtqAVtXTF-wyZ26c0dUsS5p766q'
@@ -706,7 +746,9 @@ def test_multisig_registry_incept(mockHelpingNowUTC, mockCoringRandomNonce):
         ixn = ghab1.mhab.interact(data=[dict(i=vcp.pre, s="0", d=vcp.said)],
                                   framed=True, **KWA, gvrsn=TEST_VERSION)
         exn, atc = multisigRegistryInceptExn(ghab=ghab1, vcp=vcp.raw, anc=ixn,
-                                                      usage="Issue vLEI Credentials")
+                                             usage="Issue vLEI Credentials",
+                                             version=TEST_VERSION,
+                                             kind=Kinds.json)
 
         assert exn.ked["r"] == '/multisig/vcp'
         assert exn.saidb == b'EBum6f9SwkUUjQTl_vDplKs7L-shzQT6fS5jJlzdP9PP'
@@ -727,7 +769,9 @@ def test_multisig_incept_handler(mockHelpingNowUTC):
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
         exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids,
                                      icp=hab.msgOwnEvent(sn=hab.kever.sn,
-                                                         framed=True, gvrsn=TEST_VERSION))
+                                                         framed=True, gvrsn=TEST_VERSION),
+                                     version=TEST_VERSION,
+                                     kind=Kinds.json)
 
         notifier = Notifier(hby=hby)
         mux = Multiplexor(hby=hby, notifier=notifier)
@@ -769,10 +813,12 @@ def test_multisig_incept_handler_parses_approved_v1_embed(mockHelpingNowUTC):
 
         icp1 = ghab1.msgOwnInception(allowPartiallySigned=True)
         exn1, _ = multisigInceptExn(hab=ghab1.mhab, smids=ghab1.smids,
-                                    rmids=ghab1.rmids, icp=icp1)
+                                    rmids=ghab1.rmids, icp=icp1,
+                                    version=TEST_VERSION, kind=Kinds.json)
         icp2 = ghab2.msgOwnInception(allowPartiallySigned=True)
         exn2, atc2 = multisigInceptExn(hab=ghab2.mhab, smids=ghab2.smids,
-                                       rmids=ghab2.rmids, icp=icp2)
+                                       rmids=ghab2.rmids, icp=icp2,
+                                       version=TEST_VERSION, kind=Kinds.json)
 
         notifier = Notifier(hby=hby1)
         mux = Multiplexor(hby=hby1, notifier=notifier)
@@ -799,7 +845,7 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
 
         # create and send message from ghab2
         exn, atc = multisigRotateExn(ghab=ghab2, smids=ghab1.smids, rmids=ghab1.rmids,
-                                              rot=msg)
+                                     rot=msg, version=TEST_VERSION, kind=Kinds.json)
         ims = bytearray(exn.raw)
         ims.extend(atc)
         Parser(version=TEST_VERSION).parseOne(ims=ims, exc=exc)
@@ -817,7 +863,7 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
 
         # Send the same message from ghab1
         exn, atc = multisigRotateExn(ghab=ghab1, smids=ghab1.smids, rmids=ghab1.rmids,
-                                              rot=msg)
+                                     rot=msg, version=TEST_VERSION, kind=Kinds.json)
         ims = bytearray(exn.raw)
         ims.extend(atc)
         Parser(version=TEST_VERSION).parseOne(ims=ims, exc=exc)
@@ -837,7 +883,9 @@ def test_multisig_interact_handler(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, ghab2), (_, _)):
         ixn = ghab1.mhab.interact(framed=True, **KWA, gvrsn=TEST_VERSION)
         exn, atc = multisigInteractExn(ghab=ghab2, aids=ghab1.smids,
-                                                ixn=ixn)
+                                       ixn=ixn,
+                                       version=TEST_VERSION,
+                                       kind=Kinds.json)
 
         notifier = Notifier(hby=hby1)
         mux = Multiplexor(hby=hby1, notifier=notifier)

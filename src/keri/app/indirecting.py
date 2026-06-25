@@ -88,7 +88,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
                  cues=cues)
 
     tvy.registerReplyRoutes(router=rvy.rtr)
-    parser_version = kwa.get("version", hab.kever.serder.pvrsn)
+    parser_version = kwa.get("version", hby.version)
     parser = parsing.Parser(framed=True,
                             kvy=kvy,
                             tvy=tvy,
@@ -358,7 +358,7 @@ class Indirector(doing.DoDoer):
         self.parser = parsing.Parser(ims=self.client.rxbs,
                                      framed=True,
                                      kvy=self.kevery,
-                                     version=self.hab.kever.serder.pvrsn)
+                                     version=self.hab.psr.version)
         doers = doers if doers is not None else []
         doers.extend([doing.doify(self.msgDo),
                       doing.doify(self.escrowDo)])
@@ -1082,7 +1082,7 @@ class ReceiptEnd(doing.DoDoer):
         self.outbound = outbound if outbound is not None else decking.Deck()
         self.aids = aids
         self.receipts = set()
-        self.version = version if version is not None else self.hab.kever.serder.pvrsn
+        self.version = version if version is not None else self.hab.psr.version
         self.psr = parsing.Parser(framed=True,
                                   kvy=self.hab.kvy,
                                   version=self.version)

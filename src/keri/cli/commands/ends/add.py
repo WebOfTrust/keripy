@@ -11,7 +11,7 @@ from hio.help import ogler
 
 from ...common import setupHby, Parsery, parseVersion
 
-from ....kering import ConfigurationError, Kinds
+from ....kering import ConfigurationError, Kinds, Version
 from ....app import (GroupHab, Multiplexor, MailboxDirector,
                      Poster, WitnessPublisher, Notifier,
                      multisigRpyExn)
@@ -101,7 +101,7 @@ class RoleDoer(doing.DoDoer):
         route = "/end/role/add"
         msg = self.hab.reply(route=route, data=data, stamp=self.timestamp, **self.replyKwargs)
 
-        parser_version = self.version if self.version is not None else self.hab.kever.serder.pvrsn
+        parser_version = self.version if self.version is not None else Version
         parser = Parser(version=parser_version)
         parser.parse(ims=bytes(msg), kvy=self.hab.kvy, rvy=self.hab.rvy)
 
@@ -110,7 +110,8 @@ class RoleDoer(doing.DoDoer):
             smids.remove(self.hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = multisigRpyExn(ghab=self.hab, rpy=msg)
+                exn, atc = multisigRpyExn(ghab=self.hab, rpy=msg,
+                                          version=self.version, kind=Kinds.json)
                 self.postman.send(src=self.hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",

@@ -75,7 +75,7 @@ class ConfirmDoer(doing.DoDoer):
         self.hbyDoer = HaberyDoer(habery=hby)  # setup doer
         self.witq = WitnessInquisitor(hby=hby)
         self.postman = Poster(hby=hby)
-        self.counselor = Counselor(hby=hby)
+        self.counselor = Counselor(hby=hby, version=version, kind=Kinds.json)
         self.notifier = Notifier(hby=hby)
         self.mux = Multiplexor(hby=hby, notifier=self.notifier)
         self.authenticate = authenticate
@@ -175,7 +175,8 @@ class ConfirmDoer(doing.DoDoer):
                             continue
 
                         serder = SerderKERI(raw=msg)
-                        exn, atc = grouping.multisigInteractExn(ghab=hab, aids=aids, ixn=bytearray(msg))
+                        exn, atc = grouping.multisigInteractExn(ghab=hab, aids=aids, ixn=bytearray(msg),
+                                                                version=self.version, kind=Kinds.json)
                         self.mux.add(exn)
                         others = list(oset(hab.smids + (hab.rmids or [])))
                         others.remove(hab.mhab.pre)

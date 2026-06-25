@@ -114,7 +114,9 @@ class GroupMultisigIncept(doing.DoDoer):
                                        kind=self.inits.get("kind", Kinds.json))
         else:
             self.mbx = MailboxDirector(hby=self.hby, topics=topics, exc=exc)
-        self.counselor = Counselor(hby=self.hby)
+        self.counselor = Counselor(hby=self.hby,
+                                   version=self.inits.get("version"),
+                                   kind=self.inits.get("kind", Kinds.json))
         self.postman = Poster(hby=self.hby)
 
         doers = [self.hbyDoer, self.mbx, self.counselor, self.postman]
@@ -163,7 +165,9 @@ class GroupMultisigIncept(doing.DoDoer):
             exn, ims = multisigInceptExn(ghab.mhab,
                                          smids=ghab.smids,
                                          rmids=ghab.rmids,
-                                         icp=icp)
+                                         icp=icp,
+                                         version=self.inits.get("version"),
+                                         kind=self.inits.get("kind", Kinds.json))
             self.mux.add(exn)
             others = list(oset(smids + (rmids or [])))
 

@@ -15,7 +15,7 @@ from prettytable import PrettyTable
 from ...common import Parsery, setupHby, printIdentifier, parseVersion
 
 from ....kering import (TraitCodex, ConfigurationError,
-                        Kinds, MissingAnchorError)
+                        Kinds, MissingAnchorError, Version)
 from ....app import (HaberyDoer, MailboxDirector, WitnessInquisitor,
                      Notifier, Multiplexor, Counselor, Organizer, Poster,
                      multisigInceptExn, multisigInteractExn, multisigRotateExn,
@@ -78,6 +78,7 @@ class JoinDoer(doing.DoDoer):
                          while using the default group of "default-group"
         """
         self.group = group
+        self.version = version
         self.hby = setupHby(name=name, base=base, bran=bran)
         self.rgy = Regery(hby=self.hby, name=name, base=base)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
@@ -98,7 +99,7 @@ class JoinDoer(doing.DoDoer):
 
         mux = Multiplexor(hby=self.hby, notifier=self.notifier)
         loadHandlers(exc=self.exc, mux=mux)
-        self.counselor = Counselor(hby=self.hby)
+        self.counselor = Counselor(hby=self.hby, version=version, kind=Kinds.json)
 
         self.registrar = Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)
         self.credentialer = Credentialer(hby=self.hby, rgy=self.rgy, registrar=self.registrar,
@@ -244,7 +245,9 @@ class JoinDoer(doing.DoDoer):
             exn, ims = multisigInceptExn(ghab.mhab,
                                          smids=ghab.smids,
                                          rmids=ghab.rmids,
-                                         icp=icp)
+                                         icp=icp,
+                                         version=self.version if self.version is not None else Version,
+                                         kind=oicp.kind)
             others = list(oset(smids + (rmids or [])))
 
             others.remove(ghab.mhab.pre)
@@ -314,7 +317,9 @@ class JoinDoer(doing.DoDoer):
 
             ixn = ghab.msgOwnEvent(allowPartiallySigned=True, sn=oixn.sn, framed=True, gvrsn=version)
 
-            exn, ims = multisigInteractExn(ghab, aids=ghab.smids, ixn=ixn)
+            exn, ims = multisigInteractExn(ghab, aids=ghab.smids, ixn=ixn,
+                                           version=self.version if self.version is not None else Version,
+                                           kind=oixn.kind)
             others = list(oset(smids + (rmids or [])))
 
             others.remove(ghab.mhab.pre)
@@ -446,7 +451,9 @@ class JoinDoer(doing.DoDoer):
             exn, ims = multisigRotateExn(ghab,
                                          smids=ghab.smids,
                                          rmids=ghab.rmids,
-                                         rot=rot)
+                                         rot=rot,
+                                         version=self.version if self.version is not None else Version,
+                                         kind=orot.kind)
             others = list(oset(smids + (rmids or [])))
 
             others.remove(ghab.mhab.pre)
@@ -599,7 +606,9 @@ class JoinDoer(doing.DoDoer):
             smids.remove(hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = multisigRpyExn(ghab=hab, rpy=anc)
+                exn, atc = multisigRpyExn(ghab=hab, rpy=anc,
+                                          version=self.version if self.version is not None else Version,
+                                          kind=rserder.kind)
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",
@@ -676,7 +685,14 @@ class JoinDoer(doing.DoDoer):
             smids.remove(hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = multisigRegistryInceptExn(ghab=hab, vcp=vserder.raw, anc=anc, usage=usage)
+                exn, atc = multisigRegistryInceptExn(
+                    ghab=hab,
+                    vcp=vserder.raw,
+                    anc=anc,
+                    usage=usage,
+                    version=self.version if self.version is not None else Version,
+                    kind=vserder.kind,
+                )
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",
@@ -779,7 +795,14 @@ class JoinDoer(doing.DoDoer):
             smids.remove(hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = multisigIssueExn(ghab=hab, acdc=acdc, iss=iserder.raw, anc=anc)
+                exn, atc = multisigIssueExn(
+                    ghab=hab,
+                    acdc=acdc,
+                    iss=iserder.raw,
+                    anc=anc,
+                    version=self.version if self.version is not None else Version,
+                    kind=iserder.kind,
+                )
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",
@@ -875,7 +898,14 @@ class JoinDoer(doing.DoDoer):
             smids.remove(hab.mhab.pre)
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
-                exn, atc = multisigRevokeExn(ghab=hab, said=creder.said, rev=rserder.raw, anc=anc)
+                exn, atc = multisigRevokeExn(
+                    ghab=hab,
+                    said=creder.said,
+                    rev=rserder.raw,
+                    anc=anc,
+                    version=self.version if self.version is not None else Version,
+                    kind=rserder.kind,
+                )
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",

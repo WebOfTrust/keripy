@@ -9,7 +9,7 @@ module for enveloping and forwarding KERI message
 from hio.base import doing
 from hio.help import ogler
 
-from ..kering import ValidationError, Vrsn_1_0, Ilks
+from ..kering import ValidationError, Version, Vrsn_1_0, Kinds, Ilks
 from ..core import (Counter, Number, Diger, Saider,
                     Prefixer, Kevery, Router,
                     Revery, Parser, SerderKERI,
@@ -289,13 +289,19 @@ def loadHandlers(exc, mux):
     exc.addHandler(MultisigNotificationHandler(resource="/multisig/rpy", mux=mux))
 
 
-def _exnVersion(hab):
-    """Return specialExchange and endorse version kwargs from hab."""
-    pvrsn = hab.kever.serder.pvrsn
-    return dict(version=pvrsn, kind=hab.kever.serder.kind), pvrsn
+def _exnVersion(version=None, kind=None):
+    """Return embedded EXN and outer framing versions for specialExchange.
+
+    `specialExchange` still builds the legacy embedded `/multisig/*` EXN
+    shape, so keep that body at v1 while allowing the surrounding stream
+    framing to follow the explicit caller version or the global default.
+    """
+    gvrsn = version if version is not None else Version
+    kind = kind if kind is not None else Kinds.json
+    return dict(version=Vrsn_1_0, kind=kind), gvrsn
 
 
-def multisigInceptExn(hab, smids, rmids, icp, delegator=None):
+def multisigInceptExn(hab, smids, rmids, icp, delegator=None, version=None, kind=None):
     """
 
     Args:
@@ -325,7 +331,7 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None):
         data |= dict(delegator=delegator)
 
     # Create `exn` peer to peer message to notify other participants UI
-    kwa, gvrsn = _exnVersion(hab)
+    kwa, gvrsn = _exnVersion(version=version, kind=kind)
     exn, end = specialExchange(sender=hab.pre,
                                route="/multisig/icp",
                                modifiers=dict(),
@@ -339,7 +345,7 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None):
     return exn, ims
 
 
-def multisigRotateExn(ghab, smids, rmids, rot):
+def multisigRotateExn(ghab, smids, rmids, rot, version=None, kind=None):
     """
 
     Args:
@@ -356,7 +362,7 @@ def multisigRotateExn(ghab, smids, rmids, rot):
         rot=rot,
     )
 
-    kwa, gvrsn = _exnVersion(ghab.mhab)
+    kwa, gvrsn = _exnVersion(version=version, kind=kind)
     exn, end = specialExchange(sender=ghab.mhab.pre,
                                route="/multisig/rot", modifiers=dict(),
                                attributes=dict(gid=ghab.pre,
@@ -371,7 +377,7 @@ def multisigRotateExn(ghab, smids, rmids, rot):
     return exn, atc
 
 
-def multisigInteractExn(ghab, aids, ixn):
+def multisigInteractExn(ghab, aids, ixn, version=None, kind=None):
     """ Create a peer to peer message to propose a multisig group interaction event
 
     Parameters:
@@ -387,7 +393,7 @@ def multisigInteractExn(ghab, aids, ixn):
         ixn=ixn,
     )
 
-    kwa, gvrsn = _exnVersion(ghab.mhab)
+    kwa, gvrsn = _exnVersion(version=version, kind=kind)
     exn, end = specialExchange(sender=ghab.mhab.pre,
                                route="/multisig/ixn",
                                modifiers=dict(),
@@ -402,7 +408,7 @@ def multisigInteractExn(ghab, aids, ixn):
     return exn, atc
 
 
-def multisigRegistryInceptExn(ghab, usage, vcp, anc):
+def multisigRegistryInceptExn(ghab, usage, vcp, anc, version=None, kind=None):
     """ Create a peer to peer message to propose a credential registry inception from a multisig group identifier
 
     Either rot or ixn are required but not both
@@ -423,7 +429,7 @@ def multisigRegistryInceptExn(ghab, usage, vcp, anc):
         anc=anc
     )
 
-    kwa, gvrsn = _exnVersion(ghab.mhab)
+    kwa, gvrsn = _exnVersion(version=version, kind=kind)
     exn, end = specialExchange(sender=ghab.mhab.pre,
                                route="/multisig/vcp",
                                attributes={'gid': ghab.pre, 'usage': usage},
@@ -436,7 +442,7 @@ def multisigRegistryInceptExn(ghab, usage, vcp, anc):
     return exn, atc
 
 
-def multisigIssueExn(ghab, acdc, iss, anc):
+def multisigIssueExn(ghab, acdc, iss, anc, version=None, kind=None):
     """ Create a peer to peer message to propose a credential creation from a multisig group identifier
 
     Either rot or ixn are required but not both
@@ -458,7 +464,7 @@ def multisigIssueExn(ghab, acdc, iss, anc):
         anc=anc
     )
 
-    kwa, gvrsn = _exnVersion(ghab.mhab)
+    kwa, gvrsn = _exnVersion(version=version, kind=kind)
     exn, end = specialExchange(sender=ghab.mhab.pre,
                                route="/multisig/iss",
                                attributes={'gid': ghab.pre},
@@ -471,7 +477,7 @@ def multisigIssueExn(ghab, acdc, iss, anc):
     return exn, atc
 
 
-def multisigRevokeExn(ghab, said, rev, anc):
+def multisigRevokeExn(ghab, said, rev, anc, version=None, kind=None):
     """ Create a peer to peer message to propose a credential revocation from a multisig group identifier
 
     Either rot or ixn are required but not both
@@ -492,7 +498,7 @@ def multisigRevokeExn(ghab, said, rev, anc):
         anc=anc
     )
 
-    kwa, gvrsn = _exnVersion(ghab.mhab)
+    kwa, gvrsn = _exnVersion(version=version, kind=kind)
     exn, end = specialExchange(sender=ghab.mhab.pre,
                                route="/multisig/rev",
                                attributes={'gid': ghab.pre, 'said': said},
@@ -505,7 +511,7 @@ def multisigRevokeExn(ghab, said, rev, anc):
     return exn, atc
 
 
-def multisigRpyExn(ghab, rpy):
+def multisigRpyExn(ghab, rpy, version=None, kind=None):
     """ Create a peer to peer message to propose a credential revocation from a multisig group identifier
 
     Either rot or ixn are required but not both
@@ -523,7 +529,7 @@ def multisigRpyExn(ghab, rpy):
         rpy=rpy
     )
 
-    kwa, gvrsn = _exnVersion(ghab.mhab)
+    kwa, gvrsn = _exnVersion(version=version, kind=kind)
     exn, end = specialExchange(sender=ghab.mhab.pre,
                                route="/multisig/rpy",
                                attributes={'gid': ghab.pre},
@@ -536,7 +542,7 @@ def multisigRpyExn(ghab, rpy):
     return exn, atc
 
 
-def multisigExn(ghab, exn):
+def multisigExn(ghab, exn, version=None, kind=None):
     """ Create a peer to peer message to propose a credential issuance from a multisig group identifier
 
     Either rot or ixn are required but not both
@@ -553,7 +559,7 @@ def multisigExn(ghab, exn):
         exn=exn
     )
 
-    kwa, gvrsn = _exnVersion(ghab.mhab)
+    kwa, gvrsn = _exnVersion(version=version, kind=kind)
     wexn, end = specialExchange(sender=ghab.mhab.pre,
                                 route="/multisig/exn",
                                 attributes={'gid': ghab.pre},

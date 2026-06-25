@@ -34,6 +34,20 @@ def _free_ports(count):
     return ports
 
 
+def test_directing_defaults_use_hab_version_and_kind():
+    with openHby(name="director-defaults", base="test", version=Vrsn_1_0) as hby:
+        hab = hby.makeHab(name="director-defaults", **KWA)
+        client = clienting.Client(host='127.0.0.1', port=5631)
+
+        director = Director(hab=hab, client=client)
+        reactor = Reactor(hab=hab, client=client)
+
+        assert director._event_kwa() == dict(version=Vrsn_1_0,
+                                             kind=Kinds.json,
+                                             gvrsn=Vrsn_1_0)
+        assert reactor.parser.version == Vrsn_1_0
+
+
 def test_directing_basic():
     """
     Test directing

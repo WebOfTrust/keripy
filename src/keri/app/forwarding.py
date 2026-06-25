@@ -12,7 +12,7 @@ from ordered_set import OrderedSet as oset
 from hio.base import doing
 from hio.help import decking, ogler
 
-from ..kering import (Roles, Vrsn_1_0, Kinds,
+from ..kering import (Roles, Vrsn_1_0, Version, Kinds,
                       ConfigurationError, ValidationError)
 from .agenting import messengerFrom, streamMessengerFrom
 from ..core import (Bexter, Prefixer, Verfer, Texter, Diger,
@@ -204,8 +204,8 @@ class Poster(doing.DoDoer):
                                    modifiers=dict(pre=recp, topic=topic),
                                    attributes={},
                                    embeds=dict(evt=evt),
-                                   version=hab.kever.serder.pvrsn,
-                                   kind=hab.kever.serder.kind)
+                                   version=Vrsn_1_0,
+                                   kind=Kinds.json)
         ims = hab.endorse(serder=fwd, last=False, framed=True, gvrsn=fwd.pvrsn)
 
         # Transpose the signatures to point to the new location
@@ -242,8 +242,8 @@ class Poster(doing.DoDoer):
                                    modifiers=dict(pre=recp, topic=topic),
                                    attributes={},
                                    embeds=dict(evt=evt),
-                                   version=hab.kever.serder.pvrsn,
-                                   kind=hab.kever.serder.kind)
+                                   version=Vrsn_1_0,
+                                   kind=Kinds.json)
         ims = hab.endorse(serder=fwd, last=False, framed=True, gvrsn=fwd.pvrsn)
 
         # Transpose the signatures to point to the new location
@@ -409,8 +409,8 @@ class StreamPoster:
                                   route='/essr/req',
                                   modifiers=dict(src=hab.pre, dest=ctrl),
                                   diger=diger,
-                                  version=hab.kever.serder.pvrsn,
-                                  kind=hab.kever.serder.kind)
+                                  version=Vrsn_1_0,
+                                  kind=Kinds.json)
         ims = hab.endorse(serder=essr, framed=True, gvrsn=essr.pvrsn)
         ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
                            gvrsn=Vrsn_1_0).qb64b)
@@ -435,8 +435,8 @@ class StreamPoster:
                                    modifiers=dict(pre=self.recp, topic=topic),
                                    attributes={},
                                    embeds=dict(evt=evt),
-                                   version=hab.kever.serder.pvrsn,
-                                   kind=hab.kever.serder.kind)
+                                   version=Vrsn_1_0,
+                                   kind=Kinds.json)
         ims = hab.endorse(serder=fwd, last=False, framed=True, gvrsn=fwd.pvrsn)
         return fwd, ims + atc
 

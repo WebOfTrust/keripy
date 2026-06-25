@@ -46,11 +46,14 @@ def setupDemoController(secrecies, name="who", remotePort=5621, localPort=5620,
     clientDoer = clienting.ClientDoer(client=client)
 
     if name == 'bob':
-        director = BobDirector(hab=hab, client=client, tock=0.125)
+        director = BobDirector(hab=hab, client=client, tock=0.125,
+                               version=version, kind=kind)
     elif name == "sam":
-        director = SamDirector(hab=hab, client=client, tock=0.125)
+        director = SamDirector(hab=hab, client=client, tock=0.125,
+                               version=version, kind=kind)
     elif name == 'eve':
-        director = EveDirector(hab=hab, client=client, tock=0.125)
+        director = EveDirector(hab=hab, client=client, tock=0.125,
+                               version=version, kind=kind)
     else:
         raise ValueError("Invalid director name={}.".format(name))
 

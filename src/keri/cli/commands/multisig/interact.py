@@ -89,7 +89,7 @@ class GroupMultisigInteract(doing.DoDoer):
         kwa = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
         mbd = MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'], exc=exc,
                               **kwa)
-        self.counselor = Counselor(hby=self.hby)
+        self.counselor = Counselor(hby=self.hby, version=version, kind=Kinds.json)
 
         doers = [self.hbyDoer, self.postman, mbd, self.counselor]
         self.toRemove = list(doers)
@@ -122,7 +122,8 @@ class GroupMultisigInteract(doing.DoDoer):
         ixn = ghab.interact(data=self.data, framed=True, **kwa)
         serder = SerderKERI(raw=ixn)
 
-        exn, ims = multisigInteractExn(ghab=ghab, aids=aids, ixn=ixn)
+        exn, ims = multisigInteractExn(ghab=ghab, aids=aids, ixn=ixn,
+                                       version=self.version, kind=Kinds.json)
         self.mux.add(exn)
         others = list(oset(ghab.smids + (ghab.rmids or [])))
         others.remove(ghab.mhab.pre)
