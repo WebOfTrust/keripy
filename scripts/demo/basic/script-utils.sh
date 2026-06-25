@@ -27,6 +27,17 @@ random_name () {
    echo "${prefix}_${suffix}"
 }
 
+wait_all () {
+  local status=0
+  local pid
+
+  for pid in "$@"; do
+    wait "$pid" || status=$?
+  done
+
+  return "$status"
+}
+
 kli () {
   if [[ -n "${KERI_TEMP_DIR:-}" ]]; then
     local arg
@@ -53,3 +64,4 @@ kli () {
 }
 
 export -f kli
+export -f wait_all

@@ -1,7 +1,9 @@
 #!/bin/bash
+set -e
+
 # three stooges
 
-source ${KERI_SCRIPT_DIR}/demo/basic/script-utils.sh
+source "$(dirname "$0")/script-utils.sh"
 
 # WITNESSES
 # To run the following scripts, open another console window and run:
@@ -38,6 +40,7 @@ kli oobi resolve --name curly --oobi-alias moe --oobi http://127.0.0.1:5642/oobi
 echo
 print_yellow "Multisig Inception"
 # Follow commands run in parallel
+PID_LIST=""
 kli multisig incept --name larry --alias larry --group multisig --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-three-aids.json &
 pid=$!
 PID_LIST+=" $pid"
@@ -50,7 +53,7 @@ PID_LIST+=" $pid"
 
 echo
 print_yellow "Multisig Inception - wait"
-wait $PID_LIST
+wait_all $PID_LIST
 
 echo
 print_green "Multisig Inception - status"
@@ -97,7 +100,7 @@ PID_LIST+=" $pid"
 
 echo
 print_yellow "Multisig rotation - wait"
-wait $PID_LIST
+wait_all $PID_LIST
 
 echo
 print_green "Multisig rotation - status"
@@ -120,7 +123,7 @@ PID_LIST+=" $pid"
 
 echo
 print_yellow "Multisig interact - wait"
-wait $PID_LIST
+wait_all $PID_LIST
 
 echo
 print_green "Multisig interact - status"

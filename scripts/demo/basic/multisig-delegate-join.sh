@@ -6,6 +6,8 @@ source "$(dirname "$0")/script-utils.sh"
 delegator=$(random_name delegator)
 delegate_1=$(random_name delegate_1)
 delegate_2=$(random_name delegate_2)
+delegate_json=""
+trap 'rm -f "$delegate_json"' EXIT
 
 kli init --name "$delegator" --nopasscode
 kli init --name "$delegate_1" --nopasscode
@@ -35,8 +37,6 @@ delegate_1_oobi=$(kli oobi generate --name "$delegate_1" --alias member --role w
 delegate_2_oobi=$(kli oobi generate --name "$delegate_2" --alias member --role witness | tail -n 1)
 delegate_1_aid=$(kli aid --name "$delegate_1" --alias member)
 delegate_2_aid=$(kli aid --name "$delegate_2" --alias member)
-delegator_oobi=$(kli oobi generate --name "$delegator" --alias delegator --role witness | tail -n 1)
-delegator_aid=$(kli aid --name "$delegator" --alias delegator)
 
 kli oobi resolve --name "$delegate_1" --oobi-alias delegator --oobi "${delegator_oobi}"
 kli oobi resolve --name "$delegate_1" --oobi-alias delegate_2 --oobi "${delegate_2_oobi}"
@@ -62,7 +62,7 @@ kli multisig incept --name "$delegate_1" --alias member --group delegate --versi
 PID_LIST="$!"
 kli delegate confirm --name "$delegator" --alias delegator --interact -Y --version 1.0 &
 PID_LIST+=" $!"
-wait $PID_LIST
+wait_all $PID_LIST
 
 kli status --name "$delegate_1" --alias delegate
 delegate_aid_from_1=$(kli aid --name "$delegate_1" --alias delegate)

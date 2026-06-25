@@ -6,6 +6,9 @@ set -e
 delegator_1=$(random_name delegator_1)
 delegator_2=$(random_name delegator_2)
 delegate=$(random_name delegate)
+delegator_json=""
+delegate_json=""
+trap 'rm -f "$delegator_json" "$delegate_json"' EXIT
 
 kli init --name "$delegator_1" --nopasscode
 kli init --name "$delegator_2" --nopasscode
@@ -84,6 +87,6 @@ kli delegate confirm --name "$delegator_1" --alias delegator --interact -Y --ver
 PID_LIST+=" $!"
 kli delegate confirm --name "$delegator_2" --alias delegator --interact -Y --version 1.0 &
 PID_LIST+=" $!"
-wait $PID_LIST
+wait_all $PID_LIST
 
 kli status --name "$delegate" --alias delegate

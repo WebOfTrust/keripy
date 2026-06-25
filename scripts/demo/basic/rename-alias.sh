@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 # CREATE DATABASE AND KEYSTORE
 kli init --name rename-test --base "${KERI_TEMP_DIR}" --nopasscode
@@ -9,17 +10,15 @@ kli incept --name rename-test --base "${KERI_TEMP_DIR}" --alias sabbir --version
 # Rename the alias from "sabbir" to "irfan"
 kli rename --name rename-test --base "${KERI_TEMP_DIR}" --alias sabbir irfan
 
-# Extract alias from status 
+# Extract alias from status
 irfan_alias=$(kli status --name rename-test --base "${KERI_TEMP_DIR}" --alias irfan  | grep -Eo 'Alias:\s+(.+)' | awk '{print $2}')
-
-
 
 # Check if the extracted alias is "irfan"
 if [ "$irfan_alias" = "irfan" ]; then
     echo "Alias successfully changed to 'irfan'."
 else
     echo "Alias did not change !"
-   
+    exit 1
 fi
 
 echo 'Test Complete'

@@ -1,4 +1,7 @@
 #!/bin/bash
+set -e
+
+source "$(dirname "$0")/script-utils.sh"
 
 echo "Creating delegate's first local identifier in delegate1 keystore"
 kli init --name delegate1 --salt 0ACDEyMzQ1Njc4OWxtbm9aBc --nopasscode --config-dir ${KERI_SCRIPT_DIR} --config-file demo-witness-oobis
@@ -25,6 +28,7 @@ kli oobi resolve --name delegator1 --oobi-alias delegator2 --oobi http://127.0.0
 kli oobi resolve --name delegator2 --oobi-alias delegator1 --oobi http://127.0.0.1:5642/oobi/EIKUq-JkZGpgVZ_x9Hr2Gt_LLdPDzyI2JyGnHl3EBCPl/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
 
 # In 2 delegator terminal windows run the following
+PID_LIST=""
 kli multisig incept --name delegator1 --alias delegator1 --group delegator --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegator.json &
 pid=$!
 PID_LIST+=" $pid"
@@ -34,13 +38,14 @@ pid=$!
 PID_LIST+=" $pid"
 
 # Wait for the multisig delegator to be created
-wait $PID_LIST
+wait_all $PID_LIST
 
 # Delegator does not need an oobi for delegate.
 kli oobi resolve --name delegate1 --oobi-alias delegator --oobi http://127.0.0.1:5642/oobi/EK7j7BobKFpH9yki4kwyIUuT-yQANSntS8u1hlhFYFcg/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
 kli oobi resolve --name delegate2 --oobi-alias delegator --oobi http://127.0.0.1:5642/oobi/EK7j7BobKFpH9yki4kwyIUuT-yQANSntS8u1hlhFYFcg/witness/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha
 
 # Run the delegate commands in parallel so they can collaborate and request delegation
+PID_LIST=""
 kli multisig incept --name delegate1 --alias delegate1 --group delegate --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegate.json &
 pid=$!
 PID_LIST+=" $pid"
@@ -64,7 +69,7 @@ kli delegate confirm --name delegator2 --alias delegator --interact --auto --ver
 pid=$!
 PID_LIST+=" $pid"
 
-wait $PID_LIST
+wait_all $PID_LIST
 
 echo ""
 echo "==================== Post-Inception Verification ===================="
@@ -147,15 +152,16 @@ kli query --name delegate1 --alias delegate1 --prefix "${DELEGATE2_AID}" --sn 1 
 
 # --- Step 3: Rotate the delegate multisig (DRT event, needs delegation approval) ---
 echo "Rotating delegate multisig..."
-PID_LIST=""
+ROTATE_PIDS=""
+CONFIRM_PIDS=""
 
 kli multisig rotate --name delegate1 --alias delegate --version 1.0 &
 pid=$!
-PID_LIST+=" $pid"
+ROTATE_PIDS+=" $pid"
 
 kli multisig rotate --name delegate2 --alias delegate --version 1.0 &
 pid=$!
-PID_LIST+=" $pid"
+ROTATE_PIDS+=" $pid"
 
 # Wait for the rotation request to propagate, then approve
 sleep 3
@@ -163,14 +169,17 @@ sleep 3
 echo "Approving delegated rotation from delegator1..."
 kli delegate confirm --name delegator1 --alias delegator --interact --auto --version 1.0 &
 pid=$!
-PID_LIST+=" $pid"
+CONFIRM_PIDS+=" $pid"
 
 echo "Approving delegated rotation from delegator2..."
 kli delegate confirm --name delegator2 --alias delegator --interact --auto --version 1.0 &
 pid=$!
-PID_LIST+=" $pid"
+CONFIRM_PIDS+=" $pid"
 
-wait $PID_LIST
+# As with single-party delegated rotation, the rotation workers can report a
+# transient escrow miss after the confirms have anchored the event.
+wait_all $CONFIRM_PIDS
+wait_all $ROTATE_PIDS || true
 
 echo ""
 echo "==================== Post-Rotation Verification ===================="

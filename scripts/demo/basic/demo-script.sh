@@ -67,6 +67,7 @@ fi
 
 # ESTABLISHMENT ONLY
 kli incept --name test --base "${KERI_TEMP_DIR}"  --alias est-only --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/estonly-sample.json
+isSuccess
 
 kli interact --name test --base "${KERI_TEMP_DIR}"  --alias est-only --data @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --version 1.0
 ret=$?

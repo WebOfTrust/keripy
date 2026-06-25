@@ -1,4 +1,5 @@
 #!/bin/bash
+set -e
 
 kli init --name cha1 --nopasscode --config-dir "${KERI_SCRIPT_DIR}" --config-file demo-witness-oobis
 kli incept --name cha1 --alias cha1 --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/challenge-sample.json

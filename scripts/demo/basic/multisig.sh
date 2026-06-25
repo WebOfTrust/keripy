@@ -1,4 +1,7 @@
 #!/bin/bash
+set -e
+
+source "$(dirname "$0")/script-utils.sh"
 
 # WITNESSES
 # To run the following scripts, open another console window and run:
@@ -16,6 +19,7 @@ kli oobi resolve --name multisig1 --base "${KERI_TEMP_DIR}"  --oobi-alias multis
 kli oobi resolve --name multisig2 --base "${KERI_TEMP_DIR}"  --oobi-alias multisig1 --oobi http://127.0.0.1:5642/oobi/EKYLUMmNPZeEs77Zvclf0bSN5IN-mLfLpx2ySb-HDlk4
 
 # Follow commands run in parallel
+PID_LIST=""
 kli multisig incept --name multisig1 --base "${KERI_TEMP_DIR}"  --alias multisig1 --group multisig --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-sample.json &
 pid=$!
 PID_LIST+=" $pid"
@@ -23,7 +27,7 @@ kli multisig incept --name multisig2 --base "${KERI_TEMP_DIR}"  --alias multisig
 pid=$!
 PID_LIST+=" $pid"
 
-wait $PID_LIST
+wait_all $PID_LIST
 
 kli status --name multisig1 --base "${KERI_TEMP_DIR}"  --alias multisig
 
@@ -36,6 +40,6 @@ kli ends add --base "${KERI_TEMP_DIR}" --name multisig2 --alias multisig --eid B
 pid=$!
 PID_LIST+=" $pid"
 
-wait $PID_LIST
+wait_all $PID_LIST
 
 echo "Test Complete"
