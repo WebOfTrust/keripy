@@ -56,7 +56,7 @@ class LaunchDoer(doing.DoDoer):
         self.queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
 
         self.mbd = MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"],
-                                   queryKwargs=self.queryKwargs)
+                                   **self.queryKwargs)
         doers.extend([self.hbyDoer, self.mbd])
 
         self.toRemove = list(doers)

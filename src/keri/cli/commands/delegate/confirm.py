@@ -89,7 +89,7 @@ class ConfirmDoer(doing.DoDoer):
         self.eventKwargs = dict(version=version, gvrsn=version) if version is not None else {}
         self.queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
         self.mbx = MailboxDirector(hby=hby, topics=['/receipt', '/multisig', '/replay', '/delegate'],
-                                               exc=exc, queryKwargs=self.queryKwargs)
+                                               exc=exc, **self.queryKwargs)
         doers = [self.hbyDoer, self.witq, self.postman, self.counselor, self.mbx]
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.confirmDo)])

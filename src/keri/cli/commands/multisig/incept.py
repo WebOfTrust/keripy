@@ -110,7 +110,7 @@ class GroupMultisigIncept(doing.DoDoer):
 
         queryKwargs = dict(version=self.inits.get("version"), gvrsn=self.inits.get("version"),
                            kind=self.inits.get("kind", Kinds.json))
-        self.mbx = MailboxDirector(hby=self.hby, topics=topics, exc=exc, queryKwargs=queryKwargs)
+        self.mbx = MailboxDirector(hby=self.hby, topics=topics, exc=exc, **queryKwargs)
         self.counselor = Counselor(hby=self.hby)
         self.postman = Poster(hby=self.hby)
 

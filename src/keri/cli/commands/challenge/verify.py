@@ -78,7 +78,7 @@ class VerifyDoer(doing.DoDoer):
         loadHandlers(db=self.hby.db, signaler=signaler, exc=self.exc)
 
         queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
-        self.mbd = MailboxDirector(hby=self.hby, topics=['/challenge'], exc=self.exc, queryKwargs=queryKwargs)
+        self.mbd = MailboxDirector(hby=self.hby, topics=['/challenge'], exc=self.exc, **queryKwargs)
 
         doers = [self.mbd, doing.doify(self.verifyDo)]
 

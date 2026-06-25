@@ -73,7 +73,7 @@ class LocationDoer(doing.DoDoer):
         loadHandlers(exc, mux)
 
         mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc,
-                                          queryKwargs=self.replyKwargs)
+                                          **self.replyKwargs)
 
         if self.hab is None:
             raise ConfigurationError(f"unknown alias={alias}")

@@ -521,7 +521,7 @@ class MailboxDirector(doing.DoDoer):
     """
 
     def __init__(self, hby, topics, ims=None, verifier=None, kvy=None, exc=None, rep=None, cues=None, rvy=None,
-                 tvy=None, witnesses=True, queryKwargs=None, **kwa):
+                 tvy=None, witnesses=True, version=None, gvrsn=None, kind=None, **kwa):
         """
         Initialize instance.
 
@@ -546,7 +546,9 @@ class MailboxDirector(doing.DoDoer):
         self.prefixes = oset()
         self.cues = cues if cues is not None else decking.Deck()
         self.witnesses = witnesses
-        self.queryKwargs = queryKwargs if queryKwargs is not None else {}
+        self.version = version
+        self.gvrsn = version if gvrsn is None else gvrsn
+        self.kind = kind
 
         self.ims = ims if ims is not None else bytearray()
 
@@ -638,21 +640,24 @@ class MailboxDirector(doing.DoDoer):
         """
         for (_, erole, eid), end in hab.db.ends.getTopItemIter(keys=(hab.pre, Roles.mailbox)):
             if end.allowed:
-                poller = Poller(hab=hab, topics=self.topics, witness=eid, queryKwargs=self.queryKwargs)
+                poller = Poller(hab=hab, topics=self.topics, witness=eid,
+                                version=self.version, gvrsn=self.gvrsn, kind=self.kind)
                 self.pollers.append(poller)
                 self.extend([poller])
 
         if self.witnesses:
             wits = hab.kever.wits
             for wit in wits:
-                poller = Poller(hab=hab, topics=self.topics, witness=wit, queryKwargs=self.queryKwargs)
+                poller = Poller(hab=hab, topics=self.topics, witness=wit,
+                                version=self.version, gvrsn=self.gvrsn, kind=self.kind)
                 self.pollers.append(poller)
                 self.extend([poller])
 
         self.prefixes.add(hab.pre)
 
     def addPoller(self, hab, witness):
-        poller = Poller(hab=hab, topics=self.topics, witness=witness, queryKwargs=self.queryKwargs)
+        poller = Poller(hab=hab, topics=self.topics, witness=witness,
+                        version=self.version, gvrsn=self.gvrsn, kind=self.kind)
         self.pollers.append(poller)
         self.extend([poller])
 
@@ -748,7 +753,7 @@ class Poller(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, witness, topics, msgs=None, retry=1000, queryKwargs=None, **kwa):
+    def __init__(self, hab, witness, topics, msgs=None, retry=1000, version=None, gvrsn=None, kind=None, **kwa):
         """
         Returns doist compatible doing.Doer that polls a witness for mailbox messages
         as SSE events
@@ -765,13 +770,25 @@ class Poller(doing.DoDoer):
         self.witness = witness
         self.topics = topics
         self.retry = retry
-        self.queryKwargs = queryKwargs if queryKwargs is not None else {}
+        self.version = version
+        self.gvrsn = version if gvrsn is None else gvrsn
+        self.kind = kind
         self.msgs = None if msgs is not None else decking.Deck()
         self.times = dict()
 
         doers = [doing.doify(self.eventDo)]
 
         super(Poller, self).__init__(doers=doers, **kwa)
+
+    def _query_kwa(self):
+        kwa = dict()
+        if self.version is not None:
+            kwa["version"] = self.version
+        if self.gvrsn is not None:
+            kwa["gvrsn"] = self.gvrsn
+        if self.kind is not None:
+            kwa["kind"] = self.kind
+        return kwa
 
     def eventDo(self, tymth=None, tock=0.0, **kwa):
         """
@@ -807,11 +824,12 @@ class Poller(doing.DoDoer):
                 else:
                     topics[topic] = 0
 
+            query_kwa = self._query_kwa()
             if isinstance(self.hab, GroupHab):
                 msg = self.hab.mhab.query(pre=self.pre, src=self.witness, route="mbx", query=q,
-                                          **self.queryKwargs)
+                                          **query_kwa)
             else:
-                msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q, **self.queryKwargs)
+                msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q, **query_kwa)
 
             createCESRRequest(msg, client, dest=self.witness)
 

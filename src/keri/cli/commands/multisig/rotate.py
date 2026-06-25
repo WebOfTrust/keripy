@@ -101,7 +101,7 @@ class GroupMultisigRotate(doing.DoDoer):
 
         queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
         mbd = MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig', '/replay'], exc=exc,
-                              queryKwargs=queryKwargs)
+                              **queryKwargs)
         self.counselor = Counselor(hby=self.hby)
         self.postman = Poster(hby=self.hby)
 

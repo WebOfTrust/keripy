@@ -71,7 +71,7 @@ class RoleDoer(doing.DoDoer):
         loadHandlers(exc, mux)
 
         mbx = MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc,
-                              queryKwargs=self.replyKwargs)
+                              **self.replyKwargs)
 
         if self.hab is None:
             raise ConfigurationError(f"unknown alias={alias}")

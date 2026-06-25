@@ -173,7 +173,7 @@ class InceptDoer(doing.DoDoer):
         self.postman = Poster(hby=self.hby)
         queryKwargs = dict(version=kwa.get("version"), gvrsn=kwa.get("version"), kind=kwa.get("kind", Kinds.json))
         self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"],
-                                   queryKwargs=queryKwargs)
+                                   **queryKwargs)
         doers = [self.hbyDoer, self.postman, self.mbx, self.swain, doing.doify(self.inceptDo)]
 
         self.inits = kwa

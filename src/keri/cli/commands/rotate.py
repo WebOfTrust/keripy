@@ -167,7 +167,7 @@ class RotateDoer(doing.DoDoer):
         self.postman = Poster(hby=self.hby)
         queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
         self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"],
-                                   queryKwargs=queryKwargs)
+                                   **queryKwargs)
         doers = [self.hbyDoer, self.mbx, self.swain, self.postman, doing.doify(self.rotateDo)]
 
         super(RotateDoer, self).__init__(doers=doers)
