@@ -12,10 +12,10 @@ from hio.base import doing
 from hio.help import ogler
 from prettytable import PrettyTable
 
-from ...common import Parsery, setupHby, printIdentifier
+from ...common import Parsery, setupHby, printIdentifier, parseVersion
 
 from ....kering import (TraitCodex, ConfigurationError,
-                        MissingAnchorError, Vrsn_1_0)
+                        Kinds, MissingAnchorError, Vrsn_1_0)
 from ....app import (HaberyDoer, MailboxDirector, WitnessInquisitor,
                      Notifier, Multiplexor, Counselor, Organizer, Poster,
                      multisigInceptExn, multisigInteractExn, multisigRotateExn,
@@ -38,6 +38,8 @@ parser = argparse.ArgumentParser(description='Join group multisig inception, rot
 parser.set_defaults(handler=lambda args: join(args))
 parser.add_argument('--group', '-g', help='human-readable name for the multisig group identifier prefix', required=False, default=None)
 parser.add_argument("--auto", "-Y", help="auto approve any delegation request non-interactively", action="store_true")
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for mailbox queries while joining, such as 1.0 or 2.0')
 
 def join(args):
     """ Wait for and provide interactive confirmation of group multisig inception, rotation or interaction events
@@ -51,8 +53,9 @@ def join(args):
     bran = args.bran
     auto = args.auto
     group = args.group
+    version = args.version
 
-    joinDoer = JoinDoer(name=name, base=base, bran=bran, group=group, auto=auto)
+    joinDoer = JoinDoer(name=name, base=base, bran=bran, group=group, auto=auto, version=version)
 
     doers = [joinDoer]
     return doers
@@ -63,7 +66,7 @@ class JoinDoer(doing.DoDoer):
 
     """
 
-    def __init__(self, name, base, bran, group, auto=False):
+    def __init__(self, name, base, bran, group, auto=False, version=None):
         """ Create doer for polling for group multisig events and either approve automatically or prompt user
 
         Parameters:
@@ -75,6 +78,8 @@ class JoinDoer(doing.DoDoer):
                          while using the default group of "default-group"
         """
         self.group = group
+        self.version = version
+        self.queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
         self.hby = setupHby(name=name, base=base, bran=bran)
         self.rgy = Regery(hby=self.hby, name=name, base=base)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
@@ -87,7 +92,7 @@ class JoinDoer(doing.DoDoer):
         self.hby.kvy.registerReplyRoutes(self.rvy.rtr)
         self.psr = Parser(kvy=self.hby.kvy, tvy=self.rgy.tvy,
                           rvy=self.rvy, vry=self.verifier, exc=self.exc,
-                          version=Vrsn_1_0)
+                          version=version if version is not None else Vrsn_1_0)
 
         mux = Multiplexor(hby=self.hby, notifier=self.notifier)
         loadHandlers(exc=self.exc, mux=mux)
@@ -98,7 +103,8 @@ class JoinDoer(doing.DoDoer):
                                          verifier=self.verifier)
 
         self.mbx = MailboxDirector(hby=self.hby, exc=self.exc, topics=['/receipt', '/multisig', '/replay',
-                                                                                   '/delegate'])
+                                                                       '/delegate'],
+                                   queryKwargs=self.queryKwargs)
         self.postman = Poster(hby=self.hby)
 
         doers = [self.hbyDoer, self.witq,  self.mbx, self.counselor, self.registrar, self.credentialer, self.postman]
@@ -299,10 +305,11 @@ class JoinDoer(doing.DoDoer):
             approve = yn in ('', 'y', 'Y')
 
         if approve:
-            ixn = ghab.interact(data=data, framed=True)
+            version = oixn.pvrsn
+            ixn = ghab.interact(data=data, framed=True, version=version, gvrsn=version)
             serder = SerderKERI(raw=ixn)
 
-            ixn = ghab.msgOwnEvent(allowPartiallySigned=True, sn=oixn.sn, framed=True)
+            ixn = ghab.msgOwnEvent(allowPartiallySigned=True, sn=oixn.sn, framed=True, gvrsn=version)
 
             exn, ims = multisigInteractExn(ghab, aids=ghab.smids, ixn=ixn)
             others = list(oset(smids + (rmids or [])))
@@ -427,11 +434,11 @@ class JoinDoer(doing.DoDoer):
                 ghab = self.hby.joinGroupHab(pre, group=group, mhab=mhab, smids=smids, rmids=rmids)
 
             try:
-                ghab.rotate(serder=orot, smids=smids, rmids=rmids, framed=True)
+                ghab.rotate(serder=orot, smids=smids, rmids=rmids, framed=True, gvrsn=orot.pvrsn)
             except ValueError:
                 return False
 
-            rot = ghab.msgOwnEvent(allowPartiallySigned=True, sn=orot.sn)
+            rot = ghab.msgOwnEvent(allowPartiallySigned=True, sn=orot.sn, gvrsn=orot.pvrsn)
 
             exn, ims = multisigRotateExn(ghab,
                                          smids=ghab.smids,

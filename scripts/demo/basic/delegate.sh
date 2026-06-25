@@ -12,7 +12,7 @@ kli incept --name delegate --alias delegate --version 1.0 --proxy proxy --file $
 pid=$!
 PID_LIST+=" $pid"
 
-kli delegate confirm --name delegator --alias delegator -Y &
+kli delegate confirm --name delegator --alias delegator -Y --version 1.0 &
 pid=$!
 PID_LIST+=" $pid"
 
@@ -52,12 +52,12 @@ echo ""
 
 echo "Now rotating delegate..."
 PID_LIST=""
-kli rotate --name delegate --alias delegate --proxy proxy &
+kli rotate --name delegate --alias delegate --proxy proxy --version 1.0 &
 pid=$!
 PID_LIST="$pid"
 
 echo "Checking for delegate rotate..."
-kli delegate confirm --name delegator --alias delegator -Y &
+kli delegate confirm --name delegator --alias delegator -Y --version 1.0 &
 pid=$!
 PID_LIST+=" $pid"
 

@@ -12,11 +12,12 @@ from hio.base import doing
 from hio.help import ogler
 
 from ....app import MailboxDirector, Organizer, Signaler
+from ....kering import Kinds
 from ....app.challenging import loadHandlers
 from ....help import helping
 from ....peer import Exchanger
 
-from ...common import setupHby, Parsery
+from ...common import setupHby, Parsery, parseVersion
 from .generate import generateWords
 
 
@@ -39,6 +40,8 @@ parser.add_argument("--out", "-o", help="Output type [words|string|json] of phra
 
 parser.add_argument('--signer', '-s', help='Contact alias of the AID to verify',
                     action="store", required=True)
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for mailbox queries while verifying, such as 1.0 or 2.0')
 
 
 def verify(args):
@@ -52,13 +55,14 @@ def verify(args):
                     generate=args.generate,
                     strength=args.strength,
                     out=args.out,
-                    signer=args.signer)
+                    signer=args.signer,
+                    version=args.version)
     return [ld]
 
 
 class VerifyDoer(doing.DoDoer):
 
-    def __init__(self, name, base, bran, words, generate, strength, out, signer):
+    def __init__(self, name, base, bran, words, generate, strength, out, signer, version=None):
 
         self.wordstr = words
         self.words = words
@@ -66,6 +70,7 @@ class VerifyDoer(doing.DoDoer):
         self.strength = strength
         self.out = out
         self.signer = signer
+        self.queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
         self.hby = setupHby(name=name, base=base, bran=bran)
         self.exc = Exchanger(hby=self.hby, handlers=[])
         self.org = Organizer(hby=self.hby)
@@ -73,7 +78,7 @@ class VerifyDoer(doing.DoDoer):
 
         loadHandlers(db=self.hby.db, signaler=signaler, exc=self.exc)
 
-        self.mbd = MailboxDirector(hby=self.hby, topics=['/challenge'], exc=self.exc)
+        self.mbd = MailboxDirector(hby=self.hby, topics=['/challenge'], exc=self.exc, queryKwargs=self.queryKwargs)
 
         doers = [self.mbd, doing.doify(self.verifyDo)]
 

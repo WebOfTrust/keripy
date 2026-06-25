@@ -53,13 +53,13 @@ PID_LIST+=" $pid"
 sleep 3
 
 echo "Waiting to approve the delegation request for delegator1/delegator with confirm"
-kli delegate confirm --name delegator1 --alias delegator --interact --auto &
+kli delegate confirm --name delegator1 --alias delegator --interact --auto --version 1.0 &
 #kli multisig interact --name delegator1 --alias delegator --data @${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegate-icp-anchor.json &
 pid=$!
 PID_LIST+=" $pid"
 
 echo "Waiting to approve the delegation request for delegator2/delegator with confirm"
-kli delegate confirm --name delegator2 --alias delegator --interact --auto &
+kli delegate confirm --name delegator2 --alias delegator --interact --auto --version 1.0 &
 #kli multisig interact --name delegator2 --alias delegator --data @${KERI_DEMO_SCRIPT_DIR}/data/multisig-delegate-icp-anchor.json &
 pid=$!
 PID_LIST+=" $pid"
@@ -130,10 +130,10 @@ echo ""
 
 # --- Step 1: Rotate individual delegate member keys prior to rotating the delegate multisig ---
 echo "Rotating delegate1 individual keys..."
-kli rotate --name delegate1 --alias delegate1
+kli rotate --name delegate1 --alias delegate1 --version 1.0
 
 echo "Rotating delegate2 individual keys..."
-kli rotate --name delegate2 --alias delegate2
+kli rotate --name delegate2 --alias delegate2 --version 1.0
 
 # --- Step 2: Sync keystate between delegate members ---
 # Each member queries the other to discover the newly rotated keys.
@@ -141,19 +141,19 @@ DELEGATE1_AID=$(kli aid --name delegate1 --alias delegate1)
 DELEGATE2_AID=$(kli aid --name delegate2 --alias delegate2)
 
 echo "delegate2 querying delegate1 keystate..."
-kli query --name delegate2 --alias delegate2 --prefix "${DELEGATE1_AID}" --sn 1
+kli query --name delegate2 --alias delegate2 --prefix "${DELEGATE1_AID}" --sn 1 --version 1.0
 echo "delegate1 querying delegate2 keystate..."
-kli query --name delegate1 --alias delegate1 --prefix "${DELEGATE2_AID}" --sn 1
+kli query --name delegate1 --alias delegate1 --prefix "${DELEGATE2_AID}" --sn 1 --version 1.0
 
 # --- Step 3: Rotate the delegate multisig (DRT event, needs delegation approval) ---
 echo "Rotating delegate multisig..."
 PID_LIST=""
 
-kli multisig rotate --name delegate1 --alias delegate &
+kli multisig rotate --name delegate1 --alias delegate --version 1.0 &
 pid=$!
 PID_LIST+=" $pid"
 
-kli multisig rotate --name delegate2 --alias delegate &
+kli multisig rotate --name delegate2 --alias delegate --version 1.0 &
 pid=$!
 PID_LIST+=" $pid"
 
@@ -161,12 +161,12 @@ PID_LIST+=" $pid"
 sleep 3
 
 echo "Approving delegated rotation from delegator1..."
-kli delegate confirm --name delegator1 --alias delegator --interact --auto &
+kli delegate confirm --name delegator1 --alias delegator --interact --auto --version 1.0 &
 pid=$!
 PID_LIST+=" $pid"
 
 echo "Approving delegated rotation from delegator2..."
-kli delegate confirm --name delegator2 --alias delegator --interact --auto &
+kli delegate confirm --name delegator2 --alias delegator --interact --auto --version 1.0 &
 pid=$!
 PID_LIST+=" $pid"
 

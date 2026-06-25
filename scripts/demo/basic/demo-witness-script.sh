@@ -33,12 +33,12 @@ isSuccess
 
 kli status --name witness-test --base "${KERI_TEMP_DIR}"  --alias trans-wits
 
-kli rotate --name witness-test --base "${KERI_TEMP_DIR}"  --receipt-endpoint --alias trans-wits --witness-cut BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX
+kli rotate --name witness-test --base "${KERI_TEMP_DIR}"  --receipt-endpoint --alias trans-wits --witness-cut BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX --version 1.0
 isSuccess
 
 kli status --name witness-test --base "${KERI_TEMP_DIR}"  --alias trans-wits
 
-kli rotate --name witness-test --base "${KERI_TEMP_DIR}"  --receipt-endpoint --alias trans-wits --witness-add BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX
+kli rotate --name witness-test --base "${KERI_TEMP_DIR}"  --receipt-endpoint --alias trans-wits --witness-add BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX --version 1.0
 isSuccess
 
 kli status --name witness-test --base "${KERI_TEMP_DIR}"  --alias trans-wits

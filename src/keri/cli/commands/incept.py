@@ -124,9 +124,6 @@ def mergeArgsWithFile(args):
     if isinstance(incept_opts.version, (list, tuple)):
         incept_opts.version = Versionage(*incept_opts.version)
 
-    if getattr(args, "version", None) is not None:
-        incept_opts.version = args.version
-
     incept_opts.transferable = True if args.transferable else incept_opts.transferable
     if len(args.wits) > 0:
         incept_opts.wits = args.wits
@@ -148,6 +145,8 @@ def mergeArgsWithFile(args):
         incept_opts.data = config.parseData(args.data)
     if args.delpre is not None:
         incept_opts.delpre = args.delpre
+    if args.version is not None:
+        incept_opts.version = args.version
 
     return incept_opts
 
@@ -172,7 +171,9 @@ class InceptDoer(doing.DoDoer):
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
         self.swain = Anchorer(hby=self.hby, proxy=self.proxy)
         self.postman = Poster(hby=self.hby)
-        self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
+        queryKwargs = dict(version=kwa.get("version"), gvrsn=kwa.get("version"), kind=kwa.get("kind", Kinds.json))
+        self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"],
+                                   queryKwargs=queryKwargs)
         doers = [self.hbyDoer, self.postman, self.mbx, self.swain, doing.doify(self.inceptDo)]
 
         self.inits = kwa

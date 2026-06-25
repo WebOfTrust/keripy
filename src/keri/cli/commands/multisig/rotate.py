@@ -11,9 +11,9 @@ from hio.base import doing
 from hio.help import ogler
 
 from ...common import (Parsery, config, addRotationArgs,
-                       setupHby, printIdentifier)
+                       setupHby, printIdentifier, parseVersion)
 
-from ....kering import ConfigurationError
+from ....kering import ConfigurationError, Kinds
 from ....app import (Notifier, Multiplexor, Counselor,
                      MailboxDirector, HaberyDoer, Poster,
                      multisigRotateExn)
@@ -36,6 +36,8 @@ parser.add_argument("--smids", "-s", help="List of other participant qb64 identi
 parser.add_argument("--rmids", help="List of other participant qb64 identifiers with rotation authority in rotation "
                                     "event",
                     action="append", required=False, default=None)
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for the group rotation event, such as 1.0 or 2.0')
 
 addRotationArgs(parser)
 
@@ -57,7 +59,8 @@ def rotateGroupIdentifier(args):
     hby = setupHby(name=args.name, base=args.base, bran=args.bran)
     rotDoer = GroupMultisigRotate(hby=hby, alias=args.alias, smids=args.smids, rmids=args.rmids,
                                   wits=args.witnesses, cuts=args.cuts, adds=args.witness_add,
-                                  isith=args.isith, nsith=args.nsith, toad=args.toad, data=data)
+                                  isith=args.isith, nsith=args.nsith, toad=args.toad, data=data,
+                                  version=args.version)
 
     doers = [rotDoer]
     return doers
@@ -72,7 +75,8 @@ class GroupMultisigRotate(doing.DoDoer):
     """
 
     def __init__(self, hby, alias, smids=None, rmids=None, isith=None, nsith=None,
-                 toad=None, wits=None, cuts=None, adds=None, data: list = None):
+                 toad=None, wits=None, cuts=None, adds=None, data: list = None,
+                 version=None):
 
         self.alias = alias
         self.isith = isith
@@ -82,6 +86,7 @@ class GroupMultisigRotate(doing.DoDoer):
         self.rmids = rmids
         self.data = data
         self.hby = hby
+        self.version = version
 
         self.wits = wits if wits is not None else []
         self.cuts = cuts if cuts is not None else []
@@ -90,10 +95,13 @@ class GroupMultisigRotate(doing.DoDoer):
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
+        self.mux = mux
         exc = Exchanger(hby=self.hby, handlers=[])
         loadHandlers(exc, mux)
 
-        mbd = MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig', '/replay'], exc=exc)
+        queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
+        mbd = MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig', '/replay'], exc=exc,
+                              queryKwargs=queryKwargs)
         self.counselor = Counselor(hby=self.hby)
         self.postman = Poster(hby=self.hby)
 
@@ -200,9 +208,10 @@ class GroupMultisigRotate(doing.DoDoer):
 
         prefixer = Prefixer(qb64=ghab.pre)
         number = Number(sn=ghab.kever.sn+1)
+        kwa = dict(version=self.version, gvrsn=self.version) if self.version is not None else {}
         rot = ghab.rotate(isith=self.isith, nsith=self.nsith,
                           toad=self.toad, cuts=list(self.cuts), adds=list(self.adds), data=self.data,
-                          verfers=merfers, digers=migers, framed=True)
+                          verfers=merfers, digers=migers, framed=True, **kwa)
 
         rserder = SerderKERI(raw=rot)
         # Create a notification EXN message to send to the other agents
@@ -210,6 +219,7 @@ class GroupMultisigRotate(doing.DoDoer):
                                      smids=smids,
                                      rmids=rmids,
                                      rot=bytearray(rot))
+        self.mux.add(exn)
         others = list(oset(smids + (rmids or [])))
 
         others.remove(ghab.mhab.pre)

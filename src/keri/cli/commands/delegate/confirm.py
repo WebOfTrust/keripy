@@ -11,13 +11,13 @@ from hio.base import doing
 from hio.help import ogler
 
 
-from ...common import setupHby, Parsery
+from ...common import setupHby, Parsery, parseVersion
 
 from ....app import (GroupHab, HaberyDoer, MailboxDirector,
                      WitnessInquisitor, WitnessReceiptor,
                      Counselor, Multiplexor, Notifier,
                      Poster, grouping, delegating)
-from ....kering import Ilks
+from ....kering import Ilks, Kinds
 
 from ....core import Number, Diger, Saider, Prefixer, SerderKERI, NumDex
 from ....help import helping
@@ -39,6 +39,8 @@ parser.add_argument("--authenticate", '-z', help="Prompt the controller for auth
 parser.add_argument('--code', help='<Witness AID>:<code> formatted witness auth codes.  Can appear multiple times',
                     default=[], action="append", required=False)
 parser.add_argument('--code-time', help='Time the witness codes were captured.', default=None, required=False)
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for the delegation approval event, such as 1.0 or 2.0')
 
 
 def confirm(args):
@@ -57,9 +59,10 @@ def confirm(args):
     authenticate = args.authenticate
     codes = args.code
     codeTime = args.code_time
+    version = args.version
 
     confirmDoer = ConfirmDoer(name=name, base=base, alias=alias, bran=bran, interact=interact, auto=auto,
-                              authenticate=authenticate, codes=codes, codeTime=codeTime)
+                              authenticate=authenticate, codes=codes, codeTime=codeTime, version=version)
 
     doers = [confirmDoer]
     return doers
@@ -67,7 +70,7 @@ def confirm(args):
 
 class ConfirmDoer(doing.DoDoer):
     def __init__(self, name, base, alias, bran, interact=False, auto=False, authenticate=False, codes=None,
-                 codeTime=None):
+                 codeTime=None, version=None):
         hby = setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = HaberyDoer(habery=hby)  # setup doer
         self.witq = WitnessInquisitor(hby=hby)
@@ -83,8 +86,9 @@ class ConfirmDoer(doing.DoDoer):
         delegating.loadHandlers(hby=hby, exc=exc, notifier=self.notifier)
         grouping.loadHandlers(exc=exc, mux=self.mux)
 
+        queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
         self.mbx = MailboxDirector(hby=hby, topics=['/receipt', '/multisig', '/replay', '/delegate'],
-                                               exc=exc)
+                                               exc=exc, queryKwargs=queryKwargs)
         doers = [self.hbyDoer, self.witq, self.postman, self.counselor, self.mbx]
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.confirmDo)])
@@ -93,7 +97,14 @@ class ConfirmDoer(doing.DoDoer):
         self.hby = hby
         self.interact = interact
         self.auto = auto
+        self.version = version
         super(ConfirmDoer, self).__init__(doers=doers)
+
+    def eventKwa(self):
+        return dict(version=self.version, gvrsn=self.version) if self.version is not None else {}
+
+    def queryKwa(self):
+        return dict(version=self.version, gvrsn=self.version, kind=Kinds.json) if self.version is not None else {}
 
     def _addAuthorizerSeal(self, pre, edig, anchorSn, anchorSaid):
         """Save the authorizer (delegator) event seal of the anchoring IXN event for an approved delegation."""
@@ -161,14 +172,16 @@ class ConfirmDoer(doing.DoDoer):
                         aids = hab.smids
 
                         anchor = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
+                        event_kwa = self.eventKwa()
                         if self.interact:
-                            msg = hab.interact(data=[anchor])
+                            msg = hab.interact(data=[anchor], **event_kwa)
                         else:
                             print("Confirm does not support rotation for delegation approval with group multisig")
                             continue
 
                         serder = SerderKERI(raw=msg)
                         exn, atc = grouping.multisigInteractExn(ghab=hab, aids=aids, ixn=bytearray(msg))
+                        self.mux.add(exn)
                         others = list(oset(hab.smids + (hab.rmids or [])))
                         others.remove(hab.mhab.pre)
 
@@ -202,10 +215,11 @@ class ConfirmDoer(doing.DoDoer):
                         cur = hab.kever.sner.num
 
                         anchor = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
+                        event_kwa = self.eventKwa()
                         if self.interact:
-                            hab.interact(data=[anchor], framed=True)
+                            hab.interact(data=[anchor], framed=True, **event_kwa)
                         else:
-                            hab.rotate(data=[anchor], framed=True)
+                            hab.rotate(data=[anchor], framed=True, **event_kwa)
 
                         auths = {}
                         if self.authenticate:
@@ -235,8 +249,9 @@ class ConfirmDoer(doing.DoDoer):
                         print(f'\tDelegate {eserder.pre} {typ} Anchored at Seq. No.  {hab.kever.sner.num}')
 
                         # wait for confirmation of fully commited event
+                        query_kwa = self.queryKwa()
                         if eserder.pre in self.hby.kevers:
-                            self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn)
+                            self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn, **query_kwa)
 
                             while eserder.sn < self.hby.kevers[eserder.pre].sn:
                                 yield self.tock
@@ -244,7 +259,7 @@ class ConfirmDoer(doing.DoDoer):
                             print(f"Delegate {eserder.pre} {typ} event committed.")
                         else:  # It should be an inception event then...
                             wits = [werfer.qb64 for werfer in eserder.berfers]
-                            self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn, wits=wits)
+                            self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn, wits=wits, **query_kwa)
 
                             while eserder.pre not in self.hby.kevers:
                                 yield self.tock

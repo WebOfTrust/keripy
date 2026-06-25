@@ -17,7 +17,7 @@ from .keeping import Keeper, Manager
 from ..peer import Exchanger,  specialExchange
 from ..db import Baser, dgKey, fetchTsgs
 from ..help import fromIso8601, toIso8601
-from ..kering import (Version, Vrsn_1_0, Vrsn_2_0, Ilks, Kinds, Roles, Schemes,
+from ..kering import (Version, Ilks, Kinds, Roles, Schemes,
                       ClosedError, AuthError, ConfigurationError, KeriError,
                       ValidationError, MissingEntryError, MissingSignatureError)
 from ..core import (Tholder, Diger, Prefixer, Kevery, Parser, Revery,
@@ -28,23 +28,6 @@ from ..recording import HabitatRecord, OobiRecord
 
 
 logger = ogler.getLogger()
-
-
-def _defaultQueryKwa(hab, kwa):
-    """Default query framing to the Hab's established event framing"""
-    pvrsn = kwa.get("pvrsn", kwa.get("version"))
-    if pvrsn is None:
-        pvrsn = hab.kever.serder.pvrsn
-        kwa["pvrsn"] = pvrsn
-
-    if "kind" not in kwa:
-        if pvrsn == hab.kever.serder.pvrsn:
-            kwa["kind"] = hab.kever.serder.kind
-        elif pvrsn.major < Vrsn_2_0.major:
-            kwa["kind"] = Kinds.json
-
-    return kwa
-
 
 @contextmanager
 def openHby(*, name="test", base="", temp=True, salt=None, **kwa):
@@ -1327,7 +1310,7 @@ class BaseHab:
 
     def rotate(self, *, verfers=None, digers=None, isith=None, nsith=None,
                         toad=None, cuts=None, adds=None, data=None,
-                        kind=None, version=Version, framed=False,
+                        kind=Kinds.json, version=Version, framed=False,
                         nested=False, gvrsn=Version, genusify=False):
         """Perform rotation operation. Register rotation in database.
 
@@ -1378,11 +1361,6 @@ class BaseHab:
         """
         # recall that kever.pre == self.pre
         kever = self.kever  # before rotation kever is prior next
-        if version is Version:
-            version = kever.serder.pvrsn
-        kind = kind if kind is not None else kever.serder.kind
-        if gvrsn is Version:
-            gvrsn = version
 
         if isith is None:
             isith = kever.ntholder.sith  # use prior next sith as default
@@ -1458,7 +1436,7 @@ class BaseHab:
 
         return msg
 
-    def interact(self, *, data=None, kind=None, version=Version,
+    def interact(self, *, data=None, kind=Kinds.json, version=Version,
                 framed=False, nested=False, gvrsn=Version, genusify=False):
         """Perform interaction operation. Register interaction in database.
 
@@ -1493,11 +1471,6 @@ class BaseHab:
             ValidationError: if the interaction event is improper.
         """
         kever = self.kever
-        if version is Version:
-            version = kever.serder.pvrsn
-        kind = kind if kind is not None else kever.serder.kind
-        if gvrsn is Version:
-            gvrsn = version
 
         serder = eventing.interact(pre=kever.prefixer.qb64,
                                    dig=kever.serder.said,
@@ -1596,7 +1569,6 @@ class BaseHab:
         query = query if query is not None else dict()
         query['i'] = pre
         query["src"] = src
-        kwa = _defaultQueryKwa(self, kwa)
         serder = eventing.query(pre=self.pre, query=query, **kwa)
         gvrsn = kwa.get("gvrsn", serder.pvrsn)
         return self.endorse(serder, last=True, framed=False, gvrsn=gvrsn)
@@ -4020,7 +3992,6 @@ class GroupHab(BaseHab):
         query["src"] = src
         if gvrsn is not Version and "gvrsn" not in kwa:
             kwa["gvrsn"] = gvrsn
-        kwa = _defaultQueryKwa(self.mhab, kwa)
         serder = eventing.query(pre=self.mhab.pre, query=query, **kwa)
         if gvrsn is Version:
             gvrsn = kwa.get("gvrsn", serder.pvrsn)

@@ -521,7 +521,7 @@ class MailboxDirector(doing.DoDoer):
     """
 
     def __init__(self, hby, topics, ims=None, verifier=None, kvy=None, exc=None, rep=None, cues=None, rvy=None,
-                 tvy=None, witnesses=True, **kwa):
+                 tvy=None, witnesses=True, queryKwargs=None, **kwa):
         """
         Initialize instance.
 
@@ -546,6 +546,7 @@ class MailboxDirector(doing.DoDoer):
         self.prefixes = oset()
         self.cues = cues if cues is not None else decking.Deck()
         self.witnesses = witnesses
+        self.queryKwargs = queryKwargs if queryKwargs is not None else {}
 
         self.ims = ims if ims is not None else bytearray()
 
@@ -637,21 +638,21 @@ class MailboxDirector(doing.DoDoer):
         """
         for (_, erole, eid), end in hab.db.ends.getTopItemIter(keys=(hab.pre, Roles.mailbox)):
             if end.allowed:
-                poller = Poller(hab=hab, topics=self.topics, witness=eid)
+                poller = Poller(hab=hab, topics=self.topics, witness=eid, queryKwargs=self.queryKwargs)
                 self.pollers.append(poller)
                 self.extend([poller])
 
         if self.witnesses:
             wits = hab.kever.wits
             for wit in wits:
-                poller = Poller(hab=hab, topics=self.topics, witness=wit)
+                poller = Poller(hab=hab, topics=self.topics, witness=wit, queryKwargs=self.queryKwargs)
                 self.pollers.append(poller)
                 self.extend([poller])
 
         self.prefixes.add(hab.pre)
 
     def addPoller(self, hab, witness):
-        poller = Poller(hab=hab, topics=self.topics, witness=witness)
+        poller = Poller(hab=hab, topics=self.topics, witness=witness, queryKwargs=self.queryKwargs)
         self.pollers.append(poller)
         self.extend([poller])
 
@@ -747,7 +748,7 @@ class Poller(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, witness, topics, msgs=None, retry=1000, **kwa):
+    def __init__(self, hab, witness, topics, msgs=None, retry=1000, queryKwargs=None, **kwa):
         """
         Returns doist compatible doing.Doer that polls a witness for mailbox messages
         as SSE events
@@ -764,6 +765,7 @@ class Poller(doing.DoDoer):
         self.witness = witness
         self.topics = topics
         self.retry = retry
+        self.queryKwargs = queryKwargs if queryKwargs is not None else {}
         self.msgs = None if msgs is not None else decking.Deck()
         self.times = dict()
 
@@ -805,10 +807,11 @@ class Poller(doing.DoDoer):
                 else:
                     topics[topic] = 0
 
+            queryKwargs = dict(self.queryKwargs)
             if isinstance(self.hab, GroupHab):
-                msg = self.hab.mhab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
+                msg = self.hab.mhab.query(pre=self.pre, src=self.witness, route="mbx", query=q, **queryKwargs)
             else:
-                msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
+                msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q, **queryKwargs)
 
             createCESRRequest(msg, client, dest=self.witness)
 

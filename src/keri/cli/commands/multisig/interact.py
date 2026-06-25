@@ -10,9 +10,9 @@ from ordered_set import OrderedSet as oset
 from hio.base import doing
 from hio.help import ogler
 
-from ...common import Parsery, config, setupHby, printIdentifier
+from ...common import Parsery, config, setupHby, printIdentifier, parseVersion
 
-from ....kering import ConfigurationError
+from ....kering import ConfigurationError, Kinds
 from ....app import (Notifier, Multiplexor, Counselor,
                      MailboxDirector, HaberyDoer, Poster,
                      multisigInteractExn)
@@ -31,6 +31,8 @@ parser.add_argument('--alias', '-a', help='human readable alias for the local id
 parser.add_argument('--data', '-d', help='Anchor data, \'@\' allowed', default=[], action="store", required=True)
 parser.add_argument("--aids", "-g", help="List of other participant qb64 identifiers to include in interaction event",
                     action="append", required=False, default=None)
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for the group interaction event, such as 1.0 or 2.0')
 
 
 def interactGroupIdentifier(args):
@@ -49,7 +51,7 @@ def interactGroupIdentifier(args):
 
     data = config.parseData(args.data) if args.data is not None else None
     ixnDoer = GroupMultisigInteract(name=args.name, alias=args.alias, aids=args.aids, base=args.base, bran=args.bran,
-                                    data=data)
+                                    data=data, version=args.version)
 
     doers = [ixnDoer]
     return doers
@@ -66,12 +68,13 @@ class GroupMultisigInteract(doing.DoDoer):
 
     """
 
-    def __init__(self, name, alias, aids, base, bran, data):
+    def __init__(self, name, alias, aids, base, bran, data, version=None):
         self.base = base
         self.bran = bran
         self.alias = alias
         self.aids = aids
         self.data = data
+        self.version = version
 
         self.hby = setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
@@ -79,10 +82,13 @@ class GroupMultisigInteract(doing.DoDoer):
 
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
+        self.mux = mux
         exc = Exchanger(hby=self.hby, handlers=[])
         loadHandlers(exc, mux)
 
-        mbd = MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'], exc=exc)
+        queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
+        mbd = MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'], exc=exc,
+                              queryKwargs=queryKwargs)
         self.counselor = Counselor(hby=self.hby)
 
         doers = [self.hbyDoer, self.postman, mbd, self.counselor]
@@ -112,10 +118,12 @@ class GroupMultisigInteract(doing.DoDoer):
 
         aids = self.aids if self.aids is not None else ghab.smids
 
-        ixn = ghab.interact(data=self.data, framed=True)
+        kwa = dict(version=self.version, gvrsn=self.version) if self.version is not None else {}
+        ixn = ghab.interact(data=self.data, framed=True, **kwa)
         serder = SerderKERI(raw=ixn)
 
         exn, ims = multisigInteractExn(ghab=ghab, aids=aids, ixn=ixn)
+        self.mux.add(exn)
         others = list(oset(ghab.smids + (ghab.rmids or [])))
         others.remove(ghab.mhab.pre)
 

@@ -20,7 +20,7 @@ kli oobi resolve --name multisigj2 --oobi-alias multisigj1 --oobi http://127.0.0
 # --- Incept phase: initiator-first wait ---
 kli multisig incept --name multisigj1 --alias multisigj1 --group multisig --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/multisig-join-sample.json &
 inceptor_pid=$!
-kli multisig join --name multisigj2 --auto &
+kli multisig join --name multisigj2 --auto --version 1.0 &
 join_pid=$!
 
 wait $inceptor_pid
@@ -46,22 +46,22 @@ ROTATE_RETRY_DELAY=${ROTATE_RETRY_DELAY:-1}
 attempt=1
 
 # Member sync once (individual rotations and cross-queries); do not re-rotate on retry.
-kli rotate --name multisigj1 --alias multisigj1
-kli query --name multisigj2 --alias multisigj2 --prefix EFY7MixHb0so4WFFHw6btOPc5qeeWfPm7v5MJWcdcbyG --sn 1
-kli rotate --name multisigj2 --alias multisigj2
-kli query --name multisigj1 --alias multisigj1 --prefix EKJ6tNVUGbdaiwx2nWDCFXG-_PY_AzESOcoKlm0kRNP3 --sn 1
+kli rotate --name multisigj1 --alias multisigj1 --version 1.0
+kli query --name multisigj2 --alias multisigj2 --prefix EFY7MixHb0so4WFFHw6btOPc5qeeWfPm7v5MJWcdcbyG --sn 1 --version 1.0
+kli rotate --name multisigj2 --alias multisigj2 --version 1.0
+kli query --name multisigj1 --alias multisigj1 --prefix EKJ6tNVUGbdaiwx2nWDCFXG-_PY_AzESOcoKlm0kRNP3 --sn 1 --version 1.0
 
-kli multisig join --name multisigj2 --auto &
+kli multisig join --name multisigj2 --auto --version 1.0 &
 join_pid=$!
 
 while [ $attempt -le $ROTATE_MAX_ATTEMPTS ]; do
   if [ $attempt -gt 1 ]; then
     sleep $ROTATE_RETRY_DELAY
-    kli query --name multisigj2 --alias multisigj2 --prefix EFY7MixHb0so4WFFHw6btOPc5qeeWfPm7v5MJWcdcbyG --sn 1
-    kli query --name multisigj1 --alias multisigj1 --prefix EKJ6tNVUGbdaiwx2nWDCFXG-_PY_AzESOcoKlm0kRNP3 --sn 1
+    kli query --name multisigj2 --alias multisigj2 --prefix EFY7MixHb0so4WFFHw6btOPc5qeeWfPm7v5MJWcdcbyG --sn 1 --version 1.0
+    kli query --name multisigj1 --alias multisigj1 --prefix EKJ6tNVUGbdaiwx2nWDCFXG-_PY_AzESOcoKlm0kRNP3 --sn 1 --version 1.0
   fi
 
-  if kli multisig rotate --name multisigj1 --alias multisig --smids EKJ6tNVUGbdaiwx2nWDCFXG-_PY_AzESOcoKlm0kRNP3 --smids EFY7MixHb0so4WFFHw6btOPc5qeeWfPm7v5MJWcdcbyG --isith '["1/2", "1/2"]' --nsith '["1/2", "1/2"]' --rmids EKJ6tNVUGbdaiwx2nWDCFXG-_PY_AzESOcoKlm0kRNP3 --rmids EFY7MixHb0so4WFFHw6btOPc5qeeWfPm7v5MJWcdcbyG; then
+  if kli multisig rotate --name multisigj1 --alias multisig --smids EKJ6tNVUGbdaiwx2nWDCFXG-_PY_AzESOcoKlm0kRNP3 --smids EFY7MixHb0so4WFFHw6btOPc5qeeWfPm7v5MJWcdcbyG --isith '["1/2", "1/2"]' --nsith '["1/2", "1/2"]' --rmids EKJ6tNVUGbdaiwx2nWDCFXG-_PY_AzESOcoKlm0kRNP3 --rmids EFY7MixHb0so4WFFHw6btOPc5qeeWfPm7v5MJWcdcbyG --version 1.0; then
     break
   fi
   if [ $attempt -eq $ROTATE_MAX_ATTEMPTS ]; then
@@ -83,9 +83,9 @@ fi
 kli status --name multisigj1 --alias multisig
 
 # --- Interact phase: initiator-first wait ---
-kli multisig interact --name multisigj1 --alias multisig --data '{"d": "potato"}' &
+kli multisig interact --name multisigj1 --alias multisig --data '{"d": "potato"}' --version 1.0 &
 interactor_pid=$!
-kli multisig join --name multisigj2 --auto &
+kli multisig join --name multisigj2 --auto --version 1.0 &
 join_pid=$!
 
 wait $interactor_pid

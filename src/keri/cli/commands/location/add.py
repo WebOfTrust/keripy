@@ -11,9 +11,9 @@ from urllib.parse import urlparse
 from hio.base import doing
 from hio.help import ogler
 
-from ...common import Parsery, setupHby
+from ...common import Parsery, setupHby, parseVersion
 
-from .... import ConfigurationError, Vrsn_1_0
+from .... import ConfigurationError, Kinds, Vrsn_1_0
 
 from ....app import (GroupHab, Multiplexor, indirecting,
                      forwarding, WitnessPublisher, Notifier,
@@ -35,6 +35,8 @@ parser.add_argument("--url", "-u", help="Location URL",
 parser.add_argument("--eid", "-e", help="qualified base64 of AID to associate a location with, defaults to alias aid ",
                     required=False, default=None)
 parser.add_argument("--time", help="timestamp for the end auth", required=False, default=None)
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for the endpoint location reply, such as 1.0 or 2.0')
 
 
 def add_loc(args):
@@ -47,16 +49,19 @@ def add_loc(args):
                       bran=args.bran,
                       url=args.url,
                       eid=args.eid,
-                      timestamp=args.time)
+                      timestamp=args.time,
+                      version=args.version)
     return [ld]
 
 
 class LocationDoer(doing.DoDoer):
 
-    def __init__(self, name, base, alias, bran, url, eid, timestamp=None):
+    def __init__(self, name, base, alias, bran, url, eid, timestamp=None, version=None):
         self.url = url
         self.eid = eid
         self.timestamp = timestamp
+        self.version = version
+        self.replyKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
 
         self.hby = setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
@@ -67,7 +72,8 @@ class LocationDoer(doing.DoDoer):
         exc = Exchanger(hby=self.hby, handlers=[])
         loadHandlers(exc, mux)
 
-        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc)
+        mbx = indirecting.MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc,
+                                          queryKwargs=self.replyKwargs)
 
         if self.hab is None:
             raise ConfigurationError(f"unknown alias={alias}")
@@ -95,8 +101,9 @@ class LocationDoer(doing.DoDoer):
         up = urlparse(self.url)
         eid = self.eid if self.eid is not None else self.hab.pre
 
-        msg = self.hab.makeLocScheme(url=self.url, eid=eid, scheme=up.scheme)
-        Parser(version=Vrsn_1_0).parse(ims=bytes(msg), kvy=self.hab.kvy, rvy=self.hab.rvy)
+        msg = self.hab.makeLocScheme(url=self.url, eid=eid, scheme=up.scheme, **self.replyKwargs)
+        parser = Parser(version=self.version if self.version is not None else Vrsn_1_0)
+        parser.parse(ims=bytes(msg), kvy=self.hab.kvy, rvy=self.hab.rvy)
 
         if isinstance(self.hab, GroupHab):
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
@@ -110,7 +117,7 @@ class LocationDoer(doing.DoDoer):
                                   serder=exn,
                                   attachment=atc)
 
-        while not self.hab.loadLocScheme(scheme=up.scheme, eid=eid):
+        while not self.hab.loadLocScheme(scheme=up.scheme, eid=eid, gvrsn=self.version):
             yield self.tock
 
         self.witpub.msgs.append(dict(pre=self.hab.pre, msg=bytes(msg)))

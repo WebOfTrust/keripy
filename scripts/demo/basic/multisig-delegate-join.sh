@@ -21,15 +21,15 @@ kli oobi resolve --name "$delegate_1" --oobi "$delegate_witness_url"
 kli oobi resolve --name "$delegate_2" --oobi "$delegate_witness_url"
 
 kli incept --name "$delegator" --alias delegator --version 1.0 --icount 1 --ncount 1 --isith 1 --nsith 1 --transferable --toad 1 --wit "$delegator_witness_aid"
-kli ends add --name "$delegator" --alias delegator --eid "$delegator_witness_aid" --role mailbox
+kli ends add --name "$delegator" --alias delegator --eid "$delegator_witness_aid" --role mailbox --version 1.0
 
 delegator_aid=$(kli aid --name "$delegator" --alias delegator)
 delegator_oobi=$(kli oobi generate --name "$delegator" --alias delegator --role witness | tail -n 1)
 
 kli incept --name "$delegate_1" --alias member --version 1.0 --icount 1 --ncount 1 --isith 1 --nsith 1 --transferable --toad 1 --wit "$delegate_witness_aid"
 kli incept --name "$delegate_2" --alias member --version 1.0 --icount 1 --ncount 1 --isith 1 --nsith 1 --transferable --toad 1 --wit "$delegate_witness_aid"
-kli ends add --name "$delegate_1" --alias member --eid "$delegate_witness_aid" --role mailbox
-kli ends add --name "$delegate_2" --alias member --eid "$delegate_witness_aid" --role mailbox
+kli ends add --name "$delegate_1" --alias member --eid "$delegate_witness_aid" --role mailbox --version 1.0
+kli ends add --name "$delegate_2" --alias member --eid "$delegate_witness_aid" --role mailbox --version 1.0
 
 delegate_1_oobi=$(kli oobi generate --name "$delegate_1" --alias member --role witness | tail -n 1)
 delegate_2_oobi=$(kli oobi generate --name "$delegate_2" --alias member --role witness | tail -n 1)
@@ -60,7 +60,7 @@ EOF
 # Delegate 1 initiates the delegated identifier
 kli multisig incept --name "$delegate_1" --alias member --group delegate --version 1.0 --file "$delegate_json" &
 PID_LIST="$!"
-kli delegate confirm --name "$delegator" --alias delegator --interact -Y &
+kli delegate confirm --name "$delegator" --alias delegator --interact -Y --version 1.0 &
 PID_LIST+=" $!"
 wait $PID_LIST
 
@@ -69,7 +69,7 @@ delegate_aid_from_1=$(kli aid --name "$delegate_1" --alias delegate)
 
 # Delegate 2 now catches up by joining the inception event
 kli oobi resolve --name "$delegate_2" --oobi-alias delegator --oobi "${delegator_oobi}"
-kli multisig join --name "$delegate_2" --auto --group delegate
+kli multisig join --name "$delegate_2" --auto --group delegate --version 1.0
 kli status --name "$delegate_2" --alias delegate
 delegate_aid_from_2=$(kli aid --name "$delegate_2" --alias delegate)
 

@@ -59,25 +59,25 @@ kli status --name larry --alias multisig
 # Rotate keys for each multisig - required before rotating the multisig
 echo
 print_yellow "Rotate keys for each multisig"
-kli rotate --name larry --alias larry
-kli rotate --name moe --alias moe
-kli rotate --name curly --alias curly
+kli rotate --name larry --alias larry --version 1.0
+kli rotate --name moe --alias moe --version 1.0
+kli rotate --name curly --alias curly --version 1.0
 
 # Pull key state in from other multisig group participant identifiers so they have the next digest
 echo
 print_yellow "Pull key state in from other multisig group participant identifiers"
 # 2 about 1
-kli query --name moe --alias moe --prefix EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --sn 1
+kli query --name moe --alias moe --prefix EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --sn 1 --version 1.0
 # 2 about 3
-kli query --name moe --alias moe --prefix EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu --sn 1
+kli query --name moe --alias moe --prefix EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu --sn 1 --version 1.0
 # 1 about 2
-kli query --name larry --alias larry --prefix ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --sn 1
+kli query --name larry --alias larry --prefix ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --sn 1 --version 1.0
 # 1 about 3
-kli query --name larry --alias larry --prefix EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu --sn 1
+kli query --name larry --alias larry --prefix EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu --sn 1 --version 1.0
 # 3 about 1
-kli query --name curly --alias curly --prefix EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --sn 1
+kli query --name curly --alias curly --prefix EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --sn 1 --version 1.0
 # 3 about 2
-kli query --name curly --alias curly --prefix ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --sn 1
+kli query --name curly --alias curly --prefix ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --sn 1 --version 1.0
 
 
 echo
@@ -85,13 +85,13 @@ print_yellow "Multisig rotation"
 
 PID_LIST=""
 
-kli multisig rotate --name larry --alias multisig --smids EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --smids ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --smids EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu --isith '["1/3", "1/3", "1/3"]' --nsith '["1/2", "1/2", "1/2"]' --rmids EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --rmids ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --rmids EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu &
+kli multisig rotate --name larry --alias multisig --smids EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --smids ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --smids EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu --isith '["1/3", "1/3", "1/3"]' --nsith '["1/2", "1/2", "1/2"]' --rmids EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --rmids ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --rmids EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu --version 1.0 &
 pid=$!
 PID_LIST+=" $pid"
-kli multisig rotate --name moe --alias multisig --smids EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --smids ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --smids EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu --isith '["1/3", "1/3", "1/3"]' --nsith '["1/2", "1/2", "1/2"]' --rmids EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --rmids ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --rmids EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu &
+kli multisig rotate --name moe --alias multisig --smids EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --smids ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --smids EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu --isith '["1/3", "1/3", "1/3"]' --nsith '["1/2", "1/2", "1/2"]' --rmids EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --rmids ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --rmids EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu --version 1.0 &
 pid=$!
 PID_LIST+=" $pid"
-kli multisig rotate --name curly --alias multisig --smids EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --smids ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --smids EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu --isith '["1/3", "1/3", "1/3"]' --nsith '["1/2", "1/2", "1/2"]' --rmids EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --rmids ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --rmids EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu &
+kli multisig rotate --name curly --alias multisig --smids EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --smids ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --smids EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu --isith '["1/3", "1/3", "1/3"]' --nsith '["1/2", "1/2", "1/2"]' --rmids EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --rmids ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --rmids EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu --version 1.0 &
 pid=$!
 PID_LIST+=" $pid"
 
@@ -108,13 +108,13 @@ print_yellow "Multisig interact"
 
 PID_LIST=""
 
-kli multisig interact --name larry --alias multisig --data "{\"tagline\":\"three lost souls\"}" &
+kli multisig interact --name larry --alias multisig --data "{\"tagline\":\"three lost souls\"}" --version 1.0 &
 pid=$!
 PID_LIST+=" $pid"
-kli multisig interact --name moe --alias multisig --data "{\"tagline\":\"three lost souls\"}" &
+kli multisig interact --name moe --alias multisig --data "{\"tagline\":\"three lost souls\"}" --version 1.0 &
 pid=$!
 PID_LIST+=" $pid"
-kli multisig interact --name curly --alias multisig --data "{\"tagline\":\"three lost souls\"}" &
+kli multisig interact --name curly --alias multisig --data "{\"tagline\":\"three lost souls\"}" --version 1.0 &
 pid=$!
 PID_LIST+=" $pid"
 

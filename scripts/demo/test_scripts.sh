@@ -10,6 +10,7 @@ source "${script_dir}"/basic/script-utils.sh
 SCRIPT_TIMEOUT="${KERI_SCRIPT_TIMEOUT:-300}"
 # Max retry attempts per script. Override with KERI_SCRIPT_RETRIES env var.
 MAX_RETRIES="${KERI_SCRIPT_RETRIES:-3}"
+FAILURES=0
 
 clean_all_temp_state() {
     local base="${KERI_TEMP_DIR}"
@@ -137,15 +138,17 @@ run_with_retry() {
 }
 
 # Test scripts
-run_with_retry "${script_dir}/basic/demo-script.sh"
-run_with_retry "${script_dir}/basic/demo-witness-script.sh"
-run_with_retry "${script_dir}/basic/demo-witness-async-script.sh"
-run_with_retry "${script_dir}/basic/delegate.sh"
-run_with_retry "${script_dir}/basic/multisig-delegate-join.sh"
-run_with_retry "${script_dir}/basic/multisig.sh"
-run_with_retry "${script_dir}/basic/multisig-rotate-three-stooges.sh"
-run_with_retry "${script_dir}/basic/multisig-delegator.sh"
-run_with_retry "${script_dir}/basic/multisig-delegate-delegator.sh"
-run_with_retry "${script_dir}/basic/challenge.sh"
-run_with_retry "${script_dir}/basic/multisig-join.sh"
-run_with_retry "${script_dir}/basic/rename-alias.sh"
+run_with_retry "${script_dir}/basic/demo-script.sh" || FAILURES=1
+run_with_retry "${script_dir}/basic/demo-witness-script.sh" || FAILURES=1
+run_with_retry "${script_dir}/basic/demo-witness-async-script.sh" || FAILURES=1
+run_with_retry "${script_dir}/basic/delegate.sh" || FAILURES=1
+run_with_retry "${script_dir}/basic/multisig-delegate-join.sh" || FAILURES=1
+run_with_retry "${script_dir}/basic/multisig.sh" || FAILURES=1
+run_with_retry "${script_dir}/basic/multisig-rotate-three-stooges.sh" || FAILURES=1
+run_with_retry "${script_dir}/basic/multisig-delegator.sh" || FAILURES=1
+run_with_retry "${script_dir}/basic/multisig-delegate-delegator.sh" || FAILURES=1
+run_with_retry "${script_dir}/basic/challenge.sh" || FAILURES=1
+run_with_retry "${script_dir}/basic/multisig-join.sh" || FAILURES=1
+run_with_retry "${script_dir}/basic/rename-alias.sh" || FAILURES=1
+
+exit "$FAILURES"

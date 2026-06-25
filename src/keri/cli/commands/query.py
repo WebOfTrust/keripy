@@ -10,9 +10,10 @@ import json
 from hio.base import doing
 from hio.help import decking, ogler
 
-from ..common import Parsery, printExternal, setupHby
+from ..common import Parsery, printExternal, setupHby, parseVersion
 
 from ...app import MailboxDirector, HaberyDoer, QueryDoer, SeqNoQuerier, AnchorQuerier
+from ...kering import Kinds
 from ...help import helping
 
 
@@ -25,19 +26,21 @@ parser.add_argument('--alias', '-a', help='human readable alias for the new iden
 parser.add_argument('--prefix', help='QB64 identifier to query', default="", required=True)
 parser.add_argument('--sn', help='sequence number to query through', type=int, default=None, required=False)
 parser.add_argument('--anchor', help='JSON file containing the anchor to search for', default=None, required=False)
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for the query event, such as 1.0 or 2.0')
 
 
 def query(args):
     name = args.name
 
     qryDoer = LaunchDoer(name=name, alias=args.alias, base=args.base, bran=args.bran, pre=args.prefix, sn=args.sn,
-                         anchor=args.anchor)
+                         anchor=args.anchor, version=args.version)
     return [qryDoer]
 
 
 class LaunchDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, pre, sn, anchor, **kwa):
+    def __init__(self, name, alias, base, bran, pre, sn, anchor, version=None, **kwa):
         doers = []
         self.hby = setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
@@ -49,9 +52,12 @@ class LaunchDoer(doing.DoDoer):
         self.pre = pre
         self.sn = sn
         self.anchor = anchor
+        self.version = version
         self.loaded = False
+        self.queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
 
-        self.mbd = MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"])
+        self.mbd = MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"],
+                                   queryKwargs=self.queryKwargs)
         doers.extend([self.hbyDoer, self.mbd])
 
         self.toRemove = list(doers)
@@ -71,17 +77,18 @@ class LaunchDoer(doing.DoDoer):
 
         end = helping.nowUTC() + datetime.timedelta(seconds=10)
 
+        kwa = dict(self.queryKwargs)
         if self.anchor is not None:
             f = open(self.anchor)
             anchor = json.load(f)
             print(f"Checking for anchor {anchor}...")
-            doer = AnchorQuerier(hby=self.hby, hab=self.hab, pre=self.pre, anchor=anchor)
+            doer = AnchorQuerier(hby=self.hby, hab=self.hab, pre=self.pre, anchor=anchor, **kwa)
         elif self.sn is not None:
             print(f"Checking for updates through sequence number {self.sn}...")
-            doer = SeqNoQuerier(hby=self.hby, hab=self.hab, pre=self.pre, sn=self.sn)
+            doer = SeqNoQuerier(hby=self.hby, hab=self.hab, pre=self.pre, sn=self.sn, **kwa)
         else:
             print(f"Checking for updates...")
-            doer = QueryDoer(hby=self.hby, hab=self.hab, pre=self.pre, kvy=self.mbd.kvy)
+            doer = QueryDoer(hby=self.hby, hab=self.hab, pre=self.pre, kvy=self.mbd.kvy, **kwa)
 
         self.extend([doer])
 

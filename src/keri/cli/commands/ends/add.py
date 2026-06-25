@@ -9,9 +9,9 @@ import argparse
 from hio.base import doing
 from hio.help import ogler
 
-from ...common import setupHby, Parsery
+from ...common import setupHby, Parsery, parseVersion
 
-from ....kering import Vrsn_1_0, ConfigurationError
+from ....kering import Vrsn_1_0, ConfigurationError, Kinds
 from ....app import (GroupHab, Multiplexor, MailboxDirector,
                      Poster, WitnessPublisher, Notifier,
                      multisigRpyExn)
@@ -33,6 +33,8 @@ parser.add_argument("--eid", "-e", help="qualified base64 of AID to authorize wi
                                         "by alias",
                     required=True)
 parser.add_argument("--time", help="timestamp for the end auth", required=False, default=None)
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for the endpoint role reply, such as 1.0 or 2.0')
 
 
 def add_end(args):
@@ -45,16 +47,19 @@ def add_end(args):
                   bran=args.bran,
                   role=args.role,
                   eid=args.eid,
-                  timestamp=args.time)
+                  timestamp=args.time,
+                  version=args.version)
     return [ld]
 
 
 class RoleDoer(doing.DoDoer):
 
-    def __init__(self, name, base, alias, bran, role, eid, timestamp=None):
+    def __init__(self, name, base, alias, bran, role, eid, timestamp=None, version=None):
         self.role = role
         self.eid = eid
         self.timestamp = timestamp
+        self.version = version
+        self.replyKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
 
         self.hby = setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
@@ -65,7 +70,8 @@ class RoleDoer(doing.DoDoer):
         exc = Exchanger(hby=self.hby, handlers=[])
         loadHandlers(exc, mux)
 
-        mbx = MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc)
+        mbx = MailboxDirector(hby=self.hby, topics=["/receipt", "/multisig", "/replay"], exc=exc,
+                              queryKwargs=self.replyKwargs)
 
         if self.hab is None:
             raise ConfigurationError(f"unknown alias={alias}")
@@ -93,9 +99,10 @@ class RoleDoer(doing.DoDoer):
         data = dict(cid=self.hab.pre, role=self.role, eid=self.eid)
 
         route = "/end/role/add"
-        msg = self.hab.reply(route=route, data=data, stamp=self.timestamp)
+        msg = self.hab.reply(route=route, data=data, stamp=self.timestamp, **self.replyKwargs)
 
-        Parser(version=Vrsn_1_0).parse(ims=bytes(msg), kvy=self.hab.kvy, rvy=self.hab.rvy)
+        parser = Parser(version=self.version if self.version is not None else Vrsn_1_0)
+        parser.parse(ims=bytes(msg), kvy=self.hab.kvy, rvy=self.hab.rvy)
 
         if isinstance(self.hab, GroupHab):
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
@@ -109,7 +116,7 @@ class RoleDoer(doing.DoDoer):
                                   serder=exn,
                                   attachment=atc)
 
-        while not self.hab.loadEndRole(cid=self.hab.pre, role=self.role, eid=self.eid):
+        while not self.hab.loadEndRole(cid=self.hab.pre, role=self.role, eid=self.eid, gvrsn=self.version):
             yield self.tock
 
         self.witpub.msgs.append(dict(pre=self.hab.pre, msg=bytes(msg)))

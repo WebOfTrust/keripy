@@ -14,7 +14,7 @@ import sys
 from hio.base import doing
 from hio.help import ogler
 
-from ....kering import ConfigurationError, Versionage
+from ....kering import ConfigurationError, Kinds, Versionage
 from ....app import (Notifier, MailboxDirector, Multiplexor,
                      Counselor, HaberyDoer, Poster,
                      multisigInceptExn)
@@ -108,7 +108,9 @@ class GroupMultisigIncept(doing.DoDoer):
         loadHandlers(exc, mux)
         self.mux = mux
 
-        self.mbx = MailboxDirector(hby=self.hby, topics=topics, exc=exc)
+        queryKwargs = dict(version=self.inits.get("version"), gvrsn=self.inits.get("version"),
+                           kind=self.inits.get("kind", Kinds.json))
+        self.mbx = MailboxDirector(hby=self.hby, topics=topics, exc=exc, queryKwargs=queryKwargs)
         self.counselor = Counselor(hby=self.hby)
         self.postman = Poster(hby=self.hby)
 

@@ -22,8 +22,8 @@ kli oobi resolve --name "$delegate" --oobi "$delegate_witness_url"
 
 kli incept --name "$delegator_1" --alias member --version 1.0 --icount 1 --ncount 1 --isith 1 --nsith 1 --transferable --toad 1 --wit "$delegator_witness_aid"
 kli incept --name "$delegator_2" --alias member --version 1.0 --icount 1 --ncount 1 --isith 1 --nsith 1 --transferable --toad 1 --wit "$delegator_witness_aid"
-kli ends add --name "$delegator_1" --alias member --eid "$delegator_witness_aid" --role mailbox
-kli ends add --name "$delegator_2" --alias member --eid "$delegator_witness_aid" --role mailbox
+kli ends add --name "$delegator_1" --alias member --eid "$delegator_witness_aid" --role mailbox --version 1.0
+kli ends add --name "$delegator_2" --alias member --eid "$delegator_witness_aid" --role mailbox --version 1.0
 
 delegator_1_aid=$(kli aid --name "$delegator_1" --alias member)
 delegator_1_oobi=$(kli oobi generate --name "$delegator_1" --alias member --role witness | tail -n 1)
@@ -53,7 +53,7 @@ wait $pid
 
 # Create proxy and resolve OOBIs
 kli incept --name "$delegate" --alias proxy --version 1.0 --icount 1 --ncount 1 --isith 1 --nsith 1 --transferable --toad 1 --wit "$delegate_witness_aid"
-kli ends add --name "$delegate" --alias proxy --eid "$delegate_witness_aid" --role mailbox
+kli ends add --name "$delegate" --alias proxy --eid "$delegate_witness_aid" --role mailbox --version 1.0
 proxy_oobi=$(kli oobi generate --name "$delegate" --alias proxy --role witness | tail -n 1)
 delegator_oobi=$(kli oobi generate --name "$delegator_1" --alias delegator --role witness | tail -n 1)
 delegator_aid=$(kli aid --name "$delegator_1" --alias delegator)
@@ -80,9 +80,9 @@ EOF
 # Create delegated identifier
 kli incept --name "$delegate" --alias delegate --version 1.0 --proxy proxy --file "$delegate_json" &
 PID_LIST="$!"
-kli delegate confirm --name "$delegator_1" --alias delegator --interact -Y &
+kli delegate confirm --name "$delegator_1" --alias delegator --interact -Y --version 1.0 &
 PID_LIST+=" $!"
-kli delegate confirm --name "$delegator_2" --alias delegator --interact -Y &
+kli delegate confirm --name "$delegator_2" --alias delegator --interact -Y --version 1.0 &
 PID_LIST+=" $!"
 wait $PID_LIST
 
