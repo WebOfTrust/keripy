@@ -14,55 +14,6 @@ from keri.vdr import credentialing, viring
 TMP_BASE_PATH = "base-reg-rename"
 
 
-def isolatedBase(tmp_path):
-    """
-    Return a relative KERI base namespace string unique to this pytest test.
-    Supports parallelization.
-
-    pytest's tmp_path is a per-test filesystem path, for example:
-    /.../pytest-42/test_registry_rename_branches0
-
-    KERI's base must be relative, so this helper uses only the final directory names:
-        tmp_path.parent.name  # "pytest-42"
-        tmp_path.name         # "test_registry_rename_branches0"
-
-    Result:
-        base-reg-rename-pytest-42-test_registry_rename_branches0
-
-    When openHby(..., name="rename", base=<base>, temp=False) opens KERI resources,
-    KERI/HIO combines this relative base with each resource tail:
-      - /usr/local/var/keri/ks/<base>/rename/data.mdb
-      - /usr/local/var/keri/db/<base>/rename/data.mdb
-      - /usr/local/var/keri/cf/<base>/rename/rename.json
-      - /usr/local/var/keri/reg/<base>/rename/data.mdb
-      - and so forth
-    For temp=True paths get created under /tmp/...
-    """
-    return f"{TMP_BASE_PATH}-{tmp_path.parent.name}-{tmp_path.name}"
-
-
-def closeRegery(rgy, clear=True):
-    """
-    Closes Regery
-    Needed to avoid LMDB's recently added strict double open errors (used to be just warnings).
-    """
-    reger = getattr(rgy, "reger", None)
-    if reger is not None and (reger.opened or clear):
-        reger.close(clear=clear)
-
-
-def closeHby(hby, clear=True):
-    """
-    Closes Habery and its Configer.
-    Needed to avoid LMDB's new strict double open errors.
-    """
-    if hby is not None:
-        cf = getattr(hby, "cf", None)
-        hby.close(clear=clear)
-        if clear and cf is not None:
-            cf.close(clear=True)
-
-
 def renameArgs(registry_name="old", new_name="new", name="test", base=TMP_BASE_PATH, registry_said=None):
     """Constructs array of correct registry rename options for multicommand parser"""
     args = ["--name", name,
@@ -83,10 +34,10 @@ def test_registry_rename_requires_new_name(capsys):
     assert "--new-name" in capsys.readouterr().err
 
 
-def test_registry_rename(tmp_path, capsys):
+def test_registry_rename(tmp_path, capsys, helpers):
     # Purpose: cover registry rename outcomes against a persistent keystore.
     salt = core.Salter(raw=b'0123456789abcdef').qb64
-    with habbing.openHby(name="rename", base=isolatedBase(tmp_path),
+    with habbing.openHby(name="rename", base=helpers.isolatedBase(TMP_BASE_PATH, tmp_path),
                          temp=False, clear=True, salt=salt) as hby:
         rgy = None
 
@@ -101,8 +52,8 @@ def test_registry_rename(tmp_path, capsys):
             rgy = credentialing.Regery(hby=hby, name=hby.name, base=hby.base)
             reg = rgy.makeRegistry(prefix=hab.pre, name="old", noBackers=True)
             record = viring.RegistryRecord(registryKey=reg.regk, prefix=hab.pre)
-            closeRegery(rgy, clear=False)
-            closeHby(hby, clear=False)
+            helpers.closeRegery(rgy, clear=False)
+            helpers.closeHby(hby, clear=False)
 
             # missing registry
             rhby, rrgy = reopenRegistry()
@@ -110,8 +61,8 @@ def test_registry_rename(tmp_path, capsys):
                 assert rrgy.reger.regs.get(keys="old") == record
                 rrgy.reger.regs.rem(keys="old")
             finally:
-                closeRegery(rrgy, clear=False)
-                closeHby(rhby, clear=False)
+                helpers.closeRegery(rrgy, clear=False)
+                helpers.closeHby(rhby, clear=False)
             directing.runController(doers=rename_cmd.handler(
                 renameArgs("missing", "new", name=hby.name, base=hby.base)))
             assert capsys.readouterr().out == "Registry missing not found\n"
@@ -122,8 +73,8 @@ def test_registry_rename(tmp_path, capsys):
                 rrgy.reger.regs.pin(keys="old", val=record)
                 rrgy.makeRegistry(prefix=hab.pre, name="new", noBackers=True)
             finally:
-                closeRegery(rrgy, clear=False)
-                closeHby(rhby, clear=False)
+                helpers.closeRegery(rrgy, clear=False)
+                helpers.closeHby(rhby, clear=False)
             directing.runController(doers=rename_cmd.handler(
                 renameArgs("old", "new", name=hby.name, base=hby.base)))
             assert capsys.readouterr().out == "Registry name new already exists\n"
@@ -140,8 +91,8 @@ def test_registry_rename(tmp_path, capsys):
                 assert rrgy.reger.regs.get(keys="old") == record
                 rrgy.reger.regs.pin(keys="new", val=record)
             finally:
-                closeRegery(rrgy, clear=False)
-                closeHby(rhby, clear=False)
+                helpers.closeRegery(rrgy, clear=False)
+                helpers.closeHby(rhby, clear=False)
 
             directing.runController(doers=rename_cmd.handler(
                 renameArgs("old", "new", name=hby.name, base=hby.base)))
@@ -156,8 +107,8 @@ def test_registry_rename(tmp_path, capsys):
                 rrgy.reger.regs.rem(keys="new")
                 rrgy.reger.regs.pin(keys="old", val=record)
             finally:
-                closeRegery(rrgy, clear=False)
-                closeHby(rhby, clear=False)
+                helpers.closeRegery(rrgy, clear=False)
+                helpers.closeHby(rhby, clear=False)
 
             directing.runController(doers=rename_cmd.handler(
                 renameArgs("old", "new", name=hby.name, base=hby.base)))
@@ -169,18 +120,18 @@ def test_registry_rename(tmp_path, capsys):
                 assert rrgy.reger.regs.get(keys="old") is None
                 assert rrgy.reger.regs.get(keys="new") == record
             finally:
-                closeRegery(rrgy, clear=False)
-                closeHby(rhby, clear=False)
+                helpers.closeRegery(rrgy, clear=False)
+                helpers.closeHby(rhby, clear=False)
         finally:
-            closeRegery(rgy)
-            closeHby(hby)
+            helpers.closeRegery(rgy)
+            helpers.closeHby(hby)
 
 
-def test_registry_rename_accepts_registry_said(tmp_path, capsys):
+def test_registry_rename_accepts_registry_said(tmp_path, capsys, helpers):
     # Purpose: verify registry rename can target the stable registry SAID, not only the current local name.
     # Imported registries are initially keyed by SAID, so this is the production recovery path for friendly names.
     salt = core.Salter(raw=b'0123456789abcdef').qb64
-    with habbing.openHby(name="rename-said", base=isolatedBase(tmp_path),
+    with habbing.openHby(name="rename-said", base=helpers.isolatedBase(TMP_BASE_PATH, tmp_path),
                          temp=False, clear=True, salt=salt) as hby:
         rgy = None
         try:
@@ -189,8 +140,8 @@ def test_registry_rename_accepts_registry_said(tmp_path, capsys):
             rgy = credentialing.Regery(hby=hby, name=hby.name, base=hby.base)
             reg = rgy.makeRegistry(prefix=hab.pre, name="old", noBackers=True)
             record = viring.RegistryRecord(registryKey=reg.regk, prefix=hab.pre)
-            closeRegery(rgy, clear=False)
-            closeHby(hby, clear=False)
+            helpers.closeRegery(rgy, clear=False)
+            helpers.closeHby(hby, clear=False)
 
             # Rename by SAID lookup
             directing.runController(doers=rename_cmd.handler(
@@ -211,8 +162,8 @@ def test_registry_rename_accepts_registry_said(tmp_path, capsys):
                 rrgy.reger.regs.rem(keys="new")
                 rrgy.reger.regs.pin(keys=reg.regk, val=record)
             finally:
-                closeRegery(rrgy, clear=False)
-                closeHby(rhby, clear=False)
+                helpers.closeRegery(rrgy, clear=False)
+                helpers.closeHby(rhby, clear=False)
 
             # Rename should work when registry_name is set to None (exists by SAID, not name)
             directing.runController(doers=rename_cmd.handler(
@@ -230,8 +181,8 @@ def test_registry_rename_accepts_registry_said(tmp_path, capsys):
                 assert rrgy.reger.regs.get(keys=reg.regk) is None
                 assert rrgy.reger.regs.get(keys="renamed") == record
             finally:
-                closeRegery(rrgy, clear=False)
-                closeHby(rhby, clear=False)
+                helpers.closeRegery(rrgy, clear=False)
+                helpers.closeHby(rhby, clear=False)
         finally:
-            closeRegery(rgy)
-            closeHby(hby)
+            helpers.closeRegery(rgy)
+            helpers.closeHby(hby)

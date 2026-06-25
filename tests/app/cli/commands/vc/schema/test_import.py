@@ -18,20 +18,6 @@ GLEIF_SCHEMA_SAID = "EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC"
 TMP_BASE_PATH = "base-schema-import"
 
 
-def isolatedBase(tmp_path):
-    """Return a relative KERI base namespace unique to each pytest test."""
-    return f"{TMP_BASE_PATH}-{tmp_path.parent.name}-{tmp_path.name}"
-
-
-def closeHby(hby, clear=True):
-    """Close Habery and its Configer."""
-    if hby is not None:
-        cf = getattr(hby, "cf", None)
-        hby.close(clear=clear)
-        if clear and cf is not None:
-            cf.close(clear=True)
-
-
 def importArgs(name="test", base=TMP_BASE_PATH, schema=None):
     """Construct schema import args with the command parser."""
     return import_cmd.importParser.parse_args(["--name", name,
@@ -92,18 +78,18 @@ def test_import_pins_to_schema_db(tmp_path, seeder):
         assert actual.said == schemer.said
 
 
-def test_schema_import_doer_pins_to_target_habery_db(tmp_path, seeder):
+def test_schema_import_doer_pins_to_target_habery_db(tmp_path, seeder, helpers):
     schema_path, schemer = seedSchemaFile(tmp_path, seeder)
     salt = core.Salter(raw=b'0123456789abcdef').qb64
 
-    with habbing.openHby(name="schema-import-target", base=isolatedBase(tmp_path),
+    with habbing.openHby(name="schema-import-target", base=helpers.isolatedBase(TMP_BASE_PATH, tmp_path),
                          temp=False, clear=True, salt=salt) as hby:
         try:
             # assert schema is not in db prior to running import
             assert hby.db.schema.get(keys=(schemer.said,)) is None
             name = hby.name
             base = hby.base
-            closeHby(hby, clear=False)
+            helpers.closeHby(hby, clear=False)
 
             doers = import_cmd.import_schema(importArgs(name=name,
                                                         base=base,
@@ -113,7 +99,7 @@ def test_schema_import_doer_pins_to_target_habery_db(tmp_path, seeder):
                 directing.runController(doers=doers)
             finally:
                 for doer in doers:
-                    closeHby(getattr(doer, "hby", None), clear=False)
+                    helpers.closeHby(getattr(doer, "hby", None), clear=False)
 
             rhby = existing.setupHby(name=name, base=base)
             # assert schema is in DB after import command
@@ -122,9 +108,9 @@ def test_schema_import_doer_pins_to_target_habery_db(tmp_path, seeder):
                 assert isinstance(actual, scheming.Schemer)
                 assert actual.said == schemer.said
             finally:
-                closeHby(rhby, clear=False)
+                helpers.closeHby(rhby, clear=False)
         finally:
-            closeHby(hby)
+            helpers.closeHby(hby)
 
 
 def test_import_missing_file_raises(tmp_path):
