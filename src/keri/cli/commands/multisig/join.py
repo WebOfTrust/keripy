@@ -100,10 +100,10 @@ class JoinDoer(doing.DoDoer):
         self.credentialer = Credentialer(hby=self.hby, rgy=self.rgy, registrar=self.registrar,
                                          verifier=self.verifier)
 
-        queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
+        kwa = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
         self.mbx = MailboxDirector(hby=self.hby, exc=self.exc, topics=['/receipt', '/multisig', '/replay',
                                                                        '/delegate'],
-                                   **queryKwargs)
+                                   **kwa)
         self.postman = Poster(hby=self.hby)
 
         doers = [self.hbyDoer, self.witq,  self.mbx, self.counselor, self.registrar, self.credentialer, self.postman]

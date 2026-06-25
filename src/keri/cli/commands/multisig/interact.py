@@ -86,9 +86,9 @@ class GroupMultisigInteract(doing.DoDoer):
         exc = Exchanger(hby=self.hby, handlers=[])
         loadHandlers(exc, mux)
 
-        queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
+        kwa = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
         mbd = MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig'], exc=exc,
-                              **queryKwargs)
+                              **kwa)
         self.counselor = Counselor(hby=self.hby)
 
         doers = [self.hbyDoer, self.postman, mbd, self.counselor]

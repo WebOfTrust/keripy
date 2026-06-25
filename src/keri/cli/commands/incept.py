@@ -171,9 +171,12 @@ class InceptDoer(doing.DoDoer):
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
         self.swain = Anchorer(hby=self.hby, proxy=self.proxy)
         self.postman = Poster(hby=self.hby)
-        queryKwargs = dict(version=kwa.get("version"), gvrsn=kwa.get("version"), kind=kwa.get("kind", Kinds.json))
-        self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"],
-                                   **queryKwargs)
+        if kwa.get("version") is not None:
+            self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"],
+                                       version=kwa.get("version"), gvrsn=kwa.get("version"),
+                                       kind=kwa.get("kind", Kinds.json))
+        else:
+            self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
         doers = [self.hbyDoer, self.postman, self.mbx, self.swain, doing.doify(self.inceptDo)]
 
         self.inits = kwa

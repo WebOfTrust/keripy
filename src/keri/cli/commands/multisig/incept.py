@@ -108,9 +108,12 @@ class GroupMultisigIncept(doing.DoDoer):
         loadHandlers(exc, mux)
         self.mux = mux
 
-        queryKwargs = dict(version=self.inits.get("version"), gvrsn=self.inits.get("version"),
-                           kind=self.inits.get("kind", Kinds.json))
-        self.mbx = MailboxDirector(hby=self.hby, topics=topics, exc=exc, **queryKwargs)
+        if self.inits.get("version") is not None:
+            self.mbx = MailboxDirector(hby=self.hby, topics=topics, exc=exc,
+                                       version=self.inits.get("version"), gvrsn=self.inits.get("version"),
+                                       kind=self.inits.get("kind", Kinds.json))
+        else:
+            self.mbx = MailboxDirector(hby=self.hby, topics=topics, exc=exc)
         self.counselor = Counselor(hby=self.hby)
         self.postman = Poster(hby=self.hby)
 

@@ -81,15 +81,16 @@ class ConfirmDoer(doing.DoDoer):
         self.authenticate = authenticate
         self.codes = codes if codes is not None else []
         self.codeTime = codeTime
+        self.version = version
 
         exc = Exchanger(hby=hby, handlers=[])
         delegating.loadHandlers(hby=hby, exc=exc, notifier=self.notifier)
         grouping.loadHandlers(exc=exc, mux=self.mux)
 
         self.eventKwargs = dict(version=version, gvrsn=version) if version is not None else {}
-        self.queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
+        kwa = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
         self.mbx = MailboxDirector(hby=hby, topics=['/receipt', '/multisig', '/replay', '/delegate'],
-                                               exc=exc, **self.queryKwargs)
+                                               exc=exc, **kwa)
         doers = [self.hbyDoer, self.witq, self.postman, self.counselor, self.mbx]
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.confirmDo)])
@@ -130,6 +131,7 @@ class ConfirmDoer(doing.DoDoer):
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
+        kwa = dict(version=self.version, gvrsn=self.version, kind=Kinds.json) if self.version is not None else {}
 
         while True:
             esc = self.escrowed()
@@ -242,7 +244,7 @@ class ConfirmDoer(doing.DoDoer):
 
                         # wait for confirmation of fully commited event
                         if eserder.pre in self.hby.kevers:
-                            self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn, **self.queryKwargs)
+                            self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn, **kwa)
 
                             while eserder.sn < self.hby.kevers[eserder.pre].sn:
                                 yield self.tock
@@ -251,7 +253,7 @@ class ConfirmDoer(doing.DoDoer):
                         else:  # It should be an inception event then...
                             wits = [werfer.qb64 for werfer in eserder.berfers]
                             self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn, wits=wits,
-                                            **self.queryKwargs)
+                                            **kwa)
 
                             while eserder.pre not in self.hby.kevers:
                                 yield self.tock

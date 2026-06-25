@@ -52,11 +52,13 @@ class LaunchDoer(doing.DoDoer):
         self.pre = pre
         self.sn = sn
         self.anchor = anchor
+        self.version = version
         self.loaded = False
-        self.queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
-
-        self.mbd = MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"],
-                                   **self.queryKwargs)
+        if version is not None:
+            self.mbd = MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"],
+                                       version=version, gvrsn=version, kind=Kinds.json)
+        else:
+            self.mbd = MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"])
         doers.extend([self.hbyDoer, self.mbd])
 
         self.toRemove = list(doers)
@@ -75,18 +77,19 @@ class LaunchDoer(doing.DoDoer):
         _ = (yield self.tock)
 
         end = helping.nowUTC() + datetime.timedelta(seconds=10)
+        kwa = dict(version=self.version, gvrsn=self.version, kind=Kinds.json) if self.version is not None else {}
 
         if self.anchor is not None:
             f = open(self.anchor)
             anchor = json.load(f)
             print(f"Checking for anchor {anchor}...")
-            doer = AnchorQuerier(hby=self.hby, hab=self.hab, pre=self.pre, anchor=anchor, **self.queryKwargs)
+            doer = AnchorQuerier(hby=self.hby, hab=self.hab, pre=self.pre, anchor=anchor, **kwa)
         elif self.sn is not None:
             print(f"Checking for updates through sequence number {self.sn}...")
-            doer = SeqNoQuerier(hby=self.hby, hab=self.hab, pre=self.pre, sn=self.sn, **self.queryKwargs)
+            doer = SeqNoQuerier(hby=self.hby, hab=self.hab, pre=self.pre, sn=self.sn, **kwa)
         else:
             print(f"Checking for updates...")
-            doer = QueryDoer(hby=self.hby, hab=self.hab, pre=self.pre, kvy=self.mbd.kvy, **self.queryKwargs)
+            doer = QueryDoer(hby=self.hby, hab=self.hab, pre=self.pre, kvy=self.mbd.kvy, **kwa)
 
         self.extend([doer])
 

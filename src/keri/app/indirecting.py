@@ -780,16 +780,6 @@ class Poller(doing.DoDoer):
 
         super(Poller, self).__init__(doers=doers, **kwa)
 
-    def _query_kwa(self):
-        kwa = dict()
-        if self.version is not None:
-            kwa["version"] = self.version
-        if self.gvrsn is not None:
-            kwa["gvrsn"] = self.gvrsn
-        if self.kind is not None:
-            kwa["kind"] = self.kind
-        return kwa
-
     def eventDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns:
@@ -824,12 +814,18 @@ class Poller(doing.DoDoer):
                 else:
                     topics[topic] = 0
 
-            query_kwa = self._query_kwa()
+            kwa = dict()
+            if self.version is not None:
+                kwa["version"] = self.version
+            if self.gvrsn is not None:
+                kwa["gvrsn"] = self.gvrsn
+            if self.kind is not None:
+                kwa["kind"] = self.kind
             if isinstance(self.hab, GroupHab):
                 msg = self.hab.mhab.query(pre=self.pre, src=self.witness, route="mbx", query=q,
-                                          **query_kwa)
+                                          **kwa)
             else:
-                msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q, **query_kwa)
+                msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q, **kwa)
 
             createCESRRequest(msg, client, dest=self.witness)
 

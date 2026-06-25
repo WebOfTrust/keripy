@@ -92,9 +92,9 @@ class InteractDoer(doing.DoDoer):
 
         self.hby = setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
-        queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
+        kwa = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
         self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"],
-                                   **queryKwargs)
+                                   **kwa)
         doers = [self.hbyDoer, self.mbx, doing.doify(self.interactDo)]
 
         super(InteractDoer, self).__init__(doers=doers)
