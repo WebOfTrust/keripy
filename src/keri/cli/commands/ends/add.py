@@ -11,7 +11,7 @@ from hio.help import ogler
 
 from ...common import setupHby, Parsery, parseVersion
 
-from ....kering import Vrsn_1_0, ConfigurationError, Kinds
+from ....kering import ConfigurationError, Kinds
 from ....app import (GroupHab, Multiplexor, MailboxDirector,
                      Poster, WitnessPublisher, Notifier,
                      multisigRpyExn)
@@ -101,7 +101,8 @@ class RoleDoer(doing.DoDoer):
         route = "/end/role/add"
         msg = self.hab.reply(route=route, data=data, stamp=self.timestamp, **self.replyKwargs)
 
-        parser = Parser(version=self.version if self.version is not None else Vrsn_1_0)
+        parser_version = self.version if self.version is not None else self.hab.kever.serder.pvrsn
+        parser = Parser(version=parser_version)
         parser.parse(ims=bytes(msg), kvy=self.hab.kvy, rvy=self.hab.rvy)
 
         if isinstance(self.hab, GroupHab):

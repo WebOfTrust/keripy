@@ -18,7 +18,7 @@ from hio.core import http, tcp
 from hio.core.tcp import serving
 from hio.help import decking, ogler
 
-from ..kering import (Vrsn_1_0, Roles, Ilks, Kinds,
+from ..kering import (Version, Roles, Ilks, Kinds,
                       MissingEntryError)
 from ..recording import TopicsRecord
 from ..core import (Kevery, parsing, routing, coring, serdering,
@@ -88,16 +88,17 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
                  cues=cues)
 
     tvy.registerReplyRoutes(router=rvy.rtr)
+    parser_version = kwa.get("version", hab.kever.serder.pvrsn)
     parser = parsing.Parser(framed=True,
                             kvy=kvy,
                             tvy=tvy,
                             exc=exchanger,
                             rvy=rvy,
-                            version=Vrsn_1_0)
+                            version=parser_version)
 
     httpEnd = HttpEnd(rxbs=parser.ims, mbx=mbx)
     app.add_route("/", httpEnd)
-    receiptEnd = ReceiptEnd(hab=hab, inbound=cues, aids=aids)
+    receiptEnd = ReceiptEnd(hab=hab, inbound=cues, aids=aids, version=parser_version)
     app.add_route("/receipts", receiptEnd)
     queryEnd = QueryEnd(hab=hab, reger=reger)
     app.add_route("/query", queryEnd)
@@ -357,7 +358,7 @@ class Indirector(doing.DoDoer):
         self.parser = parsing.Parser(ims=self.client.rxbs,
                                      framed=True,
                                      kvy=self.kevery,
-                                     version=Vrsn_1_0)
+                                     version=self.hab.kever.serder.pvrsn)
         doers = doers if doers is not None else []
         doers.extend([doing.doify(self.msgDo),
                       doing.doify(self.escrowDo)])
@@ -580,6 +581,7 @@ class MailboxDirector(doing.DoDoer):
         else:
             self.tvy = None
 
+        parser_version = self.version if self.version is not None else Version
         self.parser = parsing.Parser(ims=self.ims,
                                      framed=True,
                                      kvy=self.kvy,
@@ -587,7 +589,7 @@ class MailboxDirector(doing.DoDoer):
                                      exc=self.exchanger,
                                      rvy=self.rvy,
                                      vry=self.verifier,
-                                     version=Vrsn_1_0)
+                                     version=parser_version)
 
         super(MailboxDirector, self).__init__(doers=doers, **kwa)
 
@@ -1074,15 +1076,16 @@ class ReceiptEnd(doing.DoDoer):
 
      """
 
-    def __init__(self, hab, inbound=None, outbound=None, aids=None):
+    def __init__(self, hab, inbound=None, outbound=None, aids=None, version=None):
         self.hab = hab
         self.inbound = inbound if inbound is not None else decking.Deck()
         self.outbound = outbound if outbound is not None else decking.Deck()
         self.aids = aids
         self.receipts = set()
+        self.version = version if version is not None else self.hab.kever.serder.pvrsn
         self.psr = parsing.Parser(framed=True,
                                   kvy=self.hab.kvy,
-                                  version=Vrsn_1_0)
+                                  version=self.version)
 
         super(ReceiptEnd, self).__init__(doers=[doing.doify(self.interceptDo)])
 

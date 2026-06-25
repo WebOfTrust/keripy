@@ -15,7 +15,7 @@ from prettytable import PrettyTable
 from ...common import Parsery, setupHby, printIdentifier, parseVersion
 
 from ....kering import (TraitCodex, ConfigurationError,
-                        Kinds, MissingAnchorError, Vrsn_1_0)
+                        Kinds, MissingAnchorError)
 from ....app import (HaberyDoer, MailboxDirector, WitnessInquisitor,
                      Notifier, Multiplexor, Counselor, Organizer, Poster,
                      multisigInceptExn, multisigInteractExn, multisigRotateExn,
@@ -88,9 +88,13 @@ class JoinDoer(doing.DoDoer):
         self.verifier = Verifier(hby=self.hby, reger=self.rgy.reger)
         self.rvy = Revery(db=self.hby.db,  lax=True)
         self.hby.kvy.registerReplyRoutes(self.rvy.rtr)
+        parser_kwa = dict()
+        if version is not None:
+            parser_kwa["version"] = version
+
         self.psr = Parser(kvy=self.hby.kvy, tvy=self.rgy.tvy,
                           rvy=self.rvy, vry=self.verifier, exc=self.exc,
-                          version=version if version is not None else Vrsn_1_0)
+                          **parser_kwa)
 
         mux = Multiplexor(hby=self.hby, notifier=self.notifier)
         loadHandlers(exc=self.exc, mux=mux)
