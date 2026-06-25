@@ -4,6 +4,9 @@ tests.app.grouping module
 
 """
 from contextlib import contextmanager
+from types import SimpleNamespace
+
+from hio.base import doing
 
 from keri.kering import Version, Vrsn_1_0, Kinds
 from keri.app import (Notifier, Counselor, Multiplexor,
@@ -23,6 +26,112 @@ from keri.peer import Exchanger
 
 TEST_VERSION = Vrsn_1_0
 KWA = dict(version=TEST_VERSION, kind=Kinds.json)
+
+
+def test_counselor_explicit_version_propagates_to_default_anchorer_and_delegator_queries(monkeypatch):
+    captures = {}
+
+    class FakeAnchorer(doing.Doer):
+        def __init__(self, hby, proxy=None, auths=None, version=None, kind=None, **kwa):
+            super().__init__(**kwa)
+            captures["anchorer_version"] = version
+            captures["anchorer_kind"] = kind
+
+        def delegation(self, pre, sn=None, proxy=None, auths=None):
+            captures["delegation"] = dict(pre=pre, sn=sn, proxy=proxy, auths=auths)
+
+        def complete(self, prefixer, number, diger=None):
+            return False
+
+    class FakeWitnessInquisitor(doing.Doer):
+        def __init__(self, hby, *args, **kwa):
+            super().__init__(**kwa)
+            self.hby = hby
+
+        def query(self, *args, **kwargs):
+            captures["query_args"] = args
+            captures["query_kwargs"] = kwargs
+
+    class FakeReceiptor(doing.Doer):
+        def __init__(self, hby, *args, **kwa):
+            super().__init__(**kwa)
+            self.hby = hby
+            self.msgs = []
+            self.gets = []
+            self.cues = []
+
+    class FakeTopItemStore:
+        def __init__(self, items=None):
+            self.items = list(items or [])
+            self.removed = []
+            self.added = []
+
+        def getTopItemIter(self):
+            return iter(self.items)
+
+        def rem(self, keys):
+            self.removed.append(keys)
+            self.items = []
+
+        def add(self, keys, val):
+            self.added.append((keys, val))
+
+    class FakeLastStore:
+        def __init__(self, value):
+            self.value = value
+
+        def getLast(self, keys, on=None):
+            return self.value
+
+    class FakeSigsStore:
+        def __init__(self, sigers):
+            self.sigers = sigers
+
+        def get(self, keys):
+            return self.sigers
+
+    monkeypatch.setattr(grouping, "Anchorer", FakeAnchorer)
+    monkeypatch.setattr(grouping, "WitnessInquisitor", FakeWitnessInquisitor)
+    monkeypatch.setattr(grouping, "Receiptor", FakeReceiptor)
+
+    pre = "EGroupPrefix"
+    delpre = "EDelegatorPrefix"
+    number = Number(num=1)
+    diger = SimpleNamespace(qb64="EGroupEventDigest")
+
+    gpse = FakeTopItemStore([((pre,), (number, diger))])
+    gdee = FakeTopItemStore()
+    fake_db = SimpleNamespace(gpse=gpse,
+                              gdee=gdee,
+                              kels=FakeLastStore("abc"),
+                              sigs=FakeSigsStore([SimpleNamespace(index=1)]))
+    fake_ghab = SimpleNamespace(
+        pre=pre,
+        kever=SimpleNamespace(
+            verfers=[SimpleNamespace(qb64="DFirst"), SimpleNamespace(qb64="DSecond")],
+            delegated=True,
+            ilk=grouping.Ilks.dip,
+            delpre=delpre,
+        ),
+        mhab=SimpleNamespace(pre="ELocalMember",
+                             kever=SimpleNamespace(verfers=[SimpleNamespace(qb64="DFirst")])),
+    )
+    fake_hby = SimpleNamespace(db=fake_db, habs={pre: fake_ghab})
+
+    counselor = Counselor(hby=fake_hby, version=Vrsn_1_0, kind=Kinds.json)
+    counselor.processPartialSignedEscrow()
+
+    assert captures["anchorer_version"] == Vrsn_1_0
+    assert captures["anchorer_kind"] == Kinds.json
+    assert captures["query_kwargs"] == dict(
+        src="ELocalMember",
+        pre=delpre,
+        anchor=dict(i=pre, s=number.snh, d=diger.qb64),
+        version=Vrsn_1_0,
+        gvrsn=Vrsn_1_0,
+        kind=Kinds.json,
+    )
+
 
 def test_counselor():
     salt = b'0123456789abcdef'

@@ -34,7 +34,7 @@ class Counselor(doing.DoDoer):
         - escrowDo: processes escrows of group multisig identifiers waiting to be completed.
     """
 
-    def __init__(self, hby, swain=None, proxy=None, **kwa):
+    def __init__(self, hby, swain=None, proxy=None, version=None, kind=None, **kwa):
         """
         Initialize Counselor.
 
@@ -42,10 +42,19 @@ class Counselor(doing.DoDoer):
             hby (Habery): database environment for local Habs
             swain (Anchorer): optional Anchorer for delegation anchoring
             proxy (Hab): optional proxy Hab to use for delegation anchoring if not using local Hab
+            version (Versionage | None): optional explicit protocol version for
+                delegation queries and the default Anchorer.
+            kind (str | None): optional explicit serialization kind for
+                delegation queries and the default Anchorer.
         """
 
         self.hby = hby
-        self.swain = swain if swain is not None else Anchorer(hby=self.hby)
+        self.version = version
+        self.kind = kind if kind is not None else Kinds.json
+        self.queryKwargs = dict(version=version, gvrsn=version, kind=self.kind) if version is not None else {}
+        self.swain = swain if swain is not None else Anchorer(hby=self.hby,
+                                                              version=self.version,
+                                                              kind=self.kind)
         self.proxy = proxy
         self.witDoer = Receiptor(hby=self.hby)
         self.witq = WitnessInquisitor(hby=hby)
@@ -158,9 +167,11 @@ class Counselor(doing.DoDoer):
                     else:
                         anchor = dict(i=pre, s=number.snh, d=diger.qb64)
                         if self.proxy:
-                            self.witq.query(hab=self.proxy, pre=kever.delpre, anchor=anchor)
+                            self.witq.query(hab=self.proxy, pre=kever.delpre, anchor=anchor,
+                                            **self.queryKwargs)
                         else:
-                            self.witq.query(src=ghab.mhab.pre, pre=kever.delpre, anchor=anchor)
+                            self.witq.query(src=ghab.mhab.pre, pre=kever.delpre, anchor=anchor,
+                                            **self.queryKwargs)
 
                     logger.info("AID %s...%s: Waiting for delegation approval...", pre[:4], pre[-4:])
                     self.hby.db.gdee.add(keys=(pre,), val=(number, diger))
