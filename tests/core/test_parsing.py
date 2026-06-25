@@ -4,6 +4,7 @@ tests.core.test_parsing module
 
 """
 import os
+from dataclasses import asdict
 
 import pytest
 
@@ -14,7 +15,8 @@ from keri.kering import ValidationError, Vrsn_1_0, Vrsn_2_0, Kinds
 
 from keri.core import (Counter, Diger, GenDex, Codens, Seqner, Dater, Texter, Pather,
                        Blinder, Mediar, TypeMedia, Sealer, SealKind, Verser,
-                       Salter, Parser, Kever, Kevery, incept, rotate, interact)
+                       Salter, Parser, Kever, Kevery, incept, rotate, interact,
+                       exchept, messagize)
 
 from keri.db import openDB
 
@@ -4759,6 +4761,208 @@ def test_parse_native_cesr_fixed_field():
     """ Done Test """
 
 
+def test_parser_v2_substream():
+    """Test the support functionality for Parser stream processor CESR v2
+    for substreamed message attachemments
+
+    """
+    parser = Parser()  # test defaults
+    assert parser.genus == GenDex.KERI
+    assert parser.version == Vrsn_2_0
+    assert parser.methods == Parser.Methods[Vrsn_2_0.major][Vrsn_2_0.minor]
+    assert parser.codes == Parser.Codes[Vrsn_2_0.major][Vrsn_2_0.minor]
+    assert parser.sucodes == Parser.SUCodes[Vrsn_2_0.major][Vrsn_2_0.minor]
+    assert parser.mucodes == Parser.MUCodes[Vrsn_2_0.major][Vrsn_2_0.minor]
+
+    assert not parser.local
+    assert parser.ims == bytearray()
+    assert parser.framed
+    assert not parser.piped
+    assert parser.kvy is None
+    assert parser.tvy is None
+    assert parser.exc is None
+    assert parser.rvy is None
+    assert parser.vry is None
+
+
+    logger.setLevel("ERROR")
+
+    #  create transferable signers
+    raw = b"ABCDEFGH01234567"
+    signers2 = Salter(raw=raw).signers(count=8, path='psr', temp=True)
+
+
+    with openDB(name="controller") as conDB, openDB(name="validator") as valDB:
+        gvc1 = Counter(countB64=Counter.verToB64(major=Vrsn_1_0.major,
+                                                     minor=Vrsn_1_0.minor),
+                           code=Codens.KERIACDCGenusVersion,
+                               version=Vrsn_1_0)
+        assert gvc1.qb64 == '-_AAABAA'
+        assert Counter.b64ToVer(gvc1.countToB64(l=3)) == Vrsn_1_0
+
+        gvc2 = Counter(countB64=Counter.verToB64(major=Vrsn_2_0.major,
+                                                     minor=Vrsn_2_0.minor),
+                           code=Codens.KERIACDCGenusVersion,
+                                version=Vrsn_2_0)
+        assert gvc2.qb64 == '-_AAACAA'
+        assert Counter.b64ToVer(gvc2.countToB64(l=3)) == Vrsn_2_0
+
+        kevery = Kevery(db=valDB)
+
+        parser = Parser(kvy=kevery, version=Vrsn_2_0)
+        assert parser.genus == GenDex.KERI
+        assert parser.version == Vrsn_2_0
+        assert parser.local == False
+        assert parser.framed == True
+        assert parser.piped == False
+        assert parser.ims == bytearray()
+        assert parser.kvy == kevery
+        assert parser.tvy is None
+        assert parser.exc is None
+        assert parser.rvy is None
+        assert parser.vry is None
+
+
+        # Event 0  Inception Transferable (nxt digest not empty)
+        serder0 = incept(keys=[signers2[0].verfer.qb64],
+                        ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64],
+                        version=Vrsn_2_0,
+                        kind=Kinds.cesr)
+        assert serder0.pvrsn == Vrsn_2_0
+        assert serder0.gvrsn == Vrsn_2_0
+
+        # sign serialization indexed controller sigs group count quadlets
+        siger0 = signers2[0].sign(serder0.raw, index=0)  # return siger
+        msg0 = messagize(serder=serder0, sigers=[siger0], nested=True, gvrsn=Vrsn_2_0)
+
+        # Event 1 Rotation Transferable
+        serder1 = rotate(pre=serder0.pre,
+                        keys=[signers2[1].verfer.qb64],
+                        dig=serder0.said,
+                        ndigs=[Diger(ser=signers2[2].verfer.qb64b).qb64],
+                        sn=1,
+                        version=Vrsn_2_0,
+                        kind=Kinds.cesr)
+        # sign serialization
+        siger1 = signers2[1].sign(serder1.raw, index=0)  # returns siger
+        msg1 = messagize(serder=serder1, sigers=[siger1], framed=False, gvrsn=Vrsn_2_0)
+
+        # now create message using messagize with msg0 and msg1 as nests
+        attributes = dict(a=serder0.said, b=serder1.said)
+        nonce = '0AB8WKheGX-o1b1SzLaxZr4u'
+        dts = '2026-06-24T20:39:40.737875+00:00'  # helping.nowIso8601()
+        serder2 = exchept(sender=serder0.pre,
+                          receiver=serder0.pre,
+                          nonce=nonce,
+                          stamp=dts,
+                          attributes = attributes,
+                          kind=Kinds.cesr,
+                          pvrsn=Vrsn_2_0)
+
+        siger2 = signers2[0].sign(ser=serder2.raw, index=0)  # default indexed True
+        msg2 = messagize(serder2, sigers=[siger2], nests=[msg0, msg1], nested=True)
+
+        assert msg2 == (b'-BEX-FBP0OKERICAACAAXxipENigDsiL9CrHdU-yn5hOVQM5zKg6xktazQqYLUKp'
+          b'i1Kq0AB8WKheGX-o1b1SzLaxZr4uDNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJI'
+          b'WDiXp4HxDNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJIWDiXp4Hx1AAG2026-06-'
+          b'24T20c39c40d737875p00c004AAA-IAA-IAY0J_aEFaYE2LTv8dItUgQzIHKRA9F'
+          b'aHDrHtIHNs-m5DJKWXRN0J_bELd8a717hYxwewOwgmZfNRUaSmpBZpABZsOHduLd'
+          b'1cg8-KAWAADKmJDaLkMGw6NUYyWAYFY4uBWItPntgZflpuIA5hk2WqqlGWj-JMpX'
+          b'bxPYON9eCj47Wj0wqG1IraSpr1huW6kB-BBR-FA50OKERICAACAAXicpEFaYE2LT'
+          b'v8dItUgQzIHKRA9FaHDrHtIHNs-m5DJKWXRNDNG2arBDtHK_JyHRAq-emRdC6UM-'
+          b'yIpCAeJIWDiXp4HxMAAAMAAB-JALDNG2arBDtHK_JyHRAq-emRdC6UM-yIpCAeJI'
+          b'WDiXp4HxMAAB-JALEFXIx7URwmw7AVQTBcMxPXfOOJ2YYA1SJAam69DXV8D2MAAA'
+          b'-JAA-JAA-JAA-KAWAADIuhb1P2QTiAdAsff8zRQi4z7DKqXyCWtQj8NllWrD9CQU'
+          b'KpRB3NCpg_SX3LV2gAqlpbIkX0vDt61yhQmZfUYN-FBF0OKERICAACAAXrotELd8'
+          b'a717hYxwewOwgmZfNRUaSmpBZpABZsOHduLd1cg8DNG2arBDtHK_JyHRAq-emRdC'
+          b'6UM-yIpCAeJIWDiXp4HxMAABEFaYE2LTv8dItUgQzIHKRA9FaHDrHtIHNs-m5DJK'
+          b'WXRNMAAB-JALDOwvH3i0ceL1GBqaLxecDIsk6NFDL-Qv6SFq5Gj6JMABMAAB-JAL'
+          b'EFOcjb2T4uNP6C20sStcAzOyXDU27_2vWpTzAFbTarAcMAAA-JAA-JAA-JAA-JAA'
+          b'-CAX-KAWAAB030oDC6rw-sdMygaNxzsoIFdgl0n02BbIkLEcT-Ot2d26rBW6TmIw'
+          b'AeGFicXl1pOwJ8X4Zah4idvMuP3F688P')
+
+
+        ims = bytearray(msg2)
+
+        results = parser.parse(ims=ims, framed=False, processive=False)
+        assert ims == bytearray(b'')  # emptied
+        assert len(results) == 1
+        result = results[0]
+
+        assert result.serder.said == serder2.said
+        assert result.nests[0].serder.said == serder0.said
+        assert result.nests[1].serder.said == serder1.said
+
+        # redo with differnt events
+        # Event 0  Inception Transferable (nxt digest not empty)
+        serder3 = incept(keys=[signers2[0].verfer.qb64],
+                             ndigs=[Diger(ser=signers2[1].verfer.qb64b).qb64],
+                            version=Vrsn_2_0,
+                            kind=Kinds.json)
+
+        # sign serialization indexed controller sigs group count quadlets
+        siger3 = signers2[0].sign(serder3.raw, index=0)  # return siger
+        msg3 = messagize(serder=serder3, sigers=[siger3], nested=True, gvrsn=Vrsn_2_0)
+
+        # Event 1 Rotation Transferable
+        serder4 = rotate(pre=serder3.pre,
+                             keys=[signers2[1].verfer.qb64],
+                            dig=serder3.said,
+                            ndigs=[Diger(ser=signers2[2].verfer.qb64b).qb64],
+                            sn=1,
+                            version=Vrsn_2_0,
+                            kind=Kinds.json)
+        # sign serialization
+        siger4 = signers2[1].sign(serder4.raw, index=0)  # returns siger
+        msg4 = messagize(serder=serder4, sigers=[siger4], nested=True, gvrsn=Vrsn_2_0)
+
+        # now create message using messagize with msg3 and msg4 as nests
+        attributes = dict(a=serder3.said, b=serder4.said)
+        nonce = '0AB8WKheGX-o1b1SzLaxZr4u'
+        dts = '2026-06-24T20:39:40.737875+00:00'  # helping.nowIso8601()
+        serder5 = exchept(sender=serder3.pre,
+                              receiver=serder3.pre,
+                              nonce=nonce,
+                              stamp=dts,
+                              attributes = attributes,
+                              kind=Kinds.json,
+                              pvrsn=Vrsn_2_0)
+
+        siger5 = signers2[0].sign(ser=serder5.raw, index=0)  # default indexed True
+        msg5 = messagize(serder5, sigers=[siger5], nests=[msg3, msg4], framed=False)
+
+        ims = bytearray(msg5)
+
+        results = parser.parse(ims=ims, framed=False, processive=False)
+        assert ims == bytearray(b'')  # emptied
+        assert len(results) == 1
+        result = results[0]
+
+        assert result.serder.said == serder5.said
+        assert result.nests[0].serder.said == serder3.said
+        assert result.nests[1].serder.said == serder4.said
+
+        # now have two successful msgs with substeams in stream
+        ims = bytearray(msg2)
+        ims.extend(msg5)
+
+        results = parser.parse(ims=ims, framed=True, processive=False)
+        assert ims == bytearray(b'')  # emptied
+        assert len(results) == 2
+
+        result = results[0]
+        assert result.serder.said == serder2.said
+        assert result.nests[0].serder.said == serder0.said
+        assert result.nests[1].serder.said == serder1.said
+
+        result = results[1]
+        assert result.serder.said == serder5.said
+        assert result.nests[0].serder.said == serder3.said
+        assert result.nests[1].serder.said == serder4.said
+
+        """Done Test"""
+
+
 if __name__ == "__main__":
     test_parser_v1_basic()
     test_parser_v1_version()
@@ -4772,3 +4976,4 @@ if __name__ == "__main__":
     test_parse_generic_group()
     test_group_parsator()
     test_parse_native_cesr_fixed_field()
+    test_parser_v2_substream()

@@ -533,7 +533,6 @@ class Parser:
         local = local if local is not None else self.local
         local = True if local else False
 
-        results = []
         result = None
         while ims:  # only process until ims empty (differs here from parsator)
             try:
@@ -548,8 +547,6 @@ class Parser:
                                                         local=local,
                                                         version=version,
                                                         processive=processive)
-                if not processive:
-                    results.append(result)
 
             except SizedGroupError as ex:  # error inside sized group
                 # processOneIter already flushed group so do not flush stream
@@ -574,7 +571,7 @@ class Parser:
                     logger.error("Parser msg non-extraction error: %s", ex)
             yield
 
-        return result if processive else results  # debug parsing when not processive
+        return result  # debug parsing when not processive
 
 
     def onceParsator(self, ims=None, framed=None, piped=None, kvy=None,
@@ -814,6 +811,7 @@ class Parser:
         svrsn = None
         eggs = None  # used in preflused error
         result = None
+        results = []
         try:
             while True:  # process stream until done
                 while not ims and stack:  # happens when ascending (un-nesting)
@@ -910,7 +908,7 @@ class Parser:
 
                         continue
                 else:
-                    result = exts
+                    results.append(exts)
 
 
         except ExtractionError as ex:  # maybe this needs to be more granular
@@ -930,7 +928,7 @@ class Parser:
                 svrsn, _ = stack.pop()
                 if svrsn:
                     self.version = svrsn
-        return result
+        return result if processive else results
 
 
     def msgParsator(self, ims=None, framed=True, piped=False, local=None,
