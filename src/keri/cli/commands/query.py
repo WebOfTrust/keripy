@@ -52,7 +52,6 @@ class LaunchDoer(doing.DoDoer):
         self.pre = pre
         self.sn = sn
         self.anchor = anchor
-        self.version = version
         self.loaded = False
         self.queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
 
@@ -77,18 +76,17 @@ class LaunchDoer(doing.DoDoer):
 
         end = helping.nowUTC() + datetime.timedelta(seconds=10)
 
-        kwa = dict(self.queryKwargs)
         if self.anchor is not None:
             f = open(self.anchor)
             anchor = json.load(f)
             print(f"Checking for anchor {anchor}...")
-            doer = AnchorQuerier(hby=self.hby, hab=self.hab, pre=self.pre, anchor=anchor, **kwa)
+            doer = AnchorQuerier(hby=self.hby, hab=self.hab, pre=self.pre, anchor=anchor, **self.queryKwargs)
         elif self.sn is not None:
             print(f"Checking for updates through sequence number {self.sn}...")
-            doer = SeqNoQuerier(hby=self.hby, hab=self.hab, pre=self.pre, sn=self.sn, **kwa)
+            doer = SeqNoQuerier(hby=self.hby, hab=self.hab, pre=self.pre, sn=self.sn, **self.queryKwargs)
         else:
             print(f"Checking for updates...")
-            doer = QueryDoer(hby=self.hby, hab=self.hab, pre=self.pre, kvy=self.mbd.kvy, **kwa)
+            doer = QueryDoer(hby=self.hby, hab=self.hab, pre=self.pre, kvy=self.mbd.kvy, **self.queryKwargs)
 
         self.extend([doer])
 

@@ -78,8 +78,6 @@ class JoinDoer(doing.DoDoer):
                          while using the default group of "default-group"
         """
         self.group = group
-        self.version = version
-        self.queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
         self.hby = setupHby(name=name, base=base, bran=bran)
         self.rgy = Regery(hby=self.hby, name=name, base=base)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
@@ -102,9 +100,10 @@ class JoinDoer(doing.DoDoer):
         self.credentialer = Credentialer(hby=self.hby, rgy=self.rgy, registrar=self.registrar,
                                          verifier=self.verifier)
 
+        queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
         self.mbx = MailboxDirector(hby=self.hby, exc=self.exc, topics=['/receipt', '/multisig', '/replay',
                                                                        '/delegate'],
-                                   queryKwargs=self.queryKwargs)
+                                   queryKwargs=queryKwargs)
         self.postman = Poster(hby=self.hby)
 
         doers = [self.hbyDoer, self.witq,  self.mbx, self.counselor, self.registrar, self.credentialer, self.postman]

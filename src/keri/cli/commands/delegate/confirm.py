@@ -86,9 +86,10 @@ class ConfirmDoer(doing.DoDoer):
         delegating.loadHandlers(hby=hby, exc=exc, notifier=self.notifier)
         grouping.loadHandlers(exc=exc, mux=self.mux)
 
-        queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
+        self.eventKwargs = dict(version=version, gvrsn=version) if version is not None else {}
+        self.queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
         self.mbx = MailboxDirector(hby=hby, topics=['/receipt', '/multisig', '/replay', '/delegate'],
-                                               exc=exc, queryKwargs=queryKwargs)
+                                               exc=exc, queryKwargs=self.queryKwargs)
         doers = [self.hbyDoer, self.witq, self.postman, self.counselor, self.mbx]
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.confirmDo)])
@@ -97,14 +98,7 @@ class ConfirmDoer(doing.DoDoer):
         self.hby = hby
         self.interact = interact
         self.auto = auto
-        self.version = version
         super(ConfirmDoer, self).__init__(doers=doers)
-
-    def eventKwa(self):
-        return dict(version=self.version, gvrsn=self.version) if self.version is not None else {}
-
-    def queryKwa(self):
-        return dict(version=self.version, gvrsn=self.version, kind=Kinds.json) if self.version is not None else {}
 
     def _addAuthorizerSeal(self, pre, edig, anchorSn, anchorSaid):
         """Save the authorizer (delegator) event seal of the anchoring IXN event for an approved delegation."""
@@ -172,9 +166,8 @@ class ConfirmDoer(doing.DoDoer):
                         aids = hab.smids
 
                         anchor = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
-                        event_kwa = self.eventKwa()
                         if self.interact:
-                            msg = hab.interact(data=[anchor], **event_kwa)
+                            msg = hab.interact(data=[anchor], **self.eventKwargs)
                         else:
                             print("Confirm does not support rotation for delegation approval with group multisig")
                             continue
@@ -215,11 +208,10 @@ class ConfirmDoer(doing.DoDoer):
                         cur = hab.kever.sner.num
 
                         anchor = dict(i=eserder.ked["i"], s=eserder.snh, d=eserder.said)
-                        event_kwa = self.eventKwa()
                         if self.interact:
-                            hab.interact(data=[anchor], framed=True, **event_kwa)
+                            hab.interact(data=[anchor], framed=True, **self.eventKwargs)
                         else:
-                            hab.rotate(data=[anchor], framed=True, **event_kwa)
+                            hab.rotate(data=[anchor], framed=True, **self.eventKwargs)
 
                         auths = {}
                         if self.authenticate:
@@ -249,9 +241,8 @@ class ConfirmDoer(doing.DoDoer):
                         print(f'\tDelegate {eserder.pre} {typ} Anchored at Seq. No.  {hab.kever.sner.num}')
 
                         # wait for confirmation of fully commited event
-                        query_kwa = self.queryKwa()
                         if eserder.pre in self.hby.kevers:
-                            self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn, **query_kwa)
+                            self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn, **self.queryKwargs)
 
                             while eserder.sn < self.hby.kevers[eserder.pre].sn:
                                 yield self.tock
@@ -259,7 +250,8 @@ class ConfirmDoer(doing.DoDoer):
                             print(f"Delegate {eserder.pre} {typ} event committed.")
                         else:  # It should be an inception event then...
                             wits = [werfer.qb64 for werfer in eserder.berfers]
-                            self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn, wits=wits, **query_kwa)
+                            self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn, wits=wits,
+                                            **self.queryKwargs)
 
                             while eserder.pre not in self.hby.kevers:
                                 yield self.tock

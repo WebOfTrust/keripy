@@ -807,11 +807,11 @@ class Poller(doing.DoDoer):
                 else:
                     topics[topic] = 0
 
-            queryKwargs = dict(self.queryKwargs)
             if isinstance(self.hab, GroupHab):
-                msg = self.hab.mhab.query(pre=self.pre, src=self.witness, route="mbx", query=q, **queryKwargs)
+                msg = self.hab.mhab.query(pre=self.pre, src=self.witness, route="mbx", query=q,
+                                          **self.queryKwargs)
             else:
-                msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q, **queryKwargs)
+                msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q, **self.queryKwargs)
 
             createCESRRequest(msg, client, dest=self.witness)
 

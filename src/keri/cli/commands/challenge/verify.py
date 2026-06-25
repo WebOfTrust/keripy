@@ -70,7 +70,6 @@ class VerifyDoer(doing.DoDoer):
         self.strength = strength
         self.out = out
         self.signer = signer
-        self.queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
         self.hby = setupHby(name=name, base=base, bran=bran)
         self.exc = Exchanger(hby=self.hby, handlers=[])
         self.org = Organizer(hby=self.hby)
@@ -78,7 +77,8 @@ class VerifyDoer(doing.DoDoer):
 
         loadHandlers(db=self.hby.db, signaler=signaler, exc=self.exc)
 
-        self.mbd = MailboxDirector(hby=self.hby, topics=['/challenge'], exc=self.exc, queryKwargs=self.queryKwargs)
+        queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
+        self.mbd = MailboxDirector(hby=self.hby, topics=['/challenge'], exc=self.exc, queryKwargs=queryKwargs)
 
         doers = [self.mbd, doing.doify(self.verifyDo)]
 

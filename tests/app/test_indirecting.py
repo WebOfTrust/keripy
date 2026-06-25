@@ -25,7 +25,7 @@ from keri.app import (MailboxIterable, QryRpyMailboxIterable,
                       ReceiptEnd, CESR_CONTENT_TYPE, CESR_DESTINATION_HEADER)
 from keri.app.httping import CESR_ATTACHMENT_HEADER
 
-from tests.common import KWA
+from tests.common import CUE_KWA, KWA
 
 
 def test_mailbox_iter():
@@ -391,14 +391,15 @@ def test_receiptor_get_processes_v1_witness_receipt_response(seeder):
         assert witDoer.clienter.removed is True
 
 
-def test_mailbox_query_defaults_to_hab_version_for_v1_topics():
+def test_mailbox_query_honors_explicit_v1_kwargs():
     with openHby(name="mailbox-query", version=Vrsn_1_0) as hby:
         hab = hby.makeHab(name="cam", **KWA)
 
         msg = hab.query(pre=hab.pre,
                         src=hab.pre,
                         route="mbx",
-                        query=dict(topics={"/receipt": 0}))
+                        query=dict(topics={"/receipt": 0}),
+                        **KWA)
 
         serder = SerderKERI(raw=msg)
         assert serder.pvrsn == Vrsn_1_0
@@ -406,16 +407,16 @@ def test_mailbox_query_defaults_to_hab_version_for_v1_topics():
         assert serder.ked["q"]["topics"] == {"/receipt": 0}
 
 
-def test_v1_hab_follow_on_events_default_to_hab_version():
+def test_follow_on_events_honor_explicit_v1_kwargs():
     with openHby(name="v1-follow-ons", version=Vrsn_1_0) as hby:
         hab = hby.makeHab(name="cam", **KWA)
 
-        rot = hab.rotate(framed=True)
+        rot = hab.rotate(framed=True, **CUE_KWA)
         rserder = SerderKERI(raw=rot)
         assert rserder.pvrsn == Vrsn_1_0
         assert rserder.kind == Kinds.json
 
-        ixn = hab.interact(framed=True)
+        ixn = hab.interact(framed=True, **CUE_KWA)
         iserder = SerderKERI(raw=ixn)
         assert iserder.pvrsn == Vrsn_1_0
         assert iserder.kind == Kinds.json
