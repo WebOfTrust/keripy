@@ -115,7 +115,7 @@ FirstSeen = namedtuple("FirstSeen", 'f, dt')
 # d = SAID digest qb64 of receipted event (Diger)
 # rss = receiptor indexed signatures qb64 list[Siger]
 # use TransLastReceiptIdxSigGroups count code for CESR native
-TransLastReceipts = namedtuple("Receipt", 'i, n, d, rss')
+TransReceipts = namedtuple("TransReceipts", 'i, n, d, rss')
 
 # Transferable Signatures
 # i = AID pre qb64 of signer (Prefixer)

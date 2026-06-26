@@ -52,7 +52,7 @@ class CounterCodex_1_0(IceMapDom):
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    As subclass of MapCodex can get codes with item syntax using tag variables.
+    As subclass of IceMapDom can get codes with item syntax using tag variables.
     Example: codex[tag]
     """
     ControllerIdxSigs: str = '-A'  # Qualified Base64 Indexed Signature.
@@ -92,7 +92,7 @@ class QuadTripCodex_1_0(IceMapDom):
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    As subclass of MapCodex can get codes with item syntax using tag variables.
+    As subclass of IceMapDom can get codes with item syntax using tag variables.
     Example: codex[tag]
     """
     PathedMaterialCouples: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
@@ -119,7 +119,7 @@ class UniversalCodex_1_0(IceMapDom):
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    As subclass of MapCodex can get codes with item syntax using tag variables.
+    As subclass of IceMapDom can get codes with item syntax using tag variables.
     Example: codex[tag]
     """
     GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
@@ -146,7 +146,7 @@ class SpecialUniversalCodex_1_0(IceMapDom):
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    As subclass of MapCodex can get codes with item syntax using tag variables.
+    As subclass of IceMapDom can get codes with item syntax using tag variables.
     Example: codex[tag]
     """
     GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)
@@ -169,7 +169,7 @@ class MessageUniversalCodex_1_0(IceMapDom):
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    As subclass of MapCodex can get codes with item syntax using tag variables.
+    As subclass of IceMapDom can get codes with item syntax using tag variables.
     Example: codex[tag]
     """
     NonNativeBodyGroup: str = '-W'  # Message body Non-native enclosed with Texter
@@ -180,6 +180,24 @@ class MessageUniversalCodex_1_0(IceMapDom):
 
 MUDex_1_0 = MessageUniversalCodex_1_0()
 
+@dataclass(frozen=True)
+class BodyUniversalCodex_1_0(IceMapDom):
+    """BodyUniversalCodex_1_0 is codex hard (stable) part of all V1 message
+    universal counter codes that support CESR native full message Bodies.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of IceMapDom can get codes with item syntax using tag variables.
+    Example: codex[tag]
+    """
+    NonNativeBodyGroup: str = '-W'  # Message body Non-native enclosed with Texter
+    BigNonNativeBodyGroup: str = '--W'  # Big Message body Non-native enclosed with Texter
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+BUDex_1_0 = BodyUniversalCodex_1_0()
+
 
 @dataclass(frozen=True)
 class CounterCodex_2_0(IceMapDom):
@@ -187,7 +205,7 @@ class CounterCodex_2_0(IceMapDom):
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    As subclass of MapCodex can get codes with item syntax using tag variables.
+    As subclass of IceMapDom can get codes with item syntax using tag variables.
     Example: codex[tag]
     """
     GenericGroup: str = '-A'  # Generic Group (Universal with Override).
@@ -261,7 +279,7 @@ class UniversalCodex_2_0(IceMapDom):
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    As subclass of MapCodex can get codes with item syntax using tag variables.
+    As subclass of IceMapDom can get codes with item syntax using tag variables.
     Example: codex[tag]
     """
     GenericGroup: str = '-A'  # Generic Group (Universal with Override).
@@ -299,7 +317,7 @@ class SpecialUniversalCodex_2_0(IceMapDom):
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    As subclass of MapCodex can get codes with item syntax using tag variables.
+    As subclass of IceMapDom can get codes with item syntax using tag variables.
     Example: codex[tag]
     """
     GenericGroup: str = '-A'  # Generic Group (Universal with Override).
@@ -322,7 +340,7 @@ class MessageUniversalCodex_2_0(IceMapDom):
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    As subclass of MapCodex can get codes with item syntax using tag variables.
+    As subclass of IceMapDom can get codes with item syntax using tag variables.
     Example: codex[tag]
     """
     DatagramSegmentGroup: str = '-D'  # Datagram Segment Group (Universal).
@@ -340,6 +358,28 @@ class MessageUniversalCodex_2_0(IceMapDom):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
 
 MUDex_2_0 = MessageUniversalCodex_2_0()
+
+@dataclass(frozen=True)
+class BodyUniversalCodex_2_0(IceMapDom):
+    """BodyUniversalCodex_2_0 is codex hard (stable) part of all V2 message
+    universal counter codes that support CESR native message Bodies.
+    Only provide defined codes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    As subclass of IceMapDom can get codes with item syntax using tag variables.
+    Example: codex[tag]
+    """
+    FixBodyGroup: str = '-F'  # Fixed Field Message Body Group (Universal).
+    BigFixBodyGroup: str = '--F'  # Big Fixed Field Message Body Group (Universal).
+    MapBodyGroup: str = '-G'  # Field Map Message Body Group (Universal).
+    BigMapBodyGroup: str = '--G'  # Big Field Map Message Body Group (Universal).
+    NonNativeBodyGroup: str = '-H'  # Message body Non-native enclosed with Texter
+    BigNonNativeBodyGroup: str = '--H'  # Big Message body Non-native enclosed with Texter
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+BUDex_2_0 = BodyUniversalCodex_2_0()
 
 
 # CodeNames  is tuple of codes names given by attributes of union of codices
@@ -360,7 +400,7 @@ class SealCodex_2_0(IceMapDom):
     Only provide defined codes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    As subclass of MapCodex can get codes with item syntax using tag variables.
+    As subclass of IceMapDom can get codes with item syntax using tag variables.
     Example: codex[tag]
     """
     DigestSealSingles: str = '-Q'  # Digest Seal Single(s), dig of sealed data.
@@ -401,7 +441,10 @@ class Counter:
     Includes the following attributes and properties:
 
     Class Attributes:
-        Codes (dict): nested of codexes keyed by major and minor version
+        Codes (dict): nested codes keyed by major and minor version
+        SUCodes (dict): nested special universal codes keyed by major and minor version
+        MUCodes (dict): nested message universal codes keyed by major and minor version
+        BUCodes (dict): nested body universal codes keyed by major and minor version
         Names (dict): nested of map of code names to codes keyed by
                         major and minor version
         Hards (dict): of hard code sizes keyed by text domain selector
@@ -525,7 +568,7 @@ class Counter:
         },
     }
 
-    # special universal codes
+    # message universal codes
     MUCodes = \
     {
         Vrsn_1_0.major: \
@@ -535,6 +578,19 @@ class Counter:
         Vrsn_2_0.major: \
         {
             Vrsn_2_0.minor: MUDex_2_0,
+        },
+    }
+
+    # message universal codes
+    BUCodes = \
+    {
+        Vrsn_1_0.major: \
+        {
+            Vrsn_1_0.minor: BUDex_1_0,
+        },
+        Vrsn_2_0.major: \
+        {
+            Vrsn_2_0.minor: BUDex_2_0,
         },
     }
 

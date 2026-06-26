@@ -14,7 +14,7 @@ from keri import (ValidationError, UnverifiedReceiptError, InvalidCodeError,
                          versify)
 
 from keri.app import habbing, openKS, Manager
-from keri.core import (Signer, Counter, Codens, Kever, Parser,
+from keri.core import (Noncer, Signer, Counter, Codens, Kever, Parser,
                        SerderKERI, Salter, Diger, Matter, Cigar, Seqner,
                        Verfer, Prefixer, Number, Saider, Seqner,
                        DigDex, MtrDex, PreDex, NumDex, IdrDex, IdxSigDex,
@@ -26,7 +26,7 @@ from keri.core import (Signer, Counter, Codens, Kever, Parser,
                        deReceiptCouple, deSourceCouple, deReceiptTriple,
                        deTransReceiptQuadruple, deTransReceiptQuintuple,
                        incept, rotate, interact, receipt, query, delcept,
-                       deltate, state, messagize, loadEvent)
+                       deltate, exchept, state, messagize, loadEvent)
 
 from keri.db import openDB, dgKey, snKey
 from keri.help import helping, ogler
@@ -2459,6 +2459,196 @@ def test_messagize_v2_native_nested():
         """ Done Test """
 
 
+def test_messagize_v2_native_with_nests():
+    """Test messagize utility function with version 2 messages in native CESR
+    with nested msg substream attachments
+
+    """
+    salter = Salter(raw=b'0123456789abcdef')
+    with openDB(name="edy") as db, openKS(name="edy") as ks:
+        # Init key pair manager
+        mgr = Manager(ks=ks, salt=salter.qb64)
+        verfers, digers = mgr.incept(icount=1, ncount=0, transferable=True, stem="C")
+
+        # Test with inception message as innie
+        serder0 = incept(keys=[verfers[0].qb64], code=MtrDex.Blake3_256,
+                        kind=Kinds.cesr, pvrsn=Vrsn_2_0)
+
+        pre0 = serder0.pre
+        dig0 = serder0.said
+
+        sigers0 = mgr.sign(ser=serder0.raw, verfers=verfers)  # default indexed True
+        assert isinstance(sigers0[0], Siger)
+
+        # test nested forces gvrsn to V2 and uses BodyWithAttachmentGroup
+        msg0 = messagize(serder0, sigers=sigers0, nested=True)
+        assert isinstance(msg0, bytearray)
+        assert msg0 == (b'-BBG-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2'
+                    b'NfHnEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif'
+                    b'48whAmpb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA'
+                    b'-KAWAABfKnU9VdFRGI2pQ2gMotaAB3Q8BxNhLRnrXTrKiyi5qhjQ5YKU4SbDFjVd'
+                    b'GoUoN3u5gfn6dHBVwvnBkr96OPwM')
+
+
+        # Test with inception message as innie
+        serder1 = interact(pre=pre0, dig=dig0, kind=Kinds.cesr, pvrsn=Vrsn_2_0)
+        sigers1 = mgr.sign(ser=serder1.raw, verfers=verfers)  # default indexed True
+        assert isinstance(sigers1[0], Siger)
+
+        # test not framed so uses AttachmentGroup not BodyWithAttachmentGroup
+        msg1 = messagize(serder1, sigers=sigers1,framed=False, gvrsn=Vrsn_2_0, )
+        assert isinstance(msg1, bytearray)
+        assert msg1 == (b'-FAn0OKERICAACAAXixnEPnIYriZ1Yp22y7vkjkLxSCtO5753wO6UGmGp6DE4_qW'
+                    b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAABEP8WtjzSzxcEfUQr'
+                    b'FQvL542r9-8KZe9o9PapQ2A2NfHn-JAA-CAX-KAWAADpEKBo7AvvhlEmrj7FvUs1'
+                    b'Eh2JNpMD0IkGrUAwwDAOAwrFyG1XUjQtALJx8M1j-ZWGhjvEo2BiyP_5a1bwUyEM')
+
+
+        # now create message using messagize with msg0 and msg1 as nests
+        attributes = dict(a=serder0.said, b=serder1.said)
+        nonce = '0AB8WKheGX-o1b1SzLaxZr4u'
+        dts = '2026-06-24T20:39:40.737875+00:00'  # helping.nowIso8601()
+        serder2 = exchept(sender = pre0,
+                          receiver = pre0,
+                          nonce=nonce,
+                          stamp=dts,
+                          attributes = attributes,
+                          kind=Kinds.cesr,
+                          pvrsn=Vrsn_2_0)
+
+        sigers2 = mgr.sign(ser=serder2.raw, verfers=verfers)  # default indexed True
+        assert isinstance(sigers2[0], Siger)
+
+        msg2 = messagize(serder2, sigers=sigers2, nests=[msg0, msg1], nested=True)
+        assert isinstance(msg2, bytearray)
+
+        assert msg2 == (b'-BDu-FBP0OKERICAACAAXxipEG7fNAXPS9ZsRVaLBiKQKDhKrXAj-jwZAqTv21y6'
+                    b'JKKQ0AB8WKheGX-o1b1SzLaxZr4uEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9Pap'
+                    b'Q2A2NfHnEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn1AAG2026-06-'
+                    b'24T20c39c40d737875p00c004AAA-IAA-IAY0J_aEP8WtjzSzxcEfUQrFQvL542r'
+                    b'9-8KZe9o9PapQ2A2NfHn0J_bEPnIYriZ1Yp22y7vkjkLxSCtO5753wO6UGmGp6DE'
+                    b'4_qW-KAWAAD1g4mb9KyElx8P-8b1jJU9raMuLQzKCksbUriy7ArulP57iG_gX0ix'
+                    b'7J7zinOEqFX2t4h9OcnxbAGjUGw0CZIC-BBG-FAu0OKERICAACAAXicpEP8WtjzS'
+                    b'zxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnEP8WtjzSzxcEfUQrFQvL542r9-8K'
+                    b'Ze9o9PapQ2A2NfHnMAAAMAAB-JALDOif48whAmpb_4kyksMcz57snMRIuX0bqN1F'
+                    b'De09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-KAWAABfKnU9VdFRGI2pQ2gMotaAB3Q8'
+                    b'BxNhLRnrXTrKiyi5qhjQ5YKU4SbDFjVdGoUoN3u5gfn6dHBVwvnBkr96OPwM-FAn'
+                    b'0OKERICAACAAXixnEPnIYriZ1Yp22y7vkjkLxSCtO5753wO6UGmGp6DE4_qWEP8W'
+                    b'tjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAABEP8WtjzSzxcEfUQrFQvL'
+                    b'542r9-8KZe9o9PapQ2A2NfHn-JAA-CAX-KAWAADpEKBo7AvvhlEmrj7FvUs1Eh2J'
+                    b'NpMD0IkGrUAwwDAOAwrFyG1XUjQtALJx8M1j-ZWGhjvEo2BiyP_5a1bwUyEM')
+
+        """Done Test"""
+
+
+def test_messagize_v2_json_with_nests():
+    """Test messagize utility function with version 2 messages in native CESR
+    with nested msg substream attachments
+
+    """
+    salter = Salter(raw=b'0123456789abcdef')
+    kind = Kinds.json
+
+    with openDB(name="edy") as db, openKS(name="edy") as ks:
+        # Init key pair manager
+        mgr = Manager(ks=ks, salt=salter.qb64)
+        verfers, digers = mgr.incept(icount=1, ncount=0, transferable=True, stem="C")
+
+        # Test with inception message as innie
+        serder0 = incept(keys=[verfers[0].qb64], code=MtrDex.Blake3_256,
+                        kind=kind, pvrsn=Vrsn_2_0)
+
+        pre0 = serder0.pre
+        dig0 = serder0.said
+
+        sigers0 = mgr.sign(ser=serder0.raw, verfers=verfers)  # default indexed True
+        assert isinstance(sigers0[0], Siger)
+
+        # test nested forces gvrsn to V2 and uses BodyWithAttachmentGroup
+        msg0 = messagize(serder0, sigers=sigers0, nested=True)
+        assert isinstance(msg0, bytearray)
+        assert msg0 == (b'-BBu-HBW4BBVeyJ2IjoiS0VSSUNBQUNBQUpTT05BQURfLiIsInQiOiJpY3AiLCJk'
+                    b'IjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlMV1Ui'
+                    b'LCJpIjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlM'
+                    b'V1UiLCJzIjoiMCIsImt0IjoiMSIsImsiOlsiRE9pZjQ4d2hBbXBiXzRreWtzTWN6'
+                    b'NTdzbk1SSXVYMGJxTjFGRGUwOUFsUmoiXSwibnQiOiIwIiwibiI6W10sImJ0Ijoi'
+                    b'MCIsImIiOltdLCJjIjpbXSwiYSI6W119-KAWAADdpYFg2ecIl0O7FeUnHN2P_aK-'
+                    b'9U_31Hsvt57_duHbLVlG50kep74k6uFccMbXLqxMI0dAMAPDisFFvBcb6qEC')
+
+
+        # Test with inception message as innie
+        serder1 = interact(pre=pre0, dig=dig0, kind=kind, pvrsn=Vrsn_2_0)
+        sigers1 = mgr.sign(ser=serder1.raw, verfers=verfers)  # default indexed True
+        assert isinstance(sigers1[0], Siger)
+
+        # test not framed so uses AttachmentGroup not BodyWithAttachmentGroup
+        msg1 = messagize(serder1, sigers=sigers1,framed=False, gvrsn=Vrsn_2_0, )
+        assert isinstance(msg1, bytearray)
+        assert msg1 == (b'{"v":"KERICAACAAJSONAADN.","t":"ixn","d":"EOO0xssiJ6P3MLpP86hLGe'
+                        b'eG8IAfoT_Rm52_MmIQRVRP","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
+                        b'3OIQLyLWU","s":"1","p":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc3OIQL'
+                        b'yLWU","a":[]}-CAX-KAWAABCSsGAY7etLuefZ7f8pfn3twCGD38BHF3B1PrduEI'
+                        b'qWHFxrHyMl2MLIMhPJMruSlOtM3pvTbWUM2ER5WCHqGQJ')
+
+
+        # now create message using messagize with msg0 and msg1 as nests
+        attributes = dict(a=serder0.said, b=serder1.said)
+        nonce = '0AB8WKheGX-o1b1SzLaxZr4u'
+        dts = '2026-06-24T20:39:40.737875+00:00'  # helping.nowIso8601()
+        serder2 = exchept(sender = pre0,
+                          receiver = pre0,
+                          nonce=nonce,
+                          stamp=dts,
+                          attributes = attributes,
+                          kind=kind,
+                          pvrsn=Vrsn_2_0)
+
+        sigers2 = mgr.sign(ser=serder2.raw, verfers=verfers)  # default indexed True
+        assert isinstance(sigers2[0], Siger)
+
+        with pytest.raises(ValueError):  # json is not aligned 24 bit
+            msg2 = messagize(serder2, sigers=sigers2, nests=[msg0, msg1], framed=False)
+
+
+        # test nested to force json to be converted to non-native
+        msg1 = messagize(serder1, sigers=sigers1, nested=True, gvrsn=Vrsn_2_0, )
+        assert isinstance(msg1, bytearray)
+        assert msg1 == (b'-BBe-HBG6BBFAAB7InYiOiJLRVJJQ0FBQ0FBSlNPTkFBRE4uIiwidCI6Iml4biIs'
+                    b'ImQiOiJFT08weHNzaUo2UDNNTHBQODZoTEdlZUc4SUFmb1RfUm01Ml9NbUlRUlZS'
+                    b'UCIsImkiOiJFQ3RHelhCRGhZQU9kS2VRY1RnQnI0YWdxeTA2SU43amFLYzNPSVFM'
+                    b'eUxXVSIsInMiOiIxIiwicCI6IkVDdEd6WEJEaFlBT2RLZVFjVGdCcjRhZ3F5MDZJ'
+                    b'TjdqYUtjM09JUUx5TFdVIiwiYSI6W119-KAWAABCSsGAY7etLuefZ7f8pfn3twCG'
+                    b'D38BHF3B1PrduEIqWHFxrHyMl2MLIMhPJMruSlOtM3pvTbWUM2ER5WCHqGQJ')
+
+
+        msg2 = messagize(serder2, sigers=sigers2, nests=[msg0, msg1], framed=False)
+        assert isinstance(msg2, bytearray)
+
+        assert msg2 == (b'{"v":"KERICAACAAJSONAAGA.","t":"xip","d":"ECZ9FxiLtkf7sFevUGS15N'
+                    b'ONgsGbOe8ybQLlkgzDAXET","u":"0AB8WKheGX-o1b1SzLaxZr4u","i":"ECtG'
+                    b'zXBDhYAOdKeQcTgBr4agqy06IN7jaKc3OIQLyLWU","ri":"ECtGzXBDhYAOdKeQ'
+                    b'cTgBr4agqy06IN7jaKc3OIQLyLWU","dt":"2026-06-24T20:39:40.737875+0'
+                    b'0:00","r":"","q":{},"a":{"a":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaK'
+                    b'c3OIQLyLWU","b":"EOO0xssiJ6P3MLpP86hLGeeG8IAfoT_Rm52_MmIQRVRP"}}'
+                    b'-CDl-KAWAAAwpw3fOB36R-88UnB8PPjHtT_r_W7Dule_AsjlNjhGyFNhaxM73QL5'
+                    b'K6d8ngighdld-JF8mUFmpxN10a4KjpoD-BBu-HBW4BBVeyJ2IjoiS0VSSUNBQUNB'
+                    b'QUpTT05BQURfLiIsInQiOiJpY3AiLCJkIjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0Jy'
+                    b'NGFncXkwNklON2phS2MzT0lRTHlMV1UiLCJpIjoiRUN0R3pYQkRoWUFPZEtlUWNU'
+                    b'Z0JyNGFncXkwNklON2phS2MzT0lRTHlMV1UiLCJzIjoiMCIsImt0IjoiMSIsImsi'
+                    b'OlsiRE9pZjQ4d2hBbXBiXzRreWtzTWN6NTdzbk1SSXVYMGJxTjFGRGUwOUFsUmoi'
+                    b'XSwibnQiOiIwIiwibiI6W10sImJ0IjoiMCIsImIiOltdLCJjIjpbXSwiYSI6W119'
+                    b'-KAWAADdpYFg2ecIl0O7FeUnHN2P_aK-9U_31Hsvt57_duHbLVlG50kep74k6uFc'
+                    b'cMbXLqxMI0dAMAPDisFFvBcb6qEC-BBe-HBG6BBFAAB7InYiOiJLRVJJQ0FBQ0FB'
+                    b'SlNPTkFBRE4uIiwidCI6Iml4biIsImQiOiJFT08weHNzaUo2UDNNTHBQODZoTEdl'
+                    b'ZUc4SUFmb1RfUm01Ml9NbUlRUlZSUCIsImkiOiJFQ3RHelhCRGhZQU9kS2VRY1Rn'
+                    b'QnI0YWdxeTA2SU43amFLYzNPSVFMeUxXVSIsInMiOiIxIiwicCI6IkVDdEd6WEJE'
+                    b'aFlBT2RLZVFjVGdCcjRhZ3F5MDZJTjdqYUtjM09JUUx5TFdVIiwiYSI6W119-KAW'
+                    b'AABCSsGAY7etLuefZ7f8pfn3twCGD38BHF3B1PrduEIqWHFxrHyMl2MLIMhPJMru'
+                    b'SlOtM3pvTbWUM2ER5WCHqGQJ')
+
+        """Done Test"""
+
+
 def test_messagize_with_prior_next():
     """
     Test messagize utility function with prior next modifier on indexed signatures
@@ -2466,3 +2656,18 @@ def test_messagize_with_prior_next():
     pass
 
     """ Done Test """
+
+
+
+
+if __name__ == "__main__":
+    test_messagize_v1()
+    test_messagize_v1_mix_v2()
+    test_messagize_v2()
+    test_messagize_v2_native()
+    test_messagize_v1_nested()
+    test_messagize_v2_nested()
+    test_messagize_v2_native_nested()
+    test_messagize_v2_native_with_nests()
+    test_messagize_v2_json_with_nests()
+    test_messagize_with_prior_next()

@@ -53,7 +53,8 @@ def test_pathed_material(mockHelpingNowUTC):
         exc = Exchanger(hby=debHby, handlers=[handler])
         parser = Parser(exc=exc, version=Vrsn_1_0)
 
-        parser.parseOne(ims=fwd)
+        result = parser.parseOne(ims=fwd)
+        assert result == True
         assert len(handler.msgs) == 1
         serder = handler.msgs.popleft()
 
