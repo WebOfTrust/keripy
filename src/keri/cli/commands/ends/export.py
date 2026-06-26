@@ -68,7 +68,7 @@ class ExportDoer(doing.DoDoer):
             if said is not None:
                 serder = self.hby.db.rpys.get(keys=(said.qb64,))
                 cigars = self.hby.db.scgs.get(keys=(said.qb64,))
-                sigers = self.hby.db.ssgs.get(keys=(said.qb64,))
+                sigers = self.hby.db.tsgs.get(keys=(said.qb64,))
 
                 if len(cigars) == 1:
                     (verfer, cigar) = cigars[0]

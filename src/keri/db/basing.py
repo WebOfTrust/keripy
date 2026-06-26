@@ -432,19 +432,19 @@ class Baser(LMDBer):
             Key: said (bytes) of SAD.
             Only one value per DB key is allowed.
 
-        .ssgs this is a naming consistency error should be called tsgs since
+        .tsgs this is a naming consistency error should be called tsgs since
         the values come from the tsgs attachment in parser.
         tsgs (list[tuple]): (prefixer, number, diger, [Sigers]) triple plus list of sigs
         quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", diger.qb64)
-        self.db.ssgs.put(keys=quadkeys, vals=sigers)
+        self.db.tsgs.put(keys=quadkeys, vals=sigers)
 
-        .ssgs is named subDB instance of CesrIoSetSuber (klas=Siger) for SAD
+        .tsgs is named subDB instance of CesrIoSetSuber (klas=Siger) for SAD
             transferable indexed signatures. Maps quadruple key
             (diger.qb64, prefixer.qb64, number.qb64, diger.qb64) to Siger
             of the transferable signer's signature. Diger is the SAID of the
             SAD; prefixer, number, and diger indicate the key state
             establishment event for the signer.
-            subkey 'ssgs.'
+            subkey 'tsgs.'
             Key: join(diger.qb64b, prefixer.qb64b, number.qb64b, diger.qb64b)
             Multiple values per key (one per signer, insertion ordered).
 
@@ -459,7 +459,7 @@ class Baser(LMDBer):
 
         .rpys is named subDB instance of SerderSuber for reply messages. Maps
             reply SAID to serialization of the reply message (versioned SAD).
-            Use .sdts, .ssgs, and .scgs for associated datetimes and
+            Use .sdts, .tsgs, and .scgs for associated datetimes and
             signatures.
             subkey 'rpys.'
             Key: said bytes.
@@ -984,11 +984,11 @@ class Baser(LMDBer):
         # all sad  sdts (sad datetime serializations) maps said to date-time
         self.sdts = subing.CesrSuber(db=self, subkey='sdts.', klas=coring.Dater)
 
-        # all sad ssgs (sad indexed signature serializations) maps SAD quadkeys
+        # all sad tsgs (sad indexed signature serializations) maps SAD quadkeys
         # given by quadruple (diger.qb64, prefixer.qb64, seqner.q64, diger.qb64)
         #  of reply and trans signer's key state est evt to val Siger for each
         # signature.
-        self.ssgs = subing.CesrIoSetSuber(db=self, subkey='ssgs.', klas=indexing.Siger)
+        self.tsgs = subing.CesrIoSetSuber(db=self, subkey='tsgs.', klas=indexing.Siger)
 
         # all sad scgs  (sad non-indexed signature serializations) maps SAD SAID
         # to couple (Verfer, Cigar) of nontrans signer of signature in Cigar
@@ -998,7 +998,7 @@ class Baser(LMDBer):
 
         # all reply messages. Maps reply said to serialization. Replys are
         # versioned sads ( with version string) so use Serder to deserialize and
-        # use  .sdts, .ssgs, and .scgs for datetimes and signatures
+        # use  .sdts, .tsgs, and .scgs for datetimes and signatures
         # TODO: clean
         self.rpys = subing.SerderSuber(db=self, subkey='rpys.')
 

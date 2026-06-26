@@ -2249,7 +2249,7 @@ class BaseHab:
             serder = self.db.rpys.get(keys=(said.qb64,))
             gvrsn = gvrsn if gvrsn is not None else serder.pvrsn
             cigars = self.db.scgs.get(keys=(said.qb64,))
-            tsgs = fetchTsgs(db=self.db.ssgs, diger=said)
+            tsgs = fetchTsgs(db=self.db.tsgs, diger=said)
 
             if len(cigars) == 1:
                 (verfer, cigar) = cigars[0]
@@ -2376,7 +2376,7 @@ class BaseHab:
             serder = self.db.rpys.get(keys=(said.qb64,))
             egvrsn = gvrsn if gvrsn is not None else serder.pvrsn
             cigars = self.db.scgs.get(keys=(said.qb64,))
-            tsgs = fetchTsgs(db=self.db.ssgs, diger=said)
+            tsgs = fetchTsgs(db=self.db.tsgs, diger=said)
 
             if len(cigars) == 1:
                 (verfer, cigar) = cigars[0]

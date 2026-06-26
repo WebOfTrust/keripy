@@ -69,7 +69,7 @@ MaxSuffix = int("f"*(SuffixSize), 16)
 
 def fetchTsgs(db, diger, snh=None):
     """
-    Fetch tsgs for diger from .db.ssgs. When sn then only fetch if sn <= snh
+    Fetch tsgs for diger from .db.tsgs. When sn then only fetch if sn <= snh
     Returns:
         tsgs (list): of tsg quadruple of form (prefixer, seqner, diger, sigers)
             where:

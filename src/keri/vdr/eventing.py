@@ -2406,11 +2406,11 @@ class Reger(LMDBer):
         self.cancs = CatCesrSuber(db=self, subkey='cancs.',
                                          klas=(Prefixer, Number, Diger))
 
-        # all sad path ssgs (sad pathed indexed signature serializations) maps SAD quinkeys
+        # all sad path tsgs (sad pathed indexed signature serializations) maps SAD quinkeys
         # given by quintuple (saider.qb64, path, prefixer.qb64, number.qb64, diger.qb64)
         # of credential and trans signer's key state est evt to val Siger for each
         # signature.
-        self.spsgs = CesrIoSetSuber(db=self, subkey='ssgs.', klas=Siger)
+        self.spsgs = CesrIoSetSuber(db=self, subkey='tsgs.', klas=Siger)
 
         # all sad path scgs  (sad pathed non-indexed signature serializations) maps
         # couple (SAD SAID, path) to couple (Verfer, Cigar) of nontrans signer of signature in Cigar
