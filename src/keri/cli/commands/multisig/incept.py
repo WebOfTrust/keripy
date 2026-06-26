@@ -117,7 +117,8 @@ class GroupMultisigIncept(doing.DoDoer):
         self.counselor = Counselor(hby=self.hby,
                                    version=self.inits.get("version"),
                                    kind=self.inits.get("kind", Kinds.json))
-        self.postman = Poster(hby=self.hby)
+        self.postman = Poster(hby=self.hby, version=self.inits.get("version"),
+                              kind=self.inits.get("kind", Kinds.json))
 
         doers = [self.hbyDoer, self.mbx, self.counselor, self.postman]
         self.toRemove = list(doers)

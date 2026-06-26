@@ -81,7 +81,7 @@ echo ""
 # Re-resolve delegate OOBI to pick up rotation event
 echo "Re-resolving delegate OOBI after rotation..."
 OOBI=$(kli oobi generate --name delegate --alias delegate --role witness | head -n 1)
-kli oobi resolve --version 1.0 --name delegator --oobi-alias delegate --oobi "${OOBI}"
+kli oobi resolve --version 1.0 --force --name delegator --oobi-alias delegate --oobi "${OOBI}"
 
 echo ""
 echo "--- Verification: delegator views delegate keystate after rotation (sn=1) ---"

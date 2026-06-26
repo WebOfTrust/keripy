@@ -1709,7 +1709,19 @@ class Baser(LMDBer):
                 atc.extend(wiger.qb64b)
 
         # add authorizer (delegator/issuer) source seal event couple to attachments
-        if (duple := self.aess.get(keys=(pre, dig))) is not None:
+        duple = self.aess.get(keys=(pre, dig))
+        if duple is None and serder.ilk in ("dip", "drt"):
+            # Recover the seal from the delegator's KEL when it is missing locally
+            delpre = serder.ked.get("di")
+            if delpre is None and serder.pre in self.kevers:
+                delpre = self.kevers[serder.pre].delpre
+            if delpre and delpre in self.kevers:
+                seal = dict(i=serder.pre, s=serder.snh, d=serder.said)
+                if dserder := self.fetchLastSealingEventByEventSeal(pre=delpre, seal=seal):
+                    duple = (coring.Number(num=dserder.sn, code=coring.NumDex.Huge),
+                             coring.Diger(qb64b=dserder.saidb))
+
+        if duple is not None:
             number, diger = duple
             atc.extend(Counter(code=Codens.SealSourceCouples,
                                count=1, version=Vrsn_1_0).qb64b)

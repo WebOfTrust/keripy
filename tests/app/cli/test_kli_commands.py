@@ -1,15 +1,18 @@
 import os
+from collections import deque
 from types import SimpleNamespace
 import multicommand
 import pytest
 
 
-from keri.kering import Ilks, ValidationError, Vrsn_1_0
+from keri.kering import Ilks, Kinds, ValidationError, Vrsn_1_0
 from keri.core import Salter
 
 from keri.app import runController
 from keri.cli.commands.witness import start as witness_start
 from keri.cli.commands import init as init_command
+from keri.cli.commands.delegate import request as delegate_request_command
+from keri.cli.commands.multisig import continue_ as multisig_continue_command
 
 from keri.cli import commands
 from keri.cli.common import existingHab, existingHby
@@ -423,6 +426,171 @@ def test_init_passes_explicit_version_to_habery_and_oobiery(monkeypatch):
     assert captured["habery_version"] == Vrsn_1_0
     assert captured["oobiery_version"] == Vrsn_1_0
     assert captured["closed"] is True
+
+
+def test_delegate_request_passes_explicit_version_to_counselor_delegate_request_exn_and_forwarding(monkeypatch):
+    captured = {}
+
+    class FakeGroupHab:
+        def __init__(self):
+            self.pre = "group-pre"
+            self.kever = SimpleNamespace(delpre="delegator-pre")
+            self.mhab = SimpleNamespace(pre="member-pre")
+            self.smids = ["member-pre"]
+
+        def msgOwnEvent(self, sn):
+            captured["event_sn"] = sn
+            return bytearray(b"fake-event")
+
+    class FakeHabery:
+        def __init__(self):
+            self.hab = FakeGroupHab()
+            self.db = SimpleNamespace(
+                gdee=SimpleNamespace(get=lambda keys: [(SimpleNamespace(sn=3), SimpleNamespace())]),
+            )
+
+        def habByName(self, alias):
+            if alias == "group":
+                return self.hab
+            return None
+
+    class FakeHaberyDoer:
+        def __init__(self, habery):
+            self.habery = habery
+
+    class FakeWitnessInquisitor:
+        def __init__(self, hby):
+            self.hby = hby
+
+    class FakePoster:
+        def __init__(self, hby, version=None, kind=None):
+            captured["poster_version"] = version
+            captured["poster_kind"] = kind
+            self.cues = deque()
+
+        def send(self, **kwa):
+            captured.setdefault("postman_sends", []).append(kwa)
+            said = getattr(kwa["serder"], "said", None)
+            if said is not None:
+                self.cues.append(dict(said=said))
+
+    class FakeCounselor:
+        def __init__(self, hby, version=None, kind=None):
+            captured["counselor_version"] = version
+            captured["counselor_kind"] = kind
+
+    class FakeSerderKERI:
+        def __init__(self, raw):
+            self.size = 0
+            self.said = "event-said"
+
+    def fake_delegate_request_exn(hab, delpre, evt, aids, version=None, kind=None):
+        captured["delegate_request"] = dict(hab=hab, delpre=delpre, evt=evt, aids=aids,
+                                            version=version, kind=kind)
+        return SimpleNamespace(said="exn-said"), b"fake-atc"
+
+    monkeypatch.setattr(delegate_request_command, "setupHby", lambda **kwa: FakeHabery())
+    monkeypatch.setattr(delegate_request_command, "HaberyDoer", FakeHaberyDoer)
+    monkeypatch.setattr(delegate_request_command, "WitnessInquisitor", FakeWitnessInquisitor)
+    monkeypatch.setattr(delegate_request_command, "Poster", FakePoster)
+    monkeypatch.setattr(delegate_request_command, "Counselor", FakeCounselor)
+    monkeypatch.setattr(delegate_request_command, "SerderKERI", FakeSerderKERI)
+    monkeypatch.setattr(delegate_request_command, "delegateRequestExn", fake_delegate_request_exn)
+    monkeypatch.setattr(delegate_request_command, "GroupHab", FakeGroupHab)
+
+    args = delegate_request_command.parser.parse_args([
+        "--name", "test-request-version",
+        "--alias", "group",
+        "--version", "1.0",
+    ])
+    doer = delegate_request_command.request(args)[0]
+    doer.remove = lambda doers: None
+
+    dog = doer.requestDo(lambda: 0.0)
+    next(dog)
+    next(dog)
+    with pytest.raises(StopIteration):
+        next(dog)
+
+    assert captured["poster_version"] == Vrsn_1_0
+    assert captured["poster_kind"] == Kinds.json
+    assert captured["counselor_version"] == Vrsn_1_0
+    assert captured["counselor_kind"] == Kinds.json
+    assert captured["delegate_request"]["version"] == Vrsn_1_0
+    assert captured["delegate_request"]["kind"] == Kinds.json
+    assert captured["delegate_request"]["aids"] == ["member-pre"]
+    assert [send["dest"] for send in captured["postman_sends"]] == ["delegator-pre", "delegator-pre"]
+
+
+def test_multisig_continue_passes_explicit_version_to_counselor_mailbox_and_query(monkeypatch):
+    captured = {}
+
+    class FakeHab:
+        def __init__(self):
+            self.pre = "multisig-pre"
+            self.kever = SimpleNamespace(delpre="delegator-pre")
+
+    class FakeHabery:
+        def __init__(self):
+            self.hab = FakeHab()
+            self.db = SimpleNamespace(
+                gdee=SimpleNamespace(get=lambda keys: [(SimpleNamespace(numh="7", qb64="7"),
+                                                       SimpleNamespace(qb64="dig"))]),
+                cgms=SimpleNamespace(get=lambda keys: "complete"),
+            )
+
+        def habByName(self, alias):
+            if alias == "group":
+                return self.hab
+            return None
+
+    class FakeCounselor:
+        def __init__(self, hby, version=None, kind=None):
+            captured["counselor_version"] = version
+            captured["counselor_kind"] = kind
+
+    class FakeWitnessInquisitor:
+        def __init__(self, hby):
+            self.hby = hby
+
+        def query(self, **kwa):
+            captured["query"] = kwa
+
+    class FakeMailboxDirector:
+        def __init__(self, hby, topics, **kwa):
+            captured["mailbox_topics"] = topics
+            captured["mailbox_kwargs"] = kwa
+
+    monkeypatch.setattr(multisig_continue_command, "setupHby", lambda **kwa: FakeHabery())
+    monkeypatch.setattr(multisig_continue_command, "Counselor", FakeCounselor)
+    monkeypatch.setattr(multisig_continue_command, "WitnessInquisitor", FakeWitnessInquisitor)
+    monkeypatch.setattr(multisig_continue_command, "MailboxDirector", FakeMailboxDirector)
+    monkeypatch.setattr(multisig_continue_command, "printIdentifier",
+                        lambda hby, pre: captured.setdefault("printed", []).append(pre))
+
+    args = multisig_continue_command.parser.parse_args([
+        "--name", "test-continue-version",
+        "--alias", "group",
+        "--version", "1.0",
+    ])
+    doer = multisig_continue_command.handler(args)[0]
+    doer.remove = lambda doers: None
+
+    dog = doer.recover(lambda: 0.0)
+    next(dog)
+    with pytest.raises(StopIteration):
+        next(dog)
+
+    assert captured["counselor_version"] == Vrsn_1_0
+    assert captured["counselor_kind"] == Kinds.json
+    assert captured["mailbox_kwargs"] == dict(version=Vrsn_1_0, gvrsn=Vrsn_1_0, kind=Kinds.json)
+    assert captured["query"] == dict(src="multisig-pre",
+                                     pre="delegator-pre",
+                                     anchor=dict(i="multisig-pre", s="7", d="dig"),
+                                     version=Vrsn_1_0,
+                                     gvrsn=Vrsn_1_0,
+                                     kind=Kinds.json)
+    assert captured["printed"] == ["multisig-pre"]
 
 
 def test_run_witness_closes_boot_keeper_before_reopen(monkeypatch):

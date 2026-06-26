@@ -164,7 +164,7 @@ class RotateDoer(doing.DoDoer):
 
         self.proxy = self.hby.habByName(proxy) if proxy is not None else None
         self.swain = Anchorer(hby=self.hby, proxy=self.proxy, version=version, kind=Kinds.json)
-        self.postman = Poster(hby=self.hby)
+        self.postman = Poster(hby=self.hby, version=version, kind=Kinds.json)
         kwa = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
         self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"],
                                    **kwa)

@@ -78,7 +78,7 @@ class GroupMultisigInteract(doing.DoDoer):
 
         self.hby = setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
-        self.postman = Poster(hby=self.hby)
+        self.postman = Poster(hby=self.hby, version=version, kind=Kinds.json)
 
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)

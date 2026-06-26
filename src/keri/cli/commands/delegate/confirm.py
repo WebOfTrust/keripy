@@ -74,7 +74,7 @@ class ConfirmDoer(doing.DoDoer):
         hby = setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = HaberyDoer(habery=hby)  # setup doer
         self.witq = WitnessInquisitor(hby=hby)
-        self.postman = Poster(hby=hby)
+        self.postman = Poster(hby=hby, version=version, kind=Kinds.json)
         self.counselor = Counselor(hby=hby, version=version, kind=Kinds.json)
         self.notifier = Notifier(hby=hby)
         self.mux = Multiplexor(hby=hby, notifier=self.notifier)

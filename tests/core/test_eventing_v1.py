@@ -4732,6 +4732,132 @@ def test_load_event(mockHelpingNowUTC):
     """End Test"""
 
 
+def test_clone_evt_msg_recovers_delegate_source_seal_for_witness_replay(mockHelpingNowUTC):
+    with habbing.openHby(name="tor", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as torHby, \
+         habbing.openHby(name="wan", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as wanHby, \
+         habbing.openHby(name="tee", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as teeHby, \
+         habbing.openHby(name="val", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as valHby:
+
+        wanKvy = Kevery(db=wanHby.db, lax=False, local=False)
+        valKvy = Kevery(db=valHby.db, lax=False, local=False)
+
+        wanHab = wanHby.makeHab(name="wan", transferable=False,
+                                version=Vrsn_1_0, kind=Kinds.json)
+        wanMsg = wanHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
+
+        torHab = torHby.makeHab(name="tor", icount=1, isith='1', ncount=1, nsith='1',
+                                wits=[wanHab.pre], toad=1, version=Vrsn_1_0,
+                                kind=Kinds.json)
+        torIcp = torHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(torIcp), kvy=wanHab.kvy, local=True)
+        wanHab.processCues(wanHab.kvy.cues, gvrsn=Vrsn_1_0,
+                           version=Vrsn_1_0, kind=Kinds.json)
+
+        teeHab = teeHby.makeHab(name="tee", delpre=torHab.pre, icount=1, isith='1', ncount=1, nsith='1',
+                                wits=[wanHab.pre], toad=1, version=Vrsn_1_0, kind=Kinds.json)
+        ixn = torHab.interact(data=[dict(i=teeHab.pre, s='0', d=teeHab.kever.serder.said)],
+                              framed=True, gvrsn=Vrsn_1_0,
+                              version=Vrsn_1_0, kind=Kinds.json)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(ixn), kvy=wanHab.kvy, local=True)
+        wanHab.processCues(wanHab.kvy.cues, gvrsn=Vrsn_1_0,
+                           version=Vrsn_1_0, kind=Kinds.json)
+
+        teeIcp = teeHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
+        teeIcp.extend(Counter(Codens.SealSourceCouples, count=1, version=Vrsn_1_0).qb64b)
+        teeIcp.extend(Seqner(sn=torHab.kever.sn).qb64b)
+        teeIcp.extend(torHab.kever.serder.saidb)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(teeIcp), kvy=wanKvy, local=True)
+        wanHab.processCues(wanKvy.cues, gvrsn=Vrsn_1_0,
+                           version=Vrsn_1_0, kind=Kinds.json)
+
+        assert wanHby.db.aess.get(keys=(teeHab.pre.encode("utf-8"), teeHab.kever.serder.saidb)) is None
+
+        clone = wanHby.db.cloneEvtMsg(pre=teeHab.pre, fn=0, dig=teeHab.kever.serder.saidb)
+        tor_replay = bytearray()
+        for msg in wanHby.db.clonePreIter(pre=torHab.pre):
+            tor_replay.extend(msg)
+
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(wanMsg), kvy=valKvy)
+        Parser(version=Vrsn_1_0).parse(ims=tor_replay, kvy=valKvy)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(clone), kvy=valKvy)
+
+        assert teeHab.pre in valKvy.kevers
+        assert valHby.db.aess.get(keys=(teeHab.pre.encode("utf-8"), teeHab.kever.serder.saidb)) is not None
+
+
+def test_clone_pre_iter_recovers_delegate_rotation_source_seal_from_kever_delpre(mockHelpingNowUTC):
+    with habbing.openHby(name="tor", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as torHby, \
+         habbing.openHby(name="wan", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as wanHby, \
+         habbing.openHby(name="tee", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as teeHby, \
+         habbing.openHby(name="val", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as valHby:
+
+        wanKvy = Kevery(db=wanHby.db, lax=False, local=False)
+        valKvy = Kevery(db=valHby.db, lax=False, local=False)
+
+        wanHab = wanHby.makeHab(name="wan", transferable=False,
+                                version=Vrsn_1_0, kind=Kinds.json)
+        wanMsg = wanHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
+
+        torHab = torHby.makeHab(name="tor", icount=1, isith='1', ncount=1, nsith='1',
+                                wits=[wanHab.pre], toad=1, version=Vrsn_1_0,
+                                kind=Kinds.json)
+        torIcp = torHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(torIcp), kvy=wanHab.kvy, local=True)
+        wanHab.processCues(wanHab.kvy.cues, gvrsn=Vrsn_1_0,
+                           version=Vrsn_1_0, kind=Kinds.json)
+
+        teeHab = teeHby.makeHab(name="tee", delpre=torHab.pre, icount=1, isith='1', ncount=1, nsith='1',
+                                wits=[wanHab.pre], toad=1, version=Vrsn_1_0, kind=Kinds.json)
+        ixn0 = torHab.interact(data=[dict(i=teeHab.pre, s='0', d=teeHab.kever.serder.said)],
+                               framed=True, gvrsn=Vrsn_1_0,
+                               version=Vrsn_1_0, kind=Kinds.json)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(ixn0), kvy=wanHab.kvy, local=True)
+        wanHab.processCues(wanHab.kvy.cues, gvrsn=Vrsn_1_0,
+                           version=Vrsn_1_0, kind=Kinds.json)
+
+        teeIcp = teeHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
+        teeIcp.extend(Counter(Codens.SealSourceCouples, count=1, version=Vrsn_1_0).qb64b)
+        teeIcp.extend(Seqner(sn=torHab.kever.sn).qb64b)
+        teeIcp.extend(torHab.kever.serder.saidb)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(teeIcp), kvy=wanKvy, local=True)
+        wanHab.processCues(wanKvy.cues, gvrsn=Vrsn_1_0,
+                           version=Vrsn_1_0, kind=Kinds.json)
+
+        teeRot = teeHab.rotate(framed=True, gvrsn=Vrsn_1_0,
+                               version=Vrsn_1_0, kind=Kinds.json)
+        ixn1 = torHab.interact(data=[dict(i=teeHab.pre, s='1', d=teeHab.kever.serder.said)],
+                               framed=True, gvrsn=Vrsn_1_0,
+                               version=Vrsn_1_0, kind=Kinds.json)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(ixn1), kvy=wanHab.kvy, local=True)
+        wanHab.processCues(wanHab.kvy.cues, gvrsn=Vrsn_1_0,
+                           version=Vrsn_1_0, kind=Kinds.json)
+
+        teeRot.extend(Counter(Codens.SealSourceCouples, count=1, version=Vrsn_1_0).qb64b)
+        teeRot.extend(Seqner(sn=torHab.kever.sn).qb64b)
+        teeRot.extend(torHab.kever.serder.saidb)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(teeRot), kvy=wanKvy, local=True)
+        wanHab.processCues(wanKvy.cues, gvrsn=Vrsn_1_0,
+                           version=Vrsn_1_0, kind=Kinds.json)
+
+        assert wanHby.db.aess.get(keys=(teeHab.pre.encode("utf-8"), teeHab.kever.serder.saidb)) is None
+
+        tor_replay = bytearray()
+        for msg in wanHby.db.clonePreIter(pre=torHab.pre):
+            tor_replay.extend(msg)
+
+        tee_replay = bytearray()
+        for msg in wanHby.db.clonePreIter(pre=teeHab.pre):
+            tee_replay.extend(msg)
+
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(wanMsg), kvy=valKvy)
+        Parser(version=Vrsn_1_0).parse(ims=tor_replay, kvy=valKvy)
+        Parser(version=Vrsn_1_0).parse(ims=tee_replay, kvy=valKvy)
+
+        assert teeHab.pre in valKvy.kevers
+        assert valKvy.kevers[teeHab.pre].sn == 1
+        assert valHby.db.aess.get(keys=(teeHab.pre.encode("utf-8"), teeHab.kever.serder.saidb)) is not None
+
+
 if __name__ == "__main__":
     # pytest.main(['-vv', 'test_eventing_v1.py::test_keyeventfuncs'])
     test_keyeventsequence_0()

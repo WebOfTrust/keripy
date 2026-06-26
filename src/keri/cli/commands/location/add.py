@@ -66,7 +66,7 @@ class LocationDoer(doing.DoDoer):
         self.hby = setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
         self.witpub = WitnessPublisher(hby=self.hby)
-        self.postman = forwarding.Poster(hby=self.hby)
+        self.postman = forwarding.Poster(hby=self.hby, version=version, kind=Kinds.json)
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
         exc = Exchanger(hby=self.hby, handlers=[])

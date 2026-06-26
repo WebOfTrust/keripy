@@ -109,7 +109,7 @@ class JoinDoer(doing.DoDoer):
         self.mbx = MailboxDirector(hby=self.hby, exc=self.exc, topics=['/receipt', '/multisig', '/replay',
                                                                        '/delegate'],
                                    **kwa)
-        self.postman = Poster(hby=self.hby)
+        self.postman = Poster(hby=self.hby, version=version, kind=Kinds.json)
 
         doers = [self.hbyDoer, self.witq,  self.mbx, self.counselor, self.registrar, self.credentialer, self.postman]
         self.toRemove = list(doers)

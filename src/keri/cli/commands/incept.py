@@ -171,7 +171,8 @@ class InceptDoer(doing.DoDoer):
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
         self.swain = Anchorer(hby=self.hby, proxy=self.proxy, version=kwa.get("version"),
                               kind=kwa.get("kind", Kinds.json))
-        self.postman = Poster(hby=self.hby)
+        self.postman = Poster(hby=self.hby, version=kwa.get("version"),
+                              kind=kwa.get("kind", Kinds.json))
         if kwa.get("version") is not None:
             self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"],
                                        version=kwa.get("version"), gvrsn=kwa.get("version"),

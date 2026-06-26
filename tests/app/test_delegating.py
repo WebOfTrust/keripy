@@ -4,6 +4,8 @@ tests.app.delegating module
 
 """
 import time
+from types import SimpleNamespace
+
 from hio.base import doing, tyming
 
 from keri.kering import Schemes, Version, Vrsn_1_0, Kinds
@@ -15,6 +17,45 @@ from keri.app import (Anchorer, DelegateRequestHandler, Receiptor,
 from keri.app import delegating
 
 from tests.common import CUE_KWA, KWA
+
+
+def test_anchorer_explicit_version_propagates_to_postman():
+    with openHby(name="del", salt=Salter(raw=b'0123456789ghijkl').qb64, version=Version) as delHby:
+        bts = Anchorer(hby=delHby, version=Vrsn_1_0, kind=Kinds.json)
+
+        assert bts.postman.version == Vrsn_1_0
+        assert bts.postman.kind == Kinds.json
+
+
+def test_publish_delegator_republishes_delegate_event_with_anchor():
+    publisher = SimpleNamespace(msgs=[])
+    calls = {}
+
+    def clone_delegation(_):
+        yield b"delegator-msg"
+
+    def msg_own_event(*, sn, framed, gvrsn):
+        calls["msgOwnEvent"] = dict(sn=sn, framed=framed, gvrsn=gvrsn)
+        return bytearray(b"delegate-msg")
+
+    serder = SimpleNamespace(sn=1, pvrsn=Vrsn_1_0)
+    hab = SimpleNamespace(pre="delegate-pre",
+                          kever=SimpleNamespace(serder=serder),
+                          db=SimpleNamespace(cloneDelegation=clone_delegation),
+                          msgOwnEvent=msg_own_event)
+    bts = Anchorer.__new__(Anchorer)
+    bts.publishers = {"delegate-pre": publisher}
+    bts.hby = SimpleNamespace(habs={"delegate-pre": hab})
+    bts.extend = lambda doers: calls.setdefault("extended", []).extend(doers)
+
+    bts.publishDelegator("delegate-pre", serder=serder)
+
+    assert calls["extended"] == [publisher]
+    assert calls["msgOwnEvent"] == dict(sn=1, framed=True, gvrsn=Vrsn_1_0)
+    assert publisher.msgs == [
+        dict(pre="delegate-pre", msg=b"delegator-msg"),
+        dict(pre="delegate-pre", msg=b"delegate-msg"),
+    ]
 
 
 def test_anchorer(seeder):

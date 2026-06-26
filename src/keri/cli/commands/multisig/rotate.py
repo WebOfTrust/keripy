@@ -103,7 +103,7 @@ class GroupMultisigRotate(doing.DoDoer):
         mbd = MailboxDirector(hby=self.hby, topics=['/receipt', '/multisig', '/replay'], exc=exc,
                               **kwa)
         self.counselor = Counselor(hby=self.hby, version=version, kind=Kinds.json)
-        self.postman = Poster(hby=self.hby)
+        self.postman = Poster(hby=self.hby, version=version, kind=Kinds.json)
 
         doers = [mbd, self.hbyDoer, self.counselor, self.postman]
         self.toRemove = list(doers)
