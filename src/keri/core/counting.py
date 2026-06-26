@@ -68,7 +68,7 @@ class CounterCodex_1_0(MapDom):
     AttachmentGroup: str = '-V'  # Composed Grouped Attached Material Quadlet (4 char each)
     BigAttachmentGroup: str = '-0V'  # Composed Grouped Attached Material Quadlet (4 char each)
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group, dig of content+Texter group
-    KERIACDCGenusVersion: str = '--AAA'  # KERI ACDC Protocol Stack CESR Version
+    KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Protocol Stack CESR Version
 
 
     def __iter__(self):
@@ -138,7 +138,7 @@ class CounterCodex_2_0(MapDom):
     BigSealSourceLastSingles: str = '-0Y'  # Big Seal Source Couple(s), pre of last source sealing or sealed event.
     ESSRPayloadGroup: str = '-Z'  # ESSR Payload Group.
     BigESSRPayloadGroup: str = '-0Z'  # Big ESSR Payload Group.
-    KERIACDCGenusVersion: str = '--AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
+    KERIACDCGenusVersion: str = '-_AAA'  # KERI ACDC Stack CESR Protocol Genus Version (Universal)
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -329,6 +329,7 @@ class Counter:
     Hards.update({('-' + chr(c)): 2 for c in range(97, 97 + 26)})
     Hards.update([('-0', 3)])
     Hards.update([('--', 5)])
+    Hards.update([('-_', 5)])
 
     # Bards table maps to hard size, hs, of code from bytes holding sextets
     # converted from first two code char. Used for ._bexfil.
@@ -361,7 +362,7 @@ class Counter:
                 '-V': Cizage(hs=2, ss=2, fs=4),
                 '-0V': Cizage(hs=3, ss=5, fs=8),
                 '-Z': Cizage(hs=2, ss=2, fs=4),
-                '--AAA': Cizage(hs=5, ss=3, fs=8),
+                '-_AAA': Cizage(hs=5, ss=3, fs=8),
             },
         },
         Vrsn_2_0.major: \
@@ -420,7 +421,7 @@ class Counter:
                 '-0Y': Cizage(hs=3, ss=5, fs=8),
                 '-Z': Cizage(hs=2, ss=2, fs=4),
                 '-0Z': Cizage(hs=3, ss=5, fs=8),
-                '--AAA': Cizage(hs=5, ss=3, fs=8),
+                '-_AAA': Cizage(hs=5, ss=3, fs=8),
             },
         },
     }
