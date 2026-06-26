@@ -10,8 +10,6 @@ import itertools
 from hio.base import doing
 from hio.help import ogler
 
-from .. import Vrsn_1_0
-from ..kering import Kinds
 from ..core import Kevery, Revery, Parser
 from ..vdr import Tevery
 

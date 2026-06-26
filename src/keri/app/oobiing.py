@@ -16,7 +16,7 @@ from hio.help import decking, ogler
 
 from .httping import Clienter,CESR_CONTENT_TYPE
 from .organizing import Organizer
-from .. import (Vrsn_1_0, Vrsn_2_0, Version, Roles, Schemes, Ilks, Kinds,
+from .. import (Vrsn_2_0, Version, Roles, Schemes, Ilks, Kinds,
                 ValidationError, UnverifiedReplyError,
                 ConfigurationError)
 from ..help import nowIso8601, fromIso8601, toIso8601, nowUTC

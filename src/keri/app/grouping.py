@@ -13,7 +13,7 @@ from ..kering import ValidationError, Version, Vrsn_1_0, Kinds, Ilks
 from ..core import (Counter, Number, Diger, Saider,
                     Prefixer, Kevery, Router,
                     Revery, Parser, SerderKERI,
-                    Serder, Codens, NumDex, exchange)
+                    Serder, Codens, NumDex)
 from ..peer import Exchanger, specialExchange, cloneMessage
 
 from .delegating import Anchorer

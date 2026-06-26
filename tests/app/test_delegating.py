@@ -57,9 +57,6 @@ def test_publish_delegator_republishes_delegate_event_with_anchor():
         dict(pre="delegate-pre", msg=b"delegate-msg"),
     ]
 
-from tests.common import CUE_KWA, KWA
-
-
 def test_anchorer(seeder):
     with openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, version=Vrsn_1_0) as wesHby, \
             openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as palHby, \

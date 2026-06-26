@@ -8,7 +8,7 @@ import falcon
 from hio.base import doing
 from hio.core import http
 
-from keri.kering import Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Kinds, Version
+from keri.kering import Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Version
 from keri.app import (Notifier, Oobiery, Authenticator,
                       Result, openHab, openHby,
                       oobiRequestExn)

@@ -17,7 +17,7 @@ from ..kering import (Roles, Vrsn_1_0, Version, Kinds,
 from .agenting import messengerFrom, streamMessengerFrom
 from ..core import (Bexter, Prefixer, Verfer, Texter, Diger,
                     Counter, SerderKERI,
-                    MtrDex, Codens, NonTransDex, exchange)
+                    MtrDex, Codens, NonTransDex)
 from ..db import dgKey
 from ..peer import specialExchange
 from ..spac import PayloadTyper, PayloadTypes

@@ -14,7 +14,7 @@ from .forwarding import Poster
 from .habbing import GroupHab
 
 from ..kering import ValidationError, Version, Vrsn_1_0, Kinds
-from ..core import Number, Diger, Seqner, SerderKERI, NumDex, exchange
+from ..core import Number, Diger, Seqner, SerderKERI, NumDex
 from ..peer import specialExchange
 
 logger = ogler.getLogger()

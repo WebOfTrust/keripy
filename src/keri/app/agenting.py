@@ -16,9 +16,8 @@ from socket import gaierror
 
 from .httping import Clienter, streamCESRRequests, CESR_DESTINATION_HEADER
 
-from ..kering import (Schemes, Roles, Vrsn_1_0, Version, Kinds,
-                      MissingEntryError, ConfigurationError,
-                      MissingEntryError)
+from ..kering import (Schemes, Roles, Vrsn_1_0,
+                      MissingEntryError, ConfigurationError)
 from ..core import Counter, eventing, parsing, coring, serdering, Codens, Cigar, Siger, Verfer
 
 

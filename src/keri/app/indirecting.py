@@ -21,7 +21,7 @@ from hio.help import decking, ogler
 from ..kering import (Version, Roles, Ilks, Kinds,
                       MissingEntryError)
 from ..recording import TopicsRecord
-from ..core import (Kevery, parsing, routing, coring, serdering,
+from ..core import (Kevery, parsing, routing, serdering,
                     Counter, receipt, Codens)
 from ..db import BaserDoer
 from ..end import loadEnds as loadEndingEnds
