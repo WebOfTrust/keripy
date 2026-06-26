@@ -27,6 +27,8 @@ from keri.app.httping import CESR_ATTACHMENT_HEADER
 
 from tests.common import CUE_KWA, KWA
 
+from tests.common import KWA
+
 
 def test_mailbox_iter():
     pre = "EA3mbE6upuYnFlx68GmLYCQd7cCcwG_AtHM6dW_GT068"

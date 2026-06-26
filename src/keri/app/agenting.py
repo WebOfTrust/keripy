@@ -584,6 +584,11 @@ class WitnessInquisitor(doing.DoDoer):
             elif (hab := self.hby.habByPre(src)) is None:
                 continue
 
+            if "version" not in kwa:
+                kwa = dict(**kwa,
+                           version=hab.kever.serder.pvrsn,
+                           kind=hab.kever.serder.kind)
+
             if not wits and pre not in self.hby.kevers:
                 logger.error(f"must have KEL for identifier to query {pre}")
                 continue
