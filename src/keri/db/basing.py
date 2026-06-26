@@ -1023,6 +1023,7 @@ class Baser(dbing.LMDBer):
         self.pdes = subing.OnIoDupSuber(db=self, subkey='pdes.')
         self.udes = subing.CatCesrSuber(db=self, subkey='udes.',
                                         klas=(coring.Seqner, coring.Saider))
+        self.pwde = subing.OnIoDupSuber(db=self, subkey='pwde.')
         self.uwes = self.env.open_db(key=b'uwes.', dupsort=True)
         self.ooes = self.env.open_db(key=b'ooes.', dupsort=True)
         self.dels = self.env.open_db(key=b'dels.', dupsort=True)
