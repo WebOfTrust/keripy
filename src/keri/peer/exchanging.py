@@ -622,7 +622,7 @@ def cloneMessage(hby, said):
 def serializeMessage(hby, said, framed=False):
     """Fetch message and attachments from hby.db by said and then serialize them
 
-    Parameters::
+    Parameters:
         hby (Habery): environment with db
         said (str): of message
         framed (bool): True means may assume each message plus its attachments
@@ -632,7 +632,7 @@ def serializeMessage(hby, said, framed=False):
                             is isolated as frame when parsing so do need
                             attachment group when messagizing
 
-    Returns::
+    Returns:
         msg (bytearray):  message by said with attachments
 
     """

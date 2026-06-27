@@ -77,9 +77,11 @@ class BobDirector(directing.Director):
     Inherited Properties:
         .tyme is float relative cycle time of associated Tymist .tyme obtained
             via injected .tymth function wrapper closure.
+
         .tymth is function wrapper closure returned by Tymist .tymeth() method.
             When .tymth is called it returns associated Tymist .tyme.
             .tymth provides injected dependency on Tymist tyme base.
+
         .tock is desired time in seconds between runs or until next run,
                  non negative, zero means run asap
 
@@ -94,6 +96,7 @@ class BobDirector(directing.Director):
     Hidden:
        ._tymth is injected function wrapper closure returned by .tymen() of
             associated Tymist instance that returns Tymist .tyme. when called.
+
        ._tock is hidden attribute for .tock property
     """
 
@@ -179,9 +182,11 @@ class SamDirector(directing.Director):
     Inherited Properties:
         .tyme is float relative cycle time of associated Tymist .tyme obtained
             via injected .tymth function wrapper closure.
+
         .tymth is function wrapper closure returned by Tymist .tymeth() method.
             When .tymth is called it returns associated Tymist .tyme.
             .tymth provides injected dependency on Tymist tyme base.
+
         .tock is desired time in seconds between runs or until next run,
                  non negative, zero means run asap
 
@@ -196,6 +201,7 @@ class SamDirector(directing.Director):
     Hidden:
        ._tymth is injected function wrapper closure returned by .tymen() of
             associated Tymist instance that returns Tymist .tyme. when called.
+
        ._tock is hidden attribute for .tock property
     """
 
@@ -304,9 +310,11 @@ class CamDirector(directing.Director):
     Inherited Properties:
         .tyme is float relative cycle time of associated Tymist .tyme obtained
             via injected .tymth function wrapper closure.
+
         .tymth is function wrapper closure returned by Tymist .tymeth() method.
             When .tymth is called it returns associated Tymist .tyme.
             .tymth provides injected dependency on Tymist tyme base.
+
         .tock is desired time in seconds between runs or until next run,
                  non negative, zero means run asap
 
@@ -321,6 +329,7 @@ class CamDirector(directing.Director):
     Hidden:
        ._tymth is injected function wrapper closure returned by .tymen() of
             associated Tymist instance that returns Tymist .tyme. when called.
+
        ._tock is hidden attribute for .tock property
     """
 
@@ -382,9 +391,11 @@ class EveDirector(directing.Director):
     Inherited Properties:
         .tyme is float relative cycle time of associated Tymist .tyme obtained
             via injected .tymth function wrapper closure.
+
         .tymth is function wrapper closure returned by Tymist .tymeth() method.
             When .tymth is called it returns associated Tymist .tyme.
             .tymth provides injected dependency on Tymist tyme base.
+
         .tock is desired time in seconds between runs or until next run,
                  non negative, zero means run asap
 
@@ -399,6 +410,7 @@ class EveDirector(directing.Director):
     Hidden:
        ._tymth is injected function wrapper closure returned by .tymen() of
             associated Tymist instance that returns Tymist .tyme. when called.
+
        ._tock is hidden attribute for .tock property
     """
 
