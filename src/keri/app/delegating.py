@@ -336,7 +336,7 @@ def delegateRequestExn(hab, delpre, evt, aids=None):
                              modifiers=dict(),
                              attributes=data,
                              embeds=embeds)
-    ims = hab.endorse(serder=exn, last=False, framed=True)
+    ims = hab.endorse(serder=exn, last=False, framed=True, gvrsn=exn.pvrsn)
     del ims[:exn.size]
 
     return exn, ims

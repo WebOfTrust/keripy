@@ -4534,24 +4534,25 @@ def test_cesr_native_dumps_hby():
     salter = Salter(raw=rawsalt)
     salt = salter.qb64
     assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
+    kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
 
     # need to fix this so it uses different Kind and different Version
     # makHab uses stem=name to make different names have differnt AID pre
-    with (openHby(name="wes", base="test", salt=salt) as wesHby,
-         openHby(name="wok", base="test", salt=salt) as wokHby,
-         openHby(name="wam", base="test", salt=salt) as wamHby,
-         openHby(name="cam", base="test", salt=salt) as camHby):
+    with (openHby(name="wes", base="test", salt=salt, version=Vrsn_1_0) as wesHby,
+         openHby(name="wok", base="test", salt=salt, version=Vrsn_1_0) as wokHby,
+         openHby(name="wam", base="test", salt=salt, version=Vrsn_1_0) as wamHby,
+         openHby(name="cam", base="test", salt=salt, version=Vrsn_1_0) as camHby):
 
         # witnesses first so can setup inception event for tam
         wsith = '1'
-        wesHab = wesHby.makeHab(name='wes', isith=wsith, icount=1, transferable=False)
-        wokHab = wokHby.makeHab(name='wok', isith=wsith, icount=1, transferable=False)
-        wamHab = wamHby.makeHab(name='wam', isith=wsith, icount=1, transferable=False)
+        wesHab = wesHby.makeHab(name='wes', isith=wsith, icount=1, transferable=False, **kwa)
+        wokHab = wokHby.makeHab(name='wok', isith=wsith, icount=1, transferable=False, **kwa)
+        wamHab = wamHby.makeHab(name='wam', isith=wsith, icount=1, transferable=False, **kwa)
 
         # setup Tam's habitat trans multisig
         wits = [wesHab.pre, wokHab.pre, wamHab.pre]
         tsith = '2'  # hex str of threshold int
-        camHab = camHby.makeHab(name='cam', isith=tsith, icount=3, toad=2, wits=wits,)
+        camHab = camHby.makeHab(name='cam', isith=tsith, icount=3, toad=2, wits=wits, **kwa)
 
         assert camHab.kever.prefixer.transferable
         assert len(camHab.iserder.berfers) == len(wits)

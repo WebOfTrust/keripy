@@ -23,7 +23,7 @@ import pytest
 from keri.kering import (EmptyMaterialError, RawMaterialError, ShortageError,
                          InvalidCodeSizeError, InvalidValueError, ValidationError,
                          InvalidVarRawSizeError, ConversionError, SoftMaterialError,
-                         InvalidSoftError, InvalidCodeError, Version,Vrsn_2_0,
+                         InvalidSoftError, InvalidCodeError, Version, Vrsn_1_0, Vrsn_2_0,
                          Protocols, Ilks, TraitDex, Kinds, versify)
 
 from keri.help import sceil, intToB64, codeB64ToB2, DTS_BASE_0, DTS_BASE_1
@@ -6598,7 +6598,7 @@ def test_saider():
 
     # Load from vaccuous dict
     label = Saids.d
-    vs = versify(pvrsn=Version, kind=kind, size=0)  # vaccuous size == 0
+    vs = versify(pvrsn=Vrsn_1_0, kind=kind, size=0)  # vaccuous size == 0
     assert vs == 'KERI10JSON000000_'
     sad4 = dict(
         v=vs,
@@ -6678,7 +6678,7 @@ def test_saider():
     assert saider.verify(sad8, prefixed=True)
 
     # verify gets kind from version string if provided when loading from dict
-    vs = versify(pvrsn=Version, kind=Kinds.mgpk, size=0)  # vaccuous size == 0
+    vs = versify(pvrsn=Vrsn_1_0, kind=Kinds.mgpk, size=0)  # vaccuous size == 0
     assert vs == 'KERI10MGPK000000_'
     sad9 = dict(sad4)
     sad9['v'] = vs

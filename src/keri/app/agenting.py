@@ -79,7 +79,8 @@ class Receiptor(doing.DoDoer):
         if len(wits) == 0:
             return
 
-        msg = hab.msgOwnEvent(sn=sn, framed=True)
+        serder, _, _ = hab.getOwnEvent(sn=sn)
+        msg = hab.msgOwnEvent(sn=sn, framed=True, gvrsn=serder.pvrsn)
         ser = serdering.SerderKERI(raw=msg)
 
         # If we are a rotation event, may need to catch new witnesses up to current key state
@@ -118,7 +119,7 @@ class Receiptor(doing.DoDoer):
                 del rct[:rserder.size]
 
                 # pull off the count code
-                Counter(qb64b=rct, strip=True, version=Vrsn_1_0)
+                Counter(qb64b=rct, strip=True, version=rserder.pvrsn)
                 rcts[wit] = rct
             else:
                 print(f"invalid response {rep.status} from witnesses {wit}")
@@ -142,7 +143,7 @@ class Receiptor(doing.DoDoer):
                                        kind=ser.kind)
             msg.extend(rserder.raw)
             msg.extend(Counter(Codens.NonTransReceiptCouples,
-                                    count=len(wigers), version=Vrsn_1_0).qb64b)
+                                    count=len(wigers), version=ser.pvrsn).qb64b)
             for wiger in wigers:
                 msg.extend(wiger)
 
@@ -353,7 +354,8 @@ class WitnessReceiptor(doing.DoDoer):
                 if len(wits) == 0:
                     continue
 
-                msg = hab.msgOwnEvent(sn=sn, framed=True)
+                serder, _, _ = hab.getOwnEvent(sn=sn)
+                msg = hab.msgOwnEvent(sn=sn, framed=True, gvrsn=serder.pvrsn)
                 ser = serdering.SerderKERI(raw=msg)
 
                 witers = []
@@ -422,7 +424,8 @@ class WitnessReceiptor(doing.DoDoer):
                                                said=ser.said,
                                                version=ser.pvrsn,
                                                kind=ser.kind)
-                    rctMsg.extend(eventing.messagize(serder=rserder, wigers=wigers, framed=True))
+                    rctMsg.extend(eventing.messagize(serder=rserder, wigers=wigers,
+                                                     framed=True, gvrsn=ser.pvrsn))
 
                     witer.msgs.append(rctMsg)
                     _ = (yield self.tock)
@@ -505,11 +508,17 @@ class WitnessInquisitor(doing.DoDoer):
             r = evt["r"]
             q = evt["q"]
             wits = evt["wits"] if "wits" in evt else None
+            kwa = evt["kwa"] if "kwa" in evt else dict()
 
             if "hab" in evt:
                 hab = evt["hab"]
             elif (hab := self.hby.habByPre(src)) is None:
                 continue
+
+            if "version" not in kwa:
+                kwa = dict(**kwa,
+                           version=hab.kever.serder.pvrsn,
+                           kind=hab.kever.serder.kind)
 
             if not wits and pre not in self.hby.kevers:
                 logger.error(f"must have KEL for identifier to query {pre}")
@@ -543,7 +552,7 @@ class WitnessInquisitor(doing.DoDoer):
 
             self.extend([witer])
 
-            msg = hab.query(target, src=witer.wit, route=r, query=q)  # Query for remote pre Event
+            msg = hab.query(target, src=witer.wit, route=r, query=q, **kwa)  # Query for remote pre Event
 
             kel = introduce(hab, witer.wit)
             if kel:
@@ -578,7 +587,7 @@ class WitnessInquisitor(doing.DoDoer):
         if anchor is not None:
             qry["a"] = anchor
 
-        msg = dict(src=src, pre=pre, target=pre, r=r, q=qry, wits=wits)
+        msg = dict(src=src, pre=pre, target=pre, r=r, q=qry, wits=wits, kwa=kwa)
         if hab is not None:
             msg["hab"] = hab
 
@@ -600,7 +609,7 @@ class WitnessInquisitor(doing.DoDoer):
             wits (list): witnesses to query
         """
         qry = dict(ri=ri)
-        msg = dict(src=src, pre=pre, target=i, r=r, wits=wits, q=qry)
+        msg = dict(src=src, pre=pre, target=i, r=r, wits=wits, q=qry, kwa=kwa)
         if hab is not None:
             msg["hab"] = hab
 
@@ -1106,5 +1115,6 @@ def schemes(db, eids):
                     cigar = None
                 msgs.extend(eventing.messagize(serder=serder,
                                                cigars=[cigar],
-                                               framed=False))
+                                               framed=False,
+                                               gvrsn=serder.pvrsn))
     return msgs

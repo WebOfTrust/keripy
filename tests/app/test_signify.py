@@ -12,6 +12,8 @@ from keri.core import Salter, Diger, Tiers, MtrDex, incept, rotate
 
 from keri.app import SaltyCreator, openHby
 
+from tests.common import CUE_KWA, KWA
+
 
 def test_remote_salty_hab():
     name = "test"
@@ -19,8 +21,8 @@ def test_remote_salty_hab():
     raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
     salter = Salter(raw=raw, tier=tier)
 
-    with openHby(name="remoteSalty") as remote, \
-            openHby(name="local", salt=salter.qb64, temp=True, tier=tier) as local:
+    with openHby(name="remoteSalty", version=Vrsn_1_0) as remote, \
+            openHby(name="local", salt=salter.qb64, temp=True, tier=tier, version=Vrsn_1_0) as local:
         # create a single Local Hab and compare the results with the Signify Hab
 
         creator = SaltyCreator(salt=salter.qb64, stem="test", tier=tier)
@@ -28,7 +30,7 @@ def test_remote_salty_hab():
         ridx = 0
         kidx = 0
 
-        lhab = local.makeHab(name=name)
+        lhab = local.makeHab(name=name, **KWA)
         assert lhab.pre == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
 
         # create current key
@@ -78,7 +80,7 @@ def test_remote_salty_hab():
         assert habord.hid == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
         assert habord.sid == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
 
-        lhab.rotate(framed=True)
+        lhab.rotate(framed=True, **CUE_KWA)
 
         ridx = ridx + 1
         kidx = kidx + 1
@@ -100,7 +102,7 @@ def test_remote_salty_hab():
         assert tsig1.qb64b == (b'AAAGWYaw6N_4Wk2IBVOaPGb-rnuj1ys5xSHjfYnAzTRdBN8VzT9GVkBE8CLxLp0iSQ_SCRNpKQEV'
                                b'6BIwPVyJS0cA')
 
-        msg = hab.rotate(serder=rot, sigers=[tsig1], framed=True)
+        msg = hab.rotate(serder=rot, sigers=[tsig1], framed=True, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EEZTwrSQdE6QXDNHGMVDf8Zc'
                        b'fA-us9tavFORrBaorrtf","i":"EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiy'
                        b'ZCcDH7N","s":"1","p":"EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH'

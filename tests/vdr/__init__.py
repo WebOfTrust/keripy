@@ -4,16 +4,19 @@ Test utilities for vdr
 """
 
 from keri.core import Salter
+from keri.kering import Vrsn_1_0, Kinds
 
 from keri.app import habbing
 
-def buildHab(db, ks, name="test"):
+
+def buildHab(db, ks, name="test", **kwa):
     """Utility to setup Habery and Hab for testing purposes
     Returns:
        tuple (Habery, Hab):
     """
 
     raw = b"raw salt to test"
+    version = kwa.get("version", Vrsn_1_0)
 
     #  create secrecies
     secrecies = [[signer.qb64] for signer in
@@ -22,7 +25,7 @@ def buildHab(db, ks, name="test"):
                                          temp=True)]
 
     # setup hab
-    hby = habbing.Habery(name=name, temp=True, ks=ks, db=db)
-    hab = hby.makeHab(name=name, secrecies=secrecies)
+    hby = habbing.Habery(name=name, temp=True, ks=ks, db=db, version=version)
+    hab = hby.makeHab(name=name, secrecies=secrecies, **kwa)
     return (hby, hab)
 

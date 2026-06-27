@@ -153,13 +153,15 @@ class DbSeed:
                                             role=Roles.controller,
                                             stamp=help.nowIso8601(),
                                             version=version,
-                                            kind=kind,))
+                                            kind=kind,
+                                            gvrsn=version,))
 
                 msgs.extend(hab.makeLocScheme(url=url,
                                               scheme=scheme,
                                               stamp=help.nowIso8601(),
                                               version=version,
-                                              kind=kind,))
+                                              kind=kind,
+                                              gvrsn=version,))
                 psr.parse(ims=msgs)
 
     @staticmethod
