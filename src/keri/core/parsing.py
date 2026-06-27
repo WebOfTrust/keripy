@@ -956,7 +956,7 @@ class Parser:
                 sigers (list[Siger]): ControllerIdxSigs
                 wigers (list[Siger]): WitnessIdxSigs
                 cigars (list[Cigar]): NonTransReceiptCouples cigar with verfer from (pre+sig)
-                trqs   (list[TransLastReceipts]): TransReceiptQuadruples TransLastReceiptIdxSigGroups (prefixer, number, diger, siger)
+                trqs   (list[TransReceiptQuadruples]): TransReceiptQuadruples TransLastReceiptIdxSigGroups (prefixer, number, diger, siger)
                 tsgs   (list[TransSigs]):TransIdxSigGroups (prefixer, number, diger, [Sigers])
                 lsgs   (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[Sigers]) (was tsgs)
                 frcs   (list[FirstSeen]): FirstSeenReplayCouples (number, dater)

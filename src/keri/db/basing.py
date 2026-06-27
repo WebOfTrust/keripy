@@ -432,12 +432,6 @@ class Baser(LMDBer):
             Key: said (bytes) of SAD.
             Only one value per DB key is allowed.
 
-        .tsgs this is a naming consistency error should be called tsgs since
-        the values come from the tsgs attachment in parser.
-        tsgs (list[tuple]): (prefixer, number, diger, [Sigers]) triple plus list of sigs
-        quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", diger.qb64)
-        self.db.tsgs.put(keys=quadkeys, vals=sigers)
-
         .tsgs is named subDB instance of CesrIoSetSuber (klas=Siger) for SAD
             transferable indexed signatures. Maps quadruple key
             (diger.qb64, prefixer.qb64, number.qb64, diger.qb64) to Siger
