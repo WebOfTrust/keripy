@@ -81,7 +81,7 @@ def launch(args):
 
 
 def runWitness(name="witness", base="", alias="witness", bran="", tcp=5631, http=5632, expire=0.0,
-               configDir="", configFile="", keypath=None, certpath=None, cafilepath=None):
+               configDir="", configFile=None, keypath=None, certpath=None, cafilepath=None):
     """
     Setup and run one witness
     """
@@ -95,7 +95,7 @@ def runWitness(name="witness", base="", alias="witness", bran="", tcp=5631, http
     ks.close()  # release LMDB env before Habery/setupHby re-opens the same keystore
 
     cf = None
-    if configFile is not None:
+    if configFile:
         cf = Configer(name=configFile, headDirPath=configDir, temp=False, reopen=True, clear=False)
 
     if aeid is None:
