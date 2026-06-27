@@ -384,7 +384,7 @@ def test_replay():
         assert len(msg) == 1008 - 3 * len(siger.qb64b) == 744
 
         counter = Counter(qb64b=msg, version=V1)  # trans receipt (vrc) counter
-        assert counter.code == CtrDex_1_0.TransReceiptQuadruples
+        assert counter.code == CtrDex_1_0.TransReceiptIdxSigGroups
         assert counter.count == 3  # multisig cam
         del msg[:len(counter.qb64b)]
         assert len(msg) == 740

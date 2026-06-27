@@ -1718,7 +1718,7 @@ class Baser(LMDBer):
         # add trans endorsement quadruples to attachments not controller
         # may have been originally key event attachments or receipted endorsements
         if quads := self.vrcs.get(keys=dgkey):
-            atc.extend(Counter(code=Codens.TransReceiptQuadruples,
+            atc.extend(Counter(code=Codens.TransReceiptIdxSigGroups,
                                count=len(quads), version=Vrsn_1_0).qb64b)
             for pre, snu, diger, siger in quads:    # adapt to CESR
                 atc.extend(pre.qb64b)
