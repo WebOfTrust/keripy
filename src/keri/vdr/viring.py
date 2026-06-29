@@ -89,7 +89,13 @@ class rbdict(dict):
 
 @dataclass
 class RegistryRecord:
-    """ Registry Key keyed by Registry name
+    """Local registry-name mapping.
+
+    Attributes:
+        registryKey (str): qb64 registry identifier, stored from the registry
+            inception event prefix/SAID (`reg.regk`, VCP `i`/`pre`).
+        prefix (str): qb64 identifier prefix of the local issuer/controller
+            AID that owns the registry (`hab.pre`).
     """
     registryKey: str
     prefix: str
