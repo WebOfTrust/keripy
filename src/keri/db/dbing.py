@@ -344,11 +344,15 @@ class LMDBer(filing.Filer):
         headDirPath is head directory path
         path is full directory path
         perm is numeric os permissions for directory and/or file(s)
-        filed (bool): True means .path ends in file; False means .path ends in directory
+        filed (bool): True means .path ends in file.
+                       False means .path ends in directory
+
         mode (str): file open mode if filed
         fext (str): file extension if filed
         file (File)
-        opened is Boolean, True means directory created and if file then file is opened. False otherwise
+
+        opened is Boolean, True means directory created and if file then file
+                is opened. False otherwise
 
     Attributes:
         env (lmdb.env): LMDB main (super) database environment

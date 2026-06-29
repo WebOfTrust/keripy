@@ -972,6 +972,7 @@ class B64Suber(B64SuberBase, Suber):
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
                                each key. Set to False
+
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
                        also used to convert val iterator to val bytes
@@ -1072,6 +1073,7 @@ class CesrSuber(CesrSuberBase, Suber):
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
                                each key
+
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
@@ -1101,6 +1103,7 @@ class CesrOnSuber(CesrSuberBase, OnSuberBase, Suber):
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
                                each key. Set to False
+
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
@@ -1232,6 +1235,7 @@ class CatCesrSuber(CatCesrSuberBase, Suber):
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
                                each key
+
             sep (str): separator to convert keys iterator to key bytes for db key
                        default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
@@ -1660,6 +1664,7 @@ class B64IoSetSuber(B64SuberBase, IoSetSuber):
             dupsort (bool): True means enable duplicates at each key
                                False (default) means do not enable duplicates at
                                each key. Set to False
+
             sep (str): separator for combining keys tuple of strs into key bytes
                    for db key and also used to convert val iterator to val bytes
                    Must not be Base64 character.
