@@ -60,11 +60,7 @@ echo "Checking for delegate rotate..."
 kli delegate confirm --name delegator --alias delegator -Y --version 1.0 &
 confirm_pid="$!"
 
-# Delegated rotation can commit even when one of the paired commands exits after
-# reporting a temporary pre-approval escrow miss. Preserve the demo flow by
-# continuing after both processes finish and exercising the final state below
-wait "$confirm_pid" || true
-wait "$rotate_pid" || true
+wait_all $confirm_pid $rotate_pid
 
 echo ""
 echo "==================== Post-Rotation Verification ===================="

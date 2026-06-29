@@ -265,7 +265,8 @@ class ConfirmDoer(doing.DoDoer):
                         #   the following direct removal to instead rely on normal escrow processing.
                         self.hby.db.delegables.rem(keys=(pre, sn), val=edig)
                         self._addAuthorizerSeal(pre, edig, anchorSn=hab.kever.sn, anchorSaid=hab.kever.serder.said)
-                        self._processEvent(pre=pre, edig=edig, eserder=eserder, anchorSn=eserder.sn, anchorSaid=eserder.said)
+                        self._processEvent(pre=pre, edig=edig, eserder=eserder,
+                                           anchorSn=hab.kever.sn, anchorSaid=hab.kever.serder.said)
                         self.remove(self.toRemove)
                         return True
 
