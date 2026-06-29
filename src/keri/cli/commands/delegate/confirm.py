@@ -243,11 +243,11 @@ class ConfirmDoer(doing.DoDoer):
                         print(f'Delegator Prefix  {hab.pre}')
                         print(f'\tDelegate {eserder.pre} {typ} Anchored at Seq. No.  {hab.kever.sner.num}')
 
-                        # wait for confirmation of fully commited event
+                        # wait for confirmation of fully committed event
                         if eserder.pre in self.hby.kevers:
                             self.witq.query(src=hab.pre, pre=eserder.pre, sn=eserder.sn, **kwa)
 
-                            while eserder.sn < self.hby.kevers[eserder.pre].sn:
+                            while self.hby.kevers[eserder.pre].sn < eserder.sn:
                                 yield self.tock
 
                             print(f"Delegate {eserder.pre} {typ} event committed.")

@@ -176,8 +176,8 @@ kli delegate confirm --name delegator2 --alias delegator --interact --auto --ver
 pid=$!
 CONFIRM_PIDS+=" $pid"
 
-# As with single-party delegated rotation, the rotation workers can report a
-# transient escrow miss after the confirms have anchored the event.
+# The multisig rotation workers can still report a transient escrow miss after
+# the confirms have anchored the event.
 wait_all $CONFIRM_PIDS
 wait_all $ROTATE_PIDS || true
 
