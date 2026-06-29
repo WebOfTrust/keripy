@@ -446,11 +446,11 @@ class Counter:
         MUCodes (dict): nested message universal codes keyed by major and minor version
         BUCodes (dict): nested body universal codes keyed by major and minor version
         Names (dict): nested of map of code names to codes keyed by
-                        major and minor version
+        major and minor version
         Hards (dict): of hard code sizes keyed by text domain selector
         Bards (dict): of hard code sizes keyed by binary domain selector
         Sizes (dict): of size tables keyed by version. Size table is dict
-                      of Sizages keyed by hard code
+        of Sizages keyed by hard code
 
     Attributes:
 
@@ -463,13 +463,13 @@ class Counter:
         raw (bytes): crypto material only without code
         pad  (int): number of pad chars given raw
         count (int): count of quadlets/triplets of following framed material
-                      (not including code)
+        (not including code)
         qb64 (str | bytes | bytearray): in Base64 fully qualified with
-                                          derivation code + crypto mat
+        derivation code + crypto mat
         qb64b (bytes | bytearray): in Base64 fully qualified with
-                                    derivation code + crypto mat
+        derivation code + crypto mat
         qb2  (bytes | bytearray): in binary with derivation code +
-                                  crypto material
+        crypto material
 
     Hidden:
         _version (Versionage): value for .version property
@@ -931,7 +931,7 @@ class Counter:
         """Property for code
         Returns:
             code (str): hard part only of full text code.
-                Getter for ._code. Makes .code read only
+            Getter for ._code. Makes .code read only
 
         Soft part is count
         """
@@ -992,7 +992,7 @@ class Counter:
     @property
     def fullSize(self):
         """Getter for full size of counter in bytes in text domain
-        Returns"
+        Returns:
            fs (int): full size of counter in bytes in text domain
 
         """
@@ -1031,9 +1031,9 @@ class Counter:
 
     def countToB64(self, l=None):
         """ Returns count as Base64 left padded with "A"s
-            Parameters:
-                l (int | None): minimum number characters including left padding
-                    When not provided use the softsize of .code
+        Parameters:
+            l (int | None): minimum number characters including left padding
+            When not provided use the softsize of .code
 
         """
         if l is None:

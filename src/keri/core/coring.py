@@ -708,13 +708,14 @@ class Matter:
         code (str): hard part of derivation code to indicate cypher suite
         hard (str): hard part of derivation code. alias for code
         soft (str | bytes): soft part of full code exclusive of xs xtra prepad.
-                    Empty when ss = 0.
+        Empty when ss = 0.
         both (str): hard + soft parts of full text code
         size (int | None): Number of quadlets/triplets of chars/bytes including
-                            lead bytes of variable sized material (fs = None).
-                            Converted value of the soft part (of len ss) of full
-                            derivation code.
-                          Otherwise None when not variably sized (fs != None)
+                           lead bytes of variable sized material (fs = None).
+                           Converted value of the soft part (of len ss) of full
+                           derivation code.
+                           Otherwise None when not variably sized (fs != None)
+
         fullSize (int): full size of primitive
         raw (bytes): crypto material only. Not derivation code or lead bytes.
         qb64 (str): Base64 fully qualified with derivation code + crypto mat
@@ -987,7 +988,6 @@ class Matter:
                                          f"(raw not None and code) or "
                                          f"(code and soft) or "
                                          f"qb64b or qb64 or qb2.")
-
             if not isinstance(raw, (bytes, bytearray)):
                 raise TypeError(f"Not a bytes or bytearray {raw=}.")
 
@@ -1103,8 +1103,6 @@ class Matter:
                                          f"(raw not None and code) or "
                                          f"(code and soft) or "
                                          f"qb64b or qb64 or qb2.")
-
-
     @property
     def code(self):
         """
@@ -1157,7 +1155,7 @@ class Matter:
         Returns:
             size(int | None): Number of variably sized b64 quadlets/b2 triplets
                                 in primitive when varibly sized
-                              None when not variably sized when (fs!=None)
+                                None when not variably sized when (fs!=None)
 
         Number of quadlets/triplets of chars/bytes of variable sized material or
         None when not variably sized.
@@ -1246,7 +1244,7 @@ class Matter:
         """
         Property transferable:
         Returns True if identifier does not have non-transferable derivation code,
-                False otherwise
+        False otherwise
         """
         return (self.code not in NonTransDex)
 
@@ -1256,7 +1254,7 @@ class Matter:
         """
         Property digestable:
         Returns True if identifier has digest derivation code,
-                False otherwise
+        False otherwise
         """
         return (self.code in DigDex)
 
@@ -1266,7 +1264,7 @@ class Matter:
         """
         Property prefixive:
         Returns True if identifier has prefix derivation code,
-                False otherwise
+        False otherwise
         """
         return (self.code in PreDex)
 
@@ -1694,9 +1692,9 @@ class Number(Matter):
         code (str): hard part of derivation code to indicate cypher suite
         both (int): hard and soft parts of full text code
         size (int): Number of triplets of bytes including lead bytes
-            (quadlets of chars) of variable sized material. Value of soft size,
-            ss, part of full text code.
-            Otherwise None.
+        (quadlets of chars) of variable sized material. Value of soft size,
+        ss, part of full text code.
+        Otherwise None.
         rize (int): number of bytes of raw material not including lead bytes
         raw (bytes): crypto material only without code
         qb64 (str): Base64 fully qualified with derivation code + crypto mat
@@ -1711,9 +1709,9 @@ class Number(Matter):
         sn (int): alias for num
         snh (str): alias for numh
         huge (str): qb64 of num but with code NumDex.Huge so 24 char compatible
-                    with fixed size seq num for lexicographic lmdb key space
+        with fixed size seq num for lexicographic lmdb key space
         positive (bool): True if .num  > 0, False otherwise. Because .num must be
-                         non-negative, .positive == False means .num == 0
+        non-negative, .positive == False means .num == 0
         inceptive (bool): True means .num == 0 False otherwise.
 
 
@@ -1721,12 +1719,12 @@ class Number(Matter):
         _code (str): value for .code property
         _raw (bytes): value for .raw property
         _rsize (bytes): value for .rsize property. Raw size in bytes when
-            variable sized material else None.
+        variable sized material else None.
         _size (int): value for .size property. Number of triplets of bytes
-            including lead bytes (quadlets of chars) of variable sized material
-            else None.
+        including lead bytes (quadlets of chars) of variable sized material
+        else None.
         _infil (types.MethodType): creates qb64b from .raw and .code
-                                   (fully qualified Base64)
+                                   c
         _exfil (types.MethodType): extracts .code and .raw from qb64b
                                    (fully qualified Base64)
 
@@ -2003,7 +2001,6 @@ class Decimer(Matter):
             if dns is None:
                 raise EmptyMaterialError(f"Need one of raw, qb64, qb64b, qb2, "
                                          f"dns, or decimer input")
-
             if hasattr(dns, "decode"):
                 dns = dns.decode("")  # convert to str
 
@@ -2110,7 +2107,7 @@ class Dater(Matter):
     Use the properties to get the different representations
     .dts is ASCII RFC-3339 of ISO-8601
     .qb64 is qualified Base64 encoding with derivation code proem and ':.+'
-        replaced with 'cdp'
+    replaced with 'cdp'
     .qb2 is qualified binary decoding of the .qb64
     .code is text CESR derivation code
     .raw is binary version of the converted datetime only portion of .qb64
@@ -2214,13 +2211,13 @@ class Tagger(Matter):
         code (str): hard part of derivation code to indicate cypher suite
         hard (str): hard part of derivation code. alias for code
         soft (str): soft part of derivation code fs any.
-                    Empty when ss = 0.
+        Empty when ss = 0.
         both (str): hard + soft parts of full text code
         size (int | None): Number of quadlets/triplets of chars/bytes including
-                            lead bytes of variable sized material (fs = None).
-                            Converted value of the soft part (of len ss) of full
-                            derivation code.
-                          Otherwise None when not variably sized (fs != None)
+        lead bytes of variable sized material (fs = None).
+        Converted value of the soft part (of len ss) of full
+        derivation code.
+        Otherwise None when not variably sized (fs != None)
         fullSize (int): full size of primitive
         raw (bytes): crypto material only. Not derivation code or lead bytes.
         qb64 (str): Base64 fully qualified with derivation code + crypto mat
@@ -2342,10 +2339,10 @@ class Ilker(Tagger):
                     Empty when ss = 0.
         both (str): hard + soft parts of full text code
         size (int | None): Number of quadlets/triplets of chars/bytes including
-                            lead bytes of variable sized material (fs = None).
-                            Converted value of the soft part (of len ss) of full
-                            derivation code.
-                          Otherwise None when not variably sized (fs != None)
+        lead bytes of variable sized material (fs = None).
+        Converted value of the soft part (of len ss) of full
+        derivation code.
+        Otherwise None when not variably sized (fs != None)
         fullSize (int): full size of primitive
         raw (bytes): crypto material only. Not derivation code or lead bytes.
         qb64 (str): Base64 fully qualified with derivation code + crypto mat
@@ -2447,10 +2444,10 @@ class Traitor(Tagger):
                     Empty when ss = 0.
         both (str): hard + soft parts of full text code
         size (int | None): Number of quadlets/triplets of chars/bytes including
-                            lead bytes of variable sized material (fs = None).
-                            Converted value of the soft part (of len ss) of full
-                            derivation code.
-                          Otherwise None when not variably sized (fs != None)
+        lead bytes of variable sized material (fs = None).
+        Converted value of the soft part (of len ss) of full
+        derivation code.
+        Otherwise None when not variably sized (fs != None)
         fullSize (int): full size of primitive
         raw (bytes): crypto material only. Not derivation code or lead bytes.
         qb64 (str): Base64 fully qualified with derivation code + crypto mat
@@ -2554,13 +2551,13 @@ class Verser(Tagger):
         code (str): hard part of derivation code to indicate cypher suite
         hard (str): hard part of derivation code. alias for code
         soft (str): soft part of derivation code fs any.
-                    Empty when ss = 0.
+            Empty when ss = 0.
         both (str): hard + soft parts of full text code
         size (int | None): Number of quadlets/triplets of chars/bytes including
-                            lead bytes of variable sized material (fs = None).
-                            Converted value of the soft part (of len ss) of full
-                            derivation code.
-                          Otherwise None when not variably sized (fs != None)
+        lead bytes of variable sized material (fs = None).
+        Converted value of the soft part (of len ss) of full
+        derivation code.
+        Otherwise None when not variably sized (fs != None)
         fullSize (int): full size of primitive
         raw (bytes): crypto material only. Not derivation code or lead bytes.
         qb64 (str): Base64 fully qualified with derivation code + crypto mat
@@ -2730,10 +2727,10 @@ class Texter(Matter):
 
     Inherited Properties:  (See Matter)
         size (int | None): Number of quadlets/triplets of chars/bytes including
-                            lead bytes of variable sized material (fs = None).
-                            Converted value of the soft part (of len ss) of full
-                            derivation code.
-                          Otherwise None when not variably sized (fs != None)
+        lead bytes of variable sized material (fs = None).
+        Converted value of the soft part (of len ss) of full
+        derivation code.
+        Otherwise None when not variably sized (fs != None)
 
     Properties:
         text (str): unqaulified text str  without CESR code and leader.
@@ -3602,7 +3599,7 @@ class Cigar(Matter):
     Properties:  (Inherited)
         .code is str derivation code to indicate cypher suite
         .size is size (int): number of quadlets when variable sized material besides
-                        full derivation code else None
+        full derivation code else None
         .raw is bytes crypto material only without code
         .qb64 is str in Base64 fully qualified with derivation code + crypto mat
         .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
@@ -3716,7 +3713,7 @@ class Diger(Matter):
            ser (bytes): serialization from which raw is computed if not raw
            strict (bool): True means enforce code must be in DigDex
                           False means do not enfoce code in DigDex this allows
-                            subclasses to enforce different codex
+                          subclasses to enforce different codex
         """
 
         try:
@@ -3810,6 +3807,7 @@ class Prefixer(Matter):
 
     def __init__(self, **kwa):
         """Checks for .code in PreDex so valid prefixive code
+
         Inherited Parameters:
             See Matter
 
@@ -3914,7 +3912,7 @@ class Saider(Matter):
     Properties: (inherited)
         code (str): derivation code to indicate cypher suite
         size (int): number of quadlets when variable sized material besides
-                        full derivation code else None
+        full derivation code else None
         raw (bytes): crypto material only without code
         qb64 (str): Base64 fully qualified with derivation code + crypto mat
         qb64b (bytes): Base64 fully qualified with derivation code + crypto mat
@@ -3926,10 +3924,8 @@ class Saider(Matter):
         _code (str): value for .code property
         _size (int): value for .size property
         _raw (bytes): value for .raw property
-        _infil (types.MethodType): creates qb64b from .raw and .code
-                                   (fully qualified Base64)
-        _exfil (types.MethodType): extracts .code and .raw from qb64b
-                                   (fully qualified Base64)
+        _infil (types.MethodType): creates qb64b from .raw and .code (fully qualified Base64)
+        _exfil (types.MethodType): extracts .code and .raw from qb64b (fully qualified Base64)
         _derive (types.MethodType): derives said (.qb64 )
         _verify (types.MethodType): verifies said ((.qb64 ) against a given sad
 
@@ -4427,22 +4423,22 @@ class Tholder:
     Properties:
         .weighted is Boolean True if fractional weighted threshold False if numeric
         .size is int of minimum size of keys list
-                    when weighted is size of keys list
-                    when unweighted is size of int thold since don't have anyway
-                        to know size of keys list in this case
+        when weighted is size of keys list
+        when unweighted is size of int thold since don't have anyway
+        to know size of keys list in this case
 
         .limen is qualified b64b signing threshold suitable for CESR serialization.
             either Number.qb64b or Bexter.qb64b.
             The b64 portion of limen  with code stripped (Bexter.bext) of
-              [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]
-              is '1s2c1s2c1s4c1s4c1s4a1c1' basically slash is 's', comma is 'c',
-            ANDed clauses are delimited by 'a'.
-            Each clause top level weight may be optionally a weighted set of weights
-            delimited by 'k' for the weight on the set and 'v' for the weights in
-            the set.
-            [[{'1/3': ['1/2', '1/2', '1/2']}, '1/2', {'1/2': ['1', '1']}],
-                            ['1/2', {'1/2': ['1', '1']}]]
-            b'4AAKA1s3k1s2v1s2v1s2c1s2c1s2k1v1a1s2c1s2k1v1'
+        [["1/2", "1/2", "1/4", "1/4", "1/4"], ["1", "1"]]
+        is '1s2c1s2c1s4c1s4c1s4a1c1' basically slash is 's', comma is 'c',
+        ANDed clauses are delimited by 'a'.
+        Each clause top level weight may be optionally a weighted set of weights
+        delimited by 'k' for the weight on the set and 'v' for the weights in
+        the set.
+        [[{'1/3': ['1/2', '1/2', '1/2']}, '1/2', {'1/2': ['1', '1']}],
+        ['1/2', {'1/2': ['1', '1']}]]
+        b'4AAKA1s3k1s2v1s2v1s2c1s2c1s2k1v1a1s2c1s2k1v1'
 
 
         .sith is original signing threshold suitable for value to be serialized
