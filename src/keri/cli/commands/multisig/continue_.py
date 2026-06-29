@@ -39,10 +39,10 @@ class ContinueDoer(doing.DoDoer):
         self.hby = setupHby(name=name, base=base, bran=bran)
         self.alias = alias
         self.version = version
-        self.queryKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
+        self.kind = Kinds.json
         self.counselor = Counselor(hby=self.hby, version=version, kind=Kinds.json)
         self.witq = WitnessInquisitor(hby=self.hby)
-        kwa = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
+        kwa = dict(version=version, gvrsn=version, kind=self.kind) if version is not None else {}
         self.mbx = MailboxDirector(hby=self.hby,
                                    topics=["/receipt", "/replay", "/multisig", "/credential", "/delegate",
                                            "/challenge", "/oobi"],
@@ -69,7 +69,8 @@ class ContinueDoer(doing.DoDoer):
         (number, diger) = esc[0]
         src = hab.mhab.pre if isinstance(hab, GroupHab) else hab.pre
         anchor = dict(i=hab.pre, s=number.numh, d=diger.qb64)
-        self.witq.query(src=src, pre=hab.kever.delpre, anchor=anchor, **self.queryKwargs)
+        kwa = dict(version=self.version, gvrsn=self.version, kind=self.kind) if self.version is not None else {}
+        self.witq.query(src=src, pre=hab.kever.delpre, anchor=anchor, **kwa)
 
         print(f"Checking mailboxes for any events to process")
         while self.hby.db.cgms.get(keys=(hab.pre, number.qb64)) is None:

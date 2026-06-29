@@ -47,7 +47,6 @@ class Anchorer(doing.DoDoer):
         self.publishers = dict()
         self.proxy = proxy
         self.auths = auths
-        self.queryKwargs = dict(version=version, gvrsn=version, kind=self.kind) if version is not None else {}
 
         super(Anchorer, self).__init__(doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)], **kwa)
 
@@ -213,7 +212,8 @@ class Anchorer(doing.DoDoer):
                 self.postman.send(hab=phab, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
 
                 seal = dict(i=srdr.pre, s=srdr.snh, d=srdr.said)
-                self.witq.query(hab=phab, pre=dkever.prefixer.qb64, anchor=seal, **self.queryKwargs)
+                kwa = dict(version=self.version, gvrsn=self.version, kind=self.kind) if self.version is not None else {}
+                self.witq.query(hab=phab, pre=dkever.prefixer.qb64, anchor=seal, **kwa)
 
                 self.hby.db.dpwe.rem(keys=(pre, said))
                 self.hby.db.dune.pin(keys=(srdr.pre, srdr.said), val=srdr)

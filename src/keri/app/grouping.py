@@ -51,7 +51,6 @@ class Counselor(doing.DoDoer):
         self.hby = hby
         self.version = version
         self.kind = kind if kind is not None else Kinds.json
-        self.queryKwargs = dict(version=version, gvrsn=version, kind=self.kind) if version is not None else {}
         self.swain = swain if swain is not None else Anchorer(hby=self.hby,
                                                               version=self.version,
                                                               kind=self.kind)
@@ -166,12 +165,13 @@ class Counselor(doing.DoDoer):
                         self.swain.delegation(pre=pre, sn=number.sn)
                     else:
                         anchor = dict(i=pre, s=number.snh, d=diger.qb64)
+                        kwa = dict(version=self.version, gvrsn=self.version, kind=self.kind) if self.version is not None else {}
                         if self.proxy:
                             self.witq.query(hab=self.proxy, pre=kever.delpre, anchor=anchor,
-                                            **self.queryKwargs)
+                                            **kwa)
                         else:
                             self.witq.query(src=ghab.mhab.pre, pre=kever.delpre, anchor=anchor,
-                                            **self.queryKwargs)
+                                            **kwa)
 
                     logger.info("AID %s...%s: Waiting for delegation approval...", pre[:4], pre[-4:])
                     self.hby.db.gdee.add(keys=(pre,), val=(number, diger))
