@@ -4853,6 +4853,10 @@ class Kevery:
                 quadruple = (sprefixer, snumber, diger, siger)
                 self.db.vrcs.add(keys=(pre, serder.said), val=quadruple)
 
+                # vrcsNew test to replace vrcs
+                keys = (pre, serder.said, sprefixer.qb64, snumber.onkey, diger.qb64)
+                self.db.vrcsNew.add(keys=keys, val=siger)
+
 
             else:  # escrow  either receiptor or receipted event not yet in database
                 self.escrowTRQuadruple(serder, sprefixer, snumber, diger, siger)
@@ -7181,6 +7185,10 @@ class Kevery:
                     # good sig so write receipt quadruple to database
                     quadruple = (sprefixer, snumber, ssaider, siger)
                     self.db.vrcs.add(keys=(pre, serder.said), val=quadruple)
+
+                    # vrcsNew test to replace vrcs
+                    keys = (pre, serder.said, sprefixer.qb64, snumber.onkey, ssaider.qb64)
+                    self.db.vrcsNew.add(keys=keys, val=siger)
 
 
                 except UnverifiedTransferableReceiptError as ex:
