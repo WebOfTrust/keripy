@@ -4489,20 +4489,30 @@ class Kevery:
                 # verify sigs and if so write receipt to database
                 sverfers = sserder.verfers
                 if not sverfers:
-                    raise ValidationError("Invalid receipter's est. event"
-                                          " dig = {}  from pre ={}, no keys."
-                                          "".format(sdiger.qb64, sprefixer.qb64))
+                    raise ValidationError(f"Invalid receipter's est. event"
+                                          f" dig={sdiger.qb64}  from pre="
+                                          f"{sprefixer.qb64}, no keys.")
 
                 for siger in sigers:  # endorser (non-controller) signatures
                     if siger.index >= len(sverfers):
-                        raise ValidationError("Index = {} to large for keys."
-                                              "".format(siger.index))
+                        raise ValidationError(f"Index={siger.index} to large for keys.")
+
                     siger.verfer = sverfers[siger.index]  # assign verfer
                     if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
                         # good sig so write receipt quadruple to database
                         quadruple = (sprefixer, snumber, sdiger, siger)
-                        self.db.vrcs.add(keys=dgKey(pre=pre, dig=ldig),
-                                       val=quadruple)  # dups kept
+                        self.db.vrcs.add(keys=(pre, ldig), val=quadruple)
+
+                # temporary for vrcsNew to see if works
+                for siger in sigers:  # endorser (non-controller) signatures
+                    if siger.index >= len(sverfers):
+                        raise ValidationError(f"Index={siger.index} to large for keys.")
+
+                    siger.verfer = sverfers[siger.index]  # assign verfer
+                    if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
+                        # good sig so write receipt to database
+                        keys = (pre, ldig, sprefixer.qb64, snumber.onkey, sdiger.qb64)
+                        self.db.vrcsNew.add(keys=keys, val=siger)
 
         else:  # no events to be receipted yet at that sn so escrow
             if cigars:
@@ -4841,7 +4851,7 @@ class Kevery:
 
                 # Set up quadruple
                 quadruple = (sprefixer, snumber, diger, siger)
-                self.db.vrcs.add(keys=dgKey(pre, serder.said), val=quadruple)
+                self.db.vrcs.add(keys=(pre, serder.said), val=quadruple)
 
 
             else:  # escrow  either receiptor or receipted event not yet in database
@@ -7170,7 +7180,7 @@ class Kevery:
 
                     # good sig so write receipt quadruple to database
                     quadruple = (sprefixer, snumber, ssaider, siger)
-                    self.db.vrcs.add(keys=dgKey(pre, serder.said), val=quadruple)
+                    self.db.vrcs.add(keys=(pre, serder.said), val=quadruple)
 
 
                 except UnverifiedTransferableReceiptError as ex:

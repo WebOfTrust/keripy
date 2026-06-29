@@ -2701,11 +2701,17 @@ class BaseHab:
 
                 if cuedKed["t"] == Ilks.icp:
                     dgkey = dgKey(self.pre, self.iserder.said)
+
+                    # decide if need to send our inception before sending receipt
+                    # to remote pre of receipted event so it can process our key state
+                    # to verify local signatures on our receipt. Need to send
+                    # our inception if we do not have a receipt from receiver of
+                    # our inception so we believe other pre cannot verify signs.
                     found = False
                     if cuedPrefixer.transferable:  # find if have rct from other pre for own icp
                         for sprefixer, snumber, sdiger, siger in self.db.vrcs.getIter(dgkey):
                             if sprefixer.qb64 == cuedKed["i"]:
-                                found = True
+                                found = True  # yes so don't send own inception
                     else:  # find if already rcts of own icp
                         for prefixer, cigar in self.db.rcts.getIter(dgkey):
                             if prefixer.qb64.startswith(cuedKed["i"]):

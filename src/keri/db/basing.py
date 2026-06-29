@@ -265,6 +265,26 @@ class Baser(LMDBer):
             dgKey (prefix + digest)
             Multiple values per key stored as ordered set.
 
+        .vrcsNew is named subDB instance of CesrIoSetSuber (klas=Siger))
+            for verified transferable receiptor/validator receipt signatures.
+            Represents fully validated receipts moved out of escrow.
+
+            Each stored value in ioset is returned as a typed CESR Siger.
+            The reciptor (validator not the controller) is denoted in
+            the key space for the vrcs entry. This is provided by the last three
+            elements of the key space tuple representing a receiptor's
+            AID, its latest establishment-event sequence number, and  digest.
+            The value is a set of its indexed signatures over the event.
+            Values are preserved in insertion order.
+            subkey 'vrcs.'
+            dgKey (epre + esaid + rpre, resn, resaid, )
+                epre is controller of receipted event
+                esaid is recepted event pre
+                rpre is receiptor pre
+                resn is receiptor est evt sn
+                resaid is receptor est evt said
+            Multiple values per key stored as ordered set.
+
         .vres is named subDB instance of CatCesrIoSetSuber for escrowed
             transferable-receipt quintuples. Each value is a typed CESR tuple
             (Diger, Prefixer, Number, Diger, Siger) representing a validator's
@@ -930,6 +950,9 @@ class Baser(LMDBer):
                                              klas=(coring.Diger, coring.Prefixer, coring.Cigar))
         self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.',
                              klas=(coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
+        self.vrcsNew = subing.CesrIoSetSuber(db=self, subkey='vrcs.', klas=indexing.Siger)
+
+
         self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.',
                              klas=(coring.Diger, coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
         self.pses = subing.OnIoDupSuber(db=self, subkey='pses.')
