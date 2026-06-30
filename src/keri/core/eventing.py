@@ -5604,6 +5604,14 @@ class Kevery:
         """
         cigars = cigars if cigars is not None else []
         dgkey = dgKey(prefixer.qb64b, serder.saidb)
+        if self.db.dtss.get(keys=dgkey) is not None:
+            # Already escrowed. processQueryNotFound re-runs this on every loop pass
+            # while the queried KEL is absent; the writes below are then all no-ops
+            # (put is overwrite=False, qnfs.add dedups) but each still opens a write
+            # transaction whose commit fsyncs. Returning here keeps the escrow and its
+            # first-seen datetime (so TimeoutQNF still fires) without re-fsyncing the
+            # entry every pass.
+            return
         self.db.dtss.put(keys=dgkey, val=Dater())
         self.db.sigs.put(keys=dgkey, vals=sigers)
         self.db.evts.put(keys=(prefixer.qb64b, serder.saidb), val=serder)

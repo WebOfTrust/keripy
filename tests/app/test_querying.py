@@ -170,3 +170,51 @@ def test_query_not_found_escrow():
 
         subHab.kvy.processQueryNotFound()
         assert subHab.db.qnfs.get(dgkey) == []
+
+
+def test_query_not_found_escrow_is_idempotent():
+    """A qry the node cannot answer is re-processed on every loop pass; escrowing it must
+    be idempotent so the loop does not re-write (and re-fsync) an unchanged escrow each
+    pass. Once escrowed, re-processing performs NO further escrow writes, the entry and its
+    first-seen datetime are untouched, and a later-arriving KEL still resolves it."""
+    with openHby() as hby, openHby() as hby1, openHby() as hby2:
+        inqHab = hby.makeHab(name="inquisitor")
+        subHab = hby1.makeHab(name="subject")
+        tgtHab = hby2.makeHab(name="target")  # an AID the subject does NOT have
+
+        # subject must know the inquisitor's KEL to verify the query's source signature
+        subHab.psr.parseOne(ims=inqHab.msgOwnInception(framed=True))
+        assert inqHab.pre in subHab.kevers
+        assert tgtHab.pre not in subHab.kevers  # so the query is genuinely unanswerable
+
+        # drive the real query path: keripy parks it via escrowQueryNotFoundEvent
+        qry = inqHab.query(tgtHab.pre, route="ksn", src=inqHab.pre)
+        serder = SerderKERI(raw=qry)
+        dgkey = dgKey(inqHab.pre, serder.saidb)
+        qkeys = (inqHab.pre, serder.said)
+        subHab.psr.parseOne(ims=bytearray(qry))
+        assert subHab.db.qnfs.get(keys=qkeys)  # keripy parked it
+        dt0 = subHab.db.dtss.get(keys=dgkey)
+        assert dt0 is not None
+
+        # Spy on the escrow datetime write: re-processing an already-escrowed entry must
+        # not write it again. Without the idempotency guard, escrowQueryNotFoundEvent re-runs
+        # every pass and re-issues dtss.put (a no-op overwrite=False put, but still a write
+        # transaction that commits+fsyncs) -- the churn this fix removes.
+        writes = []
+        orig_put = subHab.db.dtss.put
+        subHab.db.dtss.put = lambda *a, **k: (writes.append(1), orig_put(*a, **k))[1]
+        try:
+            for _ in range(5):
+                subHab.kvy.processQueryNotFound()
+        finally:
+            subHab.db.dtss.put = orig_put
+        assert writes == []  # no re-write of the already-escrowed entry across 5 passes
+        assert subHab.db.qnfs.get(keys=qkeys)                   # entry still parked
+        assert subHab.db.dtss.get(keys=dgkey).qb64 == dt0.qb64  # datetime untouched
+
+        # once the queried KEL arrives, the escrow still resolves and is removed
+        subHab.psr.parseOne(ims=tgtHab.msgOwnInception(framed=True))
+        assert tgtHab.pre in subHab.kevers
+        subHab.kvy.processQueryNotFound()
+        assert subHab.db.qnfs.get(keys=qkeys) == []
