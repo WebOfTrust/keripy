@@ -39,11 +39,10 @@ def sceil(r):
     Returns:
        sceil (int): value that is symmetric ceiling of r away from zero
 
-    Because int() provides a symmetric floor towards zero, just inc int(r) by:
-     1 when r - int(r) >  0  (r positive)
-    -1 when r - int(r) <  0  (r negative)
-     0 when r - int(r) == 0  (r integral already)
-    abs(r) > abs(int(r) or 0 when abs(r)
+    Because int() provides a symmetric floor towards zero, just increment
+    int(r) by 1 when r - int(r) > 0, -1 when r - int(r) < 0, or 0 when
+    r - int(r) == 0.  abs(r) > abs(int(r) or 0 when abs(r)
+
     """
     return (int(r) + isign(r - int(r)))
 
