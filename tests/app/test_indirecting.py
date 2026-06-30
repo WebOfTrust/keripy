@@ -161,16 +161,20 @@ def test_qrymailbox_iter():
             next(mbi)
 
 
-def test_wit_query_ends(seeder):
+def test_wit_query_ends(seeder, witnessPorter):
     with openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64) as wesHby, \
             openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64) as palHby:
-        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644)
+        witnessPorts, witnessUrls = witnessPorter("wes")
+        wesDoers = setupWitness(alias="wes", hby=wesHby,
+                                tcpPort=witnessPorts["wes"]["tcp"],
+                                httpPort=witnessPorts["wes"]["http"])
         # Pull the reger out of the Doers so the reger is reused and does not trigger an LMDB error on reuse
         wesReger = next(doer.baser for doer in wesDoers if isinstance(doer, basing.BaserDoer))
         witDoer = Receiptor(hby=palHby)
 
         wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[Schemes.http])
+        seeder.seedWitEnds(palHby.db, witHabs=[wesHab],
+                           protocols=[Schemes.http], witnessUrls=witnessUrls)
 
         app = falcon.App()
         query_endpoint = QueryEnd(wesHab, reger=wesReger)
@@ -281,14 +285,15 @@ class MockHttpServer:
         self.servant = servant
 
 
-def test_createHttpServer(monkeypatch):
+def test_createHttpServer(monkeypatch, unused_tcp_port):
     host = "0.0.0.0"
     if platform.system() == "Windows":
         host = "127.0.0.1"
-    port = 5632
+    port = unused_tcp_port
     app = falcon.App()
     server = createHttpServer(host, port, app)
     assert isinstance(server, http.Server)
+    server.close()
 
     monkeypatch.setattr(hio.core.tcp, 'ServerTls', MockServerTls)
     monkeypatch.setattr(hio.core.http, 'Server', MockHttpServer)

@@ -23,24 +23,25 @@ from keri.peer import specialExchange, Exchanger
 from keri.spac import payloading
 
 
-def test_postman(seeder):
+def test_postman(seeder, witnessPorter):
     with openHab(name="test", transferable=True, temp=True) as (hby, hab), \
             openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=True) as wesHby, \
             openHby(name="repTest", temp=True) as recpHby:
 
         version = Vrsn_1_0
         kwa = dict(version=version, kind=Kinds.json)
+        witnessPorts, witnessUrls = witnessPorter("wes")
         mbx = Mailboxer(name="wes", temp=True)
         wesDoers = setupWitness(alias="wes",
                                 hby=wesHby,
                                 mbx=mbx,
-                                tcpPort=5634,
-                                httpPort=5644,
+                                tcpPort=witnessPorts["wes"]["tcp"],
+                                httpPort=witnessPorts["wes"]["http"],
                                 **kwa)
         wesHab = wesHby.habByName("wes")
-        seeder.seedWitEnds(hby.db, witHabs=[wesHab], **kwa)
-        seeder.seedWitEnds(wesHby.db, witHabs=[wesHab], **kwa)
-        seeder.seedWitEnds(recpHby.db, witHabs=[wesHab], **kwa)
+        seeder.seedWitEnds(hby.db, witHabs=[wesHab], witnessUrls=witnessUrls, **kwa)
+        seeder.seedWitEnds(wesHby.db, witHabs=[wesHab], witnessUrls=witnessUrls, **kwa)
+        seeder.seedWitEnds(recpHby.db, witHabs=[wesHab], witnessUrls=witnessUrls, **kwa)
 
         recpHab = recpHby.makeHab(name="repTest",
                                   transferable=True,
@@ -238,16 +239,17 @@ def test_forward_handler():
         assert count_after == count_before
 
 
-def test_essr_stream(seeder):
+def test_essr_stream(seeder, unused_tcp_port):
     with openHab(name="test", transferable=True, temp=True) as (hby, hab), \
             openHab(name="test", transferable=True, temp=True) as (recpHby, recpHab):
 
         version = Vrsn_1_0
         kwa = dict(version=version, kind=Kinds.json)
+        httpPort = unused_tcp_port
         app = falcon.App()
         httpEnd = HttpEnd(rxbs=recpHab.psr.ims)
         app.add_route("/", httpEnd)
-        server = http.Server(port=5555, app=app)
+        server = http.Server(port=httpPort, app=app)
         httpServerDoer = http.ServerDoer(server=server)
 
         kvy = Kevery(db=hab.db)
@@ -267,7 +269,7 @@ def test_essr_stream(seeder):
                                         role=Roles.controller,
                                         stamp=help.nowIso8601(), **kwa))
 
-        msgs.extend(recpHab.makeLocScheme(url='http://127.0.0.1:5555',
+        msgs.extend(recpHab.makeLocScheme(url=f'http://127.0.0.1:{httpPort}',
                                           scheme=Schemes.http,
                                           stamp=help.nowIso8601(), **kwa))
         hab.psr.parse(ims=msgs)
@@ -347,19 +349,22 @@ def test_essr_stream(seeder):
         assert serder.ked["a"] == dict(msg="test", i=39)
 
 
-def test_essr_mbx(seeder):
+def test_essr_mbx(seeder, witnessPorter):
     with openHab(name="test", transferable=True, temp=True) as (hby, hab), \
             openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=True) as wesHby, \
             openHby(name="repTest", temp=True) as recpHby:
 
         version = Vrsn_1_0
         kwa = dict(version=version, kind=Kinds.json)
+        witnessPorts, witnessUrls = witnessPorter("wes")
         mbx = Mailboxer(name="wes", temp=True)
-        wesDoers = setupWitness(alias="wes", hby=wesHby, mbx=mbx, tcpPort=5634, httpPort=5644, **kwa)
+        wesDoers = setupWitness(alias="wes", hby=wesHby, mbx=mbx,
+                                tcpPort=witnessPorts["wes"]["tcp"],
+                                httpPort=witnessPorts["wes"]["http"], **kwa)
         wesHab = wesHby.habByName("wes")
-        seeder.seedWitEnds(hby.db, witHabs=[wesHab], **kwa)
-        seeder.seedWitEnds(wesHby.db, witHabs=[wesHab], **kwa)
-        seeder.seedWitEnds(recpHby.db, witHabs=[wesHab], **kwa)
+        seeder.seedWitEnds(hby.db, witHabs=[wesHab], witnessUrls=witnessUrls, **kwa)
+        seeder.seedWitEnds(wesHby.db, witHabs=[wesHab], witnessUrls=witnessUrls, **kwa)
+        seeder.seedWitEnds(recpHby.db, witHabs=[wesHab], witnessUrls=witnessUrls, **kwa)
 
         recpHab = recpHby.makeHab(name="repTest", transferable=True, wits=[wesHab.pre], **kwa)
 

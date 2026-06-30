@@ -11,12 +11,47 @@ on:
   workflow_dispatch:
 
 jobs:
+  lint:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set up Python 3.12.6+
+        uses: actions/setup-python@v5
+        with:
+          python-version: '>=3.12.6'
+      - name: Install dependencies
+        run: |
+          python -m pip install --upgrade pip
+          pip install flake8
+          if (Test-Path requirements.txt) { pip install -r requirements.txt }
+        shell: pwsh
+      - name: Lint changes
+        run: |
+          # stop the build if there are Python syntax errors or undefined names
+          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
+          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
+          flake8 . --count --exit-zero --ignore=E7,F841,E301,E302,E303 --max-complexity=10 --max-line-length=127 --statistics
+        shell: pwsh
+
   test:
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ macos-latest, ubuntu-latest, windows-latest ]
+        include:
+          - os: macos-latest
+            job_name: "test (macos-latest)"
+            pytest_command: "pytest tests/ --ignore tests/demo/ --ignore test/scripts -n auto"
+          - os: ubuntu-latest
+            job_name: "test (ubuntu-latest)"
+            pytest_command: "pytest tests/ --ignore tests/demo/ --ignore test/scripts -n auto"
+          - os: windows-latest
+            job_name: "test (windows-latest, core)"
+            pytest_command: "pytest tests/core"
+          - os: windows-latest
+            job_name: "test (windows-latest, non-core)"
+            pytest_command: "pytest tests/acdc tests/app tests/cli tests/comply tests/db tests/end tests/help tests/peer tests/spac tests/spec tests/test_kering.py tests/vc tests/vdr tests/wasm"
+    name: ${{ matrix.job_name }}
 
     steps:
       - uses: actions/checkout@v4
@@ -40,19 +75,12 @@ jobs:
       - name: Install dependencies
         run: |
           python -m pip install --upgrade pip
-          pip install flake8 pytest
+          pip install pytest pytest-xdist
           if (Test-Path requirements.txt) { pip install -r requirements.txt }
-        shell: pwsh
-      - name: Lint changes
-        run: |
-          # stop the build if there are Python syntax errors or undefined names
-          flake8 . --count --select=E9,F63,F7,F82 --show-source --statistics
-          # exit-zero treats all errors as warnings. The GitHub editor is 127 chars wide
-          flake8 . --count --exit-zero --ignore=E7,F841,E301,E302,E303 --max-complexity=10 --max-line-length=127 --statistics
         shell: pwsh
       - name: Run core KERI tests
         run: |
-          pytest tests/ --ignore tests/demo/ --ignore test/scripts
+          ${{ matrix.pytest_command }}
         shell: pwsh
       - name: Run KERI demo tests
         run: |
