@@ -7,7 +7,7 @@ keri.app.agenting module
 import random
 from urllib.parse import urlparse, urljoin
 
-from hio.base import doing, tyming
+from hio.base import doing
 from hio.core import http
 from hio.core.tcp import clienting
 from hio.help import decking, Hict, ogler
@@ -30,7 +30,7 @@ class Receiptor(doing.DoDoer):
     subsequent retrieval of receipts for specific events based on queries.
     """
 
-    def __init__(self, hby, msgs=None, gets=None, cues=None, receiptTimeout=10.0):
+    def __init__(self, hby, msgs=None, gets=None, cues=None):
         """
         Initialize the Receiptor and create doers for processing and retrieving witness receipts.
 
@@ -46,26 +46,14 @@ class Receiptor(doing.DoDoer):
         self.gets = gets if gets is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
         self.clienter = Clienter()
-        self.receiptTimeout = receiptTimeout
 
         doers = [self.clienter, doing.doify(self.witDo), doing.doify(self.gitDo)]
         self.hby = hby
 
         super(Receiptor, self).__init__(doers=doers)
 
-    def _waitForResponse(self, client, timeout=None):
-        """Wait for a client response, but fail boundedly instead of hanging forever."""
-        tymer = tyming.Tymer(tymth=self.tymth,
-                             duration=self.receiptTimeout if timeout is None else timeout)
-        while not client.responses:
-            if tymer.expired:
-                return False
-            yield self.tock
-
-        return True
-
     def _receiptFromResponse(self, hab, rep):
-        """Parse a witness receipt response and return its attachment bytes."""
+        """Parse a witness receipt response and return normalized attachment bytes"""
         if rep.status != 200:
             return None
 
@@ -109,27 +97,6 @@ class Receiptor(doing.DoDoer):
 
         hab.psr.parseOne(msg)
         return atc
-
-    def _fetchReceipt(self, hab, wit, pre, sn):
-        """Fetch a receipt from a specific witness."""
-        urls = hab.fetchUrls(eid=wit, scheme=Schemes.https) or hab.fetchUrls(eid=wit, scheme=Schemes.http)
-        if not urls:
-            raise MissingEntryError(f"unable to query witness {wit}, no http endpoint")
-
-        base = urls[Schemes.https] if Schemes.https in urls else urls[Schemes.http]
-        url = urljoin(base, f"/receipts?pre={pre}&sn={sn}")
-        client = self.clienter.request("GET", url)
-        if client is None:
-            return None
-
-        try:
-            if not (yield from self._waitForResponse(client)):
-                return None
-
-            rep = client.respond()
-            return self._receiptFromResponse(hab, rep)
-        finally:
-            self.clienter.remove(client)
 
     def receipt(self, pre, sn=None, auths=None):
         """Returns a generator performing witness receipting of KEL events.
@@ -186,28 +153,14 @@ class Receiptor(doing.DoDoer):
                 headers["Authorization"] = auths[wit]
 
             streamCESRRequests(client=client, dest=wit, ims=bytearray(msg), path="/receipts", headers=headers)
-            if not (yield from self._waitForResponse(client)):
-                raise TimeoutError(f"timed out waiting for witness {wit} to respond to receipt submission "
-                                   f"for pre={pre} sn={sn}")
+            while not client.responses:
+                yield self.tock
 
             rep = client.respond()
             if rep.status == 200:
                 if rct := self._receiptFromResponse(hab, rep):
                     rcts[wit] = rct
-            if rep.status in (200, 202) and wit not in rcts:
-                # The witness accepted the event but did not have a receipt
-                # ready for the immediate POST response. Poll the same witness
-                # until the receipt is available instead of completing empty
-                tymer = tyming.Tymer(tymth=self.tymth, duration=self.receiptTimeout)
-                while wit not in rcts:
-                    if tymer.expired:
-                        raise TimeoutError(f"timed out waiting for witness {wit} to publish receipt "
-                                           f"for pre={pre} sn={sn}")
-                    if rct := (yield from self._fetchReceipt(hab, wit, pre, sn)):
-                        rcts[wit] = rct
-                        break
-                    yield self.tock
-            elif rep.status != 200:
+            else:
                 print(f"invalid response {rep.status} from witnesses {wit}")
 
         # send retrieved receipts to all other witnesses
@@ -236,11 +189,7 @@ class Receiptor(doing.DoDoer):
             client = clients[wit]
 
             sent = streamCESRRequests(client=client, dest=wit, ims=bytearray(msg))
-            tymer = tyming.Tymer(tymth=self.tymth, duration=self.receiptTimeout)
             while len(client.responses) < sent:
-                if tymer.expired:
-                    raise TimeoutError(f"timed out propagating gathered receipts to witness {wit} "
-                                       f"for pre={pre} sn={sn}")
                 yield self.tock
 
         self.remove(doers)
@@ -277,9 +226,8 @@ class Receiptor(doing.DoDoer):
         url = urljoin(base, f"/receipts?pre={pre}&sn={sn}")
 
         client = self.clienter.request("GET", url)
-        if not (yield from self._waitForResponse(client)):
-            self.clienter.remove(client)
-            return False
+        while not client.responses:
+            yield self.tock
 
         rep = client.respond()
         if rep.status == 200:
@@ -310,9 +258,8 @@ class Receiptor(doing.DoDoer):
 
         for fmsg in hab.db.clonePreIter(pre=pre):
             streamCESRRequests(client=client, dest=wit, ims=bytearray(fmsg))
-            if not (yield from self._waitForResponse(client)):
-                self.remove([clientDoer])
-                raise TimeoutError(f"timed out catching witness {wit} up for pre={pre}")
+            while not client.responses:
+                yield self.tock
 
         self.remove([clientDoer])
 
@@ -388,7 +335,7 @@ class WitnessReceiptor(doing.DoDoer):
     and an `all` method that runs and waits for more messages to receipt.
     """
 
-    def __init__(self, hby, msgs=None, cues=None, force=False, auths=None, receiptTimeout=10.0, **kwa):
+    def __init__(self, hby, msgs=None, cues=None, force=False, auths=None, **kwa):
         """
         For the current event, gather the current set of witnesses, send the event,
         gather all receipts and send them to all other witnesses
@@ -407,7 +354,6 @@ class WitnessReceiptor(doing.DoDoer):
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
         self.auths = auths if auths is not None else dict()
-        self.receiptTimeout = receiptTimeout
 
         super(WitnessReceiptor, self).__init__(doers=[doing.doify(self.receiptDo)], **kwa)
 
@@ -475,13 +421,10 @@ class WitnessReceiptor(doing.DoDoer):
                         witer.msgs.append(bytearray(msg))  # make a copy
                         _ = (yield self.tock)
 
-                    tymer = tyming.Tymer(tymth=self.tymth, duration=self.receiptTimeout)
                     while True:
                         wigers = hab.db.wigs.get(keys=(ser.preb, ser.saidb))
                         if len(wigers) == len(wits):
                             break
-                        if tymer.expired:
-                            raise TimeoutError(f"timed out waiting for witness receipts for pre={pre} sn={sn}")
                         _ = yield self.tock
 
                 # If we started with all our receipts, exit unless told to force resubmit of all receipts
@@ -525,13 +468,10 @@ class WitnessReceiptor(doing.DoDoer):
                     witer.msgs.append(rctMsg)
                     _ = (yield self.tock)
 
-                tymer = tyming.Tymer(tymth=self.tymth, duration=self.receiptTimeout)
                 while True:
                     done = True
                     for witer in witers:
                         if not witer.idle:
-                            if tymer.expired:
-                                raise TimeoutError(f"timed out propagating witness receipts for pre={pre} sn={sn}")
                             yield 1.0
                             done = False
                             break
@@ -612,11 +552,6 @@ class WitnessInquisitor(doing.DoDoer):
                 hab = evt["hab"]
             elif (hab := self.hby.habByPre(src)) is None:
                 continue
-
-            if "version" not in kwa:
-                kwa = dict(**kwa,
-                           version=hab.kever.serder.pvrsn,
-                           kind=hab.kever.serder.kind)
 
             if not wits and pre not in self.hby.kevers:
                 logger.error(f"must have KEL for identifier to query {pre}")
