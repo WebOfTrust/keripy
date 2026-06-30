@@ -16,7 +16,7 @@ from hio.help import decking, ogler
 
 from .httping import Clienter,CESR_CONTENT_TYPE
 from .organizing import Organizer
-from .. import (Vrsn_1_0, Vrsn_2_0, Version, Roles, Schemes, Ilks,
+from .. import (Vrsn_1_0, Vrsn_2_0, Version, Roles, Schemes, Ilks, Kinds,
                 ValidationError, UnverifiedReplyError,
                 ConfigurationError)
 from ..help import nowIso8601, fromIso8601, toIso8601, nowUTC
@@ -290,6 +290,9 @@ def oobiRequestExn(hab, dest, oobi, version=Version, pvrsn=None, gvrsn=Version,
         oobi=oobi
     )
 
+    pvrsn = pvrsn if pvrsn is not None else version
+    kind = Kinds.cesr if pvrsn.major >= Vrsn_2_0.major else Kinds.json
+
     # Create `exn` peer to peer message to notify other participants UI
     exn = exchange(sender=hab.pre,
                       route=OobiRequestHandler.resource,
@@ -297,7 +300,8 @@ def oobiRequestExn(hab, dest, oobi, version=Version, pvrsn=None, gvrsn=Version,
                       attributes=data,
                       version=version,
                       pvrsn=pvrsn,
-                      gvrsn=gvrsn)
+                      gvrsn=gvrsn,
+                      kind=kind)
     ims = hab.endorse(serder=exn, last=False, gvrsn=gvrsn, framed=framed,
                       nested=nested, genusify=genusify)
     del ims[:exn.size]
@@ -334,7 +338,7 @@ class Oobiery:
         rvy = Revery(db=self.hby.db, rtr=rtr)
         kvy = Kevery(db=self.hby.db, lax=True, local=False, rvy=rvy)
         kvy.registerReplyRoutes(router=rtr)
-        self.parser = Parser(framed=True, kvy=kvy, rvy=rvy, version=Vrsn_1_0)
+        self.parser = Parser(framed=True, kvy=kvy, rvy=rvy, version=Vrsn_2_0)
 
         self.cues = cues if cues is not None else decking.Deck()
         self.clients = dict()

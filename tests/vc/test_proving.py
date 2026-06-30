@@ -17,14 +17,16 @@ from keri.app import openHab, openHby
 from keri.vc import credential
 from keri.vdr import Verifier, Regery
 
+from tests.common import KWA
+
 
 def test_proving(mockHelpingNowIso8601):
     """Test credential proof with SerderACDC"""
 
     sidSalt = Salter(raw=b'0123456789abcdef').qb64
 
-    with openHby(name="sid", base="test", salt=sidSalt) as sidHby:
-        sidHab = sidHby.makeHab(name="test", )
+    with openHby(name="sid", base="test", salt=sidSalt, version=Vrsn_1_0) as sidHby:
+        sidHab = sidHby.makeHab(name="test", **KWA)
         assert sidHab.pre == 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
         sed = dict()
         sed["$id"] = ""
@@ -56,9 +58,10 @@ def test_proving(mockHelpingNowIso8601):
 
         creder = credential(issuer=sidHab.pre,
                             schema=schemer.said,
-                            data=credSubject)
+                            data=credSubject,
+                            **KWA)
 
-        msg = sidHab.endorse(serder=creder, framed=False)
+        msg = sidHab.endorse(serder=creder, framed=False, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"ACDC10JSON000195_","d":"EPVHgaM_Yad1b5VHs6SIZyqF72m_byxSYU'
                     b'w3VNx5Ubqt","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","'
                     b's":"EHggmYtUecR1JYbMkDZv-za1EExCmR-T_bwaJp3PQIoW","a":{"d":"EO-m'
@@ -117,7 +120,7 @@ def test_credentialer():
 
     sub = dict(a=123, b="abc", issuanceDate="2021-06-27T21:26:21.233257+00:00")
     d = dict(
-        v=versify(proto=Protocols.acdc, kind=Kinds.json, size=0),
+        v=versify(proto=Protocols.acdc, pvrsn=Vrsn_1_0, kind=Kinds.json, size=0),
         d="",
         i="EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi",
         s="abc",
@@ -157,7 +160,7 @@ def test_credentialer():
 
     d2 = dict(d)
     d2['d'] = ""
-    d2["v"] = versify(proto=Protocols.acdc, kind=Kinds.cbor, size=0)
+    d2["v"] = versify(proto=Protocols.acdc, pvrsn=Vrsn_1_0, kind=Kinds.cbor, size=0)
     _, d2 = Saider.saidify(sad=d2)
 
     creder = SerderACDC(sad=d2)  # Creder(ked=d2)
@@ -183,7 +186,7 @@ def test_credentialer():
     assert creder.sad == d2
 
     d3 = dict(d)
-    d3["v"] = versify(proto=Protocols.acdc, kind=Kinds.mgpk, size=0)
+    d3["v"] = versify(proto=Protocols.acdc, pvrsn=Vrsn_1_0, kind=Kinds.mgpk, size=0)
     _, d3 = Saider.saidify(sad=d3)
     creder = SerderACDC(sad=d3)  # Creder(ked=d3)
 
@@ -231,7 +234,8 @@ def test_credential(mockHelpingNowIso8601):
 
     cred = credential(schema="EAllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
                       issuer="EBNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",
-                      data=d, source=s, status="ECQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
+                      data=d, source=s, status="ECQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M",
+                      **KWA)
 
     assert cred.size == len(cred.raw)
     assert cred.raw == (b'{"v":"ACDC10JSON00023b_","d":"EFyT2QGVlx0zL4ft1WNDzEeBh9lHN-vfcjL18V8h-zn1",'
@@ -257,7 +261,8 @@ def test_privacy_preserving_credential(mockHelpingNowIso8601):
                       private_credential_nonce=Salter(raw=b'0123456789abcdef').qb64,
                       private_subject_nonce=Salter(raw=b'abcdef0123456789').qb64,
                       issuer="EMZeK1yLZd1JV6Ktdq_YUt-YbyoTWB9UMcFzuiDly2Y6",
-                      data=d, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M")
+                      data=d, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M",
+                      **KWA)
 
     assert cred.size == len(cred.raw)
     assert "u" in cred.sad
@@ -274,11 +279,11 @@ def test_privacy_preserving_credential(mockHelpingNowIso8601):
 
 
 def test_credential_parsator():
-    with openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab):
+    with openHab(name="sid", temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab):
         assert hab.pre == 'EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o'
 
         regery = Regery(hby=hby, name="sid", temp=True)
-        issuer = regery.makeRegistry(prefix=hab.pre, name="sid", noBackers=True, estOnly=True)
+        issuer = regery.makeRegistry(prefix=hab.pre, name="sid", noBackers=True, estOnly=True, **KWA)
 
         credSubject = dict(
             d="",
@@ -288,7 +293,8 @@ def test_credential_parsator():
         creder = credential(issuer=hab.pre,
                             schema="EAbrwlefuH-F_KU_FPWAZR78A3pmSVDlnfJUqnm8Lhr4",
                             data=credSubject,
-                            status=issuer.regk)
+                            status=issuer.regk,
+                            **KWA)
 
         msg = bytearray(creder.raw)
         msg.extend(Counter(Codens.SealSourceTriples, count=1, version=Vrsn_1_0).qb64b)

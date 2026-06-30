@@ -889,7 +889,7 @@ def test_kever(mockHelpingNowUTC):
         sad['bt'] = "{:x}".format(toad)
 
         serder = SerderKERI(makify=True, verify=True, sad=sad)
-        assert serder.said == 'EBTCANzIfUThxmM1z1SFxQuwooGdF4QwtotRS01vZGqi'
+        assert serder.said == 'EIsOed7ES10AH9kgajYudqaNi9b9CU9lA7zV7_uYEko_'
         assert serder.pre == 'DAUDqkmn-hqlQKD8W-FAEa5JUvJC2I9yarEem-AAEg3e'
         aid0 = serder.pre
 
@@ -921,12 +921,12 @@ def test_kever(mockHelpingNowUTC):
         assert ksr.s == kever.sner.numh
         assert ([key for key in ksr.k] ==
                 [verfer.qb64 for verfer in kever.verfers])
-        assert ksr._asjson() == (b'{"vn":[1,0],"i":"DAUDqkmn-hqlQKD8W-FAEa5JUvJC2I9yarEem-AAEg3e","s":"0","p":"'
-                        b'","d":"EBTCANzIfUThxmM1z1SFxQuwooGdF4QwtotRS01vZGqi","f":"0","dt":"2021-01-0'
+        assert ksr._asjson() == (b'{"vn":[2,0],"i":"DAUDqkmn-hqlQKD8W-FAEa5JUvJC2I9yarEem-AAEg3e","s":"0","p":"'
+                        b'","d":"EIsOed7ES10AH9kgajYudqaNi9b9CU9lA7zV7_uYEko_","f":"0","dt":"2021-01-0'
                         b'1T00:00:00.000000+00:00","et":"icp","kt":"1","k":["DAUDqkmn-hqlQKD8W-FAEa5JU'
                         b'vJC2I9yarEem-AAEg3e"],"nt":"1","n":["EAKUR-LmLHWMwXTLWQ1QjxHrihBmwwrV2tYaSG7'
-                        b'hOrWj"],"bt":"0","b":[],"c":[],"ee":{"s":"0","d":"EBTCANzIfUThxmM1z1SFxQuwoo'
-                        b'GdF4QwtotRS01vZGqi","br":[],"ba":[]},"di":""}')
+                        b'hOrWj"],"bt":"0","b":[],"c":[],"ee":{"s":"0","d":"EIsOed7ES10AH9kgajYudqaNi9b9'
+                        b'CU9lA7zV7_uYEko_","br":[],"ba":[]},"di":""}')
 
         # test exposeds
         raw = b"raw salt to test"
@@ -1033,7 +1033,7 @@ def test_kever(mockHelpingNowUTC):
         sad['bt'] = "{:x}".format(toad)
 
         serder = SerderKERI(makify=True, verify=False, sad=sad)
-        assert serder.said == 'EFsuiA86Q5gGuVOO3tou8KSU6LORSExIUxzWNrlnW7WP'
+        assert serder.said == 'EHD_3J5SRltS1dpppsgkQi5LUh25O2qoFgyb2d6CjtTK'
         assert serder.pre == skp0.verfer.qb64
         aid0 = serder.pre
 
@@ -1071,7 +1071,7 @@ def test_kever(mockHelpingNowUTC):
         sad['bt'] = "{:x}".format(toad)
 
         serder = SerderKERI(makify=True, verify=True, sad=sad)
-        assert serder.said == 'EHXNdcXZzJnRIdaNk30W5h4yD5sZ2Y_n3u_ReE65X9w-'
+        assert serder.said == 'EGfd2SmXanRXVJFTwDfEA3cG2OnbtfgyuH6Es_8JREI9'
         assert serder.pre == skp0.verfer.qb64
         aid0 = serder.pre
 
@@ -1130,7 +1130,7 @@ def test_kever(mockHelpingNowUTC):
         sad['b'] = baks
 
         serder = SerderKERI(makify=True, verify=False, sad=sad)
-        assert serder.said == 'EKcREpfNupJ8oOqdnqDIyJVr1-GgIMBrVOtBUR9Gm6lO'
+        assert serder.said == 'EJa49-UUiXEpM1riyGwcHicoxmYxgzeleCQJ2vd7H-uD'
         assert serder.pre == skp0.verfer.qb64
 
 
@@ -1153,7 +1153,7 @@ def test_kever(mockHelpingNowUTC):
         sad['bt'] = "{:x}".format(toad)
 
         serder = SerderKERI(makify=True, verify=False, sad=sad)
-        assert serder.said == 'EBKhptvqccp0KNBaS45bNPdTE4m19U1IvweHJW2PIEDI'
+        assert serder.said == 'EBOgGXmBkPHcO-otls0K35LLpMsnN6xedai7jLVvvtaL'
         assert serder.pre == skp0.verfer.qb64
 
         # assign serialization
@@ -1182,7 +1182,7 @@ def test_kever(mockHelpingNowUTC):
         sad['a'] = a
 
         serder = SerderKERI(makify=True, verify=False, sad=sad)
-        assert serder.said == 'EEu-cdj_9b_66XRJ5UuhgEvJxAPpn4RjyaHvRgDU3iyA'
+        assert serder.said == 'EC_K6SeJL8hJphVCRZJNuSEcyoBrj2eevnodKG3wSKFh'
         assert serder.pre == skp0.verfer.qb64
 
         # assign serialization
@@ -1210,7 +1210,7 @@ def test_kever(mockHelpingNowUTC):
 
 
         serder = SerderKERI(makify=True, verify=True, sad=sad)
-        assert serder.said == 'EOyd2ZALXBm5k9lEpmvakO6RYPDgX1zWSFNd3MfOXL-e'
+        assert serder.said == 'EFc5n3F_zk_cVFadA6sI6mhWNseszO7BLfgY5oC8pg2W'
         assert serder.pre == skp0.verfer.qb64
 
         # assign serialization

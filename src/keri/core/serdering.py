@@ -352,9 +352,9 @@ class Serder:
     #override in subclass to enforce specific protocol
     Protocol = None  # class based message protocol, None means any in Protocols is ok
     Proto = Protocols.keri  # default message protocol type for makify on base Serder
-    PVrsn = Vrsn_1_0  # default protocol version
+    PVrsn = Vrsn_2_0  # default protocol version
     GVrsn = Vrsn_2_0  # default CESR genus version
-    Kind = Kinds.json  # default serialization kind
+    Kind = Kinds.cesr  # default serialization kind
     Genus = GenDex.KERI  # default CESR genus code
     MUCodes = Counter.MUCodes # message universal code tables from Counter
 

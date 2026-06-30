@@ -807,6 +807,7 @@ class Tever:
                       toad=self.toad,
                       wits=self.baks,
                       cnfg=cnfg,
+                      version=self.version,
                       #kind=kind
                       )
                 )
@@ -1223,6 +1224,7 @@ class Tever:
                        eilk=vcilk,
                        ra=ra,
                        a=dict(s=seqner.sn, d=saider.qb64),
+                       version=self.version,
                        )
 
     def vcSn(self, vci):

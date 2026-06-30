@@ -15,6 +15,7 @@ from ...app import (HaberyDoer, WitnessReceiptor, Receiptor,
                     MailboxDirector, Configer, Anchorer, Poster)
 
 from ...core import Number, NumDex
+from ...kering import Kinds, Version, Versionage
 
 
 logger = ogler.getLogger()
@@ -69,6 +70,8 @@ class InceptOptions:
     delpre: str = None
     estOnly: bool = False
     data: list = None
+    version: Versionage = Version
+    kind: str = Kinds.json
 
 
 def handler(args):
@@ -115,6 +118,9 @@ def mergeArgsWithFile(args):
         config.checkRequiredArgs(args, required_args)
 
     incept_opts = config.loadFileOptions(args.file, InceptOptions) if args.file != '' else emptyOptions()
+
+    if isinstance(incept_opts.version, (list, tuple)):
+        incept_opts.version = Versionage(*incept_opts.version)
 
     incept_opts.transferable = True if args.transferable else incept_opts.transferable
     if len(args.wits) > 0:
