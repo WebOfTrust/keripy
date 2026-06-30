@@ -83,7 +83,7 @@ def test_codexes_tags():
         'BigGenericGroup': '-0W',
         'ESSRPayloadGroup': '-Z',
         'BigESSRPayloadGroup': '-0Z',
-        'KERIACDCGenusVersion': '--AAA'
+        'KERIACDCGenusVersion': '-_AAA'
     }
 
 
@@ -141,7 +141,7 @@ def test_codexes_tags():
         'BigSealSourceLastSingles': '-0Y',
         'ESSRPayloadGroup': '-Z',
         'BigESSRPayloadGroup': '-0Z',
-        'KERIACDCGenusVersion': '--AAA'
+        'KERIACDCGenusVersion': '-_AAA'
     }
 
     assert counting.CodeNames == (
@@ -323,7 +323,7 @@ def test_counter_class():
                     '-0W': 'BigGenericGroup',
                     '-Z': 'ESSRPayloadGroup',
                     '-0Z': 'BigESSRPayloadGroup',
-                    '--AAA': 'KERIACDCGenusVersion',
+                    '-_AAA': 'KERIACDCGenusVersion'
                 }
             },
         2:
@@ -381,7 +381,7 @@ def test_counter_class():
                     '-0Y': 'BigSealSourceLastSingles',
                     '-Z': 'ESSRPayloadGroup',
                     '-0Z': 'BigESSRPayloadGroup',
-                    '--AAA': 'KERIACDCGenusVersion'
+                    '-_AAA': 'KERIACDCGenusVersion'
                 }
             }
         }
@@ -413,7 +413,7 @@ def test_counter_class():
                     '-0W': Cizage(hs=3, ss=5, fs=8),
                     '-Z': Cizage(hs=2, ss=2, fs=4),
                     '-0Z': Cizage(hs=3, ss=5, fs=8),
-                    '--AAA': Cizage(hs=5, ss=3, fs=8)
+                    '-_AAA': Cizage(hs=5, ss=3, fs=8)
                 }
             },
             2:
@@ -472,7 +472,7 @@ def test_counter_class():
                     '-0Y': Cizage(hs=3, ss=5, fs=8),
                     '-Z': Cizage(hs=2, ss=2, fs=4),
                     '-0Z': Cizage(hs=3, ss=5, fs=8),
-                    '--AAA': Cizage(hs=5, ss=3, fs=8)
+                    '-_AAA': Cizage(hs=5, ss=3, fs=8)
                 }
             }
         }
@@ -504,7 +504,7 @@ def test_counter_class():
         '-a': 2, '-b': 2, '-c': 2, '-d': 2, '-e': 2, '-f': 2, '-g': 2, '-h': 2, '-i': 2,
         '-j': 2, '-k': 2, '-l': 2, '-m': 2, '-n': 2, '-o': 2, '-p': 2, '-q': 2, '-r': 2,
         '-s': 2, '-t': 2, '-u': 2, '-v': 2, '-w': 2, '-x': 2, '-y': 2, '-z': 2,
-        '-0': 3, '--': 5,
+        '-0': 3, '--': 5, '-_': 5,
     }
 
 
@@ -966,7 +966,7 @@ def test_counter_v1():
     assert genver == 'AAA'
     assert genverint == b64ToInt(genver)
     qsc = CtrDex.KERIACDCGenusVersion + genver
-    assert qsc == '--AAAAAA'  # keri Cesr version 0.0.0
+    assert qsc == '-_AAAAAA'  # keri Cesr version 0.0.0
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
@@ -1435,7 +1435,7 @@ def test_counter_v2():
     assert genver == 'AAA'
     assert genverint == b64ToInt(genver)
     qsc = CtrDex.KERIACDCGenusVersion + genver
-    assert qsc == '--AAAAAA'  # keri Cesr version 0.0.0
+    assert qsc == '-_AAAAAA'  # keri Cesr version 0.0.0
     qscb = qsc.encode("utf-8")
     qscb2 = decodeB64(qscb)
 
