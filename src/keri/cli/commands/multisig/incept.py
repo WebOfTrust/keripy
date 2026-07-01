@@ -168,7 +168,6 @@ class GroupMultisigIncept(doing.DoDoer):
                                          icp=icp,
                                          version=self.inits.get("version"),
                                          kind=self.inits.get("kind", Kinds.json))
-            self.mux.add(exn)
             others = list(oset(smids + (rmids or [])))
 
             others.remove(ghab.mhab.pre)

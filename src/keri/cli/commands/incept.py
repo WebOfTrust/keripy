@@ -182,6 +182,7 @@ class InceptDoer(doing.DoDoer):
         doers = [self.hbyDoer, self.postman, self.mbx, self.swain, doing.doify(self.inceptDo)]
 
         self.inits = kwa
+        self.version = kwa.get("version")
         self.alias = alias
         super(InceptDoer, self).__init__(doers=doers)
 
@@ -205,7 +206,7 @@ class InceptDoer(doing.DoDoer):
         self.extend([witDoer, receiptor])
 
         if hab.kever.delpre:
-            self.swain.delegation(pre=hab.pre, sn=0)
+            self.swain.delegation(pre=hab.pre, sn=0, version=self.version)
             print("Waiting for delegation approval...")
             while not self.swain.complete(hab.kever.prefixer, Number(num=hab.kever.sn, code=NumDex.Huge)):
                 yield self.tock

@@ -50,7 +50,7 @@ class Anchorer(doing.DoDoer):
 
         super(Anchorer, self).__init__(doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)], **kwa)
 
-    def delegation(self, pre, sn=None, proxy=None, auths=None):
+    def delegation(self, pre, sn=None, proxy=None, auths=None, version=None):
         """
         Add witness publishers by prefix and send delegation event to witnesses and place event on
         the delegation partial witness escrow.
@@ -60,6 +60,7 @@ class Anchorer(doing.DoDoer):
             sn (int): optional sequence number of event to anchor, defaults to latest event
             proxy (Hab): optional proxy Habitat to use for sending messages
             auths (list[str]): TOTP authentication codes to send to witnesses to authorize event receipting
+            version (Versionage | None): optional explicit framing version for the delegated event message
         """
         if pre not in self.hby.habs:
             raise ValidationError(f"{pre} is not a valid local AID for delegation")
@@ -78,7 +79,7 @@ class Anchorer(doing.DoDoer):
         self.auths = auths if auths is not None else self.auths
 
         # load the event and signatures
-        evt = hab.msgOwnEvent(sn=sn)
+        evt = hab.msgOwnEvent(sn=sn, gvrsn=version if version is not None else self.version)
 
         # Send exn message for notification purposes
         srdr = SerderKERI(raw=evt)

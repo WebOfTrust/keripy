@@ -98,6 +98,7 @@ class Receiptor(doing.DoDoer):
         hab.psr.parseOne(msg)
         return atc
 
+
     def receipt(self, pre, sn=None, auths=None):
         """Returns a generator performing witness receipting of KEL events.
 

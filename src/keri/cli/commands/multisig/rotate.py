@@ -221,7 +221,6 @@ class GroupMultisigRotate(doing.DoDoer):
                                      rot=bytearray(rot),
                                      version=self.version,
                                      kind=Kinds.json)
-        self.mux.add(exn)
         others = list(oset(smids + (rmids or [])))
 
         others.remove(ghab.mhab.pre)
