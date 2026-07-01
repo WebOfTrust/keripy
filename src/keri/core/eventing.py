@@ -7417,6 +7417,9 @@ def loadEvent(db, preb, dig):
 
         receipts["transferable"] = trans
 
+
+
+
     # add nontrans receipts couples
     if duple := db.rcts.get(keys=dgkey):
         nontrans = []

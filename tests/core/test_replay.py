@@ -675,4 +675,5 @@ def test_replay_all():
 
 
 if __name__ == "__main__":
+    test_replay()
     test_replay_all()

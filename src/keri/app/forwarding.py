@@ -567,6 +567,17 @@ def introduce(hab, wit):
             # Receipt is from this hab if the prefix matches
             if sprefixer.qb64 == hab.pre:
                 found = True  # yes so don't pre-send own inception
+
+        # alt find in vrcsNew as preliminary to replace
+
+        topkeys = (wit, iserder.said)
+        for keys, siger in hab.db.vrcsNew.getTopItemIter(keys=topkeys):
+            epre, edig, rpre, rsnh, rdig = keys  # expand keys tuple
+            if rpre == hab.pre:
+                pass
+                found = True  # yes so don't pre-send own inception
+                # break
+
     else:  # find if already rcts of own icp
         for prefixer, cigar in hab.db.rcts.getIter(dgkey):
             if prefixer.qb64.startswith(hab.pre):

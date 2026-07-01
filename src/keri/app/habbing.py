@@ -2712,6 +2712,16 @@ class BaseHab:
                         for sprefixer, snumber, sdiger, siger in self.db.vrcs.getIter(dgkey):
                             if sprefixer.qb64 == cuedKed["i"]:
                                 found = True  # yes so don't send own inception
+
+                        # vrcsNew as prelimary replace above
+                        topkeys = (self.pre, self.iserder.said)
+                        for keys, siger in self.db.vrcsNew.getTopItemIter(keys=topkeys):
+                            epre, edig, rpre, rsnh, rdig = keys  # expand keys tuple
+                            if rpre == cuedKed["i"]:
+                                pass
+                                found = True  # yes so don't pre-send own inception
+                                # break
+
                     else:  # find if already rcts of own icp
                         for prefixer, cigar in self.db.rcts.getIter(dgkey):
                             if prefixer.qb64.startswith(cuedKed["i"]):

@@ -17,7 +17,7 @@ from hio.help import ogler
 
 from keri import __version__
 from .dbing import LMDBer, dgKey, openLMDB
-from ..kering import (MissingEntryError, DatabaseError,
+from ..kering import (MissingEntryError, DatabaseError, SerializeError,
                       ConfigurationError, ValidationError,
                       Vrsn_1_0, Vrsn_2_0)
 from ..recording import (KeyStateRecord, EventSourceRecord,
@@ -950,7 +950,7 @@ class Baser(LMDBer):
                                              klas=(coring.Diger, coring.Prefixer, coring.Cigar))
         self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.',
                              klas=(coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
-        self.vrcsNew = subing.CesrIoSetSuber(db=self, subkey='vrcs.', klas=indexing.Siger)
+        self.vrcsNew = subing.CesrIoSetSuber(db=self, subkey='vrcsnew.', klas=indexing.Siger)
 
 
         self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.',
@@ -1662,7 +1662,7 @@ class Baser(LMDBer):
         for keys, fn, dig in self.fels.getAllItemIter(keys=pre, on=fn):
             try:
                 msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig)
-            except Exception:
+            except (MissingEntryError, SerializeError) as ex:
                 continue  # skip this event
             yield msg
 
@@ -1683,7 +1683,7 @@ class Baser(LMDBer):
             pre = keys[0].encode() if isinstance(keys[0], str) else keys[0]
             try:
                 msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig)
-            except Exception:
+            except (MissingEntryError, SerializeError) as ex:
                 continue  # skip this event
             yield msg
 
@@ -1737,11 +1737,36 @@ class Baser(LMDBer):
         if quads := self.vrcs.get(keys=dgkey):
             atc.extend(Counter(code=Codens.TransReceiptIdxSigGroups,
                                count=len(quads), version=Vrsn_1_0).qb64b)
-            for pre, snu, diger, siger in quads:    # adapt to CESR
-                atc.extend(pre.qb64b)
-                atc.extend(snu.qb64b)
+            for prefixer, number, diger, siger in quads:    # adapt to CESR
+                atc.extend(prefixer.qb64b)
+                atc.extend(number.qb64b)
                 atc.extend(diger.qb64b)
                 atc.extend(siger.qb64b)
+
+        # add non-controller trans endorsement quadruples to attachments
+        # may have been originally non-controller sigs or receipted endorsements
+        # collate sigersets by triple of rpre,rsnh,rdig
+        topkeys = (pre, dig)
+        sigersets = dict()
+        for keys, siger in self.vrcsNew.getTopItemIter(keys=topkeys):
+            epre, edig, rpre, rsnh, rdig = keys  # expand keys tuple
+            triple = (rpre, rsnh, rdig)
+            if triple not in sigersets:
+                sigersets[triple] = [siger]
+            else:
+                sigersets[triple].append(siger)
+
+        # create and attach an attachment group per sigerset
+        if sigersets:
+            sims = bytearray()
+            for keys, sigers in sigersets.items():
+                for siger in sigers:
+                    sims.extend(siger.qb64b)
+                sims = Counter.enclose(qb64=sims, code=Codens.ControllerIdxSigs)
+                rpre, rsnh, rdig = keys
+                gims = bytearray(rpre.encode() + coring.Number(snh=rsnh).qb64b + rdig.encode())
+                gims.extend(sims)
+                gims = Counter.enclose(qb64=gims, code=Codens.TransReceiptIdxSigGroups)
 
         # add nontrans endorsement couples to attachments not witnesses
         # may have been originally key event attachments or receipted endorsements
@@ -1760,9 +1785,9 @@ class Baser(LMDBer):
         atc.extend(coring.Number(num=fn, code=coring.NumDex.Huge).qb64b)  # may not need to be Huge
         atc.extend(dater.qb64b)
 
-        # prepend pipelining counter to attachments
+        # enclose attachments in AttachmentGroup
         if len(atc) % 4:
-            raise ValueError("Invalid attachments size={}, nonintegral"
+            raise SerializeError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
         pcnt = Counter(code=Codens.AttachmentGroup,
                        count=(len(atc) // 4), version=Vrsn_1_0).qb64b
