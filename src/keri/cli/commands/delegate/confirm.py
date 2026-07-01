@@ -177,7 +177,6 @@ class ConfirmDoer(doing.DoDoer):
                         serder = SerderKERI(raw=msg)
                         exn, atc = grouping.multisigInteractExn(ghab=hab, aids=aids, ixn=bytearray(msg),
                                                                 version=self.version, kind=Kinds.json)
-                        self.mux.add(exn)
                         others = list(oset(hab.smids + (hab.rmids or [])))
                         others.remove(hab.mhab.pre)
 

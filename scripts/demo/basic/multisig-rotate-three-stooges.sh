@@ -53,7 +53,7 @@ PID_LIST+=" $pid"
 
 echo
 print_yellow "Multisig Inception - wait"
-wait_all $PID_LIST
+wait $PID_LIST
 
 echo
 print_green "Multisig Inception - status"
@@ -70,17 +70,17 @@ kli rotate --name curly --alias curly --version 1.0
 echo
 print_yellow "Pull key state in from other multisig group participant identifiers"
 # 2 about 1
-kli query --name moe --alias moe --prefix EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --sn 1 --version 1.0
+kli query --name moe --alias moe --prefix EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --version 1.0
 # 2 about 3
-kli query --name moe --alias moe --prefix EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu --sn 1 --version 1.0
+kli query --name moe --alias moe --prefix EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu --version 1.0
 # 1 about 2
-kli query --name larry --alias larry --prefix ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --sn 1 --version 1.0
+kli query --name larry --alias larry --prefix ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --version 1.0
 # 1 about 3
-kli query --name larry --alias larry --prefix EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu --sn 1 --version 1.0
+kli query --name larry --alias larry --prefix EEHyoLseuHa0nuhDj9tBv6N6nU1PILwv4jTt5x8A8uLu --version 1.0
 # 3 about 1
-kli query --name curly --alias curly --prefix EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --sn 1 --version 1.0
+kli query --name curly --alias curly --prefix EA5g3RMwkjcr_M4fI3k2ShCYlQMpgk3HD9mHhx7ZJs4U --version 1.0
 # 3 about 2
-kli query --name curly --alias curly --prefix ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --sn 1 --version 1.0
+kli query --name curly --alias curly --prefix ED7yk9oUIe5qRh8ILfTuT_sNHidrxwJ9Bl-tLPoAXbqW --version 1.0
 
 
 echo

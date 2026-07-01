@@ -12,7 +12,7 @@ from hio.help import decking, ogler
 
 from ..common import Parsery, printExternal, setupHby, parseVersion
 
-from ...app import MailboxDirector, HaberyDoer, QueryDoer, SeqNoQuerier, AnchorQuerier
+from ...app import MailboxDirector, HaberyDoer, QueryDoer, AnchorQuerier
 from ...kering import Kinds
 from ...help import helping
 
@@ -24,7 +24,6 @@ parser = argparse.ArgumentParser(description='Request KEL from Witness',
 parser.set_defaults(handler=lambda args: query(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
 parser.add_argument('--prefix', help='QB64 identifier to query', default="", required=True)
-parser.add_argument('--sn', help='sequence number to query through', type=int, default=None, required=False)
 parser.add_argument('--anchor', help='JSON file containing the anchor to search for', default=None, required=False)
 parser.add_argument('--version', default=None, required=False, type=parseVersion,
                     help='KERI protocol version for the query event, such as 1.0 or 2.0')
@@ -33,14 +32,14 @@ parser.add_argument('--version', default=None, required=False, type=parseVersion
 def query(args):
     name = args.name
 
-    qryDoer = LaunchDoer(name=name, alias=args.alias, base=args.base, bran=args.bran, pre=args.prefix, sn=args.sn,
+    qryDoer = LaunchDoer(name=name, alias=args.alias, base=args.base, bran=args.bran, pre=args.prefix,
                          anchor=args.anchor, version=args.version)
     return [qryDoer]
 
 
 class LaunchDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, pre, sn, anchor, version=None, **kwa):
+    def __init__(self, name, alias, base, bran, pre, anchor, version=None, **kwa):
         doers = []
         self.hby = setupHby(name=name, base=base, bran=bran)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
@@ -50,7 +49,6 @@ class LaunchDoer(doing.DoDoer):
         self.logs = decking.Deck()
 
         self.pre = pre
-        self.sn = sn
         self.anchor = anchor
         self.version = version
         self.loaded = False
@@ -76,7 +74,7 @@ class LaunchDoer(doing.DoDoer):
         self.tock = tock
         _ = (yield self.tock)
 
-        end = helping.nowUTC() + datetime.timedelta(seconds=10)
+        end = helping.nowUTC() + datetime.timedelta(seconds=20)
         kwa = dict(version=self.version, gvrsn=self.version, kind=Kinds.json) if self.version is not None else {}
 
         if self.anchor is not None:
@@ -84,9 +82,6 @@ class LaunchDoer(doing.DoDoer):
             anchor = json.load(f)
             print(f"Checking for anchor {anchor}...")
             doer = AnchorQuerier(hby=self.hby, hab=self.hab, pre=self.pre, anchor=anchor, **kwa)
-        elif self.sn is not None:
-            print(f"Checking for updates through sequence number {self.sn}...")
-            doer = SeqNoQuerier(hby=self.hby, hab=self.hab, pre=self.pre, sn=self.sn, **kwa)
         else:
             print(f"Checking for updates...")
             doer = QueryDoer(hby=self.hby, hab=self.hab, pre=self.pre, kvy=self.mbd.kvy, **kwa)

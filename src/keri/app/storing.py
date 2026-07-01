@@ -306,7 +306,7 @@ class Respondant(doing.DoDoer):
                 if hab is None:
                     continue
 
-                atc = hab.endorse(serder, framed=False)
+                atc = hab.endorse(serder, framed=False, gvrsn=serder.pvrsn)
                 del atc[:serder.size]
                 self.postman.send(hab=hab, dest=dest, topic="reply", serder=serder, attachment=atc)
 

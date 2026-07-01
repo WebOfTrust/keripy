@@ -154,7 +154,7 @@ class Anchorer(doing.DoDoer):
 
                 # Move to escrow waiting for witness receipts
                 logger.info(f"Delegation approval received, {serder.pre} confirmed, publishing to my witnesses")
-                self.publishDelegator(pre, serder=serder)
+                self.publishDelegator(pre)
                 self.hby.db.dpub.put(keys=(pre, said), val=serder)
                 self.hby.db.dune.rem(keys=(pre, said))
 
@@ -238,7 +238,7 @@ class Anchorer(doing.DoDoer):
             self.hby.db.dpub.rem(keys=(pre, said))
             self.hby.db.cdel.put(keys=pre, on=serder.sn, val=Diger(qb64=serder.said))
 
-    def publishDelegator(self, pre, serder=None):
+    def publishDelegator(self, pre):
         """Publish the delegation event to my witnesses."""
         if pre not in self.publishers:
             return
@@ -248,12 +248,6 @@ class Anchorer(doing.DoDoer):
         self.extend([publisher])
         for msg in hab.db.cloneDelegation(hab.kever):
             publisher.msgs.append(dict(pre=hab.pre, msg=bytes(msg)))
-
-        # Once the delegator anchor is known, republish the delegated event with
-        # its attached source seal so witnesses can validate and store it as anchored
-        serder = serder if serder is not None else hab.kever.serder
-        evt = hab.msgOwnEvent(sn=serder.sn, framed=True, gvrsn=serder.pvrsn)
-        publisher.msgs.append(dict(pre=hab.pre, msg=bytes(evt)))
 
 
 def loadHandlers(hby, exc, notifier):

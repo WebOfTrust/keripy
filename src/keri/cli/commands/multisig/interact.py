@@ -82,7 +82,6 @@ class GroupMultisigInteract(doing.DoDoer):
 
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
-        self.mux = mux
         exc = Exchanger(hby=self.hby, handlers=[])
         loadHandlers(exc, mux)
 
@@ -124,7 +123,6 @@ class GroupMultisigInteract(doing.DoDoer):
 
         exn, ims = multisigInteractExn(ghab=ghab, aids=aids, ixn=ixn,
                                        version=self.version, kind=Kinds.json)
-        self.mux.add(exn)
         others = list(oset(ghab.smids + (ghab.rmids or [])))
         others.remove(ghab.mhab.pre)
 

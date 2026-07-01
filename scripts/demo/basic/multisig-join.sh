@@ -47,9 +47,9 @@ attempt=1
 
 # Member sync once (individual rotations and cross-queries); do not re-rotate on retry.
 kli rotate --name multisigj1 --alias multisigj1 --version 1.0
-kli query --name multisigj2 --alias multisigj2 --prefix EFY7MixHb0so4WFFHw6btOPc5qeeWfPm7v5MJWcdcbyG --sn 1 --version 1.0
+kli query --name multisigj2 --alias multisigj2 --prefix EFY7MixHb0so4WFFHw6btOPc5qeeWfPm7v5MJWcdcbyG --version 1.0
 kli rotate --name multisigj2 --alias multisigj2 --version 1.0
-kli query --name multisigj1 --alias multisigj1 --prefix EKJ6tNVUGbdaiwx2nWDCFXG-_PY_AzESOcoKlm0kRNP3 --sn 1 --version 1.0
+kli query --name multisigj1 --alias multisigj1 --prefix EKJ6tNVUGbdaiwx2nWDCFXG-_PY_AzESOcoKlm0kRNP3 --version 1.0
 
 kli multisig join --name multisigj2 --auto --version 1.0 &
 join_pid=$!
@@ -57,8 +57,8 @@ join_pid=$!
 while [ $attempt -le $ROTATE_MAX_ATTEMPTS ]; do
   if [ $attempt -gt 1 ]; then
     sleep $ROTATE_RETRY_DELAY
-    kli query --name multisigj2 --alias multisigj2 --prefix EFY7MixHb0so4WFFHw6btOPc5qeeWfPm7v5MJWcdcbyG --sn 1 --version 1.0
-    kli query --name multisigj1 --alias multisigj1 --prefix EKJ6tNVUGbdaiwx2nWDCFXG-_PY_AzESOcoKlm0kRNP3 --sn 1 --version 1.0
+    kli query --name multisigj2 --alias multisigj2 --prefix EFY7MixHb0so4WFFHw6btOPc5qeeWfPm7v5MJWcdcbyG --version 1.0
+    kli query --name multisigj1 --alias multisigj1 --prefix EKJ6tNVUGbdaiwx2nWDCFXG-_PY_AzESOcoKlm0kRNP3 --version 1.0
   fi
 
   if kli multisig rotate --name multisigj1 --alias multisig --smids EKJ6tNVUGbdaiwx2nWDCFXG-_PY_AzESOcoKlm0kRNP3 --smids EFY7MixHb0so4WFFHw6btOPc5qeeWfPm7v5MJWcdcbyG --isith '["1/2", "1/2"]' --nsith '["1/2", "1/2"]' --rmids EKJ6tNVUGbdaiwx2nWDCFXG-_PY_AzESOcoKlm0kRNP3 --rmids EFY7MixHb0so4WFFHw6btOPc5qeeWfPm7v5MJWcdcbyG --version 1.0; then

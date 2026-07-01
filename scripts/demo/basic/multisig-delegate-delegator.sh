@@ -146,9 +146,9 @@ DELEGATE1_AID=$(kli aid --name delegate1 --alias delegate1)
 DELEGATE2_AID=$(kli aid --name delegate2 --alias delegate2)
 
 echo "delegate2 querying delegate1 keystate..."
-kli query --name delegate2 --alias delegate2 --prefix "${DELEGATE1_AID}" --sn 1 --version 1.0
+kli query --name delegate2 --alias delegate2 --prefix "${DELEGATE1_AID}" --version 1.0
 echo "delegate1 querying delegate2 keystate..."
-kli query --name delegate1 --alias delegate1 --prefix "${DELEGATE2_AID}" --sn 1 --version 1.0
+kli query --name delegate1 --alias delegate1 --prefix "${DELEGATE2_AID}" --version 1.0
 
 # --- Step 3: Rotate the delegate multisig (DRT event, needs delegation approval) ---
 echo "Rotating delegate multisig..."
