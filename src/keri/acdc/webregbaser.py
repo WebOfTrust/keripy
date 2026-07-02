@@ -2,8 +2,7 @@
 """
 keri.acdc.webregbaser module
 
-Supposrts
-WebRegBaser(IndexedDB)
+Support for WebRegBaser(IndexedDB)
 
 """
 
