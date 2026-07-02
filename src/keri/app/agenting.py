@@ -52,52 +52,6 @@ class Receiptor(doing.DoDoer):
 
         super(Receiptor, self).__init__(doers=doers)
 
-    def _receiptFromResponse(self, hab, rep):
-        """Parse a witness receipt response and return normalized attachment bytes"""
-        if rep.status != 200:
-            return None
-
-        msg = bytearray(rep.body)
-        rserder = serdering.SerderKERI(raw=msg)
-        atc = bytearray(msg[rserder.size:])
-        if not atc:
-            return None
-
-        ctr = Counter(qb64b=atc, strip=True, version=rserder.pvrsn)
-        if ctr.name in (Codens.WitnessIdxSigs, Codens.BigWitnessIdxSigs):
-            wigers = []
-            couples = bytearray()
-            wits = [wit.qb64 for wit in hab.kvy.fetchWitnessState(rserder.pre, rserder.sn)]
-            for _ in range(ctr.count):
-                wiger = Siger(qb64b=atc, strip=True)
-                wigers.append(wiger)
-
-                if wiger.index < len(wits):
-                    verfer = Verfer(qb64=wits[wiger.index])
-                    cigar = Cigar(raw=wiger.raw, verfer=verfer)
-                    couples.extend(verfer.qb64b)
-                    couples.extend(cigar.qb64b)
-
-            hab.kvy.processReceipt(serder=rserder, wigers=wigers, cigars=[], tsgs=[])
-            return couples
-
-        if ctr.name in (Codens.NonTransReceiptCouples, Codens.BigNonTransReceiptCouples):
-            cigars = []
-            couples = bytearray()
-            for _ in range(ctr.count):
-                verfer = Verfer(qb64b=atc, strip=True)
-                cigar = Cigar(qb64b=atc, strip=True)
-                cigar.verfer = verfer
-                cigars.append(cigar)
-                couples.extend(verfer.qb64b)
-                couples.extend(cigar.qb64b)
-
-            hab.kvy.processReceipt(serder=rserder, cigars=cigars, wigers=[], tsgs=[])
-            return couples
-
-        hab.psr.parseOne(msg)
-        return atc
-
 
     def receipt(self, pre, sn=None, auths=None):
         """Returns a generator performing witness receipting of KEL events.
@@ -159,8 +113,14 @@ class Receiptor(doing.DoDoer):
 
             rep = client.respond()
             if rep.status == 200:
-                if rct := self._receiptFromResponse(hab, rep):
-                    rcts[wit] = rct
+                rct = bytearray(rep.body)
+                hab.psr.parseOne(bytearray(rct))
+                rserder = serdering.SerderKERI(raw=rct)
+                del rct[:rserder.size]
+
+                # pull off the count code
+                Counter(qb64b=rct, strip=True, version=rserder.pvrsn)
+                rcts[wit] = rct
             else:
                 print(f"invalid response {rep.status} from witnesses {wit}")
 
@@ -232,7 +192,8 @@ class Receiptor(doing.DoDoer):
 
         rep = client.respond()
         if rep.status == 200:
-            self._receiptFromResponse(hab, rep)
+            rct = bytearray(rep.body)
+            hab.psr.parseOne(bytearray(rct))
 
         self.clienter.remove(client)
         return rep.status == 200

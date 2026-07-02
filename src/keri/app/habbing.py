@@ -1768,7 +1768,8 @@ class BaseHab:
                                     sn=int(ked["s"], 16),
                                     said=serder.said,
                                     kind=kind,
-                                    version=version)
+                                    version=version,
+                                    gvrsn=gvrsn)
 
         # sign serder event
         if self.kever.prefixer.transferable:

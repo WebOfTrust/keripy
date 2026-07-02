@@ -41,7 +41,8 @@ class LaunchDoer(doing.DoDoer):
 
     def __init__(self, name, alias, base, bran, pre, anchor, version=None, **kwa):
         doers = []
-        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.version = version
+        self.hby = setupHby(name=name, base=base, bran=bran, version=self.version)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
         hab = self.hby.habByName(alias)
 
@@ -50,7 +51,6 @@ class LaunchDoer(doing.DoDoer):
 
         self.pre = pre
         self.anchor = anchor
-        self.version = version
         self.loaded = False
         if version is not None:
             self.mbd = MailboxDirector(hby=self.hby, topics=["/replay", "/receipt", "/reply"],

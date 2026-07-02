@@ -71,7 +71,7 @@ def confirm(args):
 class ConfirmDoer(doing.DoDoer):
     def __init__(self, name, base, alias, bran, interact=False, auto=False, authenticate=False, codes=None,
                  codeTime=None, version=None):
-        hby = setupHby(name=name, base=base, bran=bran)
+        hby = setupHby(name=name, base=base, bran=bran, version=version)
         self.hbyDoer = HaberyDoer(habery=hby)  # setup doer
         self.witq = WitnessInquisitor(hby=hby)
         self.postman = Poster(hby=hby, version=version, kind=Kinds.json)

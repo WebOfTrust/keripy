@@ -56,7 +56,7 @@ def rotateGroupIdentifier(args):
     """
 
     data = config.parseData(args.data) if args.data is not None else None
-    hby = setupHby(name=args.name, base=args.base, bran=args.bran)
+    hby = setupHby(name=args.name, base=args.base, bran=args.bran, version=args.version)
     rotDoer = GroupMultisigRotate(hby=hby, alias=args.alias, smids=args.smids, rmids=args.rmids,
                                   wits=args.witnesses, cuts=args.cuts, adds=args.witness_add,
                                   isith=args.isith, nsith=args.nsith, toad=args.toad, data=data,

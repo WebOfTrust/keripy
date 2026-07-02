@@ -48,11 +48,12 @@ def request(args):
 
 class RequestDoer(doing.DoDoer):
     def __init__(self, name, base, alias, bran, version=None):
-        hby = setupHby(name=name, base=base, bran=bran)
+        self.version = version
+        hby = setupHby(name=name, base=base, bran=bran, version=self.version)
         self.hbyDoer = HaberyDoer(habery=hby)  # setup doer
         self.witq = WitnessInquisitor(hby=hby)
-        self.postman = Poster(hby=hby, version=version, kind=Kinds.json)
-        self.counselor = Counselor(hby=hby, version=version, kind=Kinds.json)
+        self.postman = Poster(hby=hby, version=self.version, kind=Kinds.json)
+        self.counselor = Counselor(hby=hby, version=self.version, kind=Kinds.json)
         doers = [self.hbyDoer, self.postman]
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.requestDo)])

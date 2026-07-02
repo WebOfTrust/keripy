@@ -166,23 +166,23 @@ class InceptDoer(doing.DoDoer):
                           reopen=True,
                           clear=False)
         self.endpoint = endpoint
-        self.hby = setupHby(name=name, base=base, bran=bran, cf=cf)
+        self.version = kwa.get("version")
+        self.hby = setupHby(name=name, base=base, bran=bran, cf=cf, version=self.version)
         self.proxy = self.hby.habByName(proxy) if proxy is not None else None
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
-        self.swain = Anchorer(hby=self.hby, proxy=self.proxy, version=kwa.get("version"),
+        self.swain = Anchorer(hby=self.hby, proxy=self.proxy, version=self.version,
                               kind=kwa.get("kind", Kinds.json))
-        self.postman = Poster(hby=self.hby, version=kwa.get("version"),
+        self.postman = Poster(hby=self.hby, version=self.version,
                               kind=kwa.get("kind", Kinds.json))
-        if kwa.get("version") is not None:
+        if self.version is not None:
             self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"],
-                                       version=kwa.get("version"), gvrsn=kwa.get("version"),
+                                       version=self.version, gvrsn=self.version,
                                        kind=kwa.get("kind", Kinds.json))
         else:
             self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
         doers = [self.hbyDoer, self.postman, self.mbx, self.swain, doing.doify(self.inceptDo)]
 
         self.inits = kwa
-        self.version = kwa.get("version")
         self.alias = alias
         super(InceptDoer, self).__init__(doers=doers)
 

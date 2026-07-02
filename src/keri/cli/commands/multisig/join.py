@@ -79,7 +79,7 @@ class JoinDoer(doing.DoDoer):
         """
         self.group = group
         self.version = version
-        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran, version=self.version)
         self.rgy = Regery(hby=self.hby, name=name, base=base)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
         self.witq = WitnessInquisitor(hby=self.hby)

@@ -1130,8 +1130,8 @@ class ReceiptEnd(doing.DoDoer):
                                                         f"{serder.sn}: wits={wits}")
 
             rct = self.hab.receipt(serder, framed=True,
-                                   version=serder.pvrsn, kind=serder.kind,
-                                   gvrsn=serder.pvrsn)
+                                   version=self.version, kind=serder.kind,
+                                   gvrsn=self.version)
 
             self.psr.parseOne(bytes(rct))
 
@@ -1179,12 +1179,13 @@ class ReceiptEnd(doing.DoDoer):
         rserder = receipt(pre=pre,
                           sn=sn,
                           said=said.decode("utf-8"),
-                          version=serder.pvrsn,
+                          version=self.version,
+                          gvrsn=self.version,
                           kind=serder.kind)
         rct = bytearray(rserder.raw)
         if wigers := self.hab.db.wigs.get(keys=(preb, said)):
             rct.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
-                               version=serder.pvrsn).qb64b)
+                               version=self.version).qb64b)
             for wiger in wigers:
                 rct.extend(wiger.qb64b)
 

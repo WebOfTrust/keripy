@@ -159,13 +159,13 @@ class RotateDoer(doing.DoDoer):
         self.cuts = cuts if cuts is not None else []
         self.adds = adds if adds is not None else []
 
-        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran, version=self.version)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
 
         self.proxy = self.hby.habByName(proxy) if proxy is not None else None
-        self.swain = Anchorer(hby=self.hby, proxy=self.proxy, version=version, kind=Kinds.json)
-        self.postman = Poster(hby=self.hby, version=version, kind=Kinds.json)
-        kwa = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
+        self.swain = Anchorer(hby=self.hby, proxy=self.proxy, version=self.version, kind=Kinds.json)
+        self.postman = Poster(hby=self.hby, version=self.version, kind=Kinds.json)
+        kwa = dict(version=self.version, gvrsn=self.version, kind=Kinds.json) if self.version is not None else {}
         self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"],
                                    **kwa)
         doers = [self.hbyDoer, self.mbx, self.swain, self.postman, doing.doify(self.rotateDo)]

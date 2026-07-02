@@ -37,6 +37,7 @@ parser.add_argument('--file', '-f', help='Filename to use to create the identifi
 parser.add_argument('--version', default=None, required=False, type=parseVersion,
                     help='KERI protocol version for the group inception event, such as 1.0 or 2.0')
 
+
 def normalizeOptions(opts):
     """
     Normalize JSON-loaded multisig inception options.
@@ -71,7 +72,7 @@ def inceptMultisig(args):
         sys.exit(-1)
 
     opts = normalizeOptions(opts)
-    if getattr(args, "version", None) is not None:
+    if args.version is not None:
         opts["version"] = args.version
 
     name = args.name
@@ -88,13 +89,16 @@ def inceptMultisig(args):
 
 class GroupMultisigIncept(doing.DoDoer):
 
-    def __init__(self, name, base, alias, bran, group, wait, **kwa):
+    def __init__(self, name, base, alias, bran, group, wait, version=None, **kwa):
         self.name = name
-        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.version = version
+        self.hby = setupHby(name=name, base=base, bran=bran, version=self.version)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
 
         self.alias = alias
         self.inits = kwa
+        if self.version is not None:
+            self.inits["version"] = self.version
         self.group = group
         self.wait = wait
 
@@ -107,16 +111,16 @@ class GroupMultisigIncept(doing.DoDoer):
         exc = Exchanger(hby=self.hby, handlers=[])
         loadHandlers(exc, mux)
         self.mux = mux
-        if self.inits.get("version") is not None:
+        if self.version is not None:
             self.mbx = MailboxDirector(hby=self.hby, topics=topics, exc=exc,
-                                       version=self.inits.get("version"), gvrsn=self.inits.get("version"),
+                                       version=self.version, gvrsn=self.version,
                                        kind=self.inits.get("kind", Kinds.json))
         else:
             self.mbx = MailboxDirector(hby=self.hby, topics=topics, exc=exc)
         self.counselor = Counselor(hby=self.hby,
-                                   version=self.inits.get("version"),
+                                   version=self.version,
                                    kind=self.inits.get("kind", Kinds.json))
-        self.postman = Poster(hby=self.hby, version=self.inits.get("version"),
+        self.postman = Poster(hby=self.hby, version=self.version,
                               kind=self.inits.get("kind", Kinds.json))
 
         doers = [self.hbyDoer, self.mbx, self.counselor, self.postman]

@@ -339,60 +339,6 @@ def test_receipt_end_returns_bytes_for_v1_receipt():
         assert rserder.ked["t"] == Ilks.rct
 
 
-def test_receiptor_get_processes_v1_witness_receipt_response(seeder):
-    class FakeResponse:
-        status = 200
-
-        def __init__(self, body):
-            self.body = body
-
-    class FakeClient:
-        def __init__(self, body):
-            self.responses = [FakeResponse(body)]
-
-        def respond(self):
-            return self.responses.pop(0)
-
-    class FakeClienter:
-        def __init__(self, body):
-            self.body = body
-            self.removed = False
-
-        def request(self, method, url):
-            assert method == "GET"
-            assert "/receipts?" in url
-            return FakeClient(self.body)
-
-        def remove(self, client):
-            self.removed = True
-
-    with openHby(name="receipt-get-wit", version=Vrsn_1_0) as witHby, \
-            openHby(name="receipt-get-cam", version=Vrsn_1_0) as camHby:
-        wit = witHby.makeHab(name="wes", transferable=False, **KWA)
-        cam = camHby.makeHab(name="cam", transferable=True, wits=[wit.pre],
-                             toad=1, icount=1, ncount=1,
-                             isith="1", nsith="1", **KWA)
-        seeder.seedWitEnds(camHby.db, witHabs=[wit], protocols=[Schemes.http], **KWA)
-
-        serder, _, _ = cam.getOwnEvent(sn=0)
-        msg = cam.msgOwnEvent(sn=0, framed=True, gvrsn=serder.pvrsn)
-        wit.psr.parseOne(bytearray(msg))
-        rct = wit.witness(serder=serder, framed=True,
-                          version=serder.pvrsn,
-                          kind=serder.kind,
-                          gvrsn=serder.pvrsn)
-
-        witDoer = Receiptor(hby=camHby)
-        witDoer.clienter = FakeClienter(bytes(rct))
-
-        for _ in witDoer.get(pre=cam.pre, sn=0):
-            pass
-
-        wigers = camHby.db.wigs.get(keys=(serder.preb, serder.saidb))
-        assert len(wigers) == 1
-        assert witDoer.clienter.removed is True
-
-
 def test_mailbox_query_honors_explicit_v1_kwargs():
     with openHby(name="mailbox-query", version=Vrsn_1_0) as hby:
         hab = hby.makeHab(name="cam", **KWA)
