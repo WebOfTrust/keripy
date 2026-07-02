@@ -1640,21 +1640,30 @@ class BaseHab:
             couples (pre+cig).
         """
         pvrsn = pvrsn if pvrsn is not None else version
+        kwa = dict(sender=self.pre,
+                   receiver=receiver,
+                   xid=xid,
+                   prior=prior,
+                   route=route,
+                   modifiers=modifiers,
+                   attributes=attributes,
+                   stamp=stamp,
+                   version=version,
+                   pvrsn=pvrsn,
+                   gvrsn=gvrsn,
+                   kind=kind,)
 
-        # generate exchange with pathed embed attachments in end
-        serder, end = specialExchange(sender=self.pre,
-                               receiver=receiver,
-                               xid=xid,
-                               prior=prior,
-                               route=route,
-                               modifiers=modifiers,
-                               attributes=attributes,
-                               embeds=embeds,
-                               stamp=stamp,
-                               version=version,
-                               pvrsn=pvrsn,
-                               gvrsn=gvrsn,
-                               kind=kind,)
+        if embeds:
+            if version is Vrsn_1_0:
+                serder, end = specialExchange(embeds=embeds, **kwa)
+            elif version is Vrsn_2_0:
+                raise ValueError("Embeds not supported for v2 exchanges")
+        else:
+            serder = exchange(**kwa)
+            end = bytearray()
+
+        if gvrsn is None:
+            gvrsn = serder.pvrsn
 
         if self.kever.prefixer.transferable:
             msg = self.endorse(serder=serder, framed=framed, nested=nested,
