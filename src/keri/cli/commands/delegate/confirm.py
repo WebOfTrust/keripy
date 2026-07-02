@@ -71,24 +71,24 @@ def confirm(args):
 class ConfirmDoer(doing.DoDoer):
     def __init__(self, name, base, alias, bran, interact=False, auto=False, authenticate=False, codes=None,
                  codeTime=None, version=None):
-        hby = setupHby(name=name, base=base, bran=bran, version=version)
+        self.version = version
+        hby = setupHby(name=name, base=base, bran=bran, version=self.version)
         self.hbyDoer = HaberyDoer(habery=hby)  # setup doer
         self.witq = WitnessInquisitor(hby=hby)
-        self.postman = Poster(hby=hby, version=version, kind=Kinds.json)
-        self.counselor = Counselor(hby=hby, version=version, kind=Kinds.json)
+        self.postman = Poster(hby=hby, version=self.version, kind=Kinds.json)
+        self.counselor = Counselor(hby=hby, version=self.version, kind=Kinds.json)
         self.notifier = Notifier(hby=hby)
         self.mux = Multiplexor(hby=hby, notifier=self.notifier)
         self.authenticate = authenticate
         self.codes = codes if codes is not None else []
         self.codeTime = codeTime
-        self.version = version
 
         exc = Exchanger(hby=hby, handlers=[])
         delegating.loadHandlers(hby=hby, exc=exc, notifier=self.notifier)
         grouping.loadHandlers(exc=exc, mux=self.mux)
 
-        self.eventKwargs = dict(version=version, gvrsn=version) if version is not None else {}
-        kwa = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
+        self.eventKwargs = dict(version=self.version, gvrsn=self.version) if self.version is not None else {}
+        kwa = dict(version=self.version, gvrsn=self.version, kind=Kinds.json) if self.version is not None else {}
         self.mbx = MailboxDirector(hby=hby, topics=['/receipt', '/multisig', '/replay', '/delegate'],
                                                exc=exc, **kwa)
         doers = [self.hbyDoer, self.witq, self.postman, self.counselor, self.mbx]

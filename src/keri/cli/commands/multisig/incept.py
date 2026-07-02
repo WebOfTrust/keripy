@@ -62,8 +62,8 @@ def inceptMultisig(args):
     # help.ogler.reopen(name=args.name, temp=True, clear=True)
 
     try:
-        f = open(args.file)
-        opts = json.load(f)
+        with open(args.file) as f:
+            opts = normalizeOptions(json.load(f))
     except FileNotFoundError:
         print("config file", args.file, "not found")
         sys.exit(-1)
@@ -71,7 +71,6 @@ def inceptMultisig(args):
         print("config file", args.file, "not valid JSON")
         sys.exit(-1)
 
-    opts = normalizeOptions(opts)
     if args.version is not None:
         opts["version"] = args.version
 
@@ -96,11 +95,12 @@ class GroupMultisigIncept(doing.DoDoer):
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
 
         self.alias = alias
-        self.inits = kwa
+        self.inits = dict(kwa)
         if self.version is not None:
             self.inits["version"] = self.version
         self.group = group
         self.wait = wait
+        init_kind = self.inits.get("kind", Kinds.json)
 
         topics = ['/receipt', '/multisig', '/replay']
         if "delpre" in self.inits:
@@ -114,14 +114,14 @@ class GroupMultisigIncept(doing.DoDoer):
         if self.version is not None:
             self.mbx = MailboxDirector(hby=self.hby, topics=topics, exc=exc,
                                        version=self.version, gvrsn=self.version,
-                                       kind=self.inits.get("kind", Kinds.json))
+                                       kind=init_kind)
         else:
             self.mbx = MailboxDirector(hby=self.hby, topics=topics, exc=exc)
         self.counselor = Counselor(hby=self.hby,
                                    version=self.version,
-                                   kind=self.inits.get("kind", Kinds.json))
+                                   kind=init_kind)
         self.postman = Poster(hby=self.hby, version=self.version,
-                              kind=self.inits.get("kind", Kinds.json))
+                              kind=init_kind)
 
         doers = [self.hbyDoer, self.mbx, self.counselor, self.postman]
         self.toRemove = list(doers)

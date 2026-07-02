@@ -90,8 +90,8 @@ class JoinDoer(doing.DoDoer):
         self.rvy = Revery(db=self.hby.db,  lax=True)
         self.hby.kvy.registerReplyRoutes(self.rvy.rtr)
         parser_kwa = dict()
-        if version is not None:
-            parser_kwa["version"] = version
+        if self.version is not None:
+            parser_kwa["version"] = self.version
 
         self.psr = Parser(kvy=self.hby.kvy, tvy=self.rgy.tvy,
                           rvy=self.rvy, vry=self.verifier, exc=self.exc,
@@ -99,17 +99,17 @@ class JoinDoer(doing.DoDoer):
 
         mux = Multiplexor(hby=self.hby, notifier=self.notifier)
         loadHandlers(exc=self.exc, mux=mux)
-        self.counselor = Counselor(hby=self.hby, version=version, kind=Kinds.json)
+        self.counselor = Counselor(hby=self.hby, version=self.version, kind=Kinds.json)
 
         self.registrar = Registrar(hby=self.hby, rgy=self.rgy, counselor=self.counselor)
         self.credentialer = Credentialer(hby=self.hby, rgy=self.rgy, registrar=self.registrar,
                                          verifier=self.verifier)
 
-        kwa = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
+        kwa = dict(version=self.version, gvrsn=self.version, kind=Kinds.json) if self.version is not None else {}
         self.mbx = MailboxDirector(hby=self.hby, exc=self.exc, topics=['/receipt', '/multisig', '/replay',
                                                                        '/delegate'],
                                    **kwa)
-        self.postman = Poster(hby=self.hby, version=version, kind=Kinds.json)
+        self.postman = Poster(hby=self.hby, version=self.version, kind=Kinds.json)
 
         doers = [self.hbyDoer, self.witq,  self.mbx, self.counselor, self.registrar, self.credentialer, self.postman]
         self.toRemove = list(doers)
@@ -311,11 +311,11 @@ class JoinDoer(doing.DoDoer):
             approve = yn in ('', 'y', 'Y')
 
         if approve:
-            version = oixn.pvrsn
-            ixn = ghab.interact(data=data, framed=True, version=version, gvrsn=version)
+            event_version = oixn.pvrsn
+            ixn = ghab.interact(data=data, framed=True, version=event_version, gvrsn=event_version)
             serder = SerderKERI(raw=ixn)
 
-            ixn = ghab.msgOwnEvent(allowPartiallySigned=True, sn=oixn.sn, framed=True, gvrsn=version)
+            ixn = ghab.msgOwnEvent(allowPartiallySigned=True, sn=oixn.sn, framed=True, gvrsn=event_version)
 
             exn, ims = multisigInteractExn(ghab, aids=ghab.smids, ixn=ixn,
                                            version=self.version if self.version is not None else Version,
