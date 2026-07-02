@@ -485,6 +485,8 @@ class MissingEntryError(DatabaseError):
     """
 
 
+
+
 # Errors when initing cryptographic material
 class MaterialError(KeriError):
     """

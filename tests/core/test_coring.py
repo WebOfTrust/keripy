@@ -2547,6 +2547,8 @@ def test_number():
     assert number.numh == '0'
     assert number.sn == 0
     assert number.snh == '0'
+    assert number.onkey == '00000000000000000000000000000000'
+    assert len(number.onkey) == 32
     assert number.huge == '0AAAAAAAAAAAAAAAAAAAAAAA'
     assert len(number.huge) == 24
     assert not number.positive
@@ -2621,6 +2623,7 @@ def test_number():
     assert number.qb2 == nqb2
     assert number.num == num == number.sn
     assert number.numh == numh == number.snh
+    assert number.onkey == '0000000000000000000000000000ffff'
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
@@ -2633,6 +2636,7 @@ def test_number():
     assert number.qb2 == nqb2
     assert number.num == num == number.sn
     assert number.numh == numh == number.snh
+    assert number.onkey == '0000000000000000000000000000ffff'
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
@@ -2645,6 +2649,7 @@ def test_number():
     assert number.qb2 == nqb2
     assert number.num == num == number.sn
     assert number.numh == numh == number.snh
+    assert number.onkey == '0000000000000000000000000000ffff'
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
@@ -2657,6 +2662,7 @@ def test_number():
     assert number.qb2 == nqb2
     assert number.num == num
     assert number.numh == numh
+    assert number.onkey == '0000000000000000000000000000ffff'
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
@@ -2669,6 +2675,7 @@ def test_number():
     assert number.qb2 == nqb2
     assert number.num == num == number.sn
     assert number.numh == numh == number.snh
+    assert number.onkey == '0000000000000000000000000000ffff'
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
@@ -2681,6 +2688,7 @@ def test_number():
     assert number.qb2 == nqb2
     assert number.num == num == number.sn
     assert number.numh == numh == number.snh
+    assert number.onkey == '0000000000000000000000000000ffff'
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
@@ -2693,6 +2701,7 @@ def test_number():
     assert number.qb2 == nqb2
     assert number.num == num
     assert number.numh == numh
+    assert number.onkey == '0000000000000000000000000000ffff'
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
@@ -2705,6 +2714,7 @@ def test_number():
     assert number.qb2 == nqb2
     assert number.num == num
     assert number.numh == numh
+    assert number.onkey == '0000000000000000000000000000ffff'
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
@@ -2717,6 +2727,7 @@ def test_number():
     assert number.qb2 == nqb2
     assert number.num == num
     assert number.numh == numh
+    assert number.onkey == '0000000000000000000000000000ffff'
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
@@ -2729,6 +2740,7 @@ def test_number():
     assert number.qb2 == nqb2
     assert number.num == num
     assert number.numh == numh
+    assert number.onkey == '0000000000000000000000000000ffff'
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
@@ -2956,6 +2968,7 @@ def test_number():
     assert number.qb2 == nqb2
     assert number.num == num
     assert number.numh == numh
+    assert number.onkey == '0000ffffffffffffffffffffffffffff'
     assert number.positive
     bs = ceil((len(number.code) * 3) / 4)
     assert number.qb2[bs:] == number.raw
@@ -3031,6 +3044,8 @@ def test_number():
     assert number.qb2[bs:] == number.raw
     with pytest.raises(InvalidValueError):
         number.huge  # too big for huge
+    with pytest.raises(InvalidValueError):
+        number.onkey  # too big for onkey
 
     number = Number(numh=numh)
     assert number.code == code
@@ -3073,8 +3088,6 @@ def test_number():
     assert number.qb2[bs:] == number.raw
     with pytest.raises(InvalidValueError):
         number.huge  # too big for huge
-
-
 
     number = Number(raw=raw, code=code)
     assert number.code == code

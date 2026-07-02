@@ -556,18 +556,33 @@ def introduce(hab, wit):
     iserder = hab.kever.serder
     witPrefixer = Prefixer(qb64=wit)
     dgkey = dgKey(wit, iserder.said)
+    #decide if need to send our inception before sending receipt
+    # to remote pre of receipted event so it can process our key state
+    # to verify local signatures on our receipt. Need to send
+    # our inception if we do not have a receipt from receiver of
+    # our inception so we believe other pre cannot verify signs.
     found = False
     if witPrefixer.transferable:  # find if have rct from other pre for own icp
         for sprefixer, snum, sdiger, siger in hab.db.vrcs.getIter(dgkey):
             # Receipt is from this hab if the prefix matches
             if sprefixer.qb64 == hab.pre:
-                found = True
+                found = True  # yes so don't pre-send own inception
+
+        # alt find in vrcsNew as preliminary to replace
+        topkeys = (wit, iserder.said)
+        for keys, siger in hab.db.vrcsNew.getTopItemIter(keys=topkeys):
+            epre, edig, rpre, rsnh, rdig = keys  # expand keys tuple
+            if rpre == hab.pre:
+                pass
+                found = True  # yes so don't pre-send own inception
+                # break
+
     else:  # find if already rcts of own icp
         for prefixer, cigar in hab.db.rcts.getIter(dgkey):
             if prefixer.qb64.startswith(hab.pre):
-                found = True  # yes so don't send own inception
+                found = True  # yes so don't pre-send own inception
 
-    if not found:  # no receipt from remote so send own inception
+    if not found:  # no receipt from remote so pre-send own inception
         # no vrcs or rct of own icp from remote so send own inception
         for msg in hab.db.clonePreIter(pre=hab.pre):
             msgs.extend(msg)

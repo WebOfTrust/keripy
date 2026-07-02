@@ -1903,6 +1903,19 @@ class Number(Matter):
 
 
     @property
+    def onkey(self):
+        """Ordinal number 32 char hex str with leading zeros to mimic onkey
+        for hex equivalent database keys that are lexocographically sorted.
+        Returns:
+            onkey (hex str): 32 char hex str with leading zeros
+        """
+        num = self.num
+        if num > MaxON:  # too big for 16 byte ordinal, 2 ** 128 -1
+            raise InvalidValueError(f"Non-ordinal: {num} exceeds {MaxON}.")
+        return ('%032x' % (num))
+
+
+    @property
     def huge(self):
         """Provides number value as qb64 but with code NumDex.huge. This is the
         same as Seqner.qb64. Raises error if too big.
@@ -1911,8 +1924,8 @@ class Number(Matter):
             huge (str): qb64 of num coded as NumDex.Huge
         """
         num = self.num
-        if num > MaxON:  # too big for ordinal 256 ** 16 - 1
-            raise InvalidValueError(f"Non-ordinal {num} exceeds {MaxON}.")
+        if num > MaxON:  # too big for 16 byte ordinal, 2 ** 128 - 1
+            raise InvalidValueError(f"Non-ordinal: {num} exceeds {MaxON}.")
 
         return Number(num=num, code=NumDex.Huge).qb64
 

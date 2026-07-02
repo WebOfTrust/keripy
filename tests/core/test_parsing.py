@@ -112,7 +112,7 @@ def test_parser_v1_basic():
         msgs.extend(cigar1.qb64b)
 
         # add trans receipt quadruples  spre+ssnu+sdig+sig
-        counter = Counter(Codens.TransReceiptQuadruples, count=1, version=Vrsn_1_0)
+        counter = Counter(Codens.TransReceiptIdxSigGroups, count=1, version=Vrsn_1_0)
         msgs.extend(counter.qb64b)
         msgs.extend(serder.pre.encode())
         msgs.extend(Seqner(snh=serder.snh).qb64b)
@@ -489,7 +489,7 @@ def test_parser_v1_version():
         msgs.extend(cigar1.qb64b)
 
         # add trans receipt quadruples  spre+ssnu+sdig+sig
-        counter = Counter(Codens.TransReceiptQuadruples, count=1, version=Vrsn_1_0)
+        counter = Counter(Codens.TransReceiptIdxSigGroups, count=1, version=Vrsn_1_0)
         msgs.extend(counter.qb64b)
         msgs.extend(serder.pre.encode())
         msgs.extend(Seqner(snh=serder.snh).qb64b)
@@ -679,7 +679,7 @@ def test_parser_v1_enclosed_attachments():
         emas.extend(cigar1.qb64b)
 
         # add trans receipt quadruples  spre+ssnu+sdig+sig
-        counter = Counter(Codens.TransReceiptQuadruples, count=1, version=Vrsn_1_0)
+        counter = Counter(Codens.TransReceiptIdxSigGroups, count=1, version=Vrsn_1_0)
         emas.extend(counter.qb64b)
         emas.extend(serder.pre.encode())
         emas.extend(Seqner(snh=serder.snh).qb64b)
@@ -1021,7 +1021,7 @@ def test_parser_v1_enclosed_message():
         eims.extend(cigar1.qb64b)
 
         # add trans receipt quadruples  spre+ssnu+sdig+sig
-        counter = Counter(Codens.TransReceiptQuadruples, count=1, version=Vrsn_1_0)
+        counter = Counter(Codens.TransReceiptIdxSigGroups, count=1, version=Vrsn_1_0)
         eims.extend(counter.qb64b)
         eims.extend(serder.pre.encode())
         eims.extend(Seqner(snh=serder.snh).qb64b)
@@ -1430,7 +1430,7 @@ def test_parser_v1_non_native_message():
         msgs.extend(cigar1.qb64b)
 
         # add trans receipt quadruples  spre+ssnu+sdig+sig
-        counter = Counter(Codens.TransReceiptQuadruples, count=1, version=Vrsn_1_0)
+        counter = Counter(Codens.TransReceiptIdxSigGroups, count=1, version=Vrsn_1_0)
         msgs.extend(counter.qb64b)
         msgs.extend(serder.pre.encode())
         msgs.extend(Seqner(snh=serder.snh).qb64b)
@@ -1838,7 +1838,7 @@ def test_parser_v2_basic():
         tiger = signers2[0].sign(serder.raw, index=0)  # return siger
         aims.extend(tiger.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
-        msgs.extend(Counter.enclose(qb64=aims, code=Codens.TransReceiptQuadruples))
+        msgs.extend(Counter.enclose(qb64=aims, code=Codens.TransReceiptIdxSigGroups))
 
         # add Trans Indexed Sig Groups
         aims = bytearray()  # attachment substream
@@ -2308,7 +2308,7 @@ def test_parser_v2_mix():
         tiger = signers2[0].sign(serder.raw, index=0)  # return siger
         aims.extend(tiger.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
-        msgs.extend(Counter.enclose(qb64=aims, code=Codens.TransReceiptQuadruples))
+        msgs.extend(Counter.enclose(qb64=aims, code=Codens.TransReceiptIdxSigGroups))
 
         # add Trans Indexed Sig Groups
         aims = bytearray()  # attachment substream
@@ -2724,7 +2724,7 @@ def test_parser_v2_enclosed_attachments():
         tiger = signers2[0].sign(serder.raw, index=0)  # return siger
         aims.extend(tiger.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
-        emas.extend(Counter.enclose(qb64=aims, code=Codens.TransReceiptQuadruples))
+        emas.extend(Counter.enclose(qb64=aims, code=Codens.TransReceiptIdxSigGroups))
 
         # add Trans Indexed Sig Groups
         aims = bytearray()  # attachment substream
@@ -3092,7 +3092,7 @@ def test_parser_v2_enclosed_message():
         tiger = signers2[0].sign(serder.raw, index=0)  # return siger
         aims.extend(tiger.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
-        emas.extend(Counter.enclose(qb64=aims, code=Codens.TransReceiptQuadruples))
+        emas.extend(Counter.enclose(qb64=aims, code=Codens.TransReceiptIdxSigGroups))
 
         # add Trans Indexed Sig Groups
         aims = bytearray()  # attachment substream
@@ -3529,7 +3529,7 @@ def test_parse_generic_group():
         tiger = signers2[0].sign(serder.raw, index=0)  # return siger
         aims.extend(tiger.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
-        emas.extend(Counter.enclose(qb64=aims, code=Codens.TransReceiptQuadruples))
+        emas.extend(Counter.enclose(qb64=aims, code=Codens.TransReceiptIdxSigGroups))
 
         # add Trans Indexed Sig Groups
         aims = bytearray()  # attachment substream
@@ -3966,7 +3966,7 @@ def test_group_parsator():
         tiger = signers2[0].sign(serder.raw, index=0)  # return siger
         aims.extend(tiger.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
-        emas.extend(Counter.enclose(qb64=aims, code=Codens.TransReceiptQuadruples))
+        emas.extend(Counter.enclose(qb64=aims, code=Codens.TransReceiptIdxSigGroups))
 
         # add Trans Indexed Sig Groups
         aims = bytearray()  # attachment substream
@@ -4439,7 +4439,7 @@ def test_parse_native_cesr_fixed_field():
         tiger = signers2[0].sign(serder.raw, index=0)  # return siger
         aims.extend(tiger.qb64b)
         # enclose and extend with quadlet counter, enclose defaults to V2
-        emas.extend(Counter.enclose(qb64=aims, code=Codens.TransReceiptQuadruples))
+        emas.extend(Counter.enclose(qb64=aims, code=Codens.TransReceiptIdxSigGroups))
 
         # add Trans Indexed Sig Groups
         aims = bytearray()  # attachment substream
