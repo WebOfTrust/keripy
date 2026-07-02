@@ -12,7 +12,8 @@ kli oobi resolve --version 1.0 --name delegate --base "${KERI_TEMP_DIR}" --oobi-
 # ==================== Delegated Inception ====================
 kli incept --name delegate --base "${KERI_TEMP_DIR}" --alias proxy --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/delegator.json
 kli incept --name delegate --base "${KERI_TEMP_DIR}" --alias delegate --version 1.0 --proxy proxy --file ${KERI_DEMO_SCRIPT_DIR}/data/delegatee.json &
-PID_LIST="$!"
+pid=$!
+PID_LIST+=" $pid"
 
 kli delegate confirm --name delegator --base "${KERI_TEMP_DIR}" --alias delegator -Y --version 1.0 &
 pid=$!
@@ -53,19 +54,20 @@ echo "==================== Delegated Rotation ===================="
 echo ""
 
 echo "Now rotating delegate..."
+PID_LIST=""
+
 kli rotate --name delegate --base "${KERI_TEMP_DIR}" --alias delegate --proxy proxy --version 1.0 &
-rotate_pid="$!"
+
+pid=$!
+PID_LIST="$pid"
 
 echo "Checking for delegate rotate..."
 kli delegate confirm --name delegator --base "${KERI_TEMP_DIR}" --alias delegator -Y --version 1.0 &
-confirm_pid="$!"
+pid=$!
+PID_LIST+=" $pid"
 
-wait "$confirm_pid"
+wait $PID_LIST
 
-# The delegate-side rotate worker can still exit late after local post-approval
-# revalidation, even though the delegated rotation is already anchored and the
-# final state checks below succeed.
-wait "$rotate_pid" || true
 
 echo ""
 echo "==================== Post-Rotation Verification ===================="
