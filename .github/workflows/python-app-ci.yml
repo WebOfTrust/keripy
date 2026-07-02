@@ -137,6 +137,7 @@ jobs:
               tests/app/test_notifying.py
               tests/core/test_scheming.py
               tests/acdc/test_messaging.py
+              tests/acdc/test_examples.py
               tests/core/test_mapping.py
               tests/app/test_configing.py
               tests/app/cli/common/test_parsing.py
