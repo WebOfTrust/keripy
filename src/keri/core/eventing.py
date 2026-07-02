@@ -7417,7 +7417,18 @@ def loadEvent(db, preb, dig):
 
         receipts["transferable"] = trans
 
-
+    # new style trans receipts
+    receiptsNew = dict()
+    transNew = []
+    topkeys = (preb, dig)
+    for keys, siger in db.vrcsNew.getTopItemIter(keys=topkeys):
+        epre, edig, rpre, rsnh, rdig = keys  # expand keys tuple
+        transNew.append(dict(prefix=rpre,
+                             sequence=Number(snh=rsnh).qb64,
+                             said=rdig,
+                             signature=siger.qb64))
+    if transNew:
+        receiptsNew['transferable'] = transNew
 
 
     # add nontrans receipts couples

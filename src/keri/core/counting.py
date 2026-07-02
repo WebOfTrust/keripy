@@ -95,6 +95,7 @@ class QuadTripCodex_1_0(IceMapDom):
     As subclass of IceMapDom can get codes with item syntax using tag variables.
     Example: codex[tag]
     """
+    TransReceiptIdxSigGroups: str = '-D'  # Composed Base64 Quadruple, pre+snu+dig+ControllerIdxSigs of qb64.
     PathedMaterialCouples: str = '-L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     BigPathedMaterialCouples: str = '--L'  # Composed Grouped Pathed Material Quadlet (4 char each)
     GenericGroup: str = '-T'  # Generic Material Quadlet (Universal with override)

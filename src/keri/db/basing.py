@@ -1758,15 +1758,24 @@ class Baser(LMDBer):
 
         # create and attach an attachment group per sigerset
         if sigersets:
-            sims = bytearray()
+            cims = bytearray()
             for keys, sigers in sigersets.items():
+                sims = bytearray()
+                sims.extend(Counter(code=Codens.ControllerIdxSigs,
+                                    count=len(sigers),
+                                    version=Vrsn_1_0).qb64b)
                 for siger in sigers:
                     sims.extend(siger.qb64b)
-                sims = Counter.enclose(qb64=sims, code=Codens.ControllerIdxSigs)
+
+                #sims = Counter.enclose(qb64=sims,
+                                       #code=Codens.ControllerIdxSigs,
+                                       #version=Vrsn_2_0)
                 rpre, rsnh, rdig = keys
-                gims = bytearray(rpre.encode() + coring.Number(snh=rsnh).qb64b + rdig.encode())
-                gims.extend(sims)
-                gims = Counter.enclose(qb64=gims, code=Codens.TransReceiptIdxSigGroups)
+                cims.extend(rpre.encode() + coring.Number(snh=rsnh).qb64b + rdig.encode())
+                cims.extend(sims)
+            gims = Counter.enclose(qb64=cims,
+                                       code=Codens.TransReceiptIdxSigGroups,
+                                       version=Vrsn_1_0)
 
         # add nontrans endorsement couples to attachments not witnesses
         # may have been originally key event attachments or receipted endorsements
