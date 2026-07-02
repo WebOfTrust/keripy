@@ -100,6 +100,7 @@ def test_codexes_tags():
 
     assert  asdict(QTDex_1_0) == \
     {
+        'TransReceiptIdxSigGroups': '-D',
         'PathedMaterialCouples': '-L',
         'BigPathedMaterialCouples': '--L',
         'GenericGroup': '-T',
