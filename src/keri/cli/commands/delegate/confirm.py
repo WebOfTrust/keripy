@@ -110,6 +110,10 @@ class ConfirmDoer(doing.DoDoer):
 
     def _processEvent(self, pre, edig, eserder, anchorSn, anchorSaid):
         """Process the DIP or DRT event so it appears in the delegator's hby.kevers."""
+        committed = self.hby.db.kels.getLast(keys=pre, on=eserder.sn)
+        if committed == eserder.said:
+            return
+
         edig = edig.encode("utf-8")
         sigers = self.hby.db.sigs.get(keys=(pre, edig))
         wigers = self.hby.db.wigs.get(keys=(pre, edig))
@@ -264,16 +268,8 @@ class ConfirmDoer(doing.DoDoer):
                         #   the following direct removal to instead rely on normal escrow processing.
                         self.hby.db.delegables.rem(keys=(pre, sn), val=edig)
                         self._addAuthorizerSeal(pre, edig, anchorSn=hab.kever.sn, anchorSaid=hab.kever.serder.said)
-
-                        # The witness query above may have already advanced the delegator's
-                        # local view of the delegate to the target sequence number. Avoid
-                        # re-processing the same delegated establishment event in that case,
-                        # because the escrowed local signatures may no longer satisfy the
-                        # prior threshold check on a duplicate pass
-                        dkever = self.hby.kevers.get(eserder.pre)
-                        if dkever is None or dkever.sn < eserder.sn:
-                            self._processEvent(pre=pre, edig=edig, eserder=eserder,
-                                               anchorSn=hab.kever.sn, anchorSaid=hab.kever.serder.said)
+                        self._processEvent(pre=pre, edig=edig, eserder=eserder,
+                                           anchorSn=hab.kever.sn, anchorSaid=hab.kever.serder.said)
                         self.remove(self.toRemove)
                         return True
 

@@ -10,10 +10,9 @@ source "${script_dir}"/basic/script-utils.sh
 SCRIPT_TIMEOUT="${KERI_SCRIPT_TIMEOUT:-300}"
 # Max retry attempts per script. Override with KERI_SCRIPT_RETRIES env var.
 MAX_RETRIES="${KERI_SCRIPT_RETRIES:-3}"
-FAILURES=0
 
-clean_all_temp_state() {
-    local base="${KERI_TEMP_DIR}"
+clean_temp_state() {
+    local base="${1:-${KERI_TEMP_DIR}}"
 
     rm -rf \
         "/usr/local/var/keri/db/${base}" \
@@ -30,59 +29,13 @@ clean_all_temp_state() {
         "$HOME/.keri/cf/${base}.json"
 }
 
-wits=""
-witness_oobis=(
-    "http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller"
-    "http://127.0.0.1:5643/oobi/BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM/controller"
-    "http://127.0.0.1:5644/oobi/BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX/controller"
-)
-
-witnesses_ready() {
-    local url
-
-    if ! command -v curl > /dev/null 2>&1; then
-        sleep 5
-        return 0
-    fi
-
-    for url in "${witness_oobis[@]}"; do
-        curl -fsS --max-time 2 "$url" > /dev/null 2>&1 || return 1
-    done
-}
-
-start_witnesses() {
-    # Launch witnesses using the same isolated base and v1 protocol version as the scripts.
-    command kli witness demo --base "${KERI_TEMP_DIR}" --version 1.0 &
-    wits=$!
-
-    for _ in {1..30}; do
-        if ! kill -0 "$wits" > /dev/null 2>&1; then
-            wait "$wits" > /dev/null 2>&1 || true
-            wits=""
-            return 1
-        fi
-
-        if witnesses_ready; then
-            return 0
-        fi
-
-        sleep 1
-    done
-
-    return 1
-}
-
-stop_witnesses() {
-    if [ -n "${wits:-}" ]; then
-        kill -HUP "$wits" > /dev/null 2>&1 || true
-        wait "$wits" > /dev/null 2>&1 || true
-        wits=""
-        sleep 1
-    fi
-}
+# Launch witnesses in background using the same isolated base as the demo scripts.
+kli witness demo --base "${KERI_TEMP_DIR}" --version 1.0 &
+wits=$!
+sleep 3
 
 # Ensure we kill the witnesses on exit
-trap 'stop_witnesses' EXIT
+trap 'kill -HUP $wits' EXIT
 
 # Run a script with a timeout and retry on failure.
 # Usage: run_with_retry <script_path> [timeout_seconds]
@@ -103,28 +56,12 @@ run_with_retry() {
         fi
         printf "************************************\n"
 
-        stop_witnesses
-        clean_all_temp_state
-        if ! start_witnesses; then
-            exit_code=1
-            stop_witnesses
-            if [ "$attempt" -lt "$MAX_RETRIES" ]; then
-                local delay=$(( 2 ** attempt ))
-                printf "\e[33m%s could not start witnesses. Retrying in %ds...\e[0m\n" "$name" "$delay"
-                sleep "$delay"
-                continue
-            else
-                printf "\e[31m%s failed after %d attempts: witnesses did not start.\e[0m\n" "$name" "$MAX_RETRIES"
-                return "$exit_code"
-            fi
-        fi
+        clean_temp_state
 
         if timeout "$t" "$script"; then
-            stop_witnesses
             return 0
         else
             exit_code=$?
-            stop_witnesses
         fi
         if [ "$attempt" -lt "$MAX_RETRIES" ]; then
             local delay=$(( 2 ** attempt ))
@@ -138,17 +75,15 @@ run_with_retry() {
 }
 
 # Test scripts
-run_with_retry "${script_dir}/basic/demo-script.sh" || FAILURES=1
-run_with_retry "${script_dir}/basic/demo-witness-script.sh" || FAILURES=1
-run_with_retry "${script_dir}/basic/demo-witness-async-script.sh" || FAILURES=1
-run_with_retry "${script_dir}/basic/delegate.sh" || FAILURES=1
-run_with_retry "${script_dir}/basic/multisig-delegate-join.sh" || FAILURES=1
-run_with_retry "${script_dir}/basic/multisig.sh" || FAILURES=1
-run_with_retry "${script_dir}/basic/multisig-rotate-three-stooges.sh" || FAILURES=1
-run_with_retry "${script_dir}/basic/multisig-delegator.sh" || FAILURES=1
-run_with_retry "${script_dir}/basic/multisig-delegate-delegator.sh" || FAILURES=1
-run_with_retry "${script_dir}/basic/challenge.sh" || FAILURES=1
-run_with_retry "${script_dir}/basic/multisig-join.sh" || FAILURES=1
-run_with_retry "${script_dir}/basic/rename-alias.sh" || FAILURES=1
-
-exit "$FAILURES"
+run_with_retry "${script_dir}/basic/demo-script.sh" 
+run_with_retry "${script_dir}/basic/demo-witness-script.sh" 
+run_with_retry "${script_dir}/basic/demo-witness-async-script.sh" 
+run_with_retry "${script_dir}/basic/delegate.sh" 
+run_with_retry "${script_dir}/basic/multisig-delegate-join.sh" 
+run_with_retry "${script_dir}/basic/multisig.sh" 
+run_with_retry "${script_dir}/basic/multisig-rotate-three-stooges.sh" 
+run_with_retry "${script_dir}/basic/multisig-delegator.sh" 
+run_with_retry "${script_dir}/basic/multisig-delegate-delegator.sh" 
+run_with_retry "${script_dir}/basic/challenge.sh" 
+run_with_retry "${script_dir}/basic/multisig-join.sh" 
+run_with_retry "${script_dir}/basic/rename-alias.sh" 

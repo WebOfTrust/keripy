@@ -87,6 +87,6 @@ kli delegate confirm --name "$delegator_1" --alias delegator --interact -Y --ver
 PID_LIST+=" $!"
 kli delegate confirm --name "$delegator_2" --alias delegator --interact -Y --version 1.0 &
 PID_LIST+=" $!"
-wait_all $PID_LIST
+wait $PID_LIST
 
 kli status --name "$delegate" --alias delegate

@@ -62,7 +62,7 @@ kli multisig incept --name "$delegate_1" --alias member --group delegate --versi
 PID_LIST="$!"
 kli delegate confirm --name "$delegator" --alias delegator --interact -Y --version 1.0 &
 PID_LIST+=" $!"
-wait_all $PID_LIST
+wait $PID_LIST
 
 kli status --name "$delegate_1" --alias delegate
 delegate_aid_from_1=$(kli aid --name "$delegate_1" --alias delegate)

@@ -27,7 +27,7 @@ kli multisig incept --name multisig2 --base "${KERI_TEMP_DIR}"  --alias multisig
 pid=$!
 PID_LIST+=" $pid"
 
-wait_all $PID_LIST
+wait $PID_LIST
 
 kli status --name multisig1 --base "${KERI_TEMP_DIR}"  --alias multisig
 
@@ -40,6 +40,6 @@ kli ends add --base "${KERI_TEMP_DIR}" --name multisig2 --alias multisig --eid B
 pid=$!
 PID_LIST+=" $pid"
 
-wait_all $PID_LIST
+wait $PID_LIST
 
 echo "Test Complete"

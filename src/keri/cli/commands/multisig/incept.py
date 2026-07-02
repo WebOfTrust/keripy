@@ -191,7 +191,7 @@ class GroupMultisigIncept(doing.DoDoer):
                                  ghab=ghab)
 
         else:
-            prefixer = Prefixer(ghab.pre)
+            prefixer = Prefixer(qb64=ghab.pre)
             number = Number(sn=0)
 
         while True:
