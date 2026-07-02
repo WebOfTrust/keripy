@@ -4493,15 +4493,15 @@ class Kevery:
                                           f" dig={sdiger.qb64}  from pre="
                                           f"{sprefixer.qb64}, no keys.")
 
-                for siger in sigers:  # endorser (non-controller) signatures
-                    if siger.index >= len(sverfers):
-                        raise ValidationError(f"Index={siger.index} to large for keys.")
+                #for siger in sigers:  # endorser (non-controller) signatures
+                    #if siger.index >= len(sverfers):
+                        #raise ValidationError(f"Index={siger.index} to large for keys.")
 
-                    siger.verfer = sverfers[siger.index]  # assign verfer
-                    if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
-                        # good sig so write receipt quadruple to database
-                        quadruple = (sprefixer, snumber, sdiger, siger)
-                        self.db.vrcs.add(keys=(pre, ldig), val=quadruple)
+                    #siger.verfer = sverfers[siger.index]  # assign verfer
+                    #if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
+                        ## good sig so write receipt quadruple to database
+                        #quadruple = (sprefixer, snumber, sdiger, siger)
+                        #self.db.vrcs.add(keys=(pre, ldig), val=quadruple)
 
                 # temporary for vrcsNew to see if works
                 for siger in sigers:  # endorser (non-controller) signatures
@@ -4512,7 +4512,7 @@ class Kevery:
                     if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
                         # good sig so write receipt to database
                         keys = (pre, ldig, sprefixer.qb64, snumber.onkey, sdiger.qb64)
-                        self.db.vrcsNew.add(keys=keys, val=siger)
+                        self.db.vrcs.add(keys=keys, val=siger)  # add to ioset at keys
 
         else:  # no events to be receipted yet at that sn so escrow
             if cigars:
@@ -4850,12 +4850,12 @@ class Kevery:
                 # good sig so write receipt quadruple to database
 
                 # Set up quadruple
-                quadruple = (sprefixer, snumber, diger, siger)
-                self.db.vrcs.add(keys=(pre, serder.said), val=quadruple)
+                #quadruple = (sprefixer, snumber, diger, siger)
+                #self.db.vrcs.add(keys=(pre, serder.said), val=quadruple)
 
                 # vrcsNew test to replace vrcs
                 keys = (pre, serder.said, sprefixer.qb64, snumber.onkey, diger.qb64)
-                self.db.vrcsNew.add(keys=keys, val=siger)
+                self.db.vrcs.add(keys=keys, val=siger)  # add to ioset at keys
 
 
             else:  # escrow  either receiptor or receipted event not yet in database
@@ -7183,12 +7183,12 @@ class Kevery:
                         raise ValidationError(msg)
 
                     # good sig so write receipt quadruple to database
-                    quadruple = (sprefixer, snumber, ssaider, siger)
-                    self.db.vrcs.add(keys=(pre, serder.said), val=quadruple)
+                    #quadruple = (sprefixer, snumber, ssaider, siger)
+                    #self.db.vrcs.add(keys=(pre, serder.said), val=quadruple)
 
                     # vrcsNew test to replace vrcs
                     keys = (pre, serder.said, sprefixer.qb64, snumber.onkey, ssaider.qb64)
-                    self.db.vrcsNew.add(keys=keys, val=siger)
+                    self.db.vrcs.add(keys=keys, val=siger)  # add to ioset at keys
 
 
                 except UnverifiedTransferableReceiptError as ex:
@@ -7403,32 +7403,33 @@ def loadEvent(db, preb, dig):
         number, diger = duple
         event["source_seal"] = dict(sequence=number.sn, said=diger.qb64)
 
-    receipts = dict()
-    # add trans receipts quadruples
-    if quads := db.vrcs.get(keys=dgkey):
-        trans = []
-        for prefixer, number, diger, siger in quads:
-            trans.append(dict(
-                prefix=prefixer.qb64,
-                sequence=number.qb64,
-                said=diger.qb64,
-                signature=siger.qb64,
-            ))
+    receipts = dict()  # add receipts transferable and nontransferable if any
 
-        receipts["transferable"] = trans
+    ## add trans receipts quadruples
+    #if quads := db.vrcs.get(keys=dgkey):
+        #trans = []
+        #for prefixer, number, diger, siger in quads:
+            #trans.append(dict(
+                #prefix=prefixer.qb64,
+                #sequence=number.qb64,
+                #said=diger.qb64,
+                #signature=siger.qb64,
+            #))
 
-    # new style trans receipts
-    receiptsNew = dict()
-    transNew = []
+        #receipts["transferable"] = trans
+
+    # add trans receipts
+    # vcrsNew new style trans receipts
+    trans = []
     topkeys = (preb, dig)
     for keys, siger in db.vrcsNew.getTopItemIter(keys=topkeys):
         epre, edig, rpre, rsnh, rdig = keys  # expand keys tuple
-        transNew.append(dict(prefix=rpre,
+        trans.append(dict(prefix=rpre,
                              sequence=Number(snh=rsnh).qb64,
                              said=rdig,
                              signature=siger.qb64))
-    if transNew:
-        receiptsNew['transferable'] = transNew
+    if trans:
+        receipts['transferable'] = trans
 
 
     # add nontrans receipts couples

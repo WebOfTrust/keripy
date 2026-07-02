@@ -2709,23 +2709,23 @@ class BaseHab:
                     # our inception so we believe other pre cannot verify signs.
                     found = False
                     if cuedPrefixer.transferable:  # find if have rct from other pre for own icp
-                        for sprefixer, snumber, sdiger, siger in self.db.vrcs.getIter(dgkey):
-                            if sprefixer.qb64 == cuedKed["i"]:
-                                found = True  # yes so don't send own inception
+                        #for sprefixer, snumber, sdiger, siger in self.db.vrcs.getIter(dgkey):
+                            #if sprefixer.qb64 == cuedKed["i"]:
+                                #found = True  # yes so don't send own inception
 
                         # vrcsNew as prelimary replace above
                         topkeys = (self.pre, self.iserder.said)
                         for keys, siger in self.db.vrcsNew.getTopItemIter(keys=topkeys):
                             epre, edig, rpre, rsnh, rdig = keys  # expand keys tuple
                             if rpre == cuedKed["i"]:
-                                pass
                                 found = True  # yes so don't pre-send own inception
-                                # break
+                                break
 
                     else:  # find if already rcts of own icp
                         for prefixer, cigar in self.db.rcts.getIter(dgkey):
                             if prefixer.qb64.startswith(cuedKed["i"]):
                                 found = True  # yes so don't send own inception
+                                break
 
                     if not found:  # no receipt from remote so send own inception
                         # no vrcs or rct of own icp from remote so send own inception
