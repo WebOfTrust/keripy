@@ -152,16 +152,15 @@ kli query --name delegate1 --base "${KERI_TEMP_DIR}" --alias delegate1 --prefix 
 
 # --- Step 3: Rotate the delegate multisig (DRT event, needs delegation approval) ---
 echo "Rotating delegate multisig..."
-ROTATE_PIDS=""
-CONFIRM_PIDS=""
+PID_LIST=""
 
 kli multisig rotate --name delegate1 --base "${KERI_TEMP_DIR}" --alias delegate --version 1.0 &
 pid=$!
-ROTATE_PIDS+=" $pid"
+PID_LIST+=" $pid"
 
 kli multisig rotate --name delegate2 --base "${KERI_TEMP_DIR}" --alias delegate --version 1.0 &
 pid=$!
-ROTATE_PIDS+=" $pid"
+PID_LIST+=" $pid"
 
 # Wait for the rotation request to propagate, then approve
 sleep 3
@@ -169,17 +168,16 @@ sleep 3
 echo "Approving delegated rotation from delegator1..."
 kli delegate confirm --name delegator1 --base "${KERI_TEMP_DIR}" --alias delegator --interact --auto --version 1.0 &
 pid=$!
-CONFIRM_PIDS+=" $pid"
+PID_LIST+=" $pid"
 
 echo "Approving delegated rotation from delegator2..."
 kli delegate confirm --name delegator2 --base "${KERI_TEMP_DIR}" --alias delegator --interact --auto --version 1.0 &
 pid=$!
-CONFIRM_PIDS+=" $pid"
+PID_LIST+=" $pid"
 
 # The multisig rotation workers can still report a transient escrow miss after
 # the confirms have anchored the event.
-wait $CONFIRM_PIDS
-wait $ROTATE_PIDS || true
+wait $PID_LIST
 
 echo ""
 echo "==================== Post-Rotation Verification ===================="

@@ -3,7 +3,7 @@ set -e
 
 # three stooges
 
-source "$(dirname "$0")/script-utils.sh"
+source "${KERI_SCRIPT_DIR}/demo/basic/script-utils.sh"
 
 # WITNESSES
 # To run the following scripts, open another console window and run:

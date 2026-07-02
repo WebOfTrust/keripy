@@ -283,7 +283,7 @@ class StreamPoster:
     def __init__(self, hby, recp, src=None, hab=None, mbx=None, topic=None, headers=None,
                  essr=False, version=None, kind=None, **kwa):
         self.hby = hby
-        self.hab = hab if hab is not None else hby.habs[src]
+        self.hab = hab
         self.recp = recp
         self.src = src
         self.messagers = []

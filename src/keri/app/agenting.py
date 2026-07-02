@@ -52,7 +52,6 @@ class Receiptor(doing.DoDoer):
 
         super(Receiptor, self).__init__(doers=doers)
 
-
     def receipt(self, pre, sn=None, auths=None):
         """Returns a generator performing witness receipting of KEL events.
 
