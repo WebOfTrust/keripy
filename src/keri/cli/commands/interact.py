@@ -8,9 +8,9 @@ import json
 
 from hio.base import doing
 
-from ..common import Parsery, setupHby
+from ..common import Parsery, setupHby, parseVersion
 
-from ...kering import ConfigurationError
+from ...kering import ConfigurationError, Kinds
 from ...help import helping
 from ...app import HaberyDoer, Receiptor, WitnessReceiptor, MailboxDirector
 
@@ -26,6 +26,8 @@ parser.add_argument("--authenticate", '-z', help="Prompt the controller for auth
 parser.add_argument('--code', help='<Witness AID>:<code> formatted witness auth codes.  Can appear multiple times',
                     default=[], action="append", required=False)
 parser.add_argument('--code-time', help='Time the witness codes were captured.', default=None, required=False)
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for the interaction event, such as 1.0 or 2.0')
 
 
 def interact(args):
@@ -39,6 +41,7 @@ def interact(args):
     alias = args.alias
     base = args.base
     bran = args.bran
+    version = args.version
 
     if args.data is not None:
         try:
@@ -57,7 +60,7 @@ def interact(args):
         data = None
 
     ixnDoer = InteractDoer(name=name, base=base, alias=alias, bran=bran, data=data, authenticate=args.authenticate,
-                           endpoint=args.endpoint, codes=args.code, codeTime=args.code_time)
+                           endpoint=args.endpoint, codes=args.code, codeTime=args.code_time, version=version)
 
     return [ixnDoer]
 
@@ -68,7 +71,7 @@ class InteractDoer(doing.DoDoer):
     to all appropriate witnesses
     """
 
-    def __init__(self, name, base, bran, alias, data: list = None, endpoint=False, authenticate=False,
+    def __init__(self, name, base, bran, alias, version=None, data: list = None, endpoint=False, authenticate=False,
                  codes=None, codeTime=None):
         """
         Returns DoDoer with all registered Doers needed to perform interaction event.
@@ -85,10 +88,13 @@ class InteractDoer(doing.DoDoer):
         self.authenticate = authenticate
         self.codes = codes if codes is not None else []
         self.codeTime = codeTime
+        self.version = version
 
-        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran, version=self.version)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
-        self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
+        kwa = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
+        self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"],
+                                   **kwa)
         doers = [self.hbyDoer, self.mbx, doing.doify(self.interactDo)]
 
         super(InteractDoer, self).__init__(doers=doers)
@@ -104,7 +110,8 @@ class InteractDoer(doing.DoDoer):
         _ = (yield self.tock)
 
         hab = self.hby.habByName(name=self.alias)
-        hab.interact(data=self.data, framed=True)
+        kwa = dict(version=self.version, gvrsn=self.version) if self.version is not None else {}
+        hab.interact(data=self.data, framed=True, **kwa)
 
         auths = {}
         if self.authenticate:

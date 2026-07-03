@@ -14,7 +14,7 @@ from ..kering import (Vrsn_1_0, Vrsn_2_0, Ilks,
                       ValidationError, MissingSignatureError)
 from ..core import (Counter, Pather, Dater, Diger,
                     Prefixer, Seqner, Saider,
-                    Noncer, Sadder, SerderKERI,
+                    Noncer, Sadder, Serder, SerderKERI,
                     NonTransDex, Saids, Codens,
                     verifySigs)
 from ..db import fetchTsgs
@@ -401,8 +401,8 @@ def exchangeOld(*,
         embeds = embeds if embeds is not None else {}
         e = dict()
         for label, msg in embeds.items():
-            serder = Sadder(raw=msg)
-            e[label] = serder.ked
+            serder = Serder(raw=msg)
+            e[label] = serder.sad
             atc = bytes(msg[serder.size:])
             if not atc:
                 continue
@@ -536,8 +536,8 @@ def specialExchange(*,
         e = dict()
 
         for label, msg in embeds.items():
-            serder = Sadder(raw=msg)
-            e[label] = serder.ked
+            serder = Serder(raw=msg)
+            e[label] = serder.sad
             atc = bytes(msg[serder.size:])
             if not atc:
                 continue

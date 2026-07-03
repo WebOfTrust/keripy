@@ -10,9 +10,9 @@ from contextlib import contextmanager
 
 from ...kering import AuthError
 from ...app import Habery, Keeper
+from keri.kering import Version
 
-
-def setupHby(name, base="", bran=None, cf=None, temp=False):
+def setupHby(name, base="", bran=None, cf=None, temp=False, version=None):
     """ Create Habery off of existing directory
 
     Parameters:
@@ -45,7 +45,7 @@ def setupHby(name, base="", bran=None, cf=None, temp=False):
                 bran = bran.replace("-", "")
 
             retries += 1
-            hby = Habery(name=name, base=base, bran=bran, cf=cf, free=True)
+            hby = Habery(name=name, base=base, bran=bran, cf=cf, free=True, version=version if version is not None else Version)
             break
         except (AuthError, ValueError) as e:
             print(e)

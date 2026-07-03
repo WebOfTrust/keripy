@@ -10,12 +10,14 @@ from keri.core import (Signer, Diger, SerderKERI, SealEvent,
                        Prefixer, Seqner, Diger, MtrDex)
 from keri.db import openDB, snKey, dgKey
 from keri import (Ilks, TraitDex, MissingAnchorError, ValidationError,
-                  MissingWitnessSignatureError, LikelyDuplicitousError)
+                  MissingWitnessSignatureError, LikelyDuplicitousError,
+                  Vrsn_1_0, Kinds)
 from keri.vdr import (openReger, incept, rotate,
                       issue, revoke, backerIssue,
                       backerRevoke, Tever, Tevery)
 
 from tests.vdr import buildHab
+from tests.common import KWA
 
 
 def test_incept(mockCoringRandomNonce):
@@ -29,14 +31,14 @@ def test_incept(mockCoringRandomNonce):
     bak3 = "DCxo-P4W_Z0xXTfoA3_4DMPn7oi0mLCElOWJDpC0nQXw"
 
     # no backers, allowed to add later
-    serder = incept(pre, baks=[], code=MtrDex.Blake3_256)
+    serder = incept(pre, baks=[], code=MtrDex.Blake3_256, **KWA)
     assert serder.raw == (b'{"v":"KERI10JSON0000fb_","t":"vcp","d":"EE7_RC-GkGy_N_IbOjFHLhqDekFNeSxygvIZ'
                           b'JBf1SPbA","i":"EE7_RC-GkGy_N_IbOjFHLhqDekFNeSxygvIZJBf1SPbA","ii":"DAtNTPnDF'
                           b'BnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"0","c":[],"bt":"0","b":[],"n":"0AA'
                           b'UiJMii_rPXXCiLTEEaDT7"}')
 
     # no backers allowed
-    serder = incept(pre, baks=[], cnfg=[TraitDex.NoBackers], code=MtrDex.Blake3_256)
+    serder = incept(pre, baks=[], cnfg=[TraitDex.NoBackers], code=MtrDex.Blake3_256, **KWA)
     assert serder.raw == (b'{"v":"KERI10JSON0000ff_","t":"vcp","d":"EM2g-TbMWL98wHMiY7fs1eBRE0uVNL21xnwa'
                           b'ys_i9K1Q","i":"EM2g-TbMWL98wHMiY7fs1eBRE0uVNL21xnways_i9K1Q","ii":"DAtNTPnDF'
                           b'BnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"0","c":["NB"],"bt":"0","b":[],"n":'
@@ -45,27 +47,27 @@ def test_incept(mockCoringRandomNonce):
     # no backers allows, one attempted
     with pytest.raises(ValueError):
         incept(pre, cnfg=[TraitDex.NoBackers],
-                        baks=[bak1])
+                        baks=[bak1], **KWA)
 
     # with backer dupes
     with pytest.raises(ValueError):
         incept(pre, cnfg=[],
-                        baks=[bak1, bak1, bak2])
+                        baks=[bak1, bak1, bak2], **KWA)
 
     # with oob toad
     with pytest.raises(ValueError):
         incept(pre, cnfg=[], toad=4,
-                        baks=[bak1, bak2, bak3])
+                        baks=[bak1, bak2, bak3], **KWA)
 
     # with oob toad
     with pytest.raises(ValueError):
         incept(pre, cnfg=[], toad=1,
-                        baks=[])
+                        baks=[], **KWA)
 
     # one backer
     serder = incept(pre,
                              baks=[bak1],
-                             code=MtrDex.Blake3_256)
+                             code=MtrDex.Blake3_256, **KWA)
     assert serder.raw == (b'{"v":"KERI10JSON000129_","t":"vcp","d":"EP_pM8RMJ2K25lepbhe5vYJnxYf4OrebU_eg'
                           b'8uYupLCq","i":"EP_pM8RMJ2K25lepbhe5vYJnxYf4OrebU_eg8uYupLCq","ii":"DAtNTPnDF'
                           b'BnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"0","c":[],"bt":"1","b":["EAvR3p8V9'
@@ -74,7 +76,7 @@ def test_incept(mockCoringRandomNonce):
     # 3 backers
     serder = incept(pre,
                              baks=[bak1, bak2, bak3],
-                             code=MtrDex.Blake3_256)
+                             code=MtrDex.Blake3_256, **KWA)
     assert serder.raw == (b'{"v":"KERI10JSON000187_","t":"vcp","d":"EI7cIxSfVdi8WhU3dj-laWIkNI1a-7MS6F-5'
                           b'Ss758cv9","i":"EI7cIxSfVdi8WhU3dj-laWIkNI1a-7MS6F-5Ss758cv9","ii":"DAtNTPnDF'
                           b'BnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"0","c":[],"bt":"3","b":["EAvR3p8V9'
@@ -86,7 +88,7 @@ def test_incept(mockCoringRandomNonce):
     serder = incept(pre,
                              toad=1,
                              baks=[bak1],
-                             code=MtrDex.Blake3_256)
+                             code=MtrDex.Blake3_256, **KWA)
     assert serder.raw == (b'{"v":"KERI10JSON000129_","t":"vcp","d":"EP_pM8RMJ2K25lepbhe5vYJnxYf4OrebU_eg'
                           b'8uYupLCq","i":"EP_pM8RMJ2K25lepbhe5vYJnxYf4OrebU_eg8uYupLCq","ii":"DAtNTPnDF'
                           b'BnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"0","c":[],"bt":"1","b":["EAvR3p8V9'
@@ -96,7 +98,7 @@ def test_incept(mockCoringRandomNonce):
     serder = incept(pre,
                              toad=2,
                              baks=[bak1, bak2, bak3],
-                             code=MtrDex.Blake3_256)
+                             code=MtrDex.Blake3_256, **KWA)
     assert serder.raw == (b'{"v":"KERI10JSON000187_","t":"vcp","d":"EDnhbkM1_hVVC_df54giqQ0qq6722QCXM9BE'
                           b'AK-GFqiF","i":"EDnhbkM1_hVVC_df54giqQ0qq6722QCXM9BEAK-GFqiF","ii":"DAtNTPnDF'
                           b'BnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"0","c":[],"bt":"2","b":["EAvR3p8V9'
@@ -119,7 +121,7 @@ def test_rotate():
 
     serder = rotate(dig=dig,
                     regk="EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw",
-                    baks=[])
+                    baks=[], **KWA)
     assert serder.raw == (b'{"v":"KERI10JSON0000dd_","t":"vrt","d":"EF_SBZzjflcJaTTTdRTfY-JLfaqOHJpa7EMO'
                           b'xqFwWXff","i":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","p":"EA2L3ycqK9'
                           b'645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg","s":"1","bt":"0","br":[],"ba":[]}')
@@ -127,7 +129,7 @@ def test_rotate():
     serder = rotate(dig=dig,
                     regk="EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw",
                     sn=3,
-                    baks=[bak1])
+                    baks=[bak1], **KWA)
     assert serder.raw == (b'{"v":"KERI10JSON0000dd_","t":"vrt","d":"EGsKu5qY-uuI9WucRkI__NvcuSKfe6R6bSvz'
                           b'G2i_hq04","i":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","p":"EA2L3ycqK9'
                           b'645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg","s":"3","bt":"1","br":[],"ba":[]}')
@@ -136,7 +138,7 @@ def test_rotate():
     serder = rotate(dig=dig,
                     regk="EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw",
                     sn=4,
-                    baks=[bak1, bak2, bak3])
+                    baks=[bak1, bak2, bak3], **KWA)
     assert serder.raw == (b'{"v":"KERI10JSON0000dd_","t":"vrt","d":"EKyZjgvjCihaqOqb58URdrrrHXKAavlV3N7U'
                           b'9WAneTK6","i":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","p":"EA2L3ycqK9'
                           b'645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg","s":"4","bt":"3","br":[],"ba":[]}')
@@ -145,7 +147,7 @@ def test_rotate():
                     regk="EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw",
                     sn=4,
                     baks=[bak1, bak2, bak3],
-                    cuts=[bak2])
+                    cuts=[bak2], **KWA)
     assert serder.raw == (b'{"v":"KERI10JSON00010b_","t":"vrt","d":"EKI7bCJ3DHxpxidDAhRBrMVI_te-JqEN55ln'
                         b'HMz-8JXg","i":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","p":"EA2L3ycqK9'
                         b'645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg","s":"4","bt":"2","br":["DAEpNJeSJjxo6oAx'
@@ -155,7 +157,7 @@ def test_rotate():
                     regk="EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw",
                     sn=4,
                     baks=[bak1, bak2, bak3],
-                    cuts=[bak2, bak3])
+                    cuts=[bak2, bak3], **KWA)
     assert serder.raw == (b'{"v":"KERI10JSON00013a_","t":"vrt","d":"EG30uAZOrLHjfscyFGeay1cUt_Clnq4xXo59'
                     b'MTKyM2JM","i":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","p":"EA2L3ycqK9'
                     b'645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg","s":"4","bt":"1","br":["DAEpNJeSJjxo6oAx'
@@ -167,7 +169,7 @@ def test_rotate():
                     regk="EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw",
                     sn=4,
                     baks=[bak1, bak2, bak3],
-                    cuts=[bak1, bak2, bak3])
+                    cuts=[bak1, bak2, bak3], **KWA)
     assert serder.raw == (b'{"v":"KERI10JSON000169_","t":"vrt","d":"EBoHO7SMctYvqVFhnwtWASPf3t9KAsn5WbpG'
                     b'1Ew9RURO","i":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","p":"EA2L3ycqK9'
                     b'645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg","s":"4","bt":"0","br":["EBvR3p8V95W8J7Ui'
@@ -180,7 +182,7 @@ def test_rotate():
                regk="EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw",
                sn=4,
                baks=[bak1, bak3],
-               cuts=[bak2])
+               cuts=[bak2], **KWA)
 
     # invalid cut
     with pytest.raises(ValueError):
@@ -188,7 +190,7 @@ def test_rotate():
                regk="EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw",
                sn=4,
                baks=[bak1, bak3],
-               cuts=[bak2])
+               cuts=[bak2], **KWA)
 
     # invalid toad
     with pytest.raises(ValueError):
@@ -197,21 +199,21 @@ def test_rotate():
                sn=4,
                toad=2,
                baks=[bak1, bak3],
-               cuts=[bak3])
+               cuts=[bak3], **KWA)
 
     # invalid sn
     with pytest.raises(ValueError):
         rotate(dig=dig,
                regk="EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw",
                sn=0,
-               baks=[])
+               baks=[], **KWA)
 
     # adds
     serder = rotate(dig=dig,
                     regk="EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw",
                     sn=4,
                     adds=[bak1],
-                    baks=[bak2, bak3])
+                    baks=[bak2, bak3], **KWA)
     assert serder.raw == (b'{"v":"KERI10JSON00010b_","t":"vrt","d":"EBGnLp2Dlt-57wU6fT9mS9Xwkcirvrw7ySr1'
                         b'-aoP27bi","i":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","p":"EA2L3ycqK9'
                         b'645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg","s":"4","bt":"3","br":[],"ba":["EBvR3p8V'
@@ -222,7 +224,7 @@ def test_rotate():
                     sn=4,
                     toad=2,
                     adds=[bak1, bak2, bak3],
-                    baks=[])
+                    baks=[], **KWA)
     assert serder.raw == (b'{"v":"KERI10JSON000169_","t":"vrt","d":"EMpFiUdRTiJ7lrpNCs8mkBQzRieTW2PwYrpY'
                     b'mK4ri256","i":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","p":"EA2L3ycqK9'
                     b'645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg","s":"4","bt":"2","br":[],"ba":["EBvR3p8V'
@@ -234,7 +236,7 @@ def test_rotate():
                     sn=4,
                     toad=3,
                     adds=[bak2, bak3],
-                    baks=[bak1])
+                    baks=[bak1], **KWA)
     assert serder.raw == (b'{"v":"KERI10JSON00013a_","t":"vrt","d":"EDkaxfBYXFe2gBpOdTcTqlGn37vZUMtui212'
                         b'vcMBQQIJ","i":"EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","p":"EA2L3ycqK9'
                         b'645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg","s":"4","bt":"3","br":[],"ba":["DAEpNJeS'
@@ -247,7 +249,7 @@ def test_rotate():
                regk="EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw",
                sn=4,
                baks=[bak2, bak3],
-               adds=[bak2])
+               adds=[bak2], **KWA)
 
     # invalid dupe add
     with pytest.raises(ValueError):
@@ -255,7 +257,7 @@ def test_rotate():
                regk="EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw",
                sn=4,
                baks=[bak3],
-               cuts=[bak2, bak3])
+               cuts=[bak2, bak3], **KWA)
 
     # invalid toad
     with pytest.raises(ValueError):
@@ -264,7 +266,7 @@ def test_rotate():
                sn=5,
                toad=3,
                adds=[bak2, bak3],
-               baks=[])
+               baks=[], **KWA)
 
     """ End Test """
 
@@ -275,14 +277,14 @@ def test_simple_issue_revoke(mockHelpingNowUTC):
     regk = "EE3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw"
     dig = "EB2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg"
 
-    serder = issue(vcdig=vcdig, regk=regk)
+    serder = issue(vcdig=vcdig, regk=regk, **KWA)
 
     assert serder.raw == (b'{"v":"KERI10JSON0000ed_","t":"iss","d":"EELqqdELW6CUVWfmsbt5sxfQfEOykyOWdUV1'
                     b'2biBR4TH","i":"DAtNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"0","ri":"E'
                     b'E3Xv6CWwEMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","dt":"2021-01-01T00:00:00.00000'
                     b'0+00:00"}')
 
-    serder = revoke(vcdig=vcdig, regk=regk, dig=dig)
+    serder = revoke(vcdig=vcdig, regk=regk, dig=dig, **KWA)
 
     assert serder.raw == (b'{"v":"KERI10JSON000120_","t":"rev","d":"EGtAthwVjf0O9qsSz0HR-C63DSEBhn3kRoxv'
                     b'muRFECOQ","i":"DAtNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"1","ri":"E'
@@ -300,7 +302,7 @@ def test_backer_issue_revoke(mockHelpingNowUTC):
     regd = "EBpq06UecHwzy-K9FpNoRxCJp2wIGM9u2Edk-PLMZ1H4"
     dig = "EC2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg"
 
-    serder = backerIssue(vcdig=vcdig, regk=regk, regsn=sn, regd=regd)
+    serder = backerIssue(vcdig=vcdig, regk=regk, regsn=sn, regd=regd, **KWA)
     assert serder.raw == (b'{"v":"KERI10JSON000162_","t":"bis","d":"EK9X5Ih5z68pKA-dHMuEZXt_2avkzM8i1_gD'
                           b'KlFBGDM7","i":"DAtNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","ii":"EE3Xv6CWw'
                           b'EMpW-99rhPD9IHFCR2LN5ienLVI8yG5faBw","s":"0","ra":{"i":"EE3Xv6CWwEMpW-99rhPD'
@@ -308,7 +310,7 @@ def test_backer_issue_revoke(mockHelpingNowUTC):
                           b'PLMZ1H4"},"dt":"2021-01-01T00:00:00.000000+00:00"}')
 
 
-    serder = backerRevoke(vcdig=vcdig, regk=regk, regsn=sn, regd=regd, dig=dig)
+    serder = backerRevoke(vcdig=vcdig, regk=regk, regsn=sn, regd=regd, dig=dig, **KWA)
     assert serder.raw == (b'{"v":"KERI10JSON000161_","t":"brv","d":"EMBHVoEIM4GfoLtelLD6erwNLyO39PUyEAcC'
                           b'-N77OGoq","i":"DAtNTPnDFBnmlO6J44LXCrzZTAmpe-82b7BmQGtL4QhM","s":"1","p":"EC'
                           b'2L3ycqK9645aEeQKP941xojSiuiHsw4Y6yTW-PmsBg","ra":{"i":"EE3Xv6CWwEMpW-99rhPD9'
@@ -327,12 +329,12 @@ def test_tever_escrow(mockCoringRandomNonce):
 
     # registry with no backers, invalid anchor
     with openDB() as db, openKS() as kpr, openReger() as reg:
-        hby, hab = buildHab(db, kpr)
+        hby, hab = buildHab(db, kpr, **KWA)
         vcp = incept(hab.pre,
                               baks=[],
                               toad=0,
                               cnfg=[],
-                              code=MtrDex.Blake3_256)
+                              code=MtrDex.Blake3_256, **KWA)
         regk = vcp.pre
         assert regk == 'EEu4cX0EqO9mTqsNgxDgCT9lJbj9qmuPvD7BwNUl6wms'
         assert vcp.said == vcp.pre
@@ -347,12 +349,12 @@ def test_tever_escrow(mockCoringRandomNonce):
 
     # registry with no backers
     with openDB() as db, openKS() as kpr, openReger() as reg:
-        hby, hab = buildHab(db, kpr)
+        hby, hab = buildHab(db, kpr, **KWA)
         vcp = incept(hab.pre,
                               baks=[],
                               toad=0,
                               cnfg=[],
-                              code=MtrDex.Blake3_256)
+                              code=MtrDex.Blake3_256, **KWA)
         regk = vcp.pre
 
         # anchoring event not in db, exception and escrow
@@ -374,18 +376,18 @@ def test_tever_escrow(mockCoringRandomNonce):
 
     # registry with backers, no signatures.  should escrow
     with openDB() as db, openKS() as kpr, openReger() as reg:
-        hby, hab = buildHab(db, kpr)
+        hby, hab = buildHab(db, kpr, **KWA)
         vcp = incept(hab.pre,
                               baks=["BAOcciw30IVQsaenKXpiyMVrjtPDW3KeD_6KFnSfoaqI"],
                               toad=1,
                               cnfg=[],
-                              code=MtrDex.Blake3_256)
+                              code=MtrDex.Blake3_256, **KWA)
         regk = vcp.pre
 
         # successfully anchor to a rotation event
         rseal = SealEvent(regk, vcp.ked["s"], vcp.said)
 
-        rot = hab.rotate(data=[rseal._asdict()], framed=True)
+        rot = hab.rotate(data=[rseal._asdict()], framed=True, gvrsn=Vrsn_1_0, **KWA)
         rotser = SerderKERI(raw=rot)
 
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
@@ -415,19 +417,19 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
     # registry with no backers
     # registry with backer and receipt
     with openDB() as db, openKS() as kpr, openReger() as reg:
-        hby, hab = buildHab(db, kpr)
+        hby, hab = buildHab(db, kpr, **KWA)
 
         vcp = incept(hab.pre,
                               baks=[],
                               toad=0,
                               cnfg=["NB"],
-                              code=MtrDex.Blake3_256)
+                              code=MtrDex.Blake3_256, **KWA)
         regk = vcp.pre
 
         # successfully anchor to a rotation event
         rseal = SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
 
-        rot = hab.rotate(data=[rseal._asdict()], framed=True)
+        rot = hab.rotate(data=[rseal._asdict()], framed=True, gvrsn=Vrsn_1_0, **KWA)
         rotser = SerderKERI(raw=rot)
 
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
@@ -455,9 +457,9 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         assert reg.twes.get(keys=regk, on=0) == []
 
         # try to rotate a backerless registry
-        vrt = rotate(regk, dig=vcp.said)
+        vrt = rotate(regk, dig=vcp.said, **KWA)
         rseal = SealEvent(regk, vrt.ked["s"], vrt.said)
-        rot = hab.rotate(data=[rseal._asdict()], framed=True)
+        rot = hab.rotate(data=[rseal._asdict()], framed=True, gvrsn=Vrsn_1_0, **KWA)
         rotser = SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
@@ -469,11 +471,11 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
 
         vcdig = b'EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU'
 
-        iss = issue(vcdig=vcdig.decode("utf-8"), regk=regk)
+        iss = issue(vcdig=vcdig.decode("utf-8"), regk=regk, **KWA)
 
         # successfully anchor to a rotation event
         rseal = SealEvent(iss.ked["i"], iss.ked["s"], iss.said)
-        rot = hab.rotate(data=[rseal._asdict()], framed=True)
+        rot = hab.rotate(data=[rseal._asdict()], framed=True, gvrsn=Vrsn_1_0, **KWA)
         rotser = SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
@@ -493,11 +495,11 @@ def test_tever_no_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         assert diger.qb64 == rdiger.qb64
 
         # revoke vc with no backers
-        rev = revoke(vcdig=vcdig.decode("utf-8"), regk=regk, dig=iss.said)
+        rev = revoke(vcdig=vcdig.decode("utf-8"), regk=regk, dig=iss.said, **KWA)
 
         # successfully anchor to a rotation event
         rseal = SealEvent(rev.ked["i"], rev.ked["s"], rev.said)
-        rot = hab.rotate(data=[rseal._asdict()], framed=True)
+        rot = hab.rotate(data=[rseal._asdict()], framed=True, gvrsn=Vrsn_1_0, **KWA)
         rotser = SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
@@ -524,20 +526,20 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         valpre = valPrefixer.qb64
         assert valpre == 'BPmRWtx8nwSzRdJ0zTvP5uBb0t3BSjjstDk0gTayFfjV'
 
-        hby, hab = buildHab(db, kpr)
+        hby, hab = buildHab(db, kpr, **KWA)
 
         vcp = incept(hab.pre,
                               baks=[valpre],
                               toad=1,
                               cnfg=[],
-                              code=MtrDex.Blake3_256)
+                              code=MtrDex.Blake3_256, **KWA)
         regk = vcp.pre
         valCigar = valSigner.sign(ser=vcp.raw, index=0)
 
         # successfully anchor to a rotation event
         rseal = SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
 
-        rot = hab.rotate(data=[rseal._asdict()], framed=True)
+        rot = hab.rotate(data=[rseal._asdict()], framed=True, gvrsn=Vrsn_1_0, **KWA)
         rotser = SerderKERI(raw=rot)
 
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
@@ -568,13 +570,13 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
         debpre = debPrefixer.qb64
         assert debpre == 'BJLT5kDB54CewL9oqnWdPBC5vxZV30u3i6o9HVcWMhZd'
 
-        vrt = rotate(regk, dig=vcp.said, baks=[valpre], adds=[debpre])
+        vrt = rotate(regk, dig=vcp.said, baks=[valpre], adds=[debpre], **KWA)
         valCigar = valSigner.sign(ser=vrt.raw, index=0)
         debCigar = debSigner.sign(ser=vrt.raw, index=1)
 
         # successfully anchor to a rotation event
         rseal = SealEvent(regk, vrt.ked["s"], vrt.said)
-        rot = hab.rotate(data=[rseal._asdict()], framed=True)
+        rot = hab.rotate(data=[rseal._asdict()], framed=True, gvrsn=Vrsn_1_0, **KWA)
         rotser = SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
@@ -587,13 +589,13 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
 
         vcdig = b'EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU'
 
-        bis = backerIssue(vcdig=vcdig.decode("utf-8"), regk=regk, regsn=tev.sn, regd=tev.serder.said)
+        bis = backerIssue(vcdig=vcdig.decode("utf-8"), regk=regk, regsn=tev.sn, regd=tev.serder.said, **KWA)
         valCigar = valSigner.sign(ser=bis.raw, index=0)
         debCigar = debSigner.sign(ser=bis.raw, index=1)
 
         # successfully anchor to a rotation event
         rseal = SealEvent(bis.ked["i"], bis.ked["s"], bis.said)
-        rot = hab.rotate(data=[rseal._asdict()], framed=True)
+        rot = hab.rotate(data=[rseal._asdict()], framed=True, gvrsn=Vrsn_1_0, **KWA)
         rotser = SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
@@ -612,19 +614,19 @@ def test_tever_backers(mockHelpingNowUTC, mockCoringRandomNonce):
 
 def test_tevery():
     with openDB() as db, openKS() as kpr, openReger() as reg:
-        hby, hab = buildHab(db, kpr)
+        hby, hab = buildHab(db, kpr, **KWA)
 
         vcp = incept(hab.pre,
                               baks=[],
                               toad=0,
                               cnfg=["NB"],
-                              code=MtrDex.Blake3_256)
+                              code=MtrDex.Blake3_256, **KWA)
         regk = vcp.pre
 
         # successfully anchor to a rotation event
         rseal = SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
 
-        rot = hab.rotate(data=[rseal._asdict()], framed=True)
+        rot = hab.rotate(data=[rseal._asdict()], framed=True, gvrsn=Vrsn_1_0, **KWA)
         rotser = SerderKERI(raw=rot)
 
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
@@ -647,11 +649,11 @@ def test_tevery():
         # process issue vc event
         vcdig = b'EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU'
 
-        iss = issue(vcdig=vcdig.decode("utf-8"), regk=regk)
+        iss = issue(vcdig=vcdig.decode("utf-8"), regk=regk, **KWA)
 
         # successfully anchor to a rotation event
         rseal = SealEvent(iss.ked["i"], iss.ked["s"], iss.said)
-        rot = hab.rotate(data=[rseal._asdict()], framed=True)
+        rot = hab.rotate(data=[rseal._asdict()], framed=True, gvrsn=Vrsn_1_0, **KWA)
         rotser = SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
@@ -663,11 +665,11 @@ def test_tevery():
         assert status.s == '0'
 
         # revoke the vc
-        rev = revoke(vcdig=vcdig.decode("utf-8"), regk=regk, dig=iss.said)
+        rev = revoke(vcdig=vcdig.decode("utf-8"), regk=regk, dig=iss.said, **KWA)
 
         # successfully anchor to a rotation event
         rseal = SealEvent(rev.ked["i"], rev.ked["s"], rev.said)
-        rot = hab.rotate(data=[rseal._asdict()], framed=True)
+        rot = hab.rotate(data=[rseal._asdict()], framed=True, gvrsn=Vrsn_1_0, **KWA)
         rotser = SerderKERI(raw=rot)
         seqner = Seqner(sn=int(rotser.ked["s"], 16))
         #diger = rotser.saider
@@ -681,13 +683,13 @@ def test_tevery():
 
 def test_tevery_process_escrow(mockCoringRandomNonce):
     with openDB() as db, openKS() as kpr, openReger() as reg:
-        hby, hab = buildHab(db, kpr)
+        hby, hab = buildHab(db, kpr, **KWA)
 
         vcp = incept(hab.pre,
                               baks=[],
                               toad=0,
                               cnfg=["NB"],
-                              code=MtrDex.Blake3_256)
+                              code=MtrDex.Blake3_256, **KWA)
         regk = vcp.pre
 
         # successfully anchor to a rotation event
@@ -705,7 +707,7 @@ def test_tevery_process_escrow(mockCoringRandomNonce):
 
         assert regk not in tvy.tevers
 
-        rot = hab.rotate(data=[rseal._asdict()], framed=True)  # Now rotate so the achoring KEL event gets into the database
+        rot = hab.rotate(data=[rseal._asdict()], framed=True, gvrsn=Vrsn_1_0, **KWA)  # Now rotate so the achoring KEL event gets into the database
         rotser = SerderKERI(raw=rot)
         assert rotser.saidb == diger.qb64b
 
@@ -724,17 +726,17 @@ def test_tevery_process_escrow_anchorless_with_bigers(mockHelpingNowUTC, mockCor
         valPrefixer = Prefixer(qb64=valSigner.verfer.qb64)
         valpre = valPrefixer.qb64
 
-        hby, hab = buildHab(db, kpr)
+        hby, hab = buildHab(db, kpr, **KWA)
 
         vcp = incept(hab.pre,
                               baks=[valpre],
                               toad=1,
                               cnfg=[],
-                              code=MtrDex.Blake3_256)
+                              code=MtrDex.Blake3_256, **KWA)
         regk = vcp.pre
 
         rseal1 = SealEvent(i=regk, s=vcp.ked["s"], d=vcp.said)
-        rot1 = hab.rotate(data=[rseal1._asdict()], framed=True)
+        rot1 = hab.rotate(data=[rseal1._asdict()], framed=True, gvrsn=Vrsn_1_0, **KWA)
         rotser1 = SerderKERI(raw=rot1)
         seqner1 = Seqner(sn=int(rotser1.ked["s"], 16))
         diger1 = Diger(qb64=rotser1.said)
@@ -746,11 +748,11 @@ def test_tevery_process_escrow_anchorless_with_bigers(mockHelpingNowUTC, mockCor
 
         # Use a distinct credential id so no TEL events exist for it (vcSn returns None, sno=0).
         vcdig = "EEBp64Aw2rsjdJpAR0e2qCq3jX7q7gLld3LjAwZgaLXU"
-        bis = backerIssue(vcdig=vcdig, regk=regk, regsn=2, regd=vcp.said)
+        bis = backerIssue(vcdig=vcdig, regk=regk, regsn=2, regd=vcp.said, **KWA)
         biger = valSigner.sign(ser=bis.raw, index=0)
 
         rseal2 = SealEvent(i=bis.ked["i"], s=bis.ked["s"], d=bis.said)
-        rot2 = hab.rotate(data=[rseal2._asdict()], framed=True)
+        rot2 = hab.rotate(data=[rseal2._asdict()], framed=True, gvrsn=Vrsn_1_0, **KWA)
         rotser2 = SerderKERI(raw=rot2)
         rotsaid2 = rotser2.saidb
 

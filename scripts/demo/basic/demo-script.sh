@@ -10,14 +10,14 @@ function isSuccess() {
 }
 
 # CREATE DATABASE AND KEYSTORE
-kli init --name test --base "${KERI_TEMP_DIR}"  --nopasscode --salt 0ACDEyMzQ1Njc4OWxtbm9aBc
+kli init --name test --base "${KERI_TEMP_DIR}"  --nopasscode --salt 0ACDEyMzQ1Njc4OWxtbm9aBc --version 1.0
 isSuccess
 
 # NON-TRANSFERABLE
-kli incept --name test --base "${KERI_TEMP_DIR}"  --alias non-trans --file ${KERI_DEMO_SCRIPT_DIR}/data/non-transferable-sample.json
+kli incept --name test --base "${KERI_TEMP_DIR}"  --alias non-trans --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/non-transferable-sample.json
 isSuccess
 
-kli rotate --name test --base "${KERI_TEMP_DIR}"  --alias non-trans
+kli rotate --name test --base "${KERI_TEMP_DIR}"  --alias non-trans --version 1.0
 ret=$?
 if [ $ret -eq 0 ]; then
    echo "Rotate of non-transferable should fail $ret"
@@ -26,22 +26,22 @@ fi
 
 
 # TRANSFERABLE
-kli incept --name test --base "${KERI_TEMP_DIR}"  --alias trans --file ${KERI_DEMO_SCRIPT_DIR}/data/transferable-sample.json
+kli incept --name test --base "${KERI_TEMP_DIR}"  --alias trans --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/transferable-sample.json
 isSuccess
 
-kli rotate --name test --base "${KERI_TEMP_DIR}"  --alias trans
+kli rotate --name test --base "${KERI_TEMP_DIR}"  --alias trans --version 1.0
 isSuccess
 
-kli rotate --name test --base "${KERI_TEMP_DIR}"  --alias trans --data @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json
+kli rotate --name test --base "${KERI_TEMP_DIR}"  --alias trans --data @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --version 1.0
 isSuccess
 
-kli interact --name test --base "${KERI_TEMP_DIR}"  --alias trans --data @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json
+kli interact --name test --base "${KERI_TEMP_DIR}"  --alias trans --data @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --version 1.0
 isSuccess
 
-kli rotate --name test --base "${KERI_TEMP_DIR}"  --alias trans --next-count 3 --nsith 2
+kli rotate --name test --base "${KERI_TEMP_DIR}"  --alias trans --next-count 3 --nsith 2 --version 1.0
 isSuccess
 
-kli rotate --name test --base "${KERI_TEMP_DIR}"  --alias trans --next-count 3 --nsith 2
+kli rotate --name test --base "${KERI_TEMP_DIR}"  --alias trans --next-count 3 --nsith 2 --version 1.0
 isSuccess
 
 # SIGN AND VERIFY ARBITRARY DATA
@@ -66,19 +66,20 @@ fi
 
 
 # ESTABLISHMENT ONLY
-kli incept --name test --base "${KERI_TEMP_DIR}"  --alias est-only --file ${KERI_DEMO_SCRIPT_DIR}/data/estonly-sample.json
+kli incept --name test --base "${KERI_TEMP_DIR}"  --alias est-only --version 1.0 --file ${KERI_DEMO_SCRIPT_DIR}/data/estonly-sample.json
+isSuccess
 
-kli interact --name test --base "${KERI_TEMP_DIR}"  --alias est-only --data @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json
+kli interact --name test --base "${KERI_TEMP_DIR}"  --alias est-only --data @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --version 1.0
 ret=$?
 if [ $ret -eq 0 ]; then
    echo "Interact should fail for establishment only $ret"
    exit $ret
 fi
 
-kli rotate --name test --base "${KERI_TEMP_DIR}"  --alias est-only
+kli rotate --name test --base "${KERI_TEMP_DIR}"  --alias est-only --version 1.0
 isSuccess
 
-kli rotate --name test --base "${KERI_TEMP_DIR}"  --alias est-only --data @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json
+kli rotate --name test --base "${KERI_TEMP_DIR}"  --alias est-only --data @${KERI_DEMO_SCRIPT_DIR}/data/anchor.json --version 1.0
 isSuccess
 
 echo 'Test Complete'

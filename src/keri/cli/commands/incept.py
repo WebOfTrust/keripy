@@ -9,12 +9,13 @@ from dataclasses import dataclass
 from hio.base import doing
 from hio.help import ogler
 
-from ..common import Parsery, config, setupHby
+from ..common import Parsery, config, setupHby, parseVersion
 
 from ...app import (HaberyDoer, WitnessReceiptor, Receiptor,
                     MailboxDirector, Configer, Anchorer, Poster)
 
 from ...core import Number, NumDex
+from ...kering import Kinds, Version, Versionage
 
 
 logger = ogler.getLogger()
@@ -29,6 +30,8 @@ parser.add_argument("--receipt-endpoint", help="Attempt to connect to witness re
 parser.add_argument("--proxy", help="alias for delegation communication proxy", default="")
 
 parser.add_argument('--file', '-f', help='Filename to use to create the identifier', default="", required=False)
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for the inception event, such as 1.0 or 2.0')
 
 parser.add_argument('--aeid', help='qualified base64 of non-transferable identifier prefix for  authentication '
                                    'and encryption of secrets in keystore', default=None)
@@ -69,6 +72,8 @@ class InceptOptions:
     delpre: str = None
     estOnly: bool = False
     data: list = None
+    version: Versionage = Version
+    kind: str = Kinds.json
 
 
 def handler(args):
@@ -116,6 +121,9 @@ def mergeArgsWithFile(args):
 
     incept_opts = config.loadFileOptions(args.file, InceptOptions) if args.file != '' else emptyOptions()
 
+    if isinstance(incept_opts.version, (list, tuple)):
+        incept_opts.version = Versionage(*incept_opts.version)
+
     incept_opts.transferable = True if args.transferable else incept_opts.transferable
     if len(args.wits) > 0:
         incept_opts.wits = args.wits
@@ -137,6 +145,8 @@ def mergeArgsWithFile(args):
         incept_opts.data = config.parseData(args.data)
     if args.delpre is not None:
         incept_opts.delpre = args.delpre
+    if args.version is not None:
+        incept_opts.version = args.version
 
     return incept_opts
 
@@ -156,12 +166,20 @@ class InceptDoer(doing.DoDoer):
                           reopen=True,
                           clear=False)
         self.endpoint = endpoint
-        self.hby = setupHby(name=name, base=base, bran=bran, cf=cf)
+        self.version = kwa.get("version")
+        self.hby = setupHby(name=name, base=base, bran=bran, cf=cf, version=self.version)
         self.proxy = self.hby.habByName(proxy) if proxy is not None else None
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
-        self.swain = Anchorer(hby=self.hby, proxy=self.proxy)
-        self.postman = Poster(hby=self.hby)
-        self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
+        self.swain = Anchorer(hby=self.hby, proxy=self.proxy, version=self.version,
+                              kind=kwa.get("kind", Kinds.json))
+        self.postman = Poster(hby=self.hby, version=self.version,
+                              kind=kwa.get("kind", Kinds.json))
+        if self.version is not None:
+            self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"],
+                                       version=self.version, gvrsn=self.version,
+                                       kind=kwa.get("kind", Kinds.json))
+        else:
+            self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
         doers = [self.hbyDoer, self.postman, self.mbx, self.swain, doing.doify(self.inceptDo)]
 
         self.inits = kwa
@@ -188,7 +206,7 @@ class InceptDoer(doing.DoDoer):
         self.extend([witDoer, receiptor])
 
         if hab.kever.delpre:
-            self.swain.delegation(pre=hab.pre, sn=0)
+            self.swain.delegation(pre=hab.pre, sn=0, version=self.version)
             print("Waiting for delegation approval...")
             while not self.swain.complete(hab.kever.prefixer, Number(num=hab.kever.sn, code=NumDex.Huge)):
                 yield self.tock

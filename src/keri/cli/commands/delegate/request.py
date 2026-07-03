@@ -9,11 +9,12 @@ import argparse
 from hio.base import doing
 from hio.help import ogler
 
-from ...common import setupHby, Parsery
+from ...common import setupHby, Parsery, parseVersion
 
 from ....app import (GroupHab, HaberyDoer, WitnessInquisitor,
                      Counselor, Poster, delegateRequestExn)
 from ....core import SerderKERI
+from ....kering import Kinds
 
 
 logger = ogler.getLogger()
@@ -23,6 +24,8 @@ parser = argparse.ArgumentParser(description='Resend a delegation request messag
                                  parents=[Parsery.keystore()])
 parser.set_defaults(handler=lambda args: request(args))
 parser.add_argument('--alias', '-a', help='human readable alias for the new identifier prefix', required=True)
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for the resent delegation request, such as 1.0 or 2.0')
 
 def request(args):
     """
@@ -35,26 +38,29 @@ def request(args):
     base = args.base
     bran = args.bran
     alias = args.alias
+    version = args.version
 
-    requestDoer = RequestDoer(name=name, base=base, alias=alias, bran=bran)
+    requestDoer = RequestDoer(name=name, base=base, alias=alias, bran=bran, version=version)
 
     doers = [requestDoer]
     return doers
 
 
 class RequestDoer(doing.DoDoer):
-    def __init__(self, name, base, alias, bran):
-        hby = setupHby(name=name, base=base, bran=bran)
+    def __init__(self, name, base, alias, bran, version=None):
+        self.version = version
+        hby = setupHby(name=name, base=base, bran=bran, version=self.version)
         self.hbyDoer = HaberyDoer(habery=hby)  # setup doer
         self.witq = WitnessInquisitor(hby=hby)
-        self.postman = Poster(hby=hby)
-        self.counselor = Counselor(hby=hby)
+        self.postman = Poster(hby=hby, version=self.version, kind=Kinds.json)
+        self.counselor = Counselor(hby=hby, version=self.version, kind=Kinds.json)
         doers = [self.hbyDoer, self.postman]
         self.toRemove = list(doers)
         doers.extend([doing.doify(self.requestDo)])
 
         self.alias = alias
         self.hby = hby
+        self.version = version
 
         super(RequestDoer, self).__init__(doers=doers)
 
@@ -89,7 +95,8 @@ class RequestDoer(doing.DoDoer):
         else:
             phab = self.hby.habByName(f"{self.alias}-proxy")
 
-        exn, atc = delegateRequestExn(hab.mhab, delpre=delpre, evt=bytes(evt), aids=hab.smids)
+        exn, atc = delegateRequestExn(hab.mhab, delpre=delpre, evt=bytes(evt), aids=hab.smids,
+                                      version=self.version, kind=Kinds.json)
 
         # delegate AID ICP and exn of delegation request EXN
         srdr = SerderKERI(raw=evt)

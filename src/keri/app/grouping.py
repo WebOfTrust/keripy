@@ -9,11 +9,11 @@ module for enveloping and forwarding KERI message
 from hio.base import doing
 from hio.help import ogler
 
-from ..kering import ValidationError, Vrsn_1_0, Ilks
+from ..kering import ValidationError, Version, Vrsn_1_0, Kinds, Ilks
 from ..core import (Counter, Number, Diger, Saider,
-                    Prefixer, Sadder, Kevery, Router,
+                    Prefixer, Kevery, Router,
                     Revery, Parser, SerderKERI,
-                    Codens, NumDex, exchange)
+                    Serder, Codens, NumDex)
 from ..peer import Exchanger, specialExchange, cloneMessage
 
 from .delegating import Anchorer
@@ -34,7 +34,7 @@ class Counselor(doing.DoDoer):
         - escrowDo: processes escrows of group multisig identifiers waiting to be completed.
     """
 
-    def __init__(self, hby, swain=None, proxy=None, **kwa):
+    def __init__(self, hby, swain=None, proxy=None, version=None, kind=None, **kwa):
         """
         Initialize Counselor.
 
@@ -42,10 +42,18 @@ class Counselor(doing.DoDoer):
             hby (Habery): database environment for local Habs
             swain (Anchorer): optional Anchorer for delegation anchoring
             proxy (Hab): optional proxy Hab to use for delegation anchoring if not using local Hab
+            version (Versionage | None): optional explicit protocol version for
+                delegation queries and the default Anchorer.
+            kind (str | None): optional explicit serialization kind for
+                delegation queries and the default Anchorer.
         """
 
         self.hby = hby
-        self.swain = swain if swain is not None else Anchorer(hby=self.hby)
+        self.version = version
+        self.kind = kind if kind is not None else Kinds.json
+        self.swain = swain if swain is not None else Anchorer(hby=self.hby,
+                                                              version=self.version,
+                                                              kind=self.kind)
         self.proxy = proxy
         self.witDoer = Receiptor(hby=self.hby)
         self.witq = WitnessInquisitor(hby=hby)
@@ -157,10 +165,13 @@ class Counselor(doing.DoDoer):
                         self.swain.delegation(pre=pre, sn=number.sn)
                     else:
                         anchor = dict(i=pre, s=number.snh, d=diger.qb64)
+                        kwa = dict(version=self.version, gvrsn=self.version, kind=self.kind) if self.version is not None else {}
                         if self.proxy:
-                            self.witq.query(hab=self.proxy, pre=kever.delpre, anchor=anchor)
+                            self.witq.query(hab=self.proxy, pre=kever.delpre, anchor=anchor,
+                                            **kwa)
                         else:
-                            self.witq.query(src=ghab.mhab.pre, pre=kever.delpre, anchor=anchor)
+                            self.witq.query(src=ghab.mhab.pre, pre=kever.delpre, anchor=anchor,
+                                            **kwa)
 
                     logger.info("AID %s...%s: Waiting for delegation approval...", pre[:4], pre[-4:])
                     self.hby.db.gdee.add(keys=(pre,), val=(number, diger))
@@ -289,7 +300,19 @@ def loadHandlers(exc, mux):
     exc.addHandler(MultisigNotificationHandler(resource="/multisig/rpy", mux=mux))
 
 
-def multisigInceptExn(hab, smids, rmids, icp, delegator=None):
+def _exnVersion(version=None, kind=None):
+    """Return embedded EXN and outer framing versions for specialExchange.
+
+    `specialExchange` still builds the legacy embedded `/multisig/*` EXN
+    shape, so keep that body at v1 while allowing the surrounding stream
+    framing to follow the explicit caller version or the global default.
+    """
+    gvrsn = version if version is not None else Version
+    kind = kind if kind is not None else Kinds.json
+    return dict(version=Vrsn_1_0, kind=kind), gvrsn
+
+
+def multisigInceptExn(hab, smids, rmids, icp, delegator=None, version=None, kind=None):
     """
 
     Args:
@@ -319,19 +342,21 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None):
         data |= dict(delegator=delegator)
 
     # Create `exn` peer to peer message to notify other participants UI
+    kwa, gvrsn = _exnVersion(version=version, kind=kind)
     exn, end = specialExchange(sender=hab.pre,
                                route="/multisig/icp",
                                modifiers=dict(),
                                attributes=data,
-                               embeds=embeds)
-    ims = hab.endorse(serder=exn, last=False, framed=True)
+                               embeds=embeds,
+                               **kwa)
+    ims = hab.endorse(serder=exn, last=False, framed=True, gvrsn=gvrsn)
     del ims[:exn.size]
     ims.extend(end)
 
     return exn, ims
 
 
-def multisigRotateExn(ghab, smids, rmids, rot):
+def multisigRotateExn(ghab, smids, rmids, rot, version=None, kind=None):
     """
 
     Args:
@@ -348,20 +373,22 @@ def multisigRotateExn(ghab, smids, rmids, rot):
         rot=rot,
     )
 
+    kwa, gvrsn = _exnVersion(version=version, kind=kind)
     exn, end = specialExchange(sender=ghab.mhab.pre,
                                route="/multisig/rot", modifiers=dict(),
                                attributes=dict(gid=ghab.pre,
                                                smids=smids,
                                                rmids=rmids),
-                               embeds=embeds)
-    ims = ghab.mhab.endorse(serder=exn, last=False, framed=True)
+                               embeds=embeds,
+                               **kwa)
+    ims = ghab.mhab.endorse(serder=exn, last=False, framed=True, gvrsn=gvrsn)
     atc = bytearray(ims[exn.size:])
     atc.extend(end)
 
     return exn, atc
 
 
-def multisigInteractExn(ghab, aids, ixn):
+def multisigInteractExn(ghab, aids, ixn, version=None, kind=None):
     """ Create a peer to peer message to propose a multisig group interaction event
 
     Parameters:
@@ -377,20 +404,22 @@ def multisigInteractExn(ghab, aids, ixn):
         ixn=ixn,
     )
 
+    kwa, gvrsn = _exnVersion(version=version, kind=kind)
     exn, end = specialExchange(sender=ghab.mhab.pre,
                                route="/multisig/ixn",
                                modifiers=dict(),
                                attributes=dict(gid=ghab.pre,
                                      smids=aids),
-                               embeds=embeds)
-    ims = ghab.mhab.endorse(serder=exn, last=False, framed=True)
+                               embeds=embeds,
+                               **kwa)
+    ims = ghab.mhab.endorse(serder=exn, last=False, framed=True, gvrsn=gvrsn)
     atc = bytearray(ims[exn.size:])
     atc.extend(end)
 
     return exn, atc
 
 
-def multisigRegistryInceptExn(ghab, usage, vcp, anc):
+def multisigRegistryInceptExn(ghab, usage, vcp, anc, version=None, kind=None):
     """ Create a peer to peer message to propose a credential registry inception from a multisig group identifier
 
     Either rot or ixn are required but not both
@@ -411,18 +440,20 @@ def multisigRegistryInceptExn(ghab, usage, vcp, anc):
         anc=anc
     )
 
+    kwa, gvrsn = _exnVersion(version=version, kind=kind)
     exn, end = specialExchange(sender=ghab.mhab.pre,
                                route="/multisig/vcp",
                                attributes={'gid': ghab.pre, 'usage': usage},
-                               embeds=embeds)
-    evt = ghab.mhab.endorse(serder=exn, last=False, framed=True)
+                               embeds=embeds,
+                               **kwa)
+    evt = ghab.mhab.endorse(serder=exn, last=False, framed=True, gvrsn=gvrsn)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
 
     return exn, atc
 
 
-def multisigIssueExn(ghab, acdc, iss, anc):
+def multisigIssueExn(ghab, acdc, iss, anc, version=None, kind=None):
     """ Create a peer to peer message to propose a credential creation from a multisig group identifier
 
     Either rot or ixn are required but not both
@@ -444,18 +475,20 @@ def multisigIssueExn(ghab, acdc, iss, anc):
         anc=anc
     )
 
+    kwa, gvrsn = _exnVersion(version=version, kind=kind)
     exn, end = specialExchange(sender=ghab.mhab.pre,
                                route="/multisig/iss",
                                attributes={'gid': ghab.pre},
-                               embeds=embeds)
-    evt = ghab.mhab.endorse(serder=exn, last=False, framed=True)
+                               embeds=embeds,
+                               **kwa)
+    evt = ghab.mhab.endorse(serder=exn, last=False, framed=True, gvrsn=gvrsn)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
 
     return exn, atc
 
 
-def multisigRevokeExn(ghab, said, rev, anc):
+def multisigRevokeExn(ghab, said, rev, anc, version=None, kind=None):
     """ Create a peer to peer message to propose a credential revocation from a multisig group identifier
 
     Either rot or ixn are required but not both
@@ -476,18 +509,20 @@ def multisigRevokeExn(ghab, said, rev, anc):
         anc=anc
     )
 
+    kwa, gvrsn = _exnVersion(version=version, kind=kind)
     exn, end = specialExchange(sender=ghab.mhab.pre,
                                route="/multisig/rev",
                                attributes={'gid': ghab.pre, 'said': said},
-                               embeds=embeds)
-    evt = ghab.mhab.endorse(serder=exn, last=False, framed=True)
+                               embeds=embeds,
+                               **kwa)
+    evt = ghab.mhab.endorse(serder=exn, last=False, framed=True, gvrsn=gvrsn)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
 
     return exn, atc
 
 
-def multisigRpyExn(ghab, rpy):
+def multisigRpyExn(ghab, rpy, version=None, kind=None):
     """ Create a peer to peer message to propose a credential revocation from a multisig group identifier
 
     Either rot or ixn are required but not both
@@ -505,18 +540,20 @@ def multisigRpyExn(ghab, rpy):
         rpy=rpy
     )
 
+    kwa, gvrsn = _exnVersion(version=version, kind=kind)
     exn, end = specialExchange(sender=ghab.mhab.pre,
                                route="/multisig/rpy",
                                attributes={'gid': ghab.pre},
-                               embeds=embeds)
-    evt = ghab.mhab.endorse(serder=exn, last=False, framed=True)
+                               embeds=embeds,
+                               **kwa)
+    evt = ghab.mhab.endorse(serder=exn, last=False, framed=True, gvrsn=gvrsn)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
 
     return exn, atc
 
 
-def multisigExn(ghab, exn):
+def multisigExn(ghab, exn, version=None, kind=None):
     """ Create a peer to peer message to propose a credential issuance from a multisig group identifier
 
     Either rot or ixn are required but not both
@@ -533,11 +570,13 @@ def multisigExn(ghab, exn):
         exn=exn
     )
 
+    kwa, gvrsn = _exnVersion(version=version, kind=kind)
     wexn, end = specialExchange(sender=ghab.mhab.pre,
                                 route="/multisig/exn",
                                 attributes={'gid': ghab.pre},
-                                embeds=embeds)
-    evt = ghab.mhab.endorse(serder=wexn, last=False, framed=True)
+                                embeds=embeds,
+                                **kwa)
+    evt = ghab.mhab.endorse(serder=wexn, last=False, framed=True, gvrsn=gvrsn)
     atc = bytearray(evt[wexn.size:])
     atc.extend(end)
 
@@ -695,8 +734,8 @@ class Multiplexor:
                     if not isinstance(val, dict):
                         continue
 
-                    sadder = Sadder(ked=val)
-                    ims.extend(sadder.raw)
+                    serder = Serder(sad=val)
+                    ims.extend(serder.raw)
                     if key in paths:
                         atc = paths[key]
                         ims.extend(atc)

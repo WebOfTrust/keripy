@@ -171,6 +171,7 @@ class Habery:
         self.name = name
         self.base = base
         self.temp = temp
+        self.version = version
 
         self.ks = ks if ks is not None else Keeper(name=self.name,
                                                            base=self.base,
@@ -287,7 +288,8 @@ class Habery:
             raise ex
 
         self._signator = Signator(db=self.db, mgr=self.mgr, temp=self.temp, ks=self.ks, cf=self.cf,
-                                  rtr=self.rtr, kvy=self.kvy, psr=self.psr, rvy=self.rvy)
+                                  rtr=self.rtr, kvy=self.kvy, psr=self.psr, rvy=self.rvy,
+                                  version=self.version)
 
         self.loadHabs()
         self.inited = True
@@ -915,9 +917,11 @@ class Signator:
         """
         self.db = db
         spre = self.db.hbys.get(name)
+        incept_kwa = dict(version=kwa.pop('version', Version),
+                          kind=kwa.pop('kind', Kinds.json))
         if not spre:
             self._hab = Hab(name=name, db=db, **kwa)
-            self._hab.incept(transferable=False, hidden=True)
+            self._hab.incept(transferable=False, hidden=True, **incept_kwa)
             self.pre = self._hab.pre
             self.db.hbys.pin(name, self.pre)
         else:
@@ -1467,6 +1471,7 @@ class BaseHab:
             ValidationError: if the interaction event is improper.
         """
         kever = self.kever
+
         serder = eventing.interact(pre=kever.prefixer.qb64,
                                    dig=kever.serder.said,
                                    sn=kever.sner.num + 1,
@@ -1565,7 +1570,8 @@ class BaseHab:
         query['i'] = pre
         query["src"] = src
         serder = eventing.query(pre=self.pre, query=query, **kwa)
-        return self.endorse(serder, last=True, framed=False)  # was framed=False
+        gvrsn = kwa.get("gvrsn", serder.pvrsn)
+        return self.endorse(serder, last=True, framed=False, gvrsn=gvrsn)
 
 
     def exchange(self, *,
@@ -1634,21 +1640,30 @@ class BaseHab:
             couples (pre+cig).
         """
         pvrsn = pvrsn if pvrsn is not None else version
+        kwa = dict(sender=self.pre,
+                   receiver=receiver,
+                   xid=xid,
+                   prior=prior,
+                   route=route,
+                   modifiers=modifiers,
+                   attributes=attributes,
+                   stamp=stamp,
+                   version=version,
+                   pvrsn=pvrsn,
+                   gvrsn=gvrsn,
+                   kind=kind,)
 
-        # generate exchange with pathed embed attachments in end
-        serder, end = specialExchange(sender=self.pre,
-                               receiver=receiver,
-                               xid=xid,
-                               prior=prior,
-                               route=route,
-                               modifiers=modifiers,
-                               attributes=attributes,
-                               embeds=embeds,
-                               stamp=stamp,
-                               version=version,
-                               pvrsn=pvrsn,
-                               gvrsn=gvrsn,
-                               kind=kind,)
+        if embeds:
+            if version is Vrsn_1_0:
+                serder, end = specialExchange(embeds=embeds, **kwa)
+            elif version is Vrsn_2_0:
+                raise ValueError("Embeds not supported for v2 exchanges")
+        else:
+            serder = exchange(**kwa)
+            end = bytearray()
+
+        if gvrsn is None:
+            gvrsn = serder.pvrsn
 
         if self.kever.prefixer.transferable:
             msg = self.endorse(serder=serder, framed=framed, nested=nested,
@@ -1762,7 +1777,8 @@ class BaseHab:
                                     sn=int(ked["s"], 16),
                                     said=serder.said,
                                     kind=kind,
-                                    version=version)
+                                    version=version,
+                                    gvrsn=gvrsn)
 
         # sign serder event
         if self.kever.prefixer.transferable:
@@ -2161,7 +2177,19 @@ class BaseHab:
         Returns::
             bytearray: reply message.
         """
+        pvrsn = kwa.get("pvrsn", kwa.get("version"))
+        if pvrsn is None:
+            pvrsn = self.kever.serder.pvrsn
+            kwa["pvrsn"] = pvrsn
+        if "kind" not in kwa:
+            kwa["kind"] = self.kever.serder.kind
+
         kwa["pre"] = self.pre
+        if gvrsn is Version:
+            if "gvrsn" in kwa:
+                gvrsn = kwa["gvrsn"]
+            else:
+                gvrsn = pvrsn
         return self.endorse(eventing.reply(**kwa), framed=framed, nested=nested,
                             gvrsn=gvrsn, genusify=genusify)
 
@@ -2192,7 +2220,7 @@ class BaseHab:
 
 
     def loadEndRole(self, cid, eid, role=Roles.controller, framed=False,
-                        nested=False, gvrsn=Version, genusify=False):
+                        nested=False, gvrsn=None, genusify=False):
         """Load and return the messagized end role authorization record for
         the given ``cid``, ``eid``, and ``role`` from the database, including
         associated attachments.
@@ -2229,6 +2257,7 @@ class BaseHab:
         if end and (end.enabled or end.allowed):
             said = self.db.eans.get(keys=(cid, role, eid))
             serder = self.db.rpys.get(keys=(said.qb64,))
+            gvrsn = gvrsn if gvrsn is not None else serder.pvrsn
             cigars = self.db.scgs.get(keys=(said.qb64,))
             tsgs = fetchTsgs(db=self.db.tsgs, diger=said)
 
@@ -2321,7 +2350,7 @@ class BaseHab:
 
 
     def loadLocScheme(self, eid, scheme=None, framed=False, nested=False,
-                                 gvrsn=Version, genusify=False):
+                                 gvrsn=None, genusify=False):
         """Load and return messagized location scheme records for the given
         ``eid`` and optional ``scheme`` from the database, including associated
         attachments.
@@ -2355,6 +2384,7 @@ class BaseHab:
         keys = (eid, scheme) if scheme else (eid,)
         for (pre, _), said in self.db.lans.getTopItemIter(keys=keys):
             serder = self.db.rpys.get(keys=(said.qb64,))
+            egvrsn = gvrsn if gvrsn is not None else serder.pvrsn
             cigars = self.db.scgs.get(keys=(said.qb64,))
             tsgs = fetchTsgs(db=self.db.tsgs, diger=said)
 
@@ -2379,7 +2409,7 @@ class BaseHab:
                                            source=seal,
                                            framed=framed,
                                            nested=nested,
-                                           gvrsn=gvrsn,
+                                           gvrsn=egvrsn,
                                            genusify=genusify))
         return msgs
 
@@ -2557,6 +2587,9 @@ class BaseHab:
         serder, sigers, duple = self.getOwnEvent(sn=sn,
                                     allowPartiallySigned=allowPartiallySigned)
 
+        if gvrsn is Version:
+            gvrsn = serder.pvrsn
+
         seal = None
         if duple is not None:
             number, diger = duple
@@ -2647,6 +2680,8 @@ class BaseHab:
 
         serder = self.db.evts.get(keys=(pre, dig))
         sigers = [siger for siger in self.db.sigs.getIter(keys=(pre, dig))]
+        if gvrsn is Version:
+            gvrsn = serder.pvrsn
         return eventing.messagize(serder, sigers=sigers, framed=framed,
                                    nested=nested, gvrsn=gvrsn, genusify=genusify)
 
@@ -2730,11 +2765,12 @@ class BaseHab:
                     if not found:  # no receipt from remote so send own inception
                         # no vrcs or rct of own icp from remote so send own inception
                         msgs.extend(self.msgOwnInception(framed=True,
-                                                         gvrsn=gvrsn))
+                                                         gvrsn=cuedSerder.pvrsn))
 
                 msgs.extend(self.receipt(cuedSerder, framed=True,
-                                         gvrsn=gvrsn, version=version,
-                                         kind=kind))
+                                         gvrsn=cuedSerder.pvrsn,
+                                         version=cuedSerder.pvrsn,
+                                         kind=cuedSerder.kind))
                 yield msgs
 
             elif cueKin in ("replay",):
@@ -3980,7 +4016,11 @@ class GroupHab(BaseHab):
         query = query if query is not None else dict()
         query['i'] = pre
         query["src"] = src
+        if gvrsn is not Version and "gvrsn" not in kwa:
+            kwa["gvrsn"] = gvrsn
         serder = eventing.query(pre=self.mhab.pre, query=query, **kwa)
+        if gvrsn is Version:
+            gvrsn = kwa.get("gvrsn", serder.pvrsn)
 
         return self.mhab.endorse(serder, last=True, framed=framed, nested=nested,
                                  gvrsn=gvrsn, genusify=genusify)

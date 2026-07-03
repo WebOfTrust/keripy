@@ -11,12 +11,14 @@ from keri.app import openHby
 from keri.vc import credential
 from keri.vdr import Verifier, Regery
 
+from tests.common import CUE_KWA, KWA
+
 
 def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
     sidSalt = Salter(raw=b'0123456789abcdef').qb64
 
-    with openHby(name="sid", base="test", salt=sidSalt) as sidHby:
-        sidHab = sidHby.makeHab(name="test")
+    with openHby(name="sid", base="test", salt=sidSalt, version=KWA["version"]) as sidHby:
+        sidHab = sidHby.makeHab(name="test", **KWA)
         seeder.seedSchema(db=sidHby.db)
         assert sidHab.pre == "EMl4RhuR_JxpiMd1N8DEJEhTxM3Ovvn9Xya8AN-tiUbl"
 
@@ -27,9 +29,9 @@ def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
 
         sidReg = Regery(hby=sidHby, name="bob", temp=True)
         verifier = Verifier(hby=sidHby, reger=sidReg.reger)
-        issuer = sidReg.makeRegistry(prefix=sidHab.pre, name="bob")
+        issuer = sidReg.makeRegistry(prefix=sidHab.pre, name="bob", **KWA)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        sidHab.interact(data=[rseal], framed=True)
+        sidHab.interact(data=[rseal], framed=True, **CUE_KWA)
         seqner = Seqner(sn=sidHab.kever.sn)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
@@ -41,12 +43,13 @@ def test_wallet(seeder, mockCoringRandomNonce, mockHelpingNowIso8601):
                             recipient=sidHab.pre,
                             schema=schema,
                             data=credSubject,
-                            status=issuer.regk)
+                            status=issuer.regk,
+                            **KWA)
         assert creder.said == "EAP1MTFwoSZ7P9Ym9yIqBvihjqZYpilpFpZj2oPTc7vM"
 
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        sidHab.interact(data=[rseal], framed=True)
+        sidHab.interact(data=[rseal], framed=True, **CUE_KWA)
         seqner = Seqner(sn=sidHab.kever.sn)
         issuer.anchorMsg(pre=iss.pre,
                          regd=iss.said,

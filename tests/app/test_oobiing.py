@@ -8,7 +8,7 @@ import falcon
 from hio.base import doing
 from hio.core import http
 
-from keri.kering import Vrsn_1_0, Vrsn_2_0, Version, Roles, Schemes
+from keri.kering import Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Version
 from keri.app import (Notifier, Oobiery, Authenticator,
                       Result, openHab, openHby,
                       oobiRequestExn)
@@ -23,11 +23,14 @@ from keri.help import helping
 from keri.peer import Exchanger
 from keri.recording import OobiRecord
 
+V2 = Vrsn_2_0
+from tests.common import KWA
+
 
 def test_oobi_share_v1(mockHelpingNowUTC):
     oobi = "http://127.0.0.1:5642/oobi/Egw3N07Ajdkjvv4LB2Mhx2qxl6TOCFdWNJU6cYR_ImFg/witness" \
            "/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo?name=Phil"
-    with openHab(name="test", temp=True, salt=b'0123456789abcdef') as (hby, hab):
+    with openHab(name="test", temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab):
         exc = Exchanger(hby=hby, handlers=[])
         notifier = Notifier(hby=hby)
 
@@ -56,7 +59,9 @@ def test_oobi_share_v1(mockHelpingNowUTC):
                               'src': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'}
 
         exn, atc = oobiRequestExn(hab=hab, dest="EO2kxXW0jifQmuPevqg6Zpi3vE-WYoj65i_XhpruWtOg",
-                                          oobi="http://127.0.0.1/oobi")
+                                          oobi="http://127.0.0.1/oobi",
+                                          version=Vrsn_1_0,
+                                          gvrsn=Vrsn_1_0)
         assert exn.ked == {'a': {'dest': 'EO2kxXW0jifQmuPevqg6Zpi3vE-WYoj65i_XhpruWtOg',
                                  'oobi': 'http://127.0.0.1/oobi'},
                            'd': 'EII7EvdWFqv0jkjRv10t01zAUcRYbjVhZ_yo3VPZEbpS',
@@ -77,7 +82,7 @@ def test_oobi_share_v2(mockHelpingNowUTC):
     oobi = "http://127.0.0.1:5642/oobi/Egw3N07Ajdkjvv4LB2Mhx2qxl6TOCFdWNJU6cYR_ImFg/witness" \
            "/BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo?name=Phil"
 
-    with openHab(name="test", temp=True, salt=b'0123456789abcdef') as (hby, hab):
+    with openHab(name="test", temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab):
         exc = Exchanger(hby=hby, handlers=[])
         notifier = Notifier(hby=hby)
 
@@ -86,7 +91,7 @@ def test_oobi_share_v2(mockHelpingNowUTC):
         assert "/oobis" in exc.routes
         handler = exc.routes["/oobis"]
 
-        exn, _ = oobiRequestExn(hab, hab.pre, oobi, version=Vrsn_2_0, gvrsn=Vrsn_2_0)
+        exn, _ = oobiRequestExn(hab, hab.pre, oobi, version=V2, gvrsn=V2)
 
         handler.handle(serder=exn)
 
@@ -105,16 +110,15 @@ def test_oobi_share_v2(mockHelpingNowUTC):
                               'r': '/oobi',
                               'src': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'}
 
-        exn, atc = oobiRequestExn(hab=hab,
-                                  dest="EO2kxXW0jifQmuPevqg6Zpi3vE-WYoj65i_XhpruWtOg",
-                                  oobi="http://127.0.0.1/oobi",
-                                  version=Vrsn_2_0,
-                                  gvrsn=Vrsn_2_0)
+        exn, atc = oobiRequestExn(hab=hab, dest="EO2kxXW0jifQmuPevqg6Zpi3vE-WYoj65i_XhpruWtOg",
+                                          oobi="http://127.0.0.1/oobi",
+                                          version=V2,
+                                          gvrsn=V2)
         assert exn.ked == \
         {
-            'v': 'KERICAACAAJSONAAE4.',
+            'v': 'KERICAACAACESRAAEA.',
             't': 'exn',
-            'd': 'EKmU06gR91hRDT9AY2L4kGB-wr0qg8hJHA0oUNWeEYhS',
+            'd': 'EJBJ3kmqXkcjr5BC_gKjXKG1GBhdutwa2RZLK_YX1z7p',
             'i': 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3',
             'ri': '',
             'x': '',
@@ -125,22 +129,22 @@ def test_oobi_share_v2(mockHelpingNowUTC):
             'a': {'dest': 'EO2kxXW0jifQmuPevqg6Zpi3vE-WYoj65i_XhpruWtOg',
                   'oobi': 'http://127.0.0.1/oobi'}
         }
-        assert atc ==(b'-XAuEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3MAAAEIaGMMWJFPmt'
-          b'XznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-KAWAAAb7Ny66Nwq-BIXtcnkQWJbHmmy'
-          b'9zOATFgtrqNf28LlurqjZm8B5mkJ9M1gc53qKd1GPCb12qxeDb75DcffidgB')
+        assert atc == (b'-XAuEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3MAAAEIaGMMWJFPmt'
+          b'XznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-KAWAADFS4WFNRm4dR4xm-dpmAn617mwHEbyof199'
+          b'bPsKX1uF_zANa_6QBnjDl6L6k_VcMBPzNGDIGBU6N8xLbkYZNsH')
 
 
 def test_oobiery():
-    with openHby(name="oobi") as hby:
-        hab = hby.makeHab(name="oobi")
+    with openHby(name="oobi", version=Vrsn_1_0) as hby:
+        hab = hby.makeHab(name="oobi", **KWA)
         msgs = bytearray()
         msgs.extend(hab.makeEndRole(eid=hab.pre,
                                     role=Roles.controller,
-                                    stamp=helping.nowIso8601()))
+                                    stamp=helping.nowIso8601(), **KWA))
 
         msgs.extend(hab.makeLocScheme(url='http://127.0.0.1:5555',
                                       scheme=Schemes.http,
-                                      stamp=helping.nowIso8601()))
+                                      stamp=helping.nowIso8601(), **KWA))
         hab.psr.parse(ims=msgs)
 
         oobiery = Oobiery(hby=hby)
@@ -191,22 +195,70 @@ def test_oobiery():
     """Done Test"""
 
 
+def test_oobiery_parser_version_uses_explicit_or_habery_default():
+    with openHby(name="oobi-default") as hby:
+        oobiery = Oobiery(hby=hby)
+        assert oobiery.version == Version
+        assert oobiery.parser.version == Version
+
+    with openHby(name="oobi-hby-v1", version=Vrsn_1_0) as hby:
+        oobiery = Oobiery(hby=hby)
+        assert oobiery.version == Vrsn_1_0
+        assert oobiery.parser.version == Vrsn_1_0
+
+    with openHby(name="oobi-v1") as hby:
+        oobiery = Oobiery(hby=hby, version=Vrsn_1_0)
+        assert oobiery.version == Vrsn_1_0
+        assert oobiery.parser.version == Vrsn_1_0
+
+
+def test_loaded_v1_endpoint_replies_use_stored_reply_framing():
+    with openHby(name="oobi-src", version=Vrsn_1_0) as src, \
+            openHby(name="oobi-dst", version=Vrsn_1_0) as dst:
+        hab = src.makeHab(name="wit", isith="1", icount=1,
+                          transferable=False, **KWA)
+        msgs = bytearray()
+        msgs.extend(hab.makeEndRole(eid=hab.pre,
+                                    role=Roles.controller,
+                                    stamp=helping.nowIso8601(),
+                                    **KWA))
+        msgs.extend(hab.makeLocScheme(url="http://127.0.0.1:5555",
+                                      scheme=Schemes.http,
+                                      stamp=helping.nowIso8601(),
+                                      **KWA))
+        hab.psr.parse(ims=msgs)
+
+        oobi = bytearray()
+        oobi.extend(hab.replay())
+        oobi.extend(hab.loadEndRole(cid=hab.pre,
+                                    eid=hab.pre,
+                                    role=Roles.controller))
+        oobi.extend(hab.loadLocScheme(eid=hab.pre,
+                                      scheme=Schemes.http))
+
+        dst.psr.parse(ims=oobi)
+
+        locer = dst.db.locs.get(keys=(hab.pre, Schemes.http))
+        assert locer is not None
+        assert locer.url == "http://127.0.0.1:5555"
+
+
 def test_introduce(mockHelpingNowUTC):
     raw = b'\x05\xaa\x8f-S\x9a\xe9\xfaU\x9c\x02\x9c\x9b\x08Hu'
     salt = Salter(raw=raw).qb64
     assert salt == '0AAFqo8tU5rp-lWcApybCEh1'
     # makHab uses stem=name to make different names have differnt AID pre
-    with (openHby(name="wat", base="test", salt=salt) as watHby,
-          openHby(name="wit", base="test", salt=salt) as witHby):
+    with (openHby(name="wat", base="test", salt=salt, version=Vrsn_1_0) as watHby,
+          openHby(name="wit", base="test", salt=salt, version=Vrsn_1_0) as witHby):
         # setup Wes's habitat nontrans
-        watHab = watHby.makeHab(name='wes', isith="1", icount=1, transferable=False)
+        watHab = watHby.makeHab(name='wes', isith="1", icount=1, transferable=False, **KWA)
         assert not watHab.kever.prefixer.transferable
         assert watHab.pre == "BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfXGNrFRom"
         watKvy = Kevery(db=watHab.db, lax=False, local=False)
         watPsr = Parser(kvy=watKvy, version=Vrsn_1_0)
 
         # setup Wok's habitat nontrans
-        witHab = witHby.makeHab(name='wok', isith="1", icount=1, transferable=False)
+        witHab = witHby.makeHab(name='wok', isith="1", icount=1, transferable=False, **KWA)
         assert not witHab.kever.prefixer.transferable
         assert witHab.pre == "BKVb58uITf48YoMPz8SBOTVwLgTO9BY4oEXRPoYIOErX"
         witKvy = Kevery(db=witHab.db, lax=False, local=False)
@@ -223,7 +275,7 @@ def test_introduce(mockHelpingNowUTC):
             oobi=oobi
         )
 
-        msg = watHab.reply(route="/introduce", data=data)
+        msg = watHab.reply(route="/introduce", data=data, gvrsn=Vrsn_1_0, **KWA)
         assert msg == (b'{"v":"KERI10JSON000127_","t":"rpy","d":"EPEU3V7e2d2mhMWVFDS-oC9z'
                        b'Q8DX8t6ELkhINIaYGFNZ","dt":"2021-01-01T00:00:00.000000+00:00","r'
                        b'":"/introduce","a":{"cid":"BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfX'
@@ -239,13 +291,13 @@ def test_introduce(mockHelpingNowUTC):
 
         # Send one missing fields
         data = dict(cid=watHab.pre)
-        msg = watHab.reply(route="/introduce", data=data)
+        msg = watHab.reply(route="/introduce", data=data, gvrsn=Vrsn_1_0, **KWA)
         witPsr.parseOne(ims=msg)
         assert witHby.db.oobis.cnt() == 1  # Still one because of the missing 'oobi' field
 
         # Send one bad scheme
         data = dict(cid=watHab.pre, oobi="ftp://localhost")
-        msg = watHab.reply(route="/introduce", data=data)
+        msg = watHab.reply(route="/introduce", data=data, gvrsn=Vrsn_1_0, **KWA)
         witPsr.parseOne(ims=msg)
         assert witHby.db.oobis.cnt() == 1  # Still one because of the missing 'oobi' field
 
@@ -274,7 +326,7 @@ class MOOBIEnd:
             "aid": self.hab.pre
         }
 
-        rpy = (self.hab.reply(route="/oobi/controller", data=a))
+        rpy = self.hab.reply(route="/oobi/controller", data=a, gvrsn=Vrsn_1_0, **KWA)
         ser = SerderKERI(raw=rpy)
         rep.status = falcon.HTTP_200
         rep.content_type = "application/json"

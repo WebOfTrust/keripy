@@ -7,8 +7,6 @@ import os
 from collections import namedtuple
 from hio.help import ogler
 
-from ..kering import Vrsn_1_0, Vrsn_2_0, Version
-
 from ..peer import cloneMessage, specialExchange
 from ..core import exchange
 
@@ -23,6 +21,22 @@ PreviousRoutes = {
     Ipex.admit: (Ipex.grant,),
     Ipex.spurn: (Ipex.apply, Ipex.offer, Ipex.agree, Ipex.grant),
 }
+
+
+def _event_kwa(hab, version=None, pvrsn=None, gvrsn=None):
+    serder = hab.kever.serder
+
+    if pvrsn is None:
+        pvrsn = serder.pvrsn if version is None else version
+    elif version is not None and version != pvrsn:
+        raise ValueError("version and pvrsn must match when both are provided")
+
+    if version is None:
+        version = pvrsn
+    if gvrsn is None:
+        gvrsn = pvrsn
+
+    return dict(version=version, pvrsn=pvrsn, gvrsn=gvrsn, kind=serder.kind)
 
 
 class IpexHandler:
@@ -133,8 +147,8 @@ class IpexHandler:
         self.notifier.add(attrs=data)
 
 
-def ipexApplyExn(hab, recp, message, schema, attrs, version=Version, pvrsn=None,
-                      gvrsn=Version, framed=True, nested=False, genusify=False):
+def ipexApplyExn(hab, recp, message, schema, attrs, version=None, pvrsn=None,
+                      gvrsn=None, framed=True, nested=False, genusify=False):
     """ Apply for an ACDC
 
     Parameters::
@@ -143,8 +157,9 @@ def ipexApplyExn(hab, recp, message, schema, attrs, version=Version, pvrsn=None,
         message(str): Human readable message regarding the credential application
         schema (any): schema or its SAID
         attrs (any): attribute field label list
-        version (Versionage): KERI protocol default version if psvrsn is None
-        pvrsn (Versionage): KERI protocol version
+        version (Versionage | None): explicit KERI protocol version override.
+                        When omitted, defaults to the habitat's established version.
+        pvrsn (Versionage): explicit KERI protocol version
         gvrsn (Versionage): CESR Genus version for attachment group codes or
                         nesting group code (useful when serder.gvrsn < 2)
                         gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
@@ -175,14 +190,13 @@ def ipexApplyExn(hab, recp, message, schema, attrs, version=Version, pvrsn=None,
         a=attrs,
         i=recp
     )
+    kwa = _event_kwa(hab=hab, version=version, pvrsn=pvrsn, gvrsn=gvrsn)
 
     exn = exchange(sender=hab.pre,
                    route="/ipex/apply",
                    attributes=data,
-                   version=Version,
-                   pvrsn=pvrsn,
-                   gvrsn=gvrsn)
-    ims = hab.endorse(serder=exn, last=False, gvrsn=gvrsn, framed=framed,
+                   **kwa)
+    ims = hab.endorse(serder=exn, last=False, gvrsn=kwa["gvrsn"], framed=framed,
                       nested=nested, genusify=genusify)
     del ims[:exn.size]
     #ims.extend(end)
@@ -190,8 +204,8 @@ def ipexApplyExn(hab, recp, message, schema, attrs, version=Version, pvrsn=None,
     return exn, ims
 
 
-def ipexOfferExn(hab, message, acdc, apply=None,  version=Version, pvrsn=None,
-                      gvrsn=Version, framed=True, nested=False, genusify=False):
+def ipexOfferExn(hab, message, acdc, apply=None,  version=None, pvrsn=None,
+                      gvrsn=None, framed=True, nested=False, genusify=False):
     """ Offer a metadata ACDC
 
     Parameters:
@@ -199,8 +213,9 @@ def ipexOfferExn(hab, message, acdc, apply=None,  version=Version, pvrsn=None,
         message(str): Human readable message regarding the credential offer
         acdc (any): metadata ACDC or its SAID
         apply (Serder): optional IPEX exn apply message that this offer is response to.
-        version (Versionage): KERI protocol default version if psvrsn is None
-        pvrsn (Versionage): KERI protocol version
+        version (Versionage | None): explicit KERI protocol version override.
+                        When omitted, defaults to the habitat's established version.
+        pvrsn (Versionage): explicit KERI protocol version
         gvrsn (Versionage): CESR Genus version for attachment group codes or
                         nesting group code (useful when serder.gvrsn < 2)
                         gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
@@ -236,15 +251,14 @@ def ipexOfferExn(hab, message, acdc, apply=None,  version=Version, pvrsn=None,
     kwa = dict()
     if apply is not None:
         kwa['prior'] = apply.said
+    kwa |= _event_kwa(hab=hab, version=version, pvrsn=pvrsn, gvrsn=gvrsn)
 
     exn, end = specialExchange(sender=hab.pre,
                                route="/ipex/offer",
                                attributes=data,
                                embeds=embeds,
-                               version=version,
-                               pvrsn=pvrsn,
-                               gvrsn=gvrsn, **kwa)
-    ims = hab.endorse(serder=exn, last=False, gvrsn=gvrsn, framed=framed,
+                               **kwa)
+    ims = hab.endorse(serder=exn, last=False, gvrsn=kwa["gvrsn"], framed=framed,
                       nested=nested, genusify=genusify)
     del ims[:exn.size]
     ims.extend(end)
@@ -252,16 +266,17 @@ def ipexOfferExn(hab, message, acdc, apply=None,  version=Version, pvrsn=None,
     return exn, ims
 
 
-def ipexAgreeExn(hab, message, offer, version=Version, pvrsn=None,
-                      gvrsn=Version, framed=True, nested=False, genusify=False):
+def ipexAgreeExn(hab, message, offer, version=None, pvrsn=None,
+                      gvrsn=None, framed=True, nested=False, genusify=False):
     """ Agree an offer
 
     Parameters:
         hab(Hab): identifier environment for issuer of credential
         message(str): Human readable message regarding the credential agreement
         offer (Serder): IPEX exn offer message that this offer is response to.
-        version (Versionage): KERI protocol default version if psvrsn is None
-        pvrsn (Versionage): KERI protocol version
+        version (Versionage | None): explicit KERI protocol version override.
+                        When omitted, defaults to the habitat's established version.
+        pvrsn (Versionage): explicit KERI protocol version
         gvrsn (Versionage): CESR Genus version for attachment group codes or
                         nesting group code (useful when serder.gvrsn < 2)
                         gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
@@ -290,14 +305,13 @@ def ipexAgreeExn(hab, message, offer, version=Version, pvrsn=None,
         m=message
     )
 
+    kwa = _event_kwa(hab=hab, version=version, pvrsn=pvrsn, gvrsn=gvrsn)
     exn = exchange(sender=hab.pre,
                                prior=offer.said,
                                route="/ipex/agree",
                                attributes=data,
-                               version=version,
-                               pvrsn=pvrsn,
-                               gvrsn=gvrsn)
-    ims = hab.endorse(serder=exn, last=False, gvrsn=gvrsn, framed=framed,
+                               **kwa)
+    ims = hab.endorse(serder=exn, last=False, gvrsn=kwa["gvrsn"], framed=framed,
                       nested=nested, genusify=genusify)
     del ims[:exn.size]
     #ims.extend(end)
@@ -306,8 +320,8 @@ def ipexAgreeExn(hab, message, offer, version=Version, pvrsn=None,
 
 
 def ipexGrantExn(hab, recp, message, acdc, iss=None, anc=None, agree=None,
-                      dt=None, version=Version, pvrsn=None,
-                      gvrsn=Version, framed=True, nested=False, genusify=False):
+                      dt=None, version=None, pvrsn=None,
+                      gvrsn=None, framed=True, nested=False, genusify=False):
     """ Disclose an ACDC
 
     Parameters:
@@ -319,8 +333,9 @@ def ipexGrantExn(hab, recp, message, acdc, iss=None, anc=None, agree=None,
         anc (bytes): serialized anchoring event in the KEL, either ixn or rot
         agree (Serder): optional IPEX exn agree message that this grant is response to.
         dt (str): Iso8601 formatted date string to use for this request
-        version (Versionage): KERI protocol default version if psvrsn is None
-        pvrsn (Versionage): KERI protocol version
+        version (Versionage | None): explicit KERI protocol version override.
+                        When omitted, defaults to the habitat's established version.
+        pvrsn (Versionage): explicit KERI protocol version
         gvrsn (Versionage): CESR Genus version for attachment group codes or
                         nesting group code (useful when serder.gvrsn < 2)
                         gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
@@ -363,17 +378,15 @@ def ipexGrantExn(hab, recp, message, acdc, iss=None, anc=None, agree=None,
     kwa = dict()
     if agree is not None:
         kwa['prior'] = agree.said
+    kwa |= _event_kwa(hab=hab, version=version, pvrsn=pvrsn, gvrsn=gvrsn)
 
     exn, end = specialExchange(sender=hab.pre,
                                route="/ipex/grant",
                                stamp=dt,
                                attributes=data,
                                embeds=embeds,
-                               version=version,
-                               pvrsn=pvrsn,
-                               gvrsn=gvrsn,
                                **kwa)
-    ims = hab.endorse(serder=exn, last=False, gvrsn=gvrsn, framed=framed,
+    ims = hab.endorse(serder=exn, last=False, gvrsn=kwa["gvrsn"], framed=framed,
                       nested=nested, genusify=genusify)
     del ims[:exn.size]
     ims.extend(end)
@@ -381,8 +394,8 @@ def ipexGrantExn(hab, recp, message, acdc, iss=None, anc=None, agree=None,
     return exn, ims
 
 
-def ipexAdmitExn(hab, message, grant, dt=None, version=Version, pvrsn=None,
-                      gvrsn=Version, framed=True, nested=False, genusify=False):
+def ipexAdmitExn(hab, message, grant, dt=None, version=None, pvrsn=None,
+                      gvrsn=None, framed=True, nested=False, genusify=False):
     """ Admit a disclosure
 
     Parameters:
@@ -390,8 +403,9 @@ def ipexAdmitExn(hab, message, grant, dt=None, version=Version, pvrsn=None,
         message(str): Human readable message regarding the admission
         grant (Serder): IPEX grant exn message serder
         dt (str): timestamp
-        version (Versionage): KERI protocol default version if psvrsn is None
-        pvrsn (Versionage): KERI protocol version
+        version (Versionage | None): explicit KERI protocol version override.
+                        When omitted, defaults to the habitat's established version.
+        pvrsn (Versionage): explicit KERI protocol version
         gvrsn (Versionage): CESR Genus version for attachment group codes or
                         nesting group code (useful when serder.gvrsn < 2)
                         gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
@@ -420,15 +434,14 @@ def ipexAdmitExn(hab, message, grant, dt=None, version=Version, pvrsn=None,
         m=message,
     )
 
+    kwa = _event_kwa(hab=hab, version=version, pvrsn=pvrsn, gvrsn=gvrsn)
     exn = exchange(sender=hab.pre,
                                prior=grant.said,
                                route="/ipex/admit",
                                stamp=dt,
                                attributes=data,
-                               version=version,
-                               pvrsn=pvrsn,
-                               gvrsn=gvrsn,                                )
-    ims = hab.endorse(serder=exn, last=False, gvrsn=gvrsn, framed=framed,
+                               **kwa)
+    ims = hab.endorse(serder=exn, last=False, gvrsn=kwa["gvrsn"], framed=framed,
                       nested=nested, genusify=genusify)
     del ims[:exn.size]
     #ims.extend(end)
@@ -436,16 +449,17 @@ def ipexAdmitExn(hab, message, grant, dt=None, version=Version, pvrsn=None,
     return exn, ims
 
 
-def ipexSpurnExn(hab, message, spurned, version=Version, pvrsn=None,
-                      gvrsn=Version, framed=True, nested=False, genusify=False):
+def ipexSpurnExn(hab, message, spurned, version=None, pvrsn=None,
+                      gvrsn=None, framed=True, nested=False, genusify=False):
     """ Reject an application, offer or agreement
 
     Parameters:
         hab(Hab): identifier environment for issuer of credential
         message(str): Human readable message regarding the admission
         spurned (Serder): apply, offer, agree or grant received
-        version (Versionage): KERI protocol default version if psvrsn is None
-        pvrsn (Versionage): KERI protocol version
+        version (Versionage | None): explicit KERI protocol version override.
+                        When omitted, defaults to the habitat's established version.
+        pvrsn (Versionage): explicit KERI protocol version
         gvrsn (Versionage): CESR Genus version for attachment group codes or
                         nesting group code (useful when serder.gvrsn < 2)
                         gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
@@ -474,14 +488,13 @@ def ipexSpurnExn(hab, message, spurned, version=Version, pvrsn=None,
         m=message
     )
 
+    kwa = _event_kwa(hab=hab, version=version, pvrsn=pvrsn, gvrsn=gvrsn)
     exn = exchange(sender=hab.pre,
                                prior=spurned.said,
                                route="/ipex/spurn",
                                attributes=data,
-                               version=version,
-                               pvrsn=pvrsn,
-                               gvrsn=gvrsn,                                )
-    ims = hab.endorse(serder=exn, last=False, gvrsn=gvrsn, framed=framed,
+                               **kwa)
+    ims = hab.endorse(serder=exn, last=False, gvrsn=kwa["gvrsn"], framed=framed,
                       nested=nested, genusify=genusify)
     del ims[:exn.size]
     #ims.extend(end)

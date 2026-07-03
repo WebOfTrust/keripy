@@ -11,6 +11,8 @@ from keri.app import Adjudicator, DiffState, diffState, openHby
 from keri.core import Saider, Salter
 from keri.recording import KeyStateRecord, ObservedRecord
 
+from tests.common import CUE_KWA, KWA
+
 
 def test_diffstate():
     d0 = {'vn': [1, 0],
@@ -102,8 +104,8 @@ def test_diffstate():
 
 def test_adjudicator():
     default_salt = Salter(raw=b'0123456789abcdef').qb64
-    with openHby(name="test", base="test", salt=default_salt) as hby:
-        hab = hby.makeHab("test")
+    with openHby(name="test", base="test", salt=default_salt, version=KWA["version"]) as hby:
+        hab = hby.makeHab("test", **KWA)
         assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
         wat = "BbIg_3-11d3PYxSInLN-Q9_T2axD6kkXd3XRgbGZTm6s"
         saider = Saider(qb64b=b'EClqKVJREM3MWKBqR2j712s3Z6rPxhqO-h-p8Ls6_9hQ')
@@ -131,7 +133,7 @@ def test_adjudicator():
                                             dig='EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3')],
                        'wids': {'BbIg_3-11d3PYxSInLN-Q9_T2axD6kkXd3XRgbGZTm6s'}}
 
-        hab.rotate(framed=True)
+        hab.rotate(framed=True, **CUE_KWA)
 
         adj.adjudicate(hab.pre, 1)
         assert len(adj.cues) == 1

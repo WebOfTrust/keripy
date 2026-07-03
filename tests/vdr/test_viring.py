@@ -10,7 +10,7 @@ import platform
 import tempfile
 
 import lmdb
-from keri import versify, Kinds
+from keri import versify, Kinds, Vrsn_1_0
 
 from keri.core import (Siger, Diger, Number,
                        Prefixer, Saider, Seqner)
@@ -82,7 +82,7 @@ def test_issuer():
     #  test with registry inception (vcp) event
     regk = regb
     sn = 0
-    vs = versify(kind=Kinds.json, size=20)
+    vs = versify(pvrsn=Vrsn_1_0, kind=Kinds.json, size=20)
 
     vcp = dict(v=vs, i=regk.decode("utf-8"),
                s="{:x}".format(sn), b=[rarb.decode("utf-8")],
@@ -203,7 +203,7 @@ def test_issuer():
         #  test with verifiable credential issuance (iss) event
         vcdig = b'EAvR3p8V95W8J7Ui4-mEzZ79S-A1esAnJo1Kmzq80Jkc'
         sn = 0
-        vs = versify(kind=Kinds.json, size=20)
+        vs = versify(pvrsn=Vrsn_1_0, kind=Kinds.json, size=20)
 
         vcp = dict(v=vs, i=vcdig.decode("utf-8"),
                    s="{:x}".format(sn),
@@ -286,7 +286,7 @@ def test_clone():
 
     #  test with registry inception (vcp) event
     sn = 0
-    vs = versify(kind=Kinds.json, size=20)
+    vs = versify(pvrsn=Vrsn_1_0, kind=Kinds.json, size=20)
 
     vcp = dict(v=vs, i=regk.decode("utf-8"),
                s="{:x}".format(sn), b=[rarb.decode("utf-8")],
