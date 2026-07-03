@@ -17,7 +17,7 @@ from .keeping import Keeper, Manager
 from ..peer import Exchanger,  specialExchange
 from ..db import Baser, dgKey, fetchTsgs
 from ..help import fromIso8601, toIso8601
-from ..kering import (Version, Ilks, Kinds, Roles, Schemes,
+from ..kering import (Version, Vrsn_1_0, Vrsn_2_0, Ilks, Kinds, Roles, Schemes,
                       ClosedError, AuthError, ConfigurationError, KeriError,
                       ValidationError, MissingEntryError, MissingSignatureError)
 from ..core import (Tholder, Diger, Prefixer, Kevery, Parser, Revery,
