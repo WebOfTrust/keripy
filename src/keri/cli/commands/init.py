@@ -9,7 +9,7 @@ import getpass
 from hio.base import doing
 from hio.help import ogler
 
-from ..common import Parsery
+from ..common import Parsery, parseVersion
 
 from ...app import (Habery, Configer, Oobiery,
                     Authenticator, Result, Algos)
@@ -51,6 +51,8 @@ parser.add_argument('--aeid', '-a', help='qualified base64 of non-transferable i
                                          'and encryption of secrets in keystore', default=None)
 parser.add_argument('--seed', '-e', help='qualified base64 private-signing key (seed) for the aeid from which the '
                                          'private decryption key may be derived', default=None)
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for initialization-time parsing, such as 1.0 or 2.0')
 
 
 class InitDoer(doing.DoDoer):
@@ -76,6 +78,7 @@ class InitDoer(doing.DoDoer):
         bran = args.bran
         configFile = args.configFile
         configDir = args.configDir
+        version = args.version
 
         if not args.nopasscode and not bran:
             print("Creating encrypted keystore, please enter your 21 character passcode:")
@@ -93,6 +96,8 @@ class InitDoer(doing.DoDoer):
         kwa["bran"] = bran
         kwa["aeid"] = args.aeid
         kwa["seed"] = args.seed
+        if version is not None:
+            kwa["version"] = version
         if args.salt is None:
             kwa["algo"] = Algos.randy
 
@@ -118,7 +123,7 @@ class InitDoer(doing.DoDoer):
         if oc:
             print(f"\nLoading {oc} OOBIs...")
 
-            obi = Oobiery(hby=hby)
+            obi = Oobiery(hby=hby, version=version)
             self.extend(obi.doers)
 
             while oc > hby.db.roobi.cnt():

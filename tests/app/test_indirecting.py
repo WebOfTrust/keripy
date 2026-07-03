@@ -16,12 +16,16 @@ from hio.core import http
 from hio.base import doing
 from hio.help import decking
 
-from keri.kering import Schemes, Vrsn_1_0, Kinds
+from keri.kering import Schemes, Vrsn_1_0, Kinds, Ilks, Roles
 from keri.core import SerderKERI, Salter
 from keri.db import basing
 from keri.app import (MailboxIterable, QryRpyMailboxIterable,
                       QueryEnd, Mailboxer, Receiptor,
-                      setupWitness, createHttpServer, openHab, openHby)
+                      setupWitness, createHttpServer, openHab, openHby,
+                      ReceiptEnd, CESR_CONTENT_TYPE, CESR_DESTINATION_HEADER)
+from keri.app.httping import CESR_ATTACHMENT_HEADER
+
+from tests.common import CUE_KWA, KWA
 
 from tests.common import KWA
 
@@ -300,6 +304,84 @@ def test_createHttpServer(monkeypatch):
     assert isinstance(server, MockHttpServer)
     assert isinstance(server.servant, MockServerTls)
 
+
+def test_receipt_end_returns_bytes_for_v1_receipt():
+    with openHby(name="receipt-wit", version=Vrsn_1_0) as witHby, \
+            openHby(name="receipt-cam", version=Vrsn_1_0) as camHby:
+        wit = witHby.makeHab(name="wit", transferable=False, **KWA)
+        cam = camHby.makeHab(name="cam", transferable=True, wits=[wit.pre],
+                             toad=1, icount=1, ncount=1,
+                             isith="1", nsith="1", **KWA)
+
+        serder, _, _ = cam.getOwnEvent(sn=0)
+        msg = cam.msgOwnEvent(sn=0, framed=True, gvrsn=serder.pvrsn)
+
+        ims = bytearray(msg)
+        serder = SerderKERI(raw=ims)
+        del ims[:serder.size]
+
+        app = falcon.App()
+        app.add_route("/receipts", ReceiptEnd(hab=wit))
+        client = testing.TestClient(app)
+
+        res = client.simulate_post("/receipts",
+                                   body=serder.raw,
+                                   headers={
+                                       "Content-Type": CESR_CONTENT_TYPE,
+                                       CESR_ATTACHMENT_HEADER: bytes(ims).decode("utf-8"),
+                                       CESR_DESTINATION_HEADER: wit.pre,
+                                   })
+
+        assert res.status_code == 200
+        assert isinstance(res.content, bytes)
+        rserder = SerderKERI(raw=res.content)
+        assert rserder.pvrsn == Vrsn_1_0
+        assert rserder.ked["t"] == Ilks.rct
+
+
+def test_mailbox_query_honors_explicit_v1_kwargs():
+    with openHby(name="mailbox-query", version=Vrsn_1_0) as hby:
+        hab = hby.makeHab(name="cam", **KWA)
+
+        msg = hab.query(pre=hab.pre,
+                        src=hab.pre,
+                        route="mbx",
+                        query=dict(topics={"/receipt": 0}),
+                        **KWA)
+
+        serder = SerderKERI(raw=msg)
+        assert serder.pvrsn == Vrsn_1_0
+        assert serder.kind == Kinds.json
+        assert serder.ked["q"]["topics"] == {"/receipt": 0}
+
+
+def test_follow_on_events_honor_explicit_v1_kwargs():
+    with openHby(name="v1-follow-ons", version=Vrsn_1_0) as hby:
+        hab = hby.makeHab(name="cam", **KWA)
+
+        rot = hab.rotate(framed=True, **CUE_KWA)
+        rserder = SerderKERI(raw=rot)
+        assert rserder.pvrsn == Vrsn_1_0
+        assert rserder.kind == Kinds.json
+
+        ixn = hab.interact(framed=True, **CUE_KWA)
+        iserder = SerderKERI(raw=ixn)
+        assert iserder.pvrsn == Vrsn_1_0
+        assert iserder.kind == Kinds.json
+
+
+def test_end_role_reply_defaults_to_hab_version_for_v1_hab():
+    with openHby(name="v1-end-role", version=Vrsn_1_0) as hby:
+        hab = hby.makeHab(name="cam", **KWA)
+
+        msg = hab.makeEndRole(eid=hab.pre, role=Roles.mailbox)
+        serder = SerderKERI(raw=msg)
+        assert serder.pvrsn == Vrsn_1_0
+        assert serder.kind == Kinds.json
+
+        hab.psr.parse(ims=bytearray(msg))
+        loaded = hab.loadEndRole(cid=hab.pre, eid=hab.pre, role=Roles.mailbox)
+        assert loaded
 
 
 

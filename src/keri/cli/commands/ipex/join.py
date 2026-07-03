@@ -10,7 +10,7 @@ import argparse
 from hio.base import doing
 from hio.help import ogler
 
-from ...common import setupHby
+from ...common import setupHby, parseVersion
 
 from .... import Vrsn_1_0
 from ....app import (HaberyDoer, MailboxDirector, WitnessInquisitor,
@@ -28,7 +28,8 @@ logger = ogler.getLogger()
 parser = argparse.ArgumentParser(description='Join group multisig ipex events')
 parser.set_defaults(handler=lambda args: join(args))
 parser.add_argument("--auto", "-Y", help="auto approve any delegation request non-interactively", action="store_true")
-
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for the interaction event, such as 1.0 or 2.0')
 
 def join(args):
     """  Wait for and provide interactive confirmation of group multisig inception, rotation or interaction events
@@ -41,8 +42,8 @@ def join(args):
     base = args.base
     bran = args.bran
     auto = args.auto
-
-    joinDoer = JoinDoer(name=name, base=base, bran=bran, auto=auto)
+    version = args.version
+    joinDoer = JoinDoer(name=name, base=base, bran=bran, auto=auto, version=version)
 
     doers = [joinDoer]
     return doers
@@ -53,7 +54,7 @@ class JoinDoer(doing.DoDoer):
 
     """
 
-    def __init__(self, name, base, bran, auto=False):
+    def __init__(self, name, base, bran, auto=False, version=None):
         """ Create doer for polling for group ipex events and either approve automatically or prompt user
 
         Parameters:
@@ -62,7 +63,7 @@ class JoinDoer(doing.DoDoer):
             bran (str): passcode to unlock keystore
 
         """
-        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran, version=version)
         self.rgy = Regery(hby=self.hby, name=name, base=base)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
         self.witq = WitnessInquisitor(hby=self.hby)
@@ -74,7 +75,7 @@ class JoinDoer(doing.DoDoer):
         self.hby.kvy.registerReplyRoutes(self.rvy.rtr)
         self.psr = Parser(kvy=self.hby.kvy, tvy=self.rgy.tvy,
                                   rvy=self.rvy, vry=self.verifier, exc=self.exc,
-                                  version=Vrsn_1_0)
+                                  version=version)
 
         mux = Multiplexor(hby=self.hby, notifier=self.notifier)
         loadHandlers(exc=self.exc, mux=mux)
@@ -86,7 +87,7 @@ class JoinDoer(doing.DoDoer):
 
         self.mbx = MailboxDirector(hby=self.hby, exc=self.exc, topics=['/receipt', '/multisig', '/replay',
                                                                                    '/delegate'])
-        self.postman = Poster(hby=self.hby)
+        self.postman = Poster(hby=self.hby, version=version)
 
         doers = [self.hbyDoer, self.witq,  self.mbx, self.counselor, self.registrar, self.credentialer, self.postman]
         self.toRemove = list(doers)

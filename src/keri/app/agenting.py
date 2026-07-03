@@ -17,9 +17,8 @@ from socket import gaierror
 from .httping import Clienter, streamCESRRequests, CESR_DESTINATION_HEADER
 
 from ..kering import (Schemes, Roles, Vrsn_1_0,
-                      MissingEntryError, ConfigurationError,
-                      MissingEntryError)
-from ..core import Counter, eventing, parsing, coring, serdering, Codens
+                      MissingEntryError, ConfigurationError)
+from ..core import Counter, eventing, parsing, coring, serdering, Codens, Cigar, Siger, Verfer
 
 
 logger = ogler.getLogger()
@@ -514,11 +513,6 @@ class WitnessInquisitor(doing.DoDoer):
                 hab = evt["hab"]
             elif (hab := self.hby.habByPre(src)) is None:
                 continue
-
-            if "version" not in kwa:
-                kwa = dict(**kwa,
-                           version=hab.kever.serder.pvrsn,
-                           kind=hab.kever.serder.kind)
 
             if not wits and pre not in self.hby.kevers:
                 logger.error(f"must have KEL for identifier to query {pre}")

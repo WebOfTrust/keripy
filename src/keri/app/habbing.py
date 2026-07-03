@@ -17,7 +17,7 @@ from .keeping import Keeper, Manager
 from ..peer import Exchanger,  specialExchange
 from ..db import Baser, dgKey, fetchTsgs
 from ..help import fromIso8601, toIso8601
-from ..kering import (Version, Vrsn_1_0, Vrsn_2_0, Ilks, Kinds, Roles, Schemes,
+from ..kering import (Version, Ilks, Kinds, Roles, Schemes,
                       ClosedError, AuthError, ConfigurationError, KeriError,
                       ValidationError, MissingEntryError, MissingSignatureError)
 from ..core import (Tholder, Diger, Prefixer, Kevery, Parser, Revery,
@@ -1471,6 +1471,7 @@ class BaseHab:
             ValidationError: if the interaction event is improper.
         """
         kever = self.kever
+
         serder = eventing.interact(pre=kever.prefixer.qb64,
                                    dig=kever.serder.said,
                                    sn=kever.sner.num + 1,
@@ -1767,7 +1768,8 @@ class BaseHab:
                                     sn=int(ked["s"], 16),
                                     said=serder.said,
                                     kind=kind,
-                                    version=version)
+                                    version=version,
+                                    gvrsn=gvrsn)
 
         # sign serder event
         if self.kever.prefixer.transferable:
@@ -2166,12 +2168,19 @@ class BaseHab:
         Returns::
             bytearray: reply message.
         """
+        pvrsn = kwa.get("pvrsn", kwa.get("version"))
+        if pvrsn is None:
+            pvrsn = self.kever.serder.pvrsn
+            kwa["pvrsn"] = pvrsn
+        if "kind" not in kwa:
+            kwa["kind"] = self.kever.serder.kind
+
         kwa["pre"] = self.pre
         if gvrsn is Version:
             if "gvrsn" in kwa:
                 gvrsn = kwa["gvrsn"]
-            elif "version" in kwa:
-                gvrsn = kwa["version"]
+            else:
+                gvrsn = pvrsn
         return self.endorse(eventing.reply(**kwa), framed=framed, nested=nested,
                             gvrsn=gvrsn, genusify=genusify)
 
@@ -2202,7 +2211,7 @@ class BaseHab:
 
 
     def loadEndRole(self, cid, eid, role=Roles.controller, framed=False,
-                        nested=False, gvrsn=Version, genusify=False):
+                        nested=False, gvrsn=None, genusify=False):
         """Load and return the messagized end role authorization record for
         the given ``cid``, ``eid``, and ``role`` from the database, including
         associated attachments.
@@ -2239,6 +2248,7 @@ class BaseHab:
         if end and (end.enabled or end.allowed):
             said = self.db.eans.get(keys=(cid, role, eid))
             serder = self.db.rpys.get(keys=(said.qb64,))
+            gvrsn = gvrsn if gvrsn is not None else serder.pvrsn
             cigars = self.db.scgs.get(keys=(said.qb64,))
             tsgs = fetchTsgs(db=self.db.tsgs, diger=said)
 
@@ -2331,7 +2341,7 @@ class BaseHab:
 
 
     def loadLocScheme(self, eid, scheme=None, framed=False, nested=False,
-                                 gvrsn=Version, genusify=False):
+                                 gvrsn=None, genusify=False):
         """Load and return messagized location scheme records for the given
         ``eid`` and optional ``scheme`` from the database, including associated
         attachments.
@@ -2365,6 +2375,7 @@ class BaseHab:
         keys = (eid, scheme) if scheme else (eid,)
         for (pre, _), said in self.db.lans.getTopItemIter(keys=keys):
             serder = self.db.rpys.get(keys=(said.qb64,))
+            egvrsn = gvrsn if gvrsn is not None else serder.pvrsn
             cigars = self.db.scgs.get(keys=(said.qb64,))
             tsgs = fetchTsgs(db=self.db.tsgs, diger=said)
 
@@ -2389,7 +2400,7 @@ class BaseHab:
                                            source=seal,
                                            framed=framed,
                                            nested=nested,
-                                           gvrsn=gvrsn,
+                                           gvrsn=egvrsn,
                                            genusify=genusify))
         return msgs
 
@@ -3980,6 +3991,8 @@ class GroupHab(BaseHab):
         query = query if query is not None else dict()
         query['i'] = pre
         query["src"] = src
+        if gvrsn is not Version and "gvrsn" not in kwa:
+            kwa["gvrsn"] = gvrsn
         serder = eventing.query(pre=self.mhab.pre, query=query, **kwa)
         if gvrsn is Version:
             gvrsn = kwa.get("gvrsn", serder.pvrsn)

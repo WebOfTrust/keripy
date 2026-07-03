@@ -18,10 +18,10 @@ from hio.core import http, tcp
 from hio.core.tcp import serving
 from hio.help import decking, ogler
 
-from ..kering import (Vrsn_1_0, Roles, Ilks, Kinds,
+from ..kering import (Version, Roles, Ilks, Kinds,
                       MissingEntryError)
 from ..recording import TopicsRecord
-from ..core import (Kevery, parsing, routing, coring, serdering,
+from ..core import (Kevery, parsing, routing, serdering,
                     Counter, receipt, Codens)
 from ..db import BaserDoer
 from ..end import loadEnds as loadEndingEnds
@@ -61,7 +61,7 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
     reger = Reger(name=hab.name, db=hab.db, temp=hby.temp)
     verfer = Verifier(hby=hby, reger=reger)
 
-    mbx = mbx if mbx is not None else Mailboxer(name=alias, temp=hby.temp)
+    mbx = mbx if mbx is not None else Mailboxer(name=alias, base=hby.base, temp=hby.temp)
     forwarder = ForwardHandler(hby=hby, mbx=mbx)
     exchanger = Exchanger(hby=hby, handlers=[forwarder])
     clienter = Clienter()
@@ -88,16 +88,17 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
                  cues=cues)
 
     tvy.registerReplyRoutes(router=rvy.rtr)
+    parser_version = kwa.get("version", hby.version)
     parser = parsing.Parser(framed=True,
                             kvy=kvy,
                             tvy=tvy,
                             exc=exchanger,
                             rvy=rvy,
-                            version=Vrsn_1_0)
+                            version=parser_version)
 
     httpEnd = HttpEnd(rxbs=parser.ims, mbx=mbx)
     app.add_route("/", httpEnd)
-    receiptEnd = ReceiptEnd(hab=hab, inbound=cues, aids=aids)
+    receiptEnd = ReceiptEnd(hab=hab, inbound=cues, aids=aids, version=parser_version)
     app.add_route("/receipts", receiptEnd)
     queryEnd = QueryEnd(hab=hab, reger=reger)
     app.add_route("/query", queryEnd)
@@ -357,7 +358,7 @@ class Indirector(doing.DoDoer):
         self.parser = parsing.Parser(ims=self.client.rxbs,
                                      framed=True,
                                      kvy=self.kevery,
-                                     version=Vrsn_1_0)
+                                     version=self.hab.psr.version)
         doers = doers if doers is not None else []
         doers.extend([doing.doify(self.msgDo),
                       doing.doify(self.escrowDo)])
@@ -521,7 +522,7 @@ class MailboxDirector(doing.DoDoer):
     """
 
     def __init__(self, hby, topics, ims=None, verifier=None, kvy=None, exc=None, rep=None, cues=None, rvy=None,
-                 tvy=None, witnesses=True, **kwa):
+                 tvy=None, witnesses=True, version=None, gvrsn=None, kind=None, **kwa):
         """
         Initialize instance.
 
@@ -546,6 +547,9 @@ class MailboxDirector(doing.DoDoer):
         self.prefixes = oset()
         self.cues = cues if cues is not None else decking.Deck()
         self.witnesses = witnesses
+        self.version = version
+        self.gvrsn = version if gvrsn is None else gvrsn
+        self.kind = kind
 
         self.ims = ims if ims is not None else bytearray()
 
@@ -577,6 +581,7 @@ class MailboxDirector(doing.DoDoer):
         else:
             self.tvy = None
 
+        parser_version = self.version if self.version is not None else Version
         self.parser = parsing.Parser(ims=self.ims,
                                      framed=True,
                                      kvy=self.kvy,
@@ -584,7 +589,7 @@ class MailboxDirector(doing.DoDoer):
                                      exc=self.exchanger,
                                      rvy=self.rvy,
                                      vry=self.verifier,
-                                     version=Vrsn_1_0)
+                                     version=parser_version)
 
         super(MailboxDirector, self).__init__(doers=doers, **kwa)
 
@@ -637,21 +642,24 @@ class MailboxDirector(doing.DoDoer):
         """
         for (_, erole, eid), end in hab.db.ends.getTopItemIter(keys=(hab.pre, Roles.mailbox)):
             if end.allowed:
-                poller = Poller(hab=hab, topics=self.topics, witness=eid)
+                poller = Poller(hab=hab, topics=self.topics, witness=eid,
+                                version=self.version, gvrsn=self.gvrsn, kind=self.kind)
                 self.pollers.append(poller)
                 self.extend([poller])
 
         if self.witnesses:
             wits = hab.kever.wits
             for wit in wits:
-                poller = Poller(hab=hab, topics=self.topics, witness=wit)
+                poller = Poller(hab=hab, topics=self.topics, witness=wit,
+                                version=self.version, gvrsn=self.gvrsn, kind=self.kind)
                 self.pollers.append(poller)
                 self.extend([poller])
 
         self.prefixes.add(hab.pre)
 
     def addPoller(self, hab, witness):
-        poller = Poller(hab=hab, topics=self.topics, witness=witness)
+        poller = Poller(hab=hab, topics=self.topics, witness=witness,
+                        version=self.version, gvrsn=self.gvrsn, kind=self.kind)
         self.pollers.append(poller)
         self.extend([poller])
 
@@ -747,7 +755,7 @@ class Poller(doing.DoDoer):
 
     """
 
-    def __init__(self, hab, witness, topics, msgs=None, retry=1000, **kwa):
+    def __init__(self, hab, witness, topics, msgs=None, retry=1000, version=None, gvrsn=None, kind=None, **kwa):
         """
         Returns doist compatible doing.Doer that polls a witness for mailbox messages
         as SSE events
@@ -764,6 +772,9 @@ class Poller(doing.DoDoer):
         self.witness = witness
         self.topics = topics
         self.retry = retry
+        self.version = version
+        self.gvrsn = version if gvrsn is None else gvrsn
+        self.kind = kind
         self.msgs = None if msgs is not None else decking.Deck()
         self.times = dict()
 
@@ -805,10 +816,18 @@ class Poller(doing.DoDoer):
                 else:
                     topics[topic] = 0
 
+            kwa = dict()
+            if self.version is not None:
+                kwa["version"] = self.version
+            if self.gvrsn is not None:
+                kwa["gvrsn"] = self.gvrsn
+            if self.kind is not None:
+                kwa["kind"] = self.kind
             if isinstance(self.hab, GroupHab):
-                msg = self.hab.mhab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
+                msg = self.hab.mhab.query(pre=self.pre, src=self.witness, route="mbx", query=q,
+                                          **kwa)
             else:
-                msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q)
+                msg = self.hab.query(pre=self.pre, src=self.witness, route="mbx", query=q, **kwa)
 
             createCESRRequest(msg, client, dest=self.witness)
 
@@ -1057,15 +1076,16 @@ class ReceiptEnd(doing.DoDoer):
 
      """
 
-    def __init__(self, hab, inbound=None, outbound=None, aids=None):
+    def __init__(self, hab, inbound=None, outbound=None, aids=None, version=None):
         self.hab = hab
         self.inbound = inbound if inbound is not None else decking.Deck()
         self.outbound = outbound if outbound is not None else decking.Deck()
         self.aids = aids
         self.receipts = set()
+        self.version = version if version is not None else self.hab.psr.version
         self.psr = parsing.Parser(framed=True,
                                   kvy=self.hab.kvy,
-                                  version=Vrsn_1_0)
+                                  version=self.version)
 
         super(ReceiptEnd, self).__init__(doers=[doing.doify(self.interceptDo)])
 
@@ -1110,14 +1130,14 @@ class ReceiptEnd(doing.DoDoer):
                                                         f"{serder.sn}: wits={wits}")
 
             rct = self.hab.receipt(serder, framed=True,
-                                   version=serder.pvrsn, kind=serder.kind,
-                                   gvrsn=serder.pvrsn)
+                                   version=self.version, kind=serder.kind,
+                                   gvrsn=self.version)
 
             self.psr.parseOne(bytes(rct))
 
             rep.set_header('Content-Type', CESR_CONTENT_TYPE)
             rep.status = falcon.HTTP_200
-            rep.data = rct
+            rep.data = bytes(rct)
         else:
             rep.status = falcon.HTTP_202
 
@@ -1159,18 +1179,19 @@ class ReceiptEnd(doing.DoDoer):
         rserder = receipt(pre=pre,
                           sn=sn,
                           said=said.decode("utf-8"),
-                          version=serder.pvrsn,
+                          version=self.version,
+                          gvrsn=self.version,
                           kind=serder.kind)
         rct = bytearray(rserder.raw)
         if wigers := self.hab.db.wigs.get(keys=(preb, said)):
             rct.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
-                               version=serder.pvrsn).qb64b)
+                               version=self.version).qb64b)
             for wiger in wigers:
                 rct.extend(wiger.qb64b)
 
         rep.set_header('Content-Type', CESR_CONTENT_TYPE)
         rep.status = falcon.HTTP_200
-        rep.data = rct
+        rep.data = bytes(rct)
 
     def interceptDo(self, tymth=None, tock=0.0, **kwa):
         """

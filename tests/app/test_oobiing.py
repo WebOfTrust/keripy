@@ -8,7 +8,7 @@ import falcon
 from hio.base import doing
 from hio.core import http
 
-from keri.kering import Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Kinds
+from keri.kering import Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Version
 from keri.app import (Notifier, Oobiery, Authenticator,
                       Result, openHab, openHby,
                       oobiRequestExn)
@@ -23,6 +23,7 @@ from keri.help import helping
 from keri.peer import Exchanger
 from keri.recording import OobiRecord
 
+V2 = Vrsn_2_0
 from tests.common import KWA
 
 
@@ -90,7 +91,7 @@ def test_oobi_share_v2(mockHelpingNowUTC):
         assert "/oobis" in exc.routes
         handler = exc.routes["/oobis"]
 
-        exn, _ = oobiRequestExn(hab, hab.pre, oobi, version=Vrsn_2_0, gvrsn=Vrsn_2_0)
+        exn, _ = oobiRequestExn(hab, hab.pre, oobi, version=V2, gvrsn=V2)
 
         handler.handle(serder=exn)
 
@@ -111,8 +112,8 @@ def test_oobi_share_v2(mockHelpingNowUTC):
 
         exn, atc = oobiRequestExn(hab=hab, dest="EO2kxXW0jifQmuPevqg6Zpi3vE-WYoj65i_XhpruWtOg",
                                           oobi="http://127.0.0.1/oobi",
-                                          version=Vrsn_2_0,
-                                          gvrsn=Vrsn_2_0)
+                                          version=V2,
+                                          gvrsn=V2)
         assert exn.ked == \
         {
             'v': 'KERICAACAACESRAAEA.',
@@ -192,6 +193,54 @@ def test_oobiery():
         doist.exit()
 
     """Done Test"""
+
+
+def test_oobiery_parser_version_uses_explicit_or_habery_default():
+    with openHby(name="oobi-default") as hby:
+        oobiery = Oobiery(hby=hby)
+        assert oobiery.version == Version
+        assert oobiery.parser.version == Version
+
+    with openHby(name="oobi-hby-v1", version=Vrsn_1_0) as hby:
+        oobiery = Oobiery(hby=hby)
+        assert oobiery.version == Vrsn_1_0
+        assert oobiery.parser.version == Vrsn_1_0
+
+    with openHby(name="oobi-v1") as hby:
+        oobiery = Oobiery(hby=hby, version=Vrsn_1_0)
+        assert oobiery.version == Vrsn_1_0
+        assert oobiery.parser.version == Vrsn_1_0
+
+
+def test_loaded_v1_endpoint_replies_use_stored_reply_framing():
+    with openHby(name="oobi-src", version=Vrsn_1_0) as src, \
+            openHby(name="oobi-dst", version=Vrsn_1_0) as dst:
+        hab = src.makeHab(name="wit", isith="1", icount=1,
+                          transferable=False, **KWA)
+        msgs = bytearray()
+        msgs.extend(hab.makeEndRole(eid=hab.pre,
+                                    role=Roles.controller,
+                                    stamp=helping.nowIso8601(),
+                                    **KWA))
+        msgs.extend(hab.makeLocScheme(url="http://127.0.0.1:5555",
+                                      scheme=Schemes.http,
+                                      stamp=helping.nowIso8601(),
+                                      **KWA))
+        hab.psr.parse(ims=msgs)
+
+        oobi = bytearray()
+        oobi.extend(hab.replay())
+        oobi.extend(hab.loadEndRole(cid=hab.pre,
+                                    eid=hab.pre,
+                                    role=Roles.controller))
+        oobi.extend(hab.loadLocScheme(eid=hab.pre,
+                                      scheme=Schemes.http))
+
+        dst.psr.parse(ims=oobi)
+
+        locer = dst.db.locs.get(keys=(hab.pre, Schemes.http))
+        assert locer is not None
+        assert locer.url == "http://127.0.0.1:5555"
 
 
 def test_introduce(mockHelpingNowUTC):

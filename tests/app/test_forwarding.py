@@ -11,9 +11,10 @@ from hio.base import doing, tyming
 from hio.core import http
 
 from keri import help
+from keri.app import forwarding as forwarding_module
 from keri.core import (Salter, Pather, Prefixer,
                        Bexter, Kevery, Parser, SerderKERI, exchange)
-from keri.kering import Vrsn_1_0, Ilks, Roles, Schemes, Kinds
+from keri.kering import Vrsn_1_0, Version, Ilks, Roles, Schemes, Kinds
 
 from keri.app import (Mailboxer, ForwardHandler, Poster,
                       StreamPoster, HttpEnd,
@@ -23,6 +24,70 @@ from keri.peer import specialExchange, Exchanger
 from keri.spac import payloading
 
 from tests.common import KWA
+
+
+def test_forwarding_legacy_wrapper_body_uses_v1_and_outer_framing_uses_environment_or_explicit_version(monkeypatch):
+    captures = []
+    real_special_exchange = forwarding_module.specialExchange
+
+    class FakeCounter:
+        def __init__(self, *args, gvrsn=None, **kwargs):
+            captures.append(("counter", gvrsn))
+            self.qb64b = b""
+
+    def capture_special_exchange(*args, **kwargs):
+        captures.append(("specialExchange", kwargs["route"], kwargs["version"], kwargs["kind"]))
+        return real_special_exchange(*args, **kwargs)
+
+    with openHab(name="sender", transferable=True, temp=True, **KWA) as (hby, hab), \
+            openHab(name="recp", transferable=False, temp=True, **KWA) as (_, recpHab):
+
+        monkeypatch.setattr(forwarding_module, "specialExchange", capture_special_exchange)
+        monkeypatch.setattr(forwarding_module, "Counter", FakeCounter)
+
+        original_endorse = hab.endorse
+
+        def capture_endorse(serder, *args, gvrsn=None, **kwargs):
+            if serder.ked["r"] in ("/fwd", "/essr/req"):
+                captures.append(("endorse", serder.ked["r"], gvrsn))
+            return original_endorse(serder, *args, gvrsn=gvrsn, **kwargs)
+
+        monkeypatch.setattr(hab, "endorse", capture_endorse)
+
+        exn = exchange(route="/echo",
+                       attributes=dict(msg="test"),
+                       sender=hab.pre,
+                       **KWA)
+        atc = original_endorse(exn, last=False, framed=False, gvrsn=Vrsn_1_0)
+        del atc[:exn.size]
+
+        default_stream = StreamPoster(hby=hby, hab=hab, recp=recpHab.pre, topic="echo", essr=True)
+        explicit_stream = StreamPoster(hby=hby, hab=hab, recp=recpHab.pre, topic="echo",
+                                       essr=True, version=Version, kind=Kinds.json)
+
+        default_stream.createForward(hab, ends={recpHab.pre: {}}, serder=exn, atc=atc, topic="echo")
+        default_stream._essrWrapper(hab, bytearray(b"payload"), recpHab.pre)
+        explicit_stream.createForward(hab, ends={recpHab.pre: {}}, serder=exn, atc=atc, topic="echo")
+        explicit_stream._essrWrapper(hab, bytearray(b"payload"), recpHab.pre)
+
+    special_caps = [entry for entry in captures if entry[0] == "specialExchange"]
+    assert [(route, version, kind) for _, route, version, kind in special_caps] == [
+        ("/fwd", Vrsn_1_0, Kinds.json),
+        ("/essr/req", Vrsn_1_0, Kinds.json),
+        ("/fwd", Vrsn_1_0, Kinds.json),
+        ("/essr/req", Vrsn_1_0, Kinds.json),
+    ]
+
+    endorse_caps = [entry for entry in captures if entry[0] == "endorse"]
+    assert [(route, gvrsn) for _, route, gvrsn in endorse_caps] == [
+        ("/fwd", Vrsn_1_0),
+        ("/essr/req", Vrsn_1_0),
+        ("/fwd", Version),
+        ("/essr/req", Version),
+    ]
+
+    counter_caps = [entry[1] for entry in captures if entry[0] == "counter"]
+    assert counter_caps == [Vrsn_1_0, Version]
 
 
 def test_postman(seeder):
