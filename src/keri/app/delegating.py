@@ -13,8 +13,8 @@ from .agenting import WitnessInquisitor, Receiptor, WitnessPublisher
 from .forwarding import Poster
 from .habbing import GroupHab
 
-from ..kering import ValidationError, Version, Vrsn_1_0, Kinds
-from ..core import Number, Diger, Seqner, SerderKERI, NumDex
+from ..kering import ValidationError, Version, Vrsn_1_0, Kinds, MissingEntryError, SerializeError
+from ..core import Number, Diger, Seqner, SerderKERI, NumDex, exchange
 from ..peer import specialExchange
 
 logger = ogler.getLogger()
@@ -197,7 +197,12 @@ class Anchorer(doing.DoDoer):
                 else:
                     raise ValidationError("no proxy to send messages for delegation")
 
-                evt = hab.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
+                try:
+                    evt = hab.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
+                except (MissingEntryError, SerializeError) as ex:
+                    logger.debug("Problem cloning message=\n%s\n", serder.pretty())
+                    raise
+
                 srdr = SerderKERI(raw=evt)
                 exn, atc = delegateRequestExn(phab, delpre=delpre, evt=bytes(evt), aids=smids,
                                               version=self.version, kind=self.kind)

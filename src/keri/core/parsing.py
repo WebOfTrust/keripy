@@ -139,9 +139,9 @@ class Parser:
     Methods[2][0][Codens.NonTransReceiptCouples] = "_NonTransReceiptCouples2"
     Methods[2][0][Codens.BigNonTransReceiptCouples] = "_NonTransReceiptCouples2"
 
-    Methods[1][0][Codens.TransReceiptQuadruples] = "_TransReceiptQuadruples1"
-    Methods[2][0][Codens.TransReceiptQuadruples] = "_TransReceiptQuadruples2"
-    Methods[2][0][Codens.BigTransReceiptQuadruples] = "_TransReceiptQuadruples2"
+    Methods[1][0][Codens.TransReceiptIdxSigGroups] = "_TransReceiptQuadruples1"
+    Methods[2][0][Codens.TransReceiptIdxSigGroups] = "_TransReceiptQuadruples2"
+    Methods[2][0][Codens.BigTransReceiptIdxSigGroups] = "_TransReceiptQuadruples2"
 
     Methods[1][0][Codens.TransIdxSigGroups] = "_TransIdxSigGroups1"
     Methods[2][0][Codens.TransIdxSigGroups] = "_TransIdxSigGroups2"
@@ -956,7 +956,7 @@ class Parser:
                 sigers (list[Siger]): ControllerIdxSigs
                 wigers (list[Siger]): WitnessIdxSigs
                 cigars (list[Cigar]): NonTransReceiptCouples cigar with verfer from (pre+sig)
-                trqs   (list[TransLastReceipts]): TransReceiptQuadruples TransLastReceiptIdxSigGroups (prefixer, number, diger, siger)
+                trqs   (list[TransReceiptQuadruples]): TransReceiptQuadruples TransLastReceiptIdxSigGroups (prefixer, number, diger, siger)
                 tsgs   (list[TransSigs]):TransIdxSigGroups (prefixer, number, diger, [Sigers])
                 lsgs   (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[Sigers]) (was tsgs)
                 frcs   (list[FirstSeen]): FirstSeenReplayCouples (number, dater)

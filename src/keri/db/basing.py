@@ -17,7 +17,7 @@ from hio.help import ogler
 
 from keri import __version__
 from .dbing import LMDBer, dgKey, openLMDB
-from ..kering import (MissingEntryError, DatabaseError,
+from ..kering import (MissingEntryError, DatabaseError, SerializeError,
                       ConfigurationError, ValidationError,
                       Vrsn_1_0, Vrsn_2_0)
 from ..recording import (KeyStateRecord, EventSourceRecord,
@@ -170,8 +170,6 @@ class Baser(LMDBer):
     Attributes:
         see superclass LMDBer for inherited attributes
 
-        kevers (dbdict): read-through cache of Kever instances indexed by
-            identifier prefix qb64
         prefixes (OrderedSet): local prefixes corresponding to habitats for
             this db
         groups (OrderedSet): group hab identifier prefixes for this db
@@ -263,6 +261,26 @@ class Baser(LMDBer):
             order. Represents fully validated receipts moved out of escrow.
             subkey 'vrcs.'
             dgKey (prefix + digest)
+            Multiple values per key stored as ordered set.
+
+        .vrcsNew is named subDB instance of CesrIoSetSuber (klas=Siger))
+            for verified transferable receiptor/validator receipt signatures.
+            Represents fully validated receipts moved out of escrow.
+
+            Each stored value in ioset is returned as a typed CESR Siger.
+            The reciptor (validator not the controller) is denoted in
+            the key space for the vrcs entry. This is provided by the last three
+            elements of the key space tuple representing a receiptor's
+            AID, its latest establishment-event sequence number, and  digest.
+            The value is a set of its indexed signatures over the event.
+            Values are preserved in insertion order.
+            subkey 'vrcs.'
+            dgKey (epre + esaid + rpre, resn, resaid, )
+                epre is controller of receipted event
+                esaid is recepted event pre
+                rpre is receiptor pre
+                resn is receiptor est evt sn
+                resaid is receptor est evt said
             Multiple values per key stored as ordered set.
 
         .vres is named subDB instance of CatCesrIoSetSuber for escrowed
@@ -431,12 +449,6 @@ class Baser(LMDBer):
             subkey 'sdts.'
             Key: said (bytes) of SAD.
             Only one value per DB key is allowed.
-
-        .tsgs this is a naming consistency error should be called tsgs since
-        the values come from the tsgs attachment in parser.
-        tsgs (list[tuple]): (prefixer, number, diger, [Sigers]) triple plus list of sigs
-        quadkeys = (saider.qb64, prefixer.qb64, f"{seqner.sn:032x}", diger.qb64)
-        self.db.tsgs.put(keys=quadkeys, vals=sigers)
 
         .tsgs is named subDB instance of CesrIoSetSuber (klas=Siger) for SAD
             transferable indexed signatures. Maps quadruple key
@@ -936,6 +948,9 @@ class Baser(LMDBer):
                                              klas=(coring.Diger, coring.Prefixer, coring.Cigar))
         self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.',
                              klas=(coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
+        self.vrcsNew = subing.CesrIoSetSuber(db=self, subkey='vrcsnew.', klas=indexing.Siger)
+
+
         self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.',
                              klas=(coring.Diger, coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
         self.pses = subing.OnIoDupSuber(db=self, subkey='pses.')
@@ -1447,13 +1462,15 @@ class Baser(LMDBer):
     def current(self):
         """ Current property determines if we are at the current database migration state.
 
-         If the database version matches the library version return True
-         If the current database version is behind the current library version, check for migrations
-            - If there are migrations to run, return False
-            - If there are no migrations to run, reset database version to library version and return True
-         If the current database version is ahead of the current library version, raise exception
+        If the database version matches the library version return True
+        If the current database version is behind the current library version, check for migrations
 
-         """
+           - If there are migrations to run, return False
+           - If there are no migrations to run, reset database version to library version and return True
+
+        If the current database version is ahead of the current library version, raise exception
+
+        """
         if self.version == __version__:
             return True
 
@@ -1645,7 +1662,7 @@ class Baser(LMDBer):
         for keys, fn, dig in self.fels.getAllItemIter(keys=pre, on=fn):
             try:
                 msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig)
-            except Exception:
+            except (MissingEntryError, SerializeError) as ex:
                 continue  # skip this event
             yield msg
 
@@ -1666,7 +1683,7 @@ class Baser(LMDBer):
             pre = keys[0].encode() if isinstance(keys[0], str) else keys[0]
             try:
                 msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig)
-            except Exception:
+            except (MissingEntryError, SerializeError) as ex:
                 continue  # skip this event
             yield msg
 
@@ -1718,13 +1735,47 @@ class Baser(LMDBer):
         # add trans endorsement quadruples to attachments not controller
         # may have been originally key event attachments or receipted endorsements
         if quads := self.vrcs.get(keys=dgkey):
-            atc.extend(Counter(code=Codens.TransReceiptQuadruples,
+            atc.extend(Counter(code=Codens.TransReceiptIdxSigGroups,
                                count=len(quads), version=Vrsn_1_0).qb64b)
-            for pre, snu, diger, siger in quads:    # adapt to CESR
-                atc.extend(pre.qb64b)
-                atc.extend(snu.qb64b)
+            for prefixer, number, diger, siger in quads:    # adapt to CESR
+                atc.extend(prefixer.qb64b)
+                atc.extend(number.qb64b)
                 atc.extend(diger.qb64b)
                 atc.extend(siger.qb64b)
+
+        # add non-controller trans endorsement quadruples to attachments
+        # may have been originally non-controller sigs or receipted endorsements
+        # collate sigersets by triple of rpre,rsnh,rdig
+        topkeys = (pre, dig)
+        sigersets = dict()
+        for keys, siger in self.vrcsNew.getTopItemIter(keys=topkeys):
+            epre, edig, rpre, rsnh, rdig = keys  # expand keys tuple
+            triple = (rpre, rsnh, rdig)
+            if triple not in sigersets:
+                sigersets[triple] = [siger]
+            else:
+                sigersets[triple].append(siger)
+
+        # create and attach an attachment group per sigerset
+        if sigersets:
+            cims = bytearray()
+            for keys, sigers in sigersets.items():
+                sims = bytearray()
+                sims.extend(Counter(code=Codens.ControllerIdxSigs,
+                                    count=len(sigers),
+                                    version=Vrsn_1_0).qb64b)
+                for siger in sigers:
+                    sims.extend(siger.qb64b)
+
+                #sims = Counter.enclose(qb64=sims,
+                                       #code=Codens.ControllerIdxSigs,
+                                       #version=Vrsn_2_0)
+                rpre, rsnh, rdig = keys
+                cims.extend(rpre.encode() + coring.Number(snh=rsnh).qb64b + rdig.encode())
+                cims.extend(sims)
+            gims = Counter.enclose(qb64=cims,
+                                       code=Codens.TransReceiptIdxSigGroups,
+                                       version=Vrsn_1_0)
 
         # add nontrans endorsement couples to attachments not witnesses
         # may have been originally key event attachments or receipted endorsements
@@ -1743,9 +1794,9 @@ class Baser(LMDBer):
         atc.extend(coring.Number(num=fn, code=coring.NumDex.Huge).qb64b)  # may not need to be Huge
         atc.extend(dater.qb64b)
 
-        # prepend pipelining counter to attachments
+        # enclose attachments in AttachmentGroup
         if len(atc) % 4:
-            raise ValueError("Invalid attachments size={}, nonintegral"
+            raise SerializeError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
         pcnt = Counter(code=Codens.AttachmentGroup,
                        count=(len(atc) // 4), version=Vrsn_1_0).qb64b
@@ -1775,8 +1826,8 @@ class Baser(LMDBer):
         witnessed. Searchs from sn forward (default = 0).Searches all events in
         KEL of pre including disputed and/or superseded events.
         Returns the Serder of the first event with the anchored SealEvent seal,
-            None if not found
 
+            None if not found
 
         Parameters:
             pre (bytes|str): identifier of the KEL to search
@@ -1814,8 +1865,8 @@ class Baser(LMDBer):
 
         Returns:
             srdr (Serder): instance of the first event with the matching
-                           anchoring SealEvent seal,
-                        None if not found
+                anchoring SealEvent seal,
+                None if not found
 
         Parameters:
             pre (bytes|str): identifier of the KEL to search
@@ -1848,6 +1899,7 @@ class Baser(LMDBer):
         an anchored Seal with same Seal type as provided seal but in dict form.
         Searchs from sn forward (default = 0).
         Returns the Serder of the first found event with the anchored Seal seal,
+
             None if not found
 
         Parameters:

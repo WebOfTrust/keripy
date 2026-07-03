@@ -708,7 +708,7 @@ class Matter:
         code (str): hard part of derivation code to indicate cypher suite
         hard (str): hard part of derivation code. alias for code
         soft (str | bytes): soft part of full code exclusive of xs xtra prepad.
-                    Empty when ss = 0.
+        Empty when ss = 0.
         both (str): hard + soft parts of full text code
         size (int | None): Number of quadlets/triplets of chars/bytes including
                             lead bytes of variable sized material (fs = None).
@@ -1903,6 +1903,19 @@ class Number(Matter):
 
 
     @property
+    def onkey(self):
+        """Ordinal number 32 char hex str with leading zeros to mimic onkey
+        for hex equivalent database keys that are lexocographically sorted.
+        Returns:
+            onkey (hex str): 32 char hex str with leading zeros
+        """
+        num = self.num
+        if num > MaxON:  # too big for 16 byte ordinal, 2 ** 128 -1
+            raise InvalidValueError(f"Non-ordinal: {num} exceeds {MaxON}.")
+        return ('%032x' % (num))
+
+
+    @property
     def huge(self):
         """Provides number value as qb64 but with code NumDex.huge. This is the
         same as Seqner.qb64. Raises error if too big.
@@ -1911,8 +1924,8 @@ class Number(Matter):
             huge (str): qb64 of num coded as NumDex.Huge
         """
         num = self.num
-        if num > MaxON:  # too big for ordinal 256 ** 16 - 1
-            raise InvalidValueError(f"Non-ordinal {num} exceeds {MaxON}.")
+        if num > MaxON:  # too big for 16 byte ordinal, 2 ** 128 - 1
+            raise InvalidValueError(f"Non-ordinal: {num} exceeds {MaxON}.")
 
         return Number(num=num, code=NumDex.Huge).qb64
 
@@ -2554,7 +2567,7 @@ class Verser(Tagger):
         code (str): hard part of derivation code to indicate cypher suite
         hard (str): hard part of derivation code. alias for code
         soft (str): soft part of derivation code fs any.
-                    Empty when ss = 0.
+            Empty when ss = 0.
         both (str): hard + soft parts of full text code
         size (int | None): Number of quadlets/triplets of chars/bytes including
                             lead bytes of variable sized material (fs = None).
@@ -3602,7 +3615,7 @@ class Cigar(Matter):
     Properties:  (Inherited)
         .code is str derivation code to indicate cypher suite
         .size is size (int): number of quadlets when variable sized material besides
-                        full derivation code else None
+                    full derivation code else None
         .raw is bytes crypto material only without code
         .qb64 is str in Base64 fully qualified with derivation code + crypto mat
         .qb64b is bytes in Base64 fully qualified with derivation code + crypto mat
