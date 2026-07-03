@@ -1,12 +1,15 @@
+import logging
 import os
 import multicommand
 import pytest
 
 
-from keri.kering import Ilks, ValidationError
+from hio.help import ogler
+
+from keri.kering import Ilks, ValidationError, AuthError
 from keri.core import Salter
 
-from keri.app import runController
+from keri.app import runController, habbing
 from keri.cli.commands.witness import start as witness_start
 
 from keri.cli import commands
@@ -392,3 +395,138 @@ def test_run_witness_closes_boot_keeper_before_reopen(monkeypatch):
 
     assert close_called, "Keeper.close() was never called before Habery re-open"
     assert stopped, "runController was never reached"
+
+
+# --- kli witness start logging & startup behavior (WebOfTrust/keripy#238) ---
+
+def _parse(argv):
+    return multicommand.create_parser(commands).parse_args(argv)
+
+
+def test_witness_start_arg_parsing():
+    """--logdir is the current option; --logfile is retained as a deprecated alias."""
+    args = _parse(["witness", "start", "--alias", "wit",
+                   "--loglevel", "debug", "--logdir", "/tmp/wlogs"])
+    assert args.handler is not None
+    assert args.loglevel == "debug"
+    assert args.logdir == "/tmp/wlogs"
+    assert args.logfile is None
+
+    args = _parse(["witness", "start", "--alias", "wit"])
+    assert args.loglevel == "CRITICAL"
+    assert args.logdir is None
+    assert args.logfile is None
+
+
+def test_launch_normalizes_loglevel_and_logdir(monkeypatch, tmp_path):
+    """launch() must turn a lowercase --loglevel into a numeric level (the .upper()
+    fix) and route --logdir straight to ogler.headDirPath."""
+    # ogler is a process-global singleton; snapshot so this test does not leak
+    # its level/headDirPath into later tests (monkeypatch restores on teardown).
+    monkeypatch.setattr(ogler, "level", ogler.level)
+    monkeypatch.setattr(ogler, "headDirPath", ogler.headDirPath)
+
+    captured = {}
+    monkeypatch.setattr(witness_start, "runWitness", lambda **kw: captured.update(kw))
+
+    args = _parse(["witness", "start", "--alias", "wit",
+                   "--loglevel", "debug", "--logdir", str(tmp_path)])
+    args.handler(args)  # -> launch(args)
+
+    # Without .upper(), getLevelName("debug") returns the string "Level debug",
+    # which silently breaks level filtering. It must be the numeric DEBUG level.
+    assert ogler.level == logging.DEBUG
+    assert ogler.headDirPath == str(tmp_path)
+    assert captured["alias"] == "wit"
+
+
+def test_launch_logfile_extracts_dirname(monkeypatch, tmp_path):
+    """The deprecated --logfile must contribute only its *directory* as the log
+    dir (hio derives the filename from --name), never the file path itself."""
+    monkeypatch.setattr(ogler, "level", ogler.level)
+    monkeypatch.setattr(ogler, "headDirPath", ogler.headDirPath)
+    monkeypatch.setattr(witness_start, "runWitness", lambda **kw: None)
+
+    logfile = tmp_path / "witness.log"
+    args = _parse(["witness", "start", "--alias", "wit", "--logfile", str(logfile)])
+    args.handler(args)
+
+    assert ogler.headDirPath == str(tmp_path)
+
+
+def test_logfile_emits_deprecation_warning(monkeypatch, capsys, tmp_path):
+    """Passing the deprecated --logfile must print a deprecation notice to stderr
+    (visible regardless of --loglevel); using the current --logdir must not."""
+    monkeypatch.setattr(ogler, "level", ogler.level)
+    monkeypatch.setattr(ogler, "headDirPath", ogler.headDirPath)
+    monkeypatch.setattr(witness_start, "runWitness", lambda **kw: None)
+
+    args = _parse(["witness", "start", "--alias", "wit",
+                   "--logfile", str(tmp_path / "witness.log")])
+    args.handler(args)
+    assert "deprecated" in capsys.readouterr().err, "expected a --logfile deprecation notice"
+
+    args = _parse(["witness", "start", "--alias", "wit", "--logdir", str(tmp_path)])
+    args.handler(args)
+    assert "deprecated" not in capsys.readouterr().err
+
+
+def test_run_failure_is_logged_and_hby_closed(helpers, monkeypatch):
+    """A failure during setup/run (e.g. a port-bind RuntimeError from setupWitness)
+    must be logged at CRITICAL (visible at the default --loglevel) AND the Habery
+    closed in the finally block, so no stale LMDB lock is left behind."""
+    name = "bug238witerr"
+    helpers.remove_test_dirs(name)
+
+    logged = []
+    monkeypatch.setattr(witness_start.logger, "critical",
+                        lambda *a, **k: logged.append((a, k)))
+
+    closed = []
+    real_close = habbing.Habery.close
+
+    def spy_close(self, clear=False):
+        closed.append(True)
+        return real_close(self, clear=clear)
+    monkeypatch.setattr(habbing.Habery, "close", spy_close)
+
+    def _boom(**kw):
+        raise RuntimeError("cannot create http server on port 5631")
+    monkeypatch.setattr(witness_start, "setupWitness", _boom)
+
+    try:
+        # unencrypted keystore path (aeid is None) so no passcode is required
+        with pytest.raises(RuntimeError):
+            witness_start.runWitness(name=name, base="", alias="wit", bran="")
+
+        assert logged, "startup failure must be logged at CRITICAL"
+        assert "failed" in logged[0][0][0]
+        assert closed, "Habery must be closed in the finally block on failure"
+    finally:
+        helpers.remove_test_dirs(name)
+
+
+def test_encrypted_keystore_non_tty_fails_fast(helpers, monkeypatch):
+    """An encrypted keystore started with no passcode on a non-TTY must fail fast
+    with a logged AuthError instead of stalling on an interactive getpass prompt."""
+    name = "bug238witenc"
+    helpers.remove_test_dirs(name)
+    try:
+        # create an encrypted keystore so that aeid is set
+        hby = habbing.Habery(name=name, base="", bran="0123456789abcdefghijk", temp=False)
+        hby.close()
+
+        # guarantee the non-interactive condition regardless of how the test runner
+        # wires stdin
+        monkeypatch.setattr("sys.stdin.isatty", lambda: False)
+
+        # the guard must short-circuit *before* any interactive prompt; if getpass
+        # is ever reached the witness could block waiting on stdin (the stall bug)
+        def _boom(*a, **k):
+            raise AssertionError("getpass must not be called on a non-TTY start")
+        monkeypatch.setattr("keri.cli.common.existing.getpass.getpass", _boom)
+
+        with pytest.raises(AuthError):
+            witness_start.runWitness(name=name, base="", alias="wit", bran="")
+    finally:
+        helpers.remove_test_dirs(name)

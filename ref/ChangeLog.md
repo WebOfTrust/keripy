@@ -2,6 +2,17 @@
 
 ## 2.0.0-dev6
 
+*** kli witness start now logs startup/runtime failures at CRITICAL (with traceback) so
+they are visible even at the default --loglevel, and closes the Habery on failure so a
+failed start leaves no stale LMDB lock. An encrypted keystore started with no passcode on
+a non-TTY now fails fast with a logged AuthError instead of stalling on an interactive
+getpass prompt. --loglevel is normalized so a lowercase level (e.g. debug) is honored.
+See WebOfTrust/keripy#238.
+
+*** kli witness start: --logfile is deprecated in favor of --logdir. The witness writes
+its log file under the given directory; --logfile is retained as an alias whose directory
+portion is used (it previously mis-set the log head directory to the file path itself).
+
 *** peer.exchange has been replaced with a combination of either core.eventing.exchange
 or peer.specialExhange. peer.specialExchange supports the embeds and diger parameters
 and returns a tuple of (exn, atc) exn Serder instance and atc attachments bytearray.
