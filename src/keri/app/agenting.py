@@ -18,7 +18,7 @@ from .httping import Clienter, streamCESRRequests, CESR_DESTINATION_HEADER
 
 from ..kering import (Schemes, Roles, Vrsn_1_0,
                       MissingEntryError, ConfigurationError)
-from ..core import Counter, eventing, parsing, coring, serdering, Codens, Cigar, Siger, Verfer
+from ..core import Counter, eventing, parsing, coring, serdering, Codens
 
 
 logger = ogler.getLogger()
@@ -78,8 +78,7 @@ class Receiptor(doing.DoDoer):
         if len(wits) == 0:
             return
 
-        serder, _, _ = hab.getOwnEvent(sn=sn)
-        msg = hab.msgOwnEvent(sn=sn, framed=True, gvrsn=serder.pvrsn)
+        msg = hab.msgOwnEvent(sn=sn, framed=True)
         ser = serdering.SerderKERI(raw=msg)
 
         # If we are a rotation event, may need to catch new witnesses up to current key state
@@ -353,8 +352,7 @@ class WitnessReceiptor(doing.DoDoer):
                 if len(wits) == 0:
                     continue
 
-                serder, _, _ = hab.getOwnEvent(sn=sn)
-                msg = hab.msgOwnEvent(sn=sn, framed=True, gvrsn=serder.pvrsn)
+                msg = hab.msgOwnEvent(sn=sn, framed=True)
                 ser = serdering.SerderKERI(raw=msg)
 
                 witers = []
