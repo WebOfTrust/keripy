@@ -2715,7 +2715,7 @@ class BaseHab:
 
                         # vrcsNew as prelimary replace above
                         topkeys = (self.pre, self.iserder.said)
-                        for keys, siger in self.db.vrcsNew.getTopItemIter(keys=topkeys):
+                        for keys, siger in self.db.vrcs.getTopItemIter(keys=topkeys):
                             epre, edig, rpre, rsnh, rdig = keys  # expand keys tuple
                             if rpre == cuedKed["i"]:
                                 found = True  # yes so don't pre-send own inception

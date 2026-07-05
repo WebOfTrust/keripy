@@ -4503,7 +4503,7 @@ class Kevery:
                         #quadruple = (sprefixer, snumber, sdiger, siger)
                         #self.db.vrcs.add(keys=(pre, ldig), val=quadruple)
 
-                # temporary for vrcsNew to see if works
+                # vrcsNew test to replace vrcs changed format of subdb
                 for siger in sigers:  # endorser (non-controller) signatures
                     if siger.index >= len(sverfers):
                         raise ValidationError(f"Index={siger.index} to large for keys.")
@@ -7422,7 +7422,7 @@ def loadEvent(db, preb, dig):
     # vcrsNew new style trans receipts
     trans = []
     topkeys = (preb, dig)
-    for keys, siger in db.vrcsNew.getTopItemIter(keys=topkeys):
+    for keys, siger in db.vrcs.getTopItemIter(keys=topkeys):
         epre, edig, rpre, rsnh, rdig = keys  # expand keys tuple
         trans.append(dict(prefix=rpre,
                              sequence=Number(snh=rsnh).qb64,

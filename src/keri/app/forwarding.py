@@ -570,7 +570,7 @@ def introduce(hab, wit):
 
         # alt find in vrcsNew as preliminary to replace
         topkeys = (wit, iserder.said)
-        for keys, siger in hab.db.vrcsNew.getTopItemIter(keys=topkeys):
+        for keys, siger in hab.db.vrc.getTopItemIter(keys=topkeys):
             epre, edig, rpre, rsnh, rdig = keys  # expand keys tuple
             if rpre == hab.pre:
                 found = True  # yes so don't pre-send own inception

@@ -1972,26 +1972,56 @@ def test_unverified_trans_receipt_escrow():
         assert len(kvy.db.vres.get(snKey(pre, 2))) == 0
 
         # verify receipts
-        receipts = kvy.db.vrcs.get(keys=dgKey(pre, icpdig))
-        assert len(receipts) == 3
-        rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
-        assert rctPrefixer.qb64 == rpre
-        assert rctNumber.sn == 0
-        assert rctDiger.qb64 == ricpdig
+        #receipts = kvy.db.vrcs.get(keys=dgKey(pre, icpdig))
+        #assert len(receipts) == 3
+        #rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
+        #assert rctPrefixer.qb64 == rpre
+        #assert rctNumber.sn == 0
+        #assert rctDiger.qb64 == ricpdig
 
-        receipts = kvy.db.vrcs.get(keys=dgKey(pre, ixndig))
-        assert len(receipts) == 3
-        rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
-        assert rctPrefixer.qb64 == rpre
-        assert rctNumber.sn == 1
-        assert rctDiger.qb64 == rrotdig
+        #receipts = kvy.db.vrcs.get(keys=dgKey(pre, ixndig))
+        #assert len(receipts) == 3
+        #rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
+        #assert rctPrefixer.qb64 == rpre
+        #assert rctNumber.sn == 1
+        #assert rctDiger.qb64 == rrotdig
 
-        receipts = kvy.db.vrcs.get(keys=dgKey(pre, rotdig))
+        #receipts = kvy.db.vrcs.get(keys=dgKey(pre, rotdig))
+        #assert len(receipts) == 3
+        #rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
+        #assert rctPrefixer.qb64 == rpre
+        #assert rctNumber.sn == 1
+        #assert rctDiger.qb64 == rrotdig
+
+        # vrcsNew verify receipts
+        topkeys = (pre, icpdig)
+        receipts = [(keys, siger) for keys, siger in kvy.db.vrcs.getTopItemIter(keys=topkeys)}
         assert len(receipts) == 3
-        rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
-        assert rctPrefixer.qb64 == rpre
-        assert rctNumber.sn == 1
-        assert rctDiger.qb64 == rrotdig
+        epre, edig, rctpre, rctsnh, rctdig = receipts[0][0]
+        siger = receipts[0][1]
+        assert rctpre == rpre
+        assert Number(snh=rctsnh).sn == 0
+        assert rctdig == ricpdig
+
+        topkeys = (pre, ixndig)
+        receipts = [(keys, siger) for keys, siger in kvy.db.vrcs.getTopItemIter(keys=topkeys)}
+        assert len(receipts) == 3
+        epre, edig, rctpre, rctsnh, rctdig = receipts[0][0]
+        siger = receipts[0][1]
+        assert rctpre == rpre
+        assert Number(snh=rctsnh).sn == 1
+        assert rctdig == rrotdig
+
+        topkeys = (pre, rotdig)
+        receipts = [(keys, siger) for keys, siger in kvy.db.vrcs.getTopItemIter(keys=topkeys)}
+        assert len(receipts) == 3
+        epre, edig, rctpre, rctsnh, rctdig = receipts[0][0]
+        siger = receipts[0][1]
+        assert rctpre == rpre
+        assert Number(snh=rctsnh).sn == 1
+        assert rctdig == rrotdig
+
+
 
     assert not os.path.exists(ks.path)
     assert not os.path.exists(db.path)
