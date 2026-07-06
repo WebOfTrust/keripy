@@ -3,7 +3,7 @@
 import os
 
 from keri.kering import Vrsn_1_0, Vrsn_2_0, Kinds
-from keri.core import (Kevery, Salter, SealEvent, Parser, MtrDex,
+from keri.core import (Kevery, Salter, SealEvent, Number, Parser, MtrDex,
                        incept, rotate, interact, messagize, receipt)
 
 from keri.app import Manager, openKS
@@ -143,15 +143,25 @@ def test_direct_mode_with_manager():
         # check if validator's Kever in controller's .kevers
         assert valpre in coeKevery.kevers
         #  check if receipt quadruple from validator in receipt database
-        result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
-                                                dig=coeKever.serder.said))
-        val_prefixer, est_num, est_diger, sig = result[0]
+        #result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
+                                                #dig=coeKever.serder.said))
+        #val_prefixer, est_num, est_diger, sig = result[0]
+        #assert val_prefixer.qb64 == valKever.prefixer.qb64
+        #assert est_num.num == valKever.sn
+        #assert est_diger.qb64 == valKever.serder.said
+        #assert sig.qb64b == sigers[0].qb64b
 
-        assert val_prefixer.qb64 == valKever.prefixer.qb64
-        assert est_num.num == valKever.sn
-        assert est_diger.qb64 == valKever.serder.said
-        assert sig.qb64b == sigers[0].qb64b
+        # vrcsNew replace old form
+        topkeys = (coeKever.prefixer.qb64, coeKever.serder.said)
+        results = [(keys, siger) for keys, siger in
+                                coeKevery.db.vrcs.getTopItemIter(keys=topkeys)]
+        rkeys0, rsiger0 = results[0]
+        spre, sdig, rpre, rsnh, rdig, = rkeys0
 
+        assert rpre == valKever.prefixer.qb64
+        assert Number(snh=rsnh).sn == valKever.sn
+        assert rdig == valKever.serder.said
+        assert rsiger0.qb64 == sigers[0].qb64b
 
         # create receipt to escrow use invalid digest and sequence number so not in controller's db
         fake = reserder.said  # some other digest
@@ -205,14 +215,26 @@ def test_direct_mode_with_manager():
         # valKevery.process(ims=cmsg)  # controller process validator's inception and receipt
 
         #  check if receipt quadruple from controller in validator's receipt database
-        result = valKevery.db.vrcs.get(keys=dgKey(pre=valKever.prefixer.qb64,
-                                                dig=valKever.serder.said))
-        rct_prefixer, rct_num, rct_est_diger, rct_siger = result[0]
+        #result = valKevery.db.vrcs.get(keys=dgKey(pre=valKever.prefixer.qb64,
+                                                #dig=valKever.serder.said))
+        #rct_prefixer, rct_num, rct_est_diger, rct_siger = result[0]
 
-        assert rct_prefixer.qb64 == coeKever.prefixer.qb64
-        assert rct_num.num == coeKever.sn
-        assert rct_est_diger.qb64 == coeKever.serder.said
-        assert rct_siger.qb64b == sigers[0].qb64b
+        #assert rct_prefixer.qb64 == coeKever.prefixer.qb64
+        #assert rct_num.num == coeKever.sn
+        #assert rct_est_diger.qb64 == coeKever.serder.said
+        #assert rct_siger.qb64b == sigers[0].qb64b
+
+        # vrcsNew replace old form
+        topkeys = (valKever.prefixer.qb64, valKever.serder.said)
+        results = [(keys, siger) for keys, siger in
+                                 valKevery.db.vrcs.getTopItemIter(keys=topkeys)]
+        rkeys0, rsiger0 = results[0]
+        spre, sdig, rpre, rsnh, rdig, = rkeys0
+
+        assert rpre == coeKever.prefixer.qb64
+        assert Number(snh=rsnh).sn == coeKever.sn
+        assert rdig == coeKever.serder.said
+        assert rsiger0.qb64 == sigers[0].qb64b
 
         # Controller Event 1 Rotation Transferable
         csn += 1
@@ -274,14 +296,26 @@ def test_direct_mode_with_manager():
         # coeKevery.process(ims=vmsg)  # controller process validator's incept and receipt
 
         # check if receipt quadruple from validator in receipt database
-        result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
-                                                dig=coeKever.serder.said))
-        rct_prefixer, rct_num, rct_est_diger, rct_siger = result[0]
+        #result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
+                                                #dig=coeKever.serder.said))
+        #rct_prefixer, rct_num, rct_est_diger, rct_siger = result[0]
 
-        assert rct_prefixer.qb64 == valKever.prefixer.qb64
-        assert rct_num.num == valKever.sn
-        assert rct_est_diger.qb64 == valKever.serder.said
-        assert rct_siger.qb64b == sigers[0].qb64b
+        #assert rct_prefixer.qb64 == valKever.prefixer.qb64
+        #assert rct_num.num == valKever.sn
+        #assert rct_est_diger.qb64 == valKever.serder.said
+        #assert rct_siger.qb64b == sigers[0].qb64b
+
+        # vrcsNew replace old form
+        topkeys = (coeKever.prefixer.qb64, coeKever.serder.said)
+        results = [(keys, siger) for keys, siger in
+                       coeKevery.db.vrcs.getTopItemIter(keys=topkeys)]
+        rkeys0, rsiger0 = results[0]
+        spre, sdig, rpre, rsnh, rdig, = rkeys0
+
+        assert rpre == valKever.prefixer.qb64
+        assert Number(snh=rsnh).sn == valKever.sn
+        assert rdig == valKever.serder.said
+        assert rsiger0.qb64 == sigers[0].qb64b
 
         # Next Event 2 Controller Interaction
         csn += 1  # do not increment esn
@@ -340,14 +374,26 @@ def test_direct_mode_with_manager():
         # coeKevery.process(ims=vmsg)  # controller process validator's incept and receipt
 
         #  check if receipt quadruple from validator in receipt database
-        result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
-                                                dig=coeKever.serder.said))
-        rct_prefixer, rct_num, rct_est_diger, rct_siger = result[0]
+        #result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
+                                                #dig=coeKever.serder.said))
+        #rct_prefixer, rct_num, rct_est_diger, rct_siger = result[0]
 
-        assert rct_prefixer.qb64 == valKever.prefixer.qb64
-        assert rct_num.num == valKever.sn
-        assert rct_est_diger.qb64 == valKever.serder.said
-        assert rct_siger.qb64b == sigers[0].qb64b
+        #assert rct_prefixer.qb64 == valKever.prefixer.qb64
+        #assert rct_num.num == valKever.sn
+        #assert rct_est_diger.qb64 == valKever.serder.said
+        #assert rct_siger.qb64b == sigers[0].qb64b
+
+        # vrcsNew replace old form
+        topkeys = (coeKever.prefixer.qb64, coeKever.serder.said)
+        results = [(keys, siger) for keys, siger in
+                       coeKevery.db.vrcs.getTopItemIter(keys=topkeys)]
+        rkeys0, rsiger0 = results[0]
+        spre, sdig, rpre, rsnh, rdig, = rkeys0
+
+        assert rpre == valKever.prefixer.qb64
+        assert Number(snh=rsnh).sn == valKever.sn
+        assert rdig == valKever.serder.said
+        assert rsiger0.qb64 == sigers[0].qb64b
 
 
         #  verify final controller event state
