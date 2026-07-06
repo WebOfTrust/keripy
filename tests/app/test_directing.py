@@ -6,7 +6,6 @@ tests.db.dbing module
 
 import logging
 import os
-import socket
 
 from hio.base import doing
 from hio.help import ogler
@@ -17,21 +16,6 @@ from keri.core import Salter, Diger, MtrDex, incept
 from keri.app import Director, Directant, Reactor, openHby, runController
 from keri.demo import setupDemoController
 from tests.common import KWA
-
-
-def _free_port():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind(("127.0.0.1", 0))
-        return sock.getsockname()[1]
-
-
-def _free_ports(count):
-    ports = []
-    while len(ports) < count:
-        port = _free_port()
-        if port not in ports:
-            ports.append(port)
-    return ports
 
 
 def test_directing_defaults_use_hab_version_and_kind():

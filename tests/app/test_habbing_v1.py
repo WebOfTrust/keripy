@@ -73,32 +73,15 @@ def test_make_load_hab_with_habery_v1():
     assert not os.path.exists(hby.ks.path)
 
     # create not temp and then reload from not temp
-    if platform.system() == "Windows":
-        drives = [d for d in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' if os.path.exists(f'{d}:\\')]
-        for drive in drives:
-            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "cf", "hold", "test.json")):
-                os.remove(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "cf", "hold", "test.json"))
-            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "db", "hold", "test")):
-                shutil.rmtree(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "db", "hold", "test"))
-            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "ks", "hold", "test")):
-                shutil.rmtree(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "ks", "hold", "test"))
-    else:
-        if os.path.exists('/usr/local/var/keri/cf/hold/test.json'):
-            os.remove('/usr/local/var/keri/cf/hold/test.json')
-        if os.path.exists('/usr/local/var/keri/db/hold/test'):
-            shutil.rmtree('/usr/local/var/keri/db/hold/test')
-        if os.path.exists('/usr/local/var/keri/ks/hold/test'):
-            shutil.rmtree('/usr/local/var/keri/ks/hold/test')
-
-    base = "hold"
+    base = f"hold-v1-{uuid.uuid4().hex}"
     suePre = 'EAxe215BJ4Iy9r0mfoMEGVmHW8A4Avk3RYBC1A1_DZam'  # with temp=False
     bobPre = 'ENya5E5pvc6MVCe75huDK0QQhE4_64J55vCn4aKdXhR9'  # with temp=False
 
     with openHby(base=base, temp=False, salt=Salter(raw=b'0123456789abcdef').qb64, version=TEST_VERSION) as hby:  # default is temp=True
 
-        assert hby.cf.path.endswith(os.path.join("keri", "cf", "hold", "test.json"))
-        assert hby.db.path.endswith(os.path.join("keri", "db", "hold", "test"))
-        assert hby.ks.path.endswith(os.path.join("keri", "ks", "hold", "test"))
+        assert hby.cf.path.endswith(os.path.join("keri", "cf", base, "test.json"))
+        assert hby.db.path.endswith(os.path.join("keri", "db", base, "test"))
+        assert hby.ks.path.endswith(os.path.join("keri", "ks", base, "test"))
 
         sueHab = hby.makeHab(name='Sue', **KWA)
         assert isinstance(sueHab, Hab)

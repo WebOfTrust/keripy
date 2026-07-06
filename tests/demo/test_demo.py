@@ -5,7 +5,6 @@ tests.db.dbing module
 """
 import logging
 import os
-import socket
 
 import time
 from hio.base import doing
@@ -18,21 +17,6 @@ from keri.app import Reactor, Directant, openHby
 from keri.demo import (BobDirector, EveDirector,
                        SamDirector, CamDirector, setupDemoController)
 from tests.common import KWA
-
-
-def _free_port():
-    with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
-        sock.bind(("127.0.0.1", 0))
-        return sock.getsockname()[1]
-
-
-def _free_ports(count):
-    ports = []
-    while len(ports) < count:
-        port = _free_port()
-        if port not in ports:
-            ports.append(port)
-    return ports
 
 
 def test_direct_mode_bob_eve_demo(unused_tcp_port_factory):
@@ -593,4 +577,3 @@ if __name__ == "__main__":
     test_run_bob_eve_demo()
     test_run_sam_eve_demo()
     test_indirect_mode_sam_cam_wit_demo()
-
