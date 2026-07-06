@@ -28,19 +28,24 @@ def test_anchorer_explicit_version_propagates_to_postman():
 
 
 
-def test_anchorer(seeder):
+def test_anchorer(seeder, witnessPorter):
     with openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, version=Vrsn_1_0) as wesHby, \
             openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as palHby, \
             openHby(name="del", salt=Salter(raw=b'0123456789ghijkl').qb64, version=Vrsn_1_0) as delHby:
 
-        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644, **KWA)
+        witnessPorts, witnessUrls = witnessPorter("wes")
+        wesDoers = setupWitness(alias="wes", hby=wesHby,
+                                tcpPort=witnessPorts["wes"]["tcp"],
+                                httpPort=witnessPorts["wes"]["http"], **KWA)
         witDoer = Receiptor(hby=palHby)
 
         bts = Anchorer(hby=delHby, version=Vrsn_1_0, kind=Kinds.json)
 
         wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wesHab], protocols=[Schemes.http], **KWA)
-        seeder.seedWitEnds(delHby.db, witHabs=[wesHab], protocols=[Schemes.http], **KWA)
+        seeder.seedWitEnds(palHby.db, witHabs=[wesHab],
+                           protocols=[Schemes.http], witnessUrls=witnessUrls, **KWA)
+        seeder.seedWitEnds(delHby.db, witHabs=[wesHab],
+                           protocols=[Schemes.http], witnessUrls=witnessUrls, **KWA)
 
         opts = dict(
             wesHab=wesHab,
