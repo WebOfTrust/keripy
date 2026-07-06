@@ -431,6 +431,58 @@ KRAM_INTEGRATION_CONFIG = {
 }
 
 
+def test_parser_routes_v2_query_through_kram(mockHelpingNowUTC):
+    """Parser must route v2 qry messages through Kevery.processMsg and KRAM"""
+    salt1 = Salter(raw=b'0123456789abcdef').qb64
+    salt2 = Salter(raw=b'0123456789abcdeg').qb64
+
+    with (openHby(name="sender", base="test", salt=salt1, version=V2) as senderHby,
+          openHby(name="receiver", base="test", salt=salt2, version=V2) as receiverHby):
+
+        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1,
+                                      transferable=True, **KWA)
+        receiverHby.makeHab(name="receiver", isith='1', icount=1,
+                            transferable=True, **KWA)
+
+        crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
+        senderIcp = senderHab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)
+        Parser(version=V2).parse(ims=bytearray(senderIcp), kvy=crossKvy)
+        assert senderHab.pre in crossKvy.kevers
+
+        with openCF(name="kram_parser_v2", base="test", temp=True) as cf:
+            cf.put(KRAM_INTEGRATION_CONFIG)
+            kramer = Kramer(db=receiverHby.db, cf=cf)
+            assert kramer.enabled
+
+            calls = []
+            original_intake = kramer.intake
+
+            def intake(serder, kwa=None):
+                calls.append((serder.ilk, serder.ked.get("r")))
+                return original_intake(serder, kwa)
+
+            kramer.intake = intake
+            kvy = Kevery(db=receiverHby.db, lax=False, local=False, kramer=kramer)
+
+            stamp = helping.nowIso8601()
+            qry = query(pre=senderHab.pre,
+                        route="ksn",
+                        query=dict(i=senderHab.pre, src=senderHab.pre),
+                        stamp=stamp,
+                        **KWA)
+            msg = senderHab.endorse(qry, last=True, framed=False, gvrsn=V2)
+
+            Parser(version=V2).parse(ims=bytearray(msg), kvy=kvy)
+
+            assert calls == [("qry", "ksn")]
+            cache = receiverHby.db.kramMSGC.get(keys=(senderHab.pre, qry.said))
+            assert cache is not None
+            assert cache.mdt == stamp
+            assert len(kvy.cues) > 0
+            cue = kvy.cues.popleft()
+            assert cue["kin"] == "reply"
+
+
 def test_scrub_invalid_pool_sigs():
     """_verifyAttachedSigs removes unverifiable signatures from kwa in place."""
     salt1 = Salter(raw=b'\xc1\x00' * 8).qb64

@@ -1402,6 +1402,21 @@ class Parser:
         if isinstance(serder, SerderKERI):
             ilk = serder.ilk  # dispatch abased on ilk
 
+            if kvy is not None and serder.pvrsn == Version and ilk in (
+                Ilks.qry, Ilks.rpy, Ilks.exn, Ilks.xip, Ilks.pro, Ilks.bar
+            ):
+                kwa = dict(exts)
+                kwa.pop('serder', None)
+                kwa['rvy'] = rvy
+                kwa['exc'] = exc
+                kwa['tvy'] = tvy
+                try:
+                    kvy.processMsg(serder=serder, kwa=kwa)
+                except AttributeError as ex:
+                    raise ValidationError(f"Error while processing msg in Kevery"
+                                                f"= {serder.pretty()}.") from ex
+                return
+
             if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
                 firner, dater = exts['frcs'][-1] if exts['frcs'] else (None, None)  # use last one if more than one
                 # when present assumes this is source seal of delegating event in delegator's KEL
@@ -2581,5 +2596,4 @@ class Parser:
             exts.essrs.extend(essrs)
         except KeyError:
             exts.essrs = essrs
-
 

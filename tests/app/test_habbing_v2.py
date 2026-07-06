@@ -16,7 +16,7 @@ from keri.kering import (ConfigurationError, MissingEntryError,
 
 from keri.help import helping
 
-from keri.core import (Kevery, Salter, Seqner, Number,
+from keri.core import (Kramer, Kevery, Salter, Seqner, Number,
                        Diger, Dater, Parser, SerderKERI,
                        Tiers, MtrDex, NumDex)
 
@@ -29,6 +29,41 @@ from keri.db import Baser, BaserDoer
 TEST_VERSION = Vrsn_2_0
 KWA = dict(version=TEST_VERSION, kind=Kinds.cesr)
 CUE_KWA = dict(**KWA, gvrsn=TEST_VERSION)
+KRAM_V2_SUITE_CONFIG = {
+    "kram": {
+        "enabled": True,
+        "denials": [],
+        "caches": {
+            "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
+        }
+    }
+}
+
+
+def _merge_kram_config(conf=None):
+    merged = dict(conf or {})
+    merged["kram"] = dict(
+        enabled=KRAM_V2_SUITE_CONFIG["kram"]["enabled"],
+        denials=list(KRAM_V2_SUITE_CONFIG["kram"]["denials"]),
+        caches={"~": list(KRAM_V2_SUITE_CONFIG["kram"]["caches"]["~"])},
+    )
+    return merged
+
+
+def _attach_kram_spy(hby):
+    calls = []
+    kramer = Kramer(db=hby.db, cf=hby.cf, cues=hby.kvy.cues)
+    assert kramer.enabled
+
+    original_intake = kramer.intake
+
+    def intake(serder, kwa=None):
+        calls.append((serder.ilk, serder.ked.get("r")))
+        return original_intake(serder, kwa)
+
+    kramer.intake = intake
+    hby.kvy.kramer = kramer
+    return calls
 
 
 def test_habery():
@@ -875,7 +910,7 @@ def test_hab_by_pre():
         assert hby.habByPre(pre=hab5.pre) == hab5
         assert hby.habByPre(pre=hab6.pre) == hab6
 
-def test_postman_endsfor_v2():
+def _exercise_postman_endsfor_v2(*, enable_kram=False):
     with openHby(name="test", temp=True, salt=Salter(raw=b'0123456789abcdef').qb64,
                  version=TEST_VERSION) as hby, \
             openHby(name="wes", temp=True, salt=Salter(raw=b'wess-the-witness').qb64,
@@ -896,6 +931,14 @@ def test_postman_endsfor_v2():
         assert hab.kever.wits == wits
         assert hab.kever.toader.num == 1
         assert hab.kever.sn == 0
+
+        if enable_kram:
+            hby.cf.put(_merge_kram_config(hby.cf.get()))
+            habKramCalls = _attach_kram_spy(hby)
+            assert hby.kvy.kramer is not None
+        else:
+            habKramCalls = []
+            assert hby.kvy.kramer is None
 
         kvy = Kevery(db=hab.db, lax=False, local=False)
         icpMsg = hab.msgOwnInception(framed=True, gvrsn=TEST_VERSION)
@@ -975,6 +1018,20 @@ def test_postman_endsfor_v2():
             'witness': {
                 wesHab.pre: {'http': 'http://127.0.0.1:8888'}}
         }
+
+        if enable_kram:
+            assert len(habKramCalls) == 8
+            assert habKramCalls.count(("rpy", "/end/role/add")) == 5
+            assert habKramCalls.count(("rpy", "/loc/scheme")) == 3
+
+
+def test_postman_endsfor_v2():
+    _exercise_postman_endsfor_v2(enable_kram=False)
+
+
+def test_postman_endsfor_v2_with_kram(mockHelpingNowUTC):
+    _exercise_postman_endsfor_v2(enable_kram=True)
+
 
 def test_rotate_preserves_toad():
     """Test that rotating without specifying toad preserves the prior toad value.
@@ -1167,7 +1224,7 @@ def test_cues_v2():
         assert camHab.processCues(kvy.cues, **CUE_KWA) == b""
         assert not kvy.cues
 
-def test_habery_reconfigure_v2(mockHelpingNowUTC):
+def _exercise_habery_reconfigure_v2(*, enable_kram=False):
     """
     Test   .reconfigure method using .cf for config file
 
@@ -1214,14 +1271,26 @@ def test_habery_reconfigure_v2(mockHelpingNowUTC):
         iurls = [f"tcp://localhost:5621/?role={Roles.peer}&name={pname}"]
         assert tamHby.cf.get() == {}
         conf = dict(dt=helping.nowIso8601(), tam=dict(dt=helping.nowIso8601(), curls=curls), iurls=iurls)
+        if enable_kram:
+            conf = _merge_kram_config(conf)
         tamHby.cf.put(conf)
 
-        assert tamHby.cf.get() == {'dt': '2021-01-01T00:00:00.000000+00:00',
-                                   'tam': {
-                                       'dt': '2021-01-01T00:00:00.000000+00:00',
-                                       'curls': ['tcp://localhost:5620/']
-                                   },
-                                   'iurls': ['tcp://localhost:5621/?role=peer&name=nel']}
+        expected = {'dt': '2021-01-01T00:00:00.000000+00:00',
+                    'tam': {
+                        'dt': '2021-01-01T00:00:00.000000+00:00',
+                        'curls': ['tcp://localhost:5620/']
+                    },
+                    'iurls': ['tcp://localhost:5621/?role=peer&name=nel']}
+        if enable_kram:
+            expected = _merge_kram_config(expected)
+        assert tamHby.cf.get() == expected
+
+        if enable_kram:
+            tamKramCalls = _attach_kram_spy(tamHby)
+            assert tamHby.kvy.kramer is not None
+        else:
+            tamKramCalls = []
+            assert tamHby.kvy.kramer is None
 
         # setup Tam's habitat trans multisig
         wits = [wesHab.pre, wokHab.pre]
@@ -1278,6 +1347,10 @@ def test_habery_reconfigure_v2(mockHelpingNowUTC):
         locer = nelHab.db.locs.get(keys=(nelHab.pre, Schemes.tcp))
         assert locer.url == 'tcp://localhost:5621/'
 
+        if enable_kram:
+            assert tamKramCalls == [("rpy", "/end/role/add"),
+                                    ("rpy", "/loc/scheme")]
+
     assert not os.path.exists(nelHby.cf.path)
     assert not os.path.exists(nelHby.db.path)
     assert not os.path.exists(nelHby.ks.path)
@@ -1294,6 +1367,14 @@ def test_habery_reconfigure_v2(mockHelpingNowUTC):
     assert not os.path.exists(tamHby.db.path)
     assert not os.path.exists(tamHby.ks.path)
     """Done Test"""
+
+
+def test_habery_reconfigure_v2(mockHelpingNowUTC):
+    _exercise_habery_reconfigure_v2(enable_kram=False)
+
+
+def test_habery_reconfigure_v2_with_kram(mockHelpingNowUTC):
+    _exercise_habery_reconfigure_v2(enable_kram=True)
 
 
 if __name__ == "__main__":
