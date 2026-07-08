@@ -711,6 +711,7 @@ def test_run_failure_is_logged_and_hby_closed(helpers, monkeypatch):
     name = "bug238witerr"
     helpers.remove_test_dirs(name)
 
+    # set up CRITICAL logger so we can assert its contents
     logged = []
     monkeypatch.setattr(witness_start.logger, "critical",
                         lambda *a, **k: logged.append((a, k)))
@@ -740,26 +741,49 @@ def test_run_failure_is_logged_and_hby_closed(helpers, monkeypatch):
 
 
 def test_encrypted_keystore_non_tty_fails_fast(helpers, monkeypatch):
-    """An encrypted keystore started with no passcode on a non-TTY must fail fast
-    with a logged AuthError instead of stalling on an interactive getpass prompt."""
+    """Starting encrypted keystore with no passcode on a non-TTY must fail fast with no prompt"""
     name = "bug238witenc"
+
+    # ensure TTY false regardless of test harness start (sometimes IDE starts set TTY=True)
+    monkeypatch.setattr("sys.stdin.isatty", lambda: False)
+
+    # Defensive raise on getpass, testing that we never call it for this test since no TTY
+    def _boom(*a, **k):
+        raise AssertionError("getpass must not be called on a non-TTY start")
+    monkeypatch.setattr("keri.cli.common.existing.getpass.getpass", _boom)
+
     helpers.remove_test_dirs(name)
     try:
         # create an encrypted keystore so that aeid is set
         hby = habbing.Habery(name=name, base="", bran="0123456789abcdefghijk", temp=False)
         hby.close()
 
-        # guarantee the non-interactive condition regardless of how the test runner
-        # wires stdin
-        monkeypatch.setattr("sys.stdin.isatty", lambda: False)
-
-        # the guard must short-circuit *before* any interactive prompt; if getpass
-        # is ever reached the witness could block waiting on stdin (the stall bug)
-        def _boom(*a, **k):
-            raise AssertionError("getpass must not be called on a non-TTY start")
-        monkeypatch.setattr("keri.cli.common.existing.getpass.getpass", _boom)
-
-        with pytest.raises(AuthError):
+        with pytest.raises(AuthError, match="passcode required"):
             witness_start.runWitness(name=name, base="", alias="wit", bran="")
     finally:
         helpers.remove_test_dirs(name)
+
+
+def test_witness_start_non_tty_wrong_passcode_raises(helpers, monkeypatch):
+    """When starting a witness with no TTY and with wrong passcode, should err."""
+    name = "bug238witwrong"
+    correct = "0123456789abcdefghijk"
+    wrong = "thisisasecretpasscode"
+
+    # ensure TTY false regardless of test harness start (sometimes IDE starts set TTY=True)
+    monkeypatch.setattr("sys.stdin.isatty", lambda: False)
+
+    helpers.remove_test_dirs(name)
+    try:
+        # Create keystore with correct passcode to later trigger noPrompt + wrong passcode err
+        hby = habbing.Habery(name=name, base="", bran=correct, temp=False)
+        hby.close()
+
+        args = _parse(["witness", "start", "--name", name, "--alias", "wit",
+                       "--passcode", wrong,
+                       "--loglevel", "debug", "--logdir", "/tmp/wlogs"])
+        with pytest.raises(AuthError, match="Last seed missing"):
+            args.handler(args)
+    finally:
+        helpers.remove_test_dirs(name)
+

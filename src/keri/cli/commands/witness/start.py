@@ -61,36 +61,24 @@ parser.add_argument("--logdir", action="store", required=False, default=None,
 parser.add_argument("--logfile", action="store", required=False, default=None,
                     help="DEPRECATED: use --logdir. Path to a log file; only its directory is used "
                          "(the file name and log subdirectory are derived internally).")
+parser.add_argument("--no-prompt", action="store_true", default=None, required=False,
+                    help="Disable interactive prompt", dest="noPrompt")
 
 
 def launch(args):
-    # Normalize (.upper()) so getLevelName returns a numeric level; a lowercase
-    # value would otherwise become the invalid string "Level debug" and silently
-    # break level filtering. The ogler.getLogger() call below applies this level to
-    # the shared logger every keri module holds. (Fatal startup failures are logged
-    # at CRITICAL in runWitness so they remain visible at the default level.)
+    # Normalize level case; avoid invalid lowercase values that silently break level filtering
     ogler.level = logging.getLevelName(args.loglevel.upper())
 
     logdir = args.logdir
-    deprecatedLogfile = args.logfile is not None
-    if deprecatedLogfile:
-        # --logfile is deprecated: ogler derives the log file name from --name and
-        # its subdirectory from its own prefix, so only the directory is meaningful.
+    if args.logfile:
+        print(f"--logfile is deprecated; use --logdir. Logging to {ogler.path}", file=sys.stderr)
         logdir = os.path.dirname(args.logfile) or "."
 
-    if logdir is not None:
+    if logdir is not None:  # Must reopen
         ogler.headDirPath = logdir
         ogler.reopen(name=args.name, temp=False, clear=True)
 
-    # Re-fetch so the configured level and any newly attached file handler are
-    # applied to the shared logger used throughout this command.
-    ogler.getLogger()
-
-    if deprecatedLogfile:
-        # Print (not log) so the notice is visible regardless of --loglevel, and
-        # report the actual resolved path so operators know where the log landed.
-        print(f"kli witness start: --logfile is deprecated; use --logdir. "
-              f"Logging to {ogler.path}", file=sys.stderr)
+    ogler.getLogger()  # re-applies ogler.level, replaces handlers, binding to "logger" var
 
     logger.info("\n******* Starting Witness for %s listening: http/%s, tcp/%s "
                 ".******\n\n", args.name, args.http, args.tcp)
@@ -105,17 +93,20 @@ def launch(args):
                configFile=args.configFile,
                keypath=args.keypath,
                certpath=args.certpath,
-               cafilepath=args.cafilepath)
+               cafilepath=args.cafilepath,
+               noPrompt=args.noPrompt)
 
     logger.info("\n******* Ended Witness for %s listening: http/%s, tcp/%s"
                 ".******\n\n", args.name, args.http, args.tcp)
 
 
 def runWitness(name="witness", base="", alias="witness", bran="", tcp=5631, http=5632, expire=0.0,
-               configDir="", configFile=None, keypath=None, certpath=None, cafilepath=None):
+               configDir="", configFile=None, keypath=None, certpath=None, cafilepath=None,
+               noPrompt=None):
     """
     Setup and run one witness
     """
+    noPrompt = noPrompt if noPrompt is not None else not sys.stdin.isatty()  # When not TTY then do not prompt
 
     ks = Keeper(name=name,
                 base=base,
@@ -134,14 +125,11 @@ def runWitness(name="witness", base="", alias="witness", bran="", tcp=5631, http
         if aeid is None:
             hby = Habery(name=name, base=base, bran=bran, cf=cf)
         else:
-            # Encrypted keystore requires a passcode. Only prompt interactively when
-            # attached to a TTY; a witness started from a script/service with no
-            # passcode must fail fast instead of stalling on getpass for input.
-            if not bran and not sys.stdin.isatty():
-                raise AuthError(f"Witness {name!r} keystore is encrypted but no passcode "
-                                f"was provided and stdin is not a TTY; pass --passcode "
-                                f"to start non-interactively.")
-            hby = setupHby(name=name, base=base, bran=bran, cf=cf)
+            # Prompt only for TTY; fail fast for no passcode on script/service witness start
+            if not bran and noPrompt:
+                raise AuthError(f"passcode required for keystore {name!r} but prompting is disabled. "
+                                f"pass --passcode or omit --no-prompt in an interactive terminal..")
+            hby = setupHby(name=name, base=base, bran=bran, cf=cf, noPrompt=noPrompt)
 
         hbyDoer = HaberyDoer(habery=hby)  # setup doer
         doers = [hbyDoer]
@@ -156,14 +144,10 @@ def runWitness(name="witness", base="", alias="witness", bran="", tcp=5631, http
 
         runController(doers=doers, expire=expire)
     except Exception:
-        # Log at CRITICAL (with the traceback via exc_info) so a failed start is
-        # visible even at the default --loglevel CRITICAL; a lower level would be
-        # suppressed. Without this the failure surfaces only as a bare traceback
-        # or a terse "ERR:" print from the CLI dispatcher.
+        # Log startup failures at CRITICAL with traceback.
         logger.critical("Witness %r failed to start", name, exc_info=True)
         raise
     finally:
-        # Release the keystore/database LMDB env so a failed start does not leave
-        # a stale lock that would block the next start attempt.
+        # Close Habery LMDB to avoid leftover locks on failed start blocking next start attempt
         if hby is not None:
             hby.close()
