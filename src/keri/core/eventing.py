@@ -4047,7 +4047,8 @@ class Kevery:
     TimeoutQNF = 300   # seconds to timeout query not found escrows
 
     def __init__(self, *, cues=None, db=None, rvy=None, exc=None, tvy=None,
-                 kramer=None, lax=True, local=False, cloned=False, direct=True,
+                 cf=None, kramer=None, enableKram=False,
+                 lax=True, local=False, cloned=False, direct=True,
                  check=False):
         """
         Initialize instance:
@@ -4059,7 +4060,11 @@ class Kevery:
             rvy (Revery): instance for reply message processing
             exc (Exchanger): instance for exchange message processing
             tvy (Tevery): instance for TEL query route processing
+            cf (Configer): instance of configuration provider for KRAM settings
             kramer (Kramer): instance for KRAM processing
+            enableKram (bool): True means create a KRAM processor when kramer
+                is not provided. KRAM enforcement remains controlled by the
+                provided configuration.
             lax (bool): True means operate in promiscuous (unrestricted) mode,
                            False means operate in nonpromiscuous (restricted) mode
                               as determined by local and prefixes
@@ -4082,6 +4087,9 @@ class Kevery:
         self.rvy = rvy
         self.exc = exc          # Exchanger instance for exn messages
         self.tvy = tvy          # Tevery instance for TEL query routes
+        if kramer is None and enableKram:
+            from .kraming import Kramer  # import here to avoid eventing/kraming cycle
+            kramer = Kramer(db=self.db, cf=cf, cues=self.cues)
         self.kramer = kramer    # Kramer instance for KRAM processing
         if self.kramer is not None:
             self.kramer.cues = self.cues

@@ -140,7 +140,7 @@ class DbSeed:
         rvy = routing.Revery(db=db, rtr=rtr)
         kvy = eventing.Kevery(db=db, lax=False, local=True, rvy=rvy)
         kvy.registerReplyRoutes(router=rtr)
-        psr = parsing.Parser(framed=True, kvy=kvy, rvy=rvy, version=Vrsn_1_0)
+        psr = parsing.Parser(framed=True, kvy=kvy, rvy=rvy, version=version)
 
         if protocols is None:
             protocols = [Schemes.tcp, Schemes.http]

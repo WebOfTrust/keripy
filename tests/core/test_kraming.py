@@ -174,6 +174,36 @@ def test_configuration():
                 Kramer(db, cf)
 
 
+def test_kevery_enable_kram_creates_kramer():
+    """Kevery can opt into constructing its KRAM processor from config."""
+    conf = {
+        "kram": {
+            "enabled": True,
+            "denials": [],
+            "caches": {
+                "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
+            }
+        }
+    }
+
+    with openCF(name="kram_kevery", base="test") as cf:
+        cf.put(conf)
+        with openDB(name="test_kevery_enable_kram", temp=True) as db:
+            kvy = Kevery(db=db, cf=cf)
+            assert kvy.kramer is None
+
+            kvy = Kevery(db=db, cf=cf, enableKram=True)
+            assert isinstance(kvy.kramer, Kramer)
+            assert kvy.kramer.enabled is True
+            assert kvy.kramer.cues is kvy.cues
+            assert db.kramCTYP.get("~").d == 1000
+
+    with openDB(name="test_kevery_enable_kram_no_config", temp=True) as db:
+        kvy = Kevery(db=db, enableKram=True)
+        assert isinstance(kvy.kramer, Kramer)
+        assert kvy.kramer.enabled is False
+
+
 def test_cache_type_constraints_valid():
     """Kramer init succeeds when cache-type tuple satisfies spec constraints."""
     validCf = {

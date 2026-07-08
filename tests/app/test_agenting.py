@@ -7,7 +7,7 @@ import time
 
 from hio.base import doing, tyming
 
-from keri.kering import Schemes, Vrsn_1_0, Kinds
+from keri.kering import Schemes, Vrsn_1_0, Vrsn_2_0, Kinds
 from keri.core import Salter
 from keri.app import (WitnessReceiptor, WitnessPublisher, WitnessInquisitor,
                       runController, openHby, setupWitness)
@@ -16,6 +16,25 @@ from keri.help import nowIso8601
 TEST_VERSION = Vrsn_1_0
 KWA = dict(version=TEST_VERSION, kind=Kinds.json)
 CUE_KWA = dict(**KWA, gvrsn=TEST_VERSION)
+KRAM_V2_CONFIG = {
+    "kram": {
+        "enabled": True,
+        "denials": [],
+        "caches": {
+            "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
+        }
+    }
+}
+
+
+def _merge_kram_v2_config(conf=None):
+    merged = dict(conf or {})
+    merged["kram"] = dict(
+        enabled=KRAM_V2_CONFIG["kram"]["enabled"],
+        denials=list(KRAM_V2_CONFIG["kram"]["denials"]),
+        caches={"~": list(KRAM_V2_CONFIG["kram"]["caches"]["~"])},
+    )
+    return merged
 
 
 def test_witness_receiptor(seeder):
@@ -236,6 +255,110 @@ def test_witness_inquisitor(mockHelpingNowUTC, seeder):
 
         assert palHab.pre in qinHab.kevers
         assert qinHab.pre in palHab.kevers
+
+        doist.exit()
+
+
+def test_witness_inquisitor_v2(mockHelpingNowUTC, seeder):
+
+    # Set up kwa for v2 version pass
+    KWA = dict(version=Vrsn_2_0, kind=Kinds.json)
+    CUE_KWA = dict(**KWA, gvrsn=Vrsn_2_0)
+
+    # Set up v2 habs
+    with openHby(name="wan3", salt=Salter(raw=b'wann-the-witness').qb64, version=Vrsn_2_0) as wanHby, \
+            openHby(name="wil3", salt=Salter(raw=b'will-the-witness').qb64, version=Vrsn_2_0) as wilHby, \
+            openHby(name="wes3", salt=Salter(raw=b'wess-the-witness').qb64, version=Vrsn_2_0) as wesHby, \
+            openHby(name="pal3", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_2_0) as palHby, \
+            openHby(name="qin3", salt=Salter(raw=b'abcdef0123456789').qb64, version=Vrsn_2_0) as qinHby:
+
+        # Set up cf for kram
+        for hby in (wanHby, wilHby, wesHby):
+            hby.cf.put(_merge_kram_v2_config(hby.cf.get()))
+
+        wanDoers = setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642, **KWA)
+        wilDoers = setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643, **KWA)
+        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644, **KWA)
+
+        wanHab = wanHby.habByName(name="wan")
+        wilHab = wilHby.habByName(name="wil")
+        wesHab = wesHby.habByName(name="wes")
+
+        seeder.seedWitEnds(palHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[Schemes.tcp], **KWA)
+        seeder.seedWitEnds(qinHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[Schemes.tcp], **KWA)
+
+        palHab = palHby.makeHab(name="pal", wits=[wanHab.pre, wilHab.pre, wesHab.pre], transferable=True, **KWA)
+        qinHab = qinHby.makeHab(name="qin", wits=[wanHab.pre, wilHab.pre, wesHab.pre], transferable=True, **KWA)
+
+        palWitDoer = WitnessReceiptor(hby=palHby)
+        palWitDoer.msgs.append(dict(pre=palHab.pre))
+        qinWitDoer = WitnessReceiptor(hby=qinHby)
+        qinWitDoer.msgs.append(dict(pre=qinHab.pre))
+
+        doers = wanDoers + wilDoers + wesDoers + [palWitDoer, qinWitDoer]
+        doist = doing.Doist(limit=5.0, tock=0.03125, doers=doers)
+        doist.enter()
+        doist.recur()
+
+        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
+        wigers = []
+        while not tymer.expired:
+            wigers = []
+            for hab in [palHab, qinHab]:
+                kev = hab.kever
+                ser = kev.serder
+                wigers.extend(wanHab.db.wigs.get(keys=(ser.preb, ser.saidb)))
+                wigers.extend(wilHab.db.wigs.get(keys=(ser.preb, ser.saidb)))
+                wigers.extend(wesHab.db.wigs.get(keys=(ser.preb, ser.saidb)))
+
+            if len(wigers) == 18:
+                break
+
+            doist.recur()
+
+        assert len(wigers) == 18
+
+        kev = qinHab.kever
+        ser = kev.serder
+
+        wigers = wanHab.db.wigs.get(keys=(ser.preb, ser.saidb))
+        assert len(wigers) == 3
+        wigers = wilHab.db.wigs.get(keys=(ser.preb, ser.saidb))
+        assert len(wigers) == 3
+        wigers = wesHab.db.wigs.get(keys=(ser.preb, ser.saidb))
+        assert len(wigers) == 3
+
+        qinWitq = WitnessInquisitor(hby=qinHby)
+        stamp = nowIso8601()
+        qinWitq.query(src=qinHab.pre, pre=palHab.pre, stamp=stamp, wits=palHab.kever.wits, **CUE_KWA)
+
+        palWitq = WitnessInquisitor(hby=palHby)
+        palWitq.query(src=palHab.pre, pre=qinHab.pre, stamp=stamp, wits=qinHab.kever.wits, **CUE_KWA)
+
+        doist.extend([qinWitq, palWitq])
+        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
+        while not (palHab.pre in qinHab.kevers and qinHab.pre in palHab.kevers) and not tymer.expired:
+            doist.recur()
+
+        assert palHab.pre in qinHab.kevers
+        assert qinHab.pre in palHab.kevers
+
+        # Create a list for kram entries 
+        kram_entries = []
+
+        # Iterate through the witnesses
+        for hby in (wanHby, wilHby, wesHby):
+            kram_entries.extend((keys, cache) for keys, cache in hby.db.kramMSGC.getTopItemIter()
+                                if keys[0] in (palHab.pre, qinHab.pre))
+
+        # Assert the query senders keys are in the kram entries
+        assert sorted(keys[0] for keys, _ in kram_entries) == sorted([palHab.pre, qinHab.pre])
+
+        # Assert cache.mdt value matches the timestamp used in the query
+        assert all(cache.mdt == stamp for _, cache in kram_entries)
+
+        # Assert cache.d value matches the config
+        assert all(cache.d == KRAM_V2_CONFIG["kram"]["caches"]["~"][0] for _, cache in kram_entries)
 
         doist.exit()
 

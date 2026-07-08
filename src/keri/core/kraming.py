@@ -103,7 +103,7 @@ class Kramer:
         self.cues = cues if cues is not None else []
 
         # Load config once at init, inject into runtime state
-        config = self.cf.get()
+        config = self.cf.get() if self.cf is not None else {}
         kram = config.get('kram', {})
 
         self._enabled = kram.get('enabled', False)
