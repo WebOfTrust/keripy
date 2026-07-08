@@ -4088,7 +4088,7 @@ class Kevery:
         self.exc = exc          # Exchanger instance for exn messages
         self.tvy = tvy          # Tevery instance for TEL query routes
         if kramer is None and enableKram:
-            from .kraming import Kramer  # import here to avoid eventing/kraming cycle
+            from .kraming import Kramer  # import here to avoid circular import
             kramer = Kramer(db=self.db, cf=cf, cues=self.cues)
         self.kramer = kramer    # Kramer instance for KRAM processing
         if self.kramer is not None:
