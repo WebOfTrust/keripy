@@ -729,48 +729,51 @@ def test_namespaced_habs():
     hby.close(clear=True)
     hby.cf.close(clear=True)
 
-def test_join_group_hab_persists_group_name_on_reload():
+def test_join_group_hab_persists_group_name_on_reload(tmp_path):
     hby_name = "multisig-join"
     group_name = "test_group_4"
     group_pre = Salter(raw=b'fedcba9876543210').signer(transferable=False).verfer.qb64
+    headDirPath = str(tmp_path)
 
-    # since not using temp need to clean up old path on all platforms linx, macOS, Win
-    # oldPath = '/usr/local/var/keri/ks/test/multisig-join'
-    # shutil.rmtree(oldPath)
+    hby = None
+    try:
+        with openHby(name=hby_name, base="test", temp=False,
+                     headDirPath=headDirPath,
+                     salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+            mhab = hby.makeHab(name="member1", **KWA)
+            other = hby.makeHab(name="member2", **KWA)
 
-    with openHby(name=hby_name, base="test", temp=False, clear=True,
-                         salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
-        mhab = hby.makeHab(name="member1", **KWA)
-        other = hby.makeHab(name="member2", **KWA)
+            group = hby.joinGroupHab(pre=group_pre,
+                                     group=group_name,
+                                     mhab=mhab,
+                                     smids=[mhab.pre, other.pre])
 
-        group = hby.joinGroupHab(pre=group_pre,
-                                 group=group_name,
-                                 mhab=mhab,
-                                 smids=[mhab.pre, other.pre])
+            assert group.name == group_name
+            assert hby.db.habs.get(keys=group_pre).name == group_name
 
-        assert group.name == group_name
-        assert hby.db.habs.get(keys=group_pre).name == group_name
+            qryMsg = group.query(pre=other.pre, src=mhab.pre,
+                                 gvrsn=TEST_VERSION, version=TEST_VERSION,
+                                 kind=Kinds.cesr)
+            qrySerder = SerderKERI(raw=bytes(qryMsg))
+            assert qrySerder.kind == Kinds.cesr
+            assert qrySerder.pvrsn == TEST_VERSION
+            assert qrySerder.gvrsn == TEST_VERSION
+            assert qrySerder.ked["i"] == mhab.pre
+            assert qrySerder.ked["q"]["i"] == other.pre
 
-        qryMsg = group.query(pre=other.pre, src=mhab.pre,
-                             gvrsn=TEST_VERSION, version=TEST_VERSION,
-                             kind=Kinds.cesr)
-        qrySerder = SerderKERI(raw=bytes(qryMsg))
-        assert qrySerder.kind == Kinds.cesr
-        assert qrySerder.pvrsn == TEST_VERSION
-        assert qrySerder.gvrsn == TEST_VERSION
-        assert qrySerder.ked["i"] == mhab.pre
-        assert qrySerder.ked["q"]["i"] == other.pre
+        with openHby(name=hby_name, base="test", temp=False,
+                     headDirPath=headDirPath,
+                     salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+            found = hby.habByName(name=group_name)
+            assert found is not None
+            assert found.pre == group_pre
+            assert found.name == group_name
+            assert hby.db.habs.get(keys=group_pre).name == group_name
 
-    with openHby(name=hby_name, base="test", temp=False,
-                         salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
-        found = hby.habByName(name=group_name)
-        assert found is not None
-        assert found.pre == group_pre
-        assert found.name == group_name
-        assert hby.db.habs.get(keys=group_pre).name == group_name
-
-    hby.close(clear=True)
-    hby.cf.close(clear=True)
+    finally:
+        if hby is not None:
+            hby.close(clear=True)
+            hby.cf.close(clear=True)
 
 def test_get_own_event_v2():
     """Test Hab.getOwnEvent: happy path sn=0 and sn=1, delegated duple, error path missing event."""
