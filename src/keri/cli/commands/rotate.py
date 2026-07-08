@@ -8,9 +8,9 @@ from dataclasses import dataclass
 
 from hio.base import doing
 
-from ..common import Parsery, config, addRotationArgs, setupHby
+from ..common import Parsery, config, addRotationArgs, setupHby, parseVersion
 
-from ...kering import ConfigurationError
+from ...kering import ConfigurationError, Kinds
 from ...core import Number, NumDex
 from ...help import helping
 from ...app import (HaberyDoer, Receiptor, WitnessReceiptor,
@@ -33,6 +33,9 @@ parser.add_argument('--code', help='<Witness AID>:<code> formatted witness auth 
 parser.add_argument('--code-time', help='Time the witness codes were captured.', default=None, required=False)
 
 parser.add_argument("--proxy", help="alias for delegation communication proxy", default=None)
+
+parser.add_argument('--version', default=None, required=False, type=parseVersion,
+                    help='KERI protocol version for the rotation event, such as 1.0 or 2.0')
 
 addRotationArgs(parser)
 
@@ -67,7 +70,7 @@ def rotate(args):
                          isith=opts.isith, nsith=opts.nsith,
                          count=opts.ncount, toad=opts.toad,
                          data=opts.data, proxy=args.proxy, authenticate=args.authenticate,
-                         codes=args.code, codeTime=args.code_time)
+                         codes=args.code, codeTime=args.code_time, version=args.version)
 
     doers = [rotDoer]
 
@@ -121,7 +124,7 @@ class RotateDoer(doing.DoDoer):
     to all appropriate witnesses
     """
 
-    def __init__(self, name, base, bran, alias, endpoint=False, isith=None, nsith=None, count=None,
+    def __init__(self, name, base, bran, alias, version=None, endpoint=False, isith=None, nsith=None, count=None,
                  toad=None, wits=None, cuts=None, adds=None, data: list = None, proxy=None, authenticate=False,
                  codes=None, codeTime=None):
         """
@@ -150,18 +153,21 @@ class RotateDoer(doing.DoDoer):
         self.authenticate = authenticate
         self.codes = codes if codes is not None else []
         self.codeTime = codeTime
+        self.version = version
 
         self.wits = wits if wits is not None else []
         self.cuts = cuts if cuts is not None else []
         self.adds = adds if adds is not None else []
 
-        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran, version=self.version)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
 
         self.proxy = self.hby.habByName(proxy) if proxy is not None else None
-        self.swain = Anchorer(hby=self.hby, proxy=self.proxy)
-        self.postman = Poster(hby=self.hby)
-        self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"])
+        self.swain = Anchorer(hby=self.hby, proxy=self.proxy, version=self.version, kind=Kinds.json)
+        self.postman = Poster(hby=self.hby, version=self.version, kind=Kinds.json)
+        kwa = dict(version=self.version, gvrsn=self.version, kind=Kinds.json) if self.version is not None else {}
+        self.mbx = MailboxDirector(hby=self.hby, topics=['/receipt', "/replay", "/reply"],
+                                   **kwa)
         doers = [self.hbyDoer, self.mbx, self.swain, self.postman, doing.doify(self.rotateDo)]
 
         super(RotateDoer, self).__init__(doers=doers)
@@ -195,9 +201,10 @@ class RotateDoer(doing.DoDoer):
                 for wit in self.adds:
                     yield from receiptor.catchup(hab.pre, wit)
 
+        kwa = dict(version=self.version, gvrsn=self.version) if self.version is not None else {}
         hab.rotate(isith=self.isith, nsith=self.nsith, ncount=self.count, toad=self.toad,
                    cuts=list(self.cuts), adds=list(self.adds),
-                   data=self.data, framed=True)
+                   data=self.data, framed=True, **kwa)
 
         auths = {}
         if self.authenticate:

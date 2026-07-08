@@ -15,17 +15,18 @@ from keri.core import (Saider, Kevery, Seqner,
 from keri.help import helping
 from keri.vc import credential
 from keri.vdr import Verifier, Regery, Tevery
+from tests.common import CUE_KWA, KWA
 
 
 def test_verifier_query(mockHelpingNowUTC, mockCoringRandomNonce):
-    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef') as (hby, hab):
+    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab):
         regery = Regery(hby=hby, name="test", temp=True)
-        issuer = regery.makeRegistry(prefix=hab.pre, name="test")
+        issuer = regery.makeRegistry(prefix=hab.pre, name="test", **KWA)
 
         verfer = Verifier(hby=hby)
         msg = verfer.query(hab.pre, issuer.regk,
                            "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
-                           route="tels")
+                           route="tels", **KWA)
         assert msg == (b'{"v":"KERI10JSON0000fe_","t":"qry","d":"EFa6oMZA5bgpALIc7yykT6O6'
                        b'ovdbDQnRFeTPDI4zaOhr","dt":"2021-01-01T00:00:00.000000+00:00","r'
                        b'":"tels","rr":"","q":{"i":"EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-g'
@@ -36,16 +37,16 @@ def test_verifier_query(mockHelpingNowUTC, mockCoringRandomNonce):
 
 
 def test_verifier(seeder):
-    with (openHab(name="sid", temp=True, salt=b'0123456789abcdef') as (hby, hab),
-          openHab(name="recp", transferable=True, temp=True) as (recpHby, recp)):
+    with (openHab(name="sid", temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab),
+          openHab(name="recp", transferable=True, temp=True, **KWA) as (recpHby, recp)):
         seeder.seedSchema(db=hby.db)
         seeder.seedSchema(db=recpHby.db)
         assert hab.pre == "EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o"
 
         regery = Regery(hby=hby, name="test", temp=True)
-        issuer = regery.makeRegistry(prefix=hab.pre, name="test")
+        issuer = regery.makeRegistry(prefix=hab.pre, name="test", **KWA)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        hab.interact(data=[rseal], framed=True)
+        hab.interact(data=[rseal], framed=True, **CUE_KWA)
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
@@ -67,7 +68,8 @@ def test_verifier(seeder):
         creder = credential(issuer=hab.pre,
                             schema="EMQWEcCnVRk1hatTNyK3sIykYSrrFvafX3bHQ9Gkk1kC",
                             data=d,
-                            status=issuer.regk)
+                            status=issuer.regk,
+                            **KWA)
         missing = False
         try:
             # Specify an anchor directly in the KEL
@@ -84,7 +86,7 @@ def test_verifier(seeder):
         assert q["ri"] == issuer.regk
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        hab.interact(data=[rseal], framed=True)
+        hab.interact(data=[rseal], framed=True, **CUE_KWA)
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=iss.pre,
@@ -131,10 +133,10 @@ def test_verifier_chained_credential(seeder):
     vLeiSchema = "ED892b40P_GcESs3wOcc2zFvL_GVi2Ybzp9isNTZKqP0"
     optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
 
-    with openHab(name="ron", temp=True, salt=b'0123456789abcdef') as (ronHby, ron), \
-            openHab(name="ian", temp=True, salt=b'0123456789abcdef') as (ianHby, ian), \
-            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef') as (hanHby, han), \
-            openHab(name="vic", transferable=True, temp=True, salt=b'0123456789abcdef') as (vicHby, vic):
+    with openHab(name="ron", temp=True, salt=b'0123456789abcdef', **KWA) as (ronHby, ron), \
+            openHab(name="ian", temp=True, salt=b'0123456789abcdef', **KWA) as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef', **KWA) as (hanHby, han), \
+            openHab(name="vic", transferable=True, temp=True, salt=b'0123456789abcdef', **KWA) as (vicHby, vic):
         seeder.seedSchema(db=ronHby.db)
         seeder.seedSchema(db=ianHby.db)
         seeder.seedSchema(db=hanHby.db)
@@ -148,9 +150,9 @@ def test_verifier_chained_credential(seeder):
         ronreg = Regery(hby=ronHby, name="ron", temp=True)
         ianreg = Regery(hby=ianHby, name="ian", temp=True)
         vicreg = Regery(hby=vicHby, name="vic", temp=True)
-        roniss = ronreg.makeRegistry(prefix=ron.pre, name="test")
+        roniss = ronreg.makeRegistry(prefix=ron.pre, name="test", **KWA)
         rseal = SealEvent(roniss.regk, "0", roniss.regd)._asdict()
-        ron.interact(data=[rseal], framed=True)
+        ron.interact(data=[rseal], framed=True, **CUE_KWA)
         seqner = Seqner(sn=ron.kever.sn)
         diger = Diger(qb64=ron.kever.serder.said)
         roniss.anchorMsg(pre=roniss.regk,
@@ -172,7 +174,8 @@ def test_verifier_chained_credential(seeder):
         creder = credential(issuer=ron.pre,
                             schema=qviSchema,
                             data=d,
-                            status=roniss.regk)
+                            status=roniss.regk,
+                            **KWA)
 
         missing = False
         try:
@@ -190,7 +193,7 @@ def test_verifier_chained_credential(seeder):
 
         iss = roniss.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        ron.interact(data=[rseal], framed=True)
+        ron.interact(data=[rseal], framed=True, **CUE_KWA)
         seqner = Seqner(sn=ron.kever.sn)
         diger = Diger(qb64=ron.kever.serder.said)
         roniss.anchorMsg(pre=iss.pre,
@@ -217,9 +220,9 @@ def test_verifier_chained_credential(seeder):
         saider = ronreg.reger.schms.get(qviSchema)
         assert saider[0].qb64 == creder.said
 
-        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian")
+        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", **KWA)
         rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
-        ian.interact(data=[rseal], framed=True)
+        ian.interact(data=[rseal], framed=True, **CUE_KWA)
         seqner = Seqner(sn=ian.kever.sn)
         diger = Diger(qb64=ian.kever.serder.said)
         ianiss.anchorMsg(pre=ianiss.regk,
@@ -249,10 +252,11 @@ def test_verifier_chained_credential(seeder):
                                 schema=vLeiSchema,
                                 data=d,
                                 status=ianiss.regk,
-                                        source=chain,
-                                        rules=[dict(
-                                            usageDisclaimer="Use carefully."
-                                        )])
+                                source=chain,
+                                rules=[dict(
+                                    usageDisclaimer="Use carefully."
+                                )],
+                                **KWA)
 
         missing = False
         try:
@@ -270,7 +274,7 @@ def test_verifier_chained_credential(seeder):
 
         iss = ianiss.issue(said=vLeiCreder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        ian.interact(data=[rseal], framed=True)
+        ian.interact(data=[rseal], framed=True, **CUE_KWA)
         seqner = Seqner(sn=ian.kever.sn)
         diger = Diger(qb64=ian.kever.serder.said)
         ianiss.anchorMsg(pre=iss.pre,
@@ -337,11 +341,12 @@ def test_verifier_chained_credential(seeder):
         _, chain = Saider.saidify(sad=chainSad, code=MtrDex.Blake3_256, label=Saids.d)
 
         untargetedCreder = credential(issuer=ian.pre,
-                                        schema=optionalIssueeSchema,
-                                        data=d,
-                                        status=ianiss.regk,
-                                              source=chain,
-                                              rules={})
+                                      schema=optionalIssueeSchema,
+                                      data=d,
+                                      status=ianiss.regk,
+                                      source=chain,
+                                      rules={},
+                                      **KWA)
 
         missing = False
         try:
@@ -358,7 +363,7 @@ def test_verifier_chained_credential(seeder):
 
         iss = ianiss.issue(said=untargetedCreder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        ian.interact(data=[rseal], framed=True)
+        ian.interact(data=[rseal], framed=True, **CUE_KWA)
         seqner = Seqner(sn=ian.kever.sn)
         diger = Diger(qb64=ian.kever.serder.said)
         ianiss.anchorMsg(pre=iss.pre,
@@ -387,11 +392,12 @@ def test_verifier_chained_credential(seeder):
         _, chain = Saider.saidify(sad=chainSad, code=MtrDex.Blake3_256, label=Saids.d)
 
         chainedCreder = credential(issuer=ian.pre,
-                                    schema=optionalIssueeSchema,
-                                    data=d,
-                                    status=ianiss.regk,
-                                           source=chain,
-                                           rules={})
+                                   schema=optionalIssueeSchema,
+                                   data=d,
+                                   status=ianiss.regk,
+                                   source=chain,
+                                   rules={},
+                                   **KWA)
 
         missing = False
         try:
@@ -408,7 +414,7 @@ def test_verifier_chained_credential(seeder):
 
         iss = ianiss.issue(said=chainedCreder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        ian.interact(data=[rseal], framed=True)
+        ian.interact(data=[rseal], framed=True, **CUE_KWA)
         seqner = Seqner(sn=ian.kever.sn)
         diger = Diger(qb64=ian.kever.serder.said)
         ianiss.anchorMsg(pre=iss.pre,
@@ -466,7 +472,7 @@ def test_verifier_chained_credential(seeder):
         rev = roniss.revoke(said=creder.said)
         rseq = Seqner(sn=rev.sn)
         rseal = SealEvent(rev.pre, rseq.snh, rev.said)._asdict()
-        ron.interact(data=[rseal], framed=True)
+        ron.interact(data=[rseal], framed=True, **CUE_KWA)
         seqner = Seqner(sn=ron.kever.sn)
         diger = Diger(qb64=ron.kever.serder.said)
         roniss.anchorMsg(pre=rev.pre,

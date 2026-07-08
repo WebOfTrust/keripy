@@ -100,6 +100,7 @@ setup(
                     'coverage>=7.13.1',
                     'pytest>=9.0.2',
                     'pytest-shell>=0.3.2',
+                    'pytest-xdist>=3.8.0',
                   ],
     setup_requires=[
     ],

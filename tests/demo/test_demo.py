@@ -13,14 +13,13 @@ from hio.core.tcp import clienting, serving
 
 from keri.kering import Vrsn_1_0, Kinds
 from keri.core import Salter, Diger, MtrDex, incept
-
-KWA = dict(version=Vrsn_1_0, kind=Kinds.json)
 from keri.app import Reactor, Directant, openHby
 from keri.demo import (BobDirector, EveDirector,
                        SamDirector, CamDirector, setupDemoController)
+from tests.common import KWA
 
 
-def test_direct_mode_bob_eve_demo():
+def test_direct_mode_bob_eve_demo(unused_tcp_port_factory):
     """
     Test direct mode bob and eve
     """
@@ -52,18 +51,18 @@ def test_direct_mode_bob_eve_demo():
     eve = eveSerder.ked["i"]
     assert eve == 'EFhg5my9DuMU6gw1CVk6QgkmZKBttWSXDzVzWVmxh0_K'
 
-    with (openHby(name="eve", base="test") as eveHby,
-          openHby(name="bob", base="test") as bobHby):
+    with (openHby(name="eve", base="test", version=Vrsn_1_0) as eveHby,
+          openHby(name="bob", base="test", version=Vrsn_1_0) as bobHby):
 
         limit = 1.0
         tock = 0.03125
         doist = doing.Doist(limit=limit, tock=tock)
 
-        bobPort = 5620  # bob's TCP listening port for server
-        evePort = 5621  # eve's TCP listneing port for server
+        bobPort = unused_tcp_port_factory()
+        evePort = unused_tcp_port_factory()
 
         # setup bob
-        bobHab = bobHby.makeHab(name="Bob", secrecies=bobSecrecies)
+        bobHab = bobHby.makeHab(name="Bob", secrecies=bobSecrecies, **KWA)
         print(bobHab.iserder.pretty())
         print(bobSerder.pretty())
 
@@ -96,7 +95,7 @@ def test_direct_mode_bob_eve_demo():
         # Bob's Reactants created on demand
 
         # setup eve
-        eveHab = eveHby.makeHab(name="Eve", secrecies=eveSecrecies)
+        eveHab = eveHby.makeHab(name="Eve", secrecies=eveSecrecies, **KWA)
         assert eveHab.iserder.said == eveSerder.said
         assert eveHab.pre == eve
 
@@ -151,7 +150,7 @@ def test_direct_mode_bob_eve_demo():
 
 
 
-def test_direct_mode_sam_eve_demo():
+def test_direct_mode_sam_eve_demo(unused_tcp_port_factory):
     """
     Test direct mode sam and eve
     """
@@ -184,18 +183,18 @@ def test_direct_mode_sam_eve_demo():
     assert eve == 'EFhg5my9DuMU6gw1CVk6QgkmZKBttWSXDzVzWVmxh0_K'
 
 
-    with openHby(name="eve", base="test") as eveHby, \
-         openHby(name="sam", base="test") as samHby:
+    with openHby(name="eve", base="test", version=Vrsn_1_0) as eveHby, \
+         openHby(name="sam", base="test", version=Vrsn_1_0) as samHby:
 
         limit = 1.0
         tock = 0.03125
         doist = doing.Doist(limit=limit, tock=tock)
 
-        samPort = 5620  # bob's TCP listening port for server
-        evePort = 5621  # eve's TCP listneing port for server
+        samPort = unused_tcp_port_factory()
+        evePort = unused_tcp_port_factory()
 
         # setup Sam
-        samHab = samHby.makeHab(name="Sam", secrecies=samSecrecies)
+        samHab = samHby.makeHab(name="Sam", secrecies=samSecrecies, **KWA)
         #samHab = habbing.Habitat(name='Sam',
                                  #ks=samKS,
                                  #db=samDB,
@@ -233,7 +232,7 @@ def test_direct_mode_sam_eve_demo():
         # Sam's Reactants created on demand
 
         # setup eve
-        eveHab = eveHby.makeHab(name="Eve", secrecies=eveSecrecies)
+        eveHab = eveHby.makeHab(name="Eve", secrecies=eveSecrecies, **KWA)
         #eveHab = habbing.Habitat(name='Eve',
                                  #ks=eveKS,
                                  #db=eveDB,
@@ -295,7 +294,7 @@ def test_direct_mode_sam_eve_demo():
 
 
 
-def test_run_bob_eve_demo():
+def test_run_bob_eve_demo(unused_tcp_port_factory):
     """
     Test demo setupController and run with DoDoers and Doist
     """
@@ -307,9 +306,12 @@ def test_run_bob_eve_demo():
 
     raw = b"raw salt to test"
 
+    bobPort = unused_tcp_port_factory()
+    evePort = unused_tcp_port_factory()
+
     name = "bob"
-    remote = 5621
-    local = 5620
+    remote = evePort
+    local = bobPort
 
     #  create bob secrecies
     secrecies = [[signer.qb64] for signer in
@@ -321,11 +323,12 @@ def test_run_bob_eve_demo():
     bobs = setupDemoController(secrecies=secrecies,
                                name=name,
                                remotePort=remote,
-                               localPort=local)
+                               localPort=local,
+                               **KWA)
 
     name = "eve"
-    remote = 5620
-    local = 5621
+    remote = bobPort
+    local = evePort
 
     #  create eve secrecies
     secrecies = [[signer.qb64] for signer in
@@ -336,7 +339,8 @@ def test_run_bob_eve_demo():
     eves = setupDemoController(secrecies=secrecies,
                                name=name,
                                remotePort=remote,
-                               localPort=local)
+                               localPort=local,
+                               **KWA)
 
     bobDoer = doing.DoDoer(doers=bobs)
     eveDoer = doing.DoDoer(doers=eves)
@@ -349,7 +353,7 @@ def test_run_bob_eve_demo():
     """End Test"""
 
 
-def test_run_sam_eve_demo():
+def test_run_sam_eve_demo(unused_tcp_port_factory):
     """
     Test demo setupController and run with DoDoers and Doist
     """
@@ -361,9 +365,12 @@ def test_run_sam_eve_demo():
 
     raw = b"raw salt to test"
 
+    samPort = unused_tcp_port_factory()
+    evePort = unused_tcp_port_factory()
+
     name = "sam"
-    remote = 5621
-    local = 5620
+    remote = evePort
+    local = samPort
 
     #  create sam secrecies
     secrecies = [[signer.qb64] for signer in
@@ -375,12 +382,13 @@ def test_run_sam_eve_demo():
     sams = setupDemoController(secrecies=secrecies,
                                name=name,
                                remotePort=remote,
-                               localPort=local)
+                               localPort=local,
+                               **KWA)
 
 
     name = "eve"
-    remote = 5620
-    local = 5621
+    remote = samPort
+    local = evePort
 
      #  create eve secrecies
     secrecies = [[signer.qb64] for signer in
@@ -392,7 +400,8 @@ def test_run_sam_eve_demo():
     eves = setupDemoController(secrecies=secrecies,
                                name=name,
                                remotePort=remote,
-                               localPort=local)
+                               localPort=local,
+                               **KWA)
 
 
     samDoer = doing.DoDoer(doers=sams)
@@ -406,7 +415,7 @@ def test_run_sam_eve_demo():
     """End Test"""
 
 
-def test_indirect_mode_sam_cam_wit_demo():
+def test_indirect_mode_sam_cam_wit_demo(unused_tcp_port_factory):
     """ Test indirect mode, sam and cam with witness """
 
     ogler.resetLevel(level=logging.DEBUG)
@@ -421,18 +430,19 @@ def test_indirect_mode_sam_cam_wit_demo():
     camSigners = Salter(raw=raw).signers(count=8, path="cam", temp=True)
     camSecrecies = [[signer.qb64] for signer in camSigners]
 
-    with (openHby(name="cam", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as camHby,
-          openHby(name="sam", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as samHby,
-          openHby(name="wit", base="test", salt=Salter(raw=b'0123456789abcdef').qb64) as witHby):
+    with (openHby(name="cam", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as camHby,
+          openHby(name="sam", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as samHby,
+          openHby(name="wit", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as witHby):
 
-        samPort = 5620  # sam's TCP listening port for server
-        witPort = 5621  # wit' TCP listening port for server
+        samPort = unused_tcp_port_factory()
+        witPort = unused_tcp_port_factory()
 
         # setup the witness
         witHab = witHby.makeHab(name="Wit",
                                  isith='1',
                                  icount=1,
-                                 transferable=False)
+                                 transferable=False,
+                                 **KWA)
 
         wit = witHab.pre
         witServer = serving.Server(host="", port=witPort)
@@ -442,7 +452,7 @@ def test_indirect_mode_sam_cam_wit_demo():
 
         # setup sam with witness
         sam = 'EIlGc6ZMlYj_v4Tr0j2LMonB-b6akMjIw6ThJLT2-cJe'
-        samHab = samHby.makeHab(name="Sam", wits=[wit], secrecies=samSecrecies)
+        samHab = samHby.makeHab(name="Sam", wits=[wit], secrecies=samSecrecies, **KWA)
         assert samHab.pre == sam
 
         # confirm that makeHab works the same as manual setup
@@ -482,7 +492,7 @@ def test_indirect_mode_sam_cam_wit_demo():
         samDoers = [samClientDoer, samDirector, samReactor, samServerDoer, samDirectant]
 
         # setup cam no witness
-        camHab = camHby.makeHab(name="Cam", secrecies=camSecrecies)
+        camHab = camHby.makeHab(name="Cam", secrecies=camSecrecies, **KWA)
         cam = camHab.pre
 
         # confirm that makeHab works same as manual setup
@@ -567,4 +577,3 @@ if __name__ == "__main__":
     test_run_bob_eve_demo()
     test_run_sam_eve_demo()
     test_indirect_mode_sam_cam_wit_demo()
-

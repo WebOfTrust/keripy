@@ -12,17 +12,29 @@ from ordered_set import OrderedSet as oset
 from hio.base import doing
 from hio.help import decking, ogler
 
-from ..kering import (Roles, Vrsn_1_0, Kinds,
+from ..kering import (Roles, Vrsn_1_0, Version, Kinds,
                       ConfigurationError, ValidationError)
 from .agenting import messengerFrom, streamMessengerFrom
 from ..core import (Bexter, Prefixer, Verfer, Texter, Diger,
-                    Sadder, Counter, SerderKERI,
-                    MtrDex, Codens, NonTransDex, exchange)
+                    Counter, SerderKERI,
+                    MtrDex, Codens, NonTransDex)
 from ..db import dgKey
 from ..peer import specialExchange
 from ..spac import PayloadTyper, PayloadTypes
 
 logger = ogler.getLogger()
+
+
+def _exchangeVersion(version=None, kind=None):
+    """Return embedded EXN and outer framing versions for forwarding wrappers
+
+    `/fwd` and `/essr/req` still use the legacy `specialExchange` body shape, so
+    keep that embedded body at v1 while allowing the surrounding framing to
+    follow the explicit caller version or the global default
+    """
+    gvrsn = version if version is not None else Version
+    kind = kind if kind is not None else Kinds.json
+    return dict(version=Vrsn_1_0, kind=kind), gvrsn
 
 
 class Poster(doing.DoDoer):
@@ -33,11 +45,13 @@ class Poster(doing.DoDoer):
 
     """
 
-    def __init__(self, hby, mbx=None, evts=None, cues=None, **kwa):
+    def __init__(self, hby, mbx=None, evts=None, cues=None, version=None, kind=None, **kwa):
         self.hby = hby
         self.mbx = mbx
         self.evts = evts if evts is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
+        self.version = version if version is not None else getattr(hby, "version", Version)
+        self.kind = kind if kind is not None else Kinds.json
 
         doers = [doing.doify(self.deliverDo)]
         super(Poster, self).__init__(doers=doers, **kwa)
@@ -199,12 +213,14 @@ class Poster(doing.DoDoer):
 
         evt = bytearray(serder.raw)
         evt.extend(atc)
+        kwa, gvrsn = _exchangeVersion(version=self.version, kind=self.kind)
         fwd, atc = specialExchange(sender=hab.pre,
                                    route='/fwd',
                                    modifiers=dict(pre=recp, topic=topic),
                                    attributes={},
-                                   embeds=dict(evt=evt), )
-        ims = hab.endorse(serder=fwd, last=False, framed=True)
+                                   embeds=dict(evt=evt),
+                                   **kwa)
+        ims = hab.endorse(serder=fwd, last=False, framed=True, gvrsn=gvrsn)
 
         # Transpose the signatures to point to the new location
         witer = messengerFrom(hab=hab, pre=mbx, urls=mailbox)
@@ -235,12 +251,14 @@ class Poster(doing.DoDoer):
 
         evt = bytearray(serder.raw)
         evt.extend(atc)
+        kwa, gvrsn = _exchangeVersion(version=self.version, kind=self.kind)
         fwd, atc = specialExchange(sender=hab.pre,
                                    route='/fwd',
                                    modifiers=dict(pre=recp, topic=topic),
                                    attributes={},
-                                   embeds=dict(evt=evt))
-        ims = hab.endorse(serder=fwd, last=False, framed=True)
+                                   embeds=dict(evt=evt),
+                                   **kwa)
+        ims = hab.endorse(serder=fwd, last=False, framed=True, gvrsn=gvrsn)
 
         # Transpose the signatures to point to the new location
         witer = messengerFrom(hab=hab, pre=mbx, urls=mailbox)
@@ -262,12 +280,8 @@ class StreamPoster:
 
     """
 
-    def __init__(self, hby, recp, src=None, hab=None, mbx=None, topic=None, headers=None, essr=False, **kwa):
-        if hab is not None:
-            self.hab = hab
-        else:
-            self.hab = hby.habs[src]
-
+    def __init__(self, hby, recp, src=None, hab=None, mbx=None, topic=None, headers=None,
+                 essr=False, version=None, kind=None, **kwa):
         self.hby = hby
         self.hab = hab
         self.recp = recp
@@ -277,6 +291,8 @@ class StreamPoster:
         self.topic = topic
         self.headers = headers
         self.essr = essr
+        self.version = version if version is not None else getattr(hby, "version", Version)
+        self.kind = kind if kind is not None else Kinds.json
         self.evts = decking.Deck()
 
     def deliver(self):
@@ -401,13 +417,15 @@ class StreamPoster:
 
         texter = Texter(raw=raw)
         diger = Diger(ser=raw, code=MtrDex.Blake3_256)
+        kwa, gvrsn = _exchangeVersion(version=self.version, kind=self.kind)
         essr, _ = specialExchange(sender=hab.pre,
                                   route='/essr/req',
                                   modifiers=dict(src=hab.pre, dest=ctrl),
-                                  diger=diger,)
-        ims = hab.endorse(serder=essr, framed=True)
+                                  diger=diger,
+                                  **kwa)
+        ims = hab.endorse(serder=essr, framed=True, gvrsn=gvrsn)
         ims.extend(Counter(Codens.ESSRPayloadGroup, count=1,
-                           gvrsn=Vrsn_1_0).qb64b)
+                           gvrsn=gvrsn).qb64b)
         ims.extend(texter.qb64b)
         return ims
 
@@ -424,12 +442,14 @@ class StreamPoster:
         # Its not us, randomly select a mailbox and forward it on
         evt = bytearray(serder.raw)
         evt.extend(atc)
+        kwa, gvrsn = _exchangeVersion(version=self.version, kind=self.kind)
         fwd, atc = specialExchange(sender=hab.pre,
                                    route='/fwd',
                                    modifiers=dict(pre=self.recp, topic=topic),
                                    attributes={},
-                                   embeds=dict(evt=evt))
-        ims = hab.endorse(serder=fwd, last=False, framed=True)
+                                   embeds=dict(evt=evt),
+                                   **kwa)
+        ims = hab.endorse(serder=fwd, last=False, framed=True, gvrsn=gvrsn)
         return fwd, ims + atc
 
     def forward(self, hab, ends, msg, topic):
@@ -523,8 +543,8 @@ class ForwardHandler:
         pevt = bytearray()
         for pather, atc in attachments:
             ked = pather.resolve(embeds)
-            sadder = Sadder(ked=ked, kind=Kinds.json)
-            pevt.extend(sadder.raw)
+            serder = SerderKERI(sad=ked, verify=False)
+            pevt.extend(serder.raw)
             pevt.extend(atc)
 
         if not pevt:

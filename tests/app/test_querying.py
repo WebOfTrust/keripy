@@ -5,22 +5,24 @@ keri.app.querying module
 """
 from hio.base import doing
 
-from keri.kering import Vrsn_1_0
+from keri.kering import Vrsn_1_0, Kinds
 from keri.app import (QueryDoer, KeyStateNoticer, LogQuerier,
                       SeqNoQuerier, AnchorQuerier, openHby)
 
 from keri.core import SerderKERI, Parser, reply
 from keri.db import dgKey
 
+from tests.common import CUE_KWA, KWA
+
 
 def test_querying():
-    with openHby() as hby, \
-            openHby() as hby1:
-        inqHab = hby.makeHab(name="inquisitor")
-        subHab = hby1.makeHab(name="subject")
+    with openHby(version=Vrsn_1_0) as hby, \
+            openHby(version=Vrsn_1_0) as hby1:
+        inqHab = hby.makeHab(name="inquisitor", **KWA)
+        subHab = hby1.makeHab(name="subject", **KWA)
         qdoer = QueryDoer(hby=hby, hab=inqHab, kvy=hby.kvy, pre=subHab.pre)
 
-        icp = subHab.msgOwnInception(framed=True)
+        icp = subHab.msgOwnInception(framed=True, gvrsn=Vrsn_1_0)
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(icp), kvy=inqHab.kvy)
 
         assert qdoer is not None
@@ -48,7 +50,7 @@ def test_querying():
         # Cue up a saved key state equal to the one we have
         hby.kvy.cues.clear()
         ksr = subHab.kever.state()
-        rpy = reply(route="/ksn", data=ksr._asdict())
+        rpy = reply(route="/ksn", data=ksr._asdict(), **KWA)
         cue = dict(kin="keyStateSaved", ksn=ksr._asdict())
         hby.kvy.cues.append(cue)
 
@@ -65,9 +67,9 @@ def test_querying():
         doist = doing.Doist(limit=limit, tock=tock, real=True)
 
         # rotate AID and submit as a new keyStateSave
-        rot = subHab.rotate(framed=True)
+        rot = subHab.rotate(framed=True, **CUE_KWA)
         ksr = subHab.kever.state()
-        rpy = reply(route="/ksn", data=ksr._asdict())
+        rpy = reply(route="/ksn", data=ksr._asdict(), **KWA)
         cue = dict(kin="keyStateSaved", ksn=ksr._asdict())
         hby.kvy.cues.append(cue)
         deeds = doist.enter(doers=[qdoer])
@@ -152,16 +154,16 @@ def test_querying():
         assert len(adoer.witq.msgs) == 1
 
 def test_query_not_found_escrow():
-    with openHby() as hby, \
-            openHby() as hby1:
-        inqHab = hby.makeHab(name="inquisitor")
-        subHab = hby1.makeHab(name="subject")
+    with openHby(version=Vrsn_1_0) as hby, \
+            openHby(version=Vrsn_1_0) as hby1:
+        inqHab = hby.makeHab(name="inquisitor", **KWA)
+        subHab = hby1.makeHab(name="subject", **KWA)
 
-        icp = inqHab.msgOwnInception(framed=True)
+        icp = inqHab.msgOwnInception(framed=True, gvrsn=Vrsn_1_0)
         subHab.psr.parseOne(ims=icp)
         assert inqHab.pre in subHab.kevers
 
-        qry = inqHab.query(subHab.pre, route="/foo", src=inqHab.pre)
+        qry = inqHab.query(subHab.pre, route="/foo", src=inqHab.pre, **CUE_KWA)
         serder = SerderKERI(raw=qry)
         dgkey = dgKey(inqHab.pre, serder.saidb)
 

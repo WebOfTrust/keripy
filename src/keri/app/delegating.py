@@ -13,7 +13,7 @@ from .agenting import WitnessInquisitor, Receiptor, WitnessPublisher
 from .forwarding import Poster
 from .habbing import GroupHab
 
-from ..kering import ValidationError, MissingEntryError, SerializeError
+from ..kering import ValidationError, Version, Vrsn_1_0, Kinds, MissingEntryError, SerializeError
 from ..core import Number, Diger, Seqner, SerderKERI, NumDex, exchange
 from ..peer import specialExchange
 
@@ -29,7 +29,7 @@ class Anchorer(doing.DoDoer):
 
     """
 
-    def __init__(self, hby, proxy=None, auths=None, **kwa):
+    def __init__(self, hby, proxy=None, auths=None, version=None, kind=None, **kwa):
         """
         Initialize Anchorer.
 
@@ -39,7 +39,9 @@ class Anchorer(doing.DoDoer):
             auths (list[str]): TOTP authentication codes to send to witnesses to authorize event receipting
         """
         self.hby = hby
-        self.postman = Poster(hby=hby)
+        self.version = version
+        self.kind = kind if kind is not None else Kinds.json
+        self.postman = Poster(hby=hby, version=self.version, kind=self.kind)
         self.witq = WitnessInquisitor(hby=hby)
         self.witDoer = Receiptor(hby=self.hby)
         self.publishers = dict()
@@ -48,7 +50,7 @@ class Anchorer(doing.DoDoer):
 
         super(Anchorer, self).__init__(doers=[self.witq, self.witDoer, self.postman, doing.doify(self.escrowDo)], **kwa)
 
-    def delegation(self, pre, sn=None, proxy=None, auths=None):
+    def delegation(self, pre, sn=None, proxy=None, auths=None, version=None):
         """
         Add witness publishers by prefix and send delegation event to witnesses and place event on
         the delegation partial witness escrow.
@@ -58,6 +60,7 @@ class Anchorer(doing.DoDoer):
             sn (int): optional sequence number of event to anchor, defaults to latest event
             proxy (Hab): optional proxy Habitat to use for sending messages
             auths (list[str]): TOTP authentication codes to send to witnesses to authorize event receipting
+            version (Versionage | None): optional explicit framing version for the delegated event message
         """
         if pre not in self.hby.habs:
             raise ValidationError(f"{pre} is not a valid local AID for delegation")
@@ -76,7 +79,7 @@ class Anchorer(doing.DoDoer):
         self.auths = auths if auths is not None else self.auths
 
         # load the event and signatures
-        evt = hab.msgOwnEvent(sn=sn)
+        evt = hab.msgOwnEvent(sn=sn, gvrsn=version if version is not None else self.version)
 
         # Send exn message for notification purposes
         srdr = SerderKERI(raw=evt)
@@ -201,7 +204,8 @@ class Anchorer(doing.DoDoer):
                     raise
 
                 srdr = SerderKERI(raw=evt)
-                exn, atc = delegateRequestExn(phab, delpre=delpre, evt=bytes(evt), aids=smids)
+                exn, atc = delegateRequestExn(phab, delpre=delpre, evt=bytes(evt), aids=smids,
+                                              version=self.version, kind=self.kind)
 
                 logger.info(
                     "Sending delegation request exn for %s from %s to delegator %s", srdr.ilk, phab.pre, delpre)
@@ -214,7 +218,8 @@ class Anchorer(doing.DoDoer):
                 self.postman.send(hab=phab, dest=delpre, topic="delegate", serder=srdr, attachment=evt)
 
                 seal = dict(i=srdr.pre, s=srdr.snh, d=srdr.said)
-                self.witq.query(hab=phab, pre=dkever.prefixer.qb64, anchor=seal)
+                kwa = dict(version=self.version, gvrsn=self.version, kind=self.kind) if self.version is not None else {}
+                self.witq.query(hab=phab, pre=dkever.prefixer.qb64, anchor=seal, **kwa)
 
                 self.hby.db.dpwe.rem(keys=(pre, said))
                 self.hby.db.dune.pin(keys=(srdr.pre, srdr.said), val=srdr)
@@ -312,7 +317,7 @@ class DelegateRequestHandler:
         self.notifier.add(attrs=data)
 
 
-def delegateRequestExn(hab, delpre, evt, aids=None):
+def delegateRequestExn(hab, delpre, evt, aids=None, version=None, kind=None):
     """
 
     Parameters:
@@ -335,13 +340,17 @@ def delegateRequestExn(hab, delpre, evt, aids=None):
     if aids is not None:
         data["aids"] = aids
 
-    # Create `exn` peer to peer message to notify other participants UI
+    gvrsn = version if version is not None else Version
+    kind = kind if kind is not None else Kinds.json
+
     exn, _ = specialExchange(sender=hab.pre,
                              route=DelegateRequestHandler.resource,
                              modifiers=dict(),
                              attributes=data,
-                             embeds=embeds)
-    ims = hab.endorse(serder=exn, last=False, framed=True)
+                             embeds=embeds,
+                             version=Vrsn_1_0,
+                             kind=kind)
+    ims = hab.endorse(serder=exn, last=False, framed=True, gvrsn=gvrsn)
     del ims[:exn.size]
 
     return exn, ims

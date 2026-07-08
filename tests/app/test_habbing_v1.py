@@ -6,8 +6,7 @@ tests.app.apping module
 import pytest
 
 import os
-import platform
-import shutil
+import uuid
 
 from hio.base import doing
 
@@ -41,7 +40,7 @@ def test_make_load_hab_with_habery_v1():
     name = "sue"
     suePre = 'ELF1S0jZkyQx8YtHaPLu-qyFmrkcykAiEW8twS-KPSO1'  # with temp=True
 
-    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:  # default is temp=True on openHab
+    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64, version=TEST_VERSION) as hby:  # default is temp=True on openHab
         hab = hby.makeHab(name=name, **KWA)
         assert isinstance(hab, Hab)
         assert hab.pre in hby.habs
@@ -74,32 +73,15 @@ def test_make_load_hab_with_habery_v1():
     assert not os.path.exists(hby.ks.path)
 
     # create not temp and then reload from not temp
-    if platform.system() == "Windows":
-        drives = [d for d in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' if os.path.exists(f'{d}:\\')]
-        for drive in drives:
-            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "cf", "hold", "test.json")):
-                os.remove(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "cf", "hold", "test.json"))
-            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "db", "hold", "test")):
-                shutil.rmtree(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "db", "hold", "test"))
-            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "ks", "hold", "test")):
-                shutil.rmtree(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "ks", "hold", "test"))
-    else:
-        if os.path.exists('/usr/local/var/keri/cf/hold/test.json'):
-            os.remove('/usr/local/var/keri/cf/hold/test.json')
-        if os.path.exists('/usr/local/var/keri/db/hold/test'):
-            shutil.rmtree('/usr/local/var/keri/db/hold/test')
-        if os.path.exists('/usr/local/var/keri/ks/hold/test'):
-            shutil.rmtree('/usr/local/var/keri/ks/hold/test')
-
-    base = "hold"
+    base = f"hold-v1-{uuid.uuid4().hex}"
     suePre = 'EAxe215BJ4Iy9r0mfoMEGVmHW8A4Avk3RYBC1A1_DZam'  # with temp=False
     bobPre = 'ENya5E5pvc6MVCe75huDK0QQhE4_64J55vCn4aKdXhR9'  # with temp=False
 
-    with openHby(base=base, temp=False, salt=Salter(raw=b'0123456789abcdef').qb64) as hby:  # default is temp=True
+    with openHby(base=base, temp=False, salt=Salter(raw=b'0123456789abcdef').qb64, version=TEST_VERSION) as hby:  # default is temp=True
 
-        assert hby.cf.path.endswith(os.path.join("keri", "cf", "hold", "test.json"))
-        assert hby.db.path.endswith(os.path.join("keri", "db", "hold", "test"))
-        assert hby.ks.path.endswith(os.path.join("keri", "ks", "hold", "test"))
+        assert hby.cf.path.endswith(os.path.join("keri", "cf", base, "test.json"))
+        assert hby.db.path.endswith(os.path.join("keri", "db", base, "test"))
+        assert hby.ks.path.endswith(os.path.join("keri", "ks", base, "test"))
 
         sueHab = hby.makeHab(name='Sue', **KWA)
         assert isinstance(sueHab, Hab)
@@ -138,11 +120,10 @@ def test_make_load_hab_with_habery_v1():
     assert os.path.exists(hby.ks.path)
 
     # test load from database
-    base = "hold"
-    with openHby(base=base, temp=False) as hby:  # default is temp=True
-        assert hby.cf.path.endswith(os.path.join("keri", "cf", "hold", "test.json"))
-        assert hby.db.path.endswith(os.path.join("keri", "db", "hold", "test"))
-        assert hby.ks.path.endswith(os.path.join("keri", "ks", "hold", "test"))
+    with openHby(base=base, temp=False, version=TEST_VERSION) as hby:  # default is temp=True
+        assert hby.cf.path.endswith(os.path.join("keri", "cf", base, "test.json"))
+        assert hby.db.path.endswith(os.path.join("keri", "db", base, "test"))
+        assert hby.ks.path.endswith(os.path.join("keri", "ks", base, "test"))
 
         assert hby.inited
         assert len(hby.habs) == 2
@@ -177,33 +158,16 @@ def test_hab_rotate_with_witness_v1():
     """
     Reload from disk and rotate hab with witness
     """
-    if platform.system() == "Windows":
-        drives = [d for d in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' if os.path.exists(f'{d}:\\')]
-        for drive in drives:
-            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "cf", "test", "phil-test.json")):
-                os.remove(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "cf", "test", "phil-test.json"))
-            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "db", "test", "phil-test")):
-                shutil.rmtree(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "db", "test", "phil-test"))
-            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "ks", "test", "phil-test")):
-                shutil.rmtree(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "ks", "test", "phil-test"))
-    else:
-        if os.path.exists('/usr/local/var/keri/cf/test/phil-test.json'):
-            os.remove('/usr/local/var/keri/cf/test/phil-test.json')
-        if os.path.exists('/usr/local/var/keri/db/test/phil-test'):
-            shutil.rmtree('/usr/local/var/keri/db/test/phil-test')
-        if os.path.exists('/usr/local/var/keri/ks/test/phil-test'):
-            shutil.rmtree('/usr/local/var/keri/ks/test/phil-test')
+    name = f"phil-test-v1-{uuid.uuid4().hex}"
 
-    name = "phil-test"
-
-    with openHby(name=name, base="test", temp=False) as hby:
+    with openHby(name=name, base="test", temp=False, version=TEST_VERSION) as hby:
         hab = hby.makeHab(name=name, icount=1, wits=["BANkPDTGELcUDH-TBCEjo4dpCvUnO_DnOSNEaNlL--4M"], **KWA)
         oidig = hab.iserder.said
         opre = hab.pre
         opub = hab.kever.verfers[0].qb64
         odig = hab.kever.serder.said
 
-    with openHby(name=name, base="test", temp=False) as hby:
+    with openHby(name=name, base="test", temp=False, version=TEST_VERSION) as hby:
         hab = hby.habByName(name)
         assert hab.pre == opre
         assert hab.prefixes is hab.db.prefixes
@@ -225,33 +189,18 @@ def test_hab_rotate_with_witness_v1():
 def test_habery_reinitialization_v1():
     """Test Reinitializing Habery and its Habs
     """
-    if platform.system() == "Windows":
-        drives = [d for d in 'ABCDEFGHIJKLMNOPQRSTUVWXYZ' if os.path.exists(f'{d}:\\')]
-        for drive in drives:
-            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "cf", "test", "bob-test.json")):
-                os.remove(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "cf", "test", "bob-test.json"))
-            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "db", "test", "bob-test")):
-                shutil.rmtree(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "db", "test", "bob-test"))
-            if os.path.exists(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "ks", "test", "bob-test")):
-                shutil.rmtree(os.path.join(os.path.sep, (drive + ":\\"), "usr", "local", "var", "keri", "ks", "test", "bob-test"))
-    else:
-        if os.path.exists('/usr/local/var/keri/cf/test/bob-test.json'):
-            os.remove('/usr/local/var/keri/cf/test/bob-test.json')
-        if os.path.exists('/usr/local/var/keri/db/test/bob-test'):
-            shutil.rmtree('/usr/local/var/keri/db/test/bob-test')
-        if os.path.exists('/usr/local/var/keri/ks/test/bob-test'):
-            shutil.rmtree('/usr/local/var/keri/ks/test/bob-test')
+    name = f"bob-test-v1-{uuid.uuid4().hex}"
+    base = f"test-v1-{uuid.uuid4().hex}"
+    salt = Salter(raw=b'0123456789abcdef').qb64
 
-    name = "bob-test"
-
-    with openHby(name=name, base="test", temp=False, clear=True) as hby:
+    with openHby(name=name, base=base, temp=False, clear=True, salt=salt, version=TEST_VERSION) as hby:
         hab = hby.makeHab(name=name, icount=1, **KWA)
         oidig = hab.iserder.said
         opre = hab.pre
         opub = hab.kever.verfers[0].qb64
         odig = hab.kever.serder.said
 
-    with openHby(name=name, base="test", temp=False) as hby:
+    with openHby(name=name, base=base, temp=False, salt=salt, version=TEST_VERSION) as hby:
 
         assert opre in hby.db.kevers  # read through cache
         assert opre in hby.db.prefixes
@@ -286,7 +235,7 @@ def test_habery_reinitialization_v1():
 
 def test_get_own_event_v1():
     """Test Hab.getOwnEvent: happy path sn=0 and sn=1, delegated duple, error path missing event."""
-    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64, version=TEST_VERSION) as hby:
         hab = hby.makeHab(name="test", **KWA)
         assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
 
@@ -308,7 +257,7 @@ def test_get_own_event_v1():
         assert duple is None  # rotation has no authorizer seal
 
     # Happy path: delegated hab with authorizer seal (duple is not None)
-    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64, version=TEST_VERSION) as hby:
         delHab = hby.makeHab(name="delegator", **KWA)
         delHab.interact(data=[], framed=True, **CUE_KWA)  # anchoring event at sn=1
         anchorSner = Number(num=delHab.kever.sn, code=NumDex.Huge)
@@ -326,7 +275,7 @@ def test_get_own_event_v1():
         assert saider.qb64 == delHab.kever.serder.said
 
     # Error path: missing event at sn (no event at sn=1 for inception-only hab)
-    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64, version=TEST_VERSION) as hby:
         hab = hby.makeHab(name="other", **KWA)
         with pytest.raises(MissingEntryError) as exc_info:
             hab.getOwnEvent(sn=1)
@@ -335,7 +284,7 @@ def test_get_own_event_v1():
 
 def test_msg_own_event_v1():
     """Test Hab.msgOwnEvent: sn=0 vs msgOwnInception, sn=1 after rotate."""
-    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64, version=TEST_VERSION) as hby:
         hab = hby.makeHab(name="test", **KWA)
         assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
 
@@ -357,7 +306,7 @@ def test_msg_own_event_v1():
         assert serder.sad["s"] == "1"
 
 def test_msg_other_event_v1():
-    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64) as hby:
+    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64, version=TEST_VERSION) as hby:
         hab = hby.makeHab(name="test", **KWA)
         assert hab.pre == "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3"
 
@@ -385,8 +334,8 @@ def test_msg_other_event_v1():
         assert SerderKERI(raw=bytes(msg)).kind == Kinds.json
 
 def test_postman_endsfor_v1():
-    with openHby(name="test", temp=True, salt=Salter(raw=b'0123456789abcdef').qb64) as hby, \
-            openHby(name="wes", temp=True, salt=Salter(raw=b'wess-the-witness').qb64) as wesHby, \
+    with openHby(name="test", temp=True, salt=Salter(raw=b'0123456789abcdef').qb64, version=TEST_VERSION) as hby, \
+            openHby(name="wes", temp=True, salt=Salter(raw=b'wess-the-witness').qb64, version=TEST_VERSION) as wesHby, \
             openHab(name="agent", temp=True, salt=b'0123456789abcdef', **KWA) as (agentHby, agentHab):
 
         wesHab = wesHby.makeHab(name='wes', isith="1", icount=1, transferable=False, **KWA)
@@ -493,11 +442,11 @@ def test_cues_v1():
         remoteMemberedSig (GroupHab only)
     """
     with openHby(name="cam", temp=True,
-                         salt=Salter(raw=b'camcamcamcamcamc').qb64) as camHby, \
+                         salt=Salter(raw=b'camcamcamcamcamc').qb64, version=TEST_VERSION) as camHby, \
          openHby(name="wes", temp=True,
-                         salt=Salter(raw=b'wesweswesweswesx').qb64) as wesHby, \
+                         salt=Salter(raw=b'wesweswesweswesx').qb64, version=TEST_VERSION) as wesHby, \
          openHby(name="bob", temp=True,
-                         salt=Salter(raw=b'bobbobbobbobbobb').qb64) as bobHby:
+                         salt=Salter(raw=b'bobbobbobbobbobb').qb64, version=TEST_VERSION) as bobHby:
 
         # shared habs
         wesHab = wesHby.makeHab(name='wes', isith="1", icount=1, transferable=False, **KWA)
@@ -621,11 +570,11 @@ def test_habery_reconfigure_v1(mockHelpingNowUTC):
     pname = "nel"  # peer name
     pbase = "head"  # peer base shared
 
-    with (openHby(name='wes', base=cbase, salt=salt) as wesHby,
-          openHby(name='wok', base=cbase, salt=salt) as wokHby,
-          openHby(name=cname, base=cbase, salt=salt) as tamHby,
-          openHby(name='wat', base=cbase, salt=salt) as watHby,
-          openHby(name=pname, base=pbase, salt=salt) as nelHby):
+    with (openHby(name='wes', base=cbase, salt=salt, version=TEST_VERSION) as wesHby,
+          openHby(name='wok', base=cbase, salt=salt, version=TEST_VERSION) as wokHby,
+          openHby(name=cname, base=cbase, salt=salt, version=TEST_VERSION) as tamHby,
+          openHby(name='wat', base=cbase, salt=salt, version=TEST_VERSION) as watHby,
+          openHby(name=pname, base=pbase, salt=salt, version=TEST_VERSION) as nelHby):
         # witnesses first so can setup inception event for tam
         wsith = '1'
 

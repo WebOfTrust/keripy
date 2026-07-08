@@ -4085,7 +4085,8 @@ class Saider(Matter):
         # fill id field denoted by label with dummy chars to get size correct
         sad[label] = clas.Dummy * Matter.Sizes[code].fs
         if 'v' in sad:  # if versioned then need to set size in version string
-            raw, proto, kind, sad, version = sizeify(ked=sad, kind=kind)
+            _, pvrsn, _, _, _ = deversify(sad["v"])
+            raw, proto, kind, sad, version = sizeify(ked=sad, kind=kind, version=pvrsn)
 
         ser = dict(sad)
         if ignore:  # delete ignore fields in said calculation from ser dict

@@ -13,32 +13,32 @@ function isSuccess() {
 }
 
 # CREATE DATABASE AND KEYSTORE
-kli init --name witness-test --base "${KERI_TEMP_DIR}" --nopasscode
+kli init --name witness-test --base "${KERI_TEMP_DIR}" --nopasscode --version 1.0
 isSuccess
 
 # RESOLVE WITNESS OOBIs
-kli oobi resolve --name witness-test --base "${KERI_TEMP_DIR}" --oobi-alias wan --oobi http://127.0.0.1:5643/oobi/BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM/controller
+kli oobi resolve --version 1.0 --name witness-test --base "${KERI_TEMP_DIR}" --oobi-alias wan --oobi http://127.0.0.1:5643/oobi/BLskRTInXnMxWaGqcpSyMgo0nYbalW99cGZESrz3zapM/controller
 isSuccess
-kli oobi resolve --name witness-test --base "${KERI_TEMP_DIR}"  --oobi-alias wil --oobi http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller
+kli oobi resolve --version 1.0 --name witness-test --base "${KERI_TEMP_DIR}"  --oobi-alias wil --oobi http://127.0.0.1:5642/oobi/BBilc4-L3tFUnfM_wJr4S4OJanAv_VmF_dJNN6vkf2Ha/controller
 isSuccess
-kli oobi resolve --name witness-test --base "${KERI_TEMP_DIR}"  --oobi-alias wes --oobi http://127.0.0.1:5644/oobi/BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX/controller
+kli oobi resolve --version 1.0 --name witness-test --base "${KERI_TEMP_DIR}"  --oobi-alias wes --oobi http://127.0.0.1:5644/oobi/BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX/controller
 isSuccess
 
 ## INCEPT AND PROPOGATE EVENTS AND RECEIPTS TO WITNESSES
-kli incept --name witness-test --base "${KERI_TEMP_DIR}" --receipt-endpoint --alias trans-wits --file "${KERI_DEMO_SCRIPT_DIR}/data/trans-wits-sample.json"
+kli incept --name witness-test --base "${KERI_TEMP_DIR}" --receipt-endpoint --alias trans-wits --version 1.0 --file "${KERI_DEMO_SCRIPT_DIR}/data/trans-wits-sample.json"
 isSuccess
 
-kli incept --name witness-test --base "${KERI_TEMP_DIR}"  --alias inquisitor --file "${KERI_DEMO_SCRIPT_DIR}/data/inquisitor-sample.json"
-isSuccess
-
-kli status --name witness-test --base "${KERI_TEMP_DIR}"  --alias trans-wits
-
-kli rotate --name witness-test --base "${KERI_TEMP_DIR}"  --receipt-endpoint --alias trans-wits --witness-cut BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX
+kli incept --name witness-test --base "${KERI_TEMP_DIR}"  --alias inquisitor --version 1.0 --file "${KERI_DEMO_SCRIPT_DIR}/data/inquisitor-sample.json"
 isSuccess
 
 kli status --name witness-test --base "${KERI_TEMP_DIR}"  --alias trans-wits
 
-kli rotate --name witness-test --base "${KERI_TEMP_DIR}"  --receipt-endpoint --alias trans-wits --witness-add BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX
+kli rotate --name witness-test --base "${KERI_TEMP_DIR}"  --receipt-endpoint --alias trans-wits --witness-cut BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX --version 1.0
+isSuccess
+
+kli status --name witness-test --base "${KERI_TEMP_DIR}"  --alias trans-wits
+
+kli rotate --name witness-test --base "${KERI_TEMP_DIR}"  --receipt-endpoint --alias trans-wits --witness-add BIKKuvBwpmDVA4Ds-EpL5bt9OqPzWPja2LigFYZN2YfX --version 1.0
 isSuccess
 
 kli status --name witness-test --base "${KERI_TEMP_DIR}"  --alias trans-wits

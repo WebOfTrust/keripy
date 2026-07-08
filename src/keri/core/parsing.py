@@ -1016,7 +1016,7 @@ class Parser:
         exts = MsgParseDom() # asdict(MsgParseDom())
         exts.local = local
 
-        serdery = Serdery(version=Version)
+        serdery = Serdery(version=self.version)
 
 
         try:

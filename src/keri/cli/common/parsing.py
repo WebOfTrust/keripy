@@ -5,9 +5,11 @@ keri.app.cli.common.parsing module
 """
 
 import json
-from argparse import ArgumentParser
+from argparse import ArgumentParser, ArgumentTypeError
 from os import getenv
 from typing import Any, List, Dict
+
+from ...kering import Versionage, Vrsn_1_0, Vrsn_2_0
 
 
 class Parsery:
@@ -122,3 +124,16 @@ def parseDataItems(items: List[str]) -> Dict[str, Any]:
             raise ValueError(f"invalid item '{item}', empty key")
         data[key] = coerce(value)
     return data
+
+
+def parseVersion(version: str) -> Versionage:
+    """
+    Parse a CLI protocol version like 1.0 into a supported Versionage.
+    """
+    try:
+        return {
+            "1.0": Vrsn_1_0,
+            "2.0": Vrsn_2_0,
+        }[version]
+    except (KeyError, TypeError) as ex:
+        raise ArgumentTypeError("version must be 1.0 or 2.0") from ex

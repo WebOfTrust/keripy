@@ -10,7 +10,6 @@ import itertools
 from hio.base import doing
 from hio.help import ogler
 
-from .. import Vrsn_1_0
 from ..core import Kevery, Revery, Parser
 from ..vdr import Tevery
 
@@ -26,7 +25,7 @@ class Director(doing.Doer):
             by a separate doer.
     """
 
-    def __init__(self, hab, client, **kwa):
+    def __init__(self, hab, client, version=None, kind=None, **kwa):
         """Initialize instance.
 
         Args:
@@ -38,6 +37,8 @@ class Director(doing.Doer):
         super(Director, self).__init__(**kwa)
         self.hab = hab
         self.client = client  # use client to initiate comms
+        self.version = version if version is not None else self.hab.psr.version
+        self.kind = kind if kind is not None else self.hab.iserder.kind
         if self.tymth:
             self.client.wind(self.tymth)
 
@@ -63,6 +64,10 @@ class Director(doing.Doer):
         Utility to send own inception on client
         """
         self.sendOwnEvent(sn=0)
+
+    def _event_kwa(self):
+        """Use explicit framing when configured, otherwise inherit the hab defaults."""
+        return dict(version=self.version, kind=self.kind, gvrsn=self.version)
 
 
 class Reactor(doing.DoDoer):
@@ -184,7 +189,7 @@ class Reactor(doing.DoDoer):
                              kvy=self.kevery,
                              tvy=self.tvy,
                              exc=self.exc,
-                             version=Vrsn_1_0)
+                             version=self.hab.psr.version)
 
 
         super(Reactor, self).__init__(doers=doers, **kwa)
@@ -505,7 +510,7 @@ class Reactant(doing.DoDoer):
                              tvy=self.tevery,
                              exc=self.exchanger,
                              rvy=rvy,
-                             version=Vrsn_1_0)
+                             version=self.hab.psr.version)
 
         super(Reactant, self).__init__(doers=doers, **kwa)
         if self.tymth:
