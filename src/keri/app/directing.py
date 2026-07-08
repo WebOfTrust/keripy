@@ -490,11 +490,11 @@ class Reactant(doing.DoDoer):
         #  needs unique kevery with ims per remoter connnection
         rvy = Revery(db=hab.db)
         self.kevery = Kevery(db=self.hab.db,
-                                      cf=self.hab.cf,
-                                      enableKram=True,
-                                      lax=False,
-                                      local=False,
-                                      rvy=rvy)
+                             cf=self.hab.cf,
+                             enableKram=True,
+                             lax=False,
+                             local=False,
+                             rvy=rvy)
 
         if self.verifier is not None:
             self.tevery = Tevery(reger=self.verifier.reger,

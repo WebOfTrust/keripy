@@ -12,7 +12,7 @@ from base64 import urlsafe_b64encode as encodeB64
 
 from hio.help import ogler
 
-from ..kering import (Colds, sniff, Vrsn_2_0, Version, Ilks,
+from ..kering import (Colds, sniff, Vrsn_2_0, Ilks,
                       UnexpectedCountCodeError, MaterialError, ValidationError,
                       QueryNotFoundError, ExtractionError, ShortageError,
                       ColdStartError, InvalidVersionError,
@@ -1402,7 +1402,7 @@ class Parser:
         if isinstance(serder, SerderKERI):
             ilk = serder.ilk  # dispatch abased on ilk
 
-            if kvy is not None and serder.pvrsn == Version and ilk in (
+            if kvy is not None and serder.pvrsn.major >= Vrsn_2_0.major and ilk in (
                 Ilks.qry, Ilks.rpy, Ilks.exn, Ilks.xip, Ilks.pro, Ilks.bar
             ):
                 kwa = dict(exts)
@@ -2596,4 +2596,3 @@ class Parser:
             exts.essrs.extend(essrs)
         except KeyError:
             exts.essrs = essrs
-

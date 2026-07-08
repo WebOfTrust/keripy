@@ -4064,7 +4064,7 @@ class Kevery:
             kramer (Kramer): instance for KRAM processing
             enableKram (bool): True means create a KRAM processor when kramer
                 is not provided. KRAM enforcement remains controlled by the
-                provided configuration.
+                provided configuration, defaulting to disabled without one.
             lax (bool): True means operate in promiscuous (unrestricted) mode,
                            False means operate in nonpromiscuous (restricted) mode
                               as determined by local and prefixes

@@ -261,18 +261,15 @@ def test_witness_inquisitor(mockHelpingNowUTC, seeder):
 
 def test_witness_inquisitor_v2(mockHelpingNowUTC, seeder):
 
-    # Set up kwa for v2 version pass
     KWA = dict(version=Vrsn_2_0, kind=Kinds.json)
     CUE_KWA = dict(**KWA, gvrsn=Vrsn_2_0)
 
-    # Set up v2 habs
     with openHby(name="wan3", salt=Salter(raw=b'wann-the-witness').qb64, version=Vrsn_2_0) as wanHby, \
             openHby(name="wil3", salt=Salter(raw=b'will-the-witness').qb64, version=Vrsn_2_0) as wilHby, \
             openHby(name="wes3", salt=Salter(raw=b'wess-the-witness').qb64, version=Vrsn_2_0) as wesHby, \
             openHby(name="pal3", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_2_0) as palHby, \
             openHby(name="qin3", salt=Salter(raw=b'abcdef0123456789').qb64, version=Vrsn_2_0) as qinHby:
 
-        # Set up cf for kram
         for hby in (wanHby, wilHby, wesHby):
             hby.cf.put(_merge_kram_v2_config(hby.cf.get()))
 
@@ -343,21 +340,16 @@ def test_witness_inquisitor_v2(mockHelpingNowUTC, seeder):
         assert palHab.pre in qinHab.kevers
         assert qinHab.pre in palHab.kevers
 
-        # Create a list for kram entries 
-        kram_entries = []
+        expected_senders = [palHab.pre, qinHab.pre]
+        kram_entries = [(keys, cache)
+                        for hby in (wanHby, wilHby, wesHby)
+                        for keys, cache in hby.db.kramMSGC.getTopItemIter()
+                        if keys[0] in expected_senders]
 
-        # Iterate through the witnesses
-        for hby in (wanHby, wilHby, wesHby):
-            kram_entries.extend((keys, cache) for keys, cache in hby.db.kramMSGC.getTopItemIter()
-                                if keys[0] in (palHab.pre, qinHab.pre))
+        assert sorted(keys[0] for keys, _ in kram_entries) == sorted(expected_senders)
 
-        # Assert the query senders keys are in the kram entries
-        assert sorted(keys[0] for keys, _ in kram_entries) == sorted([palHab.pre, qinHab.pre])
-
-        # Assert cache.mdt value matches the timestamp used in the query
         assert all(cache.mdt == stamp for _, cache in kram_entries)
 
-        # Assert cache.d value matches the config
         assert all(cache.d == KRAM_V2_CONFIG["kram"]["caches"]["~"][0] for _, cache in kram_entries)
 
         doist.exit()
