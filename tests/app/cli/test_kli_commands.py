@@ -773,6 +773,9 @@ def test_witness_start_non_tty_wrong_passcode_raises(helpers, monkeypatch):
     # ensure TTY false regardless of test harness start (sometimes IDE starts set TTY=True)
     monkeypatch.setattr("sys.stdin.isatty", lambda: False)
 
+    # launch() sets ogler.level from --loglevel on the shared logger; restore it so the
+    # DEBUG level does not leak into other tests (which would surface latent format bugs)
+    saved_level = ogler.level
     helpers.remove_test_dirs(name)
     try:
         # Create keystore with correct passcode to later trigger noPrompt + wrong passcode err
@@ -785,5 +788,7 @@ def test_witness_start_non_tty_wrong_passcode_raises(helpers, monkeypatch):
         with pytest.raises(AuthError, match="Last seed missing"):
             args.handler(args)
     finally:
+        ogler.level = saved_level
+        ogler.getLogger()  # re-apply restored level to the shared logger
         helpers.remove_test_dirs(name)
 
