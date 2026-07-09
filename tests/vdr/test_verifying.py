@@ -9,9 +9,10 @@ import pytest
 from keri import (MissingRegistryError, MissingEntryError,
                   MissingChainError, RevokedChainError, Vrsn_1_0)
 from keri.app import openHab
-from keri.core import (Saider, Kevery, Seqner,
+from keri.core import (Saider, Kevery, SerderKERI, Seqner,
                        Diger, Parser, SealEvent,
                        MtrDex, Saids)
+from keri.kering import Kinds, Vrsn_2_0
 from keri.help import helping
 from keri.vc import credential
 from keri.vdr import Verifier, Regery, Tevery
@@ -34,6 +35,48 @@ def test_verifier_query(mockHelpingNowUTC, mockCoringRandomNonce):
                        b'Aj-HABEMl4RhuR_JxpiMd1N8DEJEhTxM3Ovvn9Xya8AN-tiUbl-AABAABGnrnayV'
                        b'yK1siivaffGHpWWhcVThPN_dsePQvMXrlsOYNf0UdT0e6ch-0bN-UuOJCd1behue'
                        b'Zs_0V9FQ9vw0wK')
+
+
+def test_verifier_query_v2(mockHelpingNowUTC, mockCoringRandomNonce):
+    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef',
+                 version=Vrsn_2_0, kind=Kinds.json) as (hby, hab):
+        regery = Regery(hby=hby, name="test", temp=True)
+        issuer = regery.makeRegistry(prefix=hab.pre, name="test", version=Vrsn_1_0, kind=Kinds.json)
+
+        verfer = Verifier(hby=hby, reger=regery.reger)
+        qry = verfer.query(hab.pre, issuer.regk,
+                           "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
+                           route="tels", version=Vrsn_2_0, kind=Kinds.json)
+        serder = SerderKERI(raw=qry)
+        assert serder.pvrsn == Vrsn_2_0
+        assert serder.gvrsn == Vrsn_2_0
+        assert serder.kind == Kinds.json
+        assert serder.ked["i"] == hab.pre
+        assert serder.ked["r"] == "tels"
+        assert serder.ked["q"]["i"] == "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4"
+        assert serder.ked["q"]["ri"] == issuer.regk
+        assert serder.ked["q"]["src"] == hab.pre
+
+        cf = {
+            "kram": {
+                "enabled": True,
+                "denials": [],
+                "caches": {
+                    "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
+                }
+            }
+        }
+
+        hby.cf.put(cf)
+        kvy = Kevery(db=hby.db, cf=hby.cf, enableKram=True, lax=False, local=False)
+        tvy = Tevery(db=hby.db, reger=regery.reger, local=False)
+        assert kvy.kramer.enabled is True
+
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(qry), kvy=kvy, tvy=tvy)
+        cache = hby.db.kramMSGC.get(keys=(hab.pre, serder.said))
+        assert cache is not None
+        assert cache.mdt == serder.stamp
+        assert cache.d == 1000
 
 
 def test_verifier(seeder):

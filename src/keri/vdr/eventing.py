@@ -14,7 +14,7 @@ from  ordered_set import OrderedSet as oset
 from hio.help import decking, ogler
 
 from ..kering import (Kinds, Ilks, versify,
-                    Version,  Vrsn_1_0,
+                    Version,  Vrsn_1_0, Vrsn_2_0,
                     MissingWitnessSignatureError, MissingAnchorError,
                     ValidationError, OutOfOrderError,
                     LikelyDuplicitousError, MissingEntryError, MissingAnchorError,
@@ -603,7 +603,8 @@ def query(regk,
           dtb=None,
           stamp=None,
           version=Version,
-          kind=Kinds.json
+          kind=Kinds.json,
+          pre=""
           ):
     """ Returns serder of credentialquery (qry) event message.
 
@@ -623,12 +624,15 @@ def query(regk,
         stamp (str): ISO 8601 formatted current datetime of query message
         version (Versionage): the API version
         kind (str): the event type
+        pre (str): qb64 identifier prefix of the querying AID
 
     Returns:
         Serder: query event message Serder
 
     """
     qry = dict(i=vcid, ri=regk)
+    if version >= Vrsn_2_0:
+        qry["src"] = pre
 
     if dt is not None:
         qry["dt"] = dt
@@ -640,6 +644,7 @@ def query(regk,
         qry["dtb"] = dt
 
     return queryCore(route=route,
+                          pre = pre,
                           replyRoute=replyRoute,
                           query=qry,
                           stamp=stamp,

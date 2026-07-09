@@ -16,8 +16,8 @@ from hio.core import http
 from hio.base import doing
 from hio.help import decking
 
-from keri.kering import Schemes, Vrsn_1_0, Kinds, Ilks, Roles
-from keri.core import SerderKERI, Salter
+from keri.kering import Schemes, Vrsn_1_0, Vrsn_2_0, Kinds, Ilks, Roles
+from keri.core import SerderKERI, Salter, Kevery, Parser
 from keri.db import basing
 from keri.app import (MailboxIterable, QryRpyMailboxIterable,
                       QueryEnd, Mailboxer, Receiptor,
@@ -160,6 +160,84 @@ def test_qrymailbox_iter():
         val = next(mbi)
         assert val == (b'id: 0\nevent: /receipt\nretry: 1000\ndata: '
                        b'{"i": "EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3", '
+                       b'"t": "rct"}\n\n')
+
+        mb.iter.TimeoutMBX = 0  # Force the iter to timeout
+        with pytest.raises(StopIteration):
+            next(mbi)
+
+
+def test_qrymailbox_iter_v2():
+    topics = {"/receipt": 0, "/challenge": 1, "/multisig": 0}
+
+    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef',
+                 version=Vrsn_2_0, kind=Kinds.json) as (hby, hab):
+        assert hab.pre == 'EChqfw9-5A5qMrZ8_YgOAJm8iKMbTAUvfDVVI6KNGL3M'
+        icp = hab.msgOwnInception(framed=True, gvrsn=Vrsn_2_0)
+        icpSrdr = SerderKERI(raw=icp)
+        qry = hab.query(pre=hab.pre, src=hab.pre, route="mbx", query={"topics": topics},
+                        version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        srdr = SerderKERI(raw=qry)
+        assert srdr.pvrsn == Vrsn_2_0
+        assert srdr.gvrsn == Vrsn_2_0
+        assert srdr.kind == Kinds.json
+        assert srdr.ked["q"]["topics"] == topics
+        
+        cf = {
+            "kram": {
+                "enabled": True,
+                "denials": [],
+                "caches": {
+                    "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
+                }
+            }
+        }
+
+        hby.cf.put(cf)
+        kvy = Kevery(db=hby.db, cf=hby.cf, enableKram=True, lax=False, local=False)
+        assert kvy.kramer.enabled is True
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(qry), kvy=kvy)
+        cache = hby.db.kramMSGC.get(keys=(hab.pre, srdr.said))
+        assert cache is not None
+        assert cache.mdt == srdr.stamp
+        assert cache.d == 1000
+
+        cues = decking.Deck()
+        mbx = Mailboxer(temp=True)
+        mb = QryRpyMailboxIterable(mbx=mbx, cues=cues, said=srdr.said, retry=1000)
+
+        mbi = iter(mb)
+        assert mb.iter is None
+
+        #  No cued query response, empty iter
+        val = next(mbi)
+        assert val == b''
+        assert mb.iter is None
+
+        # A cue with the wrong said still returns nothing and recues the cue
+        cues.append(dict(kin="stream", serder=icpSrdr))
+        val = next(mbi)
+        assert val == b''
+        assert len(cues) == 1
+        assert mb.iter is None
+        cues.popleft()
+
+        cues.append(dict(kin="stream", pre=hab.pre, serder=srdr, topics=topics))
+        val = next(mbi)
+        assert val == b''
+        assert len(cues) == 0
+        assert mb.iter is not None
+
+        # And now it behaves just like a standard MailboxIterable
+        val = next(mbi)
+        assert val == b'retry: 1000\n\n'
+
+        # Store a message for the iter
+        msg = dict(i=hab.pre, t="rct")
+        mbx.storeMsg(topic=f"{hab.pre}/receipt", msg=json.dumps(msg).encode("utf-8"))
+        val = next(mbi)
+        assert val == (b'id: 0\nevent: /receipt\nretry: 1000\ndata: '
+                       b'{"i": "EChqfw9-5A5qMrZ8_YgOAJm8iKMbTAUvfDVVI6KNGL3M", '
                        b'"t": "rct"}\n\n')
 
         mb.iter.TimeoutMBX = 0  # Force the iter to timeout
