@@ -37,20 +37,28 @@ def _merge_kram_v2_config(conf=None):
     return merged
 
 
-def test_witness_receiptor(seeder):
+def test_witness_receiptor(seeder, witnessPorter):
     with openHby(name="wan1", salt=Salter(raw=b'wann-the-witness').qb64, version=TEST_VERSION) as wanHby, \
             openHby(name="wil1", salt=Salter(raw=b'will-the-witness').qb64, version=TEST_VERSION) as wilHby, \
             openHby(name="wes1", salt=Salter(raw=b'wess-the-witness').qb64, version=TEST_VERSION) as wesHby, \
             openHby(name="pal1", salt=Salter(raw=b'0123456789abcdef').qb64, version=TEST_VERSION) as palHby:
 
-        wanDoers = setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642, **KWA)
-        wilDoers = setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643, **KWA)
-        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644, **KWA)
+        witnessPorts, witnessUrls = witnessPorter("wan", "wil", "wes")
+        wanDoers = setupWitness(alias="wan", hby=wanHby,
+                                tcpPort=witnessPorts["wan"]["tcp"],
+                                httpPort=witnessPorts["wan"]["http"], **KWA)
+        wilDoers = setupWitness(alias="wil", hby=wilHby,
+                                tcpPort=witnessPorts["wil"]["tcp"],
+                                httpPort=witnessPorts["wil"]["http"], **KWA)
+        wesDoers = setupWitness(alias="wes", hby=wesHby,
+                                tcpPort=witnessPorts["wes"]["tcp"],
+                                httpPort=witnessPorts["wes"]["http"], **KWA)
 
         wanHab = wanHby.habByName(name="wan")
         wilHab = wilHby.habByName(name="wil")
         wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[Schemes.tcp], **KWA)
+        seeder.seedWitEnds(palHby.db, witHabs=[wanHab, wilHab, wesHab],
+                           protocols=[Schemes.tcp], witnessUrls=witnessUrls, **KWA)
 
         rctDoer = ReceiptDoer(hby=palHby, wanHab=wanHab, wilHab=wilHab, wesHab=wesHab)
 
@@ -132,30 +140,37 @@ class ReceiptDoer(doing.DoDoer):
         return True
 
 
-def test_witness_sender(seeder):
+def test_witness_sender(seeder, witnessPorter):
     with openHby(name="wan2", salt=Salter(raw=b'wann-the-witness').qb64, version=TEST_VERSION) as wanHby, \
             openHby(name="wil2", salt=Salter(raw=b'will-the-witness').qb64, version=TEST_VERSION) as wilHby, \
             openHby(name="wes2", salt=Salter(raw=b'wess-the-witness').qb64, version=TEST_VERSION) as wesHby, \
             openHby(name="pal2", salt=Salter(raw=b'0123456789abcdef').qb64, version=TEST_VERSION) as palHby:
 
         # looks like bad magic value in seeder is causing this to fail
-        pdoer = PublishDoer(wanHby, wilHby, wesHby, palHby, seeder)
+        witnessPorts, witnessUrls = witnessPorter("wan", "wil", "wes")
+        pdoer = PublishDoer(wanHby, wilHby, wesHby, palHby, seeder, witnessPorts, witnessUrls)
         runController(doers=[pdoer], expire=15.0)
         assert pdoer.done is True
 
 
 class PublishDoer(doing.DoDoer):
 
-    def __init__(self, wanHby, wilHby, wesHby, palHby, seeder):
-        wanDoers = setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642, **KWA)
-        wilDoers = setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643, **KWA)
-        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644, **KWA)
+    def __init__(self, wanHby, wilHby, wesHby, palHby, seeder, witnessPorts, witnessUrls):
+        wanDoers = setupWitness(alias="wan", hby=wanHby,
+                                tcpPort=witnessPorts["wan"]["tcp"],
+                                httpPort=witnessPorts["wan"]["http"], **KWA)
+        wilDoers = setupWitness(alias="wil", hby=wilHby,
+                                tcpPort=witnessPorts["wil"]["tcp"],
+                                httpPort=witnessPorts["wil"]["http"], **KWA)
+        wesDoers = setupWitness(alias="wes", hby=wesHby,
+                                tcpPort=witnessPorts["wes"]["tcp"],
+                                httpPort=witnessPorts["wes"]["http"], **KWA)
 
         self.wanHab = wanHby.habByName(name="wan")
         self.wilHab = wilHby.habByName(name="wil")
         self.wesHab = wesHby.habByName(name="wes")
         seeder.seedWitEnds(palHby.db, witHabs=[self.wanHab, self.wilHab, self.wesHab],
-                           protocols=[Schemes.tcp], **KWA)
+                           protocols=[Schemes.tcp], witnessUrls=witnessUrls, **KWA)
 
         self.palHab = palHby.makeHab(name="pal", wits=[self.wanHab.pre, self.wilHab.pre, self.wesHab.pre],
                                      transferable=True, **KWA)
@@ -187,21 +202,30 @@ class PublishDoer(doing.DoDoer):
         return True
 
 
-def test_witness_inquisitor(mockHelpingNowUTC, seeder):
+def test_witness_inquisitor(mockHelpingNowUTC, seeder, witnessPorter):
     with openHby(name="wan3", salt=Salter(raw=b'wann-the-witness').qb64, version=TEST_VERSION) as wanHby, \
             openHby(name="wil3", salt=Salter(raw=b'will-the-witness').qb64, version=TEST_VERSION) as wilHby, \
             openHby(name="wes3", salt=Salter(raw=b'wess-the-witness').qb64, version=TEST_VERSION) as wesHby, \
             openHby(name="pal3", salt=Salter(raw=b'0123456789abcdef').qb64, version=TEST_VERSION) as palHby, \
             openHby(name="qin3", salt=Salter(raw=b'abcdef0123456789').qb64, version=TEST_VERSION) as qinHby:
-        wanDoers = setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642, **KWA)
-        wilDoers = setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643, **KWA)
-        wesDoers = setupWitness(alias="wes", hby=wesHby, tcpPort=5634, httpPort=5644, **KWA)
+        witnessPorts, witnessUrls = witnessPorter("wan", "wil", "wes")
+        wanDoers = setupWitness(alias="wan", hby=wanHby,
+                                tcpPort=witnessPorts["wan"]["tcp"],
+                                httpPort=witnessPorts["wan"]["http"], **KWA)
+        wilDoers = setupWitness(alias="wil", hby=wilHby,
+                                tcpPort=witnessPorts["wil"]["tcp"],
+                                httpPort=witnessPorts["wil"]["http"], **KWA)
+        wesDoers = setupWitness(alias="wes", hby=wesHby,
+                                tcpPort=witnessPorts["wes"]["tcp"],
+                                httpPort=witnessPorts["wes"]["http"], **KWA)
 
         wanHab = wanHby.habByName(name="wan")
         wilHab = wilHby.habByName(name="wil")
         wesHab = wesHby.habByName(name="wes")
-        seeder.seedWitEnds(palHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[Schemes.tcp], **KWA)
-        seeder.seedWitEnds(qinHby.db, witHabs=[wanHab, wilHab, wesHab], protocols=[Schemes.tcp], **KWA)
+        seeder.seedWitEnds(palHby.db, witHabs=[wanHab, wilHab, wesHab],
+                           protocols=[Schemes.tcp], witnessUrls=witnessUrls, **KWA)
+        seeder.seedWitEnds(qinHby.db, witHabs=[wanHab, wilHab, wesHab],
+                           protocols=[Schemes.tcp], witnessUrls=witnessUrls, **KWA)
 
         palHab = palHby.makeHab(name="pal", wits=[wanHab.pre, wilHab.pre, wesHab.pre], transferable=True, **KWA)
         qinHab = qinHby.makeHab(name="qin", wits=[wanHab.pre, wilHab.pre, wesHab.pre], transferable=True, **KWA)
