@@ -70,13 +70,15 @@ def launch(args):
     ogler.level = logging.getLevelName(args.loglevel.upper())
 
     logdir = args.logdir
-    if args.logfile:
-        print(f"--logfile is deprecated; use --logdir. Logging to {ogler.path}", file=sys.stderr)
+    if args.logfile:  # deprecated: only its directory is used
         logdir = os.path.dirname(args.logfile) or "."
 
     if logdir is not None:  # Must reopen
         ogler.headDirPath = logdir
         ogler.reopen(name=args.name, temp=False, clear=True)
+
+    if args.logfile:  # print after reopen so ogler.path is the resolved log path
+        print(f"--logfile is deprecated; use --logdir. Logging to {ogler.path}", file=sys.stderr)
 
     ogler.getLogger()  # re-applies ogler.level, replaces handlers, binding to "logger" var
 
