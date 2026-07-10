@@ -109,12 +109,12 @@ TypeMedia = namedtuple("TypeMedia", 'd u mt mv')
 # use FirstSeenReplayCouples count code for CESR native
 FirstSeen = namedtuple("FirstSeen", 'f, dt')
 
-# Transferable Last Receipts
+# Transferable Receipts
 # ri = AID pre qb64 of receiptor (Prefixer)
 # n = sn of receipted event as lowercase hex string snh no leading zeros, (Number)
 # d = SAID digest qb64 of receipted event (Diger)
 # rss = receiptor indexed signatures qb64 list[Siger]
-# use TransLastReceiptIdxSigGroups count code for CESR native
+# use TransReceiptIdxSigGroups count code for CESR native
 TransReceipts = namedtuple("TransReceipts", 'i, n, d, rss')
 
 # Transferable Signatures
@@ -128,7 +128,7 @@ TransSigs = namedtuple("TransSigs", 'i, n, d, iss')
 # Transferable Last Signatures
 # i = AID pre qb64 of signer (Prefixer)
 # iss = signer indexed signatures qb64 list[Siger]
-# use TransLastReceiptIdxSigGroups count code for CESR native
+# use TransLastIdxSigGroups count code for CESR native
 TransLastSigs = namedtuple("TransLastSigs", 'i, iss')
 
 # Following are not seals or attachments only used in database

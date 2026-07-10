@@ -740,106 +740,148 @@ def test_baser():
         assert db.ures.get(cKey) == []
         assert db.ures.get(dKey) == []
 
-        # Validator (transferable) Receipts
-        # test .vrcs sub db methods dgkey
-        key = dgKey(preb, digb)
-        assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
+        # Validator (transferable) Receipts new vrcs vrcsNew form
+        # test .vrcs sub db methods dgkey  CesrIoSetSuber
+        # ioset vals are insertion ordered at each key,
+        # keys are lexicographically ordered
+        # receiptor basic test to confirm CesrIoSetSuber behavior
+        rprefixer = Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")  # fake prefix
+        rnumber = Number(num=1)
+        rdiger = Diger(ser=b"est1")    # digest of est event
 
-        p1 = Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")  # fake prefix
-        n1 = Number(num=1)
-        e1 = Diger(ser=b"est1")    # digest of est event
-        s1 = Siger(raw=b"\x00" * 64)  # 64‑byte fake signature
+        pre = preb.decode()
+        dig = digb.decode()
+        topkeys = (pre, dig)
+        allkeys = (pre, dig, rprefixer.qb64, rnumber.onkey, rdiger.qb64)
+        rsigerA = Siger(raw=b"\x00" * 64)  # 64‑byte fake signature
 
-        cesrVal = (p1, n1, e1, s1)
-        cesrVal = [cesrVal]
+        assert db.vrcs.get(allkeys) == []
+        assert db.vrcs.cnt(allkeys) == 0
+        assert db.vrcs.rem(allkeys) == False
+        assert db.vrcs.put(allkeys, rsigerA) is True
 
-        assert db.vrcs.get(key) == []
-        assert db.vrcs.cnt(key) == 0
-        assert db.vrcs.rem(key) == False
-
-        assert db.vrcs.put(key, cesrVal) is True
-
-        stored = db.vrcs.get(key)
+        stored = db.vrcs.get(allkeys)
         assert len(stored) == 1
-        sp1, sn1, se1, ss1 = stored[0]
+        assert stored[0].qb64 == rsigerA.qb64
 
-        assert sp1.qb64 == p1.qb64
-        assert sn1.num == n1.num
-        assert se1.qb64 == e1.qb64
-        assert ss1.raw == s1.raw
+        rsigerB = Siger(raw=b"\x01" * 64)  # 64‑byte fake signature
+        assert db.vrcs.add(allkeys, rsigerB) is True
 
-        assert db.vrcs.rem(key) == True
+        stored = db.vrcs.get(allkeys)
+        assert len(stored) == 2
+        assert stored[1].qb64 == rsigerB.qb64
 
-        # # dup vals are lexocographic
-        # Build several distinct typed CESR quadruples
-        pA = Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
-        pB = Prefixer(qb64="BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
-        pC = Prefixer(qb64="BCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")
-        pD = Prefixer(qb64="BDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
+        results = [(keys, siger) for keys, siger in db.vrcs.getTopItemIter(keys=topkeys)]
+        assert len(results) == 2
+        assert results[0][0] == allkeys
+        assert results[0][1].qb64 == rsigerA.qb64
+        assert results[1][0] == allkeys
+        assert results[1][1].qb64 == rsigerB.qb64
 
-        nA = Number(num=1)
-        nB = Number(num=2)
-        nC = Number(num=3)
-        nD = Number(num=4)
-
-        eA = Diger(ser=b"estA")
-        eB = Diger(ser=b"estB")
-        eC = Diger(ser=b"estC")
-        eD = Diger(ser=b"estD")
-
-        sA = Siger(raw=b"\x00" * 64)
-        sB = Siger(raw=b"\x01" * 64)
-        sC = Siger(raw=b"\x02" * 64)
-        sD = Siger(raw=b"\x03" * 64)
-
-        quadA = (pA, nA, eA, sA)
-        quadB = (pB, nB, eB, sB)
-        quadC = (pC, nC, eC, sC)
-        quadD = (pD, nD, eD, sD)
-
-        vals = [quadD, quadB, quadC, quadA]   # intentionally out of order
-
-        # Initially empty
-        assert db.vrcs.get(key) == []
-        assert db.vrcs.cnt(key) == 0
-
-        # Insert multiple typed tuples
-        assert db.vrcs.put(key, vals) is True
-
-        # Insertion order is preserved
-        stored = db.vrcs.get(key)
-        assert len(stored) == len(vals)
-        for (sp, sn, se, ss), (ep, en, ee, es) in zip(stored, vals):
-            assert sp.qb64 == ep.qb64
-            assert sn.num == en.num
-            assert se.qb64 == ee.qb64
-            assert ss.raw == es.raw
-
-        assert db.vrcs.cnt(key) == 4
-
-        # Duplicate insertion should not add new entries
-        assert db.vrcs.put(key, [quadA]) == False
-        assert db.vrcs.put(key, [quadB]) == False   # quadB already present → no change
-        assert db.vrcs.put(key, [quadD]) == False   # quadD already present → no change
-        assert db.vrcs.put(key, [quadC]) == False   # quadC already present → no change
-
-        # Iteration returns the same tuples in insertion order
-        itered = list(db.vrcs.getIter(key))
-        for (sp, sn, se, ss), (ep, en, ee, es) in zip(itered, vals):
-            assert sp.qb64 == ep.qb64
-            assert sn.num == en.num
-            assert se.qb64 == ee.qb64
-            assert ss.raw == es.raw
-
-        # Remove individual tuples
-        for quad in vals:
-            assert db.vrcs.rem(key, quad) == True
-
-        assert db.vrcs.get(key) == []
-        assert db.vrcs.cnt(key) == 0
+        assert db.vrcs.rem(allkeys) == True
 
 
-        # Unverified Validator (transferable) Receipt Escrows
+        ## Validator (transferable) Receipts old vrcs form
+        ## test .vrcs sub db methods dgkey
+        #key = dgKey(preb, digb)
+        #assert key == f'{preb.decode("utf-8")}.{digb.decode("utf-8")}'.encode("utf-8")
+
+        #p1 = Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")  # fake prefix
+        #n1 = Number(num=1)
+        #e1 = Diger(ser=b"est1")    # digest of est event
+        #s1 = Siger(raw=b"\x00" * 64)  # 64‑byte fake signature
+
+        #cesrVal = (p1, n1, e1, s1)
+        #cesrVals = [cesrVal]
+
+        #assert db.vrcs.get(key) == []
+        #assert db.vrcs.cnt(key) == 0
+        #assert db.vrcs.rem(key) == False
+
+        #assert db.vrcs.put(key, cesrVals) is True
+
+        #stored = db.vrcs.get(key)
+        #assert len(stored) == 1
+        #sp1, sn1, se1, ss1 = stored[0]
+
+        #assert sp1.qb64 == p1.qb64
+        #assert sn1.num == n1.num
+        #assert se1.qb64 == e1.qb64
+        #assert ss1.raw == s1.raw
+
+        #assert db.vrcs.rem(key) == True
+
+        ## # dup vals are lexocographic
+        ## Build several distinct typed CESR quadruples
+        #pA = Prefixer(qb64="BAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA")
+        #pB = Prefixer(qb64="BBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBBB")
+        #pC = Prefixer(qb64="BCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCCC")
+        #pD = Prefixer(qb64="BDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDDD")
+
+        #nA = Number(num=1)
+        #nB = Number(num=2)
+        #nC = Number(num=3)
+        #nD = Number(num=4)
+
+        #eA = Diger(ser=b"estA")
+        #eB = Diger(ser=b"estB")
+        #eC = Diger(ser=b"estC")
+        #eD = Diger(ser=b"estD")
+
+        #sA = Siger(raw=b"\x00" * 64)
+        #sB = Siger(raw=b"\x01" * 64)
+        #sC = Siger(raw=b"\x02" * 64)
+        #sD = Siger(raw=b"\x03" * 64)
+
+        #quadA = (pA, nA, eA, sA)
+        #quadB = (pB, nB, eB, sB)
+        #quadC = (pC, nC, eC, sC)
+        #quadD = (pD, nD, eD, sD)
+
+        #vals = [quadD, quadB, quadC, quadA]   # intentionally out of order
+
+        ## Initially empty
+        #assert db.vrcs.get(key) == []
+        #assert db.vrcs.cnt(key) == 0
+
+        ## Insert multiple typed tuples
+        #assert db.vrcs.put(key, vals) is True
+
+        ## Insertion order is preserved
+        #stored = db.vrcs.get(key)
+        #assert len(stored) == len(vals)
+        #for (sp, sn, se, ss), (ep, en, ee, es) in zip(stored, vals):
+            #assert sp.qb64 == ep.qb64
+            #assert sn.num == en.num
+            #assert se.qb64 == ee.qb64
+            #assert ss.raw == es.raw
+
+        #assert db.vrcs.cnt(key) == 4
+
+        ## Duplicate insertion should not add new entries
+        #assert db.vrcs.put(key, [quadA]) == False
+        #assert db.vrcs.put(key, [quadB]) == False   # quadB already present → no change
+        #assert db.vrcs.put(key, [quadD]) == False   # quadD already present → no change
+        #assert db.vrcs.put(key, [quadC]) == False   # quadC already present → no change
+
+        ## Iteration returns the same tuples in insertion order
+        #itered = list(db.vrcs.getIter(key))
+        #for (sp, sn, se, ss), (ep, en, ee, es) in zip(itered, vals):
+            #assert sp.qb64 == ep.qb64
+            #assert sn.num == en.num
+            #assert se.qb64 == ee.qb64
+            #assert ss.raw == es.raw
+
+        ## Remove individual tuples
+        #for quad in vals:
+            #assert db.vrcs.rem(key, quad) == True
+
+        #assert db.vrcs.get(key) == []
+        #assert db.vrcs.cnt(key) == 0
+
+
+
+        # Unverified Validator (transferable) Receipt Escrows vres
         # test .vres insertion order dup methods.  dup vals are insertion order
         key = b'A'
         vals = [b"z", b"m", b"x", b"a"]
@@ -851,14 +893,14 @@ def test_baser():
         s1 = Siger(raw=b"\x00" * 64)  # 64‑byte fake signature
 
         cesrVal = (d1, p1, n1, e1, s1)
-        cesrVal = [cesrVal]
+        cesrVals = [cesrVal]
 
         assert db.vres.get(key) == []
         assert db.vres.getLast(keys=key) == None
         assert db.vres.cnt(key) == 0
         assert db.vres.rem(key) == False
 
-        assert db.vres.put(keys=key, vals=cesrVal) is True
+        assert db.vres.put(keys=key, vals=cesrVals) is True
 
         stored = db.vres.get(key)
         assert len(stored) == 1

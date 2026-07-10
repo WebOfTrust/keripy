@@ -946,9 +946,10 @@ class Baser(LMDBer):
                                              klas=(coring.Prefixer, coring.Cigar))
         self.ures = subing.CatCesrIoSetSuber(db=self, subkey='ures.',
                                              klas=(coring.Diger, coring.Prefixer, coring.Cigar))
-        self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.',
-                             klas=(coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
-        self.vrcsNew = subing.CesrIoSetSuber(db=self, subkey='vrcsnew.', klas=indexing.Siger)
+        #self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.',
+                             #klas=(coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
+        self.vrcs = subing.CesrIoSetSuber(db=self, subkey='vrcs.', klas=indexing.Siger)
+        #self.vrcsNew = subing.CesrIoSetSuber(db=self, subkey='vrcsnew.', klas=indexing.Siger)
 
 
         self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.',
@@ -1734,21 +1735,21 @@ class Baser(LMDBer):
 
         # add trans endorsement quadruples to attachments not controller
         # may have been originally key event attachments or receipted endorsements
-        if quads := self.vrcs.get(keys=dgkey):
-            atc.extend(Counter(code=Codens.TransReceiptIdxSigGroups,
-                               count=len(quads), version=Vrsn_1_0).qb64b)
-            for prefixer, number, diger, siger in quads:    # adapt to CESR
-                atc.extend(prefixer.qb64b)
-                atc.extend(number.qb64b)
-                atc.extend(diger.qb64b)
-                atc.extend(siger.qb64b)
+        #if quads := self.vrcs.get(keys=dgkey):
+            #atc.extend(Counter(code=Codens.TransReceiptIdxSigGroups,
+                               #count=len(quads), version=Vrsn_1_0).qb64b)
+            #for prefixer, number, diger, siger in quads:    # adapt to CESR
+                #atc.extend(prefixer.qb64b)
+                #atc.extend(number.qb64b)
+                #atc.extend(diger.qb64b)
+                #atc.extend(siger.qb64b)
 
-        # add non-controller trans endorsement quadruples to attachments
+        # vrcsNew add non-controller trans endorsement quadruples to attachments
         # may have been originally non-controller sigs or receipted endorsements
         # collate sigersets by triple of rpre,rsnh,rdig
         topkeys = (pre, dig)
         sigersets = dict()
-        for keys, siger in self.vrcsNew.getTopItemIter(keys=topkeys):
+        for keys, siger in self.vrcs.getTopItemIter(keys=topkeys):
             epre, edig, rpre, rsnh, rdig = keys  # expand keys tuple
             triple = (rpre, rsnh, rdig)
             if triple not in sigersets:
@@ -1776,6 +1777,7 @@ class Baser(LMDBer):
             gims = Counter.enclose(qb64=cims,
                                        code=Codens.TransReceiptIdxSigGroups,
                                        version=Vrsn_1_0)
+            atc.extend(gims)
 
         # add nontrans endorsement couples to attachments not witnesses
         # may have been originally key event attachments or receipted endorsements
