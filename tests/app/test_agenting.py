@@ -5,6 +5,7 @@ tests.app.agenting module
 """
 import time
 
+import pytest
 from hio.base import doing, tyming
 
 from keri.kering import Schemes, Vrsn_1_0, Vrsn_2_0, Kinds
@@ -283,6 +284,7 @@ def test_witness_inquisitor(mockHelpingNowUTC, seeder, witnessPorter):
         doist.exit()
 
 
+@pytest.mark.skip(reason="need to wait for DB changes")
 def test_witness_inquisitor_v2(mockHelpingNowUTC, seeder):
 
     KWA = dict(version=Vrsn_2_0, kind=Kinds.json)

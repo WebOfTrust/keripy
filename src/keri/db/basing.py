@@ -1709,48 +1709,39 @@ class Baser(LMDBer):
         if not (serder := self.evts.get(keys=(pre, dig))):
             raise MissingEntryError("Missing event for dig={}.".format(dig))
         msg.extend(serder.raw)
-        version = serder.pvrsn
-
-        def extendAttachments(code, payload, count):
-            if version.major >= 2:
-                atc.extend(Counter.enclose(qb64=payload, code=code,
-                                           version=version))
-            else:
-                atc.extend(Counter(code=code, count=count,
-                                   version=version).qb64b)
-                atc.extend(payload)
 
         # add indexed signatures to attachments
         if not (sigers := self.sigs.get(keys=dgkey)):
             raise MissingEntryError("Missing sigs for dig={}.".format(dig))
-        payload = bytearray()
+        atc.extend(Counter(code=Codens.ControllerIdxSigs,
+                           count=len(sigers), version=Vrsn_1_0).qb64b)
         for siger in sigers:
-            payload.extend(siger.qb64b)
-        extendAttachments(Codens.ControllerIdxSigs, payload, len(sigers))
+            atc.extend(siger.qb64b)
 
         # add indexed witness signatures to attachments
         if wigers := self.wigs.get(keys=dgkey):
-            payload = bytearray()
+            atc.extend(Counter(code=Codens.WitnessIdxSigs,
+                               count=len(wigers), version=Vrsn_1_0).qb64b)
             for wiger in wigers:
-                payload.extend(wiger.qb64b)
-            extendAttachments(Codens.WitnessIdxSigs, payload, len(wigers))
+                atc.extend(wiger.qb64b)
 
         # add authorizer (delegator/issuer) source seal event couple to attachments
         if (duple := self.aess.get(keys=(pre, dig))) is not None:
             number, diger = duple
-            payload = bytearray(number.qb64b + diger.qb64b)
-            extendAttachments(Codens.SealSourceCouples, payload, 1)
+            atc.extend(Counter(code=Codens.SealSourceCouples,
+                               count=1, version=Vrsn_1_0).qb64b)
+            atc.extend(number.qb64b + diger.qb64b)
 
         # add trans endorsement quadruples to attachments not controller
         # may have been originally key event attachments or receipted endorsements
         if quads := self.vrcs.get(keys=dgkey):
-            payload = bytearray()
+            atc.extend(Counter(code=Codens.TransReceiptIdxSigGroups,
+                               count=len(quads), version=Vrsn_1_0).qb64b)
             for prefixer, number, diger, siger in quads:    # adapt to CESR
-                payload.extend(prefixer.qb64b)
-                payload.extend(number.qb64b)
-                payload.extend(diger.qb64b)
-                payload.extend(siger.qb64b)
-            extendAttachments(Codens.TransReceiptIdxSigGroups, payload, len(quads))
+                atc.extend(prefixer.qb64b)
+                atc.extend(number.qb64b)
+                atc.extend(diger.qb64b)
+                atc.extend(siger.qb64b)
 
         # add non-controller trans endorsement quadruples to attachments
         # may have been originally non-controller sigs or receipted endorsements
@@ -1772,7 +1763,7 @@ class Baser(LMDBer):
                 sims = bytearray()
                 sims.extend(Counter(code=Codens.ControllerIdxSigs,
                                     count=len(sigers),
-                                    version=version).qb64b)
+                                    version=Vrsn_1_0).qb64b)
                 for siger in sigers:
                     sims.extend(siger.qb64b)
 
@@ -1784,31 +1775,31 @@ class Baser(LMDBer):
                 cims.extend(sims)
             gims = Counter.enclose(qb64=cims,
                                        code=Codens.TransReceiptIdxSigGroups,
-                                       version=version)
+                                       version=Vrsn_1_0)
 
         # add nontrans endorsement couples to attachments not witnesses
         # may have been originally key event attachments or receipted endorsements
         if coups := self.rcts.get(keys=dgkey):
-            payload = bytearray()
+            atc.extend(Counter(code=Codens.NonTransReceiptCouples,
+                               count=len(coups), version=Vrsn_1_0).qb64b)
             for prefixer, cigar in coups:
-                payload.extend(prefixer.qb64b)
-                payload.extend(cigar.qb64b)
-            extendAttachments(Codens.NonTransReceiptCouples, payload, len(coups))
+                atc.extend(prefixer.qb64b)
+                atc.extend(cigar.qb64b)
 
         # add first seen replay couple to attachments
         if not (dater := self.dtss.get(keys=dgkey)):
             raise MissingEntryError("Missing datetime for dig={}.".format(dig))
-        payload = bytearray()
-        payload.extend(coring.Number(num=fn, code=coring.NumDex.Huge).qb64b)  # may not need to be Huge
-        payload.extend(dater.qb64b)
-        extendAttachments(Codens.FirstSeenReplayCouples, payload, 1)
+        atc.extend(Counter(code=Codens.FirstSeenReplayCouples,
+                           count=1, version=Vrsn_1_0).qb64b)
+        atc.extend(coring.Number(num=fn, code=coring.NumDex.Huge).qb64b)  # may not need to be Huge
+        atc.extend(dater.qb64b)
 
         # enclose attachments in AttachmentGroup
         if len(atc) % 4:
             raise SerializeError("Invalid attachments size={}, nonintegral"
                              " quadlets.".format(len(atc)))
         pcnt = Counter(code=Codens.AttachmentGroup,
-                       count=(len(atc) // 4), version=version).qb64b
+                       count=(len(atc) // 4), version=Vrsn_1_0).qb64b
         msg.extend(pcnt)
         msg.extend(atc)
         return msg
