@@ -948,9 +948,10 @@ class Baser(LMDBer):
                                              klas=(coring.Prefixer, coring.Cigar))
         self.ures = subing.CatCesrIoSetSuber(db=self, subkey='ures.',
                                              klas=(coring.Diger, coring.Prefixer, coring.Cigar))
-        self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.',
-                             klas=(coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
-        self.vrcsNew = subing.CesrIoSetSuber(db=self, subkey='vrcsnew.', klas=indexing.Siger)
+        #self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.',
+                             #klas=(coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
+        self.vrcs = subing.CesrIoSetSuber(db=self, subkey='vrcs.', klas=indexing.Siger)
+        #self.vrcsNew = subing.CesrIoSetSuber(db=self, subkey='vrcsnew.', klas=indexing.Siger)
 
 
         self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.',

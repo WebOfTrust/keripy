@@ -50,9 +50,9 @@ class MsgParseDom:
     sigers: list[Siger] = field(default_factory=list)  # ControllerIdxSigs
     wigers: list[Siger] = field(default_factory=list)  # WitnessIdxSigs
     cigars: list[Cigar] = field(default_factory=list)  # NonTransReceiptCouples cigar with verfer from (pre+sig)
-    trqs:   list[TransReceipts] = field(default_factory=list)  # TransReceiptQuadruples TransLastReceiptIdxSigGroups (prefixer, number, diger, siger)
-    tsgs:   list[TransSigs] = field(default_factory=list)  # TransIdxSigGroups (prefixer, number, diger, [Sigers])
-    lsgs:   list[TransLastSigs] = field(default_factory=list)  # TransLastIdxSigGroups (prefixer,[Sigers]) (was tsgs)
+    rsgs:   list[TransReceipts] = field(default_factory=list)  # TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
+    tsgs:   list[TransSigs] = field(default_factory=list)  # TransIdxSigGroups (prefixer, number, diger, [sigers])
+    lsgs:   list[TransLastSigs] = field(default_factory=list)  # TransLastIdxSigGroups (prefixer,[sigers]) (was tsgs)
     frcs:   list[FirstSeen] = field(default_factory=list)  # FirstSeenReplayCouples (number, dater)
     sscs:   list[SealSource] = field(default_factory=list)  # SealSourceCouples (number, diger) sealing or sealed event
     ssts:   list[SealEvent] = field(default_factory=list)  # SealSourceTriples (prefixer, number, diger) sealing or sealed event
@@ -139,9 +139,9 @@ class Parser:
     Methods[2][0][Codens.NonTransReceiptCouples] = "_NonTransReceiptCouples2"
     Methods[2][0][Codens.BigNonTransReceiptCouples] = "_NonTransReceiptCouples2"
 
-    Methods[1][0][Codens.TransReceiptIdxSigGroups] = "_TransReceiptQuadruples1"
-    Methods[2][0][Codens.TransReceiptIdxSigGroups] = "_TransReceiptQuadruples2"
-    Methods[2][0][Codens.BigTransReceiptIdxSigGroups] = "_TransReceiptQuadruples2"
+    Methods[1][0][Codens.TransReceiptIdxSigGroups] = "_TransReceiptIdxSigGroups1"
+    Methods[2][0][Codens.TransReceiptIdxSigGroups] = "_TransReceiptIdxSigGroups2"
+    Methods[2][0][Codens.BigTransReceiptIdxSigGroups] = "_TransReceiptIdxSigGroups2"
 
     Methods[1][0][Codens.TransIdxSigGroups] = "_TransIdxSigGroups1"
     Methods[2][0][Codens.TransIdxSigGroups] = "_TransIdxSigGroups2"
@@ -956,9 +956,9 @@ class Parser:
                 sigers (list[Siger]): ControllerIdxSigs
                 wigers (list[Siger]): WitnessIdxSigs
                 cigars (list[Cigar]): NonTransReceiptCouples cigar with verfer from (pre+sig)
-                trqs   (list[TransReceiptQuadruples]): TransReceiptQuadruples TransLastReceiptIdxSigGroups (prefixer, number, diger, siger)
-                tsgs   (list[TransSigs]):TransIdxSigGroups (prefixer, number, diger, [Sigers])
-                lsgs   (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[Sigers]) (was tsgs)
+                rsgs   (list[TransReceipts]): TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
+                tsgs   (list[TransSigs]):TransIdxSigGroups (prefixer, number, diger, [sigers])
+                lsgs   (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[sigers]) (was tsgs)
                 frcs   (list[FirstSeen]): FirstSeenReplayCouples (number, dater)
                 sscs   (list[SealSource]): SealSourceCouples (number, diger) sealing or sealed event
                 ssts   (list[SealEvent]): SealSourceTriples (prefixer, number, diger) sealing or sealed event
@@ -1356,9 +1356,9 @@ class Parser:
                 sigers (list[Siger]): ControllerIdxSigs
                 wigers (list[Siger]): WitnessIdxSigs
                 cigars (list[Cigar]): NonTransReceiptCouples cigar with verfer from (pre+sig)
-                trqs   (list[TransLastReceipts]): TransReceiptQuadruples TransLastReceiptIdxSigGroups (prefixer, number, diger, siger)
-                tsgs   (list[TransSigs]):TransIdxSigGroups (prefixer, number, diger, [Sigers])
-                lsgs   (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[Sigers]) (was tsgs)
+                rsgs   (list[TransReceipts]): TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
+                tsgs   (list[TransSigs]):TransIdxSigGroups (prefixer, number, diger, [sigers])
+                lsgs   (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[sigers]) (was tsgs)
                 frcs   (list[FirstSeen]): FirstSeenReplayCouples (number, dater)
                 sscs   (list[SealSource]): SealSourceCouples (number, diger) sealing or sealed event
                 ssts   (list[SealEvent]): SealSourceTriples (prefixer, number, diger) sealing or sealed event
@@ -1422,8 +1422,8 @@ class Parser:
                     if exts['cigars']:  # cigars
                         kvy.processAttachedReceiptCouples(**exts)
 
-                    if exts['trqs']:  # trqs
-                        kvy.processAttachedReceiptQuadruples(**exts)
+                    if exts['rsgs']:  # rsgs  TransReceiptIdxSigGroups (was trqs)
+                        kvy.processAttachedReceiptSigGroups(**exts)
 
                 except AttributeError as ex:
                     msg = f"No kevery to process so dropped msg={serder.said}"
@@ -1432,14 +1432,13 @@ class Parser:
                     raise ValidationError(msg) from ex
 
             elif ilk in [Ilks.rct]:  # event receipt msg (nontransferable)
-                if not (exts['cigars'] or exts['wigers'] or exts['tsgs']):  # (cigars or wigers or tsgs)
+                if not (exts['cigars'] or exts['wigers'] or exts['tsgs'] or exts['rsgs']):
                     msg = f"Missing attached signatures on receipt msg sn={serder.sn} SAID={serder.said}"
                     logger.info(msg)
                     logger.debug("Receipt body=\n%s\n", serder.pretty())
                     raise ValidationError(msg)
 
                 try:
-
                     kvy.processReceipt(**exts)
 
                 except AttributeError as ex:
@@ -1774,8 +1773,8 @@ class Parser:
             exts.cigars = cigars
 
 
-    def _TransReceiptQuadruples1(self, exts, ims, ctr, cold, abort):
-        """Generator to extract CESRv1 TransReceiptQuadruples group
+    def _TransReceiptIdxSigGroups1(self, exts, ims, ctr, cold, abort):
+        """Generator to extract CESRv1 TransReceiptIdxSigGroups group
 
         Parameters:
             exts (dict): of extracted group elements for keyword args.
@@ -1790,67 +1789,40 @@ class Parser:
                             another already extracted group.
 
         Returns:
-            trqs (list[tuple]): [(prefixer,seqner,saider,siger)]
+            rsgs (list[tuple]): [(prefixer,number,diger,[isigers])]
 
-        extract attaced trans receipt vrc quadruple
-        spre+ssnu+sdig+sig
+         extract attaced trans receipt idx sig groups
+        spre+ssnu+sdig+[sigs]
         spre is pre of signer of vrc
         ssnu is sn of signer's est evt when signed
         sdig is dig of signer's est event when signed
         sig is indexed signature of signer on this event msg
 
         """
-        trqs = []
-        for i in range(ctr.count):  # extract each attached quadruple
-            prefixer = yield from self._extractor(ims=ims,
-                                                  klas=Prefixer,
-                                                  cold=cold,
-                                                  abort=abort)
-            number = yield from self._extractor(ims=ims,
-                                                klas=Number,
-                                                cold=cold,
-                                                abort=abort)
-            diger = yield from self._extractor(ims=ims,
-                                                klas=Diger,
-                                                cold=cold,
-                                                abort=abort)
-            siger = yield from self._extractor(ims=ims,
-                                               klas=Siger,
-                                               cold=cold,
-                                               abort=abort)
-            trqs.append((prefixer, number, diger, siger))
-        try:
-            exts.trqs.extend(trqs)
-        except KeyError:
-            exts.trqs = trqs
+        #trqs = []
+        #for i in range(ctr.count):  # extract each attached quadruple
+            #prefixer = yield from self._extractor(ims=ims,
+                                                  #klas=Prefixer,
+                                                  #cold=cold,
+                                                  #abort=abort)
+            #number = yield from self._extractor(ims=ims,
+                                                #klas=Number,
+                                                #cold=cold,
+                                                #abort=abort)
+            #diger = yield from self._extractor(ims=ims,
+                                                #klas=Diger,
+                                                #cold=cold,
+                                                #abort=abort)
+            #siger = yield from self._extractor(ims=ims,
+                                               #klas=Siger,
+                                               #cold=cold,
+                                               #abort=abort)
+            #trqs.append((prefixer, number, diger, siger))
+        #try:
+            #exts.trqs.extend(trqs)
+        #except KeyError:
+            #exts.trqs = trqs
 
-
-    def _TransReceiptQuadruples2(self, exts, ims, ctr, cold, abort):
-        """Generator to extract CESRv2 TransReceiptQuadruples group
-
-        Parameters:
-            exts (dict): of extracted group elements for keyword args.
-            ims (bytearray): of serialized incoming message stream.
-            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
-            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
-            abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
-
-        Returns:
-            trqs (list[tuple]): [(prefixer,number,diger,siger)]
-
-        extract attaced trans receipt vrc quadruple
-        spre+ssnu+sdig+sig
-        spre is pre of signer of vrc
-        ssnu is sn of signer's est evt when signed
-        sdig is dig of signer's est event when signed
-        sig is indexed signature of signer on this event msg
-
-        """
         gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -1860,17 +1832,117 @@ class Parser:
 
         gims = ims[:gs]  # copy out group sized substream
         del ims[:gs]  # strip off from ims
-        trqs = []
-        while gims:   # extract each attached quadruple and strip from gims
+        rsgs = []
+        isigers = []
+        while gims:   # extract each attached group and strip from gims
             prefixer = self.extract(ims=gims, klas=Prefixer, cold=cold)
             number = self.extract(ims=gims, klas=Number, cold=cold)
             diger = self.extract(ims=gims, klas=Diger, cold=cold)
-            siger = self.extract(ims=gims, klas=Siger, cold=cold)
-            trqs.append((prefixer, number, diger, siger))
+            ictr = self.extract(ims=gims, klas=Counter, cold=cold)
+
+            if ictr.code != CtrDex_1_0.ControllerIdxSigs:
+                raise UnexpectedCountCodeError(f"Expected count code="
+                            f"{CtrDex_1_0.ControllerIdxSigs}, got code={ictr.code}")
+
+            isigers = []
+            for i in range(ictr.count):  # extract each signature in idx cnt
+                isiger = self.extract(ims=gims, klas=Siger, cold=cold)
+                isigers.append(isiger)
+
+            rsgs.append((prefixer, number, diger, isigers))
+
         try:
-            exts.trqs.extend(trqs)
+            exts.rsgs.extend(rsgs)
         except KeyError:
-            exts.trqs = trqs
+            exts.rsgs = rsgs
+
+
+    def _TransReceiptIdxSigGroups2(self, exts, ims, ctr, cold, abort):
+        """Generator to extract CESRv2 TransReceiptIdxSigGroups
+
+        Parameters:
+            exts (dict): of extracted group elements for keyword args.
+            ims (bytearray): of serialized incoming message stream.
+            ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
+            cold (Coldage): assumes str value is either Colds.txt or Colds.bny
+            abort (bool): True means abort if not enough bytes in ims. Use when
+                            this group is enclosed in another group that has
+                            already been extracted from stream
+                          False yield if not enough bytes in ims. Use when this
+                            group is at top level of stream not enclosed in
+                            another already extracted group.
+
+        Returns:
+            rsgs (list[tuple]): [(prefixer,number,diger,[isigers])]
+
+        extract attaced trans receipt idx sig groups
+        spre+ssnu+sdig+[sigs]
+        spre is pre of signer of vrc
+        ssnu is sn of signer's est evt when signed
+        sdig is dig of signer's est event when signed
+        [sigs] is list of indexed signature of signer
+
+        When attached to event or routed mesag signature on msg attached
+        When attached to receipt msg signature on event referenced in receipt
+
+        """
+        #gs = ctr.byteCount(cold=cold)
+        #while len(ims) < gs:
+            #if abort:  # assumes already full frame extracted unexpected problem
+                #raise ShortageError(f"Unexpected stream shortage on enclosed "
+                                    #f"group code={ctr.qb64}")
+            #yield  # wait until have full group size
+
+        #gims = ims[:gs]  # copy out group sized substream
+        #del ims[:gs]  # strip off from ims
+        #trqs = []
+        #while gims:   # extract each attached quadruple and strip from gims
+            #prefixer = self.extract(ims=gims, klas=Prefixer, cold=cold)
+            #number = self.extract(ims=gims, klas=Number, cold=cold)
+            #diger = self.extract(ims=gims, klas=Diger, cold=cold)
+            #siger = self.extract(ims=gims, klas=Siger, cold=cold)
+            #trqs.append((prefixer, number, diger, siger))
+        #try:
+            #exts.trqs.extend(trqs)
+        #except KeyError:
+            #exts.trqs = trqs
+
+        gs = ctr.byteCount(cold=cold)
+        while len(ims) < gs:
+            if abort:  # assumes already full frame extracted unexpected problem
+                raise ShortageError(f"Unexpected stream shortage on enclosed "
+                                    f"group code={ctr.qb64}")
+            yield  # wait until have full group size
+
+        gims = ims[:gs]  # copy out group sized substream
+        del ims[:gs]  # strip off from ims
+        rsgs = []
+        isigers = []
+        while gims:   # extract each attached group and strip from gims
+            prefixer = self.extract(ims=gims, klas=Prefixer, cold=cold)
+            number = self.extract(ims=gims, klas=Number, cold=cold)
+            diger = self.extract(ims=gims, klas=Diger, cold=cold)
+            ictr = self.extract(ims=gims, klas=Counter, cold=cold)
+            if ictr.code != CtrDex_2_0.ControllerIdxSigs:
+                raise UnexpectedCountCodeError(f"Expected count code="
+                            f"{CtrDex_2_0.ControllerIdxSigs}, got code={ictr.code}")
+            igs = ictr.byteCount(cold=cold)
+            # already extracted enclosing group bytes so igs must be < len(gims)
+            if len(gims) < igs:  # should not happen unless malformed counter
+                raise ShortageError(f"Unexpected stream shortage on enclosed "
+                                    f"group code={ctr.qb64}")
+            igims = gims[:igs]
+            del gims[:igs]  # strip igims from gims
+            isigers = []
+            while igims:
+                isiger = self.extract(ims=igims, klas=Siger, cold=cold)
+                isigers.append(isiger)
+            rsgs.append((prefixer, number, diger, isigers))  # tuple
+        try:
+            exts.rsgs.extend(rsgs)
+        except KeyError:
+            exts.rsgs = rsgs
+
 
 
     def _TransIdxSigGroups1(self, exts, ims, ctr, cold, abort):
@@ -1889,7 +1961,7 @@ class Parser:
                             another already extracted group.
 
         Returns:
-             tsgs (list[tuple]): [(prefixer,number,diger,[isigers])]
+            tsgs (list[tuple]): [(prefixer,number,diger,[isigers])]
 
         """
         tsgs = []
