@@ -7,11 +7,15 @@ Witness command line interface
 """
 import argparse
 import logging
+import sys
 
 from keri import __version__
 from keri import help
+from keri import kering
 from keri.app import directing, indirecting, habbing, keeping, configing
 from keri.app.cli.common import existing
+
+logger = help.ogler.getLogger()
 
 d = "Runs KERI witness controller.\n"
 d += "Example:\nwitness -H 5631 -t 5632\n"
@@ -51,14 +55,18 @@ parser.add_argument("--loglevel", action="store", required=False, default="CRITI
                     help="Set log level to DEBUG | INFO | WARNING | ERROR | CRITICAL. Default is CRITICAL")
 parser.add_argument("--logfile", action="store", required=False, default=None,
                     help="path of the log file. If not defined, logs will not be written to the file.")
+parser.add_argument("--no-prompt", action="store_true", default=None, required=False,
+                    help="Disable interactive prompt", dest="noPrompt")
 
 
 def launch(args):
-    help.ogler.level = logging.getLevelName(args.loglevel)
+    # Normalize level case; avoid invalid lowercase values that silently break level filtering
+    help.ogler.level = logging.getLevelName(args.loglevel.upper())
     if args.logfile is not None:
         help.ogler.headDirPath = args.logfile
         help.ogler.reopen(name=args.name, temp=False, clear=True)
-    logger = help.ogler.getLogger()
+
+    help.ogler.getLogger()  # re-applies ogler.level to the shared logger
 
     logger.info("\n******* Starting Witness for %s listening: http/%s, tcp/%s "
                 ".******\n\n", args.name, args.http, args.tcp)
@@ -73,17 +81,20 @@ def launch(args):
                configFile=args.configFile,
                keypath=args.keypath,
                certpath=args.certpath,
-               cafilepath=args.cafilepath)
+               cafilepath=args.cafilepath,
+               noPrompt=args.noPrompt)
 
     logger.info("\n******* Ended Witness for %s listening: http/%s, tcp/%s"
                 ".******\n\n", args.name, args.http, args.tcp)
 
 
 def runWitness(name="witness", base="", alias="witness", bran="", tcp=5631, http=5632, expire=0.0,
-               configDir="", configFile="", keypath=None, certpath=None, cafilepath=None):
+               configDir="", configFile="", keypath=None, certpath=None, cafilepath=None,
+               noPrompt=None):
     """
     Setup and run one witness
     """
+    noPrompt = noPrompt if noPrompt is not None else not sys.stdin.isatty()  # When not TTY then do not prompt
 
     ks = keeping.Keeper(name=name,
                         base=base,
@@ -97,20 +108,34 @@ def runWitness(name="witness", base="", alias="witness", bran="", tcp=5631, http
     if configFile is not None:
         cf = configing.Configer(name=configFile, headDirPath=configDir, temp=False, reopen=True, clear=False)
 
-    if aeid is None:
-        hby = habbing.Habery(name=name, base=base, bran=bran, cf=cf)
-    else:
-        hby = existing.setupHby(name=name, base=base, bran=bran, cf=cf)
+    hby = None
+    try:
+        if aeid is None:
+            hby = habbing.Habery(name=name, base=base, bran=bran, cf=cf)
+        else:
+            # Prompt only for TTY; fail fast for no passcode on script/service witness start
+            if not bran and noPrompt:
+                raise kering.AuthError(f"passcode required for keystore {name!r} but prompting is disabled. "
+                                       f"pass --passcode or omit --no-prompt in an interactive terminal..")
+            hby = existing.setupHby(name=name, base=base, bran=bran, cf=cf, noPrompt=noPrompt)
 
-    hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
-    doers = [hbyDoer]
+        hbyDoer = habbing.HaberyDoer(habery=hby)  # setup doer
+        doers = [hbyDoer]
 
-    doers.extend(indirecting.setupWitness(alias=alias,
-                                          hby=hby,
-                                          tcpPort=tcp,
-                                          httpPort=http,
-                                          keypath=keypath,
-                                          certpath=certpath,
-                                          cafilepath=cafilepath))
+        doers.extend(indirecting.setupWitness(alias=alias,
+                                              hby=hby,
+                                              tcpPort=tcp,
+                                              httpPort=http,
+                                              keypath=keypath,
+                                              certpath=certpath,
+                                              cafilepath=cafilepath))
 
-    directing.runController(doers=doers, expire=expire)
+        directing.runController(doers=doers, expire=expire)
+    except Exception:
+        # Log startup failures at CRITICAL with traceback so they surface at the default loglevel.
+        logger.critical("Witness %r failed to start", name, exc_info=True)
+        raise
+    finally:
+        # Close Habery LMDB to avoid leftover locks on failed start blocking next start attempt
+        if hby is not None:
+            hby.close()
