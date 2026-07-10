@@ -4540,7 +4540,7 @@ class Kevery:
             raise UnverifiedReceiptError(msg)
 
 
-    def processMsg(self, serder=None, kwa=None):
+    def processMsg(self, kwa=None):
         """Process one non-key-event KERI message with attachments.
 
         Consolidated entry point for non-event message types:
@@ -4552,25 +4552,16 @@ class Kevery:
             3. Message-type-specific processing delegation
 
         Parameters:
-            serder (SerderKERI | dict | None): message instance, or a packed
-                   parser artifact dict that contains "serder".
-            kwa (dict | None): parser exts / attachment dict (sigers, cigars, tsgs,
-                   lsgs, sscs, ssts, tdcs, wigers, trqs, frcs, ptds, essrs,
-                   bsqs, bsss, tmqs, local, etc.); mutated in place (KRAM
-                   normalization, rvy/exc/tvy pops, qry source/sigers).
-                   Also accepts processor overrides injected by parser:
-                   rvy (Revery), exc (Exchanger), tvy (Tevery)
+            kwa (dict | None): parser exts / attachment dict containing serder,
+                   sigers, cigars, tsgs, lsgs, sscs, ssts, tdcs, wigers, trqs,
+                   frcs, ptds, essrs, bsqs, bsss, tmqs, local, etc.; mutated in
+                   place (KRAM normalization, rvy/exc/tvy pops, qry
+                   source/sigers). Also accepts processor overrides injected by
+                   parser: rvy (Revery), exc (Exchanger), tvy (Tevery)
         """
-        if kwa is None and isinstance(serder, dict):
-            kwa = serder
-            serder = None
-        elif kwa is None:
+        if kwa is None:
             kwa = {}
-
-        if serder is None:
-            serder = kwa.pop('serder', None)
-        else:
-            kwa.pop('serder', None)
+        serder = kwa.pop('serder', None)
         if serder is None:
             raise ValidationError("Missing serder for message processing.")
         ilk = serder.ilk
