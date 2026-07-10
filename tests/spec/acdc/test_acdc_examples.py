@@ -1130,7 +1130,7 @@ def test_acdc_attribute_section_JSON():
               "d",
               "u",
               "i",
-              "name"
+              "name",
               "gpa",
               "grades"
             ],
@@ -1172,7 +1172,7 @@ def test_acdc_attribute_section_JSON():
                     [
                       "d",
                       "u",
-                      "history"
+                      "history",
                       "english",
                       "math"
                     ],
@@ -2654,7 +2654,7 @@ def test_acdc_examples_JSON():
           {
             "description": "Attribute Section Detail",
             "type": "object",
-            "required": ["d", "u", "i", "name" "gpa", "grades"],
+            "required": ["d", "u", "i", "name", "gpa", "grades"],
             "properties":
             {
               "d": {"description": "Attribute Section SAID", "type": "string"},
@@ -2670,7 +2670,7 @@ def test_acdc_examples_JSON():
                   {
                     "description": "Block detail",
                     "type": "object",
-                    "required": ["d", "u", "history" "english", "math"],
+                    "required": ["d", "u", "history", "english", "math"],
                     "properties":
                     {
                       "d": {"description": "Block SAID", "type": "string"},
@@ -2749,7 +2749,7 @@ def test_acdc_examples_JSON():
           {
             "description": "Edge Section Detail",
             "type": "object",
-            "required": ["d", "u", "accreditation" "reports"],
+            "required": ["d", "u", "accreditation", "reports"],
             "properties":
             {
               "d": {"description": "Edge Section SAID", "type": "string"},
@@ -2968,10 +2968,10 @@ def test_acdc_examples_JSON():
         "additionalProperties": False
     }
 
-    mainSchemaSaid = 'EABGAia_vH_zHCRLOK3Bm2xxujV5A8sYIJbypfSM_2Fh'
+    mainSchemaSaid = 'EMm9Gn9Qq9gkRQduJx9Vjtj3b3l1cVpe4Sv18EdAVRtb'
     mainSchemaMad = \
     {
-        "$id": "EABGAia_vH_zHCRLOK3Bm2xxujV5A8sYIJbypfSM_2Fh",
+        "$id": "EMm9Gn9Qq9gkRQduJx9Vjtj3b3l1cVpe4Sv18EdAVRtb",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "title": "Transcript Schema",
         "description": "Transcript JSON Schema for acm ACDC.",
@@ -3005,7 +3005,7 @@ def test_acdc_examples_JSON():
                     {
                       "description": "Attribute Section Detail",
                       "type": "object",
-                      "required": ["d", "u", "i", "name" "gpa", "grades"],
+                      "required": ["d", "u", "i", "name", "gpa", "grades"],
                       "properties":
                       {
                         "d": {"description": "Attribute Section SAID", "type": "string"},
@@ -3021,7 +3021,7 @@ def test_acdc_examples_JSON():
                             {
                               "description": "Block detail",
                               "type": "object",
-                              "required": ["d", "u", "history" "english", "math"],
+                              "required": ["d", "u", "history", "english", "math"],
                               "properties":
                               {
                                 "d": {"description": "Block SAID", "type": "string"},
@@ -3048,7 +3048,7 @@ def test_acdc_examples_JSON():
                   {
                     "description": "Edge Section Detail",
                     "type": "object",
-                    "required": ["d", "u", "accreditation" "reports"],
+                    "required": ["d", "u", "accreditation", "reports"],
                     "properties":
                     {
                       "d": {"description": "Edge Section SAID", "type": "string"},
@@ -3179,15 +3179,15 @@ def test_acdc_examples_JSON():
     assert mapper.said == mainSchemaSaid
     assert mapper.mad == mainSchemaMad
 
-    mainSaid = 'ENeNWgCCNcOf1JbgKxUzREKpyK5kABYFd2QYUzEfwz9H'
+    mainSaid = 'EFSzw0J4Qq15NafhAezvFHII-5TmDHbNzmIpT17-cHOa'
     mainSad = \
     {
         "v": "ACDCCAACAAJSONAAXG.",
-        "d": "ENeNWgCCNcOf1JbgKxUzREKpyK5kABYFd2QYUzEfwz9H",
+        "d": "EFSzw0J4Qq15NafhAezvFHII-5TmDHbNzmIpT17-cHOa",
         "u": "0ABhY2Rjc3BlY3dvcmtyYXdk",
         "i": "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz",
         "rd": "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX",
-        "s": "EABGAia_vH_zHCRLOK3Bm2xxujV5A8sYIJbypfSM_2Fh",
+        "s": "EMm9Gn9Qq9gkRQduJx9Vjtj3b3l1cVpe4Sv18EdAVRtb",
         "a":
         {
             "d": "ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U",
@@ -3251,11 +3251,11 @@ def test_acdc_examples_JSON():
     mainCSad = \
     {
         "v": "ACDCCAACAAJSONAAGg.",
-        "d": "ENeNWgCCNcOf1JbgKxUzREKpyK5kABYFd2QYUzEfwz9H",
+        "d": "EFSzw0J4Qq15NafhAezvFHII-5TmDHbNzmIpT17-cHOa",
         "u": "0ABhY2Rjc3BlY3dvcmtyYXdk",
         "i": "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz",
         "rd": "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX",
-        "s": "EABGAia_vH_zHCRLOK3Bm2xxujV5A8sYIJbypfSM_2Fh",
+        "s": "EMm9Gn9Qq9gkRQduJx9Vjtj3b3l1cVpe4Sv18EdAVRtb",
         "a": "ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U",
         "e": "ECpmTyIIc1duvCeIceK19Sbd0uymklmwNTtwtmfjQnX0",
         "r": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU"
@@ -3277,7 +3277,7 @@ def test_acdc_examples_JSON():
             {
                 "description": "Edge Section Detail",
                 "type": "object",
-                "required": ["d", "u", "accreditation" "reports"],
+                "required": ["d", "u", "accreditation", "reports"],
                 "properties":
                 {
                     "d": {"description": "Edge Section SAID", "type": "string"},
@@ -3342,10 +3342,10 @@ def test_acdc_examples_JSON():
         "additionalProperties": False
     }
 
-    simpleMainSchemaSaid = 'ECVhGE4yeuHZ8KEqWK-lx5O9xrfUg6wiDPkkxxQSjgfk'
+    simpleMainSchemaSaid = 'EKq-KXY-8jd5OR9WEWjj6JRRRRrvtdzqBNkOh9Oj0afK'
     simpleMainSchemaMad = \
     {
-        "$id": "ECVhGE4yeuHZ8KEqWK-lx5O9xrfUg6wiDPkkxxQSjgfk",
+        "$id": "EKq-KXY-8jd5OR9WEWjj6JRRRRrvtdzqBNkOh9Oj0afK",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "title": "Transcript Schema",
         "description": "Transcript JSON Schema for acm ACDC.",
@@ -3379,7 +3379,7 @@ def test_acdc_examples_JSON():
                     {
                       "description": "Attribute Section Detail",
                       "type": "object",
-                      "required": ["d", "u", "i", "name" "gpa", "grades"],
+                      "required": ["d", "u", "i", "name", "gpa", "grades"],
                       "properties":
                       {
                         "d": {"description": "Attribute Section SAID", "type": "string"},
@@ -3395,7 +3395,7 @@ def test_acdc_examples_JSON():
                             {
                               "description": "Block detail",
                               "type": "object",
-                              "required": ["d", "u", "history" "english", "math"],
+                              "required": ["d", "u", "history", "english", "math"],
                               "properties":
                               {
                                 "d": {"description": "Block SAID", "type": "string"},
@@ -3422,7 +3422,7 @@ def test_acdc_examples_JSON():
                     {
                         "description": "Edge Section Detail",
                         "type": "object",
-                        "required": ["d", "u", "accreditation" "reports"],
+                        "required": ["d", "u", "accreditation", "reports"],
                         "properties":
                         {
                             "d": {"description": "Edge Section SAID", "type": "string"},
@@ -3512,15 +3512,15 @@ def test_acdc_examples_JSON():
     assert compactor.mad == simpleEdgeCMad
 
 
-    simpleMainSaid = 'EBaEMTKi6ZtHXmkhxHUoGEEtG8JKelw3b0gv6cFTg6BN'
+    simpleMainSaid = 'EMR8CTHmJEwF2EF5Ylgyk6soUEXvGEB5KgJumJ86-nUX'
     simpleMainSad = \
     {
         "v": "ACDCCAACAAJSONAAOD.",
-        "d": "EBaEMTKi6ZtHXmkhxHUoGEEtG8JKelw3b0gv6cFTg6BN",
+        "d": "EMR8CTHmJEwF2EF5Ylgyk6soUEXvGEB5KgJumJ86-nUX",
         "u": "0ABhY2Rjc3BlY3dvcmtyYXdl",
         "i": "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz",
         "rd": "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX",
-        "s": "ECVhGE4yeuHZ8KEqWK-lx5O9xrfUg6wiDPkkxxQSjgfk",
+        "s": "EKq-KXY-8jd5OR9WEWjj6JRRRRrvtdzqBNkOh9Oj0afK",
         "a":
         {
             "d": "ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U",
@@ -3561,11 +3561,11 @@ def test_acdc_examples_JSON():
     simpleMainCSad = \
     {
         "v": "ACDCCAACAAJSONAAGg.",
-        "d": "EBaEMTKi6ZtHXmkhxHUoGEEtG8JKelw3b0gv6cFTg6BN",
+        "d": "EMR8CTHmJEwF2EF5Ylgyk6soUEXvGEB5KgJumJ86-nUX",
         "u": "0ABhY2Rjc3BlY3dvcmtyYXdl",
         "i": "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz",
         "rd": "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX",
-        "s": "ECVhGE4yeuHZ8KEqWK-lx5O9xrfUg6wiDPkkxxQSjgfk",
+        "s": "EKq-KXY-8jd5OR9WEWjj6JRRRRrvtdzqBNkOh9Oj0afK",
         "a": "ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U",
         "e": "EEWx-E6Rexj3eORT-e2kLcAWVgviTqxwWvxS2LbNKuCh",
         "r": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU"
@@ -3578,6 +3578,62 @@ def test_acdc_examples_JSON():
     assert serder.sad == simpleMainCSad
 
 
+def test_required_arrays_have_no_implicit_string_concatenation():
+    """Guard for issue #1482.
+
+    Python silently concatenates adjacent string literals, so a missing comma
+    between two entries of a JSON-Schema ``required`` array (e.g.
+    ``["...", "name" "gpa", ...]``) yields ``"namegpa"``: the schema then
+    requires a field that does not exist and drops two that should be
+    required. Because these example schemas are only ever hashed for their
+    SAIDs (never validated), such a typo passes unnoticed. This test walks
+    every ``required`` array in this file and fails if any two string
+    literals inside it are implicitly concatenated (i.e. not comma separated).
+    """
+    import ast
+    import io
+    import tokenize
+
+    src = open(__file__).read()
+    tree = ast.parse(src)
+
+    # (start, end) source positions of every `required` list literal
+    spans = []
+    for node in ast.walk(tree):
+        if isinstance(node, ast.Dict):
+            for key, val in zip(node.keys, node.values):
+                if (isinstance(key, ast.Constant) and key.value == "required"
+                        and isinstance(val, ast.List)):
+                    spans.append(((val.lineno, val.col_offset),
+                                  (val.end_lineno, val.end_col_offset)))
+
+    def within(pos, start, end):
+        return start <= pos <= end
+
+    toks = list(tokenize.generate_tokens(io.StringIO(src).readline))
+    concatenated = []
+    for start, end in spans:
+        prev_string = None
+        for tok in toks:
+            if not within(tok.start, start, end):
+                continue
+            if tok.type == tokenize.STRING:
+                if prev_string is not None:  # two strings, no comma between
+                    concatenated.append((tok.start[0],
+                                         prev_string.string, tok.string))
+                prev_string = tok
+            elif tok.type in (tokenize.NL, tokenize.NEWLINE,
+                              tokenize.COMMENT, tokenize.INDENT,
+                              tokenize.DEDENT):
+                continue
+            else:  # comma, brackets, etc. break any adjacency
+                prev_string = None
+
+    assert not concatenated, (
+        "implicit string concatenation in required array(s): "
+        + "; ".join(f"line {ln}: {a} {b}" for ln, a, b in concatenated))
+
+
 if __name__ == "__main__":
     test_acdc_examples_setup()
     test_acdc_registry_examples_JSON()
@@ -3587,3 +3643,4 @@ if __name__ == "__main__":
     test_acdc_aggregate_section_CESR()
     test_acdc_rule_section_JSON()
     test_acdc_examples_JSON()
+    test_required_arrays_have_no_implicit_string_concatenation()
