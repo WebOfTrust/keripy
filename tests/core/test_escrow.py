@@ -1995,7 +1995,7 @@ def test_unverified_trans_receipt_escrow():
 
         # vrcsNew verify receipts
         topkeys = (pre, icpdig)
-        receipts = [(keys, siger) for keys, siger in kvy.db.vrcs.getTopItemIter(keys=topkeys)}
+        receipts = [(keys, siger) for keys, siger in kvy.db.vrcs.getTopItemIter(keys=topkeys)]
         assert len(receipts) == 3
         epre, edig, rctpre, rctsnh, rctdig = receipts[0][0]
         siger = receipts[0][1]
@@ -2004,7 +2004,7 @@ def test_unverified_trans_receipt_escrow():
         assert rctdig == ricpdig
 
         topkeys = (pre, ixndig)
-        receipts = [(keys, siger) for keys, siger in kvy.db.vrcs.getTopItemIter(keys=topkeys)}
+        receipts = [(keys, siger) for keys, siger in kvy.db.vrcs.getTopItemIter(keys=topkeys)]
         assert len(receipts) == 3
         epre, edig, rctpre, rctsnh, rctdig = receipts[0][0]
         siger = receipts[0][1]
@@ -2013,7 +2013,7 @@ def test_unverified_trans_receipt_escrow():
         assert rctdig == rrotdig
 
         topkeys = (pre, rotdig)
-        receipts = [(keys, siger) for keys, siger in kvy.db.vrcs.getTopItemIter(keys=topkeys)}
+        receipts = [(keys, siger) for keys, siger in kvy.db.vrcs.getTopItemIter(keys=topkeys)]
         assert len(receipts) == 3
         epre, edig, rctpre, rctsnh, rctdig = receipts[0][0]
         siger = receipts[0][1]
@@ -2030,5 +2030,14 @@ def test_unverified_trans_receipt_escrow():
 
 
 if __name__ == "__main__":
-    #test_unverified_receipt_escrow()
+    test_partial_signed_escrow()
     test_missing_delegator_escrow()
+    test_misfit_escrow()
+    test_misfit_escrow_delegated()
+    test_misfit_escrow_valSigsWigsDel()
+    test_misfit_escrow_kevery()
+    test_delegated_partial_signed_escrow_udes()
+    test_out_of_order_escrow()
+    test_ooes_missing_db_entries_escrow_cleanup()
+    test_unverified_receipt_escrow()
+    test_unverified_trans_receipt_escrow()

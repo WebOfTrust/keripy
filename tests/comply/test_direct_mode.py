@@ -161,7 +161,7 @@ def test_direct_mode_with_manager():
         assert rpre == valKever.prefixer.qb64
         assert Number(snh=rsnh).sn == valKever.sn
         assert rdig == valKever.serder.said
-        assert rsiger0.qb64 == sigers[0].qb64b
+        assert rsiger0.qb64b == sigers[0].qb64b
 
         # create receipt to escrow use invalid digest and sequence number so not in controller's db
         fake = reserder.said  # some other digest
@@ -234,7 +234,7 @@ def test_direct_mode_with_manager():
         assert rpre == coeKever.prefixer.qb64
         assert Number(snh=rsnh).sn == coeKever.sn
         assert rdig == coeKever.serder.said
-        assert rsiger0.qb64 == sigers[0].qb64b
+        assert rsiger0.qb64b == sigers[0].qb64b
 
         # Controller Event 1 Rotation Transferable
         csn += 1
@@ -315,7 +315,7 @@ def test_direct_mode_with_manager():
         assert rpre == valKever.prefixer.qb64
         assert Number(snh=rsnh).sn == valKever.sn
         assert rdig == valKever.serder.said
-        assert rsiger0.qb64 == sigers[0].qb64b
+        assert rsiger0.qb64b == sigers[0].qb64b
 
         # Next Event 2 Controller Interaction
         csn += 1  # do not increment esn
@@ -393,7 +393,7 @@ def test_direct_mode_with_manager():
         assert rpre == valKever.prefixer.qb64
         assert Number(snh=rsnh).sn == valKever.sn
         assert rdig == valKever.serder.said
-        assert rsiger0.qb64 == sigers[0].qb64b
+        assert rsiger0.qb64b == sigers[0].qb64b
 
 
         #  verify final controller event state

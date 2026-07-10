@@ -518,7 +518,7 @@ def test_parser_v1_version():
         aims.extend(Seqner(snh=serder.snh).qb64b)
         aims.extend(serder.said.encode())
         sims = bytearray() # attachment sub-sub-stream
-        riger = signers[0].sign(serder.raw, index=0)  # return siger
+        riger = signers1[0].sign(serder.raw, index=0)  # return siger
         # v1 content counter not quadlet counter
         counter = Counter(Codens.ControllerIdxSigs, count=1, version=Vrsn_1_0)
         sims.extend(counter.qb64b)
