@@ -12,7 +12,7 @@ from keri.app import openHab
 from keri.core import (Saider, Kevery, SerderKERI, Seqner,
                        Diger, Parser, SealEvent,
                        MtrDex, Saids)
-from keri.kering import Kinds, Vrsn_2_0
+from keri.kering import Ilks, Kinds, Vrsn_2_0
 from keri.help import helping
 from keri.vc import credential
 from keri.vdr import Verifier, Regery, Tevery
@@ -51,6 +51,7 @@ def test_verifier_query_v2(mockHelpingNowUTC, mockCoringRandomNonce):
         assert serder.pvrsn == Vrsn_2_0
         assert serder.gvrsn == Vrsn_2_0
         assert serder.kind == Kinds.json
+        assert serder.ked["t"] == Ilks.qry
         assert serder.ked["i"] == hab.pre
         assert serder.ked["r"] == "tels"
         assert serder.ked["q"]["i"] == "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4"

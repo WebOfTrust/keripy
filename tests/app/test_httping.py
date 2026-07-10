@@ -380,8 +380,8 @@ def test_stream_cesr_request_v2(mockHelpingNowUTC):
         assert headers["Content-Length"] == 331
         assert len(headers["CESR-ATTACHMENT"]) == 144
         assert headers["CESR-ATTACHMENT"] == (b'-CAj-YAiEChqfw9-5A5qMrZ8_YgOAJm8iKMbTAUvfDVVI6KNGL3M-'
-                                            b'KAWAAA6IQQzemdSFuRZ3AU0jbL9qn9D__V6ygWoVIvrZEzujBmQwng-'
-                                            b'_xDuIwxX599cuwuliEl4CfYzuynwVYdVqz0K')
+                                              b'KAWAAA6IQQzemdSFuRZ3AU0jbL9qn9D__V6ygWoVIvrZEzujBmQwng-'
+                                              b'_xDuIwxX599cuwuliEl4CfYzuynwVYdVqz0K')
 
         ims = bytearray(args["body"])
         ims.extend(headers["CESR-ATTACHMENT"])

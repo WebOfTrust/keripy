@@ -181,6 +181,11 @@ def test_qrymailbox_iter_v2():
         assert srdr.pvrsn == Vrsn_2_0
         assert srdr.gvrsn == Vrsn_2_0
         assert srdr.kind == Kinds.json
+        assert srdr.ked["t"] == Ilks.qry
+        assert srdr.ked["i"] == hab.pre
+        assert srdr.ked["r"] == "mbx"
+        assert srdr.ked["q"]["i"] == hab.pre
+        assert srdr.ked["q"]["src"] == hab.pre
         assert srdr.ked["q"]["topics"] == topics
         
         cf = {

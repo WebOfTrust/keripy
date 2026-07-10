@@ -644,7 +644,7 @@ def query(regk,
         qry["dtb"] = dt
 
     return queryCore(route=route,
-                          pre = pre,
+                          pre=pre,
                           replyRoute=replyRoute,
                           query=qry,
                           stamp=stamp,

@@ -17,25 +17,6 @@ from keri.help import nowIso8601
 TEST_VERSION = Vrsn_1_0
 KWA = dict(version=TEST_VERSION, kind=Kinds.json)
 CUE_KWA = dict(**KWA, gvrsn=TEST_VERSION)
-KRAM_V2_CONFIG = {
-    "kram": {
-        "enabled": True,
-        "denials": [],
-        "caches": {
-            "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
-        }
-    }
-}
-
-
-def _merge_kram_v2_config(conf=None):
-    merged = dict(conf or {})
-    merged["kram"] = dict(
-        enabled=KRAM_V2_CONFIG["kram"]["enabled"],
-        denials=list(KRAM_V2_CONFIG["kram"]["denials"]),
-        caches={"~": list(KRAM_V2_CONFIG["kram"]["caches"]["~"])},
-    )
-    return merged
 
 
 def test_witness_receiptor(seeder, witnessPorter):
@@ -295,9 +276,18 @@ def test_witness_inquisitor_v2(mockHelpingNowUTC, seeder):
             openHby(name="wes3", salt=Salter(raw=b'wess-the-witness').qb64, version=Vrsn_2_0) as wesHby, \
             openHby(name="pal3", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_2_0) as palHby, \
             openHby(name="qin3", salt=Salter(raw=b'abcdef0123456789').qb64, version=Vrsn_2_0) as qinHby:
+        cf = {
+            "kram": {
+                "enabled": True,
+                "denials": [],
+                "caches": {
+                    "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
+                }
+            }
+        }
 
         for hby in (wanHby, wilHby, wesHby):
-            hby.cf.put(_merge_kram_v2_config(hby.cf.get()))
+            hby.cf.put(cf)
 
         wanDoers = setupWitness(alias="wan", hby=wanHby, tcpPort=5632, httpPort=5642, **KWA)
         wilDoers = setupWitness(alias="wil", hby=wilHby, tcpPort=5633, httpPort=5643, **KWA)
@@ -372,11 +362,16 @@ def test_witness_inquisitor_v2(mockHelpingNowUTC, seeder):
                         for keys, cache in hby.db.kramMSGC.getTopItemIter()
                         if keys[0] in expected_senders]
 
-        assert sorted(keys[0] for keys, _ in kram_entries) == sorted(expected_senders)
+        senders = []
+        for keys, cache in kram_entries:
+            senders.append(keys[0])
+            assert keys[0] in expected_senders
+            assert cache.mdt == stamp
+            assert cache.d == 1000
 
-        assert all(cache.mdt == stamp for _, cache in kram_entries)
-
-        assert all(cache.d == KRAM_V2_CONFIG["kram"]["caches"]["~"][0] for _, cache in kram_entries)
+        assert len(senders) == len(expected_senders)
+        assert palHab.pre in senders
+        assert qinHab.pre in senders
 
         doist.exit()
 
