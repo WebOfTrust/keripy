@@ -311,12 +311,12 @@ def test_messagize_v1():
                     b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VC'
                     b'A-FABDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_'
                     b'kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAB1DuEfnZZ6juMZDYiodcWiIqd'
-                    b'juEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyClVTLoD-IA'
-                    b'BDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_kH4c'
-                    b'G7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-BABAABtOhjlKo8WhJQ3EXMIMaQ_IH6yeyx'
-                    b's7_JuO4RioH1NUTtzTuV1bbuB7eoNhEj20VJYa4947ZMVrOxKhzI6EqUH-CABBJj'
-                    b'H1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BDwWrxO8RItpgGFtFiDF7Q'
-                    b'oVas-6Bzvj0xtOfbsh31jjtshcEa0rUVX2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF')
+                    b'juEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyClVTLoD-BA'
+                    b'BAABtOhjlKo8WhJQ3EXMIMaQ_IH6yeyxs7_JuO4RioH1NUTtzTuV1bbuB7eoNhEj'
+                    b'20VJYa4947ZMVrOxKhzI6EqUH-CABBJjH1MCDssEZMnORskF34AwOFDgDL47513G'
+                    b'ivRvd_QKz0BDwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa0rUV'
+                    b'X2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF-IABDAvCLRr5luWmp7keDvDuLP0kIqc'
+                    b'yBYq79b3Dho1QvrjIMAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
         # Test receipt message with wigers and/or cigars on prior message
         wigers = mgr.sign(ser=serder.raw, verfers=verfers, indexed=True)
@@ -702,13 +702,12 @@ def test_messagize_v1_mix_v2():
                     b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-CC'
                     b'A-XAuDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_'
                     b'kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-KAWAAB1DuEfnZZ6juMZDYiodcWiIqd'
-                    b'juEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyClVTLoD-TA'
-                    b'XDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_kH4c'
-                    b'G7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-LAWAABtOhjlKo8WhJQ3EXMIMaQ_IH6yeyx'
-                    b's7_JuO4RioH1NUTtzTuV1bbuB7eoNhEj20VJYa4947ZMVrOxKhzI6EqUH-MAhBJj'
-                    b'H1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BDwWrxO8RItpgGFtFiDF7Q'
-                    b'oVas-6Bzvj0xtOfbsh31jjtshcEa0rUVX2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF')
-
+                    b'juEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyClVTLoD-LA'
+                    b'WAABtOhjlKo8WhJQ3EXMIMaQ_IH6yeyxs7_JuO4RioH1NUTtzTuV1bbuB7eoNhEj'
+                    b'20VJYa4947ZMVrOxKhzI6EqUH-MAhBJjH1MCDssEZMnORskF34AwOFDgDL47513G'
+                    b'ivRvd_QKz0BDwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa0rUV'
+                    b'X2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF-TAXDAvCLRr5luWmp7keDvDuLP0kIqc'
+                    b'yBYq79b3Dho1QvrjIMAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
         # Test receipt message with wigers and or cigars signing prior event
         wigers = mgr.sign(ser=serder.raw, verfers=verfers, indexed=True)
@@ -1045,12 +1044,12 @@ def test_messagize_v2():
                     b'CCA-XAuDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_'
                     b'H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-KAWAADdpYFg2ecIl0O7FeUnHN2P_'
                     b'aK-9U_31Hsvt57_duHbLVlG50kep74k6uFccMbXLqxMI0dAMAPDisFFvBcb6qEC-'
-                    b'TAXDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_kH'
-                    b'4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-LAWAACXlTpe-ZODGKZmovS9GZKkf8k-O'
-                    b'svdBpyVz-YvqIIVrxSH1UjWDaWDlGUWrLBdCJFrCkHGNGseQYrrVYc59BwL-MAhB'
-                    b'JjH1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BBnxvPGzvJf8d6hzfDR6'
-                    b'2RMk0aX0T-MhgqJqgvO4z672OO2RDC3t_b__1HuqAIG1kTGrkhpBDyuOpknkW-xY'
-                    b'kcG')
+                    b'LAWAACXlTpe-ZODGKZmovS9GZKkf8k-OsvdBpyVz-YvqIIVrxSH1UjWDaWDlGUWr'
+                    b'LBdCJFrCkHGNGseQYrrVYc59BwL-MAhBJjH1MCDssEZMnORskF34AwOFDgDL4751'
+                    b'3GivRvd_QKz0BBnxvPGzvJf8d6hzfDR62RMk0aX0T-MhgqJqgvO4z672OO2RDC3t'
+                    b'_b__1HuqAIG1kTGrkhpBDyuOpknkW-xYkcG-TAXDAvCLRr5luWmp7keDvDuLP0kI'
+                    b'qcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeD'
+                    b'Z2z')
 
         # test with multiple seals so collated
         seal0 = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
@@ -1418,12 +1417,12 @@ def test_messagize_v2_native():
                     b'Ampb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA-CCA'
                     b'-XAuDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_k'
                     b'H4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-KAWAABfKnU9VdFRGI2pQ2gMotaAB3Q8'
-                    b'BxNhLRnrXTrKiyi5qhjQ5YKU4SbDFjVdGoUoN3u5gfn6dHBVwvnBkr96OPwM-TAX'
-                    b'DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_kH4cG'
-                    b'7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-LAWAAA704jdZETqR_LNm1gf82PAXEa7qFxz'
-                    b'a_SEP4Q97wL32P1oItaECL2m9egSKBGeLofMC1tL22Mvz2RICLDUvbsA-MAhBJjH'
-                    b'1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BDB0Tz52RRyT-CFE6zboIEk'
-                    b'rJI87RfIltfOiYBZLcrdK2Sk3aCRrg3185PzzR1XGd9asEEG6l3zejhFHaA91O8M')
+                    b'BxNhLRnrXTrKiyi5qhjQ5YKU4SbDFjVdGoUoN3u5gfn6dHBVwvnBkr96OPwM-LAW'
+                    b'AAA704jdZETqR_LNm1gf82PAXEa7qFxza_SEP4Q97wL32P1oItaECL2m9egSKBGe'
+                    b'LofMC1tL22Mvz2RICLDUvbsA-MAhBJjH1MCDssEZMnORskF34AwOFDgDL47513Gi'
+                    b'vRvd_QKz0BDB0Tz52RRyT-CFE6zboIEkrJI87RfIltfOiYBZLcrdK2Sk3aCRrg31'
+                    b'85PzzR1XGd9asEEG6l3zejhFHaA91O8M-TAXDAvCLRr5luWmp7keDvDuLP0kIqcy'
+                    b'BYq79b3Dho1QvrjIMAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
         # test with multiple seals so collated
         seal0 = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
@@ -1746,12 +1745,12 @@ def test_messagize_v1_nested():
                     b'MCIsImIiOltdLCJjIjpbXSwiYSI6W119-XAuDAvCLRr5luWmp7keDvDuLP0kIqcy'
                     b'BYq79b3Dho1QvrjIMAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'
                     b'-KAWAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5l'
-                    b'PfPQQkQkxI862_XjyZLHyClVTLoD-TAXDAvCLRr5luWmp7keDvDuLP0kIqcyBYq7'
-                    b'9b3Dho1QvrjIMAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-LAW'
-                    b'AABtOhjlKo8WhJQ3EXMIMaQ_IH6yeyxs7_JuO4RioH1NUTtzTuV1bbuB7eoNhEj2'
-                    b'0VJYa4947ZMVrOxKhzI6EqUH-MAhBJjH1MCDssEZMnORskF34AwOFDgDL47513Gi'
-                    b'vRvd_QKz0BDwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa0rUVX'
-                    b'2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF')
+                    b'PfPQQkQkxI862_XjyZLHyClVTLoD-LAWAABtOhjlKo8WhJQ3EXMIMaQ_IH6yeyxs'
+                    b'7_JuO4RioH1NUTtzTuV1bbuB7eoNhEj20VJYa4947ZMVrOxKhzI6EqUH-MAhBJjH'
+                    b'1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BDwWrxO8RItpgGFtFiDF7Qo'
+                    b'Vas-6Bzvj0xtOfbsh31jjtshcEa0rUVX2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF'
+                    b'-TAXDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_k'
+                    b'H4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
         # test with multiple seals so collated
         seal0 = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
@@ -2063,12 +2062,12 @@ def test_messagize_v2_nested():
                     b'MCIsImIiOltdLCJjIjpbXSwiYSI6W119-XAuDAvCLRr5luWmp7keDvDuLP0kIqcy'
                     b'BYq79b3Dho1QvrjIMAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'
                     b'-KAWAADdpYFg2ecIl0O7FeUnHN2P_aK-9U_31Hsvt57_duHbLVlG50kep74k6uFc'
-                    b'cMbXLqxMI0dAMAPDisFFvBcb6qEC-TAXDAvCLRr5luWmp7keDvDuLP0kIqcyBYq7'
-                    b'9b3Dho1QvrjIMAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-LAW'
-                    b'AACXlTpe-ZODGKZmovS9GZKkf8k-OsvdBpyVz-YvqIIVrxSH1UjWDaWDlGUWrLBd'
-                    b'CJFrCkHGNGseQYrrVYc59BwL-MAhBJjH1MCDssEZMnORskF34AwOFDgDL47513Gi'
-                    b'vRvd_QKz0BBnxvPGzvJf8d6hzfDR62RMk0aX0T-MhgqJqgvO4z672OO2RDC3t_b_'
-                    b'_1HuqAIG1kTGrkhpBDyuOpknkW-xYkcG')
+                    b'cMbXLqxMI0dAMAPDisFFvBcb6qEC-LAWAACXlTpe-ZODGKZmovS9GZKkf8k-Osvd'
+                    b'BpyVz-YvqIIVrxSH1UjWDaWDlGUWrLBdCJFrCkHGNGseQYrrVYc59BwL-MAhBJjH'
+                    b'1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BBnxvPGzvJf8d6hzfDR62RM'
+                    b'k0aX0T-MhgqJqgvO4z672OO2RDC3t_b__1HuqAIG1kTGrkhpBDyuOpknkW-xYkcG'
+                    b'-TAXDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_k'
+                    b'H4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
         # test with multiple seals so collated
         seal0 = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
@@ -2347,12 +2346,12 @@ def test_messagize_v2_native_nested():
                     b'48whAmpb_4kyksMcz57snMRIuX0bqN1FDe09AlRjMAAA-JAAMAAA-JAA-JAA-JAA'
                     b'-XAuDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_k'
                     b'H4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-KAWAABfKnU9VdFRGI2pQ2gMotaAB3Q8'
-                    b'BxNhLRnrXTrKiyi5qhjQ5YKU4SbDFjVdGoUoN3u5gfn6dHBVwvnBkr96OPwM-TAX'
-                    b'DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_kH4cG'
-                    b'7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-LAWAAA704jdZETqR_LNm1gf82PAXEa7qFxz'
-                    b'a_SEP4Q97wL32P1oItaECL2m9egSKBGeLofMC1tL22Mvz2RICLDUvbsA-MAhBJjH'
-                    b'1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BDB0Tz52RRyT-CFE6zboIEk'
-                    b'rJI87RfIltfOiYBZLcrdK2Sk3aCRrg3185PzzR1XGd9asEEG6l3zejhFHaA91O8M')
+                    b'BxNhLRnrXTrKiyi5qhjQ5YKU4SbDFjVdGoUoN3u5gfn6dHBVwvnBkr96OPwM-LAW'
+                    b'AAA704jdZETqR_LNm1gf82PAXEa7qFxza_SEP4Q97wL32P1oItaECL2m9egSKBGe'
+                    b'LofMC1tL22Mvz2RICLDUvbsA-MAhBJjH1MCDssEZMnORskF34AwOFDgDL47513Gi'
+                    b'vRvd_QKz0BDB0Tz52RRyT-CFE6zboIEkrJI87RfIltfOiYBZLcrdK2Sk3aCRrg31'
+                    b'85PzzR1XGd9asEEG6l3zejhFHaA91O8M-TAXDAvCLRr5luWmp7keDvDuLP0kIqcy'
+                    b'BYq79b3Dho1QvrjIMAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
         # test with multiple seals so collated
         seal0 = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',

@@ -1799,30 +1799,6 @@ class Parser:
         sig is indexed signature of signer on this event msg
 
         """
-        #trqs = []
-        #for i in range(ctr.count):  # extract each attached quadruple
-            #prefixer = yield from self._extractor(ims=ims,
-                                                  #klas=Prefixer,
-                                                  #cold=cold,
-                                                  #abort=abort)
-            #number = yield from self._extractor(ims=ims,
-                                                #klas=Number,
-                                                #cold=cold,
-                                                #abort=abort)
-            #diger = yield from self._extractor(ims=ims,
-                                                #klas=Diger,
-                                                #cold=cold,
-                                                #abort=abort)
-            #siger = yield from self._extractor(ims=ims,
-                                               #klas=Siger,
-                                               #cold=cold,
-                                               #abort=abort)
-            #trqs.append((prefixer, number, diger, siger))
-        #try:
-            #exts.trqs.extend(trqs)
-        #except KeyError:
-            #exts.trqs = trqs
-
         gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -1886,27 +1862,6 @@ class Parser:
         When attached to receipt msg signature on event referenced in receipt
 
         """
-        #gs = ctr.byteCount(cold=cold)
-        #while len(ims) < gs:
-            #if abort:  # assumes already full frame extracted unexpected problem
-                #raise ShortageError(f"Unexpected stream shortage on enclosed "
-                                    #f"group code={ctr.qb64}")
-            #yield  # wait until have full group size
-
-        #gims = ims[:gs]  # copy out group sized substream
-        #del ims[:gs]  # strip off from ims
-        #trqs = []
-        #while gims:   # extract each attached quadruple and strip from gims
-            #prefixer = self.extract(ims=gims, klas=Prefixer, cold=cold)
-            #number = self.extract(ims=gims, klas=Number, cold=cold)
-            #diger = self.extract(ims=gims, klas=Diger, cold=cold)
-            #siger = self.extract(ims=gims, klas=Siger, cold=cold)
-            #trqs.append((prefixer, number, diger, siger))
-        #try:
-            #exts.trqs.extend(trqs)
-        #except KeyError:
-            #exts.trqs = trqs
-
         gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem

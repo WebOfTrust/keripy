@@ -252,23 +252,11 @@ class Baser(LMDBer):
             snKey (prefix + sequence number)
             More than one value per DB key is allowed.
 
-        .vrcs is named subDB instance of CatCesrIoSetSuber
-            (klas=(Prefixer, Number, Diger, Siger)) for verified transferable-
-            validator receipt quadruples. Each stored value is a typed CESR
-            tuple (Prefixer, Number, Diger, Siger) representing a validator's
-            AID, its latest establishment-event sequence number, digest, and
-            its indexed signature over the event. Values preserved in insertion
-            order. Represents fully validated receipts moved out of escrow.
-            subkey 'vrcs.'
-            dgKey (prefix + digest)
-            Multiple values per key stored as ordered set.
-
-        .vrcsNew is named subDB instance of CesrIoSetSuber (klas=Siger))
+        .vrcs is named subDB instance of CesrIoSetSuber (klas=Siger))
             for verified transferable receiptor/validator receipt signatures.
-            Represents fully validated receipts moved out of escrow.
-
+            Represents fully validated receipts.
             Each stored value in ioset is returned as a typed CESR Siger.
-            The reciptor (validator not the controller) is denoted in
+            The receiptor (validator not the controller) is denoted in
             the key space for the vrcs entry. This is provided by the last three
             elements of the key space tuple representing a receiptor's
             AID, its latest establishment-event sequence number, and  digest.
@@ -945,15 +933,18 @@ class Baser(LMDBer):
         self.rcts = subing.CatCesrIoSetSuber(db=self, subkey="rcts.",
                                              klas=(coring.Prefixer, coring.Cigar))
         self.ures = subing.CatCesrIoSetSuber(db=self, subkey='ures.',
-                                             klas=(coring.Diger, coring.Prefixer, coring.Cigar))
-        #self.vrcs = subing.CatCesrIoSetSuber(db=self, subkey='vrcs.',
-                             #klas=(coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
-        self.vrcs = subing.CesrIoSetSuber(db=self, subkey='vrcs.', klas=indexing.Siger)
-        #self.vrcsNew = subing.CesrIoSetSuber(db=self, subkey='vrcsnew.', klas=indexing.Siger)
-
-
+                                             klas=(coring.Diger,
+                                                   coring.Prefixer,
+                                                   coring.Cigar))
+        self.vrcs = subing.CesrIoSetSuber(db=self,
+                                          subkey='vrcs.',
+                                          klas=indexing.Siger)
         self.vres = subing.CatCesrIoSetSuber(db=self, subkey='vres.',
-                             klas=(coring.Diger, coring.Prefixer, coring.Number, coring.Diger, indexing.Siger))
+                             klas=(coring.Diger,
+                                   coring.Prefixer,
+                                   coring.Number,
+                                   coring.Diger,
+                                   indexing.Siger))
         self.pses = subing.OnIoDupSuber(db=self, subkey='pses.')
         self.pwes = subing.OnIoDupSuber(db=self, subkey='pwes.')
         self.pdes = subing.OnIoDupSuber(db=self, subkey='pdes.')

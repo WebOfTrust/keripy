@@ -32,7 +32,8 @@ from .coring import (PreDex, DigDex, NonTransDex, NumDex, Prefixer,
 
 from .counting import Counter, Codens
 from .structing import (Structor, Sealer, SealEvent, SealSource, SealLast, BlindState,
-                        BoundState, TypeMedia, StateEstEvent)
+                        BoundState, TypeMedia, StateEstEvent,
+                        TransSigs, TransLastSigs, TransReceipts)
 from .indexing import Siger
 from .serdering import SerderKERI
 
@@ -1526,9 +1527,9 @@ def exchange(*,
     return SerderKERI(sad=sad, makify=True)
 
 
-def messagize(serder, *, sigers=None, source=None, bonds=None, wigers=None,
-                         cigars=None, nests=None, framed=False, nested=False,
-                         gvrsn=Version, genusify=False):
+def messagize(serder, *, sigers=None, source=None, tsgs=None, lsgs=None, wigers=None,
+                         cigars=None, rsgs=None, bonds=None, nests=None,
+                         framed=False, nested=False, gvrsn=Version, genusify=False):
     """Attaches authenticator(s) from sigers (with or without source as seal) and/or
     cigars and/or wigers and/or bonds. A bond is typically a seal reference to
     an event with anchoring seal of message as authenticator. In v2 bonds may
@@ -1546,14 +1547,23 @@ def messagize(serder, *, sigers=None, source=None, bonds=None, wigers=None,
                     attach uniple pre made from (i,) of seal plus ControllerIdxSigs
                     plus attached indexed sigs in sigers
                 Else None use ControllerIdxSigs plus attached indexed sigs in sigers
-        bonds (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
-            Non signature based authenticator typically an event reference or may
-            Only v2 supports BlindState|BoundState|TypeMedia
-            if bonds is not list convert to list.
+        tsgs (list[TransSigs]): TransIdxSigGroups (prefixer, number, diger, [sigers])
+                controller idx sigs or endorsements from transferable aids with
+                reference to est evt providing key state and list of indexed sigs.
+        lsgs (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[sigers])
+                controller idx sigs or endorsements from transferable aids with
+                reference to est evt providing key state and list of indexed sigs.
         wigers (list): optional list of Siger instances of witness index signatures
         cigars (list): optional list of Cigars instances of non-transferable non indexed
             signatures from  which to form receipt couples.
             Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
+        rsgs (list[TransReceipts]): TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
+                receiptor idx sigs or endorsements from transferable aids with
+                reference to est evt providing key state and list of indexed sigs.
+        bonds (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
+            Non signature based authenticator typically an event reference or may
+            Only v2 supports BlindState|BoundState|TypeMedia
+            if bonds is not list convert to list.
         nests (list[str|bytes|bytearray]|None): of nested msg substreams.
                     Each element stream with message + attachments. Attachements
                     must be enclosed in either AttachmentGroup or
@@ -1626,6 +1636,68 @@ def messagize(serder, *, sigers=None, source=None, bonds=None, wigers=None,
             for siger in sigers:
                 aims.extend(siger.qb64b)
 
+        if tsgs:
+            count = len(tsgs)
+            aims.extend(Counter(Codens.TransIdxSigGroups, count=count,
+                                        version=Vrsn_1_0).qb64b)
+            for tsg in tsgs:
+                prefixer, number, diger, sigers = tsg  # unpack
+                aims.extend(prefixer.qb64b)
+                aims.extend(number.qb64b)
+                aims.extend(diger.qb64b)
+                aims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
+                                            version=Vrsn_1_0).qb64b)
+                for siger in sigers:
+                    aims.extend(siger.qb64b)
+
+        if lsgs:
+            count = len(lsgs)
+            aims.extend(Counter(Codens.TransLastIdxSigGroups, count=count,
+                                        version=Vrsn_1_0).qb64b)
+            for lsg in lsgs:
+                prefixer, sigers = lsg  # unpack
+                aims.extend(prefixer.qb64b)
+                aims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
+                                            version=Vrsn_1_0).qb64b)
+                for siger in sigers:
+                    aims.extend(siger.qb64b)
+
+
+        if wigers:
+            aims.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
+                               version=Vrsn_1_0).qb64b)
+            for wiger in wigers:
+                if wiger.verfer and wiger.verfer.code not in NonTransDex:
+                    raise ValueError(f"Attempt to use tranferable prefix="
+                                     f"{wiger.verfer.qb64} for receipt.")
+                aims.extend(wiger.qb64b)
+
+        if cigars:
+            aims.extend(Counter(Codens.NonTransReceiptCouples, count=len(cigars),
+                               version=Vrsn_1_0).qb64b)
+            for cigar in cigars:
+                if cigar.verfer.code not in NonTransDex:
+                    raise ValueError(f"Attempt to use tranferable prefix="
+                                     f"{cigar.verfer.qb64} for receipt.")
+                aims.extend(cigar.verfer.qb64b)
+                aims.extend(cigar.qb64b)
+
+        if rsgs:
+            rims = bytearray()
+            for rsg in rsgs:
+                prefixer, number, diger, sigers = rsg  # unpack
+                rims.extend(prefixer.qb64b)
+                rims.extend(number.qb64b)
+                rims.extend(diger.qb64b)
+                rims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
+                                            version=Vrsn_1_0).qb64b)
+                for siger in sigers:
+                    rims.extend(siger.qb64b)
+
+            aims.extend(Counter.enclose(qb64=rims,
+                                        code=Codens.TransReceiptIdxSigGroups,
+                                        version=gvrsn)    )
+
         if bonds:
             if isinstance(bonds, tuple):
                 bonds = [bonds]  # convert to list
@@ -1666,25 +1738,6 @@ def messagize(serder, *, sigers=None, source=None, bonds=None, wigers=None,
                 else:
                     raise ValueError(f"Unsupported authenticator {clan} for"
                                      f" version={gvrsn} msg={serder.pretty()}")
-
-        if wigers:
-            aims.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
-                               version=Vrsn_1_0).qb64b)
-            for wiger in wigers:
-                if wiger.verfer and wiger.verfer.code not in NonTransDex:
-                    raise ValueError(f"Attempt to use tranferable prefix="
-                                     f"{wiger.verfer.qb64} for receipt.")
-                aims.extend(wiger.qb64b)
-
-        if cigars:
-            aims.extend(Counter(Codens.NonTransReceiptCouples, count=len(cigars),
-                               version=Vrsn_1_0).qb64b)
-            for cigar in cigars:
-                if cigar.verfer.code not in NonTransDex:
-                    raise ValueError(f"Attempt to use tranferable prefix="
-                                     f"{cigar.verfer.qb64} for receipt.")
-                aims.extend(cigar.verfer.qb64b)
-                aims.extend(cigar.qb64b)
 
         if len(aims) % 4:
             raise ValueError(f"Invalid attachments size={len(atc)}, "
@@ -1727,24 +1780,32 @@ def messagize(serder, *, sigers=None, source=None, bonds=None, wigers=None,
             else:
                 aims.extend(eims)
 
-        if bonds:
-            if isinstance(bonds, tuple):
-                bonds = [bonds]  # convert to list
+        if tsgs:
+            count = len(tsgs)
+            aims.extend(Counter(Codens.TransIdxSigGroups, count=count,
+                                        version=Vrsn_1_0).qb64b)
+            for tsg in tsgs:
+                prefixer, number, diger, sigers = tsg  # unpack
+                aims.extend(prefixer.qb64b)
+                aims.extend(number.qb64b)
+                aims.extend(diger.qb64b)
+                aims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
+                                            version=Vrsn_1_0).qb64b)
+                for siger in sigers:
+                    aims.extend(siger.qb64b)
 
-            clans = {}  # dict of structor lists keyed by clan
-            for bond in bonds:  # collate structors made from bonds by clan group
-                structor = Structor(crew=bond)
-                if (structor.clan not in (SealEvent, SealSource, SealLast,
-                                        BlindState, BoundState, TypeMedia)):
-                    raise ValueError(f"Unsupported authenticator {structor.clan}"
-                                     f" for version={gvrsn} msg={serder.pretty()}")
-                if structor.clan not in clans:
-                    clans[structor.clan] = [structor]
-                else:
-                    clans[structor.clan].append(structor)
+        if lsgs:
+            count = len(lsgs)
+            aims.extend(Counter(Codens.TransLastIdxSigGroups, count=count,
+                                        version=Vrsn_1_0).qb64b)
+            for lsg in lsgs:
+                prefixer, sigers = lsg  # unpack
+                aims.extend(prefixer.qb64b)
+                aims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
+                                            version=Vrsn_1_0).qb64b)
+                for siger in sigers:
+                    aims.extend(siger.qb64b)
 
-            for structors in clans.values():
-                aims.extend(Structor.enclose(structors))
 
         if wigers:
             eims = bytearray()
@@ -1768,6 +1829,41 @@ def messagize(serder, *, sigers=None, source=None, bonds=None, wigers=None,
             aims.extend(Counter.enclose(qb64=eims,
                                         code=Codens.NonTransReceiptCouples,
                                         version=gvrsn))
+
+        if rsgs:
+            rims = bytearray()
+            for rsg in rsgs:
+                prefixer, number, diger, sigers = rsg  # unpack
+                rims.extend(prefixer.qb64b)
+                rims.extend(number.qb64b)
+                rims.extend(diger.qb64b)
+                rims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
+                                            version=Vrsn_1_0).qb64b)
+                for siger in sigers:
+                    rims.extend(siger.qb64b)
+
+            aims.extend(Counter.enclose(qb64=rims,
+                                        code=Codens.TransReceiptIdxSigGroups,
+                                        version=gvrsn))
+
+        if bonds:
+            if isinstance(bonds, tuple):
+                bonds = [bonds]  # convert to list
+
+            clans = {}  # dict of structor lists keyed by clan
+            for bond in bonds:  # collate structors made from bonds by clan group
+                structor = Structor(crew=bond)
+                if (structor.clan not in (SealEvent, SealSource, SealLast,
+                                        BlindState, BoundState, TypeMedia)):
+                    raise ValueError(f"Unsupported authenticator {structor.clan}"
+                                     f" for version={gvrsn} msg={serder.pretty()}")
+                if structor.clan not in clans:
+                    clans[structor.clan] = [structor]
+                else:
+                    clans[structor.clan].append(structor)
+
+            for structors in clans.values():
+                aims.extend(Structor.enclose(structors))
 
         if nests:
             for nest in nests:  # list of msg substreams
