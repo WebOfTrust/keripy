@@ -472,3 +472,63 @@ def test_witness_start_non_tty_wrong_passcode_raises(helpers, monkeypatch):
         help.ogler.getLogger()  # re-apply restored level to the shared logger
         helpers.remove_test_dirs(name)
 
+
+# --- kli witness start: --logfile deprecation in favor of --logdir (#238) ---
+
+def test_witness_start_arg_parsing():
+    """--logdir is the current option; --logfile is retained as a deprecated alias."""
+    args = _parse(["witness", "start", "--alias", "wit",
+                   "--loglevel", "debug", "--logdir", "/tmp/wlogs"])
+    assert args.handler is not None
+    assert args.loglevel == "debug"
+    assert args.logdir == "/tmp/wlogs"
+    assert args.logfile is None
+
+    args = _parse(["witness", "start", "--alias", "wit"])
+    assert args.loglevel == "CRITICAL"
+    assert args.logdir is None
+    assert args.logfile is None
+
+
+def test_launch_routes_logdir(monkeypatch, tmp_path):
+    """launch() must route --logdir straight to ogler.headDirPath."""
+    monkeypatch.setattr(help.ogler, "level", help.ogler.level)
+    monkeypatch.setattr(help.ogler, "headDirPath", help.ogler.headDirPath)
+    monkeypatch.setattr(witness_start, "runWitness", lambda **kw: None)
+
+    args = _parse(["witness", "start", "--alias", "wit", "--logdir", str(tmp_path)])
+    args.handler(args)  # -> launch(args)
+
+    assert help.ogler.headDirPath == str(tmp_path)
+
+
+def test_launch_logfile_extracts_dirname(monkeypatch, tmp_path):
+    """The deprecated --logfile must contribute only its *directory* as the log dir
+    (hio derives the filename from --name), never the file path itself."""
+    monkeypatch.setattr(help.ogler, "level", help.ogler.level)
+    monkeypatch.setattr(help.ogler, "headDirPath", help.ogler.headDirPath)
+    monkeypatch.setattr(witness_start, "runWitness", lambda **kw: None)
+
+    logfile = tmp_path / "witness.log"
+    args = _parse(["witness", "start", "--alias", "wit", "--logfile", str(logfile)])
+    args.handler(args)
+
+    assert help.ogler.headDirPath == str(tmp_path)
+
+
+def test_logfile_emits_deprecation_warning(monkeypatch, capsys, tmp_path):
+    """Passing the deprecated --logfile must print a deprecation notice to stderr
+    (visible regardless of --loglevel); using the current --logdir must not."""
+    monkeypatch.setattr(help.ogler, "level", help.ogler.level)
+    monkeypatch.setattr(help.ogler, "headDirPath", help.ogler.headDirPath)
+    monkeypatch.setattr(witness_start, "runWitness", lambda **kw: None)
+
+    args = _parse(["witness", "start", "--alias", "wit",
+                   "--logfile", str(tmp_path / "witness.log")])
+    args.handler(args)
+    assert "deprecated" in capsys.readouterr().err, "expected a --logfile deprecation notice"
+
+    args = _parse(["witness", "start", "--alias", "wit", "--logdir", str(tmp_path)])
+    args.handler(args)
+    assert "deprecated" not in capsys.readouterr().err
+
