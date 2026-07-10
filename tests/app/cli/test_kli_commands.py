@@ -13,6 +13,7 @@ from keri.app import directing
 
 from keri.app.cli import commands
 from keri.app.cli.common import existing
+from keri.app.cli.commands.witness import start as witness_start
 
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -321,6 +322,44 @@ def test_incept_and_rotate_opts(helpers, capsys):
     doers = args.handler(args)
 
     directing.runController(doers=doers)
+
+
+def test_run_witness_closes_boot_keeper_before_reopen(helpers, monkeypatch):
+    """Regression: runWitness must close the boot Keeper before Habery re-opens
+    the same keystore, otherwise LMDB raises 'environment is already open' on
+    Linux.  See WebOfTrust/keripy#1367.
+    """
+    name = "test-spy-keeper"
+    helpers.remove_test_dirs(name)
+
+    # Spy on Keeper.close (the method, not the class) so keeping.py's internal
+    # super(Keeper, self) still resolves to the real class (avoids recursion).
+    close_called = False
+    real_close = witness_start.keeping.Keeper.close
+
+    def spy_close(self, clear=False):
+        nonlocal close_called
+        close_called = True
+        return real_close(self, clear=clear)
+
+    stopped = False
+
+    def fake_run(doers, expire=0.0):
+        nonlocal stopped
+        stopped = True
+
+    monkeypatch.setattr(witness_start.keeping.Keeper, 'close', spy_close)
+    monkeypatch.setattr(witness_start.directing, 'runController', fake_run)
+    monkeypatch.setattr(witness_start.indirecting, 'setupWitness', lambda **kw: [])
+
+    try:
+        witness_start.runWitness(name=name, base='', bran='0123456789abcdefghijk',
+                                 tcp=5631, http=5632, expire=0.0)
+
+        assert close_called, "Keeper.close() was never called before Habery re-open"
+        assert stopped, "runController was never reached"
+    finally:
+        helpers.remove_test_dirs(name)
 
 
 
