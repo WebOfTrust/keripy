@@ -74,6 +74,8 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
 
     rvy = routing.Revery(db=hby.db, cues=cues)
     kvy = Kevery(db=hby.db,
+                cf=hby.cf,
+                enableKram=True,
                 lax=True,
                 local=False,
                 rvy=rvy,

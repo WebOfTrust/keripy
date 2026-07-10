@@ -11,9 +11,9 @@ from falcon.testing import helpers
 from keri.app import (openHab, parseCesrHttpRequest,
                       createCESRRequest, streamCESRRequests,
                       CESR_CONTENT_TYPE)
-from keri.kering import Ilks, Vrsn_1_0, Kinds
-from keri.core import SerderKERI
-from keri.vdr import Regery, Verifier
+from keri.kering import Ilks, Vrsn_1_0, Vrsn_2_0, Kinds
+from keri.core import Kevery, Parser, SerderKERI
+from keri.vdr import Regery, Tevery, Verifier
 
 from tests.common import KWA
 
@@ -123,6 +123,98 @@ def test_create_cesr_request(mockHelpingNowUTC):
             b'qSTBmJzI8RvIezsJ')
 
 
+def test_create_cesr_request_v2(mockHelpingNowUTC):
+    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef',
+                 version=Vrsn_2_0, kind=Kinds.json) as (hby, hab):
+        wit = "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"
+        regery = Regery(hby=hby, name="test", temp=True)
+        issuer = regery.makeRegistry(prefix=hab.pre, name="test", **KWA)
+
+        cf = {
+            "kram": {
+                "enabled": True,
+                "denials": [],
+                "caches": {
+                    "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
+                }
+            }
+        }
+
+        hby.cf.put(cf)
+        kvy = Kevery(db=hby.db, cf=hby.cf, enableKram=True, lax=False, local=False)
+        tvy = Tevery(db=hby.db, reger=regery.reger, local=False)
+        assert kvy.kramer.enabled is True
+
+        verfer = Verifier(hby=hby, reger=regery.reger)
+        msg = verfer.query(hab.pre, issuer.regk,
+                           "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
+                           route="tels", version=Vrsn_2_0, kind=Kinds.json)
+        client = MockClient()
+
+        createCESRRequest(msg, client, dest=wit, path="/qry/tels")
+
+        args = client.args.pop()
+        assert args["method"] == "POST"
+        assert args["path"] == "/qry/tels"
+        serder = SerderKERI(raw=args['body'])
+        assert serder.pvrsn == Vrsn_2_0
+        assert serder.gvrsn == Vrsn_2_0
+        assert serder.kind == Kinds.json
+        assert serder.ked["t"] == Ilks.qry
+        assert serder.ked["i"] == hab.pre
+        assert serder.ked["r"] == "tels"
+        assert serder.ked["q"]["i"] == "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4"
+        assert serder.ked["q"]["ri"] == issuer.regk
+        assert serder.ked["q"]["src"] == hab.pre
+
+        headers = args["headers"]
+        assert headers["Content-Type"] == "application/cesr"
+        assert headers["Content-Length"] == len(args["body"])
+        assert len(headers["CESR-ATTACHMENT"]) > 0
+
+        ims = bytearray(args["body"])
+        ims.extend(headers["CESR-ATTACHMENT"])
+        Parser(version=Vrsn_2_0).parse(ims=ims, kvy=kvy, tvy=tvy)
+        cache = hby.db.kramMSGC.get(keys=(hab.pre, serder.said))
+        assert cache is not None
+        assert cache.mdt == serder.stamp
+        assert cache.d == 1000
+
+        topics = {"/receipt": 0}
+        msg = hab.query(pre=hab.pre, src=wit, route="mbx", query={"topics": topics},
+                        version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        client = MockClient()
+
+        createCESRRequest(msg, client, dest=wit, path="/qry/mbx")
+
+        args = client.args.pop()
+        assert args["method"] == "POST"
+        assert args["path"] == "/qry/mbx"
+        serder = SerderKERI(raw=args["body"])
+        assert serder.pvrsn == Vrsn_2_0
+        assert serder.gvrsn == Vrsn_2_0
+        assert serder.kind == Kinds.json
+        assert serder.ked["t"] == Ilks.qry
+        assert serder.ked["i"] == hab.pre
+        assert serder.ked["r"] == "mbx"
+        assert serder.ked["q"]["i"] == hab.pre
+        assert serder.ked["q"]["src"] == wit
+        assert serder.ked["q"]["topics"] == topics
+
+        headers = args["headers"]
+        assert headers["Content-Type"] == "application/cesr"
+        assert headers["Content-Length"] == 331
+        assert len(headers["CESR-ATTACHMENT"]) == 144
+
+        ims = bytearray(args["body"])
+        ims.extend(headers["CESR-ATTACHMENT"])
+        Parser(version=Vrsn_2_0).parse(ims=ims, kvy=kvy)
+        cache = hby.db.kramMSGC.get(keys=(hab.pre, serder.said))
+        assert cache is not None
+        assert cache.mdt == serder.stamp
+        assert cache.d == 1000
+
+
 def test_stream_cesr_request(mockHelpingNowUTC):
     with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab):
         wit = "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"
@@ -203,6 +295,155 @@ def test_stream_cesr_request(mockHelpingNowUTC):
         assert headers['CESR-ATTACHMENT'] == (b'-VAj-HABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAAA9IV9O'
                                               b'7nlInObE0V8E6xphJcv9u_53mP7YFOzESF3RsZOyN_LguuC-ZBBxY_-yjlh-YKeX'
                                               b'jIu5ZwJILbL2bcID')
+
+
+def test_stream_cesr_request_v2(mockHelpingNowUTC):
+    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef',
+                 version=Vrsn_2_0, kind=Kinds.json) as (hby, hab):
+        wit = "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"
+        regery = Regery(hby=hby, name="test", temp=True)
+        issuer = regery.makeRegistry(prefix=hab.pre, name="test", **KWA)
+
+        cf = {
+            "kram": {
+                "enabled": True,
+                "denials": [],
+                "caches": {
+                    "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
+                }
+            }
+        }
+
+        hby.cf.put(cf)
+        kvy = Kevery(db=hby.db, cf=hby.cf, enableKram=True, lax=False, local=False)
+        tvy = Tevery(db=hby.db, reger=regery.reger, local=False)
+        assert kvy.kramer.enabled is True
+
+        verfer = Verifier(hby=hby, reger=regery.reger)
+        msg = verfer.query(hab.pre, issuer.regk,
+                           "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
+                           route="tels", version=Vrsn_2_0, kind=Kinds.json)
+        client = MockClient()
+
+        streamCESRRequests(client, msg, dest=wit, path="/qry/tels")
+
+        args = client.args.pop()
+        assert args["method"] == "POST"
+        assert args["path"] == "/qry/tels"
+        serder = SerderKERI(raw=args['body'])
+        assert serder.pvrsn == Vrsn_2_0
+        assert serder.gvrsn == Vrsn_2_0
+        assert serder.kind == Kinds.json
+        assert serder.ked["t"] == Ilks.qry
+        assert serder.ked["i"] == hab.pre
+        assert serder.ked["r"] == "tels"
+        assert serder.ked["q"]["i"] == "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4"
+        assert serder.ked["q"]["ri"] == issuer.regk
+        assert serder.ked["q"]["src"] == hab.pre
+
+        headers = args["headers"]
+        assert headers["Content-Type"] == "application/cesr"
+        assert headers["Content-Length"] == 360
+        assert len(headers["CESR-ATTACHMENT"]) == 144
+
+        ims = bytearray(args["body"])
+        ims.extend(headers["CESR-ATTACHMENT"])
+        Parser(version=Vrsn_2_0).parse(ims=ims, kvy=kvy, tvy=tvy)
+        cache = hby.db.kramMSGC.get(keys=(hab.pre, serder.said))
+        assert cache is not None
+        assert cache.mdt == serder.stamp
+        assert cache.d == 1000
+
+        topics = {"/receipt": 0}
+        msg = hab.query(pre=hab.pre, src=wit, route="mbx", query={"topics": topics},
+                        version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        client = MockClient()
+
+        streamCESRRequests(client, msg, dest=wit, path="/qry/mbx")
+
+        args = client.args.pop()
+        assert args["method"] == "POST"
+        assert args["path"] == "/qry/mbx"
+        serder = SerderKERI(raw=args["body"])
+        assert serder.pvrsn == Vrsn_2_0
+        assert serder.gvrsn == Vrsn_2_0
+        assert serder.kind == Kinds.json
+        assert serder.ked["t"] == Ilks.qry
+        assert serder.ked["i"] == hab.pre
+        assert serder.ked["r"] == "mbx"
+        assert serder.ked["q"]["i"] == hab.pre
+        assert serder.ked["q"]["src"] == wit
+        assert serder.ked["q"]["topics"] == topics
+
+        headers = args["headers"]
+        assert headers["Content-Type"] == "application/cesr"
+        assert headers["Content-Length"] == 331
+        assert len(headers["CESR-ATTACHMENT"]) == 144
+        assert headers["CESR-ATTACHMENT"] == (b'-CAj-YAiEChqfw9-5A5qMrZ8_YgOAJm8iKMbTAUvfDVVI6KNGL3M-'
+                                              b'KAWAAA6IQQzemdSFuRZ3AU0jbL9qn9D__V6ygWoVIvrZEzujBmQwng-'
+                                              b'_xDuIwxX599cuwuliEl4CfYzuynwVYdVqz0K')
+
+        ims = bytearray(args["body"])
+        ims.extend(headers["CESR-ATTACHMENT"])
+        Parser(version=Vrsn_2_0).parse(ims=ims, kvy=kvy)
+        cache = hby.db.kramMSGC.get(keys=(hab.pre, serder.said))
+        assert cache is not None
+        assert cache.mdt == serder.stamp
+        assert cache.d == 1000
+
+        msgs = hab.query(pre=hab.pre, src=wit, route="logs", query=dict(s=0),
+                         version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        msgs.extend(hab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0))
+
+        client = MockClient()
+        streamCESRRequests(client, msgs, dest=wit)
+        assert len(client.args) == 2
+        args = client.args.pop()
+        assert args["method"] == "POST"
+        assert args["path"] == "/"
+
+        serder = SerderKERI(raw=args["body"])
+        assert serder.pvrsn == Vrsn_2_0
+        assert serder.gvrsn == Vrsn_2_0
+        assert serder.kind == Kinds.json
+        assert serder.ked["t"] == Ilks.icp
+        assert serder.ked["i"] == hab.pre
+
+        headers = args["headers"]
+        assert headers['Content-Type'] == 'application/cesr'
+        assert headers['Content-Length'] == 301
+        assert len(headers['CESR-ATTACHMENT']) == 92
+
+        args = client.args.pop()
+        assert args["method"] == "POST"
+        assert args["path"] == "/"
+
+        serder = SerderKERI(raw=args["body"])
+        assert serder.pvrsn == Vrsn_2_0
+        assert serder.gvrsn == Vrsn_2_0
+        assert serder.kind == Kinds.json
+        assert serder.ked["t"] == Ilks.qry
+        assert serder.ked["i"] == hab.pre
+        assert serder.ked["r"] == "logs"
+        assert serder.ked["q"]["s"] == 0
+        assert serder.ked["q"]["i"] == hab.pre
+        assert serder.ked["q"]["src"] == wit
+
+        headers = args["headers"]
+        assert headers['Content-Type'] == 'application/cesr'
+        assert headers['Content-Length'] == len(args["body"])
+        assert len(headers['CESR-ATTACHMENT']) == 144
+        assert headers['CESR-ATTACHMENT'] == (b'-CAj-YAiEChqfw9-5A5qMrZ8_YgOAJm8iKMbTAUvfDVVI6KNGL3M-'
+                                              b'KAWAACFNqIda6R-Q-cZa_bWrLwt7busxW5fKnqyTP_ToGnI7Chsjv'
+                                              b'2TyFy-T52aVmemAXjZsxWrOrZtE8WcvU0b57EE')
+
+        ims = bytearray(args["body"])
+        ims.extend(headers["CESR-ATTACHMENT"])
+        Parser(version=Vrsn_2_0).parse(ims=ims, kvy=kvy)
+        cache = hby.db.kramMSGC.get(keys=(hab.pre, serder.said))
+        assert cache is not None
+        assert cache.mdt == serder.stamp
+        assert cache.d == 1000
 
 
 if __name__ == '__main__':

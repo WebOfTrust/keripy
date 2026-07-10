@@ -16,7 +16,7 @@ from socket import gaierror
 
 from .httping import Clienter, streamCESRRequests, CESR_DESTINATION_HEADER
 
-from ..kering import (Schemes, Roles, Vrsn_1_0,
+from ..kering import (Schemes, Roles,
                       MissingEntryError, ConfigurationError)
 from ..core import Counter, eventing, parsing, coring, serdering, Codens
 
@@ -710,6 +710,7 @@ class TCPMessenger(doing.DoDoer):
         self.hab = hab
         self.wit = wit
         self.url = url
+        self.version = self.hab.psr.version
         self.posted = 0
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.sent = sent if sent is not None else decking.Deck()
@@ -736,7 +737,7 @@ class TCPMessenger(doing.DoDoer):
         self.parser = parsing.Parser(ims=client.rxbs,
                                      framed=True,
                                      kvy=self.kevery,
-                                     version=Vrsn_1_0)
+                                     version=self.version)
 
         clientDoer = clienting.ClientDoer(client=client)
         self.extend([clientDoer, doing.doify(self.msgDo)])
@@ -781,6 +782,7 @@ class TCPStreamMessenger(doing.DoDoer):
         self.hab = hab
         self.wit = wit
         self.url = url
+        self.version = self.hab.psr.version
         self.posted = 0
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.sent = sent if sent is not None else decking.Deck()
@@ -810,7 +812,7 @@ class TCPStreamMessenger(doing.DoDoer):
         self.parser = parsing.Parser(ims=client.rxbs,
                                      framed=True,
                                      kvy=self.kevery,
-                                     version=Vrsn_1_0)
+                                     version=self.version)
 
         clientDoer = clienting.ClientDoer(client=client)
         self.extend([clientDoer, doing.doify(self.msgDo)])

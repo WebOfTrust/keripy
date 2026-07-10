@@ -12,7 +12,7 @@ from base64 import urlsafe_b64encode as encodeB64
 
 from hio.help import ogler
 
-from ..kering import (Colds, sniff, Vrsn_2_0, Version, Ilks,
+from ..kering import (Colds, sniff, Vrsn_2_0, Ilks,
                       UnexpectedCountCodeError, MaterialError, ValidationError,
                       QueryNotFoundError, ExtractionError, ShortageError,
                       ColdStartError, InvalidVersionError,
@@ -1402,6 +1402,20 @@ class Parser:
         if isinstance(serder, SerderKERI):
             ilk = serder.ilk  # dispatch abased on ilk
 
+            if kvy is not None and serder.pvrsn.major >= Vrsn_2_0.major and ilk in (
+                Ilks.qry, Ilks.rpy, Ilks.exn, Ilks.xip, Ilks.pro, Ilks.bar
+            ):
+                kwa = dict(exts)
+                kwa['rvy'] = rvy
+                kwa['exc'] = exc
+                kwa['tvy'] = tvy
+                try:
+                    kvy.processMsg(kwa=kwa)
+                except AttributeError as ex:
+                    raise ValidationError(f"Error while processing msg in Kevery"
+                                                f"= {serder.pretty()}.") from ex
+                return
+
             if ilk in [Ilks.icp, Ilks.rot, Ilks.ixn, Ilks.dip, Ilks.drt]:  # event msg
                 firner, dater = exts['frcs'][-1] if exts['frcs'] else (None, None)  # use last one if more than one
                 # when present assumes this is source seal of delegating event in delegator's KEL
@@ -2581,5 +2595,3 @@ class Parser:
             exts.essrs.extend(essrs)
         except KeyError:
             exts.essrs = essrs
-
-
