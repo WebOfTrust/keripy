@@ -7,6 +7,7 @@ Witness command line interface
 """
 import argparse
 import logging
+import os
 import sys
 
 from keri import __version__
@@ -53,8 +54,12 @@ parser.add_argument("--certpath", action="store", required=False, default=None)
 parser.add_argument("--cafilepath", action="store", required=False, default=None)
 parser.add_argument("--loglevel", action="store", required=False, default="CRITICAL",
                     help="Set log level to DEBUG | INFO | WARNING | ERROR | CRITICAL. Default is CRITICAL")
+parser.add_argument("--logdir", action="store", required=False, default=None,
+                    help="directory under which the witness writes its log file. "
+                         "If not defined, logs are not written to a file.")
 parser.add_argument("--logfile", action="store", required=False, default=None,
-                    help="path of the log file. If not defined, logs will not be written to the file.")
+                    help="DEPRECATED: use --logdir. Path to a log file; only its directory is used "
+                         "(the file name and log subdirectory are derived internally).")
 parser.add_argument("--no-prompt", action="store_true", default=None, required=False,
                     help="Disable interactive prompt", dest="noPrompt")
 
@@ -62,9 +67,17 @@ parser.add_argument("--no-prompt", action="store_true", default=None, required=F
 def launch(args):
     # Normalize level case; avoid invalid lowercase values that silently break level filtering
     help.ogler.level = logging.getLevelName(args.loglevel.upper())
-    if args.logfile is not None:
-        help.ogler.headDirPath = args.logfile
+
+    logdir = args.logdir
+    if args.logfile:  # deprecated: only its directory is used
+        logdir = os.path.dirname(args.logfile) or "."
+
+    if logdir is not None:  # Must reopen
+        help.ogler.headDirPath = logdir
         help.ogler.reopen(name=args.name, temp=False, clear=True)
+
+    if args.logfile:  # print after reopen so ogler.path is the resolved log path
+        print(f"--logfile is deprecated; use --logdir. Logging to {help.ogler.path}", file=sys.stderr)
 
     help.ogler.getLogger()  # re-applies ogler.level to the shared logger
 
