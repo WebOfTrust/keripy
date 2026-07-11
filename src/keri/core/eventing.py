@@ -1527,7 +1527,7 @@ def exchange(*,
     return SerderKERI(sad=sad, makify=True)
 
 
-def messagize(serder, *, sigers=None, source=None, tsgs=None, lsgs=None, wigers=None,
+def messagize(serder, *, sigers=None, tsgs=None, lsgs=None, wigers=None,
                          cigars=None, rsgs=None, bonds=None, nests=None,
                          framed=False, nested=False, gvrsn=Version, genusify=False):
     """Attaches authenticator(s) from sigers (with or without source as seal) and/or
@@ -1539,14 +1539,6 @@ def messagize(serder, *, sigers=None, source=None, tsgs=None, lsgs=None, wigers=
         serder (SerderKERI): instance containing the event
         sigers (list): of Siger instances (optional) to create indexed signatures
                        based on seal type if any
-        source (SealEvent|SealLast|None): optional modifier to sigers when provided
-                If SealEvent use attachment group code TransIdxSigGroups plus attach
-                    triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
-                    plus attached indexed sigs in sigers
-                Elif SealLast use attachment group code TransLastIdxSigGroups plus
-                    attach uniple pre made from (i,) of seal plus ControllerIdxSigs
-                    plus attached indexed sigs in sigers
-                Else None use ControllerIdxSigs plus attached indexed sigs in sigers
         tsgs (list[TransSigs]): TransIdxSigGroups (prefixer, number, diger, [sigers])
                 controller idx sigs or endorsements from transferable aids with
                 reference to est evt providing key state and list of indexed sigs.
@@ -1615,22 +1607,6 @@ def messagize(serder, *, sigers=None, source=None, tsgs=None, lsgs=None, wigers=
 
     if gvrsn.major < 2 and not nested:  # version 1 legacy toplevel attachments
         if sigers:
-            if isinstance(source, SealEvent):
-                aims.extend(Counter(Codens.TransIdxSigGroups, count=1,
-                                        version=Vrsn_1_0).qb64b)
-                aims.extend(source.i.encode())
-                aims.extend(Number(snh=source.s).qb64b)
-                aims.extend(source.d.encode())
-
-            elif isinstance(source, SealLast):
-                aims.extend(Counter(Codens.TransLastIdxSigGroups, count=1,
-                                   version=Vrsn_1_0).qb64b)
-                aims.extend(source.i.encode("utf-8"))
-
-            elif source:
-                raise ValueError(f"Invalid trans modifier {source} for "
-                                 f"sigers on msg={serder.pretty()}")
-
             aims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
                                version=Vrsn_1_0).qb64b)
             for siger in sigers:
@@ -1754,33 +1730,13 @@ def messagize(serder, *, sigers=None, source=None, tsgs=None, lsgs=None, wigers=
     elif gvrsn.major == 2:  # version 2.x for attachments and/or nesting
 
         if sigers:
-            eims = bytearray() # enclosed incoming message stream
             sims = bytearray() # composes idxsig group inside group
-            coden = None
-            if isinstance(source, SealEvent):  # composed idx sig group
-                coden = Codens.TransIdxSigGroups
-                eims.extend(source.i.encode())
-                eims.extend(Number(snh=source.s).qb64b)
-                eims.extend(source.d.encode())
-
-            elif isinstance(source, SealLast):  # composed idx sig group
-                coden = Codens.TransLastIdxSigGroups
-                eims.extend(source.i.encode("utf-8"))
-
-            elif source:
-                raise ValueError(f"Unsupported trans modifier {source} for "
-                                 f"sigers on msg={serder.pretty()}")
-
             for siger in sigers:
                 sims.extend(siger.qb64b)
 
-            eims.extend(Counter.enclose(qb64=sims,
+            aims.extend(Counter.enclose(qb64=sims,
                                         code=Codens.ControllerIdxSigs,
                                         version=gvrsn))
-            if coden:
-                aims.extend(Counter.enclose(qb64=eims, code=coden, version=gvrsn))
-            else:
-                aims.extend(eims)
 
         if tsgs:
             cims = bytearray()

@@ -3207,8 +3207,9 @@ class SignifyHab(BaseHab):
         raise KeriError("Signify hab does not support local signing")
 
 
-    def incept(self, *, serder=None, sigers=None, source=None, bonds=None,
-                        wigers=None, cigars=None, framed=False, nested=False,
+    def incept(self, *, serder=None, sigers=None, tsgs=None, lsgs=None,
+                        wigers=None, cigars=None, rsgs=None, bonds=None,
+                        framed=False, nested=False,
                         gvrsn=Version, genusify=False, **kwa):
         """Finish setting up this SignifyHab from a pre-built inception event.
 
@@ -3220,22 +3221,23 @@ class SignifyHab(BaseHab):
                 ``serder.ked["i"]`` is assigned to ``self.pre``.
             sigers (list[Siger]|None): Siger instances carrying the remote
                 agent's signatures over ``serder.raw``.
-            source (SealEvent|SealLast|None): optiona modifier to sigers when provided
-                If SealEvent use attachment group code TransIdxSigGroups plus attach
-                    triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
-                    plus attached indexed sigs in sigers
-                Elif SealLast use attachment group code TransLastIdxSigGroups plus
-                    attach uniple pre made from (i,) of seal plus ControllerIdxSigs
-                    plus attached indexed sigs in sigers
-                Else None use ControllerIdxSigs plus attached indexed sigs in sigers
-            bonds (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
-                Non signature based authenticator typically an event reference or may
-                Only v2 supports BlindState|BoundState|TypeMedia
-                if bonds is not list convert to list.
+            tsgs (list[TransSigs]): TransIdxSigGroups (prefixer, number, diger, [sigers])
+                controller idx sigs or endorsements from transferable aids with
+                reference to est evt providing key state and list of indexed sigs.
+            lsgs (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[sigers])
+                controller idx sigs or endorsements from transferable aids with
+                reference to est evt providing key state and list of indexed sigs.
             wigers (list): optional list of Siger instances of witness index signatures
             cigars (list): optional list of Cigars instances of non-transferable non indexed
                 signatures from  which to form receipt couples.
                 Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
+            rsgs (list[TransReceipts]): TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
+                receiptor idx sigs or endorsements from transferable aids with
+                reference to est evt providing key state and list of indexed sigs.
+            bonds (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
+                Non signature based authenticator typically an event reference or may
+                Only v2 supports BlindState|BoundState|TypeMedia
+                if bonds is not list convert to list.
             framed (bool): True means may assume each message plus its attachments
                                 is isolated as frame when parsing so do not need
                                 attachment group when messagizing
@@ -3269,14 +3271,16 @@ class SignifyHab(BaseHab):
 
         self.inited = True
 
-        msg = eventing.messagize(serder, sigers=sigers, source=source, bonds=bonds,
-                                 wigers=wigers, cigars=cigars, framed=framed,
-                                 nested=nested, gvrsn=gvrsn, genusify=genusify)
+        msg = eventing.messagize(serder, sigers=sigers, tsgs=tsgs, lsgs=lsgs,
+                                 wigers=wigers, cigars=cigars, rsgs=rsgs,
+                                 bonds=bonds, framed=framed, nested=nested,
+                                 gvrsn=gvrsn, genusify=genusify)
         return msg
 
 
-    def rotate(self, *, serder=None, sigers=None, source=None, bonds=None,
-                        wigers=None, cigars=None, framed=False, nested=False,
+    def rotate(self, *, serder=None, sigers=None, tsgs=None, lsgs=None,
+                        wigers=None, cigars=None, rsgs=None, bonds=None,
+                        framed=False, nested=False,
                         gvrsn=Version, genusify=False, **kwa):
         """Messagize a rotation operation from a pre-built, pre-signed event.
 
@@ -3287,22 +3291,23 @@ class SignifyHab(BaseHab):
             serder (SerderKERI): Pre-built rotation event serder.
             sigers (list[Siger]|None): Siger instances carrying the remote
                 agent's signatures over ``serder.raw``.
-            source (SealEvent|SealLast|None): optiona modifier to sigers when provided
-                If SealEvent use attachment group code TransIdxSigGroups plus attach
-                    triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
-                    plus attached indexed sigs in sigers
-                Elif SealLast use attachment group code TransLastIdxSigGroups plus
-                    attach uniple pre made from (i,) of seal plus ControllerIdxSigs
-                    plus attached indexed sigs in sigers
-                Else None use ControllerIdxSigs plus attached indexed sigs in sigers
-            bonds (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
-                Non signature based authenticator typically an event reference or may
-                Only v2 supports BlindState|BoundState|TypeMedia
-                if bonds is not list convert to list.
+            tsgs (list[TransSigs]): TransIdxSigGroups (prefixer, number, diger, [sigers])
+                controller idx sigs or endorsements from transferable aids with
+                reference to est evt providing key state and list of indexed sigs.
+            lsgs (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[sigers])
+                controller idx sigs or endorsements from transferable aids with
+                reference to est evt providing key state and list of indexed sigs.
             wigers (list): optional list of Siger instances of witness index signatures
             cigars (list): optional list of Cigars instances of non-transferable non indexed
                 signatures from  which to form receipt couples.
                 Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
+            rsgs (list[TransReceipts]): TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
+                receiptor idx sigs or endorsements from transferable aids with
+                reference to est evt providing key state and list of indexed sigs.
+            bonds (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
+                Non signature based authenticator typically an event reference or may
+                Only v2 supports BlindState|BoundState|TypeMedia
+                if bonds is not list convert to list.
             framed (bool): True means may assume each message plus its attachments
                                 is isolated as frame when parsing so do not need
                                 attachment group when messagizing
@@ -3329,17 +3334,19 @@ class SignifyHab(BaseHab):
         if not serder:
             raise KeriError("Missing serder from remote .rotate")
 
-        msg = eventing.messagize(serder, sigers=sigers, source=source, bonds=bonds,
-                                 wigers=wigers, cigars=cigars, framed=framed,
-                                 nested=nested, gvrsn=gvrsn, genusify=genusify)
+        msg = eventing.messagize(serder, sigers=sigers, tsgs=tsgs, lsgs=lsgs,
+                                 wigers=wigers, cigars=cigars, rsgs=rsgs,
+                                 bonds=bonds, framed=framed, nested=nested,
+                                 gvrsn=gvrsn, genusify=genusify)
 
         self.processEvent(serder, sigers)  # maybe should parse msg here
 
         return msg
 
 
-    def interact(self, *, serder=None, sigers=None, source=None, bonds=None,
-                          wigers=None, cigars=None, framed=False, nested=False,
+    def interact(self, *, serder=None, sigers=None, source=None, tsgs=None, lsgs=None,
+                          wigers=None, cigars=None, rsgs=None, bonds=None,
+                          framed=False, nested=False,
                           gvrsn=Version, genusify=False, **kwa):
         """Perform an interaction operation from a pre-built, pre-signed event.
 
@@ -3350,22 +3357,23 @@ class SignifyHab(BaseHab):
             serder (SerderKERI): Pre-built interaction event serder.
             sigers (list[Siger]): Siger instances carrying the remote
                 agent's signatures over ``serder.raw``.
-            source (SealEvent|SealLast|None): optiona modifier to sigers when provided
-                If SealEvent use attachment group code TransIdxSigGroups plus attach
-                    triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
-                    plus attached indexed sigs in sigers
-                Elif SealLast use attachment group code TransLastIdxSigGroups plus
-                    attach uniple pre made from (i,) of seal plus ControllerIdxSigs
-                    plus attached indexed sigs in sigers
-                Else None use ControllerIdxSigs plus attached indexed sigs in sigers
-            bonds (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
-                Non signature based authenticator typically an event reference or may
-                Only v2 supports BlindState|BoundState|TypeMedia
-                if bonds is not list convert to list.
+            tsgs (list[TransSigs]): TransIdxSigGroups (prefixer, number, diger, [sigers])
+                controller idx sigs or endorsements from transferable aids with
+                reference to est evt providing key state and list of indexed sigs.
+            lsgs (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[sigers])
+                controller idx sigs or endorsements from transferable aids with
+                reference to est evt providing key state and list of indexed sigs.
             wigers (list): optional list of Siger instances of witness index signatures
             cigars (list): optional list of Cigars instances of non-transferable non indexed
                 signatures from  which to form receipt couples.
                 Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
+            rsgs (list[TransReceipts]): TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
+                receiptor idx sigs or endorsements from transferable aids with
+                reference to est evt providing key state and list of indexed sigs.
+            bonds (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
+                Non signature based authenticator typically an event reference or may
+                Only v2 supports BlindState|BoundState|TypeMedia
+                if bonds is not list convert to list.
             framed (bool): True means may assume each message plus its attachments
                                 is isolated as frame when parsing so do not need
                                 attachment group when messagizing
@@ -3392,18 +3400,20 @@ class SignifyHab(BaseHab):
         if not serder:
             raise KeriError("Missing serder from remote .interact")
 
-        msg = eventing.messagize(serder, sigers=sigers, source=source, bonds=bonds,
-                                 cigars=cigars, wigers=wigers, framed=framed,
-                                 nested=nested, gvrsn=gvrsn, genusify=genusify)
+        msg = eventing.messagize(serder, sigers=sigers, tsgs=tsgs, lsgs=lsgs,
+                                 cigars=cigars, wigers=wigers, rsgs=rsgs,
+                                 bonds=bonds, framed=framed, nested=nested,
+                                 gvrsn=gvrsn, genusify=genusify)
 
         self.processEvent(serder, sigers)  # maybe should parse msg here
 
         return msg
 
 
-    def exchange(self, *, serder=None, save=False, sigers=None, source=None,
-                    bonds=None, wigers=None, cigars=None, framed=False,
-                    nested=False, gvrsn=Version, genusify=False, **kwa):
+    def exchange(self, *, serder=None, save=False, sigers=None, tsgs=None,
+                    lsgs=None, wigers=None, cigars=None, rsgs=None, bonds=None,
+                    framed=False, nested=False, gvrsn=Version, genusify=False,
+                    **kwa):
         """Messagize peer-to-peer exchange message from exchange msg serder
         with provided signatures.  When ``save`` is ``True`` a local copy is
         parsed into the database for record keeping.
@@ -3414,22 +3424,23 @@ class SignifyHab(BaseHab):
                 into the local database. Defaults to ``False``.
             sigers (list or None): Siger instances carrying signatures
                 over ``serder.raw``.
-            source (SealEvent|SealLast|None): optiona modifier to sigers when provided
-                If SealEvent use attachment group code TransIdxSigGroups plus attach
-                    triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
-                    plus attached indexed sigs in sigers
-                Elif SealLast use attachment group code TransLastIdxSigGroups plus
-                    attach uniple pre made from (i,) of seal plus ControllerIdxSigs
-                    plus attached indexed sigs in sigers
-                Else None use ControllerIdxSigs plus attached indexed sigs in sigers
-            bonds (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
-                Non signature based authenticator typically an event reference or may
-                Only v2 supports BlindState|BoundState|TypeMedia
-                if bonds is not list convert to list.
+            tsgs (list[TransSigs]): TransIdxSigGroups (prefixer, number, diger, [sigers])
+                controller idx sigs or endorsements from transferable aids with
+                reference to est evt providing key state and list of indexed sigs.
+            lsgs (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[sigers])
+                controller idx sigs or endorsements from transferable aids with
+                reference to est evt providing key state and list of indexed sigs.
             wigers (list): optional list of Siger instances of witness index signatures
             cigars (list): optional list of Cigars instances of non-transferable non indexed
                 signatures from  which to form receipt couples.
                 Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
+            rsgs (list[TransReceipts]): TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
+                receiptor idx sigs or endorsements from transferable aids with
+                reference to est evt providing key state and list of indexed sigs.
+            bonds (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
+                Non signature based authenticator typically an event reference or may
+                Only v2 supports BlindState|BoundState|TypeMedia
+                if bonds is not list convert to list.
             framed (bool): True means may assume each message plus its attachments
                                 is isolated as frame when parsing so do not need
                                 attachment group when messagizing
@@ -3457,10 +3468,10 @@ class SignifyHab(BaseHab):
         if not serder:
             raise KeriError("Missing serder from remote .exchange")
 
-        msg = eventing.messagize(serder=serder, sigers=sigers, source=source,
-                                 bonds=bonds, cigars=cigars, wigers=wigers,
-                                 framed=framed, nested=nested, gvrsn=gvrsn,
-                                 genusify=genusify)
+        msg = eventing.messagize(serder, sigers=sigers, tsgs=tsgs, lsgs=lsgs,
+                                 cigars=cigars, wigers=wigers, rsgs=rsgs,
+                                 bonds=bonds, framed=framed, nested=nested,
+                                 gvrsn=gvrsn, genusify=genusify)
 
         if save:  # this parses not .processEvent why different?
             self.psr.parseOne(ims=bytearray(msg))  # process local copy into db
