@@ -1591,7 +1591,7 @@ def messagize(serder, *, sigers=None, source=None, tsgs=None, lsgs=None, wigers=
         msg (bytearray): KERI event with attachments if any
 
     """
-    if not (sigers or cigars or wigers or bonds):
+    if not (sigers or tsgs or lsgs or cigars or wigers or rsgs or bonds):
         raise ValueError(f"Missing authenticator for msg={serder.pretty()}")
 
     svrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn  # effective serder gvrsn
