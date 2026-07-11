@@ -1650,6 +1650,7 @@ def messagize(serder, *, sigers=None, source=None, tsgs=None, lsgs=None, wigers=
                 for siger in sigers:
                     aims.extend(siger.qb64b)
 
+
         if lsgs:
             count = len(lsgs)
             aims.extend(Counter(Codens.TransLastIdxSigGroups, count=count,
@@ -1689,6 +1690,7 @@ def messagize(serder, *, sigers=None, source=None, tsgs=None, lsgs=None, wigers=
                 rims.extend(prefixer.qb64b)
                 rims.extend(number.qb64b)
                 rims.extend(diger.qb64b)
+
                 rims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
                                             version=Vrsn_1_0).qb64b)
                 for siger in sigers:
@@ -1696,7 +1698,7 @@ def messagize(serder, *, sigers=None, source=None, tsgs=None, lsgs=None, wigers=
 
             aims.extend(Counter.enclose(qb64=rims,
                                         code=Codens.TransReceiptIdxSigGroups,
-                                        version=gvrsn)    )
+                                        version=Vrsn_1_0))
 
         if bonds:
             if isinstance(bonds, tuple):
@@ -1781,30 +1783,40 @@ def messagize(serder, *, sigers=None, source=None, tsgs=None, lsgs=None, wigers=
                 aims.extend(eims)
 
         if tsgs:
-            count = len(tsgs)
-            aims.extend(Counter(Codens.TransIdxSigGroups, count=count,
-                                        version=Vrsn_1_0).qb64b)
+            cims = bytearray()
             for tsg in tsgs:
                 prefixer, number, diger, sigers = tsg  # unpack
-                aims.extend(prefixer.qb64b)
-                aims.extend(number.qb64b)
-                aims.extend(diger.qb64b)
-                aims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                                            version=Vrsn_1_0).qb64b)
+                cims.extend(prefixer.qb64b)
+                cims.extend(number.qb64b)
+                cims.extend(diger.qb64b)
+
+                sims = bytearray()
                 for siger in sigers:
-                    aims.extend(siger.qb64b)
+                    sims.extend(siger.qb64b)
+                cims.extend(Counter.enclose(qb64=sims,
+                                            code=Codens.ControllerIdxSigs,
+                                            version=gvrsn))
+
+            aims.extend(Counter.enclose(qb64=cims,
+                                        code=Codens.TransIdxSigGroups,
+                                        version=gvrsn))
 
         if lsgs:
-            count = len(lsgs)
-            aims.extend(Counter(Codens.TransLastIdxSigGroups, count=count,
-                                        version=Vrsn_1_0).qb64b)
+            cims = bytearray()
             for lsg in lsgs:
                 prefixer, sigers = lsg  # unpack
-                aims.extend(prefixer.qb64b)
-                aims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                                            version=Vrsn_1_0).qb64b)
+                cims.extend(prefixer.qb64b)
+
+                sims = bytearray()
                 for siger in sigers:
-                    aims.extend(siger.qb64b)
+                    sims.extend(siger.qb64b)
+                cims.extend(Counter.enclose(qb64=sims,
+                                            code=Codens.ControllerIdxSigs,
+                                            version=gvrsn))
+
+            aims.extend(Counter.enclose(qb64=cims,
+                                        code=Codens.TransLastIdxSigGroups,
+                                        version=gvrsn))
 
 
         if wigers:
@@ -1837,10 +1849,13 @@ def messagize(serder, *, sigers=None, source=None, tsgs=None, lsgs=None, wigers=
                 rims.extend(prefixer.qb64b)
                 rims.extend(number.qb64b)
                 rims.extend(diger.qb64b)
-                rims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                                            version=Vrsn_1_0).qb64b)
+                sims = bytearray()
                 for siger in sigers:
-                    rims.extend(siger.qb64b)
+                    sims.extend(siger.qb64b)
+
+                rims.extend(Counter.enclose(qb64=sims,
+                                            code=Codens.ControllerIdxSigs,
+                                            version=gvrsn))
 
             aims.extend(Counter.enclose(qb64=rims,
                                         code=Codens.TransReceiptIdxSigGroups,
