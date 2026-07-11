@@ -3,7 +3,8 @@
 import os
 
 from keri.kering import Vrsn_1_0, Vrsn_2_0, Kinds
-from keri.core import (Kevery, Salter, SealEvent, Number, Parser, MtrDex,
+from keri.core import (Kevery, Salter, Prefixer, Diger, SealEvent, Number,
+                       Parser, MtrDex,
                        incept, rotate, interact, messagize, receipt)
 
 from keri.app import Manager, openKS
@@ -122,8 +123,14 @@ def test_direct_mode_with_manager():
         #assert counter.qb64 == '-AAB'
         sigers = valMgr.sign(ser=s.raw, verfers=valVerfers)  # return Siger if index
 
+        tsgs = [(Prefixer(qb64=valpre),
+                 Number(sn=valKever.lastEst.s),
+                 Diger(qb64=valKever.lastEst.d),
+                 sigers)]
+
         # attach signatures
-        rmsg = messagize(reserder, sigers=sigers, source=seal, framed=True, gvrsn=Vrsn_1_0)
+        #rmsg = messagize(reserder, sigers=sigers, source=seal, framed=True, gvrsn=Vrsn_1_0)
+        rmsg = messagize(reserder, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
         assert len(rmsg) == 333
 
         # process own validator receipt in validator's Kevery so have copy in own log
@@ -142,14 +149,6 @@ def test_direct_mode_with_manager():
 
         # check if validator's Kever in controller's .kevers
         assert valpre in coeKevery.kevers
-        #  check if receipt quadruple from validator in receipt database
-        #result = coeKevery.db.vrcs.get(keys=dgKey(pre=coeKever.prefixer.qb64,
-                                                #dig=coeKever.serder.said))
-        #val_prefixer, est_num, est_diger, sig = result[0]
-        #assert val_prefixer.qb64 == valKever.prefixer.qb64
-        #assert est_num.num == valKever.sn
-        #assert est_diger.qb64 == valKever.serder.said
-        #assert sig.qb64b == sigers[0].qb64b
 
         # vrcsNew replace old form
         topkeys = (coeKever.prefixer.qb64, coeKever.serder.said)
@@ -170,8 +169,15 @@ def test_direct_mode_with_manager():
                            said=fake, **kwa)
         # sign event not receipt
         sigers = valMgr.sign(ser=s.raw, verfers=valVerfers)  # return Siger if index
+
+        tsgs = [(Prefixer(qb64=valpre),
+                 Number(sn=valKever.lastEst.s),
+                 Diger(qb64=valKever.lastEst.d),
+                 sigers)]
+
         # create receipt message
-        vmsg = messagize(reserder, sigers=sigers, source=seal, framed=True, gvrsn=Vrsn_1_0)
+        #vmsg = messagize(reserder, sigers=sigers, source=seal, framed=True, gvrsn=Vrsn_1_0)
+        vmsg = messagize(reserder, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
 
         Parser(version=Vrsn_1_0).parse(ims=bytearray(vmsg), kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  # controller process the escrow receipt from validator
@@ -204,8 +210,16 @@ def test_direct_mode_with_manager():
         assert valIcpDig == valK.serder.saidb
         s = coeKevery.db.evts.get(keys=(valpre, valIcpDig))
         sigers = coeMgr.sign(ser=s.raw, verfers=coeVerfers)  # return Siger if index
+
+        tsgs = [(Prefixer(qb64=coepre),
+                 Number(sn=coeKever.lastEst.s),
+                 Diger(qb64=coeKever.lastEst.d),
+                 sigers)]
+
         # create receipt message
-        cmsg = messagize(reserder, sigers=sigers, source=seal, framed=True, gvrsn=Vrsn_1_0)
+        #cmsg = messagize(reserder, sigers=sigers, source=seal, framed=True, gvrsn=Vrsn_1_0)
+        cmsg = messagize(reserder, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
+
         # controller process own receipt in own Kevery so have copy in own log
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
         # coeKevery.processOne(ims=bytearray(cmsg))  # make copy
@@ -284,8 +298,15 @@ def test_direct_mode_with_manager():
         assert coeRotDig == coeK.serder.saidb
         s = valKevery.db.evts.get(keys=(coepre, coeRotDig))
         sigers = valMgr.sign(ser=s.raw, verfers=valVerfers)
+
+        tsgs = [(Prefixer(qb64=valpre),
+                 Number(sn=valKever.lastEst.s),
+                 Diger(qb64=valKever.lastEst.d),
+                 sigers)]
+
         # validator create receipt message
-        vmsg = messagize(reserder, sigers=sigers, source=seal, framed=True, gvrsn=Vrsn_1_0)
+        #vmsg = messagize(reserder, sigers=sigers, source=seal, framed=True, gvrsn=Vrsn_1_0)
+        vmsg = messagize(reserder, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
 
         # validator process own receipt in own kevery so have copy in own log
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
@@ -362,8 +383,15 @@ def test_direct_mode_with_manager():
         assert coeIxnDig == coeK.serder.saidb
         s = valKevery.db.evts.get(keys=(coepre, coeIxnDig))
         sigers = valMgr.sign(ser=s.raw, verfers=valVerfers)
+
+        tsgs = [(Prefixer(qb64=valpre),
+                 Number(sn=valKever.lastEst.s),
+                 Diger(qb64=valKever.lastEst.d),
+                 sigers)]
+
         # create receipt message
-        vmsg = messagize(reserder, sigers=sigers, source=seal, framed=True, gvrsn=Vrsn_1_0)
+        #vmsg = messagize(reserder, sigers=sigers, source=seal, framed=True, gvrsn=Vrsn_1_0)
+        vmsg = messagize(reserder, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
 
         # validator process own receipt in own kevery so have copy in own log
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)

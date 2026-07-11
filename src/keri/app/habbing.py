@@ -20,7 +20,7 @@ from ..help import fromIso8601, toIso8601
 from ..kering import (Version, Vrsn_1_0, Vrsn_2_0, Ilks, Kinds, Roles, Schemes,
                       ClosedError, AuthError, ConfigurationError, KeriError,
                       ValidationError, MissingEntryError, MissingSignatureError)
-from ..core import (Tholder, Diger, Prefixer, Kevery, Parser, Revery,
+from ..core import (Tholder, Diger, Prefixer, Number, Kevery, Parser, Revery,
                     Router, Counter, Salter, SealEvent, SealSource, SealLast,
                     Codens, MtrDex, TraitDex, messagize, exchange,)
 from ..core import eventing
@@ -1720,17 +1720,30 @@ class BaseHab:
         if self.kever.prefixer.transferable:
             # create SealEvent or SealLast for endorser's est evt whose keys are
             # used to sign to indicate to messagize which type sig group to use
+            sigers = self.sign(ser=serder.raw, indexed=True)
             kever = self.kever
             if last:
-                source = SealLast(i=kever.prefixer.qb64)
+                #source = SealLast(i=kever.prefixer.qb64)
+                lsgs = [(kever.prefixer, sigers)]
+                msg = eventing.messagize(serder=serder, lsgs=lsgs,
+                                         framed=framed, nested=nested,
+                                         gvrsn=gvrsn, genusify=genusify)
+
             else:
-                source = SealEvent(i=kever.prefixer.qb64,
-                                          s="{:x}".format(kever.lastEst.s),
-                                          d=kever.lastEst.d)
-            sigers = self.sign(ser=serder.raw, indexed=True)
-            msg = eventing.messagize(serder=serder, sigers=sigers, source=source,
-                                     framed=framed,nested=nested, gvrsn=gvrsn,
-                                     genusify=genusify)
+                #source = SealEvent(i=kever.prefixer.qb64,
+                                          #s="{:x}".format(kever.lastEst.s),
+                                          #d=kever.lastEst.d)
+                tsgs =[(kever.prefixer,
+                        Number(sn=kever.lastEst.s),
+                        Diger(qb64=kever.lastEst.d),
+                        sigers)]
+                msg = eventing.messagize(serder=serder, tsgs=tsgs,
+                                         framed=framed, nested=nested,
+                                         gvrsn=gvrsn, genusify=genusify)
+
+            #msg = eventing.messagize(serder=serder, sigers=sigers, source=source,
+                                     #framed=framed,nested=nested, gvrsn=gvrsn,
+                                     #genusify=genusify)
 
         else:
             cigars = self.sign(ser=serder.raw, indexed=False)
@@ -1782,14 +1795,23 @@ class BaseHab:
 
         # sign serder event
         if self.kever.prefixer.transferable:
-            source = SealEvent(i=self.pre,
-                                      s="{:x}".format(self.kever.lastEst.s),
-                                      d=self.kever.lastEst.d)
+            #source = SealEvent(i=self.pre,
+                                      #s="{:x}".format(self.kever.lastEst.s),
+                                      #d=self.kever.lastEst.d)
             sigers = self.sign(ser=serder.raw,
                                indexed=True)
-            msg = eventing.messagize(serder=reserder, sigers=sigers, source=source,
+
+            tsgs =[(Prefixer(qb64=self.pre),
+                    Number(sn=self.kever.lastEst.s),
+                    Diger(qb64=self.kever.lastEst.d),
+                    sigers)]
+
+            msg = eventing.messagize(serder=reserder, tsgs=tsgs,
                                      framed=framed, nested=nested, gvrsn=gvrsn,
                                      genusify=genusify)
+            #msg = eventing.messagize(serder=reserder, sigers=sigers, source=source,
+                                     #framed=framed, nested=nested, gvrsn=gvrsn,
+                                     #genusify=genusify)
         else:
             cigars = self.sign(ser=serder.raw,
                                indexed=False)
@@ -2267,23 +2289,31 @@ class BaseHab:
             else:
                 cigar = None
 
-            if len(tsgs) > 0:
-                (prefixer, seqner, diger, sigers) = tsgs[0]
-                seal = SealEvent(i=prefixer.qb64,
-                                          s=seqner.snh,
-                                          d=diger.qb64)
-            else:
-                sigers = None
-                seal = None
+            #if len(tsgs) > 0:
+                #(prefixer, seqner, diger, sigers) = tsgs[0]
+                #seal = SealEvent(i=prefixer.qb64,
+                                          #s=seqner.snh,
+                                          #d=diger.qb64)
+            #else:
+                #sigers = None
+                #seal = None
 
             msgs.extend(eventing.messagize(serder=serder,
                                            cigars=[cigar] if cigar else [],
-                                           sigers=sigers,
-                                           source=seal,
+                                           tsgs=tsgs,
                                            framed=framed,
                                            nested=nested,
                                            gvrsn=gvrsn,
                                            genusify=genusify))
+
+            #msgs.extend(eventing.messagize(serder=serder,
+                                           #cigars=[cigar] if cigar else [],
+                                           #sigers=sigers,
+                                           #source=seal,
+                                           #framed=framed,
+                                           #nested=nested,
+                                           #gvrsn=gvrsn,
+                                           #genusify=genusify))
         return msgs
 
 
@@ -2394,23 +2424,31 @@ class BaseHab:
             else:
                 cigar = None
 
-            if len(tsgs) > 0:
-                (prefixer, seqner, diger, sigers) = tsgs[0]
-                seal = SealEvent(i=prefixer.qb64,
-                                          s=seqner.snh,
-                                          d=diger.qb64)
-            else:
-                sigers = None
-                seal = None
+            #if len(tsgs) > 0:
+                #(prefixer, seqner, diger, sigers) = tsgs[0]
+                #seal = SealEvent(i=prefixer.qb64,
+                                          #s=seqner.snh,
+                                          #d=diger.qb64)
+            #else:
+                #sigers = None
+                #seal = None
 
             msgs.extend(eventing.messagize(serder=serder,
                                            cigars=[cigar] if cigar else [],
-                                           sigers=sigers,
-                                           source=seal,
+                                           tsgs=tsgs,
                                            framed=framed,
                                            nested=nested,
                                            gvrsn=egvrsn,
                                            genusify=genusify))
+
+            #msgs.extend(eventing.messagize(serder=serder,
+                                           #cigars=[cigar] if cigar else [],
+                                           #sigers=sigers,
+                                           #source=seal,
+                                           #framed=framed,
+                                           #nested=nested,
+                                           #gvrsn=egvrsn,
+                                           #genusify=genusify))
         return msgs
 
 

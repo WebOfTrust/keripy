@@ -14,7 +14,7 @@ from hio.help import ogler
 from keri import Vrsn_1_0
 from keri.kering import MisfitEventSourceError, Kinds
 
-from keri.core import (Seqner, Counter, Salter, Saider,
+from keri.core import (Seqner, Counter, Salter, Saider, Prefixer,
                        Number, Diger, Kevery, eventing, parsing,
                        MtrDex, Codens, NumDex,
                        incept, interact, rotate, delcept)
@@ -1740,8 +1740,16 @@ def test_unverified_trans_receipt_escrow():
         reserder = eventing.receipt(pre=pre, sn=0, said=icpdig, **KWA)
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
-        rcticpmsg = eventing.messagize(serder=reserder, sigers=resigers,
-                                       source=seal, framed=True, gvrsn=Vrsn_1_0)
+
+        tsgs = [(Prefixer(qb64=rpre),
+                 rsrdr.sner,
+                 Diger(qb64=rsrdr.said),
+                 resigers)]
+
+        #rcticpmsg = eventing.messagize(serder=reserder, sigers=resigers,
+                                       #source=seal, framed=True, gvrsn=Vrsn_1_0)
+        rcticpmsg = eventing.messagize(serder=reserder, tsgs=tsgs, framed=True,
+                                       gvrsn=Vrsn_1_0)
 
         # Process receipt by kvy
         psr.parse(ims=bytearray(rcticpmsg), kvy=kvy)
@@ -1808,8 +1816,16 @@ def test_unverified_trans_receipt_escrow():
         reserder = eventing.receipt(pre=pre, sn=1, said=ixndig, **KWA)
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
-        rctixnmsg = eventing.messagize(serder=reserder, sigers=resigers,
-                                       source=seal, framed=True, gvrsn=Vrsn_1_0)
+
+        tsgs = [(Prefixer(qb64=rpre),
+                 rsrdr.sner,
+                 Diger(qb64=rsrdr.said),
+                 resigers)]
+
+        #rctixnmsg = eventing.messagize(serder=reserder, sigers=resigers,
+                                       #source=seal, framed=True, gvrsn=Vrsn_1_0)
+        rctixnmsg = eventing.messagize(serder=reserder, tsgs=tsgs, framed=True,
+                                       gvrsn=Vrsn_1_0)
 
         # Process receipt by kvy
         psr.parse(ims=bytearray(rctixnmsg), kvy=kvy)
@@ -1864,8 +1880,16 @@ def test_unverified_trans_receipt_escrow():
         reserder = eventing.receipt(pre=pre, sn=2, said=rotdig, **KWA)
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
-        rctrotmsg = eventing.messagize(serder=reserder, sigers=resigers,
-                                       source=seal, framed=True, gvrsn=Vrsn_1_0)
+
+        tsgs = [(Prefixer(qb64=rpre),
+                 rsrdr.sner,
+                 Diger(qb64=rsrdr.said),
+                 resigers)]
+
+        #rctrotmsg = eventing.messagize(serder=reserder, sigers=resigers,
+                                       #source=seal, framed=True, gvrsn=Vrsn_1_0)
+        rctrotmsg = eventing.messagize(serder=reserder, tsgs=tsgs, framed=True,
+                                       gvrsn=Vrsn_1_0)
 
         # Process receipt by kvy
         psr.parse(ims=bytearray(rctrotmsg), kvy=kvy)
