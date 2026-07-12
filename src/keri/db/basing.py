@@ -1724,7 +1724,7 @@ class Baser(LMDBer):
             atc.extend(Counter(code=Codens.SealSourceCouples,
                                count=1, version=Vrsn_1_0).qb64b)
             atc.extend(number.qb64b + diger.qb64b)
-            srcseal = SealSource(s=number, d=diger)
+
 
         # add trans endorsement attachments not controller
         # may have been originally key event attachments or receipted endorsements
@@ -1789,6 +1789,87 @@ class Baser(LMDBer):
         msg.extend(pcnt)
         msg.extend(atc)
         return msg
+
+
+    def cloneEvtMsgNew(self, pre, fn, dig):
+        """
+        Clones Event as Serialized CESR Message with Body and attached Foot
+
+        Parameters:
+            pre (bytes): identifier prefix of event
+            fn (int): first seen number (ordinal) of event
+            dig (bytes): digest of event
+
+        Returns:
+            bytearray: message body with attachments
+        """
+        from ..core import coring
+        from ..core.counting import Counter, Codens
+        from ..core.structing import  SealSource, FirstSeen
+
+        msg = bytearray()  # message
+        atc = bytearray()  # attachments
+
+        dgkey = dgKey(pre, dig)  # get serder
+        if not (serder := self.evts.get(keys=(pre, dig))):
+            raise MissingEntryError("Missing event for dig={}.".format(dig))
+
+        # get indexed signatures
+        if not (sigers := self.sigs.get(keys=dgkey)):
+            raise MissingEntryError("Missing sigs for dig={}.".format(dig))
+
+        # get indexed witness signatures if any
+        wigers = self.wigs.get(keys=dgkey)
+
+        # get authorizer (delegator/issuer) source seal event couple if any
+        srcseal = None
+        if duple := self.aess.get(keys=(pre, dig)):
+            number, diger = duple
+            srcseal = SealSource(s=number, d=diger)
+
+        # get trans receipt/endorsement attachments not controller
+        # vrcsNew get non-controller trans receipt attachments
+        # may have been originally non-controller sigs or receipted endorsements
+        topkeys = (pre, dig)
+        sigersets = dict()  # collate  by triple of rpre,rsnh,rdig
+        for keys, siger in self.vrcs.getTopItemIter(keys=topkeys):
+            epre, edig, rpre, rsnh, rdig = keys  # expand keys tuple
+            triple = (rpre, rsnh, rdig)  # create triple of receiptor/endorser
+            if triple not in sigersets:
+                sigersets[triple] = [siger]
+            else:
+                sigersets[triple].append(siger)
+
+        rsgs = []
+        if sigersets:  # convert to rsgs
+            for triple, sigers in sigersets:
+                p, s, d = triple
+                rsgs.append((p, s, d, sigers))
+
+
+        # get nontrans endorsement couples not witnesses
+        # may have been originally key event attachments or receipted endorsements
+        if coups := self.rcts.get(keys=dgkey):
+            for prefixer, cigar in coups:
+                cigar.verfer = prefixer  # assign verfer
+
+        # get first seen replay couples  need support for frcs to messagize
+        # as a bond by adding support for FirstSeen to structor
+        # frcs:   list[FirstSeen] = field(default_factory=list)
+        # FirstSeenReplayCouples (number, dater)
+        # add support for FirstSeen to Structor AllClanDom and AllCastDom
+        # and FirstSeenClanDom FirstSeenClanDom
+        if not (dater := self.dtss.get(keys=dgkey)):
+            raise MissingEntryError("Missing datetime for dig={}.".format(dig))
+
+        atc.extend(Counter(code=Codens.FirstSeenReplayCouples,
+                           count=1, version=Vrsn_1_0).qb64b)
+        atc.extend(coring.Number(num=fn, code=coring.NumDex.Huge).qb64b)  # may not need to be Huge
+        atc.extend(dater.qb64b)
+
+        msg = bytearray()  # call messagize
+        return msg
+
 
     def cloneDelegation(self, kever):
         """
