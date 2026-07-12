@@ -11,13 +11,17 @@ import pytest
 from keri.kering import (ValidationError, InvalidValueError, EmptyMaterialError,
                          InvalidValueError, Colds)
 from keri.core import (Diger, DigDex, Prefixer, Number, Verser, Labeler,
-                       Noncer, NonceDex, Salter, Texter, Structor, Sealer,
+                       Noncer, NonceDex, Salter, Texter, Dater, Structor, Sealer,
                        Blinder, Mediar, SealDigest, SealRoot, SealBack, SealEvent,
                        SealLast, SealSource, SealKind, BlindState, BoundState,
-                       TypeMedia, Castage, CodenToClans, ClanToCodens,
-                       EClanDom, ECastDom, EmptyClanDom, EmptyCastDom,
-                       AClanDom, ACastDom, SClanDom, SCastDom, SealClanDom,
-                       SealCastDom, BSClanDom, BSCastDom, TMClanDom, TMCastDom)
+                       TypeMedia, FirstSeen, Castage, CodenToClans, ClanToCodens,
+                       EmptyClanDom, EmptyCastDom, EClanDom, ECastDom,
+                       SealClanDom, SealCastDom, SClanDom, SCastDom,
+                       BlindStateClanDom, BlindStateCastDom, BSClanDom, BSCastDom,
+                       TypeMediaClanDom, TypeMediaCastDom, TMClanDom, TMCastDom,
+                       FirstSeenClanDom, FirstSeenCastDom, FSClanDom, FSCastDom,
+                       AllClanDom, AllCastDom, AClanDom, ACastDom, )
+from keri.help import nowIso8601
 
 
 def test_structor_doms():
@@ -27,6 +31,14 @@ def test_structor_doms():
     assert isinstance(ECastDom, EmptyCastDom)
     assert isinstance(SClanDom, SealClanDom)
     assert isinstance(SCastDom, SealCastDom)
+    assert isinstance(BSClanDom, BlindStateClanDom)
+    assert isinstance(BSCastDom, BlindStateCastDom)
+    assert isinstance(TMClanDom, TypeMediaClanDom)
+    assert isinstance(TMCastDom, TypeMediaCastDom)
+    assert isinstance(FSClanDom, FirstSeenClanDom)
+    assert isinstance(FSCastDom, FirstSeenCastDom)
+    assert isinstance(AClanDom, AllClanDom)
+    assert isinstance(ACastDom, AllCastDom)
 
     assert asdict(EClanDom) == {}
     assert asdict(ECastDom) == {}
@@ -81,33 +93,110 @@ def test_structor_doms():
                                 bd=Castage(Noncer, ipn='nonce'))
     }
 
+    assert asdict(TMClanDom) == \
+    {
+        'TypeMedia': TypeMedia,
+    }
+
+
+    assert asdict(TMCastDom) == \
+    {
+        'TypeMedia': TypeMedia(d=Castage(kls=Noncer, ipn='nonce'),
+                               u=Castage(kls=Noncer, ipn='nonce'),
+                               mt=Castage(kls=Labeler, ipn='text'),
+                               mv=Castage(kls=Texter, ipn='text')),
+    }
+
+    assert asdict(FSClanDom) == \
+    {
+        'FirstSeen': FirstSeen,
+    }
+
+
+    assert asdict(FSCastDom) == \
+    {
+        'FirstSeen': FirstSeen(f=Castage(kls=Number, ipn='numh'),
+                               dt=Castage(kls=Dater, ipn='dts')),
+    }
+
+    assert asdict(AClanDom) == \
+    {
+        'SealDigest': SealDigest,
+        'SealRoot': SealRoot,
+        'SealEvent': SealEvent,
+        'SealSource': SealSource,
+        'SealLast': SealLast,
+        'SealBack': SealBack,
+        'SealKind': SealKind,
+        'BlindState': BlindState,
+        'BoundState': BoundState,
+        'TypeMedia': TypeMedia,
+        'FirstSeen': FirstSeen,
+    }
+
+
+    assert asdict(ACastDom) == \
+    {
+        'SealDigest': SealDigest(d=Castage(kls=Diger, ipn=None)),
+        'SealRoot': SealRoot(rd=Castage(kls=Diger, ipn=None)),
+        'SealEvent': SealEvent(i=Castage(kls=Prefixer, ipn=None),
+                               s=Castage(kls=Number, ipn='numh'),
+                               d=Castage(kls=Diger, ipn=None)),
+        'SealSource': SealSource(s=Castage(kls=Number, ipn='numh'),
+                               d=Castage(kls=Diger, ipn=None)),
+        'SealLast': SealLast(i=Castage(kls=Prefixer, ipn=None)),
+        'SealBack': SealBack(bi=Castage(kls=Prefixer, ipn=None),
+                                 d=Castage(kls=Diger, ipn=None)),
+        'SealKind': SealKind(t=Castage(kls=Verser, ipn=None),
+                                 d=Castage(kls=Diger, ipn=None)),
+        'BlindState': BlindState(d=Castage(kls=Noncer, ipn='nonce'),
+                                 u=Castage(kls=Noncer, ipn='nonce'),
+                                 td=Castage(kls=Noncer, ipn='nonce'),
+                                 ts=Castage(kls=Labeler, ipn='text')),
+        'BoundState': BoundState(d=Castage(Noncer, 'nonce'),
+                                u=Castage(Noncer, ipn='nonce'),
+                                td=Castage(Noncer, ipn='nonce'),
+                                ts=Castage(Labeler, ipn='text'),
+                                bn=Castage(Number, ipn='numh'),
+                                bd=Castage(Noncer, ipn='nonce')),
+        'TypeMedia': TypeMedia(d=Castage(kls=Noncer, ipn='nonce'),
+                               u=Castage(kls=Noncer, ipn='nonce'),
+                               mt=Castage(kls=Labeler, ipn='text'),
+                               mv=Castage(kls=Texter, ipn='text')),
+        'FirstSeen': FirstSeen(f=Castage(kls=Number, ipn='numh'),
+                               dt=Castage(kls=Dater, ipn='dts')),
+    }
+
 
     assert ClanToCodens == \
     {
         'SealDigest': 'DigestSealSingles',
         'SealRoot': 'MerkleRootSealSingles',
-        'SealEvent': 'SealSourceTriples',
         'SealSource': 'SealSourceCouples',
+        'SealEvent': 'SealSourceTriples',
         'SealLast': 'SealSourceLastSingles',
         'SealBack': 'BackerRegistrarSealCouples',
         'SealKind': 'TypedDigestSealCouples',
         'BlindState': 'BlindedStateQuadruples',
         'BoundState': 'BoundStateSextuples',
-        'TypeMedia': 'TypedMediaQuadruples'
+        'TypeMedia': 'TypedMediaQuadruples',
+        'FirstSeen': 'FirstSeenReplayCouples'
     }
     assert CodenToClans == \
     {
         'DigestSealSingles': 'SealDigest',
         'MerkleRootSealSingles': 'SealRoot',
-        'SealSourceTriples': 'SealEvent',
         'SealSourceCouples': 'SealSource',
+        'SealSourceTriples': 'SealEvent',
         'SealSourceLastSingles': 'SealLast',
         'BackerRegistrarSealCouples': 'SealBack',
         'TypedDigestSealCouples': 'SealKind',
         'BlindedStateQuadruples': 'BlindState',
         'BoundStateSextuples': 'BoundState',
-        'TypedMediaQuadruples': 'TypeMedia'
+        'TypedMediaQuadruples': 'TypeMedia',
+        'FirstSeenReplayCouples': 'FirstSeen'
     }
+
 
     """End Test"""
 
@@ -128,7 +217,8 @@ def test_structor_class():
         ('t', 'd'): 'SealKind',
         ('d', 'u', 'td', 'ts'): 'BlindState',
         ('d', 'u', 'td', 'ts', 'bn', 'bd'): 'BoundState',
-        ('d', 'u', 'mt', 'mv'): 'TypeMedia'
+        ('d', 'u', 'mt', 'mv'): 'TypeMedia',
+        ('f', 'dt'): 'FirstSeen',
     }
 
     assert Structor.ClanCodens == ClanToCodens == \
@@ -142,7 +232,8 @@ def test_structor_class():
         'SealKind': 'TypedDigestSealCouples',
         'BlindState': 'BlindedStateQuadruples',
         'BoundState': 'BoundStateSextuples',
-        'TypeMedia': 'TypedMediaQuadruples'
+        'TypeMedia': 'TypedMediaQuadruples',
+        'FirstSeen': 'FirstSeenReplayCouples',
     }
 
     assert Structor.CodenClans == CodenToClans == \
@@ -156,7 +247,8 @@ def test_structor_class():
         'TypedDigestSealCouples': 'SealKind',
         'BlindedStateQuadruples': 'BlindState',
         'BoundStateSextuples': 'BoundState',
-        'TypedMediaQuadruples': 'TypeMedia'
+        'TypedMediaQuadruples': 'TypeMedia',
+        'FirstSeenReplayCouples': 'FirstSeen',
     }
     """End Test"""
 
@@ -786,8 +878,6 @@ def test_structor():
     with pytest.raises(EmptyMaterialError):
         structor = Structor(cast=dcast)  # missing both crew and data need one or the other
 
-    #with pytest.raises(InvalidValueError):
-        #structor = Structor(crew=dcrew)  # gets cast from mark from crew
 
     # creaes custom clan because pick cast and crew as dict that does not match
     # mark of any in AllClanDom AllCastDom
@@ -863,6 +953,432 @@ def test_structor():
     extracts = Structor.extract(qb64b=enclosure)
     ecrews = [extract.crew for extract in extracts]
     assert ecrews == crews
+
+    """End Test"""
+
+def test_structor_firstseen():
+    """test Structor instance with FirstSeen """
+    num = 14
+    number = Number(num=num)
+    snq = number.qb64
+    snh = number.numh
+    assert snh == 'e'
+
+    dts = '2026-07-12T15:43:38.666614+00:00' # nowIso8601()
+    dater = Dater(dts=dts)
+    dtq = dater.qb64
+    assert dtq == '1AAG2026-07-12T15c43c38d666614p00c00'
+
+    #aid = 'BN5Lu0RqptmJC-iXEldMMrlEew7Q01te2fLgqlbqW9zR'
+    #prefixer = Prefixer(qb64=aid)
+    #dig = 'ELC5L3iBVD77d_MYbYGGCUQgqQBju1o4x1Ud-z2sL-ux'
+    #diger = Diger(qb64=dig)
+
+
+    # Test with multiple field namedtuple for data.  Using ipn parameter name
+    # allows a different value than default numh instead of qb64
+    data = FirstSeen(f=number, dt=dater)
+    clan = FirstSeen
+    cast = FirstSeen(f=Castage(Number, 'numh'), dt=Castage(Dater, 'dts'))
+    # naive cast doesn't know about ipn for Number
+    ncast = FirstSeen(f=Castage(Number), dt=Castage(Dater))
+    crew = FirstSeen(f=snh, dt=dts)
+    # naive crew does't know about ipn for Number (ipn init parameter name)
+    # so value must be the default of qb64.
+    ncrew = FirstSeen(f=snq, dt=dtq)
+    name = FirstSeen.__name__
+
+    dcast = cast._asdict()  # dict versions
+    dcrew = crew._asdict()
+    dncrew = ncrew._asdict()
+
+    assert data._fields == FirstSeen._fields
+    klas = data.__class__
+    assert klas == clan
+
+    qb64 = number.qb64 + dater.qb64  # ''.join(crew)
+    qb2 = number.qb2 + dater.qb2
+    #structor.enclose([structor]) == enclqb64
+    enclqb64 = b'-OAKMAAO1AAG2026-07-12T15c43c38d666614p00c00'
+    #structor.enclose([structor], cold=Colds.bny)
+    enclqb2 = (b'\xf8\xe0\n0\x00\x0e\xd4\x00\x06\xdbM\xba\xfbN\xfe\xd7d\xf5\xe5\xce'
+               b'7s\x7f\x1d\xeb\xae\xba\xd7\x8at\xd1\xcd4')
+
+    # Test create structer from data with naive flag True
+    structor = Structor(data=data, naive=True)
+    assert structor.data == data
+    assert structor.clan == clan
+    assert structor.cast == ncast
+    assert structor.crew == ncrew
+    assert structor.asdict == dncrew ==  \
+    {
+        'f': 'MAAO',
+        'dt': '1AAG2026-07-12T15c43c38d666614p00c00'
+    }
+    assert structor.name == name
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+    assert structor.enclose([structor]) == enclqb64
+    assert structor.enclose([structor], cold=Colds.bny) == enclqb2
+
+    # does not rountrip with extract since used naive cast
+    buf = bytearray(enclqb64)
+    estructors = Structor.extract(qb64b=buf, strip=True)
+    assert estructors[0].crew != structor.crew
+    assert not buf  # stripped
+    buf = bytearray(enclqb2)
+    estructors = Structor.extract(qb2=buf, strip=True)
+    assert estructors[0].crew != structor.crew
+    assert not buf  # stripped
+
+    # Test create structor from data not naive
+    structor = Structor(data=data)
+    assert structor.data == data
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew ==  \
+    {
+        'f': 'e',
+        'dt': '2026-07-12T15:43:38.666614+00:00'
+    }
+    assert structor.name == name
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+    assert structor.enclose([structor]) == enclqb64
+    assert structor.enclose([structor], cold=Colds.bny) == enclqb2
+
+    # rountrip with extract
+    buf = bytearray(enclqb64)
+    estructors = Structor.extract(qb64b=buf, strip=True)
+    assert estructors[0].crew == structor.crew
+    assert not buf  # stripped
+    buf = bytearray(enclqb2)
+    estructors = Structor.extract(qb2=buf, strip=True)
+    assert estructors[0].crew == structor.crew
+    assert not buf  # stripped
+
+    # Test create structor from cast and crew
+    structor = Structor(cast=cast, crew=crew)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew == \
+    {
+        'f': 'e',
+        'dt': '2026-07-12T15:43:38.666614+00:00'
+    }
+    assert structor.name == name
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+    assert structor.enclose([structor]) == enclqb64
+    assert structor.enclose([structor], cold=Colds.bny) == enclqb2
+
+    # rountrip with extract
+    buf = bytearray(enclqb64)
+    estructors = Structor.extract(qb64b=buf, strip=True)
+    assert estructors[0].crew == structor.crew
+    assert not buf  # stripped
+    buf = bytearray(enclqb2)
+    estructors = Structor.extract(qb2=buf, strip=True)
+    assert estructors[0].crew == structor.crew
+    assert not buf  # stripped
+
+    # create structure from cast and qb64
+    structor = Structor(cast=cast, qb64b=qb64)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew
+    assert structor.name == name
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    structor = Structor(cast=cast, qb64b=qb64.encode())
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew
+    assert structor.name == name
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    structor = Structor(cast=cast, qb64b=qb64.encode(), strip=True)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew
+    assert structor.name == name
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    ba = bytearray(qb64.encode())
+    structor = Structor(cast=cast, qb64b=ba, strip=True)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew
+    assert structor.name == name
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+    assert not ba  # stripped so empty
+
+    # create structor from cast and qb2
+    structor = Structor(cast=cast, qb2=qb2)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew
+    assert structor.name == name
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    structor = Structor(cast=cast, qb2=qb2, strip=True)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew
+    assert structor.name == name
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    ba = bytearray(qb2)
+    structor = Structor(cast=cast, qb2=ba, strip=True)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew
+    assert structor.name == name
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+    assert not ba  # stripped so empty
+
+    # Test create structor from clan, cast, and crew
+    structor = Structor(clan=clan, cast=cast, crew=crew)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew
+    assert structor.name == name
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    # Test create structor from clan, cast, and qb64
+    structor = Structor(clan=clan, cast=cast, qb64b=qb64)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew
+    assert structor.name == name
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    structor = Structor(clan=clan, cast=cast, qb64b=qb64.encode())
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew
+    assert structor.name == name
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    # Test create structor from clan, cast, and qb2
+    structor = Structor(clan=clan, cast=cast, qb2=qb2)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew
+    assert structor.name == name
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    # Test create structor from clan with cast and crew as dicts
+    structor = Structor(clan=clan, cast=dcast, crew=dcrew)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew
+    assert structor.name == name
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    # Test create structor no clan but with one or the other of cast and crew
+    # as dict or namedtuple
+    structor = Structor(cast=cast, crew=dcrew)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew
+    assert structor.name == name
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    structor = Structor(cast=dcast, crew=crew)
+    assert structor.clan == clan
+    assert structor.cast == cast
+    assert structor.crew == crew
+    assert structor.asdict == dcrew
+    assert structor.name == name
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+
+    # both cast and crew are dicts but finds matching mark for clan
+    structor = Structor(cast=dcast, crew=dcrew)
+    assert structor.data.__class__.__name__ == 'FirstSeen'
+    assert structor.clan == clan
+    assert structor.name == 'FirstSeen'
+    assert structor.cast == cast  # tuple compare is by field value not type
+    assert structor.cast.__class__.__name__ == 'FirstSeen'
+    assert structor.crew == crew
+    assert structor.asdict == dcrew
+    assert structor.qb64 == qb64
+    assert structor.qb64b == qb64.encode()
+    assert structor.qb2 == qb2
+    assert structor.enclose([structor]) == enclqb64
+    assert structor.enclose([structor], cold=Colds.bny) == enclqb2
+
+    # rountrip with extract
+    buf = bytearray(enclqb64)
+    estructors = Structor.extract(qb64b=buf, strip=True)
+    assert estructors[0].crew == structor.crew
+    assert not buf  # stripped
+    buf = bytearray(enclqb2)
+    estructors = Structor.extract(qb2=buf, strip=True)
+    assert estructors[0].crew == structor.crew
+    assert not buf  # stripped
+
+    # Test error when no clan and cast or crew as dict
+    with pytest.raises(EmptyMaterialError):
+        structor = Structor(cast=dcast)  # missing both crew and data need one or the other
+
+    # creates custom clan because pick cast and crew as dict that does not match
+    # mark of any in AllClanDom AllCastDom, changed field labels from f, dt to fn,dts)
+    dcast = {
+                'fn': Castage(Number, ipn='numh'),
+                'dts': Castage(Dater, ipn='dts')
+            }
+
+    dcrew = {
+                'fn': 'a',
+                'dts': '2026-07-12T15:43:52.000000+00:00',
+            }
+
+    structor = Structor(cast=dcast, crew=dcrew)
+    assert structor.data.__class__.__name__ == 'fn_dts'
+    assert structor.clan.__name__ == 'fn_dts'
+    assert structor.name == 'fn_dts'
+    assert structor.cast.__class__.__name__ == 'fn_dts'
+    assert structor.crew.__class__.__name__ == 'fn_dts'
+    assert structor.asdict == dcrew
+    assert structor.qb64 == 'MAAK1AAG2026-07-12T15c43c52d000000p00c00'
+    assert structor.qb64b == b'MAAK1AAG2026-07-12T15c43c52d000000p00c00'
+    assert structor.qb2 ==(b'0\x00\n\xd4\x00\x06\xdbM\xba\xfbN\xfe\xd7d\xf5\xe5\xce7s\x9d\x9d\xd3M4'
+                           b'\xd3Jt\xd1\xcd4')
+
+    with pytest.raises(InvalidValueError):  # # on the fly clan not in ClanCodens
+        assert structor.enclose([structor]) == enclqb64
+    with pytest.raises(InvalidValueError):  # # on the fly clan not in ClanCodens
+        assert structor.enclose([structor], cold=Colds.bny) == enclqb2
+
+
+    # Test no clan and cast or crew as dict
+    with pytest.raises(EmptyMaterialError):
+        structor = Structor(cast=dcast)  # missing crew or data need one or the other
+
+    with pytest.raises(InvalidValueError):
+        structor = Structor(crew=dcrew)  # missing cast for custom clan from crew
+
+
+    # test multiple structors in  enclose and extract
+    num = 36
+    number = Number(num=num)
+    snq = number.qb64
+    assert snq == 'MAAk'
+    snh = number.snh
+    assert snh == "24"
+
+    dts = '2026-07-12T16:41:51.347874+00:00' # nowIso8601()
+    dater = Dater(dts=dts)
+    dtq = dater.qb64
+    assert dtq == '1AAG2026-07-12T16c41c51d347874p00c00'
+
+    cast = ACastDom.FirstSeen  # non-naive cast with non-None ipns
+    crew0 = FirstSeen(f=snh, dt=dts)  # use crew (non-naive)
+    structor0 = Structor(cast=cast, crew=crew0)
+    assert structor0.crew == crew0
+
+    num = 11
+    number = Number(num=num)
+    snq = number.qb64
+    assert snq == 'MAAL'
+    snh = number.snh
+    assert snh == "b"
+
+    dts = '2026-07-12T16:43:32.798103+00:00' # nowIso8601()
+    dater = Dater(dts=dts)
+    dtq = dater.qb64
+    assert dtq == '1AAG2026-07-12T16c43c32d798103p00c00'
+
+    data1 = FirstSeen(f=number, dt=dater)  # use data
+    structor1 = Structor(data=data1)
+    structor1.data == data1
+    crew1 = structor1.crew
+
+    num = 0
+    number = Number(num=num)
+    snq = number.qb64
+    assert snq == 'MAAA'
+    snh = number.snh
+    assert snh == "0"
+
+    dts = '2026-07-12T16:48:52.431388+00:00' # nowIso8601()
+    dater = Dater(dts=dts)
+    dtq = dater.qb64
+    assert dtq == '1AAG2026-07-12T16c48c52d431388p00c00'
+
+    ncast = FirstSeen(f=Castage(Number),
+                      dt=Castage(Dater))   # naive no ipn
+    ncrew2 = FirstSeen(f=snq, dt=dtq)  # naive crew
+    crew2 = FirstSeen(f=snh, dt=dts)  # non naive crew
+    structor2 = Structor(cast=ncast, crew=ncrew2)  # naive with ncast and ncrew
+    assert structor2.crew == ncrew2
+
+    structors = [structor0, structor1, structor2]
+
+    enclosure = Structor.enclose(structors)
+    assert enclosure == (b'-OAeMAAk1AAG2026-07-12T16c41c51d347874p00c00'
+                         b'MAAL1AAG2026-07-12T16c43c32d798103p00c00'
+                         b'MAAA1AAG2026-07-12T16c48c52d431388p00c00')
+
+    # round trip
+    crews = [crew0, crew1, crew2]  # roundtrips as non naive crew
+    extracts = Structor.extract(qb64b=enclosure)
+    ecrews = [extract.crew for extract in extracts]
+    assert ecrews == crews
+    eqb64s = [extract.qb64 for extract in extracts]
+    assert eqb64s == \
+    [
+        'MAAk1AAG2026-07-12T16c41c51d347874p00c00',
+        'MAAL1AAG2026-07-12T16c43c32d798103p00c00',
+        'MAAA1AAG2026-07-12T16c48c52d431388p00c00'
+    ]
 
     """End Test"""
 
@@ -2626,6 +3142,7 @@ if __name__ == "__main__":
     test_structor_doms()
     test_structor_class()
     test_structor()
+    test_structor_firstseen()
     test_structor_saidive()
     test_sealer_class()
     test_sealer()

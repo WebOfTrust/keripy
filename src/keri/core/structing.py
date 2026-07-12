@@ -14,7 +14,7 @@ from ..kering import (Colds, ValidationError,
 from ..help import helping
 
 from .coring import (IceMapDom, Diger, DigDex, Prefixer, Number, Verser,
-                     Labeler, Noncer, NonceDex, Texter)
+                     Labeler, Noncer, NonceDex, Texter, Dater)
 from .counting import Codens, Counter
 from .signing import Tiers, Salter
 
@@ -105,7 +105,7 @@ TypeMedia = namedtuple("TypeMedia", 'd u mt mv')
 
 # FirstSeen
 # f = fn first seen number of event as lowercase hex string snh no leading zeros, (Number)
-# dt = date time stamp Base 64 CESR of RFC-3339 profile of ISO-8601 (Dater)
+# dt = date time stamp str of RFC-3339 profile of ISO-8601 (Dater)
 # use FirstSeenReplayCouples count code for CESR native
 FirstSeen = namedtuple("FirstSeen", 'f, dt')
 
@@ -164,7 +164,7 @@ class EmptyClanDom(IceMapDom):
     Only provide defined classes.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    Example: EmptyClanDex[name]
+    Example: EmptyClanDom[name]
     """
 
     def __iter__(self):
@@ -184,7 +184,7 @@ class EmptyCastDom(IceMapDom):
     Only provide defined namedtuples casts.
     Undefined are left out so that inclusion(exclusion) via 'in' operator works.
 
-    Example: EmptyCastDex[name]
+    Example: EmptyCastDom[name]
     """
 
     def __iter__(self):
@@ -216,8 +216,6 @@ class SealClanDom(IceMapDom):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
 
 SClanDom = SealClanDom()  # create instance
-
-
 
 
 @dataclass(frozen=True)
@@ -346,6 +344,46 @@ class TypeMediaCastDom(IceMapDom):
 
 TMCastDom = TypeMediaCastDom()  # create instance
 
+@dataclass(frozen=True)
+class FirstSeenClanDom(IceMapDom):
+    """FirstSeenClanDom is dataclass of namedtuple first seen class references
+    (clans) each indexed by its class name.
+
+    Only provide defined classes.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    Example: FirstSeenClanDom[name]
+    """
+    FirstSeen: type[NamedTuple] = FirstSeen  # FirstSeen class reference (f,dt)
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+FSClanDom = FirstSeenClanDom()  # create instance
+
+
+@dataclass(frozen=True)
+class FirstSeenCastDom(IceMapDom):
+    """FirstSeenCastDom is dataclass of namedtuple first seen instances whose
+    field values are Castage instances of named primitive class class references
+    for those fields.
+
+    indexed by its namedtuple class name.
+
+    Only provide defined namedtuples casts.
+    Undefined are left out so that inclusion(exclusion) via 'in' operator works.
+
+    Example: FirstSeenCastDom[name]
+
+    """
+    FirstSeen: NamedTuple = FirstSeen(f=Castage(Number, 'numh'),
+                                      dt=Castage(Dater, 'dts'))  # FirstSeen instance
+
+    def __iter__(self):
+        return iter(astuple(self))  # enables value not key inclusion test with "in"
+
+FSCastDom = FirstSeenCastDom()  # create instance
+
 
 @dataclass(frozen=True)
 class AllClanDom(IceMapDom):
@@ -370,6 +408,7 @@ class AllClanDom(IceMapDom):
     BlindState: type[NamedTuple] = BlindState  # BlindState class reference (d,u,td,ts)
     BoundState: type[NamedTuple] = BoundState  # BoundState class reference (d,u,td,ts,bn,bd)
     TypeMedia: type[NamedTuple] = TypeMedia  # TypeMedia class reference (d,u,mt,mv)
+    FirstSeen: type[NamedTuple] = FirstSeen  # FirstSeen class reference (f,dt)
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -419,6 +458,8 @@ class AllCastDom(IceMapDom):
                                         u=Castage(Noncer, 'nonce'),
                                         mt=Castage(Labeler, 'text'),
                                         mv=Castage(Texter, 'text'))  # TypeMedia instance
+    FirstSeen: NamedTuple = FirstSeen(f=Castage(Number, 'numh'),
+                                      dt=Castage(Dater, 'dts'))  # FirstSeen instance
 
     def __iter__(self):
         return iter(astuple(self))  # enables value not key inclusion test with "in"
@@ -438,6 +479,7 @@ ClanToCodens[AClanDom.SealKind.__name__] = Codens.TypedDigestSealCouples
 ClanToCodens[AClanDom.BlindState.__name__] = Codens.BlindedStateQuadruples
 ClanToCodens[AClanDom.BoundState.__name__] = Codens.BoundStateSextuples
 ClanToCodens[AClanDom.TypeMedia.__name__] = Codens.TypedMediaQuadruples
+ClanToCodens[AClanDom.FirstSeen.__name__] = Codens.FirstSeenReplayCouples
 
 
 # map counter codename to Structor clan name for ser/des as counted group
@@ -578,10 +620,11 @@ class Structor:
 
     @classmethod
     def enclose(cls, structors, cold=Colds.txt):
-        """Serializes structors with prepended counter code in either text or binary
-        domain as bytes determined by cold where text='txt' or binary='bny'
-        Uses .clan of zeroth structure to determine counter.code from .ClanCodes
+        """Serializes structors of same clan with prepended counter code in
+        either text or binary domain as bytes determined by cold where
+        text='txt' or binary='bny'.
         All structors must be of the same clan to join into one group.
+        Uses .clan of zeroth structure to determine counter.code from .ClanCodes
 
         Returns:
             enclosure (bytearray): enclosure serialized structors with
@@ -837,7 +880,7 @@ class Structor:
                                                     f"{clan._fields} and crew="
                                                     f"{crew._fields}.")
 
-                        crew = clan(**crew._asdict())  # convert to clan
+                        crew = clan(**crew._asdict())  # apply clan
 
                     elif isinstance(crew, Mapping):
                         if tuple(crew) != clan._fields:  # fields is mark
@@ -845,10 +888,10 @@ class Structor:
                                                     f"{clan._fields} and keys crew="
                                                     f"{tuple(crew)}.")
 
-                        crew = clan(**crew)  # convert to clan
+                        crew = clan(**crew)  # allpy clan
 
                     elif isinstance(crew, helping.isNonStringSequence):
-                        crew = clan(*crew)  # convert to clan assumes elements in correct order
+                        crew = clan(*crew)  # apply clan assumes elements in correct order
 
                     else:
                         raise InvalidValueError(f"Invalid {crew=}.")

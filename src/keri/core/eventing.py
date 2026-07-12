@@ -4232,7 +4232,7 @@ class Kevery:
                 If this event is not delegated then delnumber is ignored
             delsger (Diger|None): instance of of delegating event SAID diger.
                 If this event is not delegated then deldiger is ignored
-            firner (Seqner|None): instance of cloned first seen ordinal
+            firner (Number|None): instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
                 When firner provided then compare fn of dater and database and
                 first seen if not match then log and add cue notify problem
