@@ -1694,6 +1694,7 @@ class Baser(LMDBer):
         """
         from ..core import coring
         from ..core.counting import Counter, Codens
+        from ..core.structing import  SealSource
 
         msg = bytearray()  # message
         atc = bytearray()  # attachments
@@ -1723,19 +1724,11 @@ class Baser(LMDBer):
             atc.extend(Counter(code=Codens.SealSourceCouples,
                                count=1, version=Vrsn_1_0).qb64b)
             atc.extend(number.qb64b + diger.qb64b)
+            srcseal = SealSource(s=number, d=diger)
 
-        # add trans endorsement quadruples to attachments not controller
+        # add trans endorsement attachments not controller
         # may have been originally key event attachments or receipted endorsements
-        #if quads := self.vrcs.get(keys=dgkey):
-            #atc.extend(Counter(code=Codens.TransReceiptIdxSigGroups,
-                               #count=len(quads), version=Vrsn_1_0).qb64b)
-            #for prefixer, number, diger, siger in quads:    # adapt to CESR
-                #atc.extend(prefixer.qb64b)
-                #atc.extend(number.qb64b)
-                #atc.extend(diger.qb64b)
-                #atc.extend(siger.qb64b)
-
-        # vrcsNew add non-controller trans endorsement quadruples to attachments
+        # vrcsNew add non-controller trans endorsement attachments
         # may have been originally non-controller sigs or receipted endorsements
         # collate sigersets by triple of rpre,rsnh,rdig
         topkeys = (pre, dig)

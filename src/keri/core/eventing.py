@@ -26,7 +26,7 @@ from ..kering import (MissingEntryError, UntrustedKeyStateSource,
 
 from ..help import helping, Reb64
 
-from .coring import (PreDex, DigDex, NonTransDex, NumDex, Prefixer,
+from .coring import (PreDex, DigDex, NonTransDex, NumDex, Matter, Prefixer,
                      Diger, Number, Seqner, Cigar, Dater, Noncer,
                      Verfer, Diger, Prefixer, Tholder, Texter)
 
@@ -1696,22 +1696,34 @@ def messagize(serder, *, sigers=None, tsgs=None, lsgs=None, wigers=None,
                     aims.extend(Counter(Codens.SealSourceTriples, count=len(group),
                                             version=Vrsn_1_0).qb64b)
                     for bond in group:
-                        aims.extend(bond.i.encode())
-                        aims.extend(Number(snh=bond.s).qb64b)
-                        aims.extend(bond.d.encode())
+                        if isinstance(bond[0], Matter):  # bond field values are Matter primitives
+                            aims.extend(bond.i.qb64b)
+                            aims.extend(bond.s.qb64b)
+                            aims.extend(bond.d.qb64b)
+                        else:  # bond field values are serializations
+                            aims.extend(bond.i.encode())
+                            aims.extend(Number(snh=bond.s).qb64b)
+                            aims.extend(bond.d.encode())
 
                 elif issubclass(clan, SealSource):  # authenticator is last seal
                     aims.extend(Counter(Codens.SealSourceCouples, count=len(group),
                                             version=Vrsn_1_0).qb64b)
                     for bond in group:
-                        aims.extend(Number(snh=bond.s).qb64b)
-                        aims.extend(bond.d.encode())
+                        if isinstance(bond[0], Matter):  # bond field values are Matter primitives
+                            aims.extend(bond.s.qb64b)
+                            aims.extend(bond.d.qb64b)
+                        else:  # bond field values are serializations
+                            aims.extend(Number(snh=bond.s).qb64b)
+                            aims.extend(bond.d.encode())
 
                 elif issubclass(clan, SealLast):  # authenticator is last seal
                     aims.extend(Counter(Codens.SealSourceLastSingles, count=len(group),
                                             version=Vrsn_1_0).qb64b)
                     for bond in group:
-                        aims.extend(bond.i.encode())
+                        if isinstance(bond[0], Matter):  # bond field values are Matter primitives
+                            aims.extend(bond.i.qb64b)
+                        else:  # bond field values are serializations
+                            aims.extend(bond.i.encode())
 
                 else:
                     raise ValueError(f"Unsupported authenticator {clan} for"
@@ -1823,7 +1835,11 @@ def messagize(serder, *, sigers=None, tsgs=None, lsgs=None, wigers=None,
 
             clans = {}  # dict of structor lists keyed by clan
             for bond in bonds:  # collate structors made from bonds by clan group
-                structor = Structor(crew=bond)
+                if isinstance(bond[0], Matter):  # bond is Structor data
+                    structor = Structor(data=bond)
+                else: # bond is structor crew (serialized)
+                    structor = Structor(crew=bond)
+
                 if (structor.clan not in (SealEvent, SealSource, SealLast,
                                         BlindState, BoundState, TypeMedia)):
                     raise ValueError(f"Unsupported authenticator {structor.clan}"

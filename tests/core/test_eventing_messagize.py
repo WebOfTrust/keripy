@@ -2467,8 +2467,6 @@ def test_messagize_v2_native_nested():
                  Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
                  sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, bonds=seal, wigers=wigers,
-                        #cigars=cigars, nested=True, gvrsn=Vrsn_1_0)
         msg = messagize(serder, tsgs=tsgs, bonds=seal, wigers=wigers,
                         cigars=cigars, nested=True, gvrsn=Vrsn_1_0)
         assert msg == (b'-BCv-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2'
