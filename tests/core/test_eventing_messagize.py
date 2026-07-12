@@ -16,11 +16,11 @@ from keri import (ValidationError, UnverifiedReceiptError, InvalidCodeError,
 from keri.app import habbing, openKS, Manager
 from keri.core import (Noncer, Signer, Counter, Codens, Kever, Parser,
                        SerderKERI, Salter, Diger, Matter, Cigar, Seqner,
-                       Verfer, Prefixer, Number, Saider, Seqner,
+                       Verfer, Prefixer, Number, Dater, Saider, Seqner,
                        DigDex, MtrDex, PreDex, NumDex, IdrDex, IdxSigDex,
                        Siger, SealDigest, SealRoot, SealBack, SealEvent,
                        SealSource, SealLast, BlindState, BoundState, TypeMedia,
-                       StateEvent, StateEstEvent,
+                       StateEvent, FirstSeen, StateEstEvent,
                        Kever, Kevery,
                        LastEstLoc, simple, ample, deWitnessCouple,
                        deReceiptCouple, deSourceCouple, deReceiptTriple,
@@ -105,7 +105,6 @@ def test_messagize_v1():
                  Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
                  sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, framed=True, gvrsn=Vrsn_1_0)
         msg = messagize(serder, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
@@ -150,7 +149,7 @@ def test_messagize_v1():
         seal = SealLast(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI')
         lsgs = [(Prefixer(qb64='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
                  sigers)]
-        #msg = messagize(serder, sigers=sigers, source=source, framed=True, gvrsn=Vrsn_1_0)
+
         msg = messagize(serder, lsgs=lsgs, framed=True, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
@@ -161,7 +160,6 @@ def test_messagize_v1():
                     b'HyClVTLoD')
 
         # Test with not framed
-        #msg = messagize(serder, sigers=sigers, source=source, framed=False, gvrsn=Vrsn_1_0)
         msg = messagize(serder, lsgs=lsgs, framed=False, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
@@ -305,10 +303,7 @@ def test_messagize_v1():
                     b'H1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BDwWrxO8RItpgGFtFiDF7Q'
                     b'oVas-6Bzvj0xtOfbsh31jjtshcEa0rUVX2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF')
 
-        # Test with sigers and source and seal and wigers and cigars and not framed
-        source = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
-                         s='0',
-                         d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+        # Test with tsgs and wigers and cigars and bonds and not framed
         seal = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
                          s='0',
                          d='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
@@ -317,8 +312,6 @@ def test_messagize_v1():
                  Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
                  sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, bonds=seal,
-                        #wigers=wigers, cigars=cigars, framed=False, gvrsn=Vrsn_1_0)
         msg = messagize(serder, tsgs=tsgs, bonds=seal,
                         wigers=wigers, cigars=cigars, framed=False, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
@@ -388,7 +381,6 @@ def test_messagize_v1():
         # Test with SealLast and framed for endorsers est evt whose keys use to sign
         source = SealLast(i=pre)
         lsgs = [(Prefixer(qb64=pre), sigers)]
-        #msg = messagize(serder, sigers=sigers, source=source, framed=True, gvrsn=Vrsn_1_0)
         msg = messagize(serder, lsgs=lsgs, framed=True, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON0000c9_","t":"qry","d":"EGN68_seecuzXQO15FFGJLVw'
                     b'ZCBCPYW-hy29fjWWPQbp","dt":"2021-01-01T00:00:00.000000+00:00","r'
@@ -398,7 +390,6 @@ def test_messagize_v1():
                     b'kxI862_XjyZLHyClVTLoD')
 
         # Not framed SealLast
-        #msg = messagize(serder, sigers=sigers, source=source, framed=False, gvrsn=Vrsn_1_0)
         msg = messagize(serder, lsgs=lsgs, framed=False, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON0000c9_","t":"qry","d":"EGN68_seecuzXQO15FFGJLVw'
                     b'ZCBCPYW-hy29fjWWPQbp","dt":"2021-01-01T00:00:00.000000+00:00","r'
@@ -406,6 +397,42 @@ def test_messagize_v1():
                     b'1QvrjI"}}-VAj-HABEFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxjJyHxl4F-AA'
                     b'BAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfP'
                     b'QQkQkxI862_XjyZLHyClVTLoD')
+
+        # Test trans receipts rsgs and bonds FirstSeen serialized
+        bond = FirstSeen(f='0',
+                         dt='2026-07-12T16:48:52.431388+00:00')
+
+        rsgs = [(Prefixer(qb64='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
+                 Number(sn=0),
+                 Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
+                 sigers)]
+
+        msg = messagize(serder, rsgs=rsgs, bonds=[bond], framed=True, gvrsn=Vrsn_1_0)
+        assert msg == (b'{"v":"KERI10JSON0000c9_","t":"qry","d":"EGN68_seecuzXQO15FFGJLVw'
+                    b'ZCBCPYW-hy29fjWWPQbp","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"log","rr":"","q":{"i":"DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho'
+                    b'1QvrjI"}}-DAuDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMu'
+                    b'NWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAB1DuEfnZZ6juMZDYi'
+                    b'odcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyCl'
+                    b'VTLoD-EABMAAA1AAG2026-07-12T16c48c52d431388p00c00')
+
+        # Test trans receipts rsgs and bonds FirstSeen matter primitives
+        bond = FirstSeen(f=Number(numh='0'),
+                         dt=Dater(dts='2026-07-12T16:48:52.431388+00:00'))
+
+        rsgs = [(Prefixer(qb64='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
+                 Number(sn=0),
+                 Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
+                 sigers)]
+
+        msg = messagize(serder, rsgs=rsgs, bonds=[bond], framed=True, gvrsn=Vrsn_1_0)
+        assert msg == (b'{"v":"KERI10JSON0000c9_","t":"qry","d":"EGN68_seecuzXQO15FFGJLVw'
+                    b'ZCBCPYW-hy29fjWWPQbp","dt":"2021-01-01T00:00:00.000000+00:00","r'
+                    b'":"log","rr":"","q":{"i":"DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho'
+                    b'1QvrjI"}}-DAuDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMu'
+                    b'NWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAB1DuEfnZZ6juMZDYi'
+                    b'odcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyCl'
+                    b'VTLoD-EABMAAA1AAG2026-07-12T16c48c52d431388p00c00')
 
         """ Done Test """
 
@@ -479,8 +506,6 @@ def test_messagize_v1_mix_v2():
                  Number(sn=0),
                  Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
                  sigers)]
-
-        #msg = messagize(serder, sigers=sigers, source=source, framed=True, gvrsn=Vrsn_2_0)
         msg = messagize(serder, tsgs=tsgs, framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
@@ -491,7 +516,6 @@ def test_messagize_v1_mix_v2():
                     b'-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyClVTLoD')
 
         # Test with not framed
-        #msg = messagize(serder, sigers=sigers, source=source, framed=False, gvrsn=Vrsn_2_0)
         msg = messagize(serder, tsgs=tsgs, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
@@ -526,7 +550,6 @@ def test_messagize_v1_mix_v2():
         lsgs = [(Prefixer(qb64='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
                  sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, framed=True, gvrsn=Vrsn_2_0)
         msg = messagize(serder, lsgs=lsgs, framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
@@ -537,7 +560,6 @@ def test_messagize_v1_mix_v2():
                     b'HyClVTLoD')
 
         # Test with not framed
-        #msg = messagize(serder, sigers=sigers, source=source, framed=False, gvrsn=Vrsn_2_0)
         msg = messagize(serder, lsgs=lsgs, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
@@ -727,8 +749,6 @@ def test_messagize_v1_mix_v2():
                  Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
                  sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, bonds=seal, wigers=wigers,
-                        #cigars=cigars, framed=False, gvrsn=Vrsn_2_0)
         msg = messagize(serder, tsgs=tsgs, bonds=seal, wigers=wigers,
                         cigars=cigars, framed=False, gvrsn=Vrsn_2_0)
 
@@ -800,7 +820,6 @@ def test_messagize_v1_mix_v2():
         source = SealLast(i=pre)
         lsgs = [(Prefixer(qb64=pre), sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, framed=True, gvrsn=Vrsn_2_0)
         msg = messagize(serder, lsgs=lsgs, framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERI10JSON0000c9_","t":"qry","d":"EGN68_seecuzXQO15FFGJLVw'
                     b'ZCBCPYW-hy29fjWWPQbp","dt":"2021-01-01T00:00:00.000000+00:00","r'
@@ -891,7 +910,6 @@ def test_messagize_v2():
                  Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
                  sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, framed=True, gvrsn=Vrsn_2_0)
         msg = messagize(serder, tsgs=tsgs, framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERICAACAAJSONAAD_.","t":"icp","d":"ECtGzXBDhYAOdKeQcTgBr4'
                     b'agqy06IN7jaKc3OIQLyLWU","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
@@ -936,7 +954,6 @@ def test_messagize_v2():
         seal = SealLast(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI')
         lsgs = [(Prefixer(qb64='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'), sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, framed=True, gvrsn=Vrsn_2_0)
         msg = messagize(serder, lsgs=lsgs, framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERICAACAAJSONAAD_.","t":"icp","d":"ECtGzXBDhYAOdKeQcTgBr4'
                     b'agqy06IN7jaKc3OIQLyLWU","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
@@ -947,7 +964,6 @@ def test_messagize_v2():
                     b'sFFvBcb6qEC')
 
         # Test with not framed
-        #msg = messagize(serder, sigers=sigers, source=source, framed=False, gvrsn=Vrsn_2_0)
         msg = messagize(serder, lsgs=lsgs, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERICAACAAJSONAAD_.","t":"icp","d":"ECtGzXBDhYAOdKeQcTgBr4'
                     b'agqy06IN7jaKc3OIQLyLWU","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
@@ -1088,8 +1104,6 @@ def test_messagize_v2():
                  Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
                  sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, bonds=seal,
-                        #wigers=wigers, cigars=cigars, framed=False, gvrsn=Vrsn_2_0)
         msg = messagize(serder, tsgs=tsgs, bonds=seal,
                         wigers=wigers, cigars=cigars, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERICAACAAJSONAAD_.","t":"icp","d":"ECtGzXBDhYAOdKeQcTgBr4'
@@ -1213,7 +1227,6 @@ def test_messagize_v2():
         source = SealLast(i=pre)
         lsgs = [(Prefixer(qb64=pre), sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, framed=True, gvrsn=Vrsn_2_0)
         msg = messagize(serder, lsgs=lsgs, framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERICAACAAJSONAAD-.","t":"qry","d":"EJhb5rCAKt5x_KUuhZVfle'
                     b'7nDN7Bv0ZExzez63lHZu3y","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
@@ -1224,7 +1237,6 @@ def test_messagize_v2():
                     b'FFvBcb6qEC')
 
         # Not framed SealLast
-        #msg = messagize(serder, sigers=sigers, source=source, framed=False, gvrsn=Vrsn_2_0)
         msg = messagize(serder, lsgs=lsgs, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'{"v":"KERICAACAAJSONAAD-.","t":"qry","d":"EJhb5rCAKt5x_KUuhZVfle'
                     b'7nDN7Bv0ZExzez63lHZu3y","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
@@ -1233,6 +1245,45 @@ def test_messagize_v2():
                     b'Aj-YAiECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc3OIQLyLWU-KAWAADdpYFg2e'
                     b'cIl0O7FeUnHN2P_aK-9U_31Hsvt57_duHbLVlG50kep74k6uFccMbXLqxMI0dAMA'
                     b'PDisFFvBcb6qEC')
+
+        # Test trans receipts rsgs and bonds FirstSeen serialized
+        bond = FirstSeen(f='0',
+                         dt='2026-07-12T16:48:52.431388+00:00')
+
+        rsgs = [(Prefixer(qb64='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
+                 Number(sn=0),
+                 Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
+                 sigers)]
+
+        msg = messagize(serder, rsgs=rsgs, bonds=[bond], framed=True, gvrsn=Vrsn_2_0)
+        assert msg == (b'{"v":"KERICAACAAJSONAAD-.","t":"qry","d":"EJhb5rCAKt5x_KUuhZVfle'
+                    b'7nDN7Bv0ZExzez63lHZu3y","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
+                    b'3OIQLyLWU","dt":"2021-01-01T00:00:00.000000+00:00","r":"log","rr'
+                    b'":"","q":{"i":"DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI"}}-N'
+                    b'AuDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_kH4'
+                    b'cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-KAWAADdpYFg2ecIl0O7FeUnHN2P_aK-9U'
+                    b'_31Hsvt57_duHbLVlG50kep74k6uFccMbXLqxMI0dAMAPDisFFvBcb6qEC-OAKMA'
+                    b'AA1AAG2026-07-12T16c48c52d431388p00c00')
+
+        # Test trans receipts rsgs and bonds FirstSeen matter primitives
+        bond = FirstSeen(f=Number(numh='0'),
+                         dt=Dater(dts='2026-07-12T16:48:52.431388+00:00'))
+
+        rsgs = [(Prefixer(qb64='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
+                 Number(sn=0),
+                 Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
+                 sigers)]
+
+        msg = messagize(serder, rsgs=rsgs, bonds=[bond], framed=True, gvrsn=Vrsn_2_0)
+        assert msg == (b'{"v":"KERICAACAAJSONAAD-.","t":"qry","d":"EJhb5rCAKt5x_KUuhZVfle'
+                    b'7nDN7Bv0ZExzez63lHZu3y","i":"ECtGzXBDhYAOdKeQcTgBr4agqy06IN7jaKc'
+                    b'3OIQLyLWU","dt":"2021-01-01T00:00:00.000000+00:00","r":"log","rr'
+                    b'":"","q":{"i":"DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI"}}-N'
+                    b'AuDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_kH4'
+                    b'cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-KAWAADdpYFg2ecIl0O7FeUnHN2P_aK-9U'
+                    b'_31Hsvt57_duHbLVlG50kep74k6uFccMbXLqxMI0dAMAPDisFFvBcb6qEC-OAKMA'
+                    b'AA1AAG2026-07-12T16c48c52d431388p00c00')
+
 
 
         """ Done Test """
@@ -1303,7 +1354,6 @@ def test_messagize_v2_native():
                  Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
                  sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, framed=True, gvrsn=Vrsn_2_0)
         msg = messagize(serder, tsgs=tsgs, framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
                     b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
@@ -1313,7 +1363,6 @@ def test_messagize_v2_native():
                     b'LRnrXTrKiyi5qhjQ5YKU4SbDFjVdGoUoN3u5gfn6dHBVwvnBkr96OPwM')
 
         # Test with not framed
-        #msg = messagize(serder, sigers=sigers, source=source, framed=False, gvrsn=Vrsn_2_0)
         msg = messagize(serder, tsgs=tsgs, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
                     b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
@@ -1345,7 +1394,6 @@ def test_messagize_v2_native():
         lsgs = [(Prefixer(qb64='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
                  sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, framed=True, gvrsn=Vrsn_2_0)
         msg = messagize(serder, lsgs=lsgs, framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
                     b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
@@ -1355,7 +1403,6 @@ def test_messagize_v2_native():
                     b'kr96OPwM')
 
         # Test with not framed
-        #msg = messagize(serder, sigers=sigers, source=source, framed=False, gvrsn=Vrsn_2_0)
         msg = messagize(serder, lsgs=lsgs, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
                     b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif48wh'
@@ -1483,8 +1530,6 @@ def test_messagize_v2_native():
                  Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
                  sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, bonds=seal, wigers=wigers,
-                        #cigars=cigars, framed=False, gvrsn=Vrsn_2_0)
         msg = messagize(serder, tsgs=tsgs, bonds=seal, wigers=wigers,
                         cigars=cigars, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn'
@@ -1604,7 +1649,6 @@ def test_messagize_v2_native():
         lsgs = [(Prefixer(qb64=pre),
                  sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, framed=True, gvrsn=Vrsn_2_0)
         msg = messagize(serder, lsgs=lsgs, framed=True, gvrsn=Vrsn_2_0)
         assert msg == (b'-FAz0OKERICAACAAXqryEOtc_pUXyVNOyRDMJXTBpFrfEn9e-v56A6RIRVhv4tDE'
                     b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn1AAG2021-01-01T00c00'
@@ -1614,7 +1658,6 @@ def test_messagize_v2_native():
                     b'GoUoN3u5gfn6dHBVwvnBkr96OPwM')
 
         # Not framed SealLast
-        #msg = messagize(serder, sigers=sigers, source=source, framed=False, gvrsn=Vrsn_2_0)
         msg = messagize(serder, lsgs=lsgs, framed=False, gvrsn=Vrsn_2_0)
         assert msg == (b'-FAz0OKERICAACAAXqryEOtc_pUXyVNOyRDMJXTBpFrfEn9e-v56A6RIRVhv4tDE'
                     b'EP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn1AAG2021-01-01T00c00'
@@ -1683,7 +1726,6 @@ def test_messagize_v1_nested():
                  Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
                  sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, nested=True, gvrsn=Vrsn_1_0)
         msg = messagize(serder, tsgs=tsgs, nested=True, gvrsn=Vrsn_1_0)
         assert msg == (b'-BCG-HBW6BBVAAB7InYiOiJLRVJJMTBKU09OMDAwMGZkXyIsInQiOiJpY3AiLCJk'
                     b'IjoiRUZ5enpnMk1wNUEzZWNDaGM2QWhTTFRRc3NCWkFtTnZQbkd4akp5SHhsNEYi'
@@ -1712,7 +1754,6 @@ def test_messagize_v1_nested():
         lsgs = [(Prefixer(qb64='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
                  sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, nested=True, gvrsn=Vrsn_1_0)
         msg = messagize(serder, lsgs=lsgs, nested=True, gvrsn=Vrsn_1_0)
         assert msg == (b'-BB6-HBW6BBVAAB7InYiOiJLRVJJMTBKU09OMDAwMGZkXyIsInQiOiJpY3AiLCJk'
                     b'IjoiRUZ5enpnMk1wNUEzZWNDaGM2QWhTTFRRc3NCWkFtTnZQbkd4akp5SHhsNEYi'
@@ -1827,8 +1868,6 @@ def test_messagize_v1_nested():
                  Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
                  sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, bonds=seal, wigers=wigers,
-                        #cigars=cigars, nested=True, gvrsn=Vrsn_1_0)
         msg = messagize(serder, tsgs=tsgs, bonds=seal, wigers=wigers,
                         cigars=cigars, nested=True, gvrsn=Vrsn_1_0)
         assert msg == (b'-BDX-HBW6BBVAAB7InYiOiJLRVJJMTBKU09OMDAwMGZkXyIsInQiOiJpY3AiLCJk'
@@ -1948,7 +1987,6 @@ def test_messagize_v1_nested():
         lsgs = [(Prefixer(qb64=pre),
                  sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, nested=True, gvrsn=Vrsn_1_0)
         msg = messagize(serder, lsgs=lsgs, nested=True, gvrsn=Vrsn_1_0)
         assert msg == (b'-BBo-HBE4BBDeyJ2IjoiS0VSSTEwSlNPTjAwMDBjOV8iLCJ0IjoicXJ5IiwiZCI6'
                     b'IkVHTjY4X3NlZWN1elhRTzE1RkZHSkxWd1pDQkNQWVctaHkyOWZqV1dQUWJwIiwi'
@@ -2018,7 +2056,6 @@ def test_messagize_v2_nested():
                  Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
                  sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, nested=True, gvrsn=Vrsn_1_0)
         msg = messagize(serder, tsgs=tsgs, nested=True, gvrsn=Vrsn_1_0)
         assert msg == (b'-BCG-HBW4BBVeyJ2IjoiS0VSSUNBQUNBQUpTT05BQURfLiIsInQiOiJpY3AiLCJk'
                     b'IjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlMV1Ui'
@@ -2047,7 +2084,6 @@ def test_messagize_v2_nested():
         lsgs = [(Prefixer(qb64='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'),
                  sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, nested=True, gvrsn=Vrsn_1_0)
         msg = messagize(serder, lsgs=lsgs, nested=True, gvrsn=Vrsn_1_0)
         assert msg == (b'-BB6-HBW4BBVeyJ2IjoiS0VSSUNBQUNBQUpTT05BQURfLiIsInQiOiJpY3AiLCJk'
                     b'IjoiRUN0R3pYQkRoWUFPZEtlUWNUZ0JyNGFncXkwNklON2phS2MzT0lRTHlMV1Ui'
@@ -2162,8 +2198,6 @@ def test_messagize_v2_nested():
                  Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
                  sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, bonds=seal, wigers=wigers,
-                        #cigars=cigars, nested=True, gvrsn=Vrsn_1_0)
         msg = messagize(serder, tsgs=tsgs, bonds=seal, wigers=wigers,
                         cigars=cigars, nested=True, gvrsn=Vrsn_1_0)
         assert msg == (b'-BDX-HBW4BBVeyJ2IjoiS0VSSUNBQUNBQUpTT05BQURfLiIsInQiOiJpY3AiLCJk'
@@ -2283,7 +2317,6 @@ def test_messagize_v2_nested():
         lsgs = [(Prefixer(qb64=pre),
                  sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, nested=True, gvrsn=Vrsn_1_0)
         msg = messagize(serder, lsgs=lsgs, nested=True, gvrsn=Vrsn_1_0)
         assert msg == (b'-BB6-HBW5BBVAHsidiI6IktFUklDQUFDQUFKU09OQUFELS4iLCJ0IjoicXJ5Iiwi'
                     b'ZCI6IkVKaGI1ckNBS3Q1eF9LVXVoWlZmbGU3bkRON0J2MFpFeHplejYzbEhadTN5'
@@ -2349,7 +2382,6 @@ def test_messagize_v2_native_nested():
                  Diger(qb64='EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
                  sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, nested=True, gvrsn=Vrsn_1_0)
         msg = messagize(serder, tsgs=tsgs, nested=True, gvrsn=Vrsn_1_0)
         assert msg == (b'-BBe-FAu0OKERICAACAAXicpEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2'
                     b'NfHnEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHnMAAAMAAB-JALDOif'
@@ -2577,7 +2609,6 @@ def test_messagize_v2_native_nested():
         lsgs = [(Prefixer(qb64=pre),
                  sigers)]
 
-        #msg = messagize(serder, sigers=sigers, source=source, nested=True, gvrsn=Vrsn_1_0)
         msg = messagize(serder, lsgs=lsgs, nested=True, gvrsn=Vrsn_1_0)
         assert msg == (b'-BBX-FAz0OKERICAACAAXqryEOtc_pUXyVNOyRDMJXTBpFrfEn9e-v56A6RIRVhv'
                     b'4tDEEP8WtjzSzxcEfUQrFQvL542r9-8KZe9o9PapQ2A2NfHn1AAG2021-01-01T0'

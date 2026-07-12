@@ -32,7 +32,7 @@ from .coring import (PreDex, DigDex, NonTransDex, NumDex, Matter, Prefixer,
 
 from .counting import Counter, Codens
 from .structing import (Structor, Sealer, SealEvent, SealSource, SealLast, BlindState,
-                        BoundState, TypeMedia, StateEstEvent,
+                        BoundState, TypeMedia, FirstSeen, StateEstEvent,
                         TransSigs, TransLastSigs, TransReceipts)
 from .indexing import Siger
 from .serdering import SerderKERI
@@ -1682,7 +1682,7 @@ def messagize(serder, *, sigers=None, tsgs=None, lsgs=None, wigers=None,
 
             clans = {}
             for bond in bonds: # collate seals from bonds into groups by clan
-                if (bond.__class__ not in (SealEvent, SealSource, SealLast)):
+                if (bond.__class__ not in (SealEvent, SealSource, SealLast, FirstSeen)):
                     raise ValueError(f"Unsupported authenticator {bond} kind for "
                                      f"version={gvrsn} msg={serder.pretty()}")
 
@@ -1717,16 +1717,29 @@ def messagize(serder, *, sigers=None, tsgs=None, lsgs=None, wigers=None,
                             aims.extend(bond.d.encode())
 
                 elif issubclass(clan, SealLast):  # authenticator is last seal
-                    aims.extend(Counter(Codens.SealSourceLastSingles, count=len(group),
-                                            version=Vrsn_1_0).qb64b)
+                    aims.extend(Counter(Codens.SealSourceLastSingles,
+                                        count=len(group),
+                                        version=Vrsn_1_0).qb64b)
                     for bond in group:
                         if isinstance(bond[0], Matter):  # bond field values are Matter primitives
                             aims.extend(bond.i.qb64b)
                         else:  # bond field values are serializations
                             aims.extend(bond.i.encode())
 
+                elif issubclass(clan, FirstSeen):  # first seen bond
+                    aims.extend(Counter(Codens.FirstSeenReplayCouples,
+                                        count=len(group),
+                                        version=Vrsn_1_0).qb64b)
+                    for bond in group:
+                        if isinstance(bond[0], Matter):  # bond field values are Matter primitives
+                            aims.extend(bond.f.qb64b)
+                            aims.extend(bond.dt.qb64b)
+                        else:  # bond field values are serializations
+                            aims.extend(Number(snh=bond.f).qb64b)
+                            aims.extend(Dater(dts=bond.dt).qb64b)
+
                 else:
-                    raise ValueError(f"Unsupported authenticator {clan} for"
+                    raise ValueError(f"Unsupported bond {clan} for"
                                      f" version={gvrsn} msg={serder.pretty()}")
 
         if len(aims) % 4:
@@ -1841,8 +1854,8 @@ def messagize(serder, *, sigers=None, tsgs=None, lsgs=None, wigers=None,
                     structor = Structor(crew=bond)
 
                 if (structor.clan not in (SealEvent, SealSource, SealLast,
-                                        BlindState, BoundState, TypeMedia)):
-                    raise ValueError(f"Unsupported authenticator {structor.clan}"
+                                BlindState, BoundState, TypeMedia, FirstSeen)):
+                    raise ValueError(f"Unsupported bond {structor.clan}"
                                      f" for version={gvrsn} msg={serder.pretty()}")
                 if structor.clan not in clans:
                     clans[structor.clan] = [structor]
