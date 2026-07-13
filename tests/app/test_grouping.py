@@ -773,7 +773,7 @@ def test_multisig_incept(mockHelpingNowUTC):
         assert "icp" in exn.ked['e']
 
 
-def test_multisig_incept_default_framing_uses_default_version_with_legacy_special_exn(mockHelpingNowUTC, monkeypatch):
+def test_multisig_incept_explicit_v1_uses_legacy_special_exn(mockHelpingNowUTC, monkeypatch):
     with openHab(name="test", temp=True, salt=b'0123456789abcdef', **KWA) as (_, hab):
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
         icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=TEST_VERSION)
@@ -800,11 +800,12 @@ def test_multisig_incept_default_framing_uses_default_version_with_legacy_specia
         monkeypatch.setattr(grouping, "specialExchange", capture_special_exchange)
         monkeypatch.setattr(hab, "endorse", capture_endorse)
 
-        multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp)
+        multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp,
+                          version=Vrsn_1_0, kind=Kinds.json)
 
         assert special_calls["version"] == Vrsn_1_0
         assert special_calls["kind"] == Kinds.json
-        assert endorse_calls["gvrsn"] == Version
+        assert endorse_calls["gvrsn"] == Vrsn_1_0
 
 
 def test_multisig_incept_v2_nested_substreams(mockHelpingNowUTC):

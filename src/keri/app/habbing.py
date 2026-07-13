@@ -1706,9 +1706,9 @@ class BaseHab:
 
         nests = None
         if embeds:
-            if version is Vrsn_1_0:
+            if pvrsn.major == Vrsn_1_0.major:
                 serder, end = specialExchange(embeds=embeds, **kwa)
-            elif version is Vrsn_2_0:
+            else:
                 serder = exchange(**kwa)
                 end = bytearray()
                 ngvrsn = gvrsn if gvrsn is not None else Vrsn_2_0

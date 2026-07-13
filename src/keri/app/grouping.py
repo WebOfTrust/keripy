@@ -344,7 +344,7 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None, version=None, kind
 
     kind = kind if kind is not None else Kinds.json
 
-    if version is None or version.major == Vrsn_1_0.major:
+    if version and version.major == Vrsn_1_0.major:
         kwa, gvrsn = _exnVersion(version=version, kind=kind)
         exn, end = specialExchange(sender=hab.pre,
                                    route="/multisig/icp",
