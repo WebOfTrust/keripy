@@ -33,7 +33,7 @@ from .coring import (PreDex, DigDex, NonTransDex, NumDex, Matter, Prefixer,
 from .counting import Counter, Codens
 from .structing import (Structor, Sealer, SealEvent, SealSource, SealLast, BlindState,
                         BoundState, TypeMedia, FirstSeen, StateEstEvent,
-                        TransSigs, TransLastSigs, TransReceipts)
+                        TransSigs, TransLastSigs, TransReceipts, AClanDom)
 from .indexing import Siger
 from .serdering import SerderKERI
 
@@ -1853,8 +1853,7 @@ def messagize(serder, *, sigers=None, tsgs=None, lsgs=None, wigers=None,
                 else: # bond is structor crew (serialized)
                     structor = Structor(crew=bond)
 
-                if (structor.clan not in (SealEvent, SealSource, SealLast,
-                                BlindState, BoundState, TypeMedia, FirstSeen)):
+                if (structor.clan not in AClanDom):
                     raise ValueError(f"Unsupported bond {structor.clan}"
                                      f" for version={gvrsn} msg={serder.pretty()}")
                 if structor.clan not in clans:
