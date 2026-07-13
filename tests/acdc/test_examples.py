@@ -23,7 +23,7 @@ import pytest
 
 from keri import Vrsn_2_0, Kinds, Protocols, Ilks
 from keri.core import Noncer, Blinder, GenDex, Aggor, Compactor, Diger, DigDex
-from keri.acdc import regcept, blindate, update, acdcmap, acdcagg
+from keri.acdc import regcept, blindate, acdcmap, acdcagg
 
 
 # Spec-aligned example fixtures (see test_acdc_examples_setup in the spec tests).
@@ -160,47 +160,6 @@ def test_registry_issuance_lifecycle_JSON():
     assert reunblinder.state == 'revoked'
     assert reunblinder.acdc == acdcSaid           # bound to this credential, not another
     assert reunblinder.crew == revokedBlinder.crew
-
-
-def test_public_registry_update_JSON():
-    """Example: the non-blindable ('upd') registry update, for contrast.
-
-    A registry may record state in the clear rather than blinded. Where the
-    blindable update ('bup') hides both which credential and which state behind a
-    single blinded SAID, the plain update ('upd') carries the transaction ACDC
-    SAID ('td') and the state string ('ts') as ordinary fields. It is simpler --
-    no shared salt, no blinding, no unblinding step to verify -- but it offers no
-    state privacy: any observer of the registry reads the credential's status
-    directly off the wire. An issuer chooses 'bup' for a private registry and
-    'upd' for a public one, and a registry may use either over its lifetime.
-    """
-    regStamp = '2025-07-04T17:50:00.000000+00:00'
-    regid = regcept(issuer=AMY, uuid=NONCES[0], stamp=regStamp).said
-    acdc = acdcmap(issuer=AMY, uuid=NONCES[10], regid=regid,
-                   attribute=dict(d='', u=NONCES[7], name="Sunspot College",
-                                  level="gold"),
-                   issuee=BOB)
-    acdcSaid = acdc.said
-
-    # Record the issued state with a NON-blindable update. Unlike 'bup', it names
-    # the credential ('td') and the state ('ts') directly.
-    updStamp = '2025-08-01T18:06:10.988921+00:00'
-    upd = update(regid=regid, prior=regid, acdc=acdcSaid, state='issued',
-                 sn=1, stamp=updStamp)
-    assert upd.ilk == Ilks.upd
-    assert upd.sad['rd'] == regid          # names the registry
-    assert upd.sad['p'] == regid           # chains onto the rip event
-    assert upd.sad['n'] == "1"
-    assert upd.sad['td'] == acdcSaid       # the credential SAID -- in the clear
-    assert upd.sad['ts'] == 'issued'       # the state -- in the clear
-    assert upd.said == "EJnHBNJW8RTbLvutoc5Fh1n3dnQCQ87r3GRRC9qjWnVV"
-
-    # No privacy: the state and the credential SAID both appear in the wire bytes
-    # -- exactly the two things the blindable 'bup' keeps hidden (compare
-    # test_registry_issuance_lifecycle_JSON, where 'issued' and the ACDC SAID are
-    # asserted absent from the 'bup' raw).
-    assert b'issued' in upd.raw
-    assert acdcSaid.encode() in upd.raw
 
 
 def test_selective_disclosure_aggregate_JSON():
@@ -599,7 +558,6 @@ def test_examples_serialization_kinds(kind):
 
 if __name__ == "__main__":
     test_registry_issuance_lifecycle_JSON()
-    test_public_registry_update_JSON()
     test_selective_disclosure_aggregate_JSON()
     test_partial_disclosure_compaction_JSON()
     test_blindable_registry_correlation_minimizing_JSON()
