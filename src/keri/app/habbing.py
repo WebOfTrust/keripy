@@ -22,12 +22,63 @@ from ..kering import (Version, Vrsn_1_0, Vrsn_2_0, Ilks, Kinds, Roles, Schemes,
                       ValidationError, MissingEntryError, MissingSignatureError)
 from ..core import (Tholder, Diger, Prefixer, Number, Kevery, Parser, Revery,
                     Router, Counter, Salter, SealEvent, SealSource, SealLast,
-                    Codens, MtrDex, TraitDex, messagize, exchange,)
+                    Codens, MtrDex, TraitDex, Serder, messagize, exchange,)
 from ..core import eventing
 from ..recording import HabitatRecord, OobiRecord
 
 
 logger = ogler.getLogger()
+
+
+def _field(parsed, name):
+    if isinstance(parsed, dict):
+        return parsed.get(name)
+
+    return getattr(parsed, name, None)
+
+
+def serializeParsedSubstream(parsed, gvrsn=Vrsn_2_0):
+    """Serialize a parsed message subtree as a nested CESR v2 substream"""
+    if any(_field(parsed, name) for name in ("rsgs", "frcs", "ptds", "essrs")):
+        raise ValueError("Unsupported attachments for nested substream serialization")
+
+    serder = _field(parsed, "serder")
+    sigers = _field(parsed, "sigers") or None
+    tsgs = _field(parsed, "tsgs") or None
+    lsgs = _field(parsed, "lsgs") or None
+    if sigers and (tsgs or lsgs):
+        raise ValueError("Unsupported mixed signature groups for nested substream serialization")
+
+    bonds = []
+    for name in ("sscs", "ssts", "tdcs", "bsqs", "bsss", "tmqs"):
+        bonds.extend(_field(parsed, name) or [])
+
+    nests = [serializeParsedSubstream(nest, gvrsn=gvrsn)
+             for nest in (_field(parsed, "nests") or [])]
+
+    return messagize(serder=serder,
+                     sigers=sigers,
+                     tsgs=tsgs,
+                     lsgs=lsgs,
+                     bonds=bonds or None,
+                     wigers=_field(parsed, "wigers") or None,
+                     cigars=_field(parsed, "cigars") or None,
+                     nests=nests or None,
+                     nested=True,
+                     gvrsn=gvrsn)
+
+
+def asNestedSubstream(stream, gvrsn=Vrsn_2_0):
+    """Convert a framed message stream to a nested CESR v2 substream"""
+    serder = Serder(raw=stream)
+    svrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn
+    parsed = Parser(version=svrsn).parse(ims=bytearray(stream),
+                                         framed=True,
+                                         processive=False)
+    if len(parsed) != 1:
+        raise ValueError("Expected one embedded message stream")
+
+    return serializeParsedSubstream(parsed[0], gvrsn=gvrsn)
 
 @contextmanager
 def openHby(*, name="test", base="", temp=True, salt=None, **kwa):
@@ -1653,11 +1704,16 @@ class BaseHab:
                    gvrsn=gvrsn,
                    kind=kind,)
 
+        nests = None
         if embeds:
             if version is Vrsn_1_0:
                 serder, end = specialExchange(embeds=embeds, **kwa)
             elif version is Vrsn_2_0:
-                raise ValueError("Embeds not supported for v2 exchanges")
+                serder = exchange(**kwa)
+                end = bytearray()
+                ngvrsn = gvrsn if gvrsn is not None else Vrsn_2_0
+                nests = [asNestedSubstream(msg, gvrsn=ngvrsn)
+                         for msg in embeds.values()]
         else:
             serder = exchange(**kwa)
             end = bytearray()
@@ -1665,15 +1721,17 @@ class BaseHab:
         if gvrsn is None:
             gvrsn = serder.pvrsn
 
+        eframed = False if nests and not nested else framed
         if self.kever.prefixer.transferable:
-            msg = self.endorse(serder=serder, framed=framed, nested=nested,
-                               gvrsn=gvrsn,  genusify=genusify)
+            msg = self.endorse(serder=serder, framed=eframed, nested=nested,
+                               gvrsn=gvrsn, genusify=genusify, nests=nests)
         else:
             cigars = self.sign(ser=serder.raw,
                                indexed=False)
             gvrsn = gvrsn if gvrsn is not None else version
-            msg = eventing.messagize(serder, cigars=cigars, framed=framed,
-                                     nested=nested, gvrsn=gvrsn, genusify=genusify)
+            msg = eventing.messagize(serder, cigars=cigars, framed=eframed,
+                                     nested=nested, gvrsn=gvrsn,
+                                     genusify=genusify, nests=nests)
 
         msg.extend(end)
 
@@ -1684,7 +1742,7 @@ class BaseHab:
 
 
     def endorse(self, serder, last=False, framed=False, nested=False,
-                              gvrsn=Version, genusify=False):
+                              gvrsn=Version, genusify=False, nests=None):
         """Return msg with own endorsement of msg from serder with attached
         signature groups based on own pre transferable or non-transferable.
 
@@ -1720,35 +1778,30 @@ class BaseHab:
         if self.kever.prefixer.transferable:
             # create SealEvent or SealLast for endorser's est evt whose keys are
             # used to sign to indicate to messagize which type sig group to use
-            sigers = self.sign(ser=serder.raw, indexed=True)
             kever = self.kever
+            sigers = self.sign(ser=serder.raw, indexed=True)
             if last:
-                #source = SealLast(i=kever.prefixer.qb64)
                 lsgs = [(kever.prefixer, sigers)]
                 msg = eventing.messagize(serder=serder, lsgs=lsgs,
                                          framed=framed, nested=nested,
-                                         gvrsn=gvrsn, genusify=genusify)
+                                         gvrsn=gvrsn, genusify=genusify,
+                                         nests=nests)
 
             else:
-                #source = SealEvent(i=kever.prefixer.qb64,
-                                          #s="{:x}".format(kever.lastEst.s),
-                                          #d=kever.lastEst.d)
                 tsgs =[(kever.prefixer,
                         Number(sn=kever.lastEst.s),
                         Diger(qb64=kever.lastEst.d),
                         sigers)]
                 msg = eventing.messagize(serder=serder, tsgs=tsgs,
                                          framed=framed, nested=nested,
-                                         gvrsn=gvrsn, genusify=genusify)
-
-            #msg = eventing.messagize(serder=serder, sigers=sigers, source=source,
-                                     #framed=framed,nested=nested, gvrsn=gvrsn,
-                                     #genusify=genusify)
+                                         gvrsn=gvrsn, genusify=genusify,
+                                         nests=nests)
 
         else:
             cigars = self.sign(ser=serder.raw, indexed=False)
             msg = eventing.messagize(serder=serder, cigars=cigars, framed=framed,
-                                     nested=nested, gvrsn=gvrsn, genusify=genusify)
+                                     nested=nested, gvrsn=gvrsn,
+                                     genusify=genusify, nests=nests)
 
         return msg
 

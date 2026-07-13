@@ -9,7 +9,7 @@ module for enveloping and forwarding KERI message
 from hio.base import doing
 from hio.help import ogler
 
-from ..kering import ValidationError, Version, Vrsn_1_0, Kinds, Ilks
+from ..kering import ValidationError, Version, Vrsn_1_0, Vrsn_2_0, Kinds, Ilks
 from ..core import (Counter, Number, Diger, Saider,
                     Prefixer, Kevery, Router,
                     Revery, Parser, SerderKERI,
@@ -18,6 +18,7 @@ from ..peer import Exchanger, specialExchange, cloneMessage
 
 from .delegating import Anchorer
 from .agenting import Receiptor, WitnessInquisitor
+from .habbing import serializeParsedSubstream
 
 logger = ogler.getLogger()
 
@@ -269,7 +270,7 @@ class MultisigNotificationHandler:
         self.resource = resource
         self.mux = mux
 
-    def handle(self, serder, attachments=None):
+    def handle(self, serder, attachments=None, nests=None):
         """  Do route specific processsing of multisig exn messages
 
         Parameters:
@@ -279,7 +280,7 @@ class MultisigNotificationHandler:
         """
         logger.info("Notification for %s event SAID=%s", self.resource, serder.said)
         logger.debug("EXN Body=\n%s\n", serder.pretty())
-        self.mux.add(serder=serder)
+        self.mux.add(serder=serder, nests=nests)
 
 
 def loadHandlers(exc, mux):
@@ -341,19 +342,34 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None, version=None, kind
     if delegator is not None:
         data |= dict(delegator=delegator)
 
-    # Create `exn` peer to peer message to notify other participants UI
-    kwa, gvrsn = _exnVersion(version=version, kind=kind)
-    exn, end = specialExchange(sender=hab.pre,
-                               route="/multisig/icp",
-                               modifiers=dict(),
-                               attributes=data,
-                               embeds=embeds,
-                               **kwa)
-    ims = hab.endorse(serder=exn, last=False, framed=True, gvrsn=gvrsn)
-    del ims[:exn.size]
-    ims.extend(end)
+    kind = kind if kind is not None else Kinds.json
 
-    return exn, ims
+    if version is None or version.major == Vrsn_1_0.major:
+        kwa, gvrsn = _exnVersion(version=version, kind=kind)
+        exn, end = specialExchange(sender=hab.pre,
+                                   route="/multisig/icp",
+                                   modifiers=dict(),
+                                   attributes=data,
+                                   embeds=embeds,
+                                   **kwa)
+        ims = hab.endorse(serder=exn, last=False, framed=True, gvrsn=gvrsn)
+        del ims[:exn.size]
+        ims.extend(end)
+
+        return exn, ims
+
+    version = version if version is not None else Version
+    ims = hab.exchange(route="/multisig/icp",
+                       modifiers=dict(),
+                       attributes=data,
+                       embeds=embeds,
+                       version=version,
+                       kind=kind,
+                       framed=True,
+                       gvrsn=version)
+    exn = SerderKERI(raw=ims)
+
+    return exn, bytearray(ims[exn.size:])
 
 
 def multisigRotateExn(ghab, smids, rmids, rot, version=None, kind=None):
@@ -652,7 +668,7 @@ class Multiplexor:
 
         self.notifier = notifier
 
-    def add(self, serder):
+    def add(self, serder, nests=None):
         """ Process /multisig message by associating the exn with the SAID of the embedded event section
 
         Adds the exn message contained in `serder` to the set of messages received for a given set of embedded
@@ -670,11 +686,15 @@ class Multiplexor:
 
         """
         ked = serder.ked
-        if 'e' not in ked:  # No embedded events
+        embed = ked.get('e')
+        nests = nests if nests is not None else []
+        if embed is not None:
+            esaid = embed['d']
+        elif len(nests) == 1:
+            nserder = nests[0]["serder"] if isinstance(nests[0], dict) else nests[0].serder
+            esaid = nserder.said
+        else:
             return
-
-        embed = ked['e']
-        esaid = embed['d']
         sender = ked['i']
         route = ked['r']
         payload = ked['a']
@@ -725,23 +745,31 @@ class Multiplexor:
             approved = any([True for sub in submitters if sub.qb64 in self.hby.kevers])
             if approved:
                 # Clone exn from database, ensuring it is stored with valid signatures
-                exn, paths = cloneMessage(self.hby, said=serder.said)
-                e = exn.ked['e']
                 ims = bytearray()
+                if embed is not None:
+                    exn, paths = cloneMessage(self.hby, said=serder.said)
+                    e = exn.ked['e']
 
-                # Loop through all the embedded events, extract the attachments for those events...
-                for key, val in e.items():
-                    if not isinstance(val, dict):
-                        continue
+                    # Loop through all the embedded events, extract the attachments for those events...
+                    for key, val in e.items():
+                        if not isinstance(val, dict):
+                            continue
 
-                    serder = Serder(sad=val)
-                    ims.extend(serder.raw)
-                    if key in paths:
-                        atc = paths[key]
-                        ims.extend(atc)
+                        serder = Serder(sad=val)
+                        ims.extend(serder.raw)
+                        if key in paths:
+                            atc = paths[key]
+                            ims.extend(atc)
 
-                # ... and parse
-                self.psr.parse(ims=ims, local=True)
+                    # ... and parse
+                    self.psr.parse(ims=ims, local=True)
+                else:
+                    for nest in nests:
+                        ims.extend(serializeParsedSubstream(nest))
+
+                    parser = Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
+                                    exc=self.exc, version=Vrsn_2_0)
+                    parser.parse(ims=ims, local=True)
 
             else:
                 # Should we prod the user with another submission if we haven't already approved it?
@@ -749,7 +777,7 @@ class Multiplexor:
                 data = dict(
                     r=route,
                     d=serder.said,
-                    e=embed['d']
+                    e=esaid
                 )
 
                 self.notifier.add(attrs=data)

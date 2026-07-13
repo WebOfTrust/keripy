@@ -8,9 +8,9 @@ from types import SimpleNamespace
 
 from hio.base import doing
 
-from keri.kering import Version, Vrsn_1_0, Kinds
+from keri.kering import Version, Vrsn_1_0, Vrsn_2_0, Kinds
 from keri.app import (Notifier, Counselor, Multiplexor,
-                      openHab, multisigInceptExn,
+                      openHab, openCF, multisigInceptExn,
                       multisigRotateExn, multisigInteractExn,
                       multisigRegistryInceptExn)
 from keri.app import grouping
@@ -19,7 +19,7 @@ from keri.app.grouping import loadHandlers
 
 from keri.core import (Prefixer, Number, Diger, Kevery,
                        Parser, SerderKERI, Counter,
-                       Codens, messagize)
+                       Codens, Kramer, messagize)
 
 from keri.vdr.eventing import incept
 from keri.peer import Exchanger
@@ -807,6 +807,31 @@ def test_multisig_incept_default_framing_uses_default_version_with_legacy_specia
         assert endorse_calls["gvrsn"] == Version
 
 
+def test_multisig_incept_v2_nested_substreams(mockHelpingNowUTC):
+    V2_KWA = dict(version=Vrsn_2_0, kind=Kinds.json)
+
+    with openHab(name="test", temp=True, salt=b'0123456789abcdef', **V2_KWA) as (_, hab):
+        aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
+        icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=Vrsn_2_0)
+        innerSerder = SerderKERI(raw=icp)
+        exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp,
+                                     version=Vrsn_2_0, kind=Kinds.json)
+
+        assert exn.ked["r"] == '/multisig/icp'
+        data = exn.ked["a"]
+        assert data["gid"] == innerSerder.pre
+        assert data["smids"] == aids
+        assert data["rmids"] == aids
+        assert "e" not in exn.ked
+
+        results = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                 framed=True,
+                                                 processive=False)
+        assert len(results) == 1
+        assert len(results[0].nests) == 1
+        assert results[0].nests[0].serder.said == innerSerder.said
+
+
 def test_multisig_rotate(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
         rot = (b'{"v":"KERI10JSON00023c_","t":"rot","d":"EGt_CZZASnY_iyB14ZXGQ4MxMtcSVW5oMHAu'
@@ -942,6 +967,90 @@ def test_multisig_incept_handler_parses_approved_v1_embed(mockHelpingNowUTC):
         ims.extend(atc2)
         Parser(version=TEST_VERSION).parseOne(ims=ims, exc=exc)
 
+        serder = SerderKERI(raw=icp1)
+        sigers = hby1.db.sigs.get(keys=(serder.preb, serder.saidb))
+        assert [siger.index for siger in sigers] == [0, 1]
+
+
+def test_multisig_incept_handler_v2_with_kram(mockHelpingNowUTC):
+    V2_KWA = dict(version=Vrsn_2_0, kind=Kinds.json)
+
+    # Create two member habitats that will each build the same 2-of-2 group
+    # inception proposal from their own local perspective
+    with openHab(name="approved-nested1", salt=b'0123456789abcdef',
+                 transferable=True, temp=True, **V2_KWA) as (hby1, hab1), \
+            openHab(name="approved-nested2", salt=b'abcdef0123456789',
+                    transferable=True, temp=True, **V2_KWA) as (hby2, hab2):
+
+        # Exchange the member AID inception events first so each side knows the
+        # other participant before creating the shared group habitat
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(hab2.msgOwnEvent(sn=0, framed=True,
+                                                                      gvrsn=Vrsn_2_0)),
+                                       kvy=hby1.kvy, local=True)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(hab1.msgOwnEvent(sn=0, framed=True,
+                                                                      gvrsn=Vrsn_2_0)),
+                                       kvy=hby2.kvy, local=True)
+
+        # Both members participate in signing this group inception
+        smids = [hab1.pre, hab2.pre]
+        inits = dict(toad=0, wits=[], isith="2", nsith="2", **V2_KWA)
+
+        # Build the same group habitat on both sides
+        ghab1 = hby1.makeGroupHab(group="approved-nested", mhab=hab1,
+                                  smids=smids, rmids=None, **inits)
+        ghab2 = hby2.makeGroupHab(group="approved-nested", mhab=hab2,
+                                  smids=smids, rmids=None, **inits)
+
+        # Member 1 creates a partially signed group inception and wraps it in a
+        # V2 /multisig/icp exchange
+        icp1 = ghab1.msgOwnInception(allowPartiallySigned=True, framed=True, gvrsn=Vrsn_2_0)
+        exn1, atc1 = multisigInceptExn(hab=ghab1.mhab, smids=ghab1.smids,
+                                       rmids=ghab1.rmids, icp=icp1,
+                                       version=Vrsn_2_0, kind=Kinds.json)
+
+        # Member 2 independently creates its matching partially signed copy and
+        # wraps it in the same V2 /multisig/icp exchange route
+        icp2 = ghab2.msgOwnInception(allowPartiallySigned=True, framed=True, gvrsn=Vrsn_2_0)
+        exn2, atc2 = multisigInceptExn(hab=ghab2.mhab, smids=ghab2.smids,
+                                       rmids=ghab2.rmids, icp=icp2,
+                                       version=Vrsn_2_0, kind=Kinds.json)
+
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        # Seed "local approval already exists" directly in the mux. For V2 the
+        # wrapped group inception is carried in nested substreams, so we parse
+        # the local stream without processing it in order to recover `nests`
+        local = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn1.raw + atc1),
+                                               framed=True,
+                                               processive=False)[0]
+        mux.add(local.serder, nests=local.nests)
+
+        with openCF(name="grouping-kram", base="test") as cf:
+            # Send the Member 2's exchange through the real V2 path:
+            # Parser -> Kevery.processMsg -> Kramer -> Exchanger -> mux.add
+            config = {
+                "kram": {
+                    "enabled": True,
+                    "denials": [],
+                    "caches": {
+                        "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
+                    }
+                },
+                "dt": "2021-01-01T00:00:00.000000+00:00",
+            }
+            cf.put(config)
+            kvy = Kevery(db=hby1.db, lax=False, local=False,
+                         kramer=Kramer(db=hby1.db, cf=cf), exc=exc)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(exn2.raw + atc2),
+                                           kvy=kvy,
+                                           exc=exc,
+                                           local=False)
+
+        # Once Member 2's proposal is accepted, the inner
+        # group inception should have both members' signatures on it
         serder = SerderKERI(raw=icp1)
         sigers = hby1.db.sigs.get(keys=(serder.preb, serder.saidb))
         assert [siger.index for siger in sigers] == [0, 1]
