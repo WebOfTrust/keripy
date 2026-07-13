@@ -669,18 +669,23 @@ class Multiplexor:
         self.notifier = notifier
 
     def add(self, serder, nests=None):
-        """ Process /multisig message by associating the exn with the SAID of the embedded event section
+        """Process a /multisig exn by associating it with its wrapped event payload.
 
-        Adds the exn message contained in `serder` to the set of messages received for a given set of embedded
-        events.  Ensures this is a /multisig message with the correct properties and then stores the SAID of the
-        exn message and the prefix of the sender associated with the SAID of the embedded event section.  Also
-        sends the controller of the local participant a notice.
+        Adds the exn message contained in `serder` to the set of messages received
+        for a given wrapped event payload. Ensures this is a /multisig message with
+        the correct properties and then stores the SAID of the exn message and the
+        prefix of the sender associated with the wrapped event payload. Also sends
+        the controller of the local participant a notice.
 
-        This method will extract and parse the embedded events if the local participant has already approved the
-        events so that any addition signatures can be processed.
+        This method will extract and parse the wrapped events if the local
+        participant has already approved them so any additional signatures can be
+        processed.
 
         Parameters:
-            serder (SerderKERI): peer-to-peer exn "/multisig" message to coordinate from other participants
+            serder (SerderKERI): peer-to-peer exn "/multisig" message to coordinate
+                from other participants
+            nests (list | None): parsed nested substreams for V2 embed-free
+                exchanges
 
         Returns:
 

@@ -808,15 +808,15 @@ def test_multisig_incept_explicit_v1_uses_legacy_special_exn(mockHelpingNowUTC, 
         assert endorse_calls["gvrsn"] == Vrsn_1_0
 
 
-def test_multisig_incept_v2_nested_substreams(mockHelpingNowUTC):
+def test_multisig_incept_default_version_uses_v2_nested_substreams(mockHelpingNowUTC):
     V2_KWA = dict(version=Vrsn_2_0, kind=Kinds.json)
 
     with openHab(name="test", temp=True, salt=b'0123456789abcdef', **V2_KWA) as (_, hab):
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
-        icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=Vrsn_2_0)
+        icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=Version)
         innerSerder = SerderKERI(raw=icp)
         exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp,
-                                     version=Vrsn_2_0, kind=Kinds.json)
+                                     kind=Kinds.json)
 
         assert exn.ked["r"] == '/multisig/icp'
         data = exn.ked["a"]
