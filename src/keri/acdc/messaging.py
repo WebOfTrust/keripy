@@ -336,7 +336,7 @@ def acdcagg(israid, uuid=None, regid=None, schema=None, aggregate=None,
     uuid = uuid if uuid is not None else ""
     regid = regid if regid is not None else ""
     if schema is None:
-        ssaid, ssad = actSchemaDefault(kind=kind)
+        ssaid, ssad = acgSchemaDefault(kind=kind)
         schema = ssad
 
     aggregate = aggregate if aggregate is not None else []
