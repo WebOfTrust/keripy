@@ -291,9 +291,9 @@ def test_delegation():
 
         # test replay
         msgs = bytearray()
-        for msg in delKvy.db.clonePreIter(pre=delPre, fn=0):
+        for msg in delKvy.db.clonePreIter(pre=delPre, fn=0, version=version):
             msgs.extend(msg)
-        assert len(msgs) == 1167
+        assert len(msgs) == 1127 # 1167
         # Reconstruct the couple from the last seqner and bobSrdr.saidb used
         couple = seqner.qb64b + bobSrdr.saidb
         assert couple in msgs
@@ -750,9 +750,9 @@ def test_delegation_supersede():
 
         # test replay
         msgs = bytearray()
-        for msg in delKvy.db.clonePreIter(pre=delPre, fn=0):
+        for msg in delKvy.db.clonePreIter(pre=delPre, fn=0, version=version):
             msgs.extend(msg)
-        assert len(msgs) == 1167
+        assert len(msgs) == 1127 # 1167
         # Reconstruct the couple from the last seqner and bobSrdr.saidb used
         couple = seqner.qb64b + bobSrdr.saidb
         assert couple in msgs
