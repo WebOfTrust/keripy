@@ -618,7 +618,10 @@ def test_the_seven():
 
         # Third Partial Rotation with Recovery (using 4 members not involved in previous rotations)
         # First we have to do a replay of all multisig AID and member AID events and get members 4 - 7 up to date
-        msgs = [hab1.replay(), hab2.replay(), hab3.replay(), ghab.replay()]
+        msgs = [hab1.replay(version=TEST_VERSION),
+                hab2.replay(version=TEST_VERSION),
+                hab3.replay(version=TEST_VERSION),
+                ghab.replay(version=TEST_VERSION)]
         kevs = [kev4, kev5, kev6, kev7]
         for (kev, msg) in [(kev, msg) for kev in kevs for msg in msgs]:
             Parser(version=TEST_VERSION).parse(ims=bytearray(msg), kvy=kev, local=True)

@@ -231,7 +231,7 @@ def test_loaded_v1_endpoint_replies_use_stored_reply_framing():
         hab.psr.parse(ims=msgs)
 
         oobi = bytearray()
-        oobi.extend(hab.replay())
+        oobi.extend(hab.replay(version=Vrsn_1_0))
         oobi.extend(hab.loadEndRole(cid=hab.pre,
                                     eid=hab.pre,
                                     role=Roles.controller))

@@ -30,7 +30,7 @@ def _pin_hab_msgs_v1(hab):
     hab.msgOwnInception = partial(BaseHab.msgOwnInception, hab, gvrsn=Vrsn_1_0)
 
 
-def test_indexed_witness_replay():
+def test_indexed_witness_replay_v1():
     """
     Test event validation logic with witnesses
 
@@ -213,7 +213,7 @@ def test_indexed_witness_replay():
         # Cam replace Wok with Wil as a witness.
         # Cam update Wil all event witnessed events for Cam by replay
         # Cam update itself with Wil receipts including Wils inception
-        camReplayMsg = camHab.replay()
+        camReplayMsg = camHab.replay(version=Vrsn_1_0)
         assert len(camReplayMsg) == 2038
         Parser(version=Vrsn_1_0).parse(ims=bytearray(camReplayMsg), kvy=wilKvy, local=True)
         assert camHab.pre in wilKvy.kevers
@@ -303,7 +303,7 @@ def test_indexed_witness_replay():
     """End Test"""
 
 
-def test_nonindexed_witness_receipts():
+def test_nonindexed_witness_receipts_v1():
     """
     Test event validation logic with witnesses on incept message
 
@@ -506,7 +506,7 @@ def test_nonindexed_witness_receipts():
         # Cam replace Wok with Wil as a witness.  But first setup Wil:
         #    Cam update Wil all event witnessed events for Cam by replay
         #    Cam update itself with Wil receipts including Wils inception
-        camReplayMsg = camHab.replay()
+        camReplayMsg = camHab.replay(version=Vrsn_1_0)
         assert len(camReplayMsg) == 2038
         Parser(version=Vrsn_1_0).parse(ims=bytearray(camReplayMsg), kvy=wilKvy, local=True)
 
@@ -668,6 +668,6 @@ def test_out_of_order_witnessed_events():
 
 
 if __name__ == "__main__":
-    test_indexed_witness_replay()
-    test_nonindexed_witness_receipts()
+    test_indexed_witness_replay_v1()
+    test_nonindexed_witness_receipts_v1()
     test_out_of_order_witnessed_events()

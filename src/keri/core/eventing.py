@@ -1994,11 +1994,11 @@ class Kever:
             db (Baser | None): instance of lmdb database
             estOnly (bool | None): True means establishment only events allowed 'EO'.
                             False all events allowed.
-            delsner (Seqner | None): instance of delegating event sequence number.
+            delsner (Number | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
             delsger (Diger | None): instance of of delegating event SAID diger.
                 If this event is not delegated then saider is ignored
-            firner (Seqner | None): instance optional of cloned first seen ordinal
+            firner (Number | None): instance optional of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
                 When firner provided then compare fn of dater and database and
                 first seen if not match then log and add cue notify problem
@@ -3682,7 +3682,7 @@ class Kever:
             if dater:  # cloned replay use original's dts from dater
                 nowdater = dater
             self.db.dtss.pin(keys=dgkey, val=nowdater)  # first seen so set dts to now
-            self.db.fons.pin(keys=dgkey, val=Seqner(sn=fn))
+            self.db.fons.pin(keys=dgkey, val=Number(sn=fn))
             logger.debug("AID %s...%s: First seen %s at sn=%s valid event SAID=%s for %s at %s",
                          pre[:4], pre[-4:], serder.ilk, fn, serder.said,
                          serder.pre, nowdater.dts)
@@ -4115,8 +4115,8 @@ class Kevery:
         local (bool): True means only process msgs for own events if not lax
                          False means only process msgs for not own events if not lax
         cloned (bool): True means cloned message stream so use attached
-                         datetimes from clone source not own.
-                         False means use current datetime
+                         datetimes from clone source not own for first seen.
+                         False means use current datetime for first seen
         direct (bool): True means direct mode so cue notices for receipts etc
                           False means indirect mode so don't cue notices
         check (bool): True means do not update the database in any

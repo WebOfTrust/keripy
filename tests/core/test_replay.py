@@ -9,7 +9,7 @@ import os
 from hio.help import ogler
 
 
-from keri.kering import Vrsn_1_0, Ilks, Kinds
+from keri.kering import Version, Vrsn_1_0, Vrsn_2_0, Ilks, Kinds
 from keri.help import helping
 from keri.core import (Salter, Counter, Seqner, Dater, Prefixer, Number, Diger,
                         Siger, Kevery, Parser, SerderKERI, CtrDex_1_0,
@@ -17,14 +17,11 @@ from keri.core import (Salter, Counter, Seqner, Dater, Prefixer, Number, Diger,
 
 from keri.app import openHby
 
-#KWA = dict(version=Vrsn_1_0, kind=Kinds.json)
-#CUE_KWA = dict(**KWA, gvrsn=Vrsn_1_0)
-
 
 logger = ogler.getLogger()
 
 
-def test_replay():
+def test_replay_v1():
     """
     Test disjoint and conjoint replay
 
@@ -141,7 +138,7 @@ def test_replay():
             b'kRttBEq92pAaIG')
 
         assert debHab.kever.sn == 6
-        msgs = next(debHab.db.clonePreIter(debHab.pre, fn=4))
+        msgs = next(debHab.db.clonePreIter(debHab.pre, fn=4, version=Vrsn_1_0))
         serder = SerderKERI(raw=msgs)
         assert serder.ilk == Ilks.ixn
         assert serder.sn == 4
@@ -337,9 +334,9 @@ def test_replay():
         # so we either have to force dts in db or we parse in pieces
         debFelMsgs = bytearray()
         fn = 0
-        cloner = debHab.db.clonePreIter(pre=debHab.pre, fn=fn)  # create iterator
+        cloner = debHab.db.clonePreIter(pre=debHab.pre, fn=fn, version=Vrsn_1_0)  # create iterator
         msg = next(cloner)  # get zeroth event with attachments
-        assert len(msg) == 1355 # 1535
+        assert len(msg) == 1335 # 1355 # 1535
         debFelMsgs.extend(msg)
 
         # parse msg
@@ -348,71 +345,63 @@ def test_replay():
         assert serder.sn == fn  # no recovery forks so sn == fn
         assert serder.ked["t"] == Ilks.icp
         del msg[:len(serder.raw)]
-        assert len(msg) == 836 # 1016
+        assert len(msg) == 816  # 836 # 1016
 
         counter = Counter(qb64b=msg, version=Vrsn_1_0)  # attachment length quadlets counter
         assert counter.code == CtrDex_1_0.AttachmentGroup
-        assert counter.count == (len(msg) - len(counter.qb64b)) // 4 == 208 # 253
+        assert counter.count == 203 # (len(msg) - len(counter.qb64b)) // 4 == 208 # 253
         del msg[:len(counter.qb64b)]
-        assert len(msg) == 832 == 208 * 4
+        assert len(msg) == 812 # 832 == 208 * 4
 
         counter = Counter(qb64b=msg, version=Vrsn_1_0)  # indexed signatures counter
         assert counter.code == CtrDex_1_0.ControllerIdxSigs
         assert counter.count == 3  # multisig deb
         del msg[:len(counter.qb64b)]
-        assert len(msg) == 828  # 1008
+        assert len(msg) == 808  # 828  # 1008
 
         for i in range(counter.count):  # parse signatures
             siger = Siger(qb64b=msg)
             del msg[:len(siger.qb64b)]
-        assert len(msg) == 828 - 3 * len(siger.qb64b) == 564 # 744
+        assert len(msg) == 544 # 828 - 3 * len(siger.qb64b) == 564 # 744
 
+        counter = Counter(qb64b=msg, version=Vrsn_1_0)  # nontrans receipt (rct) counter
+        assert counter.code == CtrDex_1_0.NonTransReceiptCouples
+        assert counter.count == 1  # single sig bev
+        del msg[:len(counter.qb64b)]
+        assert len(msg) == 540
+
+        for i in range(counter.count):  # parse receipt couples
+            prefixer, cigar = deReceiptCouple(msg, strip=True)
+        assert len(msg) == 408 # 196 - 1 * (len(prefixer.qb64b) + len(cigar.qb64b)) == 64
 
         # extract trans receipt counters (quadlet)
         counter = Counter(qb64b=msg, version=Vrsn_1_0)  # trans receipt (vrc) counter
         assert counter.code == CtrDex_1_0.TransReceiptIdxSigGroups
         assert counter.count == 90 # now quadlet counter not 3  multisig cam
         del msg[:len(counter.qb64b)]
-        assert len(msg) == 560
+        assert len(msg) == 404 # 560
 
         # extract receipt triple
         prefixer = Prefixer(qb64b=msg, strip=True)
         number = Number(qb64b=msg, strip=True)
         diger = Diger(qb64b=msg, strip=True)
-        assert len(msg) == 468 == 560 - (len(prefixer.qb64b) + len(number.qb64b) + len(diger.qb64b))
+        assert len(msg) == 312 # 468 == 560 - (len(prefixer.qb64b) + len(number.qb64b) + len(diger.qb64b))
         #extract sigs
         counter = Counter(qb64b=msg, strip=True, version=Vrsn_1_0)
         sigers = []
         for i in range(counter.count):  # extract idx sig group ctr non-quadlet
             sigers.append(Siger(qb64b=msg, strip=True))
-
-        assert len(msg) == 200 == 468 - 4 - 3 * len(sigers[0].qb64b)
-
-        #for i in range(counter.count):  # parse receipt quadruples
-            #prefixer, seqner, diger, siger = deTransReceiptQuadruple(msg, strip=True)
-
-        #assert len(msg) == 740 - 3 * (len(prefixer.qb64b) + len(seqner.qb64b) +
-                                      #len(diger.qb64b) + len(siger.qb64b)) == 200
-
-        counter = Counter(qb64b=msg, version=Vrsn_1_0)  # nontrans receipt (rct) counter
-        assert counter.code == CtrDex_1_0.NonTransReceiptCouples
-        assert counter.count == 1  # single sig bev
-        del msg[:len(counter.qb64b)]
-        assert len(msg) == 196
-
-        for i in range(counter.count):  # parse receipt couples
-            prefixer, cigar = deReceiptCouple(msg, strip=True)
-        assert len(msg) == 196 - 1 * (len(prefixer.qb64b) + len(cigar.qb64b)) == 64
+        assert len(msg) == 44 # 200 == 468 - 4 - 3 * len(sigers[0].qb64b)
 
         counter = Counter(qb64b=msg, version=Vrsn_1_0)  # first seen replay couple counter
         assert counter.code == CtrDex_1_0.FirstSeenReplayCouples
         assert counter.count == 1
         del msg[:len(counter.qb64b)]
-        assert len(msg) == 60
+        assert len(msg) == 40
 
-        seqner = Seqner(qb64b=msg)
-        assert seqner.sn == fn == 0
-        del msg[:len(seqner.qb64b)]
+        number = Number(qb64b=msg)
+        assert number.sn == fn == 0
+        del msg[:len(number.qb64b)]
         assert len(msg) == 36  # 24 less
 
         dater = Dater(qb64b=msg)
@@ -430,9 +419,9 @@ def test_replay():
         """
 
         fn += 1
-        cloner = debHab.db.clonePreIter(pre=debHab.pre, fn=fn)  # create iterator not at 0
+        cloner = debHab.db.clonePreIter(pre=debHab.pre, fn=fn, version=Vrsn_1_0)  # create iterator not at 0
         msg = next(cloner)  # next event with attachments
-        assert len(msg) == 1039  # 1219
+        assert len(msg) == 1019  # 1039  # 1219
         serder = SerderKERI(raw=msg)
         assert serder.sn == fn  # no recovery forks so sn == fn
         assert serder.ked["t"] == Ilks.ixn
@@ -443,7 +432,7 @@ def test_replay():
         serder = SerderKERI(raw=msg)
         assert serder.sn == fn  # no recovery forks so sn == fn
         assert serder.ked["t"] == Ilks.rot
-        assert len(msg) == 1408 # 1588
+        assert len(msg) == 1388 # 1408 # 1588
         assert ([verfer.qb64 for verfer in serder.verfers] ==
                 [verfer.qb64 for verfer in debHab.kever.verfers])
         debFelMsgs.extend(msg)
@@ -454,14 +443,14 @@ def test_replay():
             serder = SerderKERI(raw=msg)
             assert serder.sn == fn  # no recovery forks so sn == fn
             assert serder.ked["t"] == Ilks.ixn
-            assert len(msg) == 1039 # 1219
+            assert len(msg) == 1019 # 1039 # 1219
             debFelMsgs.extend(msg)
             fn += 1
 
-        assert len(debFelMsgs) == 7958  # 9218
+        assert len(debFelMsgs) == 7818 # 7958  # 9218
         cloner.close()  # must close or get lmdb error upon with exit
 
-        msgs = debHab.replay()
+        msgs = debHab.replay(version=Vrsn_1_0)
         assert msgs == debFelMsgs
 
         # Play Cam's messages to Bev
@@ -478,10 +467,10 @@ def test_replay():
         assert camKevery.kevers[bevHab.pre].sn == bevHab.kever.sn == 0
         assert len(camKevery.cues) == 1
 
-        camDebFelMsgs = camHab.replay(pre=debHab.pre)
-        bevDebFelMsgs = bevHab.replay(pre=debHab.pre)
+        camDebFelMsgs = camHab.replay(pre=debHab.pre, version=Vrsn_1_0)
+        bevDebFelMsgs = bevHab.replay(pre=debHab.pre, version=Vrsn_1_0)
 
-        assert len(bevDebFelMsgs) == len(camDebFelMsgs) == len(debFelMsgs) == 7958 # 9218
+        assert len(bevDebFelMsgs) == len(camDebFelMsgs) == len(debFelMsgs) == 7818 # 7958 # 9218
 
         # create non-local kevery for Art to process conjoint replay msgs from Deb
         artKevery = Kevery(db=artHab.db,
@@ -503,8 +492,8 @@ def test_replay():
         # Explicit receipt+firner path: clone replay receipt processing uses
         # fels.getOn(keys=pre, on=firner.sn) to look up the event digest.
         assert artHab.db.fels.get(keys=debHab.pre, on=0) == debHab.iserder.said
-        artDebFelMsgs = artHab.replay(pre=debHab.pre)
-        assert len(artDebFelMsgs) == 7958 # 9218
+        artDebFelMsgs = artHab.replay(pre=debHab.pre, version=Vrsn_1_0)
+        assert len(artDebFelMsgs) == 7818  # 7958 # 9218
 
     assert not os.path.exists(artHby.ks.path)
     assert not os.path.exists(artHby.db.path)
@@ -518,7 +507,7 @@ def test_replay():
     """End Test"""
 
 
-def test_replay_all():
+def test_replay_all_v1():
     """
     Test conjoint replay all
 
@@ -635,7 +624,7 @@ def test_replay_all():
         # bevKevery.processOne(ims=bytearray(debBevVrcs))  # give copy to process
 
         # now setup replay
-        debAllFelMsgs = debHab.replayAll()
+        debAllFelMsgs = debHab.replayAll(version=Vrsn_1_0)
         # assert len(debAllFelMsgs) == 12495
 
         # create non-local kevery for Art to process conjoint replay msgs from Deb
@@ -655,8 +644,159 @@ def test_replay_all():
         assert len(artKevery.cues) == 10
         # Explicit receipt+firner path: fels.getOn(keys=pre, on=firner.sn) in clone replay
         assert artHab.db.fels.get(keys=debHab.pre, on=0) == debHab.iserder.said
-        artAllFelMsgs = artHab.replayAll()
-        assert len(artAllFelMsgs) == 10797 # 12237
+        artAllFelMsgs = artHab.replayAll(version=Vrsn_1_0)
+        assert len(artAllFelMsgs) == 10557 # 10797 # 12237
+
+    assert not os.path.exists(artHby.ks.path)
+    assert not os.path.exists(artHby.db.path)
+    assert not os.path.exists(bevHby.ks.path)
+    assert not os.path.exists(bevHby.db.path)
+    assert not os.path.exists(camHby.ks.path)
+    assert not os.path.exists(camHby.db.path)
+    assert not os.path.exists(debHby.ks.path)
+    assert not os.path.exists(debHby.db.path)
+
+    """End Test"""
+
+def test_replay_all_v2():
+    """
+    Test conjoint replay all
+
+    Setup database with events from Deb, Cam, Bev, abd Art
+    Replay all the events in database.
+
+    """
+    artSalt = Salter(raw=b'abcdef0123456789').qb64
+    default_salt = Salter(raw=b'0123456789abcdef').qb64
+
+    with (openHby(name="deb", base="test", salt=default_salt, version=Vrsn_2_0) as debHby,
+         openHby(name="cam", base="test", salt=default_salt, version=Vrsn_2_0) as camHby,
+         openHby(name="bev", base="test", salt=default_salt, version=Vrsn_2_0) as bevHby,
+         openHby(name="art", base="test", salt=artSalt, version=Vrsn_2_0) as artHby):
+
+        # setup Deb's habitat using default salt multisig already incepts
+        sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
+        debHab = debHby.makeHab(name='test', isith=sith, icount=3, version=Vrsn_2_0, kind=Kinds.json)
+        assert debHab.kever.prefixer.transferable
+
+        # setup Cam's habitat using default salt multisig already incepts
+        # Cam's receipts will be vrcs with 3 indexed sigantures attached
+        sith = '2'  # hex str of threshold int
+        camHab = camHby.makeHab(name='test', isith=sith, icount=3, version=Vrsn_2_0, kind=Kinds.json)
+        assert camHab.kever.prefixer.transferable
+
+        # setup Bev's habitat using default salt nonstransferable already incepts
+        # Bev's receipts will be rcts with a receipt couple attached
+        sith = '1'  # hex str of threshold int
+        bevHab = bevHby.makeHab(name='test', isith=sith, icount=1,
+                                transferable=False, version=Vrsn_2_0, kind=Kinds.json)
+        assert not bevHab.kever.prefixer.transferable
+
+        # setup Art's habitat using custom salt nonstransferable so not match Bev
+        # already incepts
+        # Art's receipts will be rcts with a receipt couple attached
+        sith = '1'  # hex str of threshold int
+        artHab = artHby.makeHab(name='test', isith=sith, icount=1,
+                                transferable=False, version=Vrsn_2_0, kind=Kinds.json)
+        assert not artHab.kever.prefixer.transferable
+
+        # Create series of event for Deb
+        debMsgs = bytearray()
+        debMsgs.extend(debHab.msgOwnInception(framed=True, gvrsn=Vrsn_2_0))
+        debMsgs.extend(debHab.interact(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0))
+        debMsgs.extend(debHab.rotate(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0))
+        debMsgs.extend(debHab.interact(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0))
+        debMsgs.extend(debHab.interact(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0))
+        debMsgs.extend(debHab.interact(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0))
+        debMsgs.extend(debHab.interact(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0))
+
+        # Play debMsgs to Cam
+        # create non-local kevery for Cam to process msgs from Deb
+        camKevery = Kevery(db=camHab.db,
+                                    lax=False,
+                                    local=False)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(debMsgs), kvy=camKevery)
+        # camKevery.process(ims=bytearray(debMsgs))  # give copy to process
+        assert debHab.pre in camKevery.kevers
+        assert camKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
+        assert len(camKevery.cues) == 7
+
+        # get disjoints receipts (vrcs) from Cam of Deb's events by processing Cam's cues
+        camMsgs = camHab.processCues(camKevery.cues, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        assert len(camKevery.cues) == 0
+
+        # Play camMsgs to Deb
+        # create non-local kevery for Deb to process msgs from Cam
+        debKevery = Kevery(db=debHab.db,
+                                    lax=False,
+                                    local=False)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(camMsgs), kvy=debKevery)
+        # debKevery.process(ims=bytearray(camMsgs))  # give copy to process
+        assert camHab.pre in debKevery.kevers
+        assert debKevery.kevers[camHab.pre].sn == camHab.kever.sn == 0
+        assert len(debKevery.cues) == 1
+
+        # get disjoints receipts (vrcs) from Deb of Cam's events by processing Deb's cues
+        debCamVrcs = debHab.processCues(debKevery.cues, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        assert len(debKevery.cues) == 0
+
+        # Play disjoints debCamVrcs to Cam
+        Parser(version=Vrsn_2_0).parseOne(ims=bytearray(debCamVrcs), kvy=camKevery)
+        # camKevery.processOne(ims=bytearray(debCamVrcs))  # give copy to process
+
+        # Play debMsgs to Bev
+        # create non-local kevery for Bev to process msgs from Deb
+        bevKevery = Kevery(db=bevHab.db,
+                                    lax=False,
+                                    local=False)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(debMsgs), kvy=bevKevery)
+        # bevKevery.process(ims=bytearray(debMsgs))  # give copy to process
+        assert debHab.pre in bevKevery.kevers
+        assert bevKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
+        assert len(bevKevery.cues) == 7
+
+        # get disjoints receipts (rcts) from Bev of Deb's events by processing Bevs's cues
+        bevMsgs = bevHab.processCues(bevKevery.cues, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        assert len(bevKevery.cues) == 0
+
+        # Play bevMsgs to Deb
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(bevMsgs), kvy=debKevery)
+        # debKevery.process(ims=bytearray(bevMsgs))  # give copy to process
+        assert bevHab.pre in debKevery.kevers
+        assert debKevery.kevers[bevHab.pre].sn == bevHab.kever.sn == 0
+        assert len(debKevery.cues) == 1
+
+        # get disjoints receipts (vrcs) from Deb of Bev's events by processing Deb's cues
+        debBevVrcs = debHab.processCues(debKevery.cues, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        assert len(debKevery.cues) == 0
+
+        # Play disjoints debBevVrcs to Bev
+        Parser(version=Vrsn_2_0).parseOne(ims=bytearray(debBevVrcs), kvy=bevKevery)
+        # bevKevery.processOne(ims=bytearray(debBevVrcs))  # give copy to process
+
+        # now setup replay
+        debAllFelMsgs = debHab.replayAll(version=Vrsn_2_0)
+        # assert len(debAllFelMsgs) == 12495
+
+        # create non-local kevery for Art to process conjoint replay msgs from Deb
+        artKevery = Kevery(db=artHab.db,
+                                    lax=False,
+                                    local=False)
+        # process Cam's inception so Art will proces Cam's vrcs without escrowing
+        camIcpMsg = camHab.msgOwnInception(framed=True, gvrsn=Vrsn_2_0)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(camIcpMsg), kvy=artKevery)
+        assert camHab.pre in artKevery.kevers
+        assert len(artKevery.cues) == 1
+        # give copy to process in cloned mode
+        artKevery.cloned = True
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(debAllFelMsgs), kvy=artKevery)
+        assert debHab.pre in artKevery.kevers
+        assert artKevery.kevers[debHab.pre].sn == debHab.kever.sn == 6
+        assert len(artKevery.cues) == 10
+        # Explicit receipt+firner path: fels.getOn(keys=pre, on=firner.sn) in clone replay
+        assert artHab.db.fels.get(keys=debHab.pre, on=0) == debHab.iserder.said
+        artAllFelMsgs = artHab.replayAll(version=Vrsn_2_0)
+        assert len(artAllFelMsgs) == 10588 # 10557 # 10797 # 12237
 
     assert not os.path.exists(artHby.ks.path)
     assert not os.path.exists(artHby.db.path)
@@ -671,5 +811,6 @@ def test_replay_all():
 
 
 if __name__ == "__main__":
-    test_replay()
-    test_replay_all()
+    test_replay_v1()
+    test_replay_all_v1()
+    test_replay_all_v2()

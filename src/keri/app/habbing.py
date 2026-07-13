@@ -1899,14 +1899,15 @@ class BaseHab:
         return msg
 
 
-    def replay(self, pre=None, fn=0):
+    def replay(self, pre=None, fn=0, version=Vrsn_1_0):
         """Return replay of FEL (first-seen event log) for ``pre`` starting
         from ``fn``. Default pre is own ``.pre``.
 
-        Args:
+        Parameters:
             pre (str or None): qb64 str or bytes of identifier prefix.
                 Default is own ``.pre``.
             fn (int): first-seen ordering number to start from.
+            version (Versionage): CESR Genus version for attachment group codes
 
         Returns:
             bytearray: serialized event log messages.
@@ -1919,20 +1920,23 @@ class BaseHab:
         for msg in self.db.cloneDelegation(kever=kever):
             msgs.extend(msg)
 
-        for msg in self.db.clonePreIter(pre=pre, fn=fn):
+        for msg in self.db.clonePreIter(pre=pre, fn=fn, version=version):
             msgs.extend(msg)
 
         return msgs
 
 
-    def replayAll(self):
+    def replayAll(self, version=Vrsn_1_0):
         """Return replay of FEL (first-seen event log) for all prefixes.
+
+        Parameters:
+            version (Versionage): CESR Genus version for attachment group codes
 
         Returns:
             bytearray: serialized event log messages for all prefixes.
         """
         msgs = bytearray()
-        for msg in self.db.cloneAllPreIter():
+        for msg in self.db.cloneAllPreIter(version=version):
             msgs.extend(msg)
         return msgs
 
@@ -2499,7 +2503,7 @@ class BaseHab:
         if cid not in self.kevers:
             return msgs
 
-        msgs.extend(self.replay(cid))
+        msgs.extend(self.replay(cid, version=Vrsn_1_0))
 
         kever = self.kevers[cid]
         witness = self.pre in kever.wits  # see if we are cid's witness

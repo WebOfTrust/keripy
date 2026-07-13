@@ -3602,8 +3602,7 @@ class Verfer(Matter):
 
 
 class Cigar(Matter):
-    """
-    Cigar is Matter subclass holding a nonindexed signature with verfer property.
+    """Cigar is Matter subclass holding a nonindexed signature with verfer property.
         From Matter .raw is signature and .code is signature cipher suite
     Adds .verfer property to hold Verfer instance of associated verifier public key
         Verfer's .raw as verifier key and .code is verifier cipher suite.
