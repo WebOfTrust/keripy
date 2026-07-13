@@ -14,7 +14,7 @@ from hio.help import ogler
 from keri import Vrsn_1_0
 from keri.kering import MisfitEventSourceError, Kinds
 
-from keri.core import (Seqner, Counter, Salter, Saider,
+from keri.core import (Seqner, Counter, Salter, Saider, Prefixer,
                        Number, Diger, Kevery, eventing, parsing,
                        MtrDex, Codens, NumDex,
                        incept, interact, rotate, delcept)
@@ -1740,8 +1740,16 @@ def test_unverified_trans_receipt_escrow():
         reserder = eventing.receipt(pre=pre, sn=0, said=icpdig, **KWA)
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
-        rcticpmsg = eventing.messagize(serder=reserder, sigers=resigers,
-                                       source=seal, framed=True, gvrsn=Vrsn_1_0)
+
+        tsgs = [(Prefixer(qb64=rpre),
+                 rsrdr.sner,
+                 Diger(qb64=rsrdr.said),
+                 resigers)]
+
+        #rcticpmsg = eventing.messagize(serder=reserder, sigers=resigers,
+                                       #source=seal, framed=True, gvrsn=Vrsn_1_0)
+        rcticpmsg = eventing.messagize(serder=reserder, tsgs=tsgs, framed=True,
+                                       gvrsn=Vrsn_1_0)
 
         # Process receipt by kvy
         psr.parse(ims=bytearray(rcticpmsg), kvy=kvy)
@@ -1808,8 +1816,16 @@ def test_unverified_trans_receipt_escrow():
         reserder = eventing.receipt(pre=pre, sn=1, said=ixndig, **KWA)
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
-        rctixnmsg = eventing.messagize(serder=reserder, sigers=resigers,
-                                       source=seal, framed=True, gvrsn=Vrsn_1_0)
+
+        tsgs = [(Prefixer(qb64=rpre),
+                 rsrdr.sner,
+                 Diger(qb64=rsrdr.said),
+                 resigers)]
+
+        #rctixnmsg = eventing.messagize(serder=reserder, sigers=resigers,
+                                       #source=seal, framed=True, gvrsn=Vrsn_1_0)
+        rctixnmsg = eventing.messagize(serder=reserder, tsgs=tsgs, framed=True,
+                                       gvrsn=Vrsn_1_0)
 
         # Process receipt by kvy
         psr.parse(ims=bytearray(rctixnmsg), kvy=kvy)
@@ -1864,8 +1880,16 @@ def test_unverified_trans_receipt_escrow():
         reserder = eventing.receipt(pre=pre, sn=2, said=rotdig, **KWA)
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
-        rctrotmsg = eventing.messagize(serder=reserder, sigers=resigers,
-                                       source=seal, framed=True, gvrsn=Vrsn_1_0)
+
+        tsgs = [(Prefixer(qb64=rpre),
+                 rsrdr.sner,
+                 Diger(qb64=rsrdr.said),
+                 resigers)]
+
+        #rctrotmsg = eventing.messagize(serder=reserder, sigers=resigers,
+                                       #source=seal, framed=True, gvrsn=Vrsn_1_0)
+        rctrotmsg = eventing.messagize(serder=reserder, tsgs=tsgs, framed=True,
+                                       gvrsn=Vrsn_1_0)
 
         # Process receipt by kvy
         psr.parse(ims=bytearray(rctrotmsg), kvy=kvy)
@@ -1971,26 +1995,56 @@ def test_unverified_trans_receipt_escrow():
         assert len(kvy.db.vres.get(snKey(pre, 2))) == 0
 
         # verify receipts
-        receipts = kvy.db.vrcs.get(keys=dgKey(pre, icpdig))
-        assert len(receipts) == 3
-        rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
-        assert rctPrefixer.qb64 == rpre
-        assert rctNumber.sn == 0
-        assert rctDiger.qb64 == ricpdig
+        #receipts = kvy.db.vrcs.get(keys=dgKey(pre, icpdig))
+        #assert len(receipts) == 3
+        #rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
+        #assert rctPrefixer.qb64 == rpre
+        #assert rctNumber.sn == 0
+        #assert rctDiger.qb64 == ricpdig
 
-        receipts = kvy.db.vrcs.get(keys=dgKey(pre, ixndig))
-        assert len(receipts) == 3
-        rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
-        assert rctPrefixer.qb64 == rpre
-        assert rctNumber.sn == 1
-        assert rctDiger.qb64 == rrotdig
+        #receipts = kvy.db.vrcs.get(keys=dgKey(pre, ixndig))
+        #assert len(receipts) == 3
+        #rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
+        #assert rctPrefixer.qb64 == rpre
+        #assert rctNumber.sn == 1
+        #assert rctDiger.qb64 == rrotdig
 
-        receipts = kvy.db.vrcs.get(keys=dgKey(pre, rotdig))
+        #receipts = kvy.db.vrcs.get(keys=dgKey(pre, rotdig))
+        #assert len(receipts) == 3
+        #rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
+        #assert rctPrefixer.qb64 == rpre
+        #assert rctNumber.sn == 1
+        #assert rctDiger.qb64 == rrotdig
+
+        # vrcsNew verify receipts
+        topkeys = (pre, icpdig)
+        receipts = [(keys, siger) for keys, siger in kvy.db.vrcs.getTopItemIter(keys=topkeys)]
         assert len(receipts) == 3
-        rctPrefixer, rctNumber, rctDiger, rctSiger = receipts[0]
-        assert rctPrefixer.qb64 == rpre
-        assert rctNumber.sn == 1
-        assert rctDiger.qb64 == rrotdig
+        epre, edig, rctpre, rctsnh, rctdig = receipts[0][0]
+        siger = receipts[0][1]
+        assert rctpre == rpre
+        assert Number(snh=rctsnh).sn == 0
+        assert rctdig == ricpdig
+
+        topkeys = (pre, ixndig)
+        receipts = [(keys, siger) for keys, siger in kvy.db.vrcs.getTopItemIter(keys=topkeys)]
+        assert len(receipts) == 3
+        epre, edig, rctpre, rctsnh, rctdig = receipts[0][0]
+        siger = receipts[0][1]
+        assert rctpre == rpre
+        assert Number(snh=rctsnh).sn == 1
+        assert rctdig == rrotdig
+
+        topkeys = (pre, rotdig)
+        receipts = [(keys, siger) for keys, siger in kvy.db.vrcs.getTopItemIter(keys=topkeys)]
+        assert len(receipts) == 3
+        epre, edig, rctpre, rctsnh, rctdig = receipts[0][0]
+        siger = receipts[0][1]
+        assert rctpre == rpre
+        assert Number(snh=rctsnh).sn == 1
+        assert rctdig == rrotdig
+
+
 
     assert not os.path.exists(ks.path)
     assert not os.path.exists(db.path)
@@ -1999,5 +2053,14 @@ def test_unverified_trans_receipt_escrow():
 
 
 if __name__ == "__main__":
-    #test_unverified_receipt_escrow()
+    test_partial_signed_escrow()
     test_missing_delegator_escrow()
+    test_misfit_escrow()
+    test_misfit_escrow_delegated()
+    test_misfit_escrow_valSigsWigsDel()
+    test_misfit_escrow_kevery()
+    test_delegated_partial_signed_escrow_udes()
+    test_out_of_order_escrow()
+    test_ooes_missing_db_entries_escrow_cleanup()
+    test_unverified_receipt_escrow()
+    test_unverified_trans_receipt_escrow()

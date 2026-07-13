@@ -10,7 +10,8 @@ from hio.help import ogler
 
 from keri.kering import Roles, Vrsn_1_0, Kinds
 
-from keri.core import Salter, Diger, SealEvent, MtrDex, messagize, bare
+from keri.core import (Salter, Diger, Prefixer, Number, SealEvent, MtrDex,
+                       messagize, bare)
 
 
 logger = ogler.getLogger()
@@ -116,7 +117,14 @@ def test_bare():
     seal = SealEvent(i=preC,
                      s='0',
                      d='EAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-    msg = messagize(serderE, sigers=[sigerC], source=seal, framed=True, gvrsn=Vrsn_1_0)
+
+    tsgs = [(Prefixer(qb64=preC),
+             Number(sn=0),
+             Diger(qb64='EAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
+             [sigerC])]
+
+    #msg = messagize(serderE, sigers=[sigerC], source=seal, framed=True, gvrsn=Vrsn_1_0)
+    msg = messagize(serderE, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
     assert msg == (b'{"v":"KERI10JSON000121_","t":"bar","d":"EGPY61eN5zhw7nnlra3bQL8x'
                 b'apaMhP4I_0yihFOLXNgH","dt":"2023-06-26T22:22:13.416766+00:00","r'
                 b'":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6l'
@@ -140,7 +148,14 @@ def test_bare():
     seal = SealEvent(i=preE,
                      s='0',
                      d='EAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
-    msg = messagize(serderE, sigers=[sigerE], source=seal, framed=True, gvrsn=Vrsn_1_0)
+
+    tsgs = [(Prefixer(qb64=preE),
+             Number(sn=0),
+             Diger(qb64='EAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'),
+             [sigerE])]
+
+    #msg = messagize(serderE, sigers=[sigerE], source=seal, framed=True, gvrsn=Vrsn_1_0)
+    msg = messagize(serderE, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
     assert msg == (b'{"v":"KERI10JSON000121_","t":"bar","d":"EGPY61eN5zhw7nnlra3bQL8x'
                 b'apaMhP4I_0yihFOLXNgH","dt":"2023-06-26T22:22:13.416766+00:00","r'
                 b'":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6l'

@@ -26,13 +26,14 @@ from ..kering import (MissingEntryError, UntrustedKeyStateSource,
 
 from ..help import helping, Reb64
 
-from .coring import (PreDex, DigDex, NonTransDex, NumDex, Prefixer,
+from .coring import (PreDex, DigDex, NonTransDex, NumDex, Matter, Prefixer,
                      Diger, Number, Seqner, Cigar, Dater, Noncer,
                      Verfer, Diger, Prefixer, Tholder, Texter)
 
 from .counting import Counter, Codens
 from .structing import (Structor, Sealer, SealEvent, SealSource, SealLast, BlindState,
-                        BoundState, TypeMedia, StateEstEvent)
+                        BoundState, TypeMedia, FirstSeen, StateEstEvent,
+                        TransSigs, TransLastSigs, TransReceipts, AClanDom)
 from .indexing import Siger
 from .serdering import SerderKERI
 
@@ -1526,9 +1527,9 @@ def exchange(*,
     return SerderKERI(sad=sad, makify=True)
 
 
-def messagize(serder, *, sigers=None, source=None, bonds=None, wigers=None,
-                         cigars=None, nests=None, framed=False, nested=False,
-                         gvrsn=Version, genusify=False):
+def messagize(serder, *, sigers=None, tsgs=None, lsgs=None, wigers=None,
+                         cigars=None, rsgs=None, bonds=None, nests=None,
+                         framed=False, nested=False, gvrsn=Version, genusify=False):
     """Attaches authenticator(s) from sigers (with or without source as seal) and/or
     cigars and/or wigers and/or bonds. A bond is typically a seal reference to
     an event with anchoring seal of message as authenticator. In v2 bonds may
@@ -1538,22 +1539,23 @@ def messagize(serder, *, sigers=None, source=None, bonds=None, wigers=None,
         serder (SerderKERI): instance containing the event
         sigers (list): of Siger instances (optional) to create indexed signatures
                        based on seal type if any
-        source (SealEvent|SealLast|None): optional modifier to sigers when provided
-                If SealEvent use attachment group code TransIdxSigGroups plus attach
-                    triple pre+snu+dig made from (i,s,d) of seal plus ControllerIdxSigs
-                    plus attached indexed sigs in sigers
-                Elif SealLast use attachment group code TransLastIdxSigGroups plus
-                    attach uniple pre made from (i,) of seal plus ControllerIdxSigs
-                    plus attached indexed sigs in sigers
-                Else None use ControllerIdxSigs plus attached indexed sigs in sigers
-        bonds (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
-            Non signature based authenticator typically an event reference or may
-            Only v2 supports BlindState|BoundState|TypeMedia
-            if bonds is not list convert to list.
+        tsgs (list[TransSigs]): TransIdxSigGroups (prefixer, number, diger, [sigers])
+                controller idx sigs or endorsements from transferable aids with
+                reference to est evt providing key state and list of indexed sigs.
+        lsgs (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[sigers])
+                controller idx sigs or endorsements from transferable aids with
+                reference to est evt providing key state and list of indexed sigs.
         wigers (list): optional list of Siger instances of witness index signatures
         cigars (list): optional list of Cigars instances of non-transferable non indexed
             signatures from  which to form receipt couples.
             Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
+        rsgs (list[TransReceipts]): TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
+                receiptor idx sigs or endorsements from transferable aids with
+                reference to est evt providing key state and list of indexed sigs.
+        bonds (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
+            Non signature based authenticator typically an event reference or may
+            Only v2 supports BlindState|BoundState|TypeMedia
+            if bonds is not list convert to list.
         nests (list[str|bytes|bytearray]|None): of nested msg substreams.
                     Each element stream with message + attachments. Attachements
                     must be enclosed in either AttachmentGroup or
@@ -1581,7 +1583,7 @@ def messagize(serder, *, sigers=None, source=None, bonds=None, wigers=None,
         msg (bytearray): KERI event with attachments if any
 
     """
-    if not (sigers or cigars or wigers or bonds):
+    if not (sigers or tsgs or lsgs or cigars or wigers or rsgs or bonds):
         raise ValueError(f"Missing authenticator for msg={serder.pretty()}")
 
     svrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn  # effective serder gvrsn
@@ -1605,67 +1607,38 @@ def messagize(serder, *, sigers=None, source=None, bonds=None, wigers=None,
 
     if gvrsn.major < 2 and not nested:  # version 1 legacy toplevel attachments
         if sigers:
-            if isinstance(source, SealEvent):
-                aims.extend(Counter(Codens.TransIdxSigGroups, count=1,
-                                        version=Vrsn_1_0).qb64b)
-                aims.extend(source.i.encode())
-                aims.extend(Number(snh=source.s).qb64b)
-                aims.extend(source.d.encode())
-
-            elif isinstance(source, SealLast):
-                aims.extend(Counter(Codens.TransLastIdxSigGroups, count=1,
-                                   version=Vrsn_1_0).qb64b)
-                aims.extend(source.i.encode("utf-8"))
-
-            elif source:
-                raise ValueError(f"Invalid trans modifier {source} for "
-                                 f"sigers on msg={serder.pretty()}")
-
             aims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
                                version=Vrsn_1_0).qb64b)
             for siger in sigers:
                 aims.extend(siger.qb64b)
 
-        if bonds:
-            if isinstance(bonds, tuple):
-                bonds = [bonds]  # convert to list
-
-            clans = {}
-            for bond in bonds: # collate seals from bonds into groups by clan
-                if (bond.__class__ not in (SealEvent, SealSource, SealLast)):
-                    raise ValueError(f"Unsupported authenticator {bond} kind for "
-                                     f"version={gvrsn} msg={serder.pretty()}")
-
-                if bond.__class__ not in clans:  # zeroth one in group
-                    clans[bond.__class__] = [bond]  # make list
-                else:
-                    clans[bond.__class__].append(bond)
-
-            for clan, group in clans.items():
-                if issubclass(clan, SealEvent):  # authenticator is event seal
-                    aims.extend(Counter(Codens.SealSourceTriples, count=len(group),
+        if tsgs:
+            count = len(tsgs)
+            aims.extend(Counter(Codens.TransIdxSigGroups, count=count,
+                                        version=Vrsn_1_0).qb64b)
+            for tsg in tsgs:
+                prefixer, number, diger, sigers = tsg  # unpack
+                aims.extend(prefixer.qb64b)
+                aims.extend(number.qb64b)
+                aims.extend(diger.qb64b)
+                aims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
                                             version=Vrsn_1_0).qb64b)
-                    for bond in group:
-                        aims.extend(bond.i.encode())
-                        aims.extend(Number(snh=bond.s).qb64b)
-                        aims.extend(bond.d.encode())
+                for siger in sigers:
+                    aims.extend(siger.qb64b)
 
-                elif issubclass(clan, SealSource):  # authenticator is last seal
-                    aims.extend(Counter(Codens.SealSourceCouples, count=len(group),
+
+        if lsgs:
+            count = len(lsgs)
+            aims.extend(Counter(Codens.TransLastIdxSigGroups, count=count,
+                                        version=Vrsn_1_0).qb64b)
+            for lsg in lsgs:
+                prefixer, sigers = lsg  # unpack
+                aims.extend(prefixer.qb64b)
+                aims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
                                             version=Vrsn_1_0).qb64b)
-                    for bond in group:
-                        aims.extend(Number(snh=bond.s).qb64b)
-                        aims.extend(bond.d.encode())
+                for siger in sigers:
+                    aims.extend(siger.qb64b)
 
-                elif issubclass(clan, SealLast):  # authenticator is last seal
-                    aims.extend(Counter(Codens.SealSourceLastSingles, count=len(group),
-                                            version=Vrsn_1_0).qb64b)
-                    for bond in group:
-                        aims.extend(bond.i.encode())
-
-                else:
-                    raise ValueError(f"Unsupported authenticator {clan} for"
-                                     f" version={gvrsn} msg={serder.pretty()}")
 
         if wigers:
             aims.extend(Counter(Codens.WitnessIdxSigs, count=len(wigers),
@@ -1686,6 +1659,89 @@ def messagize(serder, *, sigers=None, source=None, bonds=None, wigers=None,
                 aims.extend(cigar.verfer.qb64b)
                 aims.extend(cigar.qb64b)
 
+        if rsgs:
+            rims = bytearray()
+            for rsg in rsgs:
+                prefixer, number, diger, sigers = rsg  # unpack
+                rims.extend(prefixer.qb64b)
+                rims.extend(number.qb64b)
+                rims.extend(diger.qb64b)
+
+                rims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
+                                            version=Vrsn_1_0).qb64b)
+                for siger in sigers:
+                    rims.extend(siger.qb64b)
+
+            aims.extend(Counter.enclose(qb64=rims,
+                                        code=Codens.TransReceiptIdxSigGroups,
+                                        version=Vrsn_1_0))
+
+        if bonds:
+            if isinstance(bonds, tuple):
+                bonds = [bonds]  # convert to list
+
+            clans = {}
+            for bond in bonds: # collate seals from bonds into groups by clan
+                if (bond.__class__ not in (SealEvent, SealSource, SealLast, FirstSeen)):
+                    raise ValueError(f"Unsupported authenticator {bond} kind for "
+                                     f"version={gvrsn} msg={serder.pretty()}")
+
+                if bond.__class__ not in clans:  # zeroth one in group
+                    clans[bond.__class__] = [bond]  # make list
+                else:
+                    clans[bond.__class__].append(bond)
+
+            for clan, group in clans.items():
+                if issubclass(clan, SealEvent):  # authenticator is event seal
+                    aims.extend(Counter(Codens.SealSourceTriples, count=len(group),
+                                            version=Vrsn_1_0).qb64b)
+                    for bond in group:
+                        if isinstance(bond[0], Matter):  # bond field values are Matter primitives
+                            aims.extend(bond.i.qb64b)
+                            aims.extend(bond.s.qb64b)
+                            aims.extend(bond.d.qb64b)
+                        else:  # bond field values are serializations
+                            aims.extend(bond.i.encode())
+                            aims.extend(Number(snh=bond.s).qb64b)
+                            aims.extend(bond.d.encode())
+
+                elif issubclass(clan, SealSource):  # authenticator is last seal
+                    aims.extend(Counter(Codens.SealSourceCouples, count=len(group),
+                                            version=Vrsn_1_0).qb64b)
+                    for bond in group:
+                        if isinstance(bond[0], Matter):  # bond field values are Matter primitives
+                            aims.extend(bond.s.qb64b)
+                            aims.extend(bond.d.qb64b)
+                        else:  # bond field values are serializations
+                            aims.extend(Number(snh=bond.s).qb64b)
+                            aims.extend(bond.d.encode())
+
+                elif issubclass(clan, SealLast):  # authenticator is last seal
+                    aims.extend(Counter(Codens.SealSourceLastSingles,
+                                        count=len(group),
+                                        version=Vrsn_1_0).qb64b)
+                    for bond in group:
+                        if isinstance(bond[0], Matter):  # bond field values are Matter primitives
+                            aims.extend(bond.i.qb64b)
+                        else:  # bond field values are serializations
+                            aims.extend(bond.i.encode())
+
+                elif issubclass(clan, FirstSeen):  # first seen bond
+                    aims.extend(Counter(Codens.FirstSeenReplayCouples,
+                                        count=len(group),
+                                        version=Vrsn_1_0).qb64b)
+                    for bond in group:
+                        if isinstance(bond[0], Matter):  # bond field values are Matter primitives
+                            aims.extend(bond.f.qb64b)
+                            aims.extend(bond.dt.qb64b)
+                        else:  # bond field values are serializations
+                            aims.extend(Number(snh=bond.f).qb64b)
+                            aims.extend(Dater(dts=bond.dt).qb64b)
+
+                else:
+                    raise ValueError(f"Unsupported bond {clan} for"
+                                     f" version={gvrsn} msg={serder.pretty()}")
+
         if len(aims) % 4:
             raise ValueError(f"Invalid attachments size={len(atc)}, "
                              f"nonintegral quadlets.")
@@ -1699,52 +1755,50 @@ def messagize(serder, *, sigers=None, source=None, bonds=None, wigers=None,
     elif gvrsn.major == 2:  # version 2.x for attachments and/or nesting
 
         if sigers:
-            eims = bytearray() # enclosed incoming message stream
             sims = bytearray() # composes idxsig group inside group
-            coden = None
-            if isinstance(source, SealEvent):  # composed idx sig group
-                coden = Codens.TransIdxSigGroups
-                eims.extend(source.i.encode())
-                eims.extend(Number(snh=source.s).qb64b)
-                eims.extend(source.d.encode())
-
-            elif isinstance(source, SealLast):  # composed idx sig group
-                coden = Codens.TransLastIdxSigGroups
-                eims.extend(source.i.encode("utf-8"))
-
-            elif source:
-                raise ValueError(f"Unsupported trans modifier {source} for "
-                                 f"sigers on msg={serder.pretty()}")
-
             for siger in sigers:
                 sims.extend(siger.qb64b)
 
-            eims.extend(Counter.enclose(qb64=sims,
+            aims.extend(Counter.enclose(qb64=sims,
                                         code=Codens.ControllerIdxSigs,
                                         version=gvrsn))
-            if coden:
-                aims.extend(Counter.enclose(qb64=eims, code=coden, version=gvrsn))
-            else:
-                aims.extend(eims)
 
-        if bonds:
-            if isinstance(bonds, tuple):
-                bonds = [bonds]  # convert to list
+        if tsgs:
+            cims = bytearray()
+            for tsg in tsgs:
+                prefixer, number, diger, sigers = tsg  # unpack
+                cims.extend(prefixer.qb64b)
+                cims.extend(number.qb64b)
+                cims.extend(diger.qb64b)
 
-            clans = {}  # dict of structor lists keyed by clan
-            for bond in bonds:  # collate structors made from bonds by clan group
-                structor = Structor(crew=bond)
-                if (structor.clan not in (SealEvent, SealSource, SealLast,
-                                        BlindState, BoundState, TypeMedia)):
-                    raise ValueError(f"Unsupported authenticator {structor.clan}"
-                                     f" for version={gvrsn} msg={serder.pretty()}")
-                if structor.clan not in clans:
-                    clans[structor.clan] = [structor]
-                else:
-                    clans[structor.clan].append(structor)
+                sims = bytearray()
+                for siger in sigers:
+                    sims.extend(siger.qb64b)
+                cims.extend(Counter.enclose(qb64=sims,
+                                            code=Codens.ControllerIdxSigs,
+                                            version=gvrsn))
 
-            for structors in clans.values():
-                aims.extend(Structor.enclose(structors))
+            aims.extend(Counter.enclose(qb64=cims,
+                                        code=Codens.TransIdxSigGroups,
+                                        version=gvrsn))
+
+        if lsgs:
+            cims = bytearray()
+            for lsg in lsgs:
+                prefixer, sigers = lsg  # unpack
+                cims.extend(prefixer.qb64b)
+
+                sims = bytearray()
+                for siger in sigers:
+                    sims.extend(siger.qb64b)
+                cims.extend(Counter.enclose(qb64=sims,
+                                            code=Codens.ControllerIdxSigs,
+                                            version=gvrsn))
+
+            aims.extend(Counter.enclose(qb64=cims,
+                                        code=Codens.TransLastIdxSigGroups,
+                                        version=gvrsn))
+
 
         if wigers:
             eims = bytearray()
@@ -1768,6 +1822,47 @@ def messagize(serder, *, sigers=None, source=None, bonds=None, wigers=None,
             aims.extend(Counter.enclose(qb64=eims,
                                         code=Codens.NonTransReceiptCouples,
                                         version=gvrsn))
+
+        if rsgs:
+            rims = bytearray()
+            for rsg in rsgs:
+                prefixer, number, diger, sigers = rsg  # unpack
+                rims.extend(prefixer.qb64b)
+                rims.extend(number.qb64b)
+                rims.extend(diger.qb64b)
+                sims = bytearray()
+                for siger in sigers:
+                    sims.extend(siger.qb64b)
+
+                rims.extend(Counter.enclose(qb64=sims,
+                                            code=Codens.ControllerIdxSigs,
+                                            version=gvrsn))
+
+            aims.extend(Counter.enclose(qb64=rims,
+                                        code=Codens.TransReceiptIdxSigGroups,
+                                        version=gvrsn))
+
+        if bonds:
+            if isinstance(bonds, tuple):
+                bonds = [bonds]  # convert to list
+
+            clans = {}  # dict of structor lists keyed by clan
+            for bond in bonds:  # collate structors made from bonds by clan group
+                if isinstance(bond[0], Matter):  # bond is Structor data
+                    structor = Structor(data=bond)
+                else: # bond is structor crew (serialized)
+                    structor = Structor(crew=bond)
+
+                if (structor.clan not in AClanDom):
+                    raise ValueError(f"Unsupported bond {structor.clan}"
+                                     f" for version={gvrsn} msg={serder.pretty()}")
+                if structor.clan not in clans:
+                    clans[structor.clan] = [structor]
+                else:
+                    clans[structor.clan].append(structor)
+
+            for structors in clans.values():
+                aims.extend(Structor.enclose(structors))
 
         if nests:
             for nest in nests:  # list of msg substreams
@@ -1898,11 +1993,11 @@ class Kever:
             db (Baser | None): instance of lmdb database
             estOnly (bool | None): True means establishment only events allowed 'EO'.
                             False all events allowed.
-            delsner (Seqner | None): instance of delegating event sequence number.
+            delsner (Number | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
             delsger (Diger | None): instance of of delegating event SAID diger.
                 If this event is not delegated then saider is ignored
-            firner (Seqner | None): instance optional of cloned first seen ordinal
+            firner (Number | None): instance optional of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
                 When firner provided then compare fn of dater and database and
                 first seen if not match then log and add cue notify problem
@@ -3586,7 +3681,7 @@ class Kever:
             if dater:  # cloned replay use original's dts from dater
                 nowdater = dater
             self.db.dtss.pin(keys=dgkey, val=nowdater)  # first seen so set dts to now
-            self.db.fons.pin(keys=dgkey, val=Seqner(sn=fn))
+            self.db.fons.pin(keys=dgkey, val=Number(sn=fn))
             logger.debug("AID %s...%s: First seen %s at sn=%s valid event SAID=%s for %s at %s",
                          pre[:4], pre[-4:], serder.ilk, fn, serder.said,
                          serder.pre, nowdater.dts)
@@ -4019,8 +4114,8 @@ class Kevery:
         local (bool): True means only process msgs for own events if not lax
                          False means only process msgs for not own events if not lax
         cloned (bool): True means cloned message stream so use attached
-                         datetimes from clone source not own.
-                         False means use current datetime
+                         datetimes from clone source not own for first seen.
+                         False means use current datetime for first seen
         direct (bool): True means direct mode so cue notices for receipts etc
                           False means indirect mode so don't cue notices
         check (bool): True means do not update the database in any
@@ -4157,7 +4252,7 @@ class Kevery:
                 If this event is not delegated then delnumber is ignored
             delsger (Diger|None): instance of of delegating event SAID diger.
                 If this event is not delegated then deldiger is ignored
-            firner (Seqner|None): instance of cloned first seen ordinal
+            firner (Number|None): instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
                 When firner provided then compare fn of dater and database and
                 first seen if not match then log and add cue notify problem
@@ -4361,7 +4456,8 @@ class Kevery:
                         raise LikelyDuplicitousError(msg)
 
 
-    def processReceipt(self, serder, *, cigars=None, wigers=None, tsgs=None, local=None, **kwa):
+    def processReceipt(self, serder, *, cigars=None, wigers=None, tsgs=None,
+                       rsgs=None, local=None, **kwa):
         """
         Process one receipt serder with attached cigars
         may or may not be a witness receipt. If prefix matches witness then
@@ -4378,6 +4474,8 @@ class Kevery:
                 derived from nontrans witness prefix in associated witness list.
             tsgs (list[tuple]): from extracted transferable indexed sig groups
                 each converted group is tuple of (i,s,d) triple plus list of sigs
+            rsgs (list[tuple]): from extracted transferable receipt indexed sig groups
+               each converted group is tuple of (i,s,d) triple plus list of sigs
             local (bool|None): True means local (protected) event source.
                                False means remote (unprotected).
                                None means use default .local .
@@ -4503,17 +4601,17 @@ class Kevery:
                                           f" dig={sdiger.qb64}  from pre="
                                           f"{sprefixer.qb64}, no keys.")
 
-                for siger in sigers:  # endorser (non-controller) signatures
-                    if siger.index >= len(sverfers):
-                        raise ValidationError(f"Index={siger.index} to large for keys.")
+                #for siger in sigers:  # endorser (non-controller) signatures
+                    #if siger.index >= len(sverfers):
+                        #raise ValidationError(f"Index={siger.index} to large for keys.")
 
-                    siger.verfer = sverfers[siger.index]  # assign verfer
-                    if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
-                        # good sig so write receipt quadruple to database
-                        quadruple = (sprefixer, snumber, sdiger, siger)
-                        self.db.vrcs.add(keys=(pre, ldig), val=quadruple)
+                    #siger.verfer = sverfers[siger.index]  # assign verfer
+                    #if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
+                        ## good sig so write receipt quadruple to database
+                        #quadruple = (sprefixer, snumber, sdiger, siger)
+                        #self.db.vrcs.add(keys=(pre, ldig), val=quadruple)
 
-                # temporary for vrcsNew to see if works
+                # vrcsNew test to replace vrcs changed format of subdb
                 for siger in sigers:  # endorser (non-controller) signatures
                     if siger.index >= len(sverfers):
                         raise ValidationError(f"Index={siger.index} to large for keys.")
@@ -4522,7 +4620,65 @@ class Kevery:
                     if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
                         # good sig so write receipt to database
                         keys = (pre, ldig, sprefixer.qb64, snumber.onkey, sdiger.qb64)
-                        self.db.vrcsNew.add(keys=keys, val=siger)
+                        self.db.vrcs.add(keys=keys, val=siger)  # add to ioset at keys
+
+            for sprefixer, snumber, sdiger, sigers in rsgs:  # iterate over each tsg
+                if not self.lax and sprefixer.qb64 in self.prefixes:  # own is receipter
+                    if pre in self.prefixes:  # skip own receipter of own event
+                        # sign own events as controller not endorse them via receipt
+                        raise ValidationError("Own pre={} receipter of own event"
+                                              " {}.".format(self.prefixes, serder.pretty()))
+                    if not local:  # skip own receipts of nonlocal events
+                        raise ValidationError("Own pre={} receipter of nonlocal event "
+                                              "{}.".format(self.prefixes, serder.pretty()))
+
+                # receipted event in db so attempt to get receipter est evt
+                # retrieve dig of last event at sn of est evt of receiptor.
+                sdig = self.db.kels.getLast(keys=sprefixer.qb64b, on=snumber.sn)
+                if sdig is None:
+                    # receiptor's est event not yet in receiptors's KEL
+                    # so need cue to discover est evt KEL for receipter from watcher etc
+                    self.escrowTReceipts(serder, sprefixer, snumber, sdiger, sigers)
+                    raise UnverifiedTransferableReceiptError("Unverified receipt: "
+                                                             "missing establishment event of transferable "
+                                                             "receipter for event={}."
+                                                             "".format(ked))
+                sdig = sdig.encode("utf-8")
+                # retrieve last event itself of receiptor est evt from sdig.
+                sserder = self.db.evts.get(keys=(sprefixer.qb64b, bytes(sdig)))
+                # assumes db ensures that sserder must not be none because sdig was in KE
+                if not sserder.compare(said=sdiger.qb64):  # endorser's dig not match event
+                    raise ValidationError("Bad trans indexed sig group at sn = {}"
+                                          " for ksn = {}."
+                                          "".format(snumber.sn, sserder.ked))
+
+                # verify sigs and if so write receipt to database
+                sverfers = sserder.verfers
+                if not sverfers:
+                    raise ValidationError(f"Invalid receipter's est. event"
+                                          f" dig={sdiger.qb64}  from pre="
+                                          f"{sprefixer.qb64}, no keys.")
+
+                #for siger in sigers:  # endorser (non-controller) signatures
+                    #if siger.index >= len(sverfers):
+                        #raise ValidationError(f"Index={siger.index} to large for keys.")
+
+                    #siger.verfer = sverfers[siger.index]  # assign verfer
+                    #if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
+                        ## good sig so write receipt quadruple to database
+                        #quadruple = (sprefixer, snumber, sdiger, siger)
+                        #self.db.vrcs.add(keys=(pre, ldig), val=quadruple)
+
+                # vrcsNew test to replace vrcs changed format of subdb
+                for siger in sigers:  # endorser (non-controller) signatures
+                    if siger.index >= len(sverfers):
+                        raise ValidationError(f"Index={siger.index} to large for keys.")
+
+                    siger.verfer = sverfers[siger.index]  # assign verfer
+                    if siger.verfer.verify(siger.raw, lserder.raw):  # verify sig
+                        # good sig so write receipt to database
+                        keys = (pre, ldig, sprefixer.qb64, snumber.onkey, sdiger.qb64)
+                        self.db.vrcs.add(keys=keys, val=siger)  # add to ioset at keys
 
         else:  # no events to be receipted yet at that sn so escrow
             if cigars:
@@ -4768,7 +4924,7 @@ class Kevery:
                     self.db.rcts.add(keys=(pre, ldig), val=(cigar.verfer, cigar))
 
 
-    def processAttachedReceiptQuadruples(self, serder, trqs, *, firner=None,
+    def processAttachedReceiptSigGroups(self, serder, rsgs, *, firner=None,
                                          local=None, **kwa):
         """Process one attachment quadruple that represents an endorsement from
         a transferable AID that is not the controller. Maybe a watcher.
@@ -4779,7 +4935,7 @@ class Kevery:
         Parameters:
             serder (serderKERI):  instance serialized event message to which
                 attachments come from replay (clone)
-            trqs (list[tuple]): quadruples of (prefixer, number, diger, siger)
+            rsgs (list[tuple]):  (prefixer, number, diger, [sigers])
             firner (Seqner): instance of first seen ordinal,
                if provided lookup event by fn = firner.sn
                used when in cloned replay mode
@@ -4802,7 +4958,7 @@ class Kevery:
             # Only accept receipt if for last seen version of receipted event at sn
             ldig = self.db.kels.getLast(keys=pre, on=sn)  # retrieve dig of last event at sn.
 
-        for sprefixer, snumber, diger, siger in trqs:  # iterate over each trq
+        for sprefixer, snumber, sdiger, sigers in rsgs:  # iterate over each trq
             if not self.lax and sprefixer.qb64 in self.prefixes:  # own trans receipt quadruple (chit)
                 if pre in self.prefixes:  # skip own trans receipts of own events
                     raise ValidationError("Own pre={} replay attached transferable "
@@ -4827,7 +4983,7 @@ class Kevery:
                 if sdig is None:
                     # receipter's est event not yet in receipter's KEL
                     # receipter's seal event not in receipter's KEL
-                    self.escrowTRQuadruple(serder, sprefixer, snumber, diger, siger)
+                    self.escrowTransReceiptGroup(serder, sprefixer, snumber, sdiger, sigers)
                     raise UnverifiedTransferableReceiptError("Unverified receipt: "
                                                              "missing establishment event of transferable "
                                                              "validator receipt quadruple for event={}."
@@ -4836,42 +4992,59 @@ class Kevery:
                 # retrieve last event itself of receipter
                 sserder = self.db.evts.get(keys=(sprefixer.qb64b, bytes(sdig)))
                 # assumes db ensures that sserder must not be none because sdig was in KE
-                if not sserder.compare(said=diger.qb64):  # seal dig not match event
+                if not sserder.compare(said=sdiger.qb64):  # seal dig not match event
                     raise ValidationError("Bad trans receipt quadruple at sn = {}"
                                           " for rct = {}."
                                           "".format(snumber.sn, sserder.ked))
 
-                # verify sigs and if so write quadruple to database
+                # verify sigs and if so write sigs to database
                 sverfers = sserder.verfers
                 if not sverfers:
-                    raise ValidationError("Invalid trans receipt quad est. event"
+                    raise ValidationError("Invalid trans receipt est. event"
                                           " dig = {} for receipt from pre ={}, "
                                           "no keys."
-                                          "".format(diger.qb64, sprefixer.qb64))
+                                          "".format(sdiger.qb64, sprefixer.qb64))
 
-                if siger.index >= len(sverfers):
-                    raise ValidationError("Index = {} to large for keys."
-                                          "".format(siger.index))
+                # vrcsNew test to replace vrcs changed format of subdb
+                for siger in sigers:  # endorser (non-controller) signatures
+                    if siger.index >= len(sverfers):
+                        raise ValidationError(f"Index={siger.index} to large for keys.")
 
-                siger.verfer = sverfers[siger.index]  # assign verfer
-                if not siger.verfer.verify(siger.raw, serder.raw):  # verify sig
-                    msg = f"Bad escrowed trans receipt sig pre={pre} sn={sn:x} receipter={sprefixer.qb64}"
-                    logger.trace("Kevery unescrow error: %s", msg)
-                    raise ValidationError(msg)
+                    siger.verfer = sverfers[siger.index]  # assign verfer
+                    if siger.verfer.verify(siger.raw, serder.raw):  # verify sig
+                        # good sig so write receipt to database
+                        keys = (pre, serder.said, sprefixer.qb64, snumber.onkey, sdiger.qb64)
+                        self.db.vrcs.add(keys=keys, val=siger)  # add to ioset at keys
+                    else:
+                        msg = (f"Bad escrowed trans receipt sig pre={pre} sn={sn:x}"
+                              f" receipter={sprefixer.qb64}")
+                        logger.trace("Kevery unescrow error: %s", msg)
+                        raise ValidationError(msg)
 
-                # good sig so write receipt quadruple to database
+
+                #if siger.index >= len(sverfers):
+                    #raise ValidationError("Index = {} to large for keys."
+                                          #"".format(siger.index))
+
+                #siger.verfer = sverfers[siger.index]  # assign verfer
+                #if not siger.verfer.verify(siger.raw, serder.raw):  # verify sig
+                    #msg = f"Bad escrowed trans receipt sig pre={pre} sn={sn:x} receipter={sprefixer.qb64}"
+                    #logger.trace("Kevery unescrow error: %s", msg)
+                    #raise ValidationError(msg)
+
+                # good sig so write receipt sig to database
 
                 # Set up quadruple
-                quadruple = (sprefixer, snumber, diger, siger)
-                self.db.vrcs.add(keys=(pre, serder.said), val=quadruple)
+                #quadruple = (sprefixer, snumber, diger, siger)
+                #self.db.vrcs.add(keys=(pre, serder.said), val=quadruple)
 
                 # vrcsNew test to replace vrcs
-                keys = (pre, serder.said, sprefixer.qb64, snumber.onkey, diger.qb64)
-                self.db.vrcsNew.add(keys=keys, val=siger)
+                #keys = (pre, serder.said, sprefixer.qb64, snumber.onkey, sdiger.qb64)
+                #self.db.vrcs.add(keys=keys, val=siger)  # add to ioset at keys
 
 
             else:  # escrow  either receiptor or receipted event not yet in database
-                self.escrowTRQuadruple(serder, sprefixer, snumber, diger, siger)
+                self.escrowTransReceiptGroup(serder, sprefixer, snumber, sdiger, sigers)
                 msg = (f"Unverified receipt: missing associated event for transferable validator"
                        f"receipt quadruple for event {serder.said}")
                 logger.info(msg)
@@ -5773,7 +5946,8 @@ class Kevery:
         # edig, validator prefix, validtor est event sn, validator est evvent dig
         # and sig stored at kel pre, sn so can compare digs
         # with different algos.  Can't lookup by dig for the same reason. Must
-        # lookup last event by sn not by dig.
+        # lookup last event by sn not by dig.#
+        # ToDo XXXX Is this approach still valid or do SAIDs now make it obsolete?
         for tsg in tsgs:
             prefixer, number, saider, sigers = tsg
             self.db.dtss.put(keys=dgKey(serder.preb, serder.saidb), val=Dater())
@@ -5792,6 +5966,7 @@ class Kevery:
             logger.debug("Kevery process: escrowed unverified transferable receipt "
                          "of pre=%s sn=%x dig=%s by pre=%s", serder.pre,
                          serder.sn, serder.ked["d"], prefixer.qb64)
+
 
     def escrowTReceipts(self, serder, prefixer, number, saider, sigers):
         """
@@ -5822,6 +5997,9 @@ class Kevery:
         # and sig stored at kel pre, sn so can compare digs
         # with different algos.  Can't lookup by dig for the same reason. Must
         # lookup last event by sn not by dig.
+        #ToDo XXXX Is this approach obsolete now that we have SAIDs? Do we have to compare
+        # digests for same algo, or do we always refer to the event SAID?
+
         self.db.dtss.put(keys=dgKey(serder.preb, serder.saidb), val=Dater())
         # since serder of of receipt not receipted event must use dig in
         # serder.ked["d"] not serder.dig
@@ -5840,7 +6018,8 @@ class Kevery:
                     "of pre=%s sn=%x dig=%s by pre=%s", serder.pre,
                     serder.sn, serder.ked["d"], prefixer.qb64)
 
-    def escrowTRQuadruple(self, serder, sprefixer, snumber, diger, siger):
+
+    def escrowTransReceiptGroup(self, serder, sprefixer, snumber, diger, sigers):
         """Update associated logs for escrow of Unverified Transferable Receipt
         (transferable)
 
@@ -5853,7 +6032,7 @@ class Kevery:
             sprefixer (Prefixer): instance receiptor AID
             snumber (Number):  instance of sn of est event for receiptor key state
             diger (Diger): instance said digest est event or receipt key state
-            siger (Siger): instance of signature of receiptor
+            sigers (list[Siger]): signatures of receiptor
 
         """
         # Receipt dig algo may not match database dig. So must always
@@ -5864,19 +6043,23 @@ class Kevery:
         # and sig stored at kel pre, sn so can compare digs
         # with different algos.  Can't lookup by dig for the same reason. Must
         # lookup last event by sn not by dig.
+        # ToDo XXXX Is this approach obsolete now that we have SAIDs? Do we have to compare
+        # digests for same algo, or do we always refer to the event SAID?
+
         self.db.dtss.put(keys=dgKey(serder.preb, serder.said), val=Dater())
-        quintuple = (
-            Diger(qb64=serder.said),     # event digest
-            sprefixer,                  # Prefixer receiptor
-            Number(num=snumber.sn),     # SN of est event of receiptor key state
-            Diger(qb64=diger.qb64), # est event said of receiptro key state
-            siger,                  # signature of receiptor using est event key state
-        )
-        self.db.vres.add(keys=snKey(serder.preb, serder.sn), val=quintuple)
-        # log escrowed
-        logger.debug("Kevery process: escrowed unverified transferabe validator "
-                     "receipt of pre= %s sn=%x dig=%s", serder.pre, serder.sn,
-                     serder.said)
+        for siger in sigers:
+            quintuple = (
+                Diger(qb64=serder.said),     # event digest
+                sprefixer,                  # Prefixer receiptor
+                Number(num=snumber.sn),     # SN of est event of receiptor key state
+                Diger(qb64=diger.qb64), # est event said of receiptro key state
+                siger,                  # signature of receiptor using est event key state
+            )
+            self.db.vres.add(keys=snKey(serder.preb, serder.sn), val=quintuple)
+            # log escrowed
+            logger.debug("Kevery process: escrowed unverified transferabe validator "
+                         "receipt of pre= %s sn=%x dig=%s", serder.pre, serder.sn,
+                         serder.said)
 
     def processEscrows(self):
         """
@@ -7196,12 +7379,12 @@ class Kevery:
                         raise ValidationError(msg)
 
                     # good sig so write receipt quadruple to database
-                    quadruple = (sprefixer, snumber, ssaider, siger)
-                    self.db.vrcs.add(keys=(pre, serder.said), val=quadruple)
+                    #quadruple = (sprefixer, snumber, ssaider, siger)
+                    #self.db.vrcs.add(keys=(pre, serder.said), val=quadruple)
 
                     # vrcsNew test to replace vrcs
                     keys = (pre, serder.said, sprefixer.qb64, snumber.onkey, ssaider.qb64)
-                    self.db.vrcsNew.add(keys=keys, val=siger)
+                    self.db.vrcs.add(keys=keys, val=siger)  # add to ioset at keys
 
 
                 except UnverifiedTransferableReceiptError as ex:
@@ -7416,32 +7599,33 @@ def loadEvent(db, preb, dig):
         number, diger = duple
         event["source_seal"] = dict(sequence=number.sn, said=diger.qb64)
 
-    receipts = dict()
-    # add trans receipts quadruples
-    if quads := db.vrcs.get(keys=dgkey):
-        trans = []
-        for prefixer, number, diger, siger in quads:
-            trans.append(dict(
-                prefix=prefixer.qb64,
-                sequence=number.qb64,
-                said=diger.qb64,
-                signature=siger.qb64,
-            ))
+    receipts = dict()  # add receipts transferable and nontransferable if any
 
-        receipts["transferable"] = trans
+    ## add trans receipts quadruples
+    #if quads := db.vrcs.get(keys=dgkey):
+        #trans = []
+        #for prefixer, number, diger, siger in quads:
+            #trans.append(dict(
+                #prefix=prefixer.qb64,
+                #sequence=number.qb64,
+                #said=diger.qb64,
+                #signature=siger.qb64,
+            #))
 
-    # new style trans receipts
-    receiptsNew = dict()
-    transNew = []
+        #receipts["transferable"] = trans
+
+    # add trans receipts
+    # vcrsNew new style trans receipts
+    trans = []
     topkeys = (preb, dig)
-    for keys, siger in db.vrcsNew.getTopItemIter(keys=topkeys):
+    for keys, siger in db.vrcs.getTopItemIter(keys=topkeys):
         epre, edig, rpre, rsnh, rdig = keys  # expand keys tuple
-        transNew.append(dict(prefix=rpre,
+        trans.append(dict(prefix=rpre,
                              sequence=Number(snh=rsnh).qb64,
                              said=rdig,
                              signature=siger.qb64))
-    if transNew:
-        receiptsNew['transferable'] = transNew
+    if trans:
+        receipts['transferable'] = trans
 
 
     # add nontrans receipts couples

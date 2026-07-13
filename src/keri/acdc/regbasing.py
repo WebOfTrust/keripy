@@ -2,7 +2,6 @@
 """
 keri.acdc.regbasing module
 
-Support for RebBaser(LMDBer)
-
+Support for RegBaser(LMDBer)
 
 """

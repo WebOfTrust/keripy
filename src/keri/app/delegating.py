@@ -159,6 +159,7 @@ class Anchorer(doing.DoDoer):
                 self.hby.db.dpub.put(keys=(pre, said), val=serder)
                 self.hby.db.dune.rem(keys=(pre, said))
 
+
     def processPartialWitnessEscrow(self):
         """
         Process escrow of delegated events that do not have a full complement of receipts
