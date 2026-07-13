@@ -168,6 +168,8 @@ def test_serder():
     assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
+    assert isinstance(serder.diger, Diger)
+    assert serder.diger.qb64 == serder.said
     assert serder.ilk == None
     assert serder.stamp == None
     assert serder.compare(said=said)
@@ -1148,6 +1150,7 @@ def test_serderkeri():
     assert serder.said == 'EF6LmlLkfoNVY25RcGTsqKLW5uHq36FbnNEdjON07Rwv'
     assert serder.pre == serder.said  # prefix is not saidive
 
+
     sad = serder.sad
     pre = 'DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'
     sad['i'] = pre
@@ -1171,17 +1174,22 @@ def test_serderkeri():
     serder = SerderKERI(sad=sad)
     assert serder.raw == raw
     assert serder.sad == sad
+    assert serder.ked == serder.sad
     assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
     assert serder.kind == Kinds.json
     assert serder.said == said
+    assert isinstance(serder.diger, Diger)
+    assert serder.diger.qb64 == serder.said
     assert serder.pre == pre
+    assert serder.aid == serder.pre
     assert serder.stamp == None
 
     assert serder.estive
     assert serder.ked == serder.sad
     assert serder.pre == serder.sad['i'] == pre
     assert serder.preb == serder.pre.encode("utf-8")
+    assert serder.aidb == serder.preb
     assert serder.sner.num == 0
     assert serder.sn == 0
     assert serder.seals == []
@@ -1192,9 +1200,15 @@ def test_serderkeri():
     assert serder.ntholder.sith == '0'
     assert [diger.qb64 for diger in serder.ndigers] == []
     assert serder.bner.num == 0
+    assert serder.toader.qb64 == serder.bner.qb64
     assert serder.bn == 0
+    assert serder.toad == serder.bn
     assert serder.backs == []
+    assert serder.wits == serder.backs
     assert [verfer.qb64 for verfer in serder.berfers] == []
+    assert [verfer.qb64 for verfer in serder.witnesses] == []
+    assert serder.uuid == None
+    assert serder.nonce == serder.uuid
     assert serder.delpre == None
     assert serder.delpreb == None
 
@@ -2760,7 +2774,7 @@ def test_serderkeri_vcp():
     assert serder.delpre == None
     assert serder.delpreb == None
     assert serder.route == None
-    assert serder.uuid == None
+    assert serder.uuid == ''
     assert serder.nonce == ''
 
     serder = SerderKERI(raw=raw)
@@ -2791,7 +2805,7 @@ def test_serderkeri_vcp():
     assert serder.delpre == None
     assert serder.delpreb == None
     assert serder.route == None
-    assert serder.uuid == None
+    assert serder.uuid == ''
     assert serder.nonce == ''
 
 
@@ -2847,6 +2861,8 @@ def test_serderacdc():
     assert serder.size == size
     assert serder.kind == Kinds.json
     assert serder.said == said
+    assert isinstance(serder.diger, Diger)
+    assert serder.diger.qb64 == serder.said
     assert serder.ilk == None
     assert serder.stamp == None
     assert serder.issuer ==  isr
