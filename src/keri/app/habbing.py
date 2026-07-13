@@ -30,55 +30,37 @@ from ..recording import HabitatRecord, OobiRecord
 logger = ogler.getLogger()
 
 
-def _field(parsed, name):
-    if isinstance(parsed, dict):
-        return parsed.get(name)
-
-    return getattr(parsed, name, None)
-
-
 def serializeParsedSubstream(parsed, gvrsn=Vrsn_2_0):
     """Serialize a parsed message subtree as a nested CESR v2 substream"""
-    if any(_field(parsed, name) for name in ("rsgs", "frcs", "ptds", "essrs")):
+    parsed = parsed if isinstance(parsed, dict) else parsed.__dict__
+
+    if any(parsed.get(name) for name in ("rsgs", "frcs", "ptds", "essrs")):
         raise ValueError("Unsupported attachments for nested substream serialization")
 
-    serder = _field(parsed, "serder")
-    sigers = _field(parsed, "sigers") or None
-    tsgs = _field(parsed, "tsgs") or None
-    lsgs = _field(parsed, "lsgs") or None
+    serder = parsed["serder"]
+    sigers = parsed.get("sigers") or None
+    tsgs = parsed.get("tsgs") or None
+    lsgs = parsed.get("lsgs") or None
     if sigers and (tsgs or lsgs):
         raise ValueError("Unsupported mixed signature groups for nested substream serialization")
 
     bonds = []
     for name in ("sscs", "ssts", "tdcs", "bsqs", "bsss", "tmqs"):
-        bonds.extend(_field(parsed, name) or [])
+        bonds.extend(parsed.get(name) or [])
 
     nests = [serializeParsedSubstream(nest, gvrsn=gvrsn)
-             for nest in (_field(parsed, "nests") or [])]
+             for nest in (parsed.get("nests") or [])]
 
     return messagize(serder=serder,
                      sigers=sigers,
                      tsgs=tsgs,
                      lsgs=lsgs,
                      bonds=bonds or None,
-                     wigers=_field(parsed, "wigers") or None,
-                     cigars=_field(parsed, "cigars") or None,
+                     wigers=parsed.get("wigers") or None,
+                     cigars=parsed.get("cigars") or None,
                      nests=nests or None,
                      nested=True,
                      gvrsn=gvrsn)
-
-
-def asNestedSubstream(stream, gvrsn=Vrsn_2_0):
-    """Convert a framed message stream to a nested CESR v2 substream"""
-    serder = Serder(raw=stream)
-    svrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn
-    parsed = Parser(version=svrsn).parse(ims=bytearray(stream),
-                                         framed=True,
-                                         processive=False)
-    if len(parsed) != 1:
-        raise ValueError("Expected one embedded message stream")
-
-    return serializeParsedSubstream(parsed[0], gvrsn=gvrsn)
 
 @contextmanager
 def openHby(*, name="test", base="", temp=True, salt=None, **kwa):
@@ -1712,8 +1694,16 @@ class BaseHab:
                 serder = exchange(**kwa)
                 end = bytearray()
                 ngvrsn = gvrsn if gvrsn is not None else Vrsn_2_0
-                nests = [asNestedSubstream(msg, gvrsn=ngvrsn)
-                         for msg in embeds.values()]
+                nests = []
+                for msg in embeds.values():
+                    eserder = Serder(raw=msg)
+                    svrsn = eserder.gvrsn if eserder.gvrsn else eserder.pvrsn
+                    parsed = Parser(version=svrsn).parse(ims=bytearray(msg),
+                                                         framed=True,
+                                                         processive=False)
+                    if len(parsed) != 1:
+                        raise ValueError("Expected one embedded message stream")
+                    nests.append(serializeParsedSubstream(parsed[0], gvrsn=ngvrsn))
         else:
             serder = exchange(**kwa)
             end = bytearray()
