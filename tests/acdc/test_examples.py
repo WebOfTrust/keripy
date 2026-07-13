@@ -20,6 +20,8 @@ worked examples and stay in one place.
 import json
 
 import pytest
+from jsonschema import Draft202012Validator
+from jsonschema.exceptions import SchemaError, ValidationError
 
 from keri import Vrsn_2_0, Kinds, Protocols, Ilks
 from keri.core import Noncer, Blinder, GenDex, Aggor, Compactor, Diger, DigDex
@@ -32,6 +34,68 @@ BOB = "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf"    # issuee AID
 RAWS = [b'acdcspecworkraw' + b'%0x' % (i, ) for i in range(16)]
 NONCES = [Noncer(raw=raw).qb64 for raw in RAWS]
 REG_AMY = "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX"  # Amy's registry (derived in example 1)
+
+
+def assert_acdc_schema_valid(acdc, schema=None):
+    """Validate a worked-example ACDC against its JSON Schema.
+
+    Uses the pypi jsonschema (Draft 2020-12) library -- the same check an
+    independent verifier would run -- to make two guarantees:
+
+      1. the schema is itself well-formed (Draft202012Validator.check_schema);
+         this is exactly what catches a typo like the missing comma in a
+         'required' array from issue #1482; and
+      2. the ACDC instance conforms to that schema (.validate raises on failure).
+
+    The schema validated against is the one the ACDC commits to and carries in
+    its own 's' section. When that section is carried expanded (a JSON object) it
+    is taken from the ACDC directly; when it has been compacted to a bare SAID
+    string, pass the schema explicitly (e.g. the expanded sibling's sad['s']).
+
+    Returns the schema used, so callers can make further assertions.
+    """
+    if schema is None:
+        schema = acdc.sad['s']
+        if not isinstance(schema, dict):
+            raise ValueError("schema section is compacted to a SAID; pass "
+                             "schema= (e.g. the expanded ACDC's sad['s'])")
+    Draft202012Validator.check_schema(schema)          # guarantee 1
+    Draft202012Validator(schema).validate(acdc.sad)    # guarantee 2 (raises on failure)
+    return schema
+
+
+def test_schema_validation_harness_has_teeth():
+    """The schema-validation harness must actually reject bad input.
+
+    A validator that silently passes everything is worse than none: it would let
+    a broken example -- or a typo in a schema like the missing comma in issue
+    #1482 -- sail through unnoticed. So before the other examples lean on
+    assert_acdc_schema_valid, prove it (a) accepts a good ACDC, (b) rejects a
+    malformed schema, and (c) rejects a nonconforming instance.
+    """
+    acdc = acdcmap(issuer=AMY, uuid=NONCES[10], regid=REG_AMY,
+                   attribute=dict(d='', u=NONCES[7], name="Sunspot College",
+                                  level="gold"),
+                   issuee=BOB)
+
+    # (a) a good ACDC validates against the schema it carries in its 's' section.
+    schema = assert_acdc_schema_valid(acdc)
+    assert schema is acdc.sad['s']
+    assert schema['title'] == "ACM Default Schema"
+
+    # (b) a malformed schema is caught: 'required' must be an array, not a string
+    # (this is the shape of the missing-comma / bad-required-array bug class).
+    broken = dict(schema, required="v d i s")
+    with pytest.raises(SchemaError):
+        Draft202012Validator.check_schema(broken)
+
+    # (c) nonconforming instances are rejected: an extra field (the schema sets
+    # additionalProperties: False) and a missing required field.
+    validator = Draft202012Validator(schema)
+    with pytest.raises(ValidationError):
+        validator.validate(dict(acdc.sad, bogus="x"))
+    with pytest.raises(ValidationError):
+        validator.validate({k: v for k, v in acdc.sad.items() if k != 'i'})
 
 
 def test_registry_issuance_lifecycle_JSON():
@@ -81,6 +145,9 @@ def test_registry_issuance_lifecycle_JSON():
     assert acdc.sad['a']['i'] == BOB       # issued to Bob
     acdcSaid = acdc.said
     assert acdcSaid == "EKqjwYRfEGl5rLu9TAN277K0fUUO87c0iIfMMRWdoTcp"
+    # The credential conforms to its ACDC-message JSON Schema (Draft 2020-12) and
+    # commits to that schema via its 's' section.
+    assert_acdc_schema_valid(acdc)
 
     # --- Step 3: Amy binds the issued ACDC into the registry (bup event). ---
     # The blindable state block commits to (this ACDC, 'issued') but is hidden by
@@ -212,6 +279,10 @@ def test_selective_disclosure_aggregate_JSON():
                           aggregate=agid, kind=kind)
     assert acdc.ilk == Ilks.acg
     assert acdc.said == acdcCompact.said        # same SAID, compact or expanded
+    # Both the expanded and compact forms conform to the acg (aggregate)
+    # ACDC-message JSON Schema.
+    assert_acdc_schema_valid(acdc)
+    assert_acdc_schema_valid(acdcCompact)
 
     # --- Holder: fully disclose (all elements collapse to SAIDs). ---
     full, k = aggor.disclose()
@@ -288,6 +359,12 @@ def test_partial_disclosure_compaction_JSON():
     assert isinstance(compact.sad['a'], str)         # sections as SAIDs
     assert compact.sad['a'] == "ED1pc3B7apjLEMgWnI08EZky8TU5SfqpARRQ5mr_z9vh"
     assert compact.sad['r'] == "ECIxF7cojMJIXm-SKGR1w8Bj8N1v0637trHKYT9TWqd9"
+    # Both forms conform to the acm ACDC-message JSON Schema: its section fields
+    # are oneOf(SAID string, block), so a section validates whether compacted to
+    # a SAID or carried inline. The compact form's own schema section is a bare
+    # SAID, so it validates against the schema its expanded sibling carries.
+    schema = assert_acdc_schema_valid(expanded)
+    assert_acdc_schema_valid(compact, schema=schema)
 
     # Privacy invariant: the compact ACDC leaks neither the attribute values nor
     # the rule text -- only their SAIDs travel.
@@ -432,6 +509,7 @@ def test_blindable_registry_correlation_minimizing_JSON():
                                   level="gold"),
                    issuee=BOB, kind=kind)
     acdcSaid = acdc.said
+    assert_acdc_schema_valid(acdc)                     # conforms to its acm schema
     salt = NONCES[15]                                  # shared issuer<->holder secret
 
     # Two blinded-state snapshots for the same credential, as it would move
@@ -512,6 +590,7 @@ def test_examples_serialization_kinds(kind):
                                   level="gold"),
                    issuee=BOB, kind=kind)
     assert acdc.sad['rd'] == regid                # ACDC bound to the derived registry
+    assert_acdc_schema_valid(acdc)                # schema validation holds on every kind
 
     salt = NONCES[15]
     blinder = Blinder.blind(acdc=acdc.said, state='issued', salt=salt, sn=1)
@@ -533,6 +612,7 @@ def test_examples_serialization_kinds(kind):
     acg = acdcagg(issuer=AMY, uuid=NONCES[10], regid=regid,
                   aggregate=aggor.agid, kind=kind)
     assert acg.ilk == Ilks.acg and acg.sad['A'] == aggor.agid
+    assert_acdc_schema_valid(acg)                 # acg schema validation on every kind
 
     disclosed, k = aggor.disclose(indices=[1])
     assert k == kind
@@ -554,6 +634,8 @@ def test_examples_serialization_kinds(kind):
     assert expanded.said == compact.said         # same commitment, compact or expanded
     assert isinstance(expanded.sad['a'], dict)   # sections carried inline...
     assert isinstance(compact.sad['a'], str)     # ...vs. as SAIDs
+    schema = assert_acdc_schema_valid(expanded)  # both forms conform on every kind
+    assert_acdc_schema_valid(compact, schema=schema)
 
 
 if __name__ == "__main__":
