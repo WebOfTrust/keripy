@@ -850,9 +850,9 @@ class JoinDoer(doing.DoDoer):
 
         schemer = Schemer(raw=scraw)
 
-        hab = self.hby.habs[creder.issuer]
+        hab = self.hby.habs[creder.israid]
         if hab is None:
-            raise ValueError(f"credential issuer not a valid AID={creder.issuer}")
+            raise ValueError(f"credential issuer not a valid AID={creder.israid}")
 
         print(f"\nGroup Credential Revocation Proposed (from {senderAlias}):")
         print(f"Credential {creder.said}:")
@@ -920,7 +920,7 @@ class JoinDoer(doing.DoDoer):
             if hab.witnesser() and 'i' in creder.attrib:
                 recp = creder.attrib['i']
                 msgs = []
-                for msg in self.hby.db.clonePreIter(pre=creder.issuer):
+                for msg in self.hby.db.clonePreIter(pre=creder.israid):
                     serder = SerderKERI(raw=msg)
                     atc = msg[serder.size:]
                     msgs.append((serder, atc))

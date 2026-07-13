@@ -111,7 +111,7 @@ class Verifier:
 
         if regk not in self.tevers:  # registry event not found yet
             if self.escrowMRE(creder, prefixer, seqner, saider):
-                self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid, issr=creder.issuer)))
+                self.cues.append(dict(kin="telquery", q=dict(ri=regk, i=vcid, issr=creder.israid)))
             raise MissingRegistryError("registry identifier {} not in Tevers".format(regk))
 
         state = self.tevers[regk].vcState(vcid)
@@ -161,7 +161,7 @@ class Verifier:
                     continue
                 nodeSaid = node["n"]
                 op = node['o'] if 'o' in node else None
-                state = self.verifyChain(nodeSaid, op, creder.issuer)
+                state = self.verifyChain(nodeSaid, op, creder.israid)
                 if state is None:
                     self.escrowMCE(creder, prefixer, seqner, saider)
                     self.cues.append(dict(kin="proof",  said=nodeSaid))
@@ -312,7 +312,7 @@ class Verifier:
         self.reger.logCred(creder, prefixer, seqner, saider)
 
         schema = creder.schema.encode("utf-8")
-        issuer = creder.issuer.encode("utf-8")
+        issuer = creder.israid.encode("utf-8")
 
         # Look up indicies
         saider = Saider(qb64=creder.said)

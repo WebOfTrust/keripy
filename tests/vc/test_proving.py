@@ -133,7 +133,7 @@ def test_credentialer():
     creder = SerderACDC(sad=d)  # Creder(ked=d)
     assert creder.said == said
     assert creder.kind == Kinds.json
-    assert creder.issuer == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
+    assert creder.israid == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
     assert creder.schema == "abc"
     assert creder.attrib == sub
     assert creder.sad == d
@@ -154,7 +154,7 @@ def test_credentialer():
 
     creder = SerderACDC(raw=raw1)  # Creder(raw=raw1)
     assert creder.kind == Kinds.json
-    assert creder.issuer == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
+    assert creder.israid == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
     assert creder.sad == d
     assert creder.size == 211
 
@@ -165,7 +165,7 @@ def test_credentialer():
 
     creder = SerderACDC(sad=d2)  # Creder(ked=d2)
     assert creder.said == "EJHxKgPiGfPmdH2EbybID30hXIl916ILZQgC3JOa0cvY"  # shouldnt this be different here?
-    assert creder.issuer == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
+    assert creder.israid == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
     assert creder.schema == "abc"
     assert creder.attrib == sub
     assert creder.size == 183
@@ -178,7 +178,7 @@ def test_credentialer():
     raw2 = bytes(creder.raw)
     creder = SerderACDC(raw=raw2)  # Creder(raw=raw2)
     assert creder.said == "EJHxKgPiGfPmdH2EbybID30hXIl916ILZQgC3JOa0cvY"
-    assert creder.issuer == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
+    assert creder.israid == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
     assert creder.schema == "abc"
     assert creder.attrib == sub
     assert creder.size == 183
@@ -191,7 +191,7 @@ def test_credentialer():
     creder = SerderACDC(sad=d3)  # Creder(ked=d3)
 
     assert creder.said == "EMZeK1yLZd1JV6Ktdq_YUt-YbyoTWB9UMcFzuiDly2Y6"
-    assert creder.issuer == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
+    assert creder.israid == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
     assert creder.schema == "abc"
     assert creder.attrib == sub
     assert creder.size == 182
@@ -205,7 +205,7 @@ def test_credentialer():
     raw3 = bytes(creder.raw)
     creder = SerderACDC(raw=raw3)
     assert creder.said == "EMZeK1yLZd1JV6Ktdq_YUt-YbyoTWB9UMcFzuiDly2Y6"
-    assert creder.issuer == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
+    assert creder.israid == "EF6maPM_d5ZN7U3NRFC1-6TM7k_E00_a8AG9YyLA4uWi"
     assert creder.schema == "abc"
     assert creder.attrib == sub
     assert creder.size == 182

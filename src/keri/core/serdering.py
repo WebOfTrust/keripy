@@ -2331,6 +2331,17 @@ class SerderKERI(Serder):
 
     preb = aidb  # alias
 
+
+    @property
+    def aider(self):
+        """aider (AID Prefixer instance) property getter
+        Optional fields return None when not present
+        Returns:
+           aider (Prefixer|None): instance created from .aid
+        """
+        return Prefixer(qb64=self.aid) if self.aid else None
+
+
     @property
     def sner(self):
         """Number instance of sequence number, sner property getter
@@ -2646,10 +2657,12 @@ class SerderACDC(Serder):
             stamp (str | None): datetie stamp sad["dt"] when present
 
         Properties:
-            uuid (str | None): qb64  of .sad["u"] salty nonce
-            uuidb (bytes | None): .uuid as  bytes
-            issuer (str | None): qb64  of .sad["i"] issuer AID
-            issuerb (bytes | None): .issuer AID as bytes
+            uuid (str|None): qb64  of .sad["u"] salty nonce. None if missing
+            uuidb (bytes|None): .uuid as  bytes. None if missing.
+            nonce (str|None): alias of .uuid
+            nonceb (bytes|None): alisas of .uuidb
+            israid (str | None): qb64  of .sad["i"] (issuer AID)
+            israidb (bytes | None): .israid as bytes (issuer AID bytes)
             regid (str | None): qb64  registry SAID v1 .sad["ri"] v2 .said["rd"]
             regidb (bytes | None): .regid as bytes
             schema (dict | str | None): from ._sad["s"]
@@ -2674,6 +2687,7 @@ class SerderACDC(Serder):
         """
         return self._sad.get("u")
 
+    nonce = uuid
 
     @property
     def uuidb(self):
@@ -2684,25 +2698,36 @@ class SerderACDC(Serder):
         """
         return self.uuid.encode("utf-8") if self.uuid is not None else None
 
+    nonceb = uuidb
 
     @property
-    def issuer(self):
-        """issuer property getter (issuer AID)
+    def israid(self):
+        """israid (issuer AID) property getter
         Optional fields return None when not present
         Returns:
-           issuer (str | None): qb64  of .sad["i"] issuer AID
+           israid (str | None): qb64  of .sad["i"] issuer AID
         """
         return self._sad.get('i')
 
 
     @property
-    def issuerb(self):
-        """issuerb property getter (issuer AID bytes)
+    def israidb(self):
+        """israidb  (issuer AID bytes) property getter
         Optional fields return None when not present
         Returns:
-            issuerb (bytes | None): qb64b  of .issuer AID as bytes
+            israidb (bytes | None): qb64b  of .issuer AID as bytes
         """
-        return self.issuer.encode("utf-8") if self.issuer is not None else None
+        return self.israid.encode("utf-8") if self.israid is not None else None
+
+
+    @property
+    def issuer(self):
+        """issuer (issuer AID Prefixer instance) property getter
+        Optional fields return None when not present
+        Returns:
+           israid (Prefixer|None): instance created from .israid
+        """
+        return Prefixer(qb64=self.israid) if self.israid else None
 
 
     @property
@@ -2751,11 +2776,11 @@ class SerderACDC(Serder):
 
 
     @property
-    def issuee(self):
-        """ise property getter (issuee AID)
+    def iseaid(self):
+        """iseaid property getter (issuee AID)
         Optional fields return None when not present
         Returns:
-            issuee (str | None): qb64  of .sad["a"]["i"] issuee AID
+            iseaid (str | None): qb64  of .sad["a"]["i"] (issuee AID)
         """
         try:
             return self.attrib.get('i')
@@ -2764,13 +2789,23 @@ class SerderACDC(Serder):
 
 
     @property
-    def issueeb(self):
-        """isrb property getter (issuee AID bytes)
+    def iseaidb(self):
+        """iseaidb property getter (issuee AID bytes)
         Optional fields return None when not present
         Returns:
-            issueeb (bytes | None): qb64b  of .issuee AID as bytes if any
+            issueeb (bytes | None): qb64b  of .iseaid, (issuee AID bytes)
         """
-        return self.issuee.encode("utf-8") if self.issuee is not None else None
+        return self.iseaid.encode("utf-8") if self.iseaid is not None else None
+
+
+    @property
+    def issuee(self):
+        """issuee property getter (Prefixer of issuee AID)
+        Optional fields return None when not present
+        Returns:
+            issuee (Prefixer|None): instance created from .iseaid
+        """
+        return Prefixer(qb64=self.iseaid) if self.iseaid else None
 
 
     @property
@@ -2855,10 +2890,10 @@ class SerderACDC(Serder):
                 (Ilks.acm, Ilks.ace, Ilks.act, Ilks.acg, Ilks.rip)):
             # required issuer field as valid AID, not empty
             try:
-                code = Matter(qb64=self.issuer).code
+                code = Matter(qb64=self.israid).code
             except Exception as ex:
                 raise ValidationError(f"Invalid issuer AID = "
-                                      f"{self.issuer}.") from ex
+                                      f"{self.israid}.") from ex
 
             if code not in PreDex:
                 raise ValidationError(f"Invalid issuer AID code = {code}.")
