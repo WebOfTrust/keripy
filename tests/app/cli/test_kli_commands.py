@@ -1,19 +1,21 @@
 import json
+import logging
 import os
 
 import multicommand
 import pytest
 
 
-from keri.kering import ValidationError
+from keri.kering import ValidationError, AuthError
 
-from keri import core
+from keri import core, help
 from keri.core import coring
 
-from keri.app import directing
+from keri.app import directing, habbing
 
 from keri.app.cli import commands
 from keri.app.cli.common import existing
+from keri.app.cli.commands.witness import start as witness_start
 
 
 TEST_DIR = os.path.dirname(os.path.abspath(__file__))
@@ -325,6 +327,177 @@ def test_incept_and_rotate_opts(helpers, capsys):
     doers = args.handler(args)
 
     directing.runController(doers=doers)
+
+
+# --- kli witness start logging & startup behavior (WebOfTrust/keripy#238) ---
+
+def _parse(argv):
+    return multicommand.create_parser(commands).parse_args(argv)
+
+
+def test_launch_normalizes_loglevel(monkeypatch):
+    """launch() must turn a lowercase --loglevel into a numeric level (the .upper()
+    fix); without it getLevelName('debug') returns the string 'Level debug', which
+    silently breaks level filtering."""
+    # ogler is a process-global singleton; snapshot so this test does not leak its
+    # level into later tests (monkeypatch restores on teardown).
+    monkeypatch.setattr(help.ogler, "level", help.ogler.level)
+    monkeypatch.setattr(witness_start, "runWitness", lambda **kw: None)
+
+    args = _parse(["witness", "start", "--alias", "wit", "--loglevel", "debug"])
+    args.handler(args)  # -> launch(args)
+
+    assert help.ogler.level == logging.DEBUG
+
+
+def test_run_failure_is_logged_and_hby_closed(helpers, monkeypatch):
+    """A failure during setup/run (e.g. a port-bind error from setupWitness) must be
+    logged at CRITICAL (visible at the default --loglevel) AND the Habery closed in
+    the finally block, so no stale LMDB lock is left behind."""
+    name = "bug238witerr"
+    helpers.remove_test_dirs(name)
+
+    logged = []
+    monkeypatch.setattr(witness_start.logger, "critical",
+                        lambda *a, **k: logged.append((a, k)))
+
+    closed = []
+    real_close = habbing.Habery.close
+
+    def spy_close(self, clear=False):
+        closed.append(True)
+        return real_close(self, clear=clear)
+    monkeypatch.setattr(habbing.Habery, "close", spy_close)
+
+    def _boom(**kw):
+        raise RuntimeError("cannot create http server on port 5631")
+    monkeypatch.setattr(witness_start.indirecting, "setupWitness", _boom)
+
+    try:
+        # unencrypted keystore path (aeid is None) so no passcode is required;
+        # configFile=None matches what the CLI passes (launch -> args.configFile)
+        with pytest.raises(RuntimeError):
+            witness_start.runWitness(name=name, base="", alias="wit", bran="", configFile=None)
+
+        assert logged, "startup failure must be logged at CRITICAL"
+        assert "failed" in logged[0][0][0]
+        assert closed, "Habery must be closed in the finally block on failure"
+    finally:
+        helpers.remove_test_dirs(name)
+
+
+def test_encrypted_keystore_non_tty_fails_fast(helpers, monkeypatch):
+    """Starting an encrypted keystore with no passcode on a non-TTY must fail fast
+    with a logged AuthError instead of stalling on an interactive getpass prompt."""
+    name = "bug238witenc"
+
+    # ensure TTY false regardless of how the test harness started
+    monkeypatch.setattr("sys.stdin.isatty", lambda: False)
+
+    # Defensive: getpass must never be called on a non-TTY start
+    def _boom(*a, **k):
+        raise AssertionError("getpass must not be called on a non-TTY start")
+    monkeypatch.setattr("keri.app.cli.common.existing.getpass.getpass", _boom)
+
+    helpers.remove_test_dirs(name)
+    try:
+        # create an encrypted keystore so that aeid is set
+        hby = habbing.Habery(name=name, base="", bran="0123456789abcdefghijk", temp=False)
+        hby.close()
+
+        with pytest.raises(AuthError, match="passcode required"):
+            witness_start.runWitness(name=name, base="", alias="wit", bran="", configFile=None)
+    finally:
+        helpers.remove_test_dirs(name)
+
+
+def test_witness_start_non_tty_wrong_passcode_raises(helpers, monkeypatch):
+    """A non-TTY witness start with the wrong passcode must raise rather than
+    re-prompting (noPrompt propagates into setupHby)."""
+    name = "bug238witwrong"
+    correct = "0123456789abcdefghijk"
+    wrong = "abcdefghijk0123456789"
+
+    monkeypatch.setattr("sys.stdin.isatty", lambda: False)
+
+    # launch() sets ogler.level from --loglevel on the shared logger; restore it so a
+    # DEBUG level does not leak into later tests.
+    saved_level = help.ogler.level
+    helpers.remove_test_dirs(name)
+    try:
+        hby = habbing.Habery(name=name, base="", bran=correct, temp=False)
+        hby.close()
+
+        args = _parse(["witness", "start", "--name", name, "--alias", "wit",
+                       "--passcode", wrong, "--loglevel", "debug"])
+        # noPrompt guard re-raises the original AuthError ("Last seed missing"),
+        # not the retry-exhausted "too many attempts" error.
+        with pytest.raises(AuthError, match="Last seed missing"):
+            args.handler(args)
+    finally:
+        help.ogler.level = saved_level
+        help.ogler.getLogger()  # re-apply restored level to the shared logger
+        helpers.remove_test_dirs(name)
+
+
+# --- kli witness start: --logfile deprecation in favor of --logdir (#238) ---
+
+def test_witness_start_arg_parsing():
+    """--logdir is the current option; --logfile is retained as a deprecated alias."""
+    args = _parse(["witness", "start", "--alias", "wit",
+                   "--loglevel", "debug", "--logdir", "/tmp/wlogs"])
+    assert args.handler is not None
+    assert args.loglevel == "debug"
+    assert args.logdir == "/tmp/wlogs"
+    assert args.logfile is None
+
+    args = _parse(["witness", "start", "--alias", "wit"])
+    assert args.loglevel == "CRITICAL"
+    assert args.logdir is None
+    assert args.logfile is None
+
+
+def test_launch_routes_logdir(monkeypatch, tmp_path):
+    """launch() must route --logdir straight to ogler.headDirPath."""
+    monkeypatch.setattr(help.ogler, "level", help.ogler.level)
+    monkeypatch.setattr(help.ogler, "headDirPath", help.ogler.headDirPath)
+    monkeypatch.setattr(witness_start, "runWitness", lambda **kw: None)
+
+    args = _parse(["witness", "start", "--alias", "wit", "--logdir", str(tmp_path)])
+    args.handler(args)  # -> launch(args)
+
+    assert help.ogler.headDirPath == str(tmp_path)
+
+
+def test_launch_logfile_extracts_dirname(monkeypatch, tmp_path):
+    """The deprecated --logfile must contribute only its *directory* as the log dir
+    (hio derives the filename from --name), never the file path itself."""
+    monkeypatch.setattr(help.ogler, "level", help.ogler.level)
+    monkeypatch.setattr(help.ogler, "headDirPath", help.ogler.headDirPath)
+    monkeypatch.setattr(witness_start, "runWitness", lambda **kw: None)
+
+    logfile = tmp_path / "witness.log"
+    args = _parse(["witness", "start", "--alias", "wit", "--logfile", str(logfile)])
+    args.handler(args)
+
+    assert help.ogler.headDirPath == str(tmp_path)
+
+
+def test_logfile_emits_deprecation_warning(monkeypatch, capsys, tmp_path):
+    """Passing the deprecated --logfile must print a deprecation notice to stderr
+    (visible regardless of --loglevel); using the current --logdir must not."""
+    monkeypatch.setattr(help.ogler, "level", help.ogler.level)
+    monkeypatch.setattr(help.ogler, "headDirPath", help.ogler.headDirPath)
+    monkeypatch.setattr(witness_start, "runWitness", lambda **kw: None)
+
+    args = _parse(["witness", "start", "--alias", "wit",
+                   "--logfile", str(tmp_path / "witness.log")])
+    args.handler(args)
+    assert "deprecated" in capsys.readouterr().err, "expected a --logfile deprecation notice"
+
+    args = _parse(["witness", "start", "--alias", "wit", "--logdir", str(tmp_path)])
+    args.handler(args)
+    assert "deprecated" not in capsys.readouterr().err
 
 
 
