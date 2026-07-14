@@ -73,10 +73,10 @@ def test_schema_validation_harness_has_teeth():
     assert_acdc_schema_valid, prove it (a) accepts a good ACDC, (b) rejects a
     malformed schema, and (c) rejects a nonconforming instance.
     """
-    acdc = acdcmap(issuer=AMY, uuid=NONCES[10], regid=REG_AMY,
+    acdc = acdcmap(israid=AMY, uuid=NONCES[10], regid=REG_AMY,
                    attribute=dict(d='', u=NONCES[7], name="Sunspot College",
                                   level="gold"),
-                   issuee=BOB)
+                   iseaid=BOB)
 
     # (a) a good ACDC validates against the schema it carries in its 's' section.
     schema = assert_acdc_schema_valid(acdc)
@@ -117,7 +117,7 @@ def test_registry_issuance_lifecycle_JSON():
     # state, so it leaks nothing about what will later be issued. The registry
     # identifier (regid) is simply the SAID of this inception event.
     regStamp = '2025-07-04T17:50:00.000000+00:00'
-    ripper = regcept(issuer=AMY, uuid=NONCES[0], stamp=regStamp)
+    ripper = regcept(israid=AMY, uuid=NONCES[0], stamp=regStamp)
     assert ripper.proto == Protocols.acdc
     assert ripper.pvrsn == Vrsn_2_0
     assert ripper.genus == GenDex.KERI
@@ -137,8 +137,8 @@ def test_registry_issuance_lifecycle_JSON():
     # the ACDC content, we do not know it in advance; the point is that it is
     # produced here rather than assumed to pre-exist.
     attribute = dict(d='', u=NONCES[7], name="Sunspot College", level="gold")
-    acdc = acdcmap(issuer=AMY, uuid=NONCES[10], regid=regid,
-                   attribute=attribute, issuee=BOB)
+    acdc = acdcmap(israid=AMY, uuid=NONCES[10], regid=regid,
+                   attribute=attribute, iseaid=BOB)
     assert acdc.ilk == Ilks.acm
     assert acdc.sad['i'] == AMY            # issued by Amy
     assert acdc.sad['rd'] == regid         # bound to Amy's registry
@@ -273,9 +273,9 @@ def test_selective_disclosure_aggregate_JSON():
     # The issuer references the aggregate from the top-level ACDC via its 'A'
     # field. In compact form that is just the AGID; the ACDC SAID is computed
     # over the most compact form either way.
-    acdc = acdcagg(issuer=AMY, uuid=NONCES[10], regid=REG_AMY,
+    acdc = acdcagg(israid=AMY, uuid=NONCES[10], regid=REG_AMY,
                    aggregate=aggor.ael, kind=kind)
-    acdcCompact = acdcagg(issuer=AMY, uuid=NONCES[10], regid=REG_AMY,
+    acdcCompact = acdcagg(israid=AMY, uuid=NONCES[10], regid=REG_AMY,
                           aggregate=agid, kind=kind)
     assert acdc.ilk == Ilks.acg
     assert acdc.said == acdcCompact.said        # same SAID, compact or expanded
@@ -345,11 +345,11 @@ def test_partial_disclosure_compaction_JSON():
     # acdcmap inserts the issuee into the attribute block in place.
     attrMad = dict(d='', u=NONCES[7], name="Bob Student", gpa=4)
     ruleMad = dict(d='', l=ruleText)
-    expanded = acdcmap(issuer=AMY, uuid=NONCES[13], regid=REG_AMY,
-                       attribute=dict(attrMad), issuee=BOB, rule=dict(ruleMad),
+    expanded = acdcmap(israid=AMY, uuid=NONCES[13], regid=REG_AMY,
+                       attribute=dict(attrMad), iseaid=BOB, rule=dict(ruleMad),
                        compactify=False, kind=kind)
-    compact = acdcmap(issuer=AMY, uuid=NONCES[13], regid=REG_AMY,
-                      attribute=dict(attrMad), issuee=BOB, rule=dict(ruleMad),
+    compact = acdcmap(israid=AMY, uuid=NONCES[13], regid=REG_AMY,
+                      attribute=dict(attrMad), iseaid=BOB, rule=dict(ruleMad),
                       compactify=True, kind=kind)
 
     assert compact.sad['u'] == NONCES[13]             # private ACDC (has a nonce)
@@ -504,10 +504,10 @@ def test_blindable_registry_correlation_minimizing_JSON():
     # does NOT create or modify any registry. This test publishes no events at
     # all; it works directly with the two blinded-state snapshots below to show
     # the disclosure math. salt is the secret shared between issuer and holder.
-    acdc = acdcmap(issuer=AMY, uuid=NONCES[10], regid=REG_AMY,
+    acdc = acdcmap(israid=AMY, uuid=NONCES[10], regid=REG_AMY,
                    attribute=dict(d='', u=NONCES[7], name="Sunspot College",
                                   level="gold"),
-                   issuee=BOB, kind=kind)
+                   iseaid=BOB, kind=kind)
     acdcSaid = acdc.said
     assert_acdc_schema_valid(acdc)                     # conforms to its acm schema
     salt = NONCES[15]                                  # shared issuer<->holder secret
@@ -580,15 +580,15 @@ def test_examples_serialization_kinds(kind):
     """
     # Registry-lifecycle builders: create the registry, construct an ACDC bound
     # to it (rd), construct a blindable update (bup), then unblind to check state.
-    ripper = regcept(issuer=AMY, uuid=NONCES[0],
+    ripper = regcept(israid=AMY, uuid=NONCES[0],
                      stamp='2025-07-04T17:50:00.000000+00:00', kind=kind)
     assert ripper.ilk == Ilks.rip and ripper.kind == kind
     regid = ripper.said
 
-    acdc = acdcmap(issuer=AMY, uuid=NONCES[10], regid=regid,
+    acdc = acdcmap(israid=AMY, uuid=NONCES[10], regid=regid,
                    attribute=dict(d='', u=NONCES[7], name="Sunspot College",
                                   level="gold"),
-                   issuee=BOB, kind=kind)
+                   iseaid=BOB, kind=kind)
     assert acdc.sad['rd'] == regid                # ACDC bound to the derived registry
     assert_acdc_schema_valid(acdc)                # schema validation holds on every kind
 
@@ -609,7 +609,7 @@ def test_examples_serialization_kinds(kind):
                        dict(d='', u=NONCES[3], score=96)],
                   makify=True, kind=kind)
     # The issuer references the made aggregate by its AGID from an 'acg' ACDC.
-    acg = acdcagg(issuer=AMY, uuid=NONCES[10], regid=regid,
+    acg = acdcagg(israid=AMY, uuid=NONCES[10], regid=regid,
                   aggregate=aggor.agid, kind=kind)
     assert acg.ilk == Ilks.acg and acg.sad['A'] == aggor.agid
     assert_acdc_schema_valid(acg)                 # acg schema validation on every kind
@@ -625,11 +625,11 @@ def test_examples_serialization_kinds(kind):
     # share the same SAID, with sections carried as SAIDs vs inline respectively.
     attrMad = dict(d='', u=NONCES[7], name="Bob Student", gpa=4)
     ruleMad = dict(d='', l="terms")
-    expanded = acdcmap(issuer=AMY, uuid=NONCES[13], regid=regid,
-                       attribute=dict(attrMad), issuee=BOB, rule=dict(ruleMad),
+    expanded = acdcmap(israid=AMY, uuid=NONCES[13], regid=regid,
+                       attribute=dict(attrMad), iseaid=BOB, rule=dict(ruleMad),
                        compactify=False, kind=kind)
-    compact = acdcmap(issuer=AMY, uuid=NONCES[13], regid=regid,
-                      attribute=dict(attrMad), issuee=BOB, rule=dict(ruleMad),
+    compact = acdcmap(israid=AMY, uuid=NONCES[13], regid=regid,
+                      attribute=dict(attrMad), iseaid=BOB, rule=dict(ruleMad),
                       compactify=True, kind=kind)
     assert expanded.said == compact.said         # same commitment, compact or expanded
     assert isinstance(expanded.sad['a'], dict)   # sections carried inline...
