@@ -165,7 +165,8 @@ class Poster(doing.DoDoer):
     def sendEventToDelegator(self, sender, hab, fn=0):
         """ Returns generator for sending event and waiting until send is complete """
         # Send KEL event for processing
-        icp = self.hby.db.cloneEvtMsg(pre=hab.pre, fn=fn, dig=hab.kever.serder.saidb)
+        icp = self.hby.db.cloneEvtMsg(pre=hab.pre, fn=fn, dig=hab.kever.serder.saidb,
+                                      version=hab.kever.serder.pvrsn)
         ser = SerderKERI(raw=icp)
         del icp[:ser.size]
 

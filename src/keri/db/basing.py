@@ -1899,7 +1899,7 @@ class Baser(LMDBer):
         """
         Search through a KEL for the event that contains a specific anchored
         SealEvent type of provided seal but in dict form and is also fully
-        witnessed. Searchs from sn forward (default = 0).Searches all events in
+        witnessed. Searches from sn forward (default = 0). Searches all events in
         KEL of pre including disputed and/or superseded events.
         Returns the Serder of the first event with the anchored SealEvent seal,
 
