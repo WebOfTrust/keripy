@@ -809,9 +809,7 @@ def test_multisig_incept_explicit_v1_uses_legacy_special_exn(mockHelpingNowUTC, 
 
 
 def test_multisig_incept_default_version_uses_v2_nested_substreams(mockHelpingNowUTC):
-    V2_KWA = dict(version=Vrsn_2_0, kind=Kinds.json)
-
-    with openHab(name="test", temp=True, salt=b'0123456789abcdef', **V2_KWA) as (_, hab):
+    with openHab(name="test", temp=True, salt=b'0123456789abcdef', version=Vrsn_2_0, kind=Kinds.json) as (_, hab):
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
         icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=Version)
         innerSerder = SerderKERI(raw=icp)
@@ -976,14 +974,13 @@ def test_multisig_incept_handler_parses_approved_v1_embed(mockHelpingNowUTC):
 
 
 def test_multisig_incept_handler_v2_with_kram(mockHelpingNowUTC):
-    V2_KWA = dict(version=Vrsn_2_0, kind=Kinds.json)
 
     # Create two member habitats that will each build the same 2-of-2 group
     # inception proposal from their own local perspective
     with openHab(name="approved-nested1", salt=b'0123456789abcdef',
-                 transferable=True, temp=True, **V2_KWA) as (hby1, hab1), \
+                 transferable=True, temp=True, version=Vrsn_2_0, kind=Kinds.json) as (hby1, hab1), \
             openHab(name="approved-nested2", salt=b'abcdef0123456789',
-                    transferable=True, temp=True, **V2_KWA) as (hby2, hab2):
+                    transferable=True, temp=True, version=Vrsn_2_0, kind=Kinds.json) as (hby2, hab2):
 
         # Exchange the member AID inception events first so each side knows the
         # other participant before creating the shared group habitat
@@ -996,7 +993,7 @@ def test_multisig_incept_handler_v2_with_kram(mockHelpingNowUTC):
 
         # Both members participate in signing this group inception
         smids = [hab1.pre, hab2.pre]
-        inits = dict(toad=0, wits=[], isith="2", nsith="2", **V2_KWA)
+        inits = dict(toad=0, wits=[], isith="2", nsith="2", version=Vrsn_2_0, kind=Kinds.json)
 
         # Build the same group habitat on both sides
         ghab1 = hby1.makeGroupHab(group="approved-nested", mhab=hab1,
