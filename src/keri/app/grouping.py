@@ -693,8 +693,12 @@ class Multiplexor:
         ked = serder.ked
         embed = ked.get('e')
         nests = nests if nests is not None else []
+        payload = ked['a']
+        manifest = payload.get("embeds") if isinstance(payload, dict) else None
         if embed is not None:
             esaid = embed['d']
+        elif manifest is not None:
+            esaid = manifest['d']
         elif len(nests) == 1:
             nserder = nests[0]["serder"] if isinstance(nests[0], dict) else nests[0].serder
             esaid = nserder.said
@@ -702,7 +706,6 @@ class Multiplexor:
             return
         sender = ked['i']
         route = ked['r']
-        payload = ked['a']
 
         # Route specific logic to ensure this is a valid exn for a local participant.
         match route.split("/"):

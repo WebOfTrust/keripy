@@ -7,7 +7,7 @@ import json
 
 import pysodium
 
-from keri import Kinds, Vrsn_1_0
+from keri import Kinds, Vrsn_1_0, Vrsn_2_0
 from keri.core import (Salter, Counter, Texter,
                        Diger, SerderKERI, Parser,
                        MtrDex, Codens, exchange)
@@ -232,6 +232,52 @@ def test_hab_exchange(mockHelpingNowUTC):
                     b'BJZ_LF61JTCCSCIw2Q4ozE2MsbRC4m-N6-tFVlCeiZPG0BDjOC4j0Co6P0giMylR'
                     b'47149eJ8Yf_hO-32_TpY77KMVCWCf0U8GuZPIN76R2zsyT_eARvS_zQsX1ebjl3P'
                     b'MP0D')
+
+
+def test_hab_exchange_v2_multi_embed_manifest(mockHelpingNowUTC):
+    kwa = dict(version=Vrsn_2_0, kind=Kinds.json)
+    with openHby(salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test", **kwa)
+
+        evtA = hab.exchange(route="/echo/A",
+                            attributes=dict(msg="A"),
+                            framed=True,
+                            gvrsn=Vrsn_2_0,
+                            **kwa)
+        evtB = hab.exchange(route="/echo/B",
+                            attributes=dict(msg="B"),
+                            framed=True,
+                            gvrsn=Vrsn_2_0,
+                            **kwa)
+
+        embeds = dict(
+            evtA=evtA,
+            evtB=evtB,
+        )
+
+        data = dict(m="Let's send two events")
+        msg = hab.exchange(route="/forward/multi",
+                           attributes=data,
+                           embeds=embeds,
+                           framed=True,
+                           gvrsn=Vrsn_2_0,
+                           **kwa)
+
+        exn = SerderKERI(raw=msg)
+        assert exn.pvrsn == Vrsn_2_0
+        assert "e" not in exn.ked
+        assert exn.ked["a"]["m"] == "Let's send two events"
+        assert exn.ked["a"]["embeds"]["evtA"] == SerderKERI(raw=evtA).said
+        assert exn.ked["a"]["embeds"]["evtB"] == SerderKERI(raw=evtB).said
+        assert "d" in exn.ked["a"]["embeds"]
+
+        results = Parser(version=Vrsn_2_0).parse(ims=bytearray(msg),
+                                                 framed=True,
+                                                 processive=False)
+        assert len(results) == 1
+        assert len(results[0].nests) == 2
+        assert results[0].nests[0].serder.said == SerderKERI(raw=evtA).said
+        assert results[0].nests[1].serder.said == SerderKERI(raw=evtB).said
 
 
 if __name__ == "__main__":

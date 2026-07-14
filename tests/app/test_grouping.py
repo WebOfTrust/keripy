@@ -823,6 +823,8 @@ def test_multisig_incept_default_version_uses_v2_nested_substreams(mockHelpingNo
         assert data["gid"] == innerSerder.pre
         assert data["smids"] == aids
         assert data["rmids"] == aids
+        assert data["embeds"]["icp"] == innerSerder.said
+        assert "d" in data["embeds"]
         assert "e" not in exn.ked
 
         results = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),

@@ -22,7 +22,8 @@ from ..kering import (Version, Vrsn_1_0, Vrsn_2_0, Ilks, Kinds, Roles, Schemes,
                       ValidationError, MissingEntryError, MissingSignatureError)
 from ..core import (Tholder, Diger, Prefixer, Number, Kevery, Parser, Revery,
                     Router, Counter, Salter, SealEvent, SealSource, SealLast,
-                    Codens, MtrDex, TraitDex, Serder, messagize, exchange,)
+                    Codens, MtrDex, TraitDex, Saider, Saids, Serder,
+                    messagize, exchange,)
 from ..core import eventing
 from ..recording import HabitatRecord, OobiRecord
 
@@ -48,16 +49,21 @@ def serializeParsedSubstream(parsed, gvrsn=Vrsn_2_0):
     for name in ("sscs", "ssts", "tdcs", "bsqs", "bsss", "tmqs"):
         bonds.extend(parsed.get(name) or [])
 
+    wigers = parsed.get("wigers") or None
+    cigars = parsed.get("cigars") or None
     nests = [serializeParsedSubstream(nest, gvrsn=gvrsn)
              for nest in (parsed.get("nests") or [])]
+
+    if not (sigers or tsgs or lsgs or bonds or wigers or cigars):
+        raise ValueError("Nested substream serialization requires framed embedded messages")
 
     return messagize(serder=serder,
                      sigers=sigers,
                      tsgs=tsgs,
                      lsgs=lsgs,
                      bonds=bonds or None,
-                     wigers=parsed.get("wigers") or None,
-                     cigars=parsed.get("cigars") or None,
+                     wigers=wigers,
+                     cigars=cigars,
                      nests=nests or None,
                      nested=True,
                      gvrsn=gvrsn)
@@ -1691,19 +1697,36 @@ class BaseHab:
             if pvrsn.major == Vrsn_1_0.major:
                 serder, end = specialExchange(embeds=embeds, **kwa)
             else:
-                serder = exchange(**kwa)
+                # Serialize each child message as a nested substream, and
+                # record a signed label -> child SAID manifest in `a["embeds"]`
+                attrs = dict(attributes) if attributes is not None else {}
+                manifest = dict()
                 end = bytearray()
                 ngvrsn = gvrsn if gvrsn is not None else Vrsn_2_0
                 nests = []
-                for msg in embeds.values():
+                for label, msg in embeds.items():
                     eserder = Serder(raw=msg)
+                    manifest[label] = eserder.said
                     svrsn = eserder.gvrsn if eserder.gvrsn else eserder.pvrsn
+
+                    # Each embed value must be one framed top-level message stream
+                    # so we can repackage it as one nested V2 child
                     parsed = Parser(version=svrsn).parse(ims=bytearray(msg),
                                                          framed=True,
                                                          processive=False)
+                    if not parsed:
+                        raise ValueError("V2 embedded messages must be framed CESR streams")
                     if len(parsed) != 1:
                         raise ValueError("Expected one embedded message stream")
                     nests.append(serializeParsedSubstream(parsed[0], gvrsn=ngvrsn))
+
+                # Preserve embed names and add one aggregate digest for the
+                # whole labeled set
+                manifest["d"] = ""
+                _, manifest = Saider.saidify(sad=manifest, label=Saids.d)
+                attrs["embeds"] = manifest
+                kwa["attributes"] = attrs
+                serder = exchange(**kwa)
         else:
             serder = exchange(**kwa)
             end = bytearray()
