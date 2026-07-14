@@ -2520,7 +2520,7 @@ class Reger(LMDBer):
                 issatc=issatc.decode("utf-8"),
                 rev=rserder.sad if status.et in [Ilks.rev, Ilks.brv] else None,
                 revatc=revatc.decode("utf-8") if status.et in [Ilks.rev, Ilks.brv] else None,
-                pre=creder.issuer,
+                pre=creder.israid,
                 schema=schemer.sed,
                 chains=chains,
                 status=asdict(status),
@@ -2539,7 +2539,7 @@ class Reger(LMDBer):
                 Number(qb64b=iss, strip=True)
                 saider = Saider(qb64b=iss)
 
-                anc = db.cloneEvtMsg(pre=creder.issuer, fn=0, dig=saider.qb64b)
+                anc = db.cloneEvtMsg(pre=creder.israid, fn=0, dig=saider.qb64b)
                 aserder = SerderKERI(raw=anc)
                 ancatc = bytes(anc[aserder.size:])
                 cred['anc'] = aserder.sad
@@ -2554,7 +2554,7 @@ class Reger(LMDBer):
                     Number(qb64b=rev, strip=True)
                     saider = Saider(qb64b=rev)
 
-                    anc = db.cloneEvtMsg(pre=creder.issuer, fn=0, dig=saider.qb64b)
+                    anc = db.cloneEvtMsg(pre=creder.israid, fn=0, dig=saider.qb64b)
                     aserder = SerderKERI(raw=anc)
                     ancatc = bytes(anc[aserder.size:])
                     cred['revanc'] = aserder.sad

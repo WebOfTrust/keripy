@@ -18,7 +18,7 @@ from keri.kering import (Protocols, Vrsn_1_0, Vrsn_2_0, Kinds, Ilks,
 
 from keri.help import b64ToInt
 
-from keri.core import (Salter, Diger, Number, FieldDom,
+from keri.core import (Salter, Diger, Number, Prefixer, FieldDom,
                        FieldDom, Serdery, Serder, SerderKERI,
                        SerderACDC, incept, interact, rotate, delcept,
                        deltate, receipt, query, reply, prod, bare,
@@ -168,6 +168,8 @@ def test_serder():
     assert serder.kind == Kinds.json
     assert serder.said == said
     assert serder.saidb == said.encode("utf-8")
+    assert isinstance(serder.diger, Diger)
+    assert serder.diger.qb64 == serder.said
     assert serder.ilk == None
     assert serder.stamp == None
     assert serder.compare(said=said)
@@ -1147,6 +1149,9 @@ def test_serderkeri():
     assert serder.ilk == Ilks.icp
     assert serder.said == 'EF6LmlLkfoNVY25RcGTsqKLW5uHq36FbnNEdjON07Rwv'
     assert serder.pre == serder.said  # prefix is not saidive
+    assert serder.aid == serder.pre
+    assert isinstance(serder.aider, Prefixer)
+    assert serder.aider.qb64 == serder.aid
 
     sad = serder.sad
     pre = 'DKxy2sgzfplyr-tgwIxS19f2OchFHtLwPWD3v4oYimBx'
@@ -1171,17 +1176,22 @@ def test_serderkeri():
     serder = SerderKERI(sad=sad)
     assert serder.raw == raw
     assert serder.sad == sad
+    assert serder.ked == serder.sad
     assert serder.pvrsn == Vrsn_1_0
     assert serder.size == size
     assert serder.kind == Kinds.json
     assert serder.said == said
+    assert isinstance(serder.diger, Diger)
+    assert serder.diger.qb64 == serder.said
     assert serder.pre == pre
+    assert serder.aid == serder.pre
     assert serder.stamp == None
 
     assert serder.estive
     assert serder.ked == serder.sad
     assert serder.pre == serder.sad['i'] == pre
     assert serder.preb == serder.pre.encode("utf-8")
+    assert serder.aidb == serder.preb
     assert serder.sner.num == 0
     assert serder.sn == 0
     assert serder.seals == []
@@ -1192,9 +1202,15 @@ def test_serderkeri():
     assert serder.ntholder.sith == '0'
     assert [diger.qb64 for diger in serder.ndigers] == []
     assert serder.bner.num == 0
+    assert serder.toader.qb64 == serder.bner.qb64
     assert serder.bn == 0
+    assert serder.toad == serder.bn
     assert serder.backs == []
+    assert serder.wits == serder.backs
     assert [verfer.qb64 for verfer in serder.berfers] == []
+    assert [verfer.qb64 for verfer in serder.witnesses] == []
+    assert serder.uuid == None
+    assert serder.nonce == serder.uuid
     assert serder.delpre == None
     assert serder.delpreb == None
 
@@ -2760,7 +2776,7 @@ def test_serderkeri_vcp():
     assert serder.delpre == None
     assert serder.delpreb == None
     assert serder.route == None
-    assert serder.uuid == None
+    assert serder.uuid == ''
     assert serder.nonce == ''
 
     serder = SerderKERI(raw=raw)
@@ -2791,7 +2807,7 @@ def test_serderkeri_vcp():
     assert serder.delpre == None
     assert serder.delpreb == None
     assert serder.route == None
-    assert serder.uuid == None
+    assert serder.uuid == ''
     assert serder.nonce == ''
 
 
@@ -2820,8 +2836,11 @@ def test_serderacdc():
     assert serder.ilk == None
 
     # Test empty issuer field value (must be valid AID)
-    assert serder.issuer == serder.sad['i'] == ''
-    assert serder.issuerb == serder.issuer.encode("utf-8")
+    assert serder.israid == serder.sad['i'] == ''
+    assert serder.israidb == serder.israid.encode("utf-8")
+    assert serder.issuer == None
+    assert serder.iseaid == None
+    assert serder.issuee == None
 
     sad = serder.sad
     raw = serder.raw
@@ -2847,10 +2866,13 @@ def test_serderacdc():
     assert serder.size == size
     assert serder.kind == Kinds.json
     assert serder.said == said
+    assert isinstance(serder.diger, Diger)
+    assert serder.diger.qb64 == serder.said
     assert serder.ilk == None
     assert serder.stamp == None
-    assert serder.issuer ==  isr
-
+    assert serder.israid ==  isr
+    assert isinstance(serder.issuer, Prefixer)
+    assert serder.issuer.qb64 == serder.israid
 
     serder = SerderACDC(raw=raw)
     assert serder.raw == raw
@@ -2862,7 +2884,7 @@ def test_serderacdc():
     assert serder.said == said
     assert serder.ilk == None
     assert serder.stamp == None
-    assert serder.issuer ==  isr
+    assert serder.israid ==  isr
 
 
 

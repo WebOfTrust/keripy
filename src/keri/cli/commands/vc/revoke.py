@@ -145,7 +145,7 @@ class RevokeDoer(doing.DoDoer):
 
             if len(recps) > 0:
                 msgs = []
-                for msg in self.hby.db.clonePreIter(pre=creder.issuer):
+                for msg in self.hby.db.clonePreIter(pre=creder.israid):
                     serder = SerderKERI(raw=msg)
                     atc = msg[serder.size:]
                     msgs.append((serder, atc))

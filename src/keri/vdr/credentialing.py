@@ -1042,7 +1042,7 @@ def sendArtifacts(hby, reger, postman, creder, recp):
         creder (Creder): the credential to pull artifacts for and send
         recp (str): qb64 prefix of the recipient to send the artifacts to
     """
-    issr = creder.issuer
+    issr = creder.israid
     isse = creder.attrib["i"] if "i" in creder.attrib else None
     regk = creder.regid
 
@@ -1092,7 +1092,7 @@ def sendRegistry(hby, reger, postman, creder, sender, recp):
         sender (str): qb64 prefix of the sender of the registry artifacts
         recp (str): qb64 prefix of the recipient to send the artifacts to
     """
-    issr = creder.issuer
+    issr = creder.israid
     regk = creder.regid
 
     if regk is None:
