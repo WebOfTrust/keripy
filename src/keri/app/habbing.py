@@ -1697,13 +1697,21 @@ class BaseHab:
             if pvrsn.major == Vrsn_1_0.major:
                 serder, end = specialExchange(embeds=embeds, **kwa)
             else:
+                # Make a copy of attr
                 attrs = dict(attributes) if attributes is not None else {}
+                
+                # Set up a manifest for embedded messages
                 manifest = dict()
                 end = bytearray()
                 ngvrsn = gvrsn if gvrsn is not None else Vrsn_2_0
                 nests = []
+
+                # Iterate through the embeds
                 for label, msg in embeds.items():
+                    # Get the Serder of the message body
                     eserder = Serder(raw=msg)
+
+                    # Store the SAID of the embedded message in the label
                     manifest[label] = eserder.said
                     svrsn = eserder.gvrsn if eserder.gvrsn else eserder.pvrsn
 
@@ -1716,9 +1724,14 @@ class BaseHab:
                         raise ValueError("Expected one embedded message stream")
                     nests.append(serializeParsedSubstream(parsed[0], gvrsn=ngvrsn))
 
+                # Compute a SAID for the manifest
                 manifest["d"] = ""
                 _, manifest = Saider.saidify(sad=manifest, label=Saids.d)
+                
+                # Add that manifest to the outer payload under the "embeds" attribute
                 attrs["embeds"] = manifest
+
+                # Replace with the new attributes 
                 kwa["attributes"] = attrs
                 serder = exchange(**kwa)
         else:

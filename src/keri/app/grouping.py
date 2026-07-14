@@ -322,7 +322,9 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None, version=None, kind
         rmids (list): list of qb64 AIDs of members with rotation authority
         icp (bytes): serialized inception event with CESR streamed attachments
         delegator (str): qb64 AID of Delegator is group multisig is a delegated AID
-
+        version(Versionage | None): optional explicit protocol version
+        kind (str | None): optional explicit serialization kind
+ 
     Returns:
         tuple: (Serder, bytes): Serder of exn message and CESR attachments
 
