@@ -1697,8 +1697,6 @@ class BaseHab:
             if pvrsn.major == Vrsn_1_0.major:
                 serder, end = specialExchange(embeds=embeds, **kwa)
             else:
-                # Serialize each child message as a nested substream, and
-                # record a signed label -> child SAID manifest in `a["embeds"]`
                 attrs = dict(attributes) if attributes is not None else {}
                 manifest = dict()
                 end = bytearray()
@@ -1709,8 +1707,6 @@ class BaseHab:
                     manifest[label] = eserder.said
                     svrsn = eserder.gvrsn if eserder.gvrsn else eserder.pvrsn
 
-                    # Each embed value must be one framed top-level message stream
-                    # so we can repackage it as one nested V2 child
                     parsed = Parser(version=svrsn).parse(ims=bytearray(msg),
                                                          framed=True,
                                                          processive=False)
@@ -1720,8 +1716,6 @@ class BaseHab:
                         raise ValueError("Expected one embedded message stream")
                     nests.append(serializeParsedSubstream(parsed[0], gvrsn=ngvrsn))
 
-                # Preserve embed names and add one aggregate digest for the
-                # whole labeled set
                 manifest["d"] = ""
                 _, manifest = Saider.saidify(sad=manifest, label=Saids.d)
                 attrs["embeds"] = manifest
