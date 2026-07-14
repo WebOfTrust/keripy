@@ -436,7 +436,7 @@ def test_acdc_registry_examples_JSON():
 
     # Registry0  test default kind JSON uuid0 stamp0
     stamp0 = '2025-07-04T17:50:00.000000+00:00'
-    serder = regcept(issuer=amy, uuid=uuids[0], stamp=stamp0)
+    serder = regcept(israid=amy, uuid=uuids[0], stamp=stamp0)
     assert serder.sad == \
     {
         "v": "ACDCCAACAAJSONAADa.",
@@ -452,7 +452,7 @@ def test_acdc_registry_examples_JSON():
 
     # Registry1 test default kind JSON uuid1 Stamp1
     stamp1 = '2025-07-04T17:51:00.000000+00:00'
-    serder = regcept(issuer=bob, uuid=uuids[1], stamp=stamp1)
+    serder = regcept(israid=bob, uuid=uuids[1], stamp=stamp1)
     assert serder.sad == \
     {
         "v": "ACDCCAACAAJSONAADa.",
@@ -468,7 +468,7 @@ def test_acdc_registry_examples_JSON():
 
     # Registry2 test default kind JSON uuid2 Stamp2
     stamp2 = '2025-07-04T17:52:00.000000+00:00'
-    serder = regcept(issuer=cal, uuid=uuids[2], stamp=stamp2)
+    serder = regcept(israid=cal, uuid=uuids[2], stamp=stamp2)
     assert serder.sad == \
     {
         "v": "ACDCCAACAAJSONAADa.",
@@ -484,7 +484,7 @@ def test_acdc_registry_examples_JSON():
 
     # Registry3 test default kind JSON uuid3 Stamp3
     stamp3 = '2025-07-04T17:53:00.000000+00:00'
-    serder = regcept(issuer=deb, uuid=uuids[3], stamp=stamp3)
+    serder = regcept(israid=deb, uuid=uuids[3], stamp=stamp3)
     assert serder.sad == \
     {
         "v": "ACDCCAACAAJSONAADa.",
@@ -524,7 +524,7 @@ def test_blindable_state_tel_examples_JSON():
 
     # Registry1 test default kind JSON uuid1 Stamp1
     stamp1 = '2025-07-04T17:51:00.000000+00:00'
-    serder = regcept(issuer=bob, uuid=uuids[1], stamp=stamp1)
+    serder = regcept(israid=bob, uuid=uuids[1], stamp=stamp1)
     assert serder.sad == \
     {
         "v": "ACDCCAACAAJSONAADa.",
@@ -892,7 +892,7 @@ def test_blindable_state_tel_examples_JSON():
     # NonBlindable Update `upd` example
     # Registry3 RegDeb test default kind JSON uuid3 Stamp3
     stamp3 = '2025-07-04T17:53:00.000000+00:00'
-    serder = regcept(issuer=deb, uuid=uuids[3], stamp=stamp3)
+    serder = regcept(israid=deb, uuid=uuids[3], stamp=stamp3)
     assert serder.sad == \
     {
         "v": "ACDCCAACAAJSONAADa.",
@@ -2320,8 +2320,8 @@ def test_acdc_examples_JSON():
         }
     }
 
-    serder = acdcmap(issuer=cal, uuid=uuids[10], regid=regCal, schema=accredSchemaSaid,
-                     attribute=accrAttrMad, issuee=amy, rule=ruleMad)
+    serder = acdcmap(israid=cal, uuid=uuids[10], regid=regCal, schema=accredSchemaSaid,
+                     attribute=accrAttrMad, iseaid=amy, rule=ruleMad)
     assert serder.said == accredSaid
     assert serder.sad == accredSad
 
@@ -2338,8 +2338,8 @@ def test_acdc_examples_JSON():
         "r": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU"
     }
 
-    serder = acdcmap(issuer=cal, uuid=uuids[10], regid=regCal, schema=accredSchemaSaid,
-                     attribute=accrAttrMad, issuee=amy, rule=ruleMad, compactify=True)
+    serder = acdcmap(israid=cal, uuid=uuids[10], regid=regCal, schema=accredSchemaSaid,
+                     attribute=accrAttrMad, iseaid=amy, rule=ruleMad, compactify=True)
     assert serder.said == accredSaid
     assert serder.sad == accredCSad
 
@@ -2546,7 +2546,7 @@ def test_acdc_examples_JSON():
         }
     }
 
-    serder = acdcmap(issuer=deb, uuid=uuids[11], regid=regDeb, schema=reportSchemaSaid,
+    serder = acdcmap(israid=deb, uuid=uuids[11], regid=regDeb, schema=reportSchemaSaid,
                      attribute=rrptMad, rule=ruleMad)
     assert serder.said == rReportSaid
     assert serder.sad == rReportSad
@@ -2564,7 +2564,7 @@ def test_acdc_examples_JSON():
         "r": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU"
     }
 
-    serder = acdcmap(issuer=deb, uuid=uuids[11], regid=regDeb, schema=reportSchemaSaid,
+    serder = acdcmap(israid=deb, uuid=uuids[11], regid=regDeb, schema=reportSchemaSaid,
                      attribute=rrptMad, rule=ruleMad, compactify=True)
     assert serder.said == rReportSaid
     assert serder.sad == rReportCSad
@@ -2619,7 +2619,7 @@ def test_acdc_examples_JSON():
         }
     }
 
-    serder = acdcmap(issuer=bob, uuid=uuids[12], regid=regBob, schema=reportSchemaSaid,
+    serder = acdcmap(israid=bob, uuid=uuids[12], regid=regBob, schema=reportSchemaSaid,
                      attribute=prptMad, rule=ruleMad)
     assert serder.said == pReportSaid
     assert serder.sad == pReportSad
@@ -2637,7 +2637,7 @@ def test_acdc_examples_JSON():
         "r": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU"
     }
 
-    serder = acdcmap(issuer=bob, uuid=uuids[12], regid=regBob, schema=reportSchemaSaid,
+    serder = acdcmap(israid=bob, uuid=uuids[12], regid=regBob, schema=reportSchemaSaid,
                      attribute=prptMad, rule=ruleMad, compactify=True)
     assert serder.said == pReportSaid
     assert serder.sad == pReportCSad
@@ -3243,7 +3243,7 @@ def test_acdc_examples_JSON():
         }
     }
 
-    serder = acdcmap(issuer=amy, ilk=None, uuid=uuids[13], regid=regAmy, schema=mainSchemaSaid,
+    serder = acdcmap(israid=amy, ilk=None, uuid=uuids[13], regid=regAmy, schema=mainSchemaSaid,
                      attribute=mainAttrMad, edge=mainEdgeMad, rule=ruleMad)
     assert serder.said == mainSaid
     assert serder.sad == mainSad
@@ -3261,7 +3261,7 @@ def test_acdc_examples_JSON():
         "r": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU"
     }
 
-    serder = acdcmap(issuer=amy, ilk=None, uuid=uuids[13], regid=regAmy, schema=mainSchemaSaid,
+    serder = acdcmap(israid=amy, ilk=None, uuid=uuids[13], regid=regAmy, schema=mainSchemaSaid,
                      attribute=mainAttrMad, edge=mainEdgeMad, rule=ruleMad, compactify=True)
     assert serder.said == mainSaid
     assert serder.sad == mainCSad
@@ -3552,7 +3552,7 @@ def test_acdc_examples_JSON():
         "r": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU"
     }
 
-    serder = acdcmap(issuer=amy, ilk=None, uuid=uuids[14], regid=regAmy,
+    serder = acdcmap(israid=amy, ilk=None, uuid=uuids[14], regid=regAmy,
                      schema=simpleMainSchemaSaid, attribute=mainAttrMad,
                      edge=simpleEdgeCMad, rule=ruleSaid)
     assert serder.said == simpleMainSaid
@@ -3571,7 +3571,7 @@ def test_acdc_examples_JSON():
         "r": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU"
     }
 
-    serder = acdcmap(issuer=amy, ilk=None, uuid=uuids[14], regid=regAmy,
+    serder = acdcmap(israid=amy, ilk=None, uuid=uuids[14], regid=regAmy,
                      schema=simpleMainSchemaSaid, attribute=mainAttrMad,
                      edge=simpleEdgeCMad, rule=ruleSaid, compactify=True)
     assert serder.said == simpleMainSaid
