@@ -5626,8 +5626,8 @@ class Kevery:
                 msgs.append(msg)
 
             if kever.delpre:
-                delkever = self.kevers[kever.delpre]  # Get the delegator's kever so we can set the version for the iterator
-                cloner = self.db.clonePreIter(pre=kever.delpre, fn=0, version=delkever.serder.pvrsn)  # create iterator at 0
+                dkever = self.kevers[kever.delpre]  # Get the delegator's kever so we can set the version for the iterator
+                cloner = self.db.clonePreIter(pre=kever.delpre, fn=0, version=dkever.serder.pvrsn)  # create iterator at 0
                 for msg in cloner:
                     msgs.append(msg)
 
