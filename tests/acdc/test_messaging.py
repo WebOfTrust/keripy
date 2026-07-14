@@ -571,7 +571,7 @@ def test_acdcagg_default_schema():
     """
     acgSaid, _ = acgSchemaDefault()
     actSaid, _ = actSchemaDefault()
-    acg = acdcagg(issuer='EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ')
+    acg = acdcagg(israid='EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ')
     assert acg.ilk == Ilks.acg
     # the acg ACDC commits to the acg default schema, not the act one
     assert acg.sad['s']['$id'] == acgSaid
