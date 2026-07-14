@@ -6,10 +6,28 @@ tests.spec.acdc.test_acdc_examples module
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
+import pytest
+from jsonschema import Draft202012Validator
+from jsonschema.exceptions import ValidationError
+
 from keri import Vrsn_2_0, Kinds, Protocols, Ilks
 from keri.core import (MtrDex, Salter, Labeler, Noncer, Mapper, Compactor, Aggor,
                        Blinder, BlindState, BoundState, GenDex, incept)
 from keri.acdc import regcept, blindate, update, acdcmap
+
+
+def assert_schema_valid(instance, schema):
+    """Validate an instance against a JSON Schema using pypi jsonschema.
+
+    Two guarantees, via the Draft 2020-12 validator: (1) the schema is itself
+    well-formed (check_schema) -- exactly what catches a typo like the missing
+    comma in a 'required' array from issue #1482 -- and (2) the instance conforms
+    (validate raises on failure). The worked section schemas below use the
+    oneOf(SAID string, detail object) shape, so both the compacted (bare SAID)
+    and expanded (full block) forms of a section validate against the same schema.
+    """
+    Draft202012Validator.check_schema(schema)
+    Draft202012Validator(schema).validate(instance)
 
 
 def test_acdc_examples_setup():
@@ -1092,6 +1110,7 @@ def test_acdc_attribute_section_JSON():
         "score": 96,
         "name": "Zoe Doe"
     }
+    assert_schema_valid(mapper.mad, privateSchema)
 
     # public targeted attribute section
     mad = \
@@ -1110,6 +1129,7 @@ def test_acdc_attribute_section_JSON():
         "score": 96,
         "name": "Zoe Doe"
     }
+    assert_schema_valid(mapper.mad, publicSchema)
 
     # partially disclosable attribute section
 
@@ -1244,6 +1264,7 @@ def test_acdc_attribute_section_JSON():
         'gpa': 3.5,
         'grades': 'EFQnBFeKAeS4DAWYoKDwWXOT4h2-XaGk7-w4-2N4ktXy'
     }
+    assert_schema_valid(compactor.mad, partialSchema)         # compact form (grades as SAID)
 
     assert compactor.partials[('.grades',)].mad == \
     {
@@ -1261,6 +1282,7 @@ def test_acdc_attribute_section_JSON():
             'math': 3.0
         }
     }
+    assert_schema_valid(compactor.partials[('.grades',)].mad, partialSchema)  # expanded form
 
     assert compactor.partials[('',)].mad == \
     {
@@ -1508,6 +1530,11 @@ def test_acdc_aggregate_section_JSON():
     assert aggor.ael == oael
     assert aggor.disclose() == (cael, kind)
     assert aggor.disclose([1, 2]) == (dael, kind)
+    # The aggregate validates against its section schema in expanded, fully
+    # compact, and mixed-disclosure forms.
+    assert_schema_valid(aggor.ael, schema)
+    assert_schema_valid(cael, schema)
+    assert_schema_valid(dael, schema)
 
     """Done Test"""
 
@@ -1855,6 +1882,7 @@ def test_acdc_rule_section_JSON():
     assert compactor.said == said
     assert compactor.mad == rcmad
     assert compactor.kind == kind
+    assert_schema_valid(compactor.mad, schema)         # compact rule section
 
     epath = ('.disclaimers.warrantyDisclaimer', '.disclaimers.liabilityDisclaimer', '.permittedUse')
     assert compactor.partials[epath].mad == \
@@ -1886,6 +1914,7 @@ def test_acdc_rule_section_JSON():
             "l": "The Issuee (controller of the Issuee AID) MAY only use this ACDC for non-commercial purposes."
         }
     }
+    assert_schema_valid(compactor.partials[epath].mad, schema)  # fully expanded rule
 
     # Non partially disclosable rule section
 
@@ -1985,6 +2014,7 @@ def test_acdc_rule_section_JSON():
     assert compactor.said == said
     assert compactor.mad == rcmad
     assert compactor.kind == kind
+    assert_schema_valid(compactor.mad, schema)         # non-partially-disclosable rule
 
     epath = ('',)
     assert compactor.partials[epath].mad == rcmad
@@ -2073,6 +2103,7 @@ def test_acdc_examples_JSON():
     compactor = Compactor(mad=iRuleMad, makify=True, compactify=True, kind=kind)
     assert compactor.said == ruleSaid
     assert compactor.mad == ruleMad
+    assert_schema_valid(ruleMad, ruleSchema)  # expanded form
 
     # Edge ACDCs
     # Accredidation ACDC
@@ -2152,6 +2183,13 @@ def test_acdc_examples_JSON():
     compactor = Compactor(mad=iAccrAttrMad, makify=True, compactify=True, kind=kind)
     assert compactor.said == accrAttrSaid
     assert compactor.mad ==accrAttrMad
+    # KNOWN SPEC DISCREPANCY (deferred to KSWG): accrAttrSchema's 'required' lists
+    # 'score', but this accreditation instance carries 'level' instead (no 'score').
+    # The expanded form therefore does not validate against its own schema; this
+    # documents the gap (issue #1482 class) and will start failing -- prompting an
+    # update -- once the schema or the worked example is corrected.
+    with pytest.raises(ValidationError):
+        assert_schema_valid(accrAttrMad, accrAttrSchema)
 
     #accreditation acdc schema
     iAccredSMad = \
@@ -2324,6 +2362,11 @@ def test_acdc_examples_JSON():
                      attribute=accrAttrMad, iseaid=amy, rule=ruleMad)
     assert serder.said == accredSaid
     assert serder.sad == accredSad
+    # KNOWN SPEC DISCREPANCY (deferred to KSWG): this full ACDC embeds the same
+    # accreditation attribute schema whose 'required' lists 'score', while the 'a'
+    # block carries 'level'. See the accrAttrSchema note above; self-alerting gap.
+    with pytest.raises(ValidationError):
+        assert_schema_valid(accredSad, accredSchemaMad)
 
     accredCSad = \
     {
@@ -2342,6 +2385,7 @@ def test_acdc_examples_JSON():
                      attribute=accrAttrMad, iseaid=amy, rule=ruleMad, compactify=True)
     assert serder.said == accredSaid
     assert serder.sad == accredCSad
+    assert_schema_valid(accredCSad, accredSchemaMad)  # compact form
 
 
     # Reports
@@ -2520,6 +2564,12 @@ def test_acdc_examples_JSON():
     compactor = Compactor(mad=iRrptMad, makify=True, compactify=True, kind=kind)
     assert compactor.said == rrptSaid
     assert compactor.mad == rrptMad
+    # KNOWN SPEC DISCREPANCY (deferred to KSWG): reportAttrSchema's 'required' lists
+    # 'author' and 'i', but this report instance uses 'name' and omits 'i'. The
+    # expanded form does not validate; documented here (issue #1482 class) as a
+    # self-alerting gap that will fail once the schema or example is corrected.
+    with pytest.raises(ValidationError):
+        assert_schema_valid(rrptMad, reportAttrSchema)
 
     rReportSaid = 'EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5'
     rReportSad = \
@@ -2550,6 +2600,11 @@ def test_acdc_examples_JSON():
                      attribute=rrptMad, rule=ruleMad)
     assert serder.said == rReportSaid
     assert serder.sad == rReportSad
+    # KNOWN SPEC DISCREPANCY (deferred to KSWG): full ACDC embedding the report
+    # attribute schema that requires 'author'/'i' while the 'a' block uses 'name'
+    # and omits 'i'. See the reportAttrSchema note above; self-alerting gap.
+    with pytest.raises(ValidationError):
+        assert_schema_valid(rReportSad, reportSchemaMad)
 
     rReportCSad = \
     {
@@ -2568,6 +2623,7 @@ def test_acdc_examples_JSON():
                      attribute=rrptMad, rule=ruleMad, compactify=True)
     assert serder.said == rReportSaid
     assert serder.sad == rReportCSad
+    assert_schema_valid(rReportCSad, reportSchemaMad)  # compact form
 
 
     # Project Report
@@ -2593,6 +2649,10 @@ def test_acdc_examples_JSON():
     compactor = Compactor(mad=iPrptMad, makify=True, compactify=True, kind=kind)
     assert compactor.said == prptSaid
     assert compactor.mad == prptMad
+    # KNOWN SPEC DISCREPANCY (deferred to KSWG): same reportAttrSchema 'author'/'i'
+    # vs 'name'/no-'i' mismatch as the research report above; self-alerting gap.
+    with pytest.raises(ValidationError):
+        assert_schema_valid(prptMad, reportAttrSchema)
 
     pReportSaid = 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M'
     pReportSad = \
@@ -2623,6 +2683,10 @@ def test_acdc_examples_JSON():
                      attribute=prptMad, rule=ruleMad)
     assert serder.said == pReportSaid
     assert serder.sad == pReportSad
+    # KNOWN SPEC DISCREPANCY (deferred to KSWG): full ACDC embedding the report
+    # attribute schema ('author'/'i' vs 'name'/no-'i'), same as above; self-alerting.
+    with pytest.raises(ValidationError):
+        assert_schema_valid(pReportSad, reportSchemaMad)
 
     pReportCSad = \
     {
@@ -2641,6 +2705,7 @@ def test_acdc_examples_JSON():
                      attribute=prptMad, rule=ruleMad, compactify=True)
     assert serder.said == pReportSaid
     assert serder.sad == pReportCSad
+    assert_schema_valid(pReportCSad, reportSchemaMad)  # compact form
 
 
     # main ACDC
@@ -2738,6 +2803,8 @@ def test_acdc_examples_JSON():
     assert compactor.said == mainAttrSaid
     assert compactor.mad == mainAttrCMad
     assert compactor.partials[('.grades',)].mad == mainAttrMad
+    assert_schema_valid(mainAttrCMad, mainAttrSchema)  # compact form
+    assert_schema_valid(mainAttrMad, mainAttrSchema)  # expanded form
 
 
     mainEdgeSchema = \
@@ -2933,6 +3000,8 @@ def test_acdc_examples_JSON():
     assert compactor.mad == mainEdgeCMad
     path = ('.accreditation', '.reports.research', '.reports.project')
     assert compactor.partials[path].mad == mainEdgeMad
+    assert_schema_valid(mainEdgeCMad, mainEdgeSchema)  # compact form
+    assert_schema_valid(mainEdgeMad, mainEdgeSchema)  # expanded form
 
     iMainSMad = \
     {
@@ -3247,6 +3316,7 @@ def test_acdc_examples_JSON():
                      attribute=mainAttrMad, edge=mainEdgeMad, rule=ruleMad)
     assert serder.said == mainSaid
     assert serder.sad == mainSad
+    assert_schema_valid(mainSad, mainSchemaMad)  # expanded form
 
     mainCSad = \
     {
@@ -3265,6 +3335,7 @@ def test_acdc_examples_JSON():
                      attribute=mainAttrMad, edge=mainEdgeMad, rule=ruleMad, compactify=True)
     assert serder.said == mainSaid
     assert serder.sad == mainCSad
+    assert_schema_valid(mainCSad, mainSchemaMad)  # compact form
 
     # Simple Main Edge Schema Example
 
@@ -3510,6 +3581,7 @@ def test_acdc_examples_JSON():
     compactor = Compactor(mad=iSimpleEdgeMad, makify=True, compactify=True, kind=kind)
     assert compactor.said == simpleEdgeSaid
     assert compactor.mad == simpleEdgeCMad
+    assert_schema_valid(simpleEdgeCMad, simpleEdgeSchema)  # compact form
 
 
     simpleMainSaid = 'EMR8CTHmJEwF2EF5Ylgyk6soUEXvGEB5KgJumJ86-nUX'
@@ -3557,6 +3629,7 @@ def test_acdc_examples_JSON():
                      edge=simpleEdgeCMad, rule=ruleSaid)
     assert serder.said == simpleMainSaid
     assert serder.sad == simpleMainSad
+    assert_schema_valid(simpleMainSad, simpleMainSchemaMad)  # expanded form
 
     simpleMainCSad = \
     {
@@ -3576,6 +3649,7 @@ def test_acdc_examples_JSON():
                      edge=simpleEdgeCMad, rule=ruleSaid, compactify=True)
     assert serder.said == simpleMainSaid
     assert serder.sad == simpleMainCSad
+    assert_schema_valid(simpleMainCSad, simpleMainSchemaMad)  # compact form
 
 
 def test_required_arrays_have_no_implicit_string_concatenation():
