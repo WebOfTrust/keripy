@@ -604,7 +604,7 @@ def introduce(hab, wit):
 
     if not found:  # no receipt from remote so pre-send own inception
         # no vrcs or rct of own icp from remote so send own inception
-        for msg in hab.db.clonePreIter(pre=hab.pre):
+        for msg in hab.db.clonePreIter(pre=hab.pre, version=hab.kever.serder.pvrsn):
             msgs.extend(msg)
         for msg in hab.db.cloneDelegation(hab.kever):
             msgs.extend(msg)

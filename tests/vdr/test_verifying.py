@@ -346,7 +346,7 @@ def test_verifier_chained_credential(seeder):
         ianverfer = Verifier(hby=ianHby, reger=ianreg.reger)
 
         # Now process all the events that Ron's issuer has generated so far
-        for msg in ron.db.clonePreIter(pre=ron.pre):
+        for msg in ron.db.clonePreIter(pre=ron.pre, version=ron.kever.serder.pvrsn):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
         for msg in ronverfer.reger.clonePreIter(pre=roniss.regk):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
@@ -479,7 +479,7 @@ def test_verifier_chained_credential(seeder):
         victvy = Tevery(reger=vicreg.reger, db=vic.db, local=False)
         vicverfer = Verifier(hby=vicHby, reger=vicreg.reger)
 
-        for msg in ron.db.clonePreIter(pre=ron.pre):
+        for msg in ron.db.clonePreIter(pre=ron.pre, version=ron.kever.serder.pvrsn):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
         for msg in ronverfer.reger.clonePreIter(pre=roniss.regk):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
@@ -495,7 +495,7 @@ def test_verifier_chained_credential(seeder):
 
         # Vic should be able to verify Han's credential
         # Get Ian's icp into Vic's db
-        for msg in ian.db.clonePreIter(pre=ian.pre):
+        for msg in ian.db.clonePreIter(pre=ian.pre, version=ian.kever.serder.pvrsn):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
         for msg in ianverfer.reger.clonePreIter(pre=ianiss.regk):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
@@ -525,7 +525,7 @@ def test_verifier_chained_credential(seeder):
                          saider=diger)
         ronreg.processEscrows()
 
-        for msg in ron.db.clonePreIter(pre=ron.pre):
+        for msg in ron.db.clonePreIter(pre=ron.pre, version=ron.kever.serder.pvrsn):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
         for msg in ronverfer.reger.clonePreIter(pre=roniss.regk):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)

@@ -313,7 +313,7 @@ class QueryTestDoer(doing.Doer):
         while not witDoer.cues:
             yield self.tock
 
-        msg = next(wesHab.db.clonePreIter(pre=palHab.pre))
+        msg = next(wesHab.db.clonePreIter(pre=palHab.pre, version=palHab.kever.serder.pvrsn))
 
 
         # Test valid KEL query with 'pre'

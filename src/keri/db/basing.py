@@ -1541,7 +1541,7 @@ class Baser(LMDBer):
                 # process event doesn't capture exceptions so we can more easily
                 # detect in the cloning that some events did not make it through
                 psr = parsing.Parser(kvy=kvy, version=Vrsn_1_0)
-                for msg in self.cloneAllPreIter():  # clone into copy
+                for msg in self.cloneAllPreIter(version=Vrsn_1_0):  # clone into copy
                     psr.parseOne(ims=msg)
 
                 # This is the list of non-set based databases that are not created as part of event processing.
@@ -1637,7 +1637,7 @@ class Baser(LMDBer):
             shutil.rmtree(copy.path)
 
 
-    def clonePreIter(self, pre, fn=0, version=Vrsn_1_0):
+    def clonePreIter(self, pre, fn=0, version=Version):
         """
         Returns iterator of first seen event messages with attachments for the
         identifier prefix pre starting at first seen order number, fn.
@@ -1662,7 +1662,7 @@ class Baser(LMDBer):
             yield msg
 
 
-    def cloneAllPreIter(self, version=Vrsn_1_0):
+    def cloneAllPreIter(self, version=Version):
         """
         Returns iterator of first seen event messages with attachments for all
         identifier prefixes starting at key. If key == b'' then start at first
@@ -1687,7 +1687,7 @@ class Baser(LMDBer):
 
 
 
-    def cloneEvtMsg(self, pre, fn, dig, version=Vrsn_1_0):
+    def cloneEvtMsg(self, pre, fn, dig, version=Version):
         """
         Clones Event as Serialized CESR Message with Body and attached Foot
 

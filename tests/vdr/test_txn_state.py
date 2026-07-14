@@ -39,7 +39,7 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
 
         # Gather up Bob's key event log
         msgs = bytearray()
-        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0):
+        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0, version=bobHab.kever.serder.pvrsn):
             msgs.extend(msg)
 
         # pass key event log to Bam
@@ -153,7 +153,7 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
 
         # Gather up Bob's key event log
         msgs = bytearray()
-        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0):
+        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0, version=bobHab.kever.serder.pvrsn):
             msgs.extend(msg)
 
         Parser(version=Vrsn_1_0).parse(ims=msgs, kvy=bamKvy, rvy=bamRvy)
@@ -219,7 +219,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         # Create Bob's icp, pass to Wes.
         wesKvy = Kevery(db=wesHby.db, lax=False, local=False)
 
-        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0):
+        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0, version=bobHab.kever.serder.pvrsn):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=wesKvy, local=True)
             iserder = SerderKERI(raw=bytearray(msg))
             wesHab.receipt(serder=iserder, framed=True, gvrsn=Vrsn_1_0, **KWA)
@@ -277,7 +277,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         assert wesHab.pre in bamHby.db.kevers
 
         msgs = bytearray()
-        for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=0):
+        for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=0, version=bobHab.kever.serder.pvrsn):
             msgs.extend(msg)
 
         Parser(version=Vrsn_1_0).parse(ims=msgs, kvy=bamKvy, rvy=bamRvy, local=True)
@@ -345,7 +345,7 @@ def test_tsn_from_no_one(mockHelpingNowUTC, mockCoringRandomNonce):
         # Create Bob's icp, pass to Wes.
         wesKvy = Kevery(db=wesHby.db, lax=False, local=False)
 
-        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0):
+        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0, version=bobHab.kever.serder.pvrsn):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=wesKvy)
 
         assert bobHab.pre in wesHab.kevers
@@ -388,7 +388,7 @@ def test_tsn_from_no_one(mockHelpingNowUTC, mockCoringRandomNonce):
         bamTvy.registerReplyRoutes(router=bamRtr)
 
         msgs = bytearray()
-        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0):
+        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0, version=bobHab.kever.serder.pvrsn):
             msgs.extend(msg)
 
         Parser(version=Vrsn_1_0).parse(ims=msgs, kvy=bamKvy, rvy=bamRvy)
@@ -498,7 +498,7 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
 
         # Gather up Bob's key event log
         msgs = bytearray()
-        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0):
+        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0, version=bobHab.kever.serder.pvrsn):
             msgs.extend(msg)
 
         Parser(version=Vrsn_1_0).parse(ims=msgs, kvy=bamKvy, rvy=bamRvy)

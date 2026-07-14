@@ -489,7 +489,8 @@ def test_get_oobi():
 
         # Approve the delegation manually
         delhab.interact(data=[dict(i=hab.pre, s="0", d=hab.pre)], framed=True, **CUE_KWA)
-        for msg in delhab.db.clonePreIter(pre=delhab.pre, fn=0):
+        for msg in delhab.db.clonePreIter(pre=delhab.pre, fn=0,
+                                          version=delhab.kever.serder.pvrsn):
             hab.psr.parse(ims=msg)
 
         rep = client.simulate_get('/oobi', )

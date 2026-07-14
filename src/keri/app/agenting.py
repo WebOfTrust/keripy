@@ -216,7 +216,7 @@ class Receiptor(doing.DoDoer):
         client, clientDoer = httpClient(hab, wit)
         self.extend([clientDoer])
 
-        for fmsg in hab.db.clonePreIter(pre=pre):
+        for fmsg in hab.db.clonePreIter(pre=pre, version=hab.kever.serder.pvrsn):
             streamCESRRequests(client=client, dest=wit, ims=bytearray(fmsg))
             while not client.responses:
                 yield self.tock
@@ -374,7 +374,7 @@ class WitnessReceiptor(doing.DoDoer):
 
                         if ser.ked['t'] in (coring.Ilks.icp, coring.Ilks.dip) or \
                                 "ba" in ser.ked and wit in ser.ked["ba"]:  # Newly added witness, must send full KEL to catch up
-                            for fmsg in hab.db.clonePreIter(pre=pre):
+                            for fmsg in hab.db.clonePreIter(pre=pre, version=ser.pvrsn):
                                 witer.msgs.append(bytearray(fmsg))
 
                         witer.msgs.append(bytearray(msg))  # make a copy
