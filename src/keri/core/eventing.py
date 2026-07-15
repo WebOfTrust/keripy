@@ -1743,7 +1743,7 @@ def messagize(serder, *, sigers=None, tsgs=None, lsgs=None, wigers=None,
                                      f" version={gvrsn} msg={serder.pretty()}")
 
         if len(aims) % 4:
-            raise ValueError(f"Invalid attachments size={len(atc)}, "
+            raise ValueError(f"Invalid attachments size={len(aims)}, "
                              f"nonintegral quadlets.")
 
         msg = bytearray(serder.raw)
