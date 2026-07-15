@@ -301,18 +301,6 @@ def loadHandlers(exc, mux):
     exc.addHandler(MultisigNotificationHandler(resource="/multisig/rpy", mux=mux))
 
 
-def _exnVersion(version=None, kind=None):
-    """Return embedded EXN and outer framing versions for specialExchange.
-
-    `specialExchange` still builds the legacy embedded `/multisig/*` EXN
-    shape, so keep that body at v1 while allowing the surrounding stream
-    framing to follow the explicit caller version or the global default.
-    """
-    gvrsn = version if version is not None else Version
-    kind = kind if kind is not None else Kinds.json
-    return dict(version=Vrsn_1_0, kind=kind), gvrsn
-
-
 def multisigInceptExn(hab, smids, rmids, icp, delegator=None, version=None, kind=None):
     """
 
@@ -652,13 +640,13 @@ def multisigExn(ghab, exn, version=None, kind=None):
         exn=exn
     )
 
-    kwa, gvrsn = _exnVersion(version=version, kind=kind)
     wexn, end = specialExchange(sender=ghab.mhab.pre,
                                 route="/multisig/exn",
                                 attributes={'gid': ghab.pre},
                                 embeds=embeds,
-                                **kwa)
-    evt = ghab.mhab.endorse(serder=wexn, last=False, framed=True, gvrsn=gvrsn)
+                                version=version, 
+                                kind=kind)
+    evt = ghab.mhab.endorse(serder=wexn, last=False, framed=True, gvrsn=version)
     atc = bytearray(evt[wexn.size:])
     atc.extend(end)
 
