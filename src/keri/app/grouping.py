@@ -593,6 +593,8 @@ def multisigRpyExn(ghab, rpy, version=None, kind=None):
     Parameters:
         ghab (GroupHab): identifier Hab for ensorsing the message to send
         rpy (bytes): CESR stream of serialized and reply event
+        version(Versionage | None): optional explicit protocol version
+        kind (str | None): optional explicit serialization kind
 
     Returns:
         tuple: (Serder, bytes): Serder of exn message and CESR attachments
