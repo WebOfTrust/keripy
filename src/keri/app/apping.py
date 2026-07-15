@@ -78,7 +78,7 @@ class Consoler(doing.Doer):
         chunks = line.lower().split()
 
         if not chunks:
-            self.console.put("Try one of: l[eft] r[ight] w[alk] s[top]\n")
+            self.console.put(b"Try one of: l[eft] r[ight] w[alk] s[top]\n")
             return False
         verb = chunks[0]
 
@@ -95,11 +95,13 @@ class Consoler(doing.Doer):
             command = ('stop', '')
 
         else:
-            self.console.put("Invalid command: {0}\n".format(verb))
-            self.console.put("Try one of: t[urn] s[top] w[alk]\n")
+            self.console.put(b"Invalid command: " + verb + b"\n")
+            self.console.put(b"Try one of: l[eft] r[ight] w[alk] s[top]\n")
             return False
 
-        self.console.put("Did: {} {}\n".format(command[0], command[1]).encode("utf-8"))
+        self.console.put(b"Did: " +
+                         command[0].encode("utf-8") + b" " +
+                         str(command[1]).encode("utf-8") + b"\n")
 
         return False
 
