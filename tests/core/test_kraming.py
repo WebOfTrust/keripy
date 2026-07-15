@@ -426,6 +426,46 @@ def test_intake():
             assert result is serder
 
 
+def test_v2_oobi_service_reply_routes_bypass_kram_by_default():
+    """V2 OOBI endpoint replies use BADA and bypass KRAM without extra config."""
+    enabledCf = {
+        "kram": {
+            "enabled": True,
+            "denials": [],
+            "caches": {},
+        }
+    }
+
+    with openCF(name="kram_oobi_reply", base="test", temp=True) as cf:
+        cf.put(enabledCf)
+        with openDB(name="test_oobi_reply_denials", temp=True) as db:
+            kramer = Kramer(db, cf)
+            v2b64 = Verser.verToB64(major=2, minor=0)
+
+            assert f"{v2b64}.rpy./end/role" in kramer.denials
+            assert f"{v2b64}.rpy./loc/scheme" in kramer.denials
+
+            calls = []
+
+            def mock_kramit(msg, kwa=None):
+                calls.append((msg.ilk, msg.route))
+                return msg
+
+            kramer.kramit = mock_kramit
+
+            serder = reply(
+                pre=TEST_PRE,
+                route="/end/role/add",
+                data=dict(a=1),
+                pvrsn=Vrsn_2_0,
+            )
+
+            result = kramer.intake(serder)
+
+            assert result is serder
+            assert calls == []
+
+
 # The following four tests provide basic coverage for integration with kevery.processMsg() along the various auth paths
 
 KRAM_INTEGRATION_CONFIG = {

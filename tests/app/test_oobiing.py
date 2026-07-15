@@ -5,10 +5,11 @@ tests.app.test_multisig module
 """
 
 import falcon
+from falcon import testing
 from hio.base import doing
 from hio.core import http
 
-from keri.kering import Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Version
+from keri.kering import Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Version, Kinds
 from keri.app import (Notifier, Oobiery, Authenticator,
                       Result, openHab, openHby,
                       oobiRequestExn)
@@ -243,6 +244,169 @@ def test_loaded_v1_endpoint_replies_use_stored_reply_framing():
         locer = dst.db.locs.get(keys=(hab.pre, Schemes.http))
         assert locer is not None
         assert locer.url == "http://127.0.0.1:5555"
+
+
+def test_loaded_v2_oobi_endpoint_replies_bypass_kram(mockHelpingNowUTC):
+    cuekwa = dict(version=Vrsn_2_0, kind=Kinds.cesr, gvrsn=Vrsn_2_0)
+    config = {
+        "kram": {
+            "enabled": True,
+            "caches": {
+                "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000],
+            },
+        }
+    }
+
+    with openHby(name="oobi-src-v2", version=Vrsn_2_0) as src, \
+            openHby(name="oobi-dst-v2", version=Vrsn_2_0) as dst:
+        hab = src.makeHab(name="wit", isith="1", icount=1,
+                          transferable=False, version=Vrsn_2_0, kind=Kinds.cesr)
+        msgs = bytearray()
+        msgs.extend(hab.makeEndRole(eid=hab.pre,
+                                    role=Roles.controller,
+                                    stamp=helping.nowIso8601(),
+                                    version=Vrsn_2_0, kind=Kinds.cesr, gvrsn=Vrsn_2_0))
+        msgs.extend(hab.makeLocScheme(url="http://127.0.0.1:5555",
+                                      scheme=Schemes.http,
+                                      stamp=helping.nowIso8601(),
+                                      version=Vrsn_2_0, kind=Kinds.cesr, gvrsn=Vrsn_2_0))
+        hab.psr.parse(ims=msgs)
+
+        dst.cf.put(config)
+        rtr = Router()
+        rvy = Revery(db=dst.db, rtr=rtr)
+        kvy = Kevery(db=dst.db, cf=dst.cf, enableKram=True,
+                     lax=False, local=False, rvy=rvy)
+        kvy.registerReplyRoutes(router=rtr)
+        prs = Parser(framed=True, kvy=kvy, rvy=rvy, version=Vrsn_2_0)
+
+        # Assert Kramer is enabled
+        assert kvy.kramer is not None
+        assert kvy.kramer.enabled is True
+
+        # Create record calls and seen lists to track functions
+        calls = []
+        seen = []
+
+        # Retrieve kramit and processReply functions to wrap and track calls
+        original_kramit = kvy.kramer.kramit
+        original_processReply = rvy.processReply
+
+        def kramit(msg, kwa=None):
+            calls.append((msg.ilk, msg.route))
+            return original_kramit(msg, kwa)
+
+        def processReply(serder, *args, **kwa):
+            seen.append((serder.route, serder.pvrsn))
+            return original_processReply(serder, *args, **kwa)
+
+        kvy.kramer.kramit = kramit
+        rvy.processReply = processReply
+
+        oobi = bytearray()
+        oobi.extend(hab.loadEndRole(cid=hab.pre,
+                                    eid=hab.pre,
+                                    role=Roles.controller))
+        oobi.extend(hab.loadLocScheme(eid=hab.pre,
+                                      scheme=Schemes.http))
+
+        prs.parse(ims=oobi)
+
+        ender = dst.db.ends.get(keys=(hab.pre, Roles.controller, hab.pre))
+        assert ender is not None
+        assert ender.allowed is True
+
+        locer = dst.db.locs.get(keys=(hab.pre, Schemes.http))
+        assert locer is not None
+        assert locer.url == "http://127.0.0.1:5555"
+
+
+        # Assert seen and calls lists
+        assert seen == [
+            ("/end/role/add", Vrsn_2_0),
+            ("/loc/scheme", Vrsn_2_0),
+        ]
+        assert calls == []
+        assert list(dst.db.kramMSGC.getTopItemIter()) == []
+
+
+def test_v2_oobi_get_controller_stream_bypasses_kram(mockHelpingNowUTC):
+    config = {
+        "kram": {
+            "enabled": True,
+            "caches": {
+                "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000],
+            },
+        }
+    }
+
+    with openHby(name="oobi-src-v2-http", version=Vrsn_2_0) as src, \
+            openHby(name="oobi-dst-v2-http", version=Vrsn_2_0) as dst:
+        hab = src.makeHab(name="oobi", isith="1", icount=1,
+                          transferable=False, version=Vrsn_2_0, kind=Kinds.cesr)
+        msgs = bytearray()
+        msgs.extend(hab.makeEndRole(eid=hab.pre,
+                                    role=Roles.controller,
+                                    stamp=helping.nowIso8601(),
+                                    version=Vrsn_2_0, 
+                                    kind=Kinds.cesr, 
+                                    gvrsn=Vrsn_2_0))
+        msgs.extend(hab.makeLocScheme(url="http://127.0.0.1:5555",
+                                      scheme=Schemes.http,
+                                      stamp=helping.nowIso8601(),
+                                      version=Vrsn_2_0, 
+                                      kind=Kinds.cesr, 
+                                      gvrsn=Vrsn_2_0))
+        hab.psr.parse(ims=msgs)
+
+        app = falcon.App()
+        loadEndingEnds(app, hby=src, default=hab.pre)
+        client = testing.TestClient(app)
+        rep = client.simulate_get(f"/oobi/{hab.pre}/controller")
+
+        assert rep.status == falcon.HTTP_OK
+        assert rep.content
+
+        dst.cf.put(config)
+        rtr = Router()
+        rvy = Revery(db=dst.db, rtr=rtr)
+        kvy = Kevery(db=dst.db, cf=dst.cf, enableKram=True,
+                     lax=False, local=False, rvy=rvy)
+        kvy.registerReplyRoutes(router=rtr)
+        prs = Parser(framed=True, kvy=kvy, rvy=rvy, version=Vrsn_2_0)
+
+        calls = []
+        seen = []
+        original_kramit = kvy.kramer.kramit
+        original_processReply = rvy.processReply
+
+        def kramit(msg, kwa=None):
+            calls.append((msg.ilk, msg.route))
+            return original_kramit(msg, kwa)
+
+        def processReply(serder, *args, **kwa):
+            seen.append((serder.route, serder.pvrsn))
+            return original_processReply(serder, *args, **kwa)
+
+        kvy.kramer.kramit = kramit
+        rvy.processReply = processReply
+
+        prs.parse(ims=bytearray(rep.content))
+
+        ender = dst.db.ends.get(keys=(hab.pre, Roles.controller, hab.pre))
+        assert ender is not None
+        assert ender.allowed is True
+
+        locer = dst.db.locs.get(keys=(hab.pre, Schemes.http))
+        assert locer is not None
+        assert locer.url == "http://127.0.0.1:5555"
+
+        assert seen == [
+            ("/loc/scheme", Vrsn_2_0),
+            ("/end/role/add", Vrsn_2_0),
+        ]
+        assert calls == []
+        assert list(dst.db.kramMSGC.getTopItemIter()) == []
 
 
 def test_introduce(mockHelpingNowUTC):

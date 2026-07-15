@@ -95,6 +95,11 @@ class Kramer:
         denials (list): Compacted denial strings for exempted messages
         fullDenials (list): Raw denial configurations
     """
+    OobiDenials = (
+        [[2, 0], Ilks.rpy, "/end/role"],
+        [[2, 0], Ilks.rpy, "/loc/scheme"],
+    )
+
     def __init__(self, db, cf=None, cues=None):
         self.db = db
         self.cf = cf if cf else None
@@ -108,7 +113,11 @@ class Kramer:
 
         self._enabled = kram.get('enabled', False)
 
-        self._fullDenials = kram.get('denials', [])
+        fullDenials = kram.get('denials', [])
+        if self._enabled:
+            fullDenials = self._mergeOobiDenials(fullDenials)
+
+        self._fullDenials = fullDenials
         self._denials = self._compactDenials(self._fullDenials)
 
         self._kramCTYPCf = kram.get('caches', {})
@@ -116,6 +125,26 @@ class Kramer:
 
         # Staged accept-window increases (see changeConfig, reconcileConfig)
         self._pending = {}
+
+    @classmethod
+    def _mergeOobiDenials(cls, fullDenials):
+        """Add built-in OOBI denial exemptions unless config already covers them.
+
+        OOBI endpoint discovery replies rely on BADA acceptance rather than
+        KRAM replay protection, so V2 service-endpoint reply routes must bypass
+        ``kramit`` even when KRAM is enabled.
+        """
+        merged = list(fullDenials)
+        compact = cls._compactDenials(merged)
+
+        for denial in cls.OobiDenials:
+            bcompact = cls._compactDenials([denial])[0]
+            if any(bcompact.startswith(cdenial) for cdenial in compact):
+                continue
+            merged.append(list(denial))
+            compact.append(bcompact)
+
+        return merged
 
     def _parseValidateCtyp(self, key, val):
         """Parse and validate one cache-type tuple from config.
