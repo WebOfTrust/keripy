@@ -31,6 +31,8 @@ parser.add_argument("--recipient", "-r", help="alias or qb64 identifier prefix o
 parser.add_argument("--said", "-s", help="SAID of the credential to grant", required=True)
 parser.add_argument("--message", "-m", help="optional human readable message to "
                                             "send to recipient", required=False, default="")
+parser.add_argument("--oobi-url", dest="oobi_url", help="schema server OOBI URL to embed as a.oobiUrl on the "
+                                                        "GRANT exn", required=False, default=None)
 parser.add_argument("--time", help="timestamp for the revocation", required=False, default=None)
 
 
@@ -42,16 +44,18 @@ def handler(args):
                    said=args.said,
                    recp=args.recipient,
                    message=args.message,
+                   oobiUrl=args.oobi_url,
                    timestamp=args.time)
     return [ed]
 
 
 class GrantDoer(doing.DoDoer):
 
-    def __init__(self, name, alias, base, bran, said, recp, message, timestamp):
+    def __init__(self, name, alias, base, bran, said, recp, message, oobiUrl, timestamp):
         self.said = said
         self.recp = recp
         self.message = message
+        self.oobiUrl = oobiUrl
         self.timestamp = timestamp
         self.hby = existing.setupHby(name=name, base=base, bran=bran)
         self.hab = self.hby.habByName(alias)
@@ -115,8 +119,10 @@ class GrantDoer(doing.DoDoer):
                                                               seal=dict(i=iserder.pre, s=seqner.snh, d=iserder.said))
         anc = self.hby.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
 
-        exn, atc = protocoling.ipexGrantExn(hab=self.hab, recp=recp, message=self.message, acdc=acdc, iss=iss, anc=anc,
-                                            dt=self.timestamp)
+        reg = self.rgy.reger.cloneTvtAt(creder.regi) if self.oobiUrl is not None else None
+        exn, atc = protocoling.ipexGrantExn(hab=self.hab, recp=recp, message=self.message, acdc=acdc, iss=iss,
+                                            anc=anc, oobiUrl=self.oobiUrl, dt=self.timestamp, reg=reg)
+
         msg = bytearray(exn.raw)
         msg.extend(atc)
 

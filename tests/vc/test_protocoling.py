@@ -237,6 +237,13 @@ def test_ipex(seeder, mockCoringRandomNonce, mockHelpingNowIso8601, mockHelpingN
 
         assert ipexhan.verify(serder=grant0) is True
 
+        reg = sidRgy.reger.cloneTvtAt(issuer.regk)
+        grantOobi, _ = protocoling.ipexGrantExn(sidHab, message="Here's a credential", recp=sidHab.pre,
+                                                acdc=msg, iss=iss.raw, anc=anc, reg=reg,
+                                                oobiUrl="http://example.com/oobi")
+        assert grantOobi.ked["a"]["oobiUrl"] == "http://example.com/oobi"
+        assert grantOobi.ked["e"]["reg"]["d"] == issuer.regd
+
         # Lets save this bare offer so we can test full spurn workflow
         gmsg = bytearray(grant0.raw)
         gmsg.extend(grant0atc)

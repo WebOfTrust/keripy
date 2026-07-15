@@ -219,7 +219,7 @@ def ipexAgreeExn(hab, message, offer):
     return exn, ims
 
 
-def ipexGrantExn(hab, recp, message, acdc, iss=None, anc=None, agree=None, dt=None):
+def ipexGrantExn(hab, recp, message, acdc, iss=None, anc=None, agree=None, oobiUrl=None, dt=None, reg=None):
     """ Disclose an ACDC
 
     Parameters:
@@ -230,7 +230,9 @@ def ipexGrantExn(hab, recp, message, acdc, iss=None, anc=None, agree=None, dt=No
         iss (bytes): serialized TEL issuance event
         anc (bytes): serialized anchoring event in the KEL, either ixn or rot
         agree (Serder): optional IPEX exn agree message that this grant is response to.
+        oobiUrl (str): optional OOBI URL included in the GRANT payload
         dt (str): Iso8601 formatted date string to use for this request
+        reg (bytes): optional registry TEL event embedded when an OOBI URL is included
 
     Returns:
         Serder: credential issuance exn peer to peer message
@@ -241,6 +243,8 @@ def ipexGrantExn(hab, recp, message, acdc, iss=None, anc=None, agree=None, dt=No
         m=message,
         i=recp,
     )
+    if oobiUrl is not None:
+        data["oobiUrl"] = oobiUrl
 
     embeds = dict(
         acdc=acdc,
@@ -251,6 +255,9 @@ def ipexGrantExn(hab, recp, message, acdc, iss=None, anc=None, agree=None, dt=No
 
     if anc is not None:
         embeds['anc'] = anc
+
+    if oobiUrl is not None and reg is not None:
+        embeds['reg'] = reg
 
     kwa = dict()
     if agree is not None:
