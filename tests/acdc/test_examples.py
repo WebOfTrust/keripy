@@ -284,6 +284,9 @@ def test_selective_disclosure_aggregate_JSON():
     assert_acdc_schema_valid(acdc)
     assert_acdc_schema_valid(acdcCompact)
 
+    assert acdc.iseaid == BOB
+    assert acdc.issuee.qb64 == BOB
+
     # --- Holder: fully disclose (all elements collapse to SAIDs). ---
     full, k = aggor.disclose()
     assert k == kind
