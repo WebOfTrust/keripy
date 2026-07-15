@@ -432,6 +432,8 @@ def multisigInteractExn(ghab, aids, ixn, version=None, kind=None):
         ghab (GroupHab): group Hab to endorse the message
         aids (list): qb64 identifier prefixes to include in the interaction event
         ixn (bytes): serialized interaction event with CESR streamed attachments
+        version(Versionage | None): optional explicit protocol version
+        kind (str | None): optional explicit serialization kind
 
     Returns:
         tuple: (Serder, bytes): Serder of exn message and CESR attachments
@@ -441,19 +443,37 @@ def multisigInteractExn(ghab, aids, ixn, version=None, kind=None):
         ixn=ixn,
     )
 
-    kwa, gvrsn = _exnVersion(version=version, kind=kind)
-    exn, end = specialExchange(sender=ghab.mhab.pre,
-                               route="/multisig/ixn",
-                               modifiers=dict(),
-                               attributes=dict(gid=ghab.pre,
-                                     smids=aids),
-                               embeds=embeds,
-                               **kwa)
-    ims = ghab.mhab.endorse(serder=exn, last=False, framed=True, gvrsn=gvrsn)
-    atc = bytearray(ims[exn.size:])
-    atc.extend(end)
+    data = dict(gid=ghab.pre,
+                smids=aids)
 
-    return exn, atc
+    kind = kind if kind is not None else Kinds.json
+
+    if version and version.major == Vrsn_1_0.major:
+        exn, end = specialExchange(sender=ghab.mhab.pre,
+                                   route="/multisig/ixn",
+                                   modifiers=dict(),
+                                   attributes=data,
+                                   embeds=embeds,
+                                   version=version, 
+                                   kind=kind)
+        ims = ghab.mhab.endorse(serder=exn, last=False, framed=True, gvrsn=version)
+        atc = bytearray(ims[exn.size:])
+        atc.extend(end)
+
+        return exn, atc
+
+    version = version if version is not None else Version
+    ims = ghab.mhab.exchange(route="/multisig/ixn",
+                             modifiers=dict(),
+                             attributes=data,
+                             embeds=embeds,
+                             version=version,
+                             kind=kind,
+                             framed=True,
+                             gvrsn=version)
+    exn = SerderKERI(raw=ims)
+
+    return exn, bytearray(ims[exn.size:])
 
 
 def multisigRegistryInceptExn(ghab, usage, vcp, anc, version=None, kind=None):

@@ -902,6 +902,30 @@ def test_multisig_interact(mockHelpingNowUTC):
         assert "ixn" in exn.ked["e"]
 
 
+def test_multisig_interact_default_version_uses_v2_nested_substreams(mockHelpingNowUTC):
+    with openMultiSig(prefix="test") as ((_, ghab1), (_, _), (_, _)):
+        ixn = ghab1.mhab.interact(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        innerSerder = SerderKERI(raw=ixn)
+        exn, atc = multisigInteractExn(ghab=ghab1, aids=ghab1.smids,
+                                       ixn=ixn,
+                                       kind=Kinds.json)
+
+        assert exn.ked["r"] == '/multisig/ixn'
+        data = exn.ked["a"]
+        assert data["smids"] == ghab1.smids
+        assert data["gid"] == ghab1.pre
+        assert data["embeds"]["ixn"] == innerSerder.said
+        assert "d" in data["embeds"]
+        assert "e" not in exn.ked
+
+        results = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                 framed=True,
+                                                 processive=False)
+        assert len(results) == 1
+        assert len(results[0].nests) == 1
+        assert results[0].nests[0].serder.said == innerSerder.said
+
+
 def test_multisig_registry_incept(mockHelpingNowUTC, mockCoringRandomNonce):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
         vcp = incept(ghab1.pre, **KWA)
@@ -1186,6 +1210,48 @@ def test_multisig_interact_handler(mockHelpingNowUTC):
         esaid = exn.ked['e']['d']
         assert len(notifier.signaler.signals) == 1
         digers = hby1.db.meids.get(keys=(esaid, ))
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn.said
+        prefixers = hby1.db.maids.get(keys=(esaid,))
+        assert len(prefixers) == 1
+        assert prefixers[0].qb64 == ghab2.mhab.pre
+
+
+def test_multisig_interact_handler_v2_with_kram(mockHelpingNowUTC):
+    with openMultiSig(prefix="test") as ((hby1, ghab1), (_, ghab2), (_, _)):
+        ixn = ghab1.mhab.interact(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        exn, atc = multisigInteractExn(ghab=ghab2, aids=ghab1.smids,
+                                       ixn=ixn,
+                                       kind=Kinds.json)
+
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        with openCF(name="grouping-kram-ixn", base="test") as cf:
+            config = {
+                "kram": {
+                    "enabled": True,
+                    "denials": [],
+                    "caches": {
+                        "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
+                    }
+                },
+                "dt": "2021-01-01T00:00:00.000000+00:00",
+            }
+            cf.put(config)
+            kvy = Kevery(db=hby1.db, lax=False, local=False,
+                         kramer=Kramer(db=hby1.db, cf=cf), exc=exc)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                           kvy=kvy,
+                                           exc=exc,
+                                           local=False)
+
+        assert len(notifier.signaler.signals) == 1
+
+        esaid = exn.ked["a"]["embeds"]["d"]
+        digers = hby1.db.meids.get(keys=(esaid,))
         assert len(digers) == 1
         assert digers[0].qb64 == exn.said
         prefixers = hby1.db.maids.get(keys=(esaid,))
