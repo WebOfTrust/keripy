@@ -65,9 +65,13 @@ from keri.acdc import regcept, acdcmap, acdcagg
 # Four transferable Ed25519 basic AIDs derived from one fixed salt. The 'D'
 # prefix marks a transferable public key used directly as an AID; that is
 # sufficient for the data-structure-level modeling here.
-_SIGNERS = Salter(raw=b'clcworkexamplsal').signers(count=4, transferable=True,
+# Five signers: four for the actors, plus _SIGNERS[4] as the club's dedicated
+# rotation (next) key in Phase 4 -- not shared with any actor. HD derivation is
+# deterministic by index, so taking five instead of four leaves the first four
+# (and every SAID that depends on them) unchanged.
+_SIGNERS = Salter(raw=b'clcworkexamplsal').signers(count=5, transferable=True,
                                                    temp=True)
-STATE, ENDORSER, ALICE, CLUB = (signer.verfer.qb64 for signer in _SIGNERS)
+STATE, ENDORSER, ALICE, CLUB = (signer.verfer.qb64 for signer in _SIGNERS[:4])
 
 # Per-example blinding nonces, derived (not pasted) the same way the sibling
 # examples derive theirs, but from a distinct raw prefix so the two files do not
@@ -277,8 +281,9 @@ BESPOKE_SCHEMA_MAD = {
 
 # A published SEDI governance-framework provision, referenced BY SAID (not
 # authored here) from the SafeHarbor rule -- incorporation by reference, so a
-# verifier can pre-authorize the standard clause. Derived from its text so the
-# reference is a real SAID rather than a placeholder.
+# verifier can pre-authorize the standard clause. This is a PLACEHOLDER SAID (a
+# bare digest of a description string), standing in for the SAID a real deployment
+# would compute over the governance document's canonical serialization.
 GOV_PROVISION_SAID = Diger(
     ser=b'SEDI governance framework safe-harbor provision v1').qb64
 
@@ -347,6 +352,10 @@ def assert_acdc_schema_valid(acdc, schema=None):
 
 
 # --- Aggregate element indices for the sedi-id credential (a[0] is the AGID). ---
+# These serve double duty: as positions in the aggregate list AND as the NONCES
+# slot for each element's blinding nonce (so sedi elements own NONCES[1..5]).
+# Other credentials/sections use disjoint NONCES slots -- over-21 uses NONCES[14],
+# the bespoke edge section NONCES[15] -- so no blinding nonce is ever reused.
 SEDI_ISSUEE, SEDI_PHOTO, SEDI_DOB, SEDI_RESIDENCE, SEDI_NAME = 1, 2, 3, 4, 5
 
 
@@ -391,13 +400,14 @@ def _source_credentials(kind):
                    schema=sediSchema, aggregate=aggor.ael, kind=kind)
     # DESIGN DECISION (pending Sam, plan-of-record §9.1): over-21 is a pre-derived
     # boolean credential issued by an endorser to Alice (the plan's default), NOT a
-    # zero-knowledge predicate proof. Its optional edge back to sedi-id could only
-    # be I2I if it were self-issued by Alice (issuer == issuee), so under endorser
-    # issuance it is omitted rather than mislabeled. The load-bearing I2I edges are
-    # the bespoke ACDC's edges to both source creds (Phase 2), where Alice issues.
+    # zero-knowledge predicate proof. An over-21 -> sedi-id edge could only be I2I if
+    # over-21's issuer equaled sedi-id's issuee (both Alice) -- i.e. if Alice
+    # self-issued over-21; under endorser issuance issuer(over-21) = ENDORSER != ALICE,
+    # so the edge is omitted rather than mislabeled I2I. The load-bearing I2I edges
+    # are the bespoke ACDC's edges to both source creds (Phase 2), where Alice issues.
     over21 = acdcmap(israid=ENDORSER, uuid=NONCES[11], regid=regEndorser.said,
                      schema=over21Schema,
-                     attribute=dict(d='', u=NONCES[4], i=ALICE, over21=True), kind=kind)
+                     attribute=dict(d='', u=NONCES[14], i=ALICE, over21=True), kind=kind)
     return sedi, over21, aggor
 
 
@@ -442,7 +452,7 @@ def _bespoke_edges(sedi, over21):
     to share an AID," which anyone could arrange.
     """
     return dict(
-        d='', u=NONCES[5],
+        d='', u=NONCES[15],
         identity=dict(d='', u=NONCES[6], n=sedi.said, s=sedi.sad['s']['$id'], o='I2I'),
         age=dict(d='', u=NONCES[7], n=over21.said, s=over21.sad['s']['$id'], o='I2I'),
     )
@@ -519,7 +529,7 @@ def test_source_credentials_and_selective_disclosure_JSON():
     assert over21.sad['rd'] == "EHUTYL3_vqr6IgzqOXwhD8Ye6rNplLIMgmpNB_ldyFuL"
     assert over21.sad['a']['i'] == ALICE        # to the same holder
     assert over21.sad['a']['over21'] is True
-    assert over21.said == "EMD0nDGCQ11uAI2332_1vH8_581At0dHaVdbU8wKSRMc"
+    assert over21.said == "EMO2t-GvzdwwK25jT_Pvjv0UBDLhDZ_7F5tX67Shn2j6"
     over21Schema = assert_acdc_schema_valid(over21)
 
     # Schema teeth: a non-boolean age assertion is rejected.
@@ -538,7 +548,11 @@ def test_source_credentials_and_selective_disclosure_JSON():
     assert isinstance(disclosed[SEDI_RESIDENCE], str)       # residence withheld
     assert isinstance(disclosed[SEDI_NAME], str)            # name withheld
 
-    # Privacy invariant: the withheld birthdate value never appears on the wire.
+    # Privacy invariant: the withheld birthdate value never appears on the wire --
+    # dob/residence/name travel only as bare block SAIDs. Those SAIDs are
+    # computationally unlinkable to their values because each element block carries
+    # its own blinding nonce ('u'); without it a verifier cannot brute-force the
+    # (low-entropy) value from the SAID.
     assert "2000-03-15" not in json.dumps(disclosed)
 
     # The verifier recomputes the AGID over the mixed disclosure and confirms it.
@@ -561,13 +575,14 @@ def test_bespoke_presentation_acdc_JSON():
 
     Two things earn this example's keep, and both are asserted structurally here.
     The v2 acdc subpackage's message builders (keri.acdc.messaging) construct and
-    SAID-commit edge/rule sections but do not themselves interpret edge operators;
-    the working I2I/NI2I/DI2I enforcement lives in the runtime verifier
-    keri.vdr.verifying.verifyChain, which operates on the v1 (keri.vc) credential
-    pipeline through a live registry/TEL. keripy's v1->v2 reorg has not yet built
-    the v2-native verifier home, so a purely v2 construction like this one does not
-    get operator enforcement for free -- hence this test plays the verifier's
-    structural check directly:
+    SAID-commit edge/rule sections but do not themselves interpret edge operators.
+    The v1 runtime verifier keri.vdr.verifying.verifyChain enforces I2I, but only
+    via the far node's TOP-LEVEL attribute issuee (creder.attrib['i']); for an
+    aggregate ('acg') far node like sedi-id -- whose issuee is an aggregate element,
+    with no top-level a.i -- verifyChain cannot perform the check at all. So no
+    shipped verifier currently enforces the same-holder binding for this edge; the
+    test asserts the spec-intended binding a v2-native, aggregate-aware verifier
+    would enforce, playing that structural check directly:
 
       1. The I2I same-holder binding: the bespoke ACDC's issuer equals the issuee
          of each source credential its edges point to. sedi-id's issuee is an
@@ -589,7 +604,7 @@ def test_bespoke_presentation_acdc_JSON():
     assert bespoke.sad['a']['i'] == CLUB       # the club is the Issuee (Disclosee)
     assert bespoke.sad['a']['over21'] is True
     assert 'rd' not in bespoke.sad             # deliberately not registry-bound
-    assert bespoke.said == "ELB8tVljkKhekFlmE7yzKLtedos1sPl4gGZ44oBTuknA"
+    assert bespoke.said == "EACnZHzNva-bzeKhabwwnJDDH6l-E2n6ojzx7Fuzkn7e"
 
     # (1) I2I same-holder binding. The v2 path does not enforce operators, so we
     # assert the constraint the I2I operator stands for: the bespoke ACDC's issuer
@@ -647,9 +662,16 @@ def test_gated_ipex_exchange_JSON():
 
     Four properties are asserted, each a design point from the plan:
 
-      1. The offer carries only SAIDs and terms -- NO PII. Alice commits to the
-         bespoke ACDC (and its two source creds) by SAID, so the club learns what
-         it is agreeing to without yet learning who Alice is.
+      1. The offer carries only SAIDs and terms -- NO PII (no name, photo, or
+         birthdate). Alice commits to the bespoke ACDC (and its two source creds)
+         by SAID, so the club learns what it is agreeing to before receiving any
+         attribute values. (Alice's AID is still visible -- she is the offer's
+         sender -- so "no PII" means no attribute values, not sender anonymity.
+         Note too that the offer commits to the real, private bespoke SAID rather
+         than the spec's metadata-ACDC variant, a deliberate scope reduction per
+         plan-of-record §6; the SAIDs leak no PII because the ACDCs are private, but
+         the metadata variant is the spec's canonical pre-agreement artifact and
+         additionally decorrelates across presentations.)
       2. The agree binds the OFFER's SAID (its 'p' field), not the credential
          SAIDs. Because the offer commits to {cred SAIDs + governance + terms},
          referencing the offer transitively binds the club to all of it.
@@ -712,7 +734,7 @@ def test_gated_ipex_exchange_JSON():
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said                 # answers the apply
     assert bespoke.said.encode() in offer.raw           # commits to the bespoke by SAID
-    assert offer.said == "EP2fy7YTrgN_-DvhH0iQWs0lUrrNLxZNSYlN7wzzZCZ0"
+    assert offer.said == "EKf1P1uvSVufFHjgW6XeEp_weUtdRKPDgO0XSqxZs2JB"
     # (property 1) the offer leaks no PII: not Alice's name, photo, or birthdate.
     assert b"Alice Anders" not in offer.raw
     assert b"<state-endorsed-photo-bytes>" not in offer.raw
@@ -723,7 +745,7 @@ def test_gated_ipex_exchange_JSON():
     agree = exchange(sender=CLUB, receiver=ALICE, route="/ipex/agree",
                      prior=offer.said, stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said                 # binds the offer SAID
-    assert agree.said == "ELWhpenWXcSSvmbmpjuw_x6FrhlM2_Sssyz2FZ9CZ845"
+    assert agree.said == "ELuzTab7lXccFOkJV1uvsjRdYYQs0_uUt8o9B1aEsdyX"
     # The club signs the agree, and we assemble the signed wire message the blessed
     # way: messagize() frames the signature as a CESR attachment group (genus code
     # and all). New keripy code should never hand-roll attachment framing -- pass
@@ -733,15 +755,22 @@ def test_gated_ipex_exchange_JSON():
     clubSig = clubSigner.sign(ser=agree.raw, index=0)   # indexed controller signature
     signedAgree = messagize(agree, sigers=[clubSig])    # agree.raw + attachment group
     assert bytes(agree.raw) in signedAgree              # the body rides in the signed msg
-    capturedKeyState = clubSigner.verfer               # Alice's wallet captures the club key state
+    # Alice's wallet captures the club's current public key (a simplified stand-in
+    # for full key state; Phase 4 uses a real establishment event). Capture the
+    # serialized qb64 and reconstruct, so the verify is a genuine round-trip against
+    # captured bytes -- not a tautology against the live signer's own verfer object.
+    capturedKeyState = Verfer(qb64=clubSigner.verfer.qb64)
     assert capturedKeyState.verify(sig=clubSig.raw, ser=agree.raw)
 
-    # 4. The gate: Alice discloses only when handed an agree that both binds this
-    # offer AND carries a signature that verifies against the captured key state.
+    # 4. The gate: Alice discloses only when handed a message that (a) IS an agree,
+    # (b) binds this offer's SAID, and (c) carries a signature that verifies against
+    # the captured key state. Dropping the route check would let a signed spurn that
+    # binds the offer unlock disclosure -- a decline must never open the gate.
     def disclose(agreeMsg, sig, keyState):
+        isAgree = agreeMsg.sad['r'] == "/ipex/agree"
         bound = agreeMsg.sad['p'] == offer.said
         signed = keyState.verify(sig=sig.raw, ser=agreeMsg.raw)
-        if not (bound and signed):
+        if not (isAgree and bound and signed):
             return None                                 # terms not accepted -> nothing
         # The grant carries the bespoke ACDC (compact) and the selective disclosure
         # of sedi-id revealing issuee + photo -- the PII appears only here.
@@ -759,12 +788,18 @@ def test_gated_ipex_exchange_JSON():
                           prior="", stamp=AGREE_STAMP, kind=kind)
     assert disclose(strayAgree, clubSigner.sign(ser=strayAgree.raw, index=0),
                     capturedKeyState) is None
+    # A spurn (decline) -- even validly signed and binding the offer -- is not an
+    # agree, so the gate stays shut: a decline must never unlock disclosure.
+    spurn = exchange(sender=CLUB, receiver=ALICE, route="/ipex/spurn",
+                     prior=offer.said, stamp=AGREE_STAMP, kind=kind)
+    assert disclose(spurn, clubSigner.sign(ser=spurn.raw, index=0),
+                    capturedKeyState) is None
 
     # The valid, signed, offer-binding agree unlocks the disclosure.
     grant = disclose(agree, clubSig, capturedKeyState)
     assert grant is not None
     assert grant.sad['p'] == agree.said                 # grant follows the agree
-    assert grant.said == "EJcYQYuqzqQ4yCsEydtGBqjqVID6zECt_u-HreQiRYY0"
+    assert grant.said == "EG6iH5g6rVGmrKxRkPLb75arC6lJzYH-xJlKHYnvisXV"
     # (property 4) the state-endorsed photo crosses the wire only now, in the grant.
     assert b"<state-endorsed-photo-bytes>" in grant.raw
     # ...and even the grant never carries the withheld birthdate.
@@ -774,7 +809,7 @@ def test_gated_ipex_exchange_JSON():
     admit = exchange(sender=CLUB, receiver=ALICE, route="/ipex/admit",
                      prior=grant.said, stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "EBbChR-ZQ5RpEbO4W_GbTI5wULYQsOxywFWT6Sys5W3A"
+    assert admit.said == "EF-eDajl39A33hqk3G1Q6fMrYKhGZtyvYCWl_-O_lWaQ"
 
 
 def test_accountability_and_terms_follow_data_JSON():
@@ -787,14 +822,12 @@ def test_accountability_and_terms_follow_data_JSON():
     Alice's wallet must capture the club's key state -- its establishing event -- at
     acceptance time, alongside the signed agree. This test proves why.
 
-    It also shows two related accountability properties:
-
-      * Terms follow the data. The CLC terms live in the bespoke ACDC's Rules
-        section, which is committed by the ACDC's SAID. Any change to a clause
-        yields a different SAID, so a verifier cannot strip or weaken the terms
-        while still presenting "the same" credential.
-      * A spurn ends the exchange without disclosure. If the club declines the
-        terms (an IPEX spurn instead of an agree), the Phase-3 gate never opens.
+    It also shows terms follow the data: the CLC terms live in the bespoke ACDC's
+    Rules section, which is committed by the ACDC's SAID. Any change to a clause
+    yields a different SAID, so a verifier cannot strip or weaken the terms while
+    still presenting "the same" credential. (The complementary decline path -- a
+    signed spurn does not open the disclosure gate -- is exercised in Phase 3, where
+    the gate lives.)
 
     The club's key state is modeled with real KEL events (keri.core.incept /
     rotate). DESIGN DECISION (pending Sam, §9.3): the club uses a basic transferable
@@ -815,7 +848,9 @@ def test_accountability_and_terms_follow_data_JSON():
                      prior=offer.said, stamp=AGREE_STAMP, kind=kind)
 
     # --- The club's key state at acceptance: an inception establishing key0. ---
-    clubKey0, clubKey1 = _SIGNERS[3], _SIGNERS[0]     # current and next signing keys
+    # clubKey1 is the club's dedicated rotation key (_SIGNERS[4]) -- NOT any actor's
+    # key; reusing another actor's key here would be nonsensical in a KEL rotation.
+    clubKey0, clubKey1 = _SIGNERS[3], _SIGNERS[4]     # current and next signing keys
     icp = incept(keys=[clubKey0.verfer.qb64],
                  ndigs=[Diger(ser=clubKey1.verfer.qb64b).qb64])
     assert icp.pre == CLUB                            # basic 'D' AID: prefix == key0
@@ -840,14 +875,6 @@ def test_accountability_and_terms_follow_data_JSON():
     tamperedRules['Assimilation']['l'] = "Verifier may do anything it likes."
     weakened = _bespoke_presentation(sedi, over21, kind, rule=tamperedRules)
     assert weakened.said != bespoke.said              # cannot weaken terms silently
-
-    # --- Spurn: if the club declines the terms, no disclosure happens. ---
-    spurn = exchange(sender=CLUB, receiver=ALICE, route="/ipex/spurn",
-                     prior=offer.said, stamp=AGREE_STAMP, kind=kind)
-    assert spurn.sad['r'] == "/ipex/spurn"
-    # A spurn is not an agree, so the Phase-3 disclosure gate never opens: there is
-    # no agree carrying a signature that binds the offer.
-    assert spurn.sad['t'] == Ilks.exn and spurn.sad['r'] != "/ipex/agree"
 
 
 @pytest.mark.parametrize("kind", [Kinds.json, Kinds.cesr, Kinds.cbor, Kinds.mgpk])
