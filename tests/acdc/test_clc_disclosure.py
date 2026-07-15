@@ -56,7 +56,8 @@ from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ValidationError
 
 from keri import Kinds, Ilks
-from keri.core import Salter, Noncer, Aggor, Mapper, Diger, exchange, messagize
+from keri.core import (Salter, Noncer, Aggor, Mapper, Diger, Verfer,
+                       exchange, messagize, incept, rotate)
 from keri.acdc import regcept, acdcmap, acdcagg
 
 
@@ -435,15 +436,16 @@ def _bespoke_edges(sedi, over21):
     )
 
 
-def _bespoke_presentation(sedi, over21, kind, compactify=False):
+def _bespoke_presentation(sedi, over21, kind, compactify=False, rule=None):
     """Build Alice's bespoke presentation ACDC to the club (helper for Phase 2+).
 
     Issuer = Alice (Discloser), Issuee = the club (Disclosee). Attributes mirror
     the spec's restaurant example -- date and place of admittance -- plus the
     over-21 assertion the club is checking. Edges are I2I to both source creds; the
-    Rules section carries the three CLC clauses. It is deliberately NOT registry-
-    bound (no 'rd'), matching the spec's bespoke example and the plan's "no
-    correlatable log" intent. Returns the SerderACDC, most-compact when
+    Rules section carries the three CLC clauses (override via rule= to show that
+    changing the terms changes the ACDC's identity). It is deliberately NOT
+    registry-bound (no 'rd'), matching the spec's bespoke example and the plan's
+    "no correlatable log" intent. Returns the SerderACDC, most-compact when
     compactify=True (same SAID either way).
 
     DESIGN DECISION (pending Sam, plan-of-record §9.2): the state-endorsed photo is
@@ -457,7 +459,8 @@ def _bespoke_presentation(sedi, over21, kind, compactify=False):
                      place="The Alcove Club, 200 S West Temple, Salt Lake City UT",
                      over21=True)
     return acdcmap(israid=ALICE, uuid=NONCES[9], schema=schema, attribute=attribute,
-                   edge=_bespoke_edges(sedi, over21), rule=_bespoke_rules(),
+                   edge=_bespoke_edges(sedi, over21),
+                   rule=rule if rule is not None else _bespoke_rules(),
                    kind=kind, compactify=compactify)
 
 
@@ -760,3 +763,136 @@ def test_gated_ipex_exchange_JSON():
                      prior=grant.said, stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
     assert admit.said == "EBbChR-ZQ5RpEbO4W_GbTI5wULYQsOxywFWT6Sys5W3A"
+
+
+def test_accountability_and_terms_follow_data_JSON():
+    """Phase 4: the saved agree survives a club key rotation; terms follow the data.
+
+    The agree is signed but deliberately NOT KEL-anchored (Phase 3), so the club
+    keeps no public, correlatable log of whom it admits. The cost of that privacy
+    is that a bare signature rots: once the club rotates its signing key, a verifier
+    who resolves the club's CURRENT key state can no longer verify the old agree. So
+    Alice's wallet must capture the club's key state -- its establishing event -- at
+    acceptance time, alongside the signed agree. This test proves why.
+
+    It also shows two related accountability properties:
+
+      * Terms follow the data. The CLC terms live in the bespoke ACDC's Rules
+        section, which is committed by the ACDC's SAID. Any change to a clause
+        yields a different SAID, so a verifier cannot strip or weaken the terms
+        while still presenting "the same" credential.
+      * A spurn ends the exchange without disclosure. If the club declines the
+        terms (an IPEX spurn instead of an agree), the Phase-3 gate never opens.
+
+    The club's key state is modeled with real KEL events (keri.core.incept /
+    rotate). DESIGN DECISION (pending Sam, §9.3): the club uses a basic transferable
+    ('D') AID, so its inception prefix equals its initial key; a production deployment
+    would typically use a self-addressing inception prefix (stronger duplicity
+    protection). That distinction does not affect the point demonstrated here --
+    signature verification against captured vs. rotated key state.
+    """
+    kind = Kinds.json
+    sedi, over21, _ = _source_credentials(kind)
+    bespoke = _bespoke_presentation(sedi, over21, kind)
+
+    # Offer and the club's signed agree, as in Phase 3.
+    offer = exchange(sender=ALICE, receiver=CLUB, route="/ipex/offer",
+                     attributes=dict(acdc=bespoke.said, terms=_bespoke_rules()),
+                     stamp=OFFER_STAMP, kind=kind)
+    agree = exchange(sender=CLUB, receiver=ALICE, route="/ipex/agree",
+                     prior=offer.said, stamp=AGREE_STAMP, kind=kind)
+
+    # --- The club's key state at acceptance: an inception establishing key0. ---
+    clubKey0, clubKey1 = _SIGNERS[3], _SIGNERS[0]     # current and next signing keys
+    icp = incept(keys=[clubKey0.verfer.qb64],
+                 ndigs=[Diger(ser=clubKey1.verfer.qb64b).qb64])
+    assert icp.pre == CLUB                            # basic 'D' AID: prefix == key0
+    clubSig = clubKey0.sign(ser=agree.raw, index=0)
+    # Alice's wallet saves the signed agree AND the club's establishing key state.
+    capturedEstEvent = icp
+
+    # --- Later, the club rotates its signing key to key1. ---
+    rot = rotate(pre=CLUB, keys=[clubKey1.verfer.qb64], dig=icp.said, sn=1,
+                 ndigs=[Diger(ser=b'clc-club-next-key-2').qb64])
+    assert rot.sad['k'][0] == clubKey1.verfer.qb64    # current key is now key1
+
+    # A verifier resolving the club's CURRENT key state cannot verify the old agree.
+    assert not Verfer(qb64=rot.sad['k'][0]).verify(sig=clubSig.raw, ser=agree.raw)
+    # But the CAPTURED establishing key state still verifies it -- which is exactly
+    # why the wallet must capture key state alongside a non-KEL-anchored signature.
+    assert Verfer(qb64=capturedEstEvent.sad['k'][0]).verify(sig=clubSig.raw,
+                                                            ser=agree.raw)
+
+    # --- Terms follow the data: the CLC terms are bound into the bespoke SAID. ---
+    tamperedRules = _bespoke_rules()
+    tamperedRules['Assimilation']['l'] = "Verifier may do anything it likes."
+    weakened = _bespoke_presentation(sedi, over21, kind, rule=tamperedRules)
+    assert weakened.said != bespoke.said              # cannot weaken terms silently
+
+    # --- Spurn: if the club declines the terms, no disclosure happens. ---
+    spurn = exchange(sender=CLUB, receiver=ALICE, route="/ipex/spurn",
+                     prior=offer.said, stamp=AGREE_STAMP, kind=kind)
+    assert spurn.sad['r'] == "/ipex/spurn"
+    # A spurn is not an agree, so the Phase-3 disclosure gate never opens: there is
+    # no agree carrying a signature that binds the offer.
+    assert spurn.sad['t'] == Ilks.exn and spurn.sad['r'] != "/ipex/agree"
+
+
+@pytest.mark.parametrize("kind", [Kinds.json, Kinds.cesr, Kinds.cbor, Kinds.mgpk])
+def test_clc_serialization_kinds(kind):
+    """Phases 1-3 invariants hold across every serialization kind, not just JSON.
+
+    The detailed phases above pin canonical JSON SAIDs for readability. This check
+    exercises the same flows -- aggregate source creds + selective disclosure, the
+    bespoke ACDC with I2I edges and rules, and the gated exchange with a real signed
+    agree -- over CESR (the native KERI wire format) and CBOR/MGPK, asserting the
+    behavioral invariants without pinning per-kind SAIDs. (The no-PII-on-the-wire
+    invariant is JSON-specific and asserted in Phase 3: the CESR wire form
+    base64-encodes the payload, so a plaintext substring check does not apply.)
+    """
+    sedi, over21, aggor = _source_credentials(kind)
+    assert sedi.ilk == Ilks.acg and sedi.kind == kind
+    assert over21.ilk == Ilks.acm
+    assert sedi.sad['rd'] and over21.sad['rd']            # registry-bound on every kind
+    assert_acdc_schema_valid(sedi)                        # schema validation holds
+    assert_acdc_schema_valid(over21)
+
+    # Selective disclosure: reveal issuee + photo, withhold DOB; verifies via AGID.
+    disclosed = _photo_disclosure(aggor)
+    assert isinstance(disclosed[SEDI_PHOTO], dict)        # photo revealed
+    assert isinstance(disclosed[SEDI_DOB], str)           # birthdate withheld
+    assert Aggor.verifyDisclosure(disclosed, kind=kind)
+
+    # Bespoke ACDC: I2I edges + rules, schema-valid, compact == expanded SAID.
+    bespoke = _bespoke_presentation(sedi, over21, kind)
+    compact = _bespoke_presentation(sedi, over21, kind, compactify=True)
+    assert bespoke.said == compact.said
+    assert bespoke.sad['e']['identity']['o'] == 'I2I'
+    assert bespoke.sad['e']['age']['o'] == 'I2I'
+    schema = assert_acdc_schema_valid(bespoke)
+    assert_acdc_schema_valid(compact, schema=schema)
+    # I2I same-holder binding: issuer(bespoke) == issuee(sedi element) == issuee(over21)
+    assert bespoke.sad['i'] == sedi.sad['A'][SEDI_ISSUEE]['i']
+    assert bespoke.sad['i'] == over21.sad['a']['i']
+
+    # Gated exchange: the offer binds nothing PII, the agree binds the offer SAID,
+    # and the club's signed agree (assembled via messagize) verifies.
+    offer = exchange(sender=ALICE, receiver=CLUB, route="/ipex/offer",
+                     attributes=dict(acdc=bespoke.said, terms=_bespoke_rules()),
+                     stamp=OFFER_STAMP, kind=kind)
+    agree = exchange(sender=CLUB, receiver=ALICE, route="/ipex/agree",
+                     prior=offer.said, stamp=AGREE_STAMP, kind=kind)
+    assert agree.sad['p'] == offer.said
+    clubSig = _SIGNERS[3].sign(ser=agree.raw, index=0)
+    signedAgree = messagize(agree, sigers=[clubSig])
+    assert bytes(agree.raw) in signedAgree
+    assert _SIGNERS[3].verfer.verify(sig=clubSig.raw, ser=agree.raw)
+
+
+if __name__ == "__main__":
+    test_source_credentials_and_selective_disclosure_JSON()
+    test_bespoke_presentation_acdc_JSON()
+    test_gated_ipex_exchange_JSON()
+    test_accountability_and_terms_follow_data_JSON()
+    for _kind in (Kinds.json, Kinds.cesr, Kinds.cbor, Kinds.mgpk):
+        test_clc_serialization_kinds(_kind)
