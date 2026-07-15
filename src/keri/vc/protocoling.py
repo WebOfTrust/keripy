@@ -263,7 +263,8 @@ def ipexGrantExn(hab, recp, message, acdc, iss=None, anc=None, agree=None, oobiU
     if agree is not None:
         kwa['dig'] = agree.said
 
-    exn, end = exchanging.exchange(route="/ipex/grant", payload=data, sender=hab.pre, embeds=embeds, date=dt, **kwa)
+    exn, end = exchanging.exchange(route="/ipex/grant", payload=data, sender=hab.pre, recipient=recp,
+                                   embeds=embeds, date=dt, **kwa)
     ims = hab.endorse(serder=exn, last=False, pipelined=False)
     del ims[:exn.size]
     ims.extend(end)
