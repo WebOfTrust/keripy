@@ -597,17 +597,34 @@ def multisigRpyExn(ghab, rpy, version=None, kind=None):
         rpy=rpy
     )
 
-    kwa, gvrsn = _exnVersion(version=version, kind=kind)
-    exn, end = specialExchange(sender=ghab.mhab.pre,
-                               route="/multisig/rpy",
-                               attributes={'gid': ghab.pre},
-                               embeds=embeds,
-                               **kwa)
-    evt = ghab.mhab.endorse(serder=exn, last=False, framed=True, gvrsn=gvrsn)
-    atc = bytearray(evt[exn.size:])
-    atc.extend(end)
+    data = {'gid': ghab.pre}
+    kind = kind if kind is not None else Kinds.json
 
-    return exn, atc
+    if version and version.major == Vrsn_1_0.major:
+        exn, end = specialExchange(sender=ghab.mhab.pre,
+                                   route="/multisig/rpy",
+                                   attributes=data,
+                                   embeds=embeds,
+                                   version=version, 
+                                   kind=kind)
+        evt = ghab.mhab.endorse(serder=exn, last=False, framed=True, gvrsn=version)
+        atc = bytearray(evt[exn.size:])
+        atc.extend(end)
+
+        return exn, atc
+
+    version = version if version is not None else Version
+    ims = ghab.mhab.exchange(route="/multisig/rpy",
+                             modifiers=dict(),
+                             attributes=data,
+                             embeds=embeds,
+                             version=version,
+                             kind=kind,
+                             framed=True,
+                             gvrsn=version)
+    exn = SerderKERI(raw=ims)
+
+    return exn, bytearray(ims[exn.size:])
 
 
 def multisigExn(ghab, exn, version=None, kind=None):
