@@ -37,17 +37,22 @@ SAID of an inception event that commits to the actor's initial key and a pre-rot
 next key.
 
 A note on why later phases model the IPEX exchange and the club key rotation at
-the data-structure level: it is a deliberate scope choice, NOT a gap in keripy.
-Full IPEX support is implemented in keri.vc.protocoling (apply/offer/agree/grant/
-admit/spurn, version-aware), backed by the registry/TEL machinery in keri.vdr --
-but that tooling runs through a live Habery/keystore. keripy is midway through a
-deliberate v1->v2 reorganization: ACDC v1 stays in keri.vc, and the new keri.acdc
-subpackage is the v2 home, with keri.acdc.messaging filled in (the v2 message
-builders these examples use) and the other modules -- keri.acdc.ipexing,
-registring, registraring, scheming, ... -- still placeholder stubs awaiting
-migration. To keep this example Habery-free and v2-native, the exchange is built
-directly from the real v2 exn primitive keri.core.exchange. See the phase
-docstrings.
+the data-structure level: it is a deliberate scope choice, NOT a gap in keripy,
+and it is the right altitude for a first worked example. keripy is midway through
+a deliberate v1->v2 reorganization. ACDC v1 -- and its v1 IPEX handlers in
+keri.vc.protocoling -- stays in keri.vc; the new keri.acdc subpackage is the v2
+home, with keri.acdc.messaging filled in (the v2 message builders these examples
+use) and the other modules -- keri.acdc.ipexing, registring, registraring,
+scheming, ... -- still placeholder stubs awaiting migration. The v1
+keri.vc.protocoling handlers do not speak v2 messaging, so this example does NOT
+route through them; doing so would only mislead a reader about how v2 IPEX works.
+Instead the exchange is built directly from the real v2 exn primitive
+keri.core.exchange, Habery-free and v2-native. This "bare bones at the data-
+structure level" altitude is also the most useful one for implementers in other
+languages, who need to see the primitives before the automation. When
+keri.acdc.ipexing is fleshed out, a companion example will re-run this same
+scenario through that tooling -- layered examples, one scenario, escalating
+automation. See the phase docstrings.
 """
 
 import json
@@ -383,7 +388,10 @@ def _sedi_ael():
     blinded (own 'u'), self-addressing (own 'd') attribute block. The issuee
     binding (i = ALICE) is itself an aggregate element -- the convention for
     aggregate ACDCs, which carry no top-level a.i -- so it can be disclosed and
-    checked alongside the attributes it accompanies.
+    checked alongside the attributes it accompanies. It lives in the index-1
+    block (element 0 being the AGID), which is exactly where SerderACDC.iseaid
+    now resolves an aggregate issuee from (.sad["A"][1]["i"]); see test_examples
+    and keri.core.serdering.
     """
     return ['',
             dict(d='', u=NONCES[SEDI_ISSUEE], i=ALICE),
@@ -538,6 +546,10 @@ def test_source_credentials_and_selective_disclosure_JSON():
     assert sedi.sad['rd'] == "EHVOJQtOz0B_YAio90qC7t0_YgdiGTHHgX8Lga-Q3_AM"    # bound to the State's registry
     # The issuee binding is an aggregate element (acg has no top-level a.i).
     assert sedi.sad['A'][SEDI_ISSUEE]['i'] == ALICE
+    # SerderACDC.iseaid/.issuee resolve that same index-1 issuee, so a verifier
+    # reads an aggregative issuee exactly as it reads an attributive one.
+    assert sedi.iseaid == ALICE
+    assert sedi.issuee.qb64 == ALICE
     assert sedi.said == "EGv1HMP4xWZYf7GpHUv1yBwSufdVSmpLxCldIc7h9SGY"
     assert_acdc_schema_valid(sedi)
 
@@ -545,6 +557,8 @@ def test_source_credentials_and_selective_disclosure_JSON():
     assert over21.sad['i'] == ENDORSER          # issued by the endorser
     assert over21.sad['rd'] == "EJ008F-JLQ3k2tacTL8Xv5WEOYHaIvW7lfeGAbKPSDTf"
     assert over21.sad['a']['i'] == ALICE        # to the same holder
+    assert over21.iseaid == ALICE               # same property, attributive path
+    assert over21.issuee.qb64 == ALICE
     assert over21.sad['a']['over21'] is True
     assert over21.said == "EG7L78EoESOI6RKazj9wEgG-MA3-0SlkkndAksXiqXAm"
     over21Schema = assert_acdc_schema_valid(over21)
@@ -592,18 +606,20 @@ def test_bespoke_presentation_acdc_JSON():
 
     Two things earn this example's keep, and both are asserted structurally here.
     The v2 acdc subpackage's message builders (keri.acdc.messaging) construct and
-    SAID-commit edge/rule sections but do not themselves interpret edge operators.
-    The v1 runtime verifier keri.vdr.verifying.verifyChain enforces I2I, but only
-    via the far node's TOP-LEVEL attribute issuee (creder.attrib['i']); for an
-    aggregate ('acg') far node like sedi-id -- whose issuee is an aggregate element,
-    with no top-level a.i -- verifyChain cannot perform the check at all. So no
-    shipped verifier currently enforces the same-holder binding for this edge; the
-    test asserts the spec-intended binding a v2-native, aggregate-aware verifier
-    would enforce, playing that structural check directly:
+    SAID-commit edge/rule sections but do not themselves interpret edge operators,
+    so no shipped v2 runtime yet walks an edge and enforces I2I. (keri.vdr.verifying
+    .verifyChain, the v1 runtime check, predates V2 aggregate sections: it resolves
+    the far node's issuee only from a top-level attribute 'i', so it is simply out
+    of date for an 'acg' far node -- a staleness limitation of that function, not a
+    spec one.) The V2-correct way to resolve an issuee from EITHER section is
+    SerderACDC.iseaid, which reads a.i for an attributive ACDC and A[1].i for an
+    aggregative one; this test uses that property, exactly as a v2-native,
+    aggregate-aware verifier would, and plays the edge check directly:
 
       1. The I2I same-holder binding: the bespoke ACDC's issuer equals the issuee
-         of each source credential its edges point to. sedi-id's issuee is an
-         aggregate element; over-21's is its attribute issuee.
+         (via .iseaid) of each source credential its edges point to -- resolved
+         uniformly whether the far node is aggregative (sedi-id) or attributive
+         (over-21).
       2. The three Rules clauses are present with their exact agreed text.
 
     The purpose-authored bespoke schema pins the edge operator to const "I2I", so
@@ -630,9 +646,10 @@ def test_bespoke_presentation_acdc_JSON():
     assert bespoke.sad['e']['age']['o'] == 'I2I'
     assert bespoke.sad['e']['identity']['n'] == sedi.said     # edge -> sedi-id
     assert bespoke.sad['e']['age']['n'] == over21.said        # edge -> over-21
-    # issuer(bespoke) == issuee(sedi, an aggregate element) == issuee(over21)
-    assert bespoke.sad['i'] == sedi.sad['A'][SEDI_ISSUEE]['i']
-    assert bespoke.sad['i'] == over21.sad['a']['i']
+    # issuer(bespoke) == issuee(each source), resolved via SerderACDC.iseaid so the
+    # aggregative far node (sedi-id) and the attributive one (over-21) read alike.
+    assert bespoke.sad['i'] == sedi.iseaid
+    assert bespoke.sad['i'] == over21.iseaid
 
     # (2) The three Rules clauses are present with their exact agreed text.
     assert bespoke.sad['r']['Purpose']['l'] == PURPOSE_TEXT
@@ -663,19 +680,20 @@ def test_gated_ipex_exchange_JSON():
     admit, and the whole point is the ORDER: the club commits to Alice's terms
     (via a signed agree) *before* Alice discloses her state-endorsed photo.
 
-    keripy DOES implement IPEX end to end -- keri.vc.protocoling provides
-    apply/offer/agree/grant/admit/spurn handlers and exn builders (version-aware),
-    backed by the registry/TEL machinery in keri.vdr. That tooling runs through a
-    live Habery/keystore, though, and its v2-native home, keri.acdc.ipexing, is
-    still a placeholder in keripy's in-progress v1->v2 reorganization. So to keep
-    this worked example Habery-free and v2-native, it models the exchange at the
-    data-structure level -- but with real machinery, not hand-waving: each message
-    is a genuine v2 'exn' peer message built by keri.core.exchange (sender,
-    receiver, route, prior, payload), and the club's acceptance carries a real
-    Ed25519 signature made with keri.core.Signer and checked with Verfer.verify.
-    The reductions are (a) no Habery/keystore stands behind the AIDs, and (b) the
+    keripy has v1 IPEX handlers in keri.vc.protocoling (apply/offer/agree/grant/
+    admit/spurn), but they speak v1 ACDC messaging and run through a live Habery/
+    keystore, and their v2-native successor, keri.acdc.ipexing, is still a
+    placeholder in keripy's in-progress v1->v2 reorganization. Routing a v2 example
+    through the v1 handlers would misrepresent how v2 IPEX works, so this example
+    deliberately does NOT use them; instead it models the exchange at the data-
+    structure level -- but with real machinery, not hand-waving: each message is a
+    genuine v2 'exn' peer message built by keri.core.exchange (sender, receiver,
+    route, prior, payload), and the club's acceptance carries a real Ed25519
+    signature made with keri.core.Signer and checked with Verfer.verify. The
+    reductions are (a) no Habery/keystore stands behind the AIDs, and (b) the
     club's "key state" is modeled as its establishing Verfer rather than resolved
-    from a live KEL (Phase 4 shows why capturing it matters).
+    from a live KEL (Phase 4 shows why capturing it matters). When keri.acdc.ipexing
+    lands, a companion example will re-run this exchange through that v2 tooling.
 
     Four properties are asserted, each a design point from the plan:
 
@@ -699,19 +717,20 @@ def test_gated_ipex_exchange_JSON():
          agree that fails to bind the offer unlocks nothing; the state-endorsed
          photo appears on the wire only inside the grant that a valid agree gates.
 
-    Mapping onto the shipped tooling. Each step here corresponds to a real handler
-    in keri.vc.protocoling that a production (Habery-backed) agent would call
-    instead of building the exn by hand:
+    Mapping onto IPEX message types. Each step here is a standard IPEX message.
+    The forthcoming v2 tooling in keri.acdc.ipexing will provide a builder/handler
+    per message that a production (Habery-backed) agent would call instead of
+    assembling the exn by hand (the v1 analogues, for reference only, live in
+    keri.vc.protocoling):
 
-        apply  -> ipexApplyExn      offer -> ipexOfferExn
-        agree  -> ipexAgreeExn      grant -> ipexGrantExn
-        admit  -> ipexAdmitExn      (decline -> ipexSpurnExn)
+        apply  offer  agree  grant  admit  (decline)
 
-    Those helpers sign via hab.endorse (which wraps keri.core.messagize, the same
-    attachment path used for the agree below), and a production grant additionally
-    carries the ACDC's TEL issuance event (iss) and its KEL anchoring event (anc).
-    This example omits the Habery, registry and KEL anchoring on purpose, to keep
-    the focus on the exchange's structure and its ordering guarantee.
+    A production agent signs via hab.endorse -- which wraps keri.core.messagize,
+    the same genus-aware attachment path used for the agree below -- and a
+    production grant additionally carries the ACDC's TEL issuance event (iss) and
+    its KEL anchoring event (anc). This example omits the Habery, registry and KEL
+    anchoring on purpose, to keep the focus on the exchange's structure and its
+    ordering guarantee.
     """
     kind = Kinds.json
     sedi, over21, aggor = _source_credentials(kind)
@@ -928,9 +947,9 @@ def test_clc_serialization_kinds(kind):
     assert bespoke.sad['e']['age']['o'] == 'I2I'
     schema = assert_acdc_schema_valid(bespoke)
     assert_acdc_schema_valid(compact, schema=schema)
-    # I2I same-holder binding: issuer(bespoke) == issuee(sedi element) == issuee(over21)
-    assert bespoke.sad['i'] == sedi.sad['A'][SEDI_ISSUEE]['i']
-    assert bespoke.sad['i'] == over21.sad['a']['i']
+    # I2I same-holder binding via SerderACDC.iseaid (agg + att far nodes read alike)
+    assert bespoke.sad['i'] == sedi.iseaid
+    assert bespoke.sad['i'] == over21.iseaid
 
     # Gated exchange: the offer binds nothing PII, the agree binds the offer SAID,
     # and the club's signed agree (assembled via messagize) verifies.
