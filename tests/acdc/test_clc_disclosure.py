@@ -32,8 +32,9 @@ Every ACDC validates against a real, purpose-authored JSON Schema (Draft 2020-12
 from its first commit -- not the generic default -- and the source credentials
 are bound to real registries created via regcept, matching the worked examples in
 tests/acdc/test_examples.py. Actor AIDs are derived once here from a fixed salt so
-the example is reproducible; they are transferable Ed25519 basic AIDs, which is
-all the data-structure-level examples in this file need.
+the example is reproducible; each is a self-addressing ('E') transferable AID, the
+SAID of an inception event that commits to the actor's initial key and a pre-rotated
+next key.
 
 A note on why later phases model the IPEX exchange and the club key rotation at
 the data-structure level: it is a deliberate scope choice, NOT a gap in keripy.
@@ -58,20 +59,36 @@ from jsonschema.exceptions import ValidationError
 from keri import Kinds, Ilks
 from keri.core import (Salter, Noncer, Aggor, Mapper, Diger, Verfer,
                        exchange, messagize, incept, rotate)
+from keri.core.coring import MtrDex
 from keri.acdc import regcept, acdcmap, acdcagg
 
 
 # --- Reproducible example actors (see module docstring). ---
-# Four transferable Ed25519 basic AIDs derived from one fixed salt. The 'D'
-# prefix marks a transferable public key used directly as an AID; that is
-# sufficient for the data-structure-level modeling here.
-# Five signers: four for the actors, plus _SIGNERS[4] as the club's dedicated
-# rotation (next) key in Phase 4 -- not shared with any actor. HD derivation is
-# deterministic by index, so taking five instead of four leaves the first four
-# (and every SAID that depends on them) unchanged.
-_SIGNERS = Salter(raw=b'clcworkexamplsal').signers(count=5, transferable=True,
+# Each actor is a self-addressing ('E') transferable AID: its prefix is the SAID of
+# an inception event that commits to the actor's current signing key and a digest of
+# its pre-rotated next key. This is the identifier form a real transferable
+# participant uses. A bare public key ('D' basic prefix) is a spec-legal corner that
+# real deployments skip: self-addressing binds the identifier to its inception, and
+# thus to the pre-rotation, rather than leaving which-KEL-is-authoritative to the
+# controller's witnesses and each validator's watchers to establish and confirm.
+#
+# Eight signers derived from one fixed salt: _SIGNERS[0..3] are the four actors'
+# current signing keys (State, endorser, Alice, club) and _SIGNERS[4..7] are their
+# matching pre-rotated next keys. The club rotates to its next key (_SIGNERS[7]) in
+# Phase 4.
+_SIGNERS = Salter(raw=b'clcworkexamplsal').signers(count=8, transferable=True,
                                                    temp=True)
-STATE, ENDORSER, ALICE, CLUB = (signer.verfer.qb64 for signer in _SIGNERS[:4])
+
+
+def _actor_aid(cur, nxt):
+    """Self-addressing (E) AID: the SAID of an inception committing to cur + next(nxt)."""
+    return incept(keys=[cur.verfer.qb64],
+                  ndigs=[Diger(ser=nxt.verfer.qb64b).qb64],
+                  code=MtrDex.Blake3_256).pre
+
+
+STATE, ENDORSER, ALICE, CLUB = (
+    _actor_aid(_SIGNERS[i], _SIGNERS[i + 4]) for i in range(4))
 
 # Per-example blinding nonces, derived (not pasted) the same way the sibling
 # examples derive theirs, but from a distinct raw prefix so the two files do not
@@ -518,18 +535,18 @@ def test_source_credentials_and_selective_disclosure_JSON():
     # sedi-id: aggregate identity credential, registry-bound, schema-valid.
     assert sedi.ilk == Ilks.acg
     assert sedi.sad['i'] == STATE               # issued by the state
-    assert sedi.sad['rd'] == "EF2CMsrZ9gYVdEF3DNWGGN1XuWnG5FoBYIBbaMps7gHn"    # bound to the State's registry
+    assert sedi.sad['rd'] == "EHVOJQtOz0B_YAio90qC7t0_YgdiGTHHgX8Lga-Q3_AM"    # bound to the State's registry
     # The issuee binding is an aggregate element (acg has no top-level a.i).
     assert sedi.sad['A'][SEDI_ISSUEE]['i'] == ALICE
-    assert sedi.said == "EKx0IyEwroCLpVNwnqVkya3seWH272tCil9P1gySGbTH"
+    assert sedi.said == "EGv1HMP4xWZYf7GpHUv1yBwSufdVSmpLxCldIc7h9SGY"
     assert_acdc_schema_valid(sedi)
 
     # over-21: boolean age credential, registry-bound, schema-valid.
     assert over21.sad['i'] == ENDORSER          # issued by the endorser
-    assert over21.sad['rd'] == "EHUTYL3_vqr6IgzqOXwhD8Ye6rNplLIMgmpNB_ldyFuL"
+    assert over21.sad['rd'] == "EJ008F-JLQ3k2tacTL8Xv5WEOYHaIvW7lfeGAbKPSDTf"
     assert over21.sad['a']['i'] == ALICE        # to the same holder
     assert over21.sad['a']['over21'] is True
-    assert over21.said == "EMO2t-GvzdwwK25jT_Pvjv0UBDLhDZ_7F5tX67Shn2j6"
+    assert over21.said == "EG7L78EoESOI6RKazj9wEgG-MA3-0SlkkndAksXiqXAm"
     over21Schema = assert_acdc_schema_valid(over21)
 
     # Schema teeth: a non-boolean age assertion is rejected.
@@ -604,7 +621,7 @@ def test_bespoke_presentation_acdc_JSON():
     assert bespoke.sad['a']['i'] == CLUB       # the club is the Issuee (Disclosee)
     assert bespoke.sad['a']['over21'] is True
     assert 'rd' not in bespoke.sad             # deliberately not registry-bound
-    assert bespoke.said == "EACnZHzNva-bzeKhabwwnJDDH6l-E2n6ojzx7Fuzkn7e"
+    assert bespoke.said == "EKR4iCZ48DPaSnR2c-L3PhfcpO37kBMHh7q6xpALVGzW"
 
     # (1) I2I same-holder binding. The v2 path does not enforce operators, so we
     # assert the constraint the I2I operator stands for: the bespoke ACDC's issuer
@@ -720,7 +737,7 @@ def test_gated_ipex_exchange_JSON():
     assert apply.sad['t'] == Ilks.exn
     assert apply.sad['r'] == "/ipex/apply"
     assert apply.sad['i'] == CLUB and apply.sad['ri'] == ALICE
-    assert apply.said == "ELRKI85eeW7xUGkEBRMruCLc32sjdWVKHjTtSHHO9tqd"
+    assert apply.said == "EHaKgaup1e_R0V9ToYj0VI2pOcnzuSX07cEsSkQnAe_J"
 
     # 2. offer (Alice -> club): "I'll prove over-21 and show my photo if you accept
     # these terms." Carries only the SAIDs of the bespoke ACDC and its sources plus
@@ -734,7 +751,7 @@ def test_gated_ipex_exchange_JSON():
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said                 # answers the apply
     assert bespoke.said.encode() in offer.raw           # commits to the bespoke by SAID
-    assert offer.said == "EKf1P1uvSVufFHjgW6XeEp_weUtdRKPDgO0XSqxZs2JB"
+    assert offer.said == "EJWA0EwRhLRCXJgNumeoOsBDlmFqKk6VDD5uGxTQQdOy"
     # (property 1) the offer leaks no PII: not Alice's name, photo, or birthdate.
     assert b"Alice Anders" not in offer.raw
     assert b"<state-endorsed-photo-bytes>" not in offer.raw
@@ -745,7 +762,7 @@ def test_gated_ipex_exchange_JSON():
     agree = exchange(sender=CLUB, receiver=ALICE, route="/ipex/agree",
                      prior=offer.said, stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said                 # binds the offer SAID
-    assert agree.said == "ELuzTab7lXccFOkJV1uvsjRdYYQs0_uUt8o9B1aEsdyX"
+    assert agree.said == "EIoW0Un6pRpmawHvnFrjXWP9YUwcyF0nzWtlkUmPENSE"
     # The club signs the agree, and we assemble the signed wire message the blessed
     # way: messagize() frames the signature as a CESR attachment group (genus code
     # and all). New keripy code should never hand-roll attachment framing -- pass
@@ -799,7 +816,7 @@ def test_gated_ipex_exchange_JSON():
     grant = disclose(agree, clubSig, capturedKeyState)
     assert grant is not None
     assert grant.sad['p'] == agree.said                 # grant follows the agree
-    assert grant.said == "EG6iH5g6rVGmrKxRkPLb75arC6lJzYH-xJlKHYnvisXV"
+    assert grant.said == "EB6JGkVLYAay8tSvbnVqeNaQARsGxq9-z1eWx-73mNoE"
     # (property 4) the state-endorsed photo crosses the wire only now, in the grant.
     assert b"<state-endorsed-photo-bytes>" in grant.raw
     # ...and even the grant never carries the withheld birthdate.
@@ -809,7 +826,7 @@ def test_gated_ipex_exchange_JSON():
     admit = exchange(sender=CLUB, receiver=ALICE, route="/ipex/admit",
                      prior=grant.said, stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "EF-eDajl39A33hqk3G1Q6fMrYKhGZtyvYCWl_-O_lWaQ"
+    assert admit.said == "EM3rizh8WpsGF9jv7Hp460bU8xknbmsRH0DuhmexE-of"
 
 
 def test_accountability_and_terms_follow_data_JSON():
@@ -830,11 +847,11 @@ def test_accountability_and_terms_follow_data_JSON():
     the gate lives.)
 
     The club's key state is modeled with real KEL events (keri.core.incept /
-    rotate). DESIGN DECISION (pending Sam, §9.3): the club uses a basic transferable
-    ('D') AID, so its inception prefix equals its initial key; a production deployment
-    would typically use a self-addressing inception prefix (stronger duplicity
-    protection). That distinction does not affect the point demonstrated here --
-    signature verification against captured vs. rotated key state.
+    rotate). The club's AID is a self-addressing ('E') transferable identifier, the
+    SAID of the inception event reconstructed below, which is the identifier form a
+    real transferable participant uses. Because the identifier binds to its inception,
+    what a verifier still needs after a rotation is the captured establishing event
+    rather than the identifier alone, and that is the point this test makes.
     """
     kind = Kinds.json
     sedi, over21, _ = _source_credentials(kind)
@@ -847,13 +864,14 @@ def test_accountability_and_terms_follow_data_JSON():
     agree = exchange(sender=CLUB, receiver=ALICE, route="/ipex/agree",
                      prior=offer.said, stamp=AGREE_STAMP, kind=kind)
 
-    # --- The club's key state at acceptance: an inception establishing key0. ---
-    # clubKey1 is the club's dedicated rotation key (_SIGNERS[4]) -- NOT any actor's
-    # key; reusing another actor's key here would be nonsensical in a KEL rotation.
-    clubKey0, clubKey1 = _SIGNERS[3], _SIGNERS[4]     # current and next signing keys
+    # --- The club's key state at acceptance: its inception event. ---
+    # This reconstructs the same self-addressing ('E') inception that defines CLUB
+    # (its current key _SIGNERS[3], pre-rotated to _SIGNERS[7]), so icp.pre is the
+    # club's AID. clubKey1 is the club's dedicated next key, not any actor's key.
+    clubKey0, clubKey1 = _SIGNERS[3], _SIGNERS[7]     # current and next signing keys
     icp = incept(keys=[clubKey0.verfer.qb64],
-                 ndigs=[Diger(ser=clubKey1.verfer.qb64b).qb64])
-    assert icp.pre == CLUB                            # basic 'D' AID: prefix == key0
+                 ndigs=[Diger(ser=clubKey1.verfer.qb64b).qb64], code=MtrDex.Blake3_256)
+    assert icp.pre == CLUB                            # CLUB is this inception's SAID (E)
     clubSig = clubKey0.sign(ser=agree.raw, index=0)
     # Alice's wallet saves the signed agree AND the club's establishing key state.
     capturedEstEvent = icp
