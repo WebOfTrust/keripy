@@ -486,6 +486,8 @@ def multisigRegistryInceptExn(ghab, usage, vcp, anc, version=None, kind=None):
         usage (str): human readable reason for creating the credential registry
         vcp (bytes): serialized Credentials registry inception event
         anc (bytes): CESR stream of serialized and signed event anchoring registry inception event
+        version(Versionage | None): optional explicit protocol version
+        kind (str | None): optional explicit serialization kind
 
     Returns:
         tuple: (Serder, bytes): Serder of exn message and CESR attachments
@@ -497,13 +499,13 @@ def multisigRegistryInceptExn(ghab, usage, vcp, anc, version=None, kind=None):
         anc=anc
     )
 
-    kwa, gvrsn = _exnVersion(version=version, kind=kind)
     exn, end = specialExchange(sender=ghab.mhab.pre,
                                route="/multisig/vcp",
                                attributes={'gid': ghab.pre, 'usage': usage},
                                embeds=embeds,
-                               **kwa)
-    evt = ghab.mhab.endorse(serder=exn, last=False, framed=True, gvrsn=gvrsn)
+                               version=version, 
+                               kind=kind)
+    evt = ghab.mhab.endorse(serder=exn, last=False, framed=True, gvrsn=version)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
 
@@ -520,6 +522,8 @@ def multisigIssueExn(ghab, acdc, iss, anc, version=None, kind=None):
         acdc (bytes): serialized Credential
         iss (bytes): CESR stream of serialized and TEL issuance event
         anc (bytes): CESR stream of serialized and signed anchoring event anchoring creation
+        version(Versionage | None): optional explicit protocol version
+        kind (str | None): optional explicit serialization kind
 
     Returns:
         tuple: (Serder, bytes): Serder of exn message and CESR attachments
@@ -532,13 +536,13 @@ def multisigIssueExn(ghab, acdc, iss, anc, version=None, kind=None):
         anc=anc
     )
 
-    kwa, gvrsn = _exnVersion(version=version, kind=kind)
     exn, end = specialExchange(sender=ghab.mhab.pre,
                                route="/multisig/iss",
                                attributes={'gid': ghab.pre},
                                embeds=embeds,
-                               **kwa)
-    evt = ghab.mhab.endorse(serder=exn, last=False, framed=True, gvrsn=gvrsn)
+                               version=version, 
+                               kind=kind)
+    evt = ghab.mhab.endorse(serder=exn, last=False, framed=True, gvrsn=version)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
 
@@ -555,6 +559,8 @@ def multisigRevokeExn(ghab, said, rev, anc, version=None, kind=None):
         said (str): qb64 SAID of credential being revoked
         rev (bytes): CESR stream of serialized and TEL revocation event
         anc (bytes): CESR stream of serialized and signed anchoring event anchoring revocation
+        version(Versionage | None): optional explicit protocol version
+        kind (str | None): optional explicit serialization kind
 
     Returns:
         tuple: (Serder, bytes): Serder of exn message and CESR attachments
@@ -566,13 +572,13 @@ def multisigRevokeExn(ghab, said, rev, anc, version=None, kind=None):
         anc=anc
     )
 
-    kwa, gvrsn = _exnVersion(version=version, kind=kind)
     exn, end = specialExchange(sender=ghab.mhab.pre,
                                route="/multisig/rev",
                                attributes={'gid': ghab.pre, 'said': said},
                                embeds=embeds,
-                               **kwa)
-    evt = ghab.mhab.endorse(serder=exn, last=False, framed=True, gvrsn=gvrsn)
+                               version=version, 
+                               kind=kind)
+    evt = ghab.mhab.endorse(serder=exn, last=False, framed=True, gvrsn=version)
     atc = bytearray(evt[exn.size:])
     atc.extend(end)
 
