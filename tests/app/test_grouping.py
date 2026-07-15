@@ -857,6 +857,30 @@ def test_multisig_rotate(mockHelpingNowUTC):
         assert "rot" in exn.ked["e"]
 
 
+def test_multisig_rotate_default_version_uses_v2_nested_substreams(mockHelpingNowUTC):
+    with openMultiSig(prefix="test") as ((_, ghab1), (_, _), (_, _)):
+        rot = ghab1.mhab.rotate(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        innerSerder = SerderKERI(raw=rot)
+        exn, atc = multisigRotateExn(ghab=ghab1, smids=ghab1.smids, rmids=ghab1.rmids,
+                                     rot=rot, kind=Kinds.json)
+
+        assert exn.ked["r"] == '/multisig/rot'
+        data = exn.ked["a"]
+        assert data["smids"] == ghab1.smids
+        assert data["rmids"] == ghab1.rmids
+        assert data["gid"] == ghab1.pre
+        assert data["embeds"]["rot"] == innerSerder.said
+        assert "d" in data["embeds"]
+        assert "e" not in exn.ked
+
+        results = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                 framed=True,
+                                                 processive=False)
+        assert len(results) == 1
+        assert len(results[0].nests) == 1
+        assert results[0].nests[0].serder.said == innerSerder.said
+
+
 def test_multisig_interact(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
         ixn = ghab1.mhab.interact(framed=True, **KWA, gvrsn=TEST_VERSION)
@@ -1098,6 +1122,48 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
         prefixers = hby1.db.maids.get(keys=(esaid,))
         assert len(prefixers) == 2
         assert prefixers[1].qb64 == ghab1.mhab.pre
+
+
+def test_multisig_rotate_handler_v2_with_kram(mockHelpingNowUTC):
+    with openMultiSig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (_, _)):
+        msg = ghab1.mhab.rotate(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        exn, atc = multisigRotateExn(ghab=ghab2, smids=ghab1.smids, rmids=ghab1.rmids,
+                                     rot=msg, kind=Kinds.json)
+
+        with openCF(name="grouping-kram-rot", base="test") as cf:
+            config = {
+                "kram": {
+                    "enabled": True,
+                    "denials": [],
+                    "caches": {
+                        "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
+                    }
+                },
+                "dt": "2021-01-01T00:00:00.000000+00:00",
+            }
+            cf.put(config)
+            kvy = Kevery(db=hby1.db, lax=False, local=False,
+                         kramer=Kramer(db=hby1.db, cf=cf), exc=exc)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                           kvy=kvy,
+                                           exc=exc,
+                                           local=False)
+
+        # Assert the notification
+        assert len(notifier.signaler.signals) == 1
+        
+        esaid = exn.ked["a"]["embeds"]["d"]
+        digers = hby1.db.meids.get(keys=(esaid,))
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn.said
+        prefixers = hby1.db.maids.get(keys=(esaid,))
+        assert len(prefixers) == 1
+        assert prefixers[0].qb64 == ghab2.mhab.pre
 
 
 def test_multisig_interact_handler(mockHelpingNowUTC):

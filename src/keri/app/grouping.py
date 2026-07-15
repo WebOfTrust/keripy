@@ -347,14 +347,14 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None, version=None, kind
     kind = kind if kind is not None else Kinds.json
 
     if version and version.major == Vrsn_1_0.major:
-        kwa, gvrsn = _exnVersion(version=version, kind=kind)
         exn, end = specialExchange(sender=hab.pre,
                                    route="/multisig/icp",
                                    modifiers=dict(),
                                    attributes=data,
                                    embeds=embeds,
-                                   **kwa)
-        ims = hab.endorse(serder=exn, last=False, framed=True, gvrsn=gvrsn)
+                                   version=version, 
+                                   kind=kind)
+        ims = hab.endorse(serder=exn, last=False, framed=True, gvrsn=version)
         del ims[:exn.size]
         ims.extend(end)
 
@@ -382,6 +382,8 @@ def multisigRotateExn(ghab, smids, rmids, rot, version=None, kind=None):
         smids (list): list of qb64 AIDs of members with signing authority
         rmids (list): list of qb64 AIDs of members with rotation authority
         rot (bytes): serialized rotation event with CESR streamed attachments
+        version(Versionage | None): optional explicit protocol version
+        kind (str | None): optional explicit serialization kind
 
     Returns:
         tuple: (Serder, bytes): Serder of exn message and CESR attachments
@@ -391,19 +393,36 @@ def multisigRotateExn(ghab, smids, rmids, rot, version=None, kind=None):
         rot=rot,
     )
 
-    kwa, gvrsn = _exnVersion(version=version, kind=kind)
-    exn, end = specialExchange(sender=ghab.mhab.pre,
-                               route="/multisig/rot", modifiers=dict(),
-                               attributes=dict(gid=ghab.pre,
-                                               smids=smids,
-                                               rmids=rmids),
-                               embeds=embeds,
-                               **kwa)
-    ims = ghab.mhab.endorse(serder=exn, last=False, framed=True, gvrsn=gvrsn)
-    atc = bytearray(ims[exn.size:])
-    atc.extend(end)
+    data = dict(gid=ghab.pre,
+                smids=smids,
+                rmids=rmids)
+    kind = kind if kind is not None else Kinds.json
 
-    return exn, atc
+    if version and version.major == Vrsn_1_0.major:
+        exn, end = specialExchange(sender=ghab.mhab.pre,
+                                   route="/multisig/rot", modifiers=dict(),
+                                   attributes=data,
+                                   embeds=embeds,
+                                   version=version, 
+                                   kind=kind)
+        ims = ghab.mhab.endorse(serder=exn, last=False, framed=True, gvrsn=version)
+        atc = bytearray(ims[exn.size:])
+        atc.extend(end)
+
+        return exn, atc
+
+    version = version if version is not None else Version
+    ims = ghab.mhab.exchange(route="/multisig/rot",
+                             modifiers=dict(),
+                             attributes=data,
+                             embeds=embeds,
+                             version=version,
+                             kind=kind,
+                             framed=True,
+                             gvrsn=version)
+    exn = SerderKERI(raw=ims)
+
+    return exn, bytearray(ims[exn.size:])
 
 
 def multisigInteractExn(ghab, aids, ixn, version=None, kind=None):
