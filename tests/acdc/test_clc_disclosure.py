@@ -79,12 +79,15 @@ NONCES = [Noncer(raw=raw).qb64 for raw in RAWS]
 def _saidify_schema(mad, kind=Kinds.json):
     """Compute a JSON Schema's SAID and return (said, schema-with-$id).
 
-    Mirrors how keri.acdc.messaging builds its default schemas: run the schema
-    map through a Mapper that self-addresses the '$id' field. The '$id' must be
-    the FIRST field (its position is part of the serialization the SAID digests),
-    so callers author the schema with "$id": "" up front. The returned schema
-    carries its SAID in '$id'; an edge that points at a credential of this schema
-    references that same SAID in its 's' field.
+    keri exposes public builders only for the *default* ACDC schemas
+    (acm/acg/actSchemaDefault), not a general "self-address an arbitrary schema"
+    helper, so this mirrors the pattern those builders use internally: run the
+    schema map through a Mapper that self-addresses the '$id' field. The '$id'
+    must be the FIRST field (its position is part of the serialization the SAID
+    digests), so callers author the schema with "$id": "" up front. The returned
+    schema carries its SAID in '$id'; an edge that points at a credential of this
+    schema references that same SAID in its 's' field. Mapper deep-copies its
+    input, so the caller's schema map is never mutated.
     """
     mapper = Mapper(mad=mad, makify=True, strict=False, saids={"$id": 'E'},
                     saidive=True, kind=kind)
@@ -305,6 +308,15 @@ SAFE_HARBOR_TEXT = (
 # Registry inception timestamps (the State and endorser each stand up a registry).
 REG_STATE_STAMP = "2026-01-05T12:00:00.000000+00:00"
 REG_ENDORSER_STAMP = "2026-01-06T12:00:00.000000+00:00"
+
+# A note on the pinned SAID values asserted throughout this file (credential,
+# registry, and exn SAIDs): every one is DERIVED here, not authored -- the tests
+# construct the object and pin the SAID it computes. They are stable because the
+# inputs are fixed (the salt-derived actor AIDs, the NONCES, these timestamps, and
+# the schema maps above). Change any of those and the dependent SAIDs change too;
+# regenerate them by running this file's __main__ and reading the failure diffs, or
+# print the .said of the object in question. This is the same "derive, don't paste"
+# convention as tests/acdc/test_examples.py.
 
 # Fixed timestamps for the IPEX exn messages. exchange() defaults the 'dt' field
 # to the current time, which would make the messages (and their SAIDs) vary run to
