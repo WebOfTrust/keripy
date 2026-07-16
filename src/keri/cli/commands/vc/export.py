@@ -101,7 +101,7 @@ class ExportDoer(doing.DoDoer):
         creder, *_ = self.rgy.reger.cloneCred(said=said)
 
         if self.kels:
-            issr = creder.issuer
+            issr = creder.israid
             self.outputKEL(issr)
 
         if self.tels:

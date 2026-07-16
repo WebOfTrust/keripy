@@ -4,19 +4,194 @@ tests.app.agenting module
 
 """
 import time
+from types import SimpleNamespace
 
 import pytest
 from hio.base import doing, tyming
 
 from keri.kering import Schemes, Vrsn_1_0, Vrsn_2_0, Kinds
-from keri.core import Salter
-from keri.app import (WitnessReceiptor, WitnessPublisher, WitnessInquisitor,
+from keri.core import Counter, Codens, Salter, SerderKERI, Siger
+from keri.app import (Receiptor, WitnessReceiptor, WitnessPublisher, WitnessInquisitor,
                       runController, openHby, setupWitness)
+from keri.app import agenting
 from keri.help import nowIso8601
 
 TEST_VERSION = Vrsn_1_0
 KWA = dict(version=TEST_VERSION, kind=Kinds.json)
 CUE_KWA = dict(**KWA, gvrsn=TEST_VERSION)
+
+
+def test_receiptor_v2_propagates_witness_receipts(monkeypatch, seeder, witnessPorter):
+    kwa = dict(version=Vrsn_2_0, kind=Kinds.json)
+    propagated = []
+    streamCESRRequests = agenting.streamCESRRequests
+
+    def capturePropagation(client, ims, dest, path=None, headers=None):
+        if path != "/receipts":
+            propagated.append((dest, bytes(ims)))
+        return streamCESRRequests(client=client, ims=ims, dest=dest,
+                                  path=path, headers=headers)
+
+    monkeypatch.setattr(agenting, "streamCESRRequests", capturePropagation)
+
+    with openHby(name="wan-v2", salt=Salter(raw=b'wann-the-witness').qb64,
+                 version=Vrsn_2_0) as wanHby, \
+            openHby(name="wil-v2", salt=Salter(raw=b'will-the-witness').qb64,
+                    version=Vrsn_2_0) as wilHby, \
+            openHby(name="wes-v2", salt=Salter(raw=b'wess-the-witness').qb64,
+                    version=Vrsn_2_0) as wesHby, \
+            openHby(name="pal-v2", salt=Salter(raw=b'0123456789abcdef').qb64,
+                    version=Vrsn_2_0) as palHby:
+        witnessPorts, witnessUrls = witnessPorter("wan-v2", "wil-v2", "wes-v2")
+        witnessDoers = []
+        for alias, hby in (("wan-v2", wanHby), ("wil-v2", wilHby), ("wes-v2", wesHby)):
+            witnessDoers.extend(setupWitness(alias=alias, hby=hby,
+                                             tcpPort=witnessPorts[alias]["tcp"],
+                                             httpPort=witnessPorts[alias]["http"],
+                                             **kwa))
+
+        witHabs = [wanHby.habByName("wan-v2"),
+                   wilHby.habByName("wil-v2"),
+                   wesHby.habByName("wes-v2")]
+        seeder.seedWitEnds(palHby.db, witHabs=witHabs,
+                           protocols=[Schemes.http], witnessUrls=witnessUrls,
+                           **kwa)
+        singleHab = palHby.makeHab(name="single-v2", wits=[witHabs[0].pre],
+                                   transferable=True, **kwa)
+        palHab = palHby.makeHab(name="pal-v2",
+                                wits=[witHab.pre for witHab in witHabs],
+                                transferable=True, **kwa)
+        receiptor = Receiptor(hby=palHby)
+        receiptor.msgs.append(dict(pre=singleHab.pre))
+
+        doist = doing.Doist(limit=5.0, tock=0.03125,
+                            doers=witnessDoers + [receiptor])
+        doist.enter()
+        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
+        while not (receiptor.cues or tymer.expired):
+            doist.recur()
+            time.sleep(doist.tock)
+
+        assert receiptor.cues
+        receiptor.cues.popleft()
+        singleSerder = singleHab.kever.serder
+        wigers = witHabs[0].db.wigs.get(keys=(singleSerder.preb, singleSerder.saidb))
+        assert {wiger.index for wiger in wigers} == {0}
+        assert propagated == []
+
+        receiptor.msgs.append(dict(pre=palHab.pre))
+        tymer = tyming.Tymer(tymth=doist.tymen(), duration=doist.limit)
+        while not (receiptor.cues or tymer.expired):
+            doist.recur()
+            time.sleep(doist.tock)
+        doist.exit()
+
+        assert receiptor.cues
+        serder = palHab.kever.serder
+        assert serder.pvrsn == Vrsn_2_0
+        assert serder.gvrsn == Vrsn_2_0
+
+        expected = {0, 1, 2}
+        for witHab in witHabs:
+            wigers = witHab.db.wigs.get(keys=(serder.preb, serder.saidb))
+            assert {wiger.index for wiger in wigers} == expected
+
+        assert {dest for dest, _ in propagated} == {witHab.pre for witHab in witHabs}
+        for _, stream in propagated:
+            ims = bytearray(stream)
+            receiptAttachments = []
+            while ims:
+                rserder = SerderKERI(raw=ims)
+                del ims[:rserder.size]
+                attachments = bytearray()
+                while ims and ims[0] != ord("{"):
+                    attachments.append(ims.pop(0))
+                if rserder.ked["t"] == "rct":
+                    receiptAttachments.append(attachments)
+
+            assert len(receiptAttachments) == 1
+            attachments = receiptAttachments[0]
+            counter = Counter(qb64b=attachments, version=Vrsn_2_0)
+            assert counter.name == Codens.WitnessIdxSigs
+            assert counter.count == (len(attachments) - len(counter.qb64b)) // 4
+
+
+@pytest.mark.parametrize("version", [Vrsn_1_0, Vrsn_2_0])
+def test_receiptor_propagates_only_verified_receipts(monkeypatch, version):
+    kwa = dict(version=version, kind=Kinds.json)
+    propagated = {}
+
+    class FakeClient:
+        def __init__(self, body):
+            self.responses = [SimpleNamespace(status=200, body=body)]
+
+        def respond(self):
+            return self.responses.pop(0)
+
+    with openHby(name="wan-bad", salt=Salter(raw=b'wann-the-witness').qb64,
+                 version=version) as wanHby, \
+            openHby(name="wil-bad", salt=Salter(raw=b'will-the-witness').qb64,
+                    version=version) as wilHby, \
+            openHby(name="wes-bad", salt=Salter(raw=b'wess-the-witness').qb64,
+                    version=version) as wesHby, \
+            openHby(name="pal-bad", salt=Salter(raw=b'0123456789abcdef').qb64,
+                    version=version) as palHby:
+        witHabs = [wanHby.makeHab(name="wan-bad", transferable=False, **kwa),
+                   wilHby.makeHab(name="wil-bad", transferable=False, **kwa),
+                   wesHby.makeHab(name="wes-bad", transferable=False, **kwa)]
+        palHab = palHby.makeHab(name="pal-bad",
+                                wits=[witHab.pre for witHab in witHabs],
+                                transferable=True, **kwa)
+        serder = palHab.kever.serder
+        receipts = [witHab.receipt(serder=serder, framed=True,
+                                   gvrsn=version, **kwa)
+                    for witHab in witHabs]
+        receipts[2][-1] = ord("A") if receipts[2][-1] != ord("A") else ord("B")
+        clients = {witHab.pre: FakeClient(receipt)
+                   for witHab, receipt in zip(witHabs, receipts)}
+
+        def fakeHttpClient(hab, wit):
+            return clients[wit], doing.Doer()
+
+        def capturePropagation(client, ims, dest, path=None, headers=None):
+            if path != "/receipts":
+                propagated[dest] = bytes(ims)
+            return 0
+
+        monkeypatch.setattr(agenting, "httpClient", fakeHttpClient)
+        monkeypatch.setattr(agenting, "streamCESRRequests", capturePropagation)
+
+        receiptor = Receiptor(hby=palHby)
+        dog = receiptor.receipt(palHab.pre)
+        with pytest.raises(StopIteration) as ex:
+            while True:
+                next(dog)
+
+        assert list(ex.value.value) == [witHab.pre for witHab in witHabs]
+        wigers = palHab.db.wigs.get(keys=(serder.preb, serder.saidb))
+        assert {wiger.index for wiger in wigers} == {0, 1}
+
+        expected = {
+            witHabs[0].pre: {1},
+            witHabs[1].pre: {0},
+            witHabs[2].pre: {0, 1},
+        }
+        assert propagated.keys() == expected.keys()
+        for wit, msg in propagated.items():
+            ims = bytearray(msg)
+            rserder = SerderKERI(raw=ims)
+            del ims[:rserder.size]
+            attachmentSize = len(ims)
+            counter = Counter(qb64b=ims, strip=True, version=version)
+            assert counter.name == Codens.WitnessIdxSigs
+            if version == Vrsn_1_0:
+                assert counter.count == len(expected[wit])
+            else:
+                assert counter.count == (attachmentSize - len(counter.qb64b)) // 4
+            indices = set()
+            while ims:
+                indices.add(Siger(qb64b=ims, strip=True).index)
+            assert indices == expected[wit]
 
 
 def test_witness_receiptor(seeder, witnessPorter):

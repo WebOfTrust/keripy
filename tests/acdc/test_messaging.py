@@ -4,6 +4,8 @@ tests.vc.test_messaging module
 
 """
 
+from jsonschema import Draft202012Validator
+
 from keri.kering import Protocols, Kinds, Ilks, Vrsn_2_0
 from keri.core import (GenDex, Noncer, SerderACDC, BlindState, Blinder,
                        Compactor, Aggor)
@@ -22,7 +24,7 @@ def test_regcept_message():
     said = 'EPC9M2c8LnocZRbaLC-nk2IC06pc-xlhipwgaoCdK_Wq'
 
     # test default kind JSON
-    serder = regcept(issuer=issuer, uuid=uuid, stamp=stamp)
+    serder = regcept(israid=issuer, uuid=uuid, stamp=stamp)
     assert serder.proto == Protocols.acdc
     assert serder.pvrsn == Vrsn_2_0
     assert serder.genus == GenDex.KERI
@@ -32,7 +34,7 @@ def test_regcept_message():
     assert serder.ilk == Ilks.rip
     assert serder.said == said
     assert serder.uuid == uuid
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.stamp == stamp
 
 
@@ -53,7 +55,7 @@ def test_regcept_message():
 
     # Test CESR
     said = 'EM1hJSHgqklxe-SFOWkGRKRTIzbSh7yd0inf8RZ8paR8'
-    serder = regcept(issuer=issuer, uuid=uuid, stamp=stamp, kind=Kinds.cesr)
+    serder = regcept(israid=issuer, uuid=uuid, stamp=stamp, kind=Kinds.cesr)
     assert serder.proto == Protocols.acdc
     assert serder.pvrsn == Vrsn_2_0
     assert serder.genus == GenDex.KERI
@@ -63,7 +65,7 @@ def test_regcept_message():
     assert serder.ilk == Ilks.rip
     assert serder.said == said
     assert serder.uuid == uuid
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.stamp == stamp
 
     assert serder.sad == \
@@ -98,7 +100,7 @@ def test_regcept_message():
     assert serder.ilk == Ilks.rip
     assert serder.said == said
     assert serder.uuid == uuid
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.stamp == stamp
     """Done Test"""
 
@@ -557,6 +559,29 @@ def test_schema_defaults():
     """Done Test"""
 
 
+def test_acdcagg_default_schema():
+    """Regression: acdcagg must default to the ACG (aggregate) schema, not ACT.
+
+    An acg message carries an aggregate ('A') section, so its default schema must
+    be acgSchemaDefault -- which requires 'A' -- not actSchemaDefault, which
+    requires an attribute 'a' section and forbids extra properties. When acdcagg
+    embedded the act default, an acg ACDC failed validation against the very
+    schema it carried. Guard that with the pypi jsonschema (Draft 2020-12)
+    library so the two cannot drift apart again.
+    """
+    acgSaid, _ = acgSchemaDefault()
+    actSaid, _ = actSchemaDefault()
+    acg = acdcagg(israid='EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ')
+    assert acg.ilk == Ilks.acg
+    # the acg ACDC commits to the acg default schema, not the act one
+    assert acg.sad['s']['$id'] == acgSaid
+    assert acg.sad['s']['$id'] != actSaid
+    # and it validates against the schema it carries (this failed before the fix)
+    Draft202012Validator(acg.sad['s']).validate(acg.sad)
+
+    """Done Test"""
+
+
 def test_acdcatt_message_json():
     """Test act acdc message with json"""
 
@@ -577,13 +602,13 @@ def test_acdcatt_message_json():
     vs = 'ACDCCAACAAJSONAAXY.'
     size = 1496
 
-    serder = acdcatt(issuer=issuer)  # defaults
+    serder = acdcatt(israid=issuer)  # defaults
     assert serder.kind == kind
     assert serder.said == said
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == ''
     assert serder.regid == ''
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.sad['s']['$id'] == schemaSaid
     assert serder.attrib == {}
     assert serder.edge == {}
@@ -604,13 +629,13 @@ def test_acdcatt_message_json():
     vs = 'ACDCCAACAAJSONAAZO.'
     size = 1614
 
-    serder = acdcatt(issuer=issuer, uuid=uuid, regid=regid, issuee=issuee)
+    serder = acdcatt(israid=issuer, uuid=uuid, regid=regid, iseaid=issuee)
     assert serder.kind == kind
     assert serder.said == said
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
-    assert serder.issuee == issuee
+    assert serder.iseaid == issuee
     assert serder.sad['s']['$id'] == schemaSaid
     assert serder.verstr == vs
     assert serder.size == size
@@ -723,16 +748,16 @@ def test_acdcatt_message_json():
     vs = 'ACDCCAACAAJSONAARj.'
     size = 1123
 
-    serder = acdcatt(issuer=issuer, uuid=uuid, schema=schemaSaid,
+    serder = acdcatt(israid=issuer, uuid=uuid, schema=schemaSaid,
                        attribute=attrs, edge=edges, rule=rules)
     assert serder.kind == kind
     assert serder.said == said
     assert serder.size == size
     assert serder.verstr == vs
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == ""
-    assert serder.issuee == issuee
+    assert serder.iseaid == issuee
     assert serder.schema == schemaSaid
     assert serder.attrib['d'] == attrSaid
     assert serder.edge['d'] == edgeSaid
@@ -784,16 +809,16 @@ def test_acdcatt_message_json():
     cvs = 'ACDCCAACAAJSONAAF-.'
     csize = 382
 
-    serder = acdcatt(issuer=issuer, uuid=uuid, schema=schemaSaid,
+    serder = acdcatt(israid=issuer, uuid=uuid, schema=schemaSaid,
                        attribute=attrSaid, edge=edgeSaid, rule=ruleSaid)
     assert serder.kind == kind
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.size == csize != size  # but size not stable not same as uncompacted
     assert serder.verstr == cvs != vs  # but vs not stable not same as uncompacted
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == ""
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.schema == schemaSaid
     assert serder.attrib == attrSaid
     assert serder.edge == edgeSaid
@@ -822,16 +847,16 @@ def test_acdcatt_message_json():
     assert serder.sad == sad
 
     # test compactify
-    serder = acdcatt(issuer=issuer, uuid=uuid, schema=schemaSaid,
+    serder = acdcatt(israid=issuer, uuid=uuid, schema=schemaSaid,
                        attribute=attrs, edge=edges, rule=rules, compactify=True)
     assert serder.kind == kind
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.size == csize
     assert serder.verstr == cvs
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == ""
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.schema == schemaSaid
     assert serder.attrib == attrSaid
     assert serder.edge == edgeSaid
@@ -847,8 +872,8 @@ def test_acdcatt_message_json():
     assert serder.sad == sad
 
     # test sectionate
-    acdc, sch, att, agg, edg, rul = sectionate(issuer=issuer, ilk=Ilks.act,
-        uuid=uuid, regid="", schema=schemaSad, attribute=attrs, issuee=issuee,
+    acdc, sch, att, agg, edg, rul = sectionate(israid=issuer, ilk=Ilks.act,
+        uuid=uuid, regid="", schema=schemaSad, attribute=attrs, iseaid=issuee,
         edge=edges, rule=rules, kind=kind, compactify=True)
 
     assert acdc.kind == kind
@@ -856,10 +881,10 @@ def test_acdcatt_message_json():
     assert acdc.ilk == Ilks.act
     assert acdc.size == csize
     assert acdc.verstr == cvs
-    assert acdc.issuer == issuer
+    assert acdc.israid == issuer
     assert acdc.uuid == uuid
     assert acdc.regid == ""
-    assert acdc.issuee == None
+    assert acdc.iseaid == None
     assert acdc.schema == schemaSaid
     assert acdc.attrib == attrSaid
     assert acdc.edge == edgeSaid
@@ -873,7 +898,7 @@ def test_acdcatt_message_json():
     assert att.said == 'EMaznyzQl51_-iDWhKfXVrskl15vj7M89DXPTtwZyX7u'
     assert att.sad['a'] == attrs
     assert att.sad['a']['d'] == attrSaid
-    assert att.issuee == issuee
+    assert att.iseaid == issuee
 
     assert agg == None
 
@@ -907,13 +932,13 @@ def test_acdcatt_message_cesr():
     vs = 'ACDCCAACAACESRAAZw.' # 'ACDCCAACAACESRAAZ0.'
     size = 1648 #1652
 
-    serder = acdcatt(issuer=issuer, kind=kind)
+    serder = acdcatt(israid=issuer, kind=kind)
     assert serder.kind == kind
     assert serder.said == said
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == ''
     assert serder.regid == ''
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.sad['s']['$id'] == schemaSaid
     assert serder.attrib == {}
     assert serder.edge == {}
@@ -935,13 +960,13 @@ def test_acdcatt_message_cesr():
     vs = 'ACDCCAACAACESRAACs.'
     size = 172
 
-    serder = acdcatt(issuer=issuer, schema=schemaSaid, kind=kind)
+    serder = acdcatt(israid=issuer, schema=schemaSaid, kind=kind)
     assert serder.kind == kind
     assert serder.said == said
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == ''
     assert serder.regid == ''
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.schema == schemaSaid
     assert serder.verstr == vs
     assert serder.size == size
@@ -959,13 +984,13 @@ def test_acdcatt_message_cesr():
     vs = 'ACDCCAACAACESRAAbc.' # 'ACDCCAACAACESRAAbg.'
     size = 1756 # 1760
 
-    serder = acdcatt(issuer=issuer, uuid=uuid, regid=regid, issuee=issuee, kind=kind)
+    serder = acdcatt(israid=issuer, uuid=uuid, regid=regid, iseaid=issuee, kind=kind)
     assert serder.kind == kind
     assert serder.said == said
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
-    assert serder.issuee == issuee
+    assert serder.iseaid == issuee
     assert serder.sad['s']['$id'] == schemaSaid
     assert serder.verstr == vs
     assert serder.size == size
@@ -1083,16 +1108,16 @@ def test_acdcatt_message_cesr():
     vs = 'ACDCCAACAACESRAARU.' # 'ACDCCAACAACESRAARU.'
     size = 1108
 
-    serder = acdcatt(issuer=issuer, uuid=uuid, regid=regid, schema=schemaSaid,
+    serder = acdcatt(israid=issuer, uuid=uuid, regid=regid, schema=schemaSaid,
                        attribute=attrs, edge=edges, rule=rules, kind=kind)
     assert serder.kind == kind
     assert serder.said == said
     assert serder.size == size
     assert serder.verstr == vs
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
-    assert serder.issuee == issuee
+    assert serder.iseaid == issuee
     assert serder.schema == schemaSaid
     assert serder.attrib['d'] == attrSaid
     assert serder.edge['d'] == edgeSaid
@@ -1144,16 +1169,16 @@ def test_acdcatt_message_cesr():
     cvs = 'ACDCCAACAACESRAAFg.'
     csize = 352
 
-    serder = acdcatt(issuer=issuer, uuid=uuid, regid=regid, schema=schemaSaid,
+    serder = acdcatt(israid=issuer, uuid=uuid, regid=regid, schema=schemaSaid,
                        attribute=attrSaid, edge=edgeSaid, rule=ruleSaid, kind=kind)
     assert serder.kind == kind
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.size == csize != size  # but size not stable not same as uncompacted
     assert serder.verstr == cvs != vs  # but vs not stable not same as uncompacted
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.schema == schemaSaid
     assert serder.attrib == attrSaid
     assert serder.edge == edgeSaid
@@ -1182,17 +1207,17 @@ def test_acdcatt_message_cesr():
     assert serder.sad == sad
 
     # test compactify
-    serder = acdcatt(issuer=issuer, uuid=uuid, regid=regid, schema=schemaSaid,
+    serder = acdcatt(israid=issuer, uuid=uuid, regid=regid, schema=schemaSaid,
                        attribute=attrs, edge=edges, rule=rules, kind=kind, compactify=True)
     assert serder.kind == kind
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.ilk == Ilks.act
     assert serder.size == csize
     assert serder.verstr == cvs
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.schema == schemaSaid
     assert serder.attrib == attrSaid
     assert serder.edge == edgeSaid
@@ -1208,8 +1233,8 @@ def test_acdcatt_message_cesr():
     assert serder.sad == sad
 
     # test sectionate
-    acdc, sch, att, agg, edg, rul = sectionate(issuer=issuer, ilk=Ilks.act,
-        uuid=uuid, regid=regid, schema=schemaSad, attribute=attrs, issuee=issuee,
+    acdc, sch, att, agg, edg, rul = sectionate(israid=issuer, ilk=Ilks.act,
+        uuid=uuid, regid=regid, schema=schemaSad, attribute=attrs, iseaid=issuee,
         edge=edges, rule=rules, kind=kind, compactify=True)
 
     assert acdc.kind == kind
@@ -1217,10 +1242,10 @@ def test_acdcatt_message_cesr():
     assert acdc.ilk == Ilks.act
     assert acdc.size == csize
     assert acdc.verstr == cvs
-    assert acdc.issuer == issuer
+    assert acdc.israid == issuer
     assert acdc.uuid == uuid
     assert acdc.regid == regid
-    assert acdc.issuee == None
+    assert acdc.iseaid == None
     assert acdc.schema == schemaSaid
     assert acdc.attrib == attrSaid
     assert acdc.edge == edgeSaid
@@ -1234,7 +1259,7 @@ def test_acdcatt_message_cesr():
     assert att.said == 'EKURq1KGljCjpRb77-Lp2OLMPHmgbrfNZWWxGGBmmDwx'
     assert att.sad['a'] == attrs
     assert att.sad['a']['d'] == attrSaid
-    assert att.issuee == issuee
+    assert att.iseaid == issuee
 
     assert agg == None
 
@@ -1471,7 +1496,7 @@ def test_attribute_section():
     assert serder.kind == kind
     assert serder.said == said
     assert serder.sad['a'] == attrSaid
-    assert serder.issuee == None  # since said not sad
+    assert serder.iseaid == None  # since said not sad
     assert serder.verstr == vs
     assert serder.size == size
 
@@ -1492,7 +1517,7 @@ def test_attribute_section():
     assert serder.kind == kind
     assert serder.said == said
     assert serder.sad['a'] == attrSad
-    assert serder.issuee == issuee  # since sad
+    assert serder.iseaid == issuee  # since sad
     assert serder.verstr == vs
     assert serder.size == size
 
@@ -1535,7 +1560,7 @@ def test_attribute_section():
     assert serder.kind == kind
     assert serder.said == said
     assert serder.sad['a'] == attrSaid
-    assert serder.issuee == None  # since said not sad
+    assert serder.iseaid == None  # since said not sad
     assert serder.verstr == vs
     assert serder.size == size
 
@@ -1556,7 +1581,7 @@ def test_attribute_section():
     assert serder.kind == kind
     assert serder.said == said
     assert serder.sad['a'] == attrSad
-    assert serder.issuee == issuee  # since sad
+    assert serder.iseaid == issuee  # since sad
     assert serder.verstr == vs
     assert serder.size == size
 
@@ -2293,16 +2318,16 @@ def test_acdcagg_message():
     size = 226
     ilk = Ilks.acg
 
-    serder = acdcagg(issuer=issuer, schema=schemaSaid, kind=kind)
+    serder = acdcagg(israid=issuer, schema=schemaSaid, kind=kind)
     assert serder.kind == kind
     assert serder.said == said
     assert serder.ilk == ilk
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == ''
     assert serder.regid == ''
     assert serder.schema == schemaSaid
     assert serder.aggreg == []
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.verstr == vs
     assert serder.size == size
 
@@ -2320,18 +2345,18 @@ def test_acdcagg_message():
     size = 733
     ilk = Ilks.acg
 
-    serder = acdcagg(issuer=issuer, schema=schemaSaid,
+    serder = acdcagg(israid=issuer, schema=schemaSaid,
                      aggregate=aggrAel, kind=kind)
     assert serder.kind == kind
     assert serder.said == said
     assert serder.ilk == ilk
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == ''
     assert serder.regid == ''
     assert serder.schema == schemaSaid
     assert serder.aggreg == aggrAel
     assert serder.aggreg[0] == aggrAgid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.verstr == vs
     assert serder.size == size
     assert serder.sad == \
@@ -2384,17 +2409,17 @@ def test_acdcagg_message():
     size = 270
     ilk = Ilks.acg
 
-    serder = acdcagg(issuer=issuer, schema=schemaSaid,
+    serder = acdcagg(israid=issuer, schema=schemaSaid,
                      aggregate=aggrAgid, kind=kind)
     assert serder.kind == kind
     assert serder.said == said
     assert serder.ilk == ilk
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == ''
     assert serder.regid == ''
     assert serder.schema == schemaSaid
     assert serder.aggreg == aggrAgid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.verstr == vs
     assert serder.size == size
     assert serder.sad == \
@@ -2426,7 +2451,7 @@ def test_acdcagg_message():
     size = 1846
     ilk = Ilks.acg
 
-    serder = acdcagg(issuer=issuer, uuid=uuid, regid=regid,
+    serder = acdcagg(israid=issuer, uuid=uuid, regid=regid,
                      schema=schemaSaid, aggregate=aggrAel, edge=edgeSad,
                      rule=ruleSad, kind=kind)
     assert serder.kind == kind
@@ -2434,7 +2459,7 @@ def test_acdcagg_message():
     assert serder.ilk == ilk
     assert serder.size == size
     assert serder.verstr == vs
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
     assert serder.schema == schemaSaid
@@ -2507,14 +2532,14 @@ def test_acdcagg_message():
     csize = 426
     ilk = Ilks.acg
 
-    serder = acdcagg(issuer=issuer, uuid=uuid, regid=regid, schema=schemaSaid,
+    serder = acdcagg(israid=issuer, uuid=uuid, regid=regid, schema=schemaSaid,
                        aggregate=aggrAgid, edge=edgeSaid, rule=ruleSaid, kind=kind)
     assert serder.kind == kind
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.ilk == ilk
     assert serder.size == csize != size  # but size not stable not same as uncompacted
     assert serder.verstr == cvs != vs  # but vs not stable not same as uncompacted
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
     assert serder.schema == schemaSaid
@@ -2545,7 +2570,7 @@ def test_acdcagg_message():
     assert serder.sad == sad
 
     # test compactify
-    serder = acdcagg(issuer=issuer, uuid=uuid, regid=regid,
+    serder = acdcagg(israid=issuer, uuid=uuid, regid=regid,
                      schema=schemaSaid, aggregate=aggrAel, edge=edgeSad,
                      rule=ruleSad, kind=kind, compactify=True)
     assert serder.kind == kind
@@ -2553,7 +2578,7 @@ def test_acdcagg_message():
     assert serder.ilk == ilk
     assert serder.size == csize
     assert serder.verstr == cvs
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
     assert serder.schema == schemaSaid
@@ -2570,7 +2595,7 @@ def test_acdcagg_message():
     assert serder.sad == sad
 
     # test sectionate
-    acdc, sch, att, agg, edg, rul = sectionate(issuer=issuer, ilk=Ilks.acg,
+    acdc, sch, att, agg, edg, rul = sectionate(israid=issuer, ilk=Ilks.acg,
         uuid=uuid, regid=regid, schema=schemaSad, aggregate=aggrAel,
         edge=edgeSad, rule=ruleSad, kind=kind, compactify=True)
 
@@ -2579,10 +2604,10 @@ def test_acdcagg_message():
     assert acdc.ilk == Ilks.acg
     assert acdc.size == csize
     assert acdc.verstr == cvs
-    assert acdc.issuer == issuer
+    assert acdc.israid == issuer
     assert acdc.uuid == uuid
     assert acdc.regid == regid
-    assert acdc.issuee == None
+    assert acdc.iseaid == None
     assert acdc.schema == schemaSaid
     assert acdc.attrib == None
     assert acdc.aggreg == aggrAgid
@@ -2739,16 +2764,16 @@ def test_acdcagg_message():
     size = 172
     ilk = Ilks.acg
 
-    serder = acdcagg(issuer=issuer, schema=schemaSaid, kind=kind)
+    serder = acdcagg(israid=issuer, schema=schemaSaid, kind=kind)
     assert serder.kind == kind
     assert serder.said == said
     assert serder.ilk == ilk
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == ''
     assert serder.regid == ''
     assert serder.schema == schemaSaid
     assert serder.aggreg == []
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.verstr == vs
     assert serder.size == size
 
@@ -2766,18 +2791,18 @@ def test_acdcagg_message():
     size = 676
     ilk = Ilks.acg
 
-    serder = acdcagg(issuer=issuer, schema=schemaSaid,
+    serder = acdcagg(israid=issuer, schema=schemaSaid,
                      aggregate=aggrAel, kind=kind)
     assert serder.kind == kind
     assert serder.said == said
     assert serder.ilk == ilk
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == ''
     assert serder.regid == ''
     assert serder.schema == schemaSaid
     assert serder.aggreg == aggrAel
     assert serder.aggreg[0] == aggrAgid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.verstr == vs
     assert serder.size == size
     assert serder.sad == \
@@ -2830,17 +2855,17 @@ def test_acdcagg_message():
     size = 212
     ilk = Ilks.acg
 
-    serder = acdcagg(issuer=issuer, schema=schemaSaid,
+    serder = acdcagg(israid=issuer, schema=schemaSaid,
                      aggregate=aggrAgid, kind=kind)
     assert serder.kind == kind
     assert serder.said == said
     assert serder.ilk == ilk
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == ''
     assert serder.regid == ''
     assert serder.schema == schemaSaid
     assert serder.aggreg == aggrAgid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.verstr == vs
     assert serder.size == size
     assert serder.sad == \
@@ -2872,7 +2897,7 @@ def test_acdcagg_message():
     size = 1784
     ilk = Ilks.acg
 
-    serder = acdcagg(issuer=issuer, uuid=uuid, regid=regid,
+    serder = acdcagg(israid=issuer, uuid=uuid, regid=regid,
                      schema=schemaSaid, aggregate=aggrAel, edge=edgeSad,
                      rule=ruleSad, kind=kind)
     assert serder.kind == kind
@@ -2880,7 +2905,7 @@ def test_acdcagg_message():
     assert serder.ilk == ilk
     assert serder.size == size
     assert serder.verstr == vs
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
     assert serder.schema == schemaSaid
@@ -2954,14 +2979,14 @@ def test_acdcagg_message():
     csize = 352
     ilk = Ilks.acg
 
-    serder = acdcagg(issuer=issuer, uuid=uuid, regid=regid, schema=schemaSaid,
+    serder = acdcagg(israid=issuer, uuid=uuid, regid=regid, schema=schemaSaid,
                        aggregate=aggrAgid, edge=edgeSaid, rule=ruleSaid, kind=kind)
     assert serder.kind == kind
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.ilk == ilk
     assert serder.size == csize != size  # but size not stable not same as uncompacted
     assert serder.verstr == cvs != vs  # but vs not stable not same as uncompacted
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
     assert serder.schema == schemaSaid
@@ -2992,7 +3017,7 @@ def test_acdcagg_message():
     assert serder.sad == sad
 
     # Test Compactify
-    serder = acdcagg(issuer=issuer, uuid=uuid, regid=regid,
+    serder = acdcagg(israid=issuer, uuid=uuid, regid=regid,
                      schema=schemaSaid, aggregate=aggrAel, edge=edgeSad,
                      rule=ruleSad, kind=kind, compactify=True)
     assert serder.kind == kind
@@ -3000,7 +3025,7 @@ def test_acdcagg_message():
     assert serder.ilk == ilk
     assert serder.size == csize
     assert serder.verstr == cvs
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
     assert serder.schema == schemaSaid
@@ -3017,7 +3042,7 @@ def test_acdcagg_message():
     assert serder.sad == sad
 
     # test sectionate
-    acdc, sch, att, agg, edg, rul = sectionate(issuer=issuer, ilk=Ilks.acg,
+    acdc, sch, att, agg, edg, rul = sectionate(israid=issuer, ilk=Ilks.acg,
         uuid=uuid, regid=regid, schema=schemaSad, aggregate=aggrAel,
         edge=edgeSad, rule=ruleSad, kind=kind, compactify=True)
 
@@ -3026,10 +3051,10 @@ def test_acdcagg_message():
     assert acdc.ilk == Ilks.acg
     assert acdc.size == csize
     assert acdc.verstr == cvs
-    assert acdc.issuer == issuer
+    assert acdc.israid == issuer
     assert acdc.uuid == uuid
     assert acdc.regid == regid
-    assert acdc.issuee == None
+    assert acdc.iseaid == None
     assert acdc.schema == schemaSaid
     assert acdc.attrib == None
     assert acdc.aggreg == aggrAgid
@@ -3219,17 +3244,17 @@ def test_acdcmap_message():
     size = 241
     ilk = Ilks.acm
 
-    serder = acdcmap(issuer=issuer, ilk=ilk, schema=schemaSaid,
+    serder = acdcmap(israid=issuer, ilk=ilk, schema=schemaSaid,
                      attribute=attrSaid, kind=kind)
     assert serder.kind == kind
     assert serder.said == said
     assert serder.ilk == ilk
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == None
     assert serder.regid == None
     assert serder.schema == schemaSaid
     assert serder.sad['a'] == attrSaid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.verstr == vs
     assert serder.size == size
     assert serder.sad == \
@@ -3256,16 +3281,16 @@ def test_acdcmap_message():
     size = 1941
     ilk = Ilks.acm
 
-    serder = acdcmap(issuer=issuer, ilk=ilk, regid=regid, attribute=attrSad, kind=kind)
+    serder = acdcmap(israid=issuer, ilk=ilk, regid=regid, attribute=attrSad, kind=kind)
     assert serder.kind == kind
     assert serder.said == said
     assert serder.ilk == ilk
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == None
     assert serder.regid == regid
     assert serder.schema == schemaSad
     assert serder.sad['a'] == attrSad
-    assert serder.issuee == issuee
+    assert serder.iseaid == issuee
     assert serder.verstr == vs
     assert serder.size == size
 
@@ -3283,7 +3308,7 @@ def test_acdcmap_message():
     size = 1616
     ilk = Ilks.acm
 
-    serder = acdcmap(issuer=issuer, ilk=ilk, uuid=uuid, regid=regid,
+    serder = acdcmap(israid=issuer, ilk=ilk, uuid=uuid, regid=regid,
                      schema=schemaSaid, attribute=attrSad, edge=edgeSad,
                      rule=ruleSad, kind=kind)
     assert serder.kind == kind
@@ -3291,10 +3316,10 @@ def test_acdcmap_message():
     assert serder.ilk == ilk
     assert serder.size == size
     assert serder.verstr == vs
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
-    assert serder.issuee == issuee
+    assert serder.iseaid == issuee
     assert serder.schema == schemaSaid
     assert serder.attrib['d'] == attrSaid
     assert serder.edge['d'] == edgeSaid
@@ -3361,17 +3386,17 @@ def test_acdcmap_message():
     csize = 426
     ilk = Ilks.acm
 
-    serder = acdcmap(issuer=issuer, ilk=ilk, uuid=uuid, regid=regid, schema=schemaSaid,
+    serder = acdcmap(israid=issuer, ilk=ilk, uuid=uuid, regid=regid, schema=schemaSaid,
                        attribute=attrSaid, edge=edgeSaid, rule=ruleSaid, kind=kind)
     assert serder.kind == kind
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.ilk == ilk
     assert serder.size == csize != size  # but size not stable not same as uncompacted
     assert serder.verstr == cvs != vs  # but vs not stable not same as uncompacted
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.schema == schemaSaid
     assert serder.attrib == attrSaid
     assert serder.edge == edgeSaid
@@ -3400,7 +3425,7 @@ def test_acdcmap_message():
     assert serder.sad == sad
 
     # test compactify
-    serder = acdcmap(issuer=issuer, ilk=ilk, uuid=uuid, regid=regid,
+    serder = acdcmap(israid=issuer, ilk=ilk, uuid=uuid, regid=regid,
                      schema=schemaSaid, attribute=attrSad, edge=edgeSad,
                      rule=ruleSad, kind=kind, compactify=True)
     assert serder.kind == kind
@@ -3408,10 +3433,10 @@ def test_acdcmap_message():
     assert serder.ilk == ilk
     assert serder.size == csize
     assert serder.verstr == cvs
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.schema == schemaSaid
     assert serder.attrib == attrSaid
     assert serder.edge == edgeSaid
@@ -3427,7 +3452,7 @@ def test_acdcmap_message():
     assert serder.sad == sad
 
     # test sectionate
-    acdc, sch, att, agg, edg, rul = sectionate(issuer=issuer, ilk=ilk,
+    acdc, sch, att, agg, edg, rul = sectionate(israid=issuer, ilk=ilk,
         uuid=uuid, regid=regid, schema=schemaSad, attribute=attrSad,
         edge=edgeSad, rule=ruleSad, kind=kind, compactify=True)
 
@@ -3436,10 +3461,10 @@ def test_acdcmap_message():
     assert acdc.ilk == ilk
     assert acdc.size == csize
     assert acdc.verstr == cvs
-    assert acdc.issuer == issuer
+    assert acdc.israid == issuer
     assert acdc.uuid == uuid
     assert acdc.regid == regid
-    assert acdc.issuee == None
+    assert acdc.iseaid == None
     assert acdc.schema == schemaSaid
     assert acdc.attrib == attrSaid
     assert acdc.aggreg == None
@@ -3472,7 +3497,7 @@ def test_acdcmap_message():
     size = 1846
     ilk = Ilks.acm
 
-    serder = acdcmap(issuer=issuer, ilk=ilk, uuid=uuid, regid=regid,
+    serder = acdcmap(israid=issuer, ilk=ilk, uuid=uuid, regid=regid,
                      schema=schemaSaid, aggregate=aggrAel, edge=edgeSad,
                      rule=ruleSad, kind=kind)
     assert serder.kind == kind
@@ -3480,10 +3505,10 @@ def test_acdcmap_message():
     assert serder.ilk == ilk
     assert serder.size == size
     assert serder.verstr == vs
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.schema == schemaSaid
     assert serder.aggreg == aggrAel
     assert serder.aggreg[0] == aggrAgid
@@ -3555,17 +3580,17 @@ def test_acdcmap_message():
     csize = 426
     ilk = Ilks.acm
 
-    serder = acdcmap(issuer=issuer, ilk=ilk, uuid=uuid, regid=regid, schema=schemaSaid,
+    serder = acdcmap(israid=issuer, ilk=ilk, uuid=uuid, regid=regid, schema=schemaSaid,
                        aggregate=aggrAgid, edge=edgeSaid, rule=ruleSaid, kind=kind)
     assert serder.kind == kind
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.ilk == ilk
     assert serder.size == csize != size  # but size not stable not same as uncompacted
     assert serder.verstr == cvs != vs  # but vs not stable not same as uncompacted
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.schema == schemaSaid
     assert serder.aggreg == aggrAgid
     assert serder.edge == edgeSaid
@@ -3594,7 +3619,7 @@ def test_acdcmap_message():
     assert serder.sad == sad
 
     # test compactify
-    serder = acdcmap(issuer=issuer, ilk=ilk, uuid=uuid, regid=regid,
+    serder = acdcmap(israid=issuer, ilk=ilk, uuid=uuid, regid=regid,
                      schema=schemaSaid, aggregate=aggrAgid, edge=edgeSad,
                      rule=ruleSad, kind=kind, compactify=True)
     assert serder.kind == kind
@@ -3602,10 +3627,10 @@ def test_acdcmap_message():
     assert serder.ilk == ilk
     assert serder.size == csize
     assert serder.verstr == cvs
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.schema == schemaSaid
     assert serder.attrib == None
     assert serder.aggreg == aggrAgid
@@ -3622,7 +3647,7 @@ def test_acdcmap_message():
     assert serder.sad == sad
 
     # test sectionate
-    acdc, sch, att, agg, edg, rul = sectionate(issuer=issuer, ilk=ilk,
+    acdc, sch, att, agg, edg, rul = sectionate(israid=issuer, ilk=ilk,
         uuid=uuid, regid=regid, schema=schemaSad, aggregate=aggrAel,
         edge=edgeSad, rule=ruleSad, kind=kind, compactify=True)
 
@@ -3631,10 +3656,10 @@ def test_acdcmap_message():
     assert acdc.ilk == ilk
     assert acdc.size == csize
     assert acdc.verstr == cvs
-    assert acdc.issuer == issuer
+    assert acdc.israid == issuer
     assert acdc.uuid == uuid
     assert acdc.regid == regid
-    assert acdc.issuee == None
+    assert acdc.iseaid == None
     assert acdc.schema == schemaSaid
     assert acdc.attrib == None
     assert acdc.aggreg == aggrAgid
@@ -3666,17 +3691,17 @@ def test_acdcmap_message():
     size = 392
     ilk = None
 
-    serder = acdcmap(issuer=issuer, ilk=ilk, uuid="", regid=regid, schema=schemaSaid,
+    serder = acdcmap(israid=issuer, ilk=ilk, uuid="", regid=regid, schema=schemaSaid,
                        attribute=attrSaid, edge=edgeSaid, rule=ruleSaid, kind=kind)
     assert serder.kind == kind
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.ilk == ilk
     assert serder.size == size
     assert serder.verstr == vs
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == ""
     assert serder.regid == regid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.schema == schemaSaid
     assert serder.attrib == attrSaid
     assert serder.edge == edgeSaid
@@ -3855,17 +3880,17 @@ def test_acdcmap_message():
     size = 220
     ilk = Ilks.acm
 
-    serder = acdcmap(issuer=issuer, ilk=ilk, schema=schemaSaid,
+    serder = acdcmap(israid=issuer, ilk=ilk, schema=schemaSaid,
                      attribute=attrSaid, kind=kind)
     assert serder.kind == kind
     assert serder.said == said
     assert serder.ilk == ilk
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == None
     assert serder.regid == None
     assert serder.schema == schemaSaid
     assert serder.sad['a'] == attrSaid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.verstr == vs
     assert serder.size == size
     assert serder.sad == \
@@ -3892,17 +3917,17 @@ def test_acdcmap_message():
     size = 2148 # 2152
     ilk = Ilks.acm
 
-    serder = acdcmap(issuer=issuer, ilk=ilk, regid=regid, attribute=attrSad,
+    serder = acdcmap(israid=issuer, ilk=ilk, regid=regid, attribute=attrSad,
                      kind=kind)
     assert serder.kind == kind
     assert serder.said == said
     assert serder.ilk == ilk
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == None
     assert serder.regid == regid
     assert serder.schema == schemaSad
     assert serder.sad['a'] == attrSad
-    assert serder.issuee == issuee
+    assert serder.iseaid == issuee
     assert serder.verstr == vs
     assert serder.size == size
 
@@ -3920,7 +3945,7 @@ def test_acdcmap_message():
     size = 1584
     ilk = Ilks.acm
 
-    serder = acdcmap(issuer=issuer, ilk=ilk, uuid=uuid, regid=regid,
+    serder = acdcmap(israid=issuer, ilk=ilk, uuid=uuid, regid=regid,
                      schema=schemaSaid, attribute=attrSad, edge=edgeSad,
                      rule=ruleSad, kind=kind)
     assert serder.kind == kind
@@ -3928,10 +3953,10 @@ def test_acdcmap_message():
     assert serder.ilk == ilk
     assert serder.size == size
     assert serder.verstr == vs
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
-    assert serder.issuee == issuee
+    assert serder.iseaid == issuee
     assert serder.schema == schemaSaid
     assert serder.attrib['d'] == attrSaid
     assert serder.edge['d'] == edgeSaid
@@ -3997,17 +4022,17 @@ def test_acdcmap_message():
     csize = 392
     ilk = Ilks.acm
 
-    serder = acdcmap(issuer=issuer, ilk=ilk, uuid=uuid, regid=regid, schema=schemaSaid,
+    serder = acdcmap(israid=issuer, ilk=ilk, uuid=uuid, regid=regid, schema=schemaSaid,
                        attribute=attrSaid, edge=edgeSaid, rule=ruleSaid, kind=kind)
     assert serder.kind == kind
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.ilk == ilk
     assert serder.size == csize != size  # but size not stable not same as uncompacted
     assert serder.verstr == cvs != vs  # but vs not stable not same as uncompacted
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.schema == schemaSaid
     assert serder.attrib == attrSaid
     assert serder.edge == edgeSaid
@@ -4036,7 +4061,7 @@ def test_acdcmap_message():
     assert serder.sad == sad
 
     # test compactify
-    serder = acdcmap(issuer=issuer, ilk=ilk, uuid=uuid, regid=regid,
+    serder = acdcmap(israid=issuer, ilk=ilk, uuid=uuid, regid=regid,
                      schema=schemaSaid, attribute=attrSad, edge=edgeSad,
                      rule=ruleSad, kind=kind, compactify=True)
     assert serder.kind == kind
@@ -4045,10 +4070,10 @@ def test_acdcmap_message():
     assert serder.ilk == ilk
     assert serder.size == csize
     assert serder.verstr == cvs
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.schema == schemaSaid
     assert serder.attrib == attrSaid
     assert serder.edge == edgeSaid
@@ -4064,7 +4089,7 @@ def test_acdcmap_message():
     assert serder.sad == sad
 
     # test sectionate
-    acdc, sch, att, agg, edg, rul = sectionate(issuer=issuer, ilk=ilk,
+    acdc, sch, att, agg, edg, rul = sectionate(israid=issuer, ilk=ilk,
         uuid=uuid, regid=regid, schema=schemaSad, attribute=attrSad,
         edge=edgeSad, rule=ruleSad, kind=kind, compactify=True)
 
@@ -4073,10 +4098,10 @@ def test_acdcmap_message():
     assert acdc.ilk == ilk
     assert acdc.size == csize
     assert acdc.verstr == cvs
-    assert acdc.issuer == issuer
+    assert acdc.israid == issuer
     assert acdc.uuid == uuid
     assert acdc.regid == regid
-    assert acdc.issuee == None
+    assert acdc.iseaid == None
     assert acdc.schema == schemaSaid
     assert acdc.attrib == attrSaid
     assert acdc.aggreg == None
@@ -4110,17 +4135,17 @@ def test_acdcmap_message():
     size = 212
     ilk = None
 
-    serder = acdcmap(issuer=issuer, ilk=ilk, schema=schemaSaid,
+    serder = acdcmap(israid=issuer, ilk=ilk, schema=schemaSaid,
                      attribute=attrSaid, kind=kind)
     assert serder.kind == kind
     assert serder.said == said
     assert serder.ilk == ilk
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == None
     assert serder.regid == None
     assert serder.schema == schemaSaid
     assert serder.sad['a'] == attrSaid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.verstr == vs
     assert serder.size == size
     assert serder.sad == \
@@ -4146,17 +4171,17 @@ def test_acdcmap_message():
     size = 2140 # 2144
     ilk = None
 
-    serder = acdcmap(issuer=issuer, ilk=ilk, regid=regid, attribute=attrSad,
+    serder = acdcmap(israid=issuer, ilk=ilk, regid=regid, attribute=attrSad,
                      kind=kind)
     assert serder.kind == kind
     assert serder.said == said
     assert serder.ilk == ilk
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == None
     assert serder.regid == regid
     assert serder.schema == schemaSad
     assert serder.sad['a'] == attrSad
-    assert serder.issuee == issuee
+    assert serder.iseaid == issuee
     assert serder.verstr == vs
     assert serder.size == size
 
@@ -4174,7 +4199,7 @@ def test_acdcmap_message():
     size = 1576
     ilk = None
 
-    serder = acdcmap(issuer=issuer, ilk=ilk, uuid=uuid, regid=regid,
+    serder = acdcmap(israid=issuer, ilk=ilk, uuid=uuid, regid=regid,
                      schema=schemaSaid, attribute=attrSad, edge=edgeSad,
                      rule=ruleSad, kind=kind)
     assert serder.kind == kind
@@ -4182,10 +4207,10 @@ def test_acdcmap_message():
     assert serder.ilk == ilk
     assert serder.size == size
     assert serder.verstr == vs
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
-    assert serder.issuee == issuee
+    assert serder.iseaid == issuee
     assert serder.schema == schemaSaid
     assert serder.attrib['d'] == attrSaid
     assert serder.edge['d'] == edgeSaid
@@ -4250,17 +4275,17 @@ def test_acdcmap_message():
     csize = 384
     ilk = None
 
-    serder = acdcmap(issuer=issuer, ilk=ilk, uuid=uuid, regid=regid, schema=schemaSaid,
+    serder = acdcmap(israid=issuer, ilk=ilk, uuid=uuid, regid=regid, schema=schemaSaid,
                        attribute=attrSaid, edge=edgeSaid, rule=ruleSaid, kind=kind)
     assert serder.kind == kind
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.ilk == ilk
     assert serder.size == csize != size  # but size not stable not same as uncompacted
     assert serder.verstr == cvs != vs  # but vs not stable not same as uncompacted
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.schema == schemaSaid
     assert serder.attrib == attrSaid
     assert serder.edge == edgeSaid
@@ -4292,17 +4317,17 @@ def test_acdcmap_message():
     size = 364
     ilk = None
 
-    serder = acdcmap(issuer=issuer, ilk=ilk, uuid="", regid=regid, schema=schemaSaid,
+    serder = acdcmap(israid=issuer, ilk=ilk, uuid="", regid=regid, schema=schemaSaid,
                        attribute=attrSaid, edge=edgeSaid, rule=ruleSaid, kind=kind)
     assert serder.kind == kind
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.ilk == ilk
     assert serder.size == size
     assert serder.verstr == vs
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == ""
     assert serder.regid == regid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.schema == schemaSaid
     assert serder.attrib == attrSaid
     assert serder.edge == edgeSaid
@@ -4336,7 +4361,7 @@ def test_acdcmap_message():
     size = 1824
     ilk = Ilks.acm
 
-    serder = acdcmap(issuer=issuer, ilk=ilk, uuid=uuid, regid=regid,
+    serder = acdcmap(israid=issuer, ilk=ilk, uuid=uuid, regid=regid,
                      schema=schemaSaid, aggregate=aggrAel, edge=edgeSad,
                      rule=ruleSad, kind=kind)
     assert serder.kind == kind
@@ -4344,10 +4369,10 @@ def test_acdcmap_message():
     assert serder.ilk == ilk
     assert serder.size == size
     assert serder.verstr == vs
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.schema == schemaSaid
     assert serder.aggreg == aggrAel
     assert serder.aggreg[0] == aggrAgid
@@ -4419,17 +4444,17 @@ def test_acdcmap_message():
     csize = 392
     ilk = Ilks.acm
 
-    serder = acdcmap(issuer=issuer, ilk=ilk, uuid=uuid, regid=regid, schema=schemaSaid,
+    serder = acdcmap(israid=issuer, ilk=ilk, uuid=uuid, regid=regid, schema=schemaSaid,
                        aggregate=aggrAgid, edge=edgeSaid, rule=ruleSaid, kind=kind)
     assert serder.kind == kind
     assert serder.said == said  # stable said of compact ACDC same as uncompacted
     assert serder.ilk == ilk
     assert serder.size == csize != size  # but size not stable not same as uncompacted
     assert serder.verstr == cvs != vs  # but vs not stable not same as uncompacted
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.schema == schemaSaid
     assert serder.aggreg == aggrAgid
     assert serder.edge == edgeSaid
@@ -4458,7 +4483,7 @@ def test_acdcmap_message():
     assert serder.sad == sad
 
     # test compactify
-    serder = acdcmap(issuer=issuer, ilk=ilk, uuid=uuid, regid=regid,
+    serder = acdcmap(israid=issuer, ilk=ilk, uuid=uuid, regid=regid,
                      schema=schemaSaid, aggregate=aggrAel, edge=edgeSad,
                      rule=ruleSad, kind=kind, compactify=True)
     assert serder.kind == kind
@@ -4466,10 +4491,10 @@ def test_acdcmap_message():
     assert serder.ilk == ilk
     assert serder.size == csize
     assert serder.verstr == cvs
-    assert serder.issuer == issuer
+    assert serder.israid == issuer
     assert serder.uuid == uuid
     assert serder.regid == regid
-    assert serder.issuee == None
+    assert serder.iseaid == None
     assert serder.schema == schemaSaid
     assert serder.aggreg == aggrAgid
     assert serder.edge == edgeSaid

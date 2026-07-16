@@ -11,7 +11,7 @@ from ..kering import versify, Protocols, Kinds, Ilks, Vrsn_2_0
 from ..core import Number, Noncer, SerderACDC, Mapper
 from ..help import nowIso8601
 
-def regcept(issuer, *, uuid=None, stamp=None,
+def regcept(israid, *, uuid=None, stamp=None,
             pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
     """Utility function to create registry inception message of type 'rip'
     for ACDC protocol v2.
@@ -20,7 +20,7 @@ def regcept(issuer, *, uuid=None, stamp=None,
         serder (SerderACDC): instance of ACDC 'rip' message
 
     Parameters:
-        issuer  (str): qb64 of issuer AID
+        israid  (str): qb64 of issuer AID
         uuid (str|None): qb64 of salty nonce (UUID) if any.
                          None means create random uuid on the fly
         stamp (str|None):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
@@ -38,7 +38,7 @@ def regcept(issuer, *, uuid=None, stamp=None,
     uuid = uuid if uuid is not None else Noncer().qb64
     snh = Number(num=0).numh  # sn for registry incept must be 0
     stamp = stamp if stamp is not None else nowIso8601()
-    sad = dict(v=vs, t=ilk, d='', u=uuid, i=issuer, n=snh, dt=stamp)
+    sad = dict(v=vs, t=ilk, d='', u=uuid, i=israid, n=snh, dt=stamp)
     return SerderACDC(sad=sad, makify=True)
 
 
@@ -106,8 +106,8 @@ def update(regid, prior, acdc, state, *, sn=1, stamp=None,
     return SerderACDC(sad=sad, makify=True)
 
 
-def acdcmap(issuer, ilk=Ilks.acm, uuid=None, regid=None, schema=None,
-            attribute=None, issuee=None, aggregate=None, edge=None, rule=None,
+def acdcmap(israid, ilk=Ilks.acm, uuid=None, regid=None, schema=None,
+            attribute=None, iseaid=None, aggregate=None, edge=None, rule=None,
             pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json, compactify=False):
     """Utility function to create top-level field map ACDC message of type 'acm'
     for ACDC protocol v2.
@@ -116,7 +116,7 @@ def acdcmap(issuer, ilk=Ilks.acm, uuid=None, regid=None, schema=None,
         serder (SerderACDC): instance of ACDC message
 
     Parameters:
-        issuer  (str): qb64 of issuer AID
+        israid  (str): qb64 of issuer AID
         ilk  (str|None): message type of Ilks. Default include field value 'acm'
                           None means do not include field
         uuid (str|None): qb64 of salty nonce (UUID) if any.
@@ -129,7 +129,7 @@ def acdcmap(issuer, ilk=Ilks.acm, uuid=None, regid=None, schema=None,
                                    attribute section block
                                     None means do not include field
                                     either attribute or aggregate is required
-        issuee (str): qb64 of issuee AID if any to insert in attribute section
+        iseaid (str): qb64 of issuee AID if any to insert in attribute section
                       when attributes is a Mapping.
                       None means do not insert issuee
         aggregate (str|list|None): SAID of aggregate section or list of
@@ -172,8 +172,8 @@ def acdcmap(issuer, ilk=Ilks.acm, uuid=None, regid=None, schema=None,
         ssaid, ssad = acmSchemaDefault(kind=kind)
         schema = ssad
 
-    if issuee is not None and isinstance(attribute, Mapping):
-        attribute['i'] = issuee
+    if iseaid is not None and isinstance(attribute, Mapping):
+        attribute['i'] = iseaid
 
     if ((attribute is not None and aggregate is not None) or
             (attribute is None and aggregate is None)):
@@ -186,15 +186,15 @@ def acdcmap(issuer, ilk=Ilks.acm, uuid=None, regid=None, schema=None,
     sad['d'] = ''
     if uuid is not None:
         sad['u'] = uuid
-    sad['i'] = issuer
+    sad['i'] = israid
     if regid is not None:
         sad['rd'] = regid
     sad['s'] = schema
     if attribute is not None:
         sad['a'] = attribute
         if isinstance(attribute, Mapping):
-            if issuee is not None:
-                sad['a']['i'] = issuee
+            if iseaid is not None:
+                sad['a']['i'] = iseaid
     if aggregate is not None:
         sad['A'] = aggregate
     if edge is not None:
@@ -205,8 +205,8 @@ def acdcmap(issuer, ilk=Ilks.acm, uuid=None, regid=None, schema=None,
     return SerderACDC(sad=sad, makify=True, compactify=compactify)
 
 
-def acdcatt(issuer, uuid=None, regid=None, schema=None, attribute=None,
-              issuee=None, edge=None, rule=None,
+def acdcatt(israid, uuid=None, regid=None, schema=None, attribute=None,
+              iseaid=None, edge=None, rule=None,
             pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json, compactify=False):
     """Utility function to create top-level fixed field ACDC message of type 'act'
     for ACDC protocol v2.
@@ -215,7 +215,7 @@ def acdcatt(issuer, uuid=None, regid=None, schema=None, attribute=None,
         serder (SerderACDC): instance of ACDC message
 
     Parameters:
-        issuer  (str): qb64 of issuer AID
+        israid  (str): qb64 of issuer AID
         uuid (str|None): qb64 of salty nonce (UUID) if any.
                          None means use empty string for value
         regid (str|None): qb64 of registry SAID if any.
@@ -226,7 +226,7 @@ def acdcatt(issuer, uuid=None, regid=None, schema=None, attribute=None,
         attribute (str|dict|None): SAID of attribute section or dict of
                                    attribute section block
                                     None means use empty dict for value
-        issuee (str): qb64 of issuee AID if any to insert in attribute section
+        iseaid (str): qb64 of issuee AID if any to insert in attribute section
                       when attributes is a Mapping.
                       None means do not insert issuee
         edge (str|dict|None): SAID of edge section or dict of edge section block
@@ -269,17 +269,17 @@ def acdcatt(issuer, uuid=None, regid=None, schema=None, attribute=None,
         schema = ssad
 
     attribute = attribute if attribute is not None else {}
-    if issuee is not None and isinstance(attribute, Mapping):
-        attribute['i'] = issuee
+    if iseaid is not None and isinstance(attribute, Mapping):
+        attribute['i'] = iseaid
     edge = edge if edge is not None else {}
     rule = rule if rule is not None else {}
 
-    sad = dict(v=vs, t=ilk, d='', u=uuid, i=issuer, rd=regid,
+    sad = dict(v=vs, t=ilk, d='', u=uuid, i=israid, rd=regid,
                s=schema, a=attribute, e=edge, r=rule)
     return SerderACDC(sad=sad, makify=True, compactify=compactify)
 
 
-def acdcagg(issuer, uuid=None, regid=None, schema=None, aggregate=None,
+def acdcagg(israid, uuid=None, regid=None, schema=None, aggregate=None,
                     edge=None, rule=None,
             pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json, compactify=False):
     """Utility function to create top-level fixed field ACDC message of type 'acg'
@@ -289,7 +289,7 @@ def acdcagg(issuer, uuid=None, regid=None, schema=None, aggregate=None,
         serder (SerderACDC): instance of ACDC message
 
     Parameters:
-        issuer  (str): qb64 of issuer AID
+        israid  (str): qb64 of issuer AID
         uuid (str|None): qb64 of salty nonce (UUID) if any.
                          None means use empty string for value
         regid (str|None): qb64 of registry SAID if any.
@@ -336,14 +336,14 @@ def acdcagg(issuer, uuid=None, regid=None, schema=None, aggregate=None,
     uuid = uuid if uuid is not None else ""
     regid = regid if regid is not None else ""
     if schema is None:
-        ssaid, ssad = actSchemaDefault(kind=kind)
+        ssaid, ssad = acgSchemaDefault(kind=kind)
         schema = ssad
 
     aggregate = aggregate if aggregate is not None else []
     edge = edge if edge is not None else {}
     rule = rule if rule is not None else {}
 
-    sad = dict(v=vs, t=ilk, d='', u=uuid, i=issuer, rd=regid,
+    sad = dict(v=vs, t=ilk, d='', u=uuid, i=israid, rd=regid,
                s=schema, A=aggregate, e=edge, r=rule)
     return SerderACDC(sad=sad, makify=True, compactify=compactify)
 
@@ -468,8 +468,8 @@ def sectrule(rule, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json):
     return SerderACDC(sad=sad, makify=True)
 
 
-def sectionate(issuer, ilk=Ilks.acm, uuid=None, regid=None, schema=None,
-            attribute=None, issuee=None, aggregate=None, edge=None, rule=None,
+def sectionate(israid, ilk=Ilks.acm, uuid=None, regid=None, schema=None,
+            attribute=None, iseaid=None, aggregate=None, edge=None, rule=None,
             pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json, compactify=False):
     """Utility function to create top-level acdc message in most compact form and
     the associated section messages.
@@ -484,7 +484,7 @@ def sectionate(issuer, ilk=Ilks.acm, uuid=None, regid=None, schema=None,
             rul (SerderACDC): instance of ilk 'rul'
 
     Parameters:
-        issuer  (str): qb64 of issuer AID
+        israid  (str): qb64 of issuer AID
         ilk  (str|None): message type from Ilks for acdc in most compact form.
                         may be one of (None, 'acm','act','acg')
                         default is 'acm'
@@ -499,7 +499,7 @@ def sectionate(issuer, ilk=Ilks.acm, uuid=None, regid=None, schema=None,
                                    attribute section block
                                     None means do not include field
                                     either attribute or aggregate is required
-        issuee (str): qb64 of issuee AID if any to insert in attribute section
+        iseaid (str): qb64 of issuee AID if any to insert in attribute section
                       when attributes is a Mapping.
                       None means do not insert issuee
         aggregate (str|list|None): SAID of aggregate section or list of
@@ -534,8 +534,8 @@ def sectionate(issuer, ilk=Ilks.acm, uuid=None, regid=None, schema=None,
     if ilk == Ilks.acg and aggregate is None:
         raise ValueError(f"Invalid aggregate=None for {ilk=}")
 
-    if issuee is not None and isinstance(attribute, Mapping):
-        attribute['i'] = issuee
+    if iseaid is not None and isinstance(attribute, Mapping):
+        attribute['i'] = iseaid
 
     if schema is None:
         if ilk == Ilks.act:
@@ -559,15 +559,15 @@ def sectionate(issuer, ilk=Ilks.acm, uuid=None, regid=None, schema=None,
 
     if ilk == Ilks.act:
 
-        acdc = acdcatt(issuer, uuid=uuid, regid=regid, schema=ssaid,
-                       attribute=attribute, issuee=issuee,
+        acdc = acdcatt(israid, uuid=uuid, regid=regid, schema=ssaid,
+                       attribute=attribute, iseaid=iseaid,
                        edge=edge, rule=rule,
                        pvrsn=pvrsn, gvrsn=gvrsn, kind=kind, compactify=True)
         att = sectattr(attribute, pvrsn=pvrsn, gvrsn=gvrsn, kind=kind)
         agg = None
 
     elif ilk == Ilks.acg:
-        acdc = acdcagg(issuer, uuid=uuid, regid=regid, schema=ssaid,
+        acdc = acdcagg(israid, uuid=uuid, regid=regid, schema=ssaid,
                        aggregate=aggregate, edge=edge, rule=rule,
                        pvrsn=pvrsn, gvrsn=gvrsn, kind=kind, compactify=True)
         att = None
@@ -575,8 +575,8 @@ def sectionate(issuer, ilk=Ilks.acm, uuid=None, regid=None, schema=None,
 
 
     else:
-        acdc = acdcmap(issuer=issuer, ilk=ilk, uuid=uuid, regid=regid,
-                       schema=ssaid, attribute=attribute, issuee=issuee,
+        acdc = acdcmap(israid=israid, ilk=ilk, uuid=uuid, regid=regid,
+                       schema=ssaid, attribute=attribute, iseaid=iseaid,
                        aggregate=aggregate, edge=edge, rule=rule,
                        pvrsn=pvrsn, gvrsn=gvrsn, kind=kind, compactify=True)
         att = agg = None

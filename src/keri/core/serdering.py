@@ -287,6 +287,7 @@ class Serder:
         size (int): number of bytes in serialization
         said (str): qb64 said of .raw given by appropriate field
         saidb (bytes): qb64b of .said
+        diger (Diger): Diger instance created from .said
         ilk (str | None): packet type for this Serder if any (may be None)
         stamp (str | None): datetie stamp sad["dt"] when present
 
@@ -2096,6 +2097,13 @@ class Serder:
         """
         return self.said.encode("utf-8") if self.said is not None else None
 
+    @property
+    def diger(self):
+        """diger property getter
+        Returns:
+           diger (Diger): Diger instance created from .said
+        """
+        return Diger(qb64=self.said)
 
     @property
     def ilk(self):
@@ -2123,8 +2131,81 @@ class SerderKERI(Serder):
     See docs for Serder
 
     Inherited Properties:
+        raw (bytes): of serialized event only
+        sad (dict): self addressed data dict
+        verstr (str | None): sad["v"] version string 'v' field when present
+        proto (str): Protocolage value as protocol identifier such as KERI, ACDC
+                     alias of .protocol
+        protocol (str): Protocolage value as protocol identifier such as KERI, ACDC
+                        alias of .proto
+        pvrsn (Versionage): protocol version (Major, Minor)
+        genus (str): CESR genus code for supported cesr genus
+        gvrsn (Versionage): instance CESR genus code table version (Major, Minor)
+                            when version field includes it (future)
+        mucodes (MUDex): selected by .gvrsn latest from (MUDex_1_0, MUDex_2_0)
+        kind (str): serialization kind coring.Serials such as JSON, CBOR, MGPK, CESR
+        size (int): number of bytes in serialization
+        said (str): qb64 said of .raw given by appropriate field
+        saidb (bytes): qb64b of .said
+        diger (Diger): Diger instance created from .said
+        ilk (str | None): packet type for this Serder if any (may be None)
+        stamp (str | None): datetie stamp sad["dt"] when present
 
     Properties:
+        estive (bool): True if Serder represents an establishment event
+        ked (dict): alias of .sad
+        aid (str|None): qb64  of .sad["i"] identifier aid prefix property getter
+        aidb (bytes|None): qb64b  of .aid identifier aid prefix property getter as bytes
+        pre (str|None): alias of .aid
+        preb (bytes|None): alias of .aidb
+        sner (Number|None): Number instance of ._sad["s"] hex number str converted
+        sn (int|None): of .sner.num from .sad["s"]
+        snh (hex str|None): of .sner.numh from .sad["s"]
+        seals (list|None): from ._sad["a"]. None means no list not empty list
+        traits (list|None): from ._sad["c"]. None means no list not empty list
+        tholder (Tholder|None): instance as converted from ._sad['kt']
+                                    or None if missing.
+        keys (list|None): of qb64 keys from ._sad['k']. One for each key.
+                        None means list missing from ._sad['k']
+        verfers (list): of Verfer instances as converted from ._sad['k'].
+                        One for each key. None means list missing from .sad['k']
+        ntholder (Tholder|None): instance as converted from ._sad['nt']
+                               or None if missing.
+        ndigs (list): of qb64 str of next key digests. None if missing.
+        ndigers (list[Diger]|None): instance as converted from ._sad['n'].
+                                        One for each next key digests.
+                                        None is list missing from ._sad['n']
+        bner (Number|None): of ._sad["bt"] hex number str converted to Number.
+                                None if missing.
+        toader (Number|None): alias of .bner
+        bn (int|None): of .bner.num from .ked["bt"]. None if missing
+        toad (int|None): alias of of .bn
+        backs (list[str]|None): aids qb64 from ._sad['b'].
+                           One for each backer (witness). None if missing.
+        wits (list[str]|None): witness aids, alias of .backs
+        berfers (list[Verfer]|None): of backer instances as converted from
+                                        ._sad['b']. One for each backer (witness).
+                                        None if missing.
+        witnesses (list[Verfer]|None): alias of .berfers
+        prior (str|None): said qb64 of prior event from ._sad['p'].
+                              None if missing.
+        priorb (str|None): said qb64b of prior event from ._sad['p'].
+                          None if missing.
+        cuts (list[str]|None): of aids of instances as converted from
+                                   ._sad['br']. One for each backer (witness)
+                                   to be cut (removed). None if missing.
+        adds (list[str]|None): of qb64 aids of instances as converted from
+                                   ._sad['ba']. One for each backer (witness)
+                                   to be added.  None if missing.
+        delpre (str|None): qb64 of .sad["di"] delegator AID prefix.
+                              None if missing
+        delpreb (bytes|None): qb64b of .delpre delegator AID prefix. as bytes
+                                  None if missing.
+        route (str|None): route str .sad["r"]. None if missing.
+        uuid (str|None): qb64 of ._sad["u"] salty nonce or ._sad.["n"]
+                            if ._sad['u'] missing and v1 and ilk == vcp
+                            else None if both ._sad['u'] and ._sad['n"] missing.
+        nonce (str|None): alias for uuid
 
     """
     #override in subclass to enforce specific protocol
@@ -2213,7 +2294,9 @@ class SerderKERI(Serder):
 
     @property
     def estive(self):  # establishative
-        """ Returns True if Serder represents an establishment event """
+        """ Returns:
+            estive (bool): True if Serder represents an establishment event
+        """
         return (self._sad["t"] in (Ilks.icp, Ilks.rot, Ilks.dip, Ilks.drt)
                      if "t" in self._sad else False)
 
@@ -2228,21 +2311,35 @@ class SerderKERI(Serder):
 
 
     @property
-    def pre(self):
+    def aid(self):
         """
         Returns:
-           pre (str): qb64  of .sad["i"] identifier prefix property getter
+           aid (str|None): qb64  of .sad["i"] identifier aid prefix property getter
         """
         return self._sad.get("i")
 
+    pre = aid  # alias
+
 
     @property
-    def preb(self):
+    def aidb(self):
         """
         Returns:
-        preb (bytes): qb64b  of .pre identifier prefix property getter as bytes
+        aidb (bytes|None): qb64b  of .aid identifier aid prefix property getter as bytes
         """
-        return self.pre.encode("utf-8") if self.pre is not None else None
+        return self.aid.encode() if self.aid is not None else None
+
+    preb = aidb  # alias
+
+
+    @property
+    def aider(self):
+        """aider (AID Prefixer instance) property getter
+        Optional fields return None when not present
+        Returns:
+           aider (Prefixer|None): instance created from .aid
+        """
+        return Prefixer(qb64=self.aid) if self.aid else None
 
 
     @property
@@ -2250,7 +2347,7 @@ class SerderKERI(Serder):
         """Number instance of sequence number, sner property getter
 
         Returns:
-            (Number): of ._sad["s"] hex number str converted
+            sner (Number|None): Number instance of ._sad["s"] hex number str converted
         """
         # auto converts hex num str to int
         return Number(num=self._sad["s"]) if 's' in self._sad else None
@@ -2260,7 +2357,7 @@ class SerderKERI(Serder):
     def sn(self):
         """Sequence number, sn property getter
         Returns:
-            sn (int): of .sner.num from .sad["s"]
+            sn (int|None): of .sner.num from .sad["s"]
         """
         return self.sner.num if self.sner is not None else None
 
@@ -2269,7 +2366,7 @@ class SerderKERI(Serder):
     def snh(self):
         """Sequence number hex str, snh property getter
         Returns:
-            snh (hex str): of .sner.numh from .sad["s"]
+            snh (hex str|None): of .sner.numh from .sad["s"]
         """
         return self.sner.numh if self.sner is not None else None
 
@@ -2279,7 +2376,7 @@ class SerderKERI(Serder):
         """Seals property getter
 
         Returns:
-            seals (list): from ._sad["a"]
+            seals (list|None): from ._sad["a"]. None means no list not empty list
         """
         return self._sad.get("a")
 
@@ -2290,7 +2387,7 @@ class SerderKERI(Serder):
         """Traits list property getter  (config traits)
 
         Returns:
-            traits (list): from ._sad["c"]
+            traits (list|None): from ._sad["c"]. None means no list not empty list
         """
         return self._sad.get("c")
 
@@ -2301,8 +2398,8 @@ class SerderKERI(Serder):
         """Tholder property getter
 
         Returns:
-            tholder (Tholder): instance as converted from ._sad['kt']
-                or None if missing.
+            tholder (Tholder|None): instance as converted from ._sad['kt']
+                                    or None if missing.
 
         """
         return Tholder(sith=self._sad["kt"]) if "kt" in self._sad else None
@@ -2310,18 +2407,22 @@ class SerderKERI(Serder):
 
     @property
     def keys(self):
-        """Returns list of qb64 keys from ._sad['k'].
-        One for each key.
-        keys property getter
+        """Keys property getter
+        Returns:
+            keys (list|None): of qb64 keys from ._sad['k']. One for each key.
+                              None means list missing from ._sad
+
         """
         return self._sad.get("k")
 
 
     @property
     def verfers(self):
-        """Returns list of Verfer instances as converted from ._sad['k'].
-        One for each key.
-        verfers property getter
+        """verfers property getter
+        Returns:
+            verfers (list): of Verfer instances as converted from ._sad['k'].
+                        One for each key. None means list missing from .sad['k']
+
         """
         keys = self._sad.get("k")
         return [Verfer(qb64=key) for key in keys] if keys is not None else None
@@ -2329,7 +2430,10 @@ class SerderKERI(Serder):
 
     @property
     def ntholder(self):
-        """Returns Tholder instance as converted from ._sad['nt'] or None if missing.
+        """ntholder getter
+        Returns:
+           ntholder (Tholder|None): instance as converted from ._sad['nt']
+                               or None if missing.
 
         """
         return Tholder(sith=self._sad["nt"]) if "nt" in self._sad else None
@@ -2337,9 +2441,9 @@ class SerderKERI(Serder):
 
     @property
     def ndigs(self):
-        """
+        """ndigs property getter
         Returns:
-            (list): digs
+            ndigs (list): of qb64 str of next key digests. None if missing.
         """
         if self.pvrsn.major < 2 and self.pvrsn.minor < 1 and self.ilk == Ilks.vcp:
             return None
@@ -2348,11 +2452,12 @@ class SerderKERI(Serder):
 
     @property
     def ndigers(self):
-        """NDigers property getter
+        """ndigers property getter
 
         Returns:
-            ndigers (list[Diger]): instance as converted from ._sad['n'].
-            One for each next key digests.
+            ndigers (list[Diger]|None): instance as converted from ._sad['n'].
+                                        One for each next key digests.
+                                        None is list missing from ._sad['n']
         """
         if self.pvrsn.major < 2 and self.pvrsn.minor < 1 and self.ilk == Ilks.vcp:
             return None
@@ -2363,24 +2468,29 @@ class SerderKERI(Serder):
 
     @property
     def bner(self):  # toader
-        """
+        """bner property getter (toader)
         bner (Number of backer TOAD threshold of accountable duplicity property getter
+
         Returns:
-            (Number): of ._sad["bt"] hex number str converted. Auto converts
-            hex num str to int
+            bner (Number|None): of ._sad["bt"] hex number str converted to Number.
+                                None if missing.
         """
         return Number(num=self._sad["bt"]) if 'bt' in self._sad else None
+
+    toader = bner  # alias
 
 
     @property
     def bn(self):
-        """
+        """bn property getter backer threashold as int
+
         bn (backer TOAD number) property getter
         Returns:
-            bn (int): of .bner.num from .ked["bt"]
+            bn (int|None): of .bner.num from .ked["bt"]. None if missing
         """
         return self.bner.num if self.bner is not None else None
 
+    toad = bn  # alias of .bn
 
     # properties for incentive Serders like icp, dip
     @property
@@ -2388,23 +2498,28 @@ class SerderKERI(Serder):
         """Backers property getter
 
         Returns:
-            backs (list[str]): aids qb64 from ._sad['b'].
-                           One for each backer (witness).
+            backs (list[str]|None): aids qb64 from ._sad['b'].
+                           One for each backer (witness). None if missing.
 
         """
         return self._sad.get("b")
+
+    wits = backs  # alias of .backs
 
 
     @property
     def berfers(self):
         """Berfers property getter
-        Returns list of Verfer instances as converted from ._sad['b'].
-                One for each backer (witness).
+        Returns:
+            berfers (list[Verfer]|None): of backer instances as converted from
+                                        ._sad['b']. One for each backer (witness).
+                                        None if missing.
 
         """
         baks = self._sad.get("b")
         return [Verfer(qb64=bak) for bak in baks] if baks is not None else None
 
+    witnesses = berfers  # alias
 
     # properties for priorative Serders like ixn rot drt
 
@@ -2412,7 +2527,8 @@ class SerderKERI(Serder):
     def prior(self):
         """Prior property getter
         Returns:
-            prior (str): said qb64 of prior event from ._sad['p'].
+            prior (str|None): said qb64 of prior event from ._sad['p'].
+                              None if missing.
 
         """
         return self._sad.get("p")
@@ -2422,7 +2538,8 @@ class SerderKERI(Serder):
     def priorb(self):
         """Priorb bytes property getter
         Returns:
-            priorb (str): said qb64b of prior event from ._sad['p'].
+            priorb (str|None): said qb64b of prior event from ._sad['p'].
+                          None if missing.
 
         """
         return self.prior.encode("utf-8") if self.prior is not None else None
@@ -2433,8 +2550,10 @@ class SerderKERI(Serder):
     @property
     def cuts(self):
         """Cuts property getter
-        Returns list of aids of instances as converted from ._sad['br'].
-                 One for each backer (witness) to be cut (removed).
+        Returns:
+            cuts (list[str]|None): of qb64 aids of instances as converted from
+                                   ._sad['br']. One for each backer (witness)
+                                   to be cut (removed). None if missing.
 
         """
         return self._sad.get("br")
@@ -2443,9 +2562,10 @@ class SerderKERI(Serder):
     @property
     def adds(self):
         """Adds property getter
-        Returns list of aids of instances as converted from ._sad['ba'].
-                 One for each backer (witness) to be added.
-
+        Returns:
+            adds (list[str]|None): of qb64 aids of instances as converted from
+                                   ._sad['ba']. One for each backer (witness)
+                                   to be added.  None if missing.
         """
         return self._sad.get("ba")
 
@@ -2454,18 +2574,21 @@ class SerderKERI(Serder):
 
     @property
     def delpre(self):
-        """
+        """delpre property getter, qb64 aid of delegator if any
+
         Returns:
-           delpre (str): qb64  of .sad["di"] delegator ID prefix property getter
+           delpre (str|None): qb64 of .sad["di"] delegator AID prefix.
+                              None if missing
         """
         return self._sad.get("di")
 
 
     @property
     def delpreb(self):
-        """
+        """delpreb property getter
         Returns:
-        delpreb (bytes): qb64b  of .delpre property getter as bytes
+            delpreb (bytes|None): qb64b of .delpre delegator AID prefix. as bytes
+                                  None if missing
         """
         return self.delpre.encode("utf-8") if self.delpre is not None else None
 
@@ -2474,9 +2597,10 @@ class SerderKERI(Serder):
 
     @property
     def route(self):
-        """
+        """route property getter
+
         Returns:
-           route (str): qb64 of .sad["r"] route property getter
+           route (str|None): route str .sad["r"]. None if missing.
         """
         return self._sad.get("r")
 
@@ -2487,22 +2611,23 @@ class SerderKERI(Serder):
         """uuid property getter
 
         Returns:
-           uuid (str): qb64  of .sad["u"] salty nonce
+           uuid (str|None): qb64 of ._sad["u"] salty nonce or ._sad.["n"]
+                            if ._sad['u'] missing and v1 and ilk == vcp
+                            else None if both ._sad['u'] and ._sad['n"] missing.
         """
-        return self._sad.get("u")
+        uuid = self._sad.get('u')
+        if (uuid is None and self.pvrsn.major < 2 and self.pvrsn.minor < 1 and
+                self.ilk == Ilks.vcp):
+            uuid = self._sad.get("n")
+        return uuid
 
-    @property
-    def nonce(self):
-        """
-        should be deprecated
+        #if self.pvrsn.major < 2 and self.pvrsn.minor < 1 and self.ilk == Ilks.vcp:
+            #return self._sad.get("n")
+        #else:
+            #return self._sad.get("u")
 
-        Returns:
-           nonce (str): alias for .uuid property
-        """
-        if self.pvrsn.major < 2 and self.pvrsn.minor < 1 and self.ilk == Ilks.vcp:
-            return self._sad.get("n")
-        else:
-            return self.uuid
+    nonce = uuid
+
 
 
 
@@ -2527,14 +2652,17 @@ class SerderACDC(Serder):
             size (int): number of bytes in serialization
             said (str): qb64 said of .raw given by appropriate field
             saidb (bytes): qb64b of .said
+            diger (Diger): Diger instance created from .said
             ilk (str | None): packet type for this Serder if any (may be None)
             stamp (str | None): datetie stamp sad["dt"] when present
 
         Properties:
-            uuid (str | None): qb64  of .sad["u"] salty nonce
-            uuidb (bytes | None): .uuid as  bytes
-            issuer (str | None): qb64  of .sad["i"] issuer AID
-            issuerb (bytes | None): .issuer AID as bytes
+            uuid (str|None): qb64  of .sad["u"] salty nonce. None if missing
+            uuidb (bytes|None): .uuid as  bytes. None if missing.
+            nonce (str|None): alias of .uuid
+            nonceb (bytes|None): alisas of .uuidb
+            israid (str | None): qb64  of .sad["i"] (issuer AID)
+            israidb (bytes | None): .israid as bytes (issuer AID bytes)
             regid (str | None): qb64  registry SAID v1 .sad["ri"] v2 .said["rd"]
             regidb (bytes | None): .regid as bytes
             schema (dict | str | None): from ._sad["s"]
@@ -2559,6 +2687,7 @@ class SerderACDC(Serder):
         """
         return self._sad.get("u")
 
+    nonce = uuid
 
     @property
     def uuidb(self):
@@ -2569,25 +2698,36 @@ class SerderACDC(Serder):
         """
         return self.uuid.encode("utf-8") if self.uuid is not None else None
 
+    nonceb = uuidb
 
     @property
-    def issuer(self):
-        """issuer property getter (issuer AID)
+    def israid(self):
+        """israid (issuer AID) property getter
         Optional fields return None when not present
         Returns:
-           issuer (str | None): qb64  of .sad["i"] issuer AID
+           israid (str | None): qb64  of .sad["i"] issuer AID
         """
         return self._sad.get('i')
 
 
     @property
-    def issuerb(self):
-        """issuerb property getter (issuer AID bytes)
+    def israidb(self):
+        """israidb  (issuer AID bytes) property getter
         Optional fields return None when not present
         Returns:
-            issuerb (bytes | None): qb64b  of .issuer AID as bytes
+            israidb (bytes | None): qb64b  of .issuer AID as bytes
         """
-        return self.issuer.encode("utf-8") if self.issuer is not None else None
+        return self.israid.encode("utf-8") if self.israid is not None else None
+
+
+    @property
+    def issuer(self):
+        """issuer (issuer AID Prefixer instance) property getter
+        Optional fields return None when not present
+        Returns:
+           israid (Prefixer|None): instance created from .israid
+        """
+        return Prefixer(qb64=self.israid) if self.israid else None
 
 
     @property
@@ -2636,29 +2776,6 @@ class SerderACDC(Serder):
 
 
     @property
-    def issuee(self):
-        """ise property getter (issuee AID)
-        Optional fields return None when not present
-        Returns:
-            issuee (str | None): qb64  of .sad["a"]["i"] issuee AID
-        """
-        try:
-            return self.attrib.get('i')
-        except:
-            return None
-
-
-    @property
-    def issueeb(self):
-        """isrb property getter (issuee AID bytes)
-        Optional fields return None when not present
-        Returns:
-            issueeb (bytes | None): qb64b  of .issuee AID as bytes if any
-        """
-        return self.issuee.encode("utf-8") if self.issuee is not None else None
-
-
-    @property
     def aggreg(self):
         """aggreg block property getter (attribute aggregate)
         Optional fields return None when not present
@@ -2666,6 +2783,52 @@ class SerderACDC(Serder):
             aggreg (dict | str): aggregate from ._sad["A"]
         """
         return self._sad.get("A")
+
+
+    @property
+    def iseaid(self):
+        """iseaid property getter (issuee AID)
+        Optional fields return None when not present
+        Returns:
+            iseaid (str | None): qb64  of issuee AID field
+                                for attributive ACDC .sad["a"]["i"]
+                                for aggregative ACDC .sad["A"][1]['i']
+
+        """
+        try:
+            if att := self.attrib:
+                return att.get('i')
+
+            if agg := self.aggreg:
+                if len(agg) >= 2:
+                    return agg[1].get("i")
+
+            return None
+
+        except:
+            return None
+
+
+    @property
+    def iseaidb(self):
+        """iseaidb property getter (issuee AID bytes)
+        Optional fields return None when not present
+        Returns:
+            issueeb (bytes | None): qb64b  of .iseaid, (issuee AID bytes)
+        """
+        return self.iseaid.encode("utf-8") if self.iseaid is not None else None
+
+
+    @property
+    def issuee(self):
+        """issuee property getter (Prefixer of issuee AID)
+        Optional fields return None when not present
+        Returns:
+            issuee (Prefixer|None): instance created from .iseaid
+        """
+        return Prefixer(qb64=self.iseaid) if self.iseaid else None
+
+
 
 
     @property
@@ -2740,10 +2903,10 @@ class SerderACDC(Serder):
                 (Ilks.acm, Ilks.ace, Ilks.act, Ilks.acg, Ilks.rip)):
             # required issuer field as valid AID, not empty
             try:
-                code = Matter(qb64=self.issuer).code
+                code = Matter(qb64=self.israid).code
             except Exception as ex:
                 raise ValidationError(f"Invalid issuer AID = "
-                                      f"{self.issuer}.") from ex
+                                      f"{self.israid}.") from ex
 
             if code not in PreDex:
                 raise ValidationError(f"Invalid issuer AID code = {code}.")

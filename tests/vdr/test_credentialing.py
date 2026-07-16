@@ -3,17 +3,97 @@
 tests.vdr.test_credentialing module
 
 """
-from keri.kering import ValidationError, Vrsn_1_0, Kinds
+from keri.kering import Ilks, ValidationError, Vrsn_1_0, Vrsn_2_0, Kinds
 
-from keri.core import Number, Saider, Diger, SerderKERI, SealEvent
+from keri.core import Number, Saider, Diger, SerderKERI, SealEvent, TraitDex
 
 from keri.app import openKS
 from keri.db import openDB
-from keri.vdr import Regery, Registrar
+from keri.vdr import Credentialer, Regery, Registrar
+from keri.vdr.eventing import incept
 
 from tests.vdr import buildHab
 
 from tests.common import KWA
+
+
+def test_v1_registry_version_across_lifecycle_with_v2_identifier():
+    with openDB(temp=True) as db, openKS(temp=True) as kpr:
+        hby, hab = buildHab(db, kpr, version=Vrsn_2_0, kind=Kinds.json)
+        for registry_type in ("standard", "signify"):
+            rgy = Regery(hby=hby, name=registry_type, temp=True)
+            try:
+                if registry_type == "standard":
+                    registry = rgy.makeRegistry(
+                        name="legacy",
+                        prefix=hab.pre,
+                        noBackers=True,
+                        version=Vrsn_1_0,
+                        kind=Kinds.json,
+                    )
+                    vcp = registry.vcp
+                else:
+                    vcp = incept(
+                        pre=hab.pre,
+                        cnfg=[TraitDex.NoBackers],
+                        version=Vrsn_1_0,
+                        kind=Kinds.json,
+                    )
+                    registry = rgy.makeSignifyRegistry(
+                        name="legacy",
+                        prefix=hab.pre,
+                        regser=vcp,
+                    )
+
+                credentialer = Credentialer(
+                    hby=hby,
+                    rgy=rgy,
+                    registrar=None,
+                    verifier=None,
+                )
+                credentialer.validate = lambda creder: True
+
+                def create_credential():
+                    return credentialer.create(
+                        regname="legacy",
+                        recp=None,
+                        schema="EAllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
+                        source=None,
+                        rules=None,
+                        data={"name": "Test"},
+                    )
+
+                creder = create_credential()
+                assert creder.pvrsn == Vrsn_1_0
+                assert creder.sad["ri"] == registry.regk
+
+                seal = SealEvent(i=registry.regk, s="0", d=registry.regd)
+                msg = hab.interact(
+                    data=[seal._asdict()],
+                    framed=True,
+                    gvrsn=Vrsn_2_0,
+                )
+                anchor = SerderKERI(raw=msg)
+                rgy.tvy.processEvent(
+                    serder=vcp,
+                    seqner=Number(num=anchor.sn),
+                    saider=Saider(qb64=anchor.said),
+                )
+
+                if registry_type == "standard":
+                    rgy.regs.clear()
+                    rgy.loadRegistries()
+                    registry = rgy.registryByName("legacy")
+
+                creder = create_credential()
+                assert creder.pvrsn == Vrsn_1_0
+                assert creder.sad["ri"] == registry.regk
+
+                iserder = registry.issue(said=creder.said)
+                assert iserder.pvrsn == Vrsn_1_0
+                assert iserder.ilk == Ilks.iss
+            finally:
+                rgy.close()
 
 
 def test_tpwe():
