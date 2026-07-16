@@ -9,6 +9,7 @@ from hio.base import doing
 
 from ...common import Parsery, setupHby
 
+from ....kering import Vrsn_1_0
 from ....app import (Notifier, StreamPoster, Organizer,
                      GroupHab, Multiplexor, MailboxDirector,
                      serialize, multisigExn)
@@ -126,7 +127,7 @@ class GrantDoer(doing.DoDoer):
         msg = bytearray(exn.raw)
         msg.extend(atc)
 
-        parsing.Parser().parseOne(ims=bytes(msg), exc=self.exc)
+        parsing.Parser(version=Vrsn_1_0).parseOne(ims=bytes(msg), exc=self.exc)
 
         sender = self.hab
         if isinstance(self.hab, GroupHab):
