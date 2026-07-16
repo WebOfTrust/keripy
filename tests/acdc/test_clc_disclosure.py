@@ -447,7 +447,7 @@ def _photo_disclosure(aggor):
     return disclosed
 
 
-def _bespoke_rules():
+def _rules_in_bespoke():
     """The bespoke ACDC's Rules section: Purpose + Assimilation + SafeHarbor.
 
     Mirrors the spec's bespoke-ACDC rule shape -- a top-level block plus one named
@@ -505,7 +505,7 @@ def _bespoke_presentation(sedi, over21, kind, compactify=False, rule=None):
                      over21=True)
     return acdcmap(israid=ALICE, uuid=NONCES[9], schema=schema, attribute=attribute,
                    edge=_bespoke_edges(sedi, over21),
-                   rule=rule if rule is not None else _bespoke_rules(),
+                   rule=rule if rule is not None else _rules_in_bespoke(),
                    kind=kind, compactify=compactify)
 
 
@@ -789,7 +789,7 @@ def test_gated_ipex_exchange_JSON():
                      attributes=dict(acdc=bespoke.said,
                                      credentials=[sedi.said, over21.said],
                                      governance=GOV_PROVISION_SAID,
-                                     terms=_bespoke_rules()),
+                                     terms=_rules_in_bespoke()),
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said                 # answers the apply
     assert bespoke.said.encode() in offer.raw           # commits to the bespoke by SAID
@@ -906,7 +906,7 @@ def test_accountability_and_terms_follow_data_JSON():
 
     # Offer and the club's signed agree, as in Phase 3.
     offer = exchange(sender=ALICE, receiver=CLUB, route="/ipex/offer",
-                     attributes=dict(acdc=bespoke.said, terms=_bespoke_rules()),
+                     attributes=dict(acdc=bespoke.said, terms=_rules_in_bespoke()),
                      stamp=OFFER_STAMP, kind=kind)
     agree = exchange(sender=CLUB, receiver=ALICE, route="/ipex/agree",
                      prior=offer.said, stamp=AGREE_STAMP, kind=kind)
@@ -936,7 +936,7 @@ def test_accountability_and_terms_follow_data_JSON():
                                                             ser=agree.raw)
 
     # --- Terms follow the data: the CLC terms are bound into the bespoke SAID. ---
-    tamperedRules = _bespoke_rules()
+    tamperedRules = _rules_in_bespoke()
     tamperedRules['Assimilation']['l'] = "Verifier may do anything it likes."
     weakened = _bespoke_presentation(sedi, over21, kind, rule=tamperedRules)
     assert weakened.said != bespoke.said              # cannot weaken terms silently
@@ -982,7 +982,7 @@ def test_clc_serialization_kinds(kind):
     # Gated exchange: the offer binds nothing PII, the agree binds the offer SAID,
     # and the club's signed agree (assembled via messagize) verifies.
     offer = exchange(sender=ALICE, receiver=CLUB, route="/ipex/offer",
-                     attributes=dict(acdc=bespoke.said, terms=_bespoke_rules()),
+                     attributes=dict(acdc=bespoke.said, terms=_rules_in_bespoke()),
                      stamp=OFFER_STAMP, kind=kind)
     agree = exchange(sender=CLUB, receiver=ALICE, route="/ipex/agree",
                      prior=offer.said, stamp=AGREE_STAMP, kind=kind)
