@@ -465,6 +465,18 @@ def test_v2_oobi_service_reply_routes_bypass_kram_by_default():
             assert result is serder
             assert calls == []
 
+            serder = reply(
+                pre=TEST_PRE,
+                route="/loc/scheme",
+                data=dict(a=1),
+                pvrsn=Vrsn_2_0,
+            )
+
+            result = kramer.intake(serder)
+
+            assert result is serder
+            assert calls == []
+
 
 # The following four tests provide basic coverage for integration with kevery.processMsg() along the various auth paths
 

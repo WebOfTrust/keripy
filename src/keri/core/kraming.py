@@ -245,6 +245,7 @@ class Kramer:
     def fullDenials(self):
         """Returns raw denials list from config.
         Each denial is [[major, minor], ilk, route]
+        OOBIs routes /end/role and /loc/scheme are automatically added to the list when KRAM is enabled.
         """
         return self._fullDenials
 

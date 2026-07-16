@@ -247,7 +247,6 @@ def test_loaded_v1_endpoint_replies_use_stored_reply_framing():
 
 
 def test_loaded_v2_oobi_endpoint_replies_bypass_kram(mockHelpingNowUTC):
-    cuekwa = dict(version=Vrsn_2_0, kind=Kinds.cesr, gvrsn=Vrsn_2_0)
     config = {
         "kram": {
             "enabled": True,
