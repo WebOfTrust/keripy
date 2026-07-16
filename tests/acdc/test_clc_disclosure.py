@@ -8,10 +8,14 @@ agreement. It complements tests/acdc/test_examples.py (registry lifecycle,
 graduated/selective disclosure, blindable registries) by adding the pieces that
 file does not yet show:
 
-  * a selectively disclosable Aggregate ('A') section as an mDL-style identity
-    credential (reveal the photo, withhold the birthdate),
+  * BOTH graduated-disclosure mechanisms, each on the credential it fits: an
+    ATTRIBUTIVE identity credential with individually partially-disclosable nested
+    blocks (reveal the photo, withhold the birthdate), and an AGGREGATIVE age
+    credential -- an array of boolean age-threshold flags (reveal over-21, withhold
+    whether she is over 55 or 65),
   * edges carrying the I2I operator that bind a rich presentation to a single
-    holder,
+    holder, with the issuee resolved uniformly (SerderACDC.iseaid) whether the far
+    node is attributive (a.i) or aggregative (A[1].i),
   * combined disclosure across two source credentials into one bespoke
     presentation ACDC (the spec's "rich presentation" pattern), and
   * a Rules section that negotiates CLC terms -- a Purpose clause, an
@@ -19,14 +23,20 @@ file does not yet show:
     the ACDC spec's "Bespoke Issued ACDC" example (spec-body.md, the GoodFood
     Restaurant admittance example).
 
-Scenario. Alice, a Utah resident, holds two ACDCs under one holder AID: a SEDI
-digital-identity credential (name, date of birth, state-endorsed photo,
-residence -- as an aggregate of individually-blinded, selectively-disclosable
-elements) and a derived "over-21" credential. To enter a dance club that serves
-alcohol she runs CLC as a credential: she (Issuer/Discloser) issues a bespoke
-presentation ACDC to the club (Issuee/Disclosee) that edges (I2I) to her two
-source credentials and carries the CLC terms in its Rules section, binding the
-club before it receives her state-endorsed photo and age proof.
+The choice of section per credential is deliberate (see the schema comments): a
+fixed, well-labeled identity field set is best modeled attributively (clean labels,
+clean partial disclosure), while the aggregate (unlabeled-position) form earns its
+keep for the age-threshold flags, where hiding which thresholds are asserted is the
+whole point -- a poor man's sparse Merkle tree, as mdoc models age proofs.
+
+Scenario. Alice, a Utah resident, holds two ACDCs under one holder AID: an
+attributive SEDI digital-identity credential (issuee plus individually-disclosable
+name, date of birth, state-endorsed photo, and residence blocks) and an aggregative
+age credential (boolean flags for the thresholds 13, 16, 18, 21, 55, 65). To enter a
+dance club that serves alcohol she runs CLC as a credential: she (Issuer/Discloser)
+issues a bespoke presentation ACDC to the club (Issuee/Disclosee) that edges (I2I) to
+her two source credentials and carries the CLC terms in its Rules section, binding
+the club before it receives her state-endorsed photo and age proof.
 
 Every ACDC validates against a real, purpose-authored JSON Schema (Draft 2020-12)
 from its first commit -- not the generic default -- and the source credentials
@@ -62,7 +72,7 @@ from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ValidationError
 
 from keri import Kinds, Ilks
-from keri.core import (Salter, Noncer, Aggor, Mapper, Diger, Verfer,
+from keri.core import (Salter, Noncer, Aggor, Compactor, Mapper, Diger, Verfer,
                        exchange, messagize, incept, rotate)
 from keri.core.coring import MtrDex
 from keri.core.serdering import SerderACDC
@@ -99,7 +109,7 @@ STATE, ENDORSER, ALICE, CLUB = (
 # Per-example blinding nonces, derived (not pasted) the same way the sibling
 # examples derive theirs, but from a distinct raw prefix so the two files do not
 # share nonce values.
-RAWS = [b'clcworkexamplra' + b'%0x' % (i,) for i in range(16)]
+RAWS = [b'clcworkexamplra' + b'%0x' % (i,) for i in range(24)]
 NONCES = [Noncer(raw=raw).qb64 for raw in RAWS]
 
 
@@ -126,14 +136,14 @@ def _saidify_schema(mad, kind=Kinds.json):
 # maps with "$id" first so _saidify_schema can self-address them per wire kind.
 # ---------------------------------------------------------------------------
 
-# sedi-id follows the spec's canonical Aggregate-section schema pattern
-# (spec-body.md, "Composed Schema for selectively disclosable Aggregate section"):
-# 'A' is oneOf(AGID string, uncompacted array); the array uses items+anyOf over
-# the block TYPES (not prefixItems), and each block is oneOf(block SAID, block
-# detail). That is what lets ANY subset of blocks be disclosed as detail while the
-# rest stay bare SAIDs -- selective disclosure -- without fixing count or order.
-def _agg_block(attr, attr_schema, desc):
-    """One aggregate-element schema: oneOf(block SAID, block detail)."""
+# Both credentials use partially/selectively disclosable BLOCKS of one shape --
+# oneOf(block SAID, block detail{d, u, <attr>}) -- whether the block is a nested
+# attribute block (attributive ACDC) or an element of an aggregate array. Disclosing a
+# block in full lets a verifier recompute its SAID and confirm it belongs; a withheld
+# block travels as its bare SAID and leaks nothing (each block carries its own blinding
+# nonce 'u', so its low-entropy value cannot be brute-forced from the SAID).
+def _disclosable_block(attr, attr_schema, desc):
+    """One partially-disclosable block schema: oneOf(block SAID, block detail)."""
     return {
         "description": f"{desc} block",
         "oneOf": [
@@ -147,62 +157,27 @@ def _agg_block(attr, attr_schema, desc):
         ],
     }
 
-# acg is a fixed-field format: it always carries (possibly empty) e and r sections
-# even for a pure aggregate credential, so the schema must admit them.
+# acm/acg are fixed-field formats: they always carry (possibly empty) e and r sections
+# even when unused, so the schema must admit them.
 _EMPTY_OR_SECTION = {"oneOf": [{"type": "string"}, {"type": "object"}]}
 
+# sedi-id is an ATTRIBUTIVE ('acm') credential. Its identity attributes are a fixed set
+# of well-known, meaningfully-labeled fields, so an attribute section with individually
+# partially-disclosable nested blocks is the right model: labels give clean paths and
+# clean partial disclosure, and the aggregate (unlabeled-array) form buys nothing for a
+# fixed labeled field set. The 'a' section is oneOf(section SAID, object); the object
+# carries the top-level issuee 'i' plus one nested, individually-blinded block per
+# attribute (photo/dob/residence/name), each oneOf(block SAID, block detail). Partial
+# disclosure reveals a chosen block in full and leaves the rest as bare SAIDs -- every
+# mix verifying to the same committed section SAID.
 SEDI_SCHEMA_MAD = {
     "$id": "",
     "$schema": "https://json-schema.org/draft/2020-12/schema",
     "title": "SEDI Identity Credential",
-    "description": "State-endorsed SEDI digital-identity credential; attributes "
-                   "carried as a selectively disclosable Aggregate section of "
-                   "individually-blinded attribute blocks.",
+    "description": "State-endorsed SEDI digital-identity credential; attributes carried "
+                   "as individually partially-disclosable nested blocks of an "
+                   "attribute section.",
     "credentialType": "SEDI_Identity",
-    "version": "1.0.0",
-    "type": "object",
-    "required": ["v", "d", "i", "rd", "s", "A"],
-    "properties": {
-        "v": {"description": "ACDC version string", "type": "string"},
-        "t": {"description": "Message type", "const": "acg"},
-        "d": {"description": "Message SAID", "type": "string"},
-        "u": {"description": "Message UUID", "type": "string"},
-        "i": {"description": "Issuer (State) AID", "type": "string"},
-        "rd": {"description": "Registry SAID", "type": "string"},
-        "s": {"description": "Schema Section",
-              "oneOf": [{"type": "string"}, {"type": "object"}]},
-        "A": {
-            "description": "Selectively disclosable attribute aggregate section",
-            "oneOf": [
-                {"description": "Aggregate Section AGID", "type": "string"},
-                {"description": "Selectively disclosable attribute details",
-                 "type": "array", "uniqueItems": True,
-                 "items": {"anyOf": [
-                     _agg_block("i", {"description": "Issuee AID",
-                                      "type": "string"}, "Issuee"),
-                     _agg_block("photo", {"description": "State-endorsed photo",
-                                          "type": "string"}, "Photo"),
-                     _agg_block("dob", {"description": "Date of birth",
-                                        "type": "string", "format": "date"}, "DOB"),
-                     _agg_block("residence", {"description": "Residence",
-                                              "type": "string"}, "Residence"),
-                     _agg_block("name", {"description": "Full name",
-                                         "type": "string"}, "Name"),
-                 ]}},
-            ],
-        },
-        "e": _EMPTY_OR_SECTION,
-        "r": _EMPTY_OR_SECTION,
-    },
-    "additionalProperties": False,
-}
-
-OVER21_SCHEMA_MAD = {
-    "$id": "",
-    "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "title": "Over-21 Age Credential",
-    "description": "Derived boolean age credential asserting the holder is over 21.",
-    "credentialType": "Over21",
     "version": "1.0.0",
     "type": "object",
     "required": ["v", "d", "i", "rd", "s", "a"],
@@ -211,19 +186,84 @@ OVER21_SCHEMA_MAD = {
         "t": {"description": "Message type", "const": "acm"},
         "d": {"description": "Message SAID", "type": "string"},
         "u": {"description": "Message UUID", "type": "string"},
+        "i": {"description": "Issuer (State) AID", "type": "string"},
+        "rd": {"description": "Registry SAID", "type": "string"},
+        "s": {"description": "Schema Section",
+              "oneOf": [{"type": "string"}, {"type": "object"}]},
+        "a": {
+            "description": "Attribute section with individually-disclosable blocks",
+            "oneOf": [
+                {"description": "Attribute Section SAID", "type": "string"},
+                {"description": "Attribute detail",
+                 "type": "object",
+                 "required": ["d", "u", "i", "photo", "dob", "residence", "name"],
+                 "properties": {
+                     "d": {"description": "Section SAID", "type": "string"},
+                     "u": {"description": "Section UUID", "type": "string"},
+                     "i": {"description": "Issuee AID", "type": "string"},
+                     "photo": _disclosable_block("photo",
+                         {"description": "State-endorsed photo", "type": "string"},
+                         "Photo"),
+                     "dob": _disclosable_block("dob",
+                         {"description": "Date of birth", "type": "string",
+                          "format": "date"}, "DOB"),
+                     "residence": _disclosable_block("residence",
+                         {"description": "Residence", "type": "string"}, "Residence"),
+                     "name": _disclosable_block("name",
+                         {"description": "Full name", "type": "string"}, "Name"),
+                 },
+                 "additionalProperties": False},
+            ],
+        },
+        "e": _EMPTY_OR_SECTION,
+        "r": _EMPTY_OR_SECTION,
+    },
+    "additionalProperties": False,
+}
+
+# age is an AGGREGATIVE ('acg') credential: an array of boolean age-threshold flags.
+# THIS is where the aggregate (unlabeled-position) form earns its keep. Every threshold
+# has an element and all are present, so disclosing one flag (e.g. over21) reveals
+# nothing about which OTHER thresholds are asserted -- a poor man's sparse Merkle tree,
+# matching how mdoc models age proofs. Element 0 is the AGID, the index-1 block carries
+# the issuee 'i', and the rest are one boolean block per threshold (over13..over65).
+AGE_THRESHOLDS = (13, 16, 18, 21, 55, 65)
+AGE_SCHEMA_MAD = {
+    "$id": "",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Age Threshold Credential",
+    "description": "Derived age credential: a selectively disclosable aggregate of "
+                   "boolean flags, one per age threshold.",
+    "credentialType": "AgeThresholds",
+    "version": "1.0.0",
+    "type": "object",
+    "required": ["v", "d", "i", "rd", "s", "A"],
+    "properties": {
+        "v": {"description": "ACDC version string", "type": "string"},
+        "t": {"description": "Message type", "const": "acg"},
+        "d": {"description": "Message SAID", "type": "string"},
+        "u": {"description": "Message UUID", "type": "string"},
         "i": {"description": "Issuer (endorser) AID", "type": "string"},
         "rd": {"description": "Registry SAID", "type": "string"},
         "s": {"description": "Schema Section",
               "oneOf": [{"type": "string"}, {"type": "object"}]},
-        "a": {"description": "Attribute Section",
-              "oneOf": [
-                  {"type": "string"},
-                  {"type": "object", "required": ["d", "u", "i", "over21"],
-                   "properties": {"d": {"type": "string"}, "u": {"type": "string"},
-                                  "i": {"description": "Issuee AID", "type": "string"},
-                                  "over21": {"description": "Age assertion",
-                                             "type": "boolean"}},
-                   "additionalProperties": False}]},
+        "A": {
+            "description": "Selectively disclosable age-threshold aggregate section",
+            "oneOf": [
+                {"description": "Aggregate Section AGID", "type": "string"},
+                {"description": "Selectively disclosable flag details",
+                 "type": "array", "uniqueItems": True,
+                 "items": {"anyOf": [
+                     _disclosable_block("i", {"description": "Issuee AID",
+                                              "type": "string"}, "Issuee"),
+                     *[_disclosable_block(f"over{n}",
+                         {"description": f"Over-{n} flag", "type": "boolean"},
+                         f"Over{n}") for n in AGE_THRESHOLDS],
+                 ]}},
+            ],
+        },
+        "e": _EMPTY_OR_SECTION,
+        "r": _EMPTY_OR_SECTION,
     },
     "additionalProperties": False,
 }
@@ -272,13 +312,12 @@ BESPOKE_SCHEMA_MAD = {
               "oneOf": [
                   {"type": "string"},
                   {"type": "object",
-                   "required": ["d", "u", "i", "date", "place", "over21"],
+                   "required": ["d", "u", "i", "date", "place"],
                    "properties": {"d": {"type": "string"}, "u": {"type": "string"},
                                   "i": {"description": "Issuee = Disclosee",
                                         "type": "string"},
                                   "date": {"type": "string"},
-                                  "place": {"type": "string"},
-                                  "over21": {"type": "boolean"}},
+                                  "place": {"type": "string"}},
                    "additionalProperties": False}]},
         "e": {"description": "Edge Section",
               "oneOf": [
@@ -375,77 +414,138 @@ def assert_acdc_schema_valid(acdc, schema=None):
     return schema
 
 
-# --- Aggregate element indices for the sedi-id credential (a[0] is the AGID). ---
-# These serve double duty: as positions in the aggregate list AND as the NONCES
-# slot for each element's blinding nonce (so sedi elements own NONCES[1..5]).
-# Other credentials/sections use disjoint NONCES slots -- over-21 uses NONCES[14],
-# the bespoke edge section NONCES[15] -- so no blinding nonce is ever reused.
-SEDI_ISSUEE, SEDI_PHOTO, SEDI_DOB, SEDI_RESIDENCE, SEDI_NAME = 1, 2, 3, 4, 5
+# --- Blinding-nonce / uuid slot allocation: each NONCES[i] is used exactly once. ---
+# sedi-id (attributive): attribute-section uuid + one nonce per nested block + acdc uuid.
+N_SEDI_A, N_SEDI_PHOTO, N_SEDI_DOB, N_SEDI_RES, N_SEDI_NAME, N_SEDI_ACDC = 1, 2, 3, 4, 5, 6
+# age (aggregative): issuee-block nonce + six flag-block nonces (8..13) + acdc uuid.
+N_AGE_ISSUEE, N_AGE_FLAG0, N_AGE_ACDC = 7, 8, 14
+# registries and bespoke (attribute uuid, acdc uuid, edge-section uuid, two edge uuids).
+N_REG_STATE, N_REG_ENDORSER = 15, 16
+N_BESP_A, N_BESP_ACDC, N_BESP_E, N_BESP_E_ID, N_BESP_E_AGE = 17, 18, 19, 20, 21
+
+# Age aggregate ARRAY positions (A[0] = AGID; A[1] = issuee; A[2..] = the flags, one per
+# AGE_THRESHOLDS entry). SerderACDC.iseaid resolves the aggregate issuee from A[1].i.
+AGE_ISSUEE = 1
+AGE_FLAG0 = 2
+AGE_OVER21 = AGE_FLAG0 + AGE_THRESHOLDS.index(21)   # array index of the over-21 flag
+
+# Alice's age at the admittance date (DOB 2000-03-15, admittance 2026-07-14).
+ALICE_AGE = 26
 
 
-def _sedi_ael():
-    """Alice's sedi-id aggregate element list (a fresh list each call).
+def _sedi_attr():
+    """Alice's sedi-id attribute section (a fresh map each call).
 
-    Element 0 is the AGID placeholder; elements 1..5 are each an individually-
-    blinded (own 'u'), self-addressing (own 'd') attribute block. The issuee
-    binding (i = ALICE) is itself an aggregate element -- the convention for
-    aggregate ACDCs, which carry no top-level a.i -- so it can be disclosed and
-    checked alongside the attributes it accompanies. It lives in the index-1
-    block (element 0 being the AGID), which is exactly where SerderACDC.iseaid
-    now resolves an aggregate issuee from (.sad["A"][1]["i"]); see test_examples
-    and keri.core.serdering.
+    sedi-id is attributive: the issuee ('i') is inserted at the top of the section by
+    acdcmap via iseaid, and each identity attribute is its own individually-blinded
+    (own 'u'), self-addressing (own 'd') nested block, so it can be partially disclosed
+    or withheld independently (see _photo_disclosure).
     """
-    return ['',
-            dict(d='', u=NONCES[SEDI_ISSUEE], i=ALICE),
-            dict(d='', u=NONCES[SEDI_PHOTO], photo="<state-endorsed-photo-bytes>"),
-            dict(d='', u=NONCES[SEDI_DOB], dob="2000-03-15"),
-            dict(d='', u=NONCES[SEDI_RESIDENCE], residence="Salt Lake City UT"),
-            dict(d='', u=NONCES[SEDI_NAME], name="Alice Anders")]
+    return dict(d='', u=NONCES[N_SEDI_A],
+                photo=dict(d='', u=NONCES[N_SEDI_PHOTO],
+                           photo="<state-endorsed-photo-bytes>"),
+                dob=dict(d='', u=NONCES[N_SEDI_DOB], dob="2000-03-15"),
+                residence=dict(d='', u=NONCES[N_SEDI_RES],
+                               residence="Salt Lake City UT"),
+                name=dict(d='', u=NONCES[N_SEDI_NAME], name="Alice Anders"))
+
+
+def _age_ael():
+    """Alice's age-threshold aggregate element list (a fresh list each call).
+
+    Element 0 is the AGID placeholder; element 1 is the issuee block (i = ALICE), which
+    is where SerderACDC.iseaid resolves an aggregate issuee from (.sad["A"][1]["i"]);
+    elements 2.. are one individually-blinded boolean block per AGE_THRESHOLDS entry
+    (over<n> = ALICE_AGE >= n). All thresholds are present as blocks, so disclosing one
+    flag reveals nothing about which others are asserted.
+    """
+    els = ['', dict(d='', u=NONCES[N_AGE_ISSUEE], i=ALICE)]
+    for offset, n in enumerate(AGE_THRESHOLDS):
+        els.append(dict(d='', u=NONCES[N_AGE_FLAG0 + offset],
+                        **{f"over{n}": ALICE_AGE >= n}))
+    return els
 
 
 def _source_credentials(kind):
     """Build Alice's two source credentials, registry-bound and schema-validated.
 
-    sedi-id is an aggregate ('acg') credential carrying the mDL-style, selectively
-    disclosable identity attributes; over-21 is a simple attribute ('acm') boolean
-    age credential. Both are bound to real registries created here via regcept, and
-    both validate against their purpose-authored schemas. Returns
-    (sedi, over21, aggor) -- the Aggor is returned so callers can perform selective
-    disclosure over the same aggregate.
+    sedi-id is an ATTRIBUTIVE ('acm') identity credential whose attributes are
+    individually partially-disclosable nested blocks (issuee at a.i); age is an
+    AGGREGATIVE ('acg') credential carrying an array of boolean age-threshold flags
+    (issuee at A[1].i). Both are bound to real registries created here via regcept and
+    validate against their purpose-authored schemas. Returns (sedi, age, ageAggor) --
+    the Aggor is returned so callers can selectively disclose over the age aggregate.
     """
     # Real registries: the State and the endorser each stand up a registry (rip
     # event); the credential's 'rd' binds it to that registry.
-    regState = regcept(israid=STATE, uuid=NONCES[12], stamp=REG_STATE_STAMP, kind=kind)
-    regEndorser = regcept(israid=ENDORSER, uuid=NONCES[13],
+    regState = regcept(israid=STATE, uuid=NONCES[N_REG_STATE], stamp=REG_STATE_STAMP,
+                       kind=kind)
+    regEndorser = regcept(israid=ENDORSER, uuid=NONCES[N_REG_ENDORSER],
                           stamp=REG_ENDORSER_STAMP, kind=kind)
 
     _, sediSchema = _saidify_schema(dict(SEDI_SCHEMA_MAD), kind=kind)
-    _, over21Schema = _saidify_schema(dict(OVER21_SCHEMA_MAD), kind=kind)
+    _, ageSchema = _saidify_schema(dict(AGE_SCHEMA_MAD), kind=kind)
 
-    aggor = Aggor(ael=_sedi_ael(), makify=True, kind=kind)
-    sedi = acdcagg(israid=STATE, uuid=NONCES[10], regid=regState.said,
-                   schema=sediSchema, aggregate=aggor.ael, kind=kind)
-    # over-21 is a standalone boolean credential the endorser issues to Alice,
-    # bound to her by its own a.i. It carries no edge to sedi-id and needs none:
-    # the two source creds are independent, joined only at presentation by the
-    # bespoke ACDC's I2I edges (Phase 2), where Alice is issuer and the issuee of both.
-    over21 = acdcmap(israid=ENDORSER, uuid=NONCES[11], regid=regEndorser.said,
-                     schema=over21Schema,
-                     attribute=dict(d='', u=NONCES[14], i=ALICE, over21=True), kind=kind)
-    return sedi, over21, aggor
+    # sedi-id: attributive; acdcmap inserts the issuee (iseaid -> a.i). Built expanded
+    # so its attribute section can be partially disclosed block-by-block.
+    sedi = acdcmap(israid=STATE, uuid=NONCES[N_SEDI_ACDC], regid=regState.said,
+                   schema=sediSchema, attribute=_sedi_attr(), iseaid=ALICE, kind=kind)
+    # age: aggregative boolean-flag credential the endorser issues to Alice; its issuee
+    # is the index-1 aggregate block. It carries no edge to sedi-id and needs none --
+    # the two source creds are independent, joined only at presentation by the bespoke
+    # ACDC's I2I edges (Phase 2), where Alice is issuer and the issuee of both.
+    ageAggor = Aggor(ael=_age_ael(), makify=True, kind=kind)
+    age = acdcagg(israid=ENDORSER, uuid=NONCES[N_AGE_ACDC], regid=regEndorser.said,
+                  schema=ageSchema, aggregate=ageAggor.ael, kind=kind)
+    return sedi, age, ageAggor
 
 
-def _photo_disclosure(aggor):
-    """Alice's selective disclosure of sedi-id: reveal issuee + photo, withhold DOB.
+def _photo_disclosure(sedi, kind):
+    """Alice's partial disclosure of sedi-id: reveal the photo block + issuee, withhold
+    dob/residence/name as bare SAIDs.
 
-    Returns the disclosure list produced by Aggor: the issuee and photo elements in
-    full, the rest (dob, residence, name) as bare SAIDs. The issuee element is
-    revealed because the club must check the I2I binding (issuee == Alice); the
-    photo is the state-endorsed image; the birthdate never crosses the wire. The
-    disclosure still verifies against the committed AGID.
+    sedi-id is attributive, so disclosure is by compaction rather than by aggregate
+    index: the attribute section's nested blocks each collapse to a SAID, and the holder
+    expands only the chosen block. Returns the mixed 'a' section -- photo in full, the
+    rest as SAIDs, the issuee ('i') always present as a top-level simple field. Every mix
+    recomputes to the same committed section SAID, so a verifier can confirm the
+    disclosure belongs to the ACDC (test_examples.test_partial_disclosure_compaction
+    shows the same Compactor mechanism).
     """
-    disclosed, _ = aggor.disclose(indices=[SEDI_ISSUEE, SEDI_PHOTO])
+    compactor = Compactor(mad=dict(sedi.sad['a']), makify=True, kind=kind)
+    compactor.compact()
+    compactor.expand(greedy=True)
+    allCompact = compactor.partials[('',)].mad
+    allExpanded = next(v.mad for k, v in compactor.partials.items() if k != ('',))
+    mixed = dict(allCompact)                    # every block as a bare SAID...
+    mixed['photo'] = allExpanded['photo']       # ...then reveal only the photo block
+    return mixed
+
+
+def _age_disclosure(ageAggor):
+    """Alice's selective disclosure of the age credential: reveal the issuee + the
+    over-21 flag, withhold every other threshold as a bare SAID.
+
+    The club learns she is over 21 and nothing about the other thresholds -- not whether
+    she is over 13/16/18 (which over-21 implies anyway) and, importantly, not whether she
+    is over 55 or 65. The disclosure still verifies against the committed AGID.
+    """
+    disclosed, _ = ageAggor.disclose(indices=[AGE_ISSUEE, AGE_OVER21])
     return disclosed
+
+
+def _committed_a_said(sedi, kind):
+    """The SAID sedi-id commits to for its attribute section -- the value its most-
+    compact form carries under 'a'.
+
+    A private ACDC's section SAID is taken over the most-compact form, so it is not
+    the (empty) 'd' the expanded section carries; it is recomputed by compacting the
+    section. A partial disclosure recompacts to this same SAID, which is what lets a
+    verifier confirm the disclosure belongs to the credential.
+    """
+    compactor = Compactor(mad=dict(sedi.sad['a']), makify=True, kind=kind)
+    compactor.compact()
+    return compactor.said
 
 
 def _rules_in_bespoke():
@@ -463,7 +563,7 @@ def _rules_in_bespoke():
     )
 
 
-def _bespoke_edges(sedi, over21):
+def _bespoke_edges(sedi, age):
     """The bespoke ACDC's edge section: I2I edges to the two source credentials.
 
     Each edge names the target credential's SAID ('n') and schema ('s', read from
@@ -473,39 +573,42 @@ def _bespoke_edges(sedi, over21):
     points to. Since Alice issues the bespoke ACDC and is the issuee of both source
     credentials, I2I is exactly right -- it is what cryptographically distinguishes
     "Alice presenting her own credentials" from "two credentials that merely happen
-    to share an AID," which anyone could arrange.
+    to share an AID," which anyone could arrange. The far-node issuee is resolved
+    uniformly via SerderACDC.iseaid whether it is attributive (sedi-id, a.i) or
+    aggregative (age, A[1].i).
     """
     return dict(
-        d='', u=NONCES[15],
-        identity=dict(d='', u=NONCES[6], n=sedi.said, s=sedi.sad['s']['$id'], o='I2I'),
-        age=dict(d='', u=NONCES[7], n=over21.said, s=over21.sad['s']['$id'], o='I2I'),
+        d='', u=NONCES[N_BESP_E],
+        identity=dict(d='', u=NONCES[N_BESP_E_ID], n=sedi.said,
+                      s=sedi.sad['s']['$id'], o='I2I'),
+        age=dict(d='', u=NONCES[N_BESP_E_AGE], n=age.said,
+                 s=age.sad['s']['$id'], o='I2I'),
     )
 
 
-def _bespoke_presentation(sedi, over21, kind, compactify=False, rule=None):
+def _bespoke_presentation(sedi, age, kind, compactify=False, rule=None):
     """Build Alice's bespoke presentation ACDC to the club (helper for Phase 2+).
 
-    Issuer = Alice (Discloser), Issuee = the club (Disclosee). Attributes mirror
-    the spec's restaurant example -- date and place of admittance -- plus the
-    over-21 assertion the club is checking. Edges are I2I to both source creds; the
-    Rules section carries the three CLC clauses (override via rule= to show that
-    changing the terms changes the ACDC's identity). It is deliberately NOT
-    registry-bound (no 'rd'), matching the spec's bespoke example and the plan's
-    "no correlatable log" intent. Returns the SerderACDC, most-compact when
-    compactify=True (same SAID either way).
+    Issuer = Alice (Discloser), Issuee = the club (Disclosee). Attributes mirror the
+    spec's restaurant example -- date and place of admittance. Edges are I2I to both
+    source creds; the Rules section carries the three CLC clauses (override via rule=
+    to show that changing the terms changes the ACDC's identity). It is deliberately
+    NOT registry-bound (no 'rd'), matching the spec's bespoke example and the "no
+    correlatable log" intent. Returns the SerderACDC, most-compact when compactify=True
+    (same SAID either way).
 
-    The state-endorsed photo is NOT copied into these attributes; it stays the
-    single source of truth in sedi-id, reached via the I2I edge and disclosed by
-    selective disclosure of just that element (see _photo_disclosure). So no photo
-    bytes are duplicated here.
+    Neither the photo nor the age assertion is copied into these attributes: the photo
+    stays the single source of truth in sedi-id (reached via the identity edge, revealed
+    by partial disclosure of just that block), and the over-21 proof comes from the age
+    credential (reached via the age edge, revealed by selective disclosure of just that
+    flag). The bespoke references; it does not restate.
     """
     _, schema = _saidify_schema(dict(BESPOKE_SCHEMA_MAD), kind=kind)
-    attribute = dict(d='', u=NONCES[8], i=CLUB,
+    attribute = dict(d='', u=NONCES[N_BESP_A], i=CLUB,
                      date="2026-07-14T21:30:00.000000+00:00",
-                     place="The Alcove Club, 200 S West Temple, Salt Lake City UT",
-                     over21=True)
-    return acdcmap(israid=ALICE, uuid=NONCES[9], schema=schema, attribute=attribute,
-                   edge=_bespoke_edges(sedi, over21),
+                     place="The Alcove Club, 200 S West Temple, Salt Lake City UT")
+    return acdcmap(israid=ALICE, uuid=NONCES[N_BESP_ACDC], schema=schema,
+                   attribute=attribute, edge=_bespoke_edges(sedi, age),
                    rule=rule if rule is not None else _rules_in_bespoke(),
                    kind=kind, compactify=compactify)
 
@@ -536,94 +639,103 @@ def _club_accepts_grant(grantedSad, agreedSaid, schema):
     return True
 
 
-def test_source_credentials_and_selective_disclosure_JSON():
-    """Phase 1: Alice's two source credentials, with selective disclosure.
+def test_source_credentials_and_graduated_disclosure_JSON():
+    """Phase 1: Alice's two source credentials, each with the disclosure it fits.
 
-    Alice holds two ACDCs under one holder AID (ALICE), each bound to a real
-    registry and validated against a purpose-authored JSON Schema:
+    Alice holds two ACDCs under one holder AID (ALICE), each bound to a real registry
+    and validated against a purpose-authored JSON Schema, and each using the disclosure
+    mechanism that fits its data:
 
-      * sedi-id -- issued by the STATE to Alice as an aggregate ('acg') credential.
-        Each identity attribute (issuee, photo, dob, residence, name) is its own
-        individually-blinded, self-addressing element of the Aggregate ('A')
-        section. This is the mDL-style selective-disclosure mechanism: at
-        presentation the holder discloses an arbitrary SUBSET of elements in full
-        and leaves the rest as bare SAIDs, and the verifier recomputes the
-        aggregate digest (AGID) to confirm the disclosure is authentic.
+      * sedi-id -- issued by the STATE as an ATTRIBUTIVE ('acm') identity credential.
+        The issuee is the top-level a.i; each identity attribute (photo, dob, residence,
+        name) is its own individually-blinded, partially-disclosable nested block. At
+        presentation the holder reveals a chosen block in full and leaves the rest as
+        bare SAIDs (partial disclosure by compaction); every mix recomputes to the same
+        committed section SAID. This is the right model for a fixed, labeled field set.
 
-      * over-21 -- a pre-derived boolean age credential issued to Alice, so the
-        club never needs the birthdate to confirm the age claim.
+      * age -- issued by the endorser as an AGGREGATIVE ('acg') credential: an array of
+        boolean age-threshold flags (over13..over65). All thresholds are present, so
+        disclosing one flag (over21) reveals nothing about which others are asserted --
+        selective disclosure over the aggregate, verified via the committed AGID. This
+        is the use case the aggregate (unlabeled-position) form is actually for.
 
-    The load-bearing selective-disclosure claim -- prove-age-without-birthdate --
-    is asserted here: a disclosure revealing the issuee binding and the state-
-    endorsed photo while withholding the date of birth still verifies against the
-    committed AGID, and the birthdate value is provably absent from it.
-
-    The purpose-authored schemas have teeth: this test also confirms the over-21
-    schema rejects a non-boolean age assertion.
+    The load-bearing claims are asserted here: reveal the photo and over-21 while
+    withholding the DOB and the other age thresholds; the withheld values are provably
+    absent; and both disclosures are tamper-evident.
     """
     kind = Kinds.json
-    sedi, over21, aggor = _source_credentials(kind)
+    sedi, age, ageAggor = _source_credentials(kind)
 
-    # sedi-id: aggregate identity credential, registry-bound, schema-valid.
-    assert sedi.ilk == Ilks.acg
-    assert sedi.sad['i'] == STATE               # issued by the state
-    assert sedi.sad['rd'] == "EHVOJQtOz0B_YAio90qC7t0_YgdiGTHHgX8Lga-Q3_AM"    # bound to the State's registry
-    # The issuee binding is an aggregate element (acg has no top-level a.i).
-    assert sedi.sad['A'][SEDI_ISSUEE]['i'] == ALICE
-    # SerderACDC.iseaid/.issuee resolve that same index-1 issuee, so a verifier
-    # reads an aggregative issuee exactly as it reads an attributive one.
-    assert sedi.iseaid == ALICE
+    # sedi-id: ATTRIBUTIVE identity credential, registry-bound, schema-valid.
+    assert sedi.ilk == Ilks.acm
+    assert sedi.sad['i'] == STATE                   # issued by the state
+    assert sedi.sad['rd'] == "EBi8GblmoTZK6Z5bfhgdJcFD7ed0MGIVk_uSOWupWJUb"        # bound to the State's registry
+    assert sedi.sad['a']['i'] == ALICE              # attributive issuee (top-level a.i)
+    assert sedi.iseaid == ALICE                     # .iseaid resolves the attributive path
     assert sedi.issuee.qb64 == ALICE
-    assert sedi.said == "EGv1HMP4xWZYf7GpHUv1yBwSufdVSmpLxCldIc7h9SGY"
+    assert sedi.said == "EECATyTq4KuL-Ixs1EkcN9OjBRqfzR45fWUJ_auPCvEL"
     assert_acdc_schema_valid(sedi)
 
-    # over-21: boolean age credential, registry-bound, schema-valid.
-    assert over21.sad['i'] == ENDORSER          # issued by the endorser
-    assert over21.sad['rd'] == "EJ008F-JLQ3k2tacTL8Xv5WEOYHaIvW7lfeGAbKPSDTf"
-    assert over21.sad['a']['i'] == ALICE        # to the same holder
-    assert over21.iseaid == ALICE               # same property, attributive path
-    assert over21.issuee.qb64 == ALICE
-    assert over21.sad['a']['over21'] is True
-    assert over21.said == "EG7L78EoESOI6RKazj9wEgG-MA3-0SlkkndAksXiqXAm"
-    over21Schema = assert_acdc_schema_valid(over21)
+    # age: AGGREGATIVE boolean-flag credential, registry-bound, schema-valid.
+    assert age.ilk == Ilks.acg
+    assert age.sad['i'] == ENDORSER                 # issued by the endorser
+    assert age.sad['rd'] == "EBoRy72Iko9PF4PyFr1C4FP2HD36jrYNASEk8rK8N9mU"
+    assert age.sad['A'][AGE_ISSUEE]['i'] == ALICE   # aggregative issuee (index-1 block)
+    assert age.iseaid == ALICE                      # .iseaid resolves the aggregative path
+    assert age.issuee.qb64 == ALICE
+    assert age.sad['A'][AGE_OVER21]['over21'] is True                          # over 21...
+    over65Pos = AGE_FLAG0 + AGE_THRESHOLDS.index(65)
+    assert age.sad['A'][over65Pos]['over65'] is False                          # ...not over 65
+    assert age.said == "EBh61oE3I_O3tg8NbCLaAazseE2lzRolGGI0H-V7kmXd"
+    ageSchema = assert_acdc_schema_valid(age)
 
-    # Schema teeth: a non-boolean age assertion is rejected.
-    bad = dict(over21.sad, a=dict(over21.sad['a'], over21="yes"))
+    # Schema teeth: a non-boolean threshold flag is rejected.
+    badA = list(age.sad['A'])
+    badA[AGE_OVER21] = dict(badA[AGE_OVER21], over21="yes")
     with pytest.raises(ValidationError):
-        Draft202012Validator(over21Schema).validate(bad)
+        Draft202012Validator(ageSchema).validate(dict(age.sad, A=badA))
 
-    # --- Selective disclosure of sedi-id: reveal issuee + photo, withhold DOB. ---
-    disclosed = _photo_disclosure(aggor)
-    assert disclosed[0] == aggor.agid                       # AGID anchor
-    assert isinstance(disclosed[SEDI_ISSUEE], dict)         # issuee revealed
-    assert disclosed[SEDI_ISSUEE]['i'] == ALICE
-    assert isinstance(disclosed[SEDI_PHOTO], dict)          # photo revealed
-    assert disclosed[SEDI_PHOTO]['photo'] == "<state-endorsed-photo-bytes>"
-    assert isinstance(disclosed[SEDI_DOB], str)             # birthdate withheld...
-    assert isinstance(disclosed[SEDI_RESIDENCE], str)       # residence withheld...
-    assert isinstance(disclosed[SEDI_NAME], str)            # name withheld...
-    # ...and each withheld element is provably its committed block SAID, not the
-    # value. This is the assertion that actually proves non-disclosure: dob,
-    # residence, and name are themselves strings, so the isinstance checks above
-    # establish only the bare (compact) form -- they cannot on their own tell a
-    # block SAID from the plaintext. Equality to the aggregate's committed 'd' can.
-    assert disclosed[SEDI_DOB]       == aggor.ael[SEDI_DOB]['d']
-    assert disclosed[SEDI_RESIDENCE] == aggor.ael[SEDI_RESIDENCE]['d']
-    assert disclosed[SEDI_NAME]      == aggor.ael[SEDI_NAME]['d']
+    # --- Partial disclosure of sedi-id (attributive): reveal photo + issuee, hide DOB. ---
+    photoDisc = _photo_disclosure(sedi, kind)
+    assert photoDisc['i'] == ALICE                          # issuee always present (simple field)
+    assert isinstance(photoDisc['photo'], dict)             # photo block revealed in full
+    assert photoDisc['photo']['photo'] == "<state-endorsed-photo-bytes>"
+    assert isinstance(photoDisc['dob'], str)                # birthdate withheld...
+    assert isinstance(photoDisc['residence'], str)          # residence withheld...
+    assert isinstance(photoDisc['name'], str)               # name withheld...
+    # ...as bare block SAIDs: the withheld values never cross the wire.
+    assert "2000-03-15" not in json.dumps(photoDisc)        # birthdate
+    assert "Salt Lake City" not in json.dumps(photoDisc)    # residence
+    assert "Alice Anders" not in json.dumps(photoDisc)      # name
+    # The verifier recomputes the section's most-compact SAID over the mixed disclosure
+    # and confirms it is the commitment sedi-id carries under 'a'. A withheld block's
+    # SAID is covered by this recomputation, so tampering ANY block (revealed OR
+    # withheld) is caught -- which is why the withheld blocks need no separate check.
+    committedA = _committed_a_said(sedi, kind)
+    check = Compactor(mad=dict(photoDisc, d=''), makify=True, kind=kind)
+    check.compact()
+    assert check.said == committedA
+    # Tamper evidence: altering the revealed photo breaks that recomputation.
+    tampered = dict(photoDisc, photo=dict(photoDisc['photo'], photo="<forged>"))
+    tcheck = Compactor(mad=dict(tampered, d=''), makify=True, kind=kind)
+    tcheck.compact()
+    assert tcheck.said != committedA
 
-    # Privacy invariant: the withheld birthdate value never appears on the wire --
-    # dob/residence/name travel only as bare block SAIDs. Those SAIDs are
-    # computationally unlinkable to their values because each element block carries
-    # its own blinding nonce ('u'); without it a verifier cannot brute-force the
-    # (low-entropy) value from the SAID.
-    assert "2000-03-15" not in json.dumps(disclosed)
-
-    # The verifier recomputes the AGID over the mixed disclosure and confirms it.
-    assert Aggor.verifyDisclosure(disclosed, kind=kind)
-    # Tamper evidence: altering a revealed value breaks AGID verification.
-    tampered = list(disclosed)
-    tampered[SEDI_ISSUEE] = dict(disclosed[SEDI_ISSUEE], i=CLUB)
-    assert not Aggor.verifyDisclosure(tampered, kind=kind)
+    # --- Selective disclosure of age (aggregative): reveal over21 + issuee, hide rest. ---
+    ageDisc = _age_disclosure(ageAggor)
+    assert ageDisc[0] == ageAggor.agid                      # AGID anchor
+    assert ageDisc[AGE_ISSUEE]['i'] == ALICE                # issuee revealed
+    assert ageDisc[AGE_OVER21]['over21'] is True            # over-21 revealed
+    assert isinstance(ageDisc[over65Pos], str)              # over-65 flag withheld (SAID)
+    # Privacy: no other threshold flag crosses the wire -- the club learns she is over 21
+    # and cannot tell whether she is over 55 or 65.
+    assert "over55" not in json.dumps(ageDisc)
+    assert "over65" not in json.dumps(ageDisc)
+    assert Aggor.verifyDisclosure(ageDisc, kind=kind)
+    # Tamper evidence: altering a revealed flag breaks AGID verification.
+    tamperedAge = list(ageDisc)
+    tamperedAge[AGE_OVER21] = dict(ageDisc[AGE_OVER21], over21=False)
+    assert not Aggor.verifyDisclosure(tamperedAge, kind=kind)
 
 
 def test_bespoke_presentation_acdc_JSON():
@@ -650,8 +762,8 @@ def test_bespoke_presentation_acdc_JSON():
 
       1. The I2I same-holder binding: the bespoke ACDC's issuer equals the issuee
          (via .iseaid) of each source credential its edges point to -- resolved
-         uniformly whether the far node is aggregative (sedi-id) or attributive
-         (over-21).
+         uniformly whether the far node is attributive (sedi-id, a.i) or aggregative
+         (age, A[1].i).
       2. The three Rules clauses are present with their exact agreed text.
 
     The purpose-authored bespoke schema pins the edge operator to const "I2I", so
@@ -660,16 +772,17 @@ def test_bespoke_presentation_acdc_JSON():
     nonce), its most-compact and expanded forms share one SAID.
     """
     kind = Kinds.json
-    sedi, over21, _ = _source_credentials(kind)
+    sedi, age, _ = _source_credentials(kind)
 
-    bespoke = _bespoke_presentation(sedi, over21, kind)
+    bespoke = _bespoke_presentation(sedi, age, kind)
 
     assert bespoke.ilk == Ilks.acm
     assert bespoke.sad['i'] == ALICE           # Alice is the Issuer (Discloser)
     assert bespoke.sad['a']['i'] == CLUB       # the club is the Issuee (Disclosee)
-    assert bespoke.sad['a']['over21'] is True
+    assert bespoke.sad['a']['place'].startswith("The Alcove Club")
+    assert 'over21' not in bespoke.sad['a']    # age proof referenced via edge, not restated
     assert 'rd' not in bespoke.sad             # deliberately not registry-bound
-    assert bespoke.said == "EFwdS-KdBvH7Cum7cv_VBTztmYVD3z2X5IyWRVTZC7v7"
+    assert bespoke.said == "EEh1Fmv_fN2AUV_mTuCdMB3XZptOuvhklPzAFxLeTsuY"
 
     # (1) I2I same-holder binding. The v2 path does not enforce operators, so we
     # assert the constraint the I2I operator stands for: the bespoke ACDC's issuer
@@ -677,11 +790,11 @@ def test_bespoke_presentation_acdc_JSON():
     assert bespoke.sad['e']['identity']['o'] == 'I2I'
     assert bespoke.sad['e']['age']['o'] == 'I2I'
     assert bespoke.sad['e']['identity']['n'] == sedi.said     # edge -> sedi-id
-    assert bespoke.sad['e']['age']['n'] == over21.said        # edge -> over-21
+    assert bespoke.sad['e']['age']['n'] == age.said           # edge -> age
     # issuer(bespoke) == issuee(each source), resolved via SerderACDC.iseaid so the
-    # aggregative far node (sedi-id) and the attributive one (over-21) read alike.
+    # attributive far node (sedi-id, a.i) and the aggregative one (age, A[1].i) read alike.
     assert bespoke.sad['i'] == sedi.iseaid
-    assert bespoke.sad['i'] == over21.iseaid
+    assert bespoke.sad['i'] == age.iseaid
 
     # (2) The three Rules clauses are present with their exact agreed text.
     assert bespoke.sad['r']['Purpose']['l'] == PURPOSE_TEXT
@@ -691,7 +804,7 @@ def test_bespoke_presentation_acdc_JSON():
     assert GOV_PROVISION_SAID in bespoke.sad['r']['SafeHarbor']['l']
 
     # The private ACDC's compact and expanded forms share one SAID.
-    compact = _bespoke_presentation(sedi, over21, kind, compactify=True)
+    compact = _bespoke_presentation(sedi, age, kind, compactify=True)
     assert compact.said == bespoke.said
     assert isinstance(bespoke.sad['e'], dict)     # sections inline...
     assert isinstance(compact.sad['e'], str)      # ...vs. collapsed to SAIDs
@@ -765,12 +878,13 @@ def test_gated_ipex_exchange_JSON():
     ordering guarantee.
     """
     kind = Kinds.json
-    sedi, over21, aggor = _source_credentials(kind)
-    bespoke = _bespoke_presentation(sedi, over21, kind)
-    # The grant carries the bespoke ACDC in most-compact form (schema as a SAID):
-    # the club already received the terms in the offer, and compact form keeps the
-    # grant small. The revealed photo rides alongside as a selective disclosure.
-    bespokeCompact = _bespoke_presentation(sedi, over21, kind, compactify=True)
+    sedi, age, ageAggor = _source_credentials(kind)
+    bespoke = _bespoke_presentation(sedi, age, kind)
+    # The grant carries the bespoke ACDC in most-compact form (schema as a SAID): the
+    # club already received the terms in the offer, and compact form keeps the grant
+    # small. The two disclosures ride alongside -- the sedi-id photo (partial) and the
+    # age over-21 flag (selective).
+    bespokeCompact = _bespoke_presentation(sedi, age, kind, compactify=True)
     clubSigner = _SIGNERS[3]              # the club's establishing signing key
 
     # The exn peer messages are serialized as JSON here so the privacy invariants
@@ -778,35 +892,36 @@ def test_gated_ipex_exchange_JSON():
     # same way the ACDC examples assert them; the CESR wire form base64-encodes the
     # payload, which would make a substring check meaningless.
 
-    # 1. apply (club -> Alice): the challenge. It narrows what the club will accept
-    # up front: not merely which schemas, but which FIELDS must be disclosed from
-    # each -- the state-endorsed photo and the issuee from the aggregate sedi-id, and
-    # the over-21 boolean and the issuee from over-21. The issuee ('i') is required
-    # from BOTH so the club can confirm the two creds name the same holder (the I2I
-    # binding). The request is keyed by schema SAID -- the applicant is not assumed
-    # to know the actual ACDC SAIDs -- with a list of attribute paths, following the
-    # graduated-disclosure path-list model. This is a static, one-shot narrowing of
-    # the request, NOT full back-and-forth negotiation: the apply states the required
-    # disclosure and the offer answers it. No creds yet -- schemas, paths, governance.
+    # 1. apply (club -> Alice): the challenge. It narrows what the club will accept up
+    # front: not merely which schemas, but which FIELDS must be disclosed from each --
+    # the photo and issuee from the attributive sedi-id (/a/photo, /a/i), and the over-21
+    # flag and issuee from the aggregative age credential (/A/over21, /A/i). The issuee
+    # is required from BOTH so the club can confirm the two creds name the same holder
+    # (the I2I binding). The request is keyed by schema SAID -- the applicant is not
+    # assumed to know the actual ACDC SAIDs -- with a list of attribute paths, following
+    # the graduated-disclosure path-list model. This is a static, one-shot narrowing of
+    # the request, NOT full back-and-forth negotiation; the exact placement (attribute
+    # vs. query block) and encoding are still being designed (WebOfTrust/keripy
+    # discussion #1512). No creds yet -- schemas, required paths, governance.
     sediSchemaSaid = sedi.sad['s']['$id']
-    over21SchemaSaid = over21.sad['s']['$id']
+    ageSchemaSaid = age.sad['s']['$id']
     apply = exchange(sender=CLUB, receiver=ALICE, route="/ipex/apply",
                      attributes=dict(m="Prove over-21 and show the state-endorsed photo.",
-                                     disclose={sediSchemaSaid:   ["/A/i", "/A/photo"],
-                                               over21SchemaSaid: ["/a/i", "/a/over21"]},
+                                     disclose={sediSchemaSaid: ["/a/i", "/a/photo"],
+                                               ageSchemaSaid:  ["/A/i", "/A/over21"]},
                                      g=GOV_PROVISION_SAID),
                      stamp=APPLY_STAMP, kind=kind)
     assert apply.sad['t'] == Ilks.exn
     assert apply.sad['r'] == "/ipex/apply"
     assert apply.sad['i'] == CLUB and apply.sad['ri'] == ALICE
-    # The field-level request: issuee + photo from the aggregate, issuee + boolean
-    # from the attributive cred, keyed by the schema SAID the club is asking for.
+    # The field-level request: issuee + photo from the attributive cred, issuee + over-21
+    # flag from the aggregative cred, keyed by the schema SAID the club is asking for.
     reqSedi = apply.sad['a']['disclose'][sediSchemaSaid]
-    reqOver21 = apply.sad['a']['disclose'][over21SchemaSaid]
-    assert reqSedi == ["/A/i", "/A/photo"]              # aggregate: issuee + photo
-    assert reqOver21 == ["/a/i", "/a/over21"]           # attributive: issuee + age
-    assert "/A/i" in reqSedi and "/a/i" in reqOver21    # the joining issuee, from both
-    assert apply.said == "EKopjmSZtcCtCA4IisjpshXaoASiMH9FYjS1P0ygkLFO"
+    reqAge = apply.sad['a']['disclose'][ageSchemaSaid]
+    assert reqSedi == ["/a/i", "/a/photo"]              # attributive: issuee + photo
+    assert reqAge == ["/A/i", "/A/over21"]              # aggregate: issuee + over-21 flag
+    assert "/a/i" in reqSedi and "/A/i" in reqAge       # the joining issuee, from both
+    assert apply.said == "EMaBzmylNSY-nwwvknFohrV87K9MlLGnnMB6y4CrLCDp"
 
     # 2. offer (Alice -> club): "I'll prove over-21 and show my photo if you accept
     # these terms." Carries only the SAIDs of the bespoke ACDC and its sources plus
@@ -814,13 +929,13 @@ def test_gated_ipex_exchange_JSON():
     offer = exchange(sender=ALICE, receiver=CLUB, route="/ipex/offer",
                      prior=apply.said,
                      attributes=dict(acdc=bespoke.said,
-                                     credentials=[sedi.said, over21.said],
+                                     credentials=[sedi.said, age.said],
                                      governance=GOV_PROVISION_SAID,
                                      terms=_rules_in_bespoke()),
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said                 # answers the apply
     assert bespoke.said.encode() in offer.raw           # commits to the bespoke by SAID
-    assert offer.said == "EILGFKd_ErA7W9NcCfxW10e7oWVdFIug2OUP6oDByzjC"
+    assert offer.said == "EPqHYfquYatWtmKy9BRFHX9YZ6N9Zv_bdMjqlThoEOhy"
     # (property 1) the offer leaks no PII: not Alice's name, photo, or birthdate.
     assert b"Alice Anders" not in offer.raw
     assert b"<state-endorsed-photo-bytes>" not in offer.raw
@@ -831,7 +946,7 @@ def test_gated_ipex_exchange_JSON():
     agree = exchange(sender=CLUB, receiver=ALICE, route="/ipex/agree",
                      prior=offer.said, stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said                 # binds the offer SAID
-    assert agree.said == "EKSTgLEO_RGIJOsr2E6WPaZ_jNz5cLsbYp0T2e7acwSp"
+    assert agree.said == "EB_aO3htcjsYl0zxNIO1zhPFNaW-XSrA96VgEfVNVHSs"
     # The club signs the agree, and we assemble the signed wire message the blessed
     # way: messagize() frames the signature as a CESR attachment group (genus code
     # and all). New keripy code should never hand-roll attachment framing -- pass
@@ -858,12 +973,13 @@ def test_gated_ipex_exchange_JSON():
         signed = keyState.verify(sig=sig.raw, ser=agreeMsg.raw)
         if not (isAgree and bound and signed):
             return None                                 # terms not accepted -> nothing
-        # The grant carries the bespoke ACDC (compact) and the selective disclosure
-        # of sedi-id revealing issuee + photo -- the PII appears only here.
+        # The grant carries the bespoke ACDC (compact) plus the two disclosures -- the
+        # sedi-id photo (partial) and the age over-21 flag (selective). PII appears only here.
         return exchange(sender=ALICE, receiver=CLUB, route="/ipex/grant",
                         prior=agreeMsg.said,
                         attributes=dict(acdc=bespokeCompact.sad,
-                                        photo=_photo_disclosure(aggor)),
+                                        identity=_photo_disclosure(sedi, kind),
+                                        age=_age_disclosure(ageAggor)),
                         stamp=GRANT_STAMP, kind=kind)
 
     # A forged signature (someone else's key over the agree) unlocks nothing.
@@ -885,16 +1001,22 @@ def test_gated_ipex_exchange_JSON():
     grant = disclose(agree, clubSig, capturedKeyState)
     assert grant is not None
     assert grant.sad['p'] == agree.said                 # grant follows the agree
-    assert grant.said == "EHBoanV1HwhjGQA-fqBsIewHpyI69eThflJ40zgl7xLi"
-    # (property 4) the state-endorsed photo crosses the wire only now, in the grant.
+    assert grant.said == "EMRqeruzBqBsMOPeUCHNSGzQmOS64BDd9qthWTG4My5s"
+    # (property 4) PII crosses the wire only now, in the grant: the photo and the
+    # over-21 flag.
     assert b"<state-endorsed-photo-bytes>" in grant.raw
-    # ...and even the grant never carries the withheld birthdate.
+    assert grant.sad['a']['age'][AGE_OVER21]['over21'] is True
+    # ...and the grant still never carries the withheld birthdate or the other age
+    # thresholds -- the club cannot tell whether she is over 55 or 65.
     assert b"2000-03-15" not in grant.raw
-    # The grant honors the apply's field request: Alice's selective disclosure of
-    # sedi-id reveals exactly the elements the club asked for -- the issuee (/A/i)
-    # and the photo (/A/photo), i.e. reqSedi -- and leaves the rest as bare SAIDs.
-    revealed = {i for i, el in enumerate(grant.sad['a']['photo']) if isinstance(el, dict)}
-    assert revealed == {SEDI_ISSUEE, SEDI_PHOTO}        # the /A/i and /A/photo paths
+    assert b"over55" not in grant.raw and b"over65" not in grant.raw
+    # The grant honors the apply's field request. sedi-id (attributive): the photo block
+    # and issuee are revealed (/a/photo, /a/i), the rest stay bare SAIDs. age
+    # (aggregative): the over-21 flag and issuee are revealed.
+    identityDisc = grant.sad['a']['identity']
+    assert isinstance(identityDisc['photo'], dict) and identityDisc['i'] == ALICE
+    assert isinstance(identityDisc['dob'], str)         # dob withheld
+    assert grant.sad['a']['age'][AGE_ISSUEE]['i'] == ALICE
 
     # The club VERIFIES the granted credential before trusting it -- a real operation,
     # not a SAID-equality trick (see _club_accepts_grant: self-verify the artifact,
@@ -905,13 +1027,13 @@ def test_gated_ipex_exchange_JSON():
     # The 4th check, revocation, is documented in _club_accepts_grant; the presentation
     # carries its hooks -- each I2I edge names a registry-bound source credential.
     assert bespoke.sad['e']['identity']['n'] == sedi.said and sedi.sad['rd']
-    assert bespoke.sad['e']['age']['n'] == over21.said and over21.sad['rd']
+    assert bespoke.sad['e']['age']['n'] == age.said and age.sad['rd']
 
     # 5. admit (club -> Alice): acknowledges receipt, closing the exchange.
     admit = exchange(sender=CLUB, receiver=ALICE, route="/ipex/admit",
                      prior=grant.said, stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "EMWJIivg85-QVgNTrzHDWuYiDftaM-f_MOocNNTlttNl"
+    assert admit.said == "EI0QUbDFqJzTuMWbSdGKMFeEt_cDyKF4O_Uge9BzAY9s"
 
 
 def test_accountability_and_terms_follow_data_JSON():
@@ -955,8 +1077,8 @@ def test_accountability_and_terms_follow_data_JSON():
     rather than the identifier alone, and that is the point this test makes.
     """
     kind = Kinds.json
-    sedi, over21, _ = _source_credentials(kind)
-    bespoke = _bespoke_presentation(sedi, over21, kind)
+    sedi, age, _ = _source_credentials(kind)
+    bespoke = _bespoke_presentation(sedi, age, kind)
 
     # Offer and the club's signed agree, as in Phase 3.
     offer = exchange(sender=ALICE, receiver=CLUB, route="/ipex/offer",
@@ -998,7 +1120,7 @@ def test_accountability_and_terms_follow_data_JSON():
     # credential -- terms follow the data.
     tamperedRules = _rules_in_bespoke()
     tamperedRules['Assimilation']['l'] = "Verifier may do anything it likes."
-    weakened = _bespoke_presentation(sedi, over21, kind, rule=tamperedRules)
+    weakened = _bespoke_presentation(sedi, age, kind, rule=tamperedRules)
     assert not _club_accepts_grant(weakened.sad, bespoke.said, bespoke.sad['s'])
 
 
@@ -1007,37 +1129,44 @@ def test_clc_serialization_kinds(kind):
     """Phases 1-3 invariants hold across every serialization kind, not just JSON.
 
     The detailed phases above pin canonical JSON SAIDs for readability. This check
-    exercises the same flows -- aggregate source creds + selective disclosure, the
-    bespoke ACDC with I2I edges and rules, and the gated exchange with a real signed
-    agree -- over CESR (the native KERI wire format) and CBOR/MGPK, asserting the
-    behavioral invariants without pinning per-kind SAIDs. (The no-PII-on-the-wire
-    invariant is JSON-specific and asserted in Phase 3: the CESR wire form
-    base64-encodes the payload, so a plaintext substring check does not apply.)
+    exercises the same flows -- the attributive sedi-id with partial disclosure, the
+    aggregative age credential with selective disclosure, the bespoke ACDC with I2I
+    edges and rules, and the gated exchange with a real signed agree -- over CESR (the
+    native KERI wire format) and CBOR/MGPK, asserting the behavioral invariants without
+    pinning per-kind SAIDs. (The no-PII-on-the-wire invariant is JSON-specific and
+    asserted in Phase 3: the CESR wire form base64-encodes the payload, so a plaintext
+    substring check does not apply.)
     """
-    sedi, over21, aggor = _source_credentials(kind)
-    assert sedi.ilk == Ilks.acg and sedi.kind == kind
-    assert over21.ilk == Ilks.acm
-    assert sedi.sad['rd'] and over21.sad['rd']            # registry-bound on every kind
+    sedi, age, ageAggor = _source_credentials(kind)
+    assert sedi.ilk == Ilks.acm and sedi.kind == kind
+    assert age.ilk == Ilks.acg
+    assert sedi.sad['rd'] and age.sad['rd']               # registry-bound on every kind
     assert_acdc_schema_valid(sedi)                        # schema validation holds
-    assert_acdc_schema_valid(over21)
+    assert_acdc_schema_valid(age)
 
-    # Selective disclosure: reveal issuee + photo, withhold DOB; verifies via AGID.
-    disclosed = _photo_disclosure(aggor)
-    assert isinstance(disclosed[SEDI_PHOTO], dict)        # photo revealed
-    assert isinstance(disclosed[SEDI_DOB], str)           # birthdate withheld
-    assert Aggor.verifyDisclosure(disclosed, kind=kind)
+    # Partial disclosure of sedi-id: reveal photo, withhold DOB; recompute the section SAID.
+    photoDisc = _photo_disclosure(sedi, kind)
+    assert isinstance(photoDisc['photo'], dict)           # photo revealed
+    assert isinstance(photoDisc['dob'], str)              # birthdate withheld
+    check = Compactor(mad=dict(photoDisc, d=''), makify=True, kind=kind)
+    check.compact()
+    assert check.said == _committed_a_said(sedi, kind)
+    # Selective disclosure of age: reveal over-21, withhold the rest; verifies via AGID.
+    ageDisc = _age_disclosure(ageAggor)
+    assert ageDisc[AGE_OVER21]['over21'] is True          # over-21 revealed
+    assert Aggor.verifyDisclosure(ageDisc, kind=kind)
 
     # Bespoke ACDC: I2I edges + rules, schema-valid, compact == expanded SAID.
-    bespoke = _bespoke_presentation(sedi, over21, kind)
-    compact = _bespoke_presentation(sedi, over21, kind, compactify=True)
+    bespoke = _bespoke_presentation(sedi, age, kind)
+    compact = _bespoke_presentation(sedi, age, kind, compactify=True)
     assert bespoke.said == compact.said
     assert bespoke.sad['e']['identity']['o'] == 'I2I'
     assert bespoke.sad['e']['age']['o'] == 'I2I'
     schema = assert_acdc_schema_valid(bespoke)
     assert_acdc_schema_valid(compact, schema=schema)
-    # I2I same-holder binding via SerderACDC.iseaid (agg + att far nodes read alike)
+    # I2I same-holder binding via SerderACDC.iseaid (att + agg far nodes read alike)
     assert bespoke.sad['i'] == sedi.iseaid
-    assert bespoke.sad['i'] == over21.iseaid
+    assert bespoke.sad['i'] == age.iseaid
 
     # Gated exchange: the offer binds nothing PII, the agree binds the offer SAID,
     # and the club's signed agree (assembled via messagize) verifies.
@@ -1054,7 +1183,7 @@ def test_clc_serialization_kinds(kind):
 
 
 if __name__ == "__main__":
-    test_source_credentials_and_selective_disclosure_JSON()
+    test_source_credentials_and_graduated_disclosure_JSON()
     test_bespoke_presentation_acdc_JSON()
     test_gated_ipex_exchange_JSON()
     test_accountability_and_terms_follow_data_JSON()
