@@ -65,6 +65,7 @@ from keri import Kinds, Ilks
 from keri.core import (Salter, Noncer, Aggor, Mapper, Diger, Verfer,
                        exchange, messagize, incept, rotate)
 from keri.core.coring import MtrDex
+from keri.core.serdering import SerderACDC
 from keri.acdc import regcept, acdcmap, acdcagg
 
 
@@ -869,6 +870,28 @@ def test_gated_ipex_exchange_JSON():
     revealed = {i for i, el in enumerate(grant.sad['a']['photo']) if isinstance(el, dict)}
     assert revealed == {SEDI_ISSUEE, SEDI_PHOTO}        # the /A/i and /A/photo paths
 
+    # The club VERIFIES the granted credential before trusting it -- a real operation,
+    # not a SAID-equality trick. Reconstructing it self-verifies the artifact
+    # (SerderACDC recomputes the SAID over the content and raises if it does not match
+    # the committed 'd'); the club then confirms this SAID is exactly the one it agreed
+    # to in the offer (so the terms it accepted are the terms bound into the data it
+    # received -- terms follow the data), and that it validates against the bespoke
+    # schema (which enforces I2I and the required CLC clauses).
+    granted = SerderACDC(sad=grant.sad['a']['acdc'], verify=True)   # self-verifies or raises
+    assert granted.said == bespoke.said                            # == the agreed SAID
+    assert_acdc_schema_valid(granted, schema=bespoke.sad['s'])      # schema-valid (compact form)
+    # A complete verifier performs a 4th check the presentation itself cannot carry:
+    # revocation. Walking the bespoke's I2I edges to each source credential, it checks
+    # that credential's registry (named by its 'rd') for a revocation event before
+    # trusting the assertion -- a revoked source cred must be rejected even when the
+    # presentation is otherwise perfect. The hooks are present here (each edge names a
+    # far node, and each far node is bound to a real registry), but running the live
+    # TEL/registry check (keri.vdr's Tevery/Reger over a Habery) is out of scope for
+    # this data-structure-level example; test_examples.py exercises the registry
+    # lifecycle, and a future automation companion will fold it in.
+    assert bespoke.sad['e']['identity']['n'] == sedi.said and sedi.sad['rd']
+    assert bespoke.sad['e']['age']['n'] == over21.said and over21.sad['rd']
+
     # 5. admit (club -> Alice): acknowledges receipt, closing the exchange.
     admit = exchange(sender=CLUB, receiver=ALICE, route="/ipex/admit",
                      prior=grant.said, stamp=ADMIT_STAMP, kind=kind)
@@ -936,10 +959,15 @@ def test_accountability_and_terms_follow_data_JSON():
                                                             ser=agree.raw)
 
     # --- Terms follow the data: the CLC terms are bound into the bespoke SAID. ---
+    # If Alice had granted WEAKENED terms, the club's grant-time verification (Phase 3)
+    # would reject them: changing a clause changes the SAID, so the delivered credential
+    # is no longer the one the club agreed to and fails the "granted == agreed" check.
+    # (Altering the committed rules SAID in place instead fails SerderACDC self-
+    # verification outright.)
     tamperedRules = _rules_in_bespoke()
     tamperedRules['Assimilation']['l'] = "Verifier may do anything it likes."
     weakened = _bespoke_presentation(sedi, over21, kind, rule=tamperedRules)
-    assert weakened.said != bespoke.said              # cannot weaken terms silently
+    assert weakened.said != bespoke.said              # != the agreed SAID -> rejected
 
 
 @pytest.mark.parametrize("kind", [Kinds.json, Kinds.cesr, Kinds.cbor, Kinds.mgpk])
