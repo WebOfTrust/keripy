@@ -510,6 +510,32 @@ def _bespoke_presentation(sedi, over21, kind, compactify=False, rule=None):
                    kind=kind, compactify=compactify)
 
 
+def _club_accepts_grant(grantedSad, agreedSaid, schema):
+    """The club's grant-time verification of a delivered credential -- a real
+    verification operation, not a SAID-equality trick.
+
+    Three checks: (1) self-verify the artifact -- reconstruct it with SerderACDC,
+    which recomputes the SAID over the content and raises if it does not match the
+    committed 'd'; (2) confirm the SAID is exactly the one the club agreed to in the
+    offer (so the terms accepted are the terms received -- terms follow the data);
+    (3) validate against the bespoke schema (which enforces the I2I operator and the
+    required CLC clauses). Returns True only if all pass; returns False when the
+    credential is well-formed and self-consistent but is NOT the one agreed to.
+
+    A complete verifier performs a 4th check this omits -- revocation: walk the I2I
+    edges to each source credential and check its registry ('rd') TEL for a revocation
+    event; a revoked source cred must be rejected even when the presentation is
+    otherwise perfect. Running that live check (keri.vdr's Tevery/Reger over a Habery)
+    is out of scope for this data-structure-level example; test_examples.py exercises
+    the registry lifecycle, and a future automation companion will fold it in.
+    """
+    granted = SerderACDC(sad=grantedSad, verify=True)     # self-verifies or raises
+    if granted.said != agreedSaid:                        # well-formed, but not agreed to
+        return False
+    assert_acdc_schema_valid(granted, schema=schema)
+    return True
+
+
 def test_source_credentials_and_selective_disclosure_JSON():
     """Phase 1: Alice's two source credentials, with selective disclosure.
 
@@ -871,24 +897,13 @@ def test_gated_ipex_exchange_JSON():
     assert revealed == {SEDI_ISSUEE, SEDI_PHOTO}        # the /A/i and /A/photo paths
 
     # The club VERIFIES the granted credential before trusting it -- a real operation,
-    # not a SAID-equality trick. Reconstructing it self-verifies the artifact
-    # (SerderACDC recomputes the SAID over the content and raises if it does not match
-    # the committed 'd'); the club then confirms this SAID is exactly the one it agreed
-    # to in the offer (so the terms it accepted are the terms bound into the data it
-    # received -- terms follow the data), and that it validates against the bespoke
-    # schema (which enforces I2I and the required CLC clauses).
-    granted = SerderACDC(sad=grant.sad['a']['acdc'], verify=True)   # self-verifies or raises
-    assert granted.said == bespoke.said                            # == the agreed SAID
-    assert_acdc_schema_valid(granted, schema=bespoke.sad['s'])      # schema-valid (compact form)
-    # A complete verifier performs a 4th check the presentation itself cannot carry:
-    # revocation. Walking the bespoke's I2I edges to each source credential, it checks
-    # that credential's registry (named by its 'rd') for a revocation event before
-    # trusting the assertion -- a revoked source cred must be rejected even when the
-    # presentation is otherwise perfect. The hooks are present here (each edge names a
-    # far node, and each far node is bound to a real registry), but running the live
-    # TEL/registry check (keri.vdr's Tevery/Reger over a Habery) is out of scope for
-    # this data-structure-level example; test_examples.py exercises the registry
-    # lifecycle, and a future automation companion will fold it in.
+    # not a SAID-equality trick (see _club_accepts_grant: self-verify the artifact,
+    # match it to the SAID committed in the offer, schema-validate). It accepts here:
+    # the delivered SAID is the one the club agreed to, so the terms it accepted are
+    # the terms bound into the data it received -- terms follow the data.
+    assert _club_accepts_grant(grant.sad['a']['acdc'], bespoke.said, bespoke.sad['s'])
+    # The 4th check, revocation, is documented in _club_accepts_grant; the presentation
+    # carries its hooks -- each I2I edge names a registry-bound source credential.
     assert bespoke.sad['e']['identity']['n'] == sedi.said and sedi.sad['rd']
     assert bespoke.sad['e']['age']['n'] == over21.said and over21.sad['rd']
 
@@ -959,15 +974,16 @@ def test_accountability_and_terms_follow_data_JSON():
                                                             ser=agree.raw)
 
     # --- Terms follow the data: the CLC terms are bound into the bespoke SAID. ---
-    # If Alice had granted WEAKENED terms, the club's grant-time verification (Phase 3)
-    # would reject them: changing a clause changes the SAID, so the delivered credential
-    # is no longer the one the club agreed to and fails the "granted == agreed" check.
-    # (Altering the committed rules SAID in place instead fails SerderACDC self-
-    # verification outright.)
+    # If Alice had granted WEAKENED terms, the club's SAME grant-time verification
+    # rejects them -- a true verification (_club_accepts_grant), not a SAID inequality.
+    # The weakened credential is a perfectly well-formed, self-consistent ACDC, so
+    # self-verification accepts the artifact; it is rejected because its SAID is not the
+    # one the club agreed to. You cannot weaken a clause and still present the agreed
+    # credential -- terms follow the data.
     tamperedRules = _rules_in_bespoke()
     tamperedRules['Assimilation']['l'] = "Verifier may do anything it likes."
     weakened = _bespoke_presentation(sedi, over21, kind, rule=tamperedRules)
-    assert weakened.said != bespoke.said              # != the agreed SAID -> rejected
+    assert not _club_accepts_grant(weakened.sad, bespoke.said, bespoke.sad['s'])
 
 
 @pytest.mark.parametrize("kind", [Kinds.json, Kinds.cesr, Kinds.cbor, Kinds.mgpk])
