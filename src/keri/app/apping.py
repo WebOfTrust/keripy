@@ -2,7 +2,6 @@
 """
 KERI
 keri.app.apping module
-
 """
 
 from hio.base import doing
@@ -23,8 +22,7 @@ class Consoler(doing.Doer):
 
     Attributes:
         db (Baser): Database instance used by this doer.
-        console (serialing.Console): Serial console for input/output.
-    """
+        console (serialing.Console): Serial console for input/output."""
 
     def __init__(self, db=None, console=None, **kwa):
         """Initializes Consoler with optional database and console.
@@ -51,8 +49,7 @@ class Consoler(doing.Doer):
             temp (bool, optional): Unused. Reserved for interface compatibility.
 
         Raises:
-            IOError: If the console cannot be opened.
-        """
+            IOError: If the console cannot be opened."""
         if not self.console.reopen():
             raise IOError("Unable to open serial console.")
 
@@ -70,8 +67,7 @@ class Consoler(doing.Doer):
             tyme (float): Current loop time provided by the Doist scheduler.
 
         Returns:
-            bool: Always ``False``; signals the Doer to continue recurring.
-        """
+            bool: Always ``False``; signals the Doer to continue recurring."""
         line = self.console.get()
         if not line:
             return False
@@ -106,6 +102,5 @@ class Consoler(doing.Doer):
     def exit(self):
         """Closes the serial console resource.
 
-        Called by the Doer framework when leaving the task context.
-        """
+        Called by the Doer framework when leaving the task context."""
         self.console.close()

@@ -1,7 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
 keri.app.storing module
-
 """
 
 from hio.base import doing
@@ -18,9 +17,7 @@ logger = ogler.getLogger()
 
 class Mailboxer(LMDBer):
     """
-    Mailboxer stores exn messages in order and provider iterator access at an index.
-
-    """
+    Mailboxer stores exn messages in order and provider iterator access at an index."""
     TailDirPath = "keri/mbx"
     AltTailDirPath = ".keri/mbx"
     TempPrefix = "keri_mbx_"
@@ -42,9 +39,7 @@ class Mailboxer(LMDBer):
         Each .tpcs val is the digest of the message.
         The message itself is stored in .msgs where the key is the msg digest
         and the value is the serialized messag itself.
-        Multiple messages can share the same topic but with a different ordinal.
-
-        """
+        Multiple messages can share the same topic but with a different ordinal."""
         self.tpcs = None
         self.msgs = None
 
@@ -54,8 +49,7 @@ class Mailboxer(LMDBer):
         """
 
         :param kwa:
-        :return:
-        """
+        :return:"""
         super(Mailboxer, self).reopen(**kwa)
         self.tpcs = OnSuber(db=self, subkey='tpcs.')
         self.msgs = Suber(db=self, subkey='msgs.')  # key states
@@ -67,8 +61,7 @@ class Mailboxer(LMDBer):
 
         Returns:
             result (boo): True if full key consisting of key and serialized on
-                exists in database so removed. False otherwise (not removed).
-        """
+                exists in database so removed. False otherwise (not removed)."""
         return self.tpcs.rem(keys=key, on=on)
 
     def appendToTopic(self, topic, val):
@@ -77,12 +70,11 @@ class Mailboxer(LMDBer):
 
         Returns:
             on (int): order number int, on, of appended entry.
-                      Computes on as next on after last entry.
+                Computes on as next on after last entry.
 
         Parameters:
             topic (bytes):  topic identifier for message
-            val (bytes): msg digest
-        """
+            val (bytes): msg digest"""
         return self.tpcs.append(key=topic, val=val)
 
 
@@ -92,13 +84,12 @@ class Mailboxer(LMDBer):
             msgs (Iterable[bytes]): belonging to topic indices with same topic but all
                 on >= fn i.e. all topic.on beginning with fn
 
-         Parameters:
-             topic (Option(bytes|str)): key prefix combined with serialized on
+            Parameters:
+                topic (Option(bytes|str)): key prefix combined with serialized on
                     to form full actual key.  When key is empty then retrieves
                     whole database.
-             fn (int): starting index ordinal number used with onKey(pre,on)
-                    to form key at at which to initiate retrieval
-        """
+            fn (int): starting index ordinal number used with onKey(pre,on)
+                to form key at at which to initiate retrieval"""
         msgs = []
         for keys, on, dig in self.tpcs.getAllItemIter(keys=topic, on=fn):
             if msg := self.msgs.get(keys=dig):
@@ -113,14 +104,12 @@ class Mailboxer(LMDBer):
 
         Returns:
             result (bool): True if msg successfully stored and indexed at topic
-                           False otherwise
+                False otherwise
 
         Parameters:
             topic (str | bytes):  topic (Option(bytes|str)): key prefix combined
                 with serialized on to form full actual key.
-            msg (bytes): serialized message
-
-        """
+            msg (bytes): serialized message"""
         if hasattr(msg, "encode"):
             msg = msg.encode("utf-8")
 
@@ -133,7 +122,7 @@ class Mailboxer(LMDBer):
         """
         Returns:
             triple (Iterator[(on, topic, msg)]): iterator of messages at topic
-                beginning with ordinal fn.
+            beginning with ordinal fn.
 
         topic (Option(bytes|str)): key prefix combined with serialized on
             to form full actual key. When key is empty then retrieves
@@ -145,9 +134,7 @@ class Mailboxer(LMDBer):
 
         ToDo looks like misuse of IoSet this should not be IoSet but simply
         Ordinal Numbered db.  since should not be using hidden ion has not
-        hidden.
-
-        """
+        hidden."""
         for keys, on, dig in self.tpcs.getAllItemIter(keys=topic, on=fn):
             if msg := self.msgs.get(keys=dig):
                 yield (on, topic, msg.encode("utf-8"))
@@ -159,9 +146,7 @@ class Respondant(doing.DoDoer):
     Respondant processes buffer of response messages from inbound 'exn' messages and
     routes them to the appropriate mailbox.  If destination has witnesses, send response to
     one of the (randomly selected) witnesses.  Otherwise store the response in the recipients
-    mailbox locally.
-
-    """
+    mailbox locally."""
 
     def __init__(self, hby, reps=None, cues=None, mbx=None, aids=None, **kwa):
         """
@@ -170,9 +155,7 @@ class Respondant(doing.DoDoer):
 
         Parameters:
             hab (Habitat):  local environment
-            mbx (Mailboxer): storage for local messages
-
-        """
+            mbx (Mailboxer): storage for local messages"""
         self.reps = reps if reps is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
 
@@ -193,8 +176,7 @@ class Respondant(doing.DoDoer):
         locally for the recipient.
 
         Usage:
-            add result of doify on this method to doers list
-        """
+            add result of doify on this method to doers list"""
 
         # enter context
         self.wind(tymth)
@@ -236,8 +218,7 @@ class Respondant(doing.DoDoer):
             Kevery and Tevery cues deque
 
         Usage:
-            add result of doify on this method to doers list
-        """
+            add result of doify on this method to doers list"""
         # enter context
         self.wind(tymth)
         self.tock = tock

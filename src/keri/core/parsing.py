@@ -44,8 +44,7 @@ class MsgParseDom:
     a list of nested (embedded) message substreams.
 
     asdict(MsgParseDom) creates dict suitable for **keyword expansion to pass
-    as parameters to message processing
-    """
+    as parameters to message processing"""
     serder: Serder = None  # message instance SerderKERI or SerderACDC
     sigers: list[Siger] = field(default_factory=list)  # ControllerIdxSigs
     wigers: list[Siger] = field(default_factory=list)  # WitnessIdxSigs
@@ -88,14 +87,14 @@ class Parser:
         ims (bytearray): incoming message stream
         framed (bool): True means stream is packet framed
         piped (bool): True means use pipeline processor to process
-                whenever stream includes pipelineable group count codes.
+            whenever stream includes pipelineable group count codes.
         kvy (Kevery): route KEL message types to this instance
         tvy (Tevery): route TEL message types to this instance
         exc (Exchanger): route EXN message types to this instance
         rvy (Revery): reply (RPY) message handler
         vry (``Verfifier``): credential verifier with wallet storage
         local (bool): True means event source is local (protected) for validation
-                         False means event source is remote (unprotected) for validation
+            False means event source is remote (unprotected) for validation
 
     Properties:
         genus (str): genus portion of default CESR code table protocol genus code
@@ -106,7 +105,6 @@ class Parser:
         mucodes (MUDex): selected by .version from  (MUDex_1_0, MUDex_2_0)
         bucodes (BUDex): selected by .version from  (BUDex_1_0, BUDex_2_0)
 
-
     Hidden:
         _version (Versionage): value for .version property
         _genus (str): value for .genus property
@@ -114,9 +112,7 @@ class Parser:
         _methods (dict): value for .methods property
         _codes (CtrDex): value for .codes property
         _sucodes (SUDex): value for .sucodes property
-        _mucodes (MUDex): value for .mucodes property
-
-    """
+        _mucodes (MUDex): value for .mucodes property"""
     Codes = Counter.Codes  # code tables from Counter
     SUCodes = Counter.SUCodes # special universal code tables from Counter
     MUCodes = Counter.MUCodes # message universal code tables from Counter
@@ -205,10 +201,9 @@ class Parser:
             rvy (Revery): reply (RPY) message handler
             vry (``Verfifier``): credential verifier with wallet storage
             local (bool): True means event source is local (protected) for validation
-                         False means event source is remote (unprotected) for validation
+                False means event source is remote (unprotected) for validation
             version (Versionage): instance of version portion of genus version code
-                                  for default code table
-        """
+                for default code table"""
         self.ims = ims if ims is not None else bytearray()
         self.framed = True if framed else False  # extract until end-of-stream
         self.piped = True if piped else False  # use pipeline processor
@@ -227,16 +222,14 @@ class Parser:
     @property
     def genus(self):
         """Makes .genus read only
-        Returns ._genus
-        """
+        Returns ._genus"""
         return self._genus
 
 
     @property
     def version(self):
         """Makes .version read only default version from genus-version code
-        Returns ._version
-        """
+        Returns ._version"""
         return self._version
 
 
@@ -246,9 +239,7 @@ class Parser:
 
         Parameters:
             version (Versionage|None): version portion of genus-versioncode
-                If None do nothing
-
-        """
+                If None do nothing"""
         if version is not None:
             if version.major not in self.Methods:
                 raise InvalidVersionError(f"Unsupported major version="
@@ -270,45 +261,45 @@ class Parser:
     @property
     def methods(self):
         """Gets methods from .Methods for .version current version in stream context
+
         Returns:
-            methods (dict): method names for counter extraction, keyed by count code name
-        """
+            methods (dict): method names for counter extraction, keyed by count code name"""
         return self._methods
 
 
     @property
     def codes(self):
         """Makes .codes read only
+
         Returns:
-            _codes (CtrDex): selected by .version from (CtrDex_1_0, CtrDex_2_0)
-        """
+            _codes (CtrDex): selected by .version from (CtrDex_1_0, CtrDex_2_0)"""
         return self._codes
 
 
     @property
     def sucodes(self):
         """Makes .sucodes read only
+
         Returns:
-            _sucodes (SUDex): selected by .version from (SUDex_1_0, SUDex_2_0)
-        """
+            _sucodes (SUDex): selected by .version from (SUDex_1_0, SUDex_2_0)"""
         return self._sucodes
 
 
     @property
     def mucodes(self):
         """Makes .mucodes read only
+
         Returns:
-            _mucodes (MUDex): selected by .version from (MUDex_1_0, MUDex_2_0)
-        """
+            _mucodes (MUDex): selected by .version from (MUDex_1_0, MUDex_2_0)"""
         return self._mucodes
 
 
     @property
     def bucodes(self):
         """Makes .bucodes read only
+
         Returns:
-            _bucodes (BUDex): selected by .version from (BUDex_1_0, BUDex_2_0)
-        """
+            _bucodes (BUDex): selected by .version from (BUDex_1_0, BUDex_2_0)"""
         return self._bucodes
 
 
@@ -320,9 +311,7 @@ class Parser:
         Parameters:
             ims (bytearray): input message stream (must be strippable)
             klas (Serder | Counter | Matter | Indexer): subclass that is parsable
-            cold (Coldage): instance str value
-
-        """
+            cold (Coldage): instance str value"""
         if cold == Colds.txt:
             return klas(qb64b=ims, strip=True, version=self.version)
         elif cold == Colds.bny:
@@ -344,13 +333,12 @@ class Parser:
             klas (Serder | Counter | Matter | Indexer): subclass that is parsable
             cold (Coldage): instance str value
             abort (bool): True means abort if bad pipelined frame Shortage
-                          False means do not abort if Shortage just wait for more
+                False means do not abort if Shortage just wait for more
             strip (bool): True means strip extracted instance from ims
-                          False means do not strip, so can peek at stream
+                False means do not strip, so can peek at stream
 
         Usage:
-            yield from self._extractor(ims=ims, klas=Counter)
-        """
+            yield from self._extractor(ims=ims, klas=Counter)"""
         while True:
             try:
                 if cold == Colds.txt:
@@ -383,22 +371,21 @@ class Parser:
                 ims msgs when stream incpyludes pipelineable count codes.
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
-            exc (Exchanger) route EXN message types to this instance
+                exc (Exchanger) route EXN message types to this instance
             rvy (Revery): reply (RPY) message handler
             vry (Verfifier): credential verifier with wallet storage
             local (bool): True means event source is local (protected) for validation
-                          False means event source is remote (unprotected) for validation
-                          None means use default .local
+                False means event source is remote (unprotected) for validation
+                None means use default .local
             version (Versionage): default version of CESR to use
-                                  None means do not change default
+                None means do not change default
             processive (bool): True means process messages as they are parsed
-                               False means do not process parse only, useful for
-                                   testing and debugging
+                False means do not process parse only, useful for
+                    testing and debugging
 
-        New Logic:
-            Attachments must all have counters so know if txt or bny format for
-            attachments. So even when framed==True must still have counters.
-        """
+            New Logic:
+                Attachments must all have counters so know if txt or bny format for
+                attachments. So even when framed==True must still have counters."""
         local = local if local is not None else self.local
         local = True if local else False
 
@@ -434,30 +421,29 @@ class Parser:
 
         Parameters:
             ims (bytearray): serialized incoming message stream.
-                May contain one or more sets each of a serialized message with
-                attached cryptographic material such as signatures or receipts.
-            framed (bool) True means ims contains only one frame of msg plus
-                counted attachments instead of stream with multiple messages
+                    May contain one or more sets each of a serialized message with
+                    attached cryptographic material such as signatures or receipts.
+                framed (bool) True means ims contains only one frame of msg plus
+                    counted attachments instead of stream with multiple messages
             piped (bool): True means use pipeline processor to process
                 ims msgs when stream includes pipelineable count codes.
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
-            exc (Exchanger) route EXN message types to this instance
+                exc (Exchanger) route EXN message types to this instance
             rvy (Revery): reply (RPY) message handler
             local (bool): True means event source is local (protected) for validation
-                          False means event source is remote (unprotected) for validation
-                          None means use default .local
+                False means event source is remote (unprotected) for validation
+                None means use default .local
             version (Versionage): default genera version of CESR to use
-                                  None means do not change default
+                None means do not change default
             processive (bool): True means process messages as they are parsed
-                               False means do not process parse only, useful for
-                                   testing and debugging
+                False means do not process parse only, useful for
+                    testing and debugging
 
 
-        New Logic:
-            Attachments must all have counters so know if txt or bny format for
-            attachments. So even when framed==True must still have counters.
-        """
+            New Logic:
+                Attachments must all have counters so know if txt or bny format for
+                attachments. So even when framed==True must still have counters."""
         local = local if local is not None else self.local
         local = True if local else False
 
@@ -500,23 +486,22 @@ class Parser:
                 ims msgs when stream includes pipelineable count codes.
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
-            exc (Exchanger) route EXN message types to this instance
+                exc (Exchanger) route EXN message types to this instance
             rvy (Revery): reply (RPY) message handler
             vry (Verfifier): credential verifier with wallet storage
             local (bool): True means event source is local (protected) for validation
-                          False means event source is remote (unprotected) for validation
-                          None means use default .local
+                False means event source is remote (unprotected) for validation
+                None means use default .local
             version (Versionage): default version of CESR to use
-                                None means do not change default
+                None means do not change default
             processive (bool): True means process messages as they are parsed
-                               False means do not process parse only, useful for
-                                   testing and debugging
+                False means do not process parse only, useful for
+                    testing and debugging
 
 
-        New Logic:
-            Attachments must all have counters so know if txt or bny format for
-            attachments. So even when framed==True must still have counters.
-        """
+            New Logic:
+                Attachments must all have counters so know if txt or bny format for
+                attachments. So even when framed==True must still have counters."""
         if ims is not None:  # needs bytearray not bytes since deletes as processes
             if not isinstance(ims, bytearray):
                 ims = bytearray(ims)  # so make bytearray copy
@@ -590,23 +575,22 @@ class Parser:
                 ims msgs when stream includes pipelineable count codes.
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
-            exc (Exchanger) route EXN message types to this instance
+                exc (Exchanger) route EXN message types to this instance
             rvy (Revery): reply (RPY) message handler
             vry (Verfifier): credential verifier with wallet storage
             local (bool): True means event source is local (protected) for validation
-                          False means event source is remote (unprotected) for validation
-                          None means use default .local
+                False means event source is remote (unprotected) for validation
+                None means use default .local
             version (Versionage): default version of CESR to use
-                                  None means do not change default
+                None means do not change default
             processive (bool): True means process messages as they are parsed
-                               False means do not process parse only, useful for
-                                   testing and debugging
+                False means do not process parse only, useful for
+                    testing and debugging
 
 
-        New Logic:
-            Attachments must all have counters so know if txt or bny format for
-            attachments. So even when framed==True must still have counters.
-        """
+            New Logic:
+                Attachments must all have counters so know if txt or bny format for
+                attachments. So even when framed==True must still have counters."""
         if ims is not None:  # needs bytearray not bytes since deletes as processes
             if not isinstance(ims, bytearray):
                 ims = bytearray(ims)  # so make bytearray copy
@@ -692,23 +676,22 @@ class Parser:
                 ims msgs when stream includes pipelineable count codes.
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
-            exc (Exchanger) route EXN message types to this instance
+                exc (Exchanger) route EXN message types to this instance
             rvy (Revery): reply (RPY) message handler
             vry (Verifier): credential processor
             local (bool): True means event source is local (protected) for validation
-                          False means event source is remote (unprotected) for validation
-                          None means use default .local
+                False means event source is remote (unprotected) for validation
+                None means use default .local
             version (Versionage): default version of CESR to use
-                                  None means do not change default
+                None means do not change default
             processive (bool): True means process messages as they are parsed
-                               False means do not process parse only, useful for
-                                   testing and debugging
+                False means do not process parse only, useful for
+                    testing and debugging
 
 
-        New Logic:
-            Attachments must all have counters so know if txt or bny format for
-            attachments. So even when framed==True must still have counters.
-        """
+            New Logic:
+                Attachments must all have counters so know if txt or bny format for
+                attachments. So even when framed==True must still have counters."""
         if ims is not None:  # needs bytearray not bytes since deletes as processes
             if not isinstance(ims, bytearray):
                 ims = bytearray(ims)  # so make bytearray copy
@@ -785,20 +768,17 @@ class Parser:
                 ims msgs when stream includes pipelineable count codes.
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
-            exc (Exchanger) route EXN message types to this instance
+                exc (Exchanger) route EXN message types to this instance
             rvy (Revery): reply (RPY) message handler
             vry (Verfifier): credential verifier with wallet storage
             local (bool): True means event source is local (protected) for validation
-                          False means event source is remote (unprotected) for validation
-                          None means use default .local
+                False means event source is remote (unprotected) for validation
+                None means use default .local
             version (Versionage): default version of CESR to use
-                                None means do not change default
+                None means do not change default
             processive (bool): True means process messages as they are parsed
-                               False means do not process parse only, useful for
-                                   testing and debugging
-
-
-        """
+                False means do not process parse only, useful for
+                    testing and debugging"""
         if ims is None:
             ims = self.ims
 
@@ -949,30 +929,28 @@ class Parser:
 
         Returns:
             exts (dict): parsed msg+attachments substream. Result is suitable
-                           for ** expansion as keywords to subsequent processing
-                           of the msg substream. The dict is the asdict() of
-                           MsgParseDom dataclass
-                serder (Serder): message instance SerderKERI or SerderACDC
-                sigers (list[Siger]): ControllerIdxSigs
-                wigers (list[Siger]): WitnessIdxSigs
-                cigars (list[Cigar]): NonTransReceiptCouples cigar with verfer from (pre+sig)
-                rsgs   (list[TransReceipts]): TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
-                tsgs   (list[TransSigs]):TransIdxSigGroups (prefixer, number, diger, [sigers])
-                lsgs   (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[sigers]) (was tsgs)
-                frcs   (list[FirstSeen]): FirstSeenReplayCouples (number, dater)
-                sscs   (list[SealSource]): SealSourceCouples (number, diger) sealing or sealed event
-                ssts   (list[SealEvent]): SealSourceTriples (prefixer, number, diger) sealing or sealed event
-                tdcs   (list[SealKind]): TypedDigestSealCouples SealKind (verser, diger)
-                bsqs   (list[BlindState]): BlindedStateQuadruples BlindState (diger, noncer, noncer, labeler)
-                bsss   (list[BoundState]): BoundStateSextuples BoundState (diger, noncer, noncer, labeler, number, noncer)
-                tmqs   (list[TypeMedia]): TypedMediaQuadruples TypeMedia (diger, noncer, labeler, texter)
-                essrs  (list[Texter]): ESSR encapsulations as Texters
-                ptds   (list[bytes]): PathedMaterialCouples (path, text) -> concat path+text
-                nests  (list[dict]): asdict(MsgParseDOM) instance dicts recursively nested
-                local  (bool): True means treat as local source controller context for processing
-                               False means treat as remote controller context for processing
-
-
+                for ** expansion as keywords to subsequent processing
+                of the msg substream. The dict is the asdict() of
+                MsgParseDom dataclass
+            serder (Serder): message instance SerderKERI or SerderACDC
+            sigers (list[Siger]): ControllerIdxSigs
+            wigers (list[Siger]): WitnessIdxSigs
+            cigars (list[Cigar]): NonTransReceiptCouples cigar with verfer from (pre+sig)
+            rsgs   (list[TransReceipts]): TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
+            tsgs   (list[TransSigs]):TransIdxSigGroups (prefixer, number, diger, [sigers])
+            lsgs   (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[sigers]) (was tsgs)
+            frcs   (list[FirstSeen]): FirstSeenReplayCouples (number, dater)
+            sscs   (list[SealSource]): SealSourceCouples (number, diger) sealing or sealed event
+            ssts   (list[SealEvent]): SealSourceTriples (prefixer, number, diger) sealing or sealed event
+            tdcs   (list[SealKind]): TypedDigestSealCouples SealKind (verser, diger)
+            bsqs   (list[BlindState]): BlindedStateQuadruples BlindState (diger, noncer, noncer, labeler)
+            bsss   (list[BoundState]): BoundStateSextuples BoundState (diger, noncer, noncer, labeler, number, noncer)
+            tmqs   (list[TypeMedia]): TypedMediaQuadruples TypeMedia (diger, noncer, labeler, texter)
+            essrs  (list[Texter]): ESSR encapsulations as Texters
+            ptds   (list[bytes]): PathedMaterialCouples (path, text) -> concat path+text
+            nests  (list[dict]): asdict(MsgParseDOM) instance dicts recursively nested
+            local  (bool): True means treat as local source controller context for processing
+                False means treat as remote controller context for processing
 
         Parameters:
             ims (bytearray): serialized incoming message stream.
@@ -983,10 +961,10 @@ class Parser:
             piped (bool): True means use pipeline processor to process
                 ims msgs when stream includes pipelineable count codes.
             local (bool): True means event source is local (protected) for validation
-                          False means event source is remote (unprotected) for validation
-                          None means use default .local
+                False means event source is remote (unprotected) for validation
+                None means use default .local
             version (``Versionage``): default version of CESR to use.
-                                  None means do not change default
+                None means do not change default
 
         Logic::
             Currently only support couters on attachments not on combined or
@@ -1001,10 +979,7 @@ class Parser:
                 sniff for counter
                 if group counter extract and discard but keep track of count
                 so if error while processing attachments then only need to flush
-                attachment count not full stream.
-
-
-        """
+                attachment count not full stream."""
         if ims is None:
             ims = self.ims
 
@@ -1349,35 +1324,34 @@ class Parser:
 
         Parameters:
             exts (dict): parsed msg+attachments substream. Result is suitable
-                           for ** expansion as keywords to subsequent processing
-                           of the msg substream. The dict is the asdict() of
-                           MsgParseDom dataclass
-                serder (Serder): message instance SerderKERI or SerderACDC
-                sigers (list[Siger]): ControllerIdxSigs
-                wigers (list[Siger]): WitnessIdxSigs
-                cigars (list[Cigar]): NonTransReceiptCouples cigar with verfer from (pre+sig)
-                rsgs   (list[TransReceipts]): TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
-                tsgs   (list[TransSigs]):TransIdxSigGroups (prefixer, number, diger, [sigers])
-                lsgs   (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[sigers]) (was tsgs)
-                frcs   (list[FirstSeen]): FirstSeenReplayCouples (number, dater)
-                sscs   (list[SealSource]): SealSourceCouples (number, diger) sealing or sealed event
-                ssts   (list[SealEvent]): SealSourceTriples (prefixer, number, diger) sealing or sealed event
-                tdcs   (list[SealKind]): TypedDigestSealCouples SealKind (verser, diger)
-                bsqs   (list[BlindState]): BlindedStateQuadruples BlindState (diger, noncer, noncer, labeler)
-                bsss   (list[BoundState]): BoundStateSextuples BoundState (diger, noncer, noncer, labeler, number, noncer)
-                tmqs   (list[TypeMedia]): TypedMediaQuadruples TypeMedia (diger, noncer, labeler, texter)
-                essrs  (list[Texter]): ESSR encapsulations as Texters
-                ptds   (list[bytes]): PathedMaterialCouples (path, text) -> concat path+text
-                nests  (list[dict]): asdict(MsgParseDOM) instance dicts recursively nested
-                local  (bool): True means treat as local source controller context for processing
-                               False means treat as remote controller context for processing
+                for ** expansion as keywords to subsequent processing
+                of the msg substream. The dict is the asdict() of
+                MsgParseDom dataclass
+            serder (Serder): message instance SerderKERI or SerderACDC
+            sigers (list[Siger]): ControllerIdxSigs
+            wigers (list[Siger]): WitnessIdxSigs
+            cigars (list[Cigar]): NonTransReceiptCouples cigar with verfer from (pre+sig)
+            rsgs   (list[TransReceipts]): TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
+            tsgs   (list[TransSigs]):TransIdxSigGroups (prefixer, number, diger, [sigers])
+            lsgs   (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[sigers]) (was tsgs)
+            frcs   (list[FirstSeen]): FirstSeenReplayCouples (number, dater)
+            sscs   (list[SealSource]): SealSourceCouples (number, diger) sealing or sealed event
+            ssts   (list[SealEvent]): SealSourceTriples (prefixer, number, diger) sealing or sealed event
+            tdcs   (list[SealKind]): TypedDigestSealCouples SealKind (verser, diger)
+            bsqs   (list[BlindState]): BlindedStateQuadruples BlindState (diger, noncer, noncer, labeler)
+            bsss   (list[BoundState]): BoundStateSextuples BoundState (diger, noncer, noncer, labeler, number, noncer)
+            tmqs   (list[TypeMedia]): TypedMediaQuadruples TypeMedia (diger, noncer, labeler, texter)
+            essrs  (list[Texter]): ESSR encapsulations as Texters
+            ptds   (list[bytes]): PathedMaterialCouples (path, text) -> concat path+text
+            nests  (list[dict]): asdict(MsgParseDOM) instance dicts recursively nested
+            local  (bool): True means treat as local source controller context for processing
+                False means treat as remote controller context for processing
 
             kvy (Kevery): route KERI KEL message types to this instance
             tvy (Tevery): route TEL message types to this instance
             exc (Exchanger): route EXN message types to this instance
             rvy (Revery): reply (RPY) message handler
             vry (Verifier): ACDC credential processor
-
 
         Logic::
 
@@ -1393,10 +1367,7 @@ class Parser:
                 sniff for counter
                 if group counter extract and discard but keep track of count
                 so if error while processing attachments then only need to flush
-                attachment count not full stream.
-
-
-        """
+                attachment count not full stream."""
         serder = exts['serder']
 
         if isinstance(serder, SerderKERI):
@@ -1576,17 +1547,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
-
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            sigers (list[Siger]): of indexed signature instances
-
-        """
+            sigers (list[Siger]): of indexed signature instances"""
         sigers = []
         for i in range(ctr.count):  # extract each attached signature
             siger = yield from self._extractor(ims=ims,
@@ -1610,16 +1578,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            sigers (list[Siger]): of indexed signature instances
-
-        """
+            sigers (list[Siger]): of indexed signature instances"""
         gs = ctr.byteCount(cold=cold) # ctr.count * 4 if cold == Colds.txt else ctr.count * 3
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -1647,17 +1613,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
-
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            wigers (list[Siger]): of indexed signature instances
-
-        """
+            wigers (list[Siger]): of indexed signature instances"""
         wigers = []
         for i in range(ctr.count):  # extract each attached signature
             wiger = yield from self._extractor(ims=ims,
@@ -1680,16 +1643,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            wigers (list[Siger]): of indexed signature instances
-
-        """
+            wigers (list[Siger]): of indexed signature instances"""
         gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -1717,16 +1678,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            cigars (list[Cigar]): of signature instances with assigned verfer
-
-        """
+            cigars (list[Cigar]): of signature instances with assigned verfer"""
         cigars = []
         for i in range(ctr.count):  # extract each attached couple
             verfer = yield from self._extractor(ims=ims,
@@ -1756,16 +1715,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            cigars (list[Cigar]): of signature instances with assigned verfer
-
-        """
+            cigars (list[Cigar]): of signature instances with assigned verfer"""
         gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -1796,23 +1753,22 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
             rsgs (list[tuple]): [(prefixer,number,diger,[isigers])]
 
-         extract attaced trans receipt idx sig groups
+                extract attaced trans receipt idx sig groups
+
         spre+ssnu+sdig+[sigs]
         spre is pre of signer of vrc
         ssnu is sn of signer's est evt when signed
         sdig is dig of signer's est event when signed
-        sig is indexed signature of signer on this event msg
-
-        """
+        sig is indexed signature of signer on this event msg"""
         gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -1856,11 +1812,11 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
             rsgs (list[tuple]): [(prefixer,number,diger,[isigers])]
@@ -1873,9 +1829,7 @@ class Parser:
         [sigs] is list of indexed signature of signer
 
         When attached to event or routed mesag signature on msg attached
-        When attached to receipt msg signature on event referenced in receipt
-
-        """
+        When attached to receipt msg signature on event referenced in receipt"""
         gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -1923,16 +1877,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            tsgs (list[tuple]): [(prefixer,number,diger,[isigers])]
-
-        """
+            tsgs (list[tuple]): [(prefixer,number,diger,[isigers])]"""
         tsgs = []
         for i in range(ctr.count):  # extract each attached group
             prefixer = yield from self._extractor(ims=ims,
@@ -1977,16 +1929,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            tsgs (list[tuple]): [(prefixer,number,diger,[isigers])]
-
-        """
+            tsgs (list[tuple]): [(prefixer,number,diger,[isigers])]"""
         gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -2033,16 +1983,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            lsgs (list[tuple]): [(prefixer, [isigers])]
-
-        """
+            lsgs (list[tuple]): [(prefixer, [isigers])]"""
         lsgs = []
         for i in range(ctr.count):  # extract each attached group
             prefixer = yield from self._extractor(ims=ims,
@@ -2079,16 +2027,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            lsgs (list[tuple]): [(prefixer, [isigers])]
-
-        """
+            lsgs (list[tuple]): [(prefixer, [isigers])]"""
         gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -2133,15 +2079,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            frcs (list[tuple]): [(number, dater)]  first seen sn
-        """
+            frcs (list[tuple]): [(number, dater)]  first seen sn"""
         frcs = []
         for i in range(ctr.count):  # extract each attached group
             firner = yield from self._extractor(ims=ims,
@@ -2168,16 +2113,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            frcs (list[tuple]): [(number, dater)]  first seen sn
-
-        """
+            frcs (list[tuple]): [(number, dater)]  first seen sn"""
         gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -2207,15 +2150,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            sscs (list[tuple]): [(seqner, number)]
-        """
+            sscs (list[tuple]): [(seqner, number)]"""
         sscs = []
         for i in range(ctr.count):  # extract each attached group
             number = yield from self._extractor(ims=ims,
@@ -2242,16 +2184,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            sscs (list[tuple]): [(seqner, number)]
-
-        """
+            sscs (list[tuple]): [(seqner, number)]"""
         gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -2281,15 +2221,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            ssts (list[tuple]): [(prefixer, seqner, saider)]
-        """
+            ssts (list[tuple]): [(prefixer, seqner, saider)]"""
         ssts = []
         for i in range(ctr.count):  # extract each attached group
             prefixer = yield from self._extractor(ims=ims,
@@ -2320,16 +2259,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            ssts (list[tuple]): [(prefixer, seqner, saider)]
-
-        """
+            ssts (list[tuple]): [(prefixer, seqner, saider)]"""
         gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -2360,16 +2297,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            tdcs (list[tuple]): [(verser, diger)]
-
-        """
+            tdcs (list[tuple]): [(verser, diger)]"""
         gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -2399,16 +2334,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            bsqs (list[tuple]): [(diger, noncer, acdcer, stater)]
-
-        """
+            bsqs (list[tuple]): [(diger, noncer, acdcer, stater)]"""
         gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -2440,16 +2373,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            bsss (list[tuple]): [(diger, noncer, acdcer, stater, number, eventer)]
-
-        """
+            bsss (list[tuple]): [(diger, noncer, acdcer, stater, number, eventer)]"""
         gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -2483,16 +2414,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            tmqs (list[tuple]): [(diger, noncer, labeler, texter)]
-
-        """
+            tmqs (list[tuple]): [(diger, noncer, labeler, texter)]"""
         gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -2530,16 +2459,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            pims (list[bytes]): [gims]
-
-        """
+            pims (list[bytes]): [gims]"""
         gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem
@@ -2564,15 +2491,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            essrs (list[Texter]): [texter]
-        """
+            essrs (list[Texter]): [texter]"""
         essrs = []
         for i in range(ctr.count):  # extract each attached group
             texter = yield from self._extractor(ims=ims,
@@ -2595,16 +2521,14 @@ class Parser:
             ctr (Counter): instance of CESR v1 Counter of code .ControllerIdxSigs
             cold (Coldage): assumes str value is either Colds.txt or Colds.bny
             abort (bool): True means abort if not enough bytes in ims. Use when
-                            this group is enclosed in another group that has
-                            already been extracted from stream
-                          False yield if not enough bytes in ims. Use when this
-                            group is at top level of stream not enclosed in
-                            another already extracted group.
+                    this group is enclosed in another group that has
+                    already been extracted from stream
+                False yield if not enough bytes in ims. Use when this
+                    group is at top level of stream not enclosed in
+                    another already extracted group.
 
         Returns:
-            essrs (list[Texter]): [texter]
-
-        """
+            essrs (list[Texter]): [texter]"""
         gs = ctr.byteCount(cold=cold)
         while len(ims) < gs:
             if abort:  # assumes already full frame extracted unexpected problem

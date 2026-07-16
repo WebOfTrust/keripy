@@ -1,7 +1,6 @@
 # -*- coding: utf-8 -*-
 """
 keri.core.eventing module
-
 """
 import datetime
 import logging
@@ -63,9 +62,9 @@ def simple(n):
     """
     Returns int as simple majority of n when n >=1
         otherwise returns 0
+
     Parameters:
-        n is int total number of elements
-    """
+        n: int total number of elements"""
     return min(max(0, n), (max(0, n) // 2) + 1)
 
 
@@ -73,22 +72,22 @@ def ample(n, f=None, weak=True):
     """
     Returns int as sufficient immune (ample) majority of n when n >=1
         otherwise returns 0
-    Parameters:
-        n is int total number of elements
-        f is int optional fault number
-        weak is Boolean
-            If f is not None and
-                weak is True then minimize m for f
-                weak is False then maximize m for f that satisfies n >= 3*f+1
-            Else
-                weak is True then find maximum f and minimize m
-                weak is False then find maximum f and maximize m
 
-        n,m,f are subject to
-        f >= 1 if n > 0
-        n >= 3*f+1
-        (n+f+1)/2 <= m <= n-f
-    """
+    Parameters:
+        n: int total number of elements
+        f: int optional fault number
+        weak: Boolean
+                If f is not None and
+                    weak is True then minimize m for f
+                    weak is False then maximize m for f that satisfies n >= 3*f+1
+                Else
+                    weak is True then find maximum f and minimize m
+                    weak is False then find maximum f and maximize m
+
+            n,m,f are subject to
+            f >= 1 if n > 0
+            n >= 3*f+1
+            (n+f+1)/2 <= m <= n-f"""
     n = max(0, n)  # no negatives
     if f is None:
         f1 = max(1, max(0, n - 1) // 3)  # least floor f subject to n >= 3*f+1
@@ -126,18 +125,15 @@ def deWitnessCouple(data, strip=False):
             list of latest establishment event for receipted event.
 
     Parameters:
-        data is couple of bytes concatenation of dig+wig from receipt
-        deletive is Boolean True means delete from data each part as parsed
+        data: couple of bytes concatenation of dig+wig from receipt
+        deletive: Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream
 
     Witness couple is used for escrows of unverified witness recipts signed by
     nontransferable witness prefix keys with indexed signatures where index
     is offset into associated witness list. At time of escrow receipted event
     may not be in KEL so need the dig to look up event and then look up witness
-    list from key state.
-
-
-    """
+    list from key state."""
     if isinstance(data, memoryview):
         data = bytes(data)
     if hasattr(data, "encode"):
@@ -159,11 +155,10 @@ def deReceiptCouple(data, strip=False):
     Couple is used for receipts signed by nontransferable prefix keys
 
     Parameters:
-        data is couple of bytes concatenation of pre+sig from receipt
-        strip is Boolean True means delete from data each part as parsed
+        data: couple of bytes concatenation of pre+sig from receipt
+        strip: Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream
-            Raises error if not bytearray
-    """
+            Raises error if not bytearray"""
     if isinstance(data, memoryview):
         data = bytes(data)
     if hasattr(data, "encode"):
@@ -185,11 +180,10 @@ def deSourceCouple(data, strip=False):
     Couple is used for delegated/issued event attachment of delegator/issuer evt
 
     Parameters:
-        data is couple of bytes concatenation of pre+sig from receipt
-        strip is Boolean True means delete from data each part as parsed
+        data: couple of bytes concatenation of pre+sig from receipt
+        strip: Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream
-            Raises error if not bytearray
-    """
+            Raises error if not bytearray"""
     if isinstance(data, memoryview):
         data = bytes(data)
     if hasattr(data, "encode"):
@@ -214,10 +208,9 @@ def deReceiptTriple(data, strip=False):
     prefix keys
 
     Parameters:
-        data is triple of bytes concatenation of dig+pre+cig from receipt
-        deletive is Boolean True means delete from data each part as parsed
-            Only useful if data is bytearray from front of stream
-    """
+        data: triple of bytes concatenation of dig+pre+cig from receipt
+        deletive: Boolean True means delete from data each part as parsed
+            Only useful if data is bytearray from front of stream"""
     if isinstance(data, memoryview):
         data = bytes(data)
     if hasattr(data, "encode"):
@@ -242,10 +235,9 @@ def deTransReceiptQuadruple(data, strip=False):
     for event that is in kel where event is given by context or key
 
     Parameters:
-        quadruple is bytes concatenation of pre+snu+dig+sig from receipt
-        deletive is Boolean True means delete from data each part as parsed
-            Only useful if data is bytearray from front of stream
-    """
+        quadruple: bytes concatenation of pre+snu+dig+sig from receipt
+        deletive: Boolean True means delete from data each part as parsed
+            Only useful if data is bytearray from front of stream"""
     if isinstance(data, memoryview):
         data = bytes(data)
     if hasattr(data, "encode"):
@@ -275,10 +267,9 @@ def deTransReceiptQuintuple(data, strip=False):
     event is given by event digest (ediger)
 
     Parameters:
-        quintuple is bytes concatenation of edig+spre+ssnu+sdig+sig from receipt
-        deletive is Boolean True means delete from data each part as parsed
-            Only useful if data is bytearray from front of stream
-    """
+        quintuple: bytes concatenation of edig+spre+ssnu+sdig+sig from receipt
+        deletive: Boolean True means delete from data each part as parsed
+            Only useful if data is bytearray from front of stream"""
     if isinstance(data, memoryview):
         data = bytes(data)
     if hasattr(data, "encode"):
@@ -315,10 +306,8 @@ def verifySigs(raw, sigers, verfers):
 
     Parameters:
         raw (bytes) signed data
-        sigers is list of indexed Siger instances (signatures)
-        verfers is list of Verfer instance (public keys)
-
-    """
+        sigers: list of indexed Siger instances (signatures)
+        verfers: list of Verfer instance (public keys)"""
     if sigers is None:
         sigers = []
     # Ensure no duplicate sigers by using set math on sigers' sigs otherwise
@@ -358,24 +347,22 @@ def validateSigs(serder, sigers, verfers, tholder):
 
     Returns:
         result (tuple): (sigers, valid) where:
-            sigers (list): subset of of provided sigers of verified signatures
-                on serder using verfers
-            valid (bool): True means threshold from tholder satisfied by sigers,
-                          False otherwise.
+        sigers (list): subset of of provided sigers of verified signatures
+            on serder using verfers
+        valid (bool): True means threshold from tholder satisfied by sigers,
+            False otherwise.
 
     Parameters:
         serder (SerderKERI): instance of message
         sigers (Iterable): Siger instances of indexed signatures.
-            Index is offset into verfers list each providing verification key
+        Index: offset into verfers list each providing verification key
         verfers (Iterable): Verfer instances of keys
         tholder (Tholder): instance of signing threshold (sith)
 
-        seqner is Seqner instance of delegating event sequence number.
+        seqner: Seqner instance of delegating event sequence number.
             If this event is not delegated then seqner is ignored
-        diger is Diger instance of of delegating event digest.
-            If this event is not delegated then diger is ignored
-
-    """
+        diger: Diger instance of of delegating event digest.
+            If this event is not delegated then diger is ignored"""
     valid = False
     if len(verfers) < tholder.size:
         raise ValidationError("Invalid sith = {} for keys = {}."
@@ -434,21 +421,19 @@ def state(pre,
             wr = witness remove list (cuts)
             wa = witness add list (adds)
         stamp (str | None):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                      creation of message or data
+            creation of message or data
         sith sith (int | str | list | None): current signing threshold input to Tholder
         ndigs (list | None): current signing key digests qb64
-        nsith int | str | list | None): next signing threshold input to Tholder
+            nsith int | str | list | None): next signing threshold input to Tholder
         toad (int | str | None): witness threshold number if str then hex str
         wits (list | None): prior witness identifier prefixes qb64
         cnfg (list | None):  strings from TraitDex configuration trait strings
         dpre (str | None): identifier prefix qb64 delegator if any
-                           If None then dpre in state is empty ""
+            If None then dpre in state is empty ""
         version (Version): KERI protocol version string
         kind (str): serialization kind from Serials
         intive (bool): True means sith, nsith, and toad are serialized as ints
-                       instead of hex str when numeric threshold
-
-    """
+            instead of hex str when numeric threshold"""
     sner = Number(num=sn)  # raises InvalidValueError if sn < 0
     fner = Number(num=fn)  # raises InvalidValueError if fn < 0
 
@@ -594,8 +579,7 @@ def incept(keys,
             not hex str when numeric threshold. Most compact JSON representation
             when Numbers are small because no quotes. Number accepts both.
         delpre (str | None): delegator identifier prefix qb64. When not None
-            makes this a msg type "dip", delegated inception event.
-    """
+            makes this a msg type "dip", delegated inception event."""
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
@@ -692,7 +676,7 @@ def delcept(keys, delpre, **kwa):
         keys  (list): current signing keys qb64
         isith (int | str | list | None): current signing threshold input to Tholder
         ndigs (list | None): current signing key digests qb64
-        nsith int | str | list | None): next signing threshold input to Tholder
+            nsith int | str | list | None): next signing threshold input to Tholder
         toad (int | str | None): witness threshold number if str then hex str
         wits (list | None): witness identifier prefixes qb64
         cnfg (list | None): configuration traits from TraitDex
@@ -705,8 +689,7 @@ def delcept(keys, delpre, **kwa):
         intive (bool): True means sith, nsith, and toad are serialized as ints
             not hex str when numeric threshold
         delpre (str | None): delegator identifier prefix qb64. When not None
-            makes this a msg type "dip", delegated inception event.
-    """
+            makes this a msg type "dip", delegated inception event."""
     return incept(keys=keys, delpre=delpre, **kwa)
 
 
@@ -755,8 +738,7 @@ def rotate(pre,
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind from Serials
         intive (bool): True means sith, nsith, and toad are serialized as ints
-                       instead of hex str when numeric threshold
-    """
+            instead of hex str when numeric threshold"""
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
@@ -887,7 +869,7 @@ def deltate(pre,
         sn (int | str): sequence number int or hex str
         isith (int | str | list): current signing threshold input to Tholder
         ndigs (list): current signing key digests qb64
-        nsith int | str | list): next signing threshold input to Tholder
+            nsith int | str | list): next signing threshold input to Tholder
         toad (int | str ): witness threshold number if str then hex str
         wits (list): prior witness identifier prefixes qb64
         cuts (list): witness prefixes to cut qb64
@@ -899,9 +881,7 @@ def deltate(pre,
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind from Serials
         intive (bool): True means sith, nsith, and toad are serialized as ints
-            not hex str when numeric threshold
-
-    """
+            not hex str when numeric threshold"""
     return rotate(pre=pre, keys=keys, dig=dig, ilk=ilk, **kwa)
 
 
@@ -919,15 +899,14 @@ def interact(pre,
     Utility function to automate creation of interaction events.
 
      Parameters:
-         pre is identifier prefix qb64
-        dig is said digest of previous event qb64
-        sn is int sequence number
-        data is list of dicts of comitted data such as seals
-        version (Versionage): KERI protocol default version if psvrsn is None
-        pvrsn (Versionage): KERI protocol version
-        gvrsn (Versionage): CESR genus vrsion
-        kind is serialization kind
-    """
+         pre: identifier prefix qb64
+         dig: said digest of previous event qb64
+         sn: int sequence number
+         data: list of dicts of comitted data such as seals
+         version (Versionage): KERI protocol default version if psvrsn is None
+         pvrsn (Versionage): KERI protocol version
+         gvrsn (Versionage): CESR genus vrsion
+         kind: serialization kind"""
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
@@ -970,14 +949,13 @@ def receipt(pre,
     Utility function to automate creation of receipts.
 
      Parameters:
-         pre is qb64 str of prefix of event being receipted
-        sn  is int sequence number of event being receipted
-        said is qb64 of said of event being receipted
-        version (Versionage): KERI protocol default version if psvrsn is None
-        pvrsn (Versionage): KERI protocol version
-        gvrsn (Versionage): CESR genus vrsion
-        kind  is serialization kind of receipt
-    """
+         pre: qb64 str of prefix of event being receipted
+         sn: int sequence number of event being receipted
+         said: qb64 of said of event being receipted
+         version (Versionage): KERI protocol default version if psvrsn is None
+         pvrsn (Versionage): KERI protocol version
+         gvrsn (Versionage): CESR genus vrsion
+         kind: serialization kind of receipt"""
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
@@ -1015,12 +993,12 @@ def query(pre="",
     Parameters:
         pre (str): Identifier prefix (AID) of sender controller (Version 2)
         route (str): namesapaced path, '/' delimited, that indicates data flow
-                     handler (behavior) to processs the query
+            handler (behavior) to processs the query
         replyRoute (str): namesapaced path, '/' delimited, that indicates data flow
-                     handler (behavior) to processs reply message to query if any.
+            handler (behavior) to processs reply message to query if any.
         query (dict): query data paramaters modifiers
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                      creation of message
+            creation of message
         version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
         gvrsn (Versionage): CESR genus vrsion
@@ -1057,9 +1035,7 @@ def query(pre="",
         "sn": "5",
         "dt": "2020-08-01T12:20:05.123456+00:00",
       }
-    }
-
-    """
+    }"""
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
 
@@ -1110,7 +1086,7 @@ def reply(pre="",
             (behavior) to processs the reply if any
         data (dict): attribute section of reply
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                      creation of message or data
+            creation of message or data
         version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
         gvrsn (Versionage): CESR genus vrsion
@@ -1147,10 +1123,7 @@ def reply(pre="",
          "name": "John Jones",
          "role": "Founder",
       }
-    }
-
-
-    """
+    }"""
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
@@ -1193,18 +1166,19 @@ def prod(pre="",
 
     Returns:
         prod (SerderKERI):  of prod, 'pro', msg to request disclosure via bare, 'bar' msg
+
     of data anchored via seal(s) on KEL for identifier prefix, pre, when given
     by all SAIDs given in digs list.
 
     Parameters:
         pre (str): Identifier prefix (AID) of sender controller (Version 2)
         route (str): namesapaced path, '/' delimited, that indicates data flow
-                     handler (behavior) to processs the query
+            handler (behavior) to processs the query
         replyRoute (str): namesapaced path, '/' delimited, that indicates data flow
-                     handler (behavior) to processs reply message to query if any.
+            handler (behavior) to processs reply message to query if any.
         query (dict): query data paramaters modifiers
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                      creation of message
+            creation of message
         version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
         gvrsn (Versionage): CESR genus vrsion
@@ -1238,9 +1212,7 @@ def prod(pre="",
       {
         "d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
       }
-    }
-
-    """
+    }"""
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
@@ -1293,23 +1265,23 @@ def bare(pre="",
     Parameters:
         pre (str): Identifier prefix (AID) of sender controller (Version 2)
         route (str): namesapaced path, '/' delimited, that indicates data flow
-                     handler (behavior) to processs the exposure
+            handler (behavior) to processs the exposure
         data (dict): dict of dicts of comitted SADS for SAIDs in seals keyed by SAID
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                      creation of message
+            creation of message
         version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
 
-       route is route path string that indicates data flow handler (behavior)
-           to processs the exposure
-       data is dict of dicts of comitted SADS for SAIDs in seals keyed by SAID
-       stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                     creation of message or data
-       version is Version instance
-       kind is serialization kind
+        route: route path string that indicates data flow handler (behavior)
+            to processs the exposure
+        data: dict of dicts of comitted SADS for SAIDs in seals keyed by SAID
+        stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
+            creation of message or data
+        version: Version instance
+        kind: serialization kind
 
     Version 1
     {
@@ -1350,8 +1322,7 @@ def bare(pre="",
                "role": "Founder",
             }
         }
-    }
-    """
+    }"""
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
     ilk = Ilks.bar
@@ -1396,7 +1367,8 @@ def exchept(sender="",
     Returns:
         exchept (SerderKERI):  'xip' message.
 
-    Fields in order:
+        Fields in order:
+
     (v, t, d, u, ri, dt, r, q, a),
 
 
@@ -1404,12 +1376,12 @@ def exchept(sender="",
         sender (str): qb64 of sender identifier (AID)
         receiver (str): qb64 of receiver identifier (AID)
         route (str):  '/' delimited path identifier of data flow handler
-               (behavior) to processs the reply if any
+            (behavior) to processs the reply if any
         modifiers (dict): modifiers
         attributes (dict): attributes
         nonce (str|None): qb64 of UUID salty nonce. When None generate nonce.
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                      creation of message or data, default is now.
+            creation of message or data, default is now.
         version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
         gvrsn (Versionage): CESR genus vrsion
@@ -1434,8 +1406,7 @@ def exchept(sender="",
       {
           "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
       }
-    }
-    """
+    }"""
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
@@ -1476,25 +1447,23 @@ def exchange(*,
         sender (str): qb64 of sender identifier (AID)
         receiver (str): qb64 of receiver identifier (AID)
         xid (str): qb64 of exchange ID which is SAID of exchange inception 'xip'
-                   if any
+            if any
         prior (str): qb64 of prior exchange event including 'xip" if any
         route (str):  '/' delimited path identifier of data flow handler
-                      (behavior) to processs the reply if any (equivalent of
-                      url path to resource)
+            (behavior) to processs the reply if any (equivalent of
+            url path to resource)
         modifiers (dict): modifiers field map (equvalent of http query string)
         attributes (dict): attributes field map (payload body)
         stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-                      creation of message or data, default is now.
+            creation of message or data, default is now.
         version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
         gvrsn (Versionage): CESR Genus version for attachment group codes or
-                        nesting group code (useful when serder.gvrsn < 2)
-                        gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
-                            if serder.gvrsn else serder.pvrsn
+            nesting group code (useful when serder.gvrsn < 2)
+            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                if serder.gvrsn else serder.pvrsn
         kind (str): serialization for key event message
-                    one of Kinds ("json","cbor","mgpk","cesr")
-
-    """
+            one of Kinds ("json","cbor","mgpk","cesr")"""
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
@@ -1538,51 +1507,49 @@ def messagize(serder, *, sigers=None, tsgs=None, lsgs=None, wigers=None,
     Parameters:
         serder (SerderKERI): instance containing the event
         sigers (list): of Siger instances (optional) to create indexed signatures
-                       based on seal type if any
+            based on seal type if any
         tsgs (list[TransSigs]): TransIdxSigGroups (prefixer, number, diger, [sigers])
-                controller idx sigs or endorsements from transferable aids with
-                reference to est evt providing key state and list of indexed sigs.
+            controller idx sigs or endorsements from transferable aids with
+            reference to est evt providing key state and list of indexed sigs.
         lsgs (list[TransLastSigs]): TransLastIdxSigGroups (prefixer,[sigers])
-                controller idx sigs or endorsements from transferable aids with
-                reference to est evt providing key state and list of indexed sigs.
+            controller idx sigs or endorsements from transferable aids with
+            reference to est evt providing key state and list of indexed sigs.
         wigers (list): optional list of Siger instances of witness index signatures
         cigars (list): optional list of Cigars instances of non-transferable non indexed
             signatures from  which to form receipt couples.
             Each cigar.vefer.qb64 is pre of receiptor and cigar.qb64 is signature
         rsgs (list[TransReceipts]): TransReceiptIdxSigGroups (prefixer, number, diger, [sigers])
-                receiptor idx sigs or endorsements from transferable aids with
-                reference to est evt providing key state and list of indexed sigs.
+            receiptor idx sigs or endorsements from transferable aids with
+            reference to est evt providing key state and list of indexed sigs.
         bonds (list[]|SealEvent|SealSource|SealLast|BlindState|BoundState|TypeMedia|None):
             Non signature based authenticator typically an event reference or may
             Only v2 supports BlindState|BoundState|TypeMedia
             if bonds is not list convert to list.
         nests (list[str|bytes|bytearray]|None): of nested msg substreams.
-                    Each element stream with message + attachments. Attachements
-                    must be enclosed in either AttachmentGroup or
-                    BodyWithAttachmentGroup. When True forces gvrsn to V2 and
-                    forces either nested to True or framed to false
+            Each element stream with message + attachments. Attachements
+            must be enclosed in either AttachmentGroup or
+            BodyWithAttachmentGroup. When True forces gvrsn to V2 and
+            forces either nested to True or framed to false
         framed (bool): True means each message plus attachments may be assumed to
-                            be isolated as frame when parsing so do not need
-                            attachment group
-                       False means use attachment group since message plus
-                            attachments may not be isolated as frame when parsing
+                be isolated as frame when parsing so do not need
+                attachment group
+            False means use attachment group since message plus
+                attachments may not be isolated as frame when parsing
         nested (bool): True means messagize for non-top level
-                            This forces non-native serializion to be embedded
-                            in non-native group code. When True forces gvrsn to V2
-                       False means messagize for top level of stream.
-                            This allows bare non-native serialization of message
+                This forces non-native serializion to be embedded
+                in non-native group code. When True forces gvrsn to V2
+            False means messagize for top level of stream.
+                This allows bare non-native serialization of message
         gvrsn (Versionage): CESR Genus version for attachment group codes or
-                            nesting group code (useful when serder.gvrsn < 2)
-                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
-                                if serder.gvrsn else serder.pvrsn
+            nesting group code (useful when serder.gvrsn < 2)
+            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
+                if serder.gvrsn else serder.pvrsn
         genusify (bool): True means prepend genus version code from gvrsn before
-                            serder to override default stream genus version
-                         False means do nothing
+                serder to override default stream genus version
+            False means do nothing
 
     Returns:
-        msg (bytearray): KERI event with attachments if any
-
-    """
+        msg (bytearray): KERI event with attachments if any"""
     if not (sigers or tsgs or lsgs or cigars or wigers or rsgs or bonds):
         raise ValueError(f"Missing authenticator for msg={serder.pretty()}")
 
@@ -1945,7 +1912,7 @@ class Kever:
         toader (Number): instance of TOAD (threshold of accountable duplicity)
         wits (list): of qualified qb64 aids for witnesses
         cuts (list): of qualified qb64 aids for witnesses cut from prev wits list
-        adds (list) of qualified qb64 aids for witnesses added to prev wits list
+            adds (list) of qualified qb64 aids for witnesses added to prev wits list
 
         estOnly (bool): config trait True means only allow establishment events
             Default False. Corresponds to config trait string "EO"
@@ -1954,8 +1921,7 @@ class Kever:
 
         lastEst (LastEstLoc): namedtuple of int sn .s and qb64 digest .d of last est event
         delegated (bool): True means delegated identifier, False not delegated
-        delpre(str): qb64 of delegator's prefix
-
+        delpre (str): qb64 of delegator's prefix
 
     Properties:
         sn (int): sequence number property that returns .sner.num
@@ -1966,13 +1932,10 @@ class Kever:
 
 
 
-    ToDo:
-       Add Registrar Backer support:
-        Class variable, instance variable and parse support config trait.
-        raise error for now
-
-
-    """
+        ToDo:
+        Add Registrar Backer support:
+            Class variable, instance variable and parse support config trait.
+            raise error for now"""
     EstOnly = False
     DoNotDelegate = False
 
@@ -1992,7 +1955,7 @@ class Kever:
                 event. Index is offset into wits list from latest est event
             db (Baser | None): instance of lmdb database
             estOnly (bool | None): True means establishment only events allowed 'EO'.
-                            False all events allowed.
+                False all events allowed.
             delsner (Number | None): instance of delegating event sequence number.
                 If this event is not delegated then seqner is ignored
             delsger (Diger | None): instance of of delegating event SAID diger.
@@ -2007,10 +1970,10 @@ class Kever:
             cues (Deck | None): reference to Kevery.cues Deck when provided
                 i.e. notices of events or requests to respond to
             eager (bool): True means try harder to find validate events by
-                            walking KELs. Enables only being eager
-                            in escrow processing not initial parsing.
-                          False means only use pre-existing information
-                            if any, either percolated attached or in database.
+                    walking KELs. Enables only being eager
+                    in escrow processing not initial parsing.
+                False means only use pre-existing information
+                    if any, either percolated attached or in database.
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -2018,8 +1981,7 @@ class Kever:
             check (bool): True means do not update the database in any
                 non-idempotent way. Useful for reinitializing the Kevers from
                 a persisted KEL without updating non-idempotent first seen .fels
-                and timestamps.
-        """
+                and timestamps."""
         if not (state or (serder and sigers)):
             raise ValueError("Missing required arguments. Need state or serder"
                              " and sigers")
@@ -2086,8 +2048,7 @@ class Kever:
     def sn(self):
         """
         Returns:
-            (int): .sner.num
-        """
+            (int): .sner.num"""
         return self.sner.num
 
 
@@ -2095,8 +2056,7 @@ class Kever:
     def fn(self):
         """
         Returns:
-            (int): .fner.num
-        """
+            (int): .fner.num"""
         return self.fner.num
 
 
@@ -2104,32 +2064,28 @@ class Kever:
     def ndigs(self):
         """
         Returns:
-            (list): digs of digers
-        """
+            (list): digs of digers"""
         return [diger.qb64 for diger in self.ndigers]
 
 
     @property
     def kevers(self):
         """
-        Returns .baser.kevers
-        """
+        Returns .baser.kevers"""
         return self.db.kevers
 
 
     @property
     def prefixes(self):
         """
-        Returns .db.prefixes
-        """
+        Returns .db.prefixes"""
         return self.db.prefixes
 
 
     @property
     def groups(self):
         """
-        Returns .db.gids oset of group hab ids (prefixes)
-        """
+        Returns .db.gids oset of group hab ids (prefixes)"""
         return self.db.groups
 
 
@@ -2139,8 +2095,7 @@ class Kever:
         Property transferable:
         Returns True if identifier does not have non-transferable derivation code
                 and .nextor is not None
-                False otherwise
-        """
+                False otherwise"""
         return True if self.ndigers and self.prefixer.transferable else False
 
 
@@ -2154,14 +2109,11 @@ class Kever:
 
         Returns:
             (bool): True if pre is local hab but not group hab
-                        When pre="" empty then returns False
+            When pre="" empty then returns False
 
         Parameters:
             pre (str|None): qb64 identifier prefix if any. Default None
-                    None means use self.prefixer.qb64
-
-
-        """
+                None means use self.prefixer.qb64"""
         pre = pre if pre is not None else self.prefixer.qb64
         return pre in self.prefixes and pre not in self.groups
 
@@ -2188,11 +2140,10 @@ class Kever:
 
         Returns:
             (bool): True if pre is local hab or group hab that has a local member
-                        When pre="" empty or None then returns False
+            When pre="" empty or None then returns False
 
         Parameters:
             pre (str): qb64 identifier prefix if any.
-
 
         ToDo: this code does not account for stale group members as delegators.
         i.e. a stale group membed is a member AID for a group AID in .groups
@@ -2214,9 +2165,7 @@ class Kever:
             habord = self.db.habs.get(keys=(pre,))
             return habord.mid in habord.smids  # True not stale, False stale
 
-        return pre in self.prefixes  # otherwise local non-group delegator
-
-        """
+        return pre in self.prefixes  # otherwise local non-group delegator"""
         pre = pre if pre is not None else ""
         return pre in self.prefixes
 
@@ -2229,9 +2178,7 @@ class Kever:
 
         Parameters:
             wits (list[str]): qb64 identifier prefixes of witnesses
-           serder ( SerderKERI | None): SerderKERI instace if any
-
-        """
+            serder ( SerderKERI | None): SerderKERI instace if any"""
         if not wits:
             if not serder:
                 wits = self.wits
@@ -2249,13 +2196,11 @@ class Kever:
 
         Returns:
             (bool): True if pre is group hab identifier in .groups
-                    False otherwise
+            False otherwise
 
         Parameters:
             pre (str|None): qb64 identifier prefix if any or None
-                           When None default to use self.prefixer.qb64
-
-        """
+                When None default to use self.prefixer.qb64"""
         # assumes stale group membership is taken care of by presence of groups
         # i.e where once a local member but no more.
         pre = pre if pre is not None else self.prefixer.qb64
@@ -2272,9 +2217,7 @@ class Kever:
             verfers (list[Verfer]): instance for each current signing key
 
         Returns:
-            indices list[int]: list of indices of keys contributed by local members
-
-        """
+            indices list[int]: list of indices of keys contributed by local members"""
         habord = self.db.habs.get(keys=(self.prefixer.qb64,))
         kever = self.kevers[habord.mid]
 
@@ -2287,9 +2230,7 @@ class Kever:
         Reload Kever attributes (aka its state) from state (KeyStateRecord)
 
         Parameters:
-            state (KeyStateRecord | None): instance for key state notice
-
-        """
+            state (KeyStateRecord | None): instance for key state notice"""
         self.version = Versionage._make(state.vn)
         self.prefixer = Prefixer(qb64=state.i)
         self.sner = Number(numh=state.s)  # sequence number Number instance hex str
@@ -2326,9 +2267,8 @@ class Kever:
 
 
         Parameters:
-            serder is SerderKERI instance of inception event
-            estOnly is boolean  to indicate establish only events allowed
-        """
+            serder: SerderKERI instance of inception event
+            estOnly: boolean  to indicate establish only events allowed"""
         ked = serder.ked
 
         self.sner = serder.sner
@@ -2393,8 +2333,7 @@ class Kever:
 
     def config(self, serder, estOnly=None, doNotDelegate=None):
         """
-        Process cnfg field for configuration traits
-        """
+        Process cnfg field for configuration traits"""
         # assign traits
         self.estOnly = (True if (estOnly if estOnly is not None else self.EstOnly)
                         else False)  # ensure default estOnly is boolean
@@ -2436,10 +2375,10 @@ class Kever:
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
             eager (bool): True means try harder to find validate events by
-                            walking KELs. Enables only being eager
-                            in escrow processing not initial parsing.
-                          False means only use pre-existing information
-                            if any, either percolated attached or in database.
+                    walking KELs. Enables only being eager
+                    in escrow processing not initial parsing.
+                False means only use pre-existing information
+                    if any, either percolated attached or in database.
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -2447,9 +2386,7 @@ class Kever:
             check (bool): True means do not update the database in any
                 non-idempotent way. Useful for reinitializing the Kevers from
                 a persisted KEL without updating non-idempotent first seen .fels
-                and timestamps.
-
-        """
+                and timestamps."""
         ked = serder.ked
         if not self.transferable:  # not transferable so no further events allowed
             raise ValidationError("Unexpected event = {} is nontransferable "
@@ -2583,13 +2520,11 @@ class Kever:
 
         Returns:
             tuple (tholder, toader, wits, cuts, adds) of provisional  results
+
         of rotation subject to additional validation
 
         Parameters:
-            serder (SerderKERI): instance of rotation ('rot' or 'drt') event.
-
-
-        """
+            serder (SerderKERI): instance of rotation ('rot' or 'drt') event."""
         ked = serder.ked
         sner = serder.sner
         pre = serder.pre  # ked["i"]  # controller AID prefix
@@ -2684,13 +2619,12 @@ class Kever:
 
         Returns:
             wca (tuple): of
-               wits (list[str]): prefixes of witnesses full list (backers)
-               cuts (list[str]): prefixes of witnesses removed in latest est evt
-               adds (list[str]): prefixes of witnesses added in latest est evt
+            wits (list[str]): prefixes of witnesses full list (backers)
+            cuts (list[str]): prefixes of witnesses removed in latest est evt
+            adds (list[str]): prefixes of witnesses added in latest est evt
 
         Parameters:
-            serder (SerderKeri): instance of current event
-        """
+            serder (SerderKeri): instance of current event"""
         if serder.ilk not in (Ilks.rot, Ilks.drt) or self.sn >= serder.sn:  # no changes
             return self.wits, self.cuts, self.adds
 
@@ -2748,11 +2682,11 @@ class Kever:
         Parameters:
             serder (SerderKERI): instance of event
             sigers (list): of Siger instances of indexed controllers signatures.
-                Index is offset into verfers list from which public key may be derived.
+            Index: offset into verfers list from which public key may be derived.
             verfers (list): of Verfer instances of keys from latest est event
             tholder (Tholder): instance of sith threshold
             wigers (list): of Siger instances of indexed witness signatures.
-                Index is offset into wits list of associated witness nontrans pre
+            Index: offset into wits list of associated witness nontrans pre
                 from which public key may be derived.
             toader (Number): instance of backer witness threshold
             wits (list): of qb64 non-transferable prefixes of witnesses used to
@@ -2762,16 +2696,14 @@ class Kever:
             delsger (Diger | None): instance of delegating event said diger.
                 If this event is not delegated then diger is ignored
             eager (bool): True means try harder to find validate events by
-                            walking KELs. Enables only being eager
-                            in escrow processing not initial parsing.
-                          False means only use pre-existing information
-                            if any, either percolated attached or in database.
+                    walking KELs. Enables only being eager
+                    in escrow processing not initial parsing.
+                False means only use pre-existing information
+                    if any, either percolated attached or in database.
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-
-        """
+                Event validation logic is a function of local or remote"""
         if len(verfers) < tholder.size:
             raise ValidationError("Invalid sith = {} for keys = {} for evt = {}."
                                   "".format(tholder.sith,
@@ -2965,8 +2897,7 @@ class Kever:
         digests defined by the rotation event.
 
         Parameters:
-            sigers (list): of Siger instances  of indexed signature with .verfer
-        """
+            sigers (list): of Siger instances  of indexed signature with .verfer"""
         odxs = []
         for siger in sigers:
             try:
@@ -3019,15 +2950,15 @@ class Kever:
                 If this event is not delegated then ignored
             delsger (Diger | None): instance of delegating event said diger.
                 If this event is not delegated ignored
-                local (bool): event source for validation logic
+            local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
                 Event validation logic is a function of local or remote
             eager (bool): True means try harder to validate event by
-                            walking KELs. Enables only being eager
-                            in escrow processing not initial parsing.
-                          False means only use pre-existing information
-                            if any, either percolated attached or in database.
+                    walking KELs. Enables only being eager
+                    in escrow processing not initial parsing.
+                False means only use pre-existing information
+                    if any, either percolated attached or in database.
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
@@ -3036,106 +2967,106 @@ class Kever:
         Returns:
             None
 
-        Process Logic:
-            A delegative event is processed differently for each of four different
-            parties, namely, controller of event, witness to controller of event,
-            delegator of event , and validator of event that is not controller,
-            witness or delegator. Events are processed as either local (protected)
-            or remote. A local event may assume that the event only came via a
-            protected transmission path. This might be because the event is
-            functions locally on a device under the supervision of the controller
-            or was received via some protected channel using some form of MFA.
-            A remote event is received in an unprotected manner. The purpose of
-            local and remote is to allow increased security on local events where
-            a threshold structure is imposed.
+            Process Logic:
+                A delegative event is processed differently for each of four different
+                parties, namely, controller of event, witness to controller of event,
+                delegator of event , and validator of event that is not controller,
+                witness or delegator. Events are processed as either local (protected)
+                or remote. A local event may assume that the event only came via a
+                protected transmission path. This might be because the event is
+                functions locally on a device under the supervision of the controller
+                or was received via some protected channel using some form of MFA.
+                A remote event is received in an unprotected manner. The purpose of
+                local and remote is to allow increased security on local events where
+                a threshold structure is imposed.
 
-            A witness pool may act a threshold structure for enchanced security
-            when each witness only accepts local events that are protected
-            by a unique authentication factor thereby making the controller's
-            signature(s) the first factor and the set of unique witness factors
-            a secondary threshold factor. An attacker therefore has to compromise
-            not merely the controller's private key(s) but also the unique second factor
-            on each of a threshold satisfycing number of witnesses.
+                A witness pool may act a threshold structure for enchanced security
+                when each witness only accepts local events that are protected
+                by a unique authentication factor thereby making the controller's
+            signature (s): the first factor and the set of unique witness factors
+                a secondary threshold factor. An attacker therefore has to compromise
+                not merely the controller's private key(s) but also the unique second factor
+                on each of a threshold satisfycing number of witnesses.
 
-            Likewise a delegator may act as a threshold structure for enhanced security
-            when the delegator only accepts local events for delegation that are
-            protected by a unique authentication factor thereby making the
-            controller's signatures the first factor, a threshold satisfycing
-            number of unique witness factors the second layer of factors, and
-            the delegator's unique authentication factor as the third factor.
-            An attacker therefore has to compromise not merely the controller's
-            private key(s) but also the unique second factor
-            on each of a threshold satisfycing number of witnesses and the unique
-            third factor for the delegator.
+                Likewise a delegator may act as a threshold structure for enhanced security
+                when the delegator only accepts local events for delegation that are
+                protected by a unique authentication factor thereby making the
+                controller's signatures the first factor, a threshold satisfycing
+                number of unique witness factors the second layer of factors, and
+                the delegator's unique authentication factor as the third factor.
+                An attacker therefore has to compromise not merely the controller's
+                private key(s) but also the unique second factor
+                on each of a threshold satisfycing number of witnesses and the unique
+                third factor for the delegator.
 
-            Controller as delegatee must accept its own delegated event prior
-            to full witnessing or delegator approval (anchored seal) by signing the
-            event in order to trigger the logic to get witness receipts and
-            delegator approval. This means a local (protected) event may be
-            accepted into controller's KEL when fully signed by controller.
+                Controller as delegatee must accept its own delegated event prior
+                to full witnessing or delegator approval (anchored seal) by signing the
+                event in order to trigger the logic to get witness receipts and
+                delegator approval. This means a local (protected) event may be
+                accepted into controller's KEL when fully signed by controller.
 
-            Witness must accept a controller's delegated event it witnesses prior to
-            full witnessing or delegator approval in order to trigger its
-            witnessing logic. This means a local (protected) event may be
-            accepted into  a witness' KEL when fully signed by its controller.
+                Witness must accept a controller's delegated event it witnesses prior to
+                full witnessing or delegator approval in order to trigger its
+                witnessing logic. This means a local (protected) event may be
+                accepted into  a witness' KEL when fully signed by its controller.
 
-            Delegator may escrow or sandbox a delegated event prior to it anchoring
-            a seal of the event in its KEL in order to trigger its approval logic.
-            Alternatively the approval logic may be triggered immediately after
-            it is received and authenticated on it its local (protected) channel
-            but before it is submitted to its local Kevery for processing.
+                Delegator may escrow or sandbox a delegated event prior to it anchoring
+                a seal of the event in its KEL in order to trigger its approval logic.
+                Alternatively the approval logic may be triggered immediately after
+            it: received and authenticated on it its local (protected) channel
+                but before it is submitted to its local Kevery for processing.
 
-            The delegator MUST NOT accept a delegable event unless it is locally
-            sourced, fully signed by its controller, and fully witnessed by its
-            controller's designated witness pool.
-            A Delegator may impose additional validation logic prior to approval.
-            The approval logic may be handled by an escrow that only runs if
-            the delegable event is sourced as local. This may require a
-            sandboxed kel for the delegatee in order to not corrupt its pristine
-            copy of the delegatee's KEL with a valid delegable event from a
-            malicious source. The sandboxing logic may create a virtual
-            delegation event with seal for the purpose of checking the delegated
-            event superseding logic prior to acceptance.
+                The delegator MUST NOT accept a delegable event unless it is locally
+                sourced, fully signed by its controller, and fully witnessed by its
+                controller's designated witness pool.
+                A Delegator may impose additional validation logic prior to approval.
+                The approval logic may be handled by an escrow that only runs if
+                the delegable event is sourced as local. This may require a
+                sandboxed kel for the delegatee in order to not corrupt its pristine
+                copy of the delegatee's KEL with a valid delegable event from a
+                malicious source. The sandboxing logic may create a virtual
+                delegation event with seal for the purpose of checking the delegated
+                event superseding logic prior to acceptance.
 
-            A malicious attacker that compromises the pre-rotated keys of the
-            delegatee may issue a rotation that changes its witness pool in order
-            to bypass the local security logic of the witness pool. The approval
-            logic of the delegator may choose to not automatically approve a
-            delegable rotation event unliess the change to the witness pool is
-            below the threshold.
+                A malicious attacker that compromises the pre-rotated keys of the
+                delegatee may issue a rotation that changes its witness pool in order
+                to bypass the local security logic of the witness pool. The approval
+                logic of the delegator may choose to not automatically approve a
+                delegable rotation event unliess the change to the witness pool is
+                below the threshold.
 
-            The logic for superseded events is NOT a requirement for acceptance in
-            either a delegated event controller's KEL or its witness' KEL. The
-            delegator's kel creates a virtual (provisional) delegating interaction
-            event in order to evaluate correct superseding logic so as not to
-            accept an invalid supderseding delegated event into its local copy
-            of the delegated KEL. This virtual event is needed because superseding
-            logic requires an anchoring seal be present before the rules can
-            be fully evaluated.
+                The logic for superseded events is NOT a requirement for acceptance in
+                either a delegated event controller's KEL or its witness' KEL. The
+                delegator's kel creates a virtual (provisional) delegating interaction
+                event in order to evaluate correct superseding logic so as not to
+                accept an invalid supderseding delegated event into its local copy
+                of the delegated KEL. This virtual event is needed because superseding
+                logic requires an anchoring seal be present before the rules can
+                be fully evaluated.
 
-            Should the actual anchor be via a superseding rotation in the
-            delegator's KEL not via an interaction event then the delegator must
-            check the logic for a virtual delegating rotation instead.
-            In either case the delegated event does not change so the virtual
-            delegating checks are sufficient to accept the delegated event
-            into the delegator's local copy of the delegatee's KEL.
+                Should the actual anchor be via a superseding rotation in the
+                delegator's KEL not via an interaction event then the delegator must
+                check the logic for a virtual delegating rotation instead.
+                In either case the delegated event does not change so the virtual
+                delegating checks are sufficient to accept the delegated event
+                into the delegator's local copy of the delegatee's KEL.
 
 
-            Any of delegated controller, delegated witness, or delegator
-            of delegated event may after the fact fully validate event by
-            processing it as a remote event.
-            Then the logic applied is same as validator below.
+                Any of delegated controller, delegated witness, or delegator
+                of delegated event may after the fact fully validate event by
+                processing it as a remote event.
+                Then the logic applied is same as validator below.
 
-            A validator of a delegated event that is not the event's controller,
-            witness, or delegator must not accept the event until is is fully
-            signed by the controller (threshold), fully witnessed by the witness
-            pool (threshold) and its seal anchored in the delegator's KEL. The
-            rules for event superseding in the delegated controller's kel must
-            also be satisfied. The logic should be the same for both local and
-            remote event because the validator is not one of the protected parties
-            to the event.
+                A validator of a delegated event that is not the event's controller,
+                witness, or delegator must not accept the event until is is fully
+                signed by the controller (threshold), fully witnessed by the witness
+                pool (threshold) and its seal anchored in the delegator's KEL. The
+                rules for event superseding in the delegated controller's kel must
+                also be satisfied. The logic should be the same for both local and
+                remote event because the validator is not one of the protected parties
+                to the event.
 
-        Superseding Recovery:
+            Superseding Recovery:
 
         Supersede means that after an event has already been accepted as first seen
         into a KEL that a different event with the same sequence number is accepted
@@ -3250,9 +3181,7 @@ class Kever:
         malicious source seal couple with repaired seal so repaired seal not
         malicous seal gets written to 'aes' db. When the event is valid but
         non-delegated then need to nullify malicous source seal couple so it
-        does not get written to 'aes' database.
-
-        """
+        does not get written to 'aes' database."""
         if not delpre: # not delegable delpre is None if ilk is not dip or drt
             return (None, None)  # non-delegated so delnum deldiger must be None
 
@@ -3496,21 +3425,21 @@ class Kever:
 
         Returns:
             dserder (SerderKERI): delegating key event with delegating seal of
-                                  delegated event serder. If can't fetch then
-                                  returns None when eager==False or raises
-                                  ValidationError if can't fetch but eager==True
+                delegated event serder. If can't fetch then
+                returns None when eager==False or raises
+                ValidationError if can't fetch but eager==True
 
         Parameters:
             delpre (str): qb64 of identifier prefix of delegator
             serder (SerderKERI): delegated serder
             original (bool): True means delegated event is the original candidate
-                             to be superseded. This means kel walk search should
-                             include superseded or disputed events.
-                             False means the delegated event is new candidate to
-                             supersede. This means kel walk search should not
-                             include superseded or disputed events.
+                to be superseded. This means kel walk search should
+                include superseded or disputed events.
+                False means the delegated event is new candidate to
+                supersede. This means kel walk search should not
+                include superseded or disputed events.
             eager (bool): True means do more expensive KEL walk instead of escrow
-                          False means do not do expensive KEL walk now.
+                False means do not do expensive KEL walk now.
 
         Assumes db.aes source seal couple of delegating event cannot be written
         unless that event has been accepted (first seen) into delegator's KEL
@@ -3542,8 +3471,7 @@ class Kever:
         entry. Otherwise does not repair but simply returns found delegation.
 
         Found delegation may not be superseding so do not repair .aess unless
-        delegate was already accepted.
-        """
+        delegate was already accepted."""
         if (duple := self.db.aess.get(keys=(serder.preb, serder.saidb))):  # delegation source couple at delegate
             delnum, diger = duple
             deldig = diger.qb64  # dig of delegating event
@@ -3609,29 +3537,28 @@ class Kever:
         Update is idempotent. Logs will not write dup at key if already exists.
 
         Parameters:
-            serder is SerderKERI instance of current event
-            sigers is optional list of Siger instance for current event
-            wigers is optional list of Siger instance of indexed witness sigs
-            wits is optional list of current witnesses provide during any establishment event
-            first is Boolean True means first seen accepted log of event.
-                    Otherwise means idempotent log of event to accept additional
-                    signatures beyond the threshold provided for first seen
-            delnum is Number instance of delegating event sequence number.
+            serder: SerderKERI instance of current event
+            sigers: optional list of Siger instance for current event
+            wigers: optional list of Siger instance of indexed witness sigs
+            wits: optional list of current witnesses provide during any establishment event
+            first: Boolean True means first seen accepted log of event.
+                Otherwise means idempotent log of event to accept additional
+                signatures beyond the threshold provided for first seen
+            delnum: Number instance of delegating event sequence number.
                 If this event is not delegated then delnum is ignored
-            diger is Diger instance of of delegating event said.
+            diger: Diger instance of of delegating event said.
                 If this event is not delegated then diger is ignored
-            firner is optional Seqner instance of cloned first seen ordinal
+            firner: optional Seqner instance of cloned first seen ordinal
                 If cloned mode then firner maybe provided (not None)
                 When firner provided then compare fn of dater and database and
                 first seen if not match then log and add cue notify problem
-            dater is optional Dater instance of cloned replay datetime
+            dater: optional Dater instance of cloned replay datetime
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-        """
+                Event validation logic is a function of local or remote"""
         local = True if local else False
         fn = None  # None means not a first seen log event so does not return an fn
         dgkeys = (serder.pre, serder.said)
@@ -3708,8 +3635,7 @@ class Kever:
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-        """
+                Event validation logic is a function of local or remote"""
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
         if esr := self.db.esrs.get(keys=dgkey):  # preexisting esr
@@ -3746,8 +3672,7 @@ class Kever:
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-        """
+                Event validation logic is a function of local or remote"""
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
         if esr := self.db.esrs.get(keys=dgkey):  # preexisting esr
@@ -3776,16 +3701,15 @@ class Kever:
         or fully signed delegated event but not yet verified delegation.
 
         Parameters:
-            serder is SerderKERI instance of event
-            sigers is list of Siger instances of indexed controller sigs
-            wigers is optional list of Siger instance of indexed witness sigs
+            serder: SerderKERI instance of event
+            sigers: list of Siger instances of indexed controller sigs
+            wigers: optional list of Siger instance of indexed witness sigs
             delsner (Number): instance of sn of delegating event if any
             delsger (Diger): instance of said digest of delegating event if any
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-        """
+                Event validation logic is a function of local or remote"""
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
         self.db.dtss.put(keys=dgkey, val=Dater())  # idempotent
@@ -3818,17 +3742,15 @@ class Kever:
         Update associated logs for escrow of partially witnessed event
 
         Parameters:
-            serder is SerderKERI instance of  event
-            sigers is optional list of Siger instances of indexed controller sigs
-            wigers is list of Siger instance of indexed witness sigs
+            serder: SerderKERI instance of  event
+            sigers: optional list of Siger instances of indexed controller sigs
+            wigers: list of Siger instance of indexed witness sigs
             delsner (Number): instance of sn of delegating event if any
             delsger (Diger): instance of said digest of delegating event if any
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-
-        """
+                Event validation logic is a function of local or remote"""
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
         self.db.dtss.put(keys=dgkey, val=Dater())  # idempotent
@@ -3872,17 +3794,15 @@ class Kever:
         couple from val in order to to re-verify authentication status.
 
         Parameters:
-            serder is SerderKERI instance of  event
-            sigers is optional list of Siger instances of indexed controller sigs
-            wigers is list of Siger instance of indexed witness sigs
-            delsner is Number instance of sn of seal source delegating event sn
-            delsger is Diger instance of digest of delegating event said
+            serder: SerderKERI instance of  event
+            sigers: optional list of Siger instances of indexed controller sigs
+            wigers: list of Siger instance of indexed witness sigs
+            delsner: Number instance of sn of seal source delegating event sn
+            delsger: Diger instance of digest of delegating event said
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-
-        """
+                Event validation logic is a function of local or remote"""
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
         self.db.dtss.put(keys=dgkey, val=Dater())  # idempotent
@@ -3920,9 +3840,7 @@ class Kever:
 
     def state(self):
         """
-        Returns KeyStateRecord instance of current key state
-
-        """
+        Returns KeyStateRecord instance of current key state"""
         eevt = StateEstEvent(s="{:x}".format(self.lastEst.s),
                              d=self.lastEst.d,
                              br=self.cuts,
@@ -3973,9 +3891,7 @@ class Kever:
 
         Returns:
             digers (list | None): of Diger instances or None if no prior est evt
-                to current .lastEst
-
-        """
+                to current .lastEst"""
         pre = self.prefixer.qb64
         if sn is None:
             sn = self.lastEst.s - 1
@@ -4011,15 +3927,13 @@ class Kever:
 
         Parameters:
             verfers (list[Verfer]): of verfer instances
-          sn (int | None): sn to start searching. If None then start at .lastEst.s
+            sn (int | None): sn to start searching. If None then start at .lastEst.s
 
         Returns:
-            tuple(int, int,Verfer) | None: where tuple is of form (sn, idx, verfer).
-                sn is sequence number.
-                idx is index of verfer in verfers
-                verfer is instance of Verfer
-
-        """
+            tuple (int, int,Verfer): | None: where tuple is of form (sn, idx, verfer).
+            sn: sequence number.
+            idx: index of verfer in verfers
+            verfer: instance of Verfer"""
         pre = self.prefixer.qb64
         if sn is None:
             sn = self.lastEst.s
@@ -4062,16 +3976,14 @@ class Kever:
 
         Parameters:
             verfer (Verfer): instance of verfer
-          sn (int | None): sn to start searching. If None then start at .lastEst.s
+            sn (int | None): sn to start searching. If None then start at .lastEst.s
 
         Returns:
-            tuple(int, int, list[Verfer]) | None: where tuple is of form
-            (sn, index, verfers)
-                sn is sequence number
-                index is index into verfers of verfers
-                verfers is list of Verfer instances.
-
-        """
+            tuple (int, int, list[Verfer]): | None: where tuple is of form
+                (sn, index, verfers)
+            sn: sequence number
+            index: index into verfers of verfers
+            verfers: list of Verfer instances."""
         pre = self.prefixer.qb64
         if sn is None:
             sn = self.lastEst.s
@@ -4106,32 +4018,28 @@ class Kevery:
 
     Attributes:
         cues (Deck):  of Cues i.e. notices of events needing receipt or
-                      requests needing response
+            requests needing response
         db (Baser): instance of LMDB Baser object
         lax (bool): True means operate in promiscuous (unrestricted) mode,
-                           False means operate in nonpromiscuous (restricted) mode
-                              as determined by local and prefixes
+            False means operate in nonpromiscuous (restricted) mode
+                as determined by local and prefixes
 
         local (bool): True means only process msgs for own events if not lax
-                         False means only process msgs for not own events if not lax
+            False means only process msgs for not own events if not lax
         cloned (bool): True means cloned message stream so use attached
-                         datetimes from clone source not own for first seen.
-                         False means use current datetime for first seen
+            datetimes from clone source not own for first seen.
+            False means use current datetime for first seen
         direct (bool): True means direct mode so cue notices for receipts etc
-                          False means indirect mode so don't cue notices
+            False means indirect mode so don't cue notices
         check (bool): True means do not update the database in any
-                non-idempotent way. Useful for reinitializing the Kevers from
-                a persisted KEL without updating non-idempotent first seen .fels
-                and timestamps.
-
+            non-idempotent way. Useful for reinitializing the Kevers from
+            a persisted KEL without updating non-idempotent first seen .fels
+            and timestamps.
 
     Properties:
         .kevers is dict of db kevers indexed by pre (qb64) of each Kever
         .prefixes is OrderedSet of fully qualified base64 identifier prefixes of db
-            local habitats if any.
-
-
-    """
+        local habitats if any."""
     TimeoutOOE = 1200  # seconds to timeout out of order escrows
     TimeoutPSE = 3600  # seconds to timeout partially signed or delegated escrows
     TimeoutPWE = 3600  # seconds to timeout partially witnessed escrows
@@ -4151,7 +4059,7 @@ class Kevery:
 
         Parameters:
             cues (Deck)  notices to create responses to evts
-            kevers is dict of Kever instances of key state in db
+            kevers: dict of Kever instances of key state in db
             db (Baser): instance of database
             rvy (Revery): instance for reply message processing
             exc (Exchanger): instance for exchange message processing
@@ -4162,20 +4070,19 @@ class Kevery:
                 is not provided. KRAM enforcement remains controlled by the
                 provided configuration, defaulting to disabled without one.
             lax (bool): True means operate in promiscuous (unrestricted) mode,
-                           False means operate in nonpromiscuous (restricted) mode
-                              as determined by local and prefixes
+                False means operate in nonpromiscuous (restricted) mode
+                    as determined by local and prefixes
             local (bool): True means event source is local (protected) for validation
-                         False means event source is remote (unprotected) for validation
+                False means event source is remote (unprotected) for validation
             cloned (bool): True means cloned message stream so use attached
-                         datetimes from clone source not own.
-                         False means use current datetime
+                datetimes from clone source not own.
+                False means use current datetime
             direct (bool): True means direct mode so cue notices for receipts etc
-                          False means indirect mode so don't cue notices
+                False means indirect mode so don't cue notices
             check (bool): True means do not update the database in any
                 non-idempotent way. Useful for reinitializing the Kevers from
                 a persisted KEL without updating non-idempotent first seen .fels
-                and timestamps.
-        """
+                and timestamps."""
         self.cues = cues if cues is not None else decking.Deck()  # subclass of deque
         if db is None:
             db = Baser(reopen=True)  # default name = "main"
@@ -4201,15 +4108,13 @@ class Kevery:
     @property
     def kevers(self):
         """
-        Returns .db.kevers
-        """
+        Returns .db.kevers"""
         return self.db.kevers
 
     @property
     def prefixes(self):
         """
-        Returns .db.prefixes
-        """
+        Returns .db.prefixes"""
         return self.db.prefixes
 
     def fetchWitnessState(self, pre, sn):
@@ -4226,9 +4131,7 @@ class Kevery:
 
         Returns:
             list:  list of Prefixer objects representing the witness state for the identifier prefix at
-                 the sequence number
-
-        """
+                the sequence number"""
         preb = pre.encode("utf-8")
         for digb in self.db.kels.getBackIter(keys=preb, on=sn):
             serder = self.db.evts.get(keys=(preb, digb))
@@ -4261,14 +4164,13 @@ class Kevery:
                 If cloned mode then dater maybe provided (not None)
                 When dater provided then use dater for first seen datetime
             eager (bool): True means try harder to find validate events by
-                            walking KELs. Enables only being eager
-                            in escrow processing not initial parsing.
-                          False means only use pre-existing information
-                            if any, either percolated attached or in database.
+                    walking KELs. Enables only being eager
+                    in escrow processing not initial parsing.
+                False means only use pre-existing information
+                    if any, either percolated attached or in database.
             local (bool|None): True means local (protected) event source.
-                               False means remote (unprotected).
-                               None means use default .local .
-        """
+                False means remote (unprotected).
+                None means use default .local ."""
         local = local if local is not None else self.local
         local = True if local else False  # force boolean
 
@@ -4476,18 +4378,17 @@ class Kevery:
             tsgs (list[tuple]): from extracted transferable indexed sig groups
                 each converted group is tuple of (i,s,d) triple plus list of sigs
             rsgs (list[tuple]): from extracted transferable receipt indexed sig groups
-               each converted group is tuple of (i,s,d) triple plus list of sigs
+                each converted group is tuple of (i,s,d) triple plus list of sigs
             local (bool|None): True means local (protected) event source.
-                               False means remote (unprotected).
-                               None means use default .local .
+                False means remote (unprotected).
+                None means use default .local .
 
         Receipt dict labels
             vs  # version string
             pre  # qb64 prefix
             sn  # hex string sequence number
             ilk  # rct
-            dig  # qb64 digest of receipted event
-        """
+            dig  # qb64 digest of receipted event"""
         local = local if local is not None else self.local
         local = True if local else False  # force boolean
 
@@ -4710,12 +4611,11 @@ class Kevery:
 
         Parameters:
             kwa (dict | None): parser exts / attachment dict containing serder,
-                   sigers, cigars, tsgs, lsgs, sscs, ssts, tdcs, wigers, trqs,
-                   frcs, ptds, essrs, bsqs, bsss, tmqs, local, etc.; mutated in
-                   place (KRAM normalization, rvy/exc/tvy pops, qry
-                   source/sigers). Also accepts processor overrides injected by
-                   parser: rvy (Revery), exc (Exchanger), tvy (Tevery)
-        """
+                sigers, cigars, tsgs, lsgs, sscs, ssts, tdcs, wigers, trqs,
+                frcs, ptds, essrs, bsqs, bsss, tmqs, local, etc.; mutated in
+                place (KRAM normalization, rvy/exc/tvy pops, qry
+                source/sigers). Also accepts processor overrides injected by
+                parser: rvy (Revery), exc (Exchanger), tvy (Tevery)"""
         if kwa is None:
             kwa = {}
         serder = kwa.pop('serder', None)
@@ -4862,10 +4762,8 @@ class Kevery:
                 if provided lookup event by fn = firner.sn
                 used when in cloned replay mode
             local (bool|None): True means local (protected) event source.
-                               False means remote (unprotected).
-                               None means use default .local .
-
-        """
+                False means remote (unprotected).
+                None means use default .local ."""
         local = local if local is not None else self.local
         local = True if local else False  # force boolean
 
@@ -4938,13 +4836,11 @@ class Kevery:
                 attachments come from replay (clone)
             rsgs (list[tuple]):  (prefixer, number, diger, [sigers])
             firner (Seqner): instance of first seen ordinal,
-               if provided lookup event by fn = firner.sn
-               used when in cloned replay mode
+                if provided lookup event by fn = firner.sn
+                used when in cloned replay mode
             local (bool|None): True means local (protected) event source.
-                               False means remote (unprotected).
-                               None means use default .local .
-
-        """
+                False means remote (unprotected).
+                None means use default .local ."""
         local = local if local is not None else self.local
         local = True if local else False  # force boolean
 
@@ -5055,14 +4951,22 @@ class Kevery:
 
     def removeStaleReplyEndRole(self, saider):
         """
-        Process reply escrow at saider for route "/end/role"
+        Process reply escrow at saider for route "/end/role".
+
+        Parameters:
+            saider (Saider): SAID of the reply SAD whose escrow entry should
+                be removed.
         """
         pass
 
 
     def removeStaleReplyLocScheme(self, saider):
         """
-        Process reply escrow at saider for route "/loc/scheme"
+        Process reply escrow at saider for route "/loc/scheme".
+
+        Parameters:
+            saider (Saider): SAID of the reply SAD whose escrow entry should
+                be removed.
         """
         pass
 
@@ -5071,9 +4975,7 @@ class Kevery:
         """ Register the routes for processing messages embedded in `rpy` event messages
 
         Parameters:
-            router(Router): reply message router
-
-        """
+            router (Router): reply message router"""
         router.addRoute("/end/role/{action}", self, suffix="EndRole")
         router.addRoute("/loc/scheme", self, suffix="LocScheme")
         router.addRoute("/ksn/{aid}", self, suffix="KeyStateNotice")
@@ -5092,19 +4994,20 @@ class Kevery:
             diger (Diger): instance from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
-                          signature in .raw and public key in .verfer
+                signature in .raw and public key in .verfer
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
-                prefixer is pre of trans endorser
-                seqner is sequence number of trans endorser's est evt for keys for sigs
-                diger is digest of trans endorser's est evt for keys for sigs
+            prefixer: pre of trans endorser
+            seqner: sequence number of trans endorser's est evt for keys for sigs
+            diger: digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
-        EndpointRecord:
+            EndpointRecord:
             allowed: bool = False  # True eid allowed (add), False eid disallowed (cut)
             name: str = ""  # optional user friendly name of endpoint
 
-        Reply Message:
+            Reply Message:
+
         {
           "v" : "KERI10JSON00011c_",
           "t" : "rpy",
@@ -5131,9 +5034,7 @@ class Kevery:
              "role": "watcher",  # one of Roles
              "eid": "BrHLayDN-mXKv62DAjFLX1_Y5yEUe0vA9YPe_ihiKYHE",
           }
-        }
-
-        """
+        }"""
         # reply specific logic
         if route.startswith("/end/role/add"):
             allowed = True
@@ -5189,12 +5090,12 @@ class Kevery:
             diger (Diger): instance from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
-                          signature in .raw and public key in .verfer
+                signature in .raw and public key in .verfer
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
-                prefixer is pre of trans endorser
-                seqner is sequence number of trans endorser's est evt for keys for sigs
-                diger is digest of trans endorser's est evt for keys for sigs
+            prefixer: pre of trans endorser
+            seqner: sequence number of trans endorser's est evt for keys for sigs
+            diger: digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
         EndAuthRecord
@@ -5233,10 +5134,7 @@ class Kevery:
              "scheme": "http",  # one of Schemes
              "url":  "",  # Nullifies
           }
-        }
-
-
-        """
+        }"""
         # reply specific logic
         if not route.startswith("/loc/scheme"):
             raise ValidationError("Usupported route={} in {} msg={}."
@@ -5291,15 +5189,16 @@ class Kevery:
             diger (Diger): instance from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
-                          signature in .raw and public key in .verfer
+                signature in .raw and public key in .verfer
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
-                prefixer is pre of trans endorser
-                seqner is sequence number of trans endorser's est evt for keys for sigs
-                diger is digest of trans endorser's est evt for keys for sigs
+            prefixer: pre of trans endorser
+            seqner: sequence number of trans endorser's est evt for keys for sigs
+            diger: digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
-        Reply Message:
+            Reply Message:
+
         {
           "v" : "KERI10JSON00011c_",
           "t" : "rpy",
@@ -5337,9 +5236,7 @@ class Kevery:
             },
             "di": ""
           }
-        }
-
-        """
+        }"""
         cigars = cigars if cigars is not None else []
         tsgs = tsgs if tsgs is not None else []
 
@@ -5413,8 +5310,7 @@ class Kevery:
             keys (tuple): of key strs for databases (cid, role, eid)
             saider (Diger): instance from said in reply serder (SAD)
             allowed (bool): True allow eid to be endpoint provided
-                          False otherwise
-        """
+                False otherwise"""
         # update .eans and .ends
         self.db.eans.pin(keys=keys, val=saider)  # overwrite
         if ender := self.db.ends.get(keys=keys):  # preexisting record
@@ -5431,8 +5327,7 @@ class Kevery:
         Parameters:
             keys (tuple): of key strs for databases (eid, scheme)
             saider (Diger): instance from said in reply serder (SAD)
-            url (str): endpoint url
-        """
+            url (str): endpoint url"""
         self.db.lans.pin(keys=keys, val=saider)  # overwrite
         if locer := self.db.locs.get(keys=keys):  # preexisting record
             locer.url = url  # update preexisting record
@@ -5452,8 +5347,7 @@ class Kevery:
             aid (str): identifier of key state
             ksr (KeyStateRecord): converted from key state notice dict in reply msg
             saider (Diger): instance from said in serder (SAD)
-            dater (Dater): instance from date-time in serder (SAD)
-        """
+            dater (Dater): instance from date-time in serder (SAD)"""
         keys = (saider.qb64,)
 
         # Add source of ksn to the key for DATEs too...  (source AID, ksn AID)
@@ -5485,15 +5379,16 @@ class Kevery:
             diger (Diger): instance from said in serder (SAD)
             route (str): reply route
             cigars (list): of Cigar instances that contain nontrans signing couple
-                          signature in .raw and public key in .verfer
+                signature in .raw and public key in .verfer
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
-                prefixer is pre of trans endorser
-                seqner is sequence number of trans endorser's est evt for keys for sigs
-                diger is digest of trans endorser's est evt for keys for sigs
+            prefixer: pre of trans endorser
+            seqner: sequence number of trans endorser's est evt for keys for sigs
+            diger: digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
-        Reply Message:
+            Reply Message:
+
         {
           "v" : "KERI10JSON00011c_",
           "t" : "rpy",
@@ -5506,9 +5401,7 @@ class Kevery:
             "oid": "EM0-i05TNZJZAoH3UR2nmLaU6JwyvPzhzS6YAfSVbMC5"
             "oobi": "http://example.com/oobi/EyX-zd8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM"
           }
-        }
-
-        """
+        }"""
         aid = kwa["aid"]
         action = kwa["action"]
         # reply specific logic
@@ -5555,8 +5448,7 @@ class Kevery:
         Parameters:
             keys (tuple): of key strs for databases (eid, scheme)
             saider (Diger): instance from said in reply serder (SAD)
-            enabled (bool): True means add observed to watcher, False means remove (cut)
-        """
+            enabled (bool): True means add observed to watcher, False means remove (cut)"""
         self.db.wwas.pin(keys=keys, val=saider)  # overwrite
         if observed := self.db.obvs.get(keys=keys):  # preexisting record
             observed.enabled = enabled  # update preexisting record
@@ -5574,9 +5466,7 @@ class Kevery:
             serder (SerderKERI) is query message serder
             source (Prefixer) identifier prefix of querier
             sigers (list) of Siger instances of attached controller indexed sigs
-            cigars (list) of Cigar instance of attached non-trans sigs
-
-        """
+            cigars (list) of Cigar instance of attached non-trans sigs"""
         ked = serder.ked
 
         ilk = ked["t"]
@@ -5695,9 +5585,8 @@ class Kevery:
         Returns None if no event at sn accepted in KEL for pre
 
         Parameters:
-            pre is qb64 of identifier prefix for KEL
-            sn is int sequence number of event in KEL of pre
-        """
+            pre: qb64 of identifier prefix for KEL
+            sn: int sequence number of event in KEL of pre"""
 
         found = False
         while not found:
@@ -5732,8 +5621,7 @@ class Kevery:
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-        """
+                Event validation logic is a function of local or remote"""
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
         if esr := self.db.esrs.get(keys=dgkey):  # preexisting esr
@@ -5769,8 +5657,7 @@ class Kevery:
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-        """
+                Event validation logic is a function of local or remote"""
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
         if esr := self.db.esrs.get(keys=dgkey):  # preexisting esr
@@ -5801,8 +5688,7 @@ class Kevery:
             prefixer (Prefixer): source of query message
             serder (SerderKERI): instance of  event
             sigers (list): of Siger instance for  event
-            cigars (list): of non-transferable receipts
-        """
+            cigars (list): of non-transferable receipts"""
         cigars = cigars if cigars is not None else []
         dgkey = dgKey(prefixer.qb64b, serder.saidb)
         self.db.dtss.put(keys=dgkey, val=Dater())
@@ -5822,13 +5708,12 @@ class Kevery:
         Update associated logs for escrow of Likely Duplicitous event
 
         Parameters:
-            serder is SerderKERI instance of  event
-            sigers is list of Siger instance for  event
+            serder: SerderKERI instance of  event
+            sigers: list of Siger instance for  event
             local (bool): event source for validation logic
                 True means event source is local (protected).
                 False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
-        """
+                Event validation logic is a function of local or remote"""
         local = True if local else False
         dgkey = dgKey(serder.preb, serder.saidb)
         if esr := self.db.esrs.get(keys=dgkey):  # preexisting esr
@@ -5861,10 +5746,9 @@ class Kevery:
         Parameters:
             serder (SerderKERI): instance of receipt msg not receipted event
             wigers (list): of Siger instances for witness indexed signature
-                of receipted event
-            said (str) qb64 said of receipted event not serder.dig because
-                serder is a receipt not the receipted event
-        """
+                    of receipted event
+                said (str) qb64 said of receipted event not serder.dig because
+            serder: a receipt not the receipted event"""
         # note receipt dig algo may not match database dig also so must always
         # serder.compare to match. So receipts for same event may have different
         # digs of that event due to different algos. So the escrow may have
@@ -5895,8 +5779,7 @@ class Kevery:
             serder (SerderKERI): instance of receipt msg not receipted event
             cigars (list): of Cigar instances for event receipt
             said (str): qb64 said in receipt of receipted event not serder.dig because
-                serder is of receipt not receipted event
-        """
+            serder: of receipt not receipted event"""
         # note receipt dig algo may not match database dig also so must always
         # serder.compare to match. So receipts for same event may have different
         # digs of that event due to different algos. So the escrow may have
@@ -5925,11 +5808,11 @@ class Kevery:
 
         Parameters:
             serder instance of receipt message not receipted event
-            tsgs is list of tuples of form: (prefixer,seqner,diger, sigers)
-                prefixer is Prefixer instance of prefix of receipter
-                number is Number instance of  sn of est event of receiptor
-                diger is Diger instance of digest of est event of receiptor
-                sigers is list of Siger instances of multi-sig of receiptor
+            tsgs: list of tuples of form: (prefixer,seqner,diger, sigers)
+            prefixer: Prefixer instance of prefix of receipter
+            number: Number instance of  sn of est event of receiptor
+            diger: Diger instance of digest of est event of receiptor
+            sigers: list of Siger instances of multi-sig of receiptor
 
         escrow quintuple for each siger
             quintuple = edig+pre+snu+dig+sig
@@ -5938,8 +5821,7 @@ class Kevery:
                 pre is receipter prefix
                 snu is receipter est event sn
                 dig is receipt est evant dig
-                sig is indexed sig of receiptor of receipted event
-        """
+                sig is indexed sig of receiptor of receipted event"""
         # Receipt dig algo may not match database dig. So must always
         # serder.compare to match. So receipts for same event may have different
         # digs of that event due to different algos. So the escrow may have
@@ -5976,10 +5858,10 @@ class Kevery:
 
         Parameters:
             serder instance of receipt message not receipted event
-            prefixer is Prefixer instance of prefix of receipter
-            number is Number instance of  sn of est event of receiptor
-            saider is Saider instance of said of est event of receiptor
-            igers is list of Siger instances of multi-sig of receiptor
+            prefixer: Prefixer instance of prefix of receipter
+            number: Number instance of  sn of est event of receiptor
+            saider: Saider instance of said of est event of receiptor
+            igers: list of Siger instances of multi-sig of receiptor
 
         escrow quintuple for each siger
             quintuple = edig+pre+snu+dig+sig
@@ -5988,8 +5870,7 @@ class Kevery:
                 pre is receipter prefix
                 snu is receipter est event sn
                 dig is receipt est evant dig
-                sig is indexed sig of receiptor of receipted event
-        """
+                sig is indexed sig of receiptor of receipted event"""
         # Receipt dig algo may not match database dig. So must always
         # serder.compare to match. So receipts for same event may have different
         # digs of that event due to different algos. So the escrow may have
@@ -6033,9 +5914,7 @@ class Kevery:
             sprefixer (Prefixer): instance receiptor AID
             snumber (Number):  instance of sn of est event for receiptor key state
             diger (Diger): instance said digest est event or receipt key state
-            sigers (list[Siger]): signatures of receiptor
-
-        """
+            sigers (list[Siger]): signatures of receiptor"""
         # Receipt dig algo may not match database dig. So must always
         # serder.compare to match. So receipts for same event may have different
         # digs of that event due to different algos. So the escrow may have
@@ -6064,8 +5943,7 @@ class Kevery:
 
     def processEscrows(self):
         """
-        Iterate throush escrows and process any that may now be finalized
-            """
+        Iterate throush escrows and process any that may now be finalized"""
         try:
             self.processEscrowOutOfOrders()
             self.processEscrowUnverWitness()
@@ -6119,8 +5997,7 @@ class Kevery:
                         Get Event
                         Get and Attach Signatures
                         Process event as if it came in over the wire
-                        If successful then remove from escrow table
-        """
+                        If successful then remove from escrow table"""
         for pre, sn, edig in self.db.ooes.getAllItemIter():
 
             if isinstance(pre, (tuple, list)):
@@ -6243,8 +6120,7 @@ class Kevery:
                         Get Event
                         Get and Attach Signatures
                         Process event as if it came in over the wire
-                        If successful then remove from escrow table
-        """
+                        If successful then remove from escrow table"""
 
         #key = ekey = b''  # both start same. when not same means escrows found
         #while True:  # break when done
@@ -6400,8 +6276,7 @@ class Kevery:
                         Get and Attach Signatures
                         Get and Attach Witness Signatures
                         Process event as if it came in over the wire
-                        If successful then remove from escrow table
-        """
+                        If successful then remove from escrow table"""
         for pre, sn, edig in self.db.pwes.getAllItemIter(keys=b''):
             try:
                 if isinstance(pre, (tuple, list)):
@@ -6541,8 +6416,7 @@ class Kevery:
                         Get and Attach Signatures
                         Get and Attach Witness Signatures
                         Process event as if it came in over the wire
-                        If successful then remove from escrow table
-        """
+                        If successful then remove from escrow table"""
 
         for (epre,), esn, edig in self.db.pdes.getAllItemIter(keys=b''):
             try:
@@ -6719,8 +6593,7 @@ class Kevery:
                         Get Event
                         compare dig so same event
                         verify wigs via wigers
-                        If successful then remove from escrow table
-        """
+                        If successful then remove from escrow table"""
         #for (pre, snh), (rdiger, wiger) in self.db.uwes.getTopItemIter():
         for (pre, ), sn, (rdig, wig) in self.db.uwes.getTopItemIter():
             try:
@@ -6824,8 +6697,7 @@ class Kevery:
                         Get Event
                         compare dig so same event
                         verify sigs via cigars
-                        If successful then remove from escrow table
-        """
+                        If successful then remove from escrow table"""
 
         for (pre, sn), (rsaider, sprefixer, cigar) in self.db.ures.getTopItemIter():
             sn = Seqner(qb64=sn).sn
@@ -6954,8 +6826,7 @@ class Kevery:
                         Get Event
                         Get and Attach Signatures
                         Process event as if it came in over the wire
-                        If successful then remove from escrow table
-        """
+                        If successful then remove from escrow table"""
 
         for (pre, sn), dig in self.db.delegables.getTopItemIter():
             try:
@@ -7059,8 +6930,7 @@ class Kevery:
                         Get Event
                         Get and Attach Signatures
                         Process event as if it came in over the wire
-                        If successful then remove from escrow table
-        """
+                        If successful then remove from escrow table"""
 
         key = ekey = b''  # both start same. when not same means escrows found
         pre = b''
@@ -7151,20 +7021,17 @@ class Kevery:
 
         Returns:
             found (bool): True means found matching event in .Pwes and added wig
-                        to .Wigs. False means dig not find matching event in .Pwes
-
+                to .Wigs. False means dig not find matching event in .Pwes
 
         Raises:
             Validation error if found matching event but signature does not verify
 
         Parameters:
             pre (Union[str,bytes]): pre of receipted event controller kel
-           sn (int): sequence number of receipted event
-           rsaider (Saider): derived from receipt's dig of receipted event to find
-           wiger (Siger): instance of witness indexed signature from receipt
-           cigar (Cigar): instance of witness nonindexed signature from receipt
-
-        """
+            sn (int): sequence number of receipted event
+            rsaider (Saider): derived from receipt's dig of receipted event to find
+            wiger (Siger): instance of witness indexed signature from receipt
+            cigar (Cigar): instance of witness nonindexed signature from receipt"""
         # lookup the database dig of the receipted event in pwes escrow using
         # snKey(pre,sn) where pre is controller and sn is event sequence number
         # compare dig to rdiger derived from receipt's dig of receipted event
@@ -7290,8 +7157,7 @@ class Kevery:
                         Get Event
                         compare dig so same event
                         verify sigs via sigers
-                        If successful then remove from escrow table
-        """
+                        If successful then remove from escrow table"""
 
         ims = bytearray()
         key = ekey = b''  # both start same. when not same means escrows found
@@ -7446,8 +7312,7 @@ class Kevery:
                         Get Event
                         Get and Attach Signatures
                         Process event as if it came in over the wire
-                        If successful then remove from escrow table
-        """
+                        If successful then remove from escrow table"""
         key = ekey = b''  # both start same. when not same means escrows found
         while True:  # break when done
             for (pre,), sn, edig in self.db.ldes.getAllItemIter(keys=key):
@@ -7545,9 +7410,7 @@ class Kevery:
 
         Handles duplicity detection and logging if duplicitous
 
-        Placeholder here for logic need to move
-
-        """
+        Placeholder here for logic need to move"""
         pass
 
 
@@ -7560,9 +7423,7 @@ def loadEvent(db, preb, dig):
         dig (bytes): digest of event to load
 
     Returns:
-        dict: data from event
-
-    """
+        dict: data from event"""
     event = dict()
     dgkey = dgKey(preb, dig)  # get message
     if not (serder := db.evts.get(keys=(preb, dig))):

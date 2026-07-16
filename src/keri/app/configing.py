@@ -1,7 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
 keri.app.configing module
-
 """
 import json
 import os
@@ -32,8 +31,7 @@ def openCF(cls=None, filed=True, **kwa):
 
     Returns:
         contextlib.AbstractContextManager: Context manager that yields an open
-            ``Configer`` instance.
-    """
+            ``Configer`` instance."""
     if cls == None:  # can't reference class before its defined below
         cls = Configer
     return filing.openFiler(cls=cls, filed=filed, **kwa)
@@ -143,8 +141,7 @@ class Configer(filing.Filer):
         Raises:
             ValueError: If the file is not open.
             IOError: If the file extension is not ``.json``, ``.mgpk``, or
-                ``.cbor``.
-        """
+                ``.cbor``."""
         if not self.file or self.file.closed:
             raise ValueError(f"File '{self.path}' not opened.")
 
@@ -194,8 +191,7 @@ class Configer(filing.Filer):
         Raises:
             ValueError: If the file is not open.
             IOError: If the file extension is not ``.json``, ``.mgpk``, or
-                ``.cbor``.
-        """
+                ``.cbor``."""
         if not self.file or self.file.closed:
             raise ValueError(f"File '{self.path}' not opened.")
 
@@ -238,8 +234,7 @@ class ConfigerDoer(doing.Doer):
         tymth (callable): Closure returned by ``Tymist.tymeth()``. Calling
             it returns the associated ``Tymist.tyme`` value.
         tock (float): Desired interval in seconds between runs. Zero means
-            run as soon as possible. Must be non-negative.
-    """
+            run as soon as possible. Must be non-negative."""
 
     def __init__(self, configer, **kwa):
         """Initialize the doer with a ``Configer`` instance.
@@ -247,8 +242,7 @@ class ConfigerDoer(doing.Doer):
         Parameters:
             configer (Configer): The ``Configer`` instance to manage.
             **kwa: Additional keyword arguments forwarded to
-                :class:`doing.Doer`.
-        """
+                :class:`doing.Doer`."""
         super(ConfigerDoer, self).__init__(**kwa)
         self.configer = configer
 
@@ -257,8 +251,7 @@ class ConfigerDoer(doing.Doer):
 
         Parameters:
             temp (bool, optional): Unused. Present for interface compatibility
-                with the base ``Doer`` lifecycle. Defaults to ``None``.
-        """
+                with the base ``Doer`` lifecycle. Defaults to ``None``."""
         if not self.configer.opened:
             self.configer.reopen()
 

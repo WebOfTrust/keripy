@@ -1,7 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
 keri.kli.common.oobiing module
-
 """
 import datetime
 import json
@@ -43,26 +42,20 @@ def loadHandlers(hby, exc, notifier):
     Parameters:
         hby (Habery): Database and keystore for environment
         exc (Exchanger): Peer-to-peer message router
-        notifier (Notifier): Outbound notifications
-
-    """
+        notifier (Notifier): Outbound notifications"""
     oobireq = OobiRequestHandler(hby=hby, notifier=notifier)
     exc.addHandler(oobireq)
 
 
 class OobiResource:
     """
-    Resource for managing OOBIs
-
-    """
+    Resource for managing OOBIs"""
 
     def __init__(self, hby):
         """ Create Endpoints for discovery and resolution of OOBIs
 
         Parameters:
-            hby (Habery): identifier database environment
-
-        """
+            hby (Habery): identifier database environment"""
         self.hby = hby
 
     def on_get_alias(self, req, rep, alias=None):
@@ -100,8 +93,7 @@ class OobiResource:
                       application/json:
                         schema:
                             description: Key state information for current identifiers
-                            type: object
-        """
+                            type: object"""
 
         hab = self.hby.habByName(alias)
         if hab is None:
@@ -178,9 +170,7 @@ class OobiResource:
                               description: unsigned KERI rpy event message with endpoints
             responses:
                202:
-                  description: OOBI resolution to key state successful
-
-        """
+                  description: OOBI resolution to key state successful"""
         body = req.get_media()
 
         if "url" in body:
@@ -207,9 +197,7 @@ class OobiResource:
 
 class OobiRequestHandler:
     """
-    Handler for oobi notification EXN messages
-
-    """
+    Handler for oobi notification EXN messages"""
     resource = "/oobis"
 
     def __init__(self, hby, notifier):
@@ -217,9 +205,7 @@ class OobiRequestHandler:
 
         Parameters:
             hby (Habery) database environment of the controller
-            notifier (Notifier) notifier to convert OOBI request exn messages to controller notifications
-
-        """
+            notifier (Notifier) notifier to convert OOBI request exn messages to controller notifications"""
         self.hby = hby
         self.notifier = notifier
 
@@ -228,9 +214,7 @@ class OobiRequestHandler:
 
         Parameters:
             serder (Serder): Serder of the exn OOBI request message
-            attachments (list): list of tuples of pather, CESR SAD path attachments to the exn event
-
-        """
+            attachments (list): list of tuples of pather, CESR SAD path attachments to the exn event"""
         src = serder.pre
         pay = serder.ked['a']
         if "oobi" not in pay:
@@ -265,29 +249,25 @@ def oobiRequestExn(hab, dest, oobi, version=Version, pvrsn=None, gvrsn=Version,
         oobi (str): OOBI to request
         version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
-        gvrsn (Versionage): CESR Genus version for attachment group codes or
-                        nesting group code (useful when serder.gvrsn < 2)
-                        gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
-                            if serder.gvrsn else serder.pvrsn
-        framed (bool): True means may assume each message plus its attachments
-                                is isolated as frame when parsing so do not need
-                                attachment group when messagizing
-                           False means may not assume eash message plus its attachments
-                                is isolated as frame when parsing so do need
-                                attachment group when messagizing
-        nested (bool): True means messagize for non-top level
-                            This forces non-native serializion to be embedded
-                            in non-native group code
-                       False means messagize for top level of stream.
-                            This allows bare non-native serialization of message
+        gvrsn (Versionage): CESR Genus version for attachment group codes or nesting
+            group code (useful when serder.gvrsn < 2). gvrsn = max(svrsn, gvrsn)
+            where svrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn.
+        framed (bool): True means may assume each message plus its attachments is
+            isolated as frame when parsing so do not need attachment group when
+            messagizing. False means may not assume eash message plus its
+            attachments is isolated as frame when parsing so do need attachment
+            group when messagizing.
+        nested (bool): True means messagize for non-top level. This forces
+            non-native serializion to be embedded in non-native group code. False
+            means messagize for top level of stream. This allows bare non-native
+            serialization of message.
         genusify (bool): True means prepend genus version code from gvrsn before
-                        serder to override default stream genus version
-                     False means do nothing
+            serder to override default stream genus version. False means do
+            nothing.
 
     Returns:
         tuple: ``(exn, ims)`` where ``exn`` is the OOBI request exchange
             message and ``ims`` is the endorsed attachment stream
-
     """
 
     data = dict(
@@ -315,9 +295,7 @@ def oobiRequestExn(hab, dest, oobi, version=Version, pvrsn=None, gvrsn=Version,
 
 
 class Oobiery:
-    """ Resolver for OOBIs
-
-    """
+    """ Resolver for OOBIs"""
 
     RetryDelay = 30
 
@@ -327,8 +305,7 @@ class Oobiery:
         Parameters:
             hby (Habery): database environment
             clienter (Clienter): DoDoer client provider responsible for managing HTTP client requests
-            cues (decking.Deck): outbound cues from processing oobis
-        """
+            cues (decking.Deck): outbound cues from processing oobis"""
 
         self.hby = hby
         self.rvy = rvy
@@ -356,9 +333,7 @@ class Oobiery:
         The Oobiery handles rpy messages with the /introduce route by processing the contained oobi
 
         Parameters:
-            router(Router): reply message router
-
-        """
+            router (Router): reply message router"""
         router.addRoute("/introduce", self)
 
     def processReply(self, *, serder, diger, route, cigars=None, tsgs=None, **kwargs):
@@ -376,12 +351,12 @@ class Oobiery:
                 signature in .raw and public key in .verfer
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
-                prefixer is pre of trans endorser
-                seqner is sequence number of trans endorser's est evt for keys for sigs
-                diger is digest of trans endorser's est evt for keys for sigs
+            prefixer: pre of trans endorser
+            seqner: sequence number of trans endorser's est evt for keys for sigs
+            diger: digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
-        OobiRecord:
+            OobiRecord:
             date: str = date time of reply message of the introduction
 
         Reply Message::
@@ -397,9 +372,7 @@ class Oobiery:
                  "cid": "ENcOes8_t2C7tck4X4j61fSm0sWkLbZrEZffq7mSn8On",
                  "oobi":  "http://localhost:5632/oobi/ENcOes8_t2C7tck4X4j61fSm0sWkLbZrEZffq7mSn8On/witness",
               }
-            }
-
-        """
+            }"""
         if route != "/introduce":
             raise ValidationError(f"Usupported route={route} in {Ilks.rpy} "
                                   f"msg={serder.ked}.")
@@ -445,8 +418,7 @@ class Oobiery:
             tock (float): injected initial tock value
 
         Usage:
-            add result of doify on this method to doers list
-        """
+            add result of doify on this method to doers list"""
         _ = (yield tock)
 
         while True:
@@ -455,9 +427,7 @@ class Oobiery:
 
     def processFlows(self):
         """
-        Process OOBI URLs by requesting from the endpoint and parsing the results
-
-        """
+        Process OOBI URLs by requesting from the endpoint and parsing the results"""
         self.processOobis()
         self.processClients()
         self.processRetries()
@@ -466,9 +436,7 @@ class Oobiery:
     def processOobis(self):
         """ Process OOBI records loaded for discovery
 
-        There should be only one OOBIERY that minds the OOBI table, this should read from the table like an escrow
-
-        """
+        There should be only one OOBIERY that minds the OOBI table, this should read from the table like an escrow"""
         for (url,), obr in self.hby.db.oobis.getTopItemIter():
             try:
                 # Don't process OOBIs we've already resolved or are in escrow being retried
@@ -519,9 +487,7 @@ class Oobiery:
                 print(f"error requesting invalid OOBI URL {ex}", url)
 
     def processClients(self):
-        """ Process Client responses by parsing the messages and removing the client/doer
-
-        """
+        """ Process Client responses by parsing the messages and removing the client/doer"""
         for (url,), obr in self.hby.db.coobi.getTopItemIter():
             if url not in self.clients:
                 self.request(url, obr)
@@ -625,9 +591,7 @@ class Oobiery:
                 self.cues.append(dict(kin=obr.state, oobi=url))
 
     def processMOOBIs(self):
-        """ Process Client responses by parsing the messages and removing the client/doer
-
-        """
+        """ Process Client responses by parsing the messages and removing the client/doer"""
         for (url,), obr in self.hby.db.moobi.getTopItemIter():
             result = Result.resolved
             complete = True
@@ -645,9 +609,7 @@ class Oobiery:
                 self.hby.db.roobi.put(keys=(url,), val=obr)
 
     def processRetries(self):
-        """ Process Client responses by parsing the messages and removing the client/doer
-
-        """
+        """ Process Client responses by parsing the messages and removing the client/doer"""
         for (url,), obr in self.hby.db.eoobi.getTopItemIter():
             last = fromIso8601(obr.date)
             now = nowUTC()
@@ -694,8 +656,7 @@ class Authenticator:
 
         Parameters:
             hby (Habery): Identifier database environment
-            clienter (Clienter): DoDoer client provider responsible for managing HTTP client requests
-        """
+            clienter (Clienter): DoDoer client provider responsible for managing HTTP client requests"""
         self.hby = hby
         self.clienter = clienter if clienter is not None else Clienter()
         self.clients = dict()
@@ -724,8 +685,7 @@ class Authenticator:
             tock (float): injected initial tock value
 
         Usage:
-            add result of doify on this method to doers list
-        """
+            add result of doify on this method to doers list"""
         _ = (yield tock)
 
         while True:
@@ -733,7 +693,7 @@ class Authenticator:
             yield tock
 
     def processFlows(self):
-        """ Process well-known authentication URLs """
+        """ Process well-known authentication URLs"""
 
         self.processWoobis()
         self.processMultiFactorAuth()
@@ -741,9 +701,7 @@ class Authenticator:
     def processWoobis(self):
         """ Process well-known OOBIs saved as multi-factor auth records
 
-        Process wOOBI URLs by requesting from the endpoint and confirming the results
-
-        """
+        Process wOOBI URLs by requesting from the endpoint and confirming the results"""
         for (wurl,), obr in self.hby.db.woobi.getTopItemIter():
             # Find any woobis that match and can be used to perform MFA for this resolved AID
             purl = urlparse(wurl)
@@ -758,9 +716,7 @@ class Authenticator:
                 self.hby.db.woobi.rem(keys=(wurl,))
 
     def processMultiFactorAuth(self):
-        """ Process Client responses by parsing the messages and removing the client
-
-        """
+        """ Process Client responses by parsing the messages and removing the client"""
         for (wurl,), obr in self.hby.db.mfa.getTopItemIter():
             if wurl not in self.clients:
                 self.request(wurl, obr)
