@@ -924,6 +924,22 @@ def test_accountability_and_terms_follow_data_JSON():
     Alice's wallet must capture the club's key state -- its establishing event -- at
     acceptance time, alongside the signed agree. This test proves why.
 
+    What this does and does NOT establish. Capturing the establishing event makes the
+    signature CHECKABLE against the club's first key; it does not prove that key was
+    the club's CURRENT key when it signed. An undated signature by the (now retired)
+    first key made AFTER the rotation verifies against the captured inception
+    identically -- the scheme cannot distinguish a genuine pre-rotation acceptance
+    from a post-rotation forgery by a compromised retired key, nor stop the club from
+    repudiating a real acceptance. (Pre-rotation protects the club's ongoing IDENTIFIER
+    control -- a thief with the old key cannot continue the KEL -- but not the
+    forgeability of an undated message signed by that key.) So this is durable
+    VERIFIABILITY under cooperative timing, not non-repudiation robust to key
+    compromise. Establishing currency-at-signing requires ordering the signature
+    against the KEL -- anchoring the agree as a KEL transaction seal, or a witnessed
+    receipt -- which this example forgoes for privacy. A high-stakes CLC flow would
+    anchor instead (to a blinded presentation registry, to keep correlation-resistance),
+    sitting at the opposite, accountability-maximizing end of the same tradespace.
+
     It also shows terms follow the data: the CLC terms live in the bespoke ACDC's
     Rules section, which is committed by the ACDC's SAID. Any change to a clause
     yields a different SAID, so a verifier cannot strip or weaken the terms while
