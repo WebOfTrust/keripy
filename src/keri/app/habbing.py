@@ -1899,7 +1899,7 @@ class BaseHab:
         return msg
 
 
-    def replay(self, pre=None, fn=0, version=Vrsn_1_0):
+    def replay(self, pre=None, fn=0, gvrsn=Vrsn_1_0, *, version=None):
         """Return replay of FEL (first-seen event log) for ``pre`` starting
         from ``fn``. Default pre is own ``.pre``.
 
@@ -1907,7 +1907,8 @@ class BaseHab:
             pre (str or None): qb64 str or bytes of identifier prefix.
                 Default is own ``.pre``.
             fn (int): first-seen ordering number to start from.
-            version (Versionage): CESR Genus version for attachment group codes
+            gvrsn (Versionage): CESR genus version for attachments
+            version (Versionage): legacy alias for gvrsn
 
         Returns:
             bytearray: serialized event log messages.
@@ -1915,28 +1916,33 @@ class BaseHab:
         if not pre:
             pre = self.pre
 
+        if version is not None:
+            gvrsn = version
         msgs = bytearray()
         kever = self.kevers[pre]
-        for msg in self.db.cloneDelegation(kever=kever):
+        for msg in self.db.cloneDelegation(kever=kever, gvrsn=gvrsn):
             msgs.extend(msg)
 
-        for msg in self.db.clonePreIter(pre=pre, fn=fn, version=version):
+        for msg in self.db.clonePreIter(pre=pre, fn=fn, gvrsn=gvrsn):
             msgs.extend(msg)
 
         return msgs
 
 
-    def replayAll(self, version=Vrsn_1_0):
+    def replayAll(self, gvrsn=Vrsn_1_0, *, version=None):
         """Return replay of FEL (first-seen event log) for all prefixes.
 
         Parameters:
-            version (Versionage): CESR Genus version for attachment group codes
+            gvrsn (Versionage): CESR genus version for attachments
+            version (Versionage): legacy alias for gvrsn
 
         Returns:
             bytearray: serialized event log messages for all prefixes.
         """
+        if version is not None:
+            gvrsn = version
         msgs = bytearray()
-        for msg in self.db.cloneAllPreIter(version=version):
+        for msg in self.db.cloneAllPreIter(gvrsn=gvrsn):
             msgs.extend(msg)
         return msgs
 
@@ -2197,7 +2203,8 @@ class BaseHab:
                 route (str): route path string indicating the data flow handler.
                 data (list): dicts of committed data such as seals.
                 dts (str): date-time-stamp of message at time of creation.
-                version (Version): version instance.
+                version (Versionage): default KERI protocol version
+                pvrsn (Versionage): KERI protocol version
                 kind (str): serialization kind.
 
         Returns::
@@ -2212,10 +2219,7 @@ class BaseHab:
 
         kwa["pre"] = self.pre
         if gvrsn is Version:
-            if "gvrsn" in kwa:
-                gvrsn = kwa["gvrsn"]
-            else:
-                gvrsn = pvrsn
+            gvrsn = pvrsn
         return self.endorse(eventing.reply(**kwa), framed=framed, nested=nested,
                             gvrsn=gvrsn, genusify=genusify)
 
@@ -2234,7 +2238,9 @@ class BaseHab:
             stamp (str or None): date-time-stamp RFC-3339 profile of iso8601
                 datetime. None means use now.
             **kwa: keyword arguments forwarded to ``eventing.reply``, including:
-                version (Version): version instance.
+                version (Versionage): default KERI protocol version
+                pvrsn (Versionage): KERI protocol version
+                gvrsn (Versionage): CESR genus version for attachments
                 kind (str): serialization kind.
 
         Returns:
@@ -2337,7 +2343,9 @@ class BaseHab:
                 route (str): route path string indicating the data flow handler.
                 data (list): dicts of committed data such as seals.
                 dts (str): date-time-stamp of message at time of creation.
-                version (Version): version instance.
+                version (Versionage): default KERI protocol version
+                pvrsn (Versionage): KERI protocol version
+                gvrsn (Versionage): CESR genus version for attachments
                 kind (str): serialization kind.
 
 
@@ -2367,7 +2375,9 @@ class BaseHab:
                 route (str): route path string indicating the data flow handler.
                 data (list): dicts of committed data such as seals.
                 dts (str): date-time-stamp of message at time of creation.
-                version (Version): version instance.
+                version (Versionage): default KERI protocol version
+                pvrsn (Versionage): KERI protocol version
+                gvrsn (Versionage): CESR genus version for attachments
                 kind (str): serialization kind.
 
 
@@ -2489,7 +2499,9 @@ class BaseHab:
                 route (str): route path string indicating the data flow handler.
                 data (list): dicts of committed data such as seals.
                 dts (str): date-time-stamp of message at time of creation.
-                version (Version): version instance.
+                version (Versionage): default KERI protocol version
+                pvrsn (Versionage): KERI protocol version
+                gvrsn (Versionage): CESR genus version for stream attachments
                 kind (str): serialization kind.
 
         Returns::
@@ -2503,7 +2515,10 @@ class BaseHab:
         if cid not in self.kevers:
             return msgs
 
-        msgs.extend(self.replay(cid, version=Vrsn_1_0))
+        gvrsn = kwa.get("gvrsn")
+        msgs.extend(self.replay(
+            cid, gvrsn=gvrsn if gvrsn is not None else Vrsn_1_0
+        ))
 
         kever = self.kevers[cid]
         witness = self.pre in kever.wits  # see if we are cid's witness
@@ -2515,14 +2530,17 @@ class BaseHab:
                     if eid == self.pre:
                         msgs.extend(self.replyLocScheme(eid=eid, scheme=scheme, **kwa))
                     else:
-                        msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
+                        msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme,
+                                                       gvrsn=gvrsn))
                     if not witness:  # we are not witness, send auth records
                         msgs.extend(self.makeEndRole(eid=eid, role=role, **kwa))
 
         for (_, erole, eid), end in self.db.ends.getTopItemIter(keys=(cid,)):
             if (end.enabled or end.allowed) and (not role or role == erole) and (not eids or eid in eids):
-                msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
-                msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole))
+                msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme,
+                                               gvrsn=gvrsn))
+                msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole,
+                                             gvrsn=gvrsn))
 
         return msgs
 
@@ -2550,7 +2568,9 @@ class BaseHab:
                 route (str): route path string indicating the data flow handler.
                 data (list): dicts of committed data such as seals.
                 dts (str): date-time-stamp of message at time of creation.
-                version (Version): version instance.
+                version (Versionage): default KERI protocol version
+                pvrsn (Versionage): KERI protocol version
+                gvrsn (Versionage): CESR genus version for stream attachments
                 kind (str): serialization kind.
 
         Returns::
@@ -3548,7 +3568,9 @@ class SignifyHab(BaseHab):
                 route (str): route path string indicating the data flow handler.
                 data (list): dicts of committed data such as seals.
                 dts (str): date-time-stamp of message at time of creation.
-                version (Version): version instance.
+                version (Versionage): default KERI protocol version
+                pvrsn (Versionage): KERI protocol version
+                gvrsn (Versionage): CESR genus version for stream attachments
                 kind (str): serialization kind.
 
         Returns::
@@ -3560,8 +3582,12 @@ class SignifyHab(BaseHab):
         if eids is None:
             eids = []
 
+        gvrsn = kwa.get("gvrsn")
+
         # introduce yourself, please
-        msgs.extend(self.replay(cid))
+        msgs.extend(self.replay(
+            cid, gvrsn=gvrsn if gvrsn is not None else Vrsn_1_0
+        ))
 
         if role == Roles.witness:
             if kever := self.kevers[cid] if cid in self.kevers else None:
@@ -3570,17 +3596,24 @@ class SignifyHab(BaseHab):
                 # latest key state for cid
                 for eid in kever.wits:
                     if not eids or eid in eids:
-                        msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
+                        msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme,
+                                                       gvrsn=gvrsn))
                         if not witness:  # we are not witness, send auth records
                             msgs.extend(self.makeEndRole(eid=eid, role=role, **kwa))
                 if witness:  # we are witness, set KEL as authz
-                    msgs.extend(self.replay(cid))
+                    msgs.extend(self.replay(
+                        cid, gvrsn=gvrsn if gvrsn is not None else Vrsn_1_0
+                    ))
 
         for (_, erole, eid), end in self.db.ends.getTopItemIter(keys=(cid,)):
             if (end.enabled or end.allowed) and (not role or role == erole) and (not eids or eid in eids):
-                msgs.extend(self.replay(eid))
-                msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme))
-                msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole))
+                msgs.extend(self.replay(
+                    eid, gvrsn=gvrsn if gvrsn is not None else Vrsn_1_0
+                ))
+                msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme,
+                                               gvrsn=gvrsn))
+                msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole,
+                                             gvrsn=gvrsn))
 
         return msgs
 

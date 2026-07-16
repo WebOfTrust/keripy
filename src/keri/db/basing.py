@@ -1637,7 +1637,7 @@ class Baser(LMDBer):
             shutil.rmtree(copy.path)
 
 
-    def clonePreIter(self, pre, fn=0, version=Vrsn_1_0):
+    def clonePreIter(self, pre, fn=0, gvrsn=Vrsn_1_0, *, version=None):
         """
         Returns iterator of first seen event messages with attachments for the
         identifier prefix pre starting at first seen order number, fn.
@@ -1646,7 +1646,8 @@ class Baser(LMDBer):
         Parameters:
             pre is bytes of itdentifier prefix
             fn is int fn to resume replay. Earliset is fn=0
-            version (Versionage): CESR Genus version for attachment group codes
+            gvrsn (Versionage): CESR genus version for attachments
+            version (Versionage): legacy alias for gvrsn
 
         Returns:
            msgs (Iterator): over all items with pre starting at fn
@@ -1654,15 +1655,17 @@ class Baser(LMDBer):
         #if hasattr(pre, 'encode'):
             #pre = pre.encode("utf-8")
 
+        if version is not None:
+            gvrsn = version
         for keys, fn, dig in self.fels.getAllItemIter(keys=pre, on=fn):
             try:
-                msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig, version=version)
+                msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig, gvrsn=gvrsn)
             except (MissingEntryError, SerializeError) as ex:
                 continue  # skip this event
             yield msg
 
 
-    def cloneAllPreIter(self, version=Vrsn_1_0):
+    def cloneAllPreIter(self, gvrsn=Vrsn_1_0, *, version=None):
         """
         Returns iterator of first seen event messages with attachments for all
         identifier prefixes starting at key. If key == b'' then start at first
@@ -1671,23 +1674,26 @@ class Baser(LMDBer):
         set of FELs.
 
         Parameters:
-            version (Versionage): CESR Genus version for attachment group codes
+            gvrsn (Versionage): CESR genus version for attachments
+            version (Versionage): legacy alias for gvrsn
 
         Returns:
            msgs (Iterator): over all items in db
 
         """
+        if version is not None:
+            gvrsn = version
         for keys, fn, dig in self.fels.getAllItemIter(keys=b'', on=0):
             pre = keys[0].encode() if isinstance(keys[0], str) else keys[0]
             try:
-                msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig, version=version)
+                msg = self.cloneEvtMsg(pre=pre, fn=fn, dig=dig, gvrsn=gvrsn)
             except (MissingEntryError, SerializeError) as ex:
                 continue  # skip this event
             yield msg
 
 
 
-    def cloneEvtMsg(self, pre, fn, dig, version=Vrsn_1_0):
+    def cloneEvtMsg(self, pre, fn, dig, gvrsn=Vrsn_1_0, *, version=None):
         """
         Clones Event as Serialized CESR Message with Body and attached Foot
 
@@ -1695,12 +1701,16 @@ class Baser(LMDBer):
             pre (bytes): identifier prefix of event
             fn (int): first seen number (ordinal) of event
             dig (bytes): digest of event
-            version (Versionage): CESR Genus version for attachment group codes
+            gvrsn (Versionage): CESR genus version for attachments
+            version (Versionage): legacy alias for gvrsn
 
         Returns:
             msg (bytearray): message body with attachments
         """
         from ..core import Prefixer, Number, Diger, SealSource, FirstSeen, messagize
+
+        if version is not None:
+            gvrsn = version
 
         keys = (pre, dig)
 
@@ -1760,7 +1770,7 @@ class Baser(LMDBer):
 
 
         msg = messagize(serder=serder, sigers=sigers, wigers=wigers,
-                        cigars=cigars, rsgs=rsgs, bonds=bonds, gvrsn=version)
+                        cigars=cigars, rsgs=rsgs, bonds=bonds, gvrsn=gvrsn)
         return msg
 
 
@@ -1880,19 +1890,23 @@ class Baser(LMDBer):
         #return msg
 
 
-    def cloneDelegation(self, kever):
+    def cloneDelegation(self, kever, gvrsn=Vrsn_1_0, *, version=None):
         """
-        Recursively clone delegation chain from AID of Kever if one exits.
+        Recursively clone delegation chain from AID of Kever if one exists.
 
         Parameters:
             kever (Kever): Kever from which to clone the delegator's AID.
+            gvrsn (Versionage): CESR genus version for attachments
+            version (Versionage): legacy alias for gvrsn
 
         """
+        if version is not None:
+            gvrsn = version
         if kever.delegated and kever.delpre in self.kevers:
             dkever = self.kevers[kever.delpre]
-            yield from self.cloneDelegation(dkever)
+            yield from self.cloneDelegation(dkever, gvrsn=gvrsn)
 
-            for dmsg in self.clonePreIter(pre=kever.delpre, fn=0, version=Vrsn_1_0):
+            for dmsg in self.clonePreIter(pre=kever.delpre, fn=0, gvrsn=gvrsn):
                 yield dmsg
 
     def fetchAllSealingEventByEventSeal(self, pre, seal, sn=0):

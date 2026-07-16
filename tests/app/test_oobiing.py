@@ -8,7 +8,7 @@ import falcon
 from hio.base import doing
 from hio.core import http
 
-from keri.kering import Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Version
+from keri.kering import Vrsn_1_0, Vrsn_2_0, Roles, Schemes, Version, Kinds
 from keri.app import (Notifier, Oobiery, Authenticator,
                       Result, openHab, openHby,
                       oobiRequestExn)
@@ -216,7 +216,8 @@ def test_oobiery_parser_version_uses_explicit_or_habery_default():
 
 def test_loaded_v1_endpoint_replies_use_stored_reply_framing():
     with openHby(name="oobi-src", version=Vrsn_1_0) as src, \
-            openHby(name="oobi-dst", version=Vrsn_1_0) as dst:
+            openHby(name="oobi-dst", version=Vrsn_1_0) as dst, \
+            openHby(name="oobi-dst-v2", version=Vrsn_2_0) as dst2:
         hab = src.makeHab(name="wit", isith="1", icount=1,
                           transferable=False, **KWA)
         msgs = bytearray()
@@ -241,6 +242,19 @@ def test_loaded_v1_endpoint_replies_use_stored_reply_framing():
         dst.psr.parse(ims=oobi)
 
         locer = dst.db.locs.get(keys=(hab.pre, Schemes.http))
+        assert locer is not None
+        assert locer.url == "http://127.0.0.1:5555"
+
+        oobi = hab.replyToOobi(aid=hab.pre,
+                               role=Roles.controller,
+                               eids=[hab.pre],
+                               pvrsn=Vrsn_2_0,
+                               kind=Kinds.json,
+                               gvrsn=Vrsn_2_0)
+        dst2.psr.parse(ims=oobi)
+
+        assert not oobi
+        locer = dst2.db.locs.get(keys=(hab.pre, Schemes.http))
         assert locer is not None
         assert locer.url == "http://127.0.0.1:5555"
 
