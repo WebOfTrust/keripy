@@ -1540,8 +1540,8 @@ class Baser(LMDBer):
                 # need new method cloneObjAllPreIter()
                 # process event doesn't capture exceptions so we can more easily
                 # detect in the cloning that some events did not make it through
-                psr = parsing.Parser(kvy=kvy, version=Vrsn_1_0)
-                for msg in self.cloneAllPreIter():  # clone into copy
+                psr = parsing.Parser(kvy=kvy)  # default v2 parser
+                for msg in self.cloneAllPreIter(version=Vrsn_2_0):  # clone v2
                     psr.parseOne(ims=msg)
 
                 # This is the list of non-set based databases that are not created as part of event processing.
