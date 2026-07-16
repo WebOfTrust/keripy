@@ -423,13 +423,10 @@ def _source_credentials(kind):
     aggor = Aggor(ael=_sedi_ael(), makify=True, kind=kind)
     sedi = acdcagg(israid=STATE, uuid=NONCES[10], regid=regState.said,
                    schema=sediSchema, aggregate=aggor.ael, kind=kind)
-    # DESIGN DECISION (pending Sam, plan-of-record §9.1): over-21 is a pre-derived
-    # boolean credential issued by an endorser to Alice (the plan's default), NOT a
-    # zero-knowledge predicate proof. An over-21 -> sedi-id edge could only be I2I if
-    # over-21's issuer equaled sedi-id's issuee (both Alice) -- i.e. if Alice
-    # self-issued over-21; under endorser issuance issuer(over-21) = ENDORSER != ALICE,
-    # so the edge is omitted rather than mislabeled I2I. The load-bearing I2I edges
-    # are the bespoke ACDC's edges to both source creds (Phase 2), where Alice issues.
+    # over-21 is a standalone boolean credential the endorser issues to Alice,
+    # bound to her by its own a.i. It carries no edge to sedi-id and needs none:
+    # the two source creds are independent, joined only at presentation by the
+    # bespoke ACDC's I2I edges (Phase 2), where Alice is issuer and the issuee of both.
     over21 = acdcmap(israid=ENDORSER, uuid=NONCES[11], regid=regEndorser.said,
                      schema=over21Schema,
                      attribute=dict(d='', u=NONCES[14], i=ALICE, over21=True), kind=kind)
@@ -495,10 +492,10 @@ def _bespoke_presentation(sedi, over21, kind, compactify=False, rule=None):
     "no correlatable log" intent. Returns the SerderACDC, most-compact when
     compactify=True (same SAID either way).
 
-    DESIGN DECISION (pending Sam, plan-of-record §9.2): the state-endorsed photo is
-    NOT copied into these attributes; it stays the single source of truth in
-    sedi-id, reached via the I2I edge and disclosed by selective disclosure of just
-    that element (see _photo_disclosure). So no photo bytes are duplicated here.
+    The state-endorsed photo is NOT copied into these attributes; it stays the
+    single source of truth in sedi-id, reached via the I2I edge and disclosed by
+    selective disclosure of just that element (see _photo_disclosure). So no photo
+    bytes are duplicated here.
     """
     _, schema = _saidify_schema(dict(BESPOKE_SCHEMA_MAD), kind=kind)
     attribute = dict(d='', u=NONCES[8], i=CLUB,
@@ -525,9 +522,8 @@ def test_source_credentials_and_selective_disclosure_JSON():
         and leaves the rest as bare SAIDs, and the verifier recomputes the
         aggregate digest (AGID) to confirm the disclosure is authentic.
 
-      * over-21 -- a derived boolean age credential issued to Alice, following the
-        plan's default of a pre-derived boolean (not a zero-knowledge predicate),
-        so the club never needs the birthdate to confirm the age claim.
+      * over-21 -- a pre-derived boolean age credential issued to Alice, so the
+        club never needs the birthdate to confirm the age claim.
 
     The load-bearing selective-disclosure claim -- prove-age-without-birthdate --
     is asserted here: a disclosure revealing the issuee binding and the state-
@@ -575,9 +571,17 @@ def test_source_credentials_and_selective_disclosure_JSON():
     assert disclosed[SEDI_ISSUEE]['i'] == ALICE
     assert isinstance(disclosed[SEDI_PHOTO], dict)          # photo revealed
     assert disclosed[SEDI_PHOTO]['photo'] == "<state-endorsed-photo-bytes>"
-    assert isinstance(disclosed[SEDI_DOB], str)             # birthdate withheld (SAID)
-    assert isinstance(disclosed[SEDI_RESIDENCE], str)       # residence withheld
-    assert isinstance(disclosed[SEDI_NAME], str)            # name withheld
+    assert isinstance(disclosed[SEDI_DOB], str)             # birthdate withheld...
+    assert isinstance(disclosed[SEDI_RESIDENCE], str)       # residence withheld...
+    assert isinstance(disclosed[SEDI_NAME], str)            # name withheld...
+    # ...and each withheld element is provably its committed block SAID, not the
+    # value. This is the assertion that actually proves non-disclosure: dob,
+    # residence, and name are themselves strings, so the isinstance checks above
+    # establish only the bare (compact) form -- they cannot on their own tell a
+    # block SAID from the plaintext. Equality to the aggregate's committed 'd' can.
+    assert disclosed[SEDI_DOB]       == aggor.ael[SEDI_DOB]['d']
+    assert disclosed[SEDI_RESIDENCE] == aggor.ael[SEDI_RESIDENCE]['d']
+    assert disclosed[SEDI_NAME]      == aggor.ael[SEDI_NAME]['d']
 
     # Privacy invariant: the withheld birthdate value never appears on the wire --
     # dob/residence/name travel only as bare block SAIDs. Those SAIDs are
@@ -703,8 +707,8 @@ def test_gated_ipex_exchange_JSON():
          attribute values. (Alice's AID is still visible -- she is the offer's
          sender -- so "no PII" means no attribute values, not sender anonymity.
          Note too that the offer commits to the real, private bespoke SAID rather
-         than the spec's metadata-ACDC variant, a deliberate scope reduction per
-         plan-of-record §6; the SAIDs leak no PII because the ACDCs are private, but
+         than the spec's metadata-ACDC variant, a deliberate scope reduction; the
+         SAIDs leak no PII because the ACDCs are private, but
          the metadata variant is the spec's canonical pre-agreement artifact and
          additionally decorrelates across presentations.)
       2. The agree binds the OFFER's SAID (its 'p' field), not the credential
