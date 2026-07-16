@@ -1899,7 +1899,7 @@ class BaseHab:
         return msg
 
 
-    def replay(self, pre=None, fn=0, gvrsn=Vrsn_1_0, *, version=None):
+    def replay(self, pre=None, fn=0, gvrsn=Version, *, version=None):
         """Return replay of FEL (first-seen event log) for ``pre`` starting
         from ``fn``. Default pre is own ``.pre``.
 
@@ -1929,7 +1929,7 @@ class BaseHab:
         return msgs
 
 
-    def replayAll(self, gvrsn=Vrsn_1_0, *, version=None):
+    def replayAll(self, gvrsn=Version, *, version=None):
         """Return replay of FEL (first-seen event log) for all prefixes.
 
         Parameters:

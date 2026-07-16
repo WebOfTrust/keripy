@@ -11,7 +11,6 @@ from hio.base import doing
 
 from ..common import Parsery, setupHby
 
-from ...kering import Vrsn_1_0, Vrsn_2_0
 from ...app import HaberyDoer
 from ...core import Parser
 
@@ -65,8 +64,7 @@ class ImportDoer(doing.DoDoer):
 
         with open(self.file, 'rb') as f:
             ims = f.read()
-            Parser(kvy=self.hby.kvy, rvy=self.hby.rvy, local=False,
-                   version=Vrsn_1_0).parse(ims=ims)
+            Parser(kvy=self.hby.kvy, rvy=self.hby.rvy, local=False).parse(ims=ims)
             self.hby.kvy.processEscrows()
 
         self.exit()

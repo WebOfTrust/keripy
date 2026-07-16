@@ -20,7 +20,7 @@ from hio import base
 from hio.core import http, wiring
 from hio.help import ogler
 
-from ..kering import Roles, Schemes, Version, Vrsn_1_0, Vrsn_2_0
+from ..kering import Roles, Schemes
 
 from ..core import Cigar, Siger
 from ..help import helping
@@ -604,7 +604,7 @@ class OOBIEnd:
         msgs = hab.replyToOobi(aid=aid, role=role, eids=eids)
         if not msgs and role is None:
             msgs = hab.replyToOobi(aid=aid, role=Roles.witness, eids=eids)
-            msgs.extend(hab.replay(aid, version=Vrsn_1_0))
+            msgs.extend(hab.replay(aid))
 
         if msgs:
             rep.status = falcon.HTTP_200  # This is the default status

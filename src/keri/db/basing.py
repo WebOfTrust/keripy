@@ -1510,7 +1510,7 @@ class Baser(LMDBer):
         return migrations
 
 
-    def clean(self):
+    def clean(self, gvrsn=Version, *, version=None):
         """
         Clean database by creating re-verified cleaned cloned copy
         and then replacing original with cleaned cloned copy
@@ -1518,8 +1518,15 @@ class Baser(LMDBer):
         Database usage should be offline during cleaning as it will be cloned in
         readonly mode
 
+        Parameters:
+            gvrsn (Versionage): CESR genus version for clone attachments and parser
+            version (Versionage): legacy alias for gvrsn
+
         """
         from ..core import parsing
+
+        if version is not None:
+            gvrsn = version
 
         # create copy to clone into
         with openDB(name=self.name,
@@ -1540,8 +1547,8 @@ class Baser(LMDBer):
                 # need new method cloneObjAllPreIter()
                 # process event doesn't capture exceptions so we can more easily
                 # detect in the cloning that some events did not make it through
-                psr = parsing.Parser(kvy=kvy, version=Vrsn_1_0)
-                for msg in self.cloneAllPreIter(version=Vrsn_1_0):  # clone into copy
+                psr = parsing.Parser(kvy=kvy, version=gvrsn)
+                for msg in self.cloneAllPreIter(gvrsn=gvrsn):  # clone into copy
                     psr.parseOne(ims=msg)
 
                 # This is the list of non-set based databases that are not created as part of event processing.
