@@ -12,7 +12,7 @@ class Wallet:
     """
     Wallet represents all credentials received or verified"""
 
-    def __init__(self, reger: "Reger" = None, name="test", temp=False):
+    def __init__(self, reger: Reger = None, name="test", temp=False):
         """
         Create a Wallet associated with a Habitat
 
