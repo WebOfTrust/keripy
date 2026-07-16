@@ -237,7 +237,8 @@ _I2I_EDGE_SCHEMA = {
                               "type": "string"},
                         "s": {"description": "Far node schema SAID",
                               "type": "string"},
-                        "o": {"description": "Edge operator; I2I = same holder",
+                        "o": {"description": "Edge operator; I2I: this ACDC's "
+                                             "issuer = far node's issuee",
                               "const": "I2I"}}}]}
 _CLAUSE_SCHEMA = {
     "oneOf": [
@@ -641,7 +642,7 @@ def test_bespoke_presentation_acdc_JSON():
     assert bespoke.sad['a']['i'] == CLUB       # the club is the Issuee (Disclosee)
     assert bespoke.sad['a']['over21'] is True
     assert 'rd' not in bespoke.sad             # deliberately not registry-bound
-    assert bespoke.said == "EKR4iCZ48DPaSnR2c-L3PhfcpO37kBMHh7q6xpALVGzW"
+    assert bespoke.said == "EFwdS-KdBvH7Cum7cv_VBTztmYVD3z2X5IyWRVTZC7v7"
 
     # (1) I2I same-holder binding. The v2 path does not enforce operators, so we
     # assert the constraint the I2I operator stands for: the bespoke ACDC's issuer
@@ -750,17 +751,35 @@ def test_gated_ipex_exchange_JSON():
     # same way the ACDC examples assert them; the CESR wire form base64-encodes the
     # payload, which would make a substring check meaningless.
 
-    # 1. apply (club -> Alice): the challenge -- which schemas to use and the SEDI
-    # governance framework under which the club proposes to interact. No creds yet.
+    # 1. apply (club -> Alice): the challenge. It narrows what the club will accept
+    # up front: not merely which schemas, but which FIELDS must be disclosed from
+    # each -- the state-endorsed photo and the issuee from the aggregate sedi-id, and
+    # the over-21 boolean and the issuee from over-21. The issuee ('i') is required
+    # from BOTH so the club can confirm the two creds name the same holder (the I2I
+    # binding). The request is keyed by schema SAID -- the applicant is not assumed
+    # to know the actual ACDC SAIDs -- with a list of attribute paths, following the
+    # graduated-disclosure path-list model. This is a static, one-shot narrowing of
+    # the request, NOT full back-and-forth negotiation: the apply states the required
+    # disclosure and the offer answers it. No creds yet -- schemas, paths, governance.
+    sediSchemaSaid = sedi.sad['s']['$id']
+    over21SchemaSaid = over21.sad['s']['$id']
     apply = exchange(sender=CLUB, receiver=ALICE, route="/ipex/apply",
                      attributes=dict(m="Prove over-21 and show the state-endorsed photo.",
-                                     s=[sedi.sad['s']['$id'], over21.sad['s']['$id']],
+                                     disclose={sediSchemaSaid:   ["/A/i", "/A/photo"],
+                                               over21SchemaSaid: ["/a/i", "/a/over21"]},
                                      g=GOV_PROVISION_SAID),
                      stamp=APPLY_STAMP, kind=kind)
     assert apply.sad['t'] == Ilks.exn
     assert apply.sad['r'] == "/ipex/apply"
     assert apply.sad['i'] == CLUB and apply.sad['ri'] == ALICE
-    assert apply.said == "EHaKgaup1e_R0V9ToYj0VI2pOcnzuSX07cEsSkQnAe_J"
+    # The field-level request: issuee + photo from the aggregate, issuee + boolean
+    # from the attributive cred, keyed by the schema SAID the club is asking for.
+    reqSedi = apply.sad['a']['disclose'][sediSchemaSaid]
+    reqOver21 = apply.sad['a']['disclose'][over21SchemaSaid]
+    assert reqSedi == ["/A/i", "/A/photo"]              # aggregate: issuee + photo
+    assert reqOver21 == ["/a/i", "/a/over21"]           # attributive: issuee + age
+    assert "/A/i" in reqSedi and "/a/i" in reqOver21    # the joining issuee, from both
+    assert apply.said == "EKopjmSZtcCtCA4IisjpshXaoASiMH9FYjS1P0ygkLFO"
 
     # 2. offer (Alice -> club): "I'll prove over-21 and show my photo if you accept
     # these terms." Carries only the SAIDs of the bespoke ACDC and its sources plus
@@ -774,7 +793,7 @@ def test_gated_ipex_exchange_JSON():
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said                 # answers the apply
     assert bespoke.said.encode() in offer.raw           # commits to the bespoke by SAID
-    assert offer.said == "EJWA0EwRhLRCXJgNumeoOsBDlmFqKk6VDD5uGxTQQdOy"
+    assert offer.said == "EILGFKd_ErA7W9NcCfxW10e7oWVdFIug2OUP6oDByzjC"
     # (property 1) the offer leaks no PII: not Alice's name, photo, or birthdate.
     assert b"Alice Anders" not in offer.raw
     assert b"<state-endorsed-photo-bytes>" not in offer.raw
@@ -785,7 +804,7 @@ def test_gated_ipex_exchange_JSON():
     agree = exchange(sender=CLUB, receiver=ALICE, route="/ipex/agree",
                      prior=offer.said, stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said                 # binds the offer SAID
-    assert agree.said == "EIoW0Un6pRpmawHvnFrjXWP9YUwcyF0nzWtlkUmPENSE"
+    assert agree.said == "EKSTgLEO_RGIJOsr2E6WPaZ_jNz5cLsbYp0T2e7acwSp"
     # The club signs the agree, and we assemble the signed wire message the blessed
     # way: messagize() frames the signature as a CESR attachment group (genus code
     # and all). New keripy code should never hand-roll attachment framing -- pass
@@ -839,17 +858,22 @@ def test_gated_ipex_exchange_JSON():
     grant = disclose(agree, clubSig, capturedKeyState)
     assert grant is not None
     assert grant.sad['p'] == agree.said                 # grant follows the agree
-    assert grant.said == "EB6JGkVLYAay8tSvbnVqeNaQARsGxq9-z1eWx-73mNoE"
+    assert grant.said == "EHBoanV1HwhjGQA-fqBsIewHpyI69eThflJ40zgl7xLi"
     # (property 4) the state-endorsed photo crosses the wire only now, in the grant.
     assert b"<state-endorsed-photo-bytes>" in grant.raw
     # ...and even the grant never carries the withheld birthdate.
     assert b"2000-03-15" not in grant.raw
+    # The grant honors the apply's field request: Alice's selective disclosure of
+    # sedi-id reveals exactly the elements the club asked for -- the issuee (/A/i)
+    # and the photo (/A/photo), i.e. reqSedi -- and leaves the rest as bare SAIDs.
+    revealed = {i for i, el in enumerate(grant.sad['a']['photo']) if isinstance(el, dict)}
+    assert revealed == {SEDI_ISSUEE, SEDI_PHOTO}        # the /A/i and /A/photo paths
 
     # 5. admit (club -> Alice): acknowledges receipt, closing the exchange.
     admit = exchange(sender=CLUB, receiver=ALICE, route="/ipex/admit",
                      prior=grant.said, stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "EM3rizh8WpsGF9jv7Hp460bU8xknbmsRH0DuhmexE-of"
+    assert admit.said == "EMWJIivg85-QVgNTrzHDWuYiDftaM-f_MOocNNTlttNl"
 
 
 def test_accountability_and_terms_follow_data_JSON():
