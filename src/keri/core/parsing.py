@@ -947,7 +947,7 @@ class Parser:
         Iterator yields when not enough bytes in ims to finish one msg plus
         attachments. Returns (which raises StopIteration) when finished.
 
-        Returns::
+        Returns:
             exts (dict): parsed msg+attachments substream. Result is suitable
                            for ** expansion as keywords to subsequent processing
                            of the msg substream. The dict is the asdict() of
@@ -974,7 +974,7 @@ class Parser:
 
 
 
-        Parameters::
+        Parameters:
             ims (bytearray): serialized incoming message stream.
                 May contain one or more sets each of a serialized message with
                 attached cryptographic material such as signatures or receipts.

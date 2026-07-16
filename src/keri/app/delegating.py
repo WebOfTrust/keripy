@@ -328,8 +328,9 @@ def delegateRequestExn(hab, delpre, evt, aids=None, version=None, kind=None):
         aids (list): list of multisig AIDs participating
 
     Returns:
-
-    """
+        tuple: ``(exn, ims)`` where ``exn`` is the delegation request exchange
+            message serder and ``ims`` is the endorsed attachment stream
+        """
     data = dict(
         delpre=delpre,
     )

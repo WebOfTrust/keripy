@@ -173,7 +173,7 @@ class DicterSuber(Suber):
             keys (tuple): of key strs to be combined in order to form key
 
         Returns:
-           bool: True if key exists so delete successful. False otherwise
+            bool: True if key exists so delete successful. False otherwise
         """
         return self.db.remVal(db=self.sdb, key=self._tokey(keys))
 
@@ -213,13 +213,13 @@ class Noter(LMDBer):
     TempPrefix = "keri_not_"
 
     def __init__(self, name="not", headDirPath=None, reopen=True, **kwa):
-        """
+        """Create a notification store backed by LMDB
 
         Parameters:
-            headDirPath:
-            perm:
-            reopen:
-            kwa:
+            name (str): name differentiator for the underlying LMDB path
+            headDirPath (str | None): optional head directory for the LMDB path
+            reopen (bool): True means open the LMDB environment during initialization
+            **kwa: additional keyword arguments forwarded to ``LMDBer.__init__``
         """
         self.notes = None
         self.nidx = None
@@ -228,10 +228,13 @@ class Noter(LMDBer):
         super(Noter, self).__init__(name=name, headDirPath=headDirPath, reopen=reopen, **kwa)
 
     def reopen(self, **kwa):
-        """
+        """Reopen the LMDB environment and initialize note sub-databases.
 
-        :param kwa:
-        :return:
+        Parameters:
+            **kwa: additional keyword arguments forwarded to ``LMDBer.reopen``
+
+        Returns:
+            lmdb.Environment: reopened LMDB environment
         """
         super(Noter, self).reopen(**kwa)
 
@@ -248,6 +251,9 @@ class Noter(LMDBer):
         Parameters:
             note (Notice): sad message content
             cigar (Cigar): non-transferable signature over note
+
+        Returns:
+            bool: True if the note was added
 
         """
         dt = note.datetime
@@ -266,6 +272,9 @@ class Noter(LMDBer):
         Parameters:
             note (Notice): sad message content
             cigar (Cigar): non-transferable signature over note
+
+        Returns:
+            bool: True if the note was updated
 
         """
         dt = note.datetime
@@ -336,6 +345,9 @@ class Noter(LMDBer):
             start (int): number of item to start
             end (int): number of last item to return
 
+        Returns:
+            list[tuple[Notice, Cigar]]: requested notes and signatures
+
         """
         if hasattr(start, "isoformat"):
             start = start.isoformat()
@@ -382,7 +394,7 @@ class Notifier:
     def add(self, attrs):
         """  Add unread notice to the end of the current list of notices
 
-        Args:
+        Parameters:
             attrs (dict): body of a new unread notice to append to the current list of notices
 
         Returns:
@@ -490,6 +502,9 @@ class Notifier:
         Parameters:
             start (int): number of item to start
             end (int): number of last item to return
+
+        Returns:
+            list[Notice]: requested notes with verified signatures
 
         """
         notesigs = self.noter.getNotes(start, end)

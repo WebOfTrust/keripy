@@ -190,7 +190,7 @@ def splitKey(key, sep=b'.'):
     Raises ValueError if key does not split into exactly two elements
 
     Parameters:
-       key is database key with split at sep
+        key is database key with split at sep
        sep is bytes separator character. default is b'.'
     """
     if isinstance(key, memoryview):
@@ -247,7 +247,7 @@ def splitKeyDT(key):
 def suffix(key: Union[bytes, str, memoryview], ion: int, *, sep: Union[bytes, str]=b'.'):
     """
     Returns:
-       iokey (bytes): actual DB key after concatenating suffix as hex version
+        iokey (bytes): actual DB key after concatenating suffix as hex version
        of insertion ordering ordinal int ion using separator sep.
 
     Parameters:
@@ -268,7 +268,7 @@ def suffix(key: Union[bytes, str, memoryview], ion: int, *, sep: Union[bytes, st
 def unsuffix(iokey: Union[bytes, str, memoryview], *, sep: Union[bytes, str]=b'.'):
     """
     Returns:
-       result (tuple): (key, ion) by splitting iokey at rightmost separator sep
+        result (tuple): (key, ion) by splitting iokey at rightmost separator sep
             strip off suffix, where key is bytes apparent effective DB key and
             ion is the insertion ordering int converted from stripped of hex
             suffix
@@ -511,7 +511,7 @@ class LMDBer(filing.Filer):
         """
         Close lmdb at .env and if clear or .temp then remove lmdb directory at .path
         Parameters:
-           clear is boolean, True means clear lmdb directory
+            clear is boolean, True means clear lmdb directory
         """
         if self.env:
             try:
@@ -978,7 +978,7 @@ class LMDBer(filing.Filer):
         When key is empty then deletes whole db.
 
         Returns:
-           result (bool): True if any entries deleted
+            result (bool): True if any entries deleted
                           False otherwise
 
         Parameters:
@@ -1194,7 +1194,7 @@ class LMDBer(filing.Filer):
         The suffix is appended and stripped transparently.
 
         Returns:
-           result (bool): True if vals replaced set.
+            result (bool): True if vals replaced set.
                           False otherwise including key not in db, empty or None
                           or vals empty or None
 
@@ -1227,7 +1227,7 @@ class LMDBer(filing.Filer):
         The suffix is appended and stripped transparently.
 
         Returns:
-           result (bool): True if val added to set.
+            result (bool): True if val added to set.
                           False if already in set or key is empty or None or val
                           is None
 
@@ -1602,7 +1602,7 @@ class LMDBer(filing.Filer):
         Does not replace if key is empty or None or vals is empty or None
 
         Returns:
-           result (bool): True if vals replaced set.
+            result (bool): True if vals replaced set.
                           False otherwise including key not in db, empty or None
                           or vals empty or None
 
@@ -1717,7 +1717,7 @@ class LMDBer(filing.Filer):
         and val is not None.
 
         Returns:
-           result (bool): True if val added to set.
+            result (bool): True if val added to set.
                           False if already in set or key is empty or None or val
                           is None
 
@@ -1853,7 +1853,7 @@ class LMDBer(filing.Filer):
         When key is empty then deletes whole db.
 
         Returns:
-           result (bool): True if any entries deleted
+            result (bool): True if any entries deleted
                           False otherwise
 
         Parameters:
@@ -2908,7 +2908,7 @@ class LMDBer(filing.Filer):
         with O(1) whereas list inclusion scales with O(n).
 
         Returns:
-           result (bool): True if duplicate val added at onkey idempotent
+            result (bool): True if duplicate val added at onkey idempotent
                           False if duplicate val preexists at onkey
 
         Parameters:
@@ -2977,7 +2977,7 @@ class LMDBer(filing.Filer):
         Set inclusion scales with O(1) whereas list inclusion scales with O(n).
 
         Returns:
-           vals (list): of dup vals ot onkey when onkey present
+            vals (list): of dup vals ot onkey when onkey present
                         empty list if onkey not present
 
 
@@ -3172,7 +3172,7 @@ class LMDBer(filing.Filer):
         with O(1) whereas list inclusion scales with O(n).
 
         Returns:
-           result (bool): True if onkey present so all dups at onkey deleted
+            result (bool): True if onkey present so all dups at onkey deleted
                           False if onkey not present
 
         Parameters:
@@ -3199,7 +3199,7 @@ class LMDBer(filing.Filer):
         with O(1) whereas list inclusion scales with O(n).
 
         Returns:
-           result (bool): True if duplicate val found and deleted
+            result (bool): True if duplicate val found and deleted
                           False if duplicate val does not exist at onkey
 
         Parameters:

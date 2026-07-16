@@ -80,11 +80,11 @@ class KomerBase:
         by partial keys by appending separator to end of partial key
 
         Returns:
-           key (bytes): each element of keys is joined by .sep. If top then last
+            key (bytes): each element of keys is joined by .sep. If top then last
                         char of key is also .sep
 
         Parameters:
-           keys (str | bytes | memoryview | Iterable[str | bytes]): db key or
+            keys (str | bytes | memoryview | Iterable[str | bytes]): db key or
                         Iterable of (str | bytes) to form key.
            topive (bool): True means treat as partial key tuple from top branch of
                        key space given by partial keys. Resultant key ends in .sep
@@ -112,10 +112,10 @@ class KomerBase:
         then splitting at separator .sep.
 
         Returns:
-           keys (Iterable): keyspace elements
+            keys (Iterable): keyspace elements
 
         Parameters:
-           key (bytes|memoryview): keyspace index
+            key (bytes|memoryview): keyspace index
 
         """
         if isinstance(key, memoryview):  # memoryview of bytes
@@ -227,7 +227,7 @@ class KomerBase:
                 partial ending in sep regardless of top value
 
         Returns:
-           result (bool): True if key exists so delete successful. False otherwise
+            result (bool): True if key exists so delete successful. False otherwise
         """
         return(self.db.remTop(db=self.sdb, top=self._tokey(keys, topive=topive)))
 
@@ -404,7 +404,7 @@ class Komer(KomerBase):
                 in order to form key
 
         Returns:
-           result (bool): True if key exists so delete successful. False otherwise
+            result (bool): True if key exists so delete successful. False otherwise
         """
         return (self.db.remVal(db=self.sdb, key=self._tokey(keys)))
 
@@ -614,7 +614,7 @@ class IoSetKomer(KomerBase):
                               if val is None then remove all values at key
 
         Returns:
-           result (bool): True if key exists so delete successful. False otherwise
+            result (bool): True if key exists so delete successful. False otherwise
 
         """
         return self.db.remIoSetVal(db=self.sdb,
@@ -822,7 +822,7 @@ class DupKomer(KomerBase):
                               if val is None then remove all values at key
 
         Returns:
-           result (bool): True if key exists so delete successful. False otherwise
+            result (bool): True if key exists so delete successful. False otherwise
 
         """
         if val is not None:

@@ -765,7 +765,8 @@ class Siger(Indexer):
     def __init__(self, verfer=None, **kwa):
         """Initialze instance
 
-        Parameters:  See Matter for inherted parameters
+        Parameters:
+            See Matter for inherted parameters
             verfer (Verfer): instance if any provides public verification key
 
         """

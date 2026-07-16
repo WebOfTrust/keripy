@@ -259,9 +259,10 @@ def oobiRequestExn(hab, dest, oobi, version=Version, pvrsn=None, gvrsn=Version,
                    framed=True, nested=False, genusify=False):
     """Create oobi request exn and attachments
 
-    Parameters::
-        dest
-        oobi
+    Parameters:
+        hab (Hab): identifier habitat creating the OOBI request
+        dest (str): qb64 AID of recipient
+        oobi (str): OOBI to request
         version (Versionage): KERI protocol default version if psvrsn is None
         pvrsn (Versionage): KERI protocol version
         gvrsn (Versionage): CESR Genus version for attachment group codes or
@@ -282,6 +283,10 @@ def oobiRequestExn(hab, dest, oobi, version=Version, pvrsn=None, gvrsn=Version,
         genusify (bool): True means prepend genus version code from gvrsn before
                         serder to override default stream genus version
                      False means do nothing
+
+    Returns:
+        tuple: ``(exn, ims)`` where ``exn`` is the OOBI request exchange
+            message and ``ims`` is the endorsed attachment stream
 
     """
 

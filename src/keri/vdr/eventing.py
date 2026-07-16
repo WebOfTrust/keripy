@@ -64,7 +64,7 @@ def incept(
     Utility function to create a Registry inception event
 
     Parameters:
-         pre (str): issuer identifier prefix qb64
+        pre (str): issuer identifier prefix qb64
          toad (Union(int,str)): int or str hex of backer threshold
          baks (list): the initial list of backers prefixes for VCs in the Registry
          nonce (str): qb64 encoded ed25519 random seed of credential registry
@@ -1187,7 +1187,7 @@ class Tever:
         Returns None if never issued from this Registry
 
         Parameters:
-          vci (str):  qb64 VC identifier
+            vci (str):  qb64 VC identifier
 
         Returns:
             status (Serder): transaction event state notification message
@@ -1238,7 +1238,7 @@ class Tever:
         Returns None if never issued from this Registry
 
         Parameters:
-          vci (str):  qb64 VC identifier
+            vci (str):  qb64 VC identifier
 
         Returns:
             int: current TEL sequence number of credential or None if not found
@@ -1354,7 +1354,7 @@ class Tever:
             saider (Saider): digest of anchoring event
 
         Returns:
-             bool: True is anchoring event exists in database and seal is valid against
+            bool: True is anchoring event exists in database and seal is valid against
                    TEL event.
 
         """
@@ -2253,7 +2253,7 @@ def openReger(name="test", **kwa):
 
     Parameters:
         name (str): registry database name
-        **kwa (dict) keyword arguments to pass to LMDB
+        **kwa (dict): keyword arguments to pass to LMDB
 
     """
     return openLMDB(cls=Reger, name=name, **kwa)
@@ -2473,7 +2473,7 @@ class Reger(LMDBer):
         """ Returns fully expanded credential with chained credentials attached.
 
         Parameters:
-           saids (list): of Saider objects:
+            saids (list): of Saider objects:
            db (Baser): baser object to load schema
 
         Returns:

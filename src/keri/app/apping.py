@@ -29,7 +29,7 @@ class Consoler(doing.Doer):
     def __init__(self, db=None, console=None, **kwa):
         """Initializes Consoler with optional database and console.
 
-        Args:
+        Parameters:
             db (Baser, optional): Database instance. Defaults to a new
                 :class:`~keri.db.basing.Baser` instance if None.
             console (serialing.Console, optional): Serial console instance.
@@ -47,7 +47,7 @@ class Consoler(doing.Doer):
 
         Called by the Doer framework when entering the task context.
 
-        Args:
+        Parameters:
             temp (bool, optional): Unused. Reserved for interface compatibility.
 
         Raises:
@@ -66,7 +66,7 @@ class Consoler(doing.Doer):
         - ``w`` / ``walk``: walk 1 step
         - ``s`` / ``stop``: stop
 
-        Args:
+        Parameters:
             tyme (float): Current loop time provided by the Doist scheduler.
 
         Returns:

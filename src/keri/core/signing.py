@@ -394,10 +394,7 @@ class Salter(Matter):
             qb2 is bytes of fully qualified crypto material
             code is str of derivation code
             index is int of count of attached receipts for CryCntDex codes
-
-        Parameters:
-
-        """
+            """
         try:
             super(Salter, self).__init__(raw=raw, code=code, **kwa)
         except EmptyMaterialError as ex:
@@ -780,7 +777,8 @@ class Encrypter(Matter):
         """
         Assign encrypting cipher suite function to ._encrypt
 
-        Parameters:  See Matter for inherted parameters such as qb64, qb64b
+        Parameters:
+            See Matter for inherted parameters such as qb64, qb64b
             raw (bytes): public encryption key
             qb64b (bytes): fully qualified public encryption key
             qb64 (str): fully qualified public encryption key
@@ -825,7 +823,6 @@ class Encrypter(Matter):
             provided by either ser or prim as CESR primitive instance.
 
         Parameters:
-
             ser (str | bytes | bytearray | memoryview): qb64b or qb64 or sniffable
                 stream serialization of plain text
             prim (Matter | Indexer | Streamer): CESR primitive instance whose
@@ -1120,7 +1117,7 @@ class Streamer:
         individually expanded to qb64.
         Requires parsing full depth to ensure expanded consistently.
         Returns:
-           stream (bytes): expanded text qb64 version of stream
+            stream (bytes): expanded text qb64 version of stream
 
         Only works for ver 2 CESR because need for all count codes to be
         pipelineable in order to simply parse and expand stream
@@ -1134,7 +1131,7 @@ class Streamer:
         individually compacted to qb2.
         Requires parsing full depth to ensure compacted consistently
         Returns:
-           stream (bytes): compacted binary qb2 version of stream
+            stream (bytes): compacted binary qb2 version of stream
 
         Only works for ver 2 CESR because need for all count codes to be
         pipelineable in order to simply parse and compact stream
@@ -1149,7 +1146,7 @@ class Streamer:
         Texter(text=self.stream)
 
         Returns:
-           texter (Texter): Texter primitive of stream suitable wrapping
+            texter (Texter): Texter primitive of stream suitable wrapping
 
         """
         return self._stream
@@ -1170,7 +1167,7 @@ class Streamer:
 
         Requires parsing to ensure qb64
         Returns:
-           bexter (Bexter): Bexter primitive of stream suitable wrapping
+            bexter (Bexter): Bexter primitive of stream suitable wrapping
 
         """
         return self._stream

@@ -156,7 +156,7 @@ class Receiptor(doing.DoDoer):
         Queries a random witness for the receipt of the event at the sequence number for a prefix.
 
         Returns:
-             a generator requesting receipts for event identified by pre and sn
+            a generator requesting receipts for event identified by pre and sn
 
         Parameters:
             pre (str): qualified base64 identifier to gather a receipt for
@@ -228,7 +228,7 @@ class Receiptor(doing.DoDoer):
         Delegates to the internal receipt generator function.
 
         Returns:
-             a Hio generator function to be used as a Doer.
+            a Hio generator function to be used as a Doer.
         Parameters:
             tymth (function): function returning cycle time for configuring this Doer's cycle time.
             tock (float): cycle time for this Doer, default is 0.0 seconds.
@@ -319,7 +319,7 @@ class WitnessReceiptor(doing.DoDoer):
          URLs between witnesses in the set of current witnesses.
 
         Returns:
-             a doifiable Hio generator to perform event and receipt sending.
+            a doifiable Hio generator to perform event and receipt sending.
 
         Usage:
             add result of doify on this method to doers list
@@ -569,7 +569,7 @@ class WitnessInquisitor(doing.DoDoer):
             src (str): qb64 identifier prefix of source of query
             hab (Hab): Hab to use instead of src, if provided, to retrieve endpoint role records from and to perform signing
             anchor (Seal): anchored Seal to search for in the query target
-            wits (list) witnesses to query
+            wits (list): witnesses to query
         """
         qry = dict(s=sn, fn=fn)
         if anchor is not None:
@@ -677,6 +677,9 @@ class WitnessPublisher(doing.DoDoer):
 
         Parameters:
             said (str): qb64 SAID of message to check for
+
+        Returns:
+            bool: True if the message SAID has been sent
         """
 
         for cue in self.cues:

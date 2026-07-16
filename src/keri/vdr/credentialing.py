@@ -161,8 +161,8 @@ class RegeryDoer(doing.Doer):
             **opts (dict): additional keyword arguments
 
         Returns:
-
-        """
+            generator: doifiable Doist compatible generator method
+            """
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -924,7 +924,7 @@ class Credentialer(doing.DoDoer):
         """
         Validates a credential against its locally resolved schema.
 
-        Args:
+        Parameters:
             creder (Creder): creder object representing the credential to validate
 
         Returns:
@@ -948,7 +948,7 @@ class Credentialer(doing.DoDoer):
     def issue(self, creder, serder):
         """ Issue the credential creder and handle witness propagation and communication
 
-        Args:
+        Parameters:
             creder (Creder): Credential object to issue
             serder (Serder): KEL or TEL anchoring event
                 need to contribute digest of next rotating key

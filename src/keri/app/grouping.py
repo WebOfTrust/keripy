@@ -68,11 +68,13 @@ class Counselor(doing.DoDoer):
         Escrow identifier for multisigs, witness receipts and delegation anchor
 
         Parameters:
-
             ghab (Hab): group Habitat
             prefixer (Prefixer): prefixer of group identifier
             number (Number): number of event of group identifier
             diger (Diger): diger of event of group identifier
+
+        Returns:
+            bool: True if the escrow record was added
 
         """
         # used just for the log message
@@ -91,8 +93,8 @@ class Counselor(doing.DoDoer):
             diger (Diger): optional digest of event to verify
 
         Returns:
-
-        """
+            bool: True when the multisig protocol has completed for the event
+            """
         cdiger = self.hby.db.cgms.get(keys=(prefixer.qb64, number.qb64))
         if not cdiger:
             return False
@@ -315,7 +317,7 @@ def _exnVersion(version=None, kind=None):
 def multisigInceptExn(hab, smids, rmids, icp, delegator=None, version=None, kind=None):
     """
 
-    Args:
+    Parameters:
         hab (Hab): habitat of local multisig member AID
         smids (list): list of qb64 AIDs of members with signing authority
         rmids (list): list of qb64 AIDs of members with rotation authority
@@ -359,7 +361,7 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None, version=None, kind
 def multisigRotateExn(ghab, smids, rmids, rot, version=None, kind=None):
     """
 
-    Args:
+    Parameters:
         ghab (GroupHab): habitat of group multisig AID
         smids (list): list of qb64 AIDs of members with signing authority
         rmids (list): list of qb64 AIDs of members with rotation authority
@@ -665,10 +667,7 @@ class Multiplexor:
 
         Parameters:
             serder (SerderKERI): peer-to-peer exn "/multisig" message to coordinate from other participants
-
-        Returns:
-
-        """
+            """
         ked = serder.ked
         if 'e' not in ked:  # No embedded events
             return

@@ -736,7 +736,7 @@ class Serder:
         computation. Raises exception if anything is invalid
 
         Returns:
-           tuple (sad, saids):  where
+            tuple (sad, saids):  where
                 sad (dict): self addressed data dict with dummied fields
                 saids (dict)
         """
@@ -895,7 +895,7 @@ class Serder:
            Otherwise use class attribute
 
         Returns:
-           tuple (sad, saids):  where
+            tuple (sad, saids):  where
                 sad (dict): self addressed data dict with dummied fields
                 saids (dict)
 
@@ -1141,7 +1141,8 @@ class Serder:
         called on self as well because it only ever accesses clas attributes
         not instance attributes.
 
-        Returns: tuple (sad, proto, vrsn, kind, size) where:
+        Returns:
+            tuple (sad, proto, vrsn, kind, size) where:
             sad (dict): serializable attribute dict of saidified data
             proto (str): value of Protocols (Protocolage) protocol type
             pvrsn (Versionage | None): protocol tuple of (major, minor) version ints
@@ -1993,7 +1994,7 @@ class Serder:
         """verstr (version string 'v' field) property getter
         Optional fields return None when not present
         Returns:
-           verstr (str | None): sad["v"] version string 'v' field when present
+            verstr (str | None): sad["v"] version string 'v' field when present
         """
         return self._sad.get('v')
 
@@ -2082,7 +2083,7 @@ class Serder:
     def said(self):
         """said property getter
         Returns:
-           said (str): qb64
+            said (str): qb64
         """
         if not self.Fields[self.proto][self.pvrsn][self.ilk].saids and 'd' in self._sad:
             return self._sad['d']  # special case for non-saidive messages like rct
@@ -2101,7 +2102,7 @@ class Serder:
     def diger(self):
         """diger property getter
         Returns:
-           diger (Diger): Diger instance created from .said
+            diger (Diger): Diger instance created from .said
         """
         return Diger(qb64=self.said)
 
@@ -2119,7 +2120,7 @@ class Serder:
         """stamp property getter (datetime stamp in iso8601 format)
         Optional fields return None when not present
         Returns:
-           stamp (str | None): sad["dt"] when present
+            stamp (str | None): sad["dt"] when present
         """
         return self._sad.get('dt')
 
@@ -2314,7 +2315,7 @@ class SerderKERI(Serder):
     def aid(self):
         """
         Returns:
-           aid (str|None): qb64  of .sad["i"] identifier aid prefix property getter
+            aid (str|None): qb64  of .sad["i"] identifier aid prefix property getter
         """
         return self._sad.get("i")
 
@@ -2325,7 +2326,7 @@ class SerderKERI(Serder):
     def aidb(self):
         """
         Returns:
-        aidb (bytes|None): qb64b  of .aid identifier aid prefix property getter as bytes
+            aidb (bytes|None): qb64b  of .aid identifier aid prefix property getter as bytes
         """
         return self.aid.encode() if self.aid is not None else None
 
@@ -2337,7 +2338,7 @@ class SerderKERI(Serder):
         """aider (AID Prefixer instance) property getter
         Optional fields return None when not present
         Returns:
-           aider (Prefixer|None): instance created from .aid
+            aider (Prefixer|None): instance created from .aid
         """
         return Prefixer(qb64=self.aid) if self.aid else None
 
@@ -2432,7 +2433,7 @@ class SerderKERI(Serder):
     def ntholder(self):
         """ntholder getter
         Returns:
-           ntholder (Tholder|None): instance as converted from ._sad['nt']
+            ntholder (Tholder|None): instance as converted from ._sad['nt']
                                or None if missing.
 
         """
@@ -2577,7 +2578,7 @@ class SerderKERI(Serder):
         """delpre property getter, qb64 aid of delegator if any
 
         Returns:
-           delpre (str|None): qb64 of .sad["di"] delegator AID prefix.
+            delpre (str|None): qb64 of .sad["di"] delegator AID prefix.
                               None if missing
         """
         return self._sad.get("di")
@@ -2600,7 +2601,7 @@ class SerderKERI(Serder):
         """route property getter
 
         Returns:
-           route (str|None): route str .sad["r"]. None if missing.
+            route (str|None): route str .sad["r"]. None if missing.
         """
         return self._sad.get("r")
 
@@ -2611,7 +2612,7 @@ class SerderKERI(Serder):
         """uuid property getter
 
         Returns:
-           uuid (str|None): qb64 of ._sad["u"] salty nonce or ._sad.["n"]
+            uuid (str|None): qb64 of ._sad["u"] salty nonce or ._sad.["n"]
                             if ._sad['u'] missing and v1 and ilk == vcp
                             else None if both ._sad['u'] and ._sad['n"] missing.
         """
@@ -2683,7 +2684,7 @@ class SerderACDC(Serder):
         """uuid property getter
         Optional fields return None when not present
         Returns:
-           uuid (str | None): qb64  of .sad["u"] salty nonce
+            uuid (str | None): qb64  of .sad["u"] salty nonce
         """
         return self._sad.get("u")
 
@@ -2694,7 +2695,7 @@ class SerderACDC(Serder):
         """uuid property getter (uuid bytes)
         Optional fields return None when not present
         Returns:
-           uuidb (bytes | None): qb64b  of .sad["u"] salty nonce as bytes
+            uuidb (bytes | None): qb64b  of .sad["u"] salty nonce as bytes
         """
         return self.uuid.encode("utf-8") if self.uuid is not None else None
 
@@ -2705,7 +2706,7 @@ class SerderACDC(Serder):
         """israid (issuer AID) property getter
         Optional fields return None when not present
         Returns:
-           israid (str | None): qb64  of .sad["i"] issuer AID
+            israid (str | None): qb64  of .sad["i"] issuer AID
         """
         return self._sad.get('i')
 
@@ -2725,7 +2726,7 @@ class SerderACDC(Serder):
         """issuer (issuer AID Prefixer instance) property getter
         Optional fields return None when not present
         Returns:
-           israid (Prefixer|None): instance created from .israid
+            israid (Prefixer|None): instance created from .israid
         """
         return Prefixer(qb64=self.israid) if self.israid else None
 
@@ -2735,7 +2736,7 @@ class SerderACDC(Serder):
         """regi property getter (registry SAID)
         Optional fields return None when not present
         Returns:
-           regid (str | None): qb64  registry SAID
+            regid (str | None): qb64  registry SAID
                               v1 .sad["ri"]
                               v2 .said["rd"]
         """

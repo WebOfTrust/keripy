@@ -919,7 +919,7 @@ def interact(pre,
     Utility function to automate creation of interaction events.
 
      Parameters:
-        pre is identifier prefix qb64
+         pre is identifier prefix qb64
         dig is said digest of previous event qb64
         sn is int sequence number
         data is list of dicts of comitted data such as seals
@@ -970,7 +970,7 @@ def receipt(pre,
     Utility function to automate creation of receipts.
 
      Parameters:
-        pre is qb64 str of prefix of event being receipted
+         pre is qb64 str of prefix of event being receipted
         sn  is int sequence number of event being receipted
         said is qb64 of said of event being receipted
         version (Versionage): KERI protocol default version if psvrsn is None
@@ -1535,7 +1535,7 @@ def messagize(serder, *, sigers=None, tsgs=None, lsgs=None, wigers=None,
     an event with anchoring seal of message as authenticator. In v2 bonds may
     also include any Structor subclass not simply seal references.
 
-    Parameters::
+    Parameters:
         serder (SerderKERI): instance containing the event
         sigers (list): of Siger instances (optional) to create indexed signatures
                        based on seal type if any
@@ -1579,7 +1579,7 @@ def messagize(serder, *, sigers=None, tsgs=None, lsgs=None, wigers=None,
                             serder to override default stream genus version
                          False means do nothing
 
-    Returns::
+    Returns:
         msg (bytearray): KERI event with attachments if any
 
     """
@@ -2228,7 +2228,7 @@ class Kever:
            i.e.  self is witnessd by locally owned (controlled) AID (identifier prefix)
 
         Parameters:
-           wits (list[str]): qb64 identifier prefixes of witnesses
+            wits (list[str]): qb64 identifier prefixes of witnesses
            serder ( SerderKERI | None): SerderKERI instace if any
 
         """
@@ -2581,7 +2581,8 @@ class Kever:
         Validates provisional rotation
         Same logic for both 'rot' and 'drt' (plain and delegated rotation)
 
-        Returns: tuple (tholder, toader, wits, cuts, adds) of provisional  results
+        Returns:
+            tuple (tholder, toader, wits, cuts, adds) of provisional  results
         of rotation subject to additional validation
 
         Parameters:
@@ -3968,7 +3969,7 @@ class Kever:
         the result will be the list of digers immediately prior to the current list.
 
         Parameters:
-          sn (int | None): sn to start searching. If None then start at .lastEst.s - 1
+            sn (int | None): sn to start searching. If None then start at .lastEst.s - 1
 
         Returns:
             digers (list | None): of Diger instances or None if no prior est evt
@@ -4009,7 +4010,7 @@ class Kever:
         matching result may be from that event.
 
         Parameters:
-          verfers (list[Verfer]): of verfer instances
+            verfers (list[Verfer]): of verfer instances
           sn (int | None): sn to start searching. If None then start at .lastEst.s
 
         Returns:
@@ -4060,7 +4061,7 @@ class Kever:
         matching result may be from that event.
 
         Parameters:
-          verfer (Verfer): instance of verfer
+            verfer (Verfer): instance of verfer
           sn (int | None): sn to start searching. If None then start at .lastEst.s
 
         Returns:
@@ -4219,7 +4220,7 @@ class Kevery:
         sequence number of each establishment event.  If sn represents an interaction event (ixn) it
         searches backwards for the last establishment event prior to sn and returns that witness state.
 
-        Args:
+        Parameters:
             pre (str): identifier prefix qb64
             sn (int): sequence number of the event for which witness state is desired
 
@@ -6064,9 +6065,7 @@ class Kevery:
     def processEscrows(self):
         """
         Iterate throush escrows and process any that may now be finalized
-
-        Parameters:
-        """
+            """
         try:
             self.processEscrowOutOfOrders()
             self.processEscrowUnverWitness()
@@ -7151,7 +7150,7 @@ class Kevery:
         partially witnessed event
 
         Returns:
-           found (bool): True means found matching event in .Pwes and added wig
+            found (bool): True means found matching event in .Pwes and added wig
                         to .Wigs. False means dig not find matching event in .Pwes
 
 
@@ -7159,7 +7158,7 @@ class Kevery:
             Validation error if found matching event but signature does not verify
 
         Parameters:
-           pre (Union[str,bytes]): pre of receipted event controller kel
+            pre (Union[str,bytes]): pre of receipted event controller kel
            sn (int): sequence number of receipted event
            rsaider (Saider): derived from receipt's dig of receipted event to find
            wiger (Siger): instance of witness indexed signature from receipt
@@ -7555,7 +7554,7 @@ class Kevery:
 def loadEvent(db, preb, dig):
     """ Load event details from database
 
-    Args:
+    Parameters:
         db (Baser): database to load event fro,
         preb (bytes): qb64b identifier prefix
         dig (bytes): digest of event to load

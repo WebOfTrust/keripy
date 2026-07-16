@@ -130,7 +130,7 @@ class CredentialIssuer(doing.DoDoer):
         """ Create DoDoer for issuing a credential and managing the processes needed to complete issuance
 
         Parameters:
-             name:
+            name:
              registryName:
              schema:
              edges:
@@ -216,7 +216,7 @@ class CredentialIssuer(doing.DoDoer):
 
 
         Parameters:
-             tymth (function): injected function wrapper closure returned by .tymen() of
+            tymth (function): injected function wrapper closure returned by .tymen() of
                  Tymist instance. Calling tymth() returns associated Tymist .tyme.
              tock (float): injected initial tock value
         """

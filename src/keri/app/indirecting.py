@@ -133,13 +133,18 @@ def setupWitness(hby, alias="witness", mbx=None, aids=None, tcpPort=5631, httpPo
 def createHttpServer(host, port, app, keypath=None, certpath=None, cafilepath=None):
     """
     Create an HTTP or HTTPS server depending on whether TLS key material is present
+
     Parameters:
-        host(str)          : host to bind to for this server, or None for default of '0.0.0.0', all ifaces
-        port (int)         : port to listen on for all HTTP(s) server instances
-        app (Any)          : WSGI application instance to pass to the http.Server instance
-        keypath (string)   : the file path to the TLS private key
-        certpath (string)  : the file path to the TLS signed certificate (public key)
+        host (str): host to bind to for this server, or None for default of
+            '0.0.0.0', all ifaces
+        port (int): port to listen on for all HTTP(s) server instances
+        app (Any): WSGI application instance to pass to the http.Server
+            instance
+        keypath (string): the file path to the TLS private key
+        certpath (string): the file path to the TLS signed certificate
+            (public key)
         cafilepath (string): the file path to the TLS CA certificate chain file
+
     Returns:
         hio.core.http.Server
     """
@@ -205,6 +210,9 @@ class WitnessStart(doing.DoDoer):
 
         Usage:
             add result of doify on this method to doers list
+
+        Returns:
+            generator: doifiable Doist compatible generator method
         """
         self.wind(tymth)
         self.tock = tock
@@ -396,6 +404,9 @@ class Indirector(doing.DoDoer):
 
         Usage:
             add result of doify on this method to doers list
+
+        Returns:
+            generator: doifiable Doist compatible generator method
         """
         self.wind(tymth)
         self.tock = tock
@@ -605,7 +616,7 @@ class MailboxDirector(doing.DoDoer):
     def pollDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns:
-           doifiable Doist compatible generator method
+            doifiable Doist compatible generator method
 
         Usage:
             add result of doify on this method to doers list
@@ -700,6 +711,9 @@ class MailboxDirector(doing.DoDoer):
 
         Usage:
             add result of doify on this method to doers list
+
+        Returns:
+            generator: doifiable Doist compatible generator method
         """
         self.wind(tymth)
         self.tock = tock
@@ -787,7 +801,7 @@ class Poller(doing.DoDoer):
     def eventDo(self, tymth=None, tock=0.0, **kwa):
         """
         Returns:
-           doifiable Doist compatible generator method
+            doifiable Doist compatible generator method
 
         Usage:
             add result of doify on this method to doers list
@@ -903,8 +917,8 @@ class HttpEnd:
         Handles POST for KERI event messages.
 
         Parameters:
-              req (Request) Falcon HTTP request
-              rep (Response) Falcon HTTP response
+            req (Request) Falcon HTTP request
+            rep (Response) Falcon HTTP response
 
         .. code-block:: none
 
@@ -965,8 +979,8 @@ class HttpEnd:
         Handles PUT for KERI mbx event messages.
 
         Parameters:
-              req (Request) Falcon HTTP request
-              rep (Response) Falcon HTTP response
+            req (Request) Falcon HTTP request
+            rep (Response) Falcon HTTP response
 
         .. code-block:: none
 

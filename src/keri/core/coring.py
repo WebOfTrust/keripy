@@ -109,10 +109,10 @@ def dumps(ked, kind=Kinds.json):
     utility function to handle serialization by kind
 
     Returns:
-       raw (bytes): serialized version of ked dict
+        raw (bytes): serialized version of ked dict
 
     Parameters:
-       ked (Optional(dict, list)): key event dict or message dict to serialize
+        ked (Optional(dict, list)): key event dict or message dict to serialize
        kind (str): serialization kind (JSON, MGPK, CBOR)
     """
     if kind == Kinds.json:
@@ -134,10 +134,10 @@ def loads(raw, size=None, kind=Kinds.json):
     utility function to handle deserialization by kind
 
     Returns:
-       ked (dict): deserialized
+        ked (dict): deserialized
 
     Parameters:
-       raw (Union[bytes,bytearray]): raw serialization to deserialze as dict
+        raw (Union[bytes,bytearray]): raw serialization to deserialze as dict
        size (int): number of bytes to consume for the deserialization. If None
                    then consume all bytes
        kind (str): serialization kind (JSON, MGPK, CBOR)
@@ -1839,7 +1839,7 @@ class Number(Matter):
                sequence number or first seen number etc.
 
         Parameters:
-           inceptive(bool): raise ValidationError whan .num invalid
+            inceptive(bool): raise ValidationError whan .num invalid
                             None means exception when .num < 0
                             True means exception when .num != 0
                             False means exception when .num < 1
@@ -2056,7 +2056,7 @@ class Decimer(Matter):
         """Returns decoded raw as dns
 
         Returns:
-           dns (str): decoded raw decimal number string
+            dns (str): decoded raw decimal number string
         """
         _, _, _, _, ls = self.Sizes[self.code]
         dns = encodeB64(bytes([0] * ls) + self.raw)
@@ -2313,10 +2313,10 @@ class Tagger(Matter):
         """Returns code for tag when tag is appropriately sized Base64
 
         Parameters:
-           tag (str | bytes):  Base64 value
+            tag (str | bytes):  Base64 value
 
         Returns:
-           code (str): derivation code for tag
+            code (str): derivation code for tag
 
         """
         # TagDex tags appear in order of size 1 to 10, at indices 0 to 9
@@ -2864,14 +2864,14 @@ class Bexter(Matter):
     def _derawify(cls, raw, code, escapive=True):
         """Returns bext as B64 str aka bext value from padded right aligned raw
 
-        Parameters::
+        Parameters:
             raw (bytes): raw binary domain value
             code (str): CESR code for encoding raw as CESR b2 or b64
             escapive (bool): True use escape '-' either when bext[0] is '-'
                               or when size ambiguity and bext[0] is 'A'
                               False otherwise
 
-        Returns::
+        Returns:
             bext (str): decoded raw as B64 str aka bext value
 
         When bext is multiple of 4 then aligned on 24 bit boundary so no
@@ -2951,7 +2951,7 @@ class Bexter(Matter):
         """Returns raw value equivalent of Base64 text.
         Suitable for variable sized matter.
 
-        Parameters::
+        Parameters:
             bext (bytes): Base64 bytes to be encoded as padded raw
             escapive (bool): True use escape '-' either when bext[0] is '-'
                               or when size ambiguity and bext[0] is 'A'
@@ -2980,7 +2980,7 @@ class Bexter(Matter):
         Default is escapive is True so that we don't have to restrict bext
         zeroth character to not be 'A'
 
-        Returns::
+        Returns:
             raw (bytes): raw value of bext with code and padding stripped off.
 
         """
@@ -3209,7 +3209,7 @@ class Pather(Matter):
 
         Returns a new Pather anchoring this path at the new root specified by root.
 
-        Args:
+        Parameters:
             root(Pather): the new root to apply to this path
 
         Returns:
@@ -3227,7 +3227,7 @@ class Pather(Matter):
 
         Returns a new Pather with root stripped off the front
 
-        Args:
+        Parameters:
             root(Pather): the new root to apply to this path
 
         Returns:
@@ -3725,7 +3725,7 @@ class Diger(Matter):
             See Matter
 
         Parameters:
-           ser (bytes): serialization from which raw is computed if not raw
+            ser (bytes): serialization from which raw is computed if not raw
            strict (bool): True means enforce code must be in DigDex
                           False means do not enfoce code in DigDex this allows
                             subclasses to enforce different codex
@@ -4001,10 +4001,10 @@ class Saider(Matter):
             Serials.json
 
         Returns:
-           ser (bytes): raw serialization of sad
+            ser (bytes): raw serialization of sad
 
         Parameters:
-           sad (dict): serializable dict
+            sad (dict): serializable dict
            kind (str): serialization algorithm of sad, one of Serials
                         used to override that given by 'v' field if any in sad
                         otherwise default is Serials.json
@@ -4208,7 +4208,7 @@ class Sadder:
         When serializing if kind provided then use kind instead of field in ked
 
         Parameters:
-          raw (bytes): serialized event
+            raw (bytes): serialized event
           ked is key event dict or None
             if None its deserialized from raw
           kind is serialization kind string value or None (see namedtuple coring.Serials)
@@ -4249,7 +4249,7 @@ class Sadder:
         instance attributes.
 
         Parameters:
-          raw is bytes of serialized event
+            raw is bytes of serialized event
           kind is str of raw serialization kind (see namedtuple Serials)
           size is int size of raw to be deserialized
 
@@ -4513,7 +4513,6 @@ class Tholder:
 
 
         Parameters:
-
             thold is signing threshold (current or next) is suitable for computing
                 the satisfaction of a threshold and is expressed as either:
                     int of threshold number (M of N)

@@ -37,7 +37,7 @@ def sceil(r):
     """
     Symmetric ceiling function
     Returns:
-       sceil (int): value that is symmetric ceiling of r away from zero
+        sceil (int): value that is symmetric ceiling of r away from zero
 
     Because int() provides a symmetric floor towards zero, just increment
     int(r) by 1 when r - int(r) > 0, -1 when r - int(r) < 0, or 0 when
@@ -53,7 +53,7 @@ def dictify(val: dataclasses.dataclass):
     contains a `_ser` method, use it instead of `asdict`
 
     Parameters:
-         val the dataclass instance to turn into a dict.
+        val: the dataclass instance to turn into a dict.
     """
     ser = getattr(val, "_ser", None)
     if callable(ser):
@@ -69,8 +69,8 @@ def datify(cls, d):
     of default fieldtypes conversion.
 
     Parameters:
-    cls is dataclass class
-    d is dict
+        cls: dataclass class
+        d: dict
     """
     try:
         der = getattr(cls, "_der", None)
@@ -145,7 +145,8 @@ def isNonStringIterable(obj):
 
 def isNonStringSequence(obj):
     """
-    Returns: True if obj is non-string sequence, False otherwise
+    Returns:
+        True if obj is non-string sequence, False otherwise
 
     Future proof way that is compatible with both Python3 and Python2 to check
     for non string sequences.
@@ -162,8 +163,8 @@ def extractElementValues(element, values):
     Assumes that extracted values are str
 
     Parameters:
-        element is some element to extract values from
-        values is list of values from elements that are not nonStringIterables
+        element: some element to extract values from
+        values: list of values from elements that are not nonStringIterables
 
     IF element is mapping or sequence (nonStringIterable) then
         recusively  extractValues from the items of that element
@@ -197,8 +198,8 @@ def extractValues(ked, labels):
     key event dict ked whose labels are in labels list
 
     Parameters:
-       ked is key event dict
-       labels is list of element labels in ked from which to extract values
+        ked: key event dict
+        labels: list of element labels in ked from which to extract values
     """
     values = []
     for label in labels:
@@ -469,4 +470,3 @@ Reatt = re.compile(ATREX)  # compile is faster
 PATHREX = rb'^[a-zA-Z0-9_]*$'  # bytes May be empty string
 # Usage: if Reat.match(name): or if not Reat.match(name):
 Repath = re.compile(PATHREX)  # compile is faster
-

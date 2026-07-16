@@ -49,7 +49,7 @@ def openHby(*, name="test", base="", temp=True, salt=None, **kwa):
             See ``Habery`` for the full list (``seed``, ``aeid``, ``bran``,
             ``pidx``, ``algo``, ``tier``, ``free``, ``version``).
 
-    Yields::
+    Yields:
         Habery: Fully initialised ``Habery`` instance.
     """
     habery = None
@@ -72,7 +72,7 @@ def openHab(name="test", base="", salt=None, temp=True, cf=None, **kwa):
     otherwise a new single-key ``Hab`` (``icount=1, isith='1', ncount=1,
     nsith='1'``) is created via ``Habery.makeHab``.
 
-    Parameters::
+    Parameters:
         name (str): Name of the ``Hab`` (and the underlying shared databases).
         base (str): Optional path component for shared resources.  See
             ``openHby``.
@@ -86,7 +86,7 @@ def openHab(name="test", base="", salt=None, temp=True, cf=None, **kwa):
             When ``version`` is provided, it is also used for the shared
             ``Habery`` parser.
 
-    Yields::
+    Yields:
         tuple[Habery, Hab]: The shared ``Habery`` environment and the named
             ``Hab`` instance.
     """
@@ -145,7 +145,7 @@ class Habery:
         dependency-injected stores are not yet open (e.g. in an async context),
         ``setup`` must be called explicitly once they have been opened.
 
-        Args:
+        Parameters:
             name (str): Alias name for the shared environment, databases, and
                 config file.
             base (str): Optional directory path segment inserted before
@@ -221,7 +221,7 @@ class Habery:
         may be opened asynchronously after ``__init__``.  The first successful
         call performs vacuous (initial) database setup.
 
-        Args:
+        Parameters:
             seed (str | None): qb64 private signing key (seed) for the
                 ``aeid``.  Used to derive the private decryption key and to
                 authenticate the ``Manager``.  This value is **memory-only**
@@ -370,7 +370,7 @@ class Habery:
         The new ``Hab`` is registered in ``.habs`` keyed by its generated
         prefix.
 
-        Args:
+        Parameters:
             name (str): Human-readable alias for the new identifier.
             ns (str | None): Optional namespace for the identifier.  Must not
                 contain a ``'.'`` character.
@@ -422,7 +422,7 @@ class Habery:
         group's inception keys (``merfers``), and next key digests form the
         group's next key commitments (``migers``).
 
-        Args:
+        Parameters:
             group (str): Human-readable alias for the group identifier.
             mhab (Hab): The local participant ``Hab`` that is a member of this
                 group.
@@ -495,7 +495,7 @@ class Habery:
         ``Hab`` is constructed, its prefix set to ``pre``, and the record
         persisted directly rather than through ``Hab.make``.
 
-        Args:
+        Parameters:
             pre (str): qb64 prefix of the already-established group identifier.
             group (str): Human-readable alias for the group identifier.
             mhab (Hab): The local participant ``Hab`` that is a member of this
@@ -558,7 +558,7 @@ class Habery:
         """Create, persist, and return a new ``SignifyHab`` (Signify-managed
         single identifier).
 
-        Args:
+        Parameters:
             name (str): Human-readable alias for the identifier.
             ns (str | None): Optional namespace for the identifier.
             **kwa: Keyword arguments forwarded to ``SignifyHab.make``.
@@ -579,7 +579,7 @@ class Habery:
         """Create, persist, and return a new ``SignifyGroupHab`` (Signify-managed
         multisig group identifier).
 
-        Args:
+        Parameters:
             name (str): Human-readable alias for the group identifier.
             mhab (Hab): The local participant ``Hab`` that is a member of this
                 group.
@@ -611,7 +611,7 @@ class Habery:
         The group ``Hab`` is constructed with the given ``pre``, and the
         record is persisted directly.
 
-        Args:
+        Parameters:
             pre (str): qb64 prefix of the already-established group identifier.
             name (str): Human-readable alias for the group identifier.
             mhab (Hab): The local participant ``Hab`` that is a member of this
@@ -676,7 +676,7 @@ class Habery:
         Also removes the name-to-prefix mapping, the prefix from
         ``db.prefixes``, and (if present) the entry from ``db.groups``.
 
-        Args:
+        Parameters:
             name (str): Human-readable alias of the ``Hab`` to delete.
             ns (str | None): Namespace of the ``Hab``.  Defaults to ``""``
                 when ``None``.
@@ -714,7 +714,7 @@ class Habery:
         digest diger is appended to ``migers`` (members that have abandoned
         their identifier and have empty next digers are skipped).
 
-        Args:
+        Parameters:
             smids (list[str]): qb64 prefixes of the signing members of the
                 multisig group.  Each must have exactly one current signing key
                 in ``.kevers``.
@@ -762,7 +762,7 @@ class Habery:
     def close(self, clear=False):
         """Close all managed resources (keystore, database, config file).
 
-        Args:
+        Parameters:
             clear (bool): When ``True``, remove the resource directories in
                 addition to closing them.  Temporary resources (``temp=True``)
                 are always cleared regardless of this flag.
@@ -789,7 +789,7 @@ class Habery:
     def habByPre(self, pre):
         """Return the ``Hab`` instance for a given prefix, or ``None``.
 
-        Args:
+        Parameters:
             pre (str): qb64 AID prefix to look up.
 
         Returns:
@@ -808,7 +808,7 @@ class Habery:
         Resolves the name to a prefix via ``db.names`` and then looks up the
         ``Hab`` in ``.habs``.
 
-        Args:
+        Parameters:
             name (str): Human-readable alias of the ``Hab``.
             ns (str | None): Namespace of the ``Hab``.  Defaults to ``""``
                 when ``None``.
@@ -909,7 +909,7 @@ class Signator:
         non-transferable, hidden Hab and pins its prefix. If present, rehydrates
         the existing Hab from the stored prefix.
 
-        Args:
+        Parameters:
             db (Baser): Database environment for key state and AID storage.
             name (str): Label used to look up or register the signing AID.
                 Defaults to SIGNER.
@@ -934,7 +934,7 @@ class Signator:
         Delegates to the underlying Hab's sign method with indexed=False,
         returning the first (and only) Cigar signature object.
 
-        Args:
+        Parameters:
             ser (bytes): Raw byte data to sign.
 
         Returns:
@@ -949,7 +949,7 @@ class Signator:
         Checks the raw signature in cigar against ser using the first verfer
         on the Signator's current key event state (kever).
 
-        Args:
+        Parameters:
             ser (bytes): Raw byte data to verify against the signature.
             cigar (Cigar): Non-transferable signature to verify.
 
@@ -989,7 +989,7 @@ class HaberyDoer(doing.Doer):
     def __init__(self, habery, **kwa):
         """Initializes HaberyDoer with the Habery instance to manage.
 
-        Args:
+        Parameters:
             habery (Habery): Habery instance to initialize and close during
                 the doer lifecycle.
             **kwa: Additional keyword arguments forwarded to Doer.__init__.
@@ -1003,7 +1003,7 @@ class HaberyDoer(doing.Doer):
         Calls habery.setup() with its stored _inits parameters only when
         habery.inited is False. No-ops if Habery is already initialized.
 
-        Args:
+        Parameters:
             temp (bool | None): Unused in this implementation. Present for
                 interface compatibility with the base Doer enter signature.
         """
@@ -1049,7 +1049,7 @@ class BaseHab:
                  name='test', ns=None, pre=None, temp=False):
         """Initialize instance.
 
-        Args:
+        Parameters:
             ks (Keeper): lmdb key store.
             db (basing.Baser): lmdb data base for KEL etc.
             cf (Configer): config file instance.
@@ -1088,7 +1088,7 @@ class BaseHab:
         """Creates Serder of inception event for provided parameters.
         Assumes injected dependencies were already setup.
 
-        Args:
+        Parameters:
             DnD (bool): True means add trait ``TraitDex.DnD`` which means do
                 not allow delegated identifiers from this identifier. False
                 (default) means do allow, and no trait is added.
@@ -1163,7 +1163,7 @@ class BaseHab:
     def make(self, **kwa):
         """Alias for ``.incept``.
 
-        Args:
+        Parameters:
             **kwa: keyword arguments forwarded to :meth:`incept`.
         """
         self.incept(**kwa)
@@ -1218,7 +1218,7 @@ class BaseHab:
             database, not as a database. Config file may have named sections
             for Habery or individual Habs as needed.
 
-        Parameters::
+        Parameters:
             **kwa: keyword arguments forwarded to ``makeEndRole`` and
                 ``makeLocScheme``, including ``version`` and ``kind``.
         """
@@ -1314,7 +1314,7 @@ class BaseHab:
                         nested=False, gvrsn=Version, genusify=False):
         """Perform rotation operation. Register rotation in database.
 
-        Parameters::
+        Parameters:
             verfers (list or None): Verfer instances of public keys qb64.
             digers (list or None): Diger instances of public next key digests
                 qb64.
@@ -1351,10 +1351,10 @@ class BaseHab:
                             serder to override default stream genus version
                          False means do nothing
 
-        Returns::
+        Returns:
             bytearray: rotation message with attached signatures.
 
-        Raises::
+        Raises:
             ValidationError: if the new key set cannot satisfy the prior next
                 signing threshold, or if the rotation event is otherwise
                 improper.
@@ -1440,7 +1440,7 @@ class BaseHab:
                 framed=False, nested=False, gvrsn=Version, genusify=False):
         """Perform interaction operation. Register interaction in database.
 
-        Parameters::
+        Parameters:
             data (list or None): dicts of committed data such as seals.
             kind (str): serialization for key event message
                         one of Kinds ("json","cbor","mgpk","cesr")
@@ -1464,10 +1464,10 @@ class BaseHab:
                             serder to override default stream genus version
                          False means do nothing
 
-        Returns::
+        Returns:
             bytearray: interaction message with attached signatures.
 
-        Raises::
+        Raises:
             ValidationError: if the interaction event is improper.
         """
         kever = self.kever
@@ -1499,7 +1499,7 @@ class BaseHab:
         """Sign given serialization ``ser`` using appropriate keys.
         Uses provided verfers or ``.kever.verfers`` to look up keys to sign.
 
-        Args:
+        Parameters:
             ser (bytes): serialization to sign.
             verfers (list[Verfer] or None): Verfer instances to get public
                 verifier keys to look up private signing keys. None means use
@@ -1531,7 +1531,7 @@ class BaseHab:
         """Decrypt given serialization ``ser`` using appropriate keys.
         Uses provided verfers or ``.kever.verfers`` to look up keys to decrypt.
 
-        Args:
+        Parameters:
             ser (str, bytes, bytearray, or memoryview): serialization to
                 decrypt.
             verfers (list[Verfer] or None): Verfer instances to get public
@@ -1555,7 +1555,7 @@ class BaseHab:
         """Create, sign, and return a ``qry`` message against the attester
         for the prefix.
 
-        Args:
+        Parameters:
             pre (str): qb64 identifier prefix being queried for.
             src (str): qb64 identifier prefix of attester being queried.
             query (dict or None): additional query modifiers to include in
@@ -1595,7 +1595,7 @@ class BaseHab:
         """Build and return a signed ``exn`` message, optionally saving it to
         own db.
 
-        Parameters::
+        Parameters:
             sender (str): qb64 of sender identifier (AID)
             receiver (str): qb64 of receiver identifier (AID)
             xid (str): qb64 of exchange ID which is SAID of exchange inception 'xip'
@@ -1635,7 +1635,7 @@ class BaseHab:
             eid (str or None): qb64 of endpoint provider identifier if any.
             save (bool): True means process local copy into db after building.
 
-        Returns::
+        Returns:
             bytearray: signed exchange message with count code and receipt
             couples (pre+cig).
         """
@@ -1688,7 +1688,7 @@ class BaseHab:
         """Return msg with own endorsement of msg from serder with attached
         signature groups based on own pre transferable or non-transferable.
 
-        Parameters::
+        Parameters:
             serder (Serder): instance of msg.
             last (bool): Affects which signature group code messagize will use
                         the seal type provided here,
@@ -1714,7 +1714,7 @@ class BaseHab:
                             serder to override default stream genus version
                          False means do nothing
 
-        Returns::
+        Returns:
             bytearray: endorsed message with attached signatures from messagize.
         """
         if self.kever.prefixer.transferable:
@@ -1758,7 +1758,7 @@ class BaseHab:
         """Build own receipt ``rct`` message of serder with count code and
         receipt couples (pre+cig). Processes local copy into db to validate.
 
-        Parameters::
+        Parameters:
             serder (Serder): event serder to receipt.
             kind (str): serialization for receipt message
                         one of Kinds ("json","cbor","mgpk","cesr")
@@ -1782,7 +1782,7 @@ class BaseHab:
                             serder to override default stream genus version
                          False means do nothing
 
-        Returns::
+        Returns:
             bytearray: receipt message with attached signatures.
         """
         ked = serder.ked
@@ -1834,7 +1834,7 @@ class BaseHab:
             accepted as a valid event into this hab controller's KEL before
             calling this method.
 
-        Parameters::
+        Parameters:
             serder (Serder): event serder to witness.
             kind (str): serialization for receipt message
                         one of Kinds ("json","cbor","mgpk","cesr")
@@ -1858,10 +1858,10 @@ class BaseHab:
                             serder to override default stream genus version
                          False means do nothing
 
-        Returns::
+        Returns:
             bytearray: witness receipt message with attached signatures.
 
-        Raises::
+        Raises:
             ValueError: if own prefix is transferable, if the key state for
                 ``serder.pre`` is missing, or if own prefix is not a witness
                 of the event.
@@ -1951,7 +1951,7 @@ class BaseHab:
         """Return the endpoint record for the given controller, role, and
         endpoint provider.
 
-        Args:
+        Parameters:
             cid (str): qb64 identifier prefix of controller.
             role (str): endpoint role.
             eid (str): qb64 identifier prefix of endpoint provider.
@@ -1967,7 +1967,7 @@ class BaseHab:
         """Return the location record for the given endpoint provider and
         scheme.
 
-        Args:
+        Parameters:
             eid (str): qb64 identifier prefix of endpoint provider.
             scheme (str): url scheme. Default is ``Schemes.http``.
 
@@ -1982,7 +1982,7 @@ class BaseHab:
         """Return whether ``eid`` is allowed as endpoint provider for ``cid``
         in ``role``.
 
-        Args:
+        Parameters:
             cid (str): qb64 identifier prefix of controller authorizing
                 endpoint provider ``eid`` in role.
             role (str): endpoint role such as controller, witness, watcher,
@@ -2001,7 +2001,7 @@ class BaseHab:
         """Return whether ``eid`` is enabled as endpoint provider for ``cid``
         in ``role``.
 
-        Args:
+        Parameters:
             cid (str): qb64 identifier prefix of controller authorizing
                 endpoint provider ``eid`` in role.
             role (str): endpoint role such as controller, witness, watcher,
@@ -2020,7 +2020,7 @@ class BaseHab:
         """Return whether ``eid`` is authorized (enabled or allowed) as
         endpoint provider for ``cid`` in ``role``.
 
-        Args:
+        Parameters:
             cid (str): qb64 identifier prefix of controller authorizing
                 endpoint provider ``eid`` in role.
             role (str): endpoint role such as controller, witness, watcher,
@@ -2038,7 +2038,7 @@ class BaseHab:
     def fetchUrl(self, eid: str, scheme: str = Schemes.http):
         """Return the url for the endpoint provider given by ``eid``.
 
-        Args:
+        Parameters:
             eid (str): qb64 identifier prefix of endpoint provider.
             scheme (str): url scheme. Default is ``Schemes.http``.
 
@@ -2058,7 +2058,7 @@ class BaseHab:
             is allowed for a given ``cid`` and role. Entries with empty urls
             are excluded from the result.
 
-        Args:
+        Parameters:
             eid (str): qb64 identifier prefix of endpoint provider.
             scheme (str): url scheme filter. Empty string means all schemes.
 
@@ -2073,7 +2073,7 @@ class BaseHab:
                       eids=None, enabled: bool = True, allowed: bool = True):
         """Return nested dicts of role -> eid -> scheme -> url for the given ``cid``.
 
-        Args:
+        Parameters:
             cid (str): qb64 identifier prefix of the controller authorizing
                 endpoint provider ``eid`` in role.
             role (str): endpoint role filter (e.g. ``controller``, ``witness``,
@@ -2117,7 +2117,7 @@ class BaseHab:
         """Fetch witness urls for witnesses of ``cid`` at latest key state,
         or enabled/allowed witnesses if not a witness at latest key state.
 
-        Args:
+        Parameters:
             cid (str): qb64 identifier prefix of controller whose witnesses
                 are being fetched.
             scheme (str): url scheme filter. Empty string means all schemes.
@@ -2142,7 +2142,7 @@ class BaseHab:
     def endsFor(self, pre):
         """Load authorized endpoints for the provided AID.
 
-        Args:
+        Parameters:
             pre (str): qb64 aid for which to load ends.
 
         Returns:
@@ -2180,7 +2180,7 @@ class BaseHab:
     def reply(self, framed=False, nested=False, gvrsn=Version, genusify=False, **kwa):
         """Return own endorsed reply message.
 
-        Parameters::
+        Parameters:
             framed (bool): True means may assume each message plus its attachments
                                 is isolated as frame when parsing so do not need
                                 attachment group when messagizing
@@ -2207,7 +2207,7 @@ class BaseHab:
                 pvrsn (Versionage): KERI protocol version
                 kind (str): serialization kind.
 
-        Returns::
+        Returns:
             bytearray: reply message.
         """
         pvrsn = kwa.get("pvrsn", kwa.get("version"))
@@ -2229,7 +2229,7 @@ class BaseHab:
         """Return a reply message allowing or disallowing endpoint provider
         ``eid`` in ``role``.
 
-        Args:
+        Parameters:
             eid (str): qb64 of endpoint provider to be authorized.
             role (str): authorized role for ``eid``. Default is
                 ``Roles.controller``.
@@ -2257,7 +2257,7 @@ class BaseHab:
         the given ``cid``, ``eid``, and ``role`` from the database, including
         associated attachments.
 
-        Parameters::
+        Parameters:
             cid (str): qb64 identifier prefix of controller.
             eid (str): qb64 identifier prefix of endpoint provider.
             role (str): endpoint role. Default is ``Roles.controller``.
@@ -2280,7 +2280,7 @@ class BaseHab:
                             serder to override default stream genus version
                          False means do nothing
 
-        Returns::
+        Returns:
             bytearray: messagized end role record with attachments, or empty
             bytearray if not found or not enabled/allowed.
         """
@@ -2330,7 +2330,7 @@ class BaseHab:
     def makeLocScheme(self, url, eid=None, scheme="http", stamp=None, **kwa):
         """Return a reply message of own url service endpoint at ``scheme``.
 
-        Parameters::
+        Parameters:
             url (str): url of endpoint. May have scheme missing or not. An
                 empty url nullifies the location.
             eid (str or None): qb64 of endpoint provider to be authorized.
@@ -2349,7 +2349,7 @@ class BaseHab:
                 kind (str): serialization kind.
 
 
-        Returns::
+        Returns:
             bytearray: reply message.
         """
         eid = eid if eid is not None else self.pre
@@ -2368,7 +2368,7 @@ class BaseHab:
             discovery. Future versions will use an identity constraint graph
             to constrain discovery.
 
-        Parameters::
+        Parameters:
             eid (str): endpoint provider id.
             scheme (str): url scheme filter. Empty string means all schemes.
             **kwa: keyword arguments forwarded to ``eventing.reply``, including:
@@ -2381,7 +2381,7 @@ class BaseHab:
                 kind (str): serialization kind.
 
 
-        Returns::
+        Returns:
             bytearray: reply message stream for location scheme entries.
         """
         msgs = bytearray()
@@ -2399,7 +2399,7 @@ class BaseHab:
         ``eid`` and optional ``scheme`` from the database, including associated
         attachments.
 
-        Parameters::
+        Parameters:
             eid (str): qb64 identifier prefix of endpoint provider.
             scheme (str or None): url scheme filter. None means all schemes.
             framed (bool): True means may assume each message plus its attachments
@@ -2421,7 +2421,7 @@ class BaseHab:
                             serder to override default stream genus version
                          False means do nothing
 
-        Returns::
+        Returns:
             bytearray: messagized location scheme records with attachments.
         """
         msgs = bytearray()
@@ -2488,7 +2488,7 @@ class BaseHab:
         - ``cid`` + ``role`` + ``scheme``: end authz for all eids in ``role``
           and loc url for ``scheme`` at each eid.
 
-        Parameters::
+        Parameters:
             cid (str): qb64 identifier prefix of controller authorizing
                 endpoint provider ``eid``.
             role (str or None): endpoint role filter. None means all roles.
@@ -2504,7 +2504,7 @@ class BaseHab:
                 gvrsn (Versionage): CESR genus version for stream attachments
                 kind (str): serialization kind.
 
-        Returns::
+        Returns:
             bytearray: reply message stream for end role entries.
         """
         msgs = bytearray()
@@ -2559,7 +2559,7 @@ class BaseHab:
             This method is the entry point for initiating replies generated by
             :meth:`replyEndRole` and/or :meth:`replyLocScheme`.
 
-        Parameters::
+        Parameters:
             aid (str): qb64 of identifier in oobi; may be cid or eid.
             role (str): authorized role for eid.
             eids (list or None): when provided, restrict results to only eids
@@ -2573,7 +2573,7 @@ class BaseHab:
                 gvrsn (Versionage): CESR genus version for stream attachments
                 kind (str): serialization kind.
 
-        Returns::
+        Returns:
             bytearray: reply message stream for OOBI endpoint entries.
         """
         # default logic is that if self.pre is witness of aid and has a loc url
@@ -2586,7 +2586,7 @@ class BaseHab:
         """Return the event serder, controller signatures, and seal source
         duple for own event at sequence number ``sn``.
 
-        Args:
+        Parameters:
             sn (int): sequence number of event.
             allowPartiallySigned (bool): True means attempt to load from
                 partial signed escrow if not found in KEL.
@@ -2619,7 +2619,7 @@ class BaseHab:
                               gvrsn=Version, genusify=False):
         """Messagize own event at sn with attachments if any.
 
-        Parameters::
+        Parameters:
             sn (int): sequence number of event.
             allowPartiallySigned (bool): True means attempt to load from
                 partial signed escrow if not found in KEL.
@@ -2642,7 +2642,7 @@ class BaseHab:
                             serder to override default stream genus version
                          False means do nothing
 
-        Returns::
+        Returns:
             msg (bytearray): qb64b serialization of own event at ``sn`` with
                         optionally attached signatures and seal source couple.
         """
@@ -2666,7 +2666,7 @@ class BaseHab:
         """Return messagized own inception event with attached signatures,
         retrieved from the database.
 
-        Parameters::
+        Parameters:
             allowPartiallySigned (bool): True means attempt to load from
                 partial signed escrow if not found in KEL.
             framed (bool): True means may assume each message plus its attachments
@@ -2688,7 +2688,7 @@ class BaseHab:
                             serder to override default stream genus version
                          False means do nothing
 
-        Returns::
+        Returns:
             msg (bytearray): messagized inception event with attached signatures.
         """
         return self.msgOwnEvent(sn=0, allowPartiallySigned=allowPartiallySigned,
@@ -2703,7 +2703,7 @@ class BaseHab:
         the event at sequence number ``sn`` for ``pre``, retrieved from the
         database.
 
-        Parameters::
+        Parameters:
             pre (str): qb64 identifier prefix.
             sn (int): sequence number of event.
             framed (bool): True means may assume each message plus its attachments
@@ -2725,11 +2725,11 @@ class BaseHab:
                             serder to override default stream genus version
                          False means do nothing
 
-        Returns::
+        Returns:
             msg (bytearray |None): messagized event with attached signatures,
                                    or None if ``pre`` is not in kevers.
 
-        Raises::
+        Raises:
             MissingEntryError: if no event is found for ``pre`` at ``sn``.
         """
         if pre not in self.kevers:
@@ -2752,7 +2752,7 @@ class BaseHab:
                     kind=Kinds.json):
         """Return bytearray of messages resulting from processing all cues.
 
-        Args:
+        Parameters:
             cues (deque): cue dicts to process.
             gvrsn (Versionage): CESR genus version for attachment group codes.
             version (Versionage): KERI protocol version for generated receipt
@@ -2773,7 +2773,7 @@ class BaseHab:
                         kind=Kinds.json):
         """Iterate through cues and yield one or more msgs for each cue.
 
-        Args:
+        Parameters:
             cues (deque): cue dicts to process.
             gvrsn (Versionage): CESR genus version for attachment group codes.
             version (Versionage): KERI protocol version for generated receipt
@@ -2966,7 +2966,7 @@ class Hab(BaseHab):
         Kevery.  ``MissingSignatureError`` is silently swallowed during
         delegated-identifier initialisation.
 
-        Args:
+        Parameters:
             secrecies (list or None): List of secret seeds to pre-load key
                 pairs. When provided, key pairs are replayed rather than
                 generated. Defaults to ``None``.
@@ -3113,7 +3113,7 @@ class Hab(BaseHab):
         store and KEL in sync (see issue #819).  Stale private keys from the
         previous signing set are erased only after successful validation.
 
-        Args:
+        Parameters:
             isith (int, str, list, or None): Current signing threshold as an
                 int, hex str, or weighted list. Defaults to the prior next
                 threshold when ``None``.
@@ -3217,7 +3217,7 @@ class SignifyHab(BaseHab):
         Private keys are held by the remote Signify agent, so local signing is
         intentionally disabled.
 
-        Parameters::
+        Parameters:
             ser (bytes): Serialization to sign.
             verfers (list or None): Ignored.
             indexed (bool): Ignored.
@@ -3225,7 +3225,7 @@ class SignifyHab(BaseHab):
             ondices (list or None): Ignored.
             **kwa: Ignored.
 
-        Raises::
+        Raises:
             KeriError: Always because local signing is not permitted for this hab type.
         """
         raise KeriError("Signify hab does not support local signing")
@@ -3240,7 +3240,7 @@ class SignifyHab(BaseHab):
         Registers the prefix, processes the inception event through the local
         Kevery, persists the habitat record, and marks the hab as initialised.
 
-        Args:
+        Parameters:
             serder (SerderKERI): Pre-built inception event serder. The prefix
                 ``serder.ked["i"]`` is assigned to ``self.pre``.
             sigers (list[Siger]|None): Siger instances carrying the remote
@@ -3281,6 +3281,9 @@ class SignifyHab(BaseHab):
                             serder to override default stream genus version
                          False means do nothing
             **kwas: Absorbed for API compatibility; not used.
+
+        Returns:
+            bytearray: messagized inception event with attachments
         """
         if not serder:
             raise KeriError("Missing serder from remote .incept")
@@ -3311,7 +3314,7 @@ class SignifyHab(BaseHab):
         Packages the provided serder and sigers into a message and processes
         it through the local Kevery to update key state.
 
-        Parameters::
+        Parameters:
             serder (SerderKERI): Pre-built rotation event serder.
             sigers (list[Siger]|None): Siger instances carrying the remote
                 agent's signatures over ``serder.raw``.
@@ -3352,7 +3355,7 @@ class SignifyHab(BaseHab):
                          False means do nothing
             **kwa: Absorbed for API compatibility; not used.
 
-        Returns::
+        Returns:
             bytearray: Rotation message with attached signatures.
         """
         if not serder:
@@ -3377,7 +3380,7 @@ class SignifyHab(BaseHab):
         Packages the provided serder and sigers into a message and processes
         it through the local Kevery to update key state.
 
-        Parameters::
+        Parameters:
             serder (SerderKERI): Pre-built interaction event serder.
             sigers (list[Siger]): Siger instances carrying the remote
                 agent's signatures over ``serder.raw``.
@@ -3418,7 +3421,7 @@ class SignifyHab(BaseHab):
                          False means do nothing
             **kwa: Absorbed for API compatibility; not used.
 
-        Returns::
+        Returns:
             bytearray: Interaction message with attached signatures.
         """
         if not serder:
@@ -3442,7 +3445,7 @@ class SignifyHab(BaseHab):
         with provided signatures.  When ``save`` is ``True`` a local copy is
         parsed into the database for record keeping.
 
-        Parameters::
+        Parameters:
             serder (SerderKERI): Pre-built exchange event serder.
             save (bool): When ``True``, parse a copy of the assembled message
                 into the local database. Defaults to ``False``.
@@ -3485,7 +3488,7 @@ class SignifyHab(BaseHab):
                          False means do nothing
             **kwa: Absorbed for API compatibility; not used.
 
-        Returns::
+        Returns:
             msg (bytearray): Exchange message with count code and attached
                              signatures.
         """
@@ -3512,12 +3515,12 @@ class SignifyHab(BaseHab):
         ``MissingSignatureError``; any exception from the Kevery is wrapped
         in a ``ConfigurationError`` and re-raised.
 
-        Parameters::
+        Parameters:
             serder (SerderKERI): Event serder to process.
             sigers (list[Siger]| None): Signature instances over
                 ``serder.raw``.
 
-        Raises::
+        Raises:
             ConfigurationError: If the Kevery raises any exception during
                 event processing.
         """
@@ -3555,7 +3558,7 @@ class SignifyHab(BaseHab):
         ``cid``'s witnesses, the KEL replay is used as the authorisation
         instead of explicit end-role records.
 
-        Parameters::
+        Parameters:
             cid (str): qb64 identifier prefix of the controller whose
                 endpoint authorisations are being requested.
             role (str or None): Authorised role to filter by. ``None`` means
@@ -3573,7 +3576,7 @@ class SignifyHab(BaseHab):
                 gvrsn (Versionage): CESR genus version for stream attachments
                 kind (str): serialization kind.
 
-        Returns::
+        Returns:
             bytearray: Concatenated reply message stream containing KEL
             replay, location scheme records, and end-role records.
         """
@@ -3649,7 +3652,7 @@ class SignifyGroupHab(SignifyHab):
         habitat record (including group member metadata), and marks the hab as
         initialised.
 
-        Args:
+        Parameters:
             serder (SerderKERI): Pre-built inception event serder. The prefix
                 ``serder.ked["i"]`` is assigned to ``self.pre``.
             sigers (list[Siger]): Siger instances carrying the remote
@@ -3672,7 +3675,7 @@ class SignifyGroupHab(SignifyHab):
         can be created and stored with only a single local member's signature,
         pending collection of the remaining co-signers' contributions.
 
-        Args:
+        Parameters:
             serder (SerderKERI): Event serder to process.
             sigers (list): Signature instances over
                 ``serder.raw``.
@@ -3698,7 +3701,7 @@ class SignifyGroupHab(SignifyHab):
         ``smids`` and ``rmids`` on both the instance and the persisted
         ``HabitatRecord``.
 
-        Args:
+        Parameters:
             smids (list or None): Updated qb64 prefixes of signing members
                 after rotation.
             rmids (list or None): Updated qb64 prefixes of rotating members
@@ -3773,7 +3776,7 @@ class GroupHab(BaseHab):
     def __init__(self, smids, mhab=None, rmids=None, **kwa):
         """Initialise a GroupHab instance.
 
-        Args:
+        Parameters:
             smids (list[str]): qb64 prefixes of the current signing members of
                 the multisig group.
             mhab (Hab or None): Local participant member hab. The ``mhab.pre``
@@ -3804,7 +3807,7 @@ class GroupHab(BaseHab):
 
         Assumes injected dependencies have already been set up.
 
-        Args:
+        Parameters:
             code (str): Prefix derivation code. Defaults to
                 ``MtrDex.Blake3_256``.
             transferable (bool): ``True`` means the prefix is transferable
@@ -3904,7 +3907,7 @@ class GroupHab(BaseHab):
         ``smids``/``rmids`` member lists are updated on both the instance and
         the persisted ``HabitatRecord``.
 
-        Args:
+        Parameters:
             smids (list or None): Updated qb64 prefixes of signing members
                 after rotation.
             rmids (list or None): Updated qb64 prefixes of rotating members
@@ -3988,7 +3991,7 @@ class GroupHab(BaseHab):
         digest is always the zeroth element of the member's next-key digest
         list.
 
-        Args:
+        Parameters:
             ser (bytes): Serialisation to sign.
             verfers (list or None): ``Verfer`` instances representing
                 the group's current signing keys. ``None`` means use
@@ -4071,7 +4074,7 @@ class GroupHab(BaseHab):
     def witness(self, serder):
         """Group habs cannot act as witnesses.
 
-        Args:
+        Parameters:
             serder (SerderKERI): Ignored.
 
         Raises:
@@ -4088,7 +4091,7 @@ class GroupHab(BaseHab):
         endorses it through the local member hab (``mhab``) using the last
         event in ``mhab``'s KEL.
 
-        Args:
+        Parameters:
             pre (str): qb64 identifier prefix being queried for.
             src (str): qb64 identifier prefix of the attester being queried.
             query (dict or None): Additional query modifiers to include in the

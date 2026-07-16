@@ -326,7 +326,7 @@ class Exchanger:
     def complete(self, said):
         """
 
-        Args:
+        Parameters:
             said (str): qb64 said of exchange message to check status
 
         Returns:
@@ -490,7 +490,7 @@ def specialExchange(*,
     attachment as determined by the presence of diger or embeds parameters
     repectively
 
-    Parameters::
+    Parameters:
         sender (str): qb64 of sender identifier (AID)
         receiver (str): qb64 of receiver identifier (AID)
         xid (str): qb64 of exchange ID which is SAID of exchange inception 'xip'
@@ -514,7 +514,7 @@ def specialExchange(*,
         diger (Diger): qb64 digest of attributes section (payload)
         embeds (dict): named embeded KERI event CESR stream with attachments
 
-    Returns::
+    Returns:
         embedded (SerderKeri, bytearray): of form (exchange, attachments) where
             exchange is serder of exchange message and atc is serialized path
             attachments of embeds

@@ -64,10 +64,7 @@ class Router:
             diger:
             cigars:
             tsgs:
-
-        Returns:
-
-        """
+            """
         ked = serder.ked
         # Dispatch based on route
         r = ked["r"]
@@ -118,7 +115,7 @@ class Router:
             route (str): route ('r') of the event message
             cigars (Optional(list)): list of non-transferable signature tuples
             tsgs (Optional(list)): list of transferable signature tuples
-            **kwargs (dict) additional keyword args
+            **kwargs (dict): additional keyword args
 
         """
 
@@ -649,7 +646,7 @@ def compile_uri_template(template):
     Also, note that if the template contains a trailing slash character,
     it will be stripped in order to normalize the routing logic.
 
-    Args:
+    Parameters:
         template(str): The template to compile. Note that field names are
             restricted to ASCII a-z, A-Z, and the underscore character.
 

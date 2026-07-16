@@ -113,11 +113,11 @@ def signPaths(hab, serder, paths):
 def transSeal(hab):
     """ Returns seal components and signing indices as appropriate for current state of Habitat
 
-    Args:
+    Parameters:
         hab (Habitat): environment that contains the information for the idenfitier prefix
 
     Returns:
-       tuple:  seal components with signing indices
+        tuple:  seal components with signing indices
 
     ToDo: NRR
        indices for both hab.smids and hab.rmids

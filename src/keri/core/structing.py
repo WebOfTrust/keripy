@@ -1132,7 +1132,7 @@ class Structor:
         """primary said field value if any. None otherwise
 
         Returns:
-              said (str|None): primary said field value if any. None otherwise
+            said (str|None): primary said field value if any. None otherwise
                                primary has same label as zeroth item in .saids
         """
         if self.saidive and self.saids:
@@ -1148,7 +1148,7 @@ class Structor:
         """primary said field value if any. None otherwise
 
         Returns:
-              said (bytes|None): primary said field value if any. None otherwise
+            said (bytes|None): primary said field value if any. None otherwise
                                primary has same label as zeroth item in .saids
         """
         return self.said.encode() if self.said is not None else None
@@ -1174,7 +1174,7 @@ class Structor:
         """Getter for ._saidive
 
         Returns:
-              saidive (bool): True means compute SAID(s) for toplevel fields in .saids
+            saidive (bool): True means compute SAID(s) for toplevel fields in .saids
                             False means do not compute SAIDs
         """
         return self._saidive
@@ -1494,7 +1494,6 @@ class Blinder(Structor):
             blinder (Blinder): blinded blinder
 
         Parameters:
-
             raw (bytes|None): random crypto material as salt used to generate uuid
             salt (str|None): qb64 of 128 bit random salt used to generate uuid
             sn (int): sequence number of blindable update message. Converted to
@@ -1635,11 +1634,7 @@ class Blinder(Structor):
                               value to be computed from serialized dummied .mad
             saidive (bool): True means compute SAID(s) for toplevel fields in .saids
                         False means do not compute SAIDs
-
-        Parameters:
-
-
-        """
+            """
         super(Blinder, self).__init__(saidive=saidive, **kwa)
 
         if self.clan not in self.Clans:
@@ -1650,7 +1645,7 @@ class Blinder(Structor):
     def blid(self):
         """blid property getter (alias of .said)
         Returns:
-           blid (str): blid of BlindState CESR .data.d 'd' field
+            blid (str): blid of BlindState CESR .data.d 'd' field
         """
         return self.said
 
@@ -1668,7 +1663,7 @@ class Blinder(Structor):
     def uuid(self):
         """uuid property getter
         Returns:
-           uuid (str): uuid of BlindState CESR .data.u 'u' field
+            uuid (str): uuid of BlindState CESR .data.u 'u' field
         """
         return self.data.u.nonce
 
@@ -1686,7 +1681,7 @@ class Blinder(Structor):
     def acdc(self):
         """acdc property getter
         Returns:
-           acdc (str): qb64 transaction acdc said or empty of
+            acdc (str): qb64 transaction acdc said or empty of
                        BlindState CESR .data.td 'td' field
         """
         return self.data.td.nonce
@@ -1706,7 +1701,7 @@ class Blinder(Structor):
     def state(self):
         """state property getter
         Returns:
-           state (str):  transaction state string of
+            state (str):  transaction state string of
                         BlindState CESR .data.ts 'ts' field
         """
         return self.data.ts.text
@@ -1726,7 +1721,7 @@ class Blinder(Structor):
     def bsn(self):
         """bsn property getter
         Returns:
-           bsn (int): bound key state sequence number of issuees key state at
+            bsn (int): bound key state sequence number of issuees key state at
                       time of update
                       BoundState CESR .data.bn 'bn' field
         """
@@ -1758,7 +1753,7 @@ class Blinder(Structor):
     def bd(self):
         """bd property getter
         Returns:
-           bd (str): qb64 bound key state said  of issuee at time of update
+            bd (str): qb64 bound key state said  of issuee at time of update
                       BoundState CESR .data.bd 'bd' field
         """
         return self.data.bd.nonce if self.clan is BoundState else None
@@ -1907,11 +1902,7 @@ class Mediar(Structor):
                               value to be computed from serialized dummied .mad
             saidive (bool): True means compute SAID(s) for toplevel fields in .saids
                         False means do not compute SAIDs
-
-        Parameters:
-
-
-        """
+            """
         super(Mediar, self).__init__(saidive=saidive, **kwa)
 
         if self.clan not in self.Clans:
@@ -1922,7 +1913,7 @@ class Mediar(Structor):
     def uuid(self):
         """uuid property getter
         Returns:
-           uuid (str): uuid of TypeMedia CESR .data.u 'u' field
+            uuid (str): uuid of TypeMedia CESR .data.u 'u' field
         """
         return self.data.u.nonce
 
@@ -1940,7 +1931,7 @@ class Mediar(Structor):
     def mt(self):
         """mt property getter
         Returns:
-           mt (str): media type string TypeMedia  .data.mt.text 'mt' field
+            mt (str): media type string TypeMedia  .data.mt.text 'mt' field
         """
         return self.data.mt.text
 
@@ -1958,7 +1949,7 @@ class Mediar(Structor):
     def mv(self):
         """mv property getter
         Returns:
-           mv (str): media value string TypeMedia .data.mv.text 'mv' field
+            mv (str): media value string TypeMedia .data.mv.text 'mv' field
         """
         return self.data.mv.text
 

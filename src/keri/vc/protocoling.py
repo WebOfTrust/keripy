@@ -119,8 +119,8 @@ class IpexHandler:
             serder (Serder): IPEX exn message to check for a response
 
         Returns:
-
-        """
+            Serder | None: response exn message if one exists, otherwise None
+            """
         saider = self.hby.db.erpy.get(keys=(serder.said,))
         if saider:
             rserder, _ = cloneMessage(self.hby, saider.qb64)  # Clone previous so we reverify the sigs
@@ -151,7 +151,7 @@ def ipexApplyExn(hab, recp, message, schema, attrs, version=None, pvrsn=None,
                       gvrsn=None, framed=True, nested=False, genusify=False):
     """ Apply for an ACDC
 
-    Parameters::
+    Parameters:
         hab(Hab): identifier environment for issuer of credential
         recp (str): qb64 AID of recipient
         message(str): Human readable message regarding the credential application
@@ -179,7 +179,7 @@ def ipexApplyExn(hab, recp, message, schema, attrs, version=None, pvrsn=None,
                         serder to override default stream genus version
                      False means do nothing
 
-    Returns::
+    Returns:
         Serder: credential issuance exn peer to peer message
         bytes: attachments for exn message
 

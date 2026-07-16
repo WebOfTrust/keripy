@@ -22,7 +22,7 @@ def openCF(cls=None, filed=True, **kwa):
     Thin wrapper around :func:`filing.openFiler` with ``Configer`` as the
     default class and ``filed=True`` as the default.
 
-    Args:
+    Parameters:
         cls (type, optional): Filer subclass to instantiate. Defaults to
             ``Configer`` when ``None``.
         filed (bool): ``True`` means ``.path`` is a file path rather than a
@@ -95,7 +95,7 @@ class Configer(filing.Filer):
                  fext="json", human=True, **kwa):
         """Initialize and open the config file.
 
-        Args:
+        Parameters:
             name (str): Leaf name component used to differentiate multiple
                 KERI installations on the same host. Defaults to ``"conf"``.
             base (str): Optional intermediate directory segment inserted
@@ -132,7 +132,7 @@ class Configer(filing.Filer):
         - ``.mgpk`` — MsgPack.
         - ``.cbor`` — CBOR.
 
-        Args:
+        Parameters:
             data (dict): Data to serialize and write.
             human (bool, optional): Override ``self.human`` for this call.
                 ``None`` means use ``self.human``. Defaults to ``None``.
@@ -183,7 +183,7 @@ class Configer(filing.Filer):
 
         An empty file returns an empty dict without error.
 
-        Args:
+        Parameters:
             human (bool, optional): Override ``self.human`` for this call.
                 ``None`` means use ``self.human``. Defaults to ``None``.
 
@@ -244,7 +244,7 @@ class ConfigerDoer(doing.Doer):
     def __init__(self, configer, **kwa):
         """Initialize the doer with a ``Configer`` instance.
 
-        Args:
+        Parameters:
             configer (Configer): The ``Configer`` instance to manage.
             **kwa: Additional keyword arguments forwarded to
                 :class:`doing.Doer`.
@@ -255,7 +255,7 @@ class ConfigerDoer(doing.Doer):
     def enter(self, *, temp=None):
         """Open the ``Configer`` if it is not already open.
 
-        Args:
+        Parameters:
             temp (bool, optional): Unused. Present for interface compatibility
                 with the base ``Doer`` lifecycle. Defaults to ``None``.
         """

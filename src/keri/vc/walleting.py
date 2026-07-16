@@ -85,7 +85,7 @@ class WalletDoer(doing.DoDoer):
             add result of doify on this method to doers list
 
         Returns:
-             Doist: doifiable Doist compatible generator method
+            Doist: doifiable Doist compatible generator method
 
         """
         # start enter context

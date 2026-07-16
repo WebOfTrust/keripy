@@ -160,11 +160,11 @@ class SuberBase():
         by partial keys by appending separator to end of partial key
 
         Returns:
-           key (bytes): each element of keys is joined by .sep. If topive then
+            key (bytes): each element of keys is joined by .sep. If topive then
                         last char of key is .sep
 
         Parameters:
-           keys (str|bytes|memoryview|Iterable[str|bytes|memoryview]): db key or
+            keys (str|bytes|memoryview|Iterable[str|bytes|memoryview]): db key or
                         Iterable of (str|bytes|memoryview) to form key.
            topive (bool): True means treat as partial key tuple from top branch of
                        key space given by partial keys. Resultant key ends in .sep
@@ -193,10 +193,10 @@ class SuberBase():
         at separator .sep.
 
         Returns:
-           keys (tuple[str]): makes tuple by splitting key at sep
+            keys (tuple[str]): makes tuple by splitting key at sep
 
         Parameters:
-           key (str|bytes|memoryview): db key.
+            key (str|bytes|memoryview): db key.
 
         """
         if isinstance(key, memoryview):  # memoryview of bytes
@@ -233,7 +233,7 @@ class SuberBase():
         Enables removal of whole branches of db key space.
 
         Returns:
-           result (bool): True if val at key exists so delete successful.
+            result (bool): True if val at key exists so delete successful.
                           False otherwise
 
         Parameters:
@@ -872,10 +872,10 @@ class B64SuberBase(SuberBase):
         joins with .sep and converts to val bytes and returns.
 
         Returns:
-           val (bytes): each element of vals is joined by .sep.
+            val (bytes): each element of vals is joined by .sep.
 
         Parameters:
-           vals (str | bytes | memoryview | Iterable[str | bytes]): db val or
+            vals (str | bytes | memoryview | Iterable[str | bytes]): db val or
                         Iterable of (str | bytes | memoryview) to form val.
                         Note, join of bytes sep works with memoryview.
 
@@ -908,10 +908,10 @@ class B64SuberBase(SuberBase):
         at separator .sep.
 
         Returns:
-           vals (tuple[str]): makes tuple by splitting val at .sep
+            vals (tuple[str]): makes tuple by splitting val at .sep
 
         Parameters:
-           val (bytes | memoryview): db Base64 val.
+            val (bytes | memoryview): db Base64 val.
 
         """
         if isinstance(val, memoryview):  # memoryview of bytes
@@ -927,10 +927,10 @@ class B64SuberBase(SuberBase):
         When val is Iterable then joins each elements with .sep returns val bytes
 
         Returns:
-           val (bytes): .sep join of each Base64 bytes in val
+            val (bytes): .sep join of each Base64 bytes in val
 
         Parameters:
-           val (Union[Iterable, bytes]): of Base64 bytes
+            val (Union[Iterable, bytes]): of Base64 bytes
 
         """
         if not helping.isNonStringIterable(val):  # not iterable
@@ -944,10 +944,10 @@ class B64SuberBase(SuberBase):
         .qb64b  concatenation in order of each instance in .klas
 
         Returns:
-           vals (tuple): subclass instances
+            vals (tuple): subclass instances
 
         Parameters:
-           val (Union[bytes, memoryview]):  of concatenation of .qb64b
+            val (Union[bytes, memoryview]):  of concatenation of .qb64b
 
         """
         return self._tovals(val)
@@ -1169,14 +1169,14 @@ class CatCesrSuberBase(CesrSuberBase):
         or ValueError/TypeError is raised.
 
         Parameters:
-           val (Union[Iterable, coring.Matter]): of subclass instances.
+            val (Union[Iterable, coring.Matter]): of subclass instances.
                Non-iterables are wrapped as a one-item tuple.
 
         Returns:
-           bytes: concatenation of serialized qb64b values in order.
+            bytes: concatenation of serialized qb64b values in order.
 
         Raises:
-           ValueError: when strict and tuple arity does not match .klas.
+            ValueError: when strict and tuple arity does not match .klas.
            TypeError: wrong slot class when strict.
 
         """
@@ -1197,10 +1197,10 @@ class CatCesrSuberBase(CesrSuberBase):
         .qb64b  concatenation in order of each instance in .klas
 
         Returns:
-           vals (tuple): subclass instances
+            vals (tuple): subclass instances
 
         Parameters:
-           val (Union[bytes, memoryview]):  of concatenation of .qb64b
+            val (Union[bytes, memoryview]):  of concatenation of .qb64b
 
         """
         if not isinstance(val, bytearray):  # is memoryview or bytes
@@ -1521,7 +1521,7 @@ class IoSetSuber(SuberBase):
                 if val is None then remove all values at key
 
         Returns:
-           result (bool): True if effective key with val exists so rem successful.
+            result (bool): True if effective key with val exists so rem successful.
                            False otherwise
 
         """
@@ -2345,7 +2345,7 @@ class DupSuber(SuberBase):
                               if val is None, default, then remove all values at key
 
         Returns:
-           result (bool): True if key exists so delete successful. False otherwise
+            result (bool): True if key exists so delete successful. False otherwise
 
         """
         if val is None:
@@ -2603,7 +2603,7 @@ class IoDupSuber(DupSuber):
                         if val is None then remove all values at key
 
         Returns:
-           result (bool): True if key with dup val exists so rem successful.
+            result (bool): True if key with dup val exists so rem successful.
                            False otherwise
 
         """
@@ -2948,7 +2948,7 @@ class OnIoDupSuber(OnSuberBase, IoDupSuber):
                         if val is None then remove all values at key
 
         Returns:
-           result (bool): True if onkey with dup val exists so rem successful.
+            result (bool): True if onkey with dup val exists so rem successful.
                            False otherwise
 
         """
@@ -3486,7 +3486,7 @@ class OnIoSetSuber(OnSuberBase, IoSetSuber):
         entry at onkey = keys + sep + on if any in db.
 
         Returns:
-           result (bool): True if onkey with dup val exists so rem successful.
+            result (bool): True if onkey with dup val exists so rem successful.
                            False otherwise
 
         Parameters:

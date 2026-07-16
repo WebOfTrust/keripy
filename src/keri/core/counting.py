@@ -721,10 +721,10 @@ class Counter:
     def makeGVC(cls, version):
         """Makes genus version code from Versionage version
 
-        Parameters::
+        Parameters:
             version (Versionage): version portion of Genus Version Code
 
-        Returns::
+        Returns:
             qb64b (bytes):  qb64b serialized genus version counter for KERI/ACDC genus
 
         """

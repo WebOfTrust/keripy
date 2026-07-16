@@ -28,7 +28,7 @@ def handler(args):
     """
     List notifications for an identifier.
 
-    Args:
+    Parameters:
         args(Namespace): arguments object from command line
     """
 
@@ -67,7 +67,8 @@ class MarkDoer(doing.DoDoer):
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value
 
-        Returns:  doifiable Doist compatible generator method
+        Returns:
+            doifiable Doist compatible generator method
         """
         # enter context
         self.wind(tymth)

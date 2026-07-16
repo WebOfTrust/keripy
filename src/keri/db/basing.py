@@ -1650,7 +1650,7 @@ class Baser(LMDBer):
             version (Versionage): legacy alias for gvrsn
 
         Returns:
-           msgs (Iterator): over all items with pre starting at fn
+            msgs (Iterator): over all items with pre starting at fn
         """
         #if hasattr(pre, 'encode'):
             #pre = pre.encode("utf-8")
@@ -1678,7 +1678,7 @@ class Baser(LMDBer):
             version (Versionage): legacy alias for gvrsn
 
         Returns:
-           msgs (Iterator): over all items in db
+            msgs (Iterator): over all items in db
 
         """
         if version is not None:
@@ -2050,8 +2050,8 @@ class Baser(LMDBer):
             serder (Serder): event serder to validate witness threshold
 
         Returns:
-
-        """
+            bool: True if the event has enough witness receipts to satisfy the threshold
+            """
         # Verify fully receipted, because this witness may have persisted before all receipts
         # have been gathered if this ius a witness for serder.pre
         # get unique verified wigers and windices lists from wigers list
@@ -2199,7 +2199,7 @@ class BaserDoer(doing.Doer):
            tock is float seconds initial value of .tock
 
         Parameters:
-           baser is Baser instance
+            baser is Baser instance
         """
         super(BaserDoer, self).__init__(**kwa)
         self.baser = baser

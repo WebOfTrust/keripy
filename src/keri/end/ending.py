@@ -186,7 +186,7 @@ def designature(value):
     RFC8941 structured Field Values for HTTP
 
     Returns:
-       signages (list): items are Signage namedtuples,
+        signages (list): items are Signage namedtuples,
                            (markers, indexed, signer, ordinal, kind)
 
             where:
@@ -274,7 +274,7 @@ def siginput(name, method, path, headers, fields, hab=None, signers=None, expire
              keyid=None, context=None):
     """ Create an HTTP Signature-Input Header
    Parameters:
-        context (str): Optional implementation specific context for the signature
+       context (str): Optional implementation specific context for the signature
         keyid (str): Optional key identifier used to sign the request
         alg (str): Algorithm used when generating the signature
         nonce (str): Uniqque salty nonce for signing the request
@@ -361,8 +361,8 @@ def desiginput(value):
         value (Request): falcon request object
 
     Returns:
-
-    """
+        list: parsed signature input descriptors
+        """
     sid = Dictionary()
     sid.parse(value)
 

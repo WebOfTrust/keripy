@@ -80,7 +80,7 @@ def handler(args):
     """
     Create KERI identifier prefix in specified key store with alias
 
-    Args:
+    Parameters:
         args(Namespace): arguments object from command line
     """
 
@@ -193,7 +193,8 @@ class InceptDoer(doing.DoDoer):
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value
 
-        Returns:  doifiable Doist compatible generator method
+        Returns:
+            doifiable Doist compatible generator method
         """
         # enter context
         self.wind(tymth)
