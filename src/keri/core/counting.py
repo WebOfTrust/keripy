@@ -434,7 +434,7 @@ class Counter:
         MUCodes (dict): nested message universal codes keyed by major and minor version
         BUCodes (dict): nested body universal codes keyed by major and minor version
         Names (dict): nested of map of code names to codes keyed by
-                        major and minor version
+                      major and minor version
         Hards (dict): of hard code sizes keyed by text domain selector
         Bards (dict): of hard code sizes keyed by binary domain selector
         Sizes (dict): of size tables keyed by version. Size table is dict
@@ -451,10 +451,13 @@ class Counter:
         pad  (int): number of pad chars given raw
         count (int): count of quadlets/triplets of following framed material
             (not including code)
+
         qb64 (str | bytes | bytearray): in Base64 fully qualified with
             derivation code + crypto mat
+
         qb64b (bytes | bytearray): in Base64 fully qualified with
             derivation code + crypto mat
+
         qb2  (bytes | bytearray): in binary with derivation code +
             crypto material
 
@@ -493,12 +496,13 @@ class Counter:
             and the message body protocol stack labeled KERI/ACDC/SPAC
 
             The two versions, CESR Genus and Protocol Stack, may be synchronized in
+
         the following way:
 
             * Major versions must match or be compatible
 
             * Minor versions may differ but must be compatible within a
-            major version.
+              major version.
 
             Importantly the CESR code table version may not be included in the
             message body itself but only provided in the surrounding CESR stream.
