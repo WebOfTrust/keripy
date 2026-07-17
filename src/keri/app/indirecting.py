@@ -647,10 +647,8 @@ class MailboxDirector(doing.DoDoer):
 
     def processPollIter(self):
         """
-        Iterate through cues and yields one or more responses for each cue.
+        Iterate through cues and yields one or more responses for each cue."""
 
-        Parameters:
-            cues: deque of cues"""
         mail = []
         for poller in self.pollers:  # get responses from all behaviors
             while poller.msgs:

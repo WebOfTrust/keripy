@@ -2709,7 +2709,7 @@ class LMDBer(filing.Filer):
             items (abc.Iterator): iterator of (full key, val) tuples of all
                 dup items  over a branch of the db given by top key where returned
                 full key is full database key for val not truncated top key.
-            Item: (key, val) with proem stripped from val stored in db.
+                Item is (key, val) with proem stripped from val stored in db.
                 If key = b'' then returns list of dup items for all keys in db.
 
         Because cursor.iternext() advances cursor after returning item its safe

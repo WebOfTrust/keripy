@@ -126,7 +126,7 @@ def deWitnessCouple(data, strip=False):
 
     Parameters:
         data: couple of bytes concatenation of dig+wig from receipt
-        deletive: Boolean True means delete from data each part as parsed
+        deletive is Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream
 
     Witness couple is used for escrows of unverified witness recipts signed by
@@ -209,7 +209,7 @@ def deReceiptTriple(data, strip=False):
 
     Parameters:
         data: triple of bytes concatenation of dig+pre+cig from receipt
-        deletive: Boolean True means delete from data each part as parsed
+        deletive is Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream"""
     if isinstance(data, memoryview):
         data = bytes(data)
@@ -235,8 +235,8 @@ def deTransReceiptQuadruple(data, strip=False):
     for event that is in kel where event is given by context or key
 
     Parameters:
-        quadruple: bytes concatenation of pre+snu+dig+sig from receipt
-        deletive: Boolean True means delete from data each part as parsed
+        quadruple is bytes concatenation of pre+snu+dig+sig from receipt
+        deletive is Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream"""
     if isinstance(data, memoryview):
         data = bytes(data)
@@ -267,8 +267,8 @@ def deTransReceiptQuintuple(data, strip=False):
     event is given by event digest (ediger)
 
     Parameters:
-        quintuple: bytes concatenation of edig+spre+ssnu+sdig+sig from receipt
-        deletive: Boolean True means delete from data each part as parsed
+        quintuple is bytes concatenation of edig+spre+ssnu+sdig+sig from receipt
+        deletive is Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream"""
     if isinstance(data, memoryview):
         data = bytes(data)
@@ -355,13 +355,13 @@ def validateSigs(serder, sigers, verfers, tholder):
     Parameters:
         serder (SerderKERI): instance of message
         sigers (Iterable): Siger instances of indexed signatures.
-        Index: offset into verfers list each providing verification key
+            Index is offset into verfers list each providing verification key
         verfers (Iterable): Verfer instances of keys
         tholder (Tholder): instance of signing threshold (sith)
 
-        seqner: Seqner instance of delegating event sequence number.
+        seqner is Seqner instance of delegating event sequence number.
             If this event is not delegated then seqner is ignored
-        diger: Diger instance of of delegating event digest.
+        diger is Diger instance of of delegating event digest.
             If this event is not delegated then diger is ignored"""
     valid = False
     if len(verfers) < tholder.size:
@@ -2682,11 +2682,11 @@ class Kever:
         Parameters:
             serder (SerderKERI): instance of event
             sigers (list): of Siger instances of indexed controllers signatures.
-            Index: offset into verfers list from which public key may be derived.
+                Index is offset into verfers list from which public key may be derived.
             verfers (list): of Verfer instances of keys from latest est event
             tholder (Tholder): instance of sith threshold
             wigers (list): of Siger instances of indexed witness signatures.
-            Index: offset into wits list of associated witness nontrans pre
+                Index is offset into wits list of associated witness nontrans pre
                 from which public key may be derived.
             toader (Number): instance of backer witness threshold
             wits (list): of qb64 non-transferable prefixes of witnesses used to
@@ -4059,7 +4059,7 @@ class Kevery:
 
         Parameters:
             cues (Deck)  notices to create responses to evts
-            kevers: dict of Kever instances of key state in db
+            kevers is dict of Kever instances of key state in db
             db (Baser): instance of database
             rvy (Revery): instance for reply message processing
             exc (Exchanger): instance for exchange message processing
@@ -4997,12 +4997,12 @@ class Kevery:
                 signature in .raw and public key in .verfer
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
-            prefixer: pre of trans endorser
-            seqner: sequence number of trans endorser's est evt for keys for sigs
-            diger: digest of trans endorser's est evt for keys for sigs
+                prefixer is pre of trans endorser
+                seqner is sequence number of trans endorser's est evt for keys for sigs
+                diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
-            EndpointRecord:
+        EndpointRecord:
             allowed: bool = False  # True eid allowed (add), False eid disallowed (cut)
             name: str = ""  # optional user friendly name of endpoint
 
@@ -5093,9 +5093,9 @@ class Kevery:
                 signature in .raw and public key in .verfer
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
-            prefixer: pre of trans endorser
-            seqner: sequence number of trans endorser's est evt for keys for sigs
-            diger: digest of trans endorser's est evt for keys for sigs
+                prefixer is pre of trans endorser
+                seqner is sequence number of trans endorser's est evt for keys for sigs
+                diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
         EndAuthRecord
@@ -5192,9 +5192,9 @@ class Kevery:
                 signature in .raw and public key in .verfer
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
-            prefixer: pre of trans endorser
-            seqner: sequence number of trans endorser's est evt for keys for sigs
-            diger: digest of trans endorser's est evt for keys for sigs
+                prefixer is pre of trans endorser
+                seqner is sequence number of trans endorser's est evt for keys for sigs
+                diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
             Reply Message:
@@ -5382,9 +5382,9 @@ class Kevery:
                 signature in .raw and public key in .verfer
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
-            prefixer: pre of trans endorser
-            seqner: sequence number of trans endorser's est evt for keys for sigs
-            diger: digest of trans endorser's est evt for keys for sigs
+                prefixer is pre of trans endorser
+                seqner is sequence number of trans endorser's est evt for keys for sigs
+                diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
             Reply Message:
@@ -5747,8 +5747,8 @@ class Kevery:
             serder (SerderKERI): instance of receipt msg not receipted event
             wigers (list): of Siger instances for witness indexed signature
                     of receipted event
-                said (str) qb64 said of receipted event not serder.dig because
-            serder: a receipt not the receipted event"""
+            said (str): qb64 said of receipted event not serder.dig because
+                serder is a receipt not the receipted event"""
         # note receipt dig algo may not match database dig also so must always
         # serder.compare to match. So receipts for same event may have different
         # digs of that event due to different algos. So the escrow may have
@@ -5807,12 +5807,12 @@ class Kevery:
         event (transferable)
 
         Parameters:
-            serder instance of receipt message not receipted event
+            serder: Serder instance of receipt message not receipted event
             tsgs: list of tuples of form: (prefixer,seqner,diger, sigers)
-            prefixer: Prefixer instance of prefix of receipter
-            number: Number instance of  sn of est event of receiptor
-            diger: Diger instance of digest of est event of receiptor
-            sigers: list of Siger instances of multi-sig of receiptor
+                prefixer is Prefixer instance of prefix of receipter
+                number is Number instance of sn of est event of receiptor
+                diger is Diger instance of digest of est event of receiptor
+                sigers is list of Siger instances of multi-sig of receiptor
 
         escrow quintuple for each siger
             quintuple = edig+pre+snu+dig+sig
@@ -5857,11 +5857,11 @@ class Kevery:
         (transferable)
 
         Parameters:
-            serder instance of receipt message not receipted event
+            serder: Serder instance of receipt message not receipted event
             prefixer: Prefixer instance of prefix of receipter
             number: Number instance of  sn of est event of receiptor
             saider: Saider instance of said of est event of receiptor
-            igers: list of Siger instances of multi-sig of receiptor
+            sigers: list of Siger instances of multi-sig of receiptor
 
         escrow quintuple for each siger
             quintuple = edig+pre+snu+dig+sig

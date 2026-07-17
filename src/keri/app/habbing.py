@@ -1850,7 +1850,7 @@ class BaseHab:
 
         Parameters:
             pre (str or None): qb64 str or bytes of identifier prefix.
-            Default: own ``.pre``.
+                Defaults to own ``.pre``.
             fn (int): first-seen ordering number to start from.
             gvrsn (Versionage): CESR genus version for attachments
             version (Versionage): legacy alias for gvrsn
@@ -2263,7 +2263,7 @@ class BaseHab:
             eid (str or None): qb64 of endpoint provider to be authorized.
                 None means use own ``.pre``.
             scheme (str): url scheme; must match scheme in url if present.
-            Default: ``"http"``.
+                Defaults to ``"http"``.
             stamp (str or None): date-time-stamp RFC-3339 profile of iso8601
                 datetime. None means use now.
             **kwa: keyword arguments forwarded to ``eventing.reply``, including:
@@ -2909,7 +2909,7 @@ class Hab(BaseHab):
             algo (str or None): Key-creation algorithm code used by the key
                 manager when generating new keys.
             salt (str or None): qb64 salt for randomisation when the salty
-            algorithm: used.
+                algorithm is used.
             tier (str or None): Security-criticality tier code used with the
                 salty algorithm.
             kind (str): serialization value of Kinds ("json","cbor","mgpk","cesr")

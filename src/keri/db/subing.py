@@ -348,7 +348,7 @@ class SuberBase():
                 over the all the items in subdb whose key startswith key made from
                 keys. Keys may be keyspace prefix to return branches of key space.
                 When keys is empty then returns all items in subdb.
-            This: meant to return full parts of items in both keyspace and
+                This is meant to return full parts of items in both keyspace and
                 valuespace which may be useful in debugging or testing.
 
         Parameters:

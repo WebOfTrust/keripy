@@ -866,7 +866,7 @@ class Tever:
             seqner (Seqner): issuing event sequence number from controlling KEL.
             saider (Saider): issuing event SAID from controlling KEL.
             bigers (list): of Siger instances of indexed witness signatures.
-            Index: offset into wits list of associated witness nontrans pre
+                Index is offset into wits list of associated witness nontrans pre
                 from which public key may be derived."""
 
         ked = serder.ked
@@ -1016,7 +1016,7 @@ class Tever:
             saider (Saider): issuing event SAID from controlling KEL.
             sn (int): event sequence event
             bigers (list): of Siger instances of indexed witness signatures.
-            Index: offset into wits list of associated witness nontrans pre
+                Index is offset into wits list of associated witness nontrans pre
                 from which public key may be derived."""
 
         ked = serder.ked
@@ -1081,7 +1081,7 @@ class Tever:
             saider (Saider): issuing event digest from controlling KEL.
             sn (int): event sequence event
             bigers (list): of Siger instances of indexed witness signatures.
-            Index: offset into wits list of associated witness nontrans pre
+                Index is offset into wits list of associated witness nontrans pre
                 from which public key may be derived."""
 
         ked = serder.ked
@@ -1254,8 +1254,8 @@ class Tever:
             serder (Serder): instance of event
             seqner (Seqner): issuing event sequence number from controlling KEL.
             saider (Saider): issuing event said from controlling KEL.
-                bigers (list)  Siger instances of indexed witness signatures.
-            Index: offset into wits list of associated witness nontrans pre
+            bigers (list): Siger instances of indexed witness signatures.
+                Index is offset into wits list of associated witness nontrans pre
                 from which public key may be derived.
 
             toad (int):  str hex of witness threshold
@@ -1656,9 +1656,9 @@ class Tevery:
                  signature in .raw and public key in .verfer
              tsgs (list): tuples (quadruples) of form
                  (prefixer, seqner, diger, [sigers]) where:
-             prefixer: pre of trans endorser
-             seqner: sequence number of trans endorser's est evt for keys for sigs
-             diger: digest of trans endorser's est evt for keys for sigs
+                 prefixer is pre of trans endorser
+                 seqner is sequence number of trans endorser's est evt for keys for sigs
+                 diger is digest of trans endorser's est evt for keys for sigs
                  [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
          Reply Message::
@@ -1795,9 +1795,9 @@ class Tevery:
                  signature in .raw and public key in .verfer
              tsgs (list): tuples (quadruples) of form
                  (prefixer, seqner, diger, [sigers]) where:
-             prefixer: pre of trans endorser
-             seqner: sequence number of trans endorser's est evt for keys for sigs
-             diger: digest of trans endorser's est evt for keys for sigs
+                 prefixer is pre of trans endorser
+                 seqner is sequence number of trans endorser's est evt for keys for sigs
+                 diger is digest of trans endorser's est evt for keys for sigs
                  [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
          Reply Message::

@@ -745,7 +745,7 @@ class Structor:
             qb2 (bytes|bytearray|None): concatenation of qb2 data values to generate
                 .data when data and crew and qb64 missing.
             strip (bool): False means do not strip each value from qb64 or qb2.
-            Default: False. True means if qb64 or qb2 are bytearray then
+                Defaults to False. True means if qb64 or qb2 are bytearray then
                 strip contained concatenated data values. Else convert qb64 or
                 qb2 to bytearray so can strip inplace. Enables parser to extract
                 data fields from front of CESR stream when stream is bytearray.

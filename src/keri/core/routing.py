@@ -150,9 +150,9 @@ class Revery:
                 signature in .raw and public key in .verfer
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
-            prefixer: pre of trans endorser
-            number: sequence number of trans endorser's est evt for keys for sigs
-            diger: digest of trans endorser's est evt for keys for sigs
+                prefixer is pre of trans endorser
+                number is sequence number of trans endorser's est evt for keys for sigs
+                diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
         BADA (Best Available Data Acceptance) model for each reply message.
@@ -196,9 +196,9 @@ class Revery:
                 signature in .raw and public key in .verfer
             tsgs (list): tuples (quadruples) of form
                 (prefixer, seqner, diger, [sigers]) where:
-            prefixer: pre of trans endorser
-            number: sequence number of trans endorser's est evt for keys for sigs
-            diger: digest of trans endorser's est evt for keys for sigs
+                prefixer is pre of trans endorser
+                number is sequence number of trans endorser's est evt for keys for sigs
+                diger is digest of trans endorser's est evt for keys for sigs
                 [sigers] is list of indexed sigs from trans endorser's keys from est evt
 
         BADA (Best Available Data Acceptance) model for each reply message.
