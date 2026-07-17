@@ -489,12 +489,12 @@ class OnSuberBase(SuberBase):
             db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
-                False (default) means do not enable duplicates at
-                each key. Default False
+                             False (default) means do not enable duplicates at
+                             each key. Default False
             sep (str): separator to convert keys iterator to key bytes for db key
-                Default '.'
+                       Default '.'
             verify (bool): True means reverify when ._des from db when applicable
-                False means do not reverify. Default False"""
+                           False means do not reverify. Default False"""
         super(OnSuberBase, self).__init__(*pa, **kwa)
 
 
@@ -776,12 +776,12 @@ class OnSuber(OnSuberBase, Suber):
             db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
-                False (default) means do not enable duplicates at
-                each key. Set to False
+                             False (default) means do not enable duplicates at
+                             each key. Set to False
             sep (str): separator to convert keys iterator to key bytes for db key
-                default is self.Sep == '.'
+                       default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                False means do not reverify. Default False"""
+                           False means do not reverify. Default False"""
         super(OnSuber, self).__init__(*pa, **kwa)
 
 
@@ -797,8 +797,8 @@ class B64SuberBase(SuberBase):
          db (LMDBer): base LMDB db
          sdb (lmdb._Database): instance of lmdb named sub db for this Suber
          sep (str): separator for combining keys tuple of strs into key bytes
-             for db key and also used to convert val iterator to val bytes
-             Must not be Base64 character.
+                    for db key and also used to convert val iterator to val bytes
+                    Must not be Base64 character.
          default: self.Sep == '.'"""
 
     def __init__(self, *pa, **kwa):
@@ -807,13 +807,13 @@ class B64SuberBase(SuberBase):
             db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
-                False (default) means do not enable duplicates at
-                each key
+                             False (default) means do not enable duplicates at
+                             each key
             sep (str): separator to convert keys iterator to key bytes for db key
-                default is self.Sep == '.'
-                Must not be Base64 character.
+                       default is self.Sep == '.'
+                       Must not be Base64 character.
             verify (bool): True means reverify when ._des from db when applicable
-                False means do not reverify. Default False"""
+                           False means do not reverify. Default False"""
         super(B64SuberBase, self).__init__(*pa, **kwa)
         if helping.Reb64.match(self.sep.encode()):
             raise ValueError("Invalid sep={self.sep}, must not be Base64 char.")
@@ -914,14 +914,14 @@ class B64Suber(B64SuberBase, Suber):
             db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
-                False (default) means do not enable duplicates at
-                each key. Set to False
+                             False (default) means do not enable duplicates at
+                             each key. Set to False
             sep (str): separator to convert keys iterator to key bytes for db key
-                default is self.Sep == '.'
-                also used to convert val iterator to val bytes
-                Must not be Base64 character.
+                       default is self.Sep == '.'
+                       also used to convert val iterator to val bytes
+                       Must not be Base64 character.
             verify (bool): True means reverify when ._des from db when applicable
-                False means do not reverify. Default False"""
+                           False means do not reverify. Default False"""
         super(B64Suber, self).__init__(*pa, **kwa)
 
 
@@ -1034,12 +1034,12 @@ class CesrOnSuber(CesrSuberBase, OnSuberBase, Suber):
             db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
-                False (default) means do not enable duplicates at
-                each key. Set to False
+                             False (default) means do not enable duplicates at
+                             each key. Set to False
             sep (str): separator to convert keys iterator to key bytes for db key
-                default is self.Sep == '.'
+                       default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                False means do not reverify. Default False"""
+                           False means do not reverify. Default False"""
         super(CesrOnSuber, self).__init__(*pa, **kwa)
 
 
@@ -1554,14 +1554,14 @@ class B64IoSetSuber(B64SuberBase, IoSetSuber):
             db (LMDBer): base db
             subkey (str):  LMDB sub database key
             dupsort (bool): True means enable duplicates at each key
-                False (default) means do not enable duplicates at
-                each key. Set to False
+                             False (default) means do not enable duplicates at
+                             each key. Set to False
             sep (str): separator for combining keys tuple of strs into key bytes
-                for db key and also used to convert val iterator to val bytes
-                Must not be Base64 character.
-                default is self.Sep == '.'
+                       for db key and also used to convert val iterator to val bytes
+                       Must not be Base64 character.
+                       default is self.Sep == '.'
             verify (bool): True means reverify when ._des from db when applicable
-                False means do not reverify. Default False"""
+                           False means do not reverify. Default False"""
         super(B64IoSetSuber, self).__init__(*pa, **kwa)
 
 

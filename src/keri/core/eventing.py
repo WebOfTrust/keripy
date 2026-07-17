@@ -116,17 +116,19 @@ def deWitnessCouple(data, strip=False):
     """
     Returns tuple of (diger, wiger) extracted from bytes or bytearray
     that hold concatenated data couple where:
-        diger is Diger instance
-        wiger is Siger instance
+    diger is Diger instance
+    wiger is Siger instance
+
     Couple is dig+wig  where:
-        dig is receipted event digest
-        wig is indexed signature made with key pair derived from witness nontrans
-            identifier prefix from witness list. Index is offset into witness
-            list of latest establishment event for receipted event.
+    dig is receipted event digest
+    wig is indexed signature made with key pair derived from witness nontrans
+    identifier prefix from witness list. Index is offset into witness
+    list of latest establishment event for receipted event.
 
     Parameters:
         data: couple of bytes concatenation of dig+wig from receipt
         deletive is Boolean True means delete from data each part as parsed
+
             Only useful if data is bytearray from front of stream
 
     Witness couple is used for escrows of unverified witness recipts signed by
@@ -150,15 +152,20 @@ def deReceiptCouple(data, strip=False):
     """
     Returns tuple of (prefixer, cigar) from concatenated bytes or bytearray
     of data couple made up of qb64 or qb64b versions of pre+cig where:
-       pre is nontransferable identifier prefix of receiptor
-       cig is nonindexed signature made with key pair derived from pre
+    pre is nontransferable identifier prefix of receiptor
+    cig is nonindexed signature made with key pair derived from pre
+
     Couple is used for receipts signed by nontransferable prefix keys
 
     Parameters:
         data: couple of bytes concatenation of pre+sig from receipt
         strip: Boolean True means delete from data each part as parsed
+
             Only useful if data is bytearray from front of stream
-            Raises error if not bytearray"""
+
+            Raises error if not bytearray
+
+    """
     if isinstance(data, memoryview):
         data = bytes(data)
     if hasattr(data, "encode"):
@@ -175,15 +182,20 @@ def deSourceCouple(data, strip=False):
     """
     Returns tuple of (number, diger) from concatenated bytes or bytearray
     of data couple made up of qb64 or qb64b versions of snu+dig where:
-       snu is sn of delegator/issuer source event
-       dig is digest of delegator/issuer source event
+    snu is sn of delegator/issuer source event
+    dig is digest of delegator/issuer source event
+
     Couple is used for delegated/issued event attachment of delegator/issuer evt
 
     Parameters:
         data: couple of bytes concatenation of pre+sig from receipt
         strip: Boolean True means delete from data each part as parsed
+
             Only useful if data is bytearray from front of stream
-            Raises error if not bytearray"""
+
+            Raises error if not bytearray
+
+    """
     if isinstance(data, memoryview):
         data = bytes(data)
     if hasattr(data, "encode"):
@@ -200,9 +212,9 @@ def deReceiptTriple(data, strip=False):
     """
     Returns tuple of (diger, prefixer, cigar) from concatenated bytes or bytearray
     of data triple made up of qb64 or qb64b versions of dig+pre+cig where:
-        dig is receipted event digest
-        pre is nontransferable identifier prefix of receiptor
-        cig is nonindexed signature made with key pair derived from pre
+    dig is receipted event digest
+    pre is nontransferable identifier prefix of receiptor
+    cig is nonindexed signature made with key pair derived from pre
 
     Triple is used for escrows of unverified receipts signed by nontransferable
     prefix keys
@@ -210,7 +222,10 @@ def deReceiptTriple(data, strip=False):
     Parameters:
         data: triple of bytes concatenation of dig+pre+cig from receipt
         deletive is Boolean True means delete from data each part as parsed
-            Only useful if data is bytearray from front of stream"""
+
+            Only useful if data is bytearray from front of stream
+
+    """
     if isinstance(data, memoryview):
         data = bytes(data)
     if hasattr(data, "encode"):
@@ -231,13 +246,17 @@ def deTransReceiptQuadruple(data, strip=False):
     Returns tuple (quadruple) of (prefixer, number, diger, siger) from
     concatenated bytes or bytearray of quadruple made up of qb64 or qb64b
     versions of spre+ssnu+sdig+sig.
+
     Quadruple is used for receipts signed by transferable prefix keys. Recept
     for event that is in kel where event is given by context or key
 
     Parameters:
         quadruple is bytes concatenation of pre+snu+dig+sig from receipt
         deletive is Boolean True means delete from data each part as parsed
-            Only useful if data is bytearray from front of stream"""
+
+            Only useful if data is bytearray from front of stream
+
+    """
     if isinstance(data, memoryview):
         data = bytes(data)
     if hasattr(data, "encode"):
@@ -262,6 +281,7 @@ def deTransReceiptQuintuple(data, strip=False):
     Returns tuple of (ediger, seal prefixer, seal number, seal diger, siger)
     from concatenated bytes or bytearray of quintuple made up of qb64 or qb64b
     versions of quntipuple given by  concatenation of  edig+spre+ssnu+sdig+sig.
+
     Quintuple is used for unverified escrows of validator receipts signed
     by transferable prefix keys. Receipt for event that is not yet in KEL where
     event is given by event digest (ediger)
@@ -1004,38 +1024,45 @@ def query(pre="",
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
-    Version 1.0
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "qry",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "logs",
-      "rr": "log/processor",
-      "q" :
-      {
-        "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-        "sn": "5",
-        "dt": "2020-08-01T12:20:05.123456+00:00",
-      }
-    }
+    Version 1.0:
 
-    Version 2.0
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "qry",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "logs",
-      "rr": "log/processor",
-      "q" :
-      {
-        "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-        "sn": "5",
-        "dt": "2020-08-01T12:20:05.123456+00:00",
-      }
-    }"""
+    .. code-block:: json
+
+       {
+         "v" : "KERI10JSON00011c_",
+         "t" : "qry",
+         "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+         "dt": "2020-08-22T17:50:12.988921+00:00",
+         "r" : "logs",
+         "rr": "log/processor",
+         "q" :
+         {
+           "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+           "sn": "5",
+           "dt": "2020-08-01T12:20:05.123456+00:00",
+         }
+       }
+
+    Version 2.0:
+
+    .. code-block:: json
+
+       {
+         "v" : "KERI10JSON00011c_",
+         "t" : "qry",
+         "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+         "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
+         "dt": "2020-08-22T17:50:12.988921+00:00",
+         "r" : "logs",
+         "rr": "log/processor",
+         "q" :
+         {
+           "i":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+           "sn": "5",
+           "dt": "2020-08-01T12:20:05.123456+00:00",
+         }
+       }
+    """
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)
 
@@ -1093,37 +1120,44 @@ def reply(pre="",
         kind (str): serialization kind value of Serials
 
     Version 1:
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "rpy",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "logs/processor",
-      "a" :
-      {
-         "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-         "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-         "name": "John Jones",
-         "role": "Founder",
-      }
-    }
+
+    .. code-block:: json
+
+       {
+         "v" : "KERI10JSON00011c_",
+         "t" : "rpy",
+         "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+         "dt": "2020-08-22T17:50:12.988921+00:00",
+         "r" : "logs/processor",
+         "a" :
+         {
+            "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+            "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+            "name": "John Jones",
+            "role": "Founder",
+         }
+       }
 
     Version 2:
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "rpy",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "logs/processor",
-      "a" :
-      {
-         "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+
+    .. code-block:: json
+
+       {
+         "v" : "KERI10JSON00011c_",
+         "t" : "rpy",
+         "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
          "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-         "name": "John Jones",
-         "role": "Founder",
-      }
-    }"""
+         "dt": "2020-08-22T17:50:12.988921+00:00",
+         "r" : "logs/processor",
+         "a" :
+         {
+            "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+            "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+            "name": "John Jones",
+            "role": "Founder",
+         }
+       }
+    """
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
@@ -1184,35 +1218,41 @@ def prod(pre="",
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
-    Version 1
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "pro",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "data",
-      "rr": "data/processor",
-      "q":
-      {
-        "d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
-      }
-    }
+    Version 1:
 
-    Version 2
+    .. code-block:: json
 
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "pro",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "data",
-      "rr": "data/processor",
-      "q":
-      {
-        "d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
-      }
-    }"""
+       {
+         "v" : "KERI10JSON00011c_",
+         "t" : "pro",
+         "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+         "dt": "2020-08-22T17:50:12.988921+00:00",
+         "r" : "data",
+         "rr": "data/processor",
+         "q":
+         {
+           "d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
+         }
+       }
+
+    Version 2:
+
+    .. code-block:: json
+
+       {
+         "v" : "KERI10JSON00011c_",
+         "t" : "pro",
+         "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+         "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+         "dt": "2020-08-22T17:50:12.988921+00:00",
+         "r" : "data",
+         "rr": "data/processor",
+         "q":
+         {
+           "d":"EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
+         }
+       }
+    """
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
@@ -1274,55 +1314,53 @@ def bare(pre="",
         gvrsn (Versionage): CESR genus vrsion
         kind (str): serialization kind value of Serials
 
+    Version 1:
 
-        route: route path string that indicates data flow handler (behavior)
-            to processs the exposure
-        data: dict of dicts of comitted SADS for SAIDs in seals keyed by SAID
-        stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
-            creation of message or data
-        version: Version instance
-        kind: serialization kind
+    .. code-block:: json
 
-    Version 1
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "bar",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "sealed/processor",
-      "a" :
-        {
-          "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM":
-            {
-               "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-               "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-               "dt": "2020-08-22T17:50:12.988921+00:00",
-               "name": "John Jones",
-               "role": "Founder",
-            }
-        }
-    }
+       {
+         "v" : "KERI10JSON00011c_",
+         "t" : "bar",
+         "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+         "dt": "2020-08-22T17:50:12.988921+00:00",
+         "r" : "sealed/processor",
+         "a" :
+           {
+             "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM":
+               {
+                  "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                  "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+                  "dt": "2020-08-22T17:50:12.988921+00:00",
+                  "name": "John Jones",
+                  "role": "Founder",
+               }
+           }
+       }
 
-    Version 2
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "bar",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "sealed/processor",
-      "a" :
-        {
-          "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM":
-            {
-               "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
-               "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-               "dt": "2020-08-22T17:50:12.988921+00:00",
-               "name": "John Jones",
-               "role": "Founder",
-            }
-        }
-    }"""
+    Version 2:
+
+    .. code-block:: json
+
+       {
+         "v" : "KERI10JSON00011c_",
+         "t" : "bar",
+         "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+         "i": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+         "dt": "2020-08-22T17:50:12.988921+00:00",
+         "r" : "sealed/processor",
+         "a" :
+           {
+             "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM":
+               {
+                  "d":  "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM",
+                  "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+                  "dt": "2020-08-22T17:50:12.988921+00:00",
+                  "name": "John Jones",
+                  "role": "Founder",
+               }
+           }
+       }
+    """
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
     ilk = Ilks.bar
@@ -1388,25 +1426,29 @@ def exchept(sender="",
         kind (str): serialization kind value of Serials
 
     Version 2:
-    {
-      "v" : "KERI10JSON00011c_",
-      "t" : "rpy",
-      "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
-      "u": '0AAwMTIzNDU2Nzg5YWJjZGVm',
-      "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
-      "ri": "EBPzhzS6baU6JR2nmwyZ-i0d8JZ5CMAoTNZH3ULvYAfS",
-      "dt": "2020-08-22T17:50:12.988921+00:00",
-      "r" : "/logs/processor",
-      "q":
-      {
-           "name": "Zoe",
-           "color": "Blue"
-      }
-      "a":
-      {
-          "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
-      }
-    }"""
+
+    .. code-block:: json
+
+       {
+         "v" : "KERI10JSON00011c_",
+         "t" : "rpy",
+         "d": "EZ-i0d8JZAoTNZH3ULaU6JR2nmwyvYAfSVPzhzS6b5CM",
+         "u": '0AAwMTIzNDU2Nzg5YWJjZGVm',
+         "i": "EAoTNZH3ULvYAfSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM",
+         "ri": "EBPzhzS6baU6JR2nmwyZ-i0d8JZ5CMAoTNZH3ULvYAfS",
+         "dt": "2020-08-22T17:50:12.988921+00:00",
+         "r" : "/logs/processor",
+         "q":
+         {
+              "name": "Zoe",
+              "color": "Blue"
+         }
+         "a":
+         {
+             "d": "EaU6JR2nmwyZ-i0d8JZAoTNZH3ULvYAfSVPzhzS6b5CM"
+         }
+       }
+    """
     pvrsn = pvrsn if pvrsn is not None else version
     vs = versify(pvrsn=pvrsn, kind=kind, size=0, gvrsn=gvrsn)  # ensures cesr v2 only
 
@@ -1912,7 +1954,7 @@ class Kever:
         toader (Number): instance of TOAD (threshold of accountable duplicity)
         wits (list): of qualified qb64 aids for witnesses
         cuts (list): of qualified qb64 aids for witnesses cut from prev wits list
-            adds (list) of qualified qb64 aids for witnesses added to prev wits list
+        adds (list): of qualified qb64 aids for witnesses added to prev wits list
 
         estOnly (bool): config trait True means only allow establishment events
             Default False. Corresponds to config trait string "EO"
@@ -1928,14 +1970,14 @@ class Kever:
         fn (int): first seen ordinal number property the returns .fner.num
         ndigs (list): of digests qb64 of .digers
         kevers (dict): reference to self.db.kevers
+
         transferable (bool): True if .digers is not empty and pre is transferable
 
+    To Do:
 
-
-        ToDo:
         Add Registrar Backer support:
-            Class variable, instance variable and parse support config trait.
-            raise error for now"""
+        Class variable, instance variable and parse support config trait.
+        raise error for now"""
     EstOnly = False
     DoNotDelegate = False
 
@@ -2093,9 +2135,13 @@ class Kever:
     def transferable(self):
         """
         Property transferable:
+
         Returns True if identifier does not have non-transferable derivation code
-                and .nextor is not None
-                False otherwise"""
+        and .nextor is not None
+
+        False otherwise
+
+        """
         return True if self.ndigers and self.prefixer.transferable else False
 
 
@@ -2140,6 +2186,7 @@ class Kever:
 
         Returns:
             (bool): True if pre is local hab or group hab that has a local member
+
             When pre="" empty or None then returns False
 
         Parameters:
@@ -2157,15 +2204,19 @@ class Kever:
         That later approval must detect and properly handle the staleness.
 
         Alternatively the logic could be changed to short circut that later
-        work by checking here for staleness. For example:
+        work by checking here for staleness. For example::
+
             delpre.mhab.pre in delpre's hab.smids  (not stale )
 
+        ::
 
-        if pre in self.groups:  # local group delegator
-            habord = self.db.habs.get(keys=(pre,))
-            return habord.mid in habord.smids  # True not stale, False stale
+            if pre in self.groups:  # local group delegator
+                habord = self.db.habs.get(keys=(pre,))
+                return habord.mid in habord.smids  # True not stale, False stale
 
-        return pre in self.prefixes  # otherwise local non-group delegator"""
+            return pre in self.prefixes  # otherwise local non-group delegator
+
+        \"\"\""""
         pre = pre if pre is not None else ""
         return pre in self.prefixes
 
@@ -2669,14 +2720,17 @@ class Kever:
                                 local=True):
         """
         Returns triple (sigers, wigers, delegator) where:
+
         sigers is unique validated signature verified members of inputed sigers
         wigers is unique validated signature verified members of inputed wigers
         delegator is qb64 delegator prefix if delegated else None
 
         Validates sigers signatures by validating indexes, verifying signatures, and
             validating threshold sith.
+
         Validate witness receipts by validating indexes, verifying
             witness signatures and validating toad.
+
         Witness validation is a function of wits .prefixes and .local
 
         Parameters:
@@ -2924,11 +2978,12 @@ class Kever:
         this function is called.
 
         Rules:
-            If event is not a delegated event then not valid delegation
-            If delegatee's own event (.mine) then valid delegation
-            If delegation seal found in delgator's KEL then valid delegation given
-                valid superseding rules below
-            Otherwise escrow or reject if error condition
+
+        If event is not a delegated event then not valid delegation
+        If delegatee's own event (.mine) then valid delegation
+        If delegation seal found in delgator's KEL then valid delegation given
+        valid superseding rules below
+        Otherwise escrow or reject if error condition
 
         seal validates with respect to Delegator's KEL
         Location Seal is from Delegate's establishment event
@@ -2955,14 +3010,10 @@ class Kever:
                 False means event source is remote (unprotected).
                 Event validation logic is a function of local or remote
             eager (bool): True means try harder to validate event by
-                    walking KELs. Enables only being eager
-                    in escrow processing not initial parsing.
+                walking KELs. Enables only being eager
+                in escrow processing not initial parsing.
                 False means only use pre-existing information
-                    if any, either percolated attached or in database.
-            local (bool): event source for validation logic
-                True means event source is local (protected).
-                False means event source is remote (unprotected).
-                Event validation logic is a function of local or remote
+                if any, either percolated attached or in database.
 
         Returns:
             None
@@ -3095,6 +3146,7 @@ class Kever:
         A1. A non-delegated rotation may not supersede another rotation at the
             same sn.  (modified rule)
         A2. An interaction event may not supersede any event. ( existing rule).
+
 
         (B. and C. below provide the new rules)
 
@@ -3931,9 +3983,13 @@ class Kever:
 
         Returns:
             tuple (int, int,Verfer): | None: where tuple is of form (sn, idx, verfer).
+
             sn: sequence number.
             idx: index of verfer in verfers
-            verfer: instance of Verfer"""
+
+            verfer: instance of Verfer
+
+        """
         pre = self.prefixer.qb64
         if sn is None:
             sn = self.lastEst.s
@@ -3981,9 +4037,13 @@ class Kever:
         Returns:
             tuple (int, int, list[Verfer]): | None: where tuple is of form
                 (sn, index, verfers)
+
             sn: sequence number
             index: index into verfers of verfers
-            verfers: list of Verfer instances."""
+
+            verfers: list of Verfer instances.
+
+        """
         pre = self.prefixer.qb64
         if sn is None:
             sn = self.lastEst.s
