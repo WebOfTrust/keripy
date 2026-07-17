@@ -70,7 +70,7 @@ class VerifyDoer(doing.DoDoer):
         self.strength = strength
         self.out = out
         self.signer = signer
-        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran, version=version)
         self.exc = Exchanger(hby=self.hby, handlers=[])
         self.org = Organizer(hby=self.hby)
         signaler = Signaler()

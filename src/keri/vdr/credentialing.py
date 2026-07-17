@@ -60,7 +60,8 @@ class Regery:
         self.reger = reger if reger is not None else Reger(name=self.name, base=base, db=self.hby.db, temp=temp,
                                                            reopen=True)
         self.tvy = Tevery(reger=self.reger, db=self.hby.db, local=True, lax=True)
-        self.psr = Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy, version=Vrsn_1_0)
+        self.psr = Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy,
+                                  version=self.hby.version)
 
         self.regs = {}  # List of local registries
         self.inited = False

@@ -1952,7 +1952,7 @@ def test_clean_baser():
         # Nat's kever and the signatory kever
         assert len(natHab.kevers) == 2
         # now clean it
-        natHab.db.clean()
+        natHab.db.clean(version=version)
 
         # see if kevers dict is back to what it was before
         assert natHab.kever.sn == 6

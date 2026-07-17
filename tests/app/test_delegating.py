@@ -107,7 +107,7 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
         yield tock
 
     witDoer.cues.popleft()
-    msg = next(wesHab.db.clonePreIter(pre=palHab.pre))
+    msg = next(wesHab.db.clonePreIter(pre=palHab.pre, version=palHab.kever.serder.pvrsn))
     kvy = Kevery(db=delHby.db, local=True)
     Parser(version=Vrsn_1_0).parseOne(ims=bytearray(msg), kvy=kvy, local=True)
 
@@ -134,7 +134,7 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
     # Get the value of the seal created when delegation is anchored
     couple = Seqner(sn=palHab.kever.sn).qb64b + palHab.kever.serder.saidb
 
-    msg = next(wesHab.db.clonePreIter(pre=palHab.pre, fn=1))
+    msg = next(wesHab.db.clonePreIter(pre=palHab.pre, fn=1, version=palHab.kever.serder.pvrsn))
     kvy = Kevery(db=delHby.db, local=True)
     Parser(version=Vrsn_1_0).parseOne(ims=bytearray(msg), kvy=kvy, local=True)
 

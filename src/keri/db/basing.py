@@ -1510,7 +1510,7 @@ class Baser(LMDBer):
         return migrations
 
 
-    def clean(self):
+    def clean(self, gvrsn=Version, *, version=None):
         """
         Clean database by creating re-verified cleaned cloned copy
         and then replacing original with cleaned cloned copy
@@ -1518,8 +1518,15 @@ class Baser(LMDBer):
         Database usage should be offline during cleaning as it will be cloned in
         readonly mode
 
+        Parameters:
+            gvrsn (Versionage): CESR genus version for clone attachments and parser
+            version (Versionage): legacy alias for gvrsn
+
         """
         from ..core import parsing
+
+        if version is not None:
+            gvrsn = version
 
         # create copy to clone into
         with openDB(name=self.name,
@@ -1540,8 +1547,8 @@ class Baser(LMDBer):
                 # need new method cloneObjAllPreIter()
                 # process event doesn't capture exceptions so we can more easily
                 # detect in the cloning that some events did not make it through
-                psr = parsing.Parser(kvy=kvy, version=Vrsn_1_0)
-                for msg in self.cloneAllPreIter():  # clone into copy
+                psr = parsing.Parser(kvy=kvy, version=gvrsn)
+                for msg in self.cloneAllPreIter(gvrsn=gvrsn):  # clone into copy
                     psr.parseOne(ims=msg)
 
                 # This is the list of non-set based databases that are not created as part of event processing.
@@ -1637,7 +1644,7 @@ class Baser(LMDBer):
             shutil.rmtree(copy.path)
 
 
-    def clonePreIter(self, pre, fn=0, gvrsn=Vrsn_1_0, *, version=None):
+    def clonePreIter(self, pre, fn=0, gvrsn=Version, *, version=None):
         """
         Returns iterator of first seen event messages with attachments for the
         identifier prefix pre starting at first seen order number, fn.
@@ -1665,7 +1672,7 @@ class Baser(LMDBer):
             yield msg
 
 
-    def cloneAllPreIter(self, gvrsn=Vrsn_1_0, *, version=None):
+    def cloneAllPreIter(self, gvrsn=Version, *, version=None):
         """
         Returns iterator of first seen event messages with attachments for all
         identifier prefixes starting at key. If key == b'' then start at first
@@ -1693,7 +1700,7 @@ class Baser(LMDBer):
 
 
 
-    def cloneEvtMsg(self, pre, fn, dig, gvrsn=Vrsn_1_0, *, version=None):
+    def cloneEvtMsg(self, pre, fn, dig, gvrsn=Version, *, version=None):
         """
         Clones Event as Serialized CESR Message with Body and attached Foot
 
@@ -1890,18 +1897,23 @@ class Baser(LMDBer):
         #return msg
 
 
-    def cloneDelegation(self, kever, gvrsn=Vrsn_1_0, *, version=None):
+    def cloneDelegation(self, kever, gvrsn=None, *, version=None):
         """
         Recursively clone delegation chain from AID of Kever if one exists.
 
         Parameters:
             kever (Kever): Kever from which to clone the delegator's AID.
-            gvrsn (Versionage): CESR genus version for attachments
+            gvrsn (Versionage | None): CESR genus version for attachments.
+                None means derive from ``kever.serder.gvrsn`` or
+                ``kever.serder.pvrsn`` so V1 KELs are not rebuilt with the
+                global V2 default.
             version (Versionage): legacy alias for gvrsn
 
         """
         if version is not None:
             gvrsn = version
+        if gvrsn is None:
+            gvrsn = kever.serder.gvrsn or kever.serder.pvrsn
         if kever.delegated and kever.delpre in self.kevers:
             dkever = self.kevers[kever.delpre]
             yield from self.cloneDelegation(dkever, gvrsn=gvrsn)
@@ -1913,7 +1925,7 @@ class Baser(LMDBer):
         """
         Search through a KEL for the event that contains a specific anchored
         SealEvent type of provided seal but in dict form and is also fully
-        witnessed. Searchs from sn forward (default = 0).Searches all events in
+        witnessed. Searches from sn forward (default = 0). Searches all events in
         KEL of pre including disputed and/or superseded events.
         Returns the Serder of the first event with the anchored SealEvent seal,
 

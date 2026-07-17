@@ -36,10 +36,10 @@ class ContinueDoer(doing.DoDoer):
     """ DoDoer running the doers for recovering pending multisig events. """
 
     def __init__(self, name, base, bran, alias, version=None):
-        self.hby = setupHby(name=name, base=base, bran=bran)
         self.alias = alias
         self.version = version
         self.kind = Kinds.json
+        self.hby = setupHby(name=name, base=base, bran=bran, version=self.version)
         self.counselor = Counselor(hby=self.hby, version=version, kind=Kinds.json)
         self.witq = WitnessInquisitor(hby=self.hby)
         kwa = dict(version=version, gvrsn=version, kind=self.kind) if version is not None else {}

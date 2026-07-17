@@ -117,7 +117,7 @@ def test_keystate(mockHelpingNowUTC):
         assert cue["ksn"]["i"] == bobHab.pre
 
         msgs = bytearray()  # outgoing messages
-        for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=0):
+        for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=0, version=bobHab.kever.serder.pvrsn):
             msgs.extend(msg)
 
         Parser(version=Vrsn_1_0).parse(ims=msgs, kvy=bamKvy, local=True)
@@ -184,7 +184,7 @@ def test_keystate(mockHelpingNowUTC):
         assert cue["ksn"]["i"] == bobHab.pre
 
         msgs = bytearray()  # outgoing messages
-        for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=0):
+        for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=0, version=bobHab.kever.serder.pvrsn):
             msgs.extend(msg)
 
         Parser(version=Vrsn_1_0).parse(ims=msgs, kvy=bamKvy, local=True)
@@ -283,7 +283,7 @@ def test_keystate(mockHelpingNowUTC):
         Parser(version=Vrsn_1_0).parse(ims=bytearray(liveKsn), kvy=bamKvy, rvy=bamRvy, local=True)
 
         msgs = bytearray()  # outgoing messages
-        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0):
+        for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0, version=bobHab.kever.serder.pvrsn):
             msgs.extend(msg)
 
         Parser(version=Vrsn_1_0).parse(ims=msgs, kvy=bamKvy, rvy=bamRvy, local=True)
