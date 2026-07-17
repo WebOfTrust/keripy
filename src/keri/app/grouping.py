@@ -650,7 +650,7 @@ class Multiplexor:
         self.kvy = Kevery(db=self.hby.db, lax=False, local=False, rvy=self.rvy)
         self.kvy.registerReplyRoutes(router=self.rtr)
         self.psr = Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
-                                  exc=self.exc, version=Vrsn_1_0)
+                                  exc=self.exc, version=self.hby.version)
 
         self.notifier = notifier
 

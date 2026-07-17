@@ -9,7 +9,6 @@ from hio.base import doing
 
 from ...common import existing, Parsery
 
-from .... import Vrsn_1_0
 from ....app import (Notifier, Organizer, GroupHab,
                      Multiplexor, MailboxDirector,
                      WitnessInquisitor, StreamPoster,
@@ -63,7 +62,7 @@ class AdmitDoer(doing.DoDoer):
         self.tvy = Tevery(db=self.hby.db, reger=self.rgy.reger)
         self.vry = Verifier(hby=self.hby, reger=self.rgy.reger)
 
-        self.psr = Parser(kvy=self.kvy, tvy=self.tvy, vry=self.vry, version=Vrsn_1_0)
+        self.psr = Parser(kvy=self.kvy, tvy=self.tvy, vry=self.vry)
 
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
@@ -128,7 +127,7 @@ class AdmitDoer(doing.DoDoer):
         msg = bytearray(exn.raw)
         msg.extend(atc)
 
-        Parser(version=Vrsn_1_0).parseOne(ims=bytes(msg), exc=self.exc)
+        Parser().parseOne(ims=bytes(msg), exc=self.exc)
 
         sender = self.hab
         if isinstance(self.hab, GroupHab):

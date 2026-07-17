@@ -5513,11 +5513,12 @@ class Kevery:
                     raise QueryNotFoundError(msg)
 
             msgs = list()  # outgoing messages
-            for msg in self.db.clonePreIter(pre=pre, fn=fn):
+            for msg in self.db.clonePreIter(pre=pre, fn=fn, version=kever.serder.pvrsn):
                 msgs.append(msg)
 
             if kever.delpre:
-                cloner = self.db.clonePreIter(pre=kever.delpre, fn=0)  # create iterator at 0
+                dkever = self.kevers[kever.delpre]  # Get the delegator's kever so we can set the version for the iterator
+                cloner = self.db.clonePreIter(pre=kever.delpre, fn=0, version=dkever.serder.pvrsn)  # create iterator at 0
                 for msg in cloner:
                     msgs.append(msg)
 

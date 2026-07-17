@@ -642,7 +642,7 @@ def test_out_of_order_witnessed_events():
 
         # Get the receipted rotation event and pass, out of order to Bam
         msgs = bytearray()
-        for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=1):
+        for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=1, version=bobHab.kever.serder.pvrsn):
             msgs.extend(msg)
 
         bamKvy = Kevery(db=bamHby.db, lax=False, local=False)
@@ -655,7 +655,8 @@ def test_out_of_order_witnessed_events():
 
         # Pass the icp to Bam, process escrows and see if the fully
         # receipted event lands in Bam's Kevery
-        msg = wesHby.db.cloneEvtMsg(pre=bobHab.pre, fn=0, dig=iserder.saidb)
+        msg = wesHby.db.cloneEvtMsg(pre=bobHab.pre, fn=0, dig=iserder.saidb,
+                                    version=bobHab.kever.serder.pvrsn)
 
         Parser(version=Vrsn_1_0).parse(ims=msg, kvy=bamKvy)
         bamKvy.processEscrows()

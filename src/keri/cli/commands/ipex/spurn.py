@@ -10,7 +10,6 @@ from hio.base import doing
 
 from ...common import Parsery, setupHby
 
-from ....kering import Vrsn_1_0
 from ....app import (Notifier, StreamPoster, Organizer,
                      GroupHab, Multiplexor, MailboxDirector,
                      multisigExn)
@@ -58,7 +57,7 @@ class SpurnDoer(doing.DoDoer):
         tvy = Tevery(db=self.hby.db, reger=self.rgy.reger)
         vry = Verifier(hby=self.hby, reger=self.rgy.reger)
 
-        self.psr = Parser(kvy=kvy, tvy=tvy, vry=vry, version=Vrsn_1_0)
+        self.psr = Parser(kvy=kvy, tvy=tvy, vry=vry)
 
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
@@ -106,7 +105,7 @@ class SpurnDoer(doing.DoDoer):
         msg = bytearray(exn.raw)
         msg.extend(atc)
 
-        Parser(version=Vrsn_1_0).parseOne(ims=bytes(msg), exc=self.exc)
+        Parser().parseOne(ims=bytes(msg), exc=self.exc)
 
         spurn, _ = cloneMessage(self.hby, exn.said)
         if spurn is None:
