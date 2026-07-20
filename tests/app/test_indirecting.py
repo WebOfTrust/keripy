@@ -486,6 +486,23 @@ def test_query_end_reuses_injected_reger():
     assert qe.reger is mock_reger
 
 
+def test_poller_keeps_supplied_msgs_deck():
+    """Poller must keep a caller-supplied msgs deck instead of discarding it.
+    See #1500.
+    """
+    from keri.app.indirecting import Poller
+    from unittest.mock import MagicMock
+
+    mock_hab = MagicMock()
+    msgs = decking.Deck()
+
+    poller = Poller(hab=mock_hab, witness="wit", topics=["/receipt"], msgs=msgs)
+    assert poller.msgs is msgs
+
+    poller = Poller(hab=mock_hab, witness="wit", topics=["/receipt"])
+    assert isinstance(poller.msgs, decking.Deck)
+
+
 if __name__ == "__main__":
     test_mailbox_iter()
     test_qrymailbox_iter()
