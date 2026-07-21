@@ -2,7 +2,6 @@
 """
 KERI
 keri.app.apping module
-
 """
 
 from hio.base import doing
@@ -23,13 +22,12 @@ class Consoler(doing.Doer):
 
     Attributes:
         db (Baser): Database instance used by this doer.
-        console (serialing.Console): Serial console for input/output.
-    """
+        console (serialing.Console): Serial console for input/output."""
 
     def __init__(self, db=None, console=None, **kwa):
         """Initializes Consoler with optional database and console.
 
-        Args:
+        Parameters:
             db (Baser, optional): Database instance. Defaults to a new
                 :class:`~keri.db.basing.Baser` instance if None.
             console (serialing.Console, optional): Serial console instance.
@@ -47,12 +45,11 @@ class Consoler(doing.Doer):
 
         Called by the Doer framework when entering the task context.
 
-        Args:
+        Parameters:
             temp (bool, optional): Unused. Reserved for interface compatibility.
 
         Raises:
-            IOError: If the console cannot be opened.
-        """
+            IOError: If the console cannot be opened."""
         if not self.console.reopen():
             raise IOError("Unable to open serial console.")
 
@@ -66,12 +63,11 @@ class Consoler(doing.Doer):
         - ``w`` / ``walk``: walk 1 step
         - ``s`` / ``stop``: stop
 
-        Args:
+        Parameters:
             tyme (float): Current loop time provided by the Doist scheduler.
 
         Returns:
-            bool: Always ``False``; signals the Doer to continue recurring.
-        """
+            bool: Always ``False``; signals the Doer to continue recurring."""
         line = self.console.get()
         if not line:
             return False
@@ -106,6 +102,5 @@ class Consoler(doing.Doer):
     def exit(self):
         """Closes the serial console resource.
 
-        Called by the Doer framework when leaving the task context.
-        """
+        Called by the Doer framework when leaving the task context."""
         self.console.close()

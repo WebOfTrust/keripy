@@ -58,7 +58,8 @@ class Poster(doing.DoDoer):
 
     def deliverDo(self, tymth=None, tock=0.0, **kwa):
         """
-        Returns:  doifiable Doist compatible generator method that processes
+        Returns:
+            doifiable Doist compatible generator method that processes
                    a queue of messages and envelopes them in a `fwd` message
                    and sends them to one of the witnesses of the receiver for
                    store and forward.
@@ -133,9 +134,9 @@ class Poster(doing.DoDoer):
         Parameters:
             src (str): qb64 identifier prefix of sender
             hab (Hab): Sender identifier habitat
-            dest (str) is identifier prefix qb64 of the intended receiver
+            dest (str): identifier prefix qb64 of the intended receiver
             topic (str): topic of message
-            serder (Serder) KERI event message to envelope and forward:
+            serder (Serder): KERI event message to envelope and forward
             attachment (bytes): attachment bytes
 
         """
@@ -154,6 +155,9 @@ class Poster(doing.DoDoer):
 
         Parameters:
             said (str): qb64 SAID of message to check for
+
+        Returns:
+            bool: True if the message SAID has been sent
         """
 
         for cue in self.cues:
@@ -298,7 +302,8 @@ class StreamPoster:
 
     def deliver(self):
         """
-        Returns:  doifiable Doist compatible generator method that processes
+        Returns:
+            doifiable Doist compatible generator method that processes
                    a queue of messages and envelopes them in a `fwd` message
                    and sends them to one of the witnesses of the receiver for
                    store and forward.

@@ -87,7 +87,8 @@ class RespondDoer(doing.DoDoer):
 
     def respondDo(self, tymth, tock=0.0, **opts):
         """
-        Returns:  doifiable Doist compatible generator method
+        Returns:
+            doifiable Doist compatible generator method
         Usage:
             add result of doify on this method to doers list
         """

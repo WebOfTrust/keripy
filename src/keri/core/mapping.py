@@ -278,7 +278,7 @@ class Mapper:
         """Getter for ._mad
 
         Returns:
-              mad (dict): field map dict
+            mad (dict): field map dict
         """
         return self._mad
 
@@ -305,7 +305,7 @@ class Mapper:
         """Getter for ._raw as text domain str
 
         Returns:
-              qb64 (str): field map serialization
+            qb64 (str): field map serialization
         """
         return self._raw.decode()
 
@@ -315,7 +315,7 @@ class Mapper:
         """Getter for ._raw converted to qb2 binary domain
 
         Returns:
-              qb2 (bytes): field map serialization as binary domain
+            qb2 (bytes): field map serialization as binary domain
 
         """
         if self.kind != Kinds.cesr:
@@ -355,7 +355,7 @@ class Mapper:
         """Getter for ._strict
 
         Returns:
-              strict (bool): True means labels must match strict formal limitations
+            strict (bool): True means labels must match strict formal limitations
                                labels must be valid attribute names,
                                i.e. rb'^[a-zA-Z_][a-zA-Z0-9_]*$'
                                which usually serialize more compactly
@@ -369,7 +369,7 @@ class Mapper:
         """primary said field value if any. None otherwise
 
         Returns:
-              said (str|None): primary said field value if any. None otherwise
+            said (str|None): primary said field value if any. None otherwise
                                primary has same label as zeroth item in .saids
         """
         if self.saidive and self.saids:
@@ -397,7 +397,7 @@ class Mapper:
         """Getter for ._saidive
 
         Returns:
-              saidive (bool): True means compute SAID(s) for toplevel fields in .saids
+            saidive (bool): True means compute SAID(s) for toplevel fields in .saids
                             False means do not compute SAIDs
         """
         return self._saidive
@@ -408,7 +408,7 @@ class Mapper:
         """Getter for ._kind
 
         Returns:
-              kind (str): serialization kind from Kinds
+            kind (str): serialization kind from Kinds
         """
         return self._kind
 
@@ -516,7 +516,7 @@ class Mapper:
             ser (bytearray): deserializable bytearray for value
 
         Returns:
-           value (None|bool|int|float|str|list|dict): deserialized value
+            value (None|bool|int|float|str|list|dict): deserialized value
 
         """
         if ser[0] == ord(b'-'):  # value is group (Counter) serialization
@@ -869,7 +869,7 @@ class Compactor(Mapper):
         """primary said field value if any. None otherwise
 
         Returns:
-              said (str|None): primary said field value if any. None otherwise
+            said (str|None): primary said field value if any. None otherwise
                                primary has same label as zeroth item in .saids
         """
         if self.saids and (self.saidive or self.leaves):
@@ -883,7 +883,7 @@ class Compactor(Mapper):
         """Getter for ._leaves
 
         Returns:
-              leaves (dict): mapper at each leaf with computed said for leaf as
+            leaves (dict): mapper at each leaf with computed said for leaf as
                              keyed by path to leaf, value is Mapper instance
         """
         return self._leaves
@@ -894,7 +894,7 @@ class Compactor(Mapper):
         """Getter for ._partials
 
         Returns:
-              partials (dict[Compactor]): each compactor of partially disclosable
+            partials (dict[Compactor]): each compactor of partially disclosable
                                variant with fully computed saids for its leaves
                                keyed by tuple of leaf paths,
                                value is Compactor instance.
@@ -906,7 +906,7 @@ class Compactor(Mapper):
         """iscompact property
 
         Returns:
-              iscompact (bool|None): True means has leaf with path = '' i.e.
+            iscompact (bool|None): True means has leaf with path = '' i.e.
                                         has leaf at top level and has said
                                         but does not verify said
                                      False if at least one leaf but no leaf
@@ -929,7 +929,7 @@ class Compactor(Mapper):
         When saidify then compute saids of leaves and update .mad .raw etc
 
         Returns:
-           paths (list[str]): of leaf path strs, one per leaf in depth first order
+            paths (list[str]): of leaf path strs, one per leaf in depth first order
 
 
         Parameters:
@@ -956,7 +956,7 @@ class Compactor(Mapper):
         """Recursively trace paths to leaves in mad and populate .leaves
 
         Returns:
-           paths (list[str]): of leaf path strs, one per leaf in depth first order
+            paths (list[str]): of leaf path strs, one per leaf in depth first order
 
         Parameters:
             mad (Mapping): nested (MApping Dict)
@@ -1034,10 +1034,10 @@ class Compactor(Mapper):
         """Get tail of path into mad. When mad is not provided uses .mad
 
         Returns:
-           tail (dict|None):  tail of path into mad or None if not found
+            tail (dict|None):  tail of path into mad or None if not found
 
         Parameters:
-           path (str): dot "." separated path. Top-level is "" so ".x" is one
+            path (str): dot "." separated path. Top-level is "" so ".x" is one
                        level down.
            mad (dict|None): field map dict (MApping Dict). None uses default of
                             self.mad
@@ -1057,12 +1057,12 @@ class Compactor(Mapper):
         When mad is not provided uses .mad
 
         Returns:
-           tuple(emad, tail): where emad is enclosing mad of tail of path and
+            tuple(emad, tail): where emad is enclosing mad of tail of path and
                                    tail is label at tail end of path into mad
 
 
         Parameters:
-           path (str): dot "." separated path. Top-level is "" so ".x" is one
+            path (str): dot "." separated path. Top-level is "" so ".x" is one
                        level down.
            mad (dict|None): field map dict (MApping Dict). None uses default of
                             self.mad
@@ -1453,7 +1453,7 @@ class Aggor:
         """agid  aggregated digest
 
         Returns:
-              agid (str|None): aggregated digest. None when empty ael
+            agid (str|None): aggregated digest. None when empty ael
         """
         return self.ael[0] if self.ael else None
 
@@ -1463,7 +1463,7 @@ class Aggor:
         """Getter for ._ael
 
         Returns:
-              ael (list): aggregable elements list
+            ael (list): aggregable elements list
         """
         return self._ael
 
@@ -1491,7 +1491,7 @@ class Aggor:
         """Getter for ._raw as text domain str
 
         Returns:
-              qb64 (str): field map serialization
+            qb64 (str): field map serialization
         """
         return self._raw.decode()
 
@@ -1501,7 +1501,7 @@ class Aggor:
         """Getter for ._raw converted to qb2 binary domain
 
         Returns:
-              qb2 (bytes): field map serialization as binary domain
+            qb2 (bytes): field map serialization as binary domain
 
         """
         if self.kind != Kinds.cesr:
@@ -1542,7 +1542,7 @@ class Aggor:
         """Getter for ._code
 
         Returns:
-              code (str): qb64 DigDex code for computing the agid digest
+            code (str): qb64 DigDex code for computing the agid digest
         """
         return self._code
 
@@ -1552,7 +1552,7 @@ class Aggor:
         """Getter for ._strict
 
         Returns:
-              strict (bool): True means labels must match strict formal limitations
+            strict (bool): True means labels must match strict formal limitations
                                labels must be valid attribute names,
                                i.e. rb'^[a-zA-Z_][a-zA-Z0-9_]*$'
                                which usually serialize more compactly
@@ -1579,7 +1579,7 @@ class Aggor:
         """Getter for ._kind
 
         Returns:
-              kind (str): serialization kind from Kinds
+            kind (str): serialization kind from Kinds
         """
         return self._kind
 

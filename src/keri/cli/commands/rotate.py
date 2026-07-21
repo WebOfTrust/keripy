@@ -174,7 +174,8 @@ class RotateDoer(doing.DoDoer):
 
     def rotateDo(self, tymth, tock=0.0, **kwa):
         """
-        Returns:  doifiable Doist compatible generator method
+        Returns:
+            doifiable Doist compatible generator method
         Usage:
             add result of doify on this method to doers list
         """

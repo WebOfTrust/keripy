@@ -3,7 +3,6 @@
 keri.end.ending module
 
 ReST API endpoints
-
 """
 import json
 import os
@@ -68,45 +67,42 @@ def signature(signages):
 
     Returns:
         header (dict): {'Signature': 'value'} where value is RFC8941 compliant
-        (Structured Field Values for HTTP) formatted str of of Signage group.
-        Each signage group is separated by a comma. Each group is parameter list
-        of label=value items separated by ;
-        The signer and indexed are special parameters in each group.
-        This format is compatible with HTTP servers that merge multiple signature
-        headers into one header by iteratively appending the comma separated
-        value from each Signature header.
+            (Structured Field Values for HTTP) formatted str of of Signage group.
+            Each signage group is separated by a comma. Each group is parameter list
+            of label=value items separated by ;
+            The signer and indexed are special parameters in each group.
+            This format is compatible with HTTP servers that merge multiple signature
+            headers into one header by iteratively appending the comma separated
+            value from each Signature header.
 
     Parameters:
         signages (list): items are Signage namedtuples,
-                           (markers, indexed, signer, ordinal, kind)
+            (markers, indexed, signer, ordinal, kind)
 
-            where:
-                markers (Union[list, dict]): When dict each item (key, val) has
-                    key as str identifier of marker and has val as instance of
-                    either Siger or Cigar.
-                    When list each item is instance of either Siger or
-                    Cigar.
-                    All markers must be of same class
-                indexed (bool): True means marker values are indexed signatures
-                    using Siger. False means marker values are unindexed
-                    signatures using Cigar. None means auto detect from
-                    first marker value class. All markers must be of same class.
-                signer (str): optional identifier of signage. May be a
-                    multi-sig group identifier. Default is None. When None or
-                    empty signer is not included in header value
-                ordinal (str): optional ordinal hex str of int that is an ordinal
-                    such as sequence number to further identify the
-                    keys used for the signatures. Usually when indexed
-                    with signer and digest
+        where:
+            markers (Union[list, dict]): When dict each item (key, val) has
+                key as str identifier of marker and has val as instance of
+                either Siger or Cigar.
+                When list each item is instance of either Siger or
+                Cigar.
+                All markers must be of same class
+            indexed (bool): True means marker values are indexed signatures
+                using Siger. False means marker values are unindexed
+                signatures using Cigar. None means auto detect from
+                first marker value class. All markers must be of same class.
+            signer (str): optional identifier of signage. May be a
+                multi-sig group identifier. Default is None. When None or
+                empty signer is not included in header value
+            ordinal (str): optional ordinal hex str of int that is an ordinal
+                such as sequence number to further identify the
+                keys used for the signatures. Usually when indexed
+                with signer and digest
 
-                digest (str): optional CESR Base64 serialization of a digest to
-                    further identify the keys used for the signatures.
-                    Usually when indexed with signer and ordinal
+            digest (str): optional CESR Base64 serialization of a digest to
+                further identify the keys used for the signatures.
+                Usually when indexed with signer and ordinal
 
-                kind (str): serialization kind of the markers and other primitives
-
-
-    """
+            kind (str): serialization kind of the markers and other primitives"""
     values = []  # list of parameter items value str for each signage
     for signage in signages:
         markers = signage.markers
@@ -186,36 +182,35 @@ def designature(value):
     RFC8941 structured Field Values for HTTP
 
     Returns:
-       signages (list): items are Signage namedtuples,
-                           (markers, indexed, signer, ordinal, kind)
+        signages (list): items are Signage namedtuples,
+            (markers, indexed, signer, ordinal, kind)
 
-            where:
-                markers (Union[list, dict]): When dict each item (key, val) has
-                    key as str identifier of marker and has val as instance of
-                    either Siger or Cigar.
-                    When list each item is instance of either Siger or
-                    Cigar.
-                    All markers must be of same class
-                indexed (bool): True means marker values are indexed signatures
-                    using Siger. False means marker values are unindexed
-                    signatures using Cigar. None means auto detect from
-                    first marker value class. All markers must be of same class.
-                signer (str): optional identifier of signage. May be a
-                    multi-sig group identifier. Default is None. When None or
-                    empty signer is not included in header value
-                ordinal (str): optional ordinal hex str of int that is an ordinal
-                    such as sequence number to further identify the
-                    keys used for the signatures. Usually when indexed
-                    with signer and digest
+        where:
+            markers (Union[list, dict]): When dict each item (key, val) has
+                key as str identifier of marker and has val as instance of
+                either Siger or Cigar.
+                When list each item is instance of either Siger or
+                Cigar.
+                All markers must be of same class
+            indexed (bool): True means marker values are indexed signatures
+                using Siger. False means marker values are unindexed
+                signatures using Cigar. None means auto detect from
+                first marker value class. All markers must be of same class.
+            signer (str): optional identifier of signage. May be a
+                multi-sig group identifier. Default is None. When None or
+                empty signer is not included in header value
+            ordinal (str): optional ordinal hex str of int that is an ordinal
+                such as sequence number to further identify the
+                keys used for the signatures. Usually when indexed
+                with signer and digest
 
-                digest (str): optional CESR Base64 serialization of a digest to
-                    further identify the keys used for the signatures.
-                    Usually when indexed with signer and ordinal
+            digest (str): optional CESR Base64 serialization of a digest to
+                further identify the keys used for the signatures.
+                Usually when indexed with signer and ordinal
 
-                kind (str): serialization kind of the markers and other primitives
+            kind (str): serialization kind of the markers and other primitives
 
-       signatures (list): Siger or Cigar instances
-    """
+        signatures (list): Siger or Cigar instances"""
     signages = []
     values = value.replace(" ", "").split(",")  # removes all spaces
     for value in values:
@@ -273,26 +268,25 @@ def normalize(param):
 def siginput(name, method, path, headers, fields, hab=None, signers=None, expires=None, nonce=None, alg=None,
              keyid=None, context=None):
     """ Create an HTTP Signature-Input Header
+
    Parameters:
-        context (str): Optional implementation specific context for the signature
-        keyid (str): Optional key identifier used to sign the request
-        alg (str): Algorithm used when generating the signature
-        nonce (str): Uniqque salty nonce for signing the request
-        expires (str): iso8601 formated date string indicating exiration of header signature
-        signers (list): Optional signer objects used to sign the values
-        hab (Hab): Optional Hab used to sign the values.  One of signers or Hab is required
-        fields (list): Fields in request to sign.  Includes special fields as well as Header fields
-        headers (dict): HTTP request headers
-        path (str): HTTP request path
-        method (str): HTTP request method (POST, GET, PUT, etc)
-        name (str): name of item
+       context (str): Optional implementation specific context for the signature
+       keyid (str): Optional key identifier used to sign the request
+       alg (str): Algorithm used when generating the signature
+       nonce (str): Uniqque salty nonce for signing the request
+       expires (str): iso8601 formated date string indicating exiration of header signature
+       signers (list): Optional signer objects used to sign the values
+       hab (Hab): Optional Hab used to sign the values.  One of signers or Hab is required
+       fields (list): Fields in request to sign.  Includes special fields as well as Header fields
+       headers (dict): HTTP request headers
+       path (str): HTTP request path
+       method (str): HTTP request method (POST, GET, PUT, etc)
+       name (str): name of item
 
-    Returns:
-        header (dict): {'Signature-Input': 'value'} where value is RFC8941 compliant
-        (Structured Field Values for HTTP) formatted str of of Signature Input group.
-        sigers (Unqualified): unqualified base64 encoded signature
-
-    """
+       Returns:
+       header (dict): {'Signature-Input': 'value'} where value is RFC8941 compliant
+           (Structured Field Values for HTTP) formatted str of of Signature Input group.
+       sigers (Unqualified): unqualified base64 encoded signature"""
     items = []
     ifields = []
 
@@ -361,8 +355,7 @@ def desiginput(value):
         value (Request): falcon request object
 
     Returns:
-
-    """
+        list: parsed signature input descriptors"""
     sid = Dictionary()
     sid.parse(value)
 
@@ -402,22 +395,19 @@ def desiginput(value):
 
 class PointEnd(base.Tymee):
     """
-    ReST API for SEID (Service Endpoint IDentifier) database for each identifier prefix
-    """
+    ReST API for SEID (Service Endpoint IDentifier) database for each identifier prefix"""
 
     def __init__(self, hby, **kwa):
         """
         Parameters:
             hab (habbing.Hab):  instance of local habitat
-            tymth (function): tymth for superclass (inherited)
-        """
+            tymth (function): tymth for superclass (inherited)"""
         super(PointEnd, self).__init__(**kwa)
         self.hby = hby
 
     def on_post(self, req, rep, aid, role):
         """
-        Handles POST requests
-        """
+        Handles POST requests"""
         try:
             raw = req.bounded_stream.read()
         except Exception:
@@ -462,8 +452,7 @@ class PointEnd(base.Tymee):
 
     def on_get(self, req, rep):
         """
-        Handles GET requests
-        """
+        Handles GET requests"""
         message = "\nKERI Service EIDs\n\n"
         rep.status = falcon.HTTP_200  # This is the default status
         rep.content_type = "text/html"
@@ -471,8 +460,7 @@ class PointEnd(base.Tymee):
 
     def on_put(self, req, rep):
         """
-        Handles GET requests
-        """
+        Handles GET requests"""
         message = "\nKERI Service EIDs\n\n"
         rep.status = falcon.HTTP_200  # This is the default status
         rep.content_type = "text/html"
@@ -481,22 +469,19 @@ class PointEnd(base.Tymee):
 
 class LocationEnd(base.Tymee):
     """
-    ReST API for Service Endpoint database for each Service Endpoint Identifier prefix
-    """
+    ReST API for Service Endpoint database for each Service Endpoint Identifier prefix"""
 
     def __init__(self, hby, **kwa):
         """
         Parameters:
             hab (habbing.Hab):  instance of local habitat
-            tymth (function): tymth for superclass (inherited)
-        """
+            tymth (function): tymth for superclass (inherited)"""
         super(LocationEnd, self).__init__(**kwa)
         self.hby = hby
 
     def on_get(self, req, rep):
         """
-        Handles GET requests
-        """
+        Handles GET requests"""
         message = "\nKERI Service Endpoints\n\n"
         rep.status = falcon.HTTP_200  # This is the default status
         rep.content_type = "text/html"
@@ -504,8 +489,7 @@ class LocationEnd(base.Tymee):
 
     def on_put(self, req, rep):
         """
-        Handles GET requests
-        """
+        Handles GET requests"""
         message = "\nKERI Service Endpoints\n\n"
         rep.status = falcon.HTTP_200  # This is the default status
         rep.content_type = "text/html"
@@ -514,22 +498,19 @@ class LocationEnd(base.Tymee):
 
 class AdminEnd(base.Tymee):
     """
-    ReST API for admin of service endpoints
-    """
+    ReST API for admin of service endpoints"""
 
     def __init__(self, hby, **kwa):
         """
         Parameters:
             hab (habbing.Hab):  instance of local habitat
-            tymth (function): tymth for superclass (inherited)
-        """
+            tymth (function): tymth for superclass (inherited)"""
         super(AdminEnd, self).__init__(**kwa)
         self.hby = hby
 
     def on_get(self, req, rep):
         """
-        Handles GET requests
-        """
+        Handles GET requests"""
         message = "\nKERI Admin\n\n"
         rep.status = falcon.HTTP_200  # This is the default status
         rep.content_type = "text/html"
@@ -540,18 +521,14 @@ class OOBIEnd:
     """ REST API for OOBI endpoints
 
     Attributes:
-        .hby (Habery): database access
-
-    """
+        .hby (Habery): database access"""
 
     def __init__(self, hby, default=None):
         """  End point for responding to OOBIs
 
         Parameters:
             hby (Habery): database environment
-            default (str) qb64 AID of the 'self' of the node for
-
-        """
+                default (str) qb64 AID of the 'self' of the node for"""
         self.hby = hby
         self.default = default
 
@@ -563,9 +540,7 @@ class OOBIEnd:
             rep: Falcon response object
             aid: qb64 identifier prefix of OOBI
             role: requested role for OOBI rpy message
-            eid: qb64 identifier prefix of participant in role
-
-        """
+            eid: qb64 identifier prefix of participant in role"""
         if aid is None:
             if self.default is None:
                 rep.status = falcon.HTTP_NOT_FOUND
@@ -632,13 +607,11 @@ def loadEnds(app, hby, *, tymth=None, default=None, static=False):
         hab: local habitat
 
     Parameters:
-        app(falcon.App): Falcon Rest app for endpoint route registration
-        hby(Habery): glocal database environment
+        app (falcon.App): Falcon Rest app for endpoint route registration
+        hby (Habery): glocal database environment
         tymth (callable):  reference to tymist (Doist, DoDoer) virtual time reference
-        default (str) qb64 AID of the 'self' of the node for
-        static (bool) True exposes a sink end point for static files.
-
-    """
+            default (str) qb64 AID of the 'self' of the node for
+            static (bool) True exposes a sink end point for static files."""
     if static:
         sink = http.serving.StaticSink(staticDirPath=STATIC_DIR_PATH)
         app.add_sink(sink, prefix=sink.DefaultStaticSinkBasePath)
@@ -661,8 +634,7 @@ def loadEnds(app, hby, *, tymth=None, default=None, static=False):
 def setup(name="who", temp=False, tymth=None, isith=None, count=1,
           remotePort=5621, localPort=5620, webPort=8081):
     """
-    Setup and return doers list to run controller
-    """
+    Setup and return doers list to run controller"""
 
     from ..app.habbing import Habery, HaberyDoer
 

@@ -2,7 +2,6 @@
 """
 KERI
 keri.app.agenting module
-
 """
 import random
 from urllib.parse import urlparse, urljoin
@@ -27,8 +26,7 @@ logger = ogler.getLogger()
 class Receiptor(doing.DoDoer):
     """
     Receiptor is a parent task orchestrating both initial receipt retrieval of KEL events and
-    subsequent retrieval of receipts for specific events based on queries.
-    """
+    subsequent retrieval of receipts for specific events based on queries."""
 
     def __init__(self, hby, msgs=None, gets=None, cues=None):
         """
@@ -40,8 +38,7 @@ class Receiptor(doing.DoDoer):
                 Messages should have {"pre": <str>, "sn": <int>, "auths": <dict>}
             gets (Deck): query messages of KEL events to retrieve receipts from witnesses for
                 Messages should have {"pre": <str>, "sn": <int>}
-            cues (Deck): outgoing cues of successful messages; currently the messages placed here are not used
-        """
+            cues (Deck): outgoing cues of successful messages; currently the messages placed here are not used"""
         self.msgs = msgs if msgs is not None else decking.Deck()
         self.gets = gets if gets is not None else decking.Deck()
         self.cues = cues if cues is not None else decking.Deck()
@@ -65,8 +62,7 @@ class Receiptor(doing.DoDoer):
             auths: (Options[dict]): map of witness AIDs to (time,auth) tuples for providing TOTP auth for witnessing
 
         Returns:
-            list: identifiers of witnesses that returned receipts.
-        """
+            list: identifiers of witnesses that returned receipts."""
         auths = auths if auths is not None else dict()
         if pre not in self.hby.prefixes:
             raise MissingEntryError(f"{pre} not a valid AID")
@@ -156,12 +152,11 @@ class Receiptor(doing.DoDoer):
         Queries a random witness for the receipt of the event at the sequence number for a prefix.
 
         Returns:
-             a generator requesting receipts for event identified by pre and sn
+            a generator requesting receipts for event identified by pre and sn
 
         Parameters:
             pre (str): qualified base64 identifier to gather a receipt for
-            sn: (Optiona[int]): sequence number of event to gather receipts for, latest is used if not provided
-        """
+            sn: (Optiona[int]): sequence number of event to gather receipts for, latest is used if not provided"""
         if pre not in self.hby.prefixes:
             raise MissingEntryError(f"{pre} not a valid AID")
 
@@ -202,8 +197,7 @@ class Receiptor(doing.DoDoer):
 
         Parameters:
             pre (str): qualified base64 AID of the KEL to send
-            wit (str): qualified base64 AID of the witness to send the KEL to
-        """
+            wit (str): qualified base64 AID of the witness to send the KEL to"""
         if pre not in self.hby.prefixes:
             raise MissingEntryError(f"{pre} not a valid AID")
 
@@ -228,13 +222,14 @@ class Receiptor(doing.DoDoer):
         Delegates to the internal receipt generator function.
 
         Returns:
-             a Hio generator function to be used as a Doer.
+            a Hio generator function to be used as a Doer.
+
         Parameters:
             tymth (function): function returning cycle time for configuring this Doer's cycle time.
             tock (float): cycle time for this Doer, default is 0.0 seconds.
+
         Usage:
-            add result of doify on this method to doers list
-        """
+            add result of doify on this method to doers list"""
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -259,12 +254,13 @@ class Receiptor(doing.DoDoer):
 
         Returns:
             a Hio generator function to be used as a Doer.
+
         Parameters:
             tymth (function): function returning cycle time for configuring this Doer's cycle time.
             tock (float): cycle time for this Doer, default is 0.0 seconds.
+
         Usage:
-            add result of doify on this method to doers list
-        """
+            add result of doify on this method to doers list"""
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -288,8 +284,7 @@ class WitnessReceiptor(doing.DoDoer):
 
     Removes all Doers and exits as Done once all witnesses have been sent the entire
     receipt set.  Could be enhanced to have a `once` method that runs once and cleans up
-    and an `all` method that runs and waits for more messages to receipt.
-    """
+    and an `all` method that runs and waits for more messages to receipt."""
 
     def __init__(self, hby, msgs=None, cues=None, force=False, auths=None, **kwa):
         """
@@ -303,8 +298,7 @@ class WitnessReceiptor(doing.DoDoer):
             cues (Deck): outgoing cues of events confirmed as fully receipted
                 Messages have {"pre": <str>, "sn": <int>, "auths": <dict>}
             force (bool): True means to send witnesses all receipts even if we have a full complement.
-            auths (dict): map of witness AIDs to (time,auth) tuples for providing TOTP auth for witnessing
-        """
+            auths (dict): map of witness AIDs to (time,auth) tuples for providing TOTP auth for witnessing"""
         self.hby = hby
         self.force = force
         self.msgs = msgs if msgs is not None else decking.Deck()
@@ -319,15 +313,14 @@ class WitnessReceiptor(doing.DoDoer):
          URLs between witnesses in the set of current witnesses.
 
         Returns:
-             a doifiable Hio generator to perform event and receipt sending.
+            a doifiable Hio generator to perform event and receipt sending.
 
         Usage:
             add result of doify on this method to doers list
 
         Parameters:
             tymth (function): function returning cycle time for configuring this Doer's cycle time.
-            tock (float): cycle time for this Doer, default is 0.0 seconds.
-        """
+            tock (float): cycle time for this Doer, default is 0.0 seconds."""
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -449,8 +442,7 @@ class WitnessInquisitor(doing.DoDoer):
 
     Removes all Doers and exits as Done once the query target has been sent the query message
 
-    TODO: possibly rename based on the fact that multiple types of targets are supported (controller, agent, witness)
-    """
+    TODO: possibly rename based on the fact that multiple types of targets are supported (controller, agent, witness)"""
 
     def __init__(self, hby, msgs=None, klas=None, **kwa):
         """
@@ -460,12 +452,12 @@ class WitnessInquisitor(doing.DoDoer):
             hby (Habery): Habery context to use to retrieve the source Hab for reading endpoint role records
             klas (class): Type of messenger to use to send messages; defaults to HTTPMessenger; currently unused
             msgs (decking.Deck): query message buffer to be sent to the target or a random witness
+
         Attributes:
             hby (Habery): Habery context to use to retrieve the source Hab for reading endpoint role records
             klas (class): Type of messenger to use to send messages; defaults to HTTPMessenger; currently unused
             msgs (decking.Deck): query message buffer to be sent to the target or a random witness
-            sent (decking.Deck): buffer for sent messages to track sent queries
-        """
+            sent (decking.Deck): buffer for sent messages to track sent queries"""
         self.hby = hby
         self.klas = klas if klas is not None else HTTPMessenger
         self.msgs = msgs if msgs is not None else decking.Deck()
@@ -482,8 +474,7 @@ class WitnessInquisitor(doing.DoDoer):
         Returns a Hio generator function that runs until all messages in .msgs are processed.
 
         Usage:
-            add result of doify on this method to doers list
-        """
+            add result of doify on this method to doers list"""
         from .forwarding import introduce
 
         self.wind(tymth)
@@ -569,8 +560,7 @@ class WitnessInquisitor(doing.DoDoer):
             src (str): qb64 identifier prefix of source of query
             hab (Hab): Hab to use instead of src, if provided, to retrieve endpoint role records from and to perform signing
             anchor (Seal): anchored Seal to search for in the query target
-            wits (list) witnesses to query
-        """
+            wits (list): witnesses to query"""
         qry = dict(s=sn, fn=fn)
         if anchor is not None:
             qry["a"] = anchor
@@ -594,8 +584,7 @@ class WitnessInquisitor(doing.DoDoer):
             r (str): query route
             hab (Hab): Hab to use instead of src, if provided, to retrieve endpoint role records from and to perform signing
             pre (str): qb64 identifier prefix of the target being queried
-            wits (list): witnesses to query
-        """
+            wits (list): witnesses to query"""
         qry = dict(ri=ri)
         msg = dict(src=src, pre=pre, target=i, r=r, wits=wits, q=qry, kwa=kwa)
         if hab is not None:
@@ -610,9 +599,7 @@ class WitnessPublisher(doing.DoDoer):
 
     Removes all Doers and exits as Done once all witnesses have been sent the message.
     Could be enhanced to have a `once` method that runs once and cleans up
-    and an `all` method that runs and waits for more messages to receipt.
-
-    """
+    and an `all` method that runs and waits for more messages to receipt."""
 
     def __init__(self, hby, msgs=None, cues=None, **kwa):
         """Initialize with publish queue (msgs) and completion cues.
@@ -620,9 +607,7 @@ class WitnessPublisher(doing.DoDoer):
         Parameters:
             hby (Habery): Habitat of the identifier to populate witnesses
             msgs (Deck): incoming messages to publish to witnesses
-            cues (Deck): outgoing cues of successful messages
-
-        """
+            cues (Deck): outgoing cues of successful messages"""
         self.hby = hby
         self.posted = 0
         self.msgs = msgs if msgs is not None else decking.Deck()
@@ -632,8 +617,7 @@ class WitnessPublisher(doing.DoDoer):
     def sendDo(self, tymth=None, tock=0.0, **opts):
         """Doer loop that sends queued messages to each witness.
 
-        Pushes the original request to self.cues to signal completion
-        """
+        Pushes the original request to self.cues to signal completion"""
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -677,7 +661,9 @@ class WitnessPublisher(doing.DoDoer):
 
         Parameters:
             said (str): qb64 SAID of message to check for
-        """
+
+        Returns:
+            bool: True if the message SAID has been sent"""
 
         for cue in self.cues:
             if cue["said"] == said:
@@ -701,8 +687,7 @@ class TCPMessenger(doing.DoDoer):
             wit (str): qb64 witness identifier.
             url (str): tcp endpoint URL for the witness.
             msgs (Deck | None): outbound message queue.
-            sent (Deck | None): sent message queue.
-        """
+            sent (Deck | None): sent message queue."""
         self.hab = hab
         self.wit = wit
         self.url = url
@@ -773,8 +758,7 @@ class TCPStreamMessenger(doing.DoDoer):
             wit (str): qb64 witness identifier.
             url (str): tcp endpoint URL for the witness.
             msgs (Deck | None): outbound message queue.
-            sent (Deck | None): sent message queue.
-        """
+            sent (Deck | None): sent message queue."""
         self.hab = hab
         self.wit = wit
         self.url = url
@@ -794,8 +778,7 @@ class TCPStreamMessenger(doing.DoDoer):
     def receiptDo(self, tymth=None, tock=0.0, **kwa):
         """Doer loop that sends queued messages over TCP.
 
-        Pushes the original request to self.sent to signal completion
-        """
+        Pushes the original request to self.sent to signal completion"""
         self.wind(tymth)
         self.tock = tock
         _ = (yield self.tock)
@@ -849,8 +832,7 @@ class HTTPMessenger(doing.DoDoer):
             url (str): http/https endpoint URL for the witness.
             msgs (Deck | None): outbound message queue.
             sent (Deck | None): response queue.
-            auth (str | None): optional 2FA auth codes for witnesses.
-        """
+            auth (str | None): optional 2FA auth codes for witnesses."""
         self.hab = hab
         self.wit = wit
         self.posted = 0
@@ -922,8 +904,7 @@ class HTTPStreamMessenger(doing.DoDoer):
             wit (str): qb64 witness identifier.
             url (str): http/https endpoint URL for the witness.
             msg (bytes): CESR message body to send.
-            headers (dict | None): extra HTTP headers.
-        """
+            headers (dict | None): extra HTTP headers."""
         self.hab = hab
         self.wit = wit
         self.rep = None
@@ -972,8 +953,7 @@ def mailbox(hab, cid):
 
     Parameters:
         hab (Hab): Hab to use to look up witness URLs
-        cid (str): qb64 identifier prefix of controller to find mailbox for
-    """
+        cid (str): qb64 identifier prefix of controller to find mailbox for"""
     for (_, erole, eid), end in hab.db.ends.getTopItemIter(keys=(cid, Roles.mailbox)):
         if end.allowed:
             return eid
@@ -998,8 +978,7 @@ def messenger(hab, pre, auth=None):
         auth (str): optional auth code to send with any request for messenger
 
     Returns:
-        Optional(TcpWitnesser, HTTPMessenger): witnesser for ensuring full reciepts
-    """
+        Optional (TcpWitnesser, HTTPMessenger): witnesser for ensuring full reciepts"""
     urls = hab.fetchUrls(eid=pre)
     return messengerFrom(hab, pre, urls, auth)
 
@@ -1014,8 +993,7 @@ def messengerFrom(hab, pre, urls, auth=None):
         auth (str): optional auth code to send with any request for messenger
 
     Returns:
-        Optional(TcpWitnesser, HTTPMessenger): witnesser for ensuring full reciepts
-    """
+        Optional (TcpWitnesser, HTTPMessenger): witnesser for ensuring full reciepts"""
     if Schemes.http in urls or Schemes.https in urls:
         url = urls[Schemes.https] if Schemes.https in urls else urls[Schemes.http]
         witer = HTTPMessenger(hab=hab, wit=pre, url=url, auth=auth)
@@ -1039,8 +1017,7 @@ def streamMessengerFrom(hab, pre, urls, msg, headers=None):
         headers (dict): optional headers to send with HTTP requests
 
     Returns:
-        Optional(TcpWitnesser, HTTPMessenger): witnesser for ensuring full reciepts
-    """
+        Optional (TcpWitnesser, HTTPMessenger): witnesser for ensuring full reciepts"""
     if Schemes.http in urls or Schemes.https in urls:
         url = urls[Schemes.https] if Schemes.https in urls else urls[Schemes.http]
         witer = HTTPStreamMessenger(hab=hab, wit=pre, url=url, msg=msg, headers=headers)
@@ -1062,9 +1039,7 @@ def httpClient(hab, wit):
 
     Returns:
         Client: Http client for connecting to remote identifier
-        ClientDoer: Doer for client
-
-    """
+        ClientDoer: Doer for client"""
     urls = hab.fetchUrls(eid=wit, scheme=Schemes.https) or hab.fetchUrls(eid=wit, scheme=Schemes.http)
     if not urls:
         raise MissingEntryError(f"unable to query witness {wit}, no http endpoint")
@@ -1087,8 +1062,7 @@ def schemes(db, eids):
 
     Parameters:
         db (Baser): Hab database used to retrieve location records and witness signatures
-        eids (list): list of endpoint role AIDs (eids) to retrieve location records and witness signatures for
-    """
+        eids (list): list of endpoint role AIDs (eids) to retrieve location records and witness signatures for"""
     msgs = bytearray()
     for eid in eids:
         for scheme in Schemes:

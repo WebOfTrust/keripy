@@ -23,7 +23,7 @@ def setupHby(name, base="", bran=None, cf=None, temp=False, version=None):
         temp (bool): True means create database in /tmp
 
     Returns:
-          Habery:  the configured habery
+        Habery:  the configured habery
 
     """
     ks = Keeper(name=name,
