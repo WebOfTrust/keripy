@@ -28,7 +28,7 @@ PreviousRoutes = {
     Ipex.agree: (Ipex.offer,),
     Ipex.grant: (Ipex.agree,),
     Ipex.admit: (Ipex.grant,),
-    Ipex.spurn: (Ipex.apply, Ipex.offer, Ipex.agree, Ipex.grant),
+    Ipex.spurn: (Ipex.apply, Ipex.offer, Ipex.agree),
 }
 
 

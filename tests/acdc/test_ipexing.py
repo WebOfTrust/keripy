@@ -406,19 +406,19 @@ def test_ipex_v2_dispatch_linear_and_spurn():
         # Assert it was not accepted 
         assert hby.db.exns.get(keys=(dupSpurn.said,)) is None
 
-        # Build a bare grant 
+        # Build a bare grant
         grant1, grant1Atc = ipexGrant(hab=hab,
                                         recp=hab.pre,
-                                        message="Bare grant for spurn path",
+                                        message="Bare grant without agreement",
                                         acdc=acdc,
                                         iss=_nest(iss))
 
         # Build a spurn against that grant
         spurn1, spurn1Atc = ipexSpurn(hab=hab,
-                                        message="I reject this grant",
+                                        message="Grant spurn should be rejected",
                                         spurned=grant1)
 
-        # Parse both 
+        # Parse both
         grant1Ims = bytearray(grant1.raw)
         grant1Ims.extend(grant1Atc)
         Parser(version=Vrsn_2_0).parse(ims=grant1Ims, framed=False, exc=exc)
@@ -429,9 +429,30 @@ def test_ipex_v2_dispatch_linear_and_spurn():
         Parser(version=Vrsn_2_0).parse(ims=spurn1Ims, framed=False, exc=exc)
         assert spurn1Ims == bytearray()
 
-        # Assert that both were stored
+        # Assert that bare grant is valid but spurn against grant is not
         assert hby.db.exns.get(keys=(grant1.said,)) is not None
-        assert hby.db.exns.get(keys=(spurn1.said,)) is not None
+        assert hby.db.exns.get(keys=(spurn1.said,)) is None
+
+        # Build a bare offer and a valid spurn against that offer
+        offer1, offer1Atc = ipexOffer(hab=hab,
+                                      message="Bare offer for spurn path",
+                                      acdc=acdc)
+        spurn2, spurn2Atc = ipexSpurn(hab=hab,
+                                      message="I reject this offer",
+                                      spurned=offer1)
+
+        offer1Ims = bytearray(offer1.raw)
+        offer1Ims.extend(offer1Atc)
+        Parser(version=Vrsn_2_0).parse(ims=offer1Ims, framed=False, exc=exc)
+        assert offer1Ims == bytearray()
+
+        spurn2Ims = bytearray(spurn2.raw)
+        spurn2Ims.extend(spurn2Atc)
+        Parser(version=Vrsn_2_0).parse(ims=spurn2Ims, framed=False, exc=exc)
+        assert spurn2Ims == bytearray()
+
+        assert hby.db.exns.get(keys=(offer1.said,)) is not None
+        assert hby.db.exns.get(keys=(spurn2.said,)) is not None
 
         # Assert routes and their coressponding message  
         routes = {item["r"] for item in recorder.items}
@@ -449,6 +470,7 @@ def test_ipex_v2_dispatch_linear_and_spurn():
             ("/exn/ipex/agree", "I agree to the offer"),
             ("/exn/ipex/grant", "Here is the granted credential"),
             ("/exn/ipex/admit", "Thanks for the credential"),
-            ("/exn/ipex/grant", "Bare grant for spurn path"),
-            ("/exn/ipex/spurn", "I reject this grant"),
+            ("/exn/ipex/grant", "Bare grant without agreement"),
+            ("/exn/ipex/offer", "Bare offer for spurn path"),
+            ("/exn/ipex/spurn", "I reject this offer"),
         ]
