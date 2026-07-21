@@ -924,29 +924,37 @@ def test_gated_ipex_exchange_JSON():
     assert apply.said == "EMaBzmylNSY-nwwvknFohrV87K9MlLGnnMB6y4CrLCDp"
 
     # 2. offer (Alice -> club): "I'll prove over-21 and show my photo if you accept
-    # these terms." Carries only the SAIDs of the bespoke ACDC and its sources plus
-    # the terms and the governance ref -- no PII -- and binds the apply it answers.
+    # these terms." Commits ONLY to Alice's own bespoke-presentation SAID, the CLC
+    # terms, and the governance ref -- no PII -- and binds the apply it answers. It
+    # deliberately does NOT enumerate the issuer-committed source-credential SAIDs
+    # (sedi/age): those are issuer commitments, and attaching them before the club
+    # agrees would let the club spurn and walk away with stable holder correlators,
+    # defeating the metadata-ACDC decorrelation (panel review, PRV-F2). They arrive
+    # only post-agree, in the grant, reachable by expanding the delivered presentation.
     offer = exchange(sender=ALICE, receiver=CLUB, route="/ipex/offer",
                      prior=apply.said,
                      attributes=dict(acdc=bespoke.said,
-                                     credentials=[sedi.said, age.said],
                                      governance=GOV_PROVISION_SAID,
                                      terms=_rules_in_bespoke()),
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said                 # answers the apply
-    assert bespoke.said.encode() in offer.raw           # commits to the bespoke by SAID
-    assert offer.said == "EPqHYfquYatWtmKy9BRFHX9YZ6N9Zv_bdMjqlThoEOhy"
+    assert bespoke.said.encode() in offer.raw           # commits to Alice's own presentation
+    assert offer.said == "EMR2eIfqwzX6-EiNhJYIeXyzT3Zuhz24OpL7PQGbb9RL"
     # (property 1) the offer leaks no PII: not Alice's name, photo, or birthdate.
     assert b"Alice Anders" not in offer.raw
     assert b"<state-endorsed-photo-bytes>" not in offer.raw
     assert b"2000-03-15" not in offer.raw
+    # Issuer commitments withheld until after the club agrees (PRV-F2): the source
+    # SAIDs are stable cross-presentation correlators, so they must not ride the offer.
+    assert sedi.said.encode() not in offer.raw
+    assert age.said.encode() not in offer.raw
 
     # 3. agree (club -> Alice): acceptance. It binds the OFFER's SAID (property 2),
     # and the club signs it (property 3). It is signed but NOT KEL-anchored.
     agree = exchange(sender=CLUB, receiver=ALICE, route="/ipex/agree",
                      prior=offer.said, stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said                 # binds the offer SAID
-    assert agree.said == "EB_aO3htcjsYl0zxNIO1zhPFNaW-XSrA96VgEfVNVHSs"
+    assert agree.said == "EFxkM0k_f3zd55xxdict4r5uL0EgfX1CBTKf5cnFWhlo"
     # The club signs the agree, and we assemble the signed wire message the blessed
     # way: messagize() frames the signature as a CESR attachment group (genus code
     # and all). New keripy code should never hand-roll attachment framing -- pass
@@ -1001,7 +1009,7 @@ def test_gated_ipex_exchange_JSON():
     grant = disclose(agree, clubSig, capturedKeyState)
     assert grant is not None
     assert grant.sad['p'] == agree.said                 # grant follows the agree
-    assert grant.said == "EMRqeruzBqBsMOPeUCHNSGzQmOS64BDd9qthWTG4My5s"
+    assert grant.said == "EGOg87wAimac2eeCnPSHgJvwnlQO-MyJw5yNWcM-BNDP"
     # (property 4) PII crosses the wire only now, in the grant: the photo and the
     # over-21 flag.
     assert b"<state-endorsed-photo-bytes>" in grant.raw
@@ -1033,7 +1041,7 @@ def test_gated_ipex_exchange_JSON():
     admit = exchange(sender=CLUB, receiver=ALICE, route="/ipex/admit",
                      prior=grant.said, stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "EI0QUbDFqJzTuMWbSdGKMFeEt_cDyKF4O_Uge9BzAY9s"
+    assert admit.said == "EAlYEBHK7Yzqw1JoudVYze8-kHW1pLDmaGq8TpHAB0O8"
 
 
 def test_accountability_and_terms_follow_data_JSON():
