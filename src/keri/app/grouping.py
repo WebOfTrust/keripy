@@ -486,12 +486,14 @@ def multisigRegistryInceptExn(ghab, usage, vcp, anc, version=None, kind=None):
         vcp=vcp,
         anc=anc
     )
+    version = version if version is not None else Vrsn_1_0
+    kind = kind if kind is not None else Kinds.json
 
     exn, end = specialExchange(sender=ghab.mhab.pre,
                                route="/multisig/vcp",
                                attributes={'gid': ghab.pre, 'usage': usage},
                                embeds=embeds,
-                               version=version, 
+                               version=version,
                                kind=kind)
     evt = ghab.mhab.endorse(serder=exn, last=False, framed=True, gvrsn=version)
     atc = bytearray(evt[exn.size:])
@@ -523,12 +525,14 @@ def multisigIssueExn(ghab, acdc, iss, anc, version=None, kind=None):
         iss=iss,
         anc=anc
     )
+    version = version if version is not None else Vrsn_1_0
+    kind = kind if kind is not None else Kinds.json
 
     exn, end = specialExchange(sender=ghab.mhab.pre,
                                route="/multisig/iss",
                                attributes={'gid': ghab.pre},
                                embeds=embeds,
-                               version=version, 
+                               version=version,
                                kind=kind)
     evt = ghab.mhab.endorse(serder=exn, last=False, framed=True, gvrsn=version)
     atc = bytearray(evt[exn.size:])
@@ -559,12 +563,14 @@ def multisigRevokeExn(ghab, said, rev, anc, version=None, kind=None):
         rev=rev,
         anc=anc
     )
+    version = version if version is not None else Vrsn_1_0
+    kind = kind if kind is not None else Kinds.json
 
     exn, end = specialExchange(sender=ghab.mhab.pre,
                                route="/multisig/rev",
                                attributes={'gid': ghab.pre, 'said': said},
                                embeds=embeds,
-                               version=version, 
+                               version=version,
                                kind=kind)
     evt = ghab.mhab.endorse(serder=exn, last=False, framed=True, gvrsn=version)
     atc = bytearray(evt[exn.size:])
@@ -639,12 +645,14 @@ def multisigExn(ghab, exn, version=None, kind=None):
     embeds = dict(
         exn=exn
     )
+    version = version if version is not None else Vrsn_1_0
+    kind = kind if kind is not None else Kinds.json
 
     wexn, end = specialExchange(sender=ghab.mhab.pre,
                                 route="/multisig/exn",
                                 attributes={'gid': ghab.pre},
                                 embeds=embeds,
-                                version=version, 
+                                version=version,
                                 kind=kind)
     evt = ghab.mhab.endorse(serder=wexn, last=False, framed=True, gvrsn=version)
     atc = bytearray(evt[wexn.size:])
