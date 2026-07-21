@@ -17,7 +17,7 @@ from keri.app import Manager, openKS, openHby, openHab
 from keri.db import snKey, openDB
 
 logger = ogler.getLogger()
-from tests.common import CUE_KWA, KWA
+
 
 
 def test_delegation():
@@ -357,7 +357,7 @@ def test_delegation_supersede():
             openHby(name="wot", base="test", salt=wotSalt, version=Vrsn_1_0) as wotHby):
 
         # Create witness wop and controller top
-        wopHab = wopHby.makeHab(name="wop", transferable=False, **KWA)  # witness nontrans
+        wopHab = wopHby.makeHab(name="wop", transferable=False, version=Vrsn_1_0, kind=Kinds.json)  # witness nontrans
         # makehab also enters inception event into its own kel.
         # Otherwise failed make raises exception ConfigurationError
         assert wopHab.pre == 'BIDO3FhB5smF6WsTJkRRAao_wEttcbsBnDCmfQ4_f1b_'
@@ -365,7 +365,7 @@ def test_delegation_supersede():
 
         topHab = topHby.makeHab(name="top", icount=1, isith='1',  # single sig
                                 ncount=1, nsith='1', # single next
-                                wits=[wopHab.pre], toad=1, **KWA)   # one witness
+                                wits=[wopHab.pre], toad=1, version=Vrsn_1_0, kind=Kinds.json)   # one witness
         # makehab also enters inception event into its own kel
         # Otherwise failed make raises exception ConfigurationError
         assert topHab.pre == 'EJcCaHg3AtW_gRzpaz6Pw03Yv49is2IJDRwYE7ey91KE'
@@ -390,7 +390,7 @@ def test_delegation_supersede():
 
         serder = wopHab.kevers[topHab.pre].serder
         # generate witness receipt and process
-        receipt = wopHab.witness(serder=serder, framed=False, **CUE_KWA)  # now has fully witnessd controller icp
+        receipt = wopHab.witness(serder=serder, framed=False, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)  # now has fully witnessd controller icp
         count = wopHab.db.wigs.cnt(keys=(topHab.pre, serder.said))
         assert count >= 1
 
@@ -407,7 +407,7 @@ def test_delegation_supersede():
         assert count >= 1
 
         # Create witness wid and delegated controller mid
-        widHab = widHby.makeHab(name="wid", transferable=False, **KWA)  # witness nontrans
+        widHab = widHby.makeHab(name="wid", transferable=False, version=Vrsn_1_0, kind=Kinds.json)  # witness nontrans
         # makehab also enters inception event into its own kel.
         # Otherwise failed make raises exception ConfigurationError
         assert widHab.pre == 'BCI95exU-RepxQ0HmGcp7USLMCPxrXKzMc1DXqfRnikP'
@@ -416,7 +416,7 @@ def test_delegation_supersede():
         midHab = midHby.makeHab(name="mid", icount=1, isith='1',  # single sig
                                 ncount=1, nsith='1', # single next
                                 wits=[widHab.pre], toad=1,   # one witness
-                                delpre=topHab.pre, **KWA)  # delegated
+                                delpre=topHab.pre, version=Vrsn_1_0, kind=Kinds.json)  # delegated
         # makehab also enters inception event into its own kel
         # Otherwise failed make raises exception ConfigurationError
         assert midHab.pre == 'EEaTQhI7QGM-usOJtpKM9L0yQjGiBYJC3tq905aC8am4'
@@ -435,7 +435,7 @@ def test_delegation_supersede():
 
         serder = widHab.kevers[midHab.pre].serder
         # generate witness receipt and process
-        receipt = widHab.witness(serder=serder, framed=True, **CUE_KWA)  # now has fully witnessed controller icp
+        receipt = widHab.witness(serder=serder, framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)  # now has fully witnessed controller icp
         count = widHab.db.wigs.cnt(keys=(midHab.pre, serder.said))
         assert count >= 1
 
@@ -447,7 +447,7 @@ def test_delegation_supersede():
         assert count >= 1
 
         # Create witness wot and controller bot
-        wotHab = widHby.makeHab(name="wot", transferable=False, **KWA)  # witness nontrans
+        wotHab = widHby.makeHab(name="wot", transferable=False, version=Vrsn_1_0, kind=Kinds.json)  # witness nontrans
         # makehab also enters inception event into its own kel.
         # Otherwise failed make raises exception ConfigurationError
         assert wotHab.pre == 'BDChA_O6twrlHcXKf7xu1xYee__nZxDbBa0W_XznpLQH'
@@ -456,7 +456,7 @@ def test_delegation_supersede():
         botHab = botHby.makeHab(name="bot", icount=1, isith='1',  # single sig
                                 ncount=1, nsith='1', # single next
                                 wits=[wotHab.pre], toad=1,  # one witness
-                                delpre=midHab.pre, **KWA)  # delegated
+                                delpre=midHab.pre, version=Vrsn_1_0, kind=Kinds.json)  # delegated
         # makehab also enters inception event into its own kel
         # Otherwise failed make raises exception ConfigurationError
         assert botHab.pre == 'EPtHqQJwlEj2sM0e2WslvwSsAsxAflmn7JIabs-LBqJC'
@@ -475,7 +475,7 @@ def test_delegation_supersede():
 
         serder = wotHab.kevers[botHab.pre].serder
         # generate witness receipt and process
-        receipt = wotHab.witness(serder=serder, framed=True, **CUE_KWA)  # now has fully witnessed controller icp
+        receipt = wotHab.witness(serder=serder, framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)  # now has fully witnessed controller icp
         count = wotHab.db.wigs.cnt(keys=(botHab.pre, serder.said))
         assert count >= 1
 
@@ -770,9 +770,9 @@ def test_delegables_escrow():
     torSalt = Salter(raw=b'0123456789defabc').raw
 
     with openHby(name="delegate", temp=True, salt=gateSalt, version=Vrsn_1_0) as gateHby, \
-            openHab(name="delegator", temp=True, salt=torSalt, **KWA) as (torHby, torHab):
+            openHab(name="delegator", temp=True, salt=torSalt, version=Vrsn_1_0, kind=Kinds.json) as (torHby, torHab):
 
-        gateHab = gateHby.makeHab(name="repTest", transferable=True, delpre=torHab.pre, **KWA)
+        gateHab = gateHby.makeHab(name="repTest", transferable=True, delpre=torHab.pre, version=Vrsn_1_0, kind=Kinds.json)
         assert gateHab.pre == "EFqw1EgGdd2B6MgNLJaNO13_JoQpxAtasIjySDzGm9pd"
 
         gateIcp = gateHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
@@ -787,7 +787,7 @@ def test_delegables_escrow():
         seal = SealEvent(i=gateHab.pre,
                                   s="0",
                                   d=gateHab.pre)
-        ixn = torHab.interact(data=[seal._asdict()], framed=True, **CUE_KWA)
+        ixn = torHab.interact(data=[seal._asdict()], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         assert ixn == (b'{"v":"KERI10JSON00013a_","t":"ixn","d":"EPUCIjCibL-VeT3n6PYIkbyP'
                        b'qpioIFT79NRqxboFv0Os","i":"EJTtW40aDl0aKDZ09v-o6uDz_VwLJGplp6WTI'
                        b'BGCoVog","s":"1","p":"EJTtW40aDl0aKDZ09v-o6uDz_VwLJGplp6WTIBGCoV'

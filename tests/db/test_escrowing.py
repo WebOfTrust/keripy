@@ -14,7 +14,6 @@ from keri.db import (Broker, CesrIoSetSuber, CesrSuber,
 from keri.help import helping
 from keri.vdr import RegStateRecord, Regery
 
-from tests.common import CUE_KWA, KWA
 
 
 def test_broker():
@@ -41,9 +40,9 @@ def test_broker_nontrans():
          openHab(name="pal", version=Vrsn_1_0, kind=Kinds.json) as (hby, hab):
 
         regery = Regery(hby=hby, name=hab.name, temp=True)
-        issuer = regery.makeRegistry(prefix=hab.pre, name=hab.name, **KWA)
+        issuer = regery.makeRegistry(prefix=hab.pre, name=hab.name, version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        hab.interact(data=[rseal], framed=True, **CUE_KWA)
+        hab.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         seqner = Seqner(sn=hab.kever.sn)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
@@ -51,9 +50,9 @@ def test_broker_nontrans():
                          saider=Diger(qb64=hab.kever.serder.said))
         regery.processEscrows()
         rsr = issuer.tever.state()  # registry state RegStateRecord
-        rpy = reply(route="/tsn/registry/" + issuer.regk, data=rsr._asdict(), **KWA)
+        rpy = reply(route="/tsn/registry/" + issuer.regk, data=rsr._asdict(), version=Vrsn_1_0, kind=Kinds.json)
 
-        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False, **KWA)
+        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False, version=Vrsn_1_0, kind=Kinds.json)
         bork = Broker(db=brokerdb, subkey="test")
 
         dts = helping.nowIso8601()
@@ -110,9 +109,9 @@ def test_broker_trans():
          openHab(name="pal", version=Vrsn_1_0, kind=Kinds.json) as (hby, hab):
 
         regery = Regery(hby=hby, name=hab.name, temp=True)
-        issuer = regery.makeRegistry(prefix=hab.pre, name=hab.name, **KWA)
+        issuer = regery.makeRegistry(prefix=hab.pre, name=hab.name, version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        hab.interact(data=[rseal], framed=True, **CUE_KWA)
+        hab.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         seqner = Seqner(sn=hab.kever.sn)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
@@ -120,8 +119,8 @@ def test_broker_trans():
                          saider=Diger(qb64=hab.kever.serder.said))
         regery.processEscrows()
         rsr = issuer.tever.state() # registry state RegStateRecord
-        rpy = reply(route="/tsn/registry/" + issuer.regk, data=rsr._asdict(), **KWA)
-        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True, **KWA)
+        rpy = reply(route="/tsn/registry/" + issuer.regk, data=rsr._asdict(), version=Vrsn_1_0, kind=Kinds.json)
+        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True, version=Vrsn_1_0, kind=Kinds.json)
 
         bork = Broker(db=brokerdb, subkey="test")
         dts = helping.nowIso8601()
