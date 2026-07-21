@@ -26,7 +26,6 @@ from keri.core import (Salter, Diger, Number, Prefixer, FieldDom,
 
 from keri.app import openHby
 
-KWA = dict(pvrsn=Vrsn_1_0, kind=Kinds.json)
 
 
 def test_fielddom():
@@ -144,7 +143,7 @@ def test_serder():
         serder = Serder()
 
     #Test Serder bare makify bootstrap for ACDC JSON
-    serder = Serder(makify=True, proto=Protocols.acdc, **KWA)  # make defaults for ACDC
+    serder = Serder(makify=True, proto=Protocols.acdc, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make defaults for ACDC
     assert serder.sad == {'v': 'ACDC10JSON00005a_',
                             'd': 'EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT',
                             'i': '',
@@ -400,7 +399,7 @@ def test_serder():
 
 
     # Test KERI JSON with makify defaults for self bootstrap which is state msg
-    serder = Serder(makify=True, **KWA)  # make with all defaults is state message
+    serder = Serder(makify=True, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make with all defaults is state message
     assert serder.sad == {'v': 'KERI10JSON0000cf_',
                         't': 'icp',
                         'd': 'EF6LmlLkfoNVY25RcGTsqKLW5uHq36FbnNEdjON07Rwv',
@@ -447,7 +446,7 @@ def test_serder():
 
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk icp
-    serder = Serder(makify=True, ilk=Ilks.icp, **KWA)  # make with defaults
+    serder = Serder(makify=True, ilk=Ilks.icp, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make with defaults
     assert serder.sad =={'v': 'KERI10JSON0000cf_',
                         't': 'icp',
                         'd': 'EF6LmlLkfoNVY25RcGTsqKLW5uHq36FbnNEdjON07Rwv',
@@ -504,7 +503,7 @@ def test_serder():
     serder = Serder(makify=True,
                     ilk=Ilks.icp,
                     saids = {'i': PreDex.Ed25519},
-                    verify=False, **KWA)
+                    verify=False, pvrsn=Vrsn_1_0, kind=Kinds.json)
 
     assert serder.sad == {'v': 'KERI10JSON0000a3_',
                         't': 'icp',
@@ -586,7 +585,7 @@ def test_serder():
     assert serder.stamp == None
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk rot
-    serder = Serder(makify=True, ilk=Ilks.rot, **KWA)  # make with defaults
+    serder = Serder(makify=True, ilk=Ilks.rot, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON0000ac_',
                             't': 'rot',
                             'd': 'EMgauZPVfh6807jO9QO8A4Iauq1xhYTZnKX2doVd_UDl',
@@ -640,7 +639,7 @@ def test_serder():
     assert serder.stamp == None
 
     # test opts
-    serder = Serder(makify=True, proto=Protocols.acdc, **KWA)  # make defaults for ACDC
+    serder = Serder(makify=True, proto=Protocols.acdc, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make defaults for ACDC
     assert serder.sad == {'v': 'ACDC10JSON00005a_',
                             'd': 'EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT',
                             'i': '',
@@ -697,7 +696,7 @@ def test_serder():
     #}
 
     # test alts
-    serder = Serder(makify=True, proto=Protocols.acdc, **KWA)  # make defaults for ACDC
+    serder = Serder(makify=True, proto=Protocols.acdc, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make defaults for ACDC
     assert serder.sad == {'v': 'ACDC10JSON00005a_',
                             'd': 'EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT',
                             'i': '',
@@ -715,7 +714,7 @@ def test_serder():
 
 
     # test opts  using acdc extra type for test purposes
-    serder = Serder(makify=True, proto=Protocols.acdc, ilk=Ilks.ace, **KWA)  # make defaults for ACDC
+    serder = Serder(makify=True, proto=Protocols.acdc, ilk=Ilks.ace, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make defaults for ACDC
     assert serder.sad == {'v': 'ACDC10JSON000064_',
                             't': 'ace',
                             'd': 'EKFsN95K2h5I6pJC6eTrNKiX8uHyn5o-SYHy6IelbPK8',
@@ -747,7 +746,7 @@ def test_serder_verify_malicious_raw():
     """Test Serder._verify / .verify against malicious and malformed raw values."""
 
     # Baseline fixtures
-    serder_base = Serder(makify=True, proto=Protocols.acdc, **KWA)
+    serder_base = Serder(makify=True, proto=Protocols.acdc, pvrsn=Vrsn_1_0, kind=Kinds.json)
     good_raw = serder_base.raw
     good_sad = serder_base.sad
 
@@ -795,7 +794,7 @@ def test_serder_verify_malicious_raw():
         Serder(raw=serder_base.dumps(sad_bad_size, Kinds.json))
 
     # Protocol mismatch: 'v' claims ACDC but content is KERI
-    raw_keri = Serder(makify=True, ilk=Ilks.icp, **KWA).raw
+    raw_keri = Serder(makify=True, ilk=Ilks.icp, pvrsn=Vrsn_1_0, kind=Kinds.json).raw
     with pytest.raises((ValidationError, DeserializeError, FieldError)):
         Serder(raw=raw_keri.replace(b'KERI10JSON', b'ACDC10JSON'))
 
@@ -838,7 +837,7 @@ def test_serder_verify_malicious_raw():
         Serder(raw=good_raw).compare(said=None)
 
     # KERI icp: bad digest with verify=False then explicit verify()
-    serder_icp = Serder(makify=True, ilk=Ilks.icp, **KWA)
+    serder_icp = Serder(makify=True, ilk=Ilks.icp, pvrsn=Vrsn_1_0, kind=Kinds.json)
     orig_said = serder_icp.said
     # Corrupt the last character of the said so the replacement is always
     # distinct regardless of the first character's value.
@@ -853,15 +852,15 @@ def test_serder_verify_malicious_raw():
     assert not Serder(raw=raw_icp_bad, verify=False).verify()
 
     # KERI rot: binary corruption causes decode failure
-    raw_rot = bytearray(Serder(makify=True, ilk=Ilks.rot, **KWA).raw)
+    raw_rot = bytearray(Serder(makify=True, ilk=Ilks.rot, pvrsn=Vrsn_1_0, kind=Kinds.json).raw)
     raw_rot[-3] ^= 0xFF
     with pytest.raises((UnicodeDecodeError, DeserializeError, ValidationError,
                         ShortageError, VersionError)):
         Serder(raw=bytes(raw_rot))
 
     # SAD substitution: valid digest from serder_a spliced into serder_b
-    serder_a = Serder(makify=True, proto=Protocols.acdc, **KWA)
-    serder_b = Serder(makify=True, proto=Protocols.acdc, **KWA)
+    serder_a = Serder(makify=True, proto=Protocols.acdc, pvrsn=Vrsn_1_0, kind=Kinds.json)
+    serder_b = Serder(makify=True, proto=Protocols.acdc, pvrsn=Vrsn_1_0, kind=Kinds.json)
     spliced_raw = serder_b.raw.replace(serder_b.said.encode(), serder_a.said.encode())
     if spliced_raw != serder_b.raw:
         assert not Serder(raw=spliced_raw, verify=False).verify()
@@ -909,7 +908,7 @@ def test_serder_verify_malicious_raw():
 
     # Cross-proto digest reuse: valid KERI said injected into ACDC SAD
     evil_acdc = dict(good_sad)
-    evil_acdc['d'] = Serder(makify=True, ilk=Ilks.icp, **KWA).said
+    evil_acdc['d'] = Serder(makify=True, ilk=Ilks.icp, pvrsn=Vrsn_1_0, kind=Kinds.json).said
     assert not Serder(sad=evil_acdc, verify=False).verify()
 
     """End Test"""
@@ -918,12 +917,12 @@ def test_serder_verify_malicious_raw():
 def test_serder_makify_bad_sad():
     """Test Serder.makify / _makify with invalid parameters and bad sad values."""
 
-    serder_ok = Serder(makify=True, proto=Protocols.acdc, **KWA)
+    serder_ok = Serder(makify=True, proto=Protocols.acdc, pvrsn=Vrsn_1_0, kind=Kinds.json)
     good_sad = serder_ok.sad
 
     # Invalid proto string
     with pytest.raises(SerializeError):
-        Serder(makify=True, proto='BOGUS', **KWA)
+        Serder(makify=True, proto='BOGUS', pvrsn=Vrsn_1_0, kind=Kinds.json)
 
     # Bad 'v' in sad: _makify ignores it and falls back to default proto
     bad_v_sad = dict(good_sad)
@@ -941,10 +940,10 @@ def test_serder_makify_bad_sad():
 
     # Invalid ilk for proto
     with pytest.raises(SerializeError):
-        Serder(makify=True, proto=Protocols.acdc, ilk='xxx', **KWA)
+        Serder(makify=True, proto=Protocols.acdc, ilk='xxx', pvrsn=Vrsn_1_0, kind=Kinds.json)
 
     with pytest.raises(SerializeError):
-        Serder(makify=True, proto=Protocols.keri, ilk='zzz', **KWA)
+        Serder(makify=True, proto=Protocols.keri, ilk='zzz', pvrsn=Vrsn_1_0, kind=Kinds.json)
 
     # Extra fields in strict ACDC sad
     strict_sad = dict(good_sad)
@@ -953,7 +952,7 @@ def test_serder_makify_bad_sad():
         Serder(makify=True, sad=strict_sad, proto=Protocols.acdc)
 
     # Extra fields in strict KERI icp sad
-    icp_sad = Serder(makify=True, ilk=Ilks.icp, **KWA).sad
+    icp_sad = Serder(makify=True, ilk=Ilks.icp, pvrsn=Vrsn_1_0, kind=Kinds.json).sad
     icp_sad['extra'] = 'bad'
     with pytest.raises(SerializeError):
         Serder(makify=True, sad=icp_sad)
@@ -966,7 +965,7 @@ def test_serder_makify_bad_sad():
         Serder(sad=alt_sad, makify=True)
 
     # makify always fills in 'v' even from an empty sad
-    assert 'v' in Serder(makify=True, proto=Protocols.acdc, **KWA).sad
+    assert 'v' in Serder(makify=True, proto=Protocols.acdc, pvrsn=Vrsn_1_0, kind=Kinds.json).sad
 
     # Invalid gvrsn (major < 2)
     with pytest.raises(SerializeError):
@@ -976,12 +975,12 @@ def test_serder_makify_bad_sad():
     # Non-digestive code for 'd': field left empty, verify fails
     serder_bad_code = Serder(makify=True, proto=Protocols.acdc,
                              saids={'d': PreDex.Ed25519},
-                             verify=False, **KWA)
+                             verify=False, pvrsn=Vrsn_1_0, kind=Kinds.json)
     assert serder_bad_code.sad['d'] == ''
     assert not serder_bad_code.verify()
 
     # Out-of-order fields: makify reorders, raw-only path rejects
-    serder_icp2 = Serder(makify=True, ilk=Ilks.icp, **KWA)
+    serder_icp2 = Serder(makify=True, ilk=Ilks.icp, pvrsn=Vrsn_1_0, kind=Kinds.json)
     ooo_sad = serder_icp2.sad
     keys = list(ooo_sad.keys())
     keys.remove('a')
@@ -997,13 +996,13 @@ def test_serder_makify_bad_sad():
 
     # Ilk valid for one proto but not the other
     with pytest.raises(SerializeError):
-        Serder(makify=True, proto=Protocols.acdc, ilk=Ilks.rot, **KWA)
+        Serder(makify=True, proto=Protocols.acdc, ilk=Ilks.rot, pvrsn=Vrsn_1_0, kind=Kinds.json)
 
     with pytest.raises(SerializeError):
-        Serder(makify=True, proto=Protocols.keri, ilk=Ilks.ace, **KWA)
+        Serder(makify=True, proto=Protocols.keri, ilk=Ilks.ace, pvrsn=Vrsn_1_0, kind=Kinds.json)
 
     # sad with KERI 'v' + no explicit proto → infers KERI
-    keri_sad = Serder(makify=True, ilk=Ilks.icp, **KWA).sad
+    keri_sad = Serder(makify=True, ilk=Ilks.icp, pvrsn=Vrsn_1_0, kind=Kinds.json).sad
     assert Serder(sad=keri_sad, makify=True).proto == Protocols.keri
 
     # KERI-shaped sad + proto=ACDC → ilk 'icp' not valid for ACDC
@@ -1024,7 +1023,7 @@ def test_serder_makify_bad_sad():
     # KERI icp with non-digestive 'i' override: 'i' stays empty, verify fails
     assert not Serder(makify=True, ilk=Ilks.icp,
                       saids={'i': PreDex.Ed25519},
-                      verify=False, **KWA).verify()
+                      verify=False, pvrsn=Vrsn_1_0, kind=Kinds.json).verify()
 
     # No args at all
     with pytest.raises(InvalidValueError):
@@ -1043,7 +1042,7 @@ def test_serder_validate_unhappy():
     a single internal attribute before calling _verify() directly.
     """
 
-    serder_ok = Serder(makify=True, proto=Protocols.acdc, **KWA)
+    serder_ok = Serder(makify=True, proto=Protocols.acdc, pvrsn=Vrsn_1_0, kind=Kinds.json)
 
     def fresh(raw=None):
         """Return a new unverified Serder from good raw."""
@@ -1126,7 +1125,7 @@ def test_serderkeri():
 
     # Test KERI JSON with makify defaults for bootstrap which is state (ksn) msg
     # ksn msg has no ilk field for itself because is is embedded in exn or other
-    serder = SerderKERI(makify=True, **KWA)  # make with all defaults is state message
+    serder = SerderKERI(makify=True, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make with all defaults is state message
     assert serder.sad == {'v': 'KERI10JSON0000cf_',
                         't': 'icp',
                         'd': 'EF6LmlLkfoNVY25RcGTsqKLW5uHq36FbnNEdjON07Rwv',
@@ -1249,7 +1248,7 @@ def test_serderkeri_icp():
     """Test SerderKERI icp msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk icp
-    serder = SerderKERI(makify=True, ilk=Ilks.icp, **KWA)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.icp, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON0000cf_',
                         't': 'icp',
                         'd': 'EF6LmlLkfoNVY25RcGTsqKLW5uHq36FbnNEdjON07Rwv',
@@ -1357,7 +1356,7 @@ def test_serderkeri_icp():
     serder = SerderKERI(makify=True,
                     ilk=Ilks.icp,
                     saids = {'i': PreDex.Ed25519},
-                    verify=False, **KWA)
+                    verify=False, pvrsn=Vrsn_1_0, kind=Kinds.json)
 
     assert serder.sad == {'v': 'KERI10JSON0000a3_',
                         't': 'icp',
@@ -1503,7 +1502,7 @@ def test_serderkeri_rot():
     """Test SerderKERI rot msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk rot
-    serder = SerderKERI(makify=True, ilk=Ilks.rot, verify=False, **KWA)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.rot, verify=False, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON0000ac_',
                         't': 'rot',
                         'd': 'EMgauZPVfh6807jO9QO8A4Iauq1xhYTZnKX2doVd_UDl',
@@ -1621,7 +1620,7 @@ def test_serderkeri_ixn():
     """Test SerderKERI ixn msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk ixn
-    serder = SerderKERI(makify=True, ilk=Ilks.ixn, verify=False, **KWA)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.ixn, verify=False, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON000073_',
                         't': 'ixn',
                         'd': 'ELI1jUxlJky6RvRieoO20H7_YikKnQMthnWM38etba3r',
@@ -1732,7 +1731,7 @@ def test_serderkeri_dip():
     """Test SerderKERI dip msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk dip
-    serder = SerderKERI(makify=True, ilk=Ilks.dip, verify=False, **KWA)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.dip, verify=False, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON0000d7_',
                         't': 'dip',
                         'd': 'EPyzEgwg6ls8iY4jViniM15rAFWaaVbsZ4eP2a9ZcKfC',
@@ -1865,7 +1864,7 @@ def test_serderkeri_dip():
     serder = SerderKERI(makify=True,
                     ilk=Ilks.dip,
                     saids = {'i': PreDex.Ed25519},
-                    verify=False, **KWA)
+                    verify=False, pvrsn=Vrsn_1_0, kind=Kinds.json)
 
     assert serder.sad == {'v': 'KERI10JSON0000ab_',
                         't': 'dip',
@@ -2033,7 +2032,7 @@ def test_serderkeri_dip():
 def test_serderkeri_drt():
     """Test SerderKERI drt msg"""
     # Test KERI JSON with makify defaults for self bootstrap with ilk drt
-    serder = SerderKERI(makify=True, ilk=Ilks.drt, verify=False, **KWA)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.drt, verify=False, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON0000ac_',
                         't': 'drt',
                         'd': 'EMiEhgKRsD559TX6b03AT5P2GfKPPqoNk5COHZxU2TkR',
@@ -2160,7 +2159,7 @@ def test_serderkeri_rct():
     """Test SerderKERI rct msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk ixn
-    serder = SerderKERI(makify=True, ilk=Ilks.rct, verify=False, **KWA)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.rct, verify=False, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON000039_', 't': 'rct', 'd': '', 'i': '', 's': '0'}
 
     assert serder.raw == b'{"v":"KERI10JSON000039_","t":"rct","d":"","i":"","s":"0"}'
@@ -2254,7 +2253,7 @@ def test_serderkeri_rct():
 def test_serderkeri_qry():
     """Test SerderKERI qry query msg"""
     # Test KERI JSON with makify defaults for self bootstrap with ilk qry
-    serder = SerderKERI(makify=True, ilk=Ilks.qry, **KWA)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.qry, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make with defaults
     assert serder.sad =={'v': 'KERI10JSON000074_',
                         't': 'qry',
                         'd': 'EHVP7GS9B8PFKDogN3WD93NcSg6hShBXiolOqwnO3Vfm',
@@ -2347,7 +2346,7 @@ def test_serderkeri_rpy():
     """Test SerderKERI rpy reply msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk rpy
-    serder = SerderKERI(makify=True, ilk=Ilks.rpy, **KWA)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.rpy, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make with defaults
     assert serder.sad =={'v': 'KERI10JSON00006c_',
                         't': 'rpy',
                         'd': 'EFnZ6ER7GXDjNpcn-QgXWqW4IZVAp73cCKC_zW_48Nu-',
@@ -2435,7 +2434,7 @@ def test_serderkeri_rpy():
 def test_serderkeri_pro():
     """Test SerderKERI pro prod msg"""
     # Test KERI JSON with makify defaults for self bootstrap with ilk qry
-    serder = SerderKERI(makify=True, ilk=Ilks.pro, **KWA)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.pro, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make with defaults
     assert serder.sad =={'v': 'KERI10JSON000074_',
                         't': 'pro',
                         'd': 'EP5pwF1ioQjnY1J0Gu12f_ZZEaoAntM3bng52tzZAvrM',
@@ -2528,7 +2527,7 @@ def test_serderkeri_bar():
     """Test SerderKERI bar alls msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk bar
-    serder = SerderKERI(makify=True, ilk=Ilks.bar, **KWA)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.bar, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make with defaults
     assert serder.sad =={'v': 'KERI10JSON00006c_',
                         't': 'bar',
                         'd': 'EAGe-dBuaN1l1LFK8MrBS60BiFhSbxrf_l6dZBkd8JNR',
@@ -2620,7 +2619,7 @@ def test_serderkeri_exn():
     """Test SerderKERI exn msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk ixn
-    serder = SerderKERI(makify=True, ilk=Ilks.exn, **KWA)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.exn, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make with defaults
     assert serder.sad == {'a': [],
                           'd': 'EPx9pShQTfv2FoISZJAZ4dlUcekG8-CSkgJh0i0q_iJn',
                           'dt': '',
@@ -2720,7 +2719,7 @@ def test_serderkeri_vcp():
     """Test SerderKERI vcp msg"""
 
     # Test KERI JSON with makify defaults for self bootstrap with ilk vcp
-    serder = SerderKERI(makify=True, ilk=Ilks.vcp, **KWA)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.vcp, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make with defaults
     assert serder.sad == {'v': 'KERI10JSON0000b7_',
                         't': 'vcp',
                         'd': 'ELJmaZ1Cq3JoXDmNNtTpL-oNTpo4936wx4YAvXMK5tLU',
@@ -2820,7 +2819,7 @@ def test_serderacdc():
     with pytest.raises(InvalidValueError):
         serder = SerderACDC()
 
-    serder = SerderACDC(makify=True, proto=Protocols.acdc, verify=False, **KWA)  # make defaults for ACDC
+    serder = SerderACDC(makify=True, proto=Protocols.acdc, verify=False, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make defaults for ACDC
     assert serder.sad == {'v': 'ACDC10JSON00005a_',
                           'd': 'EMk7BvrqO_2sYjpI_-BmSELOFNie-muw4XTi3iYCz6pT',
                           'i': '',
@@ -3027,7 +3026,7 @@ def test_serdery():
     """Test Serdery"""
     #Create incoming message stream for Serdery to reap
 
-    serder = SerderKERI(makify=True, ilk=Ilks.ixn, verify=False, **KWA)  # make with defaults
+    serder = SerderKERI(makify=True, ilk=Ilks.ixn, verify=False, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make with defaults
     sad = serder.sad
     pre = "EDGnGYIa5obfFUhxcAuUmM4fJyeRYj2ti3KGf87Bc70J"
     sad['i'] = pre
@@ -3038,7 +3037,7 @@ def test_serdery():
 
     ims = bytearray(serderKeri.raw)
 
-    serder = SerderACDC(makify=True, proto=Protocols.acdc, verify=False, **KWA)  # make defaults for ACDC
+    serder = SerderACDC(makify=True, proto=Protocols.acdc, verify=False, pvrsn=Vrsn_1_0, kind=Kinds.json)  # make defaults for ACDC
     sad = serder.sad
     isr = 'EO8CE5RH1X8QJwHHhPkj_S6LJQDRNOiGohW327FMA6D2'
     sad['i'] = isr

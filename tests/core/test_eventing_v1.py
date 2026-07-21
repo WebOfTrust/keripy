@@ -33,7 +33,6 @@ from keri.help import helping, ogler
 
 logger = ogler.getLogger()
 
-KWA = dict(pvrsn=Vrsn_1_0, kind=Kinds.json)
 
 
 def test_simple():
@@ -1828,7 +1827,7 @@ def test_kever(mockHelpingNowUTC):
                                       ilk=Ilks.icp,
                                       saids = {'i': PreDex.Ed25519},
                                       verify=False,
-                                      **KWA)
+                                      pvrsn=Vrsn_1_0, kind=Kinds.json)
 
         sad = serder.sad
         sad['i'] = skp0.verfer.qb64  # non-digestive aid
@@ -1839,7 +1838,7 @@ def test_kever(mockHelpingNowUTC):
         sad['n'] = nxt
         sad['bt'] = "{:x}".format(toad)
 
-        serder = SerderKERI(makify=True, verify=True, sad=sad, **KWA)
+        serder = SerderKERI(makify=True, verify=True, sad=sad, pvrsn=Vrsn_1_0, kind=Kinds.json)
         assert serder.said == 'EBTCANzIfUThxmM1z1SFxQuwooGdF4QwtotRS01vZGqi'
         assert serder.pre == 'DAUDqkmn-hqlQKD8W-FAEa5JUvJC2I9yarEem-AAEg3e'
         aid0 = serder.pre
@@ -1973,7 +1972,7 @@ def test_kever(mockHelpingNowUTC):
                                       ilk=Ilks.icp,
                                       saids = {'i': PreDex.Ed25519N},
                                       verify=False,
-                                      **KWA)
+                                      pvrsn=Vrsn_1_0, kind=Kinds.json)
 
         sad = serder.sad
         sad['i'] = skp0.verfer.qb64  # non-digestive aid
@@ -1984,7 +1983,7 @@ def test_kever(mockHelpingNowUTC):
         sad['n'] = nxt
         sad['bt'] = "{:x}".format(toad)
 
-        serder = SerderKERI(makify=True, verify=False, sad=sad, **KWA)
+        serder = SerderKERI(makify=True, verify=False, sad=sad, pvrsn=Vrsn_1_0, kind=Kinds.json)
         assert serder.said == 'EFsuiA86Q5gGuVOO3tou8KSU6LORSExIUxzWNrlnW7WP'
         assert serder.pre == skp0.verfer.qb64
         aid0 = serder.pre
@@ -2012,7 +2011,7 @@ def test_kever(mockHelpingNowUTC):
                                       ilk=Ilks.icp,
                                       saids = {'i': PreDex.Ed25519N},
                                       verify=False,
-                                      **KWA)
+                                      pvrsn=Vrsn_1_0, kind=Kinds.json)
 
         sad = serder.sad
         sad['i'] = skp0.verfer.qb64  # non-digestive aid
@@ -2023,7 +2022,7 @@ def test_kever(mockHelpingNowUTC):
         sad['n'] = nxt  # empty nxt
         sad['bt'] = "{:x}".format(toad)
 
-        serder = SerderKERI(makify=True, verify=True, sad=sad, **KWA)
+        serder = SerderKERI(makify=True, verify=True, sad=sad, pvrsn=Vrsn_1_0, kind=Kinds.json)
         assert serder.said == 'EHXNdcXZzJnRIdaNk30W5h4yD5sZ2Y_n3u_ReE65X9w-'
         assert serder.pre == skp0.verfer.qb64
         aid0 = serder.pre
@@ -2071,7 +2070,7 @@ def test_kever(mockHelpingNowUTC):
                                       ilk=Ilks.icp,
                                       saids = {'i': PreDex.Ed25519N},
                                       verify=False,
-                                      **KWA)
+                                      pvrsn=Vrsn_1_0, kind=Kinds.json)
 
         sad = serder.sad
         sad['i'] = skp0.verfer.qb64  # non-digestive aid
@@ -2083,7 +2082,7 @@ def test_kever(mockHelpingNowUTC):
         sad['bt'] = "{:x}".format(toad)
         sad['b'] = baks
 
-        serder = SerderKERI(makify=True, verify=False, sad=sad, **KWA)
+        serder = SerderKERI(makify=True, verify=False, sad=sad, pvrsn=Vrsn_1_0, kind=Kinds.json)
         assert serder.said == 'EKcREpfNupJ8oOqdnqDIyJVr1-GgIMBrVOtBUR9Gm6lO'
         assert serder.pre == skp0.verfer.qb64
 
@@ -2106,7 +2105,7 @@ def test_kever(mockHelpingNowUTC):
         sad =serder.sad  # makes copy
         sad['bt'] = "{:x}".format(toad)
 
-        serder = SerderKERI(makify=True, verify=False, sad=sad, **KWA)
+        serder = SerderKERI(makify=True, verify=False, sad=sad, pvrsn=Vrsn_1_0, kind=Kinds.json)
         assert serder.said == 'EBKhptvqccp0KNBaS45bNPdTE4m19U1IvweHJW2PIEDI'
         assert serder.pre == skp0.verfer.qb64
 
@@ -2135,7 +2134,7 @@ def test_kever(mockHelpingNowUTC):
         sad['b'] = baks
         sad['a'] = a
 
-        serder = SerderKERI(makify=True, verify=False, sad=sad, **KWA)
+        serder = SerderKERI(makify=True, verify=False, sad=sad, pvrsn=Vrsn_1_0, kind=Kinds.json)
         assert serder.said == 'EEu-cdj_9b_66XRJ5UuhgEvJxAPpn4RjyaHvRgDU3iyA'
         assert serder.pre == skp0.verfer.qb64
 
@@ -2163,7 +2162,7 @@ def test_kever(mockHelpingNowUTC):
         sad['a'] = a
 
 
-        serder = SerderKERI(makify=True, verify=True, sad=sad, **KWA)
+        serder = SerderKERI(makify=True, verify=True, sad=sad, pvrsn=Vrsn_1_0, kind=Kinds.json)
         assert serder.said == 'EOyd2ZALXBm5k9lEpmvakO6RYPDgX1zWSFNd3MfOXL-e'
         assert serder.pre == skp0.verfer.qb64
 

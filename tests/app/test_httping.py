@@ -15,7 +15,6 @@ from keri.kering import Ilks, Vrsn_1_0, Vrsn_2_0, Kinds
 from keri.core import Kevery, Parser, SerderKERI
 from keri.vdr import Regery, Tevery, Verifier
 
-from tests.common import KWA
 
 
 def test_parse_cesr_request():
@@ -76,15 +75,15 @@ class MockClient:
 
 
 def test_create_cesr_request(mockHelpingNowUTC):
-    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab):
+    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (hby, hab):
         wit = "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"
         regery = Regery(hby=hby, name="test", temp=True)
-        issuer = regery.makeRegistry(prefix=hab.pre, name="test", **KWA)
+        issuer = regery.makeRegistry(prefix=hab.pre, name="test", version=Vrsn_1_0, kind=Kinds.json)
 
         verfer = Verifier(hby=hby)
         msg = verfer.query(hab.pre, issuer.regk,
                            "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
-                           route="tels", **KWA)
+                           route="tels", version=Vrsn_1_0, kind=Kinds.json)
         client = MockClient()
 
         createCESRRequest(msg, client, dest=wit, path="/qry/tels")
@@ -101,7 +100,7 @@ def test_create_cesr_request(mockHelpingNowUTC):
         assert headers["Content-Length"] == 254
         assert len(headers["CESR-ATTACHMENT"]) == 144
 
-        msg = hab.query(pre=hab.pre, src=wit, route="mbx", query=dict(s=0), **KWA)
+        msg = hab.query(pre=hab.pre, src=wit, route="mbx", query=dict(s=0), version=Vrsn_1_0, kind=Kinds.json)
         client = MockClient()
 
         createCESRRequest(msg, client, dest=wit, path="/qry/mbx")
@@ -128,7 +127,7 @@ def test_create_cesr_request_v2(mockHelpingNowUTC):
                  version=Vrsn_2_0, kind=Kinds.json) as (hby, hab):
         wit = "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"
         regery = Regery(hby=hby, name="test", temp=True)
-        issuer = regery.makeRegistry(prefix=hab.pre, name="test", **KWA)
+        issuer = regery.makeRegistry(prefix=hab.pre, name="test", version=Vrsn_1_0, kind=Kinds.json)
 
         cf = {
             "kram": {
@@ -216,15 +215,15 @@ def test_create_cesr_request_v2(mockHelpingNowUTC):
 
 
 def test_stream_cesr_request(mockHelpingNowUTC):
-    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab):
+    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (hby, hab):
         wit = "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"
         regery = Regery(hby=hby, name="test", temp=True)
-        issuer = regery.makeRegistry(prefix=hab.pre, name="test", **KWA)
+        issuer = regery.makeRegistry(prefix=hab.pre, name="test", version=Vrsn_1_0, kind=Kinds.json)
 
         verfer = Verifier(hby=hby)
         msg = verfer.query(hab.pre, issuer.regk,
                            "EA8Ih8hxLi3mmkyItXK1u55cnHl4WgNZ_RE-gKXqgcX4",
-                           route="tels", **KWA)
+                           route="tels", version=Vrsn_1_0, kind=Kinds.json)
         client = MockClient()
 
         streamCESRRequests(client, msg, dest=wit, path="/qry/tels")
@@ -241,7 +240,7 @@ def test_stream_cesr_request(mockHelpingNowUTC):
         assert headers["Content-Length"] == 254
         assert len(headers["CESR-ATTACHMENT"]) == 144
 
-        msg = hab.query(pre=hab.pre, src=wit, route="mbx", query=dict(s=0), **KWA)
+        msg = hab.query(pre=hab.pre, src=wit, route="mbx", query=dict(s=0), version=Vrsn_1_0, kind=Kinds.json)
         client = MockClient()
 
         streamCESRRequests(client, msg, dest=wit, path="/qry/mbx")
@@ -261,7 +260,7 @@ def test_stream_cesr_request(mockHelpingNowUTC):
                                               b'Z3al3V3z3VstRtHRPeOrotuqZZUgBl2yHzgpGyOjAXYGinVqWLAMhdmQ089FTSAz'
                                               b'qSTBmJzI8RvIezsJ')
 
-        msgs = hab.query(pre=hab.pre, src=wit, route="logs", query=dict(s=0), **KWA)
+        msgs = hab.query(pre=hab.pre, src=wit, route="logs", query=dict(s=0), version=Vrsn_1_0, kind=Kinds.json)
         msgs.extend(hab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0))
 
         client = MockClient()
@@ -302,7 +301,7 @@ def test_stream_cesr_request_v2(mockHelpingNowUTC):
                  version=Vrsn_2_0, kind=Kinds.json) as (hby, hab):
         wit = "BGKVzj4ve0VSd8z_AmvhLg4lqcC_9WYX90k03q-R_Ydo"
         regery = Regery(hby=hby, name="test", temp=True)
-        issuer = regery.makeRegistry(prefix=hab.pre, name="test", **KWA)
+        issuer = regery.makeRegistry(prefix=hab.pre, name="test", version=Vrsn_1_0, kind=Kinds.json)
 
         cf = {
             "kram": {

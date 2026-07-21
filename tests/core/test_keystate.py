@@ -12,7 +12,6 @@ from keri.core import (Salter, Kevery, Parser,
 from keri.kering import Vrsn_1_0, Kinds
 from keri.app import openHby
 
-from tests.common import CUE_KWA, KWA
 
 
 def test_keystate(mockHelpingNowUTC):
@@ -74,11 +73,11 @@ def test_keystate(mockHelpingNowUTC):
          openHby(name="wes", base="test", salt=salt, version=Vrsn_1_0) as wesHby):
 
         # setup Wes's habitat nontrans
-        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False, **KWA)
+        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False, version=Vrsn_1_0, kind=Kinds.json)
         assert wesHab.pre == 'BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfXGNrFRom'
 
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True,
-                                wits=[wesHab.pre], **KWA)
+                                wits=[wesHab.pre], version=Vrsn_1_0, kind=Kinds.json)
         assert bobHab.pre == 'EDotK23orLtF8GAU61_fNXRyFBTg49X50W0OUlP14YAK'
 
         # Create Bob's icp, pass to Wes.
@@ -87,7 +86,7 @@ def test_keystate(mockHelpingNowUTC):
         Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=wesKvy, local=True)
         assert bobHab.pre in wesHab.kevers
         iserder = SerderKERI(raw=bytearray(bobIcp))
-        wesHab.receipt(serder=iserder, framed=True, **CUE_KWA)
+        wesHab.receipt(serder=iserder, framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
 
         # Get key state record (ksr) from Bob and verify
         ksr = bobHab.kever.state()
@@ -103,7 +102,7 @@ def test_keystate(mockHelpingNowUTC):
         assert ksr.s == '0'
         assert ksr.d == bobHab.kever.serder.said
 
-        msg = wesHab.reply(route="/ksn/" + wesHab.pre, data=ksr._asdict(), **CUE_KWA)
+        msg = wesHab.reply(route="/ksn/" + wesHab.pre, data=ksr._asdict(), version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
 
         bamRtr = Router()
         bamRvy = Revery(db=bamHby.db, rtr=bamRtr)
@@ -136,10 +135,10 @@ def test_keystate(mockHelpingNowUTC):
          openHby(name="wes", base="test",  salt=salt, version=Vrsn_1_0) as wesHby):
 
         # setup Wes's habitat nontrans
-        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False, **KWA)
+        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False, version=Vrsn_1_0, kind=Kinds.json)
         assert wesHab.pre == 'BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfXGNrFRom'
 
-        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True, **KWA)
+        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True, version=Vrsn_1_0, kind=Kinds.json)
         bobpre = 'EA_SbBUZYwqLVlAAn14d6QUBQCSReJlZ755JqTgmRhXH'
         assert bobHab.pre == bobpre
 
@@ -163,9 +162,9 @@ def test_keystate(mockHelpingNowUTC):
         assert ksr.s == '0'
         assert ksr.d == bobHab.kever.serder.said
 
-        msg = wesHab.reply(route="/ksn/" + wesHab.pre, data=ksr._asdict(), **CUE_KWA)
+        msg = wesHab.reply(route="/ksn/" + wesHab.pre, data=ksr._asdict(), version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
 
-        bamHab = bamHby.makeHab(name="bam", isith='1', icount=1, transferable=True, **KWA)
+        bamHab = bamHby.makeHab(name="bam", isith='1', icount=1, transferable=True, version=Vrsn_1_0, kind=Kinds.json)
 
         # Set Wes has Bam's watcher
         habr = bamHab.db.habs.get(bamHab.pre)
@@ -204,10 +203,10 @@ def test_keystate(mockHelpingNowUTC):
          openHby(name="wes", base="test",  salt=salt, version=Vrsn_1_0) as wesHby):
 
         # setup Wes's habitat nontrans
-        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False, **KWA)
+        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False, version=Vrsn_1_0, kind=Kinds.json)
         assert wesHab.pre == 'BBVDlgWic_rAf-m_v7vz_VvIYAUPErvZgLTfXGNrFRom'
 
-        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True, **KWA)
+        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True, version=Vrsn_1_0, kind=Kinds.json)
         assert bobHab.pre == bobpre
 
         # Create Bob's icp, pass to Wes.
@@ -229,7 +228,7 @@ def test_keystate(mockHelpingNowUTC):
         assert ksr.s == '0'
         assert ksr.d == bobHab.kever.serder.said
 
-        msg = wesHab.reply(route="/ksn/" + wesHab.pre, data=ksr._asdict(), **CUE_KWA)
+        msg = wesHab.reply(route="/ksn/" + wesHab.pre, data=ksr._asdict(), version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
 
         bamKvy = Kevery(db=bamHby.db)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
@@ -244,7 +243,7 @@ def test_keystate(mockHelpingNowUTC):
     with (openHby(name="bob", base="test", salt=default_salt, version=Vrsn_1_0) as bobHby,
          openHby(name="bam", base="test", salt=default_salt, version=Vrsn_1_0) as bamHby):
 
-        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True, **KWA)
+        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True, version=Vrsn_1_0, kind=Kinds.json)
         assert bobHab.pre == bobpre
 
         # Get ksr key state record from Bob and verify
@@ -254,7 +253,7 @@ def test_keystate(mockHelpingNowUTC):
         assert ksr.d == bobHab.kever.serder.said
 
         for _ in range(3):
-            bobHab.rotate(framed=True, **CUE_KWA)
+            bobHab.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
 
         # Get ksr key state record from Bob and verify
         ksr = bobHab.kever.state()
@@ -262,7 +261,7 @@ def test_keystate(mockHelpingNowUTC):
         assert ksr.s == '3'
         assert ksr.d == bobHab.kever.serder.said
 
-        staleKsn = bobHab.reply(route="/ksn/" + bobHab.pre, data=ksr._asdict(), **CUE_KWA)
+        staleKsn = bobHab.reply(route="/ksn/" + bobHab.pre, data=ksr._asdict(), version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
 
         bamRtr = Router()
         bamRvy = Revery(db=bamHby.db, rtr=bamRtr)
@@ -271,7 +270,7 @@ def test_keystate(mockHelpingNowUTC):
         Parser(version=Vrsn_1_0).parse(ims=bytearray(staleKsn), kvy=bamKvy, rvy=bamRvy, local=True)
 
         for _ in range(5):
-            bobHab.rotate(framed=True, **CUE_KWA)
+            bobHab.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
 
         # Get ksn from Bob and verify
         ksr = bobHab.kever.state()
@@ -279,7 +278,7 @@ def test_keystate(mockHelpingNowUTC):
         assert ksr.s == '8'
         assert ksr.d == bobHab.kever.serder.said
 
-        liveKsn = bobHab.reply(route="/ksn/" + bobHab.pre, data=ksr._asdict(), **CUE_KWA)
+        liveKsn = bobHab.reply(route="/ksn/" + bobHab.pre, data=ksr._asdict(), version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(liveKsn), kvy=bamKvy, rvy=bamRvy, local=True)
 
         msgs = bytearray()  # outgoing messages

@@ -17,7 +17,6 @@ from keri.app import openHab, openHby
 from keri.vc import credential
 from keri.vdr import Verifier, Regery
 
-from tests.common import KWA
 
 
 def test_proving(mockHelpingNowIso8601):
@@ -26,7 +25,7 @@ def test_proving(mockHelpingNowIso8601):
     sidSalt = Salter(raw=b'0123456789abcdef').qb64
 
     with openHby(name="sid", base="test", salt=sidSalt, version=Vrsn_1_0) as sidHby:
-        sidHab = sidHby.makeHab(name="test", **KWA)
+        sidHab = sidHby.makeHab(name="test", version=Vrsn_1_0, kind=Kinds.json)
         assert sidHab.pre == 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
         sed = dict()
         sed["$id"] = ""
@@ -59,7 +58,7 @@ def test_proving(mockHelpingNowIso8601):
         creder = credential(issuer=sidHab.pre,
                             schema=schemer.said,
                             data=credSubject,
-                            **KWA)
+                            version=Vrsn_1_0, kind=Kinds.json)
 
         msg = sidHab.endorse(serder=creder, framed=False, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"ACDC10JSON000195_","d":"EPVHgaM_Yad1b5VHs6SIZyqF72m_byxSYU'
@@ -235,7 +234,7 @@ def test_credential(mockHelpingNowIso8601):
     cred = credential(schema="EAllThM1rLBSMZ_ozM1uAnFvSfC0N1jaQ42aKU5sCZ5Q",
                       issuer="EBNHFK056fqNSG_MDE7d_Eqk0bazefvd4eeQLMPPNBnM",
                       data=d, source=s, status="ECQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M",
-                      **KWA)
+                      version=Vrsn_1_0, kind=Kinds.json)
 
     assert cred.size == len(cred.raw)
     assert cred.raw == (b'{"v":"ACDC10JSON00023b_","d":"EFyT2QGVlx0zL4ft1WNDzEeBh9lHN-vfcjL18V8h-zn1",'
@@ -262,7 +261,7 @@ def test_privacy_preserving_credential(mockHelpingNowIso8601):
                       private_subject_nonce=Salter(raw=b'abcdef0123456789').qb64,
                       issuer="EMZeK1yLZd1JV6Ktdq_YUt-YbyoTWB9UMcFzuiDly2Y6",
                       data=d, status="ETQoH02zJRCTNz-Wl3nnkUD_RVSzSwcoNvmfa18AWt3M",
-                      **KWA)
+                      version=Vrsn_1_0, kind=Kinds.json)
 
     assert cred.size == len(cred.raw)
     assert "u" in cred.sad
@@ -279,11 +278,11 @@ def test_privacy_preserving_credential(mockHelpingNowIso8601):
 
 
 def test_credential_parsator():
-    with openHab(name="sid", temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab):
+    with openHab(name="sid", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (hby, hab):
         assert hab.pre == 'EKC8085pwSwzLwUGzh-HrEoFDwZnCJq27bVp5atdMT9o'
 
         regery = Regery(hby=hby, name="sid", temp=True)
-        issuer = regery.makeRegistry(prefix=hab.pre, name="sid", noBackers=True, estOnly=True, **KWA)
+        issuer = regery.makeRegistry(prefix=hab.pre, name="sid", noBackers=True, estOnly=True, version=Vrsn_1_0, kind=Kinds.json)
 
         credSubject = dict(
             d="",
@@ -294,7 +293,7 @@ def test_credential_parsator():
                             schema="EAbrwlefuH-F_KU_FPWAZR78A3pmSVDlnfJUqnm8Lhr4",
                             data=credSubject,
                             status=issuer.regk,
-                            **KWA)
+                            version=Vrsn_1_0, kind=Kinds.json)
 
         msg = bytearray(creder.raw)
         msg.extend(Counter(Codens.SealSourceTriples, count=1, version=Vrsn_1_0).qb64b)

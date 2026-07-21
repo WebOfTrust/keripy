@@ -11,9 +11,8 @@ from keri.core import (Salter, Parser, Diger, SerderKERI,
 from keri.app import openHby
 from keri.db import openDB
 
-
 logger = ogler.getLogger()
-from tests.common import CUE_KWA, KWA
+
 
 
 def test_kevery():
@@ -264,12 +263,12 @@ def test_witness_state():
         ]
 
         hab = hby.makeHab(name="controller", isith='1', icount=1, transferable=True,
-                              wits=[wits[0], wits[1]], **KWA)
+                              wits=[wits[0], wits[1]], version=Vrsn_1_0, kind=Kinds.json)
 
         wit0 = hab.kvy.fetchWitnessState(hab.pre, 0)
         assert [w.qb64 for w in wit0] == [wits[0], wits[1]]
 
-        ixn0 = hab.interact(framed=True, **CUE_KWA)
+        ixn0 = hab.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         assert ixn0 == (b'{"v":"KERI10JSON0000cb_","t":"ixn","d":"EMrHSIByF9uIw9rM9rdSWxLQ'
                 b'IQiKloH-S5T8UO2Cq3xh","i":"EItocvw9Us8NGO5I3qff6dCCSsQzRSKMDzFUU'
                 b'BXEYLAH","s":"1","p":"EItocvw9Us8NGO5I3qff6dCCSsQzRSKMDzFUUBXEYL'
@@ -278,7 +277,7 @@ def test_witness_state():
         wit1 = hab.kvy.fetchWitnessState(hab.pre, 1)
         assert [w.qb64 for w in wit1] == [wits[0], wits[1]]
 
-        rot1 = hab.rotate(framed=True, **CUE_KWA)
+        rot1 = hab.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         assert rot1 == (b'{"v":"KERI10JSON000160_","t":"rot","d":"EF3IIBRGoGr5Mq35UBuhmfiA'
                 b'SkBAOc-sM5f8BUQisi6-","i":"EItocvw9Us8NGO5I3qff6dCCSsQzRSKMDzFUU'
                 b'BXEYLAH","s":"2","p":"EMrHSIByF9uIw9rM9rdSWxLQIQiKloH-S5T8UO2Cq3'
@@ -289,7 +288,7 @@ def test_witness_state():
         wit2 = hab.kvy.fetchWitnessState(hab.pre, 2)
         assert [w.qb64 for w in wit2] == [wits[0], wits[1]]
 
-        rot2 = hab.rotate(cuts=[wits[0]], adds=wits[7:], framed=True, **CUE_KWA)
+        rot2 = hab.rotate(cuts=[wits[0]], adds=wits[7:], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         assert rot2 == (b'{"v":"KERI10JSON00021a_","t":"rot","d":"EEmrPqJNzOC2DvZx--TCbB5o'
                 b'pQ0Ewp7yXrzqAesXwwQ4","i":"EItocvw9Us8NGO5I3qff6dCCSsQzRSKMDzFUU'
                 b'BXEYLAH","s":"3","p":"EF3IIBRGoGr5Mq35UBuhmfiASkBAOc-sM5f8BUQisi'
@@ -304,10 +303,10 @@ def test_witness_state():
         assert [w.qb64 for w in wit3] == [wits[1], wits[7], wits[8], wits[9]]
 
         for _ in range(5):
-            hab.interact(framed=True, **CUE_KWA)
+            hab.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         assert hab.kever.sn == 8
 
-        hab.rotate(cuts=[wits[8], wits[9]], adds=wits[2:5], framed=True, **CUE_KWA)
+        hab.rotate(cuts=[wits[8], wits[9]], adds=wits[2:5], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         assert hab.kever.sn == 9
 
         wit4 = hab.kvy.fetchWitnessState(hab.pre, 4)
@@ -345,21 +344,21 @@ def test_stale_event_receipts():
             openHby(name="wil", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as wilHby):
 
         # setup Wes's habitat nontrans
-        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False, **KWA)
+        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False, version=Vrsn_1_0, kind=Kinds.json)
         assert wesHab.pre == 'BCuDiSPCTq-qBBFDHkhf1_kmysrH8KSsFvoaOSgEbx-X'
 
         # setup Wan's habitat nontrans
-        wanHab = wanHby.makeHab(name="wan", isith='1', icount=1, transferable=False, **KWA)
+        wanHab = wanHby.makeHab(name="wan", isith='1', icount=1, transferable=False, version=Vrsn_1_0, kind=Kinds.json)
         assert wanHab.pre == 'BAbSj3jfaeJbpuqg0WtvHw31UoRZOnN_RZQYBwbAqteP'
 
         # setup Wil's habitat nontrans
-        wilHab = wilHby.makeHab(name="wil", isith='1', icount=1, transferable=False, **KWA)
+        wilHab = wilHby.makeHab(name="wil", isith='1', icount=1, transferable=False, version=Vrsn_1_0, kind=Kinds.json)
         assert wilHab.pre == 'BEXrSXVksXpnfno_Di6RBX2Lsr9VWRAihjLhowfjNOQQ'
 
         # setup Bob's transferable habitat with wil, wes and wan as witnesses
         awits = [wesHab, wilHab, wanHab]
         bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, transferable=True,
-                                wits=[wesHab.pre, wilHab.pre, wanHab.pre], toad=2, **KWA)
+                                wits=[wesHab.pre, wilHab.pre, wanHab.pre], toad=2, version=Vrsn_1_0, kind=Kinds.json)
         assert bobHab.pre == 'EEM3_Vvu1R__sWolUiPQ8Mk97GQ1xsGbC9kqEfsFL1aO'
 
         bamKvy = Kevery(db=bamHby.db, lax=False, local=False)
@@ -374,21 +373,21 @@ def test_stale_event_receipts():
             Parser(version=Vrsn_1_0).parse(ims=bytearray(bobIcp), kvy=kvy, local=True)
             assert bobHab.pre in witHab.kevers
             iserder = SerderKERI(raw=bytearray(bobIcp))
-            msg = witHab.receipt(serder=iserder, framed=True, **CUE_KWA)
+            msg = witHab.receipt(serder=iserder, framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         bamKvy.processEscrows()
         assert bobHab.pre in bamKvy.kevers
 
         # Rotate, pass to witnesses, send receipts from Wes and Wan to Bam
-        rot0 = bobHab.rotate(toad=2, framed=True, **CUE_KWA)
+        rot0 = bobHab.rotate(toad=2, framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(rot0), kvy=bamKvy, local=True)
 
         for witHab in [wesHab, wanHab]:
             kvy = Kevery(db=witHab.db, lax=False, local=False)
             Parser(version=Vrsn_1_0).parse(ims=bytearray(rot0), kvy=kvy, local=True)
             iserder = SerderKERI(raw=bytearray(rot0))
-            msg = witHab.receipt(serder=iserder, framed=True, **CUE_KWA)
+            msg = witHab.receipt(serder=iserder, framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         bamKvy.processEscrows()
@@ -400,14 +399,14 @@ def test_stale_event_receipts():
         assert len(wigers) == 2
 
         # Rotate out Wil, pass to witnesses, receipted event to bam.
-        rot1 = bobHab.rotate(cuts=[wilHab.pre], toad=2, framed=True, **CUE_KWA)
+        rot1 = bobHab.rotate(cuts=[wilHab.pre], toad=2, framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(rot1), kvy=bamKvy, local=True)
 
         for witHab in [wesHab, wanHab]:
             kvy = Kevery(db=witHab.db)
             Parser(version=Vrsn_1_0).parse(ims=bytearray(rot1), kvy=kvy, local=True)
             iserder = SerderKERI(raw=bytearray(rot1))
-            msg = witHab.receipt(serder=iserder, framed=True, **CUE_KWA)
+            msg = witHab.receipt(serder=iserder, framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         bamKvy.processEscrows()
@@ -418,7 +417,7 @@ def test_stale_event_receipts():
         kvy = Kevery(db=wilHab.db)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(rot0), kvy=kvy, local=True)
         iserder = SerderKERI(raw=bytearray(rot0))
-        msg = wilHab.receipt(serder=iserder, framed=True, **CUE_KWA)
+        msg = wilHab.receipt(serder=iserder, framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=bamKvy, local=True)
 
         # Validate that bam has 3 receipts in DB for event 1
