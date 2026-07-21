@@ -1907,7 +1907,9 @@ class BaseHab:
             pre (str or None): qb64 str or bytes of identifier prefix.
                 Default is own ``.pre``.
             fn (int): first-seen ordering number to start from.
-            gvrsn (Versionage): CESR genus version for attachments
+            gvrsn (Versionage): CESR genus version for attachments. When the
+                default sentinel ``Version`` is used and ``pre`` is in
+                ``.kevers``, the target kever's ``serder.pvrsn`` is substituted.
             version (Versionage): legacy alias for gvrsn
 
         Returns:
@@ -1918,6 +1920,8 @@ class BaseHab:
 
         if version is not None:
             gvrsn = version
+        if gvrsn is Version and pre in self.kevers:
+            gvrsn = self.kevers[pre].serder.pvrsn
         msgs = bytearray()
         kever = self.kevers[pre]
         for msg in self.db.cloneDelegation(kever=kever, gvrsn=gvrsn):
@@ -2516,9 +2520,7 @@ class BaseHab:
             return msgs
 
         gvrsn = kwa.get("gvrsn")
-        msgs.extend(self.replay(
-            cid, gvrsn=gvrsn if gvrsn is not None else Vrsn_1_0
-        ))
+        msgs.extend(self.replay(cid, gvrsn=kwa.get("gvrsn", Version)))
 
         kever = self.kevers[cid]
         witness = self.pre in kever.wits  # see if we are cid's witness
@@ -3585,9 +3587,7 @@ class SignifyHab(BaseHab):
         gvrsn = kwa.get("gvrsn")
 
         # introduce yourself, please
-        msgs.extend(self.replay(
-            cid, gvrsn=gvrsn if gvrsn is not None else Vrsn_1_0
-        ))
+        msgs.extend(self.replay(cid, gvrsn=kwa.get("gvrsn", Version)))
 
         if role == Roles.witness:
             if kever := self.kevers[cid] if cid in self.kevers else None:
@@ -3601,15 +3601,11 @@ class SignifyHab(BaseHab):
                         if not witness:  # we are not witness, send auth records
                             msgs.extend(self.makeEndRole(eid=eid, role=role, **kwa))
                 if witness:  # we are witness, set KEL as authz
-                    msgs.extend(self.replay(
-                        cid, gvrsn=gvrsn if gvrsn is not None else Vrsn_1_0
-                    ))
+                    msgs.extend(self.replay(cid, gvrsn=kwa.get("gvrsn", Version)))
 
         for (_, erole, eid), end in self.db.ends.getTopItemIter(keys=(cid,)):
             if (end.enabled or end.allowed) and (not role or role == erole) and (not eids or eid in eids):
-                msgs.extend(self.replay(
-                    eid, gvrsn=gvrsn if gvrsn is not None else Vrsn_1_0
-                ))
+                msgs.extend(self.replay(eid, gvrsn=kwa.get("gvrsn", Version)))
                 msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme,
                                                gvrsn=gvrsn))
                 msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole,
