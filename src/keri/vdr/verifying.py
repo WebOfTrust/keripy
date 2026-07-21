@@ -161,7 +161,9 @@ class Verifier:
                     continue
                 nodeSaid = node["n"]
                 op = node['o'] if 'o' in node else None
-                state = self.verifyChain(nodeSaid, op, creder.israid, creder.iseaid)
+                nodeSchema = node['s'] if 's' in node else None
+                state = self.verifyChain(nodeSaid, op, creder.israid, creder.iseaid,
+                                         schema=nodeSchema)
                 if state is None:
                     self.escrowMCE(creder, prefixer, seqner, saider)
                     self.cues.append(dict(kin="proof",  said=nodeSaid))
@@ -336,7 +338,7 @@ class Verifier:
         hab = self.hby.habs[pre]
         return hab.endorse(serder, last=True, framed=False, gvrsn=serder.pvrsn)
 
-    def verifyChain(self, nodeSaid, op, issuer, issuee=None):
+    def verifyChain(self, nodeSaid, op, issuer, issuee=None, schema=None):
         """ Verifies the node credential at the end of an edge
 
         Parameters:
@@ -346,6 +348,9 @@ class Verifier:
             issuee (str|None): qb64 AID of the issuee of the near (edge-bearing) ACDC,
                 required by the identity operators (E1E). None when the near ACDC is
                 untargeted.
+            schema (str|None): qb64 SAID of the schema the edge declares its far node
+                must satisfy (the edge 's' field). None when the edge omits 's', in
+                which case the far node's schema is not constrained here.
 
         Returns:
             Serder: transaction event state notification message
@@ -356,6 +361,14 @@ class Verifier:
             return None
 
         creder = self.reger.creds.get(keys=nodeSaid)  # far (node) credential
+
+        # Enforce the edge's declared far-node schema ('s'): the resolved far node
+        # must actually be of the schema the edge claims, else a far node can be
+        # swapped for a same-shape credential of a different schema. The mismatch
+        # is permanent (the SAID commits the far node's schema), but is returned as
+        # None here for consistency with verifyChain's other reject paths.
+        if schema is not None and creder.schema != schema:
+            return None
 
         if op not in ['I2I', 'DI2I', 'NI2I', 'E1E']:
             # A far node is targeted (I2I) iff it has an issuee, else untargeted

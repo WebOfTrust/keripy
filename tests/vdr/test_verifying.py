@@ -791,3 +791,83 @@ def test_verifier_aggregate_far_node_chain(seeder):
         assert state is not None
 
     """End Test"""
+
+
+def test_verifier_edge_schema_constraint(seeder):
+    """verifyChain enforces an edge's declared far-node schema ('s').
+
+    Regression for tick 6ggh: verifyChain read an edge's 'n' (far SAID) and 'o'
+    (operator) but never its 's' (the schema SAID the edge declares its far node
+    must satisfy). Without that check a near ACDC can point an edge at a far node
+    of a *different*, same-shape schema than the one the edge claims, and the
+    substitution is accepted. Here the far node's real schema is
+    ``optionalIssueeSchema`` but one near credential's edge declares a different
+    schema SAID; that credential's chain must be rejected, while an otherwise
+    identical credential whose edge declares the correct schema must verify.
+    """
+    optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+    # A different, valid schema SAID (the LE vLEI schema). Only its string value
+    # matters here -- verifyChain compares the far node's schema SAID against the
+    # edge's declared 's'; the declared schema itself is not resolved.
+    otherSchema = "ED892b40P_GcESs3wOcc2zFvL_GVi2Ybzp9isNTZKqP0"
+
+    with openHab(name="sid", temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab):
+        seeder.seedSchema(db=hby.db)
+
+        regery = Regery(hby=hby, name="test", temp=True)
+        issuer = regery.makeRegistry(prefix=hab.pre, name="test", **KWA)
+        rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
+        hab.interact(data=[rseal], framed=True, **CUE_KWA)
+        seqner = Seqner(sn=hab.kever.sn)
+        diger = Diger(qb64=hab.kever.serder.said)
+        issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=diger)
+        regery.processEscrows()
+
+        verifier = Verifier(hby=hby, reger=regery.reger)
+
+        def issueCred(creder):
+            """Issue creder's SAID into the registry TEL and process escrows."""
+            iss = issuer.issue(said=creder.said)
+            rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+            hab.interact(data=[rseal], framed=True, **CUE_KWA)
+            sq = Seqner(sn=hab.kever.sn)
+            dg = Diger(qb64=hab.kever.serder.said)
+            issuer.anchorMsg(pre=iss.pre, regd=iss.said, seqner=sq, saider=dg)
+            regery.processEscrows()
+
+        def buildCred(claim, source=None):
+            subject = dict(d="", dt=helping.nowIso8601(), claim=claim)
+            _, d = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+            return credential(issuer=hab.pre, schema=optionalIssueeSchema, data=d,
+                              status=issuer.regk, source=source, rules={}, **KWA)
+
+        anchor = dict(prefixer=hab.kever.prefixer, seqner=seqner,
+                      saider=Diger(qb64=hab.kever.serder.said))
+
+        # Far-node credential: untargeted, real schema == optionalIssueeSchema.
+        # The schema requires an 'e' block, so give it an empty one (no edges).
+        farCreder = buildCred("A far node claim.", source={})
+        issueCred(farCreder)
+        verifier.processCredential(farCreder, **anchor)
+        assert regery.reger.saved.get(keys=farCreder.said) is not None
+
+        # Near credential whose edge declares the WRONG far-node schema.
+        wrongChainSad = dict(d="", farEdge=dict(n=farCreder.said, s=otherSchema))
+        _, wrongChain = Saider.saidify(sad=wrongChainSad, code=MtrDex.Blake3_256,
+                                       label=Saids.d)
+        wrongCreder = buildCred("A near claim, wrong edge schema.", source=wrongChain)
+        issueCred(wrongCreder)
+        with pytest.raises(MissingChainError):
+            verifier.processCredential(wrongCreder, **anchor)
+
+        # Near credential whose edge declares the CORRECT far-node schema.
+        okChainSad = dict(d="", farEdge=dict(n=farCreder.said, s=optionalIssueeSchema))
+        _, okChain = Saider.saidify(sad=okChainSad, code=MtrDex.Blake3_256,
+                                    label=Saids.d)
+        okCreder = buildCred("A near claim, correct edge schema.", source=okChain)
+        issueCred(okCreder)
+        verifier.processCredential(okCreder, **anchor)
+        saved = [s.qb64 for s in regery.reger.schms.get(optionalIssueeSchema)]
+        assert okCreder.said in saved
+
+    """End Test"""
