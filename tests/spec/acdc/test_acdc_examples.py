@@ -3,6 +3,8 @@
 tests.spec.acdc.test_acdc_examples module
 
 """
+import json
+import os
 from base64 import urlsafe_b64encode as encodeB64
 from base64 import urlsafe_b64decode as decodeB64
 
@@ -27,6 +29,30 @@ def assert_schema_valid(instance, schema):
     """
     Draft202012Validator.check_schema(schema)
     Draft202012Validator(schema).validate(instance)
+
+
+def emit_worked_examples(examples):
+    """Emit the worked-example blocks as a JSON manifest for the spec generator.
+
+    keripy computes every worked-example SAID via makify, so these tests are the
+    single source of truth for the ACDC specification's "Working ACDC Examples".
+    When ``KERI_EMIT_WORKED_EXAMPLES`` names an output path, each test that builds
+    worked examples calls this to append its {name: mad} blocks, so the spec can be
+    regenerated (and a CI guard can diff the spec's blocks) instead of hand-copied.
+
+    ``examples`` is an ordered mapping of stable block name -> mad (dict). Blocks
+    accumulate across tests into one manifest keyed by name.
+    """
+    path = os.environ.get("KERI_EMIT_WORKED_EXAMPLES")
+    if not path:
+        return
+    manifest = {}
+    if os.path.exists(path):
+        with open(path) as f:
+            manifest = json.load(f)
+    manifest.update({name: mad for name, mad in examples.items()})
+    with open(path, "w") as f:
+        json.dump(manifest, f, indent=2)
 
 
 def test_acdc_examples_setup():
@@ -3630,6 +3656,25 @@ def test_acdc_examples_JSON():
     assert serder.said == simpleMainSaid
     assert serder.sad == simpleMainCSad
     assert_schema_valid(simpleMainCSad, simpleMainSchemaMad)  # compact form
+
+    # single source of truth for the spec's "Working ACDC Examples" (see
+    # emit_worked_examples); names are the stable ids the spec references.
+    emit_worked_examples({
+        "accreditationSchema": accredSchemaMad,
+        "accreditationExpanded": accredSad,
+        "accreditationCompact": accredCSad,
+        "reportSchema": reportSchemaMad,
+        "researchReportExpanded": rReportSad,
+        "researchReportCompact": rReportCSad,
+        "projectReportExpanded": pReportSad,
+        "projectReportCompact": pReportCSad,
+        "transcriptSchema": mainSchemaMad,
+        "transcriptExpanded": mainSad,
+        "transcriptCompact": mainCSad,
+        "simpleTranscriptSchema": simpleMainSchemaMad,
+        "simpleTranscriptExpanded": simpleMainSad,
+        "simpleTranscriptCompact": simpleMainCSad,
+    })
 
 
 def test_required_arrays_have_no_implicit_string_concatenation():
