@@ -26,9 +26,8 @@ def test_directing_defaults_use_hab_version_and_kind():
         director = Director(hab=hab, client=client)
         reactor = Reactor(hab=hab, client=client)
 
-        assert director._event_kwa() == dict(version=Vrsn_1_0,
-                                             kind=Kinds.json,
-                                             gvrsn=Vrsn_1_0)
+        assert director.version == Vrsn_1_0
+        assert director.kind == Kinds.json
         assert reactor.parser.version == Vrsn_1_0
 
 
