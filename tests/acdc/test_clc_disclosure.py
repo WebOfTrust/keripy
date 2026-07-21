@@ -13,9 +13,12 @@ file does not yet show:
     blocks (reveal the photo, withhold the birthdate), and an AGGREGATIVE age
     credential -- an array of boolean age-threshold flags (reveal over-21, withhold
     whether she is over 55 or 65),
-  * edges carrying the I2I operator that bind a rich presentation to a single
-    holder, with the issuee resolved uniformly (SerderACDC.iseaid) whether the far
-    node is attributive (a.i) or aggregative (A[1].i),
+  * an E1E identity edge chaining the age entitlement back to the core SEDI identity
+    credential -- an IDENTITY relation (same subject / issuee, issuer != issuee), NOT
+    a delegation, so it is the operator I2I would misapply (keripy discussion #1515) --
+    alongside the presentation-time I2I edges that bind a rich presentation to a single
+    holder, with the issuee resolved uniformly (SerderACDC.iseaid) whether the far node
+    is attributive (a.i) or aggregative (A[1].i),
   * combined disclosure across two source credentials into one bespoke
     presentation ACDC (the spec's "rich presentation" pattern), and
   * a Rules section that negotiates CLC terms -- a Purpose clause, an
@@ -161,6 +164,26 @@ def _disclosable_block(attr, attr_schema, desc):
 # even when unused, so the schema must admit them.
 _EMPTY_OR_SECTION = {"oneOf": [{"type": "string"}, {"type": "object"}]}
 
+# One E1E identity edge, pinned by schema (const "E1E"). This is the SEDI core-identity
+# <-> entitlement relationship (keripy discussion #1515): the near ACDC's issuee is the
+# SAME subject as the far node's issuee. E1E is an IDENTITY relation, NOT a delegation --
+# unlike I2I ("issuer = far issuee") it says nothing about the issuer, so it holds even
+# though the State issues sedi-id and the endorser issues age (issuer != issuee in both).
+# Pinning the operator to const "E1E" makes the identity relation schema-enforced.
+_E1E_EDGE_SCHEMA = {
+    "oneOf": [
+        {"type": "string"},
+        {"type": "object", "required": ["d", "n", "o"],
+         "properties": {"d": {"type": "string"}, "u": {"type": "string"},
+                        "n": {"description": "Far node (sedi-id core cred) SAID",
+                              "type": "string"},
+                        "s": {"description": "Far node schema SAID",
+                              "type": "string"},
+                        "o": {"description": "Edge operator; E1E: this ACDC's issuee = "
+                                             "far node's issuee (identity relation, "
+                                             "issuer unconstrained)",
+                              "const": "E1E"}}}]}
+
 # sedi-id is an ATTRIBUTIVE ('acm') credential. Its identity attributes are a fixed set
 # of well-known, meaningfully-labeled fields, so an attribute section with individually
 # partially-disclosable nested blocks is the right model: labels give clean paths and
@@ -262,7 +285,18 @@ AGE_SCHEMA_MAD = {
                  ]}},
             ],
         },
-        "e": _EMPTY_OR_SECTION,
+        # The entitlement chains back to the core SEDI identity credential via one
+        # E1E identity edge (same subject). Schema-required, so the identity relation
+        # is enforced rather than incidental.
+        "e": {
+            "description": "Edge section: one E1E identity edge to the sedi-id core cred",
+            "oneOf": [
+                {"type": "string"},
+                {"type": "object", "required": ["d", "identity"],
+                 "properties": {"d": {"type": "string"}, "u": {"type": "string"},
+                                "identity": _E1E_EDGE_SCHEMA},
+                 "additionalProperties": False}],
+        },
         "r": _EMPTY_OR_SECTION,
     },
     "additionalProperties": False,
@@ -422,6 +456,8 @@ N_AGE_ISSUEE, N_AGE_FLAG0, N_AGE_ACDC = 7, 8, 14
 # registries and bespoke (attribute uuid, acdc uuid, edge-section uuid, two edge uuids).
 N_REG_STATE, N_REG_ENDORSER = 15, 16
 N_BESP_A, N_BESP_ACDC, N_BESP_E, N_BESP_E_ID, N_BESP_E_AGE = 17, 18, 19, 20, 21
+# age -> sedi-id E1E identity edge: edge-section uuid + edge uuid.
+N_AGE_E, N_AGE_E_ID = 22, 23
 
 # Age aggregate ARRAY positions (A[0] = AGID; A[1] = issuee; A[2..] = the flags, one per
 # AGE_THRESHOLDS entry). SerderACDC.iseaid resolves the aggregate issuee from A[1].i.
@@ -472,9 +508,13 @@ def _source_credentials(kind):
     sedi-id is an ATTRIBUTIVE ('acm') identity credential whose attributes are
     individually partially-disclosable nested blocks (issuee at a.i); age is an
     AGGREGATIVE ('acg') credential carrying an array of boolean age-threshold flags
-    (issuee at A[1].i). Both are bound to real registries created here via regcept and
-    validate against their purpose-authored schemas. Returns (sedi, age, ageAggor) --
-    the Aggor is returned so callers can selectively disclose over the age aggregate.
+    (issuee at A[1].i). The age entitlement chains back to the core sedi-id credential
+    with one E1E identity edge -- the SEDI "entitlement chains to the core identity"
+    pattern (disc #1515), an identity relation (same issuee, issuer != issuee), verified
+    by _verify_identity_edge. Both are bound to real registries created here via regcept
+    and validate against their purpose-authored schemas (the age schema now REQUIRES the
+    E1E edge). Returns (sedi, age, ageAggor) -- the Aggor is returned so callers can
+    selectively disclose over the age aggregate.
     """
     # Real registries: the State and the endorser each stand up a registry (rip
     # event); the credential's 'rd' binds it to that registry.
@@ -491,12 +531,20 @@ def _source_credentials(kind):
     sedi = acdcmap(israid=STATE, uuid=NONCES[N_SEDI_ACDC], regid=regState.said,
                    schema=sediSchema, attribute=_sedi_attr(), iseaid=ALICE, kind=kind)
     # age: aggregative boolean-flag credential the endorser issues to Alice; its issuee
-    # is the index-1 aggregate block. It carries no edge to sedi-id and needs none --
-    # the two source creds are independent, joined only at presentation by the bespoke
-    # ACDC's I2I edges (Phase 2), where Alice is issuer and the issuee of both.
+    # is the index-1 aggregate block. It chains back to the core sedi-id credential with
+    # one E1E identity edge: both name the same subject (issuee), so this is an IDENTITY
+    # relation, not a delegation. E1E constrains only the issuee (near == far), which is
+    # why it holds even though the State issues sedi-id and the endorser issues age
+    # (issuer != issuee in both) -- the case the delegative I2I would wrongly reject.
+    # This is the SEDI "entitlement chains to the core identity" pattern (disc #1515);
+    # the bespoke presentation's own I2I edges (Phase 2) are a separate, presentation-
+    # time binding of Alice-as-discloser to her sources.
+    ageEdge = dict(d='', u=NONCES[N_AGE_E],
+                   identity=dict(d='', u=NONCES[N_AGE_E_ID], n=sedi.said,
+                                 s=sedi.sad['s']['$id'], o='E1E'))
     ageAggor = Aggor(ael=_age_ael(), makify=True, kind=kind)
     age = acdcagg(israid=ENDORSER, uuid=NONCES[N_AGE_ACDC], regid=regEndorser.said,
-                  schema=ageSchema, aggregate=ageAggor.ael, kind=kind)
+                  schema=ageSchema, aggregate=ageAggor.ael, edge=ageEdge, kind=kind)
     return sedi, age, ageAggor
 
 
@@ -561,6 +609,40 @@ def _rules_in_bespoke():
         Assimilation=dict(d='', l=ASSIMILATION_TEXT),
         SafeHarbor=dict(d='', l=SAFE_HARBOR_TEXT),
     )
+
+
+def _verify_identity_edge(near, far, coreSchemaSaid):
+    """The example's real verifier branch for an E1E identity edge.
+
+    E1E binds the two credentials to the SAME subject: the near ACDC's issuee AID MUST
+    equal the far node's issuee AID, both resolved via SerderACDC.iseaid (so an aggregate
+    node's A[1].i reads the same as an attributive a.i). Unlike the delegative I2I it puts
+    NO constraint on the issuer -- which is why it holds for two credentials issued by
+    different third parties to one subject (issuer != issuee), exactly the case a
+    coerce-to-I2I verifier (keri.vdr.verifying.verifyChain before PR #1523) rejects.
+
+    E1E constrains only the SUBJECT -- not the far node's issuer or schema -- so on its
+    own an identity edge is satisfied by ANY un-revoked credential naming that subject,
+    including a self-issued core-shaped credential from a bogus issuer. The "chains to the
+    SEDI core identity" guarantee therefore rests on ALSO binding the far node's schema:
+    a real SEDI EGF const-pins the edge's far-node schema ('s') to the core-identity
+    schema SAID (an edge s-constraint). This verifier enforces that -- the edge names, and
+    the far node carries, the expected core schema (coreSchemaSaid) -- rather than trusting
+    the subject match alone. (Far-issuer fitness beyond the schema stays a Layer-2
+    governance concern; the s-constraint is what makes "core-shaped" mean "the core schema".)
+
+    A real chain verifier would additionally confirm the far node's registry (TEL) state;
+    that live check is out of scope for this data-structure-level example (see
+    _club_accepts_grant and test_examples.py). Returns True or raises AssertionError.
+    """
+    edge = near.sad['e']['identity']
+    assert edge['o'] == 'E1E'                          # identity operator
+    assert edge['n'] == far.said                       # edge points at this far node
+    assert edge['s'] == coreSchemaSaid                 # edge s-constraint: the SEDI core schema
+    assert far.sad['s']['$id'] == coreSchemaSaid       # far node actually IS that schema
+    assert near.iseaid is not None                     # near must be targeted (has issuee)
+    assert near.iseaid == far.iseaid                   # same subject: the identity relation
+    return True
 
 
 def _bespoke_edges(sedi, age):
@@ -686,7 +768,7 @@ def test_source_credentials_and_graduated_disclosure_JSON():
     assert age.sad['A'][AGE_OVER21]['over21'] is True                          # over 21...
     over65Pos = AGE_FLAG0 + AGE_THRESHOLDS.index(65)
     assert age.sad['A'][over65Pos]['over65'] is False                          # ...not over 65
-    assert age.said == "EBh61oE3I_O3tg8NbCLaAazseE2lzRolGGI0H-V7kmXd"
+    assert age.said == "EMYibHkYzqAqJ8frlSDqSfJkODqf3XdCnAvws1Z9Dwqe"
     ageSchema = assert_acdc_schema_valid(age)
 
     # Schema teeth: a non-boolean threshold flag is rejected.
@@ -782,7 +864,7 @@ def test_bespoke_presentation_acdc_JSON():
     assert bespoke.sad['a']['place'].startswith("The Alcove Club")
     assert 'over21' not in bespoke.sad['a']    # age proof referenced via edge, not restated
     assert 'rd' not in bespoke.sad             # deliberately not registry-bound
-    assert bespoke.said == "EEh1Fmv_fN2AUV_mTuCdMB3XZptOuvhklPzAFxLeTsuY"
+    assert bespoke.said == "EPYRxEgv7rRZOLOhHIi05zEN_Q3cvcmkzqCZAolba76M"
 
     # (1) I2I same-holder binding. The v2 path does not enforce operators, so we
     # assert the constraint the I2I operator stands for: the bespoke ACDC's issuer
@@ -921,7 +1003,7 @@ def test_gated_ipex_exchange_JSON():
     assert reqSedi == ["/a/i", "/a/photo"]              # attributive: issuee + photo
     assert reqAge == ["/A/i", "/A/over21"]              # aggregate: issuee + over-21 flag
     assert "/a/i" in reqSedi and "/A/i" in reqAge       # the joining issuee, from both
-    assert apply.said == "EMaBzmylNSY-nwwvknFohrV87K9MlLGnnMB6y4CrLCDp"
+    assert apply.said == "EK0cONSlv5IO4feJcynRSrfR09udKpfQf4Y29QMWRrdH"
 
     # 2. offer (Alice -> club): "I'll prove over-21 and show my photo if you accept
     # these terms." Carries only the SAIDs of the bespoke ACDC and its sources plus
@@ -935,7 +1017,7 @@ def test_gated_ipex_exchange_JSON():
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said                 # answers the apply
     assert bespoke.said.encode() in offer.raw           # commits to the bespoke by SAID
-    assert offer.said == "EPqHYfquYatWtmKy9BRFHX9YZ6N9Zv_bdMjqlThoEOhy"
+    assert offer.said == "EL9gLhuY4EfJZrMC5i09b5yviXnMSGF7ozDYKQWSJmuU"
     # (property 1) the offer leaks no PII: not Alice's name, photo, or birthdate.
     assert b"Alice Anders" not in offer.raw
     assert b"<state-endorsed-photo-bytes>" not in offer.raw
@@ -946,7 +1028,7 @@ def test_gated_ipex_exchange_JSON():
     agree = exchange(sender=CLUB, receiver=ALICE, route="/ipex/agree",
                      prior=offer.said, stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said                 # binds the offer SAID
-    assert agree.said == "EB_aO3htcjsYl0zxNIO1zhPFNaW-XSrA96VgEfVNVHSs"
+    assert agree.said == "EGCk7jsgTabGjss9NajgoDl6qOkKur2ggvkqj_15L14h"
     # The club signs the agree, and we assemble the signed wire message the blessed
     # way: messagize() frames the signature as a CESR attachment group (genus code
     # and all). New keripy code should never hand-roll attachment framing -- pass
@@ -1001,7 +1083,7 @@ def test_gated_ipex_exchange_JSON():
     grant = disclose(agree, clubSig, capturedKeyState)
     assert grant is not None
     assert grant.sad['p'] == agree.said                 # grant follows the agree
-    assert grant.said == "EMRqeruzBqBsMOPeUCHNSGzQmOS64BDd9qthWTG4My5s"
+    assert grant.said == "EN9fynQwxa65RvLh18yDjB5u_HEyTCDJjHcjUhW4JvTf"
     # (property 4) PII crosses the wire only now, in the grant: the photo and the
     # over-21 flag.
     assert b"<state-endorsed-photo-bytes>" in grant.raw
@@ -1033,7 +1115,7 @@ def test_gated_ipex_exchange_JSON():
     admit = exchange(sender=CLUB, receiver=ALICE, route="/ipex/admit",
                      prior=grant.said, stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "EI0QUbDFqJzTuMWbSdGKMFeEt_cDyKF4O_Uge9BzAY9s"
+    assert admit.said == "EKhk3UKnGYUfdPpmENFQc03lvKgYLXFnU_w5lc992_5I"
 
 
 def test_accountability_and_terms_follow_data_JSON():
@@ -1182,8 +1264,50 @@ def test_clc_serialization_kinds(kind):
     assert _SIGNERS[3].verfer.verify(sig=clubSig.raw, ser=agree.raw)
 
 
+def test_age_identity_edge_E1E_JSON():
+    """The age entitlement carries an E1E identity edge to the sedi-id core credential.
+
+    Per keripy discussion #1515, the relationship between a SEDI core identity credential
+    and an entitlement credential is an IDENTITY relation, not a delegation: both name the
+    same subject (issuee), so the edge operator is E1E (near issuee == far issuee), NOT the
+    delegative I2I. E1E puts no constraint on the issuer, so the edge holds even though the
+    State issues sedi-id and the endorser issues age -- issuer != issuee in both. Routing
+    this edge through the V1 keri.vdr.verifying.verifyChain would coerce the unknown
+    operator to I2I and wrongly reject it (keripy PR #1523 adds a real E1E branch there);
+    this data-structure-level example verifies the edge directly (see _verify_identity_edge).
+    """
+    kind = Kinds.json
+    sedi, age, _ = _source_credentials(kind)
+
+    # The age credential's edge section carries one edge: E1E -> sedi-id.
+    edge = age.sad['e']['identity']
+    assert edge['o'] == 'E1E'                         # identity operator, not delegation
+    assert edge['n'] == sedi.said                     # points at the core identity cred
+    assert edge['s'] == sedi.sad['s']['$id']          # names the core cred's schema
+
+    # The identity relation: same subject (issuee), different issuers, issuer != issuee.
+    assert age.iseaid == sedi.iseaid == ALICE         # same holder
+    assert age.israid == ENDORSER and sedi.israid == STATE   # different issuers ...
+    assert age.israid != age.iseaid                   # ... and issuer != issuee (I2I rejects)
+
+    # The example's real E1E verifier branch accepts the edge, the age credential
+    # validates against its (E1E-emitting) schema, and a far node naming a DIFFERENT
+    # subject is rejected (the bespoke presentation's issuee is the club, not Alice).
+    # The expected SEDI-core schema SAID is derived independently (the EGF knows it),
+    # not read back from the far node -- that is what gives the s-constraint teeth.
+    coreSchemaSaid, _ = _saidify_schema(dict(SEDI_SCHEMA_MAD), kind=kind)
+    assert coreSchemaSaid == sedi.sad['s']['$id']
+    assert _verify_identity_edge(age, sedi, coreSchemaSaid)
+    assert_acdc_schema_valid(age)
+    with pytest.raises(AssertionError):                         # wrong subject (far = bespoke)
+        _verify_identity_edge(age, _bespoke_presentation(sedi, age, kind), coreSchemaSaid)
+    with pytest.raises(AssertionError):                         # right subject, wrong core schema
+        _verify_identity_edge(age, sedi, "E" + "A" * 43)
+
+
 if __name__ == "__main__":
     test_source_credentials_and_graduated_disclosure_JSON()
+    test_age_identity_edge_E1E_JSON()
     test_bespoke_presentation_acdc_JSON()
     test_gated_ipex_exchange_JSON()
     test_accountability_and_terms_follow_data_JSON()
