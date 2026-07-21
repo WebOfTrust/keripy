@@ -8,7 +8,6 @@ from base64 import urlsafe_b64decode as decodeB64
 
 import pytest
 from jsonschema import Draft202012Validator
-from jsonschema.exceptions import ValidationError
 
 from keri import Vrsn_2_0, Kinds, Protocols, Ilks
 from keri.core import (MtrDex, Salter, Labeler, Noncer, Mapper, Compactor, Aggor,
@@ -613,14 +612,14 @@ def test_blindable_state_tel_examples_JSON():
     prior = serder.said
 
     # Change state to issued
-    acdc = 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M'  # bob project report ACDC
+    acdc = 'EP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtv'  # bob project report ACDC
     state = 'issued'
     sn = 2
-    blid = 'EOtWw6X_aoOJlkzNaLj23IC6MXHl7ZSYSWVulFW_Hr_t'
+    blid = 'EItpXDP26bvHIRZ0GrJwhOIR5lLEaviFcIxFodP6IJ8N'
     uuid = 'aLfCdNAnc-0P2SiruarZSajXiUWu5iU2VfQahvpNCyzB'
-    qb64 = 'EOtWw6X_aoOJlkzNaLj23IC6MXHl7ZSYSWVulFW_Hr_taLfCdNAnc-0P2SiruarZSajXiUWu5iU2VfQahvpNCyzBEMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M0Missued'
-    eqb64 = '-aAjEOtWw6X_aoOJlkzNaLj23IC6MXHl7ZSYSWVulFW_Hr_taLfCdNAnc-0P2SiruarZSajXiUWu5iU2VfQahvpNCyzBEMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M0Missued'
-    dummied = '############################################aLfCdNAnc-0P2SiruarZSajXiUWu5iU2VfQahvpNCyzBEMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M0Missued'
+    qb64 = 'EItpXDP26bvHIRZ0GrJwhOIR5lLEaviFcIxFodP6IJ8NaLfCdNAnc-0P2SiruarZSajXiUWu5iU2VfQahvpNCyzBEP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtv0Missued'
+    eqb64 = '-aAjEItpXDP26bvHIRZ0GrJwhOIR5lLEaviFcIxFodP6IJ8NaLfCdNAnc-0P2SiruarZSajXiUWu5iU2VfQahvpNCyzBEP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtv0Missued'
+    dummied = '############################################aLfCdNAnc-0P2SiruarZSajXiUWu5iU2VfQahvpNCyzBEP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtv0Missued'
     assert len(dummied) == 140
     blinder = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn)
     assert blinder.qb64 == qb64
@@ -631,7 +630,7 @@ def test_blindable_state_tel_examples_JSON():
     assert Blinder.enclose([blinder]).decode() == eqb64
 
     stamp = '2020-08-02T12:00:20.000000+00:00'
-    said = 'EBdytzDC4dnatn-6mrCWLSGuM62LM0BgS31YnAg5NTeW'
+    said = 'EHdCoOs5P-xwHWjXuJOe8SWgTKVj_Vx_YbbDSYxJ6fK3'
 
     serder = blindate(regid=regid, prior=prior, blid=blid, stamp=stamp, sn=sn)
     assert serder.proto == Protocols.acdc
@@ -648,12 +647,12 @@ def test_blindable_state_tel_examples_JSON():
     {
         "v": "ACDCCAACAAJSONAAEi.",
         "t": "bup",
-        "d": "EBdytzDC4dnatn-6mrCWLSGuM62LM0BgS31YnAg5NTeW",
+        "d": "EHdCoOs5P-xwHWjXuJOe8SWgTKVj_Vx_YbbDSYxJ6fK3",
         "rd": "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ",
         "n": "2",
         "p": "EPNwyvHp2XJsz9pSpXtHtcCmzw6bKSFc-nhGKTbso0Yg",
         "dt": "2020-08-02T12:00:20.000000+00:00",
-        "b": "EOtWw6X_aoOJlkzNaLj23IC6MXHl7ZSYSWVulFW_Hr_t"
+        "b": "EItpXDP26bvHIRZ0GrJwhOIR5lLEaviFcIxFodP6IJ8N"
     }
     prior = serder.said
 
@@ -661,7 +660,7 @@ def test_blindable_state_tel_examples_JSON():
     state = 'revoked'
     sn = 3
 
-    blid = 'EPj3sZj8OOWTkTgAN5vzVYdANeoj3zxgEn5APb8fCRRN'
+    blid = 'EJakqLgla7ip4dygsRxRX3p3oYfAugvR6pm7zQByL0XO'
     uuid = 'aGx7b16vGHVPT56tX30kYOEzTwiVY4aabc4k9AawYyZG'
 
     blinder = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn)
@@ -670,14 +669,14 @@ def test_blindable_state_tel_examples_JSON():
     assert blinder.acdc == acdc
     assert blinder.state == state
 
-    qb64 = 'EPj3sZj8OOWTkTgAN5vzVYdANeoj3zxgEn5APb8fCRRNaGx7b16vGHVPT56tX30kYOEzTwiVY4aabc4k9AawYyZGEMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4MYrevoked'
+    qb64 = 'EJakqLgla7ip4dygsRxRX3p3oYfAugvR6pm7zQByL0XOaGx7b16vGHVPT56tX30kYOEzTwiVY4aabc4k9AawYyZGEP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtvYrevoked'
     assert blinder.qb64 == qb64
 
-    eqb64 = '-aAjEPj3sZj8OOWTkTgAN5vzVYdANeoj3zxgEn5APb8fCRRNaGx7b16vGHVPT56tX30kYOEzTwiVY4aabc4k9AawYyZGEMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4MYrevoked'
+    eqb64 = '-aAjEJakqLgla7ip4dygsRxRX3p3oYfAugvR6pm7zQByL0XOaGx7b16vGHVPT56tX30kYOEzTwiVY4aabc4k9AawYyZGEP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtvYrevoked'
     assert Blinder.enclose([blinder]).decode() == eqb64
 
     stamp = '2020-08-03T12:00:20.000000+00:00'
-    said = 'EM8B1uDhWaJLfpIiEqgp-3EurGUcbfe7u2k5AarDl2XD'
+    said = 'EAvy-pCxwjnBuNpU-1MasIL9WreuzpocGZ30wRlxj7tw'
 
     serder = blindate(regid=regid, prior=prior, blid=blid, stamp=stamp, sn=sn)
     assert serder.said == said
@@ -693,17 +692,17 @@ def test_blindable_state_tel_examples_JSON():
     {
         "v": "ACDCCAACAAJSONAAEi.",
         "t": "bup",
-        "d": "EM8B1uDhWaJLfpIiEqgp-3EurGUcbfe7u2k5AarDl2XD",
+        "d": "EAvy-pCxwjnBuNpU-1MasIL9WreuzpocGZ30wRlxj7tw",
         "rd": "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ",
         "n": "3",
-        "p": "EBdytzDC4dnatn-6mrCWLSGuM62LM0BgS31YnAg5NTeW",
+        "p": "EHdCoOs5P-xwHWjXuJOe8SWgTKVj_Vx_YbbDSYxJ6fK3",
         "dt": "2020-08-03T12:00:20.000000+00:00",
-        "b": "EPj3sZj8OOWTkTgAN5vzVYdANeoj3zxgEn5APb8fCRRN"
+        "b": "EJakqLgla7ip4dygsRxRX3p3oYfAugvR6pm7zQByL0XO"
     }
 
 
     # alternate unblindable update
-    said = 'ENR6tbkJCJXQTiu5TP-RBxkS2_ZSZBgbJmpjKucDe07h'
+    said = 'ELtIDRReKb2Evivi8Gean2uVHi6HxvvNKwlS2rcB22IX'
     serder = update(regid=regid, prior=prior, acdc=acdc, state=state, stamp=stamp, sn=sn)
     assert serder.proto == Protocols.acdc
     assert serder.pvrsn == Vrsn_2_0
@@ -718,12 +717,12 @@ def test_blindable_state_tel_examples_JSON():
     {
         "v": "ACDCCAACAAJSONAAEy.",
         "t": "upd",
-        "d": "ENR6tbkJCJXQTiu5TP-RBxkS2_ZSZBgbJmpjKucDe07h",
+        "d": "ELtIDRReKb2Evivi8Gean2uVHi6HxvvNKwlS2rcB22IX",
         "rd": "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ",
         "n": "3",
-        "p": "EBdytzDC4dnatn-6mrCWLSGuM62LM0BgS31YnAg5NTeW",
+        "p": "EHdCoOs5P-xwHWjXuJOe8SWgTKVj_Vx_YbbDSYxJ6fK3",
         "dt": "2020-08-03T12:00:20.000000+00:00",
-        "td": "EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M",
+        "td": "EP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtv",
         "ts": "revoked"
     }
 
@@ -799,13 +798,13 @@ def test_blindable_state_tel_examples_JSON():
     }
     prior = serder.said
 
-    acdc = 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M'  # bob project report ACDC
+    acdc = 'EP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtv'  # bob project report ACDC
     state = 'issued'
     sn = 2
     bsn = 1
     bd = 'EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv'
 
-    blid = 'EJAeKLEtVtMtt28IdAKJShyZHodEIZTHJHzaP21A_ZU4'
+    blid = 'EOhIBudxqPL1KP3PmJidkTHXtkneortJX4ygMcoC3p57'
     uuid = 'aKNPEY4_60x6vUx2g5_5kAoJTn0RDspR04Ql8ecNyTkO'
 
     blinder = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn,
@@ -818,17 +817,17 @@ def test_blindable_state_tel_examples_JSON():
     assert blinder.bsn == bsn
     assert blinder.bd == bd
 
-    dummied = '############################################aKNPEY4_60x6vUx2g5_5kAoJTn0RDspR04Ql8ecNyTkOEMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M0MissuedMAABEJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv'
+    dummied = '############################################aKNPEY4_60x6vUx2g5_5kAoJTn0RDspR04Ql8ecNyTkOEP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtv0MissuedMAABEJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv'
     assert len(dummied) == 188
 
-    qb64 = 'EJAeKLEtVtMtt28IdAKJShyZHodEIZTHJHzaP21A_ZU4aKNPEY4_60x6vUx2g5_5kAoJTn0RDspR04Ql8ecNyTkOEMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M0MissuedMAABEJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv'
+    qb64 = 'EOhIBudxqPL1KP3PmJidkTHXtkneortJX4ygMcoC3p57aKNPEY4_60x6vUx2g5_5kAoJTn0RDspR04Ql8ecNyTkOEP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtv0MissuedMAABEJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv'
     assert blinder.qb64 == qb64
 
-    eqb64 = '-bAvEJAeKLEtVtMtt28IdAKJShyZHodEIZTHJHzaP21A_ZU4aKNPEY4_60x6vUx2g5_5kAoJTn0RDspR04Ql8ecNyTkOEMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M0MissuedMAABEJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv'
+    eqb64 = '-bAvEOhIBudxqPL1KP3PmJidkTHXtkneortJX4ygMcoC3p57aKNPEY4_60x6vUx2g5_5kAoJTn0RDspR04Ql8ecNyTkOEP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtv0MissuedMAABEJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv'
     assert Blinder.enclose([blinder]).decode() == eqb64
 
     stamp = '2020-08-02T12:00:20.000000+00:00'
-    said = 'EGu4B78s6G_GVrzaoBw2a1vkFpB5tVo-wZ1OGsC9D_pK'
+    said = 'EMVBaTa_rjBo6bbJ6eFppI-xnnC8nCuS174-RSc1CxLh'
 
     serder = blindate(regid=regid, prior=prior, blid=blid, stamp=stamp, sn=sn)
     assert serder.said == said
@@ -845,12 +844,12 @@ def test_blindable_state_tel_examples_JSON():
     {
         "v": "ACDCCAACAAJSONAAEi.",
         "t": "bup",
-        "d": "EGu4B78s6G_GVrzaoBw2a1vkFpB5tVo-wZ1OGsC9D_pK",
+        "d": "EMVBaTa_rjBo6bbJ6eFppI-xnnC8nCuS174-RSc1CxLh",
         "rd": "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ",
         "n": "2",
         "p": "EOBVdcIL2rVEzBDpQvmBpsp3R52DsoKhTAAdvHqAz9yc",
         "dt": "2020-08-02T12:00:20.000000+00:00",
-        "b": "EJAeKLEtVtMtt28IdAKJShyZHodEIZTHJHzaP21A_ZU4"
+        "b": "EOhIBudxqPL1KP3PmJidkTHXtkneortJX4ygMcoC3p57"
     }
 
     state = 'revoked'
@@ -858,7 +857,7 @@ def test_blindable_state_tel_examples_JSON():
     bsn = 8
     bd = "EDeCPBTHAt75Acgi9PfEciHFnc1r2DKAno3s9_QIYrXk"
 
-    blid = 'EIBNZ3t5rA_-PbBNmhtvtf0VgHBjVrE0fc-DO67f-wGv'
+    blid = 'EMCLq-2IOahj__yMPEDZ5Fu7Uyvft66GYD4WYuMW8ztG'
     uuid = 'aFudXE-d0b2owzZNBjd78sx4kCTJx-RTP_Zd19HRUcVD'
 
     blinder = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn,
@@ -870,18 +869,18 @@ def test_blindable_state_tel_examples_JSON():
     assert blinder.bsn == bsn
     assert blinder.bd == bd
 
-    dummied = '############################################aFudXE-d0b2owzZNBjd78sx4kCTJx-RTP_Zd19HRUcVDEMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4MYrevokedMAAIEDeCPBTHAt75Acgi9PfEciHFnc1r2DKAno3s9_QIYrXk'
+    dummied = '############################################aFudXE-d0b2owzZNBjd78sx4kCTJx-RTP_Zd19HRUcVDEP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtvYrevokedMAAIEDeCPBTHAt75Acgi9PfEciHFnc1r2DKAno3s9_QIYrXk'
     assert len(dummied) == 188
 
-    qb64 = 'EIBNZ3t5rA_-PbBNmhtvtf0VgHBjVrE0fc-DO67f-wGvaFudXE-d0b2owzZNBjd78sx4kCTJx-RTP_Zd19HRUcVDEMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4MYrevokedMAAIEDeCPBTHAt75Acgi9PfEciHFnc1r2DKAno3s9_QIYrXk'
+    qb64 = 'EMCLq-2IOahj__yMPEDZ5Fu7Uyvft66GYD4WYuMW8ztGaFudXE-d0b2owzZNBjd78sx4kCTJx-RTP_Zd19HRUcVDEP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtvYrevokedMAAIEDeCPBTHAt75Acgi9PfEciHFnc1r2DKAno3s9_QIYrXk'
     assert blinder.qb64 == qb64
 
-    eqb64 = '-bAvEIBNZ3t5rA_-PbBNmhtvtf0VgHBjVrE0fc-DO67f-wGvaFudXE-d0b2owzZNBjd78sx4kCTJx-RTP_Zd19HRUcVDEMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4MYrevokedMAAIEDeCPBTHAt75Acgi9PfEciHFnc1r2DKAno3s9_QIYrXk'
+    eqb64 = '-bAvEMCLq-2IOahj__yMPEDZ5Fu7Uyvft66GYD4WYuMW8ztGaFudXE-d0b2owzZNBjd78sx4kCTJx-RTP_Zd19HRUcVDEP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtvYrevokedMAAIEDeCPBTHAt75Acgi9PfEciHFnc1r2DKAno3s9_QIYrXk'
     assert Blinder.enclose([blinder]).decode() == eqb64
 
     prior = serder.said
     stamp = '2020-08-03T12:00:20.000000+00:00'
-    said = 'EDXGqM-V_sfj65Dk-lgMnpOZ9DYziqMaYkrju7NRKpFn'
+    said = 'EKks_zuYb8OU1pw7KeXn6w_13kavTbPCE9eXq1KYIHcI'
 
     serder = blindate(regid=regid, prior=prior, blid=blid, stamp=stamp, sn=sn)
     assert serder.said == said
@@ -898,12 +897,12 @@ def test_blindable_state_tel_examples_JSON():
     {
         "v": "ACDCCAACAAJSONAAEi.",
         "t": "bup",
-        "d": "EDXGqM-V_sfj65Dk-lgMnpOZ9DYziqMaYkrju7NRKpFn",
+        "d": "EKks_zuYb8OU1pw7KeXn6w_13kavTbPCE9eXq1KYIHcI",
         "rd": "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ",
         "n": "3",
-        "p": "EGu4B78s6G_GVrzaoBw2a1vkFpB5tVo-wZ1OGsC9D_pK",
+        "p": "EMVBaTa_rjBo6bbJ6eFppI-xnnC8nCuS174-RSc1CxLh",
         "dt": "2020-08-03T12:00:20.000000+00:00",
-        "b": "EIBNZ3t5rA_-PbBNmhtvtf0VgHBjVrE0fc-DO67f-wGv"
+        "b": "EMCLq-2IOahj__yMPEDZ5Fu7Uyvft66GYD4WYuMW8ztG"
     }
 
 
@@ -926,23 +925,23 @@ def test_blindable_state_tel_examples_JSON():
     prior = serder.said
 
     regid = regDeb
-    acdc = 'EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5'  # deb research report
+    acdc = 'ELCZRc2VlaDv0mdooNQ_Y_MGiaBS0YQ2OaSpV97Y-wrt'  # deb research report
     stamp = '2020-08-03T12:00:20.000000+00:00'
     state = 'issued'
     sn = 1
-    said = 'EJFxtbr9WioIkzTfVX4iC6Axxyg8jjKSX0ZrJgoNHiB-'
+    said = 'EH_7mAMBpQ21f3nHSy8B6yCD_jdMYiZ__Je1Hac-c-Kc'
     serder = update(regid=regid, prior=prior, acdc=acdc, state=state, stamp=stamp, sn=sn)
     assert serder.said == said
     assert serder.sad == \
     {
         "v": "ACDCCAACAAJSONAAEx.",
         "t": "upd",
-        "d": "EJFxtbr9WioIkzTfVX4iC6Axxyg8jjKSX0ZrJgoNHiB-",
+        "d": "EH_7mAMBpQ21f3nHSy8B6yCD_jdMYiZ__Je1Hac-c-Kc",
         "rd": "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU",
         "n": "1",
         "p": "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU",
         "dt": "2020-08-03T12:00:20.000000+00:00",
-        "td": "EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5",
+        "td": "ELCZRc2VlaDv0mdooNQ_Y_MGiaBS0YQ2OaSpV97Y-wrt",
         "ts": "issued"
     }
     prior = serder.said
@@ -950,19 +949,19 @@ def test_blindable_state_tel_examples_JSON():
     stamp = '2020-08-04T12:00:20.000000+00:00'
     state = 'revoked'
     sn = 2
-    said = 'EJQ-ezS6h0Oa0BIN_w4KjstdapfOfrwmVluxn1DR5Gja'
+    said = 'ENwruIG38ayVNCQWRvQvmloSW4cK6k5eeHbI2cx23fz4'
     serder = update(regid=regid, prior=prior, acdc=acdc, state=state, stamp=stamp, sn=sn)
     assert serder.said == said
     assert serder.sad == \
     {
         "v": "ACDCCAACAAJSONAAEy.",
         "t": "upd",
-        "d": "EJQ-ezS6h0Oa0BIN_w4KjstdapfOfrwmVluxn1DR5Gja",
+        "d": "ENwruIG38ayVNCQWRvQvmloSW4cK6k5eeHbI2cx23fz4",
         "rd": "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU",
         "n": "2",
-        "p": "EJFxtbr9WioIkzTfVX4iC6Axxyg8jjKSX0ZrJgoNHiB-",
+        "p": "EH_7mAMBpQ21f3nHSy8B6yCD_jdMYiZ__Je1Hac-c-Kc",
         "dt": "2020-08-04T12:00:20.000000+00:00",
-        "td": "EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5",
+        "td": "ELCZRc2VlaDv0mdooNQ_Y_MGiaBS0YQ2OaSpV97Y-wrt",
         "ts": "revoked"
     }
     prior = serder.said
@@ -2125,8 +2124,8 @@ def test_acdc_examples_JSON():
                   "d",
                   "u",
                   "i",
-                  "score",
-                  "name"
+                  "name",
+                  "level"
                 ],
                 "properties":
                 {
@@ -2183,13 +2182,8 @@ def test_acdc_examples_JSON():
     compactor = Compactor(mad=iAccrAttrMad, makify=True, compactify=True, kind=kind)
     assert compactor.said == accrAttrSaid
     assert compactor.mad ==accrAttrMad
-    # KNOWN SPEC DISCREPANCY (deferred to KSWG): accrAttrSchema's 'required' lists
-    # 'score', but this accreditation instance carries 'level' instead (no 'score').
-    # The expanded form therefore does not validate against its own schema; this
-    # documents the gap (issue #1482 class) and will start failing -- prompting an
-    # update -- once the schema or the worked example is corrected.
-    with pytest.raises(ValidationError):
-        assert_schema_valid(accrAttrMad, accrAttrSchema)
+    # accreditation attribute section validates against its own schema (#1520)
+    assert_schema_valid(accrAttrMad, accrAttrSchema)
 
     #accreditation acdc schema
     iAccredSMad = \
@@ -2246,10 +2240,10 @@ def test_acdc_examples_JSON():
         "additionalProperties": False
     }
 
-    accredSchemaSaid = 'EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG'
+    accredSchemaSaid = 'EOlgQaGgXI6Zqikg4I0KWaQeL9sRUGu7PUj78GekKnSf'
     accredSchemaMad = \
     {
-        "$id": "EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG",
+        "$id": "EOlgQaGgXI6Zqikg4I0KWaQeL9sRUGu7PUj78GekKnSf",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "title": "Accreditation Schema",
         "description": "Accreditation JSON Schema for acm ACDC.",
@@ -2283,7 +2277,7 @@ def test_acdc_examples_JSON():
                     {
                         "description": "Attribute Section Detail",
                         "type": "object",
-                        "required": ["d", "u", "i", "score", "name"],
+                        "required": ["d", "u", "i", "name", "level"],
                         "properties":
                         {
                             "d": {"description": "Attribute Section SAID", "type": "string"},
@@ -2333,16 +2327,16 @@ def test_acdc_examples_JSON():
     assert mapper.said == accredSchemaSaid
     assert mapper.mad == accredSchemaMad
 
-    accredSaid = 'EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi'
+    accredSaid = 'EPXbQWnLaNJ5oSu5JAoZXU5a1c5sicbNWgepjls1flG4'
     accredSad = \
     {
         "v": "ACDCCAACAAJSONAAKX.",
         "t": "acm",
-        "d": "EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi",
+        "d": "EPXbQWnLaNJ5oSu5JAoZXU5a1c5sicbNWgepjls1flG4",
         "u": "0ABhY2Rjc3BlY3dvcmtyYXdh",
         "i": "ECsGDKWAYtHBCkiDrzajkxs3Iw2g-dls3bLUsRP4yVdT",
         "rd": "EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw",
-        "s": "EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG",
+        "s": "EOlgQaGgXI6Zqikg4I0KWaQeL9sRUGu7PUj78GekKnSf",
         "a":
         {
             "d": "EK799owRYyk8UPFWUmfsm5AJfJmU7jZGtZXJFbg2I0KL",
@@ -2362,21 +2356,18 @@ def test_acdc_examples_JSON():
                      attribute=accrAttrMad, iseaid=amy, rule=ruleMad)
     assert serder.said == accredSaid
     assert serder.sad == accredSad
-    # KNOWN SPEC DISCREPANCY (deferred to KSWG): this full ACDC embeds the same
-    # accreditation attribute schema whose 'required' lists 'score', while the 'a'
-    # block carries 'level'. See the accrAttrSchema note above; self-alerting gap.
-    with pytest.raises(ValidationError):
-        assert_schema_valid(accredSad, accredSchemaMad)
+    # full accreditation ACDC validates against its embedded schema (#1520)
+    assert_schema_valid(accredSad, accredSchemaMad)
 
     accredCSad = \
     {
         "v": "ACDCCAACAAJSONAAF3.",
         "t": "acm",
-        "d": "EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi",
+        "d": "EPXbQWnLaNJ5oSu5JAoZXU5a1c5sicbNWgepjls1flG4",
         "u": "0ABhY2Rjc3BlY3dvcmtyYXdh",
         "i": "ECsGDKWAYtHBCkiDrzajkxs3Iw2g-dls3bLUsRP4yVdT",
         "rd": "EPtolmh_NE2vC02oFc7FOiWkPcEiKUPWm5uu_Gv1JZDw",
-        "s": "EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG",
+        "s": "EOlgQaGgXI6Zqikg4I0KWaQeL9sRUGu7PUj78GekKnSf",
         "a": "EK799owRYyk8UPFWUmfsm5AJfJmU7jZGtZXJFbg2I0KL",
         "r": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU"
     }
@@ -2398,7 +2389,7 @@ def test_acdc_examples_JSON():
             {
                 "description": "Attribute Section Detail",
                 "type": "object",
-                "required": [ "d", "u", "i", "title", "author", "report"],
+                "required": [ "d", "u", "title", "author", "report"],
                 "properties":
                 {
                   "d": {"description": "Attribute Section SAID", "type": "string"},
@@ -2454,10 +2445,10 @@ def test_acdc_examples_JSON():
         "additionalProperties": False
     }
 
-    reportSchemaSaid = 'EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-'
+    reportSchemaSaid = 'EOumGkAf8Y28g9xBWmVJAisgkolBPaJ64nPlf8McWgvg'
     reportSchemaMad = \
     {
-        "$id": "EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-",
+        "$id": "EOumGkAf8Y28g9xBWmVJAisgkolBPaJ64nPlf8McWgvg",
         "$schema": "https://json-schema.org/draft/2020-12/schema",
         "title": "Report Schema",
         "description": "Report JSON Schema for acm ACDC.",
@@ -2491,7 +2482,7 @@ def test_acdc_examples_JSON():
                     {
                         "description": "Attribute Section Detail",
                         "type": "object",
-                        "required": [ "d", "u", "i", "title", "author", "report"],
+                        "required": [ "d", "u", "title", "author", "report"],
                         "properties":
                         {
                           "d": {"description": "Attribute Section SAID", "type": "string"},
@@ -2547,46 +2538,42 @@ def test_acdc_examples_JSON():
         "d": "",
         "u": uuids[8],
         "title": "Post Quantum Security",
-        "name": "Zoe Doe",
+        "author": "Zoe Doe",
         "report": "Imprementation should prioritize cryptographic agility over PQ.",
     }
 
-    rrptSaid = 'EFTqnoiGSf-D76W3geNxEudBI_wz81FIkIXjzsjFztI-'
+    rrptSaid = 'EPAZa0PO_Clywez4Qig0FtT40M6LI1H5Zn5lTG4u17FF'
     rrptMad = \
     {
-        'd': 'EFTqnoiGSf-D76W3geNxEudBI_wz81FIkIXjzsjFztI-',
+        'd': 'EPAZa0PO_Clywez4Qig0FtT40M6LI1H5Zn5lTG4u17FF',
         'u': '0ABhY2Rjc3BlY3dvcmtyYXc4',
         'title': 'Post Quantum Security',
-        'name': 'Zoe Doe',
+        'author': 'Zoe Doe',
         'report': 'Imprementation should prioritize cryptographic agility over PQ.'
     }
 
     compactor = Compactor(mad=iRrptMad, makify=True, compactify=True, kind=kind)
     assert compactor.said == rrptSaid
     assert compactor.mad == rrptMad
-    # KNOWN SPEC DISCREPANCY (deferred to KSWG): reportAttrSchema's 'required' lists
-    # 'author' and 'i', but this report instance uses 'name' and omits 'i'. The
-    # expanded form does not validate; documented here (issue #1482 class) as a
-    # self-alerting gap that will fail once the schema or example is corrected.
-    with pytest.raises(ValidationError):
-        assert_schema_valid(rrptMad, reportAttrSchema)
+    # research report attribute section validates against its own schema (#1520)
+    assert_schema_valid(rrptMad, reportAttrSchema)
 
-    rReportSaid = 'EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5'
+    rReportSaid = 'ELCZRc2VlaDv0mdooNQ_Y_MGiaBS0YQ2OaSpV97Y-wrt'
     rReportSad = \
     {
-        "v": "ACDCCAACAAJSONAAK4.",
+        "v": "ACDCCAACAAJSONAAK6.",
         "t": "acm",
-        "d": "EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5",
+        "d": "ELCZRc2VlaDv0mdooNQ_Y_MGiaBS0YQ2OaSpV97Y-wrt",
         "u": "0ABhY2Rjc3BlY3dvcmtyYXdi",
         "i": "EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW",
         "rd": "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU",
-        "s": "EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-",
+        "s": "EOumGkAf8Y28g9xBWmVJAisgkolBPaJ64nPlf8McWgvg",
         "a":
         {
-            "d": "EFTqnoiGSf-D76W3geNxEudBI_wz81FIkIXjzsjFztI-",
+            "d": "EPAZa0PO_Clywez4Qig0FtT40M6LI1H5Zn5lTG4u17FF",
             "u": "0ABhY2Rjc3BlY3dvcmtyYXc4",
             "title": "Post Quantum Security",
-            "name": "Zoe Doe",
+            "author": "Zoe Doe",
             "report": "Imprementation should prioritize cryptographic agility over PQ."
         },
         "r":
@@ -2600,22 +2587,19 @@ def test_acdc_examples_JSON():
                      attribute=rrptMad, rule=ruleMad)
     assert serder.said == rReportSaid
     assert serder.sad == rReportSad
-    # KNOWN SPEC DISCREPANCY (deferred to KSWG): full ACDC embedding the report
-    # attribute schema that requires 'author'/'i' while the 'a' block uses 'name'
-    # and omits 'i'. See the reportAttrSchema note above; self-alerting gap.
-    with pytest.raises(ValidationError):
-        assert_schema_valid(rReportSad, reportSchemaMad)
+    # full research-report ACDC validates against its embedded schema (#1520)
+    assert_schema_valid(rReportSad, reportSchemaMad)
 
     rReportCSad = \
     {
         "v": "ACDCCAACAAJSONAAF3.",
         "t": "acm",
-        "d": "EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5",
+        "d": "ELCZRc2VlaDv0mdooNQ_Y_MGiaBS0YQ2OaSpV97Y-wrt",
         "u": "0ABhY2Rjc3BlY3dvcmtyYXdi",
         "i": "EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW",
         "rd": "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU",
-        "s": "EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-",
-        "a": "EFTqnoiGSf-D76W3geNxEudBI_wz81FIkIXjzsjFztI-",
+        "s": "EOumGkAf8Y28g9xBWmVJAisgkolBPaJ64nPlf8McWgvg",
+        "a": "EPAZa0PO_Clywez4Qig0FtT40M6LI1H5Zn5lTG4u17FF",
         "r": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU"
     }
 
@@ -2632,44 +2616,42 @@ def test_acdc_examples_JSON():
         "d": "",
         "u": uuids[9],
         "title": "PQ Proof of Concept",
-        "name": "Zoe Doe",
+        "author": "Zoe Doe",
         "report": "Demonstration of recovery from surprise quantum attack",
     }
 
-    prptSaid = 'EIg1zAS3FfMMbQtLqARSwS3uGMttVbAPhKB71bjIPTs_'
+    prptSaid = 'EGApJO-Sts4BhAfpG21HoqVhRJSDLts00bz0doDOrBSD'
     prptMad = \
     {
-        'd': 'EIg1zAS3FfMMbQtLqARSwS3uGMttVbAPhKB71bjIPTs_',
+        'd': 'EGApJO-Sts4BhAfpG21HoqVhRJSDLts00bz0doDOrBSD',
         'u': '0ABhY2Rjc3BlY3dvcmtyYXc5',
         'title': 'PQ Proof of Concept',
-        'name': 'Zoe Doe',
+        'author': 'Zoe Doe',
         'report': 'Demonstration of recovery from surprise quantum attack'
     }
 
     compactor = Compactor(mad=iPrptMad, makify=True, compactify=True, kind=kind)
     assert compactor.said == prptSaid
     assert compactor.mad == prptMad
-    # KNOWN SPEC DISCREPANCY (deferred to KSWG): same reportAttrSchema 'author'/'i'
-    # vs 'name'/no-'i' mismatch as the research report above; self-alerting gap.
-    with pytest.raises(ValidationError):
-        assert_schema_valid(prptMad, reportAttrSchema)
+    # project report attribute section validates against its own schema (#1520)
+    assert_schema_valid(prptMad, reportAttrSchema)
 
-    pReportSaid = 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M'
+    pReportSaid = 'EP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtv'
     pReportSad = \
     {
-        "v": "ACDCCAACAAJSONAAKt.",
+        "v": "ACDCCAACAAJSONAAKv.",
         "t": "acm",
-        "d": "EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M",
+        "d": "EP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtv",
         "u": "0ABhY2Rjc3BlY3dvcmtyYXdj",
         "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf",
         "rd": "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ",
-        "s": "EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-",
+        "s": "EOumGkAf8Y28g9xBWmVJAisgkolBPaJ64nPlf8McWgvg",
         "a":
         {
-            "d": "EIg1zAS3FfMMbQtLqARSwS3uGMttVbAPhKB71bjIPTs_",
+            "d": "EGApJO-Sts4BhAfpG21HoqVhRJSDLts00bz0doDOrBSD",
             "u": "0ABhY2Rjc3BlY3dvcmtyYXc5",
             "title": "PQ Proof of Concept",
-            "name": "Zoe Doe",
+            "author": "Zoe Doe",
             "report": "Demonstration of recovery from surprise quantum attack"
         },
         "r":
@@ -2683,21 +2665,19 @@ def test_acdc_examples_JSON():
                      attribute=prptMad, rule=ruleMad)
     assert serder.said == pReportSaid
     assert serder.sad == pReportSad
-    # KNOWN SPEC DISCREPANCY (deferred to KSWG): full ACDC embedding the report
-    # attribute schema ('author'/'i' vs 'name'/no-'i'), same as above; self-alerting.
-    with pytest.raises(ValidationError):
-        assert_schema_valid(pReportSad, reportSchemaMad)
+    # full project-report ACDC validates against its embedded schema (#1520)
+    assert_schema_valid(pReportSad, reportSchemaMad)
 
     pReportCSad = \
     {
         "v": "ACDCCAACAAJSONAAF3.",
         "t": "acm",
-        "d": "EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M",
+        "d": "EP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtv",
         "u": "0ABhY2Rjc3BlY3dvcmtyYXdj",
         "i": "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf",
         "rd": "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ",
-        "s": "EKMXqyMQmOy0RuEj1VgOK9aD4GYR0D8Dcj0kssQtcY4-",
-        "a": "EIg1zAS3FfMMbQtLqARSwS3uGMttVbAPhKB71bjIPTs_",
+        "s": "EOumGkAf8Y28g9xBWmVJAisgkolBPaJ64nPlf8McWgvg",
+        "a": "EGApJO-Sts4BhAfpG21HoqVhRJSDLts00bz0doDOrBSD",
         "r": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU"
     }
 
@@ -2954,42 +2934,42 @@ def test_acdc_examples_JSON():
         }
     }
 
-    mainEdgeSaid = 'ECpmTyIIc1duvCeIceK19Sbd0uymklmwNTtwtmfjQnX0'
+    mainEdgeSaid = 'EKlVDgiwF_LvLcc2OojJNkT4i1k8GgO1ILQk2raIoUzr'
     mainEdgeCMad = \
     {
-        'd': 'ECpmTyIIc1duvCeIceK19Sbd0uymklmwNTtwtmfjQnX0',
+        'd': 'EKlVDgiwF_LvLcc2OojJNkT4i1k8GgO1ILQk2raIoUzr',
         'u': '0ABhY2Rjc3BlY3dvcmtyYXcy',
-        'accreditation': 'EAFj8JaNEC3mdFNJKrXW8E03_k9qqb_xM9NjAPVHw-xJ',
-        'reports': 'EOObmbCppe1S-7vtLuy766_4-RcfrC7p4ciFtBxdexuz'
+        'accreditation': 'EAdyOKjFvjDtZoh5CpuR2bQ9MZnLnjOENo4j4o4PVX-f',
+        'reports': 'EG56Nuf62I9r_K01jDudg7eIk96GUGr4Y3IfPlyVK0Lp'
     }
     mainEdgeMad = \
     {
-        'd': 'ECpmTyIIc1duvCeIceK19Sbd0uymklmwNTtwtmfjQnX0',
+        'd': 'EKlVDgiwF_LvLcc2OojJNkT4i1k8GgO1ILQk2raIoUzr',
         'u': '0ABhY2Rjc3BlY3dvcmtyYXcy',
         'accreditation':
         {
-            'd': 'EAFj8JaNEC3mdFNJKrXW8E03_k9qqb_xM9NjAPVHw-xJ',
+            'd': 'EAdyOKjFvjDtZoh5CpuR2bQ9MZnLnjOENo4j4o4PVX-f',
             'u': '0ABhY2Rjc3BlY3dvcmtyYXcz',
-            'n': 'EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi',
-            's': 'EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG'
+            'n': 'EPXbQWnLaNJ5oSu5JAoZXU5a1c5sicbNWgepjls1flG4',
+            's': 'EOlgQaGgXI6Zqikg4I0KWaQeL9sRUGu7PUj78GekKnSf'
         },
         'reports':
         {
-            'd': 'EOObmbCppe1S-7vtLuy766_4-RcfrC7p4ciFtBxdexuz',
+            'd': 'EG56Nuf62I9r_K01jDudg7eIk96GUGr4Y3IfPlyVK0Lp',
             'u': '0ABhY2Rjc3BlY3dvcmtyYXc0',
             'o': 'OR',
             'research':
             {
-                'd': 'EN9ngstOcFHqsjqf75JZFKtCRmW76NkeRrUSxTLoqqkI',
+                'd': 'EHuAavMyMU7mTHqYpd5ZaATCaCuDVPQCswzXAdQYTIim',
                 'u': '0ABhY2Rjc3BlY3dvcmtyYXc2',
-                'n': 'EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5',
+                'n': 'ELCZRc2VlaDv0mdooNQ_Y_MGiaBS0YQ2OaSpV97Y-wrt',
                 'o': 'NI2I'
             },
             'project':
             {
-                'd': 'EFwHz5qJ4_8c7IefP7_zugX2eIgtoyY8Up_WZ3osXwkI',
+                'd': 'EC6N1yUc_3Nqt3xyJHg_GMxYpWSusijz9JqsNuW2Ay3P',
                 'u': '0ABhY2Rjc3BlY3dvcmtyYXc1',
-                'n': 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M',
+                'n': 'EP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtv',
                 'o': 'NI2I'
             }
         }
@@ -3248,11 +3228,11 @@ def test_acdc_examples_JSON():
     assert mapper.said == mainSchemaSaid
     assert mapper.mad == mainSchemaMad
 
-    mainSaid = 'EFSzw0J4Qq15NafhAezvFHII-5TmDHbNzmIpT17-cHOa'
+    mainSaid = 'EAHU2Aby51UiUtAxthONvCXnYMwle2JxoOg9VUDWeYRq'
     mainSad = \
     {
         "v": "ACDCCAACAAJSONAAXG.",
-        "d": "EFSzw0J4Qq15NafhAezvFHII-5TmDHbNzmIpT17-cHOa",
+        "d": "EAHU2Aby51UiUtAxthONvCXnYMwle2JxoOg9VUDWeYRq",
         "u": "0ABhY2Rjc3BlY3dvcmtyYXdk",
         "i": "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz",
         "rd": "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX",
@@ -3275,32 +3255,32 @@ def test_acdc_examples_JSON():
         },
         "e":
         {
-            "d": "ECpmTyIIc1duvCeIceK19Sbd0uymklmwNTtwtmfjQnX0",
+            "d": "EKlVDgiwF_LvLcc2OojJNkT4i1k8GgO1ILQk2raIoUzr",
             "u": "0ABhY2Rjc3BlY3dvcmtyYXcy",
             "accreditation":
             {
-                "d": "EAFj8JaNEC3mdFNJKrXW8E03_k9qqb_xM9NjAPVHw-xJ",
+                "d": "EAdyOKjFvjDtZoh5CpuR2bQ9MZnLnjOENo4j4o4PVX-f",
                 "u": "0ABhY2Rjc3BlY3dvcmtyYXcz",
-                "n": "EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi",
-                "s": "EK_iGlfdc7Q-qIGL-kqbDSD2z4fesT4dAQLEHGgH4lLG"
+                "n": "EPXbQWnLaNJ5oSu5JAoZXU5a1c5sicbNWgepjls1flG4",
+                "s": "EOlgQaGgXI6Zqikg4I0KWaQeL9sRUGu7PUj78GekKnSf"
             },
             "reports":
             {
-                "d": "EOObmbCppe1S-7vtLuy766_4-RcfrC7p4ciFtBxdexuz",
+                "d": "EG56Nuf62I9r_K01jDudg7eIk96GUGr4Y3IfPlyVK0Lp",
                 "u": "0ABhY2Rjc3BlY3dvcmtyYXc0",
                 "o": "OR",
                 "research":
                 {
-                    "d": "EN9ngstOcFHqsjqf75JZFKtCRmW76NkeRrUSxTLoqqkI",
+                    "d": "EHuAavMyMU7mTHqYpd5ZaATCaCuDVPQCswzXAdQYTIim",
                     "u": "0ABhY2Rjc3BlY3dvcmtyYXc2",
-                    "n": "EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5",
+                    "n": "ELCZRc2VlaDv0mdooNQ_Y_MGiaBS0YQ2OaSpV97Y-wrt",
                     "o": "NI2I"
                 },
                 "project":
                 {
-                    "d": "EFwHz5qJ4_8c7IefP7_zugX2eIgtoyY8Up_WZ3osXwkI",
+                    "d": "EC6N1yUc_3Nqt3xyJHg_GMxYpWSusijz9JqsNuW2Ay3P",
                     "u": "0ABhY2Rjc3BlY3dvcmtyYXc1",
-                    "n": "EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M",
+                    "n": "EP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtv",
                     "o": "NI2I"
                 }
             }
@@ -3321,13 +3301,13 @@ def test_acdc_examples_JSON():
     mainCSad = \
     {
         "v": "ACDCCAACAAJSONAAGg.",
-        "d": "EFSzw0J4Qq15NafhAezvFHII-5TmDHbNzmIpT17-cHOa",
+        "d": "EAHU2Aby51UiUtAxthONvCXnYMwle2JxoOg9VUDWeYRq",
         "u": "0ABhY2Rjc3BlY3dvcmtyYXdk",
         "i": "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz",
         "rd": "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX",
         "s": "EMm9Gn9Qq9gkRQduJx9Vjtj3b3l1cVpe4Sv18EdAVRtb",
         "a": "ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U",
-        "e": "ECpmTyIIc1duvCeIceK19Sbd0uymklmwNTtwtmfjQnX0",
+        "e": "EKlVDgiwF_LvLcc2OojJNkT4i1k8GgO1ILQk2raIoUzr",
         "r": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU"
     }
 
@@ -3564,17 +3544,17 @@ def test_acdc_examples_JSON():
         }
     }
 
-    simpleEdgeSaid = 'EEWx-E6Rexj3eORT-e2kLcAWVgviTqxwWvxS2LbNKuCh'
+    simpleEdgeSaid = 'ELhvGYtKnX58nUjvXRpAdgez7ukDVgHiNvbILvk39awY'
     simpleEdgeCMad = \
     {
-        'd': 'EEWx-E6Rexj3eORT-e2kLcAWVgviTqxwWvxS2LbNKuCh',
+        'd': 'ELhvGYtKnX58nUjvXRpAdgez7ukDVgHiNvbILvk39awY',
         'u': '0ABhY2Rjc3BlY3dvcmtyYXcy',
-        'accreditation': 'EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi',
+        'accreditation': 'EPXbQWnLaNJ5oSu5JAoZXU5a1c5sicbNWgepjls1flG4',
         'reports':
         {
             'o': 'OR',
-            'research': 'EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5',
-            'project': 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M'
+            'research': 'ELCZRc2VlaDv0mdooNQ_Y_MGiaBS0YQ2OaSpV97Y-wrt',
+            'project': 'EP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtv'
         }
     }
 
@@ -3584,11 +3564,11 @@ def test_acdc_examples_JSON():
     assert_schema_valid(simpleEdgeCMad, simpleEdgeSchema)  # compact form
 
 
-    simpleMainSaid = 'EMR8CTHmJEwF2EF5Ylgyk6soUEXvGEB5KgJumJ86-nUX'
+    simpleMainSaid = 'EEpeIvCdedpcSm_X5YqP8QMp7WSdXu7uL2HUGBziH5UH'
     simpleMainSad = \
     {
         "v": "ACDCCAACAAJSONAAOD.",
-        "d": "EMR8CTHmJEwF2EF5Ylgyk6soUEXvGEB5KgJumJ86-nUX",
+        "d": "EEpeIvCdedpcSm_X5YqP8QMp7WSdXu7uL2HUGBziH5UH",
         "u": "0ABhY2Rjc3BlY3dvcmtyYXdl",
         "i": "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz",
         "rd": "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX",
@@ -3611,14 +3591,14 @@ def test_acdc_examples_JSON():
         },
         "e":
         {
-            "d": "EEWx-E6Rexj3eORT-e2kLcAWVgviTqxwWvxS2LbNKuCh",
+            "d": "ELhvGYtKnX58nUjvXRpAdgez7ukDVgHiNvbILvk39awY",
             "u": "0ABhY2Rjc3BlY3dvcmtyYXcy",
-            "accreditation": "EIF7egPvC8ITbGRdM9G0kd6aPELDg-azMkAqT-7cMuAi",
+            "accreditation": "EPXbQWnLaNJ5oSu5JAoZXU5a1c5sicbNWgepjls1flG4",
             "reports":
             {
                 "o": "OR",
-                "research": "EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5",
-                "project": "EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M"
+                "research": "ELCZRc2VlaDv0mdooNQ_Y_MGiaBS0YQ2OaSpV97Y-wrt",
+                "project": "EP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtv"
             }
         },
         "r": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU"
@@ -3634,13 +3614,13 @@ def test_acdc_examples_JSON():
     simpleMainCSad = \
     {
         "v": "ACDCCAACAAJSONAAGg.",
-        "d": "EMR8CTHmJEwF2EF5Ylgyk6soUEXvGEB5KgJumJ86-nUX",
+        "d": "EEpeIvCdedpcSm_X5YqP8QMp7WSdXu7uL2HUGBziH5UH",
         "u": "0ABhY2Rjc3BlY3dvcmtyYXdl",
         "i": "ECmiMVHTfZIjhA_rovnfx73T3G_FJzIQtzDn1meBVLAz",
         "rd": "EOMMCyztOvg970W0dZVJT2JIwlQ22DSeY7wtxNBBtpmX",
         "s": "EKq-KXY-8jd5OR9WEWjj6JRRRRrvtdzqBNkOh9Oj0afK",
         "a": "ELI2TuO6mLF0cR_0iU57EjYK4dExHIHdHxlRcAdO6x-U",
-        "e": "EEWx-E6Rexj3eORT-e2kLcAWVgviTqxwWvxS2LbNKuCh",
+        "e": "ELhvGYtKnX58nUjvXRpAdgez7ukDVgHiNvbILvk39awY",
         "r": "EMZf9m0XYwqo4L8tnIDMZuX7YCZnMswS7Ta9j0CuYfjU"
     }
 

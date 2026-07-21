@@ -38,15 +38,15 @@ def test_keri_examples_json():
     # from ACDC examples
     bobaid = "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf"   # bob's AID
     bobreg = "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ"  # bob's acdc registry
-    bobacdc = 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M'  # bob's project report ACDC
-    bobbup = "EBdytzDC4dnatn-6mrCWLSGuM62LM0BgS31YnAg5NTeW" # issued blindable update said
-    bobblid = "EOtWw6X_aoOJlkzNaLj23IC6MXHl7ZSYSWVulFW_Hr_t"  # issued blid said
+    bobacdc = 'EP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtv'  # bob's project report ACDC
+    bobbup = "EHdCoOs5P-xwHWjXuJOe8SWgTKVj_Vx_YbbDSYxJ6fK3" # issued blindable update said
+    bobblid = "EItpXDP26bvHIRZ0GrJwhOIR5lLEaviFcIxFodP6IJ8N"  # issued blid said
     bobbupsn = '2' # sn of issuing bup
 
     debaid = "EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW"   # deb's AID
     debreg = "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU"  # deb's Registry
-    debacdc = 'EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5'  # deb's research report ACDC
-    debupd = "EJFxtbr9WioIkzTfVX4iC6Axxyg8jjKSX0ZrJgoNHiB-"  # deb's update said
+    debacdc = 'ELCZRc2VlaDv0mdooNQ_Y_MGiaBS0YQ2OaSpV97Y-wrt'  # deb's research report ACDC
+    debupd = "EH_7mAMBpQ21f3nHSy8B6yCD_jdMYiZ__Je1Hac-c-Kc"  # deb's update said
     debupdsn = '1' # sn of issuing upd
 
 
@@ -1170,15 +1170,15 @@ def test_keri_examples_cesr():
     # from ACDC examples
     bobaid = "ECWJZFBtllh99fESUOrBvT3EtBujWtDKCmyzDAXWhYmf"   # bob's AID
     bobreg = "ECOWJI9kAjpCFYJ7RenpJx2w66-GsGlhyKLO-Or3qOIQ"  # bob's acdc registry
-    bobacdc = 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M'  # bob's project report ACDC
-    bobbup = "EBdytzDC4dnatn-6mrCWLSGuM62LM0BgS31YnAg5NTeW" # issued blindable update said
-    bobblid = "EOtWw6X_aoOJlkzNaLj23IC6MXHl7ZSYSWVulFW_Hr_t"  # issued blid said
+    bobacdc = 'EP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtv'  # bob's project report ACDC
+    bobbup = "EHdCoOs5P-xwHWjXuJOe8SWgTKVj_Vx_YbbDSYxJ6fK3" # issued blindable update said
+    bobblid = "EItpXDP26bvHIRZ0GrJwhOIR5lLEaviFcIxFodP6IJ8N"  # issued blid said
     bobbupsn = '2' # sn of issuing bup
 
     debaid = "EEDGM_DvZ9qFEAPf_FX08J3HX49ycrVvYVXe9isaP5SW"   # deb's AID
     debreg = "EJl5EUxL23p_pqgN3IyM-pzru89Nb7NzOM8ijH644xSU"  # deb's Registry
-    debacdc = 'EAU5dUws4ffM9jZjWs0QfXTnhJ1qk2u3IUhBwFVbFnt5'  # deb's research report ACDC
-    debupd = "EJFxtbr9WioIkzTfVX4iC6Axxyg8jjKSX0ZrJgoNHiB-"  # deb's update said
+    debacdc = 'ELCZRc2VlaDv0mdooNQ_Y_MGiaBS0YQ2OaSpV97Y-wrt'  # deb's research report ACDC
+    debupd = "EH_7mAMBpQ21f3nHSy8B6yCD_jdMYiZ__Je1Hac-c-Kc"  # deb's update said
     debupdsn = '1' # sn of issuing upd
 
 
