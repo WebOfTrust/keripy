@@ -9,9 +9,32 @@ import os
 import platform
 import logging
 
+import pytest
+
 from hio.help import ogling
 
 from keri import help
+
+
+@pytest.fixture
+def keri_ogler():
+    """Pin help.ogler to a known syslogged=True default so handler-count
+    assertions don't depend on sibling scheduling order (xdist-safe, #1521).
+
+    The process-global help.ogler is created in keri.help with syslogged=False
+    (console only = 1 handler), but these tests assert the syslogged=True
+    default (console + syslog = 2 handlers, +file = 3 when opened). Serially
+    that precondition happens to be met by a preceding sibling test that resets
+    help.ogler via initOgler(prefix='keri'); under pytest-xdist load-scheduling
+    it is not guaranteed. Establish it here instead, and restore the real
+    global on teardown so nothing leaks to later tests.
+    """
+    saved = help.ogler
+    help.ogler = ogling.initOgler(prefix='keri')  # syslogged=True -> 2 handlers unopened
+    try:
+        yield help.ogler
+    finally:
+        help.ogler = saved
 
 
 def test_openogler():
@@ -246,7 +269,7 @@ def test_ogler():
     """End Test"""
 
 
-def test_init_ogler():
+def test_init_ogler(keri_ogler):
     """
     Test initOgler function for ogler global
     """
@@ -344,7 +367,7 @@ def test_init_ogler():
     """End Test"""
 
 
-def test_reset_levels():
+def test_reset_levels(keri_ogler):
     """
     Test resetLevel on preexisting loggers
     """
