@@ -777,7 +777,7 @@ class Poller(doing.DoDoer):
         self.version = version
         self.gvrsn = version if gvrsn is None else gvrsn
         self.kind = kind
-        self.msgs = None if msgs is not None else decking.Deck()
+        self.msgs = msgs if msgs is not None else decking.Deck()
         self.times = dict()
 
         doers = [doing.doify(self.eventDo)]
