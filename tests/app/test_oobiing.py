@@ -260,6 +260,44 @@ def test_loaded_v1_endpoint_replies_use_stored_reply_framing():
         assert locer.url == "http://127.0.0.1:5555"
 
 
+def test_v2_reply_to_oobi_replay_without_explicit_gvrsn():
+    """replyToOobi replay uses target kever pvrsn when gvrsn is omitted."""
+    v2kwa = dict(version=Vrsn_2_0, kind=Kinds.cesr, gvrsn=Vrsn_2_0)
+    with openHby(name="oobi-src-v2-replay", version=Vrsn_2_0) as src, \
+            openHby(name="oobi-dst-v2-replay", version=Vrsn_2_0) as dst:
+        hab = src.makeHab(name="wit", isith="1", icount=1,
+                          transferable=False, version=Vrsn_2_0, kind=Kinds.cesr)
+        msgs = bytearray()
+        msgs.extend(hab.makeEndRole(eid=hab.pre,
+                                    role=Roles.controller,
+                                    stamp=helping.nowIso8601(),
+                                    **v2kwa))
+        msgs.extend(hab.makeLocScheme(url="http://127.0.0.1:5555",
+                                      scheme=Schemes.http,
+                                      stamp=helping.nowIso8601(),
+                                      **v2kwa))
+        hab.psr.parse(ims=msgs)
+
+        oobi = hab.replyToOobi(aid=hab.pre,
+                               role=Roles.controller,
+                               eids=[hab.pre])
+        assert oobi
+
+        rtr = Router()
+        rvy = Revery(db=dst.db, rtr=rtr)
+        kvy = Kevery(db=dst.db, lax=False, local=False, rvy=rvy)
+        kvy.registerReplyRoutes(router=rtr)
+        Parser(version=Vrsn_2_0, kvy=kvy, rvy=rvy).parse(ims=bytearray(oobi))
+
+        assert hab.pre in kvy.kevers
+        ender = dst.db.ends.get(keys=(hab.pre, Roles.controller, hab.pre))
+        assert ender is not None
+        assert ender.allowed is True
+        locer = dst.db.locs.get(keys=(hab.pre, Schemes.http))
+        assert locer is not None
+        assert locer.url == "http://127.0.0.1:5555"
+
+
 def test_loaded_v2_oobi_endpoint_replies_bypass_kram(mockHelpingNowUTC):
     config = {
         "kram": {

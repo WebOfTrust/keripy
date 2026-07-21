@@ -440,7 +440,6 @@ def test_witness_inquisitor(mockHelpingNowUTC, seeder, witnessPorter):
         doist.exit()
 
 
-@pytest.mark.skip(reason="need to wait for DB changes")
 def test_witness_inquisitor_v2(mockHelpingNowUTC, seeder):
 
     KWA = dict(version=Vrsn_2_0, kind=Kinds.json)
