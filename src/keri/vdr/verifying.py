@@ -362,13 +362,25 @@ class Verifier:
 
         creder = self.reger.creds.get(keys=nodeSaid)  # far (node) credential
 
-        # Enforce the edge's declared far-node schema ('s'): the resolved far node
-        # must actually be of the schema the edge claims, else a far node can be
-        # swapped for a same-shape credential of a different schema. The mismatch
-        # is permanent (the SAID commits the far node's schema), but is returned as
-        # None here for consistency with verifyChain's other reject paths.
+        # Enforce the edge's declared far-node schema ('s'). Per ACDC the edge 's'
+        # is a schema the far node must *satisfy*, not a SAID that must equal the
+        # far node's own schema SAID (S. Smith, issue #1534). The far node has
+        # already been validated against its own schema -- it would not be saved
+        # otherwise -- so when the edge declares that same schema there is nothing
+        # more to check. When the edge declares a *different* schema, the far node
+        # must additionally satisfy it: if it does, the near side is legitimately
+        # requiring a backwards-compatible (e.g. upgraded) schema without forcing
+        # the far node to be reissued; if it does not, the edge schema is not
+        # backwards compatible and the far node must be reissued -- reject. Reject
+        # is surfaced as None for consistency with verifyChain's other reject paths.
         if schema is not None and creder.schema != schema:
-            return None
+            scraw = self.resolver.resolve(schema)
+            if not scraw:  # edge schema not yet resolvable; transient -> MCE escrow
+                return None
+            try:
+                Schemer(raw=scraw).verify(creder.raw)
+            except ValidationError:  # far node does not satisfy the edge schema
+                return None
 
         if op not in ['I2I', 'DI2I', 'NI2I', 'E1E']:
             # A far node is targeted (I2I) iff it has an issuee, else untargeted
