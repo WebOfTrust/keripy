@@ -416,6 +416,18 @@ class LMDBer(filing.Filer):
         if readonly is not None:
             self.readonly = readonly
 
+        # close self.env if already open so reopen() is idempotent: LMDB raises
+        # "The environment '<path>' is already open in this process" if the same
+        # path is opened twice in one process. The witness start path can reopen
+        # the reg env via its BaserDoer, so without this close-first the witness
+        # aborts at "Starting witness...".
+        if self.env:
+            try:
+                self.env.close()
+            except:  # noqa: E722 - best-effort close before reopen
+                pass
+
+        self.env = None
         # open lmdb major database instance
         # creates files data.mdb and lock.mdb in .dbDirPath
         self.env = lmdb.open(self.path, max_dbs=self.MaxNamedDBs, map_size=self.MapSize,
