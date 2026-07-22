@@ -4,6 +4,8 @@ tests.vdr.verifying module
 
 """
 
+import copy
+
 import pytest
 
 from keri import (MissingRegistryError, MissingEntryError,
@@ -11,7 +13,7 @@ from keri import (MissingRegistryError, MissingEntryError,
 from keri.app import openHab
 from keri.core import (Saider, Kevery, SerderKERI, Seqner,
                        Diger, Parser, SealEvent,
-                       MtrDex, Saids, Aggor, Noncer)
+                       MtrDex, Saids, Aggor, Noncer, Schemer)
 from keri.kering import Ilks, Kinds, Vrsn_2_0
 from keri.help import helping
 from keri.vc import credential
@@ -794,22 +796,25 @@ def test_verifier_aggregate_far_node_chain(seeder):
 
 
 def test_verifier_edge_schema_constraint(seeder):
-    """verifyChain enforces an edge's declared far-node schema ('s').
+    """verifyChain enforces an edge's declared far-node schema ('s') by validation.
 
-    Regression for tick 6ggh: verifyChain read an edge's 'n' (far SAID) and 'o'
-    (operator) but never its 's' (the schema SAID the edge declares its far node
-    must satisfy). Without that check a near ACDC can point an edge at a far node
-    of a *different*, same-shape schema than the one the edge claims, and the
-    substitution is accepted. Here the far node's real schema is
-    ``optionalIssueeSchema`` but one near credential's edge declares a different
-    schema SAID; that credential's chain must be rejected, while an otherwise
-    identical credential whose edge declares the correct schema must verify.
+    Regression for tick 6ggh (issue #1534). An ACDC edge may declare 's', the SAID
+    of a schema its far node must *satisfy*. As S. Smith clarified on #1534, 's' is
+    a *satisfiability* constraint, not a SAID-equality one: when the edge's 's'
+    differs from the far node's own schema SAID, the far node's SAD must ALSO be
+    validated against the edge schema, and both must pass. A different-but-
+    backwards-compatible edge schema (an "upgrade") that the far node still
+    satisfies is accepted -- without reissuing the far node; only an edge schema
+    the far node fails to satisfy is rejected. A naive SAID-equality check wrongly
+    rejects the compatible-upgrade case, so that case is the load-bearing one here.
+
+    Three cases against a far node whose own schema is ``optionalIssueeSchema``:
+      * edge 's' = a resolvable *incompatible* schema the far node fails -> rejected;
+      * edge 's' = the far node's own schema SAID -> verifies;
+      * edge 's' = a resolvable *different but compatible* schema the far node still
+        satisfies -> verifies (the case a SAID-equality check breaks).
     """
     optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
-    # A different, valid schema SAID (the LE vLEI schema). Only its string value
-    # matters here -- verifyChain compares the far node's schema SAID against the
-    # edge's declared 's'; the declared schema itself is not resolved.
-    otherSchema = "ED892b40P_GcESs3wOcc2zFvL_GVi2Ybzp9isNTZKqP0"
 
     with openHab(name="sid", temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab):
         seeder.seedSchema(db=hby.db)
@@ -824,6 +829,30 @@ def test_verifier_edge_schema_constraint(seeder):
         regery.processEscrows()
 
         verifier = Verifier(hby=hby, reger=regery.reger)
+
+        # Derive two extra schemas from the far node's own schema and pin them into
+        # the resolver cache so verifyChain can validate the far node against them.
+        baseSchemer = hby.db.schema.get(optionalIssueeSchema)
+
+        def deriveSchema(mutate):
+            sed = copy.deepcopy(baseSchemer.sed)
+            sed['$id'] = ''  # cleared so saidify recomputes the SAID over the mutation
+            mutate(sed)
+            _, sed = Saider.saidify(sed, label=Saids.dollar)
+            schemer = Schemer(sed=sed)
+            hby.db.schema.pin(schemer.said, schemer)
+            return schemer.said
+
+        # Compatible upgrade: identical constraints, only the human-readable title
+        # differs, so the SAID changes but the far node still validates against it.
+        compatSchema = deriveSchema(
+            lambda sed: sed.__setitem__('title', 'Optional Issuee (compatible upgrade)'))
+        # Incompatible: additionally require an issuee ('i') in the attribute block,
+        # which the untargeted far node lacks, so the far node fails this schema.
+        incompatSchema = deriveSchema(
+            lambda sed: sed['properties']['a'].__setitem__('required', ['dt', 'claim', 'i']))
+        assert compatSchema != optionalIssueeSchema
+        assert incompatSchema != optionalIssueeSchema
 
         def issueCred(creder):
             """Issue creder's SAID into the registry TEL and process escrows."""
@@ -851,23 +880,33 @@ def test_verifier_edge_schema_constraint(seeder):
         verifier.processCredential(farCreder, **anchor)
         assert regery.reger.saved.get(keys=farCreder.said) is not None
 
-        # Near credential whose edge declares the WRONG far-node schema.
-        wrongChainSad = dict(d="", farEdge=dict(n=farCreder.said, s=otherSchema))
-        _, wrongChain = Saider.saidify(sad=wrongChainSad, code=MtrDex.Blake3_256,
-                                       label=Saids.d)
-        wrongCreder = buildCred("A near claim, wrong edge schema.", source=wrongChain)
-        issueCred(wrongCreder)
-        with pytest.raises(MissingChainError):
-            verifier.processCredential(wrongCreder, **anchor)
+        def nearCred(claim, farSchema):
+            """Near credential with a single edge to farCreder declaring farSchema."""
+            chainSad = dict(d="", farEdge=dict(n=farCreder.said, s=farSchema))
+            _, chain = Saider.saidify(sad=chainSad, code=MtrDex.Blake3_256, label=Saids.d)
+            creder = buildCred(claim, source=chain)
+            issueCred(creder)
+            return creder
 
-        # Near credential whose edge declares the CORRECT far-node schema.
-        okChainSad = dict(d="", farEdge=dict(n=farCreder.said, s=optionalIssueeSchema))
-        _, okChain = Saider.saidify(sad=okChainSad, code=MtrDex.Blake3_256,
-                                    label=Saids.d)
-        okCreder = buildCred("A near claim, correct edge schema.", source=okChain)
-        issueCred(okCreder)
-        verifier.processCredential(okCreder, **anchor)
+        # (1) Edge declares an INCOMPATIBLE schema the far node fails -> rejected.
+        # Assert the schema resolves, so the rejection is provably a validation
+        # failure (far node fails the edge schema) and not a missing-schema miss.
+        assert verifier.resolver.resolve(incompatSchema)
+        badCreder = nearCred("A near claim, incompatible edge schema.", incompatSchema)
+        with pytest.raises(MissingChainError):
+            verifier.processCredential(badCreder, **anchor)
+
+        # (2) Edge declares the far node's OWN schema -> verifies.
+        sameCreder = nearCred("A near claim, same edge schema.", optionalIssueeSchema)
+        verifier.processCredential(sameCreder, **anchor)
         saved = [s.qb64 for s in regery.reger.schms.get(optionalIssueeSchema)]
-        assert okCreder.said in saved
+        assert sameCreder.said in saved
+
+        # (3) Edge declares a DIFFERENT but backwards-compatible schema the far node
+        # still satisfies -> verifies (a SAID-equality check would wrongly reject).
+        upCreder = nearCred("A near claim, compatible upgrade edge schema.", compatSchema)
+        verifier.processCredential(upCreder, **anchor)
+        saved = [s.qb64 for s in regery.reger.schms.get(optionalIssueeSchema)]
+        assert upCreder.said in saved
 
     """End Test"""
