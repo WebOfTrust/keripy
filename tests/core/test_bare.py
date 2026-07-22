@@ -125,14 +125,15 @@ def test_bare():
 
     #msg = messagize(serderE, sigers=[sigerC], source=seal, framed=True, gvrsn=Vrsn_1_0)
     msg = messagize(serderE, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
-    assert msg == (b'{"v":"KERI10JSON000121_","t":"bar","d":"EGPY61eN5zhw7nnlra3bQL8x'
-                b'apaMhP4I_0yihFOLXNgH","dt":"2023-06-26T22:22:13.416766+00:00","r'
-                b'":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6l'
-                b'lSvWQTWZN","role":"watcher","eid":"EAoTNZH3ULvYAfSVPzhzS6baU6JR2'
-                b'nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDN6WBhWqp6wC08no2iWhgFYTaUg'
-                b'rasnqz6llSvWQTWZNMAAAEAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2'
-                b'z-AABAAACsAGVg747fc-61v64LuAa6WbfCKjKgH6Xo0t1wz2X7E51I_aWCTSU3KI'
-                b'hqkZirj7aYK__AIy_UvC8Tub7APwH')
+    assert msg == (b'{"v":"KERI10JSON000121_","t":"bar","d":"EGPY61eN5zhw7nnlra3b'
+                   b'QL8xapaMhP4I_0yihFOLXNgH","dt":"2023-06-26T22:22:13.416766+0'
+                   b'0:00","r":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFY'
+                   b'TaUgrasnqz6llSvWQTWZN","role":"watcher","eid":"EAoTNZH3ULvYA'
+                   b'fSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDN6WBhW'
+                   b'qp6wC08no2iWhgFYTaUgrasnqz6llSvWQTWZN0AAAAAAAAAAAAAAAAAAAAAA'
+                   b'AEAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAACsAGVg74'
+                   b'7fc-61v64LuAa6WbfCKjKgH6Xo0t1wz2X7E51I_aWCTSU3KIhqkZirj7aYK_'
+                   b'_AIy_UvC8Tub7APwH')
 
     # create endorsed bar with trans endorser
     # create trans key pair for endorser
@@ -156,14 +157,15 @@ def test_bare():
 
     #msg = messagize(serderE, sigers=[sigerE], source=seal, framed=True, gvrsn=Vrsn_1_0)
     msg = messagize(serderE, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
-    assert msg == (b'{"v":"KERI10JSON000121_","t":"bar","d":"EGPY61eN5zhw7nnlra3bQL8x'
-                b'apaMhP4I_0yihFOLXNgH","dt":"2023-06-26T22:22:13.416766+00:00","r'
-                b'":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFYTaUgrasnqz6l'
-                b'lSvWQTWZN","role":"watcher","eid":"EAoTNZH3ULvYAfSVPzhzS6baU6JR2'
-                b'nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDMrwi0a-Zblpqe5Hg7w7iz9JCKn'
-                b'MgWKu_W9w4aNUL64yMAAAEAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2'
-                b'z-AABAAAqSbIUsv723owtCsHk4ltmzhf0leA4BXxJiC3ZBD3jZzbVPwxKTv8cY1z'
-                b'-RnpS6gW1xgeL__Lb0Cr4p8ZisvEI')
+    assert msg == (b'{"v":"KERI10JSON000121_","t":"bar","d":"EGPY61eN5zhw7nnlra3b'
+                   b'QL8xapaMhP4I_0yihFOLXNgH","dt":"2023-06-26T22:22:13.416766+0'
+                   b'0:00","r":"/to/the/moon","a":{"cid":"DN6WBhWqp6wC08no2iWhgFY'
+                   b'TaUgrasnqz6llSvWQTWZN","role":"watcher","eid":"EAoTNZH3ULvYA'
+                   b'fSVPzhzS6baU6JR2nmwyZ-i0d8JZ5CM","name":"besty"}}-FABDMrwi0a'
+                   b'-Zblpqe5Hg7w7iz9JCKnMgWKu_W9w4aNUL64y0AAAAAAAAAAAAAAAAAAAAAA'
+                   b'AEAuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAAqSbIUsv7'
+                   b'23owtCsHk4ltmzhf0leA4BXxJiC3ZBD3jZzbVPwxKTv8cY1z-RnpS6gW1xge'
+                   b'L__Lb0Cr4p8ZisvEI')
 
     # create endorsed bar with nontrans endorser
     # create nontrans key pair for endorder

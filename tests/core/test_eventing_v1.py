@@ -928,11 +928,13 @@ def test_keyeventfuncs(mockHelpingNowUTC):
     #msg = messagize(serder=serder4, sigers=[siger], source=seal, framed=True, gvrsn=Vrsn_1_0)
     msg = messagize(serder=serder4, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
     assert msg == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EKKccCumVQdgxvsrSXvuTtjm'
-                b'S28Xqf3zRJ8T6peKgl9J","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpN'
-                b'ceHo4XH","s":"2"}-FABEAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0'
-                b'CMAAAEAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C-AABAAAPitVKfl6'
-                b'dG9dY4-7Ppg5tAANHsqEUptTfR05wLb0fbmKFt4DbZdBNjJaCDrEc7kAIqbLsCMC'
-                b'Kf26-Onxz-DoP')
+                   b'S28Xqf3zRJ8T6peKgl9J","i":"DFs8BBx86uytIM0D2BhsE5rrqVIT8ef8mflpN'
+                   b'ceHo4XH","s":"2"}-'
+                   b'FABEAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C0AAAAAAAAAAAAAAAA'
+                   b'AAAAAAAEAKCxMOuoRzREVHsHCkLilBrUXTvyenBiuM2QtV8BB0C-'
+                   b'AABAAAPitVKfl6dG9dY4-'
+                   b'7Ppg5tAANHsqEUptTfR05wLb0fbmKFt4DbZdBNjJaCDrEc7kAIqbLsCMCKf26-'
+                   b'Onxz-DoP')
 
     # Delegated Inception:
     # Transferable not abandoned i.e. next not empty
@@ -3401,11 +3403,12 @@ def test_direct_mode():
         #rmsg = messagize(serder=reserder, sigers=[siger], source=seal, framed=True, gvrsn=Vrsn_1_0)
         rmsg = messagize(serder=reserder, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
         assert rmsg == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EJe_sKQb1otKrz6COIL8VFvB'
-                    b'v3DEFvtKaVFGn1vm0IlL","i":"EJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn'
-                    b'1vm0IlL","s":"0"}-FABEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNod'
-                    b'zMAAAEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNodz-AABAAD-iI61odp'
-                    b'ZQjzm0fN9ZATjHx-KjQ9W3-CIlvhowwUaPC5KnQAIGYFuWJyRgAQalYVSEWoyMK2'
-                    b'id_ONTFUE-NcF')
+                        b'v3DEFvtKaVFGn1vm0IlL","i":"EJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn'
+                        b'1vm0IlL","s":"0"}-'
+                        b'FABEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNodz0AAAAAAAAAAAAAAAA'
+                        b'AAAAAAAEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNodz-AABAAD-'
+                        b'iI61odpZQjzm0fN9ZATjHx-'
+                        b'KjQ9W3-CIlvhowwUaPC5KnQAIGYFuWJyRgAQalYVSEWoyMK2id_ONTFUE-NcF')
 
         # process own Val receipt in Val's Kevery so have copy in own log
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(rmsg), kvy=valKevery)
@@ -3454,11 +3457,12 @@ def test_direct_mode():
         #vmsg = messagize(serder=reserder, sigers=[siger], source=seal, framed=True, gvrsn=Vrsn_1_0)
         vmsg = messagize(serder=reserder, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
         assert vmsg == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EJe_sKQb1otKrz6COIL8VFvB'
-                    b'v3DEFvtKaVFGn1vm0IlL","i":"EJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn'
-                    b'1vm0IlL","s":"a"}-FABEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNod'
-                    b'zMAAAEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNodz-AABAAD-iI61odp'
-                    b'ZQjzm0fN9ZATjHx-KjQ9W3-CIlvhowwUaPC5KnQAIGYFuWJyRgAQalYVSEWoyMK2'
-                    b'id_ONTFUE-NcF')
+                        b'v3DEFvtKaVFGn1vm0IlL","i":"EJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn'
+                        b'1vm0IlL","s":"a"}-'
+                        b'FABEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNodz0AAAAAAAAAAAAAAAA'
+                        b'AAAAAAAEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNodz-AABAAD-'
+                        b'iI61odpZQjzm0fN9ZATjHx-'
+                        b'KjQ9W3-CIlvhowwUaPC5KnQAIGYFuWJyRgAQalYVSEWoyMK2id_ONTFUE-NcF')
 
         Parser(version=Vrsn_1_0).parse(ims=vmsg, kvy=coeKevery)
         # coeKevery.process(ims=vmsg)  #  coe process the escrow receipt from val
@@ -3508,11 +3512,12 @@ def test_direct_mode():
         #cmsg = messagize(serder=reserder, sigers=[siger], source=seal, framed=True, gvrsn=Vrsn_1_0)
         cmsg = messagize(serder=reserder, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
         assert cmsg == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EAzjKx3hSVJArKpIOVt2KfTR'
-                    b'jq8st22hL25Ho9vnNodz","i":"EAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho'
-                    b'9vnNodz","s":"0"}-FABEJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn1vm0Il'
-                    b'LMAAAEJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn1vm0IlL-AABAACRmy9_dCM'
-                    b'i45BSI89fGeM_ktOTWQctSGrVsZtQMm1RtJZY31xaNoEN-GJ0c5UrNbNuSyT-wke'
-                    b'it0AeYsPWLEYG')
+                        b'jq8st22hL25Ho9vnNodz","i":"EAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho'
+                        b'9vnNodz","s":"0"}-'
+                        b'FABEJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn1vm0IlL0AAAAAAAAAAAAAAAA'
+                        b'AAAAAAAEJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn1vm0IlL-'
+                        b'AABAACRmy9_dCMi45BSI89fGeM_ktOTWQctSGrVsZtQMm1RtJZY31xaNoEN-'
+                        b'GJ0c5UrNbNuSyT-wkeit0AeYsPWLEYG')
 
         # coe process own receipt in own Kevery so have copy in own log
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(cmsg), kvy=coeKevery)
@@ -3613,12 +3618,12 @@ def test_direct_mode():
         # val create receipt message
         #vmsg = messagize(serder=reserder, sigers=[siger], source=seal, framed=True, gvrsn=Vrsn_1_0)
         vmsg = messagize(serder=reserder, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
-        assert vmsg == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EKlC013XEpwYuCQ84aVnEAqz'
-                    b'NurjAJDN6ayK-9NxggAr","i":"EJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn'
-                    b'1vm0IlL","s":"1"}-FABEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNod'
-                    b'zMAAAEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNodz-AABAAANSIICz13'
-                    b'kvy4hk2bvTCr2b2uePn4uTf4_nwdolkI77Voqsm5QFtF6z6sjJK7_oTLY36k2Vig'
-                    b'SExx0UgGQV7YL')
+        assert vmsg == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EKlC013XEpwYuCQ84aVn'
+                        b'EAqzNurjAJDN6ayK-9NxggAr","i":"EJe_sKQb1otKrz6COIL8VFvBv3DEF'
+                        b'vtKaVFGn1vm0IlL","s":"1"}-FABEAzjKx3hSVJArKpIOVt2KfTRjq8st22'
+                        b'hL25Ho9vnNodz0AAAAAAAAAAAAAAAAAAAAAAAEAzjKx3hSVJArKpIOVt2KfT'
+                        b'Rjq8st22hL25Ho9vnNodz-AABAAANSIICz13kvy4hk2bvTCr2b2uePn4uTf4'
+                        b'_nwdolkI77Voqsm5QFtF6z6sjJK7_oTLY36k2VigSExx0UgGQV7YL')
 
         # val process own receipt in own kevery so have copy in own log
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
@@ -3724,12 +3729,12 @@ def test_direct_mode():
         # create receipt message
         #vmsg = messagize(serder=reserder, sigers=[siger], source=seal, framed=True, gvrsn=Vrsn_1_0)
         vmsg = messagize(serder=reserder, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
-        assert vmsg == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EG3O9AV3lhySOadwTn810vHO'
-                    b'ZDc6B8TZY_u_4_iy_ono","i":"EJe_sKQb1otKrz6COIL8VFvBv3DEFvtKaVFGn'
-                    b'1vm0IlL","s":"2"}-FABEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNod'
-                    b'zMAAAEAzjKx3hSVJArKpIOVt2KfTRjq8st22hL25Ho9vnNodz-AABAABP_iABSPK'
-                    b'xN2_pcedeIu1qb9rIj5nLaGaiPOW2BFSUQQ7CSL9IW1s9_wVAxv2idySMjiGuLOZ'
-                    b'k8qI2thqMZ3ED')
+        assert vmsg == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EG3O9AV3lhySOadwTn81'
+                        b'0vHOZDc6B8TZY_u_4_iy_ono","i":"EJe_sKQb1otKrz6COIL8VFvBv3DEF'
+                        b'vtKaVFGn1vm0IlL","s":"2"}-FABEAzjKx3hSVJArKpIOVt2KfTRjq8st22'
+                        b'hL25Ho9vnNodz0AAAAAAAAAAAAAAAAAAAAAAAEAzjKx3hSVJArKpIOVt2KfT'
+                        b'Rjq8st22hL25Ho9vnNodz-AABAABP_iABSPKxN2_pcedeIu1qb9rIj5nLaGa'
+                        b'iPOW2BFSUQQ7CSL9IW1s9_wVAxv2idySMjiGuLOZk8qI2thqMZ3ED')
 
         # val process own receipt in own kevery so have copy in own log
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(vmsg), kvy=valKevery)
@@ -3942,7 +3947,7 @@ def test_direct_mode_cbor_mgpk():
         assert rmsg == (b'\x85\xa1v\xb1KERI10MGPK00007f_\xa1t\xa3rct\xa1d\xd9,EDTOWE_oHAO7j'
                     b'6rhUMGfQ_kX8GJbpaAhO-luqqsp5mK-\xa1i\xd9,EDTOWE_oHAO7j6rhUMGfQ_kX8'
                     b'GJbpaAhO-luqqsp5mK-\xa1s\xa10-FABEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_'
-                    b'r9i1nVdqMZXMAAAEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nVdqMZX-AABA'
+                    b'r9i1nVdqMZX0AAAAAAAAAAAAAAAAAAAAAAAEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nVdqMZX-AABA'
                     b'ADk55HF23ePK4g9Mmxxi4o7Pfn3VsPrtpWR3l5wGNQT3cJ7LrFYTE-Xjt72WVu2c'
                     b'bKjVLf9GAIGixpzh11tlCUD')
 
@@ -4008,7 +4013,7 @@ def test_direct_mode_cbor_mgpk():
         assert vmsg ==(b'\x85\xa1v\xb1KERI10MGPK00007f_\xa1t\xa3rct\xa1d\xd9,EDTOWE_oHAO7j'
                     b'6rhUMGfQ_kX8GJbpaAhO-luqqsp5mK-\xa1i\xd9,EDTOWE_oHAO7j6rhUMGfQ_kX8'
                     b'GJbpaAhO-luqqsp5mK-\xa1s\xa1a-FABEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_'
-                    b'r9i1nVdqMZXMAAAEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nVdqMZX-AABA'
+                    b'r9i1nVdqMZX0AAAAAAAAAAAAAAAAAAAAAAAEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nVdqMZX-AABA'
                     b'ADk55HF23ePK4g9Mmxxi4o7Pfn3VsPrtpWR3l5wGNQT3cJ7LrFYTE-Xjt72WVu2c'
                     b'bKjVLf9GAIGixpzh11tlCUD')
 
@@ -4061,7 +4066,7 @@ def test_direct_mode_cbor_mgpk():
         cmsg = messagize(serder=reserder, tsgs=tsgs, framed=True, gvrsn=Vrsn_1_0)
         assert cmsg == (b'\xa5avqKERI10CBOR00007f_atcrctadx,EFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_'
                     b'r9i1nVdqMZXaix,EFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nVdqMZXasa0-'
-                    b'FABEDTOWE_oHAO7j6rhUMGfQ_kX8GJbpaAhO-luqqsp5mK-MAAAEDTOWE_oHAO7j'
+                    b'FABEDTOWE_oHAO7j6rhUMGfQ_kX8GJbpaAhO-luqqsp5mK-0AAAAAAAAAAAAAAAAAAAAAAAEDTOWE_oHAO7j'
                     b'6rhUMGfQ_kX8GJbpaAhO-luqqsp5mK--AABAABZtKLctVcqHwMjVhYwdwQphN0Hq'
                     b'ilToRc-fE1YDDWlxXWa7Q-GAzpFBLYYdfCLuruDzDC0tEG3wSGDDj-GKfgB')
 
@@ -4179,7 +4184,7 @@ def test_direct_mode_cbor_mgpk():
         assert vmsg == (b'\x85\xa1v\xb1KERI10MGPK00007f_\xa1t\xa3rct\xa1d\xd9,EN4m9YLkeBgWV'
                     b'Ivwmj45_qdnBBBY61NVZbwOe__MAsYM\xa1i\xd9,EDTOWE_oHAO7j6rhUMGfQ_kX8'
                     b'GJbpaAhO-luqqsp5mK-\xa1s\xa11-FABEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_'
-                    b'r9i1nVdqMZXMAAAEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nVdqMZX-AABA'
+                    b'r9i1nVdqMZX0AAAAAAAAAAAAAAAAAAAAAAAEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nVdqMZX-AABA'
                     b'ABgKgla6y-DWqKIuSzV5iqPacG_ckEQOO7w2osmn1YYxTIq0aVELDNwXt1mnqWJw'
                     b'73-UVekqTtrU1jWgekCx0cF')
 
@@ -4293,7 +4298,7 @@ def test_direct_mode_cbor_mgpk():
         assert vmsg == (b'\x85\xa1v\xb1KERI10MGPK00007f_\xa1t\xa3rct\xa1d\xd9,EEobyRfni6TAn'
                     b'EROE5yL9sC6lhKEbpbmXyeqSZ1QjAKM\xa1i\xd9,EDTOWE_oHAO7j6rhUMGfQ_kX8'
                     b'GJbpaAhO-luqqsp5mK-\xa1s\xa12-FABEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_'
-                    b'r9i1nVdqMZXMAAAEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nVdqMZX-AABA'
+                    b'r9i1nVdqMZX0AAAAAAAAAAAAAAAAAAAAAAAEFBYcX4vOeL7Y5pz0iQ5yCfxd19R1dgA_r9i1nVdqMZX-AABA'
                     b'ADxJgKTEqP-yWJrKuEB9X8ZBkozW_t0v1alMYouOPQn6Fp2IT_ZSwWmk26Bxj5PP'
                     b'B4qiJmJ7LwbfQvJZLxgMUQC')
 

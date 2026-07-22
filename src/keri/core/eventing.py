@@ -1527,6 +1527,28 @@ def exchange(*,
     return SerderKERI(sad=sad, makify=True)
 
 
+def _v1seqner(ordinal):
+    """Return the qb64b of a version-1 Seqner (fixed 24-char ``0A...`` form) for
+    the given ordinal, downgrading a v2 compact Number when necessary.
+
+    The ``gvrsn.major < 2`` legacy attachment path in messagize must emit
+    sequence and first-seen ordinals as v1 Seqner primitives (as genuine keri
+    1.x nodes expect), never as v2 Number primitives (``M...``). A v2 Number
+    wedged into an otherwise-v1 attachment stream is unparseable by a real v1
+    node, breaking v2->v1 interop for transferable seals (replies, transferable
+    receipts, first-seen replay).
+
+    Parameters:
+        ordinal (Number | Seqner | str): ordinal to serialize. A Number or
+            Seqner primitive, or a hex ordinal string (snh form).
+    """
+    if isinstance(ordinal, Seqner):
+        return ordinal.qb64b
+    if isinstance(ordinal, Number):
+        return Seqner(sn=ordinal.num).qb64b
+    return Seqner(snh=ordinal).qb64b
+
+
 def messagize(serder, *, sigers=None, tsgs=None, lsgs=None, wigers=None,
                          cigars=None, rsgs=None, bonds=None, nests=None,
                          framed=False, nested=False, gvrsn=Version, genusify=False):
@@ -1619,7 +1641,7 @@ def messagize(serder, *, sigers=None, tsgs=None, lsgs=None, wigers=None,
             for tsg in tsgs:
                 prefixer, number, diger, sigers = tsg  # unpack
                 aims.extend(prefixer.qb64b)
-                aims.extend(number.qb64b)
+                aims.extend(_v1seqner(number))  # v1 Seqner not v2 Number
                 aims.extend(diger.qb64b)
                 aims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
                                             version=Vrsn_1_0).qb64b)
@@ -1664,7 +1686,7 @@ def messagize(serder, *, sigers=None, tsgs=None, lsgs=None, wigers=None,
             for rsg in rsgs:
                 prefixer, number, diger, sigers = rsg  # unpack
                 rims.extend(prefixer.qb64b)
-                rims.extend(number.qb64b)
+                rims.extend(_v1seqner(number))  # v1 Seqner not v2 Number
                 rims.extend(diger.qb64b)
 
                 rims.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
@@ -1698,11 +1720,11 @@ def messagize(serder, *, sigers=None, tsgs=None, lsgs=None, wigers=None,
                     for bond in group:
                         if isinstance(bond[0], Matter):  # bond field values are Matter primitives
                             aims.extend(bond.i.qb64b)
-                            aims.extend(bond.s.qb64b)
+                            aims.extend(_v1seqner(bond.s))  # v1 Seqner not v2 Number
                             aims.extend(bond.d.qb64b)
                         else:  # bond field values are serializations
                             aims.extend(bond.i.encode())
-                            aims.extend(Number(snh=bond.s).qb64b)
+                            aims.extend(_v1seqner(bond.s))  # v1 Seqner not v2 Number
                             aims.extend(bond.d.encode())
 
                 elif issubclass(clan, SealSource):  # authenticator is last seal
@@ -1710,10 +1732,10 @@ def messagize(serder, *, sigers=None, tsgs=None, lsgs=None, wigers=None,
                                             version=Vrsn_1_0).qb64b)
                     for bond in group:
                         if isinstance(bond[0], Matter):  # bond field values are Matter primitives
-                            aims.extend(bond.s.qb64b)
+                            aims.extend(_v1seqner(bond.s))  # v1 Seqner not v2 Number
                             aims.extend(bond.d.qb64b)
                         else:  # bond field values are serializations
-                            aims.extend(Number(snh=bond.s).qb64b)
+                            aims.extend(_v1seqner(bond.s))  # v1 Seqner not v2 Number
                             aims.extend(bond.d.encode())
 
                 elif issubclass(clan, SealLast):  # authenticator is last seal
@@ -1732,10 +1754,10 @@ def messagize(serder, *, sigers=None, tsgs=None, lsgs=None, wigers=None,
                                         version=Vrsn_1_0).qb64b)
                     for bond in group:
                         if isinstance(bond[0], Matter):  # bond field values are Matter primitives
-                            aims.extend(bond.f.qb64b)
+                            aims.extend(_v1seqner(bond.f))  # v1 Seqner not v2 Number
                             aims.extend(bond.dt.qb64b)
                         else:  # bond field values are serializations
-                            aims.extend(Number(snh=bond.f).qb64b)
+                            aims.extend(_v1seqner(bond.f))  # v1 Seqner not v2 Number
                             aims.extend(Dater(dts=bond.dt).qb64b)
 
                 else:
