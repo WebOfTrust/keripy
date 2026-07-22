@@ -1204,9 +1204,7 @@ class QueryEnd:
 
     def __init__(self, hab, reger=None):
         self.hab = hab
-        # Reuse the witness's shared Reger rather than opening a SECOND LMDB env on the same
-        # reg path — two env handles for one path in a process raise LMDB's "already open in
-        # this process" and abort witness start (setupWitness now passes its reger in).
+        # Reuse the shared reger if given; opening a second env on the same reg path aborts witness start.
         self.reger = reger if reger is not None else viring.Reger(name=hab.name, db=hab.db, temp=False)
 
     def on_get(self, req, rep):

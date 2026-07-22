@@ -416,11 +416,7 @@ class LMDBer(filing.Filer):
         if readonly is not None:
             self.readonly = readonly
 
-        # close self.env if already open so reopen() is idempotent: LMDB raises
-        # "The environment '<path>' is already open in this process" if the same
-        # path is opened twice in one process. The witness start path can reopen
-        # the reg env via its BaserDoer, so without this close-first the witness
-        # aborts at "Starting witness...".
+        # Close any open env first so reopen() is idempotent; LMDB forbids opening the same path twice in a process.
         if self.env:
             try:
                 self.env.close()
