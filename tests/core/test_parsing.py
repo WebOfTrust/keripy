@@ -2014,7 +2014,7 @@ def test_parser_v2_basic():
         state = ''
         blinder0 = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn)
         sn = 2
-        acdc = 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M'  # bob project report ACDC
+        acdc = 'EP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtv'  # bob project report ACDC
         state = 'issued'
         blinder1 = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn)
         # enclose and extend with quadlet counter,
@@ -2031,7 +2031,7 @@ def test_parser_v2_basic():
         blinder0 = Blinder.blind(acdc=acdc, state=state, salt=salt, sn=sn,
                                  bound=True, bsn=bsn, bd=bd)
         sn = 2
-        acdc = 'EMLjZLIMlfUOoKox_sDwQaJO-0wdoGW0uNbmI28Wwc4M'  # bob project report ACDC
+        acdc = 'EP-iKGmXD-iZu3RhVA2FTI-dOdX50bRBV3VDCy-peOtv'  # bob project report ACDC
         state = 'issued'
         bsn = 2
         bd = "EJOnAKXGaSyJ_43kit0V806NNeGWS07lfjybB1UcfWsv"
