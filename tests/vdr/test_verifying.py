@@ -14,7 +14,7 @@ from keri.app import openHab
 from keri.core import (Saider, Kevery, SerderKERI, Seqner,
                        Diger, Parser, SealEvent,
                        MtrDex, Saids, Aggor, Noncer, Schemer)
-from keri.kering import Ilks, Kinds, Vrsn_2_0
+from keri.kering import Ilks, Kinds, Vrsn_2_0, MissingSchemaError
 from keri.help import helping
 from keri.vc import credential
 from keri.acdc import acdcagg
@@ -808,11 +808,16 @@ def test_verifier_edge_schema_constraint(seeder):
     the far node fails to satisfy is rejected. A naive SAID-equality check wrongly
     rejects the compatible-upgrade case, so that case is the load-bearing one here.
 
-    Three cases against a far node whose own schema is ``optionalIssueeSchema``:
+    Four cases against a far node whose own schema is ``optionalIssueeSchema``:
       * edge 's' = a resolvable *incompatible* schema the far node fails -> rejected;
       * edge 's' = the far node's own schema SAID -> verifies;
       * edge 's' = a resolvable *different but compatible* schema the far node still
-        satisfies -> verifies (the case a SAID-equality check breaks).
+        satisfies -> verifies (the case a SAID-equality check breaks);
+      * edge 's' = a schema *not yet in cache* -> escrowed as missing-schema
+        (transient) with a schema-query cue, then self-heals once the schema is
+        supplied and escrows are reprocessed -- the near ACDC's own schema is
+        handled the same way, so an edge schema must not fail permanently just
+        because it has not been fetched yet.
     """
     optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
 
@@ -830,29 +835,41 @@ def test_verifier_edge_schema_constraint(seeder):
 
         verifier = Verifier(hby=hby, reger=regery.reger)
 
-        # Derive two extra schemas from the far node's own schema and pin them into
-        # the resolver cache so verifyChain can validate the far node against them.
+        # Derive extra schemas from the far node's own schema. makeSchema builds
+        # (but does not cache) a variant; pinSchema adds it to the resolver cache so
+        # the edge-schema check can validate the far node against it.
         baseSchemer = hby.db.schema.get(optionalIssueeSchema)
 
-        def deriveSchema(mutate):
+        def makeSchema(mutate):
             sed = copy.deepcopy(baseSchemer.sed)
             sed['$id'] = ''  # cleared so saidify recomputes the SAID over the mutation
             mutate(sed)
             _, sed = Saider.saidify(sed, label=Saids.dollar)
-            schemer = Schemer(sed=sed)
+            return Schemer(sed=sed)
+
+        def pinSchema(schemer):
             hby.db.schema.pin(schemer.said, schemer)
             return schemer.said
 
         # Compatible upgrade: identical constraints, only the human-readable title
         # differs, so the SAID changes but the far node still validates against it.
-        compatSchema = deriveSchema(
+        compatSchemer = makeSchema(
             lambda sed: sed.__setitem__('title', 'Optional Issuee (compatible upgrade)'))
         # Incompatible: additionally require an issuee ('i') in the attribute block,
         # which the untargeted far node lacks, so the far node fails this schema.
-        incompatSchema = deriveSchema(
+        incompatSchemer = makeSchema(
             lambda sed: sed['properties']['a'].__setitem__('required', ['dt', 'claim', 'i']))
-        assert compatSchema != optionalIssueeSchema
-        assert incompatSchema != optionalIssueeSchema
+        # Compatible, but deliberately left out of the cache to drive the missing-
+        # edge-schema escrow/self-heal path (case 4); pinned partway through.
+        deferredSchemer = makeSchema(
+            lambda sed: sed.__setitem__('title', 'Optional Issuee (deferred)'))
+
+        compatSchema = pinSchema(compatSchemer)
+        incompatSchema = pinSchema(incompatSchemer)
+        deferredSchema = deferredSchemer.said  # not pinned yet
+        assert len({compatSchema, incompatSchema, deferredSchema,
+                    optionalIssueeSchema}) == 4
+        assert hby.db.schema.get(deferredSchema) is None
 
         def issueCred(creder):
             """Issue creder's SAID into the registry TEL and process escrows."""
@@ -908,5 +925,20 @@ def test_verifier_edge_schema_constraint(seeder):
         verifier.processCredential(upCreder, **anchor)
         saved = [s.qb64 for s in regery.reger.schms.get(optionalIssueeSchema)]
         assert upCreder.said in saved
+
+        # (4) Edge declares a schema NOT yet in cache -> escrowed as missing-schema
+        # (transient), not rejected. Once the schema is supplied and escrows are
+        # reprocessed, the far node satisfies it and the chain self-heals.
+        deferredCreder = nearCred("A near claim, deferred edge schema.", deferredSchema)
+        with pytest.raises(MissingSchemaError):
+            verifier.processCredential(deferredCreder, **anchor)
+        assert verifier.reger.mse.get(keys=deferredCreder.said) is not None
+        assert verifier.reger.saved.get(keys=deferredCreder.said) is None
+
+        pinSchema(deferredSchemer)  # supply the previously-missing edge schema
+        verifier.processEscrows()
+        assert verifier.reger.mse.get(keys=deferredCreder.said) is None
+        saved = [s.qb64 for s in regery.reger.schms.get(optionalIssueeSchema)]
+        assert deferredCreder.said in saved
 
     """End Test"""

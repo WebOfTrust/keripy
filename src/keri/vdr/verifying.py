@@ -161,14 +161,48 @@ class Verifier:
                     continue
                 nodeSaid = node["n"]
                 op = node['o'] if 'o' in node else None
-                nodeSchema = node['s'] if 's' in node else None
-                state = self.verifyChain(nodeSaid, op, creder.israid, creder.iseaid,
-                                         schema=nodeSchema)
+                state = self.verifyChain(nodeSaid, op, creder.israid, creder.iseaid)
                 if state is None:
                     self.escrowMCE(creder, prefixer, seqner, saider)
                     self.cues.append(dict(kin="proof",  said=nodeSaid))
                     raise MissingChainError("Failure to verify credential {} chain {}({})"
                                                    .format(creder.said, label, nodeSaid))
+
+                # Enforce the edge's declared far-node schema ('s'). Per ACDC (S.
+                # Smith, issue #1534) the edge 's' is a schema the far node must
+                # *satisfy*, not a SAID that must equal the far node's own schema
+                # SAID. The far node already validated against its own schema (it is
+                # saved, per verifyChain above), so an edge declaring that same
+                # schema needs no further check. When the edge declares a *different*
+                # schema, the far node must additionally satisfy it: if it does, the
+                # near side is legitimately requiring a backwards-compatible (e.g.
+                # upgraded) schema without the far node being reissued; if it does
+                # not, the edge schema is not backwards compatible and the far node
+                # must be reissued. Handled here rather than in verifyChain so the
+                # missing-schema case can escrow and cue a schema query, exactly as
+                # the near ACDC's own schema does above.
+                nodeSchema = node['s'] if 's' in node else None
+                if nodeSchema is not None:
+                    farCreder = self.reger.creds.get(keys=nodeSaid)
+                    if farCreder.schema != nodeSchema:
+                        scraw = self.resolver.resolve(nodeSchema)
+                        if not scraw:  # edge schema not cached yet -- transient
+                            if self.escrowMSE(creder, prefixer, seqner, saider):
+                                self.cues.append(dict(kin="query",
+                                                      q=dict(r="schema", said=nodeSchema)))
+                            raise MissingSchemaError("edge schema {} for credential {} "
+                                                     "chain {}({}) not in cache"
+                                                     .format(nodeSchema, creder.said,
+                                                             label, nodeSaid))
+                        try:
+                            Schemer(raw=scraw).verify(farCreder.raw)
+                        except ValidationError as ex:  # far node fails the edge schema
+                            self.escrowMCE(creder, prefixer, seqner, saider)
+                            self.cues.append(dict(kin="proof", said=nodeSaid))
+                            raise MissingChainError("Credential {} chain {}({}) far node "
+                                                    "does not satisfy edge schema {}: {}"
+                                                    .format(creder.said, label, nodeSaid,
+                                                            nodeSchema, ex))
 
                 dtnow = helping.nowUTC()
                 dte = helping.fromIso8601(state.dt)
@@ -338,7 +372,7 @@ class Verifier:
         hab = self.hby.habs[pre]
         return hab.endorse(serder, last=True, framed=False, gvrsn=serder.pvrsn)
 
-    def verifyChain(self, nodeSaid, op, issuer, issuee=None, schema=None):
+    def verifyChain(self, nodeSaid, op, issuer, issuee=None):
         """ Verifies the node credential at the end of an edge
 
         Parameters:
@@ -348,9 +382,6 @@ class Verifier:
             issuee (str|None): qb64 AID of the issuee of the near (edge-bearing) ACDC,
                 required by the identity operators (E1E). None when the near ACDC is
                 untargeted.
-            schema (str|None): qb64 SAID of the schema the edge declares its far node
-                must satisfy (the edge 's' field). None when the edge omits 's', in
-                which case the far node's schema is not constrained here.
 
         Returns:
             Serder: transaction event state notification message
@@ -361,26 +392,6 @@ class Verifier:
             return None
 
         creder = self.reger.creds.get(keys=nodeSaid)  # far (node) credential
-
-        # Enforce the edge's declared far-node schema ('s'). Per ACDC the edge 's'
-        # is a schema the far node must *satisfy*, not a SAID that must equal the
-        # far node's own schema SAID (S. Smith, issue #1534). The far node has
-        # already been validated against its own schema -- it would not be saved
-        # otherwise -- so when the edge declares that same schema there is nothing
-        # more to check. When the edge declares a *different* schema, the far node
-        # must additionally satisfy it: if it does, the near side is legitimately
-        # requiring a backwards-compatible (e.g. upgraded) schema without forcing
-        # the far node to be reissued; if it does not, the edge schema is not
-        # backwards compatible and the far node must be reissued -- reject. Reject
-        # is surfaced as None for consistency with verifyChain's other reject paths.
-        if schema is not None and creder.schema != schema:
-            scraw = self.resolver.resolve(schema)
-            if not scraw:  # edge schema not yet resolvable; transient -> MCE escrow
-                return None
-            try:
-                Schemer(raw=scraw).verify(creder.raw)
-            except ValidationError:  # far node does not satisfy the edge schema
-                return None
 
         if op not in ['I2I', 'DI2I', 'NI2I', 'E1E']:
             # A far node is targeted (I2I) iff it has an issuee, else untargeted
