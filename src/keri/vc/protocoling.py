@@ -456,7 +456,7 @@ def ipexSpurnExn(hab, message, spurned, version=None, pvrsn=None,
     Parameters:
         hab(Hab): identifier environment for issuer of credential
         message(str): Human readable message regarding the admission
-        spurned (Serder): apply, offer, agree or grant received
+        spurned (Serder): apply, offer, or agree received
         version (Versionage | None): explicit KERI protocol version override.
                         When omitted, defaults to the habitat's established version.
         pvrsn (Versionage): explicit KERI protocol version
