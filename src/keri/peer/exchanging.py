@@ -140,6 +140,7 @@ class Exchanger:
             raise MissingSignatureError(msg)
 
         e = Pather(parts=["e"])
+        incomingNests = kwa.get("nests")
 
         kwa = dict()
         attachments = []
@@ -151,6 +152,8 @@ class Exchanger:
                 attachments.append((np, pattach))
 
         kwa["attachments"] = attachments
+        if route.startswith("/multisig") and incomingNests:
+            kwa["nests"] = incomingNests
         if essrs:
             kwa["essr"] = b''.join([texter.raw for texter in essrs])
 

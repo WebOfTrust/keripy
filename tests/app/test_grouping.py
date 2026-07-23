@@ -6,20 +6,22 @@ tests.app.grouping module
 from contextlib import contextmanager
 from types import SimpleNamespace
 
+import pytest
 from hio.base import doing
 
-from keri.kering import Version, Vrsn_1_0, Kinds
+from keri.kering import ValidationError, Version, Vrsn_1_0, Vrsn_2_0, Kinds
 from keri.app import (Notifier, Counselor, Multiplexor,
-                      openHab, multisigInceptExn,
+                      openHab, openCF, multisigInceptExn,
                       multisigRotateExn, multisigInteractExn,
-                      multisigRegistryInceptExn)
+                      multisigRegistryInceptExn, multisigRpyExn)
 from keri.app import grouping
 
 from keri.app.grouping import loadHandlers
 
 from keri.core import (Prefixer, Number, Diger, Kevery,
+                       Saider,
                        Parser, SerderKERI, Counter,
-                       Codens, messagize)
+                       Codens, Kramer, messagize)
 
 from keri.vdr.eventing import incept
 from keri.peer import Exchanger
@@ -773,7 +775,7 @@ def test_multisig_incept(mockHelpingNowUTC):
         assert "icp" in exn.ked['e']
 
 
-def test_multisig_incept_default_framing_uses_default_version_with_legacy_special_exn(mockHelpingNowUTC, monkeypatch):
+def test_multisig_incept_explicit_v1_uses_legacy_special_exn(mockHelpingNowUTC, monkeypatch):
     with openHab(name="test", temp=True, salt=b'0123456789abcdef', **KWA) as (_, hab):
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
         icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=TEST_VERSION)
@@ -800,11 +802,36 @@ def test_multisig_incept_default_framing_uses_default_version_with_legacy_specia
         monkeypatch.setattr(grouping, "specialExchange", capture_special_exchange)
         monkeypatch.setattr(hab, "endorse", capture_endorse)
 
-        multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp)
+        multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp,
+                          version=Vrsn_1_0, kind=Kinds.json)
 
         assert special_calls["version"] == Vrsn_1_0
         assert special_calls["kind"] == Kinds.json
-        assert endorse_calls["gvrsn"] == Version
+        assert endorse_calls["gvrsn"] == Vrsn_1_0
+
+
+def test_multisig_incept_default_version_uses_v2_nested_substreams(mockHelpingNowUTC):
+    with openHab(name="test", temp=True, salt=b'0123456789abcdef', version=Vrsn_2_0, kind=Kinds.json) as (_, hab):
+        aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
+        icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=Version)
+        innerSerder = SerderKERI(raw=icp)
+        exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp,
+                                     kind=Kinds.json)
+
+        assert exn.ked["r"] == '/multisig/icp'
+        data = exn.ked["a"]
+        assert data["gid"] == innerSerder.pre
+        assert data["smids"] == aids
+        assert data["rmids"] == aids
+        assert data["d"] == innerSerder.said
+        assert "e" not in exn.ked
+
+        results = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                 framed=True,
+                                                 processive=False)
+        assert len(results) == 1
+        assert len(results[0].nests) == 1
+        assert results[0].nests[0].serder.said == innerSerder.said
 
 
 def test_multisig_rotate(mockHelpingNowUTC):
@@ -831,6 +858,29 @@ def test_multisig_rotate(mockHelpingNowUTC):
         assert "rot" in exn.ked["e"]
 
 
+def test_multisig_rotate_default_version_uses_v2_nested_substreams(mockHelpingNowUTC):
+    with openMultiSig(prefix="test") as ((_, ghab1), (_, _), (_, _)):
+        rot = ghab1.mhab.rotate(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        innerSerder = SerderKERI(raw=rot)
+        exn, atc = multisigRotateExn(ghab=ghab1, smids=ghab1.smids, rmids=ghab1.rmids,
+                                     rot=rot, kind=Kinds.json)
+
+        assert exn.ked["r"] == '/multisig/rot'
+        data = exn.ked["a"]
+        assert data["smids"] == ghab1.smids
+        assert data["rmids"] == ghab1.rmids
+        assert data["gid"] == ghab1.pre
+        assert data["d"] == innerSerder.said
+        assert "e" not in exn.ked
+
+        results = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                 framed=True,
+                                                 processive=False)
+        assert len(results) == 1
+        assert len(results[0].nests) == 1
+        assert results[0].nests[0].serder.said == innerSerder.said
+
+
 def test_multisig_interact(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
         ixn = ghab1.mhab.interact(framed=True, **KWA, gvrsn=TEST_VERSION)
@@ -850,6 +900,54 @@ def test_multisig_interact(mockHelpingNowUTC):
         assert data["smids"] == ghab1.smids
         assert data["gid"] == ghab1.pre
         assert "ixn" in exn.ked["e"]
+
+
+def test_multisig_interact_default_version_uses_v2_nested_substreams(mockHelpingNowUTC):
+    with openMultiSig(prefix="test") as ((_, ghab1), (_, _), (_, _)):
+        ixn = ghab1.mhab.interact(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        innerSerder = SerderKERI(raw=ixn)
+        exn, atc = multisigInteractExn(ghab=ghab1, aids=ghab1.smids,
+                                       ixn=ixn,
+                                       kind=Kinds.json)
+
+        assert exn.ked["r"] == '/multisig/ixn'
+        data = exn.ked["a"]
+        assert data["smids"] == ghab1.smids
+        assert data["gid"] == ghab1.pre
+        assert data["d"] == innerSerder.said
+        assert "e" not in exn.ked
+
+        results = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                 framed=True,
+                                                 processive=False)
+        assert len(results) == 1
+        assert len(results[0].nests) == 1
+        assert results[0].nests[0].serder.said == innerSerder.said
+
+
+def test_multisig_rpy_default_version_uses_v2_nested_substreams(mockHelpingNowUTC):
+    with openMultiSig(prefix="test") as ((_, ghab1), (_, _), (_, _)):
+        rpy = ghab1.mhab.reply(route="/test/rpy",
+                               data=dict(i=ghab1.pre),
+                               framed=True,
+                               version=Vrsn_2_0,
+                               kind=Kinds.json,
+                               gvrsn=Vrsn_2_0)
+        innerSerder = SerderKERI(raw=rpy)
+        exn, atc = multisigRpyExn(ghab=ghab1, rpy=rpy, kind=Kinds.json)
+
+        assert exn.ked["r"] == '/multisig/rpy'
+        data = exn.ked["a"]
+        assert data["gid"] == ghab1.pre
+        assert data["d"] == innerSerder.said
+        assert "e" not in exn.ked
+
+        results = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                 framed=True,
+                                                 processive=False)
+        assert len(results) == 1
+        assert len(results[0].nests) == 1
+        assert results[0].nests[0].serder.said == innerSerder.said
 
 
 def test_multisig_registry_incept(mockHelpingNowUTC, mockCoringRandomNonce):
@@ -874,6 +972,33 @@ def test_multisig_registry_incept(mockHelpingNowUTC, mockCoringRandomNonce):
                         'usage': 'Issue vLEI Credentials'}
         assert "vcp" in exn.ked["e"]
         assert "anc" in exn.ked["e"]
+
+
+def test_multisig_registry_incept_handler_uses_embed_said(mockHelpingNowUTC, mockCoringRandomNonce):
+    with openMultiSig(prefix="test") as ((hby, ghab), (_, _), (_, _)):
+        vcp = incept(ghab.pre, version=Vrsn_1_0, kind=Kinds.json)
+        anc = ghab.mhab.interact(data=[dict(i=vcp.pre, s="0", d=vcp.said)],
+                                 framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        exn, atc = multisigRegistryInceptExn(ghab=ghab, vcp=vcp.raw, anc=anc,
+                                             usage="Issue vLEI Credentials",
+                                             version=Vrsn_1_0,
+                                             kind=Kinds.json)
+
+        notifier = Notifier(hby=hby)
+        mux = Multiplexor(hby=hby, notifier=notifier)
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(exn.raw + atc), exc=exc)
+        assert len(notifier.signaler.signals) == 0
+
+        esaid = exn.ked["e"]["d"]
+        digers = hby.db.meids.get(keys=(esaid,))
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn.said
+        prefixers = hby.db.maids.get(keys=(esaid,))
+        assert len(prefixers) == 1
+        assert prefixers[0].qb64 == exn.pre
 
 
 def test_multisig_incept_handler(mockHelpingNowUTC):
@@ -947,6 +1072,172 @@ def test_multisig_incept_handler_parses_approved_v1_embed(mockHelpingNowUTC):
         assert [siger.index for siger in sigers] == [0, 1]
 
 
+def test_multisig_incept_handler_v2_rejects_mismatched_nested_substream(mockHelpingNowUTC):
+    with openHab(name="bad-nested", temp=True, salt=b'0123456789abcdef',
+                 version=Vrsn_2_0, kind=Kinds.json) as (hby, hab):
+        aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
+        icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=Vrsn_2_0)
+        exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp,
+                                     version=Vrsn_2_0, kind=Kinds.json)
+        parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                framed=True,
+                                                processive=False)[0]
+        ixn = hab.interact(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        bad = Parser(version=Vrsn_2_0).parse(ims=bytearray(ixn),
+                                             framed=True,
+                                             processive=False)[0]
+
+        notifier = Notifier(hby=hby)
+        mux = Multiplexor(hby=hby, notifier=notifier)
+
+        with pytest.raises(ValidationError):
+            mux.add(parsed.serder, nests=[bad])
+
+
+def test_multisig_incept_handler_v2_rejects_missing_signed_child_said(mockHelpingNowUTC):
+    with openHab(name="missing-signed-said", temp=True, salt=b'0123456789abcdef',
+                 version=Vrsn_2_0, kind=Kinds.json) as (hby, hab):
+        aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
+        icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=Vrsn_2_0)
+        exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp,
+                                     version=Vrsn_2_0, kind=Kinds.json)
+        parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                framed=True,
+                                                processive=False)[0]
+        sad = dict(parsed.serder.ked)
+        sad["a"] = dict(sad["a"])
+        del sad["a"]["d"]
+        bad_exn = SerderKERI(sad=sad, makify=True)
+
+        notifier = Notifier(hby=hby)
+        mux = Multiplexor(hby=hby, notifier=notifier)
+
+        with pytest.raises(ValidationError):
+            mux.add(bad_exn, nests=parsed.nests)
+
+
+def test_multisig_incept_handler_mixed_v1_v2_share_legacy_embed_said_key(mockHelpingNowUTC):
+    with openHab(name="mixed-v1-v2-1", temp=True, salt=b'0123456789abcdef',
+                 version=Vrsn_2_0, kind=Kinds.json) as (hby1, hab1), \
+            openHab(name="mixed-v1-v2-2", temp=True, salt=b'abcdef0123456789',
+                    version=Vrsn_2_0, kind=Kinds.json) as (_, hab2):
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(hab2.msgOwnEvent(sn=0, framed=True,
+                                                                      gvrsn=Vrsn_2_0)),
+                                       kvy=hby1.kvy, local=True)
+        aids = [hab1.pre, hab2.pre]
+        icp = hab1.msgOwnEvent(sn=hab1.kever.sn, framed=True, gvrsn=Vrsn_2_0)
+        inner = SerderKERI(raw=icp)
+        exn1, atc1 = multisigInceptExn(hab=hab1, smids=aids, rmids=aids, icp=icp,
+                                       version=Vrsn_1_0, kind=Kinds.json)
+        exn2, atc2 = multisigInceptExn(hab=hab2, smids=aids, rmids=aids, icp=icp,
+                                       version=Vrsn_2_0, kind=Kinds.json)
+
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(exn1.raw + atc1), exc=exc)
+        Parser(version=Vrsn_2_0).parseOne(ims=bytearray(exn2.raw + atc2), exc=exc)
+
+        esaid = exn1.ked["e"]["d"]
+        _, embed = Saider.saidify(sad={"icp": inner.sad, "d": ""})
+        assert esaid == embed["d"]
+
+        digers = hby1.db.meids.get(keys=(esaid,))
+        assert len(digers) == 2
+        assert digers[0].qb64 == exn1.said
+        assert digers[1].qb64 == exn2.said
+
+        prefixers = hby1.db.maids.get(keys=(esaid,))
+        assert len(prefixers) == 2
+        assert prefixers[0].qb64 == hab1.pre
+        assert prefixers[1].qb64 == hab2.pre
+
+
+def test_multisig_incept_handler_v2_with_kram(mockHelpingNowUTC):
+
+    # Create two member habitats that will each build the same 2-of-2 group
+    # inception proposal from their own local perspective
+    with openHab(name="approved-nested1", salt=b'0123456789abcdef',
+                 transferable=True, temp=True, version=Vrsn_2_0, kind=Kinds.json) as (hby1, hab1), \
+            openHab(name="approved-nested2", salt=b'abcdef0123456789',
+                    transferable=True, temp=True, version=Vrsn_2_0, kind=Kinds.json) as (hby2, hab2):
+
+        # Exchange the member AID inception events first so each side knows the
+        # other participant before creating the shared group habitat
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(hab2.msgOwnEvent(sn=0, framed=True,
+                                                                      gvrsn=Vrsn_2_0)),
+                                       kvy=hby1.kvy, local=True)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(hab1.msgOwnEvent(sn=0, framed=True,
+                                                                      gvrsn=Vrsn_2_0)),
+                                       kvy=hby2.kvy, local=True)
+
+        # Both members participate in signing this group inception
+        smids = [hab1.pre, hab2.pre]
+        inits = dict(toad=0, wits=[], isith="2", nsith="2", version=Vrsn_2_0, kind=Kinds.json)
+
+        # Build the same group habitat on both sides
+        ghab1 = hby1.makeGroupHab(group="approved-nested", mhab=hab1,
+                                  smids=smids, rmids=None, **inits)
+        ghab2 = hby2.makeGroupHab(group="approved-nested", mhab=hab2,
+                                  smids=smids, rmids=None, **inits)
+
+        # Member 1 creates a partially signed group inception and wraps it in a
+        # V2 /multisig/icp exchange
+        icp1 = ghab1.msgOwnInception(allowPartiallySigned=True, framed=True, gvrsn=Vrsn_2_0)
+        exn1, atc1 = multisigInceptExn(hab=ghab1.mhab, smids=ghab1.smids,
+                                       rmids=ghab1.rmids, icp=icp1,
+                                       version=Vrsn_2_0, kind=Kinds.json)
+
+        # Member 2 independently creates its matching partially signed copy and
+        # wraps it in the same V2 /multisig/icp exchange route
+        icp2 = ghab2.msgOwnInception(allowPartiallySigned=True, framed=True, gvrsn=Vrsn_2_0)
+        exn2, atc2 = multisigInceptExn(hab=ghab2.mhab, smids=ghab2.smids,
+                                       rmids=ghab2.rmids, icp=icp2,
+                                       version=Vrsn_2_0, kind=Kinds.json)
+
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        # Seed "local approval already exists" directly in the mux. For V2 the
+        # wrapped group inception is carried in nested substreams, so we parse
+        # the local stream without processing it in order to recover `nests`
+        local = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn1.raw + atc1),
+                                               framed=True,
+                                               processive=False)[0]
+        mux.add(local.serder, nests=local.nests)
+
+        with openCF(name="grouping-kram", base="test") as cf:
+            # Send the Member 2's exchange through the real V2 path:
+            # Parser -> Kevery.processMsg -> Kramer -> Exchanger -> mux.add
+            config = {
+                "kram": {
+                    "enabled": True,
+                    "denials": [],
+                    "caches": {
+                        "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
+                    }
+                },
+                "dt": "2021-01-01T00:00:00.000000+00:00",
+            }
+            cf.put(config)
+            kvy = Kevery(db=hby1.db, lax=False, local=False,
+                         kramer=Kramer(db=hby1.db, cf=cf), exc=exc)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(exn2.raw + atc2),
+                                           kvy=kvy,
+                                           exc=exc,
+                                           local=False)
+
+        # Once Member 2's proposal is accepted, the inner
+        # group inception should have both members' signatures on it
+        serder = SerderKERI(raw=icp1)
+        sigers = hby1.db.sigs.get(keys=(serder.preb, serder.saidb))
+        assert [siger.index for siger in sigers] == [0, 1]
+
+
 def test_multisig_rotate_handler(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (_, _)):
         msg = ghab1.mhab.rotate(framed=True, **KWA, gvrsn=TEST_VERSION)
@@ -991,6 +1282,49 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
         assert prefixers[1].qb64 == ghab1.mhab.pre
 
 
+def test_multisig_rotate_handler_v2_with_kram(mockHelpingNowUTC):
+    with openMultiSig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (_, _)):
+        msg = ghab1.mhab.rotate(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        exn, atc = multisigRotateExn(ghab=ghab2, smids=ghab1.smids, rmids=ghab1.rmids,
+                                     rot=msg, kind=Kinds.json)
+
+        with openCF(name="grouping-kram-rot", base="test") as cf:
+            config = {
+                "kram": {
+                    "enabled": True,
+                    "denials": [],
+                    "caches": {
+                        "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
+                    }
+                },
+                "dt": "2021-01-01T00:00:00.000000+00:00",
+            }
+            cf.put(config)
+            kvy = Kevery(db=hby1.db, lax=False, local=False,
+                         kramer=Kramer(db=hby1.db, cf=cf), exc=exc)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                           kvy=kvy,
+                                           exc=exc,
+                                           local=False)
+
+        # Assert the notification
+        assert len(notifier.signaler.signals) == 1
+
+        _, embed = Saider.saidify(sad={"rot": SerderKERI(raw=msg).sad, "d": ""})
+        esaid = embed["d"]
+        digers = hby1.db.meids.get(keys=(esaid,))
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn.said
+        prefixers = hby1.db.maids.get(keys=(esaid,))
+        assert len(prefixers) == 1
+        assert prefixers[0].qb64 == ghab2.mhab.pre
+
+
 def test_multisig_interact_handler(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, ghab2), (_, _)):
         ixn = ghab1.mhab.interact(framed=True, **KWA, gvrsn=TEST_VERSION)
@@ -1011,6 +1345,95 @@ def test_multisig_interact_handler(mockHelpingNowUTC):
         esaid = exn.ked['e']['d']
         assert len(notifier.signaler.signals) == 1
         digers = hby1.db.meids.get(keys=(esaid, ))
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn.said
+        prefixers = hby1.db.maids.get(keys=(esaid,))
+        assert len(prefixers) == 1
+        assert prefixers[0].qb64 == ghab2.mhab.pre
+
+
+def test_multisig_interact_handler_v2_with_kram(mockHelpingNowUTC):
+    with openMultiSig(prefix="test") as ((hby1, ghab1), (_, ghab2), (_, _)):
+        ixn = ghab1.mhab.interact(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        exn, atc = multisigInteractExn(ghab=ghab2, aids=ghab1.smids,
+                                       ixn=ixn,
+                                       kind=Kinds.json)
+
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        with openCF(name="grouping-kram-ixn", base="test") as cf:
+            config = {
+                "kram": {
+                    "enabled": True,
+                    "denials": [],
+                    "caches": {
+                        "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
+                    }
+                },
+                "dt": "2021-01-01T00:00:00.000000+00:00",
+            }
+            cf.put(config)
+            kvy = Kevery(db=hby1.db, lax=False, local=False,
+                         kramer=Kramer(db=hby1.db, cf=cf), exc=exc)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                           kvy=kvy,
+                                           exc=exc,
+                                           local=False)
+
+        assert len(notifier.signaler.signals) == 1
+
+        _, embed = Saider.saidify(sad={"ixn": SerderKERI(raw=ixn).sad, "d": ""})
+        esaid = embed["d"]
+        digers = hby1.db.meids.get(keys=(esaid,))
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn.said
+        prefixers = hby1.db.maids.get(keys=(esaid,))
+        assert len(prefixers) == 1
+        assert prefixers[0].qb64 == ghab2.mhab.pre
+
+
+def test_multisig_rpy_handler_v2_with_kram(mockHelpingNowUTC):
+    with openMultiSig(prefix="test") as ((hby1, ghab1), (_, ghab2), (_, _)):
+        rpy = ghab1.mhab.reply(route="/test/rpy",
+                               data=dict(i=ghab1.pre),
+                               framed=True,
+                               version=Vrsn_2_0,
+                               kind=Kinds.json,
+                               gvrsn=Vrsn_2_0)
+        exn, atc = multisigRpyExn(ghab=ghab2, rpy=rpy, kind=Kinds.json)
+
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        with openCF(name="grouping-kram-rpy", base="test") as cf:
+            config = {
+                "kram": {
+                    "enabled": True,
+                    "denials": [],
+                    "caches": {
+                        "~": [1000, 5000, 60000, 300000, 5000, 60000, 300000]
+                    }
+                },
+                "dt": "2021-01-01T00:00:00.000000+00:00",
+            }
+            cf.put(config)
+            kvy = Kevery(db=hby1.db, lax=False, local=False,
+                         kramer=Kramer(db=hby1.db, cf=cf), exc=exc)
+            Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                           kvy=kvy,
+                                           exc=exc,
+                                           local=False)
+
+        assert len(notifier.signaler.signals) == 1
+
+        _, embed = Saider.saidify(sad={"rpy": SerderKERI(raw=rpy).sad, "d": ""})
+        esaid = embed["d"]
+        digers = hby1.db.meids.get(keys=(esaid,))
         assert len(digers) == 1
         assert digers[0].qb64 == exn.said
         prefixers = hby1.db.maids.get(keys=(esaid,))
