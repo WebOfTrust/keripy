@@ -864,3 +864,130 @@ def test_partition_across_verifiers_JSON():
     # --- Guardrail: the wallet mapping is 1-verifier -> 1-copy; a third distinct verifier
     # gets a third distinct index (never a reused copy across contexts). ---
     assert len({_copy_index_for(v) for v in VERIFIERS}) == len(VERIFIERS)
+
+
+# ===========================================================================
+# Phase 5: disclosure gating (v_k only post-agree) + set revocation.
+# ===========================================================================
+# A published SEDI over-21 governance framework, referenced by SAID (public, shared by
+# the whole population -> non-correlating). PLACEHOLDER digest of a description string.
+GOVERNANCE_SAID = Diger(ser=b'SEDI over-21 governance framework v1').qb64
+APPLY_STAMP = "2026-07-22T21:15:00.000000+00:00"
+OFFER_STAMP = "2026-07-22T21:16:00.000000+00:00"
+AGREE_STAMP = "2026-07-22T21:17:00.000000+00:00"
+GRANT_STAMP = "2026-07-22T21:18:00.000000+00:00"
+REVOKE_STAMP = "2026-08-01T09:00:00.000000+00:00"
+
+
+def _offer(kind, *, sender, receiver, prior, presentationSaid, governance):
+    """Leak-proof pre-agree offer constructor (Sam, issue #1532: make the leak
+    UNREPRESENTABLE at the API rather than merely asserted-absent).
+
+    Its signature has NO parameter for source-credential SAIDs, the registry, or the
+    blinding factor v_k, so the pre-agree offer STRUCTURALLY cannot carry a stable holder
+    correlator. It commits only the fresh, per-context presentation SAID (safe because it
+    is built with a per-presentation salt, so it is an ephemeral, not a stable correlator)
+    and a public governance ref. This is the 'correlation-budget doctrine' as
+    policy-by-construction -- an EGF/implementation-guide requirement, not a schema change.
+    """
+    return exchange(sender=sender, receiver=receiver, route="/ipex/offer", prior=prior,
+                    attributes=dict(acdc=presentationSaid, governance=governance),
+                    stamp=OFFER_STAMP, kind=kind)
+
+
+def test_disclosure_gating_and_revocation_JSON():
+    """Phase 5: the blinding factor v_k rides only in the grant; a revoked set fails.
+
+    Two properties. First, disclosure gating: the pre-agree /ipex/offer commits only the
+    fresh presentation SAID + public governance -- built with a constructor that cannot
+    carry the source SAIDs, the registry, or the blinding factor v_k (Sam #1532's
+    make-it-unrepresentable guidance). v_k appears ONLY in the grant, after a valid signed
+    agree, so a verifier who spurns walks away with no stable correlator and no membership
+    proof. Second, revocation: the State flips the shared set's blindable state to
+    'revoked'; a verifier that checks current status MUST then refuse, even though the
+    credential graph still binds.
+    """
+    kind = Kinds.json
+    idNonces = _BulkNonces(BULK_SALT)
+    idReg, idCopies, idBlist, Bid, idIssued = _sedi_id_set(kind, idNonces)
+    ageNonces = _BulkNonces(BULK_AGE_SALT)
+    ageReg, ageCopies, ageAggors, ageBlist, Bage, ageIssued = _sedi_age_set(
+        kind, idCopies, ageNonces)
+    presNonces = _BulkNonces(PRESENT_SALT)
+
+    verifier = ALCOVE
+    k = _copy_index_for(verifier)
+    pres = _presentation(kind, verifier, idCopies, ageCopies, presNonces)
+
+    # 1. apply (verifier -> holder): the challenge (schema/fields + governance).
+    apply = exchange(sender=verifier, receiver=ALICES[k], route="/ipex/apply",
+                     attributes=dict(m="Prove over-21.",
+                                     disclose={ageCopies[k].sad['s']['$id']:
+                                               ["/A/i", "/A/over21"]},
+                                     g=GOVERNANCE_SAID),
+                     stamp=APPLY_STAMP, kind=kind)
+    assert apply.sad['r'] == "/ipex/apply"
+
+    # 2. offer (holder -> verifier): via the leak-proof constructor. NO source SAIDs, NO v_k.
+    offer = _offer(kind, sender=ALICES[k], receiver=verifier, prior=apply.said,
+                   presentationSaid=pres.said, governance=GOVERNANCE_SAID)
+    assert offer.sad['p'] == apply.said
+    assert pres.said.encode() in offer.raw                      # fresh per-context SAID: safe
+    assert idCopies[k].said.encode() not in offer.raw           # source SAID withheld
+    assert ageCopies[k].said.encode() not in offer.raw          # source SAID withheld
+    assert idReg.said.encode() not in offer.raw                 # registry withheld
+    assert ageReg.said.encode() not in offer.raw
+    assert ageNonces.v(k).encode() not in offer.raw             # blinding factor withheld
+    assert idNonces.v(k).encode() not in offer.raw
+
+    # 3. agree (verifier -> holder): signed acceptance binding the offer.
+    agree = exchange(sender=verifier, receiver=ALICES[k], route="/ipex/agree",
+                     prior=offer.said, stamp=AGREE_STAMP, kind=kind)
+    assert agree.sad['p'] == offer.said
+    vSigner = _SIGNERS[2 + k]                                   # the verifier's establishing key
+    vSig = vSigner.sign(ser=agree.raw, index=0)
+    keyState = Verfer(qb64=vSigner.verfer.qb64)
+    assert keyState.verify(sig=vSig.raw, ser=agree.raw)
+
+    # 4. The gate: the holder discloses (grant carrying v_k + the membership proof) ONLY on
+    # a valid, offer-binding, signed agree.
+    def disclose(agreeMsg, sig):
+        if not (agreeMsg.sad['r'] == "/ipex/agree" and agreeMsg.sad['p'] == offer.said
+                and keyState.verify(sig=sig.raw, ser=agreeMsg.raw)):
+            return None
+        presCompact = _presentation(kind, verifier, idCopies, ageCopies, presNonces,
+                                    compactify=True)
+        ageDisc, _ = ageAggors[k].disclose(indices=[AGE_ISSUEE, AGE_OVER21])
+        return exchange(sender=ALICES[k], receiver=verifier, route="/ipex/grant",
+                        prior=agreeMsg.said,
+                        attributes=dict(acdc=presCompact.sad, ageDisclosure=ageDisc,
+                                        membership=dict(v=ageNonces.v(k), blist=ageBlist,
+                                                        B=Bage)),
+                        stamp=GRANT_STAMP, kind=kind)
+
+    # A forged signature unlocks nothing.
+    assert disclose(agree, _SIGNERS[0].sign(ser=agree.raw, index=0)) is None
+    # A valid agree unlocks the grant; v_k appears ONLY now, and the verifier can prove
+    # copy k is a legitimate member of the committed set from the grant's disclosure.
+    grant = disclose(agree, vSig)
+    assert grant is not None and grant.sad['p'] == agree.said
+    assert ageNonces.v(k).encode() in grant.raw                 # v_k revealed only in the grant
+    assert _verify_membership(ageCopies[k].said, ageNonces.v(k), ageBlist, Bage)
+    assert grant.sad['a']['ageDisclosure'][AGE_OVER21]['over21'] is True
+
+    # --- Revocation: the State records a 'revoked' update on the shared set registry. ---
+    revokedBlinder = Blinder.blind(acdc=Bage, state='revoked', salt=BULK_AGE_REG_SALT, sn=2)
+    revoked = blindate(regid=ageReg.said, prior=ageIssued.said, blid=revokedBlinder.said,
+                       sn=2, stamp=REVOKE_STAMP, kind=kind)
+    assert revoked.sad['p'] == ageIssued.said                   # chains onto the issuance
+    assert b"revoked" not in revoked.raw                        # state word stays blinded
+
+    def status_issued(event, sn):
+        return Blinder.unblind(said=event.sad['b'], acdc=Bage, states=SET_STATES,
+                               salt=BULK_AGE_REG_SALT, sn=sn).state == 'issued'
+    assert status_issued(ageIssued, 1) is True                  # honored while issued
+    assert status_issued(revoked, 2) is False                   # refused once revoked
+
+    # The graph still binds (edges are immutable), but a status-checking verifier refuses.
+    assert _verify_presentation(pres, idCopies[k], ageCopies[k])   # graph still binds...
+    assert status_issued(revoked, 2) is False                      # ...yet status forbids it
