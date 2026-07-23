@@ -67,11 +67,9 @@ from jsonschema import Draft202012Validator
 from jsonschema.exceptions import ValidationError
 
 from keri import Kinds, Ilks
-from keri.core import (Salter, Noncer, Aggor, Compactor, Mapper, Diger, Verfer,
-                       exchange, messagize)
+from keri.core import Salter, Noncer, Aggor, Mapper, Diger, Verfer, exchange
 from keri.core.coring import MtrDex, NonceDex
 from keri.core.eventing import incept
-from keri.core.serdering import SerderACDC
 from keri.acdc import regcept, blindate, acdcmap, acdcagg
 from keri.core.structing import Blinder
 
@@ -444,6 +442,12 @@ def test_bulk_sedi_id_set_JSON():
     assert len({c.said for c in copies}) == BULK_SIZE            # unique copy SAIDs
     assert len({c.sad['u'] for c in copies}) == BULK_SIZE        # unique top-level uuids
 
+    # Pinned reproducible values (derived, not pasted -- regenerate by printing on change).
+    assert reg.said == "EJ1pXgiZJcpglJ_HYCXd9w1ETN4Wh5Op0y1bkdTJQIgB"   # shared id registry
+    assert ALICES[0] == "EK4lOjo9f0WgCSnfI6hLjG9rsw_C5762GZf0TKJI612P"  # holder AID, context 0
+    assert copies[0].said == "EPelN-PbE6nz-DnwGHaEtGSyp0C9o_PSuY0Nqn88aRsE"
+    assert B == "EEeJA8dF4eoi9TRG0i9yfiLR9XGFQ3_9--Bee4vouJHk"          # blinded aggregate B_id
+
     # Membership: each copy verifies against the committed B_id; an outsider fails.
     for k, copy in enumerate(copies):
         assert _verify_membership(copy.said, nonces.v(k), blist, B)
@@ -651,17 +655,34 @@ def test_bulk_sedi_age_set_JSON():
         assert age.iseaid == ALICES[k]
         assert age.sad['A'][AGE_OVER21]['over21'] is True     # over 21...
         assert age.sad['A'][over65Pos]['over65'] is False     # ...not over 65
-        assert_acdc_schema_valid(age)
+        ageSchema = assert_acdc_schema_valid(age)
         # Index-aligned E1E edge -> the SAME-index sedi-id copy (the #1515 fix).
         assert age.sad['e']['identity']['o'] == 'E1E'
         assert age.sad['e']['identity']['n'] == idCopies[k].said
         assert _verify_identity_edge(age, idCopies[k])
         assert age.iseaid == idCopies[k].iseaid == ALICES[k]  # same subject per context
 
+    # Schema teeth: the identity operator is const-pinned to E1E -- a swapped operator (the
+    # I2I coercion #1515 warns about) and a non-boolean flag are both rejected at validation.
+    badOp = json.loads(json.dumps(ageCopies[0].sad))
+    badOp['e']['identity']['o'] = 'I2I'
+    with pytest.raises(ValidationError):
+        Draft202012Validator(ageSchema).validate(badOp)
+    badFlag = json.loads(json.dumps(ageCopies[0].sad))
+    badFlag['A'][AGE_OVER21] = dict(badFlag['A'][AGE_OVER21], over21="yes")
+    with pytest.raises(ValidationError):
+        Draft202012Validator(ageSchema).validate(badFlag)
+
     # Distinct across copies; each verifies as a member of the committed B_age.
     assert len({a.said for a in ageCopies}) == BULK_SIZE
     for k, age in enumerate(ageCopies):
         assert _verify_membership(age.said, ageNonces.v(k), blistAge, Bage)
+
+    # Pinned reproducible values (derived, not pasted).
+    assert ageReg.said == "EEoc-CPP2nh8RoNYLL1fLKDYogKM9N2aKhuOwvk_qTiv"   # shared age registry
+    assert Bage == "EAVHvdSmGMTUudmJpnktavMhJosgr9p8HgfzIogDumtd"          # blinded aggregate B_age
+    assert ageCopies[0].said == "EHApv7RymJmbsCOvhzUuXgNFg_2IP0-MstWfNWj4oom0"
+    assert ageAggors[0].agid == "EIhjnMKnP0I7Tzngtv4DPnvTc8szhi0NIdIQhXm0GZLU"
 
     # Selective disclosure over copy 0's aggregate: reveal over-21 + issuee, hide the rest.
     disclosed, _ = ageAggors[0].disclose(indices=[AGE_ISSUEE, AGE_OVER21])
@@ -826,6 +847,8 @@ def test_partition_across_verifiers_JSON():
     assert k1 != k2                                       # per-verifier spend is injective
     pres1 = _presentation(kind, v1, idCopies, ageCopies, presNonces)
     pres2 = _presentation(kind, v2, idCopies, ageCopies, presNonces)
+    assert pres1.said == "EAkAGbSXZo8nT1HOvI8gF-zMeFLw_ymmMafsRZao2lTi"   # Alcove context
+    assert pres2.said == "EFBArucmWAjDKX-oE25MUvaVEWgqiCj49UTbH9XJL56_"   # dispensary context
 
     # Each presentation verifies (I2I same-holder to copy-k sources) and rides the over-21
     # selective disclosure.
@@ -837,6 +860,15 @@ def test_partition_across_verifiers_JSON():
         assert Aggor.verifyDisclosure(disclosed, kind=kind)
     # Self-presentation: holder == subject (unlike the guardianship represented case).
     assert pres1.sad['i'] == idCopies[k1].iseaid == ALICES[k1]
+
+    # The presentation validates against its purpose-authored schema, and the schema
+    # ENFORCES the I2I self-presentation operators: a swapped operator is rejected.
+    presSchema = assert_acdc_schema_valid(pres1)
+    assert_acdc_schema_valid(pres2, schema=presSchema)
+    badOp = json.loads(json.dumps(pres1.sad))
+    badOp['e']['identity']['o'] = 'NI2I'
+    with pytest.raises(ValidationError):
+        Draft202012Validator(presSchema).validate(badOp)
 
     # --- PARTITIONED: the two contexts share NONE of the per-copy identifiers, INCLUDING
     # the holder AID (the independent-AID variant's payoff). ---
@@ -955,23 +987,31 @@ def test_disclosure_gating_and_revocation_JSON():
         if not (agreeMsg.sad['r'] == "/ipex/agree" and agreeMsg.sad['p'] == offer.said
                 and keyState.verify(sig=sig.raw, ser=agreeMsg.raw)):
             return None
-        presCompact = _presentation(kind, verifier, idCopies, ageCopies, presNonces,
-                                    compactify=True)
+        # The grant carries the EXPANDED presentation (edges visible, so the verifier can
+        # walk the I2I chain to the source SAIDs), the age selective disclosure, and the
+        # membership proof (v_k + list + B). The issuer-committed source SAIDs and v_k
+        # cross the wire ONLY here -- after the contract -- never in the pre-agree offer.
         ageDisc, _ = ageAggors[k].disclose(indices=[AGE_ISSUEE, AGE_OVER21])
         return exchange(sender=ALICES[k], receiver=verifier, route="/ipex/grant",
                         prior=agreeMsg.said,
-                        attributes=dict(acdc=presCompact.sad, ageDisclosure=ageDisc,
+                        attributes=dict(acdc=pres.sad, ageDisclosure=ageDisc,
                                         membership=dict(v=ageNonces.v(k), blist=ageBlist,
                                                         B=Bage)),
                         stamp=GRANT_STAMP, kind=kind)
 
     # A forged signature unlocks nothing.
     assert disclose(agree, _SIGNERS[0].sign(ser=agree.raw, index=0)) is None
-    # A valid agree unlocks the grant; v_k appears ONLY now, and the verifier can prove
-    # copy k is a legitimate member of the committed set from the grant's disclosure.
+    # A valid agree unlocks the grant; v_k and the source SAIDs appear ONLY now.
     grant = disclose(agree, vSig)
     assert grant is not None and grant.sad['p'] == agree.said
     assert ageNonces.v(k).encode() in grant.raw                 # v_k revealed only in the grant
+    assert idCopies[k].said.encode() in grant.raw               # source SAIDs revealed...
+    assert ageCopies[k].said.encode() in grant.raw              # ...only post-agree
+    # The verifier walks the chain from the grant: the presentation's age edge names the
+    # source, the source is a proven member of the committed set, and it discloses over-21.
+    granted = grant.sad['a']['acdc']
+    assert granted['e']['age']['n'] == ageCopies[k].said        # edge -> the disclosed source
+    assert granted['e']['identity']['n'] == idCopies[k].said
     assert _verify_membership(ageCopies[k].said, ageNonces.v(k), ageBlist, Bage)
     assert grant.sad['a']['ageDisclosure'][AGE_OVER21]['over21'] is True
 
@@ -1032,6 +1072,7 @@ def test_bulk_serialization_kinds(kind):
     pres2 = _presentation(kind, DISPENSARY, idCopies, ageCopies, presNonces)
     assert _verify_presentation(pres1, idCopies[k1], ageCopies[k1])
     assert _verify_presentation(pres2, idCopies[k2], ageCopies[k2])
+    assert_acdc_schema_valid(pres1)                  # presentation schema-valid on every kind
     assert _context_correlators(k1, idCopies, ageCopies, ageAggors, pres1).isdisjoint(
         _context_correlators(k2, idCopies, ageCopies, ageAggors, pres2))
 
