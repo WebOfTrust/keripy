@@ -991,3 +991,70 @@ def test_disclosure_gating_and_revocation_JSON():
     # The graph still binds (edges are immutable), but a status-checking verifier refuses.
     assert _verify_presentation(pres, idCopies[k], ageCopies[k])   # graph still binds...
     assert status_issued(revoked, 2) is False                      # ...yet status forbids it
+
+
+# ===========================================================================
+# Phase 6: the invariants hold across every serialization kind.
+# ===========================================================================
+@pytest.mark.parametrize("kind", [Kinds.json, Kinds.cesr, Kinds.cbor, Kinds.mgpk])
+def test_bulk_serialization_kinds(kind):
+    """Phases 1-5 invariants hold across every serialization kind, not just JSON.
+
+    Exercises the same flows -- the bulk sedi-id and sedi-age sets issued to per-context
+    holder AIDs ALICE_k, the index-aligned E1E edge, the blinded-aggregate membership
+    proof, the per-verifier partition, and the blindable set-state gate -- over CESR (the
+    native KERI wire format) and CBOR/MGPK, asserting the behavioral invariants without
+    pinning per-kind SAIDs. (The no-correlator-on-the-wire substring checks are
+    JSON-specific: the CESR wire form base64-encodes the payload.)
+    """
+    idNonces = _BulkNonces(BULK_SALT)
+    idReg, idCopies, idBlist, Bid, idIssued = _sedi_id_set(kind, idNonces)
+    ageNonces = _BulkNonces(BULK_AGE_SALT)
+    ageReg, ageCopies, ageAggors, ageBlist, Bage, ageIssued = _sedi_age_set(
+        kind, idCopies, ageNonces)
+
+    # Per copy: schema-valid; issued to its own per-context holder AID; index-aligned E1E;
+    # a valid member of the committed aggregate.
+    for k in range(BULK_SIZE):
+        assert idCopies[k].ilk == Ilks.acm and idCopies[k].kind == kind
+        assert ageCopies[k].ilk == Ilks.acg
+        assert idCopies[k].iseaid == ageCopies[k].iseaid == ALICES[k]
+        assert_acdc_schema_valid(idCopies[k])
+        assert_acdc_schema_valid(ageCopies[k])
+        assert _verify_identity_edge(ageCopies[k], idCopies[k])       # E1E on every kind
+        assert _verify_membership(idCopies[k].said, idNonces.v(k), idBlist, Bid)
+        assert _verify_membership(ageCopies[k].said, ageNonces.v(k), ageBlist, Bage)
+
+    # Partition across two contexts holds on every kind (holder AID included).
+    presNonces = _BulkNonces(PRESENT_SALT)
+    k1, k2 = _copy_index_for(ALCOVE), _copy_index_for(DISPENSARY)
+    pres1 = _presentation(kind, ALCOVE, idCopies, ageCopies, presNonces)
+    pres2 = _presentation(kind, DISPENSARY, idCopies, ageCopies, presNonces)
+    assert _verify_presentation(pres1, idCopies[k1], ageCopies[k1])
+    assert _verify_presentation(pres2, idCopies[k2], ageCopies[k2])
+    assert _context_correlators(k1, idCopies, ageCopies, ageAggors, pres1).isdisjoint(
+        _context_correlators(k2, idCopies, ageCopies, ageAggors, pres2))
+
+    # Private presentation: compact and expanded forms share one SAID.
+    presCompact = _presentation(kind, ALCOVE, idCopies, ageCopies, presNonces,
+                                compactify=True)
+    assert presCompact.said == pres1.said
+    assert isinstance(pres1.sad['e'], dict)          # sections inline...
+    assert isinstance(presCompact.sad['e'], str)     # ...vs. collapsed to a SAID
+
+    # Selective over-21 disclosure verifies via the AGID; blindable set state resolves.
+    disclosed, _ = ageAggors[k1].disclose(indices=[AGE_ISSUEE, AGE_OVER21])
+    assert disclosed[AGE_OVER21]['over21'] is True
+    assert Aggor.verifyDisclosure(disclosed, kind=kind)
+    assert Blinder.unblind(said=ageIssued.sad['b'], acdc=Bage, states=SET_STATES,
+                           salt=BULK_AGE_REG_SALT, sn=1).state == 'issued'
+
+
+if __name__ == "__main__":
+    test_bulk_derivation_primitive_JSON()
+    test_bulk_sedi_id_set_JSON()
+    test_bulk_sedi_age_set_JSON()
+    test_partition_across_verifiers_JSON()
+    test_disclosure_gating_and_revocation_JSON()
+    for _kind in (Kinds.json, Kinds.cesr, Kinds.cbor, Kinds.mgpk):
+        test_bulk_serialization_kinds(_kind)
