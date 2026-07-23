@@ -10,15 +10,15 @@ from typing import Optional
 from hio.base import doing
 from hio.help import decking, ogler
 
-from ..kering import (Vrsn_1_0, ClosedError,
+from ..kering import (ClosedError,
                       ConfigurationError, MissingAnchorError,
                       ValidationError, LikelyDuplicitousError,
                       MissingRegistryError)
 
 from ..core import (Parser, Schemer, SerderKERI, SerderACDC,
-                    Counter, Codens, MtrDex, NumDex,
+                    MtrDex, NumDex,
                     Number, Diger, TraitDex,
-                    Seqner, Saider, Prefixer)
+                    Seqner, Saider, Prefixer, SealEvent, messagize)
 from ..db import snKey, dgKey
 from ..vc import credential
 
@@ -1044,11 +1044,10 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
         postman.send(serder=source, attachment=atc)
 
     serder, prefixer, seqner, saider = reger.cloneCred(creder.said)
-    atc = bytearray(Counter(Codens.SealSourceTriples,
-                                 count=1, version=Vrsn_1_0).qb64b)
-    atc.extend(prefixer.qb64b)
-    atc.extend(seqner.qb64b)
-    atc.extend(saider.qb64b)
+    msg = messagize(creder,
+                    bonds=[SealEvent(i=prefixer, s=seqner, d=saider)],
+                    framed=True, gvrsn=creder.pvrsn)
+    atc = bytes(msg[creder.size:])
     postman.send(serder=creder, attachment=atc)
 
 
