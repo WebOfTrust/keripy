@@ -126,9 +126,7 @@ class WebRegBaser(WebDBer):
         self.env = self.db.env
 
         _before = set(self.__dict__)
-        # Create by opening first time named sub DBs within main DB instance
-        # Names end with "." as sub DB name must include a non Base64 character
-        # to avoid namespace collisions with Base64 identifier prefixes.
+        
         self.evts = SerderSuber(db=self, subkey='evts.', klas=SerderACDC)
         self.ancs = CatCesrSuber(db=self, subkey='ancs.',
                                 klas=(Number, Diger))
