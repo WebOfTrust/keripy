@@ -122,6 +122,7 @@ class WebRegBaser(WebDBer):
             clear=clear or self.temp,
             storageOpener=opener,
         )
+        self._version = None
         self.env = self.db.env
 
         _before = set(self.__dict__)
@@ -138,6 +139,32 @@ class WebRegBaser(WebDBer):
         self._subdb_names = set(self.__dict__) - _before
 
         self.opened = True
+
+    def getVer(self):
+        """Read the version from the opened browser database.
+
+        Returns:
+            str | None: persisted database version, or None when the database
+                is not open or has no version
+        """
+        if self.db is None:
+            return None
+
+        return self.db.getVer()
+
+    def setVer(self, val):
+        """Write the version to the opened browser database.
+
+        Parameters:
+            val (str | bytes): database version
+
+        Raises:
+            RuntimeError: if the browser database is not open
+        """
+        if self.db is None:
+            raise RuntimeError("WebRegBaser is not open")
+
+        self.db.setVer(val)
 
     def close(self, *, clear=False):
         """
