@@ -13,7 +13,7 @@ from ..kering import ValidationError, Version, Vrsn_1_0, Vrsn_2_0, Kinds, Ilks
 from ..core import (Counter, Number, Diger, Saider,
                     Prefixer, Kevery, Router,
                     Revery, Parser, SerderKERI,
-                    Serder, Codens, NumDex)
+                    Serder, Codens, NumDex, exchange)
 from ..peer import Exchanger, specialExchange, cloneMessage
 
 from .delegating import Anchorer
@@ -349,14 +349,40 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None, version=None, kind
         return exn, ims
 
     version = version if version is not None else Version
-    ims = hab.exchange(route="/multisig/icp",
-                       modifiers=dict(),
-                       attributes=data,
-                       embeds=embeds,
-                       version=version,
-                       kind=kind,
-                       framed=True,
-                       gvrsn=version)
+
+    # Sign the wrapped child by SAID directly in the outer payload
+    data = dict(data)
+    data["d"] = serder.said
+
+    # Parse the child using its own stream version before re-emitting it
+    parsed = Parser(version=serder.gvrsn if serder.gvrsn else serder.pvrsn).parse(ims=bytearray(icp),
+                                                                                  framed=True,
+                                                                                  processive=False)
+    if not parsed:
+        raise ValueError("V2 multisig payloads must be framed CESR streams")
+    if len(parsed) != 1:
+        raise ValueError("Expected one multisig payload stream")
+
+    # Re-encode the child as one nested V2 substream
+    nests = serializeParsedSubstream(parsed[0], gvrsn=version)
+
+    # Build the outer multisig exn
+    exn = exchange(sender=hab.pre,
+                   route="/multisig/icp",
+                   modifiers=dict(),
+                   attributes=data,
+                   version=version,
+                   pvrsn=version,
+                   gvrsn=version,
+                   kind=kind)
+
+    # Endorse the outer exn and attach the one nested child stream
+    ims = hab.endorse(serder=exn,
+                      last=False,
+                      framed=False,
+                      gvrsn=version,
+                      nests=[nests])
+
     exn = SerderKERI(raw=ims)
 
     return exn, bytearray(ims[exn.size:])
@@ -400,14 +426,41 @@ def multisigRotateExn(ghab, smids, rmids, rot, version=None, kind=None):
         return exn, atc
 
     version = version if version is not None else Version
-    ims = ghab.mhab.exchange(route="/multisig/rot",
-                             modifiers=dict(),
-                             attributes=data,
-                             embeds=embeds,
-                             version=version,
-                             kind=kind,
-                             framed=True,
-                             gvrsn=version)
+
+    # Sign the wrapped child by SAID directly in the outer payload
+    data = dict(data)
+    serder = Serder(raw=rot)
+    data["d"] = serder.said
+
+    # Parse the child using its own stream version before re-emitting it
+    parsed = Parser(version=serder.gvrsn if serder.gvrsn else serder.pvrsn).parse(ims=bytearray(rot),
+                                                                                  framed=True,
+                                                                                  processive=False)
+    if not parsed:
+        raise ValueError("V2 multisig payloads must be framed CESR streams")
+    if len(parsed) != 1:
+        raise ValueError("Expected one multisig payload stream")
+
+    # Re-encode the child as one nested V2 substream
+    nests = serializeParsedSubstream(parsed[0], gvrsn=version)
+
+    # Build the outer multisig exn
+    exn = exchange(sender=ghab.mhab.pre,
+                   route="/multisig/rot",
+                   modifiers=dict(),
+                   attributes=data,
+                   version=version,
+                   pvrsn=version,
+                   gvrsn=version,
+                   kind=kind)
+
+    # Endorse the outer exn and attach the one nested child stream
+    ims = ghab.mhab.endorse(serder=exn,
+                            last=False,
+                            framed=False,
+                            gvrsn=version,
+                            nests=[nests])
+
     exn = SerderKERI(raw=ims)
 
     return exn, bytearray(ims[exn.size:])
@@ -451,14 +504,37 @@ def multisigInteractExn(ghab, aids, ixn, version=None, kind=None):
         return exn, atc
 
     version = version if version is not None else Version
-    ims = ghab.mhab.exchange(route="/multisig/ixn",
-                             modifiers=dict(),
-                             attributes=data,
-                             embeds=embeds,
-                             version=version,
-                             kind=kind,
-                             framed=True,
-                             gvrsn=version)
+
+    # Sign the wrapped child by SAID directly in the outer payload
+    data = dict(data)
+    serder = Serder(raw=ixn)
+    data["d"] = serder.said
+
+    parsed = Parser(version=serder.gvrsn if serder.gvrsn else serder.pvrsn).parse(ims=bytearray(ixn),
+                                                                                  framed=True,
+                                                                                  processive=False)
+    if not parsed:
+        raise ValueError("V2 multisig payloads must be framed CESR streams")
+    if len(parsed) != 1:
+        raise ValueError("Expected one multisig payload stream")
+
+    nests = serializeParsedSubstream(parsed[0], gvrsn=version)
+
+    exn = exchange(sender=ghab.mhab.pre,
+                   route="/multisig/ixn",
+                   modifiers=dict(),
+                   attributes=data,
+                   version=version,
+                   pvrsn=version,
+                   gvrsn=version,
+                   kind=kind)
+
+    ims = ghab.mhab.endorse(serder=exn,
+                            last=False,
+                            framed=False,
+                            gvrsn=version,
+                            nests=[nests])
+
     exn = SerderKERI(raw=ims)
 
     return exn, bytearray(ims[exn.size:])
@@ -616,14 +692,36 @@ def multisigRpyExn(ghab, rpy, version=None, kind=None):
         return exn, atc
 
     version = version if version is not None else Version
-    ims = ghab.mhab.exchange(route="/multisig/rpy",
-                             modifiers=dict(),
-                             attributes=data,
-                             embeds=embeds,
-                             version=version,
-                             kind=kind,
-                             framed=True,
-                             gvrsn=version)
+
+    data = dict(data)
+    serder = Serder(raw=rpy)
+    data["d"] = serder.said
+
+    parsed = Parser(version=serder.gvrsn if serder.gvrsn else serder.pvrsn).parse(ims=bytearray(rpy),
+                                                                                  framed=True,
+                                                                                  processive=False)
+    if not parsed:
+        raise ValueError("V2 multisig payloads must be framed CESR streams")
+    if len(parsed) != 1:
+        raise ValueError("Expected one multisig payload stream")
+
+    nests = serializeParsedSubstream(parsed[0], gvrsn=version)
+
+    exn = exchange(sender=ghab.mhab.pre,
+                   route="/multisig/rpy",
+                   modifiers=dict(),
+                   attributes=data,
+                   version=version,
+                   pvrsn=version,
+                   gvrsn=version,
+                   kind=kind)
+
+    ims = ghab.mhab.endorse(serder=exn,
+                            last=False,
+                            framed=False,
+                            gvrsn=version,
+                            nests=[nests])
+
     exn = SerderKERI(raw=ims)
 
     return exn, bytearray(ims[exn.size:])
@@ -746,7 +844,7 @@ class Multiplexor:
         Parameters:
             serder (SerderKERI): peer-to-peer exn "/multisig" message to coordinate
                 from other participants
-            nests (list | None): parsed nested substreams for V2 embed-free
+            nests (list | None): parsed nested substreams for single-child V2
                 exchanges
 
         Returns:
@@ -756,18 +854,33 @@ class Multiplexor:
         embed = ked.get('e')
         nests = nests if nests is not None else []
         payload = ked['a']
-        manifest = payload.get("embeds") if isinstance(payload, dict) else None
-        if embed is not None:
-            esaid = embed['d']
-        elif manifest is not None:
-            esaid = manifest['d']
-        elif len(nests) == 1:
-            nserder = nests[0]["serder"] if isinstance(nests[0], dict) else nests[0].serder
-            esaid = nserder.said
-        else:
-            return
         sender = ked['i']
         route = ked['r']
+        ovrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn
+
+        if ovrsn.major == Vrsn_1_0.major:
+            if embed is None or "d" not in embed:
+                return
+
+            # Preserve the legacy V1 aggregation key for both single- and multi-child wrappers
+            esaid = embed["d"]
+        else:
+            if len(nests) != 1:
+                raise ValidationError(f"invalid multisig nested substreams count={len(nests)}, expected 1")
+
+            signed = payload.get("d") if isinstance(payload, dict) else None
+            if route in ("/multisig/icp", "/multisig/rot", "/multisig/ixn", "/multisig/rpy") and signed is None:
+                raise ValidationError(f"invalid multisig payload missing signed child SAID for route {route}")
+
+            nserder = nests[0]["serder"] if isinstance(nests[0], dict) else nests[0].serder
+            if signed is not None and nserder.said != signed:
+                raise ValidationError(f"invalid multisig nested substream: {nserder.said} != {signed}")
+
+            # Derive the legacy single-child embed digest so V2 proposals aggregate
+            # with the same key as their V1 wrapper shape
+            label = route.rsplit("/", 1)[-1]
+            _, esad = Saider.saidify(sad={label: nserder.sad, "d": ""})
+            esaid = esad["d"]
 
         # Route specific logic to ensure this is a valid exn for a local participant.
         match route.split("/"):
@@ -798,6 +911,7 @@ class Multiplexor:
 
         if len(self.hby.db.meids.get(keys=(esaid,))) == 0:  # No one has submitted this message yet
             if sender not in self.hby.habs:  # We are not sending this one, notify us
+                # Notify once when a remote participant first introduces this proposal
                 data = dict(
                     r=route,
                     d=serder.said
@@ -834,6 +948,7 @@ class Multiplexor:
                     # ... and parse
                     self.psr.parse(ims=ims, local=True)
                 else:
+                    # Rebuild the approved nested child stream and parse it as V2
                     for nest in nests:
                         ims.extend(serializeParsedSubstream(nest))
 
@@ -844,6 +959,7 @@ class Multiplexor:
             else:
                 # Should we prod the user with another submission if we haven't already approved it?
                 route = ked['r']
+                # Notify with the shared child SAID so follow-up approvals join the same bucket
                 data = dict(
                     r=route,
                     d=serder.said,
