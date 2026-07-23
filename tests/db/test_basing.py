@@ -63,6 +63,11 @@ def test_baser():
     assert isinstance(baser.pses, IoDupSuber)
     assert isinstance(baser.dels, OnIoDupSuber)
     assert isinstance(baser.ldes, OnIoDupSuber)
+    # essrs deserializes ESSR payloads as Texter. Guards against a `klass=`
+    # misspelling of the `klas=` kwarg silently falling back to coring.Matter
+    # (the v1.3.5 bug fixed in PR #1538).
+    assert isinstance(baser.essrs, CesrIoSetSuber)
+    assert baser.essrs.klas is Texter
 
     baser.close(clear=True)
     assert not os.path.exists(baser.path)
