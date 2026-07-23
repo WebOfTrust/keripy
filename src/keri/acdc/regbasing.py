@@ -47,7 +47,7 @@ class RegBaser(LMDBer):
 
         .heads is named subDB instance of CesrSuber (klas=Saider) for the
             current accepted registry heads.
-            subkey 'heads.'
+            subkey 'heds.'
             Key: registry SAID.
             Value: SAID of the latest accepted registry event.
             Only one value per DB key is allowed.
@@ -110,7 +110,7 @@ class RegBaser(LMDBer):
         self.ancs = CatCesrSuber(db=self, subkey='ancs.',
                                 klas=(Number, Diger))
         self.tels = CesrOnSuber(db=self, subkey='tels.', klas=Saider)
-        self.heads = CesrSuber(db=self, subkey='heads.', klas=Saider)
+        self.heads = CesrSuber(db=self, subkey='heds.', klas=Saider)
         self.maes = B64OnIoSetSuber(db=self, subkey='maes.')
         self.ooes = B64OnIoSetSuber(db=self, subkey='ooes.')
 

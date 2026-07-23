@@ -48,7 +48,7 @@ class WebRegBaser(WebDBer):
 
         .heads is named subDB instance of CesrSuber (klas=Saider) for the
             current accepted registry heads.
-            subkey 'heads.'
+            subkey 'heds.'
             Key: registry SAID.
             Value: SAID of the latest accepted registry event.
             Only one value per DB key is allowed.
@@ -89,7 +89,7 @@ class WebRegBaser(WebDBer):
             "evts.",
             "ancs.",
             "tels.",
-            "heads.",
+            "heds.",
             "maes.",
             "ooes.",
         ]
@@ -132,7 +132,7 @@ class WebRegBaser(WebDBer):
         self.ancs = CatCesrSuber(db=self, subkey='ancs.',
                                 klas=(Number, Diger))
         self.tels = CesrOnSuber(db=self, subkey='tels.', klas=Saider)
-        self.heads = CesrSuber(db=self, subkey='heads.', klas=Saider)
+        self.heads = CesrSuber(db=self, subkey='heds.', klas=Saider)
         self.maes = B64OnIoSetSuber(db=self, subkey='maes.')
         self.ooes = B64OnIoSetSuber(db=self, subkey='ooes.')
         self._subdb_names = set(self.__dict__) - _before

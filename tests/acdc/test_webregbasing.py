@@ -56,7 +56,7 @@ def test_webregbaser_store_contract_and_persistence():
             "evts.",
             "ancs.",
             "tels.",
-            "heads.",
+            "heds.",
             "maes.",
             "ooes.",
         ]
