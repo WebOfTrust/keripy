@@ -588,3 +588,90 @@ def test_ipex_v2_rejects_unsupported_nested_frame():
             ipexOffer(hab=hab,
                       message="Here is the offered credential",
                       acdc=bad)
+
+
+def test_ipex_v2_responders_set_receiver():
+    """Responder verbs address the prior's sender; offer honors an explicit recp.
+
+    apply and grant already thread ``receiver=recp``; offer, agree, admit, and
+    spurn respond to a prior message whose sender is the party to address, so
+    their receiver derives from that prior's ``i`` field. An offer opened with no
+    prior (the offer-first bootstrap) takes an explicit ``recp`` instead.
+    """
+    with openHby(name="ipex-v2-receiver",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        holder = hby.makeHab(name="holder")
+        verifier = hby.makeHab(name="verifier")
+
+        registry = regcept(israid=holder.pre)
+        acdc = acdcmap(israid=holder.pre,
+                       regid=registry.said,
+                       attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                       iseaid=holder.pre)
+        iss = update(regid=registry.said,
+                     prior=registry.said,
+                     acdc=acdc.said,
+                     state="issued")
+        anc = holder.msgOwnEvent(sn=0, framed=False, gvrsn=Vrsn_2_0)
+        schema = acdc.sad["s"]["$id"]
+
+        # verifier applies to holder
+        applyExn, _ = ipexApply(hab=verifier,
+                                recp=holder.pre,
+                                message="Prove over-21",
+                                schema=schema,
+                                attrs=dict(role="member"))
+        assert applyExn.ked["i"] == verifier.pre
+        assert applyExn.ked["ri"] == holder.pre
+
+        # holder offers, addressing the applicant (apply's sender) by derivation
+        offerExn, _ = ipexOffer(hab=holder,
+                                message="Here are the terms",
+                                acdc=acdc,
+                                apply=applyExn)
+        assert offerExn.ked["i"] == holder.pre
+        assert offerExn.ked["ri"] == verifier.pre
+
+        # verifier agrees, addressing the holder (offer's sender)
+        agreeExn, _ = ipexAgree(hab=verifier,
+                                message="I agree",
+                                offer=offerExn)
+        assert agreeExn.ked["ri"] == holder.pre
+
+        # holder grants to verifier
+        grantExn, _ = ipexGrant(hab=holder,
+                                recp=verifier.pre,
+                                message="Disclosure",
+                                acdc=acdc,
+                                iss=_nest(iss),
+                                anc=anc,
+                                agree=agreeExn)
+        assert grantExn.ked["ri"] == verifier.pre
+
+        # verifier admits, addressing the holder (grant's sender)
+        admitExn, _ = ipexAdmit(hab=verifier,
+                                message="Thanks",
+                                grant=grantExn)
+        assert admitExn.ked["ri"] == holder.pre
+
+        # holder spurns the apply, addressing its sender (verifier)
+        spurnExn, _ = ipexSpurn(hab=holder,
+                                message="No thanks",
+                                spurned=applyExn)
+        assert spurnExn.ked["ri"] == verifier.pre
+
+        # offer-first bootstrap: no prior apply, explicit recp fixes the receiver
+        bootExn, _ = ipexOffer(hab=holder,
+                               message="Opening offer",
+                               acdc=acdc,
+                               recp=verifier.pre)
+        assert bootExn.ked["p"] == ""
+        assert bootExn.ked["ri"] == verifier.pre
+
+        # an explicit recp overrides the derived receiver
+        overrideExn, _ = ipexAgree(hab=verifier,
+                                   message="I agree",
+                                   offer=offerExn,
+                                   recp=holder.pre)
+        assert overrideExn.ked["ri"] == holder.pre

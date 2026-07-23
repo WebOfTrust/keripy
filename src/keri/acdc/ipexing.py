@@ -346,7 +346,7 @@ def apply(hab, recp, message, schema, attrs, dt=None, kind=None, gvrsn=None):
     return serder, atc
 
 
-def offer(hab, message, acdc, apply=None, dt=None, kind=None, gvrsn=None):
+def offer(hab, message, acdc, apply=None, recp=None, dt=None, kind=None, gvrsn=None):
     """Create a signed V2 IPEX ``offer`` exchange with a nested ACDC stream.
 
     Parameters:
@@ -354,6 +354,9 @@ def offer(hab, message, acdc, apply=None, dt=None, kind=None, gvrsn=None):
         message (str): Human-readable offer message.
         acdc (Serder | bytes | bytearray): Offered credential artifact.
         apply (Serder | None): Optional prior ``apply`` exchange.
+        recp (str | None): Optional recipient AID. Defaults to the prior
+            ``apply`` sender; supply it directly for an offer-first exchange
+            opened with no prior.
         dt (str | None): Optional RFC-3339 timestamp override.
         kind (str | None): Optional serialization kind override.
         gvrsn (Versionage | None): Optional CESR genus version override.
@@ -362,12 +365,14 @@ def offer(hab, message, acdc, apply=None, dt=None, kind=None, gvrsn=None):
         tuple[Serder, bytearray]: Outer exchange serder and detached attachment
             bytes for the signed V2 stream.
     """
-    # Get the prior event (apply)
+    # Get the prior event (apply) and the party to address (its sender)
     prior = apply.said if apply is not None else ""
-    
+    receiver = recp if recp is not None else (apply.ked["i"] if apply is not None else "")
+
     # Build the body
     serder = exchange(
         sender=hab.pre,
+        receiver=receiver,
         prior=prior,
         route="/ipex/offer",
         stamp=dt,
@@ -387,13 +392,15 @@ def offer(hab, message, acdc, apply=None, dt=None, kind=None, gvrsn=None):
     return serder, atc
 
 
-def agree(hab, message, offer, dt=None, kind=None, gvrsn=None):
+def agree(hab, message, offer, recp=None, dt=None, kind=None, gvrsn=None):
     """Create a signed V2 IPEX ``agree`` exchange.
 
     Parameters:
         hab (Hab): Habitat creating and signing the exchange.
         message (str): Human-readable agreement message.
         offer (Serder): Prior ``offer`` exchange being accepted.
+        recp (str | None): Optional recipient AID. Defaults to the prior
+            ``offer`` sender.
         dt (str | None): Optional RFC-3339 timestamp override.
         kind (str | None): Optional serialization kind override.
         gvrsn (Versionage | None): Optional CESR genus version override.
@@ -402,8 +409,10 @@ def agree(hab, message, offer, dt=None, kind=None, gvrsn=None):
         tuple[Serder, bytearray]: Outer exchange serder and detached attachment
             bytes for the signed V2 stream.
     """
+    receiver = recp if recp is not None else offer.ked["i"]
     serder = exchange(
         sender=hab.pre,
+        receiver=receiver,
         prior=offer.said,
         route="/ipex/agree",
         stamp=dt,
@@ -469,13 +478,15 @@ def grant(hab, recp, message, acdc, iss=None, anc=None, agree=None,
     return serder, atc
 
 
-def admit(hab, message, grant, dt=None, kind=None, gvrsn=None):
+def admit(hab, message, grant, recp=None, dt=None, kind=None, gvrsn=None):
     """Create a signed V2 IPEX ``admit`` exchange.
 
     Parameters:
         hab (Hab): Habitat creating and signing the exchange.
         message (str): Human-readable admission message.
         grant (Serder): Prior ``grant`` exchange being acknowledged.
+        recp (str | None): Optional recipient AID. Defaults to the prior
+            ``grant`` sender.
         dt (str | None): Optional RFC-3339 timestamp override.
         kind (str | None): Optional serialization kind override.
         gvrsn (Versionage | None): Optional CESR genus version override.
@@ -484,8 +495,10 @@ def admit(hab, message, grant, dt=None, kind=None, gvrsn=None):
         tuple[Serder, bytearray]: Outer exchange serder and detached attachment
             bytes for the signed V2 stream.
     """
+    receiver = recp if recp is not None else grant.ked["i"]
     serder = exchange(
         sender=hab.pre,
+        receiver=receiver,
         prior=grant.said,
         route="/ipex/admit",
         stamp=dt,
@@ -499,13 +512,15 @@ def admit(hab, message, grant, dt=None, kind=None, gvrsn=None):
     return serder, atc
 
 
-def spurn(hab, message, spurned, dt=None, kind=None, gvrsn=None):
+def spurn(hab, message, spurned, recp=None, dt=None, kind=None, gvrsn=None):
     """Create a signed V2 IPEX ``spurn`` exchange.
 
     Parameters:
         hab (Hab): Habitat creating and signing the exchange.
         message (str): Human-readable rejection message.
         spurned (Serder): Prior exchange being rejected.
+        recp (str | None): Optional recipient AID. Defaults to the spurned
+            message's sender.
         dt (str | None): Optional RFC-3339 timestamp override.
         kind (str | None): Optional serialization kind override.
         gvrsn (Versionage | None): Optional CESR genus version override.
@@ -514,8 +529,10 @@ def spurn(hab, message, spurned, dt=None, kind=None, gvrsn=None):
         tuple[Serder, bytearray]: Outer exchange serder and detached attachment
             bytes for the signed V2 stream.
     """
+    receiver = recp if recp is not None else spurned.ked["i"]
     serder = exchange(
         sender=hab.pre,
+        receiver=receiver,
         prior=spurned.said,
         route="/ipex/spurn",
         stamp=dt,
