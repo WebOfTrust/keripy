@@ -40,15 +40,37 @@ State's endorsement. This is the E1E standing edge (added in PR #1523/#1527, the
 edge #1515 worried creates a join key) made SAFE by pointing it at a fresh,
 per-context far node -- Daniel's own proposed mitigation in #1515, realized.
 
+Two teaching axes, kept distinct (panel SKP-F1). The cross-verifier partition is
+delivered by the PER-COPY SAIDs (bulk issuance) and holds regardless of the edge
+label; the index-aligned E1E edge is a SECOND, correlated axis -- it shows bulk
+issuance rescuing the specific standing edge #1515 worried about. Read the partition
+win as "per-copy SAIDs + per-context AID", and the E1E alignment as "and the standing
+edge follows the same partition". (Because this example consumes E1E it must branch
+off the in-review #1527, not merged main -- a deliberate coupling flagged for Sam.)
+
+E1E coercion caveat (panel SPC-F3, inherited from #1527). The edge operator lives in
+the schema-level `o` field, not a CESR genus/version code, so E1E is not a detectable
+version bump: a pre-#1527 verifyChain silently COERCES an unknown operator to I2I/NI2I
+rather than rejecting on a version boundary (src/keri/vdr/verifying.py). For THIS
+example's edge shape (issuer STATE != issuee ALICE_k) that coercion fails closed
+(rejects), so the graph validates only against a #1527+ verifier and rides that
+dependency until the operator family is ratified with a version signal.
+
 The privacy claim, scoped honestly (Sam's #1515 coda). Bulk issuance defeats
 cryptographically PROVABLE third-party correlation via public SAIDs. It does not
 claim perfect unlinkability against statistical/contextual correlation by colluding
 verifiers (an AI "super correlator" defeats pure unlinkability eventually). Its value
 is DECORRELATION-BY-ENFORCEMENT: a partitioned identifier set makes any downstream
 reappearance of one context's identifiers prima facie evidence of a Utah 63A-20-701
-data-loyalty violation -- granular provenance makes enforcement precise. The
-independent-AID and independent-registry variants (spec 15.4) raise the technical bar
-further and are a deliberate follow-on, not this example.
+data-loyalty violation -- granular provenance makes enforcement precise. Residuals
+this example does NOT close, beyond the shared registry/B (see the partition test):
+(a) the full [b_k] list disclosed for membership is itself a byte-identical
+cross-verifier join key, removable only by the Merkle-INCLUSION variant (panel
+PRV-F3); (b) even with per-context AID strings, a real deployment that witnesses the
+M holder AIDs on a shared witness pool / endpoint / mailbox re-links them via KEL
+discovery metadata (spec L2891; panel PRV-F2). The independent-AID and
+independent-registry/herd variants (spec 15.4) raise the technical bar further and are
+a deliberate follow-on (tick 6sjz), not this example.
 
 A note on altitude. Like the sibling examples, this one models the credential graph,
 the bulk derivation, the blinded aggregate, and the registry state at the
@@ -142,7 +164,21 @@ class _BulkNonces:
         return self._nonce(f"{k}" if j is None else f"{k}/{j}")
 
     def v(self, k):
-        """Copy k's blinding factor v_k, derived at the distinct path "k." (spec 15.4)."""
+        """Copy k's blinding factor v_k, derived at the path "k.".
+
+        SPEC-FIDELITY / INTEROP NOTE (ACDC review panel SPC-F1, 2026-07-23). ACDC
+        spec 15.4 is self-contradictory on this path: L2799 derives the top-level u_k
+        at path "k", and L2811 says v_k "is not the top-level UUID ... but an entirely
+        different UUID" YET states its derivation path is also "k". Since Salter.stretch
+        is a pure function of (salt, path), a spec-literal reading yields v_k == u_k,
+        violating the spec's own "entirely different" requirement. This example resolves
+        the contradiction by deriving v_k at the DISTINCT path "k." so v_k != u_k as the
+        spec intends. A spec-literal implementation (path "k") would compute a different
+        v_k, hence a different b_k and aggregate B, and its bulk-membership proofs would
+        NOT cross-verify with this one -- so ACDC 15.4 must be corrected to pin v_k's
+        path unambiguously (proposed fix: "k."). Until then, this path is a keripy-local
+        convention, not a ratified interop invariant.
+        """
         return self._nonce(f"{k}.")
 
 
@@ -152,6 +188,14 @@ def _blind_said(v, d):
     Concatenation (not XOR) because CESR crypto-agility means SAIDs and nonces are
     variable length. A commitment to b_k discloses nothing about d_k until v_k is
     revealed, so the list of b_k can be published while the SAIDs stay hidden.
+
+    SPEC-FIDELITY / INTEROP NOTE (panel SPC-F2). Spec 15.4 (L2813-2824) pins
+    concatenation-over-XOR and the ordered structure but does NOT pin (a) which digest
+    code H uses nor (b) whether the concatenation "+" / C is over qb64 TEXT or raw
+    bytes -- both change b_k and B. This example pins the concrete choice: concatenate
+    the qb64 TEXT of v_k and d_k and digest with Blake3-256 (the Diger default). A
+    signify-ts impl that concatenated raw bytes or used another digest code would not
+    cross-verify; ACDC 15.4 should pin H and the concatenation domain explicitly.
     """
     return Diger(ser=(v + d).encode()).qb64
 
