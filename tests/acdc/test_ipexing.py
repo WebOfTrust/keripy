@@ -3,6 +3,7 @@
 tests.acdc.test_ipexing module
 
 """
+import pytest
 from keri import Kinds, Vrsn_2_0
 from keri.acdc import (acdcmap, apply as ipexApply, admit as ipexAdmit,
                        agree as ipexAgree, grant as ipexGrant,
@@ -474,3 +475,116 @@ def test_ipex_v2_dispatch_linear_and_spurn():
             ("/exn/ipex/offer", "Bare offer for spurn path"),
             ("/exn/ipex/spurn", "I reject this offer"),
         ]
+
+
+def test_ipex_v2_nontransferable_nested_artifacts():
+    """Exercise the cigar signing path with nested IPEX artifacts."""
+    
+    # Set up non-transferable hab, recorder, exchanger and load IPEX handlers
+    with openHby(name="ipex-v2-nontrans",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test", transferable=False)
+        assert not hab.kever.prefixer.transferable
+        recorder = Recorder()
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(hby=hby, exc=exc, notifier=recorder)
+
+        # Registry Inception
+        registry = regcept(israid=hab.pre)
+
+        # Create ACDC, ISS and an ANC
+        acdc = acdcmap(israid=hab.pre,
+                       regid=registry.said,
+                       attribute=dict(d="", LEI="254900OPPU84GM83MG36"),
+                       iseaid=hab.pre)
+        iss = update(regid=registry.said,
+                     prior=registry.said,
+                     acdc=acdc.said,
+                     state="issued")
+        anc = hab.msgOwnEvent(sn=0, framed=False, gvrsn=Vrsn_2_0)
+        ancSerder = _serder(anc)
+        schema = acdc.sad["s"]["$id"]
+
+        # Build IPEX messages
+        applyExn, applyAtc = ipexApply(hab=hab,
+                                       recp=hab.pre,
+                                       message="Please issue a credential",
+                                       schema=schema,
+                                       attrs=dict(role="member"))
+        offerExn, offerAtc = ipexOffer(hab=hab,
+                                       message="Here is the offered credential",
+                                       acdc=acdc,
+                                       apply=applyExn)
+        agreeExn, agreeAtc = ipexAgree(hab=hab,
+                                       message="I agree to the offer",
+                                       offer=offerExn)
+        grantExn, grantAtc = ipexGrant(hab=hab,
+                                       recp=hab.pre,
+                                       message="Here is the granted credential",
+                                       acdc=acdc,
+                                       iss=iss,
+                                       anc=anc,
+                                       agree=agreeExn)
+
+        # Parse Offer for assertions
+        offerIms = bytearray(offerExn.raw)
+        offerIms.extend(offerAtc)
+        offerResults = Parser(version=Vrsn_2_0).parse(ims=offerIms,
+                                                      framed=False,
+                                                      processive=False)
+        assert offerIms == bytearray()
+        assert len(offerResults) == 1
+        offerResult = offerResults[0]
+        assert offerResult.nests[0].serder.said == acdc.said
+
+        # Parse Grant for assertions
+        grantIms = bytearray(grantExn.raw)
+        grantIms.extend(grantAtc)
+        grantResults = Parser(version=Vrsn_2_0).parse(ims=grantIms,
+                                                      framed=False,
+                                                      processive=False)
+        assert grantIms == bytearray()
+        assert len(grantResults) == 1
+        grantResult = grantResults[0]
+        assert grantResult.nests[0].serder.said == acdc.said
+        assert grantResult.nests[1].serder.said == iss.said
+        assert grantResult.nests[2].serder.said == ancSerder.said
+
+        # Dispatch the whole chain
+        for exn, atc in ((applyExn, applyAtc),
+                         (offerExn, offerAtc),
+                         (agreeExn, agreeAtc),
+                         (grantExn, grantAtc)):
+            ims = bytearray(exn.raw)
+            ims.extend(atc)
+            Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+            assert ims == bytearray()
+
+        # Assert they were all processed and stored
+        for serder in (applyExn, offerExn, agreeExn, grantExn):
+            assert hby.db.exns.get(keys=(serder.said,)) is not None
+
+        # Check recorder for correct route/message pairs
+        assert [(item["r"], item["m"]) for item in recorder.items] == [
+            ("/exn/ipex/apply", "Please issue a credential"),
+            ("/exn/ipex/offer", "Here is the offered credential"),
+            ("/exn/ipex/agree", "I agree to the offer"),
+            ("/exn/ipex/grant", "Here is the granted credential"),
+        ]
+
+
+def test_ipex_v2_rejects_unsupported_nested_frame():
+    """Reject a carried artifact that starts with an unsupported CESR frame."""
+    with openHby(name="ipex-v2-bad-frame",
+                 base="test",
+                 version=Vrsn_2_0) as hby:
+        hab = hby.makeHab(name="test")
+        bad = Counter.enclose(qb64=b'',
+                              code=Codens.AttachmentGroup,
+                              version=Vrsn_2_0)
+
+        with pytest.raises(ValueError, match="unsupported leading frame"):
+            ipexOffer(hab=hab,
+                      message="Here is the offered credential",
+                      acdc=bad)

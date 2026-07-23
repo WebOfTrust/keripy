@@ -6,7 +6,6 @@ IPEx protocol service support (Issuance and Presentation Exchange)
 
 """
 
-import os
 from collections import namedtuple
 
 from hio.help import ogler
@@ -30,7 +29,6 @@ PreviousRoutes = {
     Ipex.admit: (Ipex.grant,),
     Ipex.spurn: (Ipex.apply, Ipex.offer, Ipex.agree),
 }
-
 
 def _streamSerder(stream):
     """Extract the message serder from a bare or nested artifact stream.
@@ -83,7 +81,11 @@ def _isNestedStream(stream):
 
     Returns:
         bool: True when the stream starts with a nested body wrapper supported
-            by the V2 parser, False otherwise.
+            by the V2 parser, False when it is a bare message body.
+
+    Raises:
+        ValueError: If the stream starts with an unsupported leading CESR frame
+            that this implementation refuses to reinterpret as a bare artifact.
     """
     ims = bytearray(stream.raw) if hasattr(stream, "raw") else bytearray(stream)
     if not ims or sniff(ims) == Colds.msg:
@@ -91,15 +93,18 @@ def _isNestedStream(stream):
 
     try:
         ctr = Counter(qb64b=ims, version=Vrsn_2_0)
-    except Exception:
-        return False
+    except Exception as ex:
+        raise ValueError("unsupported leading frame for nested artifact stream") from ex
 
-    return ctr.name in (
+    if ctr.name in (
         Codens.BodyWithAttachmentGroup,
         Codens.BigBodyWithAttachmentGroup,
         Codens.NonNativeBodyGroup,
         Codens.BigNonNativeBodyGroup,
-    )
+    ):
+        return True
+
+    raise ValueError(f"unsupported leading frame code for nested artifact stream: {ctr.name}")
 
 
 def _normalizeNestedStream(stream):
@@ -225,10 +230,7 @@ class IpexHandler:
         # Get digest of prior
         dig = serder.ked["p"]
         
-        # Split the route for validation
         parts = route.split("/")
-
-        # Reject if route is not shaped like /ipex/<verb>
         if len(parts) != 3 or parts[:2] != ["", "ipex"]:
             return False
         verb = parts[2]
@@ -256,7 +258,10 @@ class IpexHandler:
         
         # Retrieve the verb and check if previous route validates
         proute = pserder.ked["r"]
-        pverb = os.path.basename(os.path.normpath(proute))
+        pparts = proute.split("/")
+        if len(pparts) != 3 or pparts[:2] != ["", "ipex"]:
+            return False
+        pverb = pparts[2]
         if pverb not in PreviousRoutes[verb]:
             return False
 
@@ -541,4 +546,3 @@ def loadHandlers(hby, exc, notifier):
     exc.addHandler(IpexHandler(resource="/ipex/grant", hby=hby, notifier=notifier))
     exc.addHandler(IpexHandler(resource="/ipex/admit", hby=hby, notifier=notifier))
     exc.addHandler(IpexHandler(resource="/ipex/spurn", hby=hby, notifier=notifier))
-
