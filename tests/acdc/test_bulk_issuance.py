@@ -680,3 +680,187 @@ def test_bulk_sedi_age_set_JSON():
     unblinded = Blinder.unblind(said=issuedAge.sad['b'], acdc=Bage, states=SET_STATES,
                                 salt=BULK_AGE_REG_SALT, sn=1)
     assert unblinded.state == 'issued'
+
+
+# ===========================================================================
+# Phase 4: per-verifier presentations + the partition property (the headline).
+# ===========================================================================
+# The presentation envelope: a self-presentation (holder == subject) ALICE_k issues to
+# verifier k, with I2I edges to copy k's sedi-id and sedi-age. It is minted fresh per
+# presentation and is deliberately NOT registry-bound. Its own nonces come from a
+# presentation salt at index k.
+PRESENT_SCHEMA_MAD = {
+    "$id": "",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "SEDI Age-Portrait Presentation",
+    "description": "Holder-issued self-presentation: ALICE_k (issuer) presents to a "
+                   "verifier (issuee) via I2I edges to copy k's sedi-id and sedi-age. "
+                   "Not registry-bound (a one-time presentation is not logged).",
+    "credentialType": "SEDI_AgePortraitPresentation",
+    "version": "1.0.0",
+    "type": "object",
+    "required": ["v", "d", "i", "s", "a", "e"],
+    "properties": {
+        "v": {"description": "ACDC version string", "type": "string"},
+        "t": {"description": "Message type", "const": "acm"},
+        "d": {"description": "Message SAID", "type": "string"},
+        "u": {"description": "Message UUID", "type": "string"},
+        "i": {"description": "Issuer = the holder ALICE_k", "type": "string"},
+        "s": {"description": "Schema Section",
+              "oneOf": [{"type": "string"}, {"type": "object"}]},
+        "a": {"description": "Attribute Section",
+              "oneOf": [
+                  {"type": "string"},
+                  {"type": "object", "required": ["d", "u", "i", "venue", "occurredAt"],
+                   "properties": {"d": {"type": "string"}, "u": {"type": "string"},
+                                  "i": {"description": "Issuee = the verifier",
+                                        "type": "string"},
+                                  "venue": {"type": "string"},
+                                  "occurredAt": {"type": "string"}},
+                   "additionalProperties": False}]},
+        "e": {"description": "Edge Section: I2I to copy k's sedi-id + sedi-age",
+              "oneOf": [
+                  {"type": "string"},
+                  {"type": "object", "required": ["d", "identity", "age"],
+                   "properties": {"d": {"type": "string"}, "u": {"type": "string"},
+                                  "identity": _edge_schema("I2I", "self-presentation id"),
+                                  "age": _edge_schema("I2I", "self-presentation age")},
+                   "additionalProperties": False}]},
+    },
+    "additionalProperties": False,
+}
+
+PRESENT_SALT = b'bulkpresexamsalt'
+PRESENT_STAMP = "2026-07-22T21:30:00.000000+00:00"
+# Per-verifier venue text (the disclosee's own context).
+VENUES = {ALCOVE: "The Alcove Club, 200 S West Temple, Salt Lake City UT",
+          DISPENSARY: "Wasatch Dispensary, Salt Lake City UT",
+          SPORTSBOOK: "online sportsbook age-gate"}
+# Presentation nonce slots (per context k): acdc uuid at "k", attr section at "k/0",
+# edge section at "k/1", the two edges at "k/2"/"k/3".
+_P_ATTR, _P_EDGE_SEC, _P_EDGE_ID, _P_EDGE_AGE = 0, 1, 2, 3
+
+
+def _copy_index_for(verifier):
+    """Alice's wallet policy: context = disclosee AID, so each verifier maps to ONE fixed
+    copy index (per-verifier spend). Injective -- a copy is never shared across verifiers.
+    A broader context (per activity domain) is the documented alternative (issue #1532)."""
+    return VERIFIERS.index(verifier)
+
+
+def _presentation(kind, verifier, idCopies, ageCopies, nonces=None, compactify=False):
+    """The self-presentation ALICE_k issues to `verifier`, k = the wallet's index for it.
+
+    Issuer = ALICE_k (holder == subject), issuee = the verifier. Two I2I edges reference
+    copy k's sedi-id and sedi-age; I2I holds because ALICE_k issues the presentation and
+    is the issuee of both sources. Fresh per presentation, not registry-bound.
+    """
+    if nonces is None:
+        nonces = _BulkNonces(PRESENT_SALT)
+    k = _copy_index_for(verifier)
+    _, schema = _saidify_schema(dict(PRESENT_SCHEMA_MAD), kind=kind)
+    attribute = dict(d='', u=nonces.u(k, _P_ATTR), i=verifier,
+                     venue=VENUES[verifier], occurredAt=PRESENT_STAMP)
+    edge = dict(d='', u=nonces.u(k, _P_EDGE_SEC),
+                identity=dict(d='', u=nonces.u(k, _P_EDGE_ID), n=idCopies[k].said,
+                              s=idCopies[k].sad['s']['$id'], o='I2I'),
+                age=dict(d='', u=nonces.u(k, _P_EDGE_AGE), n=ageCopies[k].said,
+                         s=ageCopies[k].sad['s']['$id'], o='I2I'))
+    return acdcmap(israid=ALICES[k], uuid=nonces.u(k), schema=schema,
+                   attribute=attribute, edge=edge, kind=kind, compactify=compactify)
+
+
+def _verify_presentation(pres, idCopy, ageCopy):
+    """The verifier's binding for a self-presentation: I2I to both sources.
+
+    I2I ("issuer-to-issuee") is the same-holder constraint: it holds only when the issuer
+    of the presentation is the issuee of each source credential it references. Since
+    ALICE_k issues the presentation and is the issuee of both copy-k sources, I2I is
+    exactly right. Returns True or raises.
+    """
+    e = pres.sad['e']
+    assert e['identity']['o'] == 'I2I' and e['identity']['n'] == idCopy.said
+    assert e['age']['o'] == 'I2I' and e['age']['n'] == ageCopy.said
+    assert pres.sad['i'] == idCopy.iseaid == ageCopy.iseaid   # I2I same-holder binding
+    return True
+
+
+def _context_correlators(k, idCopies, ageCopies, ageAggors, pres):
+    """The per-copy identifiers a verifier of context k receives that bulk issuance
+    PARTITIONS (Sam's #1532 list, the '✅ partitioned' rows): the holder AID, both source
+    SAIDs, the aggregate AGID, and the fresh presentation SAID. Disjoint across contexts
+    is the structural un-joinability proof."""
+    return {ALICES[k], idCopies[k].said, ageCopies[k].said, ageAggors[k].agid,
+            pres.said}
+
+
+def test_partition_across_verifiers_JSON():
+    """Phase 4: two disparate verifiers get disjoint identifier sets -- the headline.
+
+    Alice proves over-21 at two mutually-unrelated venues. Her wallet maps each verifier
+    to its own copy index (context = disclosee AID), so the Alcove gets copy 0 and the
+    dispensary gets copy 1: different holder AIDs (ALICE_0 vs ALICE_1), different sedi-id
+    and sedi-age SAIDs, different AGIDs, different presentation SAIDs. The two verifiers
+    cannot join on any of these -- the partition of the correlatable identifier space that
+    #1515 asked for and that bulk issuance provides.
+
+    Scoped honestly per Sam's issue #1532: this classifies EVERY ACDC identifier, not just
+    a hand-picked few. The holder AID IS partitioned here (the independent-AID variant),
+    which is the dominant correlator basic bulk issuance would have left. The one residual
+    is the SHARED registry (and the aggregate B) keyed per set -- a contract-gated
+    2nd-party correlator that full 3rd-party decorrelation (independent/herd registries via
+    a Sparse-Merkle-Tree root, tick 6sjz) would remove; it is asserted PRESENT in both, not
+    hidden. Public issuer/schema identifiers are shared by the whole population and single
+    out no one.
+    """
+    kind = Kinds.json
+    idNonces = _BulkNonces(BULK_SALT)
+    idReg, idCopies, _, Bid, _ = _sedi_id_set(kind, idNonces)
+    ageNonces = _BulkNonces(BULK_AGE_SALT)
+    ageReg, ageCopies, ageAggors, _, Bage, _ = _sedi_age_set(kind, idCopies, ageNonces)
+    presNonces = _BulkNonces(PRESENT_SALT)
+
+    # Two disparate verifiers; the wallet maps them to distinct copy indices.
+    v1, v2 = ALCOVE, DISPENSARY
+    k1, k2 = _copy_index_for(v1), _copy_index_for(v2)
+    assert k1 != k2                                       # per-verifier spend is injective
+    pres1 = _presentation(kind, v1, idCopies, ageCopies, presNonces)
+    pres2 = _presentation(kind, v2, idCopies, ageCopies, presNonces)
+
+    # Each presentation verifies (I2I same-holder to copy-k sources) and rides the over-21
+    # selective disclosure.
+    assert _verify_presentation(pres1, idCopies[k1], ageCopies[k1])
+    assert _verify_presentation(pres2, idCopies[k2], ageCopies[k2])
+    for k in (k1, k2):
+        disclosed, _ = ageAggors[k].disclose(indices=[AGE_ISSUEE, AGE_OVER21])
+        assert disclosed[AGE_OVER21]['over21'] is True
+        assert Aggor.verifyDisclosure(disclosed, kind=kind)
+    # Self-presentation: holder == subject (unlike the guardianship represented case).
+    assert pres1.sad['i'] == idCopies[k1].iseaid == ALICES[k1]
+
+    # --- PARTITIONED: the two contexts share NONE of the per-copy identifiers, INCLUDING
+    # the holder AID (the independent-AID variant's payoff). ---
+    corr1 = _context_correlators(k1, idCopies, ageCopies, ageAggors, pres1)
+    corr2 = _context_correlators(k2, idCopies, ageCopies, ageAggors, pres2)
+    assert corr1.isdisjoint(corr2)                        # THE headline: no join key
+    assert ALICES[k1] != ALICES[k2]                       # holder AID partitioned
+    assert idCopies[k1].said != idCopies[k2].said         # sedi-id SAID partitioned
+    assert ageCopies[k1].said != ageCopies[k2].said       # sedi-age SAID partitioned
+    assert ageAggors[k1].agid != ageAggors[k2].agid       # AGID partitioned
+    assert pres1.said != pres2.said                       # presentation SAID partitioned
+
+    # --- RESIDUAL: the shared registry (and B) recur in BOTH contexts -- the honest gap
+    # that independent/herd registries (tick 6sjz) would close. Asserted present, not hidden.
+    assert idCopies[k1].sad['rd'] == idCopies[k2].sad['rd'] == idReg.said   # shared id registry
+    assert ageCopies[k1].sad['rd'] == ageCopies[k2].sad['rd'] == ageReg.said  # shared age registry
+    assert Bid and Bage                                   # the aggregates are per-set, shared
+
+    # --- PUBLIC, non-correlating: issuer + schema are shared by the whole population and
+    # single out no holder. ---
+    assert idCopies[k1].sad['i'] == idCopies[k2].sad['i'] == STATE
+    assert idCopies[k1].sad['s']['$id'] == idCopies[k2].sad['s']['$id']     # same sedi-id schema
+    assert ageCopies[k1].sad['s']['$id'] == ageCopies[k2].sad['s']['$id']   # same sedi-age schema
+
+    # --- Guardrail: the wallet mapping is 1-verifier -> 1-copy; a third distinct verifier
+    # gets a third distinct index (never a reused copy across contexts). ---
+    assert len({_copy_index_for(v) for v in VERIFIERS}) == len(VERIFIERS)
