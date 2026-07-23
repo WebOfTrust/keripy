@@ -25,7 +25,6 @@ from keri.vdr.eventing import incept
 from keri.peer import Exchanger
 
 TEST_VERSION = Vrsn_1_0
-KWA = dict(version=TEST_VERSION, kind=Kinds.json)
 
 
 def test_counselor_explicit_version_propagates_to_default_anchorer_and_delegator_queries(monkeypatch):
@@ -136,9 +135,9 @@ def test_counselor_explicit_version_propagates_to_default_anchorer_and_delegator
 def test_counselor():
     salt = b'0123456789abcdef'
     prefix = "counselor"
-    with openHab(name=f"{prefix}_1", salt=salt, transferable=True, **KWA) as (hby1, hab1), \
-            openHab(name=f"{prefix}_2", salt=salt, transferable=True, **KWA) as (hby2, hab2), \
-            openHab(name=f"{prefix}_3", salt=salt, transferable=True, **KWA) as (hby3, hab3):
+    with openHab(name=f"{prefix}_1", salt=salt, transferable=True, version=Vrsn_1_0, kind=Kinds.json) as (hby1, hab1), \
+            openHab(name=f"{prefix}_2", salt=salt, transferable=True, version=Vrsn_1_0, kind=Kinds.json) as (hby2, hab2), \
+            openHab(name=f"{prefix}_3", salt=salt, transferable=True, version=Vrsn_1_0, kind=Kinds.json) as (hby3, hab3):
         counselor = Counselor(hby=hby1, version=TEST_VERSION, kind=Kinds.json)
 
         # Keverys so we can process each other's inception messages.
@@ -159,7 +158,7 @@ def test_counselor():
         smids = [hab1.pre, hab2.pre, hab3.pre]
         rmids = None  # need to fixe this
         inits = dict(isith='["1/2", "1/2", "1/2"]', nsith='["1/2", "1/2", "1/2"]',
-                     toad=0, wits=[], **KWA)
+                     toad=0, wits=[], version=Vrsn_1_0, kind=Kinds.json)
 
         # Create group hab with init params
         ghab = hby1.makeGroupHab(group=f"{prefix}_group1", mhab=hab1,
@@ -199,14 +198,14 @@ def test_counselor():
         assert counselor.complete(prefixer=prefixer, number=number, diger=diger)
 
         # First Partial Rotation
-        hab1.rotate(framed=True, gvrsn=TEST_VERSION, **KWA)
-        hab2.rotate(framed=True, gvrsn=TEST_VERSION, **KWA)
+        hab1.rotate(framed=True, gvrsn=TEST_VERSION, version=Vrsn_1_0, kind=Kinds.json)
+        hab2.rotate(framed=True, gvrsn=TEST_VERSION, version=Vrsn_1_0, kind=Kinds.json)
         merfers = [hab1.kever.verfers[0], hab2.kever.verfers[0]]
         migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0]]
         prefixer = Prefixer(qb64=ghab.pre)
         number = Number(sn=ghab.kever.sn + 1)
         rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(),
-                          verfers=merfers, digers=migers, framed=True, gvrsn=TEST_VERSION, **KWA)
+                          verfers=merfers, digers=migers, framed=True, gvrsn=TEST_VERSION, version=Vrsn_1_0, kind=Kinds.json)
         rserder = SerderKERI(raw=rot)
 
         counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=Diger(qb64=rserder.said))
@@ -253,14 +252,14 @@ def test_counselor():
 
         # Second Partial Rotation
 
-        hab1.rotate(framed=True, gvrsn=TEST_VERSION, **KWA)
-        hab2.rotate(framed=True, gvrsn=TEST_VERSION, **KWA)
+        hab1.rotate(framed=True, gvrsn=TEST_VERSION, version=Vrsn_1_0, kind=Kinds.json)
+        hab2.rotate(framed=True, gvrsn=TEST_VERSION, version=Vrsn_1_0, kind=Kinds.json)
         merfers = [hab1.kever.verfers[0], hab2.kever.verfers[0]]
         migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0], hab3.kever.ndigers[0]]
         prefixer = Prefixer(qb64=ghab.pre)
         number = Number(sn=ghab.kever.sn + 1)
         rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(),
-                          verfers=merfers, digers=migers, framed=True, gvrsn=TEST_VERSION, **KWA)
+                          verfers=merfers, digers=migers, framed=True, gvrsn=TEST_VERSION, version=Vrsn_1_0, kind=Kinds.json)
         rserder = SerderKERI(raw=rot)
 
         counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=Diger(qb64=rserder.said))
@@ -308,14 +307,14 @@ def test_counselor():
         assert [diger.qb64 for diger in ghab.kever.ndigers] == ndigs
 
         # Third Partial Rotation with Recovery
-        hab1.rotate(framed=True, gvrsn=TEST_VERSION, **KWA)
-        hab3.rotate(framed=True, gvrsn=TEST_VERSION, **KWA)
+        hab1.rotate(framed=True, gvrsn=TEST_VERSION, version=Vrsn_1_0, kind=Kinds.json)
+        hab3.rotate(framed=True, gvrsn=TEST_VERSION, version=Vrsn_1_0, kind=Kinds.json)
         merfers = [hab1.kever.verfers[0], hab3.kever.verfers[0]]
         migers = [hab1.kever.ndigers[0], hab3.kever.ndigers[0]]
         prefixer = Prefixer(qb64=ghab.pre)
         number = Number(sn=ghab.kever.sn + 1)
         rot = ghab.rotate(isith="2", nsith="2", toad=0, cuts=list(), adds=list(),
-                          verfers=merfers, digers=migers, framed=True, gvrsn=TEST_VERSION, **KWA)
+                          verfers=merfers, digers=migers, framed=True, gvrsn=TEST_VERSION, version=Vrsn_1_0, kind=Kinds.json)
         rserder = SerderKERI(raw=rot)
 
         counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=Diger(qb64=rserder.said))
@@ -358,13 +357,13 @@ def test_counselor():
 def test_the_seven():
     salt = b'0123456789abcdef'
     prefix = "counselor"
-    with openHab(name=f"{prefix}_1", salt=salt, transferable=True, **KWA) as (hby1, hab1), \
-            openHab(name=f"{prefix}_2", salt=salt, transferable=True, **KWA) as (hby2, hab2), \
-            openHab(name=f"{prefix}_3", salt=salt, transferable=True, **KWA) as (hby3, hab3), \
-            openHab(name=f"{prefix}_4", salt=salt, transferable=True, **KWA) as (hby4, hab4), \
-            openHab(name=f"{prefix}_5", salt=salt, transferable=True, **KWA) as (hby5, hab5), \
-            openHab(name=f"{prefix}_6", salt=salt, transferable=True, **KWA) as (hby6, hab6), \
-            openHab(name=f"{prefix}_7", salt=salt, transferable=True, **KWA) as (hby7, hab7):
+    with openHab(name=f"{prefix}_1", salt=salt, transferable=True, version=Vrsn_1_0, kind=Kinds.json) as (hby1, hab1), \
+            openHab(name=f"{prefix}_2", salt=salt, transferable=True, version=Vrsn_1_0, kind=Kinds.json) as (hby2, hab2), \
+            openHab(name=f"{prefix}_3", salt=salt, transferable=True, version=Vrsn_1_0, kind=Kinds.json) as (hby3, hab3), \
+            openHab(name=f"{prefix}_4", salt=salt, transferable=True, version=Vrsn_1_0, kind=Kinds.json) as (hby4, hab4), \
+            openHab(name=f"{prefix}_5", salt=salt, transferable=True, version=Vrsn_1_0, kind=Kinds.json) as (hby5, hab5), \
+            openHab(name=f"{prefix}_6", salt=salt, transferable=True, version=Vrsn_1_0, kind=Kinds.json) as (hby6, hab6), \
+            openHab(name=f"{prefix}_7", salt=salt, transferable=True, version=Vrsn_1_0, kind=Kinds.json) as (hby7, hab7):
         counselor = Counselor(hby=hby1)
 
         # All the Habs, this will come in handy later
@@ -398,7 +397,7 @@ def test_the_seven():
         rmids = None  # need to fixe this
         inits = dict(isith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
                      nsith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
-                     toad=0, wits=[], **KWA)
+                     toad=0, wits=[], version=Vrsn_1_0, kind=Kinds.json)
 
         # Create group hab with init params
         ghab = hby1.makeGroupHab(group=f"{prefix}_group1", mhab=hab1,
@@ -489,9 +488,9 @@ def test_the_seven():
         assert counselor.complete(prefixer=prefixer, number=number, diger=diger)
 
         # First Partial Rotation
-        hab1.rotate(framed=True, **KWA, gvrsn=TEST_VERSION)
-        hab2.rotate(framed=True, **KWA, gvrsn=TEST_VERSION)
-        hab3.rotate(framed=True, **KWA, gvrsn=TEST_VERSION)
+        hab1.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
+        hab2.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
+        hab3.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
         merfers = [hab1.kever.verfers[0], hab2.kever.verfers[0], hab3.kever.verfers[0]]
         migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0], hab3.kever.ndigers[0], hab4.kever.ndigers[0],
                   hab5.kever.ndigers[0], hab6.kever.ndigers[0], hab7.kever.ndigers[0]]
@@ -499,7 +498,7 @@ def test_the_seven():
         number = Number(sn=ghab.kever.sn + 1)
         rot = ghab.rotate(isith='["1/3", "1/3", "1/3"]', nsith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
                           toad=0, cuts=list(), adds=list(), verfers=merfers,
-                          digers=migers, framed=True, **KWA, gvrsn=TEST_VERSION)
+                          digers=migers, framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
         rserder = SerderKERI(raw=rot)
 
         counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=Diger(qb64=rserder.said))
@@ -552,9 +551,9 @@ def test_the_seven():
         assert [diger.qb64 for diger in ghab.kever.ndigers] == ndigs
 
         # Second Partial Rotation
-        hab1.rotate(framed=True, **KWA, gvrsn=TEST_VERSION)
-        hab2.rotate(framed=True, **KWA, gvrsn=TEST_VERSION)
-        hab3.rotate(framed=True, **KWA, gvrsn=TEST_VERSION)
+        hab1.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
+        hab2.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
+        hab3.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
         merfers = [hab1.kever.verfers[0], hab2.kever.verfers[0], hab3.kever.verfers[0]]
         migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0], hab3.kever.ndigers[0], hab4.kever.ndigers[0],
                   hab5.kever.ndigers[0], hab6.kever.ndigers[0], hab7.kever.ndigers[0]]
@@ -562,7 +561,7 @@ def test_the_seven():
         number = Number(sn=ghab.kever.sn + 1)
         rot = ghab.rotate(isith='["1/3", "1/3", "1/3"]', nsith='["1/3", "1/3", "1/3", "1/3", "1/3", "1/3", "1/3"]',
                           toad=0, cuts=list(), adds=list(), verfers=merfers,
-                          digers=migers, framed=True, **KWA, gvrsn=TEST_VERSION)
+                          digers=migers, framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
         rserder = SerderKERI(raw=rot)
 
         counselor.start(ghab=ghab, prefixer=prefixer, number=number, diger=Diger(qb64=rserder.said))
@@ -634,16 +633,16 @@ def test_the_seven():
         # Create a new counselor with #4
         counselor4 = Counselor(hby=hby4)
 
-        hab4.rotate(framed=True, **KWA, gvrsn=TEST_VERSION)
-        hab5.rotate(framed=True, **KWA, gvrsn=TEST_VERSION)
-        hab6.rotate(framed=True, **KWA, gvrsn=TEST_VERSION)
+        hab4.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
+        hab5.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
+        hab6.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
         merfers = [hab4.kever.verfers[0], hab5.kever.verfers[0], hab6.kever.verfers[0]]
         migers = [hab4.kever.ndigers[0], hab5.kever.ndigers[0], hab6.kever.ndigers[0]]
         prefixer = Prefixer(qb64=ghab.pre)
         number = Number(sn=ghab.kever.sn + 1)
         rot = ghab4.rotate(isith='["1/3", "1/3", "1/3"]', nsith='["1/3", "1/3", "1/3"]',
                            toad=0, cuts=list(), adds=list(), verfers=merfers,
-                           digers=migers, framed=True, **KWA, gvrsn=TEST_VERSION)
+                           digers=migers, framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
         rserder = SerderKERI(raw=rot)
 
         counselor4.start(ghab=ghab4, prefixer=prefixer, number=number, diger=Diger(qb64=rserder.said))
@@ -694,9 +693,9 @@ def test_the_seven():
 
 @contextmanager
 def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
-    with openHab(name=f"{prefix}_1", salt=salt, transferable=True, temp=temp, **KWA) as (hby1, hab1), \
-            openHab(name=f"{prefix}_2", salt=salt, transferable=True, temp=temp, **KWA) as (hby2, hab2), \
-            openHab(name=f"{prefix}_3", salt=salt, transferable=True, temp=temp, **KWA) as (hby3, hab3):
+    with openHab(name=f"{prefix}_1", salt=salt, transferable=True, temp=temp, version=Vrsn_1_0, kind=Kinds.json) as (hby1, hab1), \
+            openHab(name=f"{prefix}_2", salt=salt, transferable=True, temp=temp, version=Vrsn_1_0, kind=Kinds.json) as (hby2, hab2), \
+            openHab(name=f"{prefix}_3", salt=salt, transferable=True, temp=temp, version=Vrsn_1_0, kind=Kinds.json) as (hby3, hab3):
         # Keverys so we can process each other's inception messages.
         kev1 = Kevery(db=hab1.db, lax=True, local=False)
         kev2 = Kevery(db=hab2.db, lax=True, local=False)
@@ -720,7 +719,7 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
             wits=[],
             isith='3',
             nsith='3',
-            **KWA
+            version=Vrsn_1_0, kind=Kinds.json
         )
 
         ghab1 = hby1.makeGroupHab(group=f"{prefix}_group1", mhab=hab1,
@@ -753,7 +752,7 @@ def openMultiSig(prefix="test", salt=b'0123456789abcdef', temp=True, **kwa):
 
 
 def test_multisig_incept(mockHelpingNowUTC):
-    with openHab(name="test", temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab):
+    with openHab(name="test", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (hby, hab):
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
         exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids,
                                      icp=hab.msgOwnEvent(sn=hab.kever.sn,
@@ -774,7 +773,7 @@ def test_multisig_incept(mockHelpingNowUTC):
 
 
 def test_multisig_incept_default_framing_uses_default_version_with_legacy_special_exn(mockHelpingNowUTC, monkeypatch):
-    with openHab(name="test", temp=True, salt=b'0123456789abcdef', **KWA) as (_, hab):
+    with openHab(name="test", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (_, hab):
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
         icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=TEST_VERSION)
         special_calls = {}
@@ -833,7 +832,7 @@ def test_multisig_rotate(mockHelpingNowUTC):
 
 def test_multisig_interact(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
-        ixn = ghab1.mhab.interact(framed=True, **KWA, gvrsn=TEST_VERSION)
+        ixn = ghab1.mhab.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
         exn, atc = multisigInteractExn(ghab=ghab1, aids=ghab1.smids,
                                        ixn=ixn,
                                        version=TEST_VERSION,
@@ -854,9 +853,9 @@ def test_multisig_interact(mockHelpingNowUTC):
 
 def test_multisig_registry_incept(mockHelpingNowUTC, mockCoringRandomNonce):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, _), (_, _)):
-        vcp = incept(ghab1.pre, **KWA)
+        vcp = incept(ghab1.pre, version=Vrsn_1_0, kind=Kinds.json)
         ixn = ghab1.mhab.interact(data=[dict(i=vcp.pre, s="0", d=vcp.said)],
-                                  framed=True, **KWA, gvrsn=TEST_VERSION)
+                                  framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
         exn, atc = multisigRegistryInceptExn(ghab=ghab1, vcp=vcp.raw, anc=ixn,
                                              usage="Issue vLEI Credentials",
                                              version=TEST_VERSION,
@@ -877,7 +876,7 @@ def test_multisig_registry_incept(mockHelpingNowUTC, mockCoringRandomNonce):
 
 
 def test_multisig_incept_handler(mockHelpingNowUTC):
-    with openHab(name="test0", temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab):
+    with openHab(name="test0", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (hby, hab):
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
         exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids,
                                      icp=hab.msgOwnEvent(sn=hab.kever.sn,
@@ -906,9 +905,9 @@ def test_multisig_incept_handler(mockHelpingNowUTC):
 
 def test_multisig_incept_handler_parses_approved_v1_embed(mockHelpingNowUTC):
     with openHab(name="approved-embed1", salt=b'0123456789abcdef',
-                 transferable=True, temp=True, **KWA) as (hby1, hab1), \
+                 transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby1, hab1), \
             openHab(name="approved-embed2", salt=b'abcdef0123456789',
-                    transferable=True, temp=True, **KWA) as (hby2, hab2):
+                    transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby2, hab2):
         Parser(version=TEST_VERSION).parse(ims=bytearray(hab2.msgOwnEvent(sn=0, framed=True,
                                                                           gvrsn=TEST_VERSION)),
                                            kvy=hby1.kvy, local=True)
@@ -917,7 +916,7 @@ def test_multisig_incept_handler_parses_approved_v1_embed(mockHelpingNowUTC):
                                            kvy=hby2.kvy, local=True)
 
         smids = [hab1.pre, hab2.pre]
-        inits = dict(toad=0, wits=[], isith="2", nsith="2", **KWA)
+        inits = dict(toad=0, wits=[], isith="2", nsith="2", version=Vrsn_1_0, kind=Kinds.json)
         ghab1 = hby1.makeGroupHab(group="approved-embed", mhab=hab1,
                                   smids=smids, rmids=None, **inits)
         ghab2 = hby2.makeGroupHab(group="approved-embed", mhab=hab2,
@@ -949,7 +948,7 @@ def test_multisig_incept_handler_parses_approved_v1_embed(mockHelpingNowUTC):
 
 def test_multisig_rotate_handler(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (hby2, ghab2), (_, _)):
-        msg = ghab1.mhab.rotate(framed=True, **KWA, gvrsn=TEST_VERSION)
+        msg = ghab1.mhab.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
         notifier = Notifier(hby=hby1)
         mux = Multiplexor(hby=hby1, notifier=notifier)
         exc = Exchanger(hby=hby1, handlers=[])
@@ -993,7 +992,7 @@ def test_multisig_rotate_handler(mockHelpingNowUTC):
 
 def test_multisig_interact_handler(mockHelpingNowUTC):
     with openMultiSig(prefix="test") as ((hby1, ghab1), (_, ghab2), (_, _)):
-        ixn = ghab1.mhab.interact(framed=True, **KWA, gvrsn=TEST_VERSION)
+        ixn = ghab1.mhab.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=TEST_VERSION)
         exn, atc = multisigInteractExn(ghab=ghab2, aids=ghab1.smids,
                                        ixn=ixn,
                                        version=TEST_VERSION,

@@ -13,7 +13,6 @@ from keri.kering import Kinds
 from keri.core import Prefixer, SerderKERI, exchange
 from keri.db import OnSuber, openLMDB, openDB
 
-from tests.common import KWA
 
 
 def test_mailboxing():
@@ -89,7 +88,7 @@ def test_mailboxing():
                               attributes=d,
                               stamp="2021-07-15T13:01:37.624492+00:00",
                               sender=dest.qb64,
-                              **KWA)
+                              version=Vrsn_1_0, kind=Kinds.json)
             mber.storeMsg(topic=dest.qb64b, msg=exn.raw)
 
         msgs = []

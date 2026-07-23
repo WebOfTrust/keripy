@@ -10,10 +10,10 @@ from hio.base import doing
 from hio.help import ogler
 
 from ..kering import ValidationError, Version, Vrsn_1_0, Kinds, Ilks
-from ..core import (Counter, Number, Diger, Saider,
+from ..core import (Number, Diger, Saider,
                     Prefixer, Kevery, Router,
                     Revery, Parser, SerderKERI,
-                    Serder, Codens, NumDex)
+                    Serder, NumDex, SealSource, messagize)
 from ..peer import Exchanger, specialExchange, cloneMessage
 
 from .delegating import Anchorer
@@ -593,20 +593,13 @@ def getEscrowedEvent(db, pre, sn):
     sigers = db.sigs.get(keys=(pre, dig))
     duple = db.aess.get(keys=(pre, dig))
 
-    msg = bytearray()
-    msg.extend(serder.raw)
-    msg.extend(Counter(Codens.ControllerIdxSigs,
-                            count=len(sigers), version=Vrsn_1_0).qb64b)  # attach cnt
-    for siger in sigers:
-        msg.extend(siger.qb64b)  # attach siger
-
+    seal = None
     if duple is not None:
         number, diger = duple
-        msg.extend(Counter(Codens.SealSourceCouples,
-                                count=1, version=Vrsn_1_0).qb64b)
-        msg.extend(number.qb64b + diger.qb64b)
+        seal = SealSource(s=number.snh, d=diger.qb64)
 
-    return msg
+    return messagize(serder, sigers=sigers, bonds=seal, framed=True,
+                     gvrsn=serder.pvrsn)
 
 
 class Multiplexor:
