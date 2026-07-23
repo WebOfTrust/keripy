@@ -75,9 +75,10 @@ def test_oobi_share_v1(mockHelpingNowUTC):
                            'rp': '',
                            't': 'exn',
                            'v': 'KERI10JSON000136_'}
-        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3MAAAEIaGMMWJFPmt'
-                    b'XznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAABdw3eSw_7BW2o3z1ufxxs1CPgX'
-                    b'1TgtJzn-MxvMjLYTidUd8KSxNKbPU9M3A4orYJDMGMIzhabHJmKA4ZIGbcgK')
+        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAA'
+                       b'AAAAAAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AAB'
+                       b'AABdw3eSw_7BW2o3z1ufxxs1CPgX1TgtJzn-MxvMjLYTidUd8KSxNKbPU9M3'
+                       b'A4orYJDMGMIzhabHJmKA4ZIGbcgK')
 
 def test_oobi_share_v2(mockHelpingNowUTC):
     oobi = "http://127.0.0.1:5642/oobi/Egw3N07Ajdkjvv4LB2Mhx2qxl6TOCFdWNJU6cYR_ImFg/witness" \
