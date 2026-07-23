@@ -238,3 +238,223 @@ def test_bulk_derivation_primitive_JSON():
     assert not _verify_membership(ds[0], vs[0], [Diger(ser=b'x').qb64] + blist[1:], B)
     # ...and a wrong committed B fails.
     assert not _verify_membership(ds[0], vs[0], blist, Diger(ser=b'wrong-B').qb64)
+
+
+# ===========================================================================
+# Phase 2: the bulk sedi-id set + its shared blindable registry (keyed on B).
+# ===========================================================================
+# Schema helpers, ported verbatim in intent from the sibling SEDI examples
+# (test_clc_disclosure.py / test_guardianship_presentation.py).
+def _saidify_schema(mad, kind=Kinds.json):
+    """Compute a JSON Schema's SAID and return (said, schema-with-$id). Mirrors the
+    sibling examples: a Mapper self-addresses the '$id' field (which must be first)."""
+    mapper = Mapper(mad=mad, makify=True, strict=False, saids={"$id": 'E'},
+                    saidive=True, kind=kind)
+    return mapper.said, mapper.mad
+
+
+def assert_acdc_schema_valid(acdc, schema=None):
+    """Validate a worked-example ACDC against its JSON Schema (Draft 2020-12)."""
+    if schema is None:
+        schema = acdc.sad['s']
+        if not isinstance(schema, dict):
+            raise ValueError("schema section is compacted to a SAID; pass schema=")
+    Draft202012Validator.check_schema(schema)
+    Draft202012Validator(schema).validate(acdc.sad)
+    return schema
+
+
+def _disclosable_block(attr, attr_schema, desc):
+    """One partially-disclosable block schema: oneOf(block SAID, block detail)."""
+    return {
+        "description": f"{desc} block",
+        "oneOf": [
+            {"description": f"{desc} block SAID", "type": "string"},
+            {"description": f"{desc} block detail", "type": "object",
+             "required": ["d", "u", attr],
+             "properties": {"d": {"description": "Block SAID", "type": "string"},
+                            "u": {"description": "Block UUID", "type": "string"},
+                            attr: attr_schema},
+             "additionalProperties": False},
+        ],
+    }
+
+
+# acm/acg always carry (possibly empty) e and r sections, so the schema must admit them.
+_EMPTY_OR_SECTION = {"oneOf": [{"type": "string"}, {"type": "object"}]}
+
+# sedi-id: the holder's ATTRIBUTIVE ('acm') core identity credential. Every bulk copy
+# shares this schema (a public, non-correlating identifier -- see the module docstring's
+# partition classification). The issuee 'i' is the per-copy holder AID ALICE_k.
+SEDI_SCHEMA_MAD = {
+    "$id": "",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "SEDI Identity Credential",
+    "description": "State-endorsed SEDI digital-identity credential; attributes carried "
+                   "as individually partially-disclosable nested blocks.",
+    "credentialType": "SEDI_Identity",
+    "version": "1.0.0",
+    "type": "object",
+    "required": ["v", "d", "i", "rd", "s", "a"],
+    "properties": {
+        "v": {"description": "ACDC version string", "type": "string"},
+        "t": {"description": "Message type", "const": "acm"},
+        "d": {"description": "Message SAID", "type": "string"},
+        "u": {"description": "Message UUID", "type": "string"},
+        "i": {"description": "Issuer (State/DGO) AID", "type": "string"},
+        "rd": {"description": "Registry SAID", "type": "string"},
+        "s": {"description": "Schema Section",
+              "oneOf": [{"type": "string"}, {"type": "object"}]},
+        "a": {
+            "description": "Attribute section with individually-disclosable blocks",
+            "oneOf": [
+                {"description": "Attribute Section SAID", "type": "string"},
+                {"description": "Attribute detail",
+                 "type": "object",
+                 "required": ["d", "u", "i", "photo", "dob", "residence", "name"],
+                 "properties": {
+                     "d": {"description": "Section SAID", "type": "string"},
+                     "u": {"description": "Section UUID", "type": "string"},
+                     "i": {"description": "Issuee (the holder) AID", "type": "string"},
+                     "photo": _disclosable_block("photo",
+                         {"description": "State-endorsed photo", "type": "string"},
+                         "Photo"),
+                     "dob": _disclosable_block("dob",
+                         {"description": "Date of birth", "type": "string",
+                          "format": "date"}, "DOB"),
+                     "residence": _disclosable_block("residence",
+                         {"description": "Residence", "type": "string"}, "Residence"),
+                     "name": _disclosable_block("name",
+                         {"description": "Full name", "type": "string"}, "Name"),
+                 },
+                 "additionalProperties": False},
+            ],
+        },
+        "e": _EMPTY_OR_SECTION,
+        "r": _EMPTY_OR_SECTION,
+    },
+    "additionalProperties": False,
+}
+
+
+# --- Per-copy holder AIDs (the independent-AID variant). ---
+# The DOMINANT correlator a basic (shared-AID) bulk issuance would leave is the holder
+# AID itself (Sam, issue #1532: "we need bulk issuance because then one has a unique AID
+# per context"). So each copy k is issued to its OWN holder AID ALICE_k, derived from a
+# HOLDER-ONLY secret salt the issuer never sees -- the holder supplies the public AIDs
+# and the issuer commits to AIDs it cannot forge. 2*M signers: ALICE_k's current key is
+# _HOLDER_SIGNERS[k], its pre-rotated next key _HOLDER_SIGNERS[M+k].
+_HOLDER_SIGNERS = Salter(raw=b'bulkaliceseckey0').signers(count=2 * BULK_SIZE,
+                                                          transferable=True, temp=True)
+ALICES = [_actor_aid(_HOLDER_SIGNERS[k], _HOLDER_SIGNERS[BULK_SIZE + k])
+          for k in range(BULK_SIZE)]
+
+# The sedi-id set's ONE shared blindable registry, its blinding salt (shared issuer <->
+# holder, never handed to a verifier), and the states its update events can carry.
+REG_ID_UUID = Noncer(raw=b'bulkidreguuid000').qb64
+REG_ID_STAMP = "2026-01-05T12:00:00.000000+00:00"
+ISSUE_ID_STAMP = "2026-01-05T12:05:00.000000+00:00"
+BULK_ID_REG_SALT = Noncer(raw=b'bulkidregblindsl').qb64
+SET_STATES = ['issued', 'revoked']
+
+# Alice's identity attribute values -- the SAME across every copy (it is one Alice); only
+# the per-copy blinding nonces differ, so the copies are semantically identical but have
+# unique SAIDs. DOB puts her well over 21 at the 2026 presentation.
+ALICE_DOB = "2000-03-15"
+
+
+def _sedi_id_attr(nonces, k):
+    """Copy k's sedi-id attribute section (issuee inserted by acdcmap via iseaid).
+
+    Per-copy blinding nonces come from the shared bulk salt at hierarchical paths keyed
+    on k: the section uuid at "k/0" and one nested-block uuid per attribute at "k/1".."k/4".
+    """
+    return dict(d='', u=nonces.u(k, 0),
+                photo=dict(d='', u=nonces.u(k, 1),
+                           photo="<state-endorsed-photo-bytes>"),
+                dob=dict(d='', u=nonces.u(k, 2), dob=ALICE_DOB),
+                residence=dict(d='', u=nonces.u(k, 3),
+                               residence="Salt Lake City UT"),
+                name=dict(d='', u=nonces.u(k, 4), name="Alice Anders"))
+
+
+def _sedi_id_set(kind, nonces=None):
+    """Build the bulk sedi-id set and its shared blindable registry.
+
+    Returns (reg, copies, blist, B, issued): the shared registry inception, the M sedi-id
+    copies (each issued by STATE to its own per-context holder AID ALICE_k, all bound to
+    the one registry), the published blinded list [b_k] and the aggregate B_id, and the
+    blindable 'issued' update (bup) that commits the whole set (identified by B_id) as
+    issued. The registry inception SAID (rd) is independent of B, so there is no circular
+    dependency: copies bind rd, B is computed over the copy SAIDs, then the bup commits B.
+    """
+    if nonces is None:
+        nonces = _BulkNonces(BULK_SALT)
+    reg = regcept(israid=STATE, uuid=REG_ID_UUID, stamp=REG_ID_STAMP, kind=kind)
+    _, schema = _saidify_schema(dict(SEDI_SCHEMA_MAD), kind=kind)
+    copies = [acdcmap(israid=STATE, uuid=nonces.u(k), regid=reg.said, schema=schema,
+                      attribute=_sedi_id_attr(nonces, k), iseaid=ALICES[k], kind=kind)
+              for k in range(BULK_SIZE)]
+    vs = [nonces.v(k) for k in range(BULK_SIZE)]
+    ds = [c.said for c in copies]
+    blist, B = _bulk_aggregate(vs, ds)
+    # The single issuance-proof commitment to B (spec 15.4): a blindable update whose
+    # blinded state binds "this set (identified by B) is issued". Reuses the existing
+    # sn-keyed Blinder -- there is ONE shared registry per set, so no copy-index blinder
+    # is needed. (A real Issuer also anchors the rip seal in its KEL; omitted at this
+    # data-structure altitude, as the sibling examples omit KEL/Habery.)
+    blinder = Blinder.blind(acdc=B, state='issued', salt=BULK_ID_REG_SALT, sn=1)
+    issued = blindate(regid=reg.said, prior=reg.said, blid=blinder.said, sn=1,
+                      stamp=ISSUE_ID_STAMP, kind=kind)
+    return reg, copies, blist, B, issued
+
+
+def test_bulk_sedi_id_set_JSON():
+    """Phase 2: the State bulk-issues Alice's sedi-id as M private copies.
+
+    Each copy is the SAME sedi-id (same attributes) with a UNIQUE SAID, issued to its OWN
+    per-context holder AID ALICE_k -- the independent-AID variant (issue #1532), so the
+    dominant correlator (the holder AID) is partitioned per context, not just the source
+    SAIDs. All M copies bind ONE shared blindable registry, and a single blindable update
+    commits the whole set (identified by the aggregate B_id) as issued -- one issuance
+    event covering many credentials.
+
+    Asserted: every copy is a schema-valid attributive sedi-id issued by STATE to a
+    DISTINCT ALICE_k; copy SAIDs and top-level uuids are all distinct; each copy verifies
+    as a member of the committed B_id and an outsider does not; and the registry update
+    blinds the set state (neither the word 'issued' nor B_id crosses the wire) while the
+    salt-holder can unblind it to 'issued'.
+    """
+    kind = Kinds.json
+    nonces = _BulkNonces(BULK_SALT)
+    reg, copies, blist, B, issued = _sedi_id_set(kind, nonces)
+
+    assert len(copies) == BULK_SIZE
+    for k, copy in enumerate(copies):
+        assert copy.ilk == Ilks.acm
+        assert copy.sad['i'] == STATE                 # issued by the State/DGO
+        assert copy.sad['rd'] == reg.said             # all copies share ONE registry
+        assert copy.sad['a']['i'] == ALICES[k]        # per-copy holder AID (independent-AID)
+        assert copy.iseaid == ALICES[k]
+        assert copy.sad['a']['dob']['dob'] == ALICE_DOB   # same Alice in every copy...
+        assert_acdc_schema_valid(copy)
+
+    # ...but every copy is cryptographically distinct: unique holder AID, SAID, and uuid.
+    assert len(set(ALICES)) == BULK_SIZE                          # AID partitioned per context
+    assert len({c.said for c in copies}) == BULK_SIZE            # unique copy SAIDs
+    assert len({c.sad['u'] for c in copies}) == BULK_SIZE        # unique top-level uuids
+
+    # Membership: each copy verifies against the committed B_id; an outsider fails.
+    for k, copy in enumerate(copies):
+        assert _verify_membership(copy.said, nonces.v(k), blist, B)
+    assert not _verify_membership(Diger(ser=b'outsider').qb64, nonces.v(0), blist, B)
+
+    # The shared registry commits the whole set as 'issued' via a blindable update; the
+    # state word and the aggregate B never appear on the wire, yet the salt-holder unblinds.
+    assert issued.ilk == Ilks.bup
+    assert issued.sad['b']                                       # blinded id present
+    assert b"issued" not in issued.raw
+    assert B.encode() not in issued.raw
+    unblinded = Blinder.unblind(said=issued.sad['b'], acdc=B, states=SET_STATES,
+                                salt=BULK_ID_REG_SALT, sn=1)
+    assert unblinded.state == 'issued'
