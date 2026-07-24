@@ -1142,6 +1142,7 @@ class BaseHab:
                                       toad=toad,
                                       wits=wits,
                                       cnfg=cnfg,
+                                      data=data,
                                       code=code,
                                       kind=kind,
                                       version=version)
@@ -1153,8 +1154,8 @@ class BaseHab:
                                  toad=toad,
                                  wits=wits,
                                  cnfg=cnfg,
-                                 code=code,
                                  data=data,
+                                 code=code,
                                  kind=kind,
                                  version=version                                 )
         return serder
