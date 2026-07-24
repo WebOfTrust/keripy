@@ -161,15 +161,17 @@ def test_delegation_request(mockHelpingNowUTC):
         exn, atc = delegateRequestExn(hab=hab, delpre=delpre, evt=evt,
                                       version=Vrsn_1_0, kind=Kinds.json)
 
-        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3MAAAEIaGMMWJFPmt'
-                    b'XznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACzeUyP6__0oDca-Oiv2iGXKghB'
-                    b'w_8sI4ZHyyeMedvz0iZIIQYqJd2Zt7cDHRh7xBGWI85J_oOixLET3mFZUu0A')
+        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAA'
+                       b'AAAAAAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AAB'
+                       b'AACzeUyP6__0oDca-Oiv2iGXKghBw_8sI4ZHyyeMedvz0iZIIQYqJd2Zt7cD'
+                       b'HRh7xBGWI85J_oOixLET3mFZUu0A')
 
         assert exn.ked["r"] == '/delegate/request'
         assert exn.saidb == b'EHPkcmdLGql9_1WD0wl0OalYk8PcF4HMMd7gGi-iqfSe'
-        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3MAAAEIaGMMWJFPmt'
-                    b'XznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACzeUyP6__0oDca-Oiv2iGXKghB'
-                    b'w_8sI4ZHyyeMedvz0iZIIQYqJd2Zt7cDHRh7xBGWI85J_oOixLET3mFZUu0A')
+        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAA'
+                       b'AAAAAAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AAB'
+                       b'AACzeUyP6__0oDca-Oiv2iGXKghBw_8sI4ZHyyeMedvz0iZIIQYqJd2Zt7cD'
+                       b'HRh7xBGWI85J_oOixLET3mFZUu0A')
         data = exn.ked["a"]
         assert data["delpre"] == delpre
         embeds = exn.ked['e']
