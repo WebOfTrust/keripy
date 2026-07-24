@@ -647,7 +647,7 @@ def serializeMessage(hby, said, framed=False):
         # Authenticator attachments via messagize; framed=True so we can append
         # pathed embeds after (pathed material is outside messagize support).
         full = messagize(exn, tsgs=tsgs or None, cigars=cigars or None,
-                         framed=True, gvrsn=exn.pvrsn)
+                         framed=True)
         aims.extend(full[exn.size:])
 
     # Pathed embeds are outside current messagize support — deliberate special
@@ -664,7 +664,7 @@ def serializeMessage(hby, said, framed=False):
                              " quadlets.".format(len(aims)))
         if not framed:
             msg.extend(Counter(Codens.AttachmentGroup,
-                               count=(len(aims) // 4), version=exn.pvrsn).qb64b)
+                               count=(len(aims) // 4), version=Version).qb64b)
         msg.extend(aims)
 
     return msg

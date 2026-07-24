@@ -6,12 +6,13 @@ keri.app.signing module
 """
 from .habbing import GroupHab
 from ..core import Pather, Seqner, Diger, SealEvent, messagize
+from ..kering import Version
 
 
 def serialize(creder, prefixer, seqner, saider):
     return bytes(messagize(creder,
                            bonds=[SealEvent(i=prefixer, s=seqner, d=saider)],
-                           framed=True, gvrsn=creder.pvrsn))
+                           framed=True, gvrsn=Version))
 
 
 #def ratify(hab, serder, paths=None, pipelined=False):

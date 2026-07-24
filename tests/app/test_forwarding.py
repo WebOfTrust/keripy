@@ -327,11 +327,13 @@ def test_essr_stream(seeder, unused_tcp_port):
         msgs = bytearray()
         msgs.extend(recpHab.makeEndRole(eid=recpHab.pre,
                                         role=Roles.controller,
-                                        stamp=help.nowIso8601(), **KWA))
+                                        stamp=help.nowIso8601(),
+                                        gvrsn=Vrsn_1_0, **KWA))
 
         msgs.extend(recpHab.makeLocScheme(url=f'http://127.0.0.1:{httpPort}',
                                           scheme=Schemes.http,
-                                          stamp=help.nowIso8601(), **KWA))
+                                          stamp=help.nowIso8601(),
+                                          gvrsn=Vrsn_1_0, **KWA))
         hab.psr.parse(ims=msgs)
 
         postman = StreamPoster(hby=hby, hab=hab, recp=recpHab.pre, essr=True)

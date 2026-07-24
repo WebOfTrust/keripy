@@ -1130,12 +1130,12 @@ def test_reply(mockHelpingNowUTC):
         assert rurls["witness"][wokHab.pre]['http'] == 'http://localhost:8080/witness/wok'
 
         msgs = bytearray()
-        msgs.extend(tamHab.makeEndRole(eid=wesHab.pre, role=Roles.witness, **KWA))
-        msgs.extend(tamHab.makeEndRole(eid=wokHab.pre, role=Roles.witness, **KWA))
-        msgs.extend(tamHab.makeEndRole(eid=wamHab.pre, role=Roles.witness, **KWA))
-        msgs.extend(wesHab.makeLocScheme(url='http://localhost:8080/witness/wes', **KWA))
-        msgs.extend(wokHab.makeLocScheme(url='http://localhost:8080/witness/wok', **KWA))
-        msgs.extend(wamHab.makeLocScheme(url='http://localhost:8080/witness/wam', **KWA))
+        msgs.extend(tamHab.makeEndRole(eid=wesHab.pre, role=Roles.witness, **CUE_KWA))
+        msgs.extend(tamHab.makeEndRole(eid=wokHab.pre, role=Roles.witness, **CUE_KWA))
+        msgs.extend(tamHab.makeEndRole(eid=wamHab.pre, role=Roles.witness, **CUE_KWA))
+        msgs.extend(wesHab.makeLocScheme(url='http://localhost:8080/witness/wes', **CUE_KWA))
+        msgs.extend(wokHab.makeLocScheme(url='http://localhost:8080/witness/wok', **CUE_KWA))
+        msgs.extend(wamHab.makeLocScheme(url='http://localhost:8080/witness/wam', **CUE_KWA))
 
         tamHab.psr.parse(bytearray(msgs))
         wesHab.psr.parse(bytearray(msgs))
@@ -1147,12 +1147,12 @@ def test_reply(mockHelpingNowUTC):
         welHab.psr.parse(bytearray(msgs))
 
         msgs = bytearray()
-        msgs.extend(nelHab.makeEndRole(eid=nelHab.pre, role=Roles.controller, **KWA))
-        msgs.extend(nelHab.makeEndRole(eid=watHab.pre, role=Roles.watcher, **KWA))
-        msgs.extend(nelHab.makeEndRole(eid=welHab.pre, role=Roles.watcher, **KWA))
-        msgs.extend(nelHab.makeLocScheme(url='http://localhost:8080/controller/nel', **KWA))
-        msgs.extend(watHab.makeLocScheme(url='http://localhost:8080/watcher/wat', **KWA))
-        msgs.extend(welHab.makeLocScheme(url='http://localhost:8080/watcher/wel', **KWA))
+        msgs.extend(nelHab.makeEndRole(eid=nelHab.pre, role=Roles.controller, **CUE_KWA))
+        msgs.extend(nelHab.makeEndRole(eid=watHab.pre, role=Roles.watcher, **CUE_KWA))
+        msgs.extend(nelHab.makeEndRole(eid=welHab.pre, role=Roles.watcher, **CUE_KWA))
+        msgs.extend(nelHab.makeLocScheme(url='http://localhost:8080/controller/nel', **CUE_KWA))
+        msgs.extend(watHab.makeLocScheme(url='http://localhost:8080/watcher/wat', **CUE_KWA))
+        msgs.extend(welHab.makeLocScheme(url='http://localhost:8080/watcher/wel', **CUE_KWA))
 
         tamHab.psr.parse(bytearray(msgs))
         wesHab.psr.parse(bytearray(msgs))

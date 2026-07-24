@@ -101,7 +101,8 @@ def test_create_cesr_request(mockHelpingNowUTC):
         assert headers["Content-Length"] == 254
         assert len(headers["CESR-ATTACHMENT"]) == 144
 
-        msg = hab.query(pre=hab.pre, src=wit, route="mbx", query=dict(s=0), **KWA)
+        msg = hab.query(pre=hab.pre, src=wit, route="mbx", query=dict(s=0),
+                        gvrsn=Vrsn_1_0, **KWA)
         client = MockClient()
 
         createCESRRequest(msg, client, dest=wit, path="/qry/mbx")
@@ -241,7 +242,8 @@ def test_stream_cesr_request(mockHelpingNowUTC):
         assert headers["Content-Length"] == 254
         assert len(headers["CESR-ATTACHMENT"]) == 144
 
-        msg = hab.query(pre=hab.pre, src=wit, route="mbx", query=dict(s=0), **KWA)
+        msg = hab.query(pre=hab.pre, src=wit, route="mbx", query=dict(s=0),
+                        gvrsn=Vrsn_1_0, **KWA)
         client = MockClient()
 
         streamCESRRequests(client, msg, dest=wit, path="/qry/mbx")
@@ -261,7 +263,8 @@ def test_stream_cesr_request(mockHelpingNowUTC):
                                               b'Z3al3V3z3VstRtHRPeOrotuqZZUgBl2yHzgpGyOjAXYGinVqWLAMhdmQ089FTSAz'
                                               b'qSTBmJzI8RvIezsJ')
 
-        msgs = hab.query(pre=hab.pre, src=wit, route="logs", query=dict(s=0), **KWA)
+        msgs = hab.query(pre=hab.pre, src=wit, route="logs", query=dict(s=0),
+                         gvrsn=Vrsn_1_0, **KWA)
         msgs.extend(hab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0))
 
         client = MockClient()

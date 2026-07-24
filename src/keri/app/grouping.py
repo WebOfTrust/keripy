@@ -599,7 +599,7 @@ def getEscrowedEvent(db, pre, sn):
         seal = SealSource(s=number.snh, d=diger.qb64)
 
     return messagize(serder, sigers=sigers, bonds=seal, framed=True,
-                     gvrsn=serder.pvrsn)
+                     gvrsn=Version)
 
 
 class Multiplexor:

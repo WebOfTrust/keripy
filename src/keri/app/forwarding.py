@@ -604,10 +604,13 @@ def introduce(hab, wit):
                 break
 
     if not found:  # no receipt from remote so pre-send own inception
-        # no vrcs or rct of own icp from remote so send own inception
-        for msg in hab.db.clonePreIter(pre=hab.pre, version=hab.kever.serder.pvrsn):
+        # no vrcs or rct of own icp from remote so send own inception.
+        # Match attachment genus to this hab's event version so v1-only
+        # witnesses can parse the introduction stream.
+        gvrsn = hab.kever.serder.pvrsn
+        for msg in hab.db.clonePreIter(pre=hab.pre, gvrsn=gvrsn):
             msgs.extend(msg)
-        for msg in hab.db.cloneDelegation(hab.kever):
+        for msg in hab.db.cloneDelegation(hab.kever, gvrsn=gvrsn):
             msgs.extend(msg)
-        msgs.extend(hab.replyEndRole(cid=hab.pre))
+        msgs.extend(hab.replyEndRole(cid=hab.pre, gvrsn=gvrsn))
     return msgs
