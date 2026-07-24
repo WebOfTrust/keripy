@@ -76,7 +76,8 @@ class Counselor(doing.DoDoer):
 
         """
         # used just for the log message
-        evt = ghab.msgOwnEvent(sn=number.sn, allowPartiallySigned=True, framed=True)
+        evt = ghab.msgOwnEvent(sn=number.sn, allowPartiallySigned=True, framed=True,
+                               gvrsn=self.version if self.version is not None else Version)
         serder = SerderKERI(raw=evt)  # used just for the log message
         logger.info("Waiting for other signatures on %s for %s:%s...",
                     serder.ilk, prefixer.qb64, number.sn)

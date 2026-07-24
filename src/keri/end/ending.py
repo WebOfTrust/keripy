@@ -601,10 +601,13 @@ class OOBIEnd:
         if eid:
             eids.append(eid)
 
-        msgs = hab.replyToOobi(aid=aid, role=role, eids=eids)
+        # Serve attachments at this node's configured CESR version (v1 demos
+        # pin --version 1.0; default Habery Version remains v2).
+        gvrsn = self.hby.version
+        msgs = hab.replyToOobi(aid=aid, role=role, eids=eids, gvrsn=gvrsn)
         if not msgs and role is None:
-            msgs = hab.replyToOobi(aid=aid, role=Roles.witness, eids=eids)
-            msgs.extend(hab.replay(aid))
+            msgs = hab.replyToOobi(aid=aid, role=Roles.witness, eids=eids, gvrsn=gvrsn)
+            msgs.extend(hab.replay(aid, gvrsn=gvrsn))
 
         if msgs:
             rep.status = falcon.HTTP_200  # This is the default status
