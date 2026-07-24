@@ -28,6 +28,11 @@ def _pin_hab_msgs_v1(hab):
     hab.query = partial(BaseHab.query, hab, gvrsn=Vrsn_1_0, **kwa)
     hab.witness = partial(BaseHab.witness, hab, gvrsn=Vrsn_1_0, **kwa)
     hab.msgOwnInception = partial(BaseHab.msgOwnInception, hab, gvrsn=Vrsn_1_0)
+    hab.msgOwnEvent = partial(BaseHab.msgOwnEvent, hab, gvrsn=Vrsn_1_0)
+    hab.processCues = partial(BaseHab.processCues, hab, gvrsn=Vrsn_1_0,
+                              version=Vrsn_1_0, kind=Kinds.json)
+    hab.processCuesIter = partial(BaseHab.processCuesIter, hab, gvrsn=Vrsn_1_0,
+                                  version=Vrsn_1_0, kind=Kinds.json)
 
 
 def test_indexed_witness_replay_v1():

@@ -13,7 +13,7 @@ from hio.help import decking, ogler
 from ..kering import (ClosedError,
                       ConfigurationError, MissingAnchorError,
                       ValidationError, LikelyDuplicitousError,
-                      MissingRegistryError)
+                      MissingRegistryError, Version)
 
 from ..core import (Parser, Schemer, SerderKERI, SerderACDC,
                     MtrDex, NumDex,
@@ -1046,7 +1046,7 @@ def sendCredential(hby, hab, reger, postman, creder, recp):
     serder, prefixer, seqner, saider = reger.cloneCred(creder.said)
     msg = messagize(creder,
                     bonds=[SealEvent(i=prefixer, s=seqner, d=saider)],
-                    framed=True, gvrsn=creder.pvrsn)
+                    framed=True, gvrsn=Version)
     atc = bytes(msg[creder.size:])
     postman.send(serder=creder, attachment=atc)
 

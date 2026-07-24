@@ -74,7 +74,9 @@ class Receiptor(doing.DoDoer):
         hab = self.hby.habs[pre]
         sn = sn if sn is not None else hab.kever.sner.num
 
-        msg = hab.msgOwnEvent(sn=sn, framed=True)
+        # Match attachment genus to the event body so v1-only witnesses can parse.
+        serder, _, _ = hab.getOwnEvent(sn=sn)
+        msg = hab.msgOwnEvent(sn=sn, framed=True, gvrsn=serder.pvrsn)
         ser = serdering.SerderKERI(raw=msg)
         wits = [wit.qb64 for wit in hab.kvy.fetchWitnessState(ser.pre, ser.sn)]
 
@@ -348,7 +350,9 @@ class WitnessReceiptor(doing.DoDoer):
                 if len(wits) == 0:
                     continue
 
-                msg = hab.msgOwnEvent(sn=sn, framed=True)
+                # Match attachment genus to the event body so v1-only witnesses can parse.
+                serder, _, _ = hab.getOwnEvent(sn=sn)
+                msg = hab.msgOwnEvent(sn=sn, framed=True, gvrsn=serder.pvrsn)
                 ser = serdering.SerderKERI(raw=msg)
 
                 witers = []

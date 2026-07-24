@@ -1124,12 +1124,18 @@ def test_reply(mockHelpingNowUTC):
         assert rurls["witness"][wokHab.pre]['http'] == 'http://localhost:8080/witness/wok'
 
         msgs = bytearray()
-        msgs.extend(tamHab.makeEndRole(eid=wesHab.pre, role=Roles.witness, version=Vrsn_1_0, kind=Kinds.json))
-        msgs.extend(tamHab.makeEndRole(eid=wokHab.pre, role=Roles.witness, version=Vrsn_1_0, kind=Kinds.json))
-        msgs.extend(tamHab.makeEndRole(eid=wamHab.pre, role=Roles.witness, version=Vrsn_1_0, kind=Kinds.json))
-        msgs.extend(wesHab.makeLocScheme(url='http://localhost:8080/witness/wes', version=Vrsn_1_0, kind=Kinds.json))
-        msgs.extend(wokHab.makeLocScheme(url='http://localhost:8080/witness/wok', version=Vrsn_1_0, kind=Kinds.json))
-        msgs.extend(wamHab.makeLocScheme(url='http://localhost:8080/witness/wam', version=Vrsn_1_0, kind=Kinds.json))
+        msgs.extend(tamHab.makeEndRole(eid=wesHab.pre, role=Roles.witness,
+                                       version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
+        msgs.extend(tamHab.makeEndRole(eid=wokHab.pre, role=Roles.witness,
+                                       version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
+        msgs.extend(tamHab.makeEndRole(eid=wamHab.pre, role=Roles.witness,
+                                       version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
+        msgs.extend(wesHab.makeLocScheme(url='http://localhost:8080/witness/wes',
+                                         version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
+        msgs.extend(wokHab.makeLocScheme(url='http://localhost:8080/witness/wok',
+                                         version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
+        msgs.extend(wamHab.makeLocScheme(url='http://localhost:8080/witness/wam',
+                                         version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
 
         tamHab.psr.parse(bytearray(msgs))
         wesHab.psr.parse(bytearray(msgs))
@@ -1141,12 +1147,18 @@ def test_reply(mockHelpingNowUTC):
         welHab.psr.parse(bytearray(msgs))
 
         msgs = bytearray()
-        msgs.extend(nelHab.makeEndRole(eid=nelHab.pre, role=Roles.controller, version=Vrsn_1_0, kind=Kinds.json))
-        msgs.extend(nelHab.makeEndRole(eid=watHab.pre, role=Roles.watcher, version=Vrsn_1_0, kind=Kinds.json))
-        msgs.extend(nelHab.makeEndRole(eid=welHab.pre, role=Roles.watcher, version=Vrsn_1_0, kind=Kinds.json))
-        msgs.extend(nelHab.makeLocScheme(url='http://localhost:8080/controller/nel', version=Vrsn_1_0, kind=Kinds.json))
-        msgs.extend(watHab.makeLocScheme(url='http://localhost:8080/watcher/wat', version=Vrsn_1_0, kind=Kinds.json))
-        msgs.extend(welHab.makeLocScheme(url='http://localhost:8080/watcher/wel', version=Vrsn_1_0, kind=Kinds.json))
+        msgs.extend(nelHab.makeEndRole(eid=nelHab.pre, role=Roles.controller,
+                                       version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
+        msgs.extend(nelHab.makeEndRole(eid=watHab.pre, role=Roles.watcher,
+                                       version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
+        msgs.extend(nelHab.makeEndRole(eid=welHab.pre, role=Roles.watcher,
+                                       version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
+        msgs.extend(nelHab.makeLocScheme(url='http://localhost:8080/controller/nel',
+                                         version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
+        msgs.extend(watHab.makeLocScheme(url='http://localhost:8080/watcher/wat',
+                                         version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
+        msgs.extend(welHab.makeLocScheme(url='http://localhost:8080/watcher/wel',
+                                         version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
 
         tamHab.psr.parse(bytearray(msgs))
         wesHab.psr.parse(bytearray(msgs))
