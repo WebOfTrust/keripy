@@ -7,8 +7,6 @@ Support for WebRegBaser(WebDBer)
 
 """
 
-import asyncio
-
 from ..core import Diger, Number, Saider, SerderACDC
 from ..db import (WebDBer, B64OnIoSetSuber, CatCesrSuber, CesrOnSuber,
                   CesrSuber, SerderSuber)
@@ -166,21 +164,25 @@ class WebRegBaser(WebDBer):
 
     def close(self, *, clear=False):
         """
-        Close browser database and schedule pending writes for persistence.
+        Close browser database when it has no pending writes.
 
         Parameters:
             clear (bool): True means clear persisted data before close
+
+        Raises:
+            RuntimeError: if pending writes or clear require async persistence
 
         """
         if not self.opened or self.db is None:
             return
 
-        if clear or self.temp:
-            for subdb in self.db._stores.values():
-                subdb.items.clear()
-                subdb.dirty = True
+        dirty = any(subdb.dirty for subdb in self.db._stores.values())
+        if clear or self.temp or dirty:
+            raise RuntimeError(
+                "WebRegBaser.close() cannot persist pending browser writes; "
+                "use await aclose()."
+            )
 
-        db = self.db
         self.db = None
         self.env = None
         self.opened = False
@@ -190,12 +192,6 @@ class WebRegBaser(WebDBer):
                 delattr(self, name)
             except AttributeError:
                 pass
-
-        try:
-            loop = asyncio.get_running_loop()
-            loop.create_task(db.flush())
-        except RuntimeError:
-            pass
 
     async def aclose(self, *, clear=False):
         """

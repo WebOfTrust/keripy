@@ -6,6 +6,8 @@ tests.acdc.test_webregbasing module
 
 import asyncio
 
+import pytest
+
 from keri.acdc import messaging, webregbasing
 from keri.core import coring, serdering
 from keri.db import subing
@@ -113,17 +115,21 @@ def test_webregbaser_store_contract_and_persistence():
         assert reopened.maes.get(keys=serder.said, on=1) == [(serder.said,)]
         assert reopened.ooes.get(keys=serder.said, on=1) == [(serder.said,)]
 
-        syncSaid = coring.Diger(ser=b"sync close candidate").qb64
-        assert reopened.ooes.add(keys=serder.said, on=2, val=syncSaid)
-        reopened.close()
+        pendingSaid = coring.Diger(ser=b"pending close candidate").qb64
+        assert reopened.ooes.add(keys=serder.said, on=2, val=pendingSaid)
+        with pytest.raises(RuntimeError):
+            reopened.close()
+        assert reopened.opened is True
+        assert reopened.db is not None
+        assert reopened.env is not None
+        await reopened.aclose()
         assert reopened.opened is False
         assert reopened.db is None
         assert reopened.env is None
-        await asyncio.sleep(0)
 
         closed = webregbasing.WebRegBaser(name="observer")
         await closed.reopen(storageOpener=backend.open)
-        assert closed.ooes.get(keys=serder.said, on=2) == [(syncSaid,)]
+        assert closed.ooes.get(keys=serder.said, on=2) == [(pendingSaid,)]
         await closed.aclose()
 
     asyncio.run(run())
