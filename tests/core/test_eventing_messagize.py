@@ -109,10 +109,11 @@ def test_messagize_v1():
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-FA'
-                    b'BDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_kH4c'
-                    b'G7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE'
-                    b'-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyClVTLoD')
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-'
+                    b'FABDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAA'
+                    b'AAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-'
+                    b'AABAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-'
+                    b'DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyClVTLoD')
 
         # Test with not framed
         #msg = messagize(serder, sigers=sigers, source=source, framed=False, gvrsn=Vrsn_1_0)
@@ -120,28 +121,30 @@ def test_messagize_v1():
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
-                    b'v-FABDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_'
-                    b'kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAB1DuEfnZZ6juMZDYiodcWiIqd'
-                    b'juEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyClVTLoD')
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-'
+                    b'VA0-'
+                    b'FABDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAA'
+                    b'AAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-'
+                    b'AABAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-'
+                    b'DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyClVTLoD')
 
          # Test with seal SealEvent Only
         msg = messagize(serder, bonds=seal, framed=True, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-IA'
-                    b'BDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_kH4c'
-                    b'G7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-'
+                    b'IABDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAA'
+                    b'AAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
         # Test with not framed
         msg = messagize(serder, bonds=seal, framed=False, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
-                    b'Y-IABDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_'
-                    b'kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-'
+                    b'VAd-IABDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAA'
+                    b'AAAAAAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
         # Test with SealLast and Sigers
         # create SealLast for endorsers est evt whose keys use to sign
@@ -181,8 +184,9 @@ def test_messagize_v1():
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VA'
-                    b'N-GABMAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-'
+                    b'VAS-GAB0AAAAAAAAAAAAAAAAAAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7z'
+                    b'hqTEhkeDZ2z')
 
         # test with multiple seals so collated
         seal0 = SealEvent(i='DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI',
@@ -201,12 +205,14 @@ def test_messagize_v1():
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VB'
-                    b'I-IACDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_'
-                    b'kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2zDAvCLRr5luWmp7keDvDuLP0kIqcyBYq'
-                    b'79b3Dho1QvrjIMAADEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-GA'
-                    b'CMAABEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2zMAACEMuNWHss_H_'
-                    b'kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-'
+                    b'VBc-IACDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAA'
+                    b'AAAAAAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2zDAvCLRr5l'
+                    b'uWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAAAAAAAADEMuNW'
+                    b'Hss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-'
+                    b'GAC0AAAAAAAAAAAAAAAAAAAAAABEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTE'
+                    b'hkeDZ2z0AAAAAAAAAAAAAAAAAAAAAACEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7z'
+                    b'hqTEhkeDZ2z')
 
         # Test with wigers
         verfers, digers = mgr.incept(icount=1, ncount=0, transferable=False, stem="W")
@@ -317,15 +323,17 @@ def test_messagize_v1():
         assert msg == (b'{"v":"KERI10JSON0000fd_","t":"icp","d":"EFyzzg2Mp5A3ecChc6AhSLTQ'
                     b'ssBZAmNvPnGxjJyHxl4F","i":"EFyzzg2Mp5A3ecChc6AhSLTQssBZAmNvPnGxj'
                     b'JyHxl4F","s":"0","kt":"1","k":["DOif48whAmpb_4kyksMcz57snMRIuX0b'
-                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-VC'
-                    b'A-FABDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMuNWHss_H_'
-                    b'kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAB1DuEfnZZ6juMZDYiodcWiIqd'
-                    b'juEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyClVTLoD-BA'
-                    b'BAABtOhjlKo8WhJQ3EXMIMaQ_IH6yeyxs7_JuO4RioH1NUTtzTuV1bbuB7eoNhEj'
-                    b'20VJYa4947ZMVrOxKhzI6EqUH-CABBJjH1MCDssEZMnORskF34AwOFDgDL47513G'
-                    b'ivRvd_QKz0BDwWrxO8RItpgGFtFiDF7QoVas-6Bzvj0xtOfbsh31jjtshcEa0rUV'
-                    b'X2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF-IABDAvCLRr5luWmp7keDvDuLP0kIqc'
-                    b'yBYq79b3Dho1QvrjIMAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
+                    b'qN1FDe09AlRj"],"nt":"0","n":[],"bt":"0","b":[],"c":[],"a":[]}-'
+                    b'VCK-FABDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAA'
+                    b'AAAAAAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-'
+                    b'AABAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-'
+                    b'DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyClVTLoD-BABAABtOhjlKo8'
+                    b'WhJQ3EXMIMaQ_IH6yeyxs7_JuO4RioH1NUTtzTuV1bbuB7eoNhEj20VJYa4947ZM'
+                    b'VrOxKhzI6EqUH-CABBJjH1MCDssEZMnORskF34AwOFDgDL47513GivRvd_QKz0BD'
+                    b'wWrxO8RItpgGFtFiDF7QoVas-'
+                    b'6Bzvj0xtOfbsh31jjtshcEa0rUVX2xsyyH1US2fBWe7FNpn6xko5EVwg_TwF-IAB'
+                    b'DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAAAAA'
+                    b'AAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z')
 
         # Test receipt message with wigers and/or cigars on prior message
         wigers = mgr.sign(ser=serder.raw, verfers=verfers, indexed=True)
@@ -409,12 +417,14 @@ def test_messagize_v1():
 
         msg = messagize(serder, rsgs=rsgs, bonds=[bond], framed=True, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON0000c9_","t":"qry","d":"EGN68_seecuzXQO15FFGJLVw'
-                    b'ZCBCPYW-hy29fjWWPQbp","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                    b'":"log","rr":"","q":{"i":"DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho'
-                    b'1QvrjI"}}-DAuDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMu'
-                    b'NWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAB1DuEfnZZ6juMZDYi'
-                    b'odcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyCl'
-                    b'VTLoD-EABMAAA1AAG2026-07-12T16c48c52d431388p00c00')
+                    b'ZCBCPYW-hy29fjWWPQbp","dt":"2021-01-'
+                    b'01T00:00:00.000000+00:00","r":"log","rr":"","q":{"i":"DAvCLRr5lu'
+                    b'Wmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI"}}-'
+                    b'DAzDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAA'
+                    b'AAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-'
+                    b'AABAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-'
+                    b'DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyClVTLoD-'
+                    b'EAB0AAAAAAAAAAAAAAAAAAAAAAA1AAG2026-07-12T16c48c52d431388p00c00')
 
         # Test trans receipts rsgs and bonds FirstSeen matter primitives
         bond = FirstSeen(f=Number(numh='0'),
@@ -427,12 +437,116 @@ def test_messagize_v1():
 
         msg = messagize(serder, rsgs=rsgs, bonds=[bond], framed=True, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON0000c9_","t":"qry","d":"EGN68_seecuzXQO15FFGJLVw'
-                    b'ZCBCPYW-hy29fjWWPQbp","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                    b'":"log","rr":"","q":{"i":"DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho'
-                    b'1QvrjI"}}-DAuDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjIMAAAEMu'
-                    b'NWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-AABAAB1DuEfnZZ6juMZDYi'
-                    b'odcWiIqdjuEE-QzdORp-DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyCl'
-                    b'VTLoD-EABMAAA1AAG2026-07-12T16c48c52d431388p00c00')
+                    b'ZCBCPYW-hy29fjWWPQbp","dt":"2021-01-'
+                    b'01T00:00:00.000000+00:00","r":"log","rr":"","q":{"i":"DAvCLRr5lu'
+                    b'Wmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI"}}-'
+                    b'DAzDAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI0AAAAAAAAAAAAAAAA'
+                    b'AAAAAAAEMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z-'
+                    b'AABAAB1DuEfnZZ6juMZDYiodcWiIqdjuEE-QzdORp-'
+                    b'DbxdDN_GG84x_NA1rSc5lPfPQQkQkxI862_XjyZLHyClVTLoD-'
+                    b'EAB0AAAAAAAAAAAAAAAAAAAAAAA1AAG2026-07-12T16c48c52d431388p00c00')
+
+        """ Done Test """
+
+
+def _v1parse(msg):
+    """Drive Parser.msgParsator over a single framed v1 message plus attachments
+    and return the extracted MsgParseDom (with .tsgs, .rsgs, .ssts, .sscs,
+    .frcs, ...). Uses the v1 code table so it mimics a genuine keri 1.x parser.
+    """
+    parser = Parser(version=Vrsn_1_0)
+    gen = parser.msgParsator(ims=bytearray(msg), framed=False, version=Vrsn_1_0)
+    try:
+        while True:
+            next(gen)
+    except StopIteration as ex:
+        return ex.value
+
+
+def test_messagize_v1_seqner_ordinals():
+    """Regression: the v1 legacy attachment path (gvrsn.major < 2) must serialize
+    seal/receipt/first-seen ordinals as a fixed 24-char v1 Seqner (0A...), not a
+    v2 compact Number (M...). A genuine keri 1.x node cannot parse the compact
+    Number, so emitting it there breaks v2->v1 interop for transferable seals
+    (replies, transferable receipts). See:
+      Seqner(sn=5).qb64 == "0AAAAAAAAAAAAAAAAAAAAAAF"  (24 chars, correct for v1)
+      Number(num=5).qb64 == "MAAF"                     (v2 compact, wrong for v1)
+    """
+    salter = Salter(raw=b'0123456789abcdef')
+    with openDB(name="edy") as db, openKS(name="edy") as ks:
+        mgr = Manager(ks=ks, salt=salter.qb64)
+        verfers, digers = mgr.incept(icount=1, ncount=0, transferable=True, stem="C")
+
+        serder = incept(keys=[verfers[0].qb64], code=MtrDex.Blake3_256,
+                        kind=Kinds.json, pvrsn=Vrsn_1_0, version=Vrsn_1_0)
+        sigers = mgr.sign(ser=serder.raw, verfers=verfers)
+
+        pre = 'DAvCLRr5luWmp7keDvDuLP0kIqcyBYq79b3Dho1QvrjI'
+        said = 'EMuNWHss_H_kH4cG7Li1jn2DXfrEaqN7zhqTEhkeDZ2z'
+
+        seqner5 = Seqner(sn=5).qb64b          # b'0AAAAAAAAAAAAAAAAAAAAAAF'
+        number5 = Number(sn=5).qb64b          # b'MAAF' - must NOT appear in v1 output
+        assert seqner5 == b'0AAAAAAAAAAAAAAAAAAAAAAF'
+        assert number5 == b'MAAF'
+
+        # --- tsgs: TransIdxSigGroups (-FAB) empirically-confirmed failure path ---
+        tsgs = [(Prefixer(qb64=pre), Number(sn=5), Diger(qb64=said), sigers)]
+        msg = messagize(serder, tsgs=tsgs, framed=False, gvrsn=Vrsn_1_0)
+        att = msg[serder.size:]
+        assert seqner5 in att
+        assert number5 not in att
+        exts = _v1parse(msg)                  # parse back with v1 code table
+        assert len(exts.tsgs) == 1
+        rpre, rnum, rdig, rsigers = exts.tsgs[0]
+        assert (rpre.qb64, rnum.num, rdig.qb64) == (pre, 5, said)
+
+        # --- rsgs: TransReceiptIdxSigGroups ---
+        rsgs = [(Prefixer(qb64=pre), Number(sn=5), Diger(qb64=said), sigers)]
+        msg = messagize(serder, rsgs=rsgs, framed=False, gvrsn=Vrsn_1_0)
+        att = msg[serder.size:]
+        assert seqner5 in att
+        assert number5 not in att
+        exts = _v1parse(msg)
+        assert len(exts.rsgs) == 1
+        assert (exts.rsgs[0][0].qb64, exts.rsgs[0][1].num, exts.rsgs[0][2].qb64) == (pre, 5, said)
+
+        # --- bonds SealEvent (SealSourceTriples), serialization form ---
+        seal = SealEvent(i=pre, s='5', d=said)
+        msg = messagize(serder, bonds=seal, framed=False, gvrsn=Vrsn_1_0)
+        att = msg[serder.size:]
+        assert seqner5 in att
+        assert number5 not in att
+        exts = _v1parse(msg)
+        assert len(exts.ssts) == 1
+        sprefixer, snumber, sdiger = exts.ssts[0]  # (prefixer, number, diger)
+        assert (sprefixer.qb64, snumber.num, sdiger.qb64) == (pre, 5, said)
+
+        # --- bonds SealSource (SealSourceCouples), serialization form ---
+        seal = SealSource(s='5', d=said)
+        msg = messagize(serder, bonds=seal, framed=False, gvrsn=Vrsn_1_0)
+        att = msg[serder.size:]
+        assert seqner5 in att
+        assert number5 not in att
+        exts = _v1parse(msg)
+        assert len(exts.sscs) == 1
+        snumber, sdiger = exts.sscs[0]  # (number, diger)
+        assert (snumber.num, sdiger.qb64) == (5, said)
+
+        # --- bonds FirstSeen (FirstSeenReplayCouples), serialization form ---
+        bond = FirstSeen(f='5', dt='2026-07-12T16:48:52.431388+00:00')
+        msg = messagize(serder, rsgs=rsgs, bonds=[bond], framed=False, gvrsn=Vrsn_1_0)
+        att = msg[serder.size:]
+        assert seqner5 in att
+        assert number5 not in att
+        exts = _v1parse(msg)
+        assert len(exts.frcs) == 1
+        assert exts.frcs[0][0].num == 5
+
+        # --- v2 path (default gvrsn) must be unchanged: still emits v2 Number ---
+        msg2 = messagize(serder, tsgs=tsgs, framed=False)  # default gvrsn == v2
+        att2 = msg2[serder.size:]
+        assert number5 in att2                # v2 Number still present
+        assert seqner5 not in att2            # no v1 Seqner downgrade in v2
 
         """ Done Test """
 
