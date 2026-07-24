@@ -593,6 +593,12 @@ class OOBIEnd:
         elif match := owits.intersection(self.hby.prefixes):  # We are a witness for identifier
             pre = match.pop()
             hab = self.hby.habs[pre]
+        elif role == Roles.mailbox and eid in self.hby.prefixes:
+            end = self.hby.db.ends.get(keys=(aid, Roles.mailbox, eid))
+            if not end or not end.allowed:
+                rep.status = falcon.HTTP_NOT_ACCEPTABLE
+                return
+            hab = self.hby.habs[eid]
         else:  # Not allowed to respond
             rep.status = falcon.HTTP_NOT_ACCEPTABLE
             return
