@@ -161,12 +161,48 @@ class Verifier:
                     continue
                 nodeSaid = node["n"]
                 op = node['o'] if 'o' in node else None
-                state = self.verifyChain(nodeSaid, op, creder.israid)
+                state = self.verifyChain(nodeSaid, op, creder.israid, creder.iseaid)
                 if state is None:
                     self.escrowMCE(creder, prefixer, seqner, saider)
                     self.cues.append(dict(kin="proof",  said=nodeSaid))
                     raise MissingChainError("Failure to verify credential {} chain {}({})"
                                                    .format(creder.said, label, nodeSaid))
+
+                # Enforce the edge's declared far-node schema ('s'). Per ACDC (S.
+                # Smith, issue #1534) the edge 's' is a schema the far node must
+                # *satisfy*, not a SAID that must equal the far node's own schema
+                # SAID. The far node already validated against its own schema (it is
+                # saved, per verifyChain above), so an edge declaring that same
+                # schema needs no further check. When the edge declares a *different*
+                # schema, the far node must additionally satisfy it: if it does, the
+                # near side is legitimately requiring a backwards-compatible (e.g.
+                # upgraded) schema without the far node being reissued; if it does
+                # not, the edge schema is not backwards compatible and the far node
+                # must be reissued. Handled here rather than in verifyChain so the
+                # missing-schema case can escrow and cue a schema query, exactly as
+                # the near ACDC's own schema does above.
+                nodeSchema = node['s'] if 's' in node else None
+                if nodeSchema is not None:
+                    farCreder = self.reger.creds.get(keys=nodeSaid)
+                    if farCreder.schema != nodeSchema:
+                        scraw = self.resolver.resolve(nodeSchema)
+                        if not scraw:  # edge schema not cached yet -- transient
+                            if self.escrowMSE(creder, prefixer, seqner, saider):
+                                self.cues.append(dict(kin="query",
+                                                      q=dict(r="schema", said=nodeSchema)))
+                            raise MissingSchemaError("edge schema {} for credential {} "
+                                                     "chain {}({}) not in cache"
+                                                     .format(nodeSchema, creder.said,
+                                                             label, nodeSaid))
+                        try:
+                            Schemer(raw=scraw).verify(farCreder.raw)
+                        except ValidationError as ex:  # far node fails the edge schema
+                            self.escrowMCE(creder, prefixer, seqner, saider)
+                            self.cues.append(dict(kin="proof", said=nodeSaid))
+                            raise MissingChainError("Credential {} chain {}({}) far node "
+                                                    "does not satisfy edge schema {}: {}"
+                                                    .format(creder.said, label, nodeSaid,
+                                                            nodeSchema, ex))
 
                 dtnow = helping.nowUTC()
                 dte = helping.fromIso8601(state.dt)
@@ -320,8 +356,11 @@ class Verifier:
         self.reger.issus.add(keys=issuer, val=saider)
         self.reger.schms.add(keys=schema, val=saider)
 
-        if not isinstance(creder.attrib, str) and 'i' in creder.attrib:
-            subject = creder.attrib["i"].encode("utf-8")
+        # Resolve the issuee via .iseaid so aggregate ('acg') credentials index
+        # their subject too: for them .attrib is None and the issuee lives at
+        # .sad["A"][1]["i"]. For attributive creds .iseaid == .attrib["i"].
+        if creder.iseaid is not None:
+            subject = creder.iseaid.encode("utf-8")
             self.reger.subjs.add(keys=subject, val=saider)
 
     def query(self, pre, regk, vcid, *, dt=None, dta=None, dtb=None, **kwa):
@@ -333,13 +372,16 @@ class Verifier:
         hab = self.hby.habs[pre]
         return hab.endorse(serder, last=True, framed=False, gvrsn=serder.pvrsn)
 
-    def verifyChain(self, nodeSaid, op, issuer):
+    def verifyChain(self, nodeSaid, op, issuer, issuee=None):
         """ Verifies the node credential at the end of an edge
 
         Parameters:
             nodeSaid: (str): qb64 SAID of node credential
             op(str): edge operator
-            issuer (str) qb64 AID of issuer
+            issuer (str) qb64 AID of the issuer of the near (edge-bearing) ACDC
+            issuee (str|None): qb64 AID of the issuee of the near (edge-bearing) ACDC,
+                required by the identity operators (E1E). None when the near ACDC is
+                untargeted.
 
         Returns:
             Serder: transaction event state notification message
@@ -349,20 +391,39 @@ class Verifier:
         if said is None:
             return None
 
-        creder = self.reger.creds.get(keys=nodeSaid)
+        creder = self.reger.creds.get(keys=nodeSaid)  # far (node) credential
 
-        if op not in ['I2I', 'DI2I', 'NI2I']:
-            op = 'I2I' if 'i' in creder.attrib else 'NI2I'
+        if op not in ['I2I', 'DI2I', 'NI2I', 'E1E']:
+            # A far node is targeted (I2I) iff it has an issuee, else untargeted
+            # (NI2I). Resolve via .iseaid so an aggregate ('acg') far node -- whose
+            # issuee is at .sad["A"][1]["i"] and whose .attrib is None -- coerces the
+            # same as an attributive one.
+            op = 'I2I' if creder.iseaid is not None else 'NI2I'
 
-        if op != 'NI2I':
-            if 'i' not in creder.attrib:
+        if op == 'E1E':
+            # Identity relation (discussion #1515): the issuee AID of the near ACDC
+            # (the one carrying this edge) MUST equal the issuee AID of the far node.
+            # Unlike the delegative I2I, this says nothing about the issuer, so the
+            # common SEDI case -- both credentials issued by a third party to the same
+            # subject, issuer != issuee -- is valid (and is exactly what I2I rejects).
+            # Resolve the far issuee via .iseaid so an aggregate node (A[1].i) works too.
+            farIssuee = creder.iseaid
+            if farIssuee is None or issuee is None or issuee != farIssuee:
+                return None
+        elif op != 'NI2I':
+            # Resolve the far node's issuee via .iseaid so an aggregate ('acg') far
+            # node (issuee at .sad["A"][1]["i"]) resolves identically to an
+            # attributive one (.attrib["i"]). None means an untargeted far node,
+            # which cannot satisfy a targeted (I2I/DI2I) edge.
+            farIssuee = creder.iseaid
+            if farIssuee is None:
                 return None
 
-            iss = self.reger.subjs.get(keys=creder.attrib['i'])
+            iss = self.reger.subjs.get(keys=farIssuee)
             if iss is None:
                 return None
 
-            if op == 'I2I' and issuer != creder.attrib['i']:
+            if op == 'I2I' and issuer != farIssuee:
                 return None
 
             if op == "DI2I":
