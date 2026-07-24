@@ -36,7 +36,7 @@ from ..db import (Baser, Broker, Komer, LMDBer,
 from ..core import (Counter, Number, Diger, Dater,
                     Prefixer, Verfer, Cigar, Saider,
                     Seqner, SerderACDC, SerderKERI,
-                    Siger, CtrDex_1_0)
+                    Siger, Codens)
 
 from ..help import helping
 
@@ -2468,18 +2468,22 @@ class Reger(LMDBer):
 
         return self.env
 
-    def cloneCreds(self, saids, db):
+    def cloneCreds(self, saids, db, gvrsn=Version, *, version=None):
         """ Returns fully expanded credential with chained credentials attached.
 
         Parameters:
            saids (list): of Saider objects:
            db (Baser): baser object to load schema
+           gvrsn (Versionage): CESR genus version for TEL attachments
+           version (Versionage): legacy alias for gvrsn
 
         Returns:
             list: fully hydrated credentials with full chains provided
 
         """
         from ..app import serialize
+        if version is not None:
+            gvrsn = version
         creds = []
         for saider in saids:
             key = saider.qb64
@@ -2491,12 +2495,12 @@ class Reger(LMDBer):
             status = self.tevers[regk].vcState(saider.qb64)
             schemer = db.schema.get(creder.schema)
 
-            iss = bytearray(self.cloneTvtAt(creder.said, sn=0))
+            iss = bytearray(self.cloneTvtAt(creder.said, sn=0, gvrsn=gvrsn))
             iserder = SerderKERI(raw=iss)
             issatc = bytes(iss[iserder.size:])
             del iss[0:iserder.size]
             if status.et in [Ilks.rev, Ilks.brv]:
-                rev = bytearray(self.cloneTvtAt(creder.said, sn=1))
+                rev = bytearray(self.cloneTvtAt(creder.said, sn=1, gvrsn=gvrsn))
                 rserder = SerderKERI(raw=rev)
                 revatc = bytes(rev[rserder.size:])
                 del rev[0:rserder.size]
@@ -2510,7 +2514,7 @@ class Reger(LMDBer):
                     continue
 
                 chainSaids.append(Saider(qb64=p["n"]))
-            chains = self.cloneCreds(chainSaids, db)
+            chains = self.cloneCreds(chainSaids, db, gvrsn=gvrsn)
 
             cred = dict(
                 sad=creder.sad,
@@ -2530,11 +2534,11 @@ class Reger(LMDBer):
                 )
             )
 
-            ctr = Counter(qb64b=iss, strip=True, version=Vrsn_1_0)
-            if ctr.code == CtrDex_1_0.AttachmentGroup:
-                ctr = Counter(qb64b=iss, strip=True, version=Vrsn_1_0)
+            ctr = Counter(qb64b=iss, strip=True, version=gvrsn)
+            if ctr.name == Codens.AttachmentGroup:
+                ctr = Counter(qb64b=iss, strip=True, version=gvrsn)
 
-            if ctr.code == CtrDex_1_0.SealSourceCouples:
+            if ctr.name == Codens.SealSourceCouples:
                 Number(qb64b=iss, strip=True)
                 saider = Saider(qb64b=iss)
 
@@ -2545,11 +2549,11 @@ class Reger(LMDBer):
                 cred['ancatc'] = ancatc.decode("utf-8"),
 
             if status.et in [Ilks.rev, Ilks.brv]:
-                ctr = Counter(qb64b=rev, strip=True, version=Vrsn_1_0)
-                if ctr.code == CtrDex_1_0.AttachmentGroup:
-                    ctr = Counter(qb64b=rev, strip=True, version=Vrsn_1_0)
+                ctr = Counter(qb64b=rev, strip=True, version=gvrsn)
+                if ctr.name == Codens.AttachmentGroup:
+                    ctr = Counter(qb64b=rev, strip=True, version=gvrsn)
 
-                if ctr.code == CtrDex_1_0.SealSourceCouples:
+                if ctr.name == Codens.SealSourceCouples:
                     Number(qb64b=rev, strip=True)
                     saider = Saider(qb64b=rev)
 
@@ -2596,7 +2600,7 @@ class Reger(LMDBer):
         prefixer, number, saider = self.cancs.get(keys=(said,))
         return creder, prefixer, number, saider
 
-    def clonePreIter(self, pre, fn=0):
+    def clonePreIter(self, pre, fn=0, gvrsn=Version, *, version=None):
         """ Iterator of first seen event messages
 
         Returns iterator of first seen event messages with attachments for the
@@ -2606,6 +2610,8 @@ class Reger(LMDBer):
         Parameters:
             pre (bytes): qb64 identifier prefix of registry state TEL
             fn (int): first seen ordinal
+            gvrsn (Versionage): CESR genus version for attachments
+            version (Versionage): legacy alias for gvrsn
 
         Returns:
             iterator: bytearray per serializeed event msg
@@ -2614,16 +2620,22 @@ class Reger(LMDBer):
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
+        if version is not None:
+            gvrsn = version
         for _, fn, dig in self.tels.getAllItemIter(keys=pre, on=fn):
-            msg = self.cloneTvt(pre, dig)
+            msg = self.cloneTvt(pre, dig, gvrsn=gvrsn)
             yield msg
 
-    def cloneTvtAt(self, pre, sn=0):
+    def cloneTvtAt(self, pre, sn=0, gvrsn=Version, *, version=None):
+        if version is not None:
+            gvrsn = version
         snkey = snKey(pre, sn)
         dig = self.tels.get(keys=pre, on=sn)
-        return self.cloneTvt(pre, dig)
+        return self.cloneTvt(pre, dig, gvrsn=gvrsn)
 
-    def cloneTvt(self, pre, dig):
+    def cloneTvt(self, pre, dig, gvrsn=Version, *, version=None):
+        if version is not None:
+            gvrsn = version
         if not (raw := self.tvts.get(keys=dgKey(pre, dig))):
             raise MissingEntryError("Missing event for dig={}.".format(dig))
 
@@ -2637,10 +2649,10 @@ class Reger(LMDBer):
         if not tibs and couple is None:
             return bytearray(rawb)
 
-        _, pvrsn, _, _, gvrsn = smell(rawb)
+        _, pvrsn, _, _, body_gvrsn = smell(rawb)
         serder = SimpleNamespace(raw=rawb,
                                  pvrsn=pvrsn,
-                                 gvrsn=gvrsn if gvrsn is not None else pvrsn,
+                                 gvrsn=body_gvrsn if body_gvrsn is not None else pvrsn,
                                  pretty=lambda: rawb[:80].decode(
                                      "utf-8", errors="replace"))
 
@@ -2650,7 +2662,7 @@ class Reger(LMDBer):
             seal = SealSource(s=number, d=diger)
 
         return coreMessagize(serder, wigers=tibs or None, bonds=seal,
-                             framed=False, gvrsn=pvrsn)
+                             framed=False, gvrsn=gvrsn)
 
     def sources(self, db, creder):
         """ Returns raw bytes of any source ('e') credential that is in our database

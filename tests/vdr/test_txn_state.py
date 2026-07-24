@@ -78,7 +78,7 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
         assert saider[0].qb64b == b'ECZWYxq_Qgs0J0ls_imRWRYxrojzTKL2REjqe0rN8kWy'
 
         tmsgs = bytearray()
-        cloner = regery.reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
+        cloner = regery.reger.clonePreIter(pre=issuer.regk, fn=0, gvrsn=Vrsn_1_0)
         for msg in cloner:
             tmsgs.extend(msg)
 
@@ -169,7 +169,7 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
         assert saider[0].qb64b == said
 
         tmsgs = bytearray()
-        cloner = regery.reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
+        cloner = regery.reger.clonePreIter(pre=issuer.regk, fn=0, gvrsn=Vrsn_1_0)
         for msg in cloner:
             tmsgs.extend(msg)
 
@@ -227,7 +227,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         assert bobHab.pre in wesHab.kevers
 
         tmsgs = bytearray()
-        cloner = regery.reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
+        cloner = regery.reger.clonePreIter(pre=issuer.regk, fn=0, gvrsn=Vrsn_1_0)
         for msg in cloner:
             tmsgs.extend(msg)
 
@@ -351,7 +351,7 @@ def test_tsn_from_no_one(mockHelpingNowUTC, mockCoringRandomNonce):
         assert bobHab.pre in wesHab.kevers
 
         tmsgs = bytearray()
-        cloner = regery.reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
+        cloner = regery.reger.clonePreIter(pre=issuer.regk, fn=0, gvrsn=Vrsn_1_0)
         for msg in cloner:
             tmsgs.extend(msg)
 
@@ -504,7 +504,7 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
         Parser(version=Vrsn_1_0).parse(ims=msgs, kvy=bamKvy, rvy=bamRvy)
 
         tmsgs = bytearray()
-        cloner = regery.reger.clonePreIter(pre=issuer.regk, fn=0)  # create iterator at 0
+        cloner = regery.reger.clonePreIter(pre=issuer.regk, fn=0, gvrsn=Vrsn_1_0)
         for msg in cloner:
             tmsgs.extend(msg)
 
@@ -523,7 +523,7 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
 
         vci = creder.said
         tmsgs = bytearray()
-        cloner = regery.reger.clonePreIter(pre=vci, fn=0)  # create iterator at 0
+        cloner = regery.reger.clonePreIter(pre=vci, fn=0, gvrsn=Vrsn_1_0)
         for msg in cloner:
             tmsgs.extend(msg)
 

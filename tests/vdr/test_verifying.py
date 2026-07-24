@@ -348,9 +348,9 @@ def test_verifier_chained_credential(seeder):
         # Now process all the events that Ron's issuer has generated so far
         for msg in ron.db.clonePreIter(pre=ron.pre, version=ron.kever.serder.pvrsn):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
-        for msg in ronverfer.reger.clonePreIter(pre=roniss.regk):
+        for msg in ronverfer.reger.clonePreIter(gvrsn=Vrsn_1_0, pre=roniss.regk):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
-        for msg in ronverfer.reger.clonePreIter(pre=creder.said):
+        for msg in ronverfer.reger.clonePreIter(gvrsn=Vrsn_1_0, pre=creder.said):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=iankvy, tvy=iantvy)
 
         ianverfer.processCredential(creder, prefixer=ron.kever.prefixer, seqner=seqner,
@@ -481,9 +481,9 @@ def test_verifier_chained_credential(seeder):
 
         for msg in ron.db.clonePreIter(pre=ron.pre, version=ron.kever.serder.pvrsn):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
-        for msg in ronverfer.reger.clonePreIter(pre=roniss.regk):
+        for msg in ronverfer.reger.clonePreIter(gvrsn=Vrsn_1_0, pre=roniss.regk):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
-        for msg in ronverfer.reger.clonePreIter(pre=creder.said):
+        for msg in ronverfer.reger.clonePreIter(gvrsn=Vrsn_1_0, pre=creder.said):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
         vicverfer.processCredential(creder, prefixer=ian.kever.prefixer, seqner=seqner,
@@ -497,9 +497,9 @@ def test_verifier_chained_credential(seeder):
         # Get Ian's icp into Vic's db
         for msg in ian.db.clonePreIter(pre=ian.pre, version=ian.kever.serder.pvrsn):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
-        for msg in ianverfer.reger.clonePreIter(pre=ianiss.regk):
+        for msg in ianverfer.reger.clonePreIter(gvrsn=Vrsn_1_0, pre=ianiss.regk):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
-        for msg in ianverfer.reger.clonePreIter(pre=vLeiCreder.said):
+        for msg in ianverfer.reger.clonePreIter(gvrsn=Vrsn_1_0, pre=vLeiCreder.said):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
         # And now verify the credential:
@@ -527,9 +527,9 @@ def test_verifier_chained_credential(seeder):
 
         for msg in ron.db.clonePreIter(pre=ron.pre, version=ron.kever.serder.pvrsn):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
-        for msg in ronverfer.reger.clonePreIter(pre=roniss.regk):
+        for msg in ronverfer.reger.clonePreIter(gvrsn=Vrsn_1_0, pre=roniss.regk):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
-        for msg in ronverfer.reger.clonePreIter(pre=creder.said):
+        for msg in ronverfer.reger.clonePreIter(gvrsn=Vrsn_1_0, pre=creder.said):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=vickvy, tvy=victvy)
 
         with pytest.raises(RevokedChainError):
