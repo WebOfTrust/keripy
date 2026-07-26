@@ -859,7 +859,7 @@ class Poller(doing.DoDoer):
                         logger.error(f"bad mailbox event: {evt}")
                         continue
 
-                    self.msgs.append(msg.encode("utf=8"))
+                    self.msgs.append(msg.encode("utf-8"))
                     yield self.tock
 
                     witrec.topics[tpc] = int(idx)
