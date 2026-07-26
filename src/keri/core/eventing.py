@@ -3151,10 +3151,9 @@ class Kever:
             and not self.locallyWitnessed(wits=wits) and seqner and saider):
             couple = seqner.qb64b + saider.qb64b
             self.db.setAes(dgkey, couple)  # authorizer (delegator/issuer) event seal
-
-        #if seqner and saider:
-            #couple = seqner.qb64b + saider.qb64b
-            #self.db.setAes(dgkey, couple)  # authorizer (delegator/issuer) event seal
+        elif (self.delpre and not serder.ilk == Ilks.ixn
+              and self.locallyWitnessed(wits=wits)):
+            self.db.pwde.addOn(keys=serder.pre, on=serder.sn, val=serder.said)
 
         if esr := self.db.esrs.get(keys=dgkeys):  # preexisting esr
             if local and not esr.local:  # local overwrites prexisting remote
@@ -5391,6 +5390,54 @@ class Kevery:
                      "receipt of pre= %s sn=%x dig=%s", serder.pre, serder.sn,
                      serder.said)
 
+    def processEscrowWitnessAnchors(self):
+        """Process escrowed delegated events accepted by a witness that are
+        still missing their authorizer event seal (AES).
+
+        Witnesses accept delegated events without requiring the delegation
+        anchor (validateDelegation short-circuits for locallyWitnessed) so
+        they can issue receipts and let the delegation flow proceed.  The AES
+        cannot be stored at acceptance time because the delegator has not yet
+        anchored the event.
+
+        db.pwde tracks these events.  Once the delegator's KEL arrives
+        (containing the anchoring seal), this method verifies it and stores
+        the AES, then removes the entry from the escrow.
+        """
+        for (epre,), esn, edig in self.db.pwde.getOnItemIter(keys=b''):
+            try:
+                dgkey = dgKey(epre, edig)
+
+                eraw = self.db.getEvt(dgkey)
+                if eraw is None:
+                    raise ValidationError(f"PWDE missing event at dig={bytes(edig)}")
+
+                eserder = serdering.SerderKERI(raw=bytes(eraw))
+                delpre = eserder.ked.get('di')
+                if not delpre or delpre not in self.kevers:
+                    continue
+
+                seal = dict(i=eserder.pre, s=eserder.snh, d=eserder.said)
+                dserder = self.db.fetchLastSealingEventByEventSeal(
+                    delpre, seal=seal)
+                if dserder is None:
+                    continue
+
+                seqner = coring.Seqner(sn=dserder.sn)
+                couple = seqner.qb64b + dserder.saidb
+                self.db.setAes(dgkey, couple)
+
+            except Exception as ex:
+                self.db.pwde.remOn(keys=epre, on=esn, val=edig)
+                if logger.isEnabledFor(logging.DEBUG):
+                    logger.exception("Kevery PWDE unescrowed: %s", ex.args[0])
+                else:
+                    logger.error("Kevery PWDE unescrowed: %s", ex.args[0])
+            else:
+                self.db.pwde.remOn(keys=epre, on=esn, val=edig)
+                logger.info("Kevery PWDE resolved delegation anchor for %s",
+                            eserder.pre)
+
     def processEscrows(self):
         """
         Iterate throush escrows and process any that may now be finalized
@@ -5404,6 +5451,7 @@ class Kevery:
             self.processEscrowUnverNonTrans()
             self.processEscrowUnverTrans()
             self.processEscrowPartialDels()
+            self.processEscrowWitnessAnchors()
             self.processEscrowPartialWigs()
             self.processEscrowPartialSigs()
             self.processEscrowDuplicitous()
