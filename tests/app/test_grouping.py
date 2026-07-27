@@ -1151,6 +1151,49 @@ def test_multisig_incept_v1_body_supports_v2_attachments(mockHelpingNowUTC, monk
         assert [siger.index for siger in sigers] == [0, 1]  # Both signatures
 
 
+def test_multisig_interact_v1_body_supports_v2_attachments_through_approved_replay(mockHelpingNowUTC, monkeypatch):
+    with openMultiSig(prefix="approved-embed-ixn-v2a") as ((hby1, ghab1), (hby2, ghab2), (_, _)):
+        # Both members keep the legacy V1 outer wrapper, but the group interaction
+        # event they are coordinating already emits V2-framed attachments
+        ixn1 = ghab1.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        exn1, _ = multisigInteractExn(ghab=ghab1, aids=ghab1.smids,
+                                      ixn=ixn1,
+                                      pvrsn=Vrsn_1_0, gvrsn=Vrsn_2_0, kind=Kinds.json)
+        ixn2 = ghab2.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        exn2, _ = multisigInteractExn(ghab=ghab2, aids=ghab2.smids,
+                                      ixn=ixn2,
+                                      pvrsn=Vrsn_1_0, gvrsn=Vrsn_2_0, kind=Kinds.json)
+
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        child = SerderKERI(raw=ixn2)
+        child_atc = bytearray(ixn2[child.size:])
+
+        # The outer wrapper stays on the embedded V1 path even though the child
+        # interaction stream carries V2-framed attachments
+        assert exn1.pvrsn == Vrsn_1_0
+        assert "ixn" in exn1.ked["e"]
+
+        mux.add(exn1)  # Record local approval before the matching peer proposal arrives
+
+        esaid = exn1.ked["e"]["d"]
+        digers = hby1.db.meids.get(keys=(esaid,))
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn1.said
+
+        # Hand the approved replay branch the stored embedded child attachments
+        # so it has to detect the child's V2 framing when reparsing
+        monkeypatch.setattr(grouping, "cloneMessage",
+                            lambda hby, said: (exn2, {"ixn": child_atc}) if said == exn2.said else (None, None))
+        mux.add(exn2)
+
+        # The replay path should still land the second signature on the shared
+        # group interaction event
+        serder = SerderKERI(raw=ixn1)
+        sigers = hby1.db.sigs.get(keys=(serder.preb, serder.saidb))
+        assert [siger.index for siger in sigers] == [0, 1]
+
+
 def test_multisig_incept_v2_body_supports_v1_child_with_v2_attachments(mockHelpingNowUTC):
     with openHab(name="v2-wrap-v1-child", temp=True, salt=b'0123456789abcdef',
                  version=Vrsn_1_0, kind=Kinds.json) as (_, hab):
@@ -1532,6 +1575,37 @@ def test_multisig_interact_handler(mockHelpingNowUTC):
         esaid = exn.ked['e']['d']
         assert len(notifier.signaler.signals) == 1
         digers = hby1.db.meids.get(keys=(esaid, ))
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn.said
+        prefixers = hby1.db.maids.get(keys=(esaid,))
+        assert len(prefixers) == 1
+        assert prefixers[0].qb64 == ghab2.mhab.pre
+
+
+def test_multisig_rpy_handler(mockHelpingNowUTC):
+    with openMultiSig(prefix="test") as ((hby1, ghab1), (_, ghab2), (_, _)):
+        rpy = ghab1.mhab.reply(route="/test/rpy",
+                               data=dict(i=ghab1.pre),
+                               framed=True,
+                               version=Vrsn_1_0,
+                               kind=Kinds.json,
+                               gvrsn=Vrsn_1_0)
+        exn, atc = multisigRpyExn(ghab=ghab2, rpy=rpy,
+                                  pvrsn=Vrsn_1_0,
+                                  kind=Kinds.json)
+
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        ims = bytearray(exn.raw)
+        ims.extend(atc)
+        Parser(version=TEST_VERSION).parseOne(ims=ims, exc=exc)
+
+        esaid = exn.ked['e']['d']
+        assert len(notifier.signaler.signals) == 1
+        digers = hby1.db.meids.get(keys=(esaid,))
         assert len(digers) == 1
         assert digers[0].qb64 == exn.said
         prefixers = hby1.db.maids.get(keys=(esaid,))
