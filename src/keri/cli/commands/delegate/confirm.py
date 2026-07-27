@@ -180,7 +180,7 @@ class ConfirmDoer(doing.DoDoer):
 
                         serder = SerderKERI(raw=msg)
                         exn, atc = grouping.multisigInteractExn(ghab=hab, aids=aids, ixn=bytearray(msg),
-                                                                version=self.version, kind=Kinds.json)
+                                                                pvrsn=self.version, kind=Kinds.json)
                         others = list(oset(hab.smids + (hab.rmids or [])))
                         others.remove(hab.mhab.pre)
 

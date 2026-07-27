@@ -122,7 +122,7 @@ class GroupMultisigInteract(doing.DoDoer):
         serder = SerderKERI(raw=ixn)
 
         exn, ims = multisigInteractExn(ghab=ghab, aids=aids, ixn=ixn,
-                                       version=self.version, kind=Kinds.json)
+                                       pvrsn=self.version, kind=Kinds.json)
         others = list(oset(ghab.smids + (ghab.rmids or [])))
         others.remove(ghab.mhab.pre)
 
