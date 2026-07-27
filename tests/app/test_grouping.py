@@ -1177,6 +1177,83 @@ def test_multisig_incept_v2_body_supports_v1_child_with_v2_attachments(mockHelpi
         assert parsed[0].nests[0].serder.said == inner.said
 
 
+def test_multisig_rotate_v2_body_supports_v1_child_with_v2_attachments(mockHelpingNowUTC):
+    with openMultiSig(prefix="rot-v2-wrap") as ((_, ghab1), (_, _), (_, _)):
+        # Keep the rotation event body on V1 while emitting its attachments with V2 framing
+        rot = ghab1.mhab.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        inner = SerderKERI(raw=rot)
+
+        # Wrap that child in the newer single-child V2 multisig envelope
+        exn, atc = multisigRotateExn(ghab=ghab1, smids=ghab1.smids, rmids=ghab1.rmids,
+                                     rot=rot, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json)
+
+        # The outer wrapper should still bind the nested child by SAID and carry
+        # it as one nested substream even though the child body remains V1
+        assert exn.pvrsn == Vrsn_2_0
+        assert exn.ked["a"]["d"] == inner.said
+        assert "e" not in exn.ked
+
+        parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                framed=True,
+                                                processive=False)
+        assert len(parsed) == 1
+        assert len(parsed[0].nests) == 1
+        assert parsed[0].nests[0].serder.said == inner.said
+
+
+def test_multisig_interact_v2_body_supports_v1_child_with_v2_attachments(mockHelpingNowUTC):
+    with openMultiSig(prefix="ixn-v2-wrap") as ((_, ghab1), (_, _), (_, _)):
+        # Keep the interaction event body on V1 while emitting its attachments with V2 framing
+        ixn = ghab1.mhab.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        inner = SerderKERI(raw=ixn)
+
+        # Wrap that child in the newer single-child V2 multisig envelope
+        exn, atc = multisigInteractExn(ghab=ghab1, aids=ghab1.smids,
+                                       ixn=ixn, pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json)
+
+        # The outer wrapper should still bind the nested child by SAID and carry
+        # it as one nested substream even though the child body remains V1
+        assert exn.pvrsn == Vrsn_2_0
+        assert exn.ked["a"]["d"] == inner.said
+        assert "e" not in exn.ked
+
+        parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                framed=True,
+                                                processive=False)
+        assert len(parsed) == 1
+        assert len(parsed[0].nests) == 1
+        assert parsed[0].nests[0].serder.said == inner.said
+
+
+def test_multisig_rpy_v2_body_supports_v1_child_with_v2_attachments(mockHelpingNowUTC):
+    with openMultiSig(prefix="rpy-v2-wrap") as ((_, ghab1), (_, _), (_, _)):
+        # Keep the reply event body on V1 while emitting its attachments with V2 framing
+        rpy = ghab1.mhab.reply(route="/test/rpy",
+                               data=dict(i=ghab1.pre),
+                               framed=True,
+                               version=Vrsn_1_0,
+                               kind=Kinds.json,
+                               gvrsn=Vrsn_2_0)
+        inner = SerderKERI(raw=rpy)
+
+        # Wrap that child in the newer single-child V2 multisig envelope
+        exn, atc = multisigRpyExn(ghab=ghab1, rpy=rpy,
+                                  pvrsn=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json)
+
+        # The outer wrapper should still bind the nested child by SAID and carry
+        # it as one nested substream even though the child body remains V1
+        assert exn.pvrsn == Vrsn_2_0
+        assert exn.ked["a"]["d"] == inner.said
+        assert "e" not in exn.ked
+
+        parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                framed=True,
+                                                processive=False)
+        assert len(parsed) == 1
+        assert len(parsed[0].nests) == 1
+        assert parsed[0].nests[0].serder.said == inner.said
+
+
 def test_multisig_incept_handler_v2_rejects_mismatched_nested_substream(mockHelpingNowUTC):
     with openHab(name="bad-nested", temp=True, salt=b'0123456789abcdef',
                  version=Vrsn_2_0, kind=Kinds.json) as (hby, hab):
