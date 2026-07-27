@@ -4,6 +4,8 @@ tests.vc.test_messaging module
 
 """
 
+from jsonschema import Draft202012Validator
+
 from keri.kering import Protocols, Kinds, Ilks, Vrsn_2_0
 from keri.core import (GenDex, Noncer, SerderACDC, BlindState, Blinder,
                        Compactor, Aggor)
@@ -553,6 +555,29 @@ def test_schema_defaults():
                                         'type': 'object'}]}},
         'additionalProperties': False
     }
+
+    """Done Test"""
+
+
+def test_acdcagg_default_schema():
+    """Regression: acdcagg must default to the ACG (aggregate) schema, not ACT.
+
+    An acg message carries an aggregate ('A') section, so its default schema must
+    be acgSchemaDefault -- which requires 'A' -- not actSchemaDefault, which
+    requires an attribute 'a' section and forbids extra properties. When acdcagg
+    embedded the act default, an acg ACDC failed validation against the very
+    schema it carried. Guard that with the pypi jsonschema (Draft 2020-12)
+    library so the two cannot drift apart again.
+    """
+    acgSaid, _ = acgSchemaDefault()
+    actSaid, _ = actSchemaDefault()
+    acg = acdcagg(israid='EA2X8Lfrl9lZbCGz8cfKIvM_cqLyTYVLSFLhnttezlzQ')
+    assert acg.ilk == Ilks.acg
+    # the acg ACDC commits to the acg default schema, not the act one
+    assert acg.sad['s']['$id'] == acgSaid
+    assert acg.sad['s']['$id'] != actSaid
+    # and it validates against the schema it carries (this failed before the fix)
+    Draft202012Validator(acg.sad['s']).validate(acg.sad)
 
     """Done Test"""
 

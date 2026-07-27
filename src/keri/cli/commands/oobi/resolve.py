@@ -58,7 +58,7 @@ class OobiDoer(doing.DoDoer):
         self.processed = 0
         self.oobi = oobi
         self.force = force
-        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran, version=version)
         self.hbyDoer = HaberyDoer(habery=self.hby)
 
         obr = OobiRecord(date=helping.nowIso8601())

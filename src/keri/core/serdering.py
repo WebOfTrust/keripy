@@ -2776,14 +2776,35 @@ class SerderACDC(Serder):
 
 
     @property
+    def aggreg(self):
+        """aggreg block property getter (attribute aggregate)
+        Optional fields return None when not present
+        Returns:
+            aggreg (dict | str): aggregate from ._sad["A"]
+        """
+        return self._sad.get("A")
+
+
+    @property
     def iseaid(self):
         """iseaid property getter (issuee AID)
         Optional fields return None when not present
         Returns:
-            iseaid (str | None): qb64  of .sad["a"]["i"] (issuee AID)
+            iseaid (str | None): qb64  of issuee AID field
+                                for attributive ACDC .sad["a"]["i"]
+                                for aggregative ACDC .sad["A"][1]['i']
+
         """
         try:
-            return self.attrib.get('i')
+            if att := self.attrib:
+                return att.get('i')
+
+            if agg := self.aggreg:
+                if len(agg) >= 2:
+                    return agg[1].get("i")
+
+            return None
+
         except:
             return None
 
@@ -2808,14 +2829,6 @@ class SerderACDC(Serder):
         return Prefixer(qb64=self.iseaid) if self.iseaid else None
 
 
-    @property
-    def aggreg(self):
-        """aggreg block property getter (attribute aggregate)
-        Optional fields return None when not present
-        Returns:
-            aggreg (dict | str): aggregate from ._sad["A"]
-        """
-        return self._sad.get("A")
 
 
     @property

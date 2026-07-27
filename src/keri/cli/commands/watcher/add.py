@@ -118,7 +118,8 @@ class AddDoer(doing.DoDoer):
             serder = SerderKERI(raw=msg)
             postman.send(serder=serder, attachment=msg[serder.size:])
 
-        for msg in self.hab.db.clonePreIter(pre=self.hab.pre):
+        for msg in self.hab.db.clonePreIter(pre=self.hab.pre,
+                                            version=self.hab.kever.serder.pvrsn):
             serder = SerderKERI(raw=msg)
             postman.send(serder=serder, attachment=msg[serder.size:])
 

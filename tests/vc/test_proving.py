@@ -62,23 +62,24 @@ def test_proving(mockHelpingNowIso8601):
                             **KWA)
 
         msg = sidHab.endorse(serder=creder, framed=False, gvrsn=Vrsn_1_0)
-        assert msg == (b'{"v":"ACDC10JSON000195_","d":"EPVHgaM_Yad1b5VHs6SIZyqF72m_byxSYU'
-                    b'w3VNx5Ubqt","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3","'
-                    b's":"EHggmYtUecR1JYbMkDZv-za1EExCmR-T_bwaJp3PQIoW","a":{"d":"EO-m'
-                    b'lywujxMkv1yLxir1m5c0p-fZLuprOrgZAIohJdmQ","dt":"2021-06-27T21:26'
-                    b':21.233257+00:00","i":"EPmpiN6bEM8EI0Mctny-6AfglVOKnJje8-vqyKTlh'
-                    b'0nc","lei":"254900OPPU84GM83MG36","issuanceDate":"2021-06-27T21:'
-                    b'26:21.233257+00:00"}}-VAv-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl'
-                    b'2QV8dDjI3MAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAAA'
-                    b'mfpF4BjMS3b4kzvPdOpkSlH3PiVx7MSySulPyKFxtaS3oxH45Y3kIvZg67u2Dyxt'
-                    b'UqVixVzRhOOTnMAB_SowI')
+        assert msg == (b'{"v":"ACDC10JSON000195_","d":"EPVHgaM_Yad1b5VHs6SIZyqF72m_by'
+                       b'xSYUw3VNx5Ubqt","i":"EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8'
+                       b'dDjI3","s":"EHggmYtUecR1JYbMkDZv-za1EExCmR-T_bwaJp3PQIoW","a'
+                       b'":{"d":"EO-mlywujxMkv1yLxir1m5c0p-fZLuprOrgZAIohJdmQ","dt":"'
+                       b'2021-06-27T21:26:21.233257+00:00","i":"EPmpiN6bEM8EI0Mctny-6'
+                       b'AfglVOKnJje8-vqyKTlh0nc","lei":"254900OPPU84GM83MG36","issua'
+                       b'nceDate":"2021-06-27T21:26:21.233257+00:00"}}-VA0-FABEIaGMMW'
+                       b'JFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAAAAAAAAAAAAA'
+                       b'AEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAAAmfpF4BjM'
+                       b'S3b4kzvPdOpkSlH3PiVx7MSySulPyKFxtaS3oxH45Y3kIvZg67u2DyxtUqVi'
+                       b'xVzRhOOTnMAB_SowI')
 
         creder = SerderACDC(raw=msg) # Creder(raw=msg)
         proof = msg[creder.size:]
 
         ctr = Counter(qb64b=proof, strip=True, version=Vrsn_1_0)
         assert ctr.code == CtrDex_1_0.AttachmentGroup
-        assert ctr.count == 47
+        assert ctr.count == 52
 
         pags = ctr.count * 4
         assert len(proof) == pags

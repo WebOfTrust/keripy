@@ -199,7 +199,8 @@ class Anchorer(doing.DoDoer):
                     raise ValidationError("no proxy to send messages for delegation")
 
                 try:
-                    evt = hab.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said)
+                    evt = hab.db.cloneEvtMsg(pre=serder.pre, fn=0, dig=serder.said,
+                                             version=serder.pvrsn)
                 except (MissingEntryError, SerializeError) as ex:
                     logger.debug("Problem cloning message=\n%s\n", serder.pretty())
                     raise

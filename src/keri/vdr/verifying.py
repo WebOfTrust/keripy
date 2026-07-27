@@ -11,7 +11,7 @@ from typing import Type
 
 from hio.help import decking, ogler
 
-from ..kering import (Vrsn_1_0, Ilks, MissingChainError,
+from ..kering import (Ilks, MissingChainError,
                       MissingRegistryError, MissingSchemaError,
                       ValidationError, FailedSchemaValidationError,
                       MissingChainError, RevokedChainError)
@@ -66,7 +66,7 @@ class Verifier:
         """
         self.tvy = Tevery(reger=self.reger, db=self.hby.db, local=False)
         self.psr = Parser(framed=True, kvy=self.hby.kvy, tvy=self.tvy,
-                                  version=Vrsn_1_0)
+                                  version=self.hby.version)
         self.resolver = CacheResolver(db=self.hby.db)
 
         self.inited = True

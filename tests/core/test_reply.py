@@ -599,16 +599,18 @@ def test_reply(mockHelpingNowUTC):
         # Sign Reply
         msg = tamHab.endorse(serder=serderR, framed=False, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON000113_","t":"rpy","d":"EHC0gHTxQ16xL9vT9n7OBu5s'
-                    b'ZlO96AX0Jh-dUD42QLDA","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                    b'":"/end/role/add","a":{"cid":"ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CK'
-                    b'HG4-mHua6e","role":"witness","eid":"BBVDlgWic_rAf-m_v7vz_VvIYAUP'
-                    b'ErvZgLTfXGNrFRom"}}-VBb-FABED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4'
-                    b'-mHua6eMAAAED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e-AADAABAp'
-                    b'pmVvSGqtmE4Esa87Etz1nEFpyxGSqVaOCOJ-yvNs_EqHNRXwBmIgTHb9J36eKuUh'
-                    b'2IyiTPGFsJcfKbIo5QNABBWpvKJtVJvSt575kmW9PVl8UoojGp3AnFnFjmgxwZhv'
-                    b'bBTrp9iSFZ5XeeR-vRV3BztCBKSlw3eQWOLhbFUydIFACD9cNMh0xdMIf_YEpjyg'
-                    b'9I0hIC1kO6CktzTLURCBjJNAuzOxp1NRn-8ujWYmXrNN73t4gdsnZwIFn8z57XeK'
-                    b'W0G')
+                       b'ZlO96AX0Jh-dUD42QLDA","dt":"2021-01-'
+                       b'01T00:00:00.000000+00:00","r":"/end/role/add","a":{"cid":"ED7ek7'
+                       b'qhzr9SzqmV8IBxgHHWfsNcbWd-'
+                       b'CKHG4-mHua6e","role":"witness","eid":"BBVDlgWic_rAf-'
+                       b'm_v7vz_VvIYAUPErvZgLTfXGNrFRom"}}-VBg-'
+                       b'FABED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-'
+                       b'mHua6e0AAAAAAAAAAAAAAAAAAAAAAAED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-'
+                       b'CKHG4-mHua6e-AADAABAppmVvSGqtmE4Esa87Etz1nEFpyxGSqVaOCOJ-yvNs_Eq'
+                       b'HNRXwBmIgTHb9J36eKuUh2IyiTPGFsJcfKbIo5QNABBWpvKJtVJvSt575kmW9PVl'
+                       b'8UoojGp3AnFnFjmgxwZhvbBTrp9iSFZ5XeeR-vRV3BztCBKSlw3eQWOLhbFUydIF'
+                       b'ACD9cNMh0xdMIf_YEpjyg9I0hIC1kO6CktzTLURCBjJNAuzOxp1NRn-'
+                       b'8ujWYmXrNN73t4gdsnZwIFn8z57XeKW0G')
 
         # use Nel's parser and kevery to authZ wes as tam end witness
         nelPrs.parse(ims=bytearray(msg))  # no kel for tam so escrow
@@ -658,15 +660,18 @@ def test_reply(mockHelpingNowUTC):
         # Sign Reply
         msg = tamHab.endorse(serder=serderR, framed=False, gvrsn=Vrsn_1_0)
         assert msg == (b'{"v":"KERI10JSON000108_","t":"rpy","d":"ELoGi_w2FKTRR2FU6UjclHJu'
-                    b'CgtDOHKXL8GxdIt5ZGtf","dt":"2021-01-01T00:00:00.000000+00:00","r'
-                    b'":"/loc/scheme","a":{"eid":"ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG'
-                    b'4-mHua6e","scheme":"http","url":"http://localhost:8080/controlle'
-                    b'r/tam"}}-VBb-FABED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6eMAAA'
-                    b'ED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-mHua6e-AADAAAE-R2roSYmjUEk'
-                    b'k44DwNh26bYZvacAsLaOIzgAC47coa0bOk4KdLYyfy-tAmUMQ7QY0Dp87Ks7tFnW'
-                    b'-8SWjMQJABCPas0sa6FAQre8TEbvavW5ip00DnifkeRU9wQOsjomEIsccSeoDYEe'
-                    b'IEKPiAO2zRCsxqlPfgsgPFH1jeaWUFQAACD9pt3Ijcc0_7fcemVbCID_n8DOWTHh'
-                    b'wWZ6K_xRQ_9bb6RHGzVJNWtxO-gI_A7eBt1yE76uLVCAdXTHHDvmhH4A')
+                       b'CgtDOHKXL8GxdIt5ZGtf","dt":"2021-01-'
+                       b'01T00:00:00.000000+00:00","r":"/loc/scheme","a":{"eid":"ED7ek7qh'
+                       b'zr9SzqmV8IBxgHHWfsNcbWd-CKHG4-'
+                       b'mHua6e","scheme":"http","url":"http://localhost:8080/controller/'
+                       b'tam"}}-VBg-FABED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CKHG4-'
+                       b'mHua6e0AAAAAAAAAAAAAAAAAAAAAAAED7ek7qhzr9SzqmV8IBxgHHWfsNcbWd-CK'
+                       b'HG4-mHua6e-AADAAAE-'
+                       b'R2roSYmjUEkk44DwNh26bYZvacAsLaOIzgAC47coa0bOk4KdLYyfy-tAmUMQ7QY0'
+                       b'Dp87Ks7tFnW-'
+                       b'8SWjMQJABCPas0sa6FAQre8TEbvavW5ip00DnifkeRU9wQOsjomEIsccSeoDYEeI'
+                       b'EKPiAO2zRCsxqlPfgsgPFH1jeaWUFQAACD9pt3Ijcc0_7fcemVbCID_n8DOWTHhw'
+                       b'WZ6K_xRQ_9bb6RHGzVJNWtxO-gI_A7eBt1yE76uLVCAdXTHHDvmhH4A')
 
         # use Tam's parser and kevery to process
         nelPrs.parse(ims=bytearray(msg))  # no kel for tam so escrow

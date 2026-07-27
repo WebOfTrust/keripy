@@ -124,6 +124,47 @@ def seeder():
     return DbSeed
 
 
+@pytest.fixture(scope="session", autouse=True)
+def isolate_keri_store_roots(tmp_path_factory):
+    """Give each pytest-xdist worker its own on-disk root for non-temp stores.
+
+    CI runs ``pytest -n auto``. Several tests open persistent (``temp=False``)
+    stores with a fixed name/base (e.g. ``name="test"``), which all resolve to
+    the same on-disk path under the store classes' ``HeadDirPath`` -- or
+    ``AltHeadDirPath`` when the head dir is not writable, as on CI. Under
+    parallel workers those paths collide, so one worker can observe another's
+    half-migrated database ("DB version None; migrations must be run") or a
+    half-written KEL ("Attempt to replay nonexistent pre=..."). Point each
+    worker's store root at its own per-worker temp directory so the paths can
+    never overlap.
+
+    Only active under xdist (where ``PYTEST_XDIST_WORKER`` is set); serial runs
+    are unchanged. ``temp=True`` stores are unaffected -- they already use
+    isolated ``/tmp`` directories. ``LMDBer`` is the base of the db (``Baser``),
+    keystore (``Keeper``) and registry (``Reger``) stores, so patching it covers
+    all three; ``Configer`` covers the config store.
+    """
+    if not os.environ.get("PYTEST_XDIST_WORKER"):
+        yield
+        return
+
+    from keri.db.dbing import LMDBer
+    from keri.app.configing import Configer
+
+    root = str(tmp_path_factory.getbasetemp())  # unique per xdist worker
+    saved = [(cls, cls.HeadDirPath, cls.AltHeadDirPath)
+             for cls in (LMDBer, Configer)]
+    for cls in (LMDBer, Configer):
+        cls.HeadDirPath = root
+        cls.AltHeadDirPath = root
+    try:
+        yield
+    finally:
+        for cls, head, alt in saved:
+            cls.HeadDirPath = head
+            cls.AltHeadDirPath = alt
+
+
 def _unused_tcp_port():
     with socket.socket(socket.AF_INET, socket.SOCK_STREAM) as sock:
         sock.bind(("127.0.0.1", 0))

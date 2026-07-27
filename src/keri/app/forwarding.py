@@ -165,7 +165,8 @@ class Poster(doing.DoDoer):
     def sendEventToDelegator(self, sender, hab, fn=0):
         """ Returns generator for sending event and waiting until send is complete """
         # Send KEL event for processing
-        icp = self.hby.db.cloneEvtMsg(pre=hab.pre, fn=fn, dig=hab.kever.serder.saidb)
+        icp = self.hby.db.cloneEvtMsg(pre=hab.pre, fn=fn, dig=hab.kever.serder.saidb,
+                                      version=hab.kever.serder.pvrsn)
         ser = SerderKERI(raw=icp)
         del icp[:ser.size]
 
@@ -604,7 +605,7 @@ def introduce(hab, wit):
 
     if not found:  # no receipt from remote so pre-send own inception
         # no vrcs or rct of own icp from remote so send own inception
-        for msg in hab.db.clonePreIter(pre=hab.pre):
+        for msg in hab.db.clonePreIter(pre=hab.pre, version=hab.kever.serder.pvrsn):
             msgs.extend(msg)
         for msg in hab.db.cloneDelegation(hab.kever):
             msgs.extend(msg)

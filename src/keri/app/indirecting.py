@@ -1280,6 +1280,7 @@ class QueryEnd:
             evnts = bytearray()
 
             sn = req.get_param_as_int("sn")
+            vrsn = self.hab.kevers[pre].serder.pvrsn if pre in self.hab.kevers else Version
             if sn is not None: ## query for event with seq-num >= sn
                 dig = self.hab.db.kels.getLast(keys=pre, on=sn)
                 if dig is None:
@@ -1287,12 +1288,12 @@ class QueryEnd:
                 for dig in self.hab.db.kels.getAllIter(keys=pre, on=sn):
                     try:
                         dig = dig.encode("utf-8")
-                        msg = self.hab.db.cloneEvtMsg(pre=pre, fn=0, dig=dig)
+                        msg = self.hab.db.cloneEvtMsg(pre=pre, fn=0, dig=dig, version=vrsn)
                     except Exception:
                         continue  # skip this event
                     evnts.extend(msg)
             else:
-                for msg in self.hab.db.clonePreIter(pre=pre):
+                for msg in self.hab.db.clonePreIter(pre=pre, version=vrsn):
                     evnts.extend(msg)
 
 

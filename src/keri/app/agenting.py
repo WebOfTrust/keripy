@@ -18,7 +18,7 @@ from .httping import Clienter, streamCESRRequests, CESR_DESTINATION_HEADER
 
 from ..kering import (Schemes, Roles,
                       MissingEntryError, ConfigurationError)
-from ..core import Counter, eventing, parsing, coring, serdering, Codens
+from ..core import eventing, parsing, coring, serdering
 
 
 logger = ogler.getLogger()
@@ -73,13 +73,13 @@ class Receiptor(doing.DoDoer):
 
         hab = self.hby.habs[pre]
         sn = sn if sn is not None else hab.kever.sner.num
-        wits = hab.kever.wits
-
-        if len(wits) == 0:
-            return
 
         msg = hab.msgOwnEvent(sn=sn, framed=True)
         ser = serdering.SerderKERI(raw=msg)
+        wits = [wit.qb64 for wit in hab.kvy.fetchWitnessState(ser.pre, ser.sn)]
+
+        if len(wits) == 0:
+            return
 
         # If we are a rotation event, may need to catch new witnesses up to current key state
         if ser.ked['t'] in (coring.Ilks.rot,):
@@ -111,21 +111,20 @@ class Receiptor(doing.DoDoer):
 
             rep = client.respond()
             if rep.status == 200:
-                rct = bytearray(rep.body)
-                hab.psr.parseOne(bytearray(rct))
-                rserder = serdering.SerderKERI(raw=rct)
-                del rct[:rserder.size]
-
-                # pull off the count code
-                Counter(qb64b=rct, strip=True, version=rserder.pvrsn)
-                rcts[wit] = rct
+                hab.psr.parseOne(bytearray(rep.body))
+                rcts[wit] = None
             else:
                 print(f"invalid response {rep.status} from witnesses {wit}")
 
+        wigers = hab.db.wigs.get(keys=(ser.preb, ser.saidb))
+        wigerByWit = {wits[wiger.index]: wiger for wiger in wigers}
+
         # send retrieved receipts to all other witnesses
         for wit in rcts:
-            ewits = [w for w in rcts if w != wit] # get complement of all other witnesses
-            wigers = [rcts[w] for w in ewits] # all other witness signatures
+            ewits = [w for w in wits if w != wit and w in wigerByWit]
+            wigers = [wigerByWit[w] for w in ewits]
+            if not wigers:
+                continue
 
             msg = bytearray()
             if ser.ked['t'] in (coring.Ilks.icp, coring.Ilks.dip):  # introduce new witnesses
@@ -139,11 +138,8 @@ class Receiptor(doing.DoDoer):
                                        said=ser.said,
                                        version=ser.pvrsn,
                                        kind=ser.kind)
-            msg.extend(rserder.raw)
-            msg.extend(Counter(Codens.NonTransReceiptCouples,
-                                    count=len(wigers), version=ser.pvrsn).qb64b)
-            for wiger in wigers:
-                msg.extend(wiger)
+            msg.extend(eventing.messagize(serder=rserder, wigers=wigers,
+                                          framed=True, gvrsn=ser.pvrsn))
 
             client = clients[wit]
 
@@ -216,7 +212,7 @@ class Receiptor(doing.DoDoer):
         client, clientDoer = httpClient(hab, wit)
         self.extend([clientDoer])
 
-        for fmsg in hab.db.clonePreIter(pre=pre):
+        for fmsg in hab.db.clonePreIter(pre=pre, version=hab.kever.serder.pvrsn):
             streamCESRRequests(client=client, dest=wit, ims=bytearray(fmsg))
             while not client.responses:
                 yield self.tock
@@ -374,7 +370,7 @@ class WitnessReceiptor(doing.DoDoer):
 
                         if ser.ked['t'] in (coring.Ilks.icp, coring.Ilks.dip) or \
                                 "ba" in ser.ked and wit in ser.ked["ba"]:  # Newly added witness, must send full KEL to catch up
-                            for fmsg in hab.db.clonePreIter(pre=pre):
+                            for fmsg in hab.db.clonePreIter(pre=pre, version=ser.pvrsn):
                                 witer.msgs.append(bytearray(fmsg))
 
                         witer.msgs.append(bytearray(msg))  # make a copy

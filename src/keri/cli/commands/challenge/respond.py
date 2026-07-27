@@ -77,7 +77,7 @@ class RespondDoer(doing.DoDoer):
         self.recp = recp
         self.version = version
 
-        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran, version=self.version)
         self.postman = Poster(hby=self.hby, version=version, kind=Kinds.json)
         self.hbyDoer = HaberyDoer(habery=self.hby)  # setup doer
         self.org = Organizer(hby=self.hby)

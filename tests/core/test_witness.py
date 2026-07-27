@@ -214,7 +214,7 @@ def test_indexed_witness_replay_v1():
         # Cam update Wil all event witnessed events for Cam by replay
         # Cam update itself with Wil receipts including Wils inception
         camReplayMsg = camHab.replay(version=Vrsn_1_0)
-        assert len(camReplayMsg) == 1998  # 2038
+        assert len(camReplayMsg) == 2038  # 1998 pre-v1-Seqner-fix
         Parser(version=Vrsn_1_0).parse(ims=bytearray(camReplayMsg), kvy=wilKvy, local=True)
         assert camHab.pre in wilKvy.kevers
         assert wilKvy.kevers[camHab.pre].sn == 1  # asscepted both events
@@ -507,7 +507,7 @@ def test_nonindexed_witness_receipts_v1():
         #    Cam update Wil all event witnessed events for Cam by replay
         #    Cam update itself with Wil receipts including Wils inception
         camReplayMsg = camHab.replay(version=Vrsn_1_0)
-        assert len(camReplayMsg) == 1998 # 2038
+        assert len(camReplayMsg) == 2038  # 1998 pre-v1-Seqner-fix
         Parser(version=Vrsn_1_0).parse(ims=bytearray(camReplayMsg), kvy=wilKvy, local=True)
 
         assert camHab.pre in wilKvy.kevers
@@ -642,7 +642,7 @@ def test_out_of_order_witnessed_events():
 
         # Get the receipted rotation event and pass, out of order to Bam
         msgs = bytearray()
-        for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=1):
+        for msg in wesHby.db.clonePreIter(pre=bobHab.pre, fn=1, version=bobHab.kever.serder.pvrsn):
             msgs.extend(msg)
 
         bamKvy = Kevery(db=bamHby.db, lax=False, local=False)
@@ -655,7 +655,8 @@ def test_out_of_order_witnessed_events():
 
         # Pass the icp to Bam, process escrows and see if the fully
         # receipted event lands in Bam's Kevery
-        msg = wesHby.db.cloneEvtMsg(pre=bobHab.pre, fn=0, dig=iserder.saidb)
+        msg = wesHby.db.cloneEvtMsg(pre=bobHab.pre, fn=0, dig=iserder.saidb,
+                                    version=bobHab.kever.serder.pvrsn)
 
         Parser(version=Vrsn_1_0).parse(ims=msg, kvy=bamKvy)
         bamKvy.processEscrows()

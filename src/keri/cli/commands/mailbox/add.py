@@ -11,7 +11,7 @@ from hio.help import Hict, ogler
 
 from ...common import Parsery, setupHby
 
-from ....kering import Roles, Version, Vrsn_1_0, Vrsn_2_0
+from ....kering import Roles
 from ....app import (Organizer, GroupHab,
                      WitnessPublisher, httpClient)
 
@@ -88,7 +88,7 @@ class AddDoer(doing.DoDoer):
         if isinstance(self.hab, GroupHab):
             raise ValueError("watchers for multisig AIDs not currently supported")
 
-        kel = self.hab.replay(version=Vrsn_1_0)
+        kel = self.hab.replay()
         data = dict(cid=self.hab.pre,
                     role=Roles.mailbox,
                     eid=self.mailbox)

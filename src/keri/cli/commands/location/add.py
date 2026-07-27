@@ -63,7 +63,7 @@ class LocationDoer(doing.DoDoer):
         self.version = version
         self.replyKwargs = dict(version=version, gvrsn=version, kind=Kinds.json) if version is not None else {}
 
-        self.hby = setupHby(name=name, base=base, bran=bran)
+        self.hby = setupHby(name=name, base=base, bran=bran, version=self.version)
         self.hab = self.hby.habByName(alias)
         self.witpub = WitnessPublisher(hby=self.hby)
         self.postman = forwarding.Poster(hby=self.hby, version=version, kind=Kinds.json)
