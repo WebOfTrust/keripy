@@ -876,11 +876,8 @@ class Multiplexor:
             if signed is not None and nserder.said != signed:
                 raise ValidationError(f"invalid multisig nested substream: {nserder.said} != {signed}")
 
-            # Derive the legacy single-child embed digest so V2 proposals aggregate
-            # with the same key as their V1 wrapper shape
-            label = route.rsplit("/", 1)[-1]
-            _, esad = Saider.saidify(sad={label: nserder.sad, "d": ""})
-            esaid = esad["d"]
+            # Use the signed child SAID as the V2 proposal identity
+            esaid = signed if signed is not None else nserder.said
 
         # Route specific logic to ensure this is a valid exn for a local participant.
         match route.split("/"):
@@ -959,7 +956,7 @@ class Multiplexor:
             else:
                 # Should we prod the user with another submission if we haven't already approved it?
                 route = ked['r']
-                # Notify with the shared child SAID so follow-up approvals join the same bucket
+                # Notify with the proposal key for follow-up approvals
                 data = dict(
                     r=route,
                     d=serder.said,

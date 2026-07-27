@@ -19,7 +19,6 @@ from keri.app import grouping
 from keri.app.grouping import loadHandlers
 
 from keri.core import (Prefixer, Number, Diger, Kevery,
-                       Saider,
                        Parser, SerderKERI, Counter,
                        Codens, Kramer, messagize)
 
@@ -1116,7 +1115,7 @@ def test_multisig_incept_handler_v2_rejects_missing_signed_child_said(mockHelpin
             mux.add(bad_exn, nests=parsed.nests)
 
 
-def test_multisig_incept_handler_mixed_v1_v2_share_legacy_embed_said_key(mockHelpingNowUTC):
+def test_multisig_incept_handler_mixed_v1_v2_use_distinct_keys(mockHelpingNowUTC):
     with openHab(name="mixed-v1-v2-1", temp=True, salt=b'0123456789abcdef',
                  version=Vrsn_2_0, kind=Kinds.json) as (hby1, hab1), \
             openHab(name="mixed-v1-v2-2", temp=True, salt=b'abcdef0123456789',
@@ -1140,19 +1139,25 @@ def test_multisig_incept_handler_mixed_v1_v2_share_legacy_embed_said_key(mockHel
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(exn1.raw + atc1), exc=exc)
         Parser(version=Vrsn_2_0).parseOne(ims=bytearray(exn2.raw + atc2), exc=exc)
 
-        esaid = exn1.ked["e"]["d"]
-        _, embed = Saider.saidify(sad={"icp": inner.sad, "d": ""})
-        assert esaid == embed["d"]
+        v1_esaid = exn1.ked["e"]["d"]
+        v2_esaid = inner.said
+        assert v1_esaid != v2_esaid
 
-        digers = hby1.db.meids.get(keys=(esaid,))
-        assert len(digers) == 2
+        digers = hby1.db.meids.get(keys=(v1_esaid,))
+        assert len(digers) == 1
         assert digers[0].qb64 == exn1.said
-        assert digers[1].qb64 == exn2.said
 
-        prefixers = hby1.db.maids.get(keys=(esaid,))
-        assert len(prefixers) == 2
+        prefixers = hby1.db.maids.get(keys=(v1_esaid,))
+        assert len(prefixers) == 1
         assert prefixers[0].qb64 == hab1.pre
-        assert prefixers[1].qb64 == hab2.pre
+
+        digers = hby1.db.meids.get(keys=(v2_esaid,))
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn2.said
+
+        prefixers = hby1.db.maids.get(keys=(v2_esaid,))
+        assert len(prefixers) == 1
+        assert prefixers[0].qb64 == hab2.pre
 
 
 def test_multisig_incept_handler_v2_with_kram(mockHelpingNowUTC):
@@ -1315,8 +1320,7 @@ def test_multisig_rotate_handler_v2_with_kram(mockHelpingNowUTC):
         # Assert the notification
         assert len(notifier.signaler.signals) == 1
 
-        _, embed = Saider.saidify(sad={"rot": SerderKERI(raw=msg).sad, "d": ""})
-        esaid = embed["d"]
+        esaid = SerderKERI(raw=msg).said
         digers = hby1.db.meids.get(keys=(esaid,))
         assert len(digers) == 1
         assert digers[0].qb64 == exn.said
@@ -1385,8 +1389,7 @@ def test_multisig_interact_handler_v2_with_kram(mockHelpingNowUTC):
 
         assert len(notifier.signaler.signals) == 1
 
-        _, embed = Saider.saidify(sad={"ixn": SerderKERI(raw=ixn).sad, "d": ""})
-        esaid = embed["d"]
+        esaid = SerderKERI(raw=ixn).said
         digers = hby1.db.meids.get(keys=(esaid,))
         assert len(digers) == 1
         assert digers[0].qb64 == exn.said
@@ -1431,8 +1434,7 @@ def test_multisig_rpy_handler_v2_with_kram(mockHelpingNowUTC):
 
         assert len(notifier.signaler.signals) == 1
 
-        _, embed = Saider.saidify(sad={"rpy": SerderKERI(raw=rpy).sad, "d": ""})
-        esaid = embed["d"]
+        esaid = SerderKERI(raw=rpy).said
         digers = hby1.db.meids.get(keys=(esaid,))
         assert len(digers) == 1
         assert digers[0].qb64 == exn.said
