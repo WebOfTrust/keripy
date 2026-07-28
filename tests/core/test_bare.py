@@ -15,7 +15,6 @@ from keri.core import (Salter, Diger, Prefixer, Number, SealEvent, MtrDex,
 
 
 logger = ogler.getLogger()
-from tests.common import KWA
 
 
 def test_bare():
@@ -95,7 +94,7 @@ def test_bare():
     serderE = bare(route="/to/the/moon",
                    data=data,
                    stamp=stamp,
-                   **KWA,
+                   version=Vrsn_1_0, kind=Kinds.json,
                    )
 
     assert serderE.raw == (b'{"v":"KERI10JSON000121_","t":"bar","d":"EGPY61eN5zhw7nnlra3bQL8xapaMhP4I_0yi'

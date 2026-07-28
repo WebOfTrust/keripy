@@ -11,9 +11,8 @@ from keri.core import Salter, Parser, exchange
 from keri.peer import Exchanger, specialExchange
 from keri.app import openHby
 
-
 logger = ogler.getLogger()
-from tests.common import CUE_KWA, KWA
+
 
 
 def test_pathed_material(mockHelpingNowUTC):
@@ -33,20 +32,20 @@ def test_pathed_material(mockHelpingNowUTC):
           openHby(name="deb", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as debHby):
 
         sith = ["1/2", "1/2", "1/2"]  # weighted signing threshold
-        palHab = hby.makeHab(name="pal", **KWA)
-        debHab = debHby.makeHab(name="deb", isith=sith, icount=3, **KWA)
+        palHab = hby.makeHab(name="pal", version=Vrsn_1_0, kind=Kinds.json)
+        debHab = debHby.makeHab(name="deb", isith=sith, icount=3, version=Vrsn_1_0, kind=Kinds.json)
         # Create series of events
         debMsgs = dict(icp=debHab.msgOwnInception(framed=True, gvrsn=Vrsn_1_0),
-                       ixn0=debHab.interact(framed=True, **CUE_KWA),
-                       rot=debHab.rotate(framed=True, **CUE_KWA),
-                       ixn1=debHab.interact(framed=True, **CUE_KWA))
+                       ixn0=debHab.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0),
+                       rot=debHab.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0),
+                       ixn1=debHab.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
         fwd, end = specialExchange(sender=debHab.pre,
                                    route='/fwd',
                                    modifiers=dict(pre=palHab.pre,
                                                   topic="replay"),
                                    attributes={},
                                    embeds=debMsgs,
-                                   **CUE_KWA)
+                                   version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         fwd = debHab.endorse(fwd, last=False, framed=True, gvrsn=Vrsn_1_0)
         fwd.extend(end)
         handler = MockHandler()

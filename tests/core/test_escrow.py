@@ -22,10 +22,8 @@ from keri.core import (Seqner, Counter, Salter, Saider, Prefixer,
 from keri.db import dgKey, snKey, openDB
 from keri.app import keeping
 
-
 logger = ogler.getLogger()
 
-from tests.common import KWA
 
 
 def test_partial_signed_escrow():
@@ -55,7 +53,7 @@ def test_partial_signed_escrow():
                       nsith=nxtsith,
                       ndigs=[diger.qb64 for diger in digers],
                       code=MtrDex.Blake3_256,
-                      **KWA)
+                      version=Vrsn_1_0, kind=Kinds.json)
 
         pre = srdr.ked["i"]
 
@@ -159,7 +157,7 @@ def test_partial_signed_escrow():
                         dig=kvr.serder.said,
                         sn=kvr.sn+1,
                         data=[],
-                        **KWA)
+                        version=Vrsn_1_0, kind=Kinds.json)
 
         sigers = mgr.sign(ser=srdr.raw, verfers=kvr.verfers)
 
@@ -283,7 +281,7 @@ def test_partial_signed_escrow():
                       ndigs=[diger.qb64 for diger in digers],
                       sn=kvr.sn+1,
                       data=[],
-                      **KWA)
+                      version=Vrsn_1_0, kind=Kinds.json)
 
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
@@ -314,7 +312,7 @@ def test_partial_signed_escrow():
                       ndigs=[diger.qb64 for diger in digers],
                       sn=kvr.sn+1,
                       data=[],
-                      **KWA)
+                      version=Vrsn_1_0, kind=Kinds.json)
 
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
@@ -405,7 +403,7 @@ def test_missing_delegator_escrow():
 
         watSrdr = incept(keys=[verfer.qb64 for verfer in verfers],
                          ndigs=[diger.qb64 for diger in digers],
-                         code=MtrDex.Blake3_256, **KWA)
+                         code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
 
         watPre = watSrdr.pre
         watMgr.move(old=verfers[0].qb64, new=watPre)  # move key pair label to prefix
@@ -432,7 +430,7 @@ def test_missing_delegator_escrow():
         verfers, digers = bobMgr.incept(stem='bob', temp=True) # algo default salty and rooted
         bobSrdr = incept(keys=[verfer.qb64 for verfer in verfers],
                          ndigs=[diger.qb64 for diger in digers],
-                         code=MtrDex.Blake3_256, **KWA)
+                         code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
 
         bobPre = bobSrdr.pre
         bobMgr.move(old=verfers[0].qb64, new=bobPre)  # move key pair label to prefix
@@ -469,7 +467,7 @@ def test_missing_delegator_escrow():
         verfers, digers = delMgr.incept(stem='del', temp=True)  # algo default salty and rooted
         delSrdr = delcept(keys=[verfer.qb64 for verfer in verfers],
                           delpre=bobPre,
-                          ndigs=[diger.qb64 for diger in digers], **KWA)
+                          ndigs=[diger.qb64 for diger in digers], version=Vrsn_1_0, kind=Kinds.json)
 
         delPre = delSrdr.pre
         delMgr.move(old=verfers[0].qb64, new=delPre)  # move key pair label to prefix
@@ -484,7 +482,7 @@ def test_missing_delegator_escrow():
         bobSrdr = interact(pre=bobK.prefixer.qb64,
                            dig=bobK.serder.said,
                            sn=bobK.sn+1,
-                           data=[seal._asdict()], **KWA)
+                           data=[seal._asdict()], version=Vrsn_1_0, kind=Kinds.json)
 
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
 
@@ -591,7 +589,7 @@ def test_missing_delegator_escrow():
                                    keys=[verfer.qb64 for verfer in verfers],
                                    dig=bobDelK.serder.said,
                                    sn=bobDelK.sn+1,
-                                   ndigs=[diger.qb64 for diger in digers], **KWA)
+                                   ndigs=[diger.qb64 for diger in digers], version=Vrsn_1_0, kind=Kinds.json)
 
         # Now create delegating interaction event
         seal = eventing.SealEvent(i=bobDelK.prefixer.qb64,
@@ -600,7 +598,7 @@ def test_missing_delegator_escrow():
         bobSrdr = interact(pre=bobK.prefixer.qb64,
                            dig=bobK.serder.said,
                            sn=bobK.sn+1,
-                           data=[seal._asdict()], **KWA)
+                           data=[seal._asdict()], version=Vrsn_1_0, kind=Kinds.json)
 
         sigers = bobMgr.sign(ser=bobSrdr.raw, verfers=bobK.verfers)
 
@@ -701,7 +699,7 @@ def test_misfit_escrow():
         verfers, digers = mgr.incept(stem='mis', temp=True)
         srdr = incept(keys=[verfer.qb64 for verfer in verfers],
                       ndigs=[diger.qb64 for diger in digers],
-                      code=MtrDex.Blake3_256, **KWA)
+                      code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
 
         pre = srdr.pre
         mgr.move(old=verfers[0].qb64, new=pre)  # move key pair label to prefix
@@ -728,7 +726,7 @@ def test_misfit_escrow():
                          dig=kever.serder.said,
                          sn=kever.sn + 1,
                          data=[],
-                         **KWA)
+                         version=Vrsn_1_0, kind=Kinds.json)
 
         sigers2 = mgr.sign(ser=srdr2.raw, verfers=kever.verfers)
         msg2 = bytearray(srdr2.raw)
@@ -786,7 +784,7 @@ def test_misfit_escrow_delegated():
         delg_verfers, delg_digers = mgr.incept(stem='delg', temp=True)
         delg_srdr = incept(keys=[verfer.qb64 for verfer in delg_verfers],
                            ndigs=[diger.qb64 for diger in delg_digers],
-                           code=MtrDex.Blake3_256, **KWA)
+                           code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
         delg_pre = delg_srdr.pre
         mgr.move(old=delg_verfers[0].qb64, new=delg_pre)
         db.prefixes.add(delg_pre)
@@ -797,7 +795,7 @@ def test_misfit_escrow_delegated():
         dip_srdr = delcept(keys=[verfer.qb64 for verfer in del_verfers],
                            delpre=delg_pre,
                            ndigs=[diger.qb64 for diger in del_digers],
-                           **KWA)
+                           version=Vrsn_1_0, kind=Kinds.json)
         del_pre = dip_srdr.pre
         mgr.move(old=del_verfers[0].qb64, new=del_pre)
 
@@ -864,7 +862,7 @@ def test_misfit_escrow_valSigsWigsDel():
         verfers, digers = mgr.incept(stem='unit', temp=True)
         srdr = incept(keys=[verfer.qb64 for verfer in verfers],
                       ndigs=[diger.qb64 for diger in digers],
-                      code=MtrDex.Blake3_256, **KWA)
+                      code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
         pre = srdr.pre
         mgr.move(old=verfers[0].qb64, new=pre)
         db.prefixes.add(pre)
@@ -888,7 +886,7 @@ def test_misfit_escrow_valSigsWigsDel():
                        dig=kever.serder.said,
                        sn=kever.sn + 1,
                        data=[],
-                       **KWA)
+                       version=Vrsn_1_0, kind=Kinds.json)
         ixn_sigers = mgr.sign(ser=ixn.raw, verfers=kever.verfers)
 
         tholder = kever.tholder
@@ -938,7 +936,7 @@ def test_misfit_escrow_kevery():
         verfers, digers = mgr.incept(stem='kvy', temp=True)
         srdr = incept(keys=[verfer.qb64 for verfer in verfers],
                       ndigs=[diger.qb64 for diger in digers],
-                      code=MtrDex.Blake3_256, **KWA)
+                      code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
 
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
@@ -1005,7 +1003,7 @@ def test_delegated_partial_signed_escrow_udes():
         delg_verfers, delg_digers = mgr.incept(stem='pse-delg', temp=True)
         delg_srdr = incept(keys=[verfer.qb64 for verfer in delg_verfers],
                            ndigs=[diger.qb64 for diger in delg_digers],
-                           code=MtrDex.Blake3_256, **KWA)
+                           code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
         delg_pre = delg_srdr.pre
         mgr.move(old=delg_verfers[0].qb64, new=delg_pre)
         db.prefixes.add(delg_pre)
@@ -1030,7 +1028,7 @@ def test_delegated_partial_signed_escrow_udes():
                            isith='2',
                            nsith='2',
                            ndigs=[diger.qb64 for diger in del_digers],
-                           **KWA)
+                           version=Vrsn_1_0, kind=Kinds.json)
         del_pre = dip_srdr.pre
         mgr.move(old=del_verfers[0].qb64, new=del_pre)
 
@@ -1098,7 +1096,7 @@ def test_out_of_order_escrow():
                       isith=sith,
                       nsith=nxtsith,
                       ndigs=[diger.qb64 for diger in digers],
-                      code=MtrDex.Blake3_256, **KWA)
+                      code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
 
         pre = srdr.ked["i"]
         icpdig = srdr.said
@@ -1117,7 +1115,7 @@ def test_out_of_order_escrow():
         icpmsg = bytearray(msg)  # save copy for later
 
         # create interaction event
-        srdr = interact(pre=pre, dig=icpdig, sn=1, data=[], **KWA)
+        srdr = interact(pre=pre, dig=icpdig, sn=1, data=[], version=Vrsn_1_0, kind=Kinds.json)
         ixndig = srdr.said
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
@@ -1145,7 +1143,7 @@ def test_out_of_order_escrow():
                       ndigs=[diger.qb64 for diger in digers],
                       sn=2,
                       data=[],
-                      **KWA)
+                      version=Vrsn_1_0, kind=Kinds.json)
 
         rotdig = srdr.said
 
@@ -1290,7 +1288,7 @@ def test_ooes_missing_db_entries_escrow_cleanup():
             nsith="1",
             ndigs=[digers[0].qb64],
             code=MtrDex.Blake3_256,
-            **KWA,
+            version=Vrsn_1_0, kind=Kinds.json,
         )
         pre = icp.ked["i"]
         icpdig = icp.said
@@ -1306,7 +1304,7 @@ def test_ooes_missing_db_entries_escrow_cleanup():
         icpmsg = msg
 
         # valid interaction event
-        ixn = interact(pre=pre, dig=icpdig, sn=1, data=[], **KWA)
+        ixn = interact(pre=pre, dig=icpdig, sn=1, data=[], version=Vrsn_1_0, kind=Kinds.json)
         ixndig = ixn.said
 
         sigers = mgr.sign(ser=ixn.raw, verfers=verfers)
@@ -1409,7 +1407,7 @@ def test_unverified_receipt_escrow():
                       isith=sith,
                       nsith=nxtsith,
                       ndigs=[diger.qb64 for diger in digers],
-                      code=MtrDex.Blake3_256, **KWA)
+                      code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
 
         pre = srdr.ked["i"]
         icpdig = srdr.said
@@ -1428,7 +1426,7 @@ def test_unverified_receipt_escrow():
         icpmsg = msg
 
         # create receipt(s) of inception message
-        reserder = eventing.receipt(pre=pre, sn=0, said=srdr.said, **KWA)
+        reserder = eventing.receipt(pre=pre, sn=0, said=srdr.said, version=Vrsn_1_0, kind=Kinds.json)
         # sign event not receipt with wit0
         wit0Cigar = mgr.sign(ser=srdr.raw, verfers=[wit0Verfer], indexed=False)[0]  # returns Cigar unindexed
         wit1Cigar = mgr.sign(ser=srdr.raw, verfers=[wit1Verfer], indexed=False)[0]  # returns Cigar unindexed
@@ -1462,7 +1460,7 @@ def test_unverified_receipt_escrow():
         assert cigar.qb64 == wit1Cigar.qb64
 
         # create interaction event
-        srdr = interact(pre=pre, dig=icpdig, sn=1, data=[], **KWA)
+        srdr = interact(pre=pre, dig=icpdig, sn=1, data=[], version=Vrsn_1_0, kind=Kinds.json)
         ixndig = srdr.said
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
@@ -1476,7 +1474,7 @@ def test_unverified_receipt_escrow():
         ixnmsg = msg
 
         # create receipt(s) of interaction message
-        reserder = eventing.receipt(pre=pre, sn=1, said=srdr.said, **KWA)
+        reserder = eventing.receipt(pre=pre, sn=1, said=srdr.said, version=Vrsn_1_0, kind=Kinds.json)
         # sign event not receipt with wit0
         wit0Cigar = mgr.sign(ser=srdr.raw, verfers=[wit0Verfer], indexed=False)[0]  # returns Cigar unindexed
         wit1Cigar = mgr.sign(ser=srdr.raw, verfers=[wit1Verfer], indexed=False)[0]  # returns Cigar unindexed
@@ -1524,7 +1522,7 @@ def test_unverified_receipt_escrow():
                       ndigs=[diger.qb64 for diger in digers],
                       sn=2,
                       data=[],
-                      **KWA)
+                      version=Vrsn_1_0, kind=Kinds.json)
 
         rotdig = srdr.said
 
@@ -1540,7 +1538,7 @@ def test_unverified_receipt_escrow():
         rotmsg = msg
 
         # create receipt(s) of rotation message
-        reserder = eventing.receipt(pre=pre, sn=2, said=srdr.said, **KWA)
+        reserder = eventing.receipt(pre=pre, sn=2, said=srdr.said, version=Vrsn_1_0, kind=Kinds.json)
         # sign event not receipt with wit0
         wit0Cigar = mgr.sign(ser=srdr.raw, verfers=[wit0Verfer], indexed=False)[0]  # returns Cigar unindexed
         wit1Cigar = mgr.sign(ser=srdr.raw, verfers=[wit1Verfer], indexed=False)[0]  # returns Cigar unindexed
@@ -1687,7 +1685,7 @@ def test_unverified_trans_receipt_escrow():
                       isith=sith,
                       nsith=nxtsith,
                       ndigs=[diger.qb64 for diger in digers],
-                      code=MtrDex.Blake3_256, **KWA)
+                      code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
 
         pre = srdr.ked["i"]
         icpdig = srdr.said
@@ -1714,7 +1712,7 @@ def test_unverified_trans_receipt_escrow():
                        isith=rsith,
                        nsith=rsith,
                        ndigs=[diger.qb64 for diger in rdigers],
-                       code=MtrDex.Blake3_256, **KWA)
+                       code=MtrDex.Blake3_256, version=Vrsn_1_0, kind=Kinds.json)
 
         rpre = rsrdr.ked["i"]
         ricpdig = rsrdr.said
@@ -1737,7 +1735,7 @@ def test_unverified_trans_receipt_escrow():
         seal = eventing.SealEvent(i=rpre,
                                   s=rsrdr.ked["s"],
                                   d=rsrdr.said)
-        reserder = eventing.receipt(pre=pre, sn=0, said=icpdig, **KWA)
+        reserder = eventing.receipt(pre=pre, sn=0, said=icpdig, version=Vrsn_1_0, kind=Kinds.json)
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
 
@@ -1768,7 +1766,7 @@ def test_unverified_trans_receipt_escrow():
 
 
         # create interaction event
-        srdr = interact(pre=pre, dig=icpdig, sn=1, data=[], **KWA)
+        srdr = interact(pre=pre, dig=icpdig, sn=1, data=[], version=Vrsn_1_0, kind=Kinds.json)
         ixndig = srdr.said
         sigers = mgr.sign(ser=srdr.raw, verfers=verfers)
 
@@ -1793,7 +1791,7 @@ def test_unverified_trans_receipt_escrow():
                        ndigs=[diger.qb64 for diger in rdigers],
                        sn=1,
                        data=[],
-                       **KWA)
+                       version=Vrsn_1_0, kind=Kinds.json)
 
         rrotdig = rsrdr.said
 
@@ -1813,7 +1811,7 @@ def test_unverified_trans_receipt_escrow():
         seal = eventing.SealEvent(i=rpre,
                                   s=rsrdr.ked["s"],
                                   d=rsrdr.said)
-        reserder = eventing.receipt(pre=pre, sn=1, said=ixndig, **KWA)
+        reserder = eventing.receipt(pre=pre, sn=1, said=ixndig, version=Vrsn_1_0, kind=Kinds.json)
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
 
@@ -1857,7 +1855,7 @@ def test_unverified_trans_receipt_escrow():
                       ndigs=[diger.qb64 for diger in digers],
                       sn=2,
                       data=[],
-                      **KWA)
+                      version=Vrsn_1_0, kind=Kinds.json)
 
         rotdig = srdr.said
 
@@ -1877,7 +1875,7 @@ def test_unverified_trans_receipt_escrow():
         seal = eventing.SealEvent(i=rpre,
                                   s=rsrdr.ked["s"],
                                   d=rsrdr.said)
-        reserder = eventing.receipt(pre=pre, sn=2, said=rotdig, **KWA)
+        reserder = eventing.receipt(pre=pre, sn=2, said=rotdig, version=Vrsn_1_0, kind=Kinds.json)
         # sign event not receipt
         resigers = mgr.sign(ser=srdr.raw, verfers=rverfers)
 
