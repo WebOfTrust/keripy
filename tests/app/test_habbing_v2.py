@@ -642,7 +642,8 @@ def test_namespaced_habs(tmp_path):
 
     # Test Reload of Namespace habs
     name = "ns-test"
-    with openHby(name=name, base="test", temp=False, clear=True) as hby:
+    headDirPath = str(tmp_path)
+    with openHby(name=name, base="test", temp=False, clear=True, headDirPath=headDirPath) as hby:
         hab = hby.makeHab(name=name, icount=1, version=Vrsn_2_0, kind=Kinds.cesr)
         opre = hab.pre
         hab = hby.makeHab(name="test.1", icount=1, version=Vrsn_2_0, kind=Kinds.cesr)

@@ -563,6 +563,8 @@ def test_verifier_e1e_identity_edge(seeder):
     equal the far issuee and says nothing about the issuer.
     """
     optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+    KWA = dict(version=Vrsn_1_0, kind=Kinds.json)
+    CUE_KWA = dict(KWA, gvrsn=Vrsn_1_0)
 
     with openHab(name="ian", temp=True, salt=b'0123456789abcdef', **KWA) as (ianHby, ian), \
             openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef', **KWA) \
