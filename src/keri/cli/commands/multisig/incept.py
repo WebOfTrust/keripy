@@ -170,7 +170,7 @@ class GroupMultisigIncept(doing.DoDoer):
                                          smids=ghab.smids,
                                          rmids=ghab.rmids,
                                          icp=icp,
-                                         pvrsn=self.inits.get("version"),
+                                         version=self.inits.get("version"),
                                          kind=self.inits.get("kind", Kinds.json))
             others = list(oset(smids + (rmids or [])))
 

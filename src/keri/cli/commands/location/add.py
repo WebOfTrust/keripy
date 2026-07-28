@@ -112,7 +112,7 @@ class LocationDoer(doing.DoDoer):
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
                 exn, atc = multisigRpyExn(ghab=self.hab, rpy=msg,
-                                          pvrsn=self.version, kind=Kinds.json)
+                                          version=self.version, kind=Kinds.json)
                 self.postman.send(src=self.hab.mhab.pre,
                                   dest=recp,
                                   topic="multisig",

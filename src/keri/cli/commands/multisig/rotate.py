@@ -219,7 +219,7 @@ class GroupMultisigRotate(doing.DoDoer):
                                      smids=smids,
                                      rmids=rmids,
                                      rot=bytearray(rot),
-                                     pvrsn=self.version,
+                                     version=self.version,
                                      kind=Kinds.json)
         others = list(oset(smids + (rmids or [])))
 

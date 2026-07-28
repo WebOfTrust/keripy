@@ -246,7 +246,7 @@ class JoinDoer(doing.DoDoer):
                                          smids=ghab.smids,
                                          rmids=ghab.rmids,
                                          icp=icp,
-                                         pvrsn=self.version if self.version is not None else Version,
+                                         version=self.version,
                                          kind=oicp.kind)
             others = list(oset(smids + (rmids or [])))
 
@@ -318,7 +318,7 @@ class JoinDoer(doing.DoDoer):
             ixn = ghab.msgOwnEvent(allowPartiallySigned=True, sn=oixn.sn, framed=True, gvrsn=event_version)
 
             exn, ims = multisigInteractExn(ghab, aids=ghab.smids, ixn=ixn,
-                                           pvrsn=self.version if self.version is not None else Version,
+                                           version=self.version,
                                            kind=oixn.kind)
             others = list(oset(smids + (rmids or [])))
 
@@ -452,7 +452,7 @@ class JoinDoer(doing.DoDoer):
                                          smids=ghab.smids,
                                          rmids=ghab.rmids,
                                          rot=rot,
-                                         pvrsn=self.version if self.version is not None else Version,
+                                         version=self.version,
                                          kind=orot.kind)
             others = list(oset(smids + (rmids or [])))
 
@@ -607,7 +607,7 @@ class JoinDoer(doing.DoDoer):
 
             for recp in smids:  # this goes to other participants only as a signaling mechanism
                 exn, atc = multisigRpyExn(ghab=hab, rpy=anc,
-                                          pvrsn=self.version if self.version is not None else Version,
+                                          version=self.version,
                                           kind=rserder.kind)
                 self.postman.send(src=hab.mhab.pre,
                                   dest=recp,
@@ -690,7 +690,7 @@ class JoinDoer(doing.DoDoer):
                     vcp=vserder.raw,
                     anc=anc,
                     usage=usage,
-                    pvrsn=self.version if self.version is not None else Version,
+                    version=self.version,
                     kind=vserder.kind,
                 )
                 self.postman.send(src=hab.mhab.pre,
@@ -800,7 +800,7 @@ class JoinDoer(doing.DoDoer):
                     acdc=acdc,
                     iss=iserder.raw,
                     anc=anc,
-                    pvrsn=self.version if self.version is not None else Version,
+                    version=self.version,
                     kind=iserder.kind,
                 )
                 self.postman.send(src=hab.mhab.pre,
@@ -903,7 +903,7 @@ class JoinDoer(doing.DoDoer):
                     said=creder.said,
                     rev=rserder.raw,
                     anc=anc,
-                    pvrsn=self.version if self.version is not None else Version,
+                    version=self.version,
                     kind=rserder.kind,
                 )
                 self.postman.send(src=hab.mhab.pre,
