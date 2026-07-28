@@ -9,3 +9,5 @@ from .messaging import (regcept, blindate, update, acdcmap, acdcatt, acdcagg,
                        sectionate,
                        actSchemaDefault, acgSchemaDefault, acmSchemaDefault)
 
+from .ipexing import (Ipex, IpexHandler, loadHandlers, apply, offer, agree,
+                      grant, admit, spurn)

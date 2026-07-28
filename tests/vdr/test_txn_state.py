@@ -9,7 +9,6 @@ from keri.app import openHby
 from keri.vc import credential
 from keri.vdr import Reger, Regery, Tever, Tevery
 
-from tests.common import KWA
 
 
 def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
@@ -21,13 +20,13 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
     with (openHby(name="bob", base="test", salt=default_salt, version=Vrsn_1_0) as bobHby,
           openHby(name="bam", base="test", salt=default_salt, version=Vrsn_1_0) as bamHby):
 
-        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, **KWA)
+        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, version=Vrsn_1_0, kind=Kinds.json)
         assert bobHab.pre == 'EFggrgspyZwbi-zB2iJzjHu0QU5dh89mA8jOhDcgrTqj'
 
         regery = Regery(hby=bobHby, name="test", temp=True)
-        issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name, **KWA)
+        issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name, version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        bobHab.interact(data=[rseal], framed=True, gvrsn=Vrsn_1_0, **KWA)
+        bobHab.interact(data=[rseal], framed=True, gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
         seqner = Seqner(sn=bobHab.kever.sn)
         issuer.anchorMsg(pre=issuer.regk,
                          regd=issuer.regd,
@@ -62,7 +61,7 @@ def test_tsn_message_out_of_order(mockHelpingNowUTC, mockCoringRandomNonce):
                                's': '0',
                                'vn': [1, 0]}
 
-        rpy = bobHab.reply(route="/tsn/registry/" + bobHab.pre, data=rsr._asdict(), gvrsn=Vrsn_1_0, **KWA)
+        rpy = bobHab.reply(route="/tsn/registry/" + bobHab.pre, data=rsr._asdict(), gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
 
         bamReger = Reger(name="bam", temp=True)
         bamTvy = Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
@@ -100,13 +99,13 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
     with (openHby(name="bob", base="test", salt=default_salt, version=Vrsn_1_0) as bobHby,
           openHby(name="bam", base="test", salt=default_salt, version=Vrsn_1_0) as bamHby):
 
-        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, **KWA)
+        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, version=Vrsn_1_0, kind=Kinds.json)
         assert bobHab.pre == 'EFggrgspyZwbi-zB2iJzjHu0QU5dh89mA8jOhDcgrTqj'
 
         regery = Regery(hby=bobHby, name="test", temp=True)
-        issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name, **KWA)
+        issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name, version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        bobHab.interact(data=[rseal], framed=True, gvrsn=Vrsn_1_0, **KWA)
+        bobHab.interact(data=[rseal], framed=True, gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
         seqner = Seqner(sn=bobHab.kever.sn)
         diger = Diger(qb64=bobHab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
@@ -136,7 +135,7 @@ def test_tsn_message_missing_anchor(mockHelpingNowUTC, mockCoringRandomNonce):
                                's': '0',
                                'vn': [1, 0]}
 
-        rpy = bobHab.reply(route="/tsn/registry/" + bobHab.pre, data=asdict(tsn), gvrsn=Vrsn_1_0, **KWA)
+        rpy = bobHab.reply(route="/tsn/registry/" + bobHab.pre, data=asdict(tsn), gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
 
         bamReger = Reger(name="bam", temp=True)
         bamTvy = Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
@@ -196,16 +195,16 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
           openHby(name="bam", base="test", salt=default_salt, version=Vrsn_1_0) as bamHby):
 
         # setup Wes's habitat nontrans
-        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False, **KWA)
+        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False, version=Vrsn_1_0, kind=Kinds.json)
         assert wesHab.pre == 'BJX05FKbj6M7EoUp53nKJNdG5eDZMGBatlDjg_QcpuqE'
 
-        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, wits=[wesHab.pre], **KWA)
+        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, wits=[wesHab.pre], version=Vrsn_1_0, kind=Kinds.json)
         assert bobHab.pre == 'EPa6GLVG4lFV9oi28WQbC7UfcSoDb7kMlZkaa3qaj4UA'
 
         regery = Regery(hby=bobHby, name="test", temp=True)
-        issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name, **KWA)
+        issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name, version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        bobHab.interact(data=[rseal], framed=True, gvrsn=Vrsn_1_0, **KWA)
+        bobHab.interact(data=[rseal], framed=True, gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
         seqner = Seqner(sn=bobHab.kever.sn)
         diger = Diger(qb64=bobHab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
@@ -222,7 +221,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
         for msg in bobHby.db.clonePreIter(pre=bobHab.pre, fn=0, version=bobHab.kever.serder.pvrsn):
             Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=wesKvy, local=True)
             iserder = SerderKERI(raw=bytearray(msg))
-            wesHab.receipt(serder=iserder, framed=True, gvrsn=Vrsn_1_0, **KWA)
+            wesHab.receipt(serder=iserder, framed=True, gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
 
         assert bobHab.pre in wesHab.kevers
 
@@ -254,7 +253,7 @@ def test_tsn_from_witness(mockHelpingNowUTC, mockCoringRandomNonce):
                                's': '0',
                                'vn': [1, 0]}
 
-        rpy = wesHab.reply(route="/tsn/registry/" + wesHab.pre, data=asdict(tsn), gvrsn=Vrsn_1_0, **KWA)
+        rpy = wesHab.reply(route="/tsn/registry/" + wesHab.pre, data=asdict(tsn), gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
 
         bamRtr = Router()
         bamRvy = Revery(db=bamHby.db, rtr=bamRtr)
@@ -321,16 +320,16 @@ def test_tsn_from_no_one(mockHelpingNowUTC, mockCoringRandomNonce):
           openHby(name="bam", base="test", salt=default_salt, version=Vrsn_1_0) as bamHby):
 
         # setup Wes's habitat nontrans
-        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False, **KWA)
+        wesHab = wesHby.makeHab(name="wes", isith='1', icount=1, transferable=False, version=Vrsn_1_0, kind=Kinds.json)
         assert wesHab.pre == 'BJX05FKbj6M7EoUp53nKJNdG5eDZMGBatlDjg_QcpuqE'
 
-        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, **KWA)
+        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, version=Vrsn_1_0, kind=Kinds.json)
         assert bobHab.pre == 'EFggrgspyZwbi-zB2iJzjHu0QU5dh89mA8jOhDcgrTqj'
 
         regery = Regery(hby=bobHby, name="test", temp=True)
-        issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name, **KWA)
+        issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name, version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        bobHab.interact(data=[rseal], framed=True, gvrsn=Vrsn_1_0, **KWA)
+        bobHab.interact(data=[rseal], framed=True, gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
         seqner = Seqner(sn=bobHab.kever.sn)
         diger = Diger(qb64=bobHab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
@@ -378,7 +377,7 @@ def test_tsn_from_no_one(mockHelpingNowUTC, mockCoringRandomNonce):
                                's': '0',
                                'vn': [1, 0]}
 
-        rpy = wesHab.reply(route="/tsn/registry/" + wesHab.pre, data=asdict(tsn), gvrsn=Vrsn_1_0, **KWA)
+        rpy = wesHab.reply(route="/tsn/registry/" + wesHab.pre, data=asdict(tsn), gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
 
         bamRtr = Router()
         bamRvy = Revery(db=bamHby.db, rtr=bamRtr)
@@ -413,13 +412,13 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
     with (openHby(name="bob", base="test", salt=default_salt, version=Vrsn_1_0) as bobHby,
           openHby(name="bam", base="test", salt=default_salt, version=Vrsn_1_0) as bamHby):
 
-        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, **KWA)
+        bobHab = bobHby.makeHab(name="bob", isith='1', icount=1, version=Vrsn_1_0, kind=Kinds.json)
         assert bobHab.pre == 'EFggrgspyZwbi-zB2iJzjHu0QU5dh89mA8jOhDcgrTqj'
 
         regery = Regery(hby=bobHby, name="test", temp=True)
-        issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name, **KWA)
+        issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name, version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        bobHab.interact(data=[rseal], framed=True, gvrsn=Vrsn_1_0, **KWA)
+        bobHab.interact(data=[rseal], framed=True, gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
         seqner = Seqner(sn=bobHab.kever.sn)
         diger = Diger(qb64=bobHab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,
@@ -444,11 +443,11 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
                             schema="EAbrwlefuH-F_KU_FPWAZR78A3pmSVDlnfJUqnm8Lhr4",
                             data=credSubject,
                             status=issuer.regk,
-                            **KWA)
+                            version=Vrsn_1_0, kind=Kinds.json)
 
         iss = issuer.issue(said=creder.said)
         rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        bobHab.interact(data=[rseal], framed=True, gvrsn=Vrsn_1_0, **KWA)
+        bobHab.interact(data=[rseal], framed=True, gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
         seqner = Seqner(sn=bobHab.kever.sn)
         diger = Diger(qb64=bobHab.kever.serder.said)
         issuer.anchorMsg(pre=iss.pre,
@@ -482,7 +481,7 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
                                 's': '0',
                                 'vn': [1, 0]}
 
-        rpy = bobHab.reply(route="/tsn/credential/" + bobHab.pre, data=asdict(ctsn), gvrsn=Vrsn_1_0, **KWA)
+        rpy = bobHab.reply(route="/tsn/credential/" + bobHab.pre, data=asdict(ctsn), gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
 
         bamReger = Reger(name="bam", temp=True)
         bamTvy = Tevery(reger=bamReger, db=bamHby.db, lax=False, local=False, rvy=bamRvy)
@@ -541,13 +540,13 @@ def test_credential_tsn_message(mockHelpingNowUTC, mockCoringRandomNonce, mockHe
 
 def test_tever_reload(mockHelpingNowUTC, mockCoringRandomNonce, mockHelpingNowIso8601):
     with openHby(name="bob", base="test", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as hby:
-        bobHab = hby.makeHab(name="bob", isith='1', icount=1, **KWA)
+        bobHab = hby.makeHab(name="bob", isith='1', icount=1, version=Vrsn_1_0, kind=Kinds.json)
         assert bobHab.pre == 'EFggrgspyZwbi-zB2iJzjHu0QU5dh89mA8jOhDcgrTqj'
 
         regery = Regery(hby=hby, name="test", temp=True)
-        issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name, **KWA)
+        issuer = regery.makeRegistry(prefix=bobHab.pre, name=bobHab.name, version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        bobHab.interact(data=[rseal], framed=True, gvrsn=Vrsn_1_0, **KWA)
+        bobHab.interact(data=[rseal], framed=True, gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
         seqner = Seqner(sn=bobHab.kever.sn)
         diger = Diger(qb64=bobHab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk,

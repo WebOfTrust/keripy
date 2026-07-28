@@ -25,9 +25,6 @@ from keri.app import (MailboxIterable, QryRpyMailboxIterable,
                       ReceiptEnd, CESR_CONTENT_TYPE, CESR_DESTINATION_HEADER)
 from keri.app.httping import CESR_ATTACHMENT_HEADER
 
-from tests.common import CUE_KWA, KWA
-
-from tests.common import KWA
 
 
 def test_mailbox_iter():
@@ -116,11 +113,11 @@ def test_mailbox_multiple_iter():
 
 
 def test_qrymailbox_iter():
-    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab):
+    with openHab(name="test", transferable=True, temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (hby, hab):
         assert hab.pre == 'EIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3'
         icp = hab.msgOwnInception(framed=True, gvrsn=Vrsn_1_0)
         icpSrdr = SerderKERI(raw=icp)
-        qry = hab.query(pre=hab.pre, src=hab.pre, route="/mbx", **KWA)
+        qry = hab.query(pre=hab.pre, src=hab.pre, route="/mbx", version=Vrsn_1_0, kind=Kinds.json)
         srdr = SerderKERI(raw=qry)
 
         cues = decking.Deck()
@@ -256,14 +253,14 @@ def test_wit_query_ends(seeder, witnessPorter):
         witnessPorts, witnessUrls = witnessPorter("wes")
         wesDoers = setupWitness(alias="wes", hby=wesHby,
                                 tcpPort=witnessPorts["wes"]["tcp"],
-                                httpPort=witnessPorts["wes"]["http"], **KWA)
+                                httpPort=witnessPorts["wes"]["http"], version=Vrsn_1_0, kind=Kinds.json)
         # Pull the reger out of the Doers so the reger is reused and does not trigger an LMDB error on reuse
         wesReger = next(doer.baser for doer in wesDoers if isinstance(doer, basing.BaserDoer))
         witDoer = Receiptor(hby=palHby)
 
         wesHab = wesHby.habByName(name="wes")
         seeder.seedWitEnds(palHby.db, witHabs=[wesHab],
-                           protocols=[Schemes.http], witnessUrls=witnessUrls, **KWA)
+                           protocols=[Schemes.http], witnessUrls=witnessUrls, version=Vrsn_1_0, kind=Kinds.json)
 
         app = falcon.App()
         query_endpoint = QueryEnd(wesHab, reger=wesReger)
@@ -305,7 +302,7 @@ class QueryTestDoer(doing.Doer):
         witDoer = self.options["witDoer"]
         wesClient = self.options["wesClient"]
 
-        palHab = palHby.makeHab(name="pal", wits=[wesHab.pre], transferable=True, **KWA)
+        palHab = palHby.makeHab(name="pal", wits=[wesHab.pre], transferable=True, version=Vrsn_1_0, kind=Kinds.json)
 
         assert palHab.pre == "EEWz3RVIvbGWw4VJC7JEZnGCLPYx4-QgWOwAzGnw-g8y"
 
@@ -395,10 +392,10 @@ def test_createHttpServer(monkeypatch):
 def test_receipt_end_returns_bytes_for_v1_receipt():
     with openHby(name="receipt-wit", version=Vrsn_1_0) as witHby, \
             openHby(name="receipt-cam", version=Vrsn_1_0) as camHby:
-        wit = witHby.makeHab(name="wit", transferable=False, **KWA)
+        wit = witHby.makeHab(name="wit", transferable=False, version=Vrsn_1_0, kind=Kinds.json)
         cam = camHby.makeHab(name="cam", transferable=True, wits=[wit.pre],
                              toad=1, icount=1, ncount=1,
-                             isith="1", nsith="1", **KWA)
+                             isith="1", nsith="1", version=Vrsn_1_0, kind=Kinds.json)
 
         serder, _, _ = cam.getOwnEvent(sn=0)
         msg = cam.msgOwnEvent(sn=0, framed=True, gvrsn=serder.pvrsn)
@@ -428,13 +425,13 @@ def test_receipt_end_returns_bytes_for_v1_receipt():
 
 def test_mailbox_query_honors_explicit_v1_kwargs():
     with openHby(name="mailbox-query", version=Vrsn_1_0) as hby:
-        hab = hby.makeHab(name="cam", **KWA)
+        hab = hby.makeHab(name="cam", version=Vrsn_1_0, kind=Kinds.json)
 
         msg = hab.query(pre=hab.pre,
                         src=hab.pre,
                         route="mbx",
                         query=dict(topics={"/receipt": 0}),
-                        **KWA)
+                        version=Vrsn_1_0, kind=Kinds.json)
 
         serder = SerderKERI(raw=msg)
         assert serder.pvrsn == Vrsn_1_0
@@ -444,14 +441,14 @@ def test_mailbox_query_honors_explicit_v1_kwargs():
 
 def test_follow_on_events_honor_explicit_v1_kwargs():
     with openHby(name="v1-follow-ons", version=Vrsn_1_0) as hby:
-        hab = hby.makeHab(name="cam", **KWA)
+        hab = hby.makeHab(name="cam", version=Vrsn_1_0, kind=Kinds.json)
 
-        rot = hab.rotate(framed=True, **CUE_KWA)
+        rot = hab.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         rserder = SerderKERI(raw=rot)
         assert rserder.pvrsn == Vrsn_1_0
         assert rserder.kind == Kinds.json
 
-        ixn = hab.interact(framed=True, **CUE_KWA)
+        ixn = hab.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         iserder = SerderKERI(raw=ixn)
         assert iserder.pvrsn == Vrsn_1_0
         assert iserder.kind == Kinds.json
@@ -459,7 +456,7 @@ def test_follow_on_events_honor_explicit_v1_kwargs():
 
 def test_end_role_reply_defaults_to_hab_version_for_v1_hab():
     with openHby(name="v1-end-role", version=Vrsn_1_0) as hby:
-        hab = hby.makeHab(name="cam", **KWA)
+        hab = hby.makeHab(name="cam", version=Vrsn_1_0, kind=Kinds.json)
 
         msg = hab.makeEndRole(eid=hab.pre, role=Roles.mailbox)
         serder = SerderKERI(raw=msg)

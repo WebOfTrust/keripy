@@ -161,7 +161,7 @@ class Verifier:
                     continue
                 nodeSaid = node["n"]
                 op = node['o'] if 'o' in node else None
-                state = self.verifyChain(nodeSaid, op, creder.israid)
+                state = self.verifyChain(nodeSaid, op, creder.israid, creder.iseaid)
                 if state is None:
                     self.escrowMCE(creder, prefixer, seqner, saider)
                     self.cues.append(dict(kin="proof",  said=nodeSaid))
@@ -333,13 +333,16 @@ class Verifier:
         hab = self.hby.habs[pre]
         return hab.endorse(serder, last=True, framed=False, gvrsn=serder.pvrsn)
 
-    def verifyChain(self, nodeSaid, op, issuer):
+    def verifyChain(self, nodeSaid, op, issuer, issuee=None):
         """ Verifies the node credential at the end of an edge
 
         Parameters:
             nodeSaid: (str): qb64 SAID of node credential
             op(str): edge operator
-            issuer (str) qb64 AID of issuer
+            issuer (str) qb64 AID of the issuer of the near (edge-bearing) ACDC
+            issuee (str|None): qb64 AID of the issuee of the near (edge-bearing) ACDC,
+                required by the identity operators (E1E). None when the near ACDC is
+                untargeted.
 
         Returns:
             Serder: transaction event state notification message
@@ -349,12 +352,22 @@ class Verifier:
         if said is None:
             return None
 
-        creder = self.reger.creds.get(keys=nodeSaid)
+        creder = self.reger.creds.get(keys=nodeSaid)  # far (node) credential
 
-        if op not in ['I2I', 'DI2I', 'NI2I']:
+        if op not in ['I2I', 'DI2I', 'NI2I', 'E1E']:
             op = 'I2I' if 'i' in creder.attrib else 'NI2I'
 
-        if op != 'NI2I':
+        if op == 'E1E':
+            # Identity relation (discussion #1515): the issuee AID of the near ACDC
+            # (the one carrying this edge) MUST equal the issuee AID of the far node.
+            # Unlike the delegative I2I, this says nothing about the issuer, so the
+            # common SEDI case -- both credentials issued by a third party to the same
+            # subject, issuer != issuee -- is valid (and is exactly what I2I rejects).
+            # Resolve the far issuee via .iseaid so an aggregate node (A[1].i) works too.
+            farIssuee = creder.iseaid
+            if farIssuee is None or issuee is None or issuee != farIssuee:
+                return None
+        elif op != 'NI2I':
             if 'i' not in creder.attrib:
                 return None
 

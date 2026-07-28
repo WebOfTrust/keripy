@@ -65,10 +65,6 @@ class Director(doing.Doer):
         """
         self.sendOwnEvent(sn=0)
 
-    def _event_kwa(self):
-        """Use explicit framing when configured, otherwise inherit the hab defaults."""
-        return dict(version=self.version, kind=self.kind, gvrsn=self.version)
-
 
 class Reactor(doing.DoDoer):
     """

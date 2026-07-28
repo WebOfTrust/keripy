@@ -1,0 +1,105 @@
+# Spec Worked-Examples Drift Guard
+#
+# keripy's tests are the single source of truth for the ACDC specification's
+# "Working ACDC Examples". This workflow regenerates keripy's canonical
+# worked-example manifest and compares it, value-for-value, against the JSON
+# example blocks embedded in the ACDC spec (trustoverip/kswg-acdc-specification,
+# spec/spec-body.md). If they disagree, the spec and keripy have DRIFTED and
+# this job fails.
+#
+# How the spec side is matched: each governed JSON block in spec-body.md is
+# tagged with an HTML comment marker immediately before its fenced code block:
+#     <!-- example: <blockName> -->
+#     ```json
+#     { ... }
+#     ```
+# The checker (tools/check_spec_examples.py) pairs each marker with the
+# same-named block in keripy's emitted manifest.
+#
+# SEQUENCING CAVEAT: this guard REQUIRES the sibling spec PR -- the one that
+# adds the `<!-- example: -->` markers and the synced JSON blocks to
+# spec-body.md -- to have LANDED in the pinned spec ref. Until then every run
+# reports "MISSING IN SPEC" and fails. Keep this workflow non-required (or add
+# it) only after that spec PR merges to the ref checked out below.
+
+name: Spec Worked-Examples Drift Guard
+
+on:
+  workflow_dispatch:
+    inputs:
+      spec_ref:
+        description: "Git ref (branch/tag/SHA) of trustoverip/kswg-acdc-specification to check against"
+        required: false
+        default: "main"
+  pull_request:
+    # Drift can only be introduced by changing the canonical examples, the
+    # checker, or this workflow -- so only run then, not on every PR.
+    paths:
+      - "tests/spec/acdc/test_acdc_examples.py"
+      - "tools/check_spec_examples.py"
+      - ".github/workflows/spec-examples-drift.yml"
+
+permissions:
+  contents: read
+
+jobs:
+  drift:
+    runs-on: ubuntu-latest
+    env:
+      # Resolve the spec ref once: workflow_dispatch supplies inputs.spec_ref;
+      # on pull_request that expression is empty, so fall back to 'main'.
+      SPEC_REF: ${{ github.event.inputs.spec_ref || 'main' }}
+    steps:
+      - name: Check out keripy
+        uses: actions/checkout@v6
+
+      - name: Check out ACDC specification
+        uses: actions/checkout@v6
+        with:
+          repository: trustoverip/kswg-acdc-specification
+          ref: ${{ env.SPEC_REF }}
+          path: spec-repo
+
+      - name: Set up Python
+        uses: actions/setup-python@v6
+        with:
+          python-version: "3.14"
+
+      - name: Install keripy
+        run: |
+          python -m pip install --upgrade pip
+          pip install -e .
+          pip install pytest pytest-shell pytest-xdist  # needed to emit the worked-examples manifest
+
+      - name: Emit keripy's canonical worked-examples manifest
+        env:
+          KERI_EMIT_WORKED_EXAMPLES: /tmp/manifest.json
+        run: |
+          python -m pytest \
+            tests/spec/acdc/test_acdc_examples.py::test_acdc_examples_JSON -q
+
+      - name: Compare spec examples against the manifest (drift guard)
+        run: |
+          python tools/check_spec_examples.py \
+            --manifest /tmp/manifest.json \
+            --spec spec-repo/spec/spec-body.md
+
+      - name: Explain a failure
+        if: failure()
+        run: |
+          echo "::error::ACDC worked-example DRIFT: keripy's canonical examples"
+          echo "::error::and the ACDC spec's example blocks disagree."
+          echo ""
+          echo "keripy's tests are the source of truth for the spec's"
+          echo "'Working ACDC Examples'. A failure here means one of:"
+          echo "  1. keripy's examples changed and the spec's JSON blocks (with"
+          echo "     their <!-- example: NAME --> markers in spec/spec-body.md)"
+          echo "     were not re-synced -- open a spec PR against"
+          echo "     trustoverip/kswg-acdc-specification to update them; or"
+          echo "  2. the sibling spec PR that introduces the markers/blocks has"
+          echo "     not landed yet in the checked-out spec ref (see the"
+          echo "     SEQUENCING CAVEAT at the top of this workflow file)."
+          echo ""
+          echo "Fix by reconciling this workflow"
+          echo "(.github/workflows/spec-examples-drift.yml + tools/check_spec_examples.py)"
+          echo "with the spec PR so keripy and the spec examples agree."

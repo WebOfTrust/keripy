@@ -23,7 +23,6 @@ from keri.app import (Mailboxer, ForwardHandler, Poster,
 from keri.peer import specialExchange, Exchanger
 from keri.spac import payloading
 
-from tests.common import KWA
 
 
 def test_forwarding_legacy_wrapper_body_uses_v1_and_outer_framing_uses_environment_or_explicit_version(monkeypatch):
@@ -39,8 +38,8 @@ def test_forwarding_legacy_wrapper_body_uses_v1_and_outer_framing_uses_environme
         captures.append(("specialExchange", kwargs["route"], kwargs["version"], kwargs["kind"]))
         return real_special_exchange(*args, **kwargs)
 
-    with openHab(name="sender", transferable=True, temp=True, **KWA) as (hby, hab), \
-            openHab(name="recp", transferable=False, temp=True, **KWA) as (_, recpHab):
+    with openHab(name="sender", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby, hab), \
+            openHab(name="recp", transferable=False, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (_, recpHab):
 
         monkeypatch.setattr(forwarding_module, "specialExchange", capture_special_exchange)
         monkeypatch.setattr(forwarding_module, "Counter", FakeCounter)
@@ -57,7 +56,7 @@ def test_forwarding_legacy_wrapper_body_uses_v1_and_outer_framing_uses_environme
         exn = exchange(route="/echo",
                        attributes=dict(msg="test"),
                        sender=hab.pre,
-                       **KWA)
+                       version=Vrsn_1_0, kind=Kinds.json)
         atc = original_endorse(exn, last=False, framed=False, gvrsn=Vrsn_1_0)
         del atc[:exn.size]
 
@@ -91,7 +90,7 @@ def test_forwarding_legacy_wrapper_body_uses_v1_and_outer_framing_uses_environme
 
 
 def test_postman(seeder, witnessPorter):
-    with openHab(name="test", transferable=True, temp=True, **KWA) as (hby, hab), \
+    with openHab(name="test", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby, hab), \
             openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=True, version=Vrsn_1_0) as wesHby, \
             openHby(name="repTest", temp=True, version=Vrsn_1_0) as recpHby:
 
@@ -102,16 +101,16 @@ def test_postman(seeder, witnessPorter):
                                 mbx=mbx,
                                 tcpPort=witnessPorts["wes"]["tcp"],
                                 httpPort=witnessPorts["wes"]["http"],
-                                **KWA)
+                                version=Vrsn_1_0, kind=Kinds.json)
         wesHab = wesHby.habByName("wes")
-        seeder.seedWitEnds(hby.db, witHabs=[wesHab], witnessUrls=witnessUrls, **KWA)
-        seeder.seedWitEnds(wesHby.db, witHabs=[wesHab], witnessUrls=witnessUrls, **KWA)
-        seeder.seedWitEnds(recpHby.db, witHabs=[wesHab], witnessUrls=witnessUrls, **KWA)
+        seeder.seedWitEnds(hby.db, witHabs=[wesHab], witnessUrls=witnessUrls, version=Vrsn_1_0, kind=Kinds.json)
+        seeder.seedWitEnds(wesHby.db, witHabs=[wesHab], witnessUrls=witnessUrls, version=Vrsn_1_0, kind=Kinds.json)
+        seeder.seedWitEnds(recpHby.db, witHabs=[wesHab], witnessUrls=witnessUrls, version=Vrsn_1_0, kind=Kinds.json)
 
         recpHab = recpHby.makeHab(name="repTest",
                                   transferable=True,
                                   wits=[wesHab.pre],
-                                  **KWA)
+                                  version=Vrsn_1_0, kind=Kinds.json)
 
         recpIcp = recpHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
         wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
@@ -119,7 +118,7 @@ def test_postman(seeder, witnessPorter):
         assert recpHab.pre in wesKvy.kevers
 
         serder = SerderKERI(raw=recpIcp)
-        rct = wesHab.receipt(serder, framed=True, gvrsn=Vrsn_1_0, **KWA)
+        rct = wesHab.receipt(serder, framed=True, gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
 
         kvy = Kevery(db=hab.db)
         Parser(version=Vrsn_1_0).parseOne(bytearray(recpIcp), kvy=kvy, local=True)
@@ -132,7 +131,7 @@ def test_postman(seeder, witnessPorter):
         exn = exchange(route="/echo",
                                      attributes=dict(msg="test"),
                                      sender=hab.pre,
-                                     **KWA)
+                                     version=Vrsn_1_0, kind=Kinds.json)
         atc = hab.endorse(exn, last=False, framed=False, gvrsn=Vrsn_1_0)
         del atc[:exn.size]
         pman.send(src=hab.pre,
@@ -169,9 +168,9 @@ def test_postman(seeder, witnessPorter):
 
 
 def test_forward_handler():
-    with openHab(name="sender", transferable=True, temp=True, **KWA) as (hby, hab), \
-         openHab(name="recp", transferable=True, temp=True, **KWA) as (recpHby, recpHab), \
-         openHab(name="recp2", transferable=True, temp=True, **KWA) as (recp2Hby, recp2Hab):
+    with openHab(name="sender", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby, hab), \
+         openHab(name="recp", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (recpHby, recpHab), \
+         openHab(name="recp2", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (recp2Hby, recp2Hab):
 
         mbx = Mailboxer(temp=True)
         forwarder = ForwardHandler(hby=hby, mbx=mbx)
@@ -180,7 +179,7 @@ def test_forward_handler():
         inner_exn = exchange(route="/echo",
                                            attributes=dict(msg="hello"),
                                            sender=hab.pre,
-                                           **KWA)
+                                           version=Vrsn_1_0, kind=Kinds.json)
         inner_atc = hab.endorse(inner_exn, last=False, framed=False, gvrsn=Vrsn_1_0)
         del inner_atc[:inner_exn.size]
 
@@ -215,7 +214,7 @@ def test_forward_handler():
         inner_exn2 = exchange(route="/delegate",
                                             attributes=dict(msg="delegate"),
                                             sender=hab.pre,
-                                            **KWA)
+                                            version=Vrsn_1_0, kind=Kinds.json)
         inner_atc2 = hab.endorse(inner_exn2, last=False, framed=False, gvrsn=Vrsn_1_0)
         del inner_atc2[:inner_exn2.size]
 
@@ -239,7 +238,7 @@ def test_forward_handler():
         inner_exn3 = exchange(route="/echo",
                                             attributes=dict(msg="other"),
                                             sender=hab.pre,
-                                            **KWA)
+                                            version=Vrsn_1_0, kind=Kinds.json)
         inner_atc3 = hab.endorse(inner_exn3, last=False, framed=False, gvrsn=Vrsn_1_0)
         del inner_atc3[:inner_exn3.size]
 
@@ -263,14 +262,14 @@ def test_forward_handler():
         inner_exnA = exchange(route="/echo",
                                          attributes=dict(msg="A"),
                                         sender=hab.pre,
-                                        **KWA)
+                                        version=Vrsn_1_0, kind=Kinds.json)
         inner_atcA = hab.endorse(inner_exnA, last=False, framed=False, gvrsn=Vrsn_1_0)
         del inner_atcA[:inner_exnA.size]
 
         inner_exnB = exchange(route="/echo",
                                          attributes=dict(msg="B"),
                                         sender=hab.pre,
-                                        **KWA)
+                                        version=Vrsn_1_0, kind=Kinds.json)
         inner_atcB = hab.endorse(inner_exnB, last=False, framed=False, gvrsn=Vrsn_1_0)
         del inner_atcB[:inner_exnB.size]
 
@@ -302,8 +301,8 @@ def test_forward_handler():
 
 
 def test_essr_stream(seeder, unused_tcp_port):
-    with openHab(name="test", transferable=True, temp=True, **KWA) as (hby, hab), \
-            openHab(name="recp", transferable=True, temp=True, **KWA) as (recpHby, recpHab):
+    with openHab(name="test", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby, hab), \
+            openHab(name="recp", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (recpHby, recpHab):
 
         httpPort = unused_tcp_port
         app = falcon.App()
@@ -327,11 +326,11 @@ def test_essr_stream(seeder, unused_tcp_port):
         msgs = bytearray()
         msgs.extend(recpHab.makeEndRole(eid=recpHab.pre,
                                         role=Roles.controller,
-                                        stamp=help.nowIso8601(), **KWA))
+                                        stamp=help.nowIso8601(), version=Vrsn_1_0, kind=Kinds.json))
 
         msgs.extend(recpHab.makeLocScheme(url=f'http://127.0.0.1:{httpPort}',
                                           scheme=Schemes.http,
-                                          stamp=help.nowIso8601(), **KWA))
+                                          stamp=help.nowIso8601(), version=Vrsn_1_0, kind=Kinds.json))
         hab.psr.parse(ims=msgs)
 
         postman = StreamPoster(hby=hby, hab=hab, recp=recpHab.pre, essr=True)
@@ -342,7 +341,7 @@ def test_essr_stream(seeder, unused_tcp_port):
             exn = exchange(route="/echo",
                                          attributes=dict(msg="test", i=i),
                                          sender=hab.pre,
-                                         **KWA)
+                                         version=Vrsn_1_0, kind=Kinds.json)
             atc = hab.endorse(exn, last=False, framed=False, gvrsn=Vrsn_1_0)
             del atc[:exn.size]
 
@@ -410,7 +409,7 @@ def test_essr_stream(seeder, unused_tcp_port):
 
 
 def test_essr_mbx(seeder, witnessPorter):
-    with openHab(name="test", transferable=True, temp=True, **KWA) as (hby, hab), \
+    with openHab(name="test", transferable=True, temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby, hab), \
             openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, temp=True, version=Vrsn_1_0) as wesHby, \
             openHby(name="repTest", temp=True, version=Vrsn_1_0) as recpHby:
 
@@ -418,13 +417,13 @@ def test_essr_mbx(seeder, witnessPorter):
         mbx = Mailboxer(name="wes", temp=True)
         wesDoers = setupWitness(alias="wes", hby=wesHby, mbx=mbx,
                                 tcpPort=witnessPorts["wes"]["tcp"],
-                                httpPort=witnessPorts["wes"]["http"], **KWA)
+                                httpPort=witnessPorts["wes"]["http"], version=Vrsn_1_0, kind=Kinds.json)
         wesHab = wesHby.habByName("wes")
-        seeder.seedWitEnds(hby.db, witHabs=[wesHab], witnessUrls=witnessUrls, **KWA)
-        seeder.seedWitEnds(wesHby.db, witHabs=[wesHab], witnessUrls=witnessUrls, **KWA)
-        seeder.seedWitEnds(recpHby.db, witHabs=[wesHab], witnessUrls=witnessUrls, **KWA)
+        seeder.seedWitEnds(hby.db, witHabs=[wesHab], witnessUrls=witnessUrls, version=Vrsn_1_0, kind=Kinds.json)
+        seeder.seedWitEnds(wesHby.db, witHabs=[wesHab], witnessUrls=witnessUrls, version=Vrsn_1_0, kind=Kinds.json)
+        seeder.seedWitEnds(recpHby.db, witHabs=[wesHab], witnessUrls=witnessUrls, version=Vrsn_1_0, kind=Kinds.json)
 
-        recpHab = recpHby.makeHab(name="repTest", transferable=True, wits=[wesHab.pre], **KWA)
+        recpHab = recpHby.makeHab(name="repTest", transferable=True, wits=[wesHab.pre], version=Vrsn_1_0, kind=Kinds.json)
 
         recpIcp = recpHab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_1_0)
         wesKvy = Kevery(db=wesHab.db, lax=False, local=False)
@@ -432,7 +431,7 @@ def test_essr_mbx(seeder, witnessPorter):
         assert recpHab.pre in wesKvy.kevers
 
         serder = SerderKERI(raw=recpIcp)
-        rct = wesHab.receipt(serder, framed=True, gvrsn=Vrsn_1_0, **KWA)
+        rct = wesHab.receipt(serder, framed=True, gvrsn=Vrsn_1_0, version=Vrsn_1_0, kind=Kinds.json)
 
         kvy = Kevery(db=hab.db)
         Parser(version=Vrsn_1_0).parseOne(bytearray(recpIcp), kvy=kvy, local=True)
@@ -454,7 +453,7 @@ def test_essr_mbx(seeder, witnessPorter):
             exn = exchange(route="/echo",
                                          attributes=dict(msg="test", i=i),
                                          sender=hab.pre,
-                                         **KWA)
+                                         version=Vrsn_1_0, kind=Kinds.json)
             atc = hab.endorse(exn, last=False, framed=False, gvrsn=Vrsn_1_0)
             del atc[:exn.size]
 
