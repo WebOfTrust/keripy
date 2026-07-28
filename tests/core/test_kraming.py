@@ -27,7 +27,6 @@ from keri.recording import MsgCacheRecord, TxnMsgCacheRecord
 from keri.help import helping
 
 V2 = Vrsn_2_0
-KWA = dict(version=V2, kind=Kinds.cesr)
 EXN_KWA = dict(version=V2, kind=Kinds.json)  # xip/exn in kramPMKM must json round-trip
 
 
@@ -522,9 +521,9 @@ def test_parser_routes_v2_query_through_kram(mockHelpingNowUTC):
           openHby(name="receiver", base="test", salt=salt2, version=V2) as receiverHby):
 
         senderHab = senderHby.makeHab(name="sender", isith='1', icount=1,
-                                      transferable=True, **KWA)
+                                      transferable=True, version=V2, kind=Kinds.cesr)
         receiverHby.makeHab(name="receiver", isith='1', icount=1,
-                            transferable=True, **KWA)
+                            transferable=True, version=V2, kind=Kinds.cesr)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
         senderIcp = senderHab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)
@@ -551,7 +550,7 @@ def test_parser_routes_v2_query_through_kram(mockHelpingNowUTC):
                         route="ksn",
                         query=dict(i=senderHab.pre, src=senderHab.pre),
                         stamp=stamp,
-                        **KWA)
+                        version=V2, kind=Kinds.cesr)
             msg = senderHab.endorse(qry, last=True, framed=False, gvrsn=V2)
 
             Parser(version=V2).parse(ims=bytearray(msg), kvy=kvy)
@@ -573,9 +572,9 @@ def test_scrub_invalid_pool_sigs():
           openHby(name="receiver", base="test", salt=salt2, version=V2) as receiverHby):
 
         senderHab = senderHby.makeHab(name="sender", isith='1', icount=1,
-                                      transferable=True, **KWA)
+                                      transferable=True, version=V2, kind=Kinds.cesr)
         receiverHby.makeHab(name="receiver", isith='1', icount=1,
-                            transferable=True, **KWA)
+                            transferable=True, version=V2, kind=Kinds.cesr)
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
         senderIcp = senderHab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)
         Parser(version=V2).parse(ims=bytearray(senderIcp), kvy=crossKvy)
@@ -592,7 +591,7 @@ def test_scrub_invalid_pool_sigs():
             route="ksn",
             query=dict(i=senderHab.pre, src=senderHab.pre, n='scrub-kwa'),
             stamp=stamp,
-            **KWA,
+            version=V2, kind=Kinds.cesr,
         )
         good = senderHab.mgr.sign(
             ser=msg.raw, verfers=senderHab.kever.verfers, indexed=True)
@@ -641,16 +640,16 @@ def test_assk(mockHelpingNowUTC):
 
         # Create transferable single-key sender (no witnesses)
         senderHab = senderHby.makeHab(name="sender", isith='1', icount=1,
-                                      transferable=True, **KWA)
+                                      transferable=True, version=V2, kind=Kinds.cesr)
         # Create non-transferable single-key sender
         senderNTHab = senderNTHby.makeHab(name="senderNT", isith='1', icount=1,
-                                          transferable=False, **KWA)
+                                          transferable=False, version=V2, kind=Kinds.cesr)
         # Create receiver hab (needed for receiver db context)
         receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1,
-                                          transferable=True, **KWA)
+                                          transferable=True, version=V2, kind=Kinds.cesr)
         # Create unknown sender
         unknownHab = unknownHby.makeHab(name="unknown", isith='1', icount=1,
-                                        transferable=True, **KWA)
+                                        transferable=True, version=V2, kind=Kinds.cesr)
 
         # Parse sender ICPs into receiver's db via a cross-feed Kevery.
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
@@ -830,12 +829,12 @@ def test_asmk(mockHelpingNowUTC):
 
         # Create 2-of-3 multi-key sender
         senderHab = senderHby.makeHab(name="mkSender", isith='2', icount=3,
-                                      transferable=True, **KWA)
+                                      transferable=True, version=V2, kind=Kinds.cesr)
         assert len(senderHab.kever.verfers) == 3
 
         # Create receiver hab for db context
         receiverHby.makeHab(name="mkReceiver", isith='1', icount=1,
-                            transferable=True, **KWA)
+                            transferable=True, version=V2, kind=Kinds.cesr)
 
         # Cross-feed sender ICP to receiver
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
@@ -1002,7 +1001,7 @@ def test_asmk(mockHelpingNowUTC):
             assert receiverHby.db.kramPMKS.get(keys=(senderHab.pre, msg5.said)) is not None
 
             # Rotate sender
-            rotMsg = senderHab.rotate(framed=True, **KWA, gvrsn=V2)
+            rotMsg = senderHab.rotate(framed=True, version=V2, kind=Kinds.cesr, gvrsn=V2)
             Parser(version=V2).parse(ims=bytearray(rotMsg), kvy=crossKvy)
 
             # Second sig uses new keys post-rotation
@@ -1081,13 +1080,13 @@ def test_asr(mockHelpingNowUTC):
 
         # Create transferable single-key sender
         senderHab = senderHby.makeHab(name="sender", isith='1', icount=1,
-                                      transferable=True, **KWA)
+                                      transferable=True, version=V2, kind=Kinds.cesr)
         # Create multi-key sender (2-of-3)
         mkHab = mkHby.makeHab(name="mkSender", isith='2', icount=3,
-                              transferable=True, **KWA)
+                              transferable=True, version=V2, kind=Kinds.cesr)
         # Create receiver hab for db context
         receiverHby.makeHab(name="receiver", isith='1', icount=1,
-                            transferable=True, **KWA)
+                            transferable=True, version=V2, kind=Kinds.cesr)
 
         # Cross-feed both senders to receiver
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
@@ -1122,7 +1121,7 @@ def test_asr(mockHelpingNowUTC):
                                  pvrsn=Vrsn_2_0)
 
             # Anchor msg SAID in sender's KEL via interaction event
-            ixnMsg = senderHab.interact(data=[dict(d=msg.said)], framed=True, **KWA, gvrsn=V2)
+            ixnMsg = senderHab.interact(data=[dict(d=msg.said)], framed=True, version=V2, kind=Kinds.cesr, gvrsn=V2)
             # Cross-feed ixn to receiver
             Parser(version=V2).parse(ims=bytearray(ixnMsg), kvy=crossKvy)
 
@@ -1154,7 +1153,7 @@ def test_asr(mockHelpingNowUTC):
                                   pvrsn=Vrsn_2_0)
 
             # Anchor in new ixn
-            ixnMsg = senderHab.interact(data=[dict(d=msg2.said)], framed=True, **KWA, gvrsn=V2)
+            ixnMsg = senderHab.interact(data=[dict(d=msg2.said)], framed=True, version=V2, kind=Kinds.cesr, gvrsn=V2)
             Parser(version=V2).parse(ims=bytearray(ixnMsg), kvy=crossKvy)
 
             ixnSn = senderHab.kever.sn
@@ -1303,7 +1302,7 @@ def test_asr(mockHelpingNowUTC):
                                   pvrsn=Vrsn_2_0)
 
             # Anchor SAID in sender's KEL
-            ixnMsg = senderHab.interact(data=[dict(d=msg7.said)], framed=True, **KWA, gvrsn=V2)
+            ixnMsg = senderHab.interact(data=[dict(d=msg7.said)], framed=True, version=V2, kind=Kinds.cesr, gvrsn=V2)
             Parser(version=V2).parse(ims=bytearray(ixnMsg), kvy=crossKvy)
 
             ixnSn = senderHab.kever.sn
@@ -1403,7 +1402,7 @@ def test_asr(mockHelpingNowUTC):
                                   pvrsn=Vrsn_2_0)
 
             # Anchor SAID in sender's KEL
-            ixnMsg = senderHab.interact(data=[dict(d=msg8.said)], framed=True, **KWA, gvrsn=V2)
+            ixnMsg = senderHab.interact(data=[dict(d=msg8.said)], framed=True, version=V2, kind=Kinds.cesr, gvrsn=V2)
             Parser(version=V2).parse(ims=bytearray(ixnMsg), kvy=crossKvy)
 
             ixnSn = senderHab.kever.sn
@@ -1446,13 +1445,13 @@ def test_transactioned(mockHelpingNowUTC):
 
         # Create single-key sender
         skHab = skHby.makeHab(name="sender", isith='1', icount=1,
-                              transferable=True, **KWA)
+                              transferable=True, version=V2, kind=Kinds.cesr)
         # Create multi-key sender (2-of-3) for step 7
         mkHab = mkHby.makeHab(name="mkSender", isith='2', icount=3,
-                              transferable=True, **KWA)
+                              transferable=True, version=V2, kind=Kinds.cesr)
         # Create receiver hab for db context
         receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1,
-                                          transferable=True, **KWA)
+                                          transferable=True, version=V2, kind=Kinds.cesr)
 
         # Cross-feed both senders to receiver
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
@@ -1928,11 +1927,11 @@ def test_non_auth_attachments_stored(mockHelpingNowUTC):
 
         # Multi-key sender
         senderHab = senderHby.makeHab(name="naaSender", isith='2', icount=3,
-                                      transferable=True, **KWA)
+                                      transferable=True, version=V2, kind=Kinds.cesr)
         assert len(senderHab.kever.verfers) == 3
 
         receiverHab = receiverHby.makeHab(name="naaReceiver", isith='1', icount=1,
-                            transferable=True, **KWA)
+                            transferable=True, version=V2, kind=Kinds.cesr)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
         senderIcp = senderHab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)
@@ -2099,9 +2098,9 @@ def test_multisig_kwa_rehydration_after_threshold(mockHelpingNowUTC):
           openHby(name="rehReceiver", base="test", salt=salt2, version=V2) as receiverHby):
 
         senderHab = senderHby.makeHab(name="rehSender", isith='2', icount=3,
-                                      transferable=True, **KWA)
+                                      transferable=True, version=V2, kind=Kinds.cesr)
         receiverHab = receiverHby.makeHab(name="rehReceiver", isith='1', icount=1,
-                                          transferable=True, **KWA)
+                                          transferable=True, version=V2, kind=Kinds.cesr)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
         senderIcp = senderHab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)
@@ -2118,7 +2117,7 @@ def test_multisig_kwa_rehydration_after_threshold(mockHelpingNowUTC):
                         route="ksn",
                         query=dict(i=senderHab.pre, src=senderHab.pre),
                         stamp=stamp,
-                        **KWA)
+                        version=V2, kind=Kinds.cesr)
 
             allSigers = senderHab.mgr.sign(ser=msg.raw,
                                            verfers=senderHab.kever.verfers,
@@ -2193,9 +2192,9 @@ def test_non_auth_attachments_empty_kwa(mockHelpingNowUTC):
           openHby(name="naesReceiver", base="test", salt=salt2) as receiverHby):
 
         senderHab = senderHby.makeHab(name="naesSender", isith='2', icount=3,
-                                      transferable=True, **KWA)
+                                      transferable=True, version=V2, kind=Kinds.cesr)
         receiverHby.makeHab(name="naesReceiver", isith='1', icount=1,
-                            transferable=True, **KWA)
+                            transferable=True, version=V2, kind=Kinds.cesr)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
         senderIcp = senderHab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)
@@ -2257,9 +2256,9 @@ def test_rem_non_auth_attachments(mockHelpingNowUTC):
           openHby(name="remReceiver", base="test", salt=salt2) as receiverHby):
 
         senderHab = senderHby.makeHab(name="remSender", isith='2', icount=3,
-                                      transferable=True, **KWA)
+                                      transferable=True, version=V2, kind=Kinds.cesr)
         receiverHby.makeHab(name="remReceiver", isith='1', icount=1,
-                            transferable=True, **KWA)
+                            transferable=True, version=V2, kind=Kinds.cesr)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
         senderIcp = senderHab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)
@@ -2380,11 +2379,11 @@ def test_stale_tsgs(mockHelpingNowUTC):
 
         # 2-of-3 multi-key sender
         senderHab = senderHby.makeHab(name="staleSender", isith='2', icount=3,
-                                      transferable=True, **KWA)
+                                      transferable=True, version=V2, kind=Kinds.cesr)
         assert len(senderHab.kever.verfers) == 3
 
         receiverHby.makeHab(name="staleReceiver", isith='1', icount=1,
-                            transferable=True, **KWA)
+                            transferable=True, version=V2, kind=Kinds.cesr)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
 
@@ -2400,7 +2399,7 @@ def test_stale_tsgs(mockHelpingNowUTC):
         assert icpSn == 0
 
         # Rotate sender so sn=1 is now current
-        rotMsg = senderHab.rotate(framed=True, **KWA, gvrsn=V2)
+        rotMsg = senderHab.rotate(framed=True, version=V2, kind=Kinds.cesr, gvrsn=V2)
         Parser(version=V2).parse(ims=bytearray(rotMsg), kvy=crossKvy)
         assert senderHab.kever.sn == 1
 
@@ -2593,9 +2592,9 @@ def test_cigar_scrubs_same_sender_prior_tsgs(mockHelpingNowUTC):
           openHby(name="cigarReceiver", base="test", salt=salt2, version=V2) as receiverHby):
 
         senderNTHab = senderHby.makeHab(name="nt", isith='1', icount=1,
-                                        transferable=False, **KWA)
+                                        transferable=False, version=V2, kind=Kinds.cesr)
         receiverHby.makeHab(name="rcv", isith='1', icount=1,
-                            transferable=True, **KWA)
+                            transferable=True, version=V2, kind=Kinds.cesr)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
         senderIcp = senderNTHab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)
@@ -2613,7 +2612,7 @@ def test_cigar_scrubs_same_sender_prior_tsgs(mockHelpingNowUTC):
                     query=dict(i=senderNTHab.pre, src=senderNTHab.pre,
                                n='cigar-stale'),
                     stamp=stamp,
-                    **KWA)
+                    version=V2, kind=Kinds.cesr)
 
         cigars = senderNTHab.mgr.sign(ser=msg.raw,
                                       verfers=senderNTHab.kever.verfers,
@@ -2656,17 +2655,17 @@ def test_cue_ks_non_transactioned(mockHelpingNowUTC):
 
         # Create transferable single-key sender (no witnesses)
         senderSkHab = senderSkHby.makeHab(name="senderSk", isith='1', icount=1,
-                                          transferable=True, **KWA)
+                                          transferable=True, version=V2, kind=Kinds.cesr)
         # Create multi-key sender
         senderMkHab = senderMkHby.makeHab(name="senderMk", isith='2', icount=3,
-                                          transferable=True, **KWA)
+                                          transferable=True, version=V2, kind=Kinds.cesr)
         # Create known Sender
         kownSenderHab = knownSenderHby.makeHab(name="knownSender", isith='1', icount=1,
-                                               transferable=True, **KWA)
+                                               transferable=True, version=V2, kind=Kinds.cesr)
 
         # Create receiver hab (needed for receiver db context)
         receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1,
-                                          transferable=True, **KWA)
+                                          transferable=True, version=V2, kind=Kinds.cesr)
 
         # Do not cross-feed senders ICP to receiver so they remain unknown to sender
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
@@ -2793,17 +2792,17 @@ def test_cue_ks_transactioned(mockHelpingNowUTC):
 
         # Create transferable single-key sender (no witnesses)
         senderSkHab = senderSkHby.makeHab(name="senderSk", isith='1', icount=1,
-                                          transferable=True, **KWA)
+                                          transferable=True, version=V2, kind=Kinds.cesr)
         # Create multi-key sender
         senderMkHab = senderMkHby.makeHab(name="senderMk", isith='2', icount=3,
-                                          transferable=True, **KWA)
+                                          transferable=True, version=V2, kind=Kinds.cesr)
         # Create known Sender
         kownSenderHab = knownSenderHby.makeHab(name="knownSender", isith='1', icount=1,
-                                               transferable=True, **KWA)
+                                               transferable=True, version=V2, kind=Kinds.cesr)
 
         # Create receiver hab (needed for receiver db context)
         receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1,
-                                          transferable=True, **KWA)
+                                          transferable=True, version=V2, kind=Kinds.cesr)
 
         # Do not cross-feed senders ICP to receiver so they remain unknown to sender
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
@@ -2922,13 +2921,13 @@ def test_aid_allow_deny(mockHelpingNowUTC):
 
         # Create single-key sender
         allowHab = allowSenderHby.makeHab(name="sender", isith='1', icount=1,
-                                          transferable=True, **KWA)
+                                          transferable=True, version=V2, kind=Kinds.cesr)
         # Create single-key sender
         denyHab = denySenderHby.makeHab(name="senderNT", isith='1', icount=1,
-                                        transferable=True, **KWA)
+                                        transferable=True, version=V2, kind=Kinds.cesr)
         # Create receiver hab (needed for receiver db context)
         receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1,
-                                          transferable=True, **KWA)
+                                          transferable=True, version=V2, kind=Kinds.cesr)
 
         # Parse sender ICPs into receiver's db via a cross-feed Kevery.
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
@@ -3392,11 +3391,11 @@ def test_existing_caches_unchanged_on_config_update(fakeHelpingClock):
 
         # Create transferable single-key sender
         senderHab = senderHby.makeHab(name="sender", isith='1', icount=1,
-                                      transferable=True, **KWA)
+                                      transferable=True, version=V2, kind=Kinds.cesr)
 
         # Create receiver hab (needed for receiver db context)
         receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1,
-                                          transferable=True, **KWA)
+                                          transferable=True, version=V2, kind=Kinds.cesr)
 
         # Parse sender ICPs into receiver's db via a cross-feed Kevery.
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
@@ -3585,10 +3584,10 @@ def test_new_cache_type(fakeHelpingClock):
     ):
 
         # Create single-key sender
-        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True, **KWA)
+        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True, version=V2, kind=Kinds.cesr)
 
         # Create receiver hab
-        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True, **KWA)
+        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True, version=V2, kind=Kinds.cesr)
 
         # Load sender's ICP into receiver
         cross = Kevery(db=receiverHby.db, lax=False, local=False)
@@ -3876,10 +3875,10 @@ def test_multiple_new_cache_type(fakeHelpingClock):
         }
 
         # Create transferable single-key sender
-        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True, **KWA)
+        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True, version=V2, kind=Kinds.cesr)
 
         # Create receiver hab
-        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True, **KWA)
+        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True, version=V2, kind=Kinds.cesr)
 
         # Load sender's ICP into receiver
         cross = Kevery(db=receiverHby.db, lax=False, local=False)
@@ -4187,10 +4186,10 @@ def test_merge_cache_types(fakeHelpingClock):
         }
 
         # Create transferable single-key sender
-        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True, **KWA)
+        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True, version=V2, kind=Kinds.cesr)
 
         # Create receiver hab
-        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True, **KWA)
+        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True, version=V2, kind=Kinds.cesr)
 
         # Load sender's ICP into receiver
         cross = Kevery(db=receiverHby.db, lax=False, local=False)
@@ -4423,10 +4422,10 @@ def test_modify_cache_types(fakeHelpingClock):
         }
 
         # Create transferable single-key sender
-        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True, **KWA)
+        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True, version=V2, kind=Kinds.cesr)
 
         # Create receiver hab
-        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True, **KWA)
+        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True, version=V2, kind=Kinds.cesr)
 
         # Load sender's ICP into receiver
         cross = Kevery(db=receiverHby.db, lax=False, local=False)
@@ -4705,10 +4704,10 @@ def test_pruning_messages_single_key(fakeHelpingClock):
           openHby(name="receiver", base="test", salt=salt_receiver) as receiverHby):
 
         # Create transferable single-key sender
-        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True, **KWA)
+        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True, version=V2, kind=Kinds.cesr)
 
         # Create receiver hab
-        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True, **KWA)
+        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True, version=V2, kind=Kinds.cesr)
 
         # Load sender's ICP into receiver
         cross = Kevery(db=receiverHby.db, lax=False, local=False)
@@ -4879,12 +4878,12 @@ def test_pruning_messages_multi_key(fakeHelpingClock):
 
         # Create 2-of-3 multi-key sender
         senderHab = senderHby.makeHab(name="mkSender", isith='2', icount=3,
-                                      transferable=True, **KWA)
+                                      transferable=True, version=V2, kind=Kinds.cesr)
         assert len(senderHab.kever.verfers) == 3
 
         # Create receiver hab for db context
         receiverHab = receiverHby.makeHab(name="mkReceiver", isith='1', icount=1,
-                            transferable=True, **KWA)
+                            transferable=True, version=V2, kind=Kinds.cesr)
 
         # Cross-feed sender ICP to receiver
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
@@ -5204,9 +5203,9 @@ def test_strict_monotonicity_existing_cache(mockHelpingNowUTC):
           openHby(name="receiverMonotonic", base="test", salt=salt2, version=V2) as receiverHby):
 
         senderHab = senderHby.makeHab(name="senderMonotonic", isith='1', icount=1,
-                                      transferable=True, **KWA)
+                                      transferable=True, version=V2, kind=Kinds.cesr)
         receiverHab = receiverHby.makeHab(name="receiverMonotonic", isith='1', icount=1,
-                                          transferable=True, **KWA)
+                                          transferable=True, version=V2, kind=Kinds.cesr)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
         senderIcp = senderHab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)
@@ -5229,7 +5228,7 @@ def test_strict_monotonicity_existing_cache(mockHelpingNowUTC):
                         route="ksn",
                         query=dict(i=senderHab.pre, src=receiverHab.pre, n='8a'),
                         stamp=stamp,
-                        **KWA)
+                        version=V2, kind=Kinds.cesr)
             qrySigers = senderHab.mgr.sign(ser=qry.raw,
                                            verfers=senderHab.kever.verfers,
                                            indexed=True)
@@ -5311,10 +5310,10 @@ def test_pruning_exchanges(fakeHelpingClock):
           openHby(name="receiver", base="test", salt=salt_receiver) as receiverHby):
 
         # Create single-key sender
-        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True, **KWA)
+        senderHab = senderHby.makeHab(name="sender", isith='1', icount=1, transferable=True, version=V2, kind=Kinds.cesr)
 
         # Create receiver hab
-        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True, **KWA)
+        receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1, transferable=True, version=V2, kind=Kinds.cesr)
 
         # Load sender's ICP into receiver
         cross = Kevery(db=receiverHby.db, lax=False, local=False)
@@ -5463,9 +5462,9 @@ def test_pruning_exchanges_cleans_transactional_partial_multisig(fakeHelpingCloc
           openHby(name="mkPruneReceiver", base="test", salt=salt_rx, version=V2) as receiverHby):
 
         mkHab = mkHby.makeHab(name="mkSender", isith='2', icount=3,
-                              transferable=True, **KWA)
+                              transferable=True, version=V2, kind=Kinds.cesr)
         receiverHab = receiverHby.makeHab(name="receiver", isith='1', icount=1,
-                                          transferable=True, **KWA)
+                                          transferable=True, version=V2, kind=Kinds.cesr)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
         mkIcp = mkHab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)
@@ -5545,9 +5544,9 @@ def test_assk_timeliness_boundaries_and_future_reject(fakeHelpingClock):
     with (openHby(name="timingSender", base="test", salt=salt1, version=V2) as senderHby,
           openHby(name="timingReceiver", base="test", salt=salt2, version=V2) as receiverHby):
         senderHab = senderHby.makeHab(name="timingSender", isith='1', icount=1,
-                                      transferable=True, **KWA)
+                                      transferable=True, version=V2, kind=Kinds.cesr)
         receiverHby.makeHab(name="timingReceiver", isith='1', icount=1,
-                            transferable=True, **KWA)
+                            transferable=True, version=V2, kind=Kinds.cesr)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
         senderIcp = senderHab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)
@@ -5575,7 +5574,7 @@ def test_assk_timeliness_boundaries_and_future_reject(fakeHelpingClock):
                             route="ksn",
                             query=dict(i=senderHab.pre, src=senderHab.pre, n=nonce),
                             stamp=stamp,
-                            **KWA)
+                            version=V2, kind=Kinds.cesr)
                 sigers = senderHab.mgr.sign(ser=msg.raw,
                                             verfers=senderHab.kever.verfers,
                                             indexed=True)
@@ -5600,9 +5599,9 @@ def test_transactioned_exchange_window_boundaries(fakeHelpingClock):
     with (openHby(name="xwinSender", base="test", salt=salt1, version=V2) as senderHby,
           openHby(name="xwinReceiver", base="test", salt=salt2, version=V2) as receiverHby):
         senderHab = senderHby.makeHab(name="xwinSender", isith='1', icount=1,
-                                      transferable=True, **KWA)
+                                      transferable=True, version=V2, kind=Kinds.cesr)
         receiverHab = receiverHby.makeHab(name="xwinReceiver", isith='1', icount=1,
-                                          transferable=True, **KWA)
+                                          transferable=True, version=V2, kind=Kinds.cesr)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
         senderIcp = senderHab.msgOwnEvent(sn=0, framed=True, gvrsn=V2)
@@ -5670,10 +5669,10 @@ def test_invalid_signature_attachments_rejected(mockHelpingNowUTC):
           openHby(name="badSigNt", base="test", salt=salt2, version=V2) as ntHby,
           openHby(name="badSigMk", base="test", salt=salt3, version=V2) as mkHby,
           openHby(name="badSigReceiver", base="test", salt=salt4, version=V2) as receiverHby):
-        skHab = skHby.makeHab(name="badSigSk", isith='1', icount=1, transferable=True, **KWA)
-        ntHab = ntHby.makeHab(name="badSigNt", isith='1', icount=1, transferable=False, **KWA)
-        mkHab = mkHby.makeHab(name="badSigMk", isith='2', icount=3, transferable=True, **KWA)
-        receiverHby.makeHab(name="badSigReceiver", isith='1', icount=1, transferable=True, **KWA)
+        skHab = skHby.makeHab(name="badSigSk", isith='1', icount=1, transferable=True, version=V2, kind=Kinds.cesr)
+        ntHab = ntHby.makeHab(name="badSigNt", isith='1', icount=1, transferable=False, version=V2, kind=Kinds.cesr)
+        mkHab = mkHby.makeHab(name="badSigMk", isith='2', icount=3, transferable=True, version=V2, kind=Kinds.cesr)
+        receiverHby.makeHab(name="badSigReceiver", isith='1', icount=1, transferable=True, version=V2, kind=Kinds.cesr)
 
         crossKvy = Kevery(db=receiverHby.db, lax=False, local=False)
         for hab in (skHab, ntHab, mkHab):
@@ -5691,7 +5690,7 @@ def test_invalid_signature_attachments_rejected(mockHelpingNowUTC):
                           route="ksn",
                           query=dict(i=skHab.pre, src=skHab.pre, n="bad-lsgs"),
                           stamp=stamp,
-                          **KWA)
+                          version=V2, kind=Kinds.cesr)
             wrongSkSigs = skHab.mgr.sign(ser=b'not-the-message',
                                          verfers=skHab.kever.verfers,
                                          indexed=True)
@@ -5704,7 +5703,7 @@ def test_invalid_signature_attachments_rejected(mockHelpingNowUTC):
                           route="ksn",
                           query=dict(i=ntHab.pre, src=ntHab.pre, n="bad-cigar"),
                           stamp=stamp,
-                          **KWA)
+                          version=V2, kind=Kinds.cesr)
             wrongCigars = ntHab.mgr.sign(ser=b'not-the-message',
                                          verfers=ntHab.kever.verfers,
                                          indexed=False)
@@ -5716,7 +5715,7 @@ def test_invalid_signature_attachments_rejected(mockHelpingNowUTC):
                           route="ksn",
                           query=dict(i=mkHab.pre, src=mkHab.pre, n="bad-tsgs"),
                           stamp=stamp,
-                          **KWA)
+                          version=V2, kind=Kinds.cesr)
             mkPrefixer = Prefixer(qb64=mkHab.pre)
             mkKever = receiverHby.db.kevers[mkHab.pre]
             seqner = Seqner(sn=mkKever.sner.num)

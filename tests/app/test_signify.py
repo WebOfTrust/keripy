@@ -12,7 +12,6 @@ from keri.core import Salter, Diger, Tiers, MtrDex, incept, rotate
 
 from keri.app import SaltyCreator, openHby
 
-from tests.common import CUE_KWA, KWA
 
 
 def test_remote_salty_hab():
@@ -30,7 +29,7 @@ def test_remote_salty_hab():
         ridx = 0
         kidx = 0
 
-        lhab = local.makeHab(name=name, **KWA)
+        lhab = local.makeHab(name=name, version=Vrsn_1_0, kind=Kinds.json)
         assert lhab.pre == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
 
         # create current key
@@ -80,7 +79,7 @@ def test_remote_salty_hab():
         assert habord.hid == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
         assert habord.sid == "EHeU-ldGfJhxceV9BTq38HdFUoasoWEcYATiyZCcDH7N"
 
-        lhab.rotate(framed=True, **CUE_KWA)
+        lhab.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
 
         ridx = ridx + 1
         kidx = kidx + 1
