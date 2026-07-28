@@ -144,11 +144,13 @@ def test_oobiery(unused_tcp_port_factory):
         msgs = bytearray()
         msgs.extend(hab.makeEndRole(eid=hab.pre,
                                     role=Roles.controller,
-                                    stamp=helping.nowIso8601(), version=Vrsn_1_0, kind=Kinds.json))
+                                    stamp=helping.nowIso8601(), version=Vrsn_1_0,
+                                    kind=Kinds.json, gvrsn=Vrsn_1_0))
 
         msgs.extend(hab.makeLocScheme(url=f'http://127.0.0.1:{locPort}',
                                       scheme=Schemes.http,
-                                      stamp=helping.nowIso8601(), version=Vrsn_1_0, kind=Kinds.json))
+                                      stamp=helping.nowIso8601(), version=Vrsn_1_0,
+                                      kind=Kinds.json, gvrsn=Vrsn_1_0))
         hab.psr.parse(ims=msgs)
 
         oobiery = Oobiery(hby=hby)
@@ -226,20 +228,22 @@ def test_loaded_v1_endpoint_replies_use_stored_reply_framing():
         msgs.extend(hab.makeEndRole(eid=hab.pre,
                                     role=Roles.controller,
                                     stamp=helping.nowIso8601(),
-                                    version=Vrsn_1_0, kind=Kinds.json))
+                                    version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
         msgs.extend(hab.makeLocScheme(url="http://127.0.0.1:5555",
                                       scheme=Schemes.http,
                                       stamp=helping.nowIso8601(),
-                                      version=Vrsn_1_0, kind=Kinds.json))
+                                      version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
         hab.psr.parse(ims=msgs)
 
         oobi = bytearray()
         oobi.extend(hab.replay(version=Vrsn_1_0))
         oobi.extend(hab.loadEndRole(cid=hab.pre,
                                     eid=hab.pre,
-                                    role=Roles.controller))
+                                    role=Roles.controller,
+                                    gvrsn=Vrsn_1_0))
         oobi.extend(hab.loadLocScheme(eid=hab.pre,
-                                      scheme=Schemes.http))
+                                      scheme=Schemes.http,
+                                      gvrsn=Vrsn_1_0))
 
         dst.psr.parse(ims=oobi)
 
