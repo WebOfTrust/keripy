@@ -564,15 +564,15 @@ def test_verifier_e1e_identity_edge(seeder):
     """
     optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
 
-    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', **KWA) as (ianHby, ian), \
-            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef', **KWA) \
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) \
             as (hanHby, han):
         seeder.seedSchema(db=ianHby.db)
 
         ianreg = Regery(hby=ianHby, name="ian", temp=True)
-        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", **KWA)
+        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
-        ian.interact(data=[rseal], framed=True, **CUE_KWA)
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
                          seqner=Seqner(sn=ian.kever.sn),
                          saider=Diger(qb64=ian.kever.serder.said))
@@ -590,7 +590,7 @@ def test_verifier_e1e_identity_edge(seeder):
                 pass  # expected: the TEL issuance event is anchored just below
             iss = ianiss.issue(said=creder.said)
             rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-            ian.interact(data=[rseal], framed=True, **CUE_KWA)
+            ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
             ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
                              seqner=Seqner(sn=ian.kever.sn),
                              saider=Diger(qb64=ian.kever.serder.said))
@@ -601,7 +601,7 @@ def test_verifier_e1e_identity_edge(seeder):
         coreSubject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim="core identity")
         _, cd = Saider.saidify(sad=coreSubject, code=MtrDex.Blake3_256, label=Saids.d)
         core = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=cd,
-                          status=ianiss.regk, source={}, rules={}, **KWA)
+                          status=ianiss.regk, source={}, rules={}, version=Vrsn_1_0, kind=Kinds.json)
         assert core.israid == ian.pre        # issuer
         assert core.iseaid == han.pre        # issuee (a.i)
         issueAndSave(core)
@@ -613,7 +613,7 @@ def test_verifier_e1e_identity_edge(seeder):
         entSubject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim="over 21")
         _, ed = Saider.saidify(sad=entSubject, code=MtrDex.Blake3_256, label=Saids.d)
         ent = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=ed,
-                         status=ianiss.regk, source=chain, rules={}, **KWA)
+                         status=ianiss.regk, source=chain, rules={}, version=Vrsn_1_0, kind=Kinds.json)
         assert ent.israid == ian.pre         # issuer is ian ...
         assert ent.iseaid == han.pre         # ... but issuee is han: issuer != issuee
         assert ent.israid != ent.iseaid
@@ -634,7 +634,7 @@ def test_verifier_e1e_identity_edge(seeder):
         badSubject = dict(d="", i=ian.pre, dt=helping.nowIso8601(), claim="wrong subject")
         _, bd = Saider.saidify(sad=badSubject, code=MtrDex.Blake3_256, label=Saids.d)
         bad = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=bd,
-                         status=ianiss.regk, source=chain, rules={}, **KWA)
+                         status=ianiss.regk, source=chain, rules={}, version=Vrsn_1_0, kind=Kinds.json)
         assert bad.iseaid == ian.pre         # near issuee (ian) != far issuee (han)
         issueAndSave(bad)
         assert verfer.reger.saved.get(keys=bad.saidb) is None
@@ -646,7 +646,7 @@ def test_verifier_e1e_identity_edge(seeder):
         orphanSubject = dict(d="", dt=helping.nowIso8601(), claim="untargeted")  # no 'i'
         _, od = Saider.saidify(sad=orphanSubject, code=MtrDex.Blake3_256, label=Saids.d)
         orphan = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=od,
-                            status=ianiss.regk, source={}, rules={}, **KWA)
+                            status=ianiss.regk, source={}, rules={}, version=Vrsn_1_0, kind=Kinds.json)
         assert orphan.iseaid is None         # untargeted far node
         issueAndSave(orphan)
         assert verfer.reger.saved.get(keys=orphan.saidb) is not None
@@ -655,7 +655,7 @@ def test_verifier_e1e_identity_edge(seeder):
         toOrphanSubject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim="to orphan")
         _, td = Saider.saidify(sad=toOrphanSubject, code=MtrDex.Blake3_256, label=Saids.d)
         toOrphan = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=td,
-                              status=ianiss.regk, source=ochain, rules={}, **KWA)
+                              status=ianiss.regk, source=ochain, rules={}, version=Vrsn_1_0, kind=Kinds.json)
         issueAndSave(toOrphan)
         assert verfer.reger.saved.get(keys=toOrphan.saidb) is None
 
