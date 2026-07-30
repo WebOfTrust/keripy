@@ -33,6 +33,19 @@ class Verifier:
     TimeoutMRI = 3600  # seconds to timeout missing issuer escrows
     TimeoutBCE = 3600  # seconds to timeout missing issuer escrows
 
+    # Unary edge operators this verifier recognizes. A token outside this set is not an
+    # operator to this verifier and is skipped when resolving a list-valued `o` (see
+    # .verifyChain). DI2I and NOT are recognized but unimplemented: they are listed so
+    # they fail closed diagnosably instead of being dropped and silently defaulting.
+    # E1E is a keripy extension not yet in the spec's normative operator table.
+    UnaryOps = ('I2I', 'NI2I', 'DI2I', 'E1E', 'NOT')
+
+    # The delegative subset of .UnaryOps: each constrains the near ACDC's issuer
+    # relative to the far node's issuee, so they are mutually exclusive and a list
+    # containing several is a conflict resolved latest-wins. Operators outside this
+    # subset constrain something else and compose with the winner instead.
+    DelegativeOps = ('I2I', 'NI2I', 'DI2I')
+
     def __init__(self, hby, reger=None, creds=None, cues=None, expiry=36000000000):
         """
         Initialize Verifier instance
@@ -161,7 +174,16 @@ class Verifier:
                     continue
                 nodeSaid = node["n"]
                 op = node['o'] if 'o' in node else None
-                state = self.verifyChain(nodeSaid, op, creder.israid, creder.iseaid)
+                try:
+                    state = self.verifyChain(nodeSaid, op, creder.israid, creder.iseaid)
+                except ValidationError as ex:
+                    # .verifyChain knows the far node but not the near credential that
+                    # carried the edge, and the escrow handler logs only the exception.
+                    # Re-raise with the near SAID and edge label so an operator triaging
+                    # a stream can tell which credential to fix, matching the shape of
+                    # the MissingChainError messages below.
+                    raise ValidationError(f"Failure to verify credential {creder.said} "
+                                          f"chain {label}({nodeSaid}): {ex}") from ex
                 if state is None:
                     self.escrowMCE(creder, prefixer, seqner, saider)
                     self.cues.append(dict(kin="proof",  said=nodeSaid))
@@ -320,16 +342,19 @@ class Verifier:
                 self.processCredential(creder, prefixer, seqner, saider)
 
             except etype as ex:
+                # Log the exception, not ex.args[0]: an exception raised with no
+                # arguments has an empty args tuple, so indexing it would raise
+                # IndexError from inside this handler and abort the whole pass.
                 if logger.isEnabledFor(logging.TRACE):
-                    logger.trace("Verifier unescrow failed: %s\n", ex.args[0])
-                    logger.exception("Verifier unescrow failed: %s\n", ex.args[0])
+                    logger.trace("Verifier unescrow failed: %s\n", ex)
+                    logger.exception("Verifier unescrow failed: %s\n", ex)
             except Exception as ex:  # log diagnostics errors etc
                 # error other than missing sigs so remove from PA escrow
                 db.rem(said)
                 if logger.isEnabledFor(logging.DEBUG):
-                    logger.exception("Verifier unescrowed: %s", ex.args[0])
+                    logger.exception("Verifier unescrowed: %s", ex)
                 else:
-                    logger.error("Verifier unescrowed: %s", ex.args[0])
+                    logger.error("Verifier unescrowed: %s", ex)
             else:
                 db.rem(said)
                 logger.info("Verifier: unescrow succeeded in valid group op: creder=%s", creder.said)
@@ -377,7 +402,10 @@ class Verifier:
 
         Parameters:
             nodeSaid: (str): qb64 SAID of node credential
-            op(str): edge operator
+            op (str|list|None): edge operator, or a list of unary operators, in which
+                case the latest recognized one takes precedence. None, an empty list,
+                or a value containing no recognized operator applies the default:
+                I2I for a targeted far node, NI2I for an untargeted one.
             issuer (str) qb64 AID of the issuer of the near (edge-bearing) ACDC
             issuee (str|None): qb64 AID of the issuee of the near (edge-bearing) ACDC,
                 required by the identity operators (E1E). None when the near ACDC is
@@ -393,14 +421,37 @@ class Verifier:
 
         creder = self.reger.creds.get(keys=nodeSaid)  # far (node) credential
 
-        if op not in ['I2I', 'DI2I', 'NI2I', 'E1E']:
-            # A far node is targeted (I2I) iff it has an issuee, else untargeted
-            # (NI2I). Resolve via .iseaid so an aggregate ('acg') far node -- whose
-            # issuee is at .sad["A"][1]["i"] and whose .attrib is None -- coerces the
-            # same as an attributive one.
+        # `o` is either a single unary operator or a list of them. Latest-wins applies
+        # only "among the conflicting Operators" (ACDC spec-body.md L1186), so the list
+        # is resolved in two parts: the delegative operators constrain the same thing
+        # (the near issuer relative to the far issuee) and therefore conflict, so the
+        # latest of those wins; E1E constrains the near issuee instead, so it does not
+        # conflict with them and composes (AND) rather than overriding or being
+        # overridden. Tokens this verifier does not recognize are skipped.
+        ops = op if isinstance(op, (list, tuple)) else [op]
+        ops = [cand for cand in ops if cand in self.UnaryOps]
+        op = next((cand for cand in reversed(ops) if cand in self.DelegativeOps), None)
+
+        if not ops:  # absent, empty, or nothing recognized: apply the default rule
+            # A far node is targeted (I2I) iff it has an issuee, else untargeted (NI2I).
+            # Resolve via .iseaid so an aggregate ('acg') far node -- whose issuee is at
+            # .sad["A"][1]["i"] and whose .attrib is None -- coerces the same as an
+            # attributive one (#1529).
             op = 'I2I' if creder.iseaid is not None else 'NI2I'
 
-        if op == 'E1E':
+        # Recognized but unimplemented operators fail closed with a diagnosable error
+        # rather than being silently dropped from the effective list. Deliberately not
+        # a MissingChainError: the chain is present and retrying cannot help, so
+        # escrowing would promise a retry that can never succeed.
+        if 'NOT' in ops:
+            raise ValidationError(f"Unsupported edge operator NOT on edge to node "
+                                  f"{nodeSaid}; NOT validation is not implemented")
+
+        if op == 'DI2I':
+            raise ValidationError(f"Unsupported edge operator DI2I on edge to node "
+                                  f"{nodeSaid}; DI2I validation is not implemented")
+
+        if 'E1E' in ops:
             # Identity relation (discussion #1515): the issuee AID of the near ACDC
             # (the one carrying this edge) MUST equal the issuee AID of the far node.
             # Unlike the delegative I2I, this says nothing about the issuer, so the
@@ -410,7 +461,8 @@ class Verifier:
             farIssuee = creder.iseaid
             if farIssuee is None or issuee is None or issuee != farIssuee:
                 return None
-        elif op != 'NI2I':
+
+        if op is not None and op != 'NI2I':
             # Resolve the far node's issuee via .iseaid so an aggregate ('acg') far
             # node (issuee at .sad["A"][1]["i"]) resolves identically to an
             # attributive one (.attrib["i"]). None means an untargeted far node,
@@ -425,9 +477,6 @@ class Verifier:
 
             if op == 'I2I' and issuer != farIssuee:
                 return None
-
-            if op == "DI2I":
-                raise NotImplementedError()
 
         if creder.regid not in self.tevers:
             return None
