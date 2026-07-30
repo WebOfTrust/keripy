@@ -686,7 +686,7 @@ def _aggregate_far_node(ian, ianiss, ianreg, issueeAid):
     # anchor a TEL issuance event for the aggregate SAID so it is "issued".
     iss = ianiss.issue(said=agg.said)
     rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-    ian.interact(data=[rseal], framed=True, **CUE_KWA)
+    ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
     ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
                      seqner=Seqner(sn=ian.kever.sn),
                      saider=Diger(qb64=ian.kever.serder.said))
@@ -704,13 +704,13 @@ def test_verifier_saves_aggregate_credential(seeder):
     subject-indexed at all. It must instead resolve the issuee via ``.iseaid``,
     identically to an attributive credential.
     """
-    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', **KWA) as (ianHby, ian), \
-            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef', **KWA) \
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) \
             as (hanHby, han):
         ianreg = Regery(hby=ianHby, name="ian", temp=True)
-        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", **KWA)
+        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
-        ian.interact(data=[rseal], framed=True, **CUE_KWA)
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
                          seqner=Seqner(sn=ian.kever.sn),
                          saider=Diger(qb64=ian.kever.serder.said))
@@ -745,13 +745,13 @@ def test_verifier_aggregate_far_node_chain(seeder):
     verifier must resolve targeted-ness and the issuee via ``.iseaid`` so an edge
     to an aggregate far node behaves identically to an attributive one.
     """
-    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', **KWA) as (ianHby, ian), \
-            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef', **KWA) \
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) \
             as (hanHby, han):
         ianreg = Regery(hby=ianHby, name="ian", temp=True)
-        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", **KWA)
+        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
-        ian.interact(data=[rseal], framed=True, **CUE_KWA)
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
                          seqner=Seqner(sn=ian.kever.sn),
                          saider=Diger(qb64=ian.kever.serder.said))
@@ -810,13 +810,13 @@ def test_verifier_e1e_aggregate_far_node(seeder):
     based; this locks in that it works for an aggregate far node through the real
     verifier, not just a bespoke example verifier.
     """
-    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', **KWA) as (ianHby, ian), \
-            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef', **KWA) \
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) \
             as (hanHby, han):
         ianreg = Regery(hby=ianHby, name="ian", temp=True)
-        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", **KWA)
+        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
-        ian.interact(data=[rseal], framed=True, **CUE_KWA)
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
                          seqner=Seqner(sn=ian.kever.sn),
                          saider=Diger(qb64=ian.kever.serder.said))
