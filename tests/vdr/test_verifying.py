@@ -1213,6 +1213,263 @@ def test_verifier_di2i_rejects_diagnosably(seeder):
     """End Test"""
 
 
+def test_verifier_edge_group_traversal(seeder):
+    """A nested Edge-group must traverse, and its m-ary Operator must be honored.
+
+    The ACDC spec gives an Edge Section two block types: Edges, which MUST have a
+    node, `n`, field, and Edge-groups, which MUST NOT (spec-body.md, "#### Block
+    Types"). The Edge Section is itself an Edge-group and MAY nest further
+    Edge-groups to arbitrary depth.
+
+    Before this change the edge loop skipped only the labels `d` and `o` and then
+    indexed ``node["n"]`` on everything else, so any nested Edge-group raised
+    ``KeyError: 'n'`` -- a crash, not a rejection, and one that escapes as an
+    unhandled exception rather than an escrow or a ValidationError. That made every
+    grouped edge section unusable, which in turn blocks the m-ary group operators
+    under discussion in #1555 (`ME`) and #1556 (group-scoped unary defaults).
+
+    This test carries none of `ME`'s semantics. It pins three things: nested groups
+    traverse, their members are really validated (not merely walked past), and a
+    group whose Operator this verifier does not implement fails closed.
+    """
+    optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0,
+                 kind=Kinds.json) as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef',
+                    version=Vrsn_1_0, kind=Kinds.json) as (hanHby, han):
+        seeder.seedSchema(db=ianHby.db)
+
+        ianreg = Regery(hby=ianHby, name="ian", temp=True)
+        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", version=Vrsn_1_0,
+                                     kind=Kinds.json)
+        rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                     gvrsn=Vrsn_1_0)
+        ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+
+        verfer, issueAndSave = setupOperatorFixture(ian, ianHby, ianreg, ianiss)
+
+        def farNode(claim):
+            """Issue and save a targeted far node, ian -> han."""
+            subject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim=claim)
+            _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+            far = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                             status=ianiss.regk, source={}, rules={},
+                             version=Vrsn_1_0, kind=Kinds.json)
+            issueAndSave(far)
+            assert verfer.reger.saved.get(keys=far.saidb) is not None
+            return far
+
+        def saidify(block):
+            _, block = Saider.saidify(sad=block, code=MtrDex.Blake3_256, label=Saids.d)
+            return block
+
+        def nearWithSection(section, claim):
+            """Issue a near credential carrying `section` as its edge section."""
+            subject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim=claim)
+            _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+            near = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                              status=ianiss.regk, source=section, rules={},
+                              version=Vrsn_1_0, kind=Kinds.json)
+            issueAndSave(near)
+            return near
+
+        # Both far nodes are issued by ian to han. Every near credential below is
+        # also issued by ian, so `near issuer (ian) != far issuee (han)`: NI2I edges
+        # accept and I2I edges reject. That asymmetry is what makes it observable
+        # whether a nested edge was actually evaluated or merely walked past.
+        work = farNode("work credential")
+        citizenship = farNode("citizenship credential")
+
+        # A group nested one level down. No `o` on the group, so the spec default
+        # AND applies -- and both members are valid, so the near credential saves.
+        # Before this change this section raised KeyError: 'n'.
+        endorsed = saidify(dict(d='', work=dict(n=work.said, o="NI2I"),
+                                citizenship=dict(n=citizenship.said, o="NI2I")))
+        section = saidify(dict(d='', endorsed=endorsed))
+        grouped = nearWithSection(section, "grouped, default AND, all members valid")
+        assert verfer.reger.saved.get(keys=grouped.saidb) is not None
+
+        # The other half of the defect: Reger.sources gathers the far-node artifacts
+        # to ship alongside an IPEX grant, and walked the edge section with the same
+        # flat assumption. Both grouped edges must be discovered, or the disclosee
+        # receives an ACDC whose chain it cannot resolve.
+        srcs = verfer.reger.sources(ianHby.db, grouped)
+        assert {src.said for src, _ in srcs} == {work.said, citizenship.said}
+
+        # The same shape with the group's Operator written out explicitly. `AND` is
+        # the default, so this MUST behave identically to the block above.
+        endorsed = saidify(dict(d='', o="AND", work=dict(n=work.said, o="NI2I"),
+                                citizenship=dict(n=citizenship.said, o="NI2I")))
+        section = saidify(dict(d='', endorsed=endorsed))
+        near = nearWithSection(section, "grouped, explicit AND")
+        assert verfer.reger.saved.get(keys=near.saidb) is not None
+
+        # AND means every member must be valid, so one bad member sinks the group.
+        # `citizenship` here is I2I, which rejects because the near issuer (ian) is
+        # not the far issuee (han). This is the load-bearing assertion of the test:
+        # a traversal that reached the nested edges but did not validate them, or
+        # that validated only the first, would wrongly save this credential.
+        endorsed = saidify(dict(d='', work=dict(n=work.said, o="NI2I"),
+                                citizenship=dict(n=citizenship.said, o="I2I")))
+        section = saidify(dict(d='', endorsed=endorsed))
+        near = nearWithSection(section, "grouped, one member fails")
+        assert verfer.reger.saved.get(keys=near.saidb) is None
+
+        # Groups nest arbitrarily deep, and a failure at depth still propagates.
+        inner = saidify(dict(d='', citizenship=dict(n=citizenship.said, o="NI2I")))
+        outer = saidify(dict(d='', work=dict(n=work.said, o="NI2I"), inner=inner))
+        section = saidify(dict(d='', outer=outer))
+        near = nearWithSection(section, "two levels of nesting, all valid")
+        assert verfer.reger.saved.get(keys=near.saidb) is not None
+
+        inner = saidify(dict(d='', citizenship=dict(n=citizenship.said, o="I2I")))
+        outer = saidify(dict(d='', work=dict(n=work.said, o="NI2I"), inner=inner))
+        section = saidify(dict(d='', outer=outer))
+        near = nearWithSection(section, "two levels of nesting, deep member fails")
+        assert verfer.reger.saved.get(keys=near.saidb) is None
+
+        # The reserved Edge-group labels are [d, u, o, w]; only non-reserved labels
+        # name nested blocks. A group carrying `u` and `w` alongside its members must
+        # still traverse -- neither is an edge. (`u` is a salty nonce and `w` a
+        # weight for WAVG; both are strings, so a walker that only skipped `d`/`o`
+        # would have tripped over them once they stopped being silently non-dict.)
+        endorsed = saidify(dict(d='', u='0ABhY2Rjc3BlY3dvcmtyYXcw', o="AND", w='2',
+                                work=dict(n=work.said, o="NI2I")))
+        section = saidify(dict(d='', endorsed=endorsed))
+        near = nearWithSection(section, "group with u and w reserved labels")
+        assert verfer.reger.saved.get(keys=near.saidb) is not None
+
+        # The Edge Section is itself an Edge-group, so it may carry its own m-ary
+        # Operator directly.
+        section = saidify(dict(d='', o="AND", work=dict(n=work.said, o="NI2I")))
+        near = nearWithSection(section, "AND on the edge section itself")
+        assert verfer.reger.saved.get(keys=near.saidb) is not None
+
+        def expectRejected(section, claim):
+            """Run a near credential to the point of failure and return the error."""
+            subject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim=claim)
+            _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+            near = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                              status=ianiss.regk, source=section, rules={},
+                              version=Vrsn_1_0, kind=Kinds.json)
+            iss = ianiss.issue(said=near.said)
+            rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+            ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                         gvrsn=Vrsn_1_0)
+            ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
+                             seqner=Seqner(sn=ian.kever.sn),
+                             saider=Diger(qb64=ian.kever.serder.said))
+            ianreg.processEscrows()
+            with pytest.raises(ValidationError) as excinfo:
+                verfer.processCredential(near, prefixer=ian.kever.prefixer,
+                                         seqner=Seqner(sn=ian.kever.sn),
+                                         saider=Diger(qb64=ian.kever.serder.said))
+            assert verfer.reger.saved.get(keys=near.saidb) is None
+            return excinfo.value
+
+        # `ME` (Multiply Endorsed, discussion #1555) is a *proposed* m-ary Operator,
+        # not one in the spec's normative table. An issuer asking for it is asking
+        # for a rule this verifier cannot apply, so it must fail closed rather than
+        # fall back to AND -- falling back would validate the ACDC under a weaker
+        # rule than the issuer specified, with nothing on the wire to show for it.
+        endorsed = saidify(dict(d='', o="ME", work=dict(n=work.said, o="NI2I"),
+                                citizenship=dict(n=citizenship.said, o="NI2I")))
+        section = saidify(dict(d='', endorsed=endorsed))
+        ex = expectRejected(section, "unrecognized m-ary operator ME")
+        assert "ME" in str(ex)
+        assert "endorsed" in str(ex)  # names the offending group, not just the ACDC
+        # Not a MissingChainError: both far nodes are present and saved. Retrying
+        # cannot make an unrecognized operator recognized, so escrowing it would
+        # promise a retry that can never succeed -- the same reasoning NOT and DI2I
+        # already follow in .verifyChain.
+        assert not isinstance(ex, MissingChainError)
+
+        # `OR` is normative, and unimplemented here. It must fail closed too: under
+        # OR the group is valid if *one* member is valid, which is strictly weaker
+        # than the AND this verifier performs. Silently applying AND would reject
+        # ACDCs their issuer considers valid; silently applying OR would accept ones
+        # it cannot actually evaluate. Recognized-but-unimplemented is the honest
+        # answer, and it is distinguishable from the unrecognized case above.
+        endorsed = saidify(dict(d='', o="OR", work=dict(n=work.said, o="NI2I"),
+                                citizenship=dict(n=citizenship.said, o="NI2I")))
+        section = saidify(dict(d='', endorsed=endorsed))
+        ex = expectRejected(section, "recognized but unimplemented operator OR")
+        assert "OR" in str(ex)
+        # Distinguishable from the unrecognized case: "Unsupported" says the token is
+        # in the spec's table but this verifier does not implement it, which is a
+        # different thing for an issuer to act on than "that is not an operator".
+        assert "Unsupported m-ary" in str(ex)
+
+        # An m-ary Operator on the top-level Edge Section fails closed just the same.
+        section = saidify(dict(d='', o="NOR", work=dict(n=work.said, o="NI2I")))
+        ex = expectRejected(section, "unimplemented operator on the edge section")
+        assert "NOR" in str(ex)
+        assert "edge section" in str(ex)
+
+        # An Edge-group's `o` is a single aggregating Operator over its members; the
+        # spec defines the list form only for an Edge's unary `o`. A list here is not
+        # a spec-legal m-ary Operator, so it is rejected rather than coerced.
+        endorsed = saidify(dict(d='', o=["AND"], work=dict(n=work.said, o="NI2I")))
+        section = saidify(dict(d='', endorsed=endorsed))
+        ex = expectRejected(section, "list-valued m-ary operator")
+        assert "Unrecognized m-ary" in str(ex)
+
+        # Diagnosability: an edge nested in a group is reported by its dotted path
+        # from the Edge Section, so an operator triaging a stream can find it. A bare
+        # label would be ambiguous -- labels are only locally unique, so two groups
+        # may each hold a `work` edge.
+        unknown = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"  # not a saved ACDC
+        endorsed = saidify(dict(d='', work=dict(n=unknown, o="NI2I")))
+        section = saidify(dict(d='', endorsed=endorsed))
+        subject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim="dotted path")
+        _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+        near = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                          status=ianiss.regk, source=section, rules={},
+                          version=Vrsn_1_0, kind=Kinds.json)
+        iss = ianiss.issue(said=near.said)
+        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                     gvrsn=Vrsn_1_0)
+        ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+        with pytest.raises(MissingChainError) as excinfo:
+            verfer.processCredential(near, prefixer=ian.kever.prefixer,
+                                     seqner=Seqner(sn=ian.kever.sn),
+                                     saider=Diger(qb64=ian.kever.serder.said))
+        assert "endorsed.work" in str(excinfo.value)
+
+        # A flat edge section keeps its bare label -- the dotted path of a top-level
+        # edge is just its own label, so nothing about existing diagnostics changes.
+        section = saidify(dict(d='', work=dict(n=unknown, o="NI2I")))
+        subject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim="flat path")
+        _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+        near = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                          status=ianiss.regk, source=section, rules={},
+                          version=Vrsn_1_0, kind=Kinds.json)
+        iss = ianiss.issue(said=near.said)
+        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                     gvrsn=Vrsn_1_0)
+        ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+        with pytest.raises(MissingChainError) as excinfo:
+            verfer.processCredential(near, prefixer=ian.kever.prefixer,
+                                     seqner=Seqner(sn=ian.kever.sn),
+                                     saider=Diger(qb64=ian.kever.serder.said))
+        assert "chain work(" in str(excinfo.value)
+
+    """End Test"""
+
+
 def test_verifier_escrow_pass_survives_argless_exception(seeder):
     """One poisoned escrow entry must not abort the whole escrow pass.
 

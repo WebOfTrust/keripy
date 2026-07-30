@@ -47,6 +47,122 @@ from .vdring import RegistryRecord, RegStateRecord, VcStateRecord
 logger = ogler.getLogger()
 
 
+# Reserved field labels within an ACDC Edge-group block, in their required order of
+# appearance (ACDC spec-body.md, "#### Edge-group"). Everything else in an Edge-group
+# is a locally-unique non-reserved label naming a nested Edge or Edge-group.
+EdgeGroupLabels = ('d', 'u', 'o', 'w')
+
+# Maximum Edge-group nesting depth this implementation will traverse. SAID-based
+# references make a cycle infeasible to construct, so this is not a cycle guard; it
+# bounds the recursion so a pathologically deep (or hand-crafted) Edge Section cannot
+# exhaust the stack. Matches the shape of the delegation depth bound.
+MaxEdgeGroupDepth = 8
+
+
+def isEdgeGroup(block):
+    """ True when an Edge Section block is an Edge-group rather than an Edge.
+
+    The ACDC spec makes the node, `n`, field the discriminator: "An Edge block MUST
+    have a node, `n`, field. This differentiates an Edge block from an Edge-group
+    block," and "An Edge-group MUST NOT have a node, `n`, field." Presence of `n` is
+    therefore the test, not the presence of nested blocks -- an Edge-group with a
+    single nested Edge and an Edge with no properties beyond `n` are both legal.
+
+    Parameters:
+        block (dict): an Edge or Edge-group block from an ACDC Edge Section
+
+    Returns:
+        bool: True means Edge-group, False means Edge
+
+    """
+    return 'n' not in block
+
+
+def walkEdgeSection(section, maxDepth=MaxEdgeGroupDepth, path=()):
+    """ Walk an ACDC Edge Section, yielding every nested Edge-group and Edge block.
+
+    The Edge Section, `e`, of an ACDC is itself an Edge-group and MAY nest further
+    Edge-groups to arbitrary depth (spec-body.md, "#### Block Types"). Callers that
+    only care about edges filter on the returned `group` flag; callers that enforce
+    m-ary Operator semantics need the Edge-group blocks too, which is why both are
+    yielded from one walk.
+
+    Nested blocks appear under non-reserved labels only; reserved labels carry
+    properties of the enclosing block and are skipped.
+
+    Parameters:
+        section (dict): the Edge Section, or a nested Edge-group block within it
+        maxDepth (int): maximum nesting depth to traverse, see .MaxEdgeGroupDepth
+        path (tuple): non-reserved labels walked so far, from the Edge Section down
+            to (and including) the yielded block. Empty for the Edge Section itself.
+
+    Yields:
+        tuple: (path, block, group) where path (tuple of str) locates the block
+            within the Edge Section, block (dict) is the Edge-group or Edge block,
+            and group (bool) is True for an Edge-group and False for an Edge.
+
+    Raises:
+        ValidationError: if nesting exceeds maxDepth. Deliberately not an escrowing
+            error: the section is fully in hand and retrying cannot make it shallower.
+
+    """
+    if not isinstance(section, dict):  # compact Edge Section: just its SAID
+        return
+
+    if len(path) > maxDepth:
+        raise ValidationError(f"Edge-group nesting deeper than {maxDepth} at "
+                              f"{'.'.join(path)}")
+
+    if not isEdgeGroup(section):
+        # Only reachable from a top-level call, since the recursion below classifies
+        # each nested block before descending. An Edge Section is an Edge-group and
+        # so MUST NOT have a node, `n`, field; a section that does is malformed and
+        # there is no safe reading of it. Previously such a section made
+        # .processCredential raise TypeError (indexing a str) while .sources
+        # returned no artifacts at all -- a crash on one path and a silent empty on
+        # the other, for the same bad input.
+        raise ValidationError(f"Edge Section is an Edge-group and MUST NOT have a "
+                              f"node, 'n', field; got {sorted(section)}")
+
+    yield path, section, True
+
+    for label, value in section.items():
+        if label in EdgeGroupLabels:  # property of this block, not a nested block
+            continue
+
+        if not isinstance(value, dict):
+            # Compact and simple-compact Edge forms, where the Edge's value is a
+            # string (its Edge block SAID) rather than a block. Resolving one means
+            # dereferencing the Edge block, which keripy does not store separately
+            # from the ACDC that carries it, so compact Edges are out of scope here
+            # and skipped -- the same behavior as before Edge-groups traversed.
+            continue
+
+        if isEdgeGroup(value):
+            yield from walkEdgeSection(value, maxDepth=maxDepth, path=path + (label,))
+        else:
+            yield path + (label,), value, False
+
+
+def edgesOf(section, maxDepth=MaxEdgeGroupDepth):
+    """ Yields (path, edge) for every Edge in an Edge Section, Edge-groups traversed.
+
+    Convenience wrapper on .walkEdgeSection for the callers that gather far-node
+    SAIDs and do not interpret m-ary Operators.
+
+    Parameters:
+        section (dict): the ACDC Edge Section
+        maxDepth (int): maximum nesting depth to traverse, see .MaxEdgeGroupDepth
+
+    Yields:
+        tuple: (path, edge) where path (tuple of str) locates the Edge within the
+            Edge Section and edge (dict) is the Edge block, guaranteed to have `n`.
+
+    """
+    for path, block, group in walkEdgeSection(section, maxDepth=maxDepth):
+        if not group:
+            yield path, block
+
 
 def incept(
         pre,
@@ -2502,15 +2618,8 @@ class Reger(LMDBer):
                 revatc = bytes(rev[rserder.size:])
                 del rev[0:rserder.size]
 
-            chainSaids = []
-            for k, p in (creder.edge.items() if creder.edge is not None else {}):
-                if k == "d":
-                    continue
-
-                if not isinstance(p, dict):
-                    continue
-
-                chainSaids.append(Saider(qb64=p["n"]))
+            chainSaids = [Saider(qb64=edge["n"]) for _, edge
+                          in edgesOf(creder.edge if creder.edge is not None else {})]
             chains = self.cloneCreds(chainSaids, db)
 
             cred = dict(
@@ -2672,15 +2781,7 @@ class Reger(LMDBer):
 
         """
         chains = creder.edge if creder.edge is not None else {}
-        saids = []
-        for key, source in chains.items():
-            if key == 'd':
-                continue
-
-            if not isinstance(source, dict):
-                continue
-
-            saids.append(source['n'])
+        saids = [edge['n'] for _, edge in edgesOf(chains)]
 
         sources = []
         for said in saids:

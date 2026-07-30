@@ -18,7 +18,7 @@ from ..kering import (Ilks, MissingChainError,
 from ..core import Dater, Saider, Parser, CacheResolver, Schemer
 from ..help import helping
 
-from .eventing import Tevery, Reger, query
+from .eventing import Tevery, Reger, query, walkEdgeSection
 
 logger = ogler.getLogger()
 
@@ -45,6 +45,26 @@ class Verifier:
     # containing several is a conflict resolved latest-wins. Operators outside this
     # subset constrain something else and compose with the winner instead.
     DelegativeOps = ('I2I', 'NI2I', 'DI2I')
+
+    # M-ary (aggregating) Operators from the ACDC spec's normative Edge-group table
+    # (spec-body.md, "##### Operator, `o` field" under "#### Edge-group"). These
+    # apply to an Edge-group's members, not to a single edge, and are therefore
+    # disjoint from .UnaryOps. A token outside this set is not an m-ary Operator to
+    # this verifier and fails closed -- see .verifyGroup.
+    MAryOps = ('AND', 'OR', 'NAND', 'NOR', 'AVG', 'WAVG')
+
+    # The subset of .MAryOps whose semantics this verifier implements. AND is the
+    # spec's default when an Edge-group's `o` field is absent, and its meaning --
+    # the group is valid only if every member is valid -- is exactly the aggregation
+    # .processCredential already performs over a flat edge section. The rest are
+    # recognized but unimplemented, so they fail closed rather than being silently
+    # treated as AND, which would apply a weaker rule than the Issuer specified.
+    MAryOpsImplemented = ('AND',)
+
+    # Operator applied to an Edge-group whose `o` field is absent: "When the
+    # Operator, `o`, field is missing in an Edge-group block, the default value for
+    # the Operator, `o`, field MUST be the `AND` Operator."
+    DefaultMAryOp = 'AND'
 
     def __init__(self, hby, reger=None, creds=None, cues=None, expiry=36000000000):
         """
@@ -169,9 +189,18 @@ class Verifier:
             raise ValidationError(f"invalid type for edges: {prov}")
 
         for edge in edges:
-            for label, node in edge.items():
-                if label in ('d', 'o'):  # SAID or Operator of this edge block
+            # An Edge Section is itself an Edge-group and MAY nest further
+            # Edge-groups, so walk it rather than assuming every non-reserved label
+            # at the top level is a flat edge. Every Edge-group encountered has its
+            # m-ary Operator checked; every Edge found, at any depth, is validated.
+            # This is the AND aggregation -- the spec default -- and .verifyGroup
+            # rejects any group asking for something else.
+            for path, node, group in walkEdgeSection(edge):
+                if group:
+                    self.verifyGroup(node, path, creder)
                     continue
+
+                label = '.'.join(path)  # dotted path so nested edges are locatable
                 nodeSaid = node["n"]
                 op = node['o'] if 'o' in node else None
                 try:
@@ -206,6 +235,48 @@ class Verifier:
 
         self.saveCredential(creder, prefixer, seqner, saider)
         self.cues.append(dict(kin="saved", creder=creder))
+
+    def verifyGroup(self, group, path, creder):
+        """ Verifies the m-ary Operator of an Edge-group is one this verifier honors
+
+        Carries none of the aggregation semantics of the operators themselves beyond
+        AND: the caller validates every Edge in the section and fails on the first
+        bad one, which is AND. This method's job is to confirm the Issuer actually
+        asked for AND, so a group asking for something else cannot be quietly
+        validated under the wrong rule.
+
+        Parameters:
+            group (dict): the Edge-group block, possibly the Edge Section itself
+            path (tuple): non-reserved labels locating the group within the Edge
+                Section; empty for the Edge Section, which is the top-level group
+            creder (Creder): the near (edge-bearing) credential, for diagnostics
+
+        Raises:
+            ValidationError: the group's `o` is not a recognized m-ary Operator, or
+                is recognized but unimplemented. Deliberately not a MissingChainError
+                in either case: the section is fully in hand and no amount of
+                retrying will make an unsupported operator supported, so escrowing
+                would promise a retry that can never succeed. This matches the
+                treatment .verifyChain gives NOT and DI2I.
+
+        """
+        # An absent `o` is not "no operator": the spec assigns it a value, and that
+        # value goes through the same checks as an explicit one so the default can
+        # never drift out of .MAryOpsImplemented unnoticed.
+        op = group['o'] if 'o' in group else self.DefaultMAryOp
+        where = f"edge group {'.'.join(path)}" if path else "the edge section"
+
+        # Unlike an Edge's unary `o`, an Edge-group's `o` is a single aggregating
+        # Operator over the group's members -- the spec defines no list form for it.
+        if not isinstance(op, str) or op not in self.MAryOps:
+            raise ValidationError(f"Unrecognized m-ary edge operator {op!r} on "
+                                  f"{where} of credential {creder.said}; expected "
+                                  f"one of {self.MAryOps}")
+
+        if op not in self.MAryOpsImplemented:
+            raise ValidationError(f"Unsupported m-ary edge operator {op} on {where} "
+                                  f"of credential {creder.said}; only "
+                                  f"{self.MAryOpsImplemented} is implemented")
 
     def processACDC(self, **kwa):
         """Alias of .processCredential with Parser compatible call signature
