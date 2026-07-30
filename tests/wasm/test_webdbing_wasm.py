@@ -20,16 +20,19 @@ pytest_pyodide = pytest.importorskip("pytest_pyodide")
 run_in_pyodide = pytest_pyodide.run_in_pyodide
 copy_files_to_pyodide = pytest_pyodide.decorator.copy_files_to_pyodide
 
-WASM_PACKAGES = ["sortedcontainers", "micropip"]
+WASM_FILES = [
+    ("webdbing.py", "/home/pyodide/webdbing.py"),
+    "wheels/ordered_set-4.1.0-py3-none-any.whl",
+]
+WASM_PACKAGES = ["sortedcontainers"]
 
 
-@copy_files_to_pyodide(file_list=[("webdbing.py", "/home/pyodide/webdbing.py")])
+@copy_files_to_pyodide(file_list=WASM_FILES)
 @run_in_pyodide(packages=WASM_PACKAGES)
 async def test_webdber_import_and_helpers(selenium):
     """Verify webdbing.py imports and key helpers work in WASM."""
     import sys
-    import micropip
-    await micropip.install("ordered_set")
+
     sys.path.insert(0, "/home/pyodide")
     from webdbing import WebDBer, onKey, splitOnKey, splitKey, MaxON
 
@@ -45,13 +48,12 @@ async def test_webdber_import_and_helpers(selenium):
     assert on2 == 0
 
 
-@copy_files_to_pyodide(file_list=[("webdbing.py", "/home/pyodide/webdbing.py")])
+@copy_files_to_pyodide(file_list=WASM_FILES)
 @run_in_pyodide(packages=WASM_PACKAGES)
 async def test_webdber_crud(selenium):
     """Verify WebDBer create, read, update, delete in WASM."""
     import sys
-    import micropip
-    await micropip.install("ordered_set")
+
     sys.path.insert(0, "/home/pyodide")
     from webdbing import WebDBer
 
@@ -86,13 +88,12 @@ async def test_webdber_crud(selenium):
     assert dber.getVal(sdb, b"hello") is None
 
 
-@copy_files_to_pyodide(file_list=[("webdbing.py", "/home/pyodide/webdbing.py")])
+@copy_files_to_pyodide(file_list=WASM_FILES)
 @run_in_pyodide(packages=WASM_PACKAGES)
 async def test_webdber_ordinals(selenium):
     """Verify ordinal key operations in WASM."""
     import sys
-    import micropip
-    await micropip.install("ordered_set")
+
     sys.path.insert(0, "/home/pyodide")
     from webdbing import WebDBer
 
@@ -127,13 +128,12 @@ async def test_webdber_ordinals(selenium):
     assert dber.cntOnAll(sdb, b"evt") == 3
 
 
-@copy_files_to_pyodide(file_list=[("webdbing.py", "/home/pyodide/webdbing.py")])
+@copy_files_to_pyodide(file_list=WASM_FILES)
 @run_in_pyodide(packages=WASM_PACKAGES)
 async def test_webdber_flush(selenium):
     """Verify flush persistence cycle in WASM."""
     import sys
-    import micropip
-    await micropip.install("ordered_set")
+
     sys.path.insert(0, "/home/pyodide")
     from webdbing import WebDBer
 
@@ -175,13 +175,12 @@ async def test_webdber_flush(selenium):
     assert dber2.getVal(sdb2, b"k2") == b"v2"
 
 
-@copy_files_to_pyodide(file_list=[("webdbing.py", "/home/pyodide/webdbing.py")])
+@copy_files_to_pyodide(file_list=WASM_FILES)
 @run_in_pyodide(packages=WASM_PACKAGES)
 async def test_webdber_prefix_iteration(selenium):
     """Verify prefix-scoped iteration in WASM."""
     import sys
-    import micropip
-    await micropip.install("ordered_set")
+
     sys.path.insert(0, "/home/pyodide")
     from webdbing import WebDBer
 
