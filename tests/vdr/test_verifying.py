@@ -11,10 +11,12 @@ from keri import (MissingRegistryError, MissingEntryError,
 from keri.app import openHab
 from keri.core import (Saider, Kevery, SerderKERI, Seqner,
                        Diger, Parser, SealEvent,
-                       MtrDex, Saids)
+                       MtrDex, Saids, Aggor, Noncer)
 from keri.kering import Ilks, Kinds, Vrsn_2_0
 from keri.help import helping
 from keri.vc import credential
+from keri.acdc import acdcagg
+from keri.acdc.messaging import acgSchemaDefault
 from keri.vdr import Verifier, Regery, Tevery
 
 
@@ -668,5 +670,197 @@ def test_verifier_e1e_identity_edge(seeder):
                               version=Vrsn_1_0, kind=Kinds.json)
         issueAndSave(toOrphan)
         assert verfer.reger.saved.get(keys=toOrphan.saidb) is None
+
+    """End Test"""
+
+
+def _aggregate_far_node(ian, ianiss, ianreg, issueeAid):
+    """Build an aggregative ('acg') far-node credential and issue its SAID into
+    ian's registry TEL so ``vcState`` resolves it to issued.
+
+    The credential is issued by ian to ``issueeAid``. For an aggregate ACDC the
+    issuee lives at ``.sad["A"][1]["i"]`` (not ``.sad["a"]["i"]``), so ``.attrib``
+    is None and ``.iseaid`` is the only way to resolve the issuee -- exactly the
+    case that the attributive-only paths in verifying.py mishandle.
+    """
+    raws = [b'2lb6aggverifchn' + b'%0x' % (i,) for i in range(3)]
+    nonces = [Noncer(raw=r).qb64 for r in raws]
+    # element 0 is the AGID placeholder; element 1 carries the issuee (i).
+    ael = ['', dict(d='', u=nonces[0], i=issueeAid),
+           dict(d='', u=nonces[1], over21=True)]
+    aggor = Aggor(ael=ael, makify=True, kind=Kinds.json)
+    sschema, _ = acgSchemaDefault(kind=Kinds.json)  # SAID string, not the block
+    agg = acdcagg(israid=ian.pre, uuid=nonces[2], regid=ianiss.regk,
+                  schema=sschema, aggregate=aggor.ael, kind=Kinds.json)
+
+    # anchor a TEL issuance event for the aggregate SAID so it is "issued".
+    iss = ianiss.issue(said=agg.said)
+    rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+    ian.interact(data=[rseal], framed=True, **CUE_KWA)
+    ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
+                     seqner=Seqner(sn=ian.kever.sn),
+                     saider=Diger(qb64=ian.kever.serder.said))
+    ianreg.processEscrows()
+    return agg
+
+
+def test_verifier_saves_aggregate_credential(seeder):
+    """saveCredential indexes an aggregate ('acg') credential's subject via .iseaid.
+
+    Regression for tick 2lb6: saveCredential guarded subject indexing on
+    ``'i' in creder.attrib``, but ``creder.attrib`` is None for an aggregate
+    credential (the issuee is at ``.sad["A"][1]["i"]``), so the membership test
+    raised ``TypeError`` and the aggregate credential could not be saved or
+    subject-indexed at all. It must instead resolve the issuee via ``.iseaid``,
+    identically to an attributive credential.
+    """
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', **KWA) as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef', **KWA) \
+            as (hanHby, han):
+        ianreg = Regery(hby=ianHby, name="ian", temp=True)
+        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", **KWA)
+        rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
+        ian.interact(data=[rseal], framed=True, **CUE_KWA)
+        ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+
+        verfer = Verifier(hby=ianHby, reger=ianreg.reger)
+
+        agg = _aggregate_far_node(ian, ianiss, ianreg, han.pre)
+        assert agg.attrib is None            # aggregate: no 'a' section
+        assert agg.iseaid == han.pre         # issuee resolves from A[1].i
+        assert agg.israid == ian.pre
+
+        # Before the fix this raised TypeError on ``'i' in creder.attrib`` (None).
+        verfer.saveCredential(agg, prefixer=ian.kever.prefixer,
+                              seqner=Seqner(sn=ian.kever.sn),
+                              saider=Diger(qb64=ian.kever.serder.said))
+
+        assert verfer.reger.saved.get(keys=agg.saidb) is not None
+        # subject indexed under the aggregate issuee (han), via .iseaid.
+        saiders = verfer.reger.subjs.get(han.pre)
+        assert agg.said in [s.qb64 for s in saiders]
+
+    """End Test"""
+
+
+def test_verifier_aggregate_far_node_chain(seeder):
+    """verifyChain resolves an aggregate ('acg') far node's issuee via .iseaid.
+
+    Regression for tick 2lb6: verifyChain coerced the default/unknown operator via
+    ``'i' in creder.attrib`` and resolved the I2I issuee via ``creder.attrib['i']``.
+    Both raise ``TypeError`` for an aggregate far node (``.attrib`` is None). The
+    verifier must resolve targeted-ness and the issuee via ``.iseaid`` so an edge
+    to an aggregate far node behaves identically to an attributive one.
+    """
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', **KWA) as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef', **KWA) \
+            as (hanHby, han):
+        ianreg = Regery(hby=ianHby, name="ian", temp=True)
+        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", **KWA)
+        rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
+        ian.interact(data=[rseal], framed=True, **CUE_KWA)
+        ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+
+        verfer = Verifier(hby=ianHby, reger=ianreg.reger)
+
+        agg = _aggregate_far_node(ian, ianiss, ianreg, han.pre)
+        assert agg.attrib is None
+        assert agg.iseaid == han.pre
+
+        # Populate the reger indices directly (isolate this from saveCredential):
+        # creds (SerderSuber -> SerderACDC), saved, and the subject index.
+        verfer.reger.logCred(agg, ian.kever.prefixer, Seqner(sn=ian.kever.sn),
+                             Diger(qb64=ian.kever.serder.said))
+        saider = Saider(qb64=agg.said)
+        verfer.reger.saved.pin(keys=saider.qb64b, val=saider)
+        verfer.reger.subjs.add(keys=agg.iseaidb, val=saider)
+
+        # Default operator (None): coerced to a targeted (I2I) edge because the far
+        # node has an issuee (.iseaid). Before the fix this raised TypeError on the
+        # ``'i' in creder.attrib`` coercion. The near issuer (han) equals the far
+        # issuee (han), so the I2I binding is accepted.
+        state = verfer.verifyChain(agg.said, None, han.pre)
+        assert state is not None
+
+        # Explicit I2I with the same binding is accepted.
+        state = verfer.verifyChain(agg.said, 'I2I', han.pre, issuee=han.pre)
+        assert state is not None
+
+        # I2I mismatch: the near issuer (ian) does not equal the far issuee (han),
+        # so the binding is rejected (returns None, no TypeError).
+        assert verfer.verifyChain(agg.said, 'I2I', ian.pre) is None
+
+        # NI2I is untargeted: accepted regardless of issuer/issuee.
+        state = verfer.verifyChain(agg.said, 'NI2I', ian.pre)
+        assert state is not None
+
+    """End Test"""
+
+
+def test_verifier_e1e_aggregate_far_node(seeder):
+    """verifyChain's E1E identity edge resolves an aggregate ('acg') far node.
+
+    Closes the coverage gap left open across the E1E stack. #1527's E1E test uses
+    only an attributive (``.sad["a"]["i"]``) far node, and this PR's other
+    aggregate tests exercise only the default/I2I/NI2I operators against an
+    aggregate far node -- never E1E. Here an E1E edge points at an aggregate far
+    node (issuee at ``.sad["A"][1]["i"]``, ``.attrib`` is None), confirming the
+    identity relation is decided on ``.iseaid``, not ``.attrib``.
+
+    End to end this depends on the whole 2lb6 change: the aggregate far node must
+    first be savable (``saveCredential`` resolving the subject via ``.iseaid``),
+    which the pre-fix ``'i' in creder.attrib`` guard cannot do -- it raises
+    ``TypeError`` on the None attribute. The E1E branch was already ``.iseaid``
+    based; this locks in that it works for an aggregate far node through the real
+    verifier, not just a bespoke example verifier.
+    """
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', **KWA) as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef', **KWA) \
+            as (hanHby, han):
+        ianreg = Regery(hby=ianHby, name="ian", temp=True)
+        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", **KWA)
+        rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
+        ian.interact(data=[rseal], framed=True, **CUE_KWA)
+        ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+
+        verfer = Verifier(hby=ianHby, reger=ianreg.reger)
+
+        # Aggregate far node: ian -> han, issuee (han) at A[1].i, .attrib is None.
+        agg = _aggregate_far_node(ian, ianiss, ianreg, han.pre)
+        assert agg.attrib is None
+        assert agg.iseaid == han.pre
+
+        # Save it through the real path. With the pre-fix saveCredential this raises
+        # TypeError on the aggregate credential; the fix indexes the subject via
+        # .iseaid so the far node can be resolved by verifyChain below.
+        verfer.saveCredential(agg, prefixer=ian.kever.prefixer,
+                              seqner=Seqner(sn=ian.kever.sn),
+                              saider=Diger(qb64=ian.kever.serder.said))
+        assert verfer.reger.saved.get(keys=agg.saidb) is not None
+
+        # E1E accepts when the near issuee equals the far (aggregate) issuee and
+        # says nothing about the issuer: here issuer=ian != issuee=han, the SEDI
+        # "same subject, third-party issuer" case that E1E exists to allow.
+        assert verfer.verifyChain(agg.said, 'E1E', ian.pre, issuee=han.pre) is not None
+
+        # E1E does work I2I cannot on this same aggregate far node: the identical
+        # binding (near issuer=ian, far aggregate issuee=han, issuer != issuee) that
+        # E1E accepted above is rejected by I2I.
+        assert verfer.verifyChain(agg.said, 'I2I', ian.pre, issuee=han.pre) is None
+
+        # E1E rejects a near issuee that differs from the far (aggregate) issuee.
+        assert verfer.verifyChain(agg.said, 'E1E', ian.pre, issuee=ian.pre) is None
+
+        # E1E rejects a missing near issuee (untargeted near ACDC carrying the edge).
+        assert verfer.verifyChain(agg.said, 'E1E', ian.pre, issuee=None) is None
 
     """End Test"""

@@ -320,8 +320,11 @@ class Verifier:
         self.reger.issus.add(keys=issuer, val=saider)
         self.reger.schms.add(keys=schema, val=saider)
 
-        if not isinstance(creder.attrib, str) and 'i' in creder.attrib:
-            subject = creder.attrib["i"].encode("utf-8")
+        # Resolve the issuee via .iseaid so aggregate ('acg') credentials index
+        # their subject too: for them .attrib is None and the issuee lives at
+        # .sad["A"][1]["i"]. For attributive creds .iseaid == .attrib["i"].
+        if creder.iseaid is not None:
+            subject = creder.iseaid.encode("utf-8")
             self.reger.subjs.add(keys=subject, val=saider)
 
     def query(self, pre, regk, vcid, *, dt=None, dta=None, dtb=None, **kwa):
@@ -355,7 +358,11 @@ class Verifier:
         creder = self.reger.creds.get(keys=nodeSaid)  # far (node) credential
 
         if op not in ['I2I', 'DI2I', 'NI2I', 'E1E']:
-            op = 'I2I' if 'i' in creder.attrib else 'NI2I'
+            # A far node is targeted (I2I) iff it has an issuee, else untargeted
+            # (NI2I). Resolve via .iseaid so an aggregate ('acg') far node -- whose
+            # issuee is at .sad["A"][1]["i"] and whose .attrib is None -- coerces the
+            # same as an attributive one.
+            op = 'I2I' if creder.iseaid is not None else 'NI2I'
 
         if op == 'E1E':
             # Identity relation (discussion #1515): the issuee AID of the near ACDC
@@ -368,14 +375,19 @@ class Verifier:
             if farIssuee is None or issuee is None or issuee != farIssuee:
                 return None
         elif op != 'NI2I':
-            if 'i' not in creder.attrib:
+            # Resolve the far node's issuee via .iseaid so an aggregate ('acg') far
+            # node (issuee at .sad["A"][1]["i"]) resolves identically to an
+            # attributive one (.attrib["i"]). None means an untargeted far node,
+            # which cannot satisfy a targeted (I2I/DI2I) edge.
+            farIssuee = creder.iseaid
+            if farIssuee is None:
                 return None
 
-            iss = self.reger.subjs.get(keys=creder.attrib['i'])
+            iss = self.reger.subjs.get(keys=farIssuee)
             if iss is None:
                 return None
 
-            if op == 'I2I' and issuer != creder.attrib['i']:
+            if op == 'I2I' and issuer != farIssuee:
                 return None
 
             if op == "DI2I":
