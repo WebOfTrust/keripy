@@ -6,6 +6,7 @@ WASM smoke tests for WebDBer — runs inside Pyodide via pytest-pyodide.
 The workflow copies webdbing.py into this directory before running.
 """
 import os
+from pathlib import Path
 
 import pytest
 
@@ -22,7 +23,9 @@ copy_files_to_pyodide = pytest_pyodide.decorator.copy_files_to_pyodide
 
 WASM_FILES = [
     ("webdbing.py", "/home/pyodide/webdbing.py"),
-    "wheels/ordered_set-4.1.0-py3-none-any.whl",
+    Path(__file__).resolve().parents[2]
+    / "wheels"
+    / "ordered_set-4.1.0-py3-none-any.whl",
 ]
 WASM_PACKAGES = ["sortedcontainers"]
 
