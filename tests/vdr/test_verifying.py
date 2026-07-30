@@ -884,13 +884,13 @@ def test_verifier_edge_schema_constraint(seeder):
     """
     optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
 
-    with openHab(name="sid", temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab):
+    with openHab(name="sid", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (hby, hab):
         seeder.seedSchema(db=hby.db)
 
         regery = Regery(hby=hby, name="test", temp=True)
-        issuer = regery.makeRegistry(prefix=hab.pre, name="test", **KWA)
+        issuer = regery.makeRegistry(prefix=hab.pre, name="test", version=Vrsn_1_0, kind=Kinds.json)
         rseal = SealEvent(issuer.regk, "0", issuer.regd)._asdict()
-        hab.interact(data=[rseal], framed=True, **CUE_KWA)
+        hab.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         seqner = Seqner(sn=hab.kever.sn)
         diger = Diger(qb64=hab.kever.serder.said)
         issuer.anchorMsg(pre=issuer.regk, regd=issuer.regd, seqner=seqner, saider=diger)
@@ -938,7 +938,7 @@ def test_verifier_edge_schema_constraint(seeder):
             """Issue creder's SAID into the registry TEL and process escrows."""
             iss = issuer.issue(said=creder.said)
             rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-            hab.interact(data=[rseal], framed=True, **CUE_KWA)
+            hab.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
             sq = Seqner(sn=hab.kever.sn)
             dg = Diger(qb64=hab.kever.serder.said)
             issuer.anchorMsg(pre=iss.pre, regd=iss.said, seqner=sq, saider=dg)
@@ -948,7 +948,7 @@ def test_verifier_edge_schema_constraint(seeder):
             subject = dict(d="", dt=helping.nowIso8601(), claim=claim)
             _, d = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
             return credential(issuer=hab.pre, schema=optionalIssueeSchema, data=d,
-                              status=issuer.regk, source=source, rules={}, **KWA)
+                              status=issuer.regk, source=source, rules={}, version=Vrsn_1_0, kind=Kinds.json)
 
         anchor = dict(prefixer=hab.kever.prefixer, seqner=seqner,
                       saider=Diger(qb64=hab.kever.serder.said))
