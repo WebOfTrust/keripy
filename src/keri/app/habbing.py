@@ -1609,12 +1609,16 @@ class BaseHab:
             attributes (dict): attributes field map (payload body)
             stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
                           creation of message or data, default is now.
-            version (Versionage): KERI protocol default version if psvrsn is None
-            pvrsn (Versionage): KERI protocol version
-            gvrsn (Versionage): CESR Genus version for attachment group codes or
-                            nesting group code (useful when serder.gvrsn < 2)
-                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
-                                if serder.gvrsn else serder.pvrsn
+            version (Versionage): KERI protocol default version if pvrsn is None
+            pvrsn (Versionage): KERI protocol version for the exchange body
+            gvrsn (Versionage): CESR genus version for attachment framing.
+                            Also forwarded into exchange body ``versify`` when
+                            not None. When None: for ``specialExchange`` embeds
+                            (``version`` is ``Vrsn_1_0``) defaults to ``version``
+                            so body and attachments match; otherwise defaults to
+                            ``Version`` after message creation, independent of
+                            body pvrsn. Pass ``Vrsn_1_0`` only when the peer
+                            requires that attachment genus.
             kind (str): serialization for key event message
                         one of Kinds ("json","cbor","mgpk","cesr")
             framed (bool): True means may assume each message plus its attachments
@@ -1628,7 +1632,6 @@ class BaseHab:
                                 in non-native group code
                            False means messagize for top level of stream.
                                 This allows bare non-native serialization of message
-
             genusify (bool): True means prepend genus version code from gvrsn before
                             serder to override default stream genus version
                          False means do nothing
@@ -1656,6 +1659,11 @@ class BaseHab:
 
         if embeds:
             if version is Vrsn_1_0:
+                # specialExchange is the v1 embeds path; match attachment genus
+                # to version when gvrsn was omitted so body and attachments agree.
+                if gvrsn is None:
+                    gvrsn = version
+                    kwa["gvrsn"] = gvrsn
                 serder, end = specialExchange(embeds=embeds, **kwa)
             elif version is Vrsn_2_0:
                 raise ValueError("Embeds not supported for v2 exchanges")
@@ -1908,8 +1916,9 @@ class BaseHab:
                 Default is own ``.pre``.
             fn (int): first-seen ordering number to start from.
             gvrsn (Versionage): CESR genus version for attachments. Default
-                ``Version`` means v2 attachment framing even when replaying
-                v1 key-event bodies. Pass ``Vrsn_1_0`` only for a v1-only peer.
+                ``Version`` means library-default attachment framing even when
+                replaying bodies with a different pvrsn. Pass ``Vrsn_1_0`` only
+                when the peer requires that attachment genus.
             version (Versionage): legacy alias for gvrsn
 
         Returns:
@@ -2195,9 +2204,9 @@ class BaseHab:
                            False means messagize for top level of stream.
                                 This allows bare non-native serialization of message
             gvrsn (Versionage): CESR Genus version for attachment group codes or
-                            nesting group code. Default ``Version`` means v2
-                            attachment framing; pass ``Vrsn_1_0`` only for a
-                            v1-only peer. Independent of the reply body pvrsn.
+                            nesting group code. Default ``Version``. Independent
+                            of the reply body pvrsn. Pass ``Vrsn_1_0`` only when
+                            the peer requires that attachment genus.
             genusify (bool): True means prepend genus version code from gvrsn before
                             serder to override default stream genus version
                          False means do nothing
@@ -2633,9 +2642,10 @@ class BaseHab:
                            False means messagize for top level of stream.
                                 This allows bare non-native serialization of message
             gvrsn (Versionage): CESR Genus version for attachment group codes or
-                            nesting group code. Default ``Version`` means v2
-                            attachment framing even for v1 event bodies; pass
-                            ``Vrsn_1_0`` only for a v1-only peer.
+                            nesting group code. Default ``Version`` means
+                            library-default attachment framing, independent of
+                            the event body pvrsn. Pass ``Vrsn_1_0`` only when
+                            the peer requires that attachment genus.
             genusify (bool): True means prepend genus version code from gvrsn before
                             serder to override default stream genus version
                          False means do nothing
@@ -2676,9 +2686,10 @@ class BaseHab:
                            False means messagize for top level of stream.
                                 This allows bare non-native serialization of message
             gvrsn (Versionage): CESR Genus version for attachment group codes or
-                            nesting group code. Default ``Version`` means v2
-                            attachment framing even for v1 event bodies; pass
-                            ``Vrsn_1_0`` only for a v1-only peer.
+                            nesting group code. Default ``Version`` means
+                            library-default attachment framing, independent of
+                            the event body pvrsn. Pass ``Vrsn_1_0`` only when
+                            the peer requires that attachment genus.
             genusify (bool): True means prepend genus version code from gvrsn before
                             serder to override default stream genus version
                          False means do nothing
@@ -2713,9 +2724,10 @@ class BaseHab:
                            False means messagize for top level of stream.
                                 This allows bare non-native serialization of message
             gvrsn (Versionage): CESR Genus version for attachment group codes or
-                            nesting group code. Default ``Version`` means v2
-                            attachment framing even for v1 event bodies; pass
-                            ``Vrsn_1_0`` only for a v1-only peer.
+                            nesting group code. Default ``Version`` means
+                            library-default attachment framing, independent of
+                            the event body pvrsn. Pass ``Vrsn_1_0`` only when
+                            the peer requires that attachment genus.
             genusify (bool): True means prepend genus version code from gvrsn before
                             serder to override default stream genus version
                          False means do nothing

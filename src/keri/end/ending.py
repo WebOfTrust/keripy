@@ -601,8 +601,8 @@ class OOBIEnd:
         if eid:
             eids.append(eid)
 
-        # Serve attachments at this node's configured CESR version (v1 demos
-        # pin --version 1.0; default Habery Version remains v2).
+        # Serve attachments at this node's configured CESR version (demos may
+        # pin --version 1.0; otherwise Habery uses Version).
         gvrsn = self.hby.version
         msgs = hab.replyToOobi(aid=aid, role=role, eids=eids, gvrsn=gvrsn)
         if not msgs and role is None:

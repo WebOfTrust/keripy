@@ -1904,8 +1904,9 @@ class Baser(LMDBer):
         Parameters:
             kever (Kever): Kever from which to clone the delegator's AID.
             gvrsn (Versionage): CESR genus version for attachments. Default
-                ``Version`` means v2 attachment framing even when cloning
-                v1 key-event bodies. Pass ``Vrsn_1_0`` only for a v1-only peer.
+                ``Version`` means library-default attachment framing even when
+                cloning bodies with a different pvrsn. Pass ``Vrsn_1_0`` only
+                when the peer requires that attachment genus.
                 Present-but-``None`` is treated as ``Version``.
             version (Versionage): legacy alias for gvrsn
 

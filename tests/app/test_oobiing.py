@@ -266,7 +266,7 @@ def test_loaded_v1_endpoint_replies_use_stored_reply_framing():
 
 
 def test_v2_reply_to_oobi_replay_without_explicit_gvrsn():
-    """replyToOobi with omitted gvrsn keeps library default (v2 attachments)."""
+    """replyToOobi with omitted gvrsn keeps library default (``Version``) attachments."""
     v2kwa = dict(version=Vrsn_2_0, kind=Kinds.cesr, gvrsn=Vrsn_2_0)
     with openHby(name="oobi-src-v2-replay", version=Vrsn_2_0) as src, \
             openHby(name="oobi-dst-v2-replay", version=Vrsn_2_0) as dst:
@@ -304,7 +304,7 @@ def test_v2_reply_to_oobi_replay_without_explicit_gvrsn():
 
 
 def test_v1_kel_replay_defaults_to_v2_attachments():
-    """v1 key-event bodies keep pvrsn; omitted gvrsn uses v2 attachment framing."""
+    """v1 key-event bodies keep pvrsn; omitted gvrsn uses ``Version`` attachment framing."""
     with openHby(name="v1-kel-v2-atc", version=Vrsn_1_0) as hby:
         hab = hby.makeHab(name="probe", version=Vrsn_1_0, kind=Kinds.json)
         msg = hab.replay()
@@ -313,8 +313,8 @@ def test_v1_kel_replay_defaults_to_v2_attachments():
         assert serder.ked["v"].startswith("KERI10")
 
         atc = bytes(msg[serder.size:])
-        assert atc.startswith(b"-CAi-KAW")  # v2 AttachmentGroup + ControllerIdxSigs
-        assert not atc.startswith(b"-VAi-AAB")  # not v1 AttachmentGroup + ControllerIdxSigs
+        assert atc.startswith(b"-CAi-KAW")  # Version AttachmentGroup + ControllerIdxSigs
+        assert not atc.startswith(b"-VAi-AAB")  # not Vrsn_1_0 AttachmentGroup + ControllerIdxSigs
 
         oobi = hab.replyToOobi(aid=hab.pre, role=Roles.controller, eids=[hab.pre])
         assert oobi
@@ -327,7 +327,7 @@ def test_v1_kel_replay_defaults_to_v2_attachments():
         rvy = Revery(db=hby.db, rtr=rtr)
         kvy = Kevery(db=hby.db, lax=False, local=False, rvy=rvy)
         kvy.registerReplyRoutes(router=rtr)
-        # v2 parser accepts v1 bodies with v2 attachments
+        # Version parser accepts v1 bodies with Version-framed attachments
         Parser(version=Vrsn_2_0, kvy=kvy, rvy=rvy).parse(ims=bytearray(msg))
 
 

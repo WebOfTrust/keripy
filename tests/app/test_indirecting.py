@@ -455,7 +455,7 @@ def test_follow_on_events_honor_explicit_v1_kwargs():
 
 
 def test_end_role_reply_defaults_to_v2_attachments_for_v1_hab():
-    """Omitted gvrsn keeps v2 attachment framing on a v1 reply body."""
+    """Omitted gvrsn keeps default (``Version``) attachment framing on a v1 reply body."""
     with openHby(name="v1-end-role", version=Vrsn_1_0) as hby:
         hab = hby.makeHab(name="cam", version=Vrsn_1_0, kind=Kinds.json)
 
@@ -464,7 +464,7 @@ def test_end_role_reply_defaults_to_v2_attachments_for_v1_hab():
         assert serder.pvrsn == Vrsn_1_0
         assert serder.kind == Kinds.json
         atc = bytes(msg[serder.size:])
-        assert atc.startswith(b"-C")  # v2 attachment group framing
+        assert atc.startswith(b"-C")  # default AttachmentGroup framing
         assert not atc.startswith(b"-V")  # not v1 attachment group
 
         # Local v1-only parser needs explicit v1 attachments.

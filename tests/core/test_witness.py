@@ -21,7 +21,7 @@ logger = ogler.getLogger()
 
 
 def _pin_hab_msgs_v1(hab):
-    """Force v1 on Hab message helpers when global defaults are v2."""
+    """Force v1 on Hab message helpers when global defaults use ``Version``."""
     kwa = dict(version=Vrsn_1_0, kind=Kinds.json)
     hab.receipt = partial(BaseHab.receipt, hab, gvrsn=Vrsn_1_0, **kwa)
     hab.reply = partial(BaseHab.reply, hab, gvrsn=Vrsn_1_0, **kwa)

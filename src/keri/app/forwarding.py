@@ -209,7 +209,7 @@ class Poster(doing.DoDoer):
         # Its not us, randomly select a mailbox and forward it on
         mbx, mailbox = random.choice(list(ends.items()))
         msg = bytearray()
-        msg.extend(introduce(hab, mbx))
+        msg.extend(introduce(hab, mbx, gvrsn=self.version))
         # create the forward message with payload embedded at `a` field
 
         evt = bytearray(serder.raw)
@@ -247,7 +247,7 @@ class Poster(doing.DoDoer):
         # Its not us, randomly select a mailbox and forward it on
         mbx, mailbox = random.choice(list(ends.items()))
         msg = bytearray()
-        msg.extend(introduce(hab, mbx))
+        msg.extend(introduce(hab, mbx, gvrsn=self.version))
         # create the forward message with payload embedded at `a` field
 
         evt = bytearray(serder.raw)
@@ -472,7 +472,7 @@ class StreamPoster:
             msg = self._essrWrapper(hab, msg, mbx)
 
         ims = bytearray()
-        ims.extend(introduce(hab, mbx))
+        ims.extend(introduce(hab, mbx, gvrsn=self.version))
         ims.extend(msg)
 
         self.messagers.append(streamMessengerFrom(hab=hab, pre=mbx, urls=mailbox, msg=bytes(ims)))
@@ -555,7 +555,7 @@ class ForwardHandler:
         self.mbx.storeMsg(topic=resource, msg=pevt)
 
 
-def introduce(hab, wit):
+def introduce(hab, wit, gvrsn=None):
     """ Clone and return hab KEL if lastest event has not been receipted by wit
 
     Check to see if the target witness has already provided a receipt for the latest event
@@ -565,6 +565,10 @@ def introduce(hab, wit):
     Parameters:
         hab (Hab): local environment for the identifier to propagate
         wit (str): qb64 identifier prefix of the receiver of KEL if not already receipted
+        gvrsn (Versionage or None): CESR genus version for intro stream attachments.
+            None means use each clone/reply helper's library default (``Version``).
+            Callers talking to a peer that requires a different genus should pass
+            their configured Habery/Poster version (e.g. ``Vrsn_1_0``).
 
     Returns:
         bytearray: cloned KEL of hab
@@ -605,12 +609,12 @@ def introduce(hab, wit):
 
     if not found:  # no receipt from remote so pre-send own inception
         # no vrcs or rct of own icp from remote so send own inception.
-        # Match attachment genus to this hab's event version so v1-only
-        # witnesses can parse the introduction stream.
-        gvrsn = hab.kever.serder.pvrsn
-        for msg in hab.db.clonePreIter(pre=hab.pre, gvrsn=gvrsn):
+        # Attachment genus follows caller config when provided; otherwise each
+        # helper uses its library default.
+        kwa = dict(gvrsn=gvrsn) if gvrsn is not None else {}
+        for msg in hab.db.clonePreIter(pre=hab.pre, **kwa):
             msgs.extend(msg)
-        for msg in hab.db.cloneDelegation(hab.kever, gvrsn=gvrsn):
+        for msg in hab.db.cloneDelegation(hab.kever, **kwa):
             msgs.extend(msg)
-        msgs.extend(hab.replyEndRole(cid=hab.pre, gvrsn=gvrsn))
+        msgs.extend(hab.replyEndRole(cid=hab.pre, **kwa))
     return msgs
