@@ -10,9 +10,9 @@ import pytest
 
 from keri import (MissingRegistryError, MissingEntryError,
                   MissingChainError, RevokedChainError, ValidationError, Vrsn_1_0)
-from keri.app import openHab
+from keri.app import openHab, openHby
 from keri.core import (Saider, Kevery, SerderKERI, Seqner,
-                       Diger, Parser, SealEvent,
+                       Diger, Parser, SealEvent, Salter,
                        MtrDex, Saids, Aggor, Noncer, Schemer)
 from keri.kering import Ilks, Kinds, Vrsn_2_0, MissingSchemaError
 from keri.help import helping
@@ -1059,6 +1059,93 @@ def setupOperatorFixture(ian, ianHby, ianreg, ianiss):
     return verfer, issueAndSave
 
 
+# Salt for the multi-hab DI2I fixtures below, which need openHby (several habs in one
+# Habery, plus delegated habs in Haberies of their own) rather than openHab's single hab.
+DI2I_SALT = Salter(raw=b'0123456789abcdef').qb64
+OPTIONAL_ISSUEE_SCHEMA = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+
+
+def anchorApproval(delegator, delegate):
+    """Approve `delegate`'s latest establishment event by anchoring its seal.
+
+    A ``dip`` becomes *validated* delegation only once the delegator anchors an event
+    seal to it on its own trunk; ``app.delegating.Anchorer`` does this in production.
+    The delegate's own Habery accepts its ``dip`` before that happens -- the
+    ``locallyOwned`` arm of the three-way local-source exemption at
+    ``core/eventing.py:3287-3289`` returns from ``validateDelegation`` with no seal
+    lookup at all -- so a fixture that skips this call still yields a Kever with
+    ``delpre`` set. That state is exactly what a DI2I check must not mistake for
+    authority, and it is what the ``unapproved`` hab below is for.
+    """
+    kever = delegate.kever
+    seal = SealEvent(i=kever.prefixer.qb64, s=kever.serder.snh,
+                     d=kever.serder.said)._asdict()
+    delegator.interact(data=[seal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                       gvrsn=Vrsn_1_0)
+
+
+def setupRegistry(hab, regery, name):
+    """Create and anchor a credential registry for `hab` inside `regery`.
+
+    One Regery can hold registries for several habs (they are keyed by prefix), which is
+    what lets the DI2I tests give the root issuer, the QVI and its subgroups a registry
+    each behind a single Verifier.
+    """
+    reg = regery.makeRegistry(prefix=hab.pre, name=name, version=Vrsn_1_0,
+                              kind=Kinds.json)
+    rseal = SealEvent(reg.regk, "0", reg.regd)._asdict()
+    hab.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                 gvrsn=Vrsn_1_0)
+    reg.anchorMsg(pre=reg.regk, regd=reg.regd, seqner=Seqner(sn=hab.kever.sn),
+                  saider=Diger(qb64=hab.kever.serder.said))
+    regery.processEscrows()
+    return reg
+
+
+def makeIssueAndSave(verfer, regery, hab, reg):
+    """Return an issueAndSave closure for `hab` issuing out of registry `reg`.
+
+    Same flow as .setupOperatorFixture's closure, but parameterized by issuer so a test
+    can issue from more than one AID against a single Verifier.
+    """
+    def issueAndSave(creder):
+        try:
+            verfer.processCredential(creder, prefixer=hab.kever.prefixer,
+                                     seqner=Seqner(sn=hab.kever.sn),
+                                     saider=Diger(qb64=hab.kever.serder.said))
+        except MissingRegistryError:
+            pass  # expected: the TEL issuance event is anchored just below
+        iss = reg.issue(said=creder.said)
+        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+        hab.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                     gvrsn=Vrsn_1_0)
+        reg.anchorMsg(pre=iss.pre, regd=iss.said, seqner=Seqner(sn=hab.kever.sn),
+                      saider=Diger(qb64=hab.kever.serder.said))
+        regery.processEscrows()
+        verfer.processEscrows()
+
+    return issueAndSave
+
+
+def makeCred(hab, reg, *, issuee=None, claim="", source=None):
+    """Build a credential issued by `hab` in registry `reg`, targeted at `issuee`."""
+    subject = dict(d="")
+    if issuee is not None:
+        subject["i"] = issuee
+    subject.update(dt=helping.nowIso8601(), claim=claim)
+    _, data = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+    return credential(issuer=hab.pre, schema=OPTIONAL_ISSUEE_SCHEMA, data=data,
+                      status=reg.regk, source=source if source is not None else {},
+                      rules={}, version=Vrsn_1_0, kind=Kinds.json)
+
+
+def di2iEdge(nodeSaid):
+    """Saidified edge block carrying a single DI2I edge to `nodeSaid`."""
+    _, chain = Saider.saidify(sad=dict(d='', node=dict(n=nodeSaid, o="DI2I")),
+                              code=MtrDex.Blake3_256, label=Saids.d)
+    return chain
+
+
 def test_verifier_list_valued_operator(seeder):
     """A list-valued `o` is a spec-legal spelling and MUST NOT fall to the default.
 
@@ -1167,29 +1254,25 @@ def test_verifier_list_valued_operator(seeder):
         near = nearWithOp(["E1E"], "E1E via list")
         assert verfer.reger.saved.get(keys=near.saidb) is not None
 
-        # The flagship interop case from the review: "o": ["DI2I"] previously resolved
-        # to I2I via the default rule, silently downgrading a delegated-issuer edge to
-        # a strict issuer==issuee one. It must now reach DI2I and fail closed.
-        chainSad = dict(d='', node=dict(n=far.said, o=["DI2I"]))
-        _, chain = Saider.saidify(sad=chainSad, code=MtrDex.Blake3_256, label=Saids.d)
-        subject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim="di2i in list")
-        _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
-        listDi2i = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
-                              status=ianiss.regk, source=chain, rules={},
-                              version=Vrsn_1_0, kind=Kinds.json)
-        iss = ianiss.issue(said=listDi2i.said)
-        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
-        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
-                     gvrsn=Vrsn_1_0)
-        ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
-                         seqner=Seqner(sn=ian.kever.sn),
-                         saider=Diger(qb64=ian.kever.serder.said))
-        ianreg.processEscrows()
-        with pytest.raises(ValidationError) as excinfo:
-            verfer.processCredential(listDi2i, prefixer=ian.kever.prefixer,
-                                     seqner=Seqner(sn=ian.kever.sn),
-                                     saider=Diger(qb64=ian.kever.serder.said))
-        assert "DI2I" in str(excinfo.value)
+        # The flagship interop case from the review: "o": ["DI2I"] previously resolved to
+        # I2I via the default rule, silently downgrading a delegated-issuer edge to a
+        # strict issuer==issuee one. DI2I now has real semantics
+        # (test_verifier_di2i_delegated_issuer_edge), so what this pins is that the list
+        # form reaches DI2I *as a member of the delegative conflict set*. Here the near
+        # issuer (ian) is neither the far issuee (han) nor a delegate of it, so DI2I
+        # rejects.
+        near = nearWithOp(["DI2I"], "di2i in list")
+        assert verfer.reger.saved.get(keys=near.saidb) is None
+
+        # This pair is the discriminating one. ["DI2I", "NI2I"] -> NI2I wins and accepts,
+        # which a verifier that skipped DI2I as an unrecognized token would also do. But
+        # ["NI2I", "DI2I"] -> DI2I wins and rejects, whereas skipping DI2I would leave
+        # NI2I as the latest recognized operator and wrongly accept. So only the second of
+        # these distinguishes "DI2I took part in latest-wins" from "DI2I was dropped".
+        near = nearWithOp(["DI2I", "NI2I"], "ni2i wins over di2i")
+        assert verfer.reger.saved.get(keys=near.saidb) is not None
+        near = nearWithOp(["NI2I", "DI2I"], "di2i wins over ni2i")
+        assert verfer.reger.saved.get(keys=near.saidb) is None
 
         # NOT is normative (spec L1195: the far node's validity is inverted) and
         # unimplemented here. It must fail closed like DI2I rather than being skipped
@@ -1305,18 +1388,22 @@ def test_verifier_nonconflicting_operators_compose(seeder):
     """End Test"""
 
 
-def test_verifier_di2i_rejects_diagnosably(seeder):
-    """An unimplemented DI2I edge must fail closed *diagnosably*, not vanish.
+def test_verifier_unimplemented_operator_rejects_diagnosably(seeder):
+    """An unimplemented operator must fail closed *diagnosably*, not vanish.
 
-    DI2I previously raised a bare ``NotImplementedError``, which is not a
-    ValidationError, so every caller mishandled it: ``Parser.allParsator``'s blanket
-    ``except (ValidationError, Exception)`` logged and discarded the ACDC, and
-    ``_processEscrow``'s generic arm unescrowed it. Neither produced a signal an
-    operator could act on.
+    Both normative-but-unimplemented operators previously raised a bare
+    ``NotImplementedError``, which is not a ValidationError, so every caller mishandled
+    it: ``Parser.allParsator``'s blanket ``except (ValidationError, Exception)`` logged
+    and discarded the ACDC, and ``_processEscrow``'s generic arm unescrowed it. Neither
+    produced a signal an operator could act on.
 
-    DI2I is still unimplemented -- this test pins the *failure mode*, not the
-    operator semantics. A ValidationError names the cause and stops the retry loop,
-    which is correct here: unlike a missing chain, retrying cannot help.
+    This test pins the *failure mode*, not any operator's semantics. A ValidationError
+    names the cause and stops the retry loop, which is correct here: unlike a missing
+    chain, retrying cannot help.
+
+    Carried on ``NOT`` (#1554), which is still unimplemented. It was originally written
+    against DI2I; DI2I now has real semantics (test_verifier_di2i_delegated_issuer_edge)
+    and no longer raises, so the failure mode moved to the operator that still has none.
     """
     optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
 
@@ -1347,9 +1434,9 @@ def test_verifier_di2i_rejects_diagnosably(seeder):
         issueAndSave(far)
         assert verfer.reger.saved.get(keys=far.saidb) is not None
 
-        chainSad = dict(d='', node=dict(n=far.said, o="DI2I"))
+        chainSad = dict(d='', node=dict(n=far.said, o="NOT"))
         _, chain = Saider.saidify(sad=chainSad, code=MtrDex.Blake3_256, label=Saids.d)
-        subject = dict(d="", i=ian.pre, dt=helping.nowIso8601(), claim="di2i edge")
+        subject = dict(d="", i=ian.pre, dt=helping.nowIso8601(), claim="not edge")
         _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
         near = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
                           status=ianiss.regk, source=chain, rules={},
@@ -1374,7 +1461,7 @@ def test_verifier_di2i_rejects_diagnosably(seeder):
         # Diagnosable: the message names the operator, the far node the edge points to,
         # and the near credential that carried the edge -- an operator triaging a stream
         # needs the last of those to know which credential to fix.
-        assert "DI2I" in str(excinfo.value)
+        assert "NOT" in str(excinfo.value)
         assert far.said in str(excinfo.value)
         assert near.said in str(excinfo.value)
         # Fails closed -- the credential is not saved on the strength of an edge the
@@ -1383,6 +1470,293 @@ def test_verifier_di2i_rejects_diagnosably(seeder):
         # Not a MissingChainError: the chain is present, the operator is unsupported.
         # Escrowing it would promise a retry that can never succeed.
         assert not isinstance(excinfo.value, MissingChainError)
+
+    """End Test"""
+
+
+def test_verifier_di2i_delegated_issuer_edge(seeder):
+    """DI2I: the near issuer must BE the far issuee, or be a *direct* delegate of it.
+
+    ACDC spec-body.md L1194: the near ACDC's issuer must be "either the Issuee AID or a
+    delegated AID" of the far node's issuee -- singular. Direct delegates only, per #1559:
+    GLEIF issues the QVI credential once through an expensive multisig ceremony, and the
+    QVI then delegates to subgroup AIDs that perform routine issuance. The requirement is
+    "any number of children, zero grandchildren" -- a subgroup must not be able to
+    delegate onward and mint new issuers. A transitive reading would actively defeat that,
+    so there is no walk here and no depth bound to disagree about.
+
+    The rows below are the full matrix: satisfied by delegation, satisfied by identity
+    (DI2I is a superset of I2I), and the five ways it must fail.
+    """
+    with openHby(name="di2i", salt=DI2I_SALT, temp=True, version=Vrsn_1_0) as hby, \
+            openHby(name="stranger", salt=DI2I_SALT, temp=True, version=Vrsn_1_0) as strangerHby:
+        seeder.seedSchema(db=hby.db)
+
+        # gar issues the far node (GLEIF); qvi is the far node's issuee and the delegator.
+        gar = hby.makeHab(name="gar", version=Vrsn_1_0, kind=Kinds.json)
+        qvi = hby.makeHab(name="qvi", version=Vrsn_1_0, kind=Kinds.json)
+        le = hby.makeHab(name="le", version=Vrsn_1_0, kind=Kinds.json)  # near-node issuee
+
+        # sub: an approved direct delegate of qvi -- the issuing subgroup.
+        sub = hby.makeHab(name="sub", delpre=qvi.pre, version=Vrsn_1_0, kind=Kinds.json)
+        anchorApproval(qvi, sub)
+
+        # unapproved: claims qvi as delegator, but qvi never anchored the approval.
+        unapproved = hby.makeHab(name="unapproved", delpre=qvi.pre, version=Vrsn_1_0,
+                                 kind=Kinds.json)
+
+        # rogue: an approved delegate -- but of gar, not of the far node's issuee.
+        rogue = hby.makeHab(name="rogue", delpre=gar.pre, version=Vrsn_1_0,
+                            kind=Kinds.json)
+        anchorApproval(gar, rogue)
+
+        # grand: an approved delegate of sub, i.e. qvi's grandchild.
+        grand = hby.makeHab(name="grand", delpre=sub.pre, version=Vrsn_1_0,
+                            kind=Kinds.json)
+        anchorApproval(sub, grand)
+
+        stranger = strangerHby.makeHab(name="stranger", version=Vrsn_1_0, kind=Kinds.json)
+
+        assert gar.kever.delpre is None
+        assert sub.kever.delpre == qvi.pre
+        assert unapproved.kever.delpre == qvi.pre
+        assert rogue.kever.delpre == gar.pre
+        assert grand.kever.delpre == sub.pre
+        assert stranger.pre not in hby.kevers
+
+        # Every dip in this Habery was accepted through the locallyOwned arm of the
+        # three-way local-source exemption (core/eventing.py:3287-3289), which returns from
+        # validateDelegation before any seal lookup -- so none of them has an .aess entry,
+        # approved or not. `delpre` is set for all of them and .aess is empty for all of
+        # them: neither field distinguishes sub from unapproved. The only thing that does
+        # is whether the delegator anchored an approval seal on its own trunk, which is
+        # what the check has to go and look at.
+        for hab in (sub, unapproved, rogue, grand):
+            assert hby.db.aess.get(keys=(hab.pre, hab.kever.lastEst.d)) is None
+
+        regery = Regery(hby=hby, name="di2i", temp=True)
+        garreg = setupRegistry(gar, regery, "gar")
+        qvireg = setupRegistry(qvi, regery, "qvi")
+        subreg = setupRegistry(sub, regery, "sub")
+        grandreg = setupRegistry(grand, regery, "grand")
+
+        verfer = Verifier(hby=hby, reger=regery.reger)
+        garIssue = makeIssueAndSave(verfer, regery, gar, garreg)
+        qviIssue = makeIssueAndSave(verfer, regery, qvi, qvireg)
+        subIssue = makeIssueAndSave(verfer, regery, sub, subreg)
+        grandIssue = makeIssueAndSave(verfer, regery, grand, grandreg)
+
+        # Far node: the QVI credential, gar -> qvi. Its issuee is the AID whose delegates
+        # a DI2I edge to it authorizes.
+        far = makeCred(gar, garreg, issuee=qvi.pre, claim="qvi credential")
+        assert far.iseaid == qvi.pre
+        garIssue(far)
+        assert verfer.reger.saved.get(keys=far.saidb) is not None
+
+        # 1 -- headline. The near issuer is a direct, approved delegate of the far issuee.
+        # This is the case the operator exists for, and the one that was previously
+        # impossible: DI2I raised a ValidationError and the credential was never saved.
+        bySub = makeCred(sub, subreg, issuee=le.pre, claim="issued by subgroup",
+                         source=di2iEdge(far.said))
+        subIssue(bySub)
+        assert verfer.reger.saved.get(keys=bySub.saidb) is not None
+
+        # Having verified the approval seal on qvi's trunk, the check repaired sub's .aess
+        # entry -- the same benign cache repair Kever.fetchDelegatingEvent performs during
+        # escrow processing, guarded on the delegated event already being accepted.
+        assert hby.db.aess.get(keys=(sub.pre, sub.kever.lastEst.d)) is not None
+
+        # 2 -- DI2I is a superset of I2I: "either the Issuee AID or a delegated AID". Easy
+        # to miss by implementing only the delegation half.
+        byQvi = makeCred(qvi, qvireg, issuee=le.pre, claim="issued by qvi itself",
+                         source=di2iEdge(far.said))
+        qviIssue(byQvi)
+        assert verfer.reger.saved.get(keys=byQvi.saidb) is not None
+
+        # 5 -- the direct-only requirement, end to end. grand is an approved delegate of an
+        # approved delegate of the far issuee. If this credential is saved, the
+        # implementation is transitive and "zero grandchildren" is not enforced.
+        byGrand = makeCred(grand, grandreg, issuee=le.pre, claim="issued by grandchild",
+                           source=di2iEdge(far.said))
+        grandIssue(byGrand)
+        assert verfer.reger.saved.get(keys=byGrand.saidb) is None
+
+        # 6 -- an untargeted far node has no issuee, so "delegate of the issuee" is
+        # undefined and there is nothing for the operator to bind to. Resolved through
+        # .iseaid so an aggregate ('A') far node reaches the same guard instead of crashing
+        # on a None attribute section.
+        farUntargeted = makeCred(gar, garreg, claim="untargeted far node")
+        assert farUntargeted.iseaid is None
+        garIssue(farUntargeted)
+        assert verfer.reger.saved.get(keys=farUntargeted.saidb) is not None
+        toUntargeted = makeCred(sub, subreg, issuee=le.pre, claim="to untargeted",
+                                source=di2iEdge(farUntargeted.said))
+        subIssue(toUntargeted)
+        assert verfer.reger.saved.get(keys=toUntargeted.saidb) is None
+
+        # The remaining rows vary only the near ACDC's issuer, which is the single input
+        # DI2I constrains, so they call .verifyChain directly instead of minting a
+        # credential and a registry apiece. A None state is exactly what processCredential
+        # turns into "escrow, do not save" -- cases 5 and 6 above pin that wiring.
+        assert verfer.verifyChain(far.said, "DI2I", issuer=sub.pre) is not None
+        assert verfer.verifyChain(far.said, "DI2I", issuer=qvi.pre) is not None
+
+        # 3 -- not delegated at all: delpre is None.
+        assert verfer.verifyChain(far.said, "DI2I", issuer=gar.pre) is None
+
+        # 4 -- delegated, but by someone other than the far issuee. An implementation that
+        # checked the truthy `Kever.delegated` flag, or merely that .aess had an entry,
+        # would accept this one.
+        assert verfer.verifyChain(far.said, "DI2I", issuer=rogue.pre) is None
+
+        # 5 at unit level -- the grandchild again, isolated from the issuance flow.
+        assert verfer.verifyChain(far.said, "DI2I", issuer=grand.pre) is None
+
+        # 7 -- the near issuer's KEL is absent from .kevers. Must return None rather than
+        # raise KeyError, which would escape _processEscrow's typed arm and abort the pass.
+        assert verfer.verifyChain(far.said, "DI2I", issuer=stranger.pre) is None
+
+        # 8 -- THE trap. unapproved.delpre == qvi.pre right here in .kevers, so a check
+        # written as `kevers[issuer].delpre == farIssuee` accepts it. But qvi anchored
+        # nothing: the dip was accepted only because this Habery owns it. Nothing was ever
+        # delegated. See test_verifier_di2i_requires_anchored_delegation for why this
+        # matters off the happy path -- the same exemption fires for a witness.
+        assert hby.kevers[unapproved.pre].delpre == qvi.pre
+        assert verfer.verifyChain(far.said, "DI2I", issuer=unapproved.pre) is None
+        # ... and no repair happened, because there was no seal to find.
+        assert hby.db.aess.get(keys=(unapproved.pre, unapproved.kever.lastEst.d)) is None
+
+    """End Test"""
+
+
+def test_verifier_di2i_requires_anchored_delegation(seeder):
+    """A self-asserted `di` must not manufacture issuing authority.
+
+    ``Kevery.validateDelegation`` short-circuits with *no seal lookup whatsoever* when the
+    event is locally owned, locally membered, or locally witnessed
+    (``core/eventing.py:3287-3289``), and the comment above it says so outright: "Witness
+    accepts without waiting for delegation seal to be anchored in delegator's KEL."
+    ``setupWitness`` co-locates a credential ``Verifier`` in that same Habery. So a DI2I
+    check written as ``kevers[issuer].delpre == farIssuee`` would let an operator running a
+    witness pool accept a DI2I edge for *any AID it witnesses* whose claimed delegator
+    never anchored anything -- issuance under authority never granted.
+
+    This test builds precisely that Habery: a witness that has accepted the delegate's
+    ``dip`` through the locallyWitnessed exemption, and that holds the far node in its own
+    credential store so the operator is genuinely evaluated rather than short-circuiting on
+    a missing far node. The edge must be refused. It then delivers the delegator's
+    anchoring event -- and nothing else -- and the same edge must validate. The delta
+    between the two assertions is one interaction event on the delegator's trunk, which is
+    the only thing that ever conferred the authority.
+    """
+    with openHby(name="qvi", salt=DI2I_SALT, temp=True, version=Vrsn_1_0) as qviHby, \
+            openHby(name="sub", salt=DI2I_SALT, temp=True, version=Vrsn_1_0) as subHby, \
+            openHby(name="wit", salt=DI2I_SALT, temp=True, version=Vrsn_1_0) as witHby, \
+            openHby(name="val", salt=DI2I_SALT, temp=True, version=Vrsn_1_0) as valHby:
+        seeder.seedSchema(db=qviHby.db)
+        seeder.seedSchema(db=witHby.db)
+
+        qvi = qviHby.makeHab(name="qvi", version=Vrsn_1_0, kind=Kinds.json)
+        wit = witHby.makeHab(name="wit", transferable=False, version=Vrsn_1_0,
+                             kind=Kinds.json)
+
+        # The delegate lives in a Habery of its own and designates wit as a witness. Its
+        # dip is entirely self-asserted -- qvi has approved nothing at this point. What
+        # matters for the exemption is only that wit is *designated*: that is what makes
+        # locallyWitnessed fire in witHby.
+        sub = subHby.makeHab(name="sub", delpre=qvi.pre, wits=[wit.pre], toad=1,
+                             version=Vrsn_1_0, kind=Kinds.json)
+        assert sub.kever.delpre == qvi.pre
+
+        # qvi issues the far node to itself, then -- as its LAST event -- anchors the
+        # approval of sub's dip. Keeping the approval last is what lets the replay below
+        # withhold it while still delivering everything the far node needs.
+        qvireg = Regery(hby=qviHby, name="qvi", temp=True)
+        qviiss = setupRegistry(qvi, qvireg, "qvi")
+        qviverfer = Verifier(hby=qviHby, reger=qvireg.reger)
+        far = makeCred(qvi, qviiss, issuee=qvi.pre, claim="qvi credential")
+        makeIssueAndSave(qviverfer, qvireg, qvi, qviiss)(far)
+        assert qviverfer.reger.saved.get(keys=far.saidb) is not None
+        farSeqner = Seqner(sn=qvi.kever.sn)
+        farSaider = Diger(qb64=qvi.kever.serder.said)
+
+        anchorApproval(qvi, sub)
+        approvalSn = qvi.kever.sn
+        dipSaid = sub.kever.serder.said
+
+        # The witness accepts sub's dip as a local (protected) source, because it is a
+        # designated witness of it -- reached without any cooperation from qvi. A remote
+        # source would be refused as a misfit event precisely because the witness is local
+        # to it (core/eventing.py:2842-2851), so this is the only way in, and it is the way
+        # a real witness pool takes.
+        wit.psr.parse(ims=bytearray(sub.msgOwnInception(framed=True, gvrsn=Vrsn_1_0)))
+        assert sub.pre in witHby.kevers
+        assert witHby.kevers[sub.pre].delpre == qvi.pre   # delpre claims qvi delegated it
+        assert witHby.db.aess.get(keys=(sub.pre, dipSaid)) is None   # on nobody's word
+
+        # The witness receipt, so the disinterested validator at the end of this test sees
+        # a fully witnessed dip and its refusal cannot be blamed on a missing receipt.
+        subReceipt = wit.witness(serder=witHby.kevers[sub.pre].serder, framed=True,
+                                 version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+
+        # Give the witness everything except qvi's approval: qvi's KEL up to but not
+        # including it, qvi's registry TEL, and the far node's TEL.
+        witreg = Regery(hby=witHby, name="wit", temp=True)
+        witkvy = Kevery(db=witHby.db, lax=False, local=False)
+        wittvy = Tevery(reger=witreg.reger, db=witHby.db, local=False)
+        qviMsgs = [bytearray(msg) for msg
+                   in qviHby.db.clonePreIter(pre=qvi.pre, version=Vrsn_1_0)]
+        assert len(qviMsgs) == approvalSn + 1  # the approval is the last event
+        for msg in qviMsgs[:-1]:               # ... and it is withheld here
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=witkvy, tvy=wittvy)
+        for msg in qvireg.reger.clonePreIter(gvrsn=Vrsn_1_0, pre=qviiss.regk):
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=witkvy, tvy=wittvy)
+        for msg in qvireg.reger.clonePreIter(gvrsn=Vrsn_1_0, pre=far.said):
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=witkvy, tvy=wittvy)
+
+        witverfer = Verifier(hby=witHby, reger=witreg.reger)
+        witverfer.processCredential(far, prefixer=qvi.kever.prefixer, seqner=farSeqner,
+                                    saider=farSaider)
+        # The far node really is saved here. Without this the assertion below would pass
+        # vacuously -- .verifyChain returns None for an unknown far node too.
+        assert witverfer.reger.saved.get(keys=far.saidb) is not None
+        assert witHby.kevers[qvi.pre].sn == approvalSn - 1
+
+        # REFUSED. Everything a delpre-based check would look at says "sub is qvi's
+        # delegate"; qvi's trunk says nothing at all.
+        assert witverfer.verifyChain(far.said, "DI2I", issuer=sub.pre) is None
+
+        # Now deliver the one withheld event -- qvi's approval -- and nothing else.
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(qviMsgs[-1]), kvy=witkvy, tvy=wittvy)
+        assert witHby.kevers[qvi.pre].sn == approvalSn
+
+        # ACCEPTED. Same Habery, same call, byte-identical ACDCs. The only change is the
+        # approval seal now on the delegator's trunk.
+        assert witverfer.verifyChain(far.said, "DI2I", issuer=sub.pre) is not None
+        assert witHby.db.aess.get(keys=(sub.pre, dipSaid)) is not None
+
+        # For contrast, the disinterested validator: neither controller nor witness of sub,
+        # so no exemption applies. With the approval withheld it never accepts the dip at
+        # all -- it sits in the delegation escrow and there is no Kever to read a delpre
+        # off, so the DI2I check is never even the thing that stops it. That is why the
+        # witness Habery above is the load-bearing case: there, the exemption gets the dip
+        # accepted anyway. Deliver the approval and the same validator accepts it and
+        # populates .aess by real validation -- no test fixture pinned it.
+        valkvy = Kevery(db=valHby.db, lax=False, local=False)
+        for msg in qviMsgs[:-1]:
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=valkvy)
+        for msg in subHby.db.clonePreIter(pre=sub.pre, version=Vrsn_1_0):
+            Parser(version=Vrsn_1_0).parse(ims=bytearray(msg), kvy=valkvy)
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(subReceipt), kvy=valkvy)
+        valkvy.processEscrows()
+        assert sub.pre not in valHby.kevers
+        assert valHby.db.aess.get(keys=(sub.pre, dipSaid)) is None
+
+        Parser(version=Vrsn_1_0).parse(ims=bytearray(qviMsgs[-1]), kvy=valkvy)
+        valkvy.processEscrows()
+        assert sub.pre in valHby.kevers
+        assert valHby.kevers[sub.pre].delpre == qvi.pre
+        assert valHby.db.aess.get(keys=(sub.pre, dipSaid)) is not None
 
     """End Test"""
 
