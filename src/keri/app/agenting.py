@@ -378,48 +378,6 @@ class Receiptor(doing.DoDoer):
 
             yield self.tock
 
-    def ksn(self, pre, src, wit, timeout=12.0):
-        """Query a specific witness for key state notice of an identifier.
-
-        Sends a ksn query to the witness and waits for the reply to be
-        processed through the normal rpy/ksn pipeline into knas/ksns.
-
-        Parameters:
-            pre (str): qb64 AID of the identifier whose key state is being queried
-            src (str): qb64 AID of the local hab (watcher) sending the query
-            wit (str): qb64 AID of the witness to query
-            timeout (float): seconds to wait for response before giving up
-
-        """
-        hab = self.hby.habByPre(src)
-        if hab is None:
-            return False
-
-        witer = messenger(hab, wit)
-        self.extend([witer])
-
-        msg = hab.query(pre=pre, src=wit, route="ksn")
-
-        kel = forwarding.introduce(hab, wit)
-        if kel:
-            witer.msgs.append(bytearray(kel))
-
-        witer.msgs.append(bytearray(msg))
-
-        while not witer.sent:
-            yield self.tock
-
-        keys = (pre, wit)
-        start = helping.nowUTC()
-        while True:
-            if self.hby.db.knas.get(keys) is not None:
-                break
-            now = helping.nowUTC()
-            if (now - start) > datetime.timedelta(seconds=timeout):
-                break
-            yield self.tock
-
-        self.remove([witer])
 
 
 class WitnessReceiptor(doing.DoDoer):
