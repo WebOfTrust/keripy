@@ -1253,6 +1253,41 @@ def test_multisig_interact_replays_stored_remote_after_late_local_approval(mockH
         assert [siger.index for siger in sigers] == [0, 1]
 
 
+def test_multisig_known_remote_submitter_does_not_count_as_local_approval(mockHelpingNowUTC):
+    with openMultiSig(prefix="remote-kever-not-approval") as ((hby1, ghab1), (_, ghab2), (_, ghab3)):
+        ixn1 = ghab1.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        exn1, _ = multisigInteractExn(ghab=ghab1, aids=ghab1.smids,
+                                      ixn=ixn1,
+                                      version=Vrsn_1_0, kind=Kinds.json)
+
+        ixn2 = ghab2.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        exn2, atc2 = multisigInteractExn(ghab=ghab2, aids=ghab2.smids,
+                                         ixn=ixn2,
+                                         version=Vrsn_1_0, kind=Kinds.json)
+
+        ixn3 = ghab3.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+        exn3, atc3 = multisigInteractExn(ghab=ghab3, aids=ghab3.smids,
+                                         ixn=ixn3,
+                                         version=Vrsn_1_0, kind=Kinds.json)
+
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(exn2.raw + atc2), exc=exc)
+        Parser(version=Vrsn_1_0).parseOne(ims=bytearray(exn3.raw + atc3), exc=exc)
+
+        serder = SerderKERI(raw=ixn1)
+        sigers = hby1.db.sigs.get(keys=(serder.preb, serder.saidb))
+        assert [siger.index for siger in sigers] == [0]
+
+        mux.add(exn1)
+
+        sigers = hby1.db.sigs.get(keys=(serder.preb, serder.saidb))
+        assert [siger.index for siger in sigers] == [0, 1, 2]
+
+
 def test_multisig_incept_v2_body_supports_v1_child_with_v2_attachments(mockHelpingNowUTC):
     with openHab(name="v2-wrap-v1-child", temp=True, salt=b'0123456789abcdef',
                  version=Vrsn_1_0, kind=Kinds.json) as (_, hab):

@@ -959,18 +959,18 @@ class Multiplexor:
                 mids = list(payload["smids"])
                 if "rmids" in payload:
                     mids.extend(payload["rmids"])
-                member = any([True for mid in mids if mid in self.hby.kevers])
+                member = any([True for mid in mids if mid in self.hby.habs])
                 if not member:
                     raise ValueError(f"invalid request to join group, not member in mids={mids}")
 
             case ["", "multisig", "rot"]:
                 gid = payload["gid"]
 
-                # Check if we know this group identifier locally 
+                # Check if we know this group identifier locally
                 if gid not in self.hby.habs:
                     mids = list(payload["smids"])
                     mids.extend(payload["rmids"])
-                    member = any([True for mid in mids if mid in self.hby.kevers])
+                    member = any([True for mid in mids if mid in self.hby.habs])
                     if not member:
                         raise ValueError(f"invalid request to join group, not member in mids={mids}")
 
@@ -992,9 +992,9 @@ class Multiplexor:
         submitters = self.hby.db.maids.get(keys=(esaid,))
         if sender not in self.hby.habs:  # We are not sending this one, need to parse if already approved
 
-            # Check if we know a matching proposal from a submitter we know
-            approved = any([True for sub in submitters if sub.qb64 in self.hby.kevers])
-            
+            # Only a locally controlled submitter counts as approval.
+            approved = any([True for sub in submitters if sub.qb64 in self.hby.habs])
+
             if approved:
                 self._replayApproved(exnSaid)
             else:
