@@ -1633,7 +1633,8 @@ class BaseHab:
             genusify (bool): True means prepend genus version code from gvrsn before
                             serder to override default stream genus version
                          False means do nothing
-            embeds (dict or None): embedded message serders if any.
+            embeds (dict or None): legacy V1 embedded message serders if any;
+                                   V2 exchange messages do not support embeds here.
             eid (str or None): qb64 of endpoint provider identifier if any.
             save (bool): True means process local copy into db after building.
 

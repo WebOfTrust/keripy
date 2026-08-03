@@ -271,7 +271,7 @@ class MultisigNotificationHandler:
         self.mux = mux
 
     def handle(self, serder, attachments=None, nests=None):
-        """  Do route specific processsing of multisig exn messages
+        """  Do route specific processing of multisig exn messages
 
         Parameters:
             serder (Serder): Serder of the exn multisig message
@@ -361,7 +361,7 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None, version=None, gvrs
     # Add the child SAID under the route-specific attribute name
     data["icp"] = child.said
 
-    # PArse the child event without processing it to recover body and attachments
+    # Parse the child event without processing it to recover body and attachments
     parsed = Parser(version=childGvrsn).parse(ims=bytearray(icp),
                                               framed=True,
                                               processive=False)
@@ -553,7 +553,7 @@ def multisigRegistryInceptExn(ghab, usage, vcp, anc, version=None, kind=None):
     Either rot or ixn are required but not both
 
     Parameters:
-        ghab (GroupHab): identifier Hab for ensorsing the message to send
+        ghab (GroupHab): identifier Hab for endorsing the message to send
         usage (str): human readable reason for creating the credential registry
         vcp (bytes): serialized Credentials registry inception event
         anc (bytes): CESR stream of serialized and signed event anchoring registry inception event
@@ -591,7 +591,7 @@ def multisigIssueExn(ghab, acdc, iss, anc, version=None, kind=None):
     Either rot or ixn are required but not both
 
     Parameters:
-        ghab (GroupHab): identifier Hab for ensorsing the message to send
+        ghab (GroupHab): identifier Hab for endorsing the message to send
         acdc (bytes): serialized Credential
         iss (bytes): CESR stream of serialized and TEL issuance event
         anc (bytes): CESR stream of serialized and signed anchoring event anchoring creation
@@ -630,7 +630,7 @@ def multisigRevokeExn(ghab, said, rev, anc, version=None, kind=None):
     Either rot or ixn are required but not both
 
     Parameters:
-        ghab (GroupHab): identifier Hab for ensorsing the message to send
+        ghab (GroupHab): identifier Hab for endorsing the message to send
         said (str): qb64 SAID of credential being revoked
         rev (bytes): CESR stream of serialized and TEL revocation event
         anc (bytes): CESR stream of serialized and signed anchoring event anchoring revocation
@@ -668,7 +668,7 @@ def multisigRpyExn(ghab, rpy, version=None, gvrsn=None, kind=None):
     Either rot or ixn are required but not both
 
     Parameters:
-        ghab (GroupHab): identifier Hab for ensorsing the message to send
+        ghab (GroupHab): identifier Hab for endorsing the message to send
         rpy (bytes): CESR stream of serialized and reply event
         version(Versionage | None): optional explicit wrapper/framing version
         gvrsn(Versionage | None): optional explicit wrapped child attachment genus version
@@ -741,8 +741,8 @@ def multisigExn(ghab, exn, version=None, kind=None):
     Either rot or ixn are required but not both
 
     Parameters:
-        ghab (GroupHab): identifier Hab for ensorsing the message to send
-        exn (bytes): CESR stream of serialized echange message, with signatures
+        ghab (GroupHab): identifier Hab for endorsing the message to send
+        exn (bytes): CESR stream of serialized exchange message, with signatures
 
     Returns:
         tuple: (Serder, bytes): Serder of exn message and CESR attachments
@@ -796,10 +796,10 @@ def getEscrowedEvent(db, pre, sn):
 class Multiplexor:
     """ Multiplexor (mux) is responsible for coordinating peer-to-peer messages between group multisig participants
 
-    When new messages arrive the Mux will associate the SAID of the embedded messages with the exn message said
-    as well as the sender.  This will allow the controller of the participant in the group multisig to have knowledge
-    of who has sent what messages and whether they match.  In addition, if the controller of the local participant
-    has already approved the messages embedded in this exn, the messages will be passed thru a non-local parser.
+    When new messages arrive the Mux associates the SAID of the wrapped child payload with the exn message SAID
+    and sender. This lets the controller of the participant know who has sent matching proposals. If the local
+    participant has already approved the wrapped payload, the wrapped child stream is replayed through the local
+    parser so signatures can merge.
 
     Attributes:
         hby (habbing.Habery): database environment for local Habs
@@ -808,11 +808,11 @@ class Multiplexor:
         exc (Exchanger): processor and router for peer-to-peer msgs
         kvy (Kevery): factory for local processing of local event msgs
         psr (Parser):  parses local messages for .kvy .rvy
-        notifier (notifying.Notifier): stores notices for numan consumption
+        notifier (notifying.Notifier): stores notices for human consumption
 
         Parameters:
             hby (habbing.Habery): database environment for local Habs
-            notifier (notifying.Notifier): stores notices for numan consumption
+            notifier (notifying.Notifier): stores notices for human consumption
 
 
     """
@@ -822,7 +822,7 @@ class Multiplexor:
 
         Parameters:
             hby (habbing.Habery): database environment for local Habs
-            notifier (notifying.Notifier): stores notices for numan consumption
+            notifier (notifying.Notifier): stores notices for human consumption
 
         """
         self.hby = hby
@@ -870,7 +870,7 @@ class Multiplexor:
             else:
                 version = cserder.gvrsn if cserder.gvrsn else cserder.pvrsn
 
-            # Process the child event locally 
+            # Replay the child event locally
             parser = Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
                             exc=self.exc, version=version)
             parser.parse(ims=ims, local=True)
@@ -941,17 +941,17 @@ class Multiplexor:
             if nserder.ilk not in allowed[route]:
                 raise ValidationError(f"invalid multisig nested substream ilk {nserder.ilk} for route {route}")
             
-            # Make sure the child event is a saidive event before validating it against a["d"]
+            # Make sure the child event is saidive before validating the signed child SAID
             saids = nserder.Fields[nserder.proto][nserder.pvrsn][nserder.ilk].saids
             if not saids:
                 raise ValidationError(f"invalid multisig nested substream ilk {nserder.ilk} is not saidive")
             
-            # Validate the nested child SAID check that it matches a["d"]
+            # Validate the nested child digest against the route-specific signed child SAID
             if not nserder.verify() or not nserder.compare(signed):
                 raise ValidationError(f"invalid multisig nested substream digest for route {route}")
 
             # Use the signed child SAID as the V2 proposal identity
-            esaid = signed if signed is not None else nserder.said
+            esaid = signed
 
         # Route specific logic to ensure this is a valid exn for a local participant.
         match route.split("/"):

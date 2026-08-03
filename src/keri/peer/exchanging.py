@@ -801,7 +801,7 @@ def verify(hby, serder):
 
 
 def serializeParsedSubstream(parsed, gvrsn=Vrsn_2_0):
-    """Serialize a parsed message subtree as a nested CESR v2 substream"""
+    """Serialize a parsed message subtree as a nested CESR substream."""
     parsed = parsed if isinstance(parsed, dict) else parsed.__dict__
 
     if any(parsed.get(name) for name in ("rsgs", "ptds", "essrs")):
@@ -859,7 +859,7 @@ def serializeParsedSubstream(parsed, gvrsn=Vrsn_2_0):
 
 
 def loadParsedNestedSubstreams(hby, said):
-    """Load and parse stored nested child substreams for an exchange message"""
+    """Load and parse stored nested child substreams for an exchange message."""
     parsed = []
     for nest in hby.db.enst.get(keys=(said,)):
         ims = bytearray(nest.encode("utf-8") if hasattr(nest, "encode") else nest)

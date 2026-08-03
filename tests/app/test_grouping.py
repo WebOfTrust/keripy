@@ -1275,6 +1275,8 @@ def test_multisig_known_remote_submitter_does_not_count_as_local_approval(mockHe
         exc = Exchanger(hby=hby1, handlers=[])
         loadHandlers(exc=exc, mux=mux)
 
+        # Remote submitters are known in hby1.kevers, but they are not local habs
+        # and must not count as local approval.
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(exn2.raw + atc2), exc=exc)
         Parser(version=Vrsn_1_0).parseOne(ims=bytearray(exn3.raw + atc3), exc=exc)
 
@@ -1282,6 +1284,8 @@ def test_multisig_known_remote_submitter_does_not_count_as_local_approval(mockHe
         sigers = hby1.db.sigs.get(keys=(serder.preb, serder.saidb))
         assert [siger.index for siger in sigers] == [0]
 
+        # Once the local member approves, the stored remote proposals can replay
+        # and merge their signatures.
         mux.add(exn1)
 
         sigers = hby1.db.sigs.get(keys=(serder.preb, serder.saidb))

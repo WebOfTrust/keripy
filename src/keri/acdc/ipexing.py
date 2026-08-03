@@ -240,7 +240,7 @@ class IpexHandler:
         verb = parts[2]
 
         if verb in (Ipex.apply, Ipex.agree, Ipex.admit, Ipex.spurn):
-            # If any of those ipex verb contains nested artifacts it should be rejected
+            # These IPEX verbs do not carry nested artifacts.
             if nests:
                 return False
         elif verb == Ipex.offer:
