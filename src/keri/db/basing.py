@@ -570,6 +570,11 @@ class Baser(LMDBer):
             subkey 'epath.'
             Multiple values per key.
 
+        .enst is named subDB instance of IoSetSuber for exchange message
+            nested child substreams.
+            subkey 'enst.'
+            Multiple values per key.
+
         .essrs is named subDB instance of CesrIoSetSuber (klas=Texter) for
             exchange message event source records.
             subkey 'essrs.'
@@ -1090,6 +1095,9 @@ class Baser(LMDBer):
         # TODO: clean
         self.epath = subing.IoSetSuber(db=self, subkey="epath.")
 
+        # exchange nested child substreams
+        self.enst = subing.IoSetSuber(db=self, subkey="enst.")
+
         self.essrs = subing.CesrIoSetSuber(db=self, subkey="essrs.", klas=coring.Texter)
 
         # accepted signed 12-word challenge response exn messages keys by prefix of signer
@@ -1568,7 +1576,7 @@ class Baser(LMDBer):
                 # This is the list of set based databases that are not created as part of event processing.
                 # for now we are just copying them from self to copy without worrying about being able to
                 # reprocess them.  We need a more secure method in the future
-                sets = ["esigs", "ecigs", "epath", "chas", "reps", "wkas", "meids", "maids"]
+                sets = ["esigs", "ecigs", "epath", "enst", "chas", "reps", "wkas", "meids", "maids"]
                 for name in sets:
                     srcdb = getattr(self, name)
                     cpydb = getattr(copy, name)

@@ -20,7 +20,7 @@ from keri.app.grouping import loadHandlers
 
 from keri.core import (Prefixer, Number, Diger, Kevery,
                        Parser, SerderKERI, Counter,
-                       Codens, Kramer, messagize)
+                       Codens, Kramer, exchange, messagize)
 
 from keri.vdr.eventing import incept
 from keri.peer import Exchanger
@@ -774,7 +774,7 @@ def test_multisig_incept(mockHelpingNowUTC):
         assert "icp" in exn.ked['e']
 
 
-def test_multisig_incept_default_framing_uses_default_version_with_legacy_special_exn(mockHelpingNowUTC, monkeypatch):
+def test_multisig_incept_legacy_special_exn_uses_explicit_v1_version(mockHelpingNowUTC, monkeypatch):
     with openHab(name="test", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (_, hab):
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
         icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=TEST_VERSION)
@@ -1111,11 +1111,11 @@ def test_multisig_incept_v1_body_supports_v2_attachments(mockHelpingNowUTC, monk
         icp1 = ghab1.msgOwnInception(allowPartiallySigned=True, framed=True, gvrsn=Vrsn_2_0)
         exn1, _ = multisigInceptExn(hab=ghab1.mhab, smids=ghab1.smids,
                                     rmids=ghab1.rmids, icp=icp1,
-                                    version=Vrsn_1_0, kind=Kinds.json)
+                                    version=Vrsn_1_0, gvrsn=Vrsn_2_0, kind=Kinds.json)
         icp2 = ghab2.msgOwnInception(allowPartiallySigned=True, framed=True, gvrsn=Vrsn_2_0)
         exn2, _ = multisigInceptExn(hab=ghab2.mhab, smids=ghab2.smids,
                                     rmids=ghab2.rmids, icp=icp2,
-                                    version=Vrsn_1_0, kind=Kinds.json)
+                                    version=Vrsn_1_0, gvrsn=Vrsn_2_0, kind=Kinds.json)
 
         notifier = Notifier(hby=hby1)
         mux = Multiplexor(hby=hby1, notifier=notifier)
@@ -1126,6 +1126,7 @@ def test_multisig_incept_v1_body_supports_v2_attachments(mockHelpingNowUTC, monk
         # even though the embedded child's attachment stream is V2-framed
         assert exn1.pvrsn == Vrsn_1_0
         assert "icp" in exn1.ked["e"]
+        assert exn1.ked["a"]["cgvrsn"] == [2, 0]
 
         mux.add(exn1)  # Record local approval before the matching peer proposal arrives
 
@@ -1156,11 +1157,11 @@ def test_multisig_interact_v1_body_supports_v2_attachments_through_approved_repl
         ixn1 = ghab1.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
         exn1, _ = multisigInteractExn(ghab=ghab1, aids=ghab1.smids,
                                       ixn=ixn1,
-                                      version=Vrsn_1_0, kind=Kinds.json)
+                                      version=Vrsn_1_0, gvrsn=Vrsn_2_0, kind=Kinds.json)
         ixn2 = ghab2.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
         exn2, _ = multisigInteractExn(ghab=ghab2, aids=ghab2.smids,
                                       ixn=ixn2,
-                                      version=Vrsn_1_0, kind=Kinds.json)
+                                      version=Vrsn_1_0, gvrsn=Vrsn_2_0, kind=Kinds.json)
 
         notifier = Notifier(hby=hby1)
         mux = Multiplexor(hby=hby1, notifier=notifier)
@@ -1171,6 +1172,7 @@ def test_multisig_interact_v1_body_supports_v2_attachments_through_approved_repl
         # interaction stream carries V2-framed attachments
         assert exn1.pvrsn == Vrsn_1_0
         assert "ixn" in exn1.ked["e"]
+        assert exn1.ked["a"]["cgvrsn"] == [2, 0]
 
         mux.add(exn1)  # Record local approval before the matching peer proposal arrives
 
@@ -1192,6 +1194,65 @@ def test_multisig_interact_v1_body_supports_v2_attachments_through_approved_repl
         assert [siger.index for siger in sigers] == [0, 1]
 
 
+def test_multisig_interact_replays_stored_remote_after_late_local_approval(mockHelpingNowUTC):
+
+    # Create a normal three-party multisig fixture, but only use the first two participants here
+    with openMultiSig(prefix="late-local-approval-ixn") as ((hby1, ghab1), (hby2, ghab2), (_, _)):
+
+        # Build the local participant's partially signed child interaction event
+        ixn1 = ghab1.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+
+        # Wrap that local child in the legacy V1 /multisig/ixn exchange shape
+        exn1, _ = multisigInteractExn(ghab=ghab1, aids=ghab1.smids,
+                                      ixn=ixn1,
+                                      version=Vrsn_1_0, kind=Kinds.json)
+
+        # Build the matching remote participant of the same child interaction
+        ixn2 = ghab2.interact(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
+
+        # Wrap the remote in its own /multisig/ixn exchange
+        exn2, atc2 = multisigInteractExn(ghab=ghab2, aids=ghab2.smids,
+                                         ixn=ixn2,
+                                         version=Vrsn_1_0, kind=Kinds.json)
+
+        # Set up notifier, mux, exc and load IPEX Handlers
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        # Deliver the remote EXN first. This simulates the race where the remote's proposal
+        # arrives before the local side registers its own approval in the mux
+        ims = bytearray(exn2.raw)
+
+        # Append the remote EXN attachments so the parser receives the same bytes as the wire path
+        ims.extend(atc2)
+
+        # Process one complete V1-framed EXN through Exchanger -> Multisig handler -> mux.add
+        Parser(version=Vrsn_1_0).parseOne(ims=ims, exc=exc)
+
+        # At this point only the local participant's own signature should be on the child ixn,
+        # because the remote proposal has been stored/notified but not replayed yet
+        serder = SerderKERI(raw=ixn1)
+
+        # Look up signatures by the shared child event key, not by either wrapper EXN
+        sigers = hby1.db.sigs.get(keys=(serder.preb, serder.saidb))
+
+        # Only signer index 0 is present before local approval closes the loop
+        assert [siger.index for siger in sigers] == [0]
+
+        # Register the local approval after the remote copy is already stored
+        # This is the regression case: the mux now needs to replay the stored remote copy
+        mux.add(exn1)
+
+        # The late local approval should trigger replay of the stored remote child stream,
+        # merging the second participant's signature onto the shared interaction event
+        sigers = hby1.db.sigs.get(keys=(serder.preb, serder.saidb))
+
+        # Both signer indices prove the local event and stored remote event were merged
+        assert [siger.index for siger in sigers] == [0, 1]
+
+
 def test_multisig_incept_v2_body_supports_v1_child_with_v2_attachments(mockHelpingNowUTC):
     with openHab(name="v2-wrap-v1-child", temp=True, salt=b'0123456789abcdef',
                  version=Vrsn_1_0, kind=Kinds.json) as (_, hab):
@@ -1202,7 +1263,7 @@ def test_multisig_incept_v2_body_supports_v1_child_with_v2_attachments(mockHelpi
 
         # Wrap that child in the newer single-child V2 multisig envelope
         exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp,
-                                     version=Vrsn_2_0, kind=Kinds.json)
+                                     version=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json)
 
         # The outer wrapper should still bind the nested child by SAID and carry
         # it as one nested substream even though the child body remains V1
@@ -1226,7 +1287,7 @@ def test_multisig_rotate_v2_body_supports_v1_child_with_v2_attachments(mockHelpi
 
         # Wrap that child in the newer single-child V2 multisig envelope
         exn, atc = multisigRotateExn(ghab=ghab1, smids=ghab1.smids, rmids=ghab1.rmids,
-                                     rot=rot, version=Vrsn_2_0, kind=Kinds.json)
+                                     rot=rot, version=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json)
 
         # The outer wrapper should still bind the nested child by SAID and carry
         # it as one nested substream even though the child body remains V1
@@ -1250,7 +1311,7 @@ def test_multisig_interact_v2_body_supports_v1_child_with_v2_attachments(mockHel
 
         # Wrap that child in the newer single-child V2 multisig envelope
         exn, atc = multisigInteractExn(ghab=ghab1, aids=ghab1.smids,
-                                       ixn=ixn, version=Vrsn_2_0, kind=Kinds.json)
+                                       ixn=ixn, version=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json)
 
         # The outer wrapper should still bind the nested child by SAID and carry
         # it as one nested substream even though the child body remains V1
@@ -1266,6 +1327,61 @@ def test_multisig_interact_v2_body_supports_v1_child_with_v2_attachments(mockHel
         assert parsed[0].nests[0].serder.said == inner.said
 
 
+@pytest.mark.parametrize("version", (Vrsn_1_0, Vrsn_2_0))
+def test_multisig_local_approval_is_logged_before_mux_add(version, mockHelpingNowUTC):
+
+    with openMultiSig(prefix=f"local-approval-{version.major}",
+                      version=Vrsn_1_0, kind=Kinds.json) as ((hby1, ghab1), (_, _), (_, _)):
+
+        # Build the child group interaction
+        ixn = ghab1.interact(framed=True, version=version, kind=Kinds.json, gvrsn=version)
+
+        # Wrap the child interaction in the matching multisig EXN shape
+        exn, atc = multisigInteractExn(ghab=ghab1, aids=ghab1.smids, ixn=ixn,
+                                       version=version, kind=Kinds.json)
+
+        # Parse without processing so the test can manually seed exactly what the CLI seeds
+        local = Parser(version=exn.pvrsn).parse(ims=bytearray(exn.raw + atc),
+                                                framed=True,
+                                                processive=False)[0]
+
+        # Build a mux with its embedded exchanger, matching the local CLI approval path
+        mux = Multiplexor(hby=hby1, notifier=Notifier(hby=hby1))
+
+        # The CLI pre-seeds local approvals, so it must persist the EXN before mux.add indexes it
+        mux.exc.logEvent(serder=local.serder, pathed=local.ptds,
+                         tsgs=local.tsgs, cigars=local.cigars,
+                         essrs=local.essrs, nests=local.nests)
+
+        # Now register the approval by the wrapped child SAID
+        mux.add(local.serder, nests=local.nests)
+
+        # V1 stores the child SAID in `e.d`; V2 stores the child SAID in `a.d`
+        esaid = exn.ked["e"]["d"] if version.major == Vrsn_1_0.major else exn.ked["a"]["d"]
+
+        # Read back the approvals indexed under the child event SAID
+        approvals = mux.get(esaid)
+
+        # The mux should report exactly the EXN that was locally approved
+        assert [approval["exn"]["d"] for approval in approvals] == [exn.said]
+
+        # The local approval must also be persisted so later replay can clone it from the DB
+        assert hby1.db.exns.get(keys=(exn.said,)) is not None
+
+        if version.major == Vrsn_1_0.major:
+            # Legacy V1 wrappers persist embedded child material as pathed attachments
+            assert len(hby1.db.epath.get(keys=(exn.said,))) == 1
+
+            # V1 local approvals should not create V2 nested-substream sidecars
+            assert not hby1.db.enst.get(keys=(exn.said,))
+        else:
+            # Native V2 wrappers should not use the legacy pathed attachment store
+            assert not hby1.db.epath.get(keys=(exn.said,))
+
+            # Native V2 wrappers must persist their one nested child substream
+            assert len(hby1.db.enst.get(keys=(exn.said,))) == 1
+
+
 def test_multisig_rpy_v2_body_supports_v1_child_with_v2_attachments(mockHelpingNowUTC):
     with openMultiSig(prefix="rpy-v2-wrap") as ((_, ghab1), (_, _), (_, _)):
         # Keep the reply event body on V1 while emitting its attachments with V2 framing
@@ -1279,7 +1395,7 @@ def test_multisig_rpy_v2_body_supports_v1_child_with_v2_attachments(mockHelpingN
 
         # Wrap that child in the newer single-child V2 multisig envelope
         exn, atc = multisigRpyExn(ghab=ghab1, rpy=rpy,
-                                  version=Vrsn_2_0, kind=Kinds.json)
+                                  version=Vrsn_2_0, gvrsn=Vrsn_2_0, kind=Kinds.json)
 
         # The outer wrapper should still bind the nested child by SAID and carry
         # it as one nested substream even though the child body remains V1
@@ -1337,6 +1453,75 @@ def test_multisig_incept_handler_v2_rejects_missing_signed_child_said(mockHelpin
 
         with pytest.raises(ValidationError):
             mux.add(bad_exn, nests=parsed.nests)
+
+
+def test_multisig_incept_handler_v2_rejects_non_saidive_nested_substream(mockHelpingNowUTC):
+    with openHab(name="bad-nonsaidive-nest", temp=True, salt=b'0123456789abcdef',
+                 version=Vrsn_2_0, kind=Kinds.json) as (hby, hab):
+
+        # Set up mux and notifier
+        notifier = Notifier(hby=hby)
+        mux = Multiplexor(hby=hby, notifier=notifier)
+
+        # The multisig inception proposal names a real local member and one placeholder peer
+        aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
+
+        # Build a valid inception child so the outer EXN has a valid signed child SAID
+        icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=Vrsn_2_0)
+
+        # Keep the child serder so we can create a receipt against it
+        inner = SerderKERI(raw=icp)
+
+        # Build the valid V2 multisig inception wrapper first
+        exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp,
+                                     version=Vrsn_2_0, kind=Kinds.json)
+
+        # Parse without processing to recover the wrapper serder and original parsed nest
+        parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                                framed=True,
+                                                processive=False)[0]
+
+        # Create a receipt message; receipts are not SAIDive child events for multisig proposals
+        receipt = hab.receipt(inner, framed=True, gvrsn=Vrsn_2_0)
+
+        # Parse the receipt into the same nested-substream shape a handler would receive
+        bad = Parser(version=Vrsn_2_0).parse(ims=bytearray(receipt),
+                                             framed=True,
+                                             processive=False)[0]
+
+        # Replacing the nested event with a non-SAIDive receipt must be rejected
+        with pytest.raises(ValidationError):
+            mux.add(parsed.serder, nests=[bad])
+
+
+def test_multisig_handler_v2_rejects_unsupported_nested_route(mockHelpingNowUTC):
+    with openHab(name="unsupported-v2-route", temp=True, salt=b'0123456789abcdef',
+                 version=Vrsn_2_0, kind=Kinds.json) as (hby, hab):
+
+        # Build a normal child KEL event that could be nested if the route supported it
+        child = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=Vrsn_2_0)
+
+        # Parse the child into the same nested form Parser would hand to the mux
+        parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(child),
+                                                framed=True,
+                                                processive=False)[0]
+
+        # Build a synthetic V2 /multisig/vcp EXN; that route is not one of the supported
+        # native nested routes currently handled by the mux
+        exn = exchange(sender=hab.pre,
+                       route="/multisig/vcp",
+                       attributes={"gid": hab.pre},
+                       version=Vrsn_2_0,
+                       gvrsn=Vrsn_2_0,
+                       kind=Kinds.json)
+
+        # Use the mux directly so this test is about route validation, not signature handling
+        notifier = Notifier(hby=hby)
+        mux = Multiplexor(hby=hby, notifier=notifier)
+
+        # The handler should fail closed instead of guessing how to replay an unsupported route
+        with pytest.raises(ValidationError):
+            mux.add(exn, nests=[parsed])
 
 
 def test_multisig_incept_handler_mixed_v1_v2_use_distinct_keys(mockHelpingNowUTC):
@@ -1465,6 +1650,126 @@ def test_multisig_incept_handler_v2_with_kram(mockHelpingNowUTC):
         serder = SerderKERI(raw=icp1)
         sigers = hby1.db.sigs.get(keys=(serder.preb, serder.saidb))
         assert [siger.index for siger in sigers] == [0, 1]
+
+
+def test_multisig_incept_handler_v2_escrow_replay_restores_nested_substream(mockHelpingNowUTC):
+    with openHab(name="escrow-replay-local", temp=True, salt=b'0123456789abcdef',
+                 version=Vrsn_2_0, kind=Kinds.json) as (hby1, hab1), \
+            openHab(name="escrow-replay-remote", temp=True, salt=b'abcdef0123456789',
+                    version=Vrsn_2_0, kind=Kinds.json) as (_, hab2):
+        
+        # Set up 
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        # The group proposal will reference these two member AIDs
+        aids = [hab1.pre, hab2.pre]
+        
+        # Build the remote member's child inception stream that will be nested in the EXN
+        icp = hab2.msgOwnEvent(sn=hab2.kever.sn, framed=True, gvrsn=Vrsn_2_0)
+        child = SerderKERI(raw=icp)
+
+        # Wrap that child in a V2 /multisig/icp exchange carrying one nested substream
+        exn, atc = multisigInceptExn(hab=hab2, smids=aids, rmids=aids, icp=icp,
+                                     version=Vrsn_2_0, kind=Kinds.json)
+
+        # Deliver the EXN before the local side knows the remote member AID.
+        # That forces the exchange into partial-signature escrow.
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                       exc=exc,
+                                       local=False)
+
+        # While escrowed, the outer EXN should be stored in epse and its nested child
+        # should be preserved in enst instead of being lost
+        assert len(list(hby1.db.epse.getTopItemIter())) == 1
+        assert len(hby1.db.enst.get(keys=(exn.said,))) == 1
+
+        # The mux has not seen a successful replay yet, so no proposal key or notification exists
+        assert len(hby1.db.meids.get(keys=(child.said,))) == 0
+        assert len(notifier.signaler.signals) == 0
+
+        # Teach the local side the remote member's current key state so escrow replay can succeed
+        # This removes the reason the exchanger originally escrowed the remote EXN
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(hab2.msgOwnEvent(sn=0, framed=True,
+                                                                      gvrsn=Vrsn_2_0)),
+                                       kvy=hby1.kvy,
+                                       local=True)
+
+        # Retry the exchanger escrow. This should reload the nested child from enst
+        # and feed it back through the normal multisig V2 handler path
+        exc.processEscrow()
+
+        # After replay, the proposal should now be indexed by the child SAID and attributed
+        # to the remote sender as if it had succeeded on the first pass
+        digers = hby1.db.meids.get(keys=(child.said,))
+
+        # The child SAID points back to the remote EXN SAID that carried it
+        assert len(digers) == 1
+        assert digers[0].qb64 == exn.said
+        prefixers = hby1.db.maids.get(keys=(child.said,))
+
+        # The mux also records which participant submitted that proposal
+        assert len(prefixers) == 1
+        assert prefixers[0].qb64 == hab2.pre
+
+        # The replayed proposal should now notify once, and the nested child should remain durable
+        assert len(notifier.signaler.signals) == 1
+
+        # Successful replay should not delete the stored nested child; later clone/get paths still need it
+        assert len(hby1.db.enst.get(keys=(exn.said,))) == 1
+
+
+def test_multiplexor_get_includes_stored_v2_nested_substreams(mockHelpingNowUTC):
+    with openMultiSig(prefix="stored-v2-get") as ((hby1, ghab1), (_, ghab2), (_, _)):
+
+        # Build a V2 child interaction event
+        ixn = ghab1.mhab.interact(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+
+        # Keep the child serder so the final parse can verify identity by SAID
+        inner = SerderKERI(raw=ixn)
+
+        # Wrap the child in a V2 /multisig/ixn EXN from a peer participant
+        exn, atc = multisigInteractExn(ghab=ghab2, aids=ghab1.smids,
+                                       ixn=ixn,
+                                       kind=Kinds.json)
+
+        # Process it through the exchanger so the persisted representation is populated
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                       exc=exc)
+
+        # Read the proposal back through the app-facing mux getter
+        proposals = mux.get(inner.said)
+
+        # Only the peer proposal should be returned for this child event
+        assert len(proposals) == 1
+
+        # V2 proposals no longer use legacy e/path embeds, so paths should be empty
+        assert proposals[0]["paths"] == {}
+
+        # The stored nested child should now be exposed directly to the app layer
+        assert proposals[0]["nests"] is not None
+
+        # This interaction wrapper carries exactly one child interaction stream
+        assert len(proposals[0]["nests"]) == 1
+
+        # Parse the returned stored nested bytes and verify they still resolve to the same child event
+        parsed = Parser(version=Vrsn_2_0).parse(
+            ims=bytearray(proposals[0]["nests"][0].encode("utf-8")),
+            framed=True,
+            processive=False,
+        )
+        # The stored sidecar should be one parseable nested message, not a bundle or an empty frame
+        assert len(parsed) == 1
+
+        # The recovered child SAID should match the original nested interaction
+        assert parsed[0].serder.said == inner.said
 
 
 def test_multisig_rotate_handler(mockHelpingNowUTC):

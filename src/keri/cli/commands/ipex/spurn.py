@@ -10,6 +10,7 @@ from hio.base import doing
 
 from ...common import Parsery, setupHby
 
+from ....kering import Vrsn_1_0
 from ....app import (Notifier, StreamPoster, Organizer,
                      GroupHab, Multiplexor, MailboxDirector,
                      multisigExn)
@@ -111,7 +112,7 @@ class SpurnDoer(doing.DoDoer):
             raise ValueError(f"Invalid spurn evt={exn.ked}, not saved")
 
         if isinstance(self.hab, GroupHab):
-            wexn, watc = multisigExn(self.hab, exn=msg)
+            wexn, watc = multisigExn(self.hab, exn=msg, version=Vrsn_1_0)
 
             smids = self.hab.db.signingMembers(pre=self.hab.pre)
             smids.remove(self.hab.mhab.pre)

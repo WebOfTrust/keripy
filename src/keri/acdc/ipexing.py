@@ -211,21 +211,25 @@ class IpexHandler:
         self.hby = hby
         self.notifier = notifier
 
-    def verify(self, serder, attachments=None):
+    def verify(self, serder, attachments=None, nests=None):
         """Validate the verb, prior link, and single-response rule.
 
         Parameters:
             serder (Serder): Incoming IPEX exchange message.
             attachments (list | None): Parsed attachment payloads, unused in the
                 current linear workflow validation.
+            nests (list | None): Parsed V2 nested artifacts that must match the
+                artifact SAIDs carried in ``a`` for offer/grant.
 
         Returns:
             bool: True when the message is valid for the linear IPEX workflow,
                 False otherwise.
         """
-        
+        nests = nests if nests is not None else []
+
         # Get route
         route = serder.ked["r"]
+        attrs = serder.ked["a"]
         
         # Get digest of prior
         dig = serder.ked["p"]
@@ -234,6 +238,39 @@ class IpexHandler:
         if len(parts) != 3 or parts[:2] != ["", "ipex"]:
             return False
         verb = parts[2]
+
+        if verb in (Ipex.apply, Ipex.agree, Ipex.admit, Ipex.spurn):
+            # If any of those ipex verb contains nested artifacts it should be rejected
+            if nests:
+                return False
+        elif verb == Ipex.offer:
+            # An offer must carry exactly 1 acdc attr
+            if "acdc" not in attrs or len(nests) != 1:
+                return False
+
+            nserder = nests[0]["serder"] if isinstance(nests[0], dict) else nests[0].serder
+
+            # Check that the artifact's SAID matches the acdc SAID in the outer body
+            if not nserder.verify() or not nserder.compare(attrs["acdc"]):
+                return False
+
+        elif verb == Ipex.grant:
+            # Always expects an acdc
+            fields = ["acdc"]
+            if "iss" in attrs:
+                fields.append("iss")
+            if "anc" in attrs:
+                fields.append("anc")
+
+            # Check that the nested artifacts match the number of referenced artifacts
+            if len(nests) != len(fields):
+                return False
+
+            # Validate each field's SAID against their outer body SAID
+            for field, nest in zip(fields, nests):
+                nserder = nest["serder"] if isinstance(nest, dict) else nest.serder
+                if not nserder.verify() or not nserder.compare(attrs[field]):
+                    return False
 
         # Apply starts the flow so there must be no prior
         if verb == Ipex.apply:
@@ -284,13 +321,15 @@ class IpexHandler:
 
         return None
 
-    def handle(self, serder, attachments=None):
+    def handle(self, serder, attachments=None, nests=None):
         """Emit a notifier record for an accepted IPEX message.
 
         Parameters:
             serder (Serder): Accepted IPEX exchange message.
             attachments (list | None): Parsed attachment payloads, unused by the
                 current notifier path.
+            nests (list | None): Parsed V2 nested artifacts, unused by the
+                notifier path.
 
         Returns:
             None

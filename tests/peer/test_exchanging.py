@@ -10,12 +10,16 @@ import pytest
 
 from keri import Kinds, Vrsn_1_0, Vrsn_2_0
 from keri.core import (Salter, Counter, Texter,
-                       Diger, SerderKERI, Parser,
+                       Diger, Prefixer, Number,
+                       SerderKERI, Parser, messagize,
                        MtrDex, Codens, exchange)
 
-from keri.app import openHab, openHby
+from keri.app import (Notifier, Counselor, Multiplexor,
+                      openHab, openHby,
+                      multisigInceptExn, multisigRotateExn)
+from keri.app.grouping import loadHandlers
 
-from keri.peer import Exchanger, nesting, specialExchange
+from keri.peer import Exchanger, nesting, specialExchange, serializeMessage
 from keri.vdr import incept
 
 TEST_VERSION = Vrsn_1_0
@@ -237,6 +241,253 @@ def test_hab_exchange(mockHelpingNowUTC):
                     b'BJZ_LF61JTCCSCIw2Q4ozE2MsbRC4m-N6-tFVlCeiZPG0BDjOC4j0Co6P0giMylR'
                     b'47149eJ8Yf_hO-32_TpY77KMVCWCf0U8GuZPIN76R2zsyT_eARvS_zQsX1ebjl3P'
                     b'MP0D')
+
+
+def test_serialize_message_round_trips_stored_nested_substreams(mockHelpingNowUTC):
+    with openHab(name="nested-save-src", base="test", salt=b'0123456789abcdef', version=Vrsn_2_0, kind=Kinds.json) as (_, hab), \
+            openHab(name="nested-save-rec", base="test", salt=b'abcdef0123456789', version=Vrsn_2_0, kind=Kinds.json) as (recHby, _):
+        
+        # Build a V2 multisig wrapper around one child inception event
+        aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
+
+        # Seed the receiver with the sender's member AID so the exchange can be accepted
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(hab.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)),
+                                       kvy=recHby.kvy,
+                                       local=True)
+
+        # The child event carried by the exchange is a framed V2 inception stream
+        icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=Vrsn_2_0)
+        inner = SerderKERI(raw=icp)
+
+        # Wrap that child in a V2 /multisig/icp EXN with one nested substream
+        exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp,
+                                     version=Vrsn_2_0, kind=Kinds.json)
+
+        # Process the exchange through the exchanger so nested children are persisted
+        exc = Exchanger(hby=recHby, handlers=[])
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
+                                       kvy=recHby.kvy,
+                                       exc=exc)
+
+        # The exchanger should have stored exactly one nested child for this EXN
+        stored = recHby.db.enst.get(keys=(exn.said,))
+        assert len(stored) == 1
+
+        # Re-serialize the saved EXN from durable storage rather than the original wire bytes
+        # This is the regression target: saved V2 proposals used to lose their nested child here
+        msg = serializeMessage(recHby, exn.said, framed=True)
+
+        # Parse the rebuilt message as a normal V2 stream and confirm the child substream survived
+        parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(msg),
+                                                framed=True,
+                                                processive=False)
+
+        # Rebuilt storage should produce exactly one outer EXN
+        assert len(parsed) == 1
+
+        # That rebuilt EXN should still contain exactly one nested child stream
+        assert len(parsed[0].nests) == 1
+        
+        # The child inside the rebuilt message should be the same child that was originally sent
+        assert parsed[0].nests[0].serder.said == inner.said
+
+
+def test_v2_multisig_incept_escrow_replay_then_rotation_anchors_in_kel(mockHelpingNowUTC):
+
+    # `hby1/hab1` is the local side under test; `hby2/hab2` acts as the remote signer.
+    with openHab(name="lifecycle-local", base="test", salt=b'0123456789abcdef', version=Vrsn_2_0, kind=Kinds.json) as (hby1, hab1), \
+            openHab(name="lifecycle-remote", base="test", salt=b'abcdef0123456789', version=Vrsn_2_0, kind=Kinds.json) as (hby2, hab2):
+        
+        # First exchange the member AID inception events so each side knows the other signer
+        for src, dest in ((hab2, hby1), (hab1, hby2)):
+            # Each participant ingests the other's inception into its local KEL
+            Parser(version=Vrsn_2_0).parse(
+                ims=bytearray(src.msgOwnEvent(sn=0, framed=True, gvrsn=Vrsn_2_0)),
+                kvy=dest.kvy,
+                local=True,
+            )
+
+        # Build the same 2-of-2 group hab independently on both participants
+        smids = [hab1.pre, hab2.pre]
+        inits = dict(toad=0, wits=[], isith="2", nsith="2", version=Vrsn_2_0, kind=Kinds.json)
+
+        # Each participant computes the same group habitat locally from the same member set
+        ghab1 = hby1.makeGroupHab(group="lifecycle-group", mhab=hab1,
+                                  smids=smids, rmids=None, **inits)
+        ghab2 = hby2.makeGroupHab(group="lifecycle-group", mhab=hab2,
+                                  smids=smids, rmids=None, **inits)
+
+        # Set up notifier, counselor, mux, exchanger and load multisig handlers
+        notifier = Notifier(hby=hby1)
+        counselor = Counselor(hby=hby1, version=Vrsn_2_0, kind=Kinds.json)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        # Create the local participant's partially signed group inception event
+        icp = ghab1.msgOwnInception(allowPartiallySigned=True, framed=True, gvrsn=Vrsn_2_0)
+        icpSerder = SerderKERI(raw=icp)
+
+        # Wrap that local child in a V2 /multisig/icp EXN
+        localExn, localAtc = multisigInceptExn(hab=ghab1.mhab, smids=ghab1.smids,
+                                               rmids=ghab1.rmids, icp=icp,
+                                               version=Vrsn_2_0, kind=Kinds.json)
+
+        # Parse the local EXN without processing it so we can seed the mux with the local approval
+        local = Parser(version=Vrsn_2_0).parse(ims=bytearray(localExn.raw + localAtc),
+                                               framed=True,
+                                               processive=False)[0]
+        mux.add(local.serder, nests=local.nests)
+
+        # Track the inner group inception in the counselor's multisig lifecycle
+        prefixer = Prefixer(qb64=ghab1.pre)
+        inceptNumber = Number(sn=0)
+        inceptDiger = Diger(qb64=icpSerder.said)
+        counselor.start(ghab=ghab1, prefixer=prefixer, number=inceptNumber, diger=inceptDiger)
+
+        # Rotate the remote member AID before it sends its matching EXN
+        # forcing the outer /multisig/icp exchange into exchanger escrow
+        memberRot = hab2.rotate(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+
+        # The remote participant independently builds the same partially signed group inception
+        remoteIcp = ghab2.msgOwnInception(allowPartiallySigned=True, framed=True, gvrsn=Vrsn_2_0)
+        remoteIcpSerder = SerderKERI(raw=remoteIcp)
+
+        # Both participants should be proposing the same child inception SAID
+        assert remoteIcpSerder.said == icpSerder.said
+
+        # Wrap the remote copy in a V2 nested /multisig/icp EXN and send it to the local side
+        remoteExn, remoteAtc = multisigInceptExn(hab=ghab2.mhab, smids=ghab2.smids,
+                                                 rmids=ghab2.rmids, icp=remoteIcp,
+                                                 version=Vrsn_2_0, kind=Kinds.json)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(remoteExn.raw + remoteAtc),
+                                       exc=exc,
+                                       local=False)
+
+        # The EXN should now be escrowed, with its nested child preserved in the new db
+        assert len(list(hby1.db.epse.getTopItemIter())) == 1
+
+        # The escrowed EXN did not lose its nested child
+        assert len(hby1.db.enst.get(keys=(remoteExn.said,))) == 1
+
+        # The inner group inception cannot be in the group KEL yet because replay has not happened
+        assert hby1.db.kels.getLast(keys=ghab1.pre, on=0) is None
+
+        # Teach the local side about the remote member's latest key state, then retry the EXN escrow
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(memberRot), kvy=hby1.kvy, local=True)
+
+        # The exchanger reloads the parked EXN plus the stored nested child from `enst`.
+        exc.processEscrow()
+
+        # Process any resulting group-event escrows so the inner inception can complete locally
+        mux.kvy.processEscrows()
+
+        # The replayed nested child should now merge the second signature onto the group inception
+        sigers = hby1.db.sigs.get(keys=(icpSerder.preb, icpSerder.saidb))
+        assert [siger.index for siger in sigers] == [0, 1]
+
+        # With both signatures present, the inner group inception should be accepted into the group KEL
+        assert hby1.db.kels.getLast(keys=ghab1.pre, on=0) == icpSerder.said
+
+        # Let the counselor observe that the inception finished and mark the multisig operation complete
+        counselor.processEscrows()
+        assert counselor.complete(prefixer=prefixer, number=inceptNumber, diger=inceptDiger)
+
+        # Verify the saved remote EXN can still be re-serialized with its nested child intact after replay
+        saved = serializeMessage(hby1, remoteExn.said, framed=True)
+
+        # Parse the serialized-from-DB bytes, not the original remote wire bytes
+        parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(saved),
+                                                framed=True,
+                                                processive=False)
+
+        # Storage serialization should rebuild one outer EXN
+        assert len(parsed) == 1
+
+        # The stored outer EXN should still include its nested child
+        assert len(parsed[0].nests) == 1
+
+        # The nested child should still be the group inception event that just completed
+        assert parsed[0].nests[0].serder.said == icpSerder.said
+
+        # Rotate the local member AID and share that updated member state with the remote side first
+        # This keeps the later /multisig/rot exchange focused on the group-rotation path, not exchange escrow
+        memberRotLocal = hab1.rotate(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(memberRotLocal), kvy=hby2.kvy, local=True)
+
+        # Create the next partially signed group rotation locally using the current member keys
+        # Use each member's current public key as the rotation signing key set
+        merfers = [hab1.kever.verfers[0], hab2.kever.verfers[0]]
+
+        # Use each member's next digest as the rotation next-key set
+        migers = [hab1.kever.ndigers[0], hab2.kever.ndigers[0]]
+        rot = ghab1.rotate(isith="2", nsith="2", toad=0, cuts=[], adds=[],
+                           verfers=merfers, digers=migers,
+                           framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+
+        # Keep the rotation serder so later assertions can use its prefix and SAID
+        rotSerder = SerderKERI(raw=rot)
+
+        # Seed the mux with the local /multisig/rot approval
+        localRotExn, localRotAtc = multisigRotateExn(ghab=ghab1, smids=ghab1.smids,
+                                                     rmids=ghab1.rmids, rot=rot,
+                                                     version=Vrsn_2_0, kind=Kinds.json)
+
+        # Parse locally without processing so we can pass the V2 nested child into mux.add
+        localRot = Parser(version=Vrsn_2_0).parse(ims=bytearray(localRotExn.raw + localRotAtc),
+                                                  framed=True,
+                                                  processive=False)[0]
+        mux.add(localRot.serder, nests=localRot.nests)
+
+        # Start counselor tracking for the inner group rotation event
+        rotNumber = Number(sn=1)
+        rotDiger = Diger(qb64=rotSerder.said)
+        counselor.start(ghab=ghab1, prefixer=prefixer, number=rotNumber, diger=rotDiger)
+
+        # Have the remote participant add its own signature to the same agreed child rotation.
+        # This mirrors the existing partial-group-rotation tests: the remote side contributes
+        # the second signature on the child event, then wraps that signed child in its own EXN.
+        sigers = hab2.mgr.sign(rotSerder.raw,
+                               verfers=hab2.kever.verfers,
+                               indexed=True,
+                               indices=[1],
+                               ondices=[1])
+
+        # Package the remote signature with the same child rotation event.
+        remoteRot = messagize(serder=rotSerder, sigers=sigers,
+                               framed=True, gvrsn=Vrsn_2_0)
+
+        # Wrap that signed child in a V2 /multisig/rot EXN and send it through the exchanger path
+        remoteRotExn, remoteRotAtc = multisigRotateExn(ghab=ghab2, smids=ghab1.smids,
+                                                       rmids=ghab1.rmids, rot=remoteRot,
+                                                       version=Vrsn_2_0, kind=Kinds.json)
+
+        # Incoming remote approval should replay the nested rotation and merge its signature
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(remoteRotExn.raw + remoteRotAtc),
+                                       exc=exc,
+                                       local=False)
+
+        # Process the resulting inner group-event escrows so the second signature is applied
+        mux.kvy.processEscrows()
+
+        # The shared child rotation should now carry both signatures locally
+        rotSigers = hby1.db.sigs.get(keys=(rotSerder.preb, rotSerder.saidb))
+        assert [siger.index for siger in rotSigers] == [0, 1]
+
+        # With the second signature replayed, the group rotation itself should anchor at sn=1 in the KEL
+        assert hby1.db.kels.getLast(keys=ghab1.pre, on=1) == rotSerder.said
+
+        # The counselor should also be able to observe completion of the rotation lifecycle
+        counselor.processEscrows()
+        assert counselor.complete(prefixer=prefixer, number=rotNumber, diger=rotDiger)
+
+        # The inner rotation should now be anchored in the group KEL at sequence number 1
+        assert hby1.db.kels.getLast(keys=ghab1.pre, on=1) == rotSerder.said
+        assert ghab1.kever.sn == 1
+
+        # Finally, confirm the counselor sees the rotation lifecycle as complete too
+        counselor.processEscrows()
+        assert counselor.complete(prefixer=prefixer, number=rotNumber, diger=rotDiger)
 
 
 def test_hab_exchange_v2_embeds_not_supported(mockHelpingNowUTC):

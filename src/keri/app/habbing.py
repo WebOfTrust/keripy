@@ -17,56 +17,18 @@ from .keeping import Keeper, Manager
 from ..peer import Exchanger,  specialExchange
 from ..db import Baser, dgKey, fetchTsgs
 from ..help import fromIso8601, toIso8601
-from ..kering import (Version, Vrsn_1_0, Vrsn_2_0, Ilks, Kinds, Roles, Schemes,
+from ..kering import (Version, Vrsn_1_0, Ilks, Kinds, Roles, Schemes,
                       ClosedError, AuthError, ConfigurationError, KeriError,
                       ValidationError, MissingEntryError, MissingSignatureError)
 from ..core import (Tholder, Diger, Prefixer, Number, Kevery, Parser, Revery,
                     Router, Counter, Salter, SealEvent, SealSource, SealLast,
-                    Codens, MtrDex, TraitDex, Saider, Saids, Serder,
+                    Codens, MtrDex, TraitDex,
                     messagize, exchange,)
 from ..core import eventing
 from ..recording import HabitatRecord, OobiRecord
 
 
 logger = ogler.getLogger()
-
-
-def serializeParsedSubstream(parsed, gvrsn=Vrsn_2_0):
-    """Serialize a parsed message subtree as a nested CESR v2 substream"""
-    parsed = parsed if isinstance(parsed, dict) else parsed.__dict__
-
-    if any(parsed.get(name) for name in ("rsgs", "frcs", "ptds", "essrs")):
-        raise ValueError("Unsupported attachments for nested substream serialization")
-
-    serder = parsed["serder"]
-    sigers = parsed.get("sigers") or None
-    tsgs = parsed.get("tsgs") or None
-    lsgs = parsed.get("lsgs") or None
-    if sigers and (tsgs or lsgs):
-        raise ValueError("Unsupported mixed signature groups for nested substream serialization")
-
-    bonds = []
-    for name in ("sscs", "ssts", "tdcs", "bsqs", "bsss", "tmqs"):
-        bonds.extend(parsed.get(name) or [])
-
-    wigers = parsed.get("wigers") or None
-    cigars = parsed.get("cigars") or None
-    nests = [serializeParsedSubstream(nest, gvrsn=gvrsn)
-             for nest in (parsed.get("nests") or [])]
-
-    if not (sigers or tsgs or lsgs or bonds or wigers or cigars):
-        raise ValueError("Nested substream serialization requires framed embedded messages")
-
-    return messagize(serder=serder,
-                     sigers=sigers,
-                     tsgs=tsgs,
-                     lsgs=lsgs,
-                     bonds=bonds or None,
-                     wigers=wigers,
-                     cigars=cigars,
-                     nests=nests or None,
-                     nested=True,
-                     gvrsn=gvrsn)
 
 @contextmanager
 def openHby(*, name="test", base="", temp=True, salt=None, **kwa):
@@ -1693,7 +1655,6 @@ class BaseHab:
                    gvrsn=gvrsn,
                    kind=kind,)
 
-        nests = None
         if embeds:
             if pvrsn.major == Vrsn_1_0.major:
                 serder, end = specialExchange(embeds=embeds, **kwa)
@@ -1706,17 +1667,16 @@ class BaseHab:
         if gvrsn is None:
             gvrsn = serder.pvrsn
 
-        eframed = False if nests and not nested else framed
         if self.kever.prefixer.transferable:
-            msg = self.endorse(serder=serder, framed=eframed, nested=nested,
-                               gvrsn=gvrsn, genusify=genusify, nests=nests)
+            msg = self.endorse(serder=serder, framed=framed, nested=nested,
+                               gvrsn=gvrsn, genusify=genusify)
         else:
             cigars = self.sign(ser=serder.raw,
                                indexed=False)
             gvrsn = gvrsn if gvrsn is not None else version
-            msg = eventing.messagize(serder, cigars=cigars, framed=eframed,
+            msg = eventing.messagize(serder, cigars=cigars, framed=framed,
                                      nested=nested, gvrsn=gvrsn,
-                                     genusify=genusify, nests=nests)
+                                     genusify=genusify)
 
         msg.extend(end)
 
@@ -1756,6 +1716,7 @@ class BaseHab:
             genusify (bool): True means prepend genus version code from gvrsn before
                             serder to override default stream genus version
                          False means do nothing
+            nests (list | None): nested substreams passed through to messagize
 
         Returns::
             bytearray: endorsed message with attached signatures from messagize.

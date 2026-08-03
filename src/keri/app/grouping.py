@@ -9,16 +9,16 @@ module for enveloping and forwarding KERI message
 from hio.base import doing
 from hio.help import ogler
 
-from ..kering import ValidationError, UnexpectedCodeError, Version, Vrsn_1_0, Vrsn_2_0, Kinds, Ilks
+from ..kering import ValidationError, Version, Versionage, Vrsn_1_0, Vrsn_2_0, Kinds, Ilks
 from ..core import (Counter, Number, Diger, Saider,
                     Prefixer, Kevery, Router,
                     Revery, Parser, SerderKERI,
                     Serder, Codens, NumDex, exchange)
 from ..peer import Exchanger, specialExchange, cloneMessage
+from ..peer.exchanging import serializeParsedSubstream
 
 from .delegating import Anchorer
 from .agenting import Receiptor, WitnessInquisitor
-from .habbing import serializeParsedSubstream
 
 logger = ogler.getLogger()
 
@@ -276,6 +276,8 @@ class MultisigNotificationHandler:
         Parameters:
             serder (Serder): Serder of the exn multisig message
             attachments (list): list of tuples of pather, CESR SAD path attachments to the exn event
+            nests (list | None): parsed V2 nested substreams for routes that
+                use the single-child V2 multisig envelope
 
         """
         logger.info("Notification for %s event SAID=%s", self.resource, serder.said)
@@ -301,7 +303,7 @@ def loadHandlers(exc, mux):
     exc.addHandler(MultisigNotificationHandler(resource="/multisig/rpy", mux=mux))
 
 
-def multisigInceptExn(hab, smids, rmids, icp, delegator=None, version=None, kind=None):
+def multisigInceptExn(hab, smids, rmids, icp, delegator=None, version=None, gvrsn=None, kind=None):
     """
 
     Args:
@@ -311,6 +313,7 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None, version=None, kind
         icp (bytes): serialized inception event with CESR streamed attachments
         delegator (str): qb64 AID of Delegator is group multisig is a delegated AID
         version(Versionage | None): optional explicit wrapper/framing version
+        gvrsn(Versionage | None): optional explicit wrapped child attachment genus version
         kind (str | None): optional explicit serialization kind
  
     Returns:
@@ -325,17 +328,20 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None, version=None, kind
         rmids=rmids,
     )
 
-    embeds = dict(
-        icp=icp,
-    )
+    embeds = dict(icp=icp)
 
     if delegator is not None:
         data |= dict(delegator=delegator)
 
     version = version if version is not None else Version
     kind = kind if kind is not None else Kinds.json
+    child = Serder(raw=icp)
+    childGvrsn = (gvrsn if gvrsn is not None
+                  else child.gvrsn if child.gvrsn else child.pvrsn)
 
     if version.major == Vrsn_1_0.major:
+        if child.gvrsn is None and childGvrsn != child.pvrsn:
+            data["cgvrsn"] = [childGvrsn.major, childGvrsn.minor]
         exn, end = specialExchange(sender=hab.pre,
                                    route="/multisig/icp",
                                    modifiers=dict(),
@@ -351,31 +357,23 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None, version=None, kind
 
     # Sign the wrapped child by SAID directly in the outer payload
     data = dict(data)
-    data["d"] = serder.said
 
-    # Parse the child using the attachment genus implied by its own CESR stream
-    atc = bytearray(icp[serder.size:])
-    if atc:
-        try:
-            Counter(qb64b=bytearray(atc), version=Vrsn_1_0)
-            vrsn = Vrsn_1_0
-        except UnexpectedCodeError:
-            vrsn = Vrsn_2_0
-    else:
-        vrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn
+    # Add the child SAID to a["d"]
+    data["d"] = child.said
 
-    parsed = Parser(version=vrsn).parse(ims=bytearray(icp),
-                                           framed=True,
-                                           processive=False)
+    # PArse the child event without processing it to recover body and attachments
+    parsed = Parser(version=childGvrsn).parse(ims=bytearray(icp),
+                                              framed=True,
+                                              processive=False)
     if not parsed:
-        raise ValueError("V2 multisig payloads must be framed CESR streams")
+        raise ValueError(f"Unable to parse multisig payload stream with attachment genus {childGvrsn.major}.{childGvrsn.minor}")
     if len(parsed) != 1:
         raise ValueError("Expected one multisig payload stream")
 
     # Re-encode the child as one nested V2 substream
-    nests = serializeParsedSubstream(parsed[0], gvrsn=version)
+    nests = serializeParsedSubstream(parsed[0], gvrsn=childGvrsn)
 
-    # Build the outer multisig exn
+    # Build the outer body multisig exn
     exn = exchange(sender=hab.pre,
                    route="/multisig/icp",
                    modifiers=dict(),
@@ -384,7 +382,7 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None, version=None, kind
                    gvrsn=version,
                    kind=kind)
 
-    # Endorse the outer exn and attach the one nested child stream
+    # Endorse the outer body exn and attach the one nested child stream
     ims = hab.endorse(serder=exn,
                       last=False,
                       framed=False,
@@ -396,7 +394,7 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None, version=None, kind
     return exn, bytearray(ims[exn.size:])
 
 
-def multisigRotateExn(ghab, smids, rmids, rot, version=None, kind=None):
+def multisigRotateExn(ghab, smids, rmids, rot, version=None, gvrsn=None, kind=None):
     """
 
     Args:
@@ -405,6 +403,7 @@ def multisigRotateExn(ghab, smids, rmids, rot, version=None, kind=None):
         rmids (list): list of qb64 AIDs of members with rotation authority
         rot (bytes): serialized rotation event with CESR streamed attachments
         version(Versionage | None): optional explicit wrapper/framing version
+        gvrsn(Versionage | None): optional explicit wrapped child attachment genus version
         kind (str | None): optional explicit serialization kind
 
     Returns:
@@ -420,7 +419,12 @@ def multisigRotateExn(ghab, smids, rmids, rot, version=None, kind=None):
                 rmids=rmids)
     version = version if version is not None else Version
     kind = kind if kind is not None else Kinds.json
+    child = Serder(raw=rot)
+    childGvrsn = (gvrsn if gvrsn is not None
+                  else child.gvrsn if child.gvrsn else child.pvrsn)
     if version.major == Vrsn_1_0.major:
+        if child.gvrsn is None and childGvrsn != child.pvrsn:
+            data["cgvrsn"] = [childGvrsn.major, childGvrsn.minor]
         exn, end = specialExchange(sender=ghab.mhab.pre,
                                    route="/multisig/rot", modifiers=dict(),
                                    attributes=data,
@@ -435,30 +439,17 @@ def multisigRotateExn(ghab, smids, rmids, rot, version=None, kind=None):
 
     # Sign the wrapped child by SAID directly in the outer payload
     data = dict(data)
-    serder = Serder(raw=rot)
-    data["d"] = serder.said
-
-    # Parse the child using the attachment genus implied by its own CESR stream
-    atc = bytearray(rot[serder.size:])
-    if atc:
-        try:
-            Counter(qb64b=bytearray(atc), version=Vrsn_1_0)
-            vrsn = Vrsn_1_0
-        except UnexpectedCodeError:
-            vrsn = Vrsn_2_0
-    else:
-        vrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn
-
-    parsed = Parser(version=vrsn).parse(ims=bytearray(rot),
-                                           framed=True,
-                                           processive=False)
+    data["d"] = child.said
+    parsed = Parser(version=childGvrsn).parse(ims=bytearray(rot),
+                                              framed=True,
+                                              processive=False)
     if not parsed:
-        raise ValueError("V2 multisig payloads must be framed CESR streams")
+        raise ValueError(f"Unable to parse multisig payload stream with attachment genus {childGvrsn.major}.{childGvrsn.minor}")
     if len(parsed) != 1:
         raise ValueError("Expected one multisig payload stream")
 
     # Re-encode the child as one nested V2 substream
-    nests = serializeParsedSubstream(parsed[0], gvrsn=version)
+    nests = serializeParsedSubstream(parsed[0], gvrsn=childGvrsn)
 
     # Build the outer multisig exn
     exn = exchange(sender=ghab.mhab.pre,
@@ -481,7 +472,7 @@ def multisigRotateExn(ghab, smids, rmids, rot, version=None, kind=None):
     return exn, bytearray(ims[exn.size:])
 
 
-def multisigInteractExn(ghab, aids, ixn, version=None, kind=None):
+def multisigInteractExn(ghab, aids, ixn, version=None, gvrsn=None, kind=None):
     """ Create a peer to peer message to propose a multisig group interaction event
 
     Parameters:
@@ -489,6 +480,7 @@ def multisigInteractExn(ghab, aids, ixn, version=None, kind=None):
         aids (list): qb64 identifier prefixes to include in the interaction event
         ixn (bytes): serialized interaction event with CESR streamed attachments
         version(Versionage | None): optional explicit wrapper/framing version
+        gvrsn(Versionage | None): optional explicit wrapped child attachment genus version
         kind (str | None): optional explicit serialization kind
 
     Returns:
@@ -504,7 +496,12 @@ def multisigInteractExn(ghab, aids, ixn, version=None, kind=None):
 
     version = version if version is not None else Version
     kind = kind if kind is not None else Kinds.json
+    child = Serder(raw=ixn)
+    childGvrsn = (gvrsn if gvrsn is not None
+                  else child.gvrsn if child.gvrsn else child.pvrsn)
     if version.major == Vrsn_1_0.major:
+        if child.gvrsn is None and childGvrsn != child.pvrsn:
+            data["cgvrsn"] = [childGvrsn.major, childGvrsn.minor]
         exn, end = specialExchange(sender=ghab.mhab.pre,
                                    route="/multisig/ixn",
                                    modifiers=dict(),
@@ -520,28 +517,16 @@ def multisigInteractExn(ghab, aids, ixn, version=None, kind=None):
 
     # Sign the wrapped child by SAID directly in the outer payload
     data = dict(data)
-    serder = Serder(raw=ixn)
-    data["d"] = serder.said
-
-    atc = bytearray(ixn[serder.size:])
-    if atc:
-        try:
-            Counter(qb64b=bytearray(atc), version=Vrsn_1_0)
-            vrsn = Vrsn_1_0
-        except UnexpectedCodeError:
-            vrsn = Vrsn_2_0
-    else:
-        vrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn
-
-    parsed = Parser(version=vrsn).parse(ims=bytearray(ixn),
-                                           framed=True,
-                                           processive=False)
+    data["d"] = child.said
+    parsed = Parser(version=childGvrsn).parse(ims=bytearray(ixn),
+                                              framed=True,
+                                              processive=False)
     if not parsed:
-        raise ValueError("V2 multisig payloads must be framed CESR streams")
+        raise ValueError(f"Unable to parse multisig payload stream with attachment genus {childGvrsn.major}.{childGvrsn.minor}")
     if len(parsed) != 1:
         raise ValueError("Expected one multisig payload stream")
 
-    nests = serializeParsedSubstream(parsed[0], gvrsn=version)
+    nests = serializeParsedSubstream(parsed[0], gvrsn=childGvrsn)
 
     exn = exchange(sender=ghab.mhab.pre,
                    route="/multisig/ixn",
@@ -677,7 +662,7 @@ def multisigRevokeExn(ghab, said, rev, anc, version=None, kind=None):
     return exn, atc
 
 
-def multisigRpyExn(ghab, rpy, version=None, kind=None):
+def multisigRpyExn(ghab, rpy, version=None, gvrsn=None, kind=None):
     """ Create a peer to peer message to propose a credential revocation from a multisig group identifier
 
     Either rot or ixn are required but not both
@@ -686,6 +671,7 @@ def multisigRpyExn(ghab, rpy, version=None, kind=None):
         ghab (GroupHab): identifier Hab for ensorsing the message to send
         rpy (bytes): CESR stream of serialized and reply event
         version(Versionage | None): optional explicit wrapper/framing version
+        gvrsn(Versionage | None): optional explicit wrapped child attachment genus version
         kind (str | None): optional explicit serialization kind
 
     Returns:
@@ -700,7 +686,12 @@ def multisigRpyExn(ghab, rpy, version=None, kind=None):
     data = {'gid': ghab.pre}
     version = version if version is not None else Version
     kind = kind if kind is not None else Kinds.json
+    child = Serder(raw=rpy)
+    childGvrsn = (gvrsn if gvrsn is not None
+                  else child.gvrsn if child.gvrsn else child.pvrsn)
     if version.major == Vrsn_1_0.major:
+        if child.gvrsn is None and childGvrsn != child.pvrsn:
+            data["cgvrsn"] = [childGvrsn.major, childGvrsn.minor]
         exn, end = specialExchange(sender=ghab.mhab.pre,
                                    route="/multisig/rpy",
                                    attributes=data,
@@ -714,28 +705,16 @@ def multisigRpyExn(ghab, rpy, version=None, kind=None):
         return exn, atc
 
     data = dict(data)
-    serder = Serder(raw=rpy)
-    data["d"] = serder.said
-
-    atc = bytearray(rpy[serder.size:])
-    if atc:
-        try:
-            Counter(qb64b=bytearray(atc), version=Vrsn_1_0)
-            vrsn = Vrsn_1_0
-        except UnexpectedCodeError:
-            vrsn = Vrsn_2_0
-    else:
-        vrsn = serder.gvrsn if serder.gvrsn else serder.pvrsn
-
-    parsed = Parser(version=vrsn).parse(ims=bytearray(rpy),
-                                           framed=True,
-                                           processive=False)
+    data["d"] = child.said
+    parsed = Parser(version=childGvrsn).parse(ims=bytearray(rpy),
+                                              framed=True,
+                                              processive=False)
     if not parsed:
-        raise ValueError("V2 multisig payloads must be framed CESR streams")
+        raise ValueError(f"Unable to parse multisig payload stream with attachment genus {childGvrsn.major}.{childGvrsn.minor}")
     if len(parsed) != 1:
         raise ValueError("Expected one multisig payload stream")
 
-    nests = serializeParsedSubstream(parsed[0], gvrsn=version)
+    nests = serializeParsedSubstream(parsed[0], gvrsn=childGvrsn)
 
     exn = exchange(sender=ghab.mhab.pre,
                    route="/multisig/rpy",
@@ -855,6 +834,47 @@ class Multiplexor:
 
         self.notifier = notifier
 
+    def _replayApproved(self, said):
+        """Replays a stored wrapped child event after local approval exists"""
+        
+        # Check for nested substreams saved under that EXN SAID
+        stored = self.hby.db.enst.get(keys=(said,))
+        if stored:
+            ims = bytearray()
+            for nest in stored:
+                ims.extend(bytearray(nest.encode("utf-8") if isinstance(nest, str) else nest))
+            
+            # Replay them through normal local event processing
+            parser = Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
+                            exc=self.exc, version=Vrsn_2_0)
+            parser.parse(ims=ims, local=True)
+            return
+
+        # If no nests, fall back to v1 cloneMessage
+        exn, paths = cloneMessage(self.hby, said=said)
+        payload = exn.ked["a"]
+        for key, val in exn.ked['e'].items():
+            if not isinstance(val, dict):
+                continue
+
+            cserder = Serder(sad=val)
+            ims = bytearray(cserder.raw)
+            if key in paths:
+                atc = bytearray(paths[key])
+                ims.extend(atc)
+
+                # If v1 body had v2 attachments, parse replay with the recorded attachment version
+                version = (Versionage(*payload["cgvrsn"])
+                           if "cgvrsn" in payload and cserder.gvrsn is None
+                           else cserder.gvrsn if cserder.gvrsn else cserder.pvrsn)
+            else:
+                version = cserder.gvrsn if cserder.gvrsn else cserder.pvrsn
+
+            # Process the child event locally 
+            parser = Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
+                            exc=self.exc, version=version)
+            parser.parse(ims=ims, local=True)
+
     def add(self, serder, nests=None):
         """Process a /multisig exn by associating it with its wrapped event payload.
 
@@ -884,6 +904,7 @@ class Multiplexor:
         sender = ked['i']
         route = ked['r']
         ovrsn = serder.pvrsn
+        exnSaid = serder.said
 
         if ovrsn.major == Vrsn_1_0.major:
             if embed is None or "d" not in embed:
@@ -895,13 +916,37 @@ class Multiplexor:
             if len(nests) != 1:
                 raise ValidationError(f"invalid multisig nested substreams count={len(nests)}, expected 1")
 
-            signed = payload.get("d") if isinstance(payload, dict) else None
-            if route in ("/multisig/icp", "/multisig/rot", "/multisig/ixn", "/multisig/rpy") and signed is None:
-                raise ValidationError(f"invalid multisig payload missing signed child SAID for route {route}")
+            # Allow only supported routes through v2 path
+            supported = ("/multisig/icp", "/multisig/rot", "/multisig/ixn", "/multisig/rpy")
+            if route not in supported:
+                raise ValidationError(f"unsupported V2 multisig route {route}")
 
+            # Retrieve child SAID
+            signed = payload.get("d") if isinstance(payload, dict) else None
+            if signed is None:
+                raise ValidationError(f"invalid multisig payload missing signed child SAID for route {route}")
+            
+            # Retrieve child event serder directly from nested substream
             nserder = nests[0]["serder"] if isinstance(nests[0], dict) else nests[0].serder
-            if signed is not None and nserder.said != signed:
-                raise ValidationError(f"invalid multisig nested substream: {nserder.said} != {signed}")
+
+            # Validate child ilks
+            allowed = {
+                "/multisig/icp": (Ilks.icp, Ilks.dip),
+                "/multisig/rot": (Ilks.rot,),
+                "/multisig/ixn": (Ilks.ixn,),
+                "/multisig/rpy": (Ilks.rpy,),
+            }
+            if nserder.ilk not in allowed[route]:
+                raise ValidationError(f"invalid multisig nested substream ilk {nserder.ilk} for route {route}")
+            
+            # Make sure the child event is a saidive event before validating it against a["d"]
+            saids = nserder.Fields[nserder.proto][nserder.pvrsn][nserder.ilk].saids
+            if not saids:
+                raise ValidationError(f"invalid multisig nested substream ilk {nserder.ilk} is not saidive")
+            
+            # Validate the nested child SAID check that it matches a["d"]
+            if not nserder.verify() or not nserder.compare(signed):
+                raise ValidationError(f"invalid multisig nested substream digest for route {route}")
 
             # Use the signed child SAID as the V2 proposal identity
             esaid = signed if signed is not None else nserder.said
@@ -909,7 +954,7 @@ class Multiplexor:
         # Route specific logic to ensure this is a valid exn for a local participant.
         match route.split("/"):
             case ["", "multisig", "icp"]:
-                mids = payload["smids"]
+                mids = list(payload["smids"])
                 if "rmids" in payload:
                     mids.extend(payload["rmids"])
                 member = any([True for mid in mids if mid in self.hby.kevers])
@@ -918,8 +963,10 @@ class Multiplexor:
 
             case ["", "multisig", "rot"]:
                 gid = payload["gid"]
+
+                # Check if we know this group identifier locally 
                 if gid not in self.hby.habs:
-                    mids = payload["smids"]
+                    mids = list(payload["smids"])
                     mids.extend(payload["rmids"])
                     member = any([True for mid in mids if mid in self.hby.kevers])
                     if not member:
@@ -933,73 +980,33 @@ class Multiplexor:
             case _:
                 raise ValueError(f"invalid route {route} for multiplexed exn={ked}")
 
-        if len(self.hby.db.meids.get(keys=(esaid,))) == 0:  # No one has submitted this message yet
-            if sender not in self.hby.habs:  # We are not sending this one, notify us
-                # Notify once when a remote participant first introduces this proposal
-                data = dict(
-                    r=route,
-                    d=serder.said
-                )
+        # Retrieve all EXN SAIDs for this child event
+        digers = list(self.hby.db.meids.get(keys=(esaid,)))
 
-                self.notifier.add(attrs=data)
+        # Check if it is the first time we see this child event
+        firstSeen = len(digers) == 0
 
-        self.hby.db.meids.add(keys=(esaid,), val=Saider(qb64=serder.said))
-        self.hby.db.maids.add(keys=(esaid,), val=Prefixer(qb64=serder.pre))
-
+        # Retrieve all AIDs that already submitted this child event
         submitters = self.hby.db.maids.get(keys=(esaid,))
         if sender not in self.hby.habs:  # We are not sending this one, need to parse if already approved
 
-            # If we've already submitted an identical payload, parse this one because we've approved it
+            # Check if we know a matching proposal from a submitter we know
             approved = any([True for sub in submitters if sub.qb64 in self.hby.kevers])
+            
             if approved:
-                # Clone exn from database, ensuring it is stored with valid signatures
-                if embed is not None:
-                    exn, paths = cloneMessage(self.hby, said=serder.said)
-                    e = exn.ked['e']
-
-                    # Replay each embedded child using the attachment code table
-                    # implied by that child's attached CESR stream
-                    for key, val in e.items():
-                        if not isinstance(val, dict):
-                            continue
-
-                        serder = Serder(sad=val)
-                        ims = bytearray(serder.raw)
-                        if key in paths:
-                            atc = bytearray(paths[key])
-                            ims.extend(atc)
-                            try:
-                                Counter(qb64b=bytearray(atc), version=Vrsn_1_0)
-                                version = Vrsn_1_0
-                            except UnexpectedCodeError:
-                                version = Vrsn_2_0
-                        else:
-                            version = serder.pvrsn
-
-                        parser = Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
-                                        exc=self.exc, version=version)
-                        parser.parse(ims=ims, local=True)
-                else:
-                    ims = bytearray()
-                    # Rebuild the approved nested child stream and parse it as V2
-                    for nest in nests:
-                        ims.extend(serializeParsedSubstream(nest))
-
-                    parser = Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
-                                    exc=self.exc, version=Vrsn_2_0)
-                    parser.parse(ims=ims, local=True)
-
+                self._replayApproved(exnSaid)
             else:
-                # Should we prod the user with another submission if we haven't already approved it?
-                route = ked['r']
-                # Notify with the proposal key for follow-up approvals
-                data = dict(
-                    r=route,
-                    d=serder.said,
-                    e=esaid
-                )
+                if firstSeen:
+                    self.notifier.add(attrs=dict(r=route, d=exnSaid))
+                else:
+                    self.notifier.add(attrs=dict(r=route, d=exnSaid, e=esaid))
+        elif not firstSeen and any([True for sub in submitters if sub.qb64 not in self.hby.habs]):
+            # If a remote copy arrived before we registered our local approval, replay it now.
+            for diger in digers:
+                self._replayApproved(diger.qb64)
 
-                self.notifier.add(attrs=data)
+        self.hby.db.meids.add(keys=(esaid,), val=Saider(qb64=exnSaid))
+        self.hby.db.maids.add(keys=(esaid,), val=Prefixer(qb64=sender))
 
     def get(self, esaid):
         digers = self.hby.db.meids.get(keys=(esaid,))
@@ -1007,9 +1014,11 @@ class Multiplexor:
         exns = []
         for diger in digers:
             exn, paths = cloneMessage(hby=self.hby, said=diger.qb64)
+            nests = self.hby.db.enst.get(keys=(diger.qb64,))
             exns.append(dict(
                 exn=exn.ked,
                 paths={k: path.decode("utf-8") for k, path in paths.items()},
+                nests=nests if nests else None,
             ))
 
         return exns

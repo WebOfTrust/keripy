@@ -17,9 +17,9 @@ from ....app import (GroupHab, HaberyDoer, MailboxDirector,
                      WitnessInquisitor, WitnessReceiptor,
                      Counselor, Multiplexor, Notifier,
                      Poster, grouping, delegating)
-from ....kering import Ilks, Kinds
+from ....kering import Ilks, Kinds, Vrsn_1_0
 
-from ....core import Number, Diger, Saider, Prefixer, SerderKERI, NumDex
+from ....core import Number, Diger, Saider, Prefixer, SerderKERI, NumDex, Parser
 from ....help import helping
 from ....peer import Exchanger
 
@@ -180,7 +180,14 @@ class ConfirmDoer(doing.DoDoer):
 
                         serder = SerderKERI(raw=msg)
                         exn, atc = grouping.multisigInteractExn(ghab=hab, aids=aids, ixn=bytearray(msg),
-                                                                version=self.version, kind=Kinds.json)
+                                                                version=Vrsn_1_0, kind=Kinds.json)
+                        local = Parser(version=exn.pvrsn).parse(ims=bytearray(exn.raw + atc),
+                                                                framed=True,
+                                                                processive=False)[0]
+                        self.mux.exc.logEvent(serder=local.serder, pathed=local.ptds,
+                                              tsgs=local.tsgs, cigars=local.cigars,
+                                              essrs=local.essrs)
+                        self.mux.add(local.serder)
                         others = list(oset(hab.smids + (hab.rmids or [])))
                         others.remove(hab.mhab.pre)
 

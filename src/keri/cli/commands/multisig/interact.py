@@ -12,13 +12,13 @@ from hio.help import ogler
 
 from ...common import Parsery, config, setupHby, printIdentifier, parseVersion
 
-from ....kering import ConfigurationError, Kinds
+from ....kering import ConfigurationError, Kinds, Vrsn_1_0
 from ....app import (Notifier, Multiplexor, Counselor,
                      MailboxDirector, HaberyDoer, Poster,
                      multisigInteractExn)
 from ....app.grouping import loadHandlers
 
-from ....core import Prefixer, Number, Diger, SerderKERI
+from ....core import Prefixer, Number, Diger, SerderKERI, Parser
 from ....peer import Exchanger
 
 
@@ -82,6 +82,7 @@ class GroupMultisigInteract(doing.DoDoer):
 
         notifier = Notifier(self.hby)
         mux = Multiplexor(self.hby, notifier=notifier)
+        self.mux = mux
         exc = Exchanger(hby=self.hby, handlers=[])
         loadHandlers(exc, mux)
 
@@ -122,7 +123,14 @@ class GroupMultisigInteract(doing.DoDoer):
         serder = SerderKERI(raw=ixn)
 
         exn, ims = multisigInteractExn(ghab=ghab, aids=aids, ixn=ixn,
-                                       version=self.version, kind=Kinds.json)
+                                       version=Vrsn_1_0, kind=Kinds.json)
+        local = Parser(version=exn.pvrsn).parse(ims=bytearray(exn.raw + ims),
+                                                framed=True,
+                                                processive=False)[0]
+        self.mux.exc.logEvent(serder=local.serder, pathed=local.ptds,
+                              tsgs=local.tsgs, cigars=local.cigars,
+                              essrs=local.essrs)
+        self.mux.add(local.serder)
         others = list(oset(ghab.smids + (ghab.rmids or [])))
         others.remove(ghab.mhab.pre)
 

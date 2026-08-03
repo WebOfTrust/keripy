@@ -213,7 +213,7 @@ class JoinDoer(doing.DoDoer):
             smids.remove(hab.mhab.pre)
 
             for smid in smids:  # this goes to other participants only as a signaling mechanism
-                rexn, atc = multisigExn(ghab=hab, exn=msg)
+                rexn, atc = multisigExn(ghab=hab, exn=msg, version=Vrsn_1_0)
                 self.postman.send(src=hab.mhab.pre,
                                   dest=smid,
                                   topic="multisig",
