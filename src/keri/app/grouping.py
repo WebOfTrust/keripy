@@ -358,8 +358,8 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None, version=None, gvrs
     # Sign the wrapped child by SAID directly in the outer payload
     data = dict(data)
 
-    # Add the child SAID to a["d"]
-    data["d"] = child.said
+    # Add the child SAID under the route-specific attribute name
+    data["icp"] = child.said
 
     # PArse the child event without processing it to recover body and attachments
     parsed = Parser(version=childGvrsn).parse(ims=bytearray(icp),
@@ -439,7 +439,7 @@ def multisigRotateExn(ghab, smids, rmids, rot, version=None, gvrsn=None, kind=No
 
     # Sign the wrapped child by SAID directly in the outer payload
     data = dict(data)
-    data["d"] = child.said
+    data["rot"] = child.said
     parsed = Parser(version=childGvrsn).parse(ims=bytearray(rot),
                                               framed=True,
                                               processive=False)
@@ -517,7 +517,7 @@ def multisigInteractExn(ghab, aids, ixn, version=None, gvrsn=None, kind=None):
 
     # Sign the wrapped child by SAID directly in the outer payload
     data = dict(data)
-    data["d"] = child.said
+    data["ixn"] = child.said
     parsed = Parser(version=childGvrsn).parse(ims=bytearray(ixn),
                                               framed=True,
                                               processive=False)
@@ -705,7 +705,7 @@ def multisigRpyExn(ghab, rpy, version=None, gvrsn=None, kind=None):
         return exn, atc
 
     data = dict(data)
-    data["d"] = child.said
+    data["rpy"] = child.said
     parsed = Parser(version=childGvrsn).parse(ims=bytearray(rpy),
                                               framed=True,
                                               processive=False)
@@ -921,11 +921,13 @@ class Multiplexor:
             if route not in supported:
                 raise ValidationError(f"unsupported V2 multisig route {route}")
 
-            # Retrieve child SAID
-            signed = payload.get("d") if isinstance(payload, dict) else None
+            field = route.rsplit("/", 1)[-1]
+
+            # Retrieve the child SAID from the route-specific field in `a`
+            signed = payload.get(field) if isinstance(payload, dict) else None
             if signed is None:
-                raise ValidationError(f"invalid multisig payload missing signed child SAID for route {route}")
-            
+                raise ValidationError(f"invalid multisig payload missing signed {field} child SAID for route {route}")
+
             # Retrieve child event serder directly from nested substream
             nserder = nests[0]["serder"] if isinstance(nests[0], dict) else nests[0].serder
 

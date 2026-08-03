@@ -831,7 +831,7 @@ def test_multisig_incept_default_version_uses_v2_nested_substreams(mockHelpingNo
         assert data["gid"] == innerSerder.pre
         assert data["smids"] == aids
         assert data["rmids"] == aids
-        assert data["d"] == innerSerder.said
+        assert data["icp"] == innerSerder.said
         assert "e" not in exn.ked
 
         results = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
@@ -879,7 +879,7 @@ def test_multisig_rotate_default_version_uses_v2_nested_substreams(mockHelpingNo
         assert data["smids"] == ghab1.smids
         assert data["rmids"] == ghab1.rmids
         assert data["gid"] == ghab1.pre
-        assert data["d"] == innerSerder.said
+        assert data["rot"] == innerSerder.said
         assert "e" not in exn.ked
 
         results = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
@@ -924,7 +924,7 @@ def test_multisig_interact_default_version_uses_v2_nested_substreams(mockHelping
         data = exn.ked["a"]
         assert data["smids"] == ghab1.smids
         assert data["gid"] == ghab1.pre
-        assert data["d"] == innerSerder.said
+        assert data["ixn"] == innerSerder.said
         assert "e" not in exn.ked
 
         results = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
@@ -949,7 +949,7 @@ def test_multisig_rpy_default_version_uses_v2_nested_substreams(mockHelpingNowUT
         assert exn.ked["r"] == '/multisig/rpy'
         data = exn.ked["a"]
         assert data["gid"] == ghab1.pre
-        assert data["d"] == innerSerder.said
+        assert data["rpy"] == innerSerder.said
         assert "e" not in exn.ked
 
         results = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
@@ -1268,7 +1268,7 @@ def test_multisig_incept_v2_body_supports_v1_child_with_v2_attachments(mockHelpi
         # The outer wrapper should still bind the nested child by SAID and carry
         # it as one nested substream even though the child body remains V1
         assert exn.pvrsn == Vrsn_2_0
-        assert exn.ked["a"]["d"] == inner.said
+        assert exn.ked["a"]["icp"] == inner.said
         assert "e" not in exn.ked
 
         parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
@@ -1292,7 +1292,7 @@ def test_multisig_rotate_v2_body_supports_v1_child_with_v2_attachments(mockHelpi
         # The outer wrapper should still bind the nested child by SAID and carry
         # it as one nested substream even though the child body remains V1
         assert exn.pvrsn == Vrsn_2_0
-        assert exn.ked["a"]["d"] == inner.said
+        assert exn.ked["a"]["rot"] == inner.said
         assert "e" not in exn.ked
 
         parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
@@ -1316,7 +1316,7 @@ def test_multisig_interact_v2_body_supports_v1_child_with_v2_attachments(mockHel
         # The outer wrapper should still bind the nested child by SAID and carry
         # it as one nested substream even though the child body remains V1
         assert exn.pvrsn == Vrsn_2_0
-        assert exn.ked["a"]["d"] == inner.said
+        assert exn.ked["a"]["ixn"] == inner.said
         assert "e" not in exn.ked
 
         parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
@@ -1356,8 +1356,8 @@ def test_multisig_local_approval_is_logged_before_mux_add(version, mockHelpingNo
         # Now register the approval by the wrapped child SAID
         mux.add(local.serder, nests=local.nests)
 
-        # V1 stores the child SAID in `e.d`; V2 stores the child SAID in `a.d`
-        esaid = exn.ked["e"]["d"] if version.major == Vrsn_1_0.major else exn.ked["a"]["d"]
+        # V1 stores the child SAID in `e.d`; V2 stores it under the route-specific child field
+        esaid = exn.ked["e"]["d"] if version.major == Vrsn_1_0.major else exn.ked["a"]["ixn"]
 
         # Read back the approvals indexed under the child event SAID
         approvals = mux.get(esaid)
@@ -1400,7 +1400,7 @@ def test_multisig_rpy_v2_body_supports_v1_child_with_v2_attachments(mockHelpingN
         # The outer wrapper should still bind the nested child by SAID and carry
         # it as one nested substream even though the child body remains V1
         assert exn.pvrsn == Vrsn_2_0
-        assert exn.ked["a"]["d"] == inner.said
+        assert exn.ked["a"]["rpy"] == inner.said
         assert "e" not in exn.ked
 
         parsed = Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + atc),
@@ -1445,7 +1445,7 @@ def test_multisig_incept_handler_v2_rejects_missing_signed_child_said(mockHelpin
                                                 processive=False)[0]
         sad = dict(parsed.serder.ked)
         sad["a"] = dict(sad["a"])
-        del sad["a"]["d"]
+        del sad["a"]["icp"]
         bad_exn = SerderKERI(sad=sad, makify=True)
 
         notifier = Notifier(hby=hby)
@@ -1657,8 +1657,8 @@ def test_multisig_incept_handler_v2_escrow_replay_restores_nested_substream(mock
                  version=Vrsn_2_0, kind=Kinds.json) as (hby1, hab1), \
             openHab(name="escrow-replay-remote", temp=True, salt=b'abcdef0123456789',
                     version=Vrsn_2_0, kind=Kinds.json) as (_, hab2):
-        
-        # Set up 
+
+        # Set up
         notifier = Notifier(hby=hby1)
         mux = Multiplexor(hby=hby1, notifier=notifier)
         exc = Exchanger(hby=hby1, handlers=[])
@@ -1666,7 +1666,7 @@ def test_multisig_incept_handler_v2_escrow_replay_restores_nested_substream(mock
 
         # The group proposal will reference these two member AIDs
         aids = [hab1.pre, hab2.pre]
-        
+
         # Build the remote member's child inception stream that will be nested in the EXN
         icp = hab2.msgOwnEvent(sn=hab2.kever.sn, framed=True, gvrsn=Vrsn_2_0)
         child = SerderKERI(raw=icp)

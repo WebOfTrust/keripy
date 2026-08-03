@@ -246,7 +246,7 @@ def test_hab_exchange(mockHelpingNowUTC):
 def test_serialize_message_round_trips_stored_nested_substreams(mockHelpingNowUTC):
     with openHab(name="nested-save-src", base="test", salt=b'0123456789abcdef', version=Vrsn_2_0, kind=Kinds.json) as (_, hab), \
             openHab(name="nested-save-rec", base="test", salt=b'abcdef0123456789', version=Vrsn_2_0, kind=Kinds.json) as (recHby, _):
-        
+
         # Build a V2 multisig wrapper around one child inception event
         aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
 
@@ -287,7 +287,7 @@ def test_serialize_message_round_trips_stored_nested_substreams(mockHelpingNowUT
 
         # That rebuilt EXN should still contain exactly one nested child stream
         assert len(parsed[0].nests) == 1
-        
+
         # The child inside the rebuilt message should be the same child that was originally sent
         assert parsed[0].nests[0].serder.said == inner.said
 
@@ -297,7 +297,7 @@ def test_v2_multisig_incept_escrow_replay_then_rotation_anchors_in_kel(mockHelpi
     # `hby1/hab1` is the local side under test; `hby2/hab2` acts as the remote signer.
     with openHab(name="lifecycle-local", base="test", salt=b'0123456789abcdef', version=Vrsn_2_0, kind=Kinds.json) as (hby1, hab1), \
             openHab(name="lifecycle-remote", base="test", salt=b'abcdef0123456789', version=Vrsn_2_0, kind=Kinds.json) as (hby2, hab2):
-        
+
         # First exchange the member AID inception events so each side knows the other signer
         for src, dest in ((hab2, hby1), (hab1, hby2)):
             # Each participant ingests the other's inception into its local KEL
