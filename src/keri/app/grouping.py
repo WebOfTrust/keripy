@@ -270,6 +270,13 @@ class MultisigNotificationHandler:
         self.resource = resource
         self.mux = mux
 
+    def verify(self, serder, attachments=None, nests=None):
+        """Validate a multisig EXN before the exchanger saves it."""
+        try:
+            return self.mux.validate(serder=serder, nests=nests) is not None
+        except (ValidationError, ValueError, KeyError, TypeError, AttributeError):
+            return False
+
     def handle(self, serder, attachments=None, nests=None):
         """  Do route specific processing of multisig exn messages
 
@@ -315,7 +322,7 @@ def multisigInceptExn(hab, smids, rmids, icp, delegator=None, version=None, gvrs
         version(Versionage | None): optional explicit wrapper/framing version
         gvrsn(Versionage | None): optional explicit wrapped child attachment genus version
         kind (str | None): optional explicit serialization kind
- 
+
     Returns:
         tuple: (Serder, bytes): Serder of exn message and CESR attachments
 
@@ -836,14 +843,14 @@ class Multiplexor:
 
     def _replayApproved(self, said):
         """Replays a stored wrapped child event after local approval exists"""
-        
+
         # Check for nested substreams saved under that EXN SAID
         stored = self.hby.db.enst.get(keys=(said,))
         if stored:
             ims = bytearray()
             for nest in stored:
                 ims.extend(bytearray(nest.encode("utf-8") if isinstance(nest, str) else nest))
-            
+
             # Replay them through normal local event processing
             parser = Parser(framed=True, kvy=self.kvy, rvy=self.rvy,
                             exc=self.exc, version=Vrsn_2_0)
@@ -875,28 +882,8 @@ class Multiplexor:
                             exc=self.exc, version=version)
             parser.parse(ims=ims, local=True)
 
-    def add(self, serder, nests=None):
-        """Process a /multisig exn by associating it with its wrapped event payload.
-
-        Adds the exn message contained in `serder` to the set of messages received
-        for a given wrapped event payload. Ensures this is a /multisig message with
-        the correct properties and then stores the SAID of the exn message and the
-        prefix of the sender associated with the wrapped event payload. Also sends
-        the controller of the local participant a notice.
-
-        This method will extract and parse the wrapped events if the local
-        participant has already approved them so any additional signatures can be
-        processed.
-
-        Parameters:
-            serder (SerderKERI): peer-to-peer exn "/multisig" message to coordinate
-                from other participants
-            nests (list | None): parsed nested substreams for single-child V2
-                exchanges
-
-        Returns:
-
-        """
+    def validate(self, serder, nests=None):
+        """Validate a /multisig exn without mutating local state."""
         ked = serder.ked
         embed = ked.get('e')
         nests = nests if nests is not None else []
@@ -940,7 +927,7 @@ class Multiplexor:
             }
             if nserder.ilk not in allowed[route]:
                 raise ValidationError(f"invalid multisig nested substream ilk {nserder.ilk} for route {route}")
-            
+
             # Make sure the child event is saidive before validating the signed child SAID
             saids = nserder.Fields[nserder.proto][nserder.pvrsn][nserder.ilk].saids
             if not saids:
@@ -981,6 +968,36 @@ class Multiplexor:
 
             case _:
                 raise ValueError(f"invalid route {route} for multiplexed exn={ked}")
+
+        return esaid, sender, route, exnSaid
+
+    def add(self, serder, nests=None):
+        """Process a /multisig exn by associating it with its wrapped event payload.
+
+        Adds the exn message contained in `serder` to the set of messages received
+        for a given wrapped event payload. Ensures this is a /multisig message with
+        the correct properties and then stores the SAID of the exn message and the
+        prefix of the sender associated with the wrapped event payload. Also sends
+        the controller of the local participant a notice.
+
+        This method will extract and parse the wrapped events if the local
+        participant has already approved them so any additional signatures can be
+        processed.
+
+        Parameters:
+            serder (SerderKERI): peer-to-peer exn "/multisig" message to coordinate
+                from other participants
+            nests (list | None): parsed nested substreams for single-child V2
+                exchanges
+
+        Returns:
+
+        """
+        result = self.validate(serder=serder, nests=nests)
+        if result is None:
+            return
+
+        esaid, sender, route, exnSaid = result
 
         # Retrieve all EXN SAIDs for this child event
         digers = list(self.hby.db.meids.get(keys=(esaid,)))

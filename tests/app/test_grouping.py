@@ -24,6 +24,7 @@ from keri.core import (Prefixer, Number, Diger, Kevery,
 
 from keri.vdr.eventing import incept
 from keri.peer import Exchanger
+from keri.peer.exchanging import serializeParsedSubstream
 
 TEST_VERSION = Vrsn_1_0
 
@@ -1470,6 +1471,43 @@ def test_multisig_incept_handler_v2_rejects_mismatched_nested_substream(mockHelp
 
         with pytest.raises(ValidationError):
             mux.add(parsed.serder, nests=[bad])
+
+
+def test_multisig_incept_handler_v2_rejects_mismatched_nested_substream_before_save(mockHelpingNowUTC):
+    with openHab(name="bad-nested-route", temp=True, salt=b'0123456789abcdef',
+                 version=Vrsn_2_0, kind=Kinds.json) as (hby, hab):
+        aids = [hab.pre, "EfrzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"]
+        icp = hab.msgOwnEvent(sn=hab.kever.sn, framed=True, gvrsn=Vrsn_2_0)
+        exn, atc = multisigInceptExn(hab=hab, smids=aids, rmids=aids, icp=icp,
+                                     version=Vrsn_2_0, kind=Kinds.json)
+
+        # Replace the expected inception child with an interaction child while
+        # keeping the signed outer body unchanged.
+        ixn = hab.interact(framed=True, version=Vrsn_2_0, kind=Kinds.json, gvrsn=Vrsn_2_0)
+        bad = Parser(version=Vrsn_2_0).parse(ims=bytearray(ixn),
+                                             framed=True,
+                                             processive=False)[0]
+        badAtc = bytearray(hab.endorse(serder=exn,
+                                       framed=False,
+                                       gvrsn=Vrsn_2_0,
+                                       nests=[serializeParsedSubstream(bad)]))
+        del badAtc[:exn.size]
+
+        notifier = Notifier(hby=hby)
+        mux = Multiplexor(hby=hby, notifier=notifier)
+        exc = Exchanger(hby=hby, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        ims = bytearray(exn.raw + badAtc)
+        Parser(version=Vrsn_2_0).parse(ims=ims, framed=False, exc=exc)
+
+        assert ims == bytearray()
+        assert hby.db.exns.get(keys=(exn.said,)) is None
+        assert not hby.db.enst.get(keys=(exn.said,))
+        assert not hby.db.meids.get(keys=(SerderKERI(raw=icp).said,))
+        assert not hby.db.maids.get(keys=(SerderKERI(raw=icp).said,))
+        assert not notifier.signaler.signals
+        assert not any(cue.get("kin") == "saved" for cue in exc.cues)
 
 
 def test_multisig_incept_handler_v2_rejects_missing_signed_child_said(mockHelpingNowUTC):
