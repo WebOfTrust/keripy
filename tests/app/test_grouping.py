@@ -1798,6 +1798,66 @@ def test_multisig_incept_handler_v2_escrow_replay_restores_nested_substream(mock
         assert len(hby1.db.enst.get(keys=(exn.said,))) == 1
 
 
+def test_multisig_incept_handler_v2_escrow_replay_rejection_cleans_nested_substream(mockHelpingNowUTC):
+    with openHab(name="escrow-reject-local", temp=True, salt=b'0123456789abcdef',
+                 version=Vrsn_2_0, kind=Kinds.json) as (hby1, hab1), \
+            openHab(name="escrow-reject-remote", temp=True, salt=b'abcdef0123456789',
+                    version=Vrsn_2_0, kind=Kinds.json) as (_, hab2):
+
+        # Set up the local exchanger with the multisig handler registered
+        notifier = Notifier(hby=hby1)
+        mux = Multiplexor(hby=hby1, notifier=notifier)
+        exc = Exchanger(hby=hby1, handlers=[])
+        loadHandlers(exc=exc, mux=mux)
+
+        # Build a valid outer /multisig/icp body
+        aids = [hab1.pre, hab2.pre]
+        icp = hab2.msgOwnEvent(sn=hab2.kever.sn, framed=True, gvrsn=Vrsn_2_0)
+        exn, _ = multisigInceptExn(hab=hab2, smids=aids, rmids=aids, icp=icp,
+                                   version=Vrsn_2_0, kind=Kinds.json)
+
+        # Replace the inception child with an interaction child in the
+        # attachment stream so mux validation will reject it once replayed
+        ixn = hab2.interact(framed=True, version=Vrsn_2_0, kind=Kinds.json,
+                            gvrsn=Vrsn_2_0)
+        bad = Parser(version=Vrsn_2_0).parse(ims=bytearray(ixn),
+                                             framed=True,
+                                             processive=False)[0]
+        badAtc = bytearray(hab2.endorse(serder=exn,
+                                        framed=False,
+                                        gvrsn=Vrsn_2_0,
+                                        nests=[serializeParsedSubstream(bad)]))
+        del badAtc[:exn.size]
+
+        # Deliver before hby1 knows hab2's key state. This forces EXN escrow,
+        # and the nested child is parked in enst for a later retry
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(exn.raw + badAtc),
+                                       framed=False,
+                                       exc=exc,
+                                       local=False)
+        assert len(list(hby1.db.epse.getTopItemIter())) == 1
+        assert hby1.db.epsd.get(keys=(exn.said,)) is not None
+        assert len(hby1.db.enst.get(keys=(exn.said,))) == 1
+
+        # Teach hby1 the remote signer state so the next escrow pass reaches
+        # behavior verification instead of staying blocked on missing key state
+        Parser(version=Vrsn_2_0).parse(ims=bytearray(hab2.msgOwnEvent(sn=0,
+                                                                      framed=True,
+                                                                      gvrsn=Vrsn_2_0)),
+                                       kvy=hby1.kvy,
+                                       local=True)
+
+        # Replay should reject the mismatched nested child and clean all escrow
+        # sidecars instead of leaving orphan enst/epsd rows
+        exc.processEscrow()
+        assert len(list(hby1.db.epse.getTopItemIter())) == 0
+        assert hby1.db.epsd.get(keys=(exn.said,)) is None
+        assert not hby1.db.enst.get(keys=(exn.said,))
+        assert hby1.db.exns.get(keys=(exn.said,)) is None
+        assert not any(cue.get("kin") == "saved" for cue in exc.cues)
+        assert not notifier.signaler.signals
+
+
 def test_multiplexor_get_includes_stored_v2_nested_substreams(mockHelpingNowUTC):
     with openMultiSig(prefix="stored-v2-get") as ((hby1, ghab1), (_, ghab2), (_, _)):
 

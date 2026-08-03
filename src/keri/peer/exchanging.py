@@ -271,17 +271,27 @@ class Exchanger:
                     logger.trace("Exchange partially signed unescrow failed: %s\n", ex.args[0])
                     logger.debug(f"Event body=\n%s\n", serder.pretty())
             except Exception as ex:
+                saved = self.hby.db.exns.get(keys=(dig,)) is not None
                 self.hby.db.epse.rem(dig)
                 self.hby.db.epsd.rem(dig)
                 self.hby.db.esigs.rem(dig)
-                self.hby.db.enst.rem(keys=(dig,))
+                if not saved:
+                    self.hby.db.epath.rem(keys=(dig,))
+                    self.hby.db.enst.rem(keys=(dig,))
                 if logger.isEnabledFor(logging.DEBUG):
                     logger.exception("Exchange partially signed unescrowed: %s", ex.args[0])
                 else:
                     logger.error("Exchange partially signed unescrowed: %s", ex.args[0])
             else:
+                saved = self.hby.db.exns.get(keys=(dig,)) is not None
                 self.hby.db.epse.rem(dig)
+                self.hby.db.epsd.rem(dig)
                 self.hby.db.esigs.rem(dig)
+                if not saved:
+                    self.hby.db.epath.rem(keys=(dig,))
+                    self.hby.db.enst.rem(keys=(dig,))
+                    logger.info("Exchanger unescrow rejected exchange: said=%s", serder.said)
+                    continue
                 logger.info("Exchanger unescrow succeeded in valid exchange: creder=%s", serder.said)
                 logger.debug("Event=\n%s\n", serder.pretty())
 
