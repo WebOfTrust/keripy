@@ -1,13 +1,28 @@
 # -*- coding: utf-8 -*-
 """
-tests.acdc.test_bulk_issuance module
+tests.acdc.test_bulk_issuance_shared_registry module
 
-Worked, working example of *bulk-issued private ACDCs* (ACDC spec section 15.4,
-"Bulk-Issued Private ACDCs") used to defeat cross-verifier correlation for SEDI
+Worked, working example of BASIC bulk-issued private ACDCs -- the SHARED-REGISTRY
+form (ACDC spec section 15.4, "Bulk-Issued Private ACDCs" and its "Basic Bulk
+Issuance Procedure"): all M copies of a set share ONE registry, and one blinded
+aggregate 'B' commits the whole set. It defeats cross-verifier correlation for SEDI
 (Utah's State-Endorsed Digital Identity, Utah Code 63A-20). It is a sibling to
 tests/acdc/test_cp_disclosure.py (contractually-protected disclosure) and
 tests/acdc/test_guardianship_presentation.py (represented presentation), and it
 adds the one axis neither shows: IDENTIFIER-level cross-verifier unlinkability.
+
+WHICH VARIANT IS THIS, AND WHICH ONE DOES UTAH WANT? This module is the SIMPLE way:
+one shared registry per set, aggregate 'B', one issuance commitment covering all M
+copies. It is the right thing to read first, because 'B' and the per-copy derivation
+are the foundation everything else builds on. But it is NOT what the State of Utah
+intends to deploy. Sam Smith, on ACDC spec PR trustoverip/kswg-acdc-specification#200
+(2026-07-23): "From a SEDI perspective they want to do Independent registry bulk
+issuance which does not use B." That fancier variant -- one registry PER COPY, no
+aggregate, and a single Merkle-root batch seal providing herd privacy -- is the
+sibling module tests/acdc/test_bulk_issuance_independent_registry.py. Read this one
+for the mechanics; read that one for the deployment target. The honest RESIDUAL this
+module asserts rather than hides (the shared registry SAID and 'B' recurring in every
+context, see test_partition_across_verifiers_JSON) is exactly what that module closes.
 
 The problem, from keripy discussion #1515. The sibling examples achieve ATTRIBUTE
 minimization (reveal "over 21", hide the birthdate) but still hand every verifier a
@@ -68,9 +83,11 @@ this example does NOT close, beyond the shared registry/B (see the partition tes
 cross-verifier join key, removable only by the Merkle-INCLUSION variant (panel
 PRV-F3); (b) even with per-context AID strings, a real deployment that witnesses the
 M holder AIDs on a shared witness pool / endpoint / mailbox re-links them via KEL
-discovery metadata (spec L2891; panel PRV-F2). The independent-AID and
-independent-registry/herd variants (spec 15.4) raise the technical bar further and are
-a deliberate follow-on (tick 6sjz), not this example.
+discovery metadata (spec L2891; panel PRV-F2). The independent-AID variant IS applied
+here (per-copy ALICE_k, below); the independent-REGISTRY and herd-anchoring variants
+(spec 15.4) raise the technical bar further and live in the sibling module
+tests/acdc/test_bulk_issuance_independent_registry.py, which closes residual (a)
+outright -- it has no [b_k] list to disclose because it has no aggregate at all.
 
 A note on altitude. Like the sibling examples, this one models the credential graph,
 the bulk derivation, the blinded aggregate, and the registry state at the
@@ -873,8 +890,9 @@ def test_partition_across_verifiers_JSON():
     a hand-picked few. The holder AID IS partitioned here (the independent-AID variant),
     which is the dominant correlator basic bulk issuance would have left. The one residual
     is the SHARED registry (and the aggregate B) keyed per set -- a contract-gated
-    2nd-party correlator that full 3rd-party decorrelation (independent/herd registries via
-    a Sparse-Merkle-Tree root, tick 6sjz) would remove; it is asserted PRESENT in both, not
+    2nd-party correlator that full 3rd-party decorrelation (independent registries under a
+    single Merkle-root batch seal) would remove -- the variant Utah intends, worked in
+    tests/acdc/test_bulk_issuance_independent_registry.py. It is asserted PRESENT here, not
     hidden. Public issuer/schema identifiers are shared by the whole population and single
     out no one.
     """
@@ -926,7 +944,7 @@ def test_partition_across_verifiers_JSON():
     assert pres1.said != pres2.said                       # presentation SAID partitioned
 
     # --- RESIDUAL: the shared registry (and B) recur in BOTH contexts -- the honest gap
-    # that independent/herd registries (tick 6sjz) would close. Asserted present, not hidden.
+    # that independent registries close (see the independent-registry sibling module).
     assert idCopies[k1].sad['rd'] == idCopies[k2].sad['rd'] == idReg.said   # shared id registry
     assert ageCopies[k1].sad['rd'] == ageCopies[k2].sad['rd'] == ageReg.said  # shared age registry
     assert Bid and Bage                                   # the aggregates are per-set, shared
