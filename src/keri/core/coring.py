@@ -1707,7 +1707,7 @@ class Number(Matter):
 
     Properties:
         num  (int): int representation of number
-        humh (str): hex string representation of number with no leading zeros
+        numh (str): hex string representation of number with no leading zeros
         sn (int): alias for num
         snh (str): alias for numh
         huge (str): qb64 of num but with code NumDex.Huge so 24 char compatible
