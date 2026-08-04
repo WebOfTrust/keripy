@@ -15,7 +15,7 @@ from ..kering import (Vrsn_1_0, Vrsn_2_0, Ilks,
 from ..core import (Counter, Pather, Dater, Diger,
                     Prefixer, Seqner, Saider,
                     Noncer, Sadder, Serder, SerderKERI, Texter,
-                    NonTransDex, Saids, Codens, FirstSeen, Parser,
+                    Saids, Codens, FirstSeen, Parser,
                     messagize,
                     verifySigs)
 from ..db import fetchTsgs
@@ -681,50 +681,31 @@ def serializeMessage(hby, said, framed=False):
                          framed=framed,
                          gvrsn=exn.gvrsn if exn.gvrsn else exn.pvrsn)
 
-    msg = bytearray(exn.raw)
-    atc = bytearray()
+    aims = bytearray()
+    if tsgs or cigars:
+        # Authenticator attachments via messagize; framed=True so we can append
+        # pathed embeds after (pathed material is outside messagize support).
+        full = messagize(exn, tsgs=tsgs or None, cigars=cigars or None,
+                         framed=True, gvrsn=Vrsn_1_0)
+        aims.extend(full[exn.size:])
 
-    if len(tsgs) > 0:
-        for (prefixer, seqner, saider, sigers) in tsgs:
-            atc.extend(Counter(Codens.TransIdxSigGroups, count=1,
-                                    version=Vrsn_1_0).qb64b)
-            atc.extend(prefixer.qb64b)
-            atc.extend(seqner.qb64b)
-            atc.extend(saider.qb64b)
-
-            atc.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                                    version=Vrsn_1_0).qb64b)
-            for siger in sigers:
-                atc.extend(siger.qb64b)
-
-    if len(cigars) > 0:
-        atc.extend(Counter(Codens.NonTransReceiptCouples,
-                                count=len(cigars), version=Vrsn_1_0).qb64b)
-        for cigar in cigars:
-            if cigar.verfer.code not in NonTransDex:
-                raise ValueError("Attempt to use tranferable prefix={} for "
-                                 "receipt.".format(cigar.verfer.qb64))
-            atc.extend(cigar.verfer.qb64b)
-            atc.extend(cigar.qb64b)
-
-    # Smash the pathed components on the end
+    # Pathed embeds are outside current messagize support — deliberate special
+    # case until messagize gains path-material encoding.
     for p in pathed:
-        atc.extend(Counter(Codens.PathedMaterialCouples,
-                                  count=(len(p) // 4), version=Vrsn_1_0).qb64b)
-        atc.extend(p.encode("utf-8"))
+        aims.extend(Counter(Codens.PathedMaterialCouples,
+                            count=(len(p) // 4), version=Vrsn_1_0).qb64b)
+        aims.extend(p.encode("utf-8"))
 
-    for nest in nests:
-        atc.extend(nest.encode("utf-8") if hasattr(nest, "encode") else nest)
+    msg = bytearray(exn.raw)
+    if aims:
+        if len(aims) % 4:
+            raise ValueError("Invalid attachments size={}, nonintegral"
+                             " quadlets.".format(len(aims)))
+        if not framed:
+            msg.extend(Counter(Codens.AttachmentGroup,
+                               count=(len(aims) // 4), version=Vrsn_1_0).qb64b)
+        msg.extend(aims)
 
-    if len(atc) % 4:
-        raise ValueError("Invalid attachments size={}, nonintegral"
-                         " quadlets.".format(len(atc)))
-
-    if not framed:
-        msg.extend(Counter(Codens.AttachmentGroup,
-                                  count=(len(atc) // 4), version=Vrsn_1_0).qb64b)
-
-    msg.extend(atc)
     return msg
 
 

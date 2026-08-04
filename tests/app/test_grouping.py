@@ -1060,11 +1060,11 @@ def test_multisig_incept_handler_parses_approved_v1_embed(mockHelpingNowUTC):
         ghab2 = hby2.makeGroupHab(group="approved-embed", mhab=hab2,
                                   smids=smids, rmids=None, **inits)
 
-        icp1 = ghab1.msgOwnInception(allowPartiallySigned=True)
+        icp1 = ghab1.msgOwnInception(allowPartiallySigned=True, gvrsn=TEST_VERSION)
         exn1, _ = multisigInceptExn(hab=ghab1.mhab, smids=ghab1.smids,
                                     rmids=ghab1.rmids, icp=icp1,
                                     version=Vrsn_1_0, kind=Kinds.json)
-        icp2 = ghab2.msgOwnInception(allowPartiallySigned=True)
+        icp2 = ghab2.msgOwnInception(allowPartiallySigned=True, gvrsn=TEST_VERSION)
         exn2, atc2 = multisigInceptExn(hab=ghab2.mhab, smids=ghab2.smids,
                                        rmids=ghab2.rmids, icp=icp2,
                                        version=Vrsn_1_0, kind=Kinds.json)

@@ -14,7 +14,7 @@ import sys
 from hio.base import doing
 from hio.help import ogler
 
-from ....kering import ConfigurationError, Kinds, Versionage, Vrsn_1_0
+from ....kering import ConfigurationError, Kinds, Version, Versionage, Vrsn_1_0
 from ....app import (Notifier, MailboxDirector, Multiplexor,
                      Counselor, HaberyDoer, Poster,
                      multisigInceptExn)
@@ -163,7 +163,8 @@ class GroupMultisigIncept(doing.DoDoer):
             ghab = self.hby.makeGroupHab(group=self.group, mhab=hab, smids=smids,
                                          rmids=rmids, **self.inits)
 
-            icp = ghab.msgOwnInception(allowPartiallySigned=True)
+            icp = ghab.msgOwnInception(allowPartiallySigned=True,
+                                       gvrsn=self.version if self.version is not None else Version)
 
             # Create a notification EXN message to send to the other agents
             exn, ims = multisigInceptExn(ghab.mhab,

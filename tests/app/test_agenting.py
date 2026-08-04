@@ -436,7 +436,6 @@ def test_witness_inquisitor(mockHelpingNowUTC, seeder, witnessPorter):
         doist.exit()
 
 
-@pytest.mark.skip(reason="need to wait for DB changes")
 def test_witness_inquisitor_v2(mockHelpingNowUTC, seeder):
 
 

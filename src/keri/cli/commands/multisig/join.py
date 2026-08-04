@@ -241,7 +241,8 @@ class JoinDoer(doing.DoDoer):
             except ValueError as e:
                 return False
 
-            icp = ghab.msgOwnInception(allowPartiallySigned=True)
+            icp = ghab.msgOwnInception(allowPartiallySigned=True,
+                                       gvrsn=self.version if self.version is not None else Version)
 
             exn, ims = multisigInceptExn(ghab.mhab,
                                          smids=ghab.smids,

@@ -54,7 +54,7 @@ class Director(doing.Doer):
         """
         Utility to send own event at sequence number sn
         """
-        msg = self.hab.msgOwnEvent(sn=sn, framed=True)
+        msg = self.hab.msgOwnEvent(sn=sn, framed=True, gvrsn=self.version)
         # send to connected remote
         self.client.tx(msg)
         logger.info("%s: %s sent event:\n%s\n\n", self.hab.name, self.hab.pre, bytes(msg))

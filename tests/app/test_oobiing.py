@@ -144,11 +144,13 @@ def test_oobiery(unused_tcp_port_factory):
         msgs = bytearray()
         msgs.extend(hab.makeEndRole(eid=hab.pre,
                                     role=Roles.controller,
-                                    stamp=helping.nowIso8601(), version=Vrsn_1_0, kind=Kinds.json))
+                                    stamp=helping.nowIso8601(), version=Vrsn_1_0,
+                                    kind=Kinds.json, gvrsn=Vrsn_1_0))
 
         msgs.extend(hab.makeLocScheme(url=f'http://127.0.0.1:{locPort}',
                                       scheme=Schemes.http,
-                                      stamp=helping.nowIso8601(), version=Vrsn_1_0, kind=Kinds.json))
+                                      stamp=helping.nowIso8601(), version=Vrsn_1_0,
+                                      kind=Kinds.json, gvrsn=Vrsn_1_0))
         hab.psr.parse(ims=msgs)
 
         oobiery = Oobiery(hby=hby)
@@ -226,20 +228,22 @@ def test_loaded_v1_endpoint_replies_use_stored_reply_framing():
         msgs.extend(hab.makeEndRole(eid=hab.pre,
                                     role=Roles.controller,
                                     stamp=helping.nowIso8601(),
-                                    version=Vrsn_1_0, kind=Kinds.json))
+                                    version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
         msgs.extend(hab.makeLocScheme(url="http://127.0.0.1:5555",
                                       scheme=Schemes.http,
                                       stamp=helping.nowIso8601(),
-                                      version=Vrsn_1_0, kind=Kinds.json))
+                                      version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
         hab.psr.parse(ims=msgs)
 
         oobi = bytearray()
         oobi.extend(hab.replay(version=Vrsn_1_0))
         oobi.extend(hab.loadEndRole(cid=hab.pre,
                                     eid=hab.pre,
-                                    role=Roles.controller))
+                                    role=Roles.controller,
+                                    gvrsn=Vrsn_1_0))
         oobi.extend(hab.loadLocScheme(eid=hab.pre,
-                                      scheme=Schemes.http))
+                                      scheme=Schemes.http,
+                                      gvrsn=Vrsn_1_0))
 
         dst.psr.parse(ims=oobi)
 
@@ -259,6 +263,72 @@ def test_loaded_v1_endpoint_replies_use_stored_reply_framing():
         locer = dst2.db.locs.get(keys=(hab.pre, Schemes.http))
         assert locer is not None
         assert locer.url == "http://127.0.0.1:5555"
+
+
+def test_v2_reply_to_oobi_replay_without_explicit_gvrsn():
+    """replyToOobi with omitted gvrsn keeps library default (``Version``) attachments."""
+    v2kwa = dict(version=Vrsn_2_0, kind=Kinds.cesr, gvrsn=Vrsn_2_0)
+    with openHby(name="oobi-src-v2-replay", version=Vrsn_2_0) as src, \
+            openHby(name="oobi-dst-v2-replay", version=Vrsn_2_0) as dst:
+        hab = src.makeHab(name="wit", isith="1", icount=1,
+                          transferable=False, version=Vrsn_2_0, kind=Kinds.cesr)
+        msgs = bytearray()
+        msgs.extend(hab.makeEndRole(eid=hab.pre,
+                                    role=Roles.controller,
+                                    stamp=helping.nowIso8601(),
+                                    **v2kwa))
+        msgs.extend(hab.makeLocScheme(url="http://127.0.0.1:5555",
+                                      scheme=Schemes.http,
+                                      stamp=helping.nowIso8601(),
+                                      **v2kwa))
+        hab.psr.parse(ims=msgs)
+
+        oobi = hab.replyToOobi(aid=hab.pre,
+                               role=Roles.controller,
+                               eids=[hab.pre])
+        assert oobi
+
+        rtr = Router()
+        rvy = Revery(db=dst.db, rtr=rtr)
+        kvy = Kevery(db=dst.db, lax=False, local=False, rvy=rvy)
+        kvy.registerReplyRoutes(router=rtr)
+        Parser(version=Vrsn_2_0, kvy=kvy, rvy=rvy).parse(ims=bytearray(oobi))
+
+        assert hab.pre in kvy.kevers
+        ender = dst.db.ends.get(keys=(hab.pre, Roles.controller, hab.pre))
+        assert ender is not None
+        assert ender.allowed is True
+        locer = dst.db.locs.get(keys=(hab.pre, Schemes.http))
+        assert locer is not None
+        assert locer.url == "http://127.0.0.1:5555"
+
+
+def test_v1_kel_replay_defaults_to_v2_attachments():
+    """v1 key-event bodies keep pvrsn; omitted gvrsn uses ``Version`` attachment framing."""
+    with openHby(name="v1-kel-v2-atc", version=Vrsn_1_0) as hby:
+        hab = hby.makeHab(name="probe", version=Vrsn_1_0, kind=Kinds.json)
+        msg = hab.replay()
+        serder = SerderKERI(raw=msg)
+        assert serder.pvrsn == Vrsn_1_0
+        assert serder.ked["v"].startswith("KERI10")
+
+        atc = bytes(msg[serder.size:])
+        assert atc.startswith(b"-CAi-KAW")  # Version AttachmentGroup + ControllerIdxSigs
+        assert not atc.startswith(b"-VAi-AAB")  # not Vrsn_1_0 AttachmentGroup + ControllerIdxSigs
+
+        oobi = hab.replyToOobi(aid=hab.pre, role=Roles.controller, eids=[hab.pre])
+        assert oobi
+        oserder = SerderKERI(raw=oobi)
+        assert oserder.pvrsn == Vrsn_1_0
+        oatc = bytes(oobi[oserder.size:])
+        assert oatc.startswith(b"-CAi-KAW")
+
+        rtr = Router()
+        rvy = Revery(db=hby.db, rtr=rtr)
+        kvy = Kevery(db=hby.db, lax=False, local=False, rvy=rvy)
+        kvy.registerReplyRoutes(router=rtr)
+        # Version parser accepts v1 bodies with Version-framed attachments
+        Parser(version=Vrsn_2_0, kvy=kvy, rvy=rvy).parse(ims=bytearray(msg))
 
 
 def test_loaded_v2_oobi_endpoint_replies_bypass_kram(mockHelpingNowUTC):

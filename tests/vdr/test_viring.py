@@ -13,7 +13,7 @@ import lmdb
 from keri import versify, Kinds, Vrsn_1_0
 
 from keri.core import (Siger, Diger, Number,
-                       Prefixer, Saider, Seqner)
+                       Prefixer, Saider)
 from keri.db import Suber, openLMDB, dgKey, snKey
 from keri.vdr import Reger
 
@@ -296,8 +296,7 @@ def test_clone():
     vdig = Diger(ser=vcpb)
     number01 = Number(num=0)
     diger01 = Diger(qb64=vdig.qb64)
-    anc01_couple = (Seqner(sn=number01.sn).qb64b +
-                    Saider(qb64=diger01.qb64).qb64b)
+    anc01_couple = number01.qb64b + diger01.qb64b
     # Valid Siger bytes (tibs must be Siger for CesrDupSuber)
     tib01 = (b'AAAUr5RHYiDH8RU0ig-2Dp5h7rVKx89StH5M3CL60-cWEbgG-XmtW31pZlFicYgSPduJZUnD838_'
              b'QLbASSQLAZcC')
@@ -313,8 +312,7 @@ def test_clone():
     r1dig = Diger(ser=rot1b)
     number02 = Number(num=1)
     diger02 = Diger(qb64=r1dig.qb64)
-    anc02_couple = (Seqner(sn=number02.sn).qb64b +
-                    Saider(qb64=diger02.qb64).qb64b)
+    anc02_couple = number02.qb64b + diger02.qb64b
 
     rot2 = dict(v=vs, i=regk.decode("utf-8"),
                 s="{:x}".format(sn + 2), br=[rarb.decode("utf-8")],
@@ -323,8 +321,7 @@ def test_clone():
     r2dig = Diger(ser=rot2b)
     number03 = Number(num=2)
     diger03 = Diger(qb64=r2dig.qb64)
-    anc03_couple = (Seqner(sn=number03.sn).qb64b +
-                    Saider(qb64=diger03.qb64).qb64b)
+    anc03_couple = number03.qb64b + diger03.qb64b
 
     with openLMDB(cls=Reger) as issuer:
         dgkey = dgKey(regk, vdig.qb64b)

@@ -82,7 +82,8 @@ class NoticeDoer(doing.DoDoer):
         if hab.group:
             (smids, rmids) = hab.members()
             serder = hab.kever.serder
-            msg = hab.msgOwnEvent(sn=hab.kever.sn, framed=True)
+            msg = hab.msgOwnEvent(sn=hab.kever.sn, framed=True,
+                                  gvrsn=serder.pvrsn)
             eserder = SerderKERI(raw=msg)
             atc = bytearray(msg)
             del atc[:eserder.size]
