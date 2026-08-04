@@ -32,7 +32,7 @@ parser.add_argument('--aeid', help='qualified base64 of non-transferable identif
 def handler(args):
     """
     Send the /multisig/rot EXN notification message to other members of a multisig group about the last event in the KEL
-    Args:
+    Parameters:
         args(Namespace): arguments object from command line
     """
 
@@ -70,7 +70,8 @@ class NoticeDoer(doing.DoDoer):
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value
 
-        Returns:  doifiable Doist compatible generator method
+        Returns:
+            doifiable Doist compatible generator method
         """
         # enter context
         self.wind(tymth)

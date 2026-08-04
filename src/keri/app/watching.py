@@ -173,10 +173,7 @@ class AdjudicationDoer(doing.Doer):
 
         Parameters:
             tyme (float): relative cycle time
-
-        Returns:
-
-        """
+            """
         self.adjudicator.performAdjudications()
 
 

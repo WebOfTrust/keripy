@@ -285,12 +285,13 @@ class MultiSigShell(cmd.Cmd):
 
 def parse(arg):
     """ Convert a series of zero or more numbers to an argument tuple
-    Args:
-        arg:
+
+    Parameters:
+        arg (str): whitespace-delimited integer values to parse
 
     Returns:
-
-    """
+        tuple: parsed integer values from ``arg``
+        """
     return tuple(map(int, arg.split()))
 
 

@@ -25,7 +25,7 @@ def handler(args):
     """
     Saidify the provided SAD
 
-    Args:
+    Parameters:
         args(Namespace): arguments object from command line
     """
     kwa = dict(args=args)

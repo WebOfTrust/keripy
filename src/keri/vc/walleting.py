@@ -1,7 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
 keri.vc.walleting module
-
 """
 from hio.base import doing
 from hio.help import ogler
@@ -11,19 +10,14 @@ logger = ogler.getLogger()
 
 class Wallet:
     """
-    Wallet represents all credentials received or verified
-
-
-    """
+    Wallet represents all credentials received or verified"""
 
     def __init__(self, reger: Reger = None, name="test", temp=False):
         """
         Create a Wallet associated with a Habitat
 
         Parameters:
-            reger: (Reger) the database for the wallet
-
-        """
+            reger: (Reger) the database for the wallet"""
         self.name = name
         self.temp = temp
 
@@ -37,9 +31,7 @@ class Wallet:
         that matches schema
 
         Parameters:
-            schema: qb64 SAID of the schema for the credential
-
-        """
+            schema: qb64 SAID of the schema for the credential"""
         saiders = self.reger.schms.get(keys=schema.encode("utf-8"))
 
         creds = []
@@ -51,18 +43,14 @@ class Wallet:
 
 
 class WalletDoer(doing.DoDoer):
-    """ DoDoer for process escrows and cues associated with a wallet
-
-    """
+    """ DoDoer for process escrows and cues associated with a wallet"""
 
     def __init__(self, hby, verifier, **kwa):
         """ Waller doer processes the verifier cues and escrows for an Enterprise Wallet
 
         Parameters:
             hab (Habitat): is the local environment associate with this wallet
-            verifier (Verifier): is the verifier that processes and stores credentials
-
-        """
+            verifier (Verifier): is the verifier that processes and stores credentials"""
 
         self.verifier = verifier
 
@@ -85,9 +73,7 @@ class WalletDoer(doing.DoDoer):
             add result of doify on this method to doers list
 
         Returns:
-             Doist: doifiable Doist compatible generator method
-
-        """
+            Doist: doifiable Doist compatible generator method"""
         # start enter context
         self.wind(tymth)
         self.tock = tock
@@ -103,9 +89,7 @@ class WalletDoer(doing.DoDoer):
         Parameters:
             tymth (function): injected function wrapper closure returned by .tymen() of
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
-            tock (float): injected initial tock value
-
-        """
+            tock (float): injected initial tock value"""
         self.wind(tymth)
         self.tock = tock
         yield self.tock

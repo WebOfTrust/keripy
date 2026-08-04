@@ -98,8 +98,8 @@ class BaseOrganizer:
             pre (str): qb64 identifier prefix for contact to remove
 
         Returns:
-
-        """
+            bool: True if contact data was removed
+            """
         self.cigsdb.rem(keys=(pre,))
         self.datadb.rem(keys=(pre,))
         return self.fielddb.trim(keys=(pre,))
@@ -201,7 +201,7 @@ class BaseOrganizer:
     def values(self, field, val=None):
         """ Find unique values for field in all contacts
 
-        Args:
+        Parameters:
             field (str): field to load values for
             val (Optional(str|None): optional filter for the value of the grouped field
 

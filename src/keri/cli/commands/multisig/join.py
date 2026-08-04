@@ -124,7 +124,8 @@ class JoinDoer(doing.DoDoer):
                 Tymist instance. Calling tymth() returns associated Tymist .tyme.
             tock (float): injected initial tock value
 
-        Returns:  doifiable Doist compatible generator method
+        Returns:
+            doifiable Doist compatible generator method
         """
         # enter context
         self.wind(tymth)
@@ -550,8 +551,8 @@ class JoinDoer(doing.DoDoer):
             attrs (dict): attributes of the reply message
 
         Returns:
-
-        """
+            bool: True when the reply is approved and processed, otherwise False
+            """
         said = attrs["d"]
         exn, pathed = cloneMessage(self.hby, said=said)
 
@@ -633,8 +634,9 @@ class JoinDoer(doing.DoDoer):
             attrs (dict): attributes of the reply message
 
         Returns:
-
-        """
+            bool: True when the registry creation is approved and processed,
+                otherwise False
+            """
         said = attrs["d"]
         exn, pathed = cloneMessage(self.hby, said=said)
 
@@ -717,8 +719,9 @@ class JoinDoer(doing.DoDoer):
             attrs (dict): attributes of the reply message
 
         Returns:
-
-        """
+            bool: True when the credential issuance is approved and processed,
+                otherwise False
+            """
         said = attrs["d"]
         exn, pathed = cloneMessage(self.hby, said=said)
 
@@ -827,8 +830,9 @@ class JoinDoer(doing.DoDoer):
             attrs (dict): attributes of the reply message
 
         Returns:
-
-        """
+            bool | None: True when the revocation is approved and processed,
+                False when declined, or None when the credential SAID is invalid
+            """
         said = attrs["d"]
         exn, pathed = cloneMessage(self.hby, said=said)
 

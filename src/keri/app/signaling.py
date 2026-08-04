@@ -97,9 +97,10 @@ class Signaler(doing.DoDoer):
     SignalTimeout = datetime.timedelta(minutes=10)
 
     def __init__(self, signals=None):
-        """
+        """Create a signaler with an optional backing signal deck.
 
         Parameters:
+            signals (Deck): optional deck of Signal instances to reuse
         """
         self.signals = signals if signals is not None else decking.Deck()
         doers = [doing.doify(self.expireDo)]
@@ -113,10 +114,7 @@ class Signaler(doing.DoDoer):
             topic (str): routing for recipient of message
             ckey (str): collapse key
             dt(Optional(str, datetime)): iso8601 formatted datetime of notice
-
-        Returns:
-
-        """
+            """
         dt = dt if dt is not None else nowIso8601()
         sig = signal(attrs=attrs, topic=topic, ckey=ckey, dt=dt)
 
@@ -162,13 +160,13 @@ class Signaler(doing.DoDoer):
 def loadEnds(app, *, signals=None):
     """ Load endpoints for agent to controller messages
 
-    Args:
+    Parameters:
         app (falcon.App): falcon.App to register handlers with:
         signals (Deck): messages for the mailbox stream
 
     Returns:
-
-    """
+        SignalsEnd: endpoint handler registered on ``/mbx``
+        """
     sigEnd = SignalsEnd(signals=signals)
     app.add_route("/mbx", sigEnd)
     return sigEnd
@@ -201,8 +199,8 @@ class SignalsEnd:
         Handles POST for KERI mailbox service.
 
         Parameters:
-              req (Request) Falcon HTTP request
-              rep (Response) Falcon HTTP response
+            req (Request) Falcon HTTP request
+            rep (Response) Falcon HTTP response
 
         .. code-block:: none
 
@@ -233,8 +231,8 @@ class SignalsEnd:
         """
         Handles GET requests as a stream of SSE events
         Parameters:
-              req (Request) Falcon HTTP request
-              rep (Response) Falcon HTTP response
+            req (Request) Falcon HTTP request
+            rep (Response) Falcon HTTP response
         .. code-block:: none
 
             ---

@@ -132,6 +132,9 @@ def openKS(name="test", **kwa):
 
         temp is Boolean, True means open in temporary directory, clear on close
         Otherwise open in persistent directory, do not clear on close
+
+    Returns:
+        contextmanager: context manager yielding a Keeper-backed LMDB environment
     """
     return openLMDB(cls=Keeper, name=name, **kwa)
 
@@ -354,7 +357,7 @@ class KeeperDoer(doing.Doer):
         """
 
         Parameters:
-           keeper is Keeper instance
+            keeper is Keeper instance
         """
         super(KeeperDoer, self).__init__(**kwa)
         self.keeper = keeper
@@ -389,10 +392,7 @@ class Creator:
     def __init__(self, **kwa):
         """
         Setup Creator.
-
-        Parameters:
-
-        """
+            """
 
     def create(self, **kwa):
         """
@@ -440,10 +440,7 @@ class RandyCreator(Creator):
     def __init__(self, **kwa):
         """
         Setup Creator.
-
-        Parameters:
-
-        """
+            """
         super(RandyCreator, self).__init__(**kwa)
 
     def create(self, codes=None, count=1, code=MtrDex.Ed25519_Seed,
@@ -456,6 +453,9 @@ class RandyCreator(Creator):
             count is count of key pairs to create is codes not provided
             code is derivation code to use for count key pairs if codes not provided
             transferable is Boolean, True means use trans deriv code. Otherwise nontrans
+
+        Returns:
+            list[Signer]: signers created from the requested derivation codes
         """
         signers = []
         if not codes:  # if not codes make list len count of same code
@@ -534,6 +534,9 @@ class SaltyCreator(Creator):
             transferable is Boolean, True means use trans deriv code. Otherwise nontrans
             temp is Boolean True means use temp stretch otherwise use time set
                  by tier for streching
+
+        Returns:
+            list[Signer]: signers created from the requested derivation codes
         """
         signers = []
         if not codes:  # if not codes make list len count of same code
@@ -676,7 +679,8 @@ class Manager:
                 another device from the device that runs the Manager.
                 Currently only code MtrDex.Ed25519_Seed is supported.
 
-        Parameters: Passthrough to .setup for later initialization
+        Parameters:
+            Passthrough to .setup for later initialization
             aeid (str): qb64 of non-transferable identifier prefix for
                 authentication and encryption of secrets in keeper. If provided
                 aeid (not None) and different from aeid stored in database then
@@ -993,6 +997,9 @@ class Manager:
             not be rotatable. This makes the identifier non-transferable in effect
             even when the identifier prefix is transferable.
 
+        Returns:
+            tuple: ``(verfers, digers)`` for the inception event
+
         """
         # get root defaults to initialize key sequence
         if rooted and algo is None:  # use root algo from db as default
@@ -1173,6 +1180,9 @@ class Manager:
             not be rotatable. This makes the identifier non-transferable in effect
             even when the identifier prefix is transferable.
 
+        Returns:
+            tuple: ``(verfers, digers)`` for the rotation event
+
         """
         # Secret to decrypt here
         if (pp := self.ks.prms.get(pre)) is None:
@@ -1331,6 +1341,9 @@ class Manager:
         checks for pris for pubs in db is not raises error
         then signs ser with eah pub
         returns list of sigers indexed else list of cigars if not
+
+        Returns:
+            list: signatures as Sigers when indexed is True, otherwise Cigars
         """
         signers = []
 
@@ -1674,6 +1687,9 @@ class Manager:
             erase (bool): True means erase old private keys made stale by
                 advancement when advance is True otherwise ignore
 
+        Returns:
+            tuple: ``(verfers, digers)`` for the replayed key state
+
         """
         if (pp := self.ks.prms.get(pre)) is None:
             raise ValueError("Attempt to replay nonexistent pre={}.".format(pre))
@@ -1776,7 +1792,7 @@ class ManagerDoer(doing.Doer):
     def __init__(self, manager, **kwa):
         """
         Parameters:
-           manager (Manager): instance
+            manager (Manager): instance
         """
         super(ManagerDoer, self).__init__(**kwa)
         self.manager = manager

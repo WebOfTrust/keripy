@@ -4,7 +4,6 @@ KERI
 keri.app.directing module
 
 simple direct mode demo support classes
-
 """
 import itertools
 from hio.base import doing
@@ -22,18 +21,16 @@ class Director(doing.Doer):
     Attributes:
         hab (Habitat): Local controller's Habitat instance.
         client (Client): hio TCP client instance. Assumed to be operated
-            by a separate doer.
-    """
+            by a separate doer."""
 
     def __init__(self, hab, client, version=None, kind=None, **kwa):
         """Initialize instance.
 
-        Args:
+        Parameters:
             tymist (Tymist): Tymist instance.
             tock (float): Seconds initial value of .tock.
             hab (Habitat): Habitat instance.
-            client (Client): TCP Client instance. Assumes opened/closed elsewhere.
-        """
+            client (Client): TCP Client instance. Assumes opened/closed elsewhere."""
         super(Director, self).__init__(**kwa)
         self.hab = hab
         self.client = client  # use client to initiate comms
@@ -45,8 +42,7 @@ class Director(doing.Doer):
     def wind(self, tymth):
         """
         Inject new tymist.tymth as new ._tymth. Changes tymist.tyme base.
-        Updates winds .tymer .tymth
-        """
+        Updates winds .tymer .tymth"""
         super(Director, self).wind(tymth)
         self.client.wind(tymth)
 
@@ -61,8 +57,7 @@ class Director(doing.Doer):
 
     def sendOwnInception(self):
         """
-        Utility to send own inception on client
-        """
+        Utility to send own inception on client"""
         self.sendOwnEvent(sn=0)
 
 
@@ -79,11 +74,11 @@ class Reactor(doing.DoDoer):
 
     Inherited Attributes:
         .done is Boolean completion state:
-            True means completed
-            Otherwise incomplete. Incompletion maybe due to close or abort.
+                True means completed
+                Otherwise incomplete. Incompletion maybe due to close or abort.
 
-        .opts is dict of injected options for its generator .do
-        .doers is list of Doers or Doer like generator functions
+            .opts is dict of injected options for its generator .do
+            .doers is list of Doers or Doer like generator functions
 
     Attributes:
         hab (Habitat): Local controller's Habitat instance.
@@ -105,45 +100,43 @@ class Reactor(doing.DoDoer):
 
     Inherited Properties:
         .tyme is float relative cycle time of associated Tymist .tyme obtained
-            via injected .tymth function wrapper closure.
+        via injected .tymth function wrapper closure.
 
         .tymth is function wrapper closure returned by Tymist .tymeth() method.
-            When .tymth is called it returns associated Tymist .tyme.
-            .tymth provides injected dependency on Tymist tyme base.
+        When .tymth is called it returns associated Tymist .tyme.
+        .tymth provides injected dependency on Tymist tyme base.
 
         .tock is float, desired time in seconds between runs or until next run,
-            non negative, zero means run asap
+        non negative, zero means run asap
 
     Properties:
 
-    Inherited Methods:
-        .wind  injects ._tymth dependency from associated Tymist to get its .tyme
+        Inherited Methods:
+            .wind  injects ._tymth dependency from associated Tymist to get its .tyme
 
-        .__call__ makes instance callable
-            Appears as generator function that returns generator
+            .__call__ makes instance callable
+                Appears as generator function that returns generator
 
-        .do is generator method that returns generator
-        .enter is enter context action method
-        .recur is recur context action method or generator method
-        .clean is clean context action method
-        .exit is exit context method
-        .close is close context method
-        .abort is abort context method
+            .do is generator method that returns generator
+            .enter is enter context action method
+            .recur is recur context action method or generator method
+            .clean is clean context action method
+            .exit is exit context method
+            .close is close context method
+            .abort is abort context method
 
-    Overidden Methods:
+        Overidden Methods:
 
     Hidden:
-       ._tymth is injected function wrapper closure returned by .tymen() of
-            associated Tymist instance that returns Tymist .tyme. when called.
+        ._tymth is injected function wrapper closure returned by .tymen() of
+        associated Tymist instance that returns Tymist .tyme. when called.
 
-       ._tock is hidden attribute for .tock property
-
-    """
+        ._tock is hidden attribute for .tock property"""
 
     def __init__(self, hab, client, verifier=None, exchanger=None, direct=True, doers=None, **kwa):
         """Initialize instance and extend doers with msgDo, escrowDo, cueDo.
 
-        Args:
+        Parameters:
             hab (Habitat): Local controller's Habitat instance.
             client (TCP Client): TCP client used for both receive and transmit.
             verifier (Verifier, optional): Verifier instance providing TEL
@@ -156,8 +149,7 @@ class Reactor(doing.DoDoer):
             doers (list, optional): Initial list of Doer instances or generator
                 functions to schedule. msgDo, escrowDo, and cueDo are always
                 appended. Defaults to None.
-            **kwa: Additional keyword arguments forwarded to DoDoer.__init__.
-        """
+            **kwa: Additional keyword arguments forwarded to DoDoer.__init__."""
         self.hab = hab
         self.client = client  # use client for both rx and tx
         self.verifier = verifier
@@ -198,10 +190,9 @@ class Reactor(doing.DoDoer):
         Overrides DoDoer.wind to ensure client.wind is called whenever the
             Tymist dependency changes.
 
-        Args:
+        Parameters:
             tymth (callable): Closure returned by Tymist.tymeth() that, when
-                called, returns the current Tymist.tyme.
-        """
+                called, returns the current Tymist.tyme."""
         super(Reactor, self).wind(tymth)
         self.client.wind(tymth)
 
@@ -212,7 +203,7 @@ class Reactor(doing.DoDoer):
         Delegates to Parser.parsator, which reads from client.rxbs and feeds
         events to kevery (and tvy when present).
 
-        Args:
+        Parameters:
             tymth (callable, optional): Injected tymth closure from the Doist.
                 Defaults to None.
             tock (float, optional): Injected initial tock value in seconds.
@@ -223,8 +214,7 @@ class Reactor(doing.DoDoer):
             None: Yields control back to the scheduler on each cycle.
 
         Returns:
-            bool: Done state from Parser.parsator. Only reached on forced close.
-        """
+            bool: Done state from Parser.parsator. Only reached on forced close."""
         yield  # enter context
         if self.parser.ims:
             logger.info("Client %s received:\n%s\n...\n", self.hab.name, self.parser.ims[:1024])
@@ -239,7 +229,7 @@ class Reactor(doing.DoDoer):
         transmits each produced message via sendMessage. Yields after each
         message to throttle output, then yields again at end of each cycle.
 
-        Args:
+        Parameters:
             tymth (callable, optional): Injected tymth closure from the Doist.
                 Defaults to None.
             tock (float, optional): Injected initial tock value in seconds.
@@ -250,8 +240,7 @@ class Reactor(doing.DoDoer):
             None: Yields control back to the scheduler on each cycle.
 
         Returns:
-            bool: Always False. Only reached on forced close.
-        """
+            bool: Always False. Only reached on forced close."""
         yield  # enter context
         while True:
             for msg in self.hab.processCuesIter(self.kevery.cues):
@@ -266,7 +255,7 @@ class Reactor(doing.DoDoer):
         Calls kevery.processEscrows() each cycle and, when tvy is present,
         also calls tvy.processEscrows().
 
-        Args:
+        Parameters:
             tymth (callable, optional): Injected tymth closure from the Doist.
                 Defaults to None.
             tock (float, optional): Injected initial tock value in seconds.
@@ -277,8 +266,7 @@ class Reactor(doing.DoDoer):
             None: Yields control back to the scheduler on each cycle.
 
         Returns:
-            bool: Always False. Only reached on forced close.
-        """
+            bool: Always False. Only reached on forced close."""
         yield  # enter context
         while True:
             self.kevery.processEscrows()
@@ -290,11 +278,10 @@ class Reactor(doing.DoDoer):
     def sendMessage(self, msg, label=""):
         """Transmit a message over the TCP client and log it.
 
-        Args:
+        Parameters:
             msg (bytes): Serialized message to transmit.
             label (str, optional): Descriptive label used in the log line.
-                Defaults to empty string.
-        """
+                Defaults to empty string."""
         self.client.tx(msg)  # send to remote
         logger.info("%s sent %s:\n%s\n\n", self.hab.name, label, bytes(msg))
 
@@ -322,13 +309,12 @@ class Directant(doing.DoDoer):
         done (bool): Completion state set by DoDoer. True means completed
             normally. False or None means incomplete.
         opts (dict): Injected options passed to the .do generator.
-        doers (list): Scheduled Doer instances or generator functions.
-    """
+        doers (list): Scheduled Doer instances or generator functions."""
 
     def __init__(self, hab, server, verifier=None, exchanger=None, doers=None, **kwa):
         """Initialize instance and extend doers with serviceDo.
 
-        Args:
+        Parameters:
             hab (Habitat): Local controller's Habitat instance.
             server (TCP Server): TCP server instance used to accept and
                 track inbound connections.
@@ -340,8 +326,7 @@ class Directant(doing.DoDoer):
             doers (list, optional): Initial list of Doer instances or generator
                 functions to schedule. serviceDo is always appended.
                 Defaults to None.
-            **kwa: Additional keyword arguments forwarded to DoDoer.__init__.
-        """
+            **kwa: Additional keyword arguments forwarded to DoDoer.__init__."""
         self.hab = hab
         self.verifier = verifier
         self.exchanger = exchanger
@@ -359,10 +344,9 @@ class Directant(doing.DoDoer):
         Overrides DoDoer.wind to ensure server.wind is called whenever the
         Tymist dependency changes.
 
-        Args:
+        Parameters:
             tymth (callable): Closure returned by Tymist.tymeth() that, when
-                called, returns the current Tymist.tyme.
-        """
+                called, returns the current Tymist.tyme."""
         super(Directant, self).wind(tymth)
         self.server.wind(tymth)
 
@@ -378,7 +362,7 @@ class Directant(doing.DoDoer):
         - If the connection has a positive tymeout and its timer has expired,
           closeConnection is called.
 
-        Args:
+        Parameters:
             tymth (callable, optional): Injected tymth closure from the Doist.
                 Defaults to None.
             tock (float, optional): Injected initial tock value in seconds.
@@ -386,8 +370,7 @@ class Directant(doing.DoDoer):
             **opts: Additional injected options from the Doist.
 
         Yields:
-            None: Yields control back to the scheduler on each cycle.
-        """
+            None: Yields control back to the scheduler on each cycle."""
         yield  # enter context
         while True:
             for ca, ix in list(self.server.ixes.items()):
@@ -414,9 +397,8 @@ class Directant(doing.DoDoer):
         server. If a Reactant exists for the address, it is closed and removed
         from the doers list.
 
-        Args:
-            ca (tuple): Connection address key used in server.ixes and rants.
-        """
+        Parameters:
+            ca (tuple): Connection address key used in server.ixes and rants."""
         if ca in self.server.ixes:  # remoter still there
             self.server.ixes[ca].serviceSends()  # send final bytes to socket
         self.server.removeIx(ca)
@@ -450,8 +432,7 @@ class Reactant(doing.DoDoer):
         done (bool): Completion state set by DoDoer. True means completed
             normally. False or None means incomplete.
         opts (dict): Injected options passed to the .do generator.
-        doers (list): Scheduled Doer instances or generator functions.
-    """
+        doers (list): Scheduled Doer instances or generator functions."""
 
     def __init__(self, hab, remoter, verifier=None, exchanger=None, doers=None, **kwa):
         """Initialize instance and extend doers with msgDo, cueDo, escrowDo.
@@ -459,7 +440,7 @@ class Reactant(doing.DoDoer):
         A Revery is always created and its router is registered on both
         kevery and, when verifier is provided, tevery.
 
-        Args:
+        Parameters:
             hab (Habitat): Local controller's Habitat instance.
             remoter (TCP Remoter): TCP remoter used for both receive and
                 transmit.
@@ -471,8 +452,7 @@ class Reactant(doing.DoDoer):
             doers (list, optional): Initial list of Doer instances or generator
                 functions to schedule. msgDo, cueDo, and escrowDo are always
                 appended. Defaults to None.
-            **kwa: Additional keyword arguments forwarded to DoDoer.__init__.
-        """
+            **kwa: Additional keyword arguments forwarded to DoDoer.__init__."""
         self.hab = hab
         self.verifier = verifier
         self.exchanger = exchanger
@@ -520,10 +500,9 @@ class Reactant(doing.DoDoer):
         Overrides DoDoer.wind to ensure remoter.wind is called whenever the
         Tymist dependency changes.
 
-        Args:
+        Parameters:
             tymth (callable): Closure returned by Tymist.tymeth() that, when
-                called, returns the current Tymist.tyme.
-        """
+                called, returns the current Tymist.tyme."""
         super(Reactant, self).wind(tymth)
         self.remoter.wind(tymth)
 
@@ -534,7 +513,7 @@ class Reactant(doing.DoDoer):
         Delegates to Parser.parsator, which reads from remoter.rxbs and feeds
         events to kevery (and tevery when present).
 
-        Args:
+        Parameters:
             tymth (callable, optional): Injected tymth closure from the Doist.
                 Defaults to None.
             tock (float, optional): Injected initial tock value in seconds.
@@ -545,8 +524,7 @@ class Reactant(doing.DoDoer):
             None: Yields control back to the scheduler on each cycle.
 
         Returns:
-            bool: Done state from Parser.parsator. Only reached on forced close.
-        """
+            bool: Done state from Parser.parsator. Only reached on forced close."""
         yield  # enter context
         if self.parser.ims:
             logger.info("Server %s: received:\n%s\n...\n", self.hab.name,
@@ -563,7 +541,7 @@ class Reactant(doing.DoDoer):
         chunks, then transmitted via sendMessage. Yields after each message
         to throttle output, then yields again at end of each cycle.
 
-        Args:
+        Parameters:
             tymth (callable, optional): Injected tymth closure from the Doist.
                 Defaults to None.
             tock (float, optional): Injected initial tock value in seconds.
@@ -574,8 +552,7 @@ class Reactant(doing.DoDoer):
             None: Yields control back to the scheduler on each cycle.
 
         Returns:
-            bool: Always False. Only reached on forced close.
-        """
+            bool: Always False. Only reached on forced close."""
         yield  # enter context
         while True:
             for msg in self.hab.processCuesIter(self.kevery.cues):
@@ -594,7 +571,7 @@ class Reactant(doing.DoDoer):
         Calls kevery.processEscrows() each cycle and, when tevery is present,
         also calls tevery.processEscrows().
 
-        Args:
+        Parameters:
             tymth (callable, optional): Injected tymth closure from the Doist.
                 Defaults to None.
             tock (float, optional): Injected initial tock value in seconds.
@@ -605,8 +582,7 @@ class Reactant(doing.DoDoer):
             None: Yields control back to the scheduler on each cycle.
 
         Returns:
-            bool: Always False. Only reached on forced close.
-        """
+            bool: Always False. Only reached on forced close."""
         yield  # enter context
         while True:
             self.kevery.processEscrows()
@@ -618,11 +594,10 @@ class Reactant(doing.DoDoer):
     def sendMessage(self, msg, label=""):
         """Transmit a message over the TCP remoter and log it.
 
-        Args:
+        Parameters:
             msg (bytes): Serialized message to transmit.
             label (str, optional): Descriptive label used in the log line.
-                Defaults to empty string.
-        """
+                Defaults to empty string."""
         self.remoter.tx(msg)  # send to remote
         logger.info("Server %s: sent %s:\n%d\n\n", self.hab.name,
                     label, len(msg))
@@ -630,8 +605,7 @@ class Reactant(doing.DoDoer):
 
 def runController(doers, expire=0.0):
     """
-    Utiitity Function to create doist to run doers
-    """
+    Utiitity Function to create doist to run doers"""
     tock = 0.03125
     doist = doing.Doist(limit=expire, tock=tock, real=True)
     doist.do(doers=doers)

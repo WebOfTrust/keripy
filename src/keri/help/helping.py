@@ -1,7 +1,6 @@
 # -*- encoding: utf-8 -*-
 """
 keri.help.helping module
-
 """
 import base64
 import dataclasses
@@ -26,24 +25,22 @@ TRUTHY = (True, 1, "?1", "yes" "true", "True", 'on')
 def isign(i):
     """
     Integer sign function
-    Returns:
-        (int): 1 if i > 0, -1 if i < 0, 0 otherwise
 
-    """
+    Returns:
+        (int): 1 if i > 0, -1 if i < 0, 0 otherwise"""
     return (1 if i > 0 else -1 if i < 0 else 0)
 
 
 def sceil(r):
     """
     Symmetric ceiling function
+
     Returns:
-       sceil (int): value that is symmetric ceiling of r away from zero
+        sceil (int): value that is symmetric ceiling of r away from zero
 
     Because int() provides a symmetric floor towards zero, just increment
     int(r) by 1 when r - int(r) > 0, -1 when r - int(r) < 0, or 0 when
-    r - int(r) == 0.  abs(r) > abs(int(r) or 0 when abs(r)
-
-    """
+    r - int(r) == 0.  abs(r) > abs(int(r) or 0 when abs(r)"""
     return (int(r) + isign(r - int(r)))
 
 
@@ -53,8 +50,7 @@ def dictify(val: dataclasses.dataclass):
     contains a `_ser` method, use it instead of `asdict`
 
     Parameters:
-         val the dataclass instance to turn into a dict.
-    """
+        val: the dataclass instance to turn into a dict."""
     ser = getattr(val, "_ser", None)
     if callable(ser):
         return ser()
@@ -69,9 +65,8 @@ def datify(cls, d):
     of default fieldtypes conversion.
 
     Parameters:
-    cls is dataclass class
-    d is dict
-    """
+        cls: dataclass class
+        d: dict"""
     try:
         der = getattr(cls, "_der", None)
         if callable(der):
@@ -93,8 +88,7 @@ def klasify(sers: Iterable, klases: Iterable, args: Iterable = None):
 
     Parameters:
         sers (Iterable): of serialized CESR subclass, str .qb64 or bytes .qb64b
-        klases (Iterable): of class reference of CESR subclass
-    """
+        klases (Iterable): of class reference of CESR subclass"""
     if not args:
         args = ("qb64",) * len(klases)
 
@@ -106,8 +100,7 @@ def klasify(sers: Iterable, klases: Iterable, args: Iterable = None):
 class NonStringIterable(metaclass=ABCMeta):
     """
     Allows isinstance check for iterable that is not a string
-    if isinstance(x, NonStringIterable):
-    """
+    if isinstance(x, NonStringIterable):"""
     @classmethod
     def __subclasshook__(cls, C):
         if cls is NonStringIterable:
@@ -119,8 +112,7 @@ class NonStringIterable(metaclass=ABCMeta):
 class NonStringSequence(metaclass=ABCMeta):
     """
     Allows isinstance check for sequence that is not a string
-    if isinstance(x, NonStringSequence):
-    """
+    if isinstance(x, NonStringSequence):"""
     @classmethod
     def __subclasshook__(cls, C):
         if cls is NonStringSequence:
@@ -138,19 +130,17 @@ def isNonStringIterable(obj):
     for non string iterables.
 
     Faster way that is less future proof
-    return (hasattr(x, '__iter__') and not isinstance(x, (str, bytes)))
-    """
+    return (hasattr(x, '__iter__') and not isinstance(x, (str, bytes)))"""
     return (not isinstance(obj, (str, bytes)) and isinstance(obj, Iterable))
 
 
 def isNonStringSequence(obj):
     """
-    Returns: True if obj is non-string sequence, False otherwise
+    Returns:
+        True if obj is non-string sequence, False otherwise
 
     Future proof way that is compatible with both Python3 and Python2 to check
-    for non string sequences.
-
-    """
+    for non string sequences."""
     return (not isinstance(obj, (str, bytes)) and isinstance(obj, Sequence))
 
 
@@ -162,8 +152,8 @@ def extractElementValues(element, values):
     Assumes that extracted values are str
 
     Parameters:
-        element is some element to extract values from
-        values is list of values from elements that are not nonStringIterables
+        element: some element to extract values from
+        values: list of values from elements that are not nonStringIterables
 
     IF element is mapping or sequence (nonStringIterable) then
         recusively  extractValues from the items of that element
@@ -171,9 +161,7 @@ def extractElementValues(element, values):
     Else
         append element to values list
 
-    return
-
-    """
+    return"""
     if isNonStringIterable(element):
         if isinstance(element, Mapping):  # dict like
             for k in element:
@@ -197,9 +185,8 @@ def extractValues(ked, labels):
     key event dict ked whose labels are in labels list
 
     Parameters:
-       ked is key event dict
-       labels is list of element labels in ked from which to extract values
-    """
+        ked: key event dict
+        labels: list of element labels in ked from which to extract values"""
     values = []
     for label in labels:
         extractElementValues(element=ked[label], values=values)
@@ -216,8 +203,7 @@ DTS_BASE_3 = "2021-01-01T01:00:00.000000+00:00"
 def nowUTC():
     """
     Returns timezone aware datetime of current UTC time
-    Convenience function that allows monkeypatching in tests to mock time
-    """
+    Convenience function that allows monkeypatching in tests to mock time"""
     return (datetime.datetime.now(datetime.timezone.utc))
 
 
@@ -230,8 +216,7 @@ def nowIso8601():
     .strftime('%Y-%m-%dT%H:%M:%S.%f%z')
     '2020-08-22T17:50:09.988921+00:00'
     Assumes TZ aware
-    For nanosecond use instead attotime or datatime64 in pandas or numpy
-    """
+    For nanosecond use instead attotime or datatime64 in pandas or numpy"""
     return (nowUTC().isoformat(timespec='microseconds'))
 
 
@@ -245,8 +230,7 @@ def toIso8601(dt=None):
     .strftime('%Y-%m-%dT%H:%M:%S.%f%z')
     '2020-08-22T17:50:09.988921+00:00'
     Assumes TZ aware
-    For nanosecond use instead attotime or datatime64 in pandas or numpy
-    """
+    For nanosecond use instead attotime or datatime64 in pandas or numpy"""
     if dt is None:
         dt = nowUTC()  # make it aware
 
@@ -262,8 +246,7 @@ def fromIso8601(dts):
     .strftime('%Y-%m-%dT%H:%M:%S.%f%z')
     '2020-08-22T17:50:09.988921+00:00'
     Assumes TZ aware
-    For nanosecond use instead attotime or datatime64 in pandas or numpy
-    """
+    For nanosecond use instead attotime or datatime64 in pandas or numpy"""
     if hasattr(dts, "decode"):
         dts = dts.decode("utf-8")
     return (datetime.datetime.fromisoformat(dts))
@@ -296,8 +279,7 @@ Reb64 = re.compile(B64REX)  # compile is faster
 def intToB64(i, l=1):
     """
     Returns conversion of int i to Base64 str
-    l is min number of b64 digits left padded with Base64 0 == "A" char
-    """
+    l is min number of b64 digits left padded with Base64 0 == "A" char"""
     d = deque()  # deque of characters base64
 
     while l:
@@ -313,15 +295,13 @@ def intToB64(i, l=1):
 def intToB64b(i, l=1):
     """
     Returns conversion of int i to Base64 bytes
-    l is min number of b64 digits left padded with Base64 0 == "A" char
-    """
+    l is min number of b64 digits left padded with Base64 0 == "A" char"""
     return (intToB64(i=i, l=l).encode("utf-8"))
 
 
 def b64ToInt(s):
     """
-    Returns conversion of Base64 str s or bytes to int
-    """
+    Returns conversion of Base64 str s or bytes to int"""
     if not s:
         raise ValueError("Empty string, conversion undefined.")
     if hasattr(s, 'decode'):
@@ -338,10 +318,9 @@ def codeB64ToB2(s):
 
     Returns:
         bs (bytes): conversion (decode) of s Base64 chars to Base2 bytes.
-        Where the number of total bytes returned is equal to the minimun number of
-        chars (octet) sufficient to hold the total converted concatenated chars from s,
-        with one sextet per each Base64 char of s. Assumes no pad chars in s.
-
+            Where the number of total bytes returned is equal to the minimun number of
+            chars (octet) sufficient to hold the total converted concatenated chars from s,
+            with one sextet per each Base64 char of s. Assumes no pad chars in s.
 
     Sextets are left aligned with pad bits in last (rightmost) byte to support
     mid padding of code portion with respect to rest of primitive.
@@ -349,9 +328,7 @@ def codeB64ToB2(s):
     a Base64 encoded string of characters.
 
     Parameters:
-        s (str | bytes): Base64 str or bytes to convert
-
-    """
+        s (str | bytes): Base64 str or bytes to convert"""
     i = b64ToInt(s)
     i <<= 2 * (len(s) % 4)  # add 2 bits right zero padding for each sextet
     n = sceil(len(s) * 3 / 4)  # compute min number of ocetets to hold all sextets
@@ -363,7 +340,7 @@ def codeB2ToB64(b, l):
 
     Returns:
         cs (bytes): conversion (encode) of l Base2 sextets from front of b
-        to Base64 chars.
+            to Base64 chars.
 
     One char for each of l sextets from front (left) of b.
     This is useful for encoding as code characters, sextets from the front of
@@ -373,8 +350,7 @@ def codeB2ToB64(b, l):
 
     Parameters:
         b (bytes | str): target from which to nab sextets
-        l (int): number of sextets to convert from front of b
-    """
+        l (int): number of sextets to convert from front of b"""
     if hasattr(b, 'encode'):
         b = b.encode("utf-8")  # convert to bytes
     n = sceil(l * 3 / 4)  # number of bytes needed for l sextets
@@ -399,9 +375,7 @@ def nabSextets(b, l):
 
     Parameters:
         b (bytes | str): target from which to nab sextets
-        l (int): number of sextets to nab from front of b
-
-    """
+        l (int): number of sextets to nab from front of b"""
     if hasattr(b, 'encode'):
         b = b.encode()  # convert to bytes
     n = sceil(l * 3 / 4)  # number of bytes needed for l sextets
@@ -417,16 +391,14 @@ def nabSextets(b, l):
 def keyToKey64u(key):
     """
     Returns 64u
-    Convert and return bytes key to unicode base64 url-file safe version
-    """
+    Convert and return bytes key to unicode base64 url-file safe version"""
     return base64.urlsafe_b64encode(key).decode("utf-8")
 
 
 def key64uToKey(key64u):
     """
     Returns bytes
-    Convert and return unicode base64 url-file safe key64u to bytes key
-    """
+    Convert and return unicode base64 url-file safe key64u to bytes key"""
     return base64.urlsafe_b64decode(key64u.encode("utf-8"))
 
 
@@ -434,8 +406,7 @@ def verifyEd25519(sig, msg, vk):
     """
     Returns True if signature sig of message msg is verified with
     verification key vk Otherwise False
-    All of sig, msg, vk are bytes
-    """
+    All of sig, msg, vk are bytes"""
     try:
         result = pysodium.crypto_sign_verify_detached(sig, msg, vk)
     except Exception as ex:
@@ -449,9 +420,7 @@ def verify64uEd25519(signature, message, verkey):
     key verkey
 
     signature and verkey are encoded as unicode base64 url-file strings
-    and message is unicode string as would be the case for a json object
-
-    """
+    and message is unicode string as would be the case for a json object"""
     sig = key64uToKey(signature)
     vk = key64uToKey(verkey)
     msg = message.encode("utf-8")
@@ -469,4 +438,3 @@ Reatt = re.compile(ATREX)  # compile is faster
 PATHREX = rb'^[a-zA-Z0-9_]*$'  # bytes May be empty string
 # Usage: if Reat.match(name): or if not Reat.match(name):
 Repath = re.compile(PATHREX)  # compile is faster
-
