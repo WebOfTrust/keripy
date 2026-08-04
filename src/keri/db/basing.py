@@ -1897,23 +1897,24 @@ class Baser(LMDBer):
         #return msg
 
 
-    def cloneDelegation(self, kever, gvrsn=None, *, version=None):
+    def cloneDelegation(self, kever, gvrsn=Version, *, version=None):
         """
         Recursively clone delegation chain from AID of Kever if one exists.
 
         Parameters:
             kever (Kever): Kever from which to clone the delegator's AID.
-            gvrsn (Versionage | None): CESR genus version for attachments.
-                None means derive from ``kever.serder.gvrsn`` or
-                ``kever.serder.pvrsn`` so V1 KELs are not rebuilt with the
-                global V2 default.
+            gvrsn (Versionage): CESR genus version for attachments. Default
+                ``Version`` means library-default attachment framing even when
+                cloning bodies with a different pvrsn. Pass ``Vrsn_1_0`` only
+                when the peer requires that attachment genus.
+                Present-but-``None`` is treated as ``Version``.
             version (Versionage): legacy alias for gvrsn
 
         """
         if version is not None:
             gvrsn = version
         if gvrsn is None:
-            gvrsn = kever.serder.gvrsn or kever.serder.pvrsn
+            gvrsn = Version
         if kever.delegated and kever.delpre in self.kevers:
             dkever = self.kevers[kever.delpre]
             yield from self.cloneDelegation(dkever, gvrsn=gvrsn)
