@@ -9,7 +9,7 @@ import copy
 import pytest
 
 from keri import (MissingRegistryError, MissingEntryError,
-                  MissingChainError, RevokedChainError, Vrsn_1_0)
+                  MissingChainError, RevokedChainError, ValidationError, Vrsn_1_0)
 from keri.app import openHab
 from keri.core import (Saider, Kevery, SerderKERI, Seqner,
                        Diger, Parser, SealEvent,
@@ -1026,5 +1026,427 @@ def test_verifier_edge_schema_constraint(seeder):
         assert verifier.reger.mse.get(keys=deferredCreder.said) is None
         saved = [s.qb64 for s in regery.reger.schms.get(optionalIssueeSchema)]
         assert deferredCreder.said in saved
+
+    """End Test"""
+
+
+def setupOperatorFixture(ian, ianHby, ianreg, ianiss):
+    """Wire ian's registry into a Verifier and return (verfer, issueAndSave).
+
+    Shared by the operator-dispatch tests below, which all need the same shape:
+    one issuer (ian) with an anchored registry, and a way to run a credential
+    through the full issue -> anchor -> escrow -> save flow.
+    """
+    verfer = Verifier(hby=ianHby, reger=ianreg.reger)
+
+    def issueAndSave(creder):
+        try:
+            verfer.processCredential(creder, prefixer=ian.kever.prefixer,
+                                     seqner=Seqner(sn=ian.kever.sn),
+                                     saider=Diger(qb64=ian.kever.serder.said))
+        except MissingRegistryError:
+            pass  # expected: the TEL issuance event is anchored just below
+        iss = ianiss.issue(said=creder.said)
+        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                     gvrsn=Vrsn_1_0)
+        ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+        verfer.processEscrows()
+
+    return verfer, issueAndSave
+
+
+def test_verifier_list_valued_operator(seeder):
+    """A list-valued `o` is a spec-legal spelling and MUST NOT fall to the default.
+
+    ACDC spec-body.md L1186: "When more than one unary Operator is applied to a given
+    Edge, then the value of the Operator, `o`, field is a list of those unary
+    Operators. When multiple unary Operators appear in the list, and there is a
+    conflict between Operators, the latest Operator among the conflicting Operators
+    in the list takes precedence."
+
+    Previously ``op not in ['I2I','DI2I','NI2I','E1E']`` was tested against the list
+    itself, which never matches, so every list form silently fell through to the
+    default inference -- I2I for a targeted far node. A conforming producer writing
+    ``"o": ["NI2I"]`` therefore got I2I semantics, and the same bytes verified
+    differently on a conforming non-keripy validator: an interop split with no
+    wire-visible cause.
+    """
+    optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0,
+                 kind=Kinds.json) as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef',
+                    version=Vrsn_1_0, kind=Kinds.json) as (hanHby, han):
+        seeder.seedSchema(db=ianHby.db)
+
+        ianreg = Regery(hby=ianHby, name="ian", temp=True)
+        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", version=Vrsn_1_0,
+                                     kind=Kinds.json)
+        rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                     gvrsn=Vrsn_1_0)
+        ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+
+        verfer, issueAndSave = setupOperatorFixture(ian, ianHby, ianreg, ianiss)
+
+        # Far node: targeted, ian -> han. Every near credential below is issued by
+        # ian, so `near issuer (ian) != far issuee (han)` -- I2I rejects, NI2I allows.
+        # That asymmetry is what makes the effective operator observable.
+        farSubject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim="far node")
+        _, fd = Saider.saidify(sad=farSubject, code=MtrDex.Blake3_256, label=Saids.d)
+        far = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=fd,
+                         status=ianiss.regk, source={}, rules={}, version=Vrsn_1_0,
+                         kind=Kinds.json)
+        assert far.iseaid == han.pre
+        issueAndSave(far)
+        assert verfer.reger.saved.get(keys=far.saidb) is not None
+
+        def nearWithOp(op, claim):
+            """Issue a near credential whose single edge carries operator `op`."""
+            chainSad = dict(d='', node=dict(n=far.said, o=op))
+            _, chain = Saider.saidify(sad=chainSad, code=MtrDex.Blake3_256, label=Saids.d)
+            subject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim=claim)
+            _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+            near = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                              status=ianiss.regk, source=chain, rules={},
+                              version=Vrsn_1_0, kind=Kinds.json)
+            issueAndSave(near)
+            return near
+
+        # Single-element list: ["NI2I"] must mean NI2I, not the I2I default.
+        # This is the red case -- before the fix the list fell through to I2I and
+        # the credential sat in missing-chain escrow.
+        near = nearWithOp(["NI2I"], "single element list")
+        assert verfer.reger.saved.get(keys=near.saidb) is not None
+
+        # Latest-wins: ["I2I", "NI2I"] resolves to NI2I, so the edge is accepted
+        # even though the near issuer is not the far issuee.
+        near = nearWithOp(["I2I", "NI2I"], "latest wins to NI2I")
+        assert verfer.reger.saved.get(keys=near.saidb) is not None
+
+        # Latest-wins in the other direction: ["NI2I", "I2I"] resolves to I2I, which
+        # rejects. Ordering must matter -- a set-membership implementation that just
+        # asked "is NI2I present?" would wrongly accept this one.
+        near = nearWithOp(["NI2I", "I2I"], "latest wins to I2I")
+        assert verfer.reger.saved.get(keys=near.saidb) is None
+
+        # Unrecognized tokens are skipped, not treated as conflicting: the latest
+        # *recognized* operator wins.
+        near = nearWithOp(["NI2I", "BOGUS"], "unrecognized token skipped")
+        assert verfer.reger.saved.get(keys=near.saidb) is not None
+
+        # A list with no recognized operator falls to the default rule, which for a
+        # targeted far node is I2I -- and so rejects.
+        near = nearWithOp(["BOGUS"], "no recognized operator")
+        assert verfer.reger.saved.get(keys=near.saidb) is None
+
+        # An empty list likewise falls to the default rule.
+        near = nearWithOp([], "empty list")
+        assert verfer.reger.saved.get(keys=near.saidb) is None
+
+        # Scalar forms are unchanged: "NI2I" still means NI2I.
+        near = nearWithOp("NI2I", "scalar NI2I")
+        assert verfer.reger.saved.get(keys=near.saidb) is not None
+
+        # A tuple is accepted as a sequence too, not just a list.
+        near = nearWithOp(("NI2I",), "tuple form")
+        assert verfer.reger.saved.get(keys=near.saidb) is not None
+
+        # E1E alone imposes no issuer constraint, and reaching it via a list must not
+        # change that. Here the near issuer is ian and the far issuee is han, so I2I
+        # would reject; E1E's own check (near issuee han == far issuee han) passes, so
+        # the edge is accepted. Composition of E1E with a delegative operator is
+        # covered by test_verifier_nonconflicting_operators_compose.
+        near = nearWithOp(["E1E"], "E1E via list")
+        assert verfer.reger.saved.get(keys=near.saidb) is not None
+
+        # The flagship interop case from the review: "o": ["DI2I"] previously resolved
+        # to I2I via the default rule, silently downgrading a delegated-issuer edge to
+        # a strict issuer==issuee one. It must now reach DI2I and fail closed.
+        chainSad = dict(d='', node=dict(n=far.said, o=["DI2I"]))
+        _, chain = Saider.saidify(sad=chainSad, code=MtrDex.Blake3_256, label=Saids.d)
+        subject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim="di2i in list")
+        _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+        listDi2i = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                              status=ianiss.regk, source=chain, rules={},
+                              version=Vrsn_1_0, kind=Kinds.json)
+        iss = ianiss.issue(said=listDi2i.said)
+        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                     gvrsn=Vrsn_1_0)
+        ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+        with pytest.raises(ValidationError) as excinfo:
+            verfer.processCredential(listDi2i, prefixer=ian.kever.prefixer,
+                                     seqner=Seqner(sn=ian.kever.sn),
+                                     saider=Diger(qb64=ian.kever.serder.said))
+        assert "DI2I" in str(excinfo.value)
+
+        # NOT is normative (spec L1195: the far node's validity is inverted) and
+        # unimplemented here. It must fail closed like DI2I rather than being skipped
+        # as an unrecognized token -- otherwise an edge asserting "this node must be
+        # INVALID" would be accepted as valid.
+        chainSad = dict(d='', node=dict(n=far.said, o=["NOT"]))
+        _, chain = Saider.saidify(sad=chainSad, code=MtrDex.Blake3_256, label=Saids.d)
+        subject = dict(d="", i=han.pre, dt=helping.nowIso8601(), claim="not operator")
+        _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+        notCred = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                             status=ianiss.regk, source=chain, rules={},
+                             version=Vrsn_1_0, kind=Kinds.json)
+        iss = ianiss.issue(said=notCred.said)
+        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                     gvrsn=Vrsn_1_0)
+        ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+        with pytest.raises(ValidationError) as excinfo:
+            verfer.processCredential(notCred, prefixer=ian.kever.prefixer,
+                                     seqner=Seqner(sn=ian.kever.sn),
+                                     saider=Diger(qb64=ian.kever.serder.said))
+        assert "NOT" in str(excinfo.value)
+
+    """End Test"""
+
+
+def test_verifier_nonconflicting_operators_compose(seeder):
+    """A non-delegative operator composes with the delegative winner, not overridden.
+
+    ACDC spec-body.md L1186 scopes latest-wins to "the conflicting Operators". I2I,
+    NI2I and DI2I all constrain the near ACDC's *issuer* relative to the far node's
+    issuee, so they conflict with one another. E1E constrains the near *issuee*, so it
+    conflicts with none of them and must be conjoined (AND).
+
+    Collapsing the whole list to a single operator drops the constraint that loses,
+    which is a silent weakening: ``["E1E", "I2I"]`` from a producer requiring both
+    relations would enforce only I2I and accept a far node whose issuee differs from
+    the near ACDC's.
+    """
+    optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0,
+                 kind=Kinds.json) as (ianHby, ian), \
+            openHab(name="han", transferable=True, temp=True, salt=b'0123456789abcdef',
+                    version=Vrsn_1_0, kind=Kinds.json) as (hanHby, han):
+        seeder.seedSchema(db=ianHby.db)
+
+        ianreg = Regery(hby=ianHby, name="ian", temp=True)
+        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", version=Vrsn_1_0,
+                                     kind=Kinds.json)
+        rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                     gvrsn=Vrsn_1_0)
+        ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+
+        verfer, issueAndSave = setupOperatorFixture(ian, ianHby, ianreg, ianiss)
+
+        # Far node issued by ian to ian, so the far issuee is ian. Every near
+        # credential below is issued by ian, so I2I (near issuer ian == far issuee ian)
+        # is always satisfied -- which isolates E1E as the only constraint that can
+        # decide the outcome.
+        farSubject = dict(d="", i=ian.pre, dt=helping.nowIso8601(), claim="far node")
+        _, fd = Saider.saidify(sad=farSubject, code=MtrDex.Blake3_256, label=Saids.d)
+        far = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=fd,
+                         status=ianiss.regk, source={}, rules={}, version=Vrsn_1_0,
+                         kind=Kinds.json)
+        assert far.iseaid == ian.pre
+        issueAndSave(far)
+        assert verfer.reger.saved.get(keys=far.saidb) is not None
+
+        def nearWithOp(op, nearIssuee, claim):
+            chainSad = dict(d='', node=dict(n=far.said, o=op))
+            _, chain = Saider.saidify(sad=chainSad, code=MtrDex.Blake3_256, label=Saids.d)
+            subject = dict(d="", i=nearIssuee, dt=helping.nowIso8601(), claim=claim)
+            _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+            near = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                              status=ianiss.regk, source=chain, rules={},
+                              version=Vrsn_1_0, kind=Kinds.json)
+            issueAndSave(near)
+            return near
+
+        # Both satisfied: I2I (issuer ian == far issuee ian) and E1E (near issuee ian ==
+        # far issuee ian). Accepted.
+        near = nearWithOp(["E1E", "I2I"], ian.pre, "both hold")
+        assert verfer.reger.saved.get(keys=near.saidb) is not None
+
+        # I2I still satisfied, E1E violated: the near issuee is han, the far issuee is
+        # ian. Must be REJECTED. This is the red case -- collapsing the list to the
+        # latest operator (I2I) would accept it and drop the E1E constraint entirely.
+        near = nearWithOp(["E1E", "I2I"], han.pre, "e1e violated, i2i holds")
+        assert verfer.reger.saved.get(keys=near.saidb) is None
+
+        # Order must not matter for a non-conflicting pair -- E1E composes either way.
+        near = nearWithOp(["I2I", "E1E"], han.pre, "order reversed, still rejected")
+        assert verfer.reger.saved.get(keys=near.saidb) is None
+
+        # E1E composed with NI2I: NI2I wins the delegative conflict (no issuer
+        # constraint), but E1E still applies and still rejects a mismatched issuee.
+        near = nearWithOp(["E1E", "NI2I"], han.pre, "ni2i wins but e1e still applies")
+        assert verfer.reger.saved.get(keys=near.saidb) is None
+
+        # Same pair with the issuee matching: NI2I drops the issuer constraint, E1E is
+        # satisfied, so the edge is accepted.
+        near = nearWithOp(["E1E", "NI2I"], ian.pre, "ni2i wins, e1e satisfied")
+        assert verfer.reger.saved.get(keys=near.saidb) is not None
+
+    """End Test"""
+
+
+def test_verifier_di2i_rejects_diagnosably(seeder):
+    """An unimplemented DI2I edge must fail closed *diagnosably*, not vanish.
+
+    DI2I previously raised a bare ``NotImplementedError``, which is not a
+    ValidationError, so every caller mishandled it: ``Parser.allParsator``'s blanket
+    ``except (ValidationError, Exception)`` logged and discarded the ACDC, and
+    ``_processEscrow``'s generic arm unescrowed it. Neither produced a signal an
+    operator could act on.
+
+    DI2I is still unimplemented -- this test pins the *failure mode*, not the
+    operator semantics. A ValidationError names the cause and stops the retry loop,
+    which is correct here: unlike a missing chain, retrying cannot help.
+    """
+    optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+
+    # Single party: every credential here is issued by ian to ian, so no second hab is
+    # needed to exercise the operator's failure mode.
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0,
+                 kind=Kinds.json) as (ianHby, ian):
+        seeder.seedSchema(db=ianHby.db)
+
+        ianreg = Regery(hby=ianHby, name="ian", temp=True)
+        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", version=Vrsn_1_0,
+                                     kind=Kinds.json)
+        rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                     gvrsn=Vrsn_1_0)
+        ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+
+        verfer, issueAndSave = setupOperatorFixture(ian, ianHby, ianreg, ianiss)
+
+        farSubject = dict(d="", i=ian.pre, dt=helping.nowIso8601(), claim="far node")
+        _, fd = Saider.saidify(sad=farSubject, code=MtrDex.Blake3_256, label=Saids.d)
+        far = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=fd,
+                         status=ianiss.regk, source={}, rules={}, version=Vrsn_1_0,
+                         kind=Kinds.json)
+        issueAndSave(far)
+        assert verfer.reger.saved.get(keys=far.saidb) is not None
+
+        chainSad = dict(d='', node=dict(n=far.said, o="DI2I"))
+        _, chain = Saider.saidify(sad=chainSad, code=MtrDex.Blake3_256, label=Saids.d)
+        subject = dict(d="", i=ian.pre, dt=helping.nowIso8601(), claim="di2i edge")
+        _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+        near = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                          status=ianiss.regk, source=chain, rules={},
+                          version=Vrsn_1_0, kind=Kinds.json)
+
+        # Anchor the TEL issuance so processCredential reaches the edge walk rather
+        # than bailing out earlier on a missing registry.
+        iss = ianiss.issue(said=near.said)
+        rseal = SealEvent(iss.pre, "0", iss.said)._asdict()
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                     gvrsn=Vrsn_1_0)
+        ianiss.anchorMsg(pre=iss.pre, regd=iss.said,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+
+        with pytest.raises(ValidationError) as excinfo:
+            verfer.processCredential(near, prefixer=ian.kever.prefixer,
+                                     seqner=Seqner(sn=ian.kever.sn),
+                                     saider=Diger(qb64=ian.kever.serder.said))
+
+        # Diagnosable: the message names the operator, the far node the edge points to,
+        # and the near credential that carried the edge -- an operator triaging a stream
+        # needs the last of those to know which credential to fix.
+        assert "DI2I" in str(excinfo.value)
+        assert far.said in str(excinfo.value)
+        assert near.said in str(excinfo.value)
+        # Fails closed -- the credential is not saved on the strength of an edge the
+        # verifier cannot evaluate.
+        assert verfer.reger.saved.get(keys=near.saidb) is None
+        # Not a MissingChainError: the chain is present, the operator is unsupported.
+        # Escrowing it would promise a retry that can never succeed.
+        assert not isinstance(excinfo.value, MissingChainError)
+
+    """End Test"""
+
+
+def test_verifier_escrow_pass_survives_argless_exception(seeder):
+    """One poisoned escrow entry must not abort the whole escrow pass.
+
+    ``_processEscrow``'s generic arm removed the entry and then evaluated
+    ``ex.args[0]`` to log it. For an exception raised with no arguments -- which is
+    exactly what ``raise NotImplementedError()`` produced -- that indexes an empty
+    tuple, so the IndexError escaped ``_processEscrow`` *and* ``processEscrows``,
+    skipping every remaining entry in the current table and both subsequent tables
+    (mce -> mse -> mre).
+
+    Pinned independently of DI2I: any argless exception from any credential reaches
+    the same handler, so fixing only the DI2I raise would leave the trap armed.
+    """
+    with openHab(name="ian", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0,
+                 kind=Kinds.json) as (ianHby, ian):
+        seeder.seedSchema(db=ianHby.db)
+
+        ianreg = Regery(hby=ianHby, name="ian", temp=True)
+        ianiss = ianreg.makeRegistry(prefix=ian.pre, name="ian", version=Vrsn_1_0,
+                                     kind=Kinds.json)
+        rseal = SealEvent(ianiss.regk, "0", ianiss.regd)._asdict()
+        ian.interact(data=[rseal], framed=True, version=Vrsn_1_0, kind=Kinds.json,
+                     gvrsn=Vrsn_1_0)
+        ianiss.anchorMsg(pre=ianiss.regk, regd=ianiss.regd,
+                         seqner=Seqner(sn=ian.kever.sn),
+                         saider=Diger(qb64=ian.kever.serder.said))
+        ianreg.processEscrows()
+
+        verfer = Verifier(hby=ianHby, reger=ianreg.reger)
+
+        optionalIssueeSchema = "EAv8omZ-o3Pk45h72_WnIpt6LTWNzc8hmLjeblpxB9vz"
+        saids = []
+        for n in range(2):
+            subject = dict(d="", i=ian.pre, dt=helping.nowIso8601(), claim=f"poison {n}")
+            _, sd = Saider.saidify(sad=subject, code=MtrDex.Blake3_256, label=Saids.d)
+            creder = credential(issuer=ian.pre, schema=optionalIssueeSchema, data=sd,
+                                status=ianiss.regk, source={}, rules={},
+                                version=Vrsn_1_0, kind=Kinds.json)
+            verfer.escrowMCE(creder, prefixer=ian.kever.prefixer,
+                             seqner=Seqner(sn=ian.kever.sn),
+                             saider=Diger(qb64=ian.kever.serder.said))
+            saids.append(creder.said)
+
+        assert len(saids) == 2
+        for said in saids:
+            assert verfer.reger.mce.get(keys=said) is not None
+
+        # Every entry raises an argless exception, the shape that used to detonate.
+        def poisoned(*args, **kwa):
+            raise NotImplementedError()
+
+        verfer.processCredential = poisoned
+
+        # Must not raise. Before the fix this propagated IndexError out of
+        # processEscrows on the first entry.
+        verfer.processEscrows()
+
+        # Both entries were reached and unescrowed -- proving the pass continued past
+        # the first poisoned entry rather than aborting on it.
+        for said in saids:
+            assert verfer.reger.mce.get(keys=said) is None
 
     """End Test"""
