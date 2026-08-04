@@ -153,12 +153,40 @@ BULK_SALT = b'bulkworkexamsalt'
 BULK_SIZE = 5
 
 
+def _hx(index):
+    """Render a derivation-path index as LOWERCASE HEX with no leading zeros.
+
+    Every index that becomes part of an HD derivation path goes through here. ACDC spec
+    15.4 currently says a bulk-issuance path index is "the decimal or hexadecimal textual
+    representation" of the index, which is an either/or that no implementation can honor:
+    the two renderings agree only for indices 0-9 and diverge from 10 onward ("10" vs
+    "a"), so two conformant implementations derive different nonces, different SAIDs and
+    different registries for every copy from the tenth. Hex is what KERI's HD paths
+    actually use everywhere -- Salter.signers (src/keri/core/signing.py:484), SaltyCreator
+    (src/keri/app/keeping.py:542,544) and Blinder.makeUUID via Number.snh
+    (src/keri/core/structing.py:1479) all render "{:x}", as does signify-ts
+    (src/keri/core/manager.ts:296) -- and it is what both specs already say for this same
+    object in prose (KERI spec L1914 / ACDC spec L3328: "the hex representation of the
+    count offset"). Sam's keripy discussion #929, the rationale for the separator-free
+    salty path, states the premise as "hex strings with no zero pre-padding" and builds
+    its whole proof on it.
+
+    This example previously rendered indices in decimal. That was not merely a latent
+    disagreement: the age credential's edge blocks sit at nested slots 20 and 21, which
+    decimal renders "20"/"21" and hex renders "14"/"15", so the divergence was already
+    live and every SAID below moved when it was corrected. Pinning the rendering in the
+    spec is proposed in trustoverip/kswg-acdc-specification#204.
+    """
+    return f"{index:x}" if isinstance(index, int) else index
+
+
 class _BulkNonces:
     """Deterministic per-copy nonce derivation for a bulk-issued set (ACDC spec 15.4).
 
     Every nonce for every copy is derived from ONE shared secret salt by argon2id
     (Salter.stretch) at a hierarchical path keyed on the copy index k, then wrapped as a
-    256-bit salty nonce (Noncer):
+    256-bit salty nonce (Noncer). Every index in a path is lowercase hex, no leading
+    zeros (see _hx):
 
         path "k"    -> copy k's top-level ACDC uuid  u_k
         path "k/j"  -> copy k's nested block j uuid   (attribute section j=0, blocks j>=1)
@@ -178,7 +206,7 @@ class _BulkNonces:
 
     def u(self, k, j=None):
         """Copy k's uuid: the top-level ACDC uuid (j is None) or nested block j's uuid."""
-        return self._nonce(f"{k}" if j is None else f"{k}/{j}")
+        return self._nonce(_hx(k) if j is None else f"{_hx(k)}/{_hx(j)}")
 
     def v(self, k):
         """Copy k's blinding factor v_k, derived at the path "k.".
@@ -196,7 +224,7 @@ class _BulkNonces:
         path unambiguously (proposed fix: "k."). Until then, this path is a keripy-local
         convention, not a ratified interop invariant.
         """
-        return self._nonce(f"{k}.")
+        return self._nonce(f"{_hx(k)}.")
 
 
 def _blind_said(v, d):
@@ -270,6 +298,23 @@ def test_bulk_derivation_primitive_JSON():
     # each regenerate the set independently -- neither stores it).
     assert [_BulkNonces(BULK_SALT).u(k) for k in range(M)] == us
     assert [_BulkNonces(BULK_SALT).v(k) for k in range(M)] == vs
+
+    # The path index rendering is LOWERCASE HEX, no leading zeros -- pinned by assertion
+    # rather than left to the coincidence that indices 0-9 render identically in both
+    # bases. Copy 10's uuid MUST derive at path "a", never at path "10". Every SAID in
+    # this module depends on this; get it wrong and nothing cross-verifies from the tenth
+    # copy onward (and, via the nested slots 20/21 used by the age edge, from the first).
+    salter = Salter(raw=BULK_SALT)
+
+    def _at(path):
+        return Noncer(raw=salter.stretch(size=32, path=path, temp=True),
+                      code=NonceDex.Salt_256).qb64
+
+    assert nonces.u(10) == _at("a")
+    assert nonces.u(10) != _at("10")
+    assert nonces.u(1, 20) == _at("1/14")            # the age edge slots, already >9
+    assert nonces.v(255) == _at("ff.")
+    assert _hx(0) == "0" and _hx(15) == "f" and _hx(16) == "10"   # no padding, lowercase
     # Uniqueness: every u_k distinct, every v_k distinct, and the blinding path "k."
     # never collides with the uuid path "k" -- the u and v spaces are disjoint.
     assert len(set(us)) == M and len(set(vs)) == M
@@ -741,8 +786,8 @@ def test_bulk_sedi_age_set_JSON():
 
     # Pinned reproducible values (derived, not pasted).
     assert ageReg.said == "EEoc-CPP2nh8RoNYLL1fLKDYogKM9N2aKhuOwvk_qTiv"   # shared age registry
-    assert Bage == "EAVHvdSmGMTUudmJpnktavMhJosgr9p8HgfzIogDumtd"          # blinded aggregate B_age
-    assert ageCopies[0].said == "EHApv7RymJmbsCOvhzUuXgNFg_2IP0-MstWfNWj4oom0"
+    assert Bage == "EMdK65I5Yb9drnJ5QbKri6KNAS_zdrn5IdE7FzsdFERS"          # blinded aggregate B_age
+    assert ageCopies[0].said == "EI7SE4GIut8JhdmBBmPOUe-xnuIRyH5GMPwaXZBY54g_"
     assert ageAggors[0].agid == "EIhjnMKnP0I7Tzngtv4DPnvTc8szhi0NIdIQhXm0GZLU"
 
     # Selective disclosure over copy 0's aggregate: reveal over-21 + issuee, hide the rest.
@@ -909,8 +954,8 @@ def test_partition_across_verifiers_JSON():
     assert k1 != k2                                       # per-verifier spend is injective
     pres1 = _presentation(kind, v1, idCopies, ageCopies, presNonces)
     pres2 = _presentation(kind, v2, idCopies, ageCopies, presNonces)
-    assert pres1.said == "EAkAGbSXZo8nT1HOvI8gF-zMeFLw_ymmMafsRZao2lTi"   # Alcove context
-    assert pres2.said == "EFBArucmWAjDKX-oE25MUvaVEWgqiCj49UTbH9XJL56_"   # dispensary context
+    assert pres1.said == "EE_6aAc5PGrQLmvQU4PTjbNldANYM_wQG7L7jCnN3Ig2"   # Alcove context
+    assert pres2.said == "ENYW0L2hrzatl4cgm_heeL0gVhoCyS7hCOPAjRtXIeLO"   # dispensary context
 
     # Each presentation verifies (I2I same-holder to copy-k sources) and rides the over-21
     # selective disclosure.

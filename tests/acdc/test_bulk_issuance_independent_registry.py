@@ -35,7 +35,7 @@ one KEL event, any third party reading that KEL sees the M registries co-anchore
 reassembles the set -- the correlator has moved from the ACDC to the KEL, not
 vanished. That is why spec 15.4 prescribes a SINGLE Merkle-root seal per batch, over a
 tree whose leaves deliberately MIX transaction events across registries AND across
-Issuees (spec L2914-2924). The batch is the anonymity set; the tree is what lets one
+Issuees (spec L2918-2922). The batch is the anonymity set; the tree is what lets one
 member prove inclusion without disclosing the others. Herd privacy is load-bearing
 here, so this example builds the tree and the inclusion proofs rather than gesturing
 at them.
@@ -50,13 +50,13 @@ registry, its OWN blinding salt, and its own transaction event, and all of those
 events -- Alice's and every other Utah resident's -- are committed by ONE Merkle root
 seal in the State's KEL.
 
-Plain Merkle tree, not a sparse Merkle tree. Spec L2916 calls for an SMT. An SMT buys
+Plain Merkle tree, not a sparse Merkle tree. Spec L2918 calls for an SMT. An SMT buys
 two things this example does not exercise: efficient NON-inclusion proofs, and
 fixed-depth addressing keyed by the leaf's own SAID. The property that carries the
 privacy argument here -- prove one leaf under a herd-wide root without disclosing any
 sibling leaf -- is delivered by an ordinary domain-separated Merkle tree, which is
 what _BatchTree below implements. A production Registrar SHOULD use an SMT for the
-incremental-update and non-inclusion properties described at spec L2916-2924; nothing
+incremental-update and non-inclusion properties described at spec L2918-2926; nothing
 in this example's proofs would change shape.
 
 SPEC GAPS THIS EXAMPLE HAD TO PIN (candidates for a follow-on spec PR, the way the
@@ -66,11 +66,20 @@ nothing for the two values independent-registry bulk issuance needs per copy. Th
 module extends the same dot-suffix convention: "k.r" derives copy k's REGISTRY
 inception uuid, and "k.b" derives copy k's registry BLINDING salt. Nor does the spec
 pin the tree's leaf definition or its hashing: this module takes the leaf to be the
-transaction event's SAID (spec L2920: "the SAIDs of each transaction event") and uses
-RFC-6962 domain separation (0x00 leaf, 0x01 interior) over qb64 TEXT concatenation
-with Blake3-256 -- the same concatenation domain #200 pinned for b_k. Two
-implementations that chose differently would compute different roots and fail to
-cross-verify, so these are interop-blocking and belong in the spec, not here.
+transaction event's SAID (spec L2922 describes the tree as holding "all the event SAIDs
+from all transaction events across the Issuer's Registries") and uses RFC-6962 domain
+separation (0x00 leaf, 0x01 interior) over qb64 TEXT concatenation with Blake3-256 --
+the same concatenation domain #200 pinned for b_k. Two implementations that chose
+differently would compute different roots and fail to cross-verify, so these are
+interop-blocking and belong in the spec, not here.
+
+WHERE THE L-NUMBERS POINT. Every "spec L####" in this module is a line number in
+spec/spec-body.md of trustoverip/kswg-acdc-specification at commit f96ef54 (2026-07-27),
+which is `main` with PR #200 merged. The pin is stated because these numbers drift: an
+earlier revision of this module was written against a checkout that predated #200 and
+every citation in this region ran two lines low, which is invisible until someone follows
+one. If you are checking these against a different commit and they miss by a small
+constant, that is why -- re-derive them rather than assuming the text moved.
 
 A note on altitude. Like the sibling examples, this one models the credential graph,
 the bulk derivation, the registries, and the batch anchor at the data-structure level,
@@ -136,11 +145,36 @@ BULK_SALT = b'indregexamsalt00'
 # M: copies per bulk-issued set, and therefore ALSO the number of registries. Small for
 # a readable example. A real deployment sizes M to the expected number of distinct
 # verifier contexts -- and pays for it in TELs, one per copy per set per resident (spec
-# L2908: "the size of the Registry database increases as a multiple of the number of
+# L2911: "the size of the Registry database increases as a multiple of the number of
 # copies"). That cost is the price of removing the registry as a correlator.
 BULK_SIZE = 5
 # The states a registry's blindable update can carry, for both bulk sets.
 SET_STATES = ['issued', 'revoked']
+
+
+def _hx(index):
+    """Render a derivation-path index as LOWERCASE HEX with no leading zeros.
+
+    Every index that becomes part of an HD derivation path goes through here. ACDC spec
+    15.4 currently says a bulk-issuance path index is "the decimal or hexadecimal textual
+    representation" of the index, which is an either/or that no implementation can honor:
+    the two renderings agree only for indices 0-9 and diverge from 10 onward ("10" vs
+    "a"), so two conformant implementations derive different nonces, different SAIDs and
+    different REGISTRIES for every copy from the tenth. Hex is what KERI's HD paths
+    actually use everywhere -- Salter.signers (src/keri/core/signing.py:484), SaltyCreator
+    (src/keri/app/keeping.py:542,544) and Blinder.makeUUID via Number.snh
+    (src/keri/core/structing.py:1479) all render "{:x}", as does signify-ts
+    (src/keri/core/manager.ts:296) -- and it is what both specs already say for this same
+    object in prose (KERI spec L1914 / ACDC spec L3328: "the hex representation of the
+    count offset"). Sam's keripy discussion #929, the rationale for the separator-free
+    salty path, states the premise as "hex strings with no zero pre-padding" and builds
+    its whole proof on it.
+
+    Non-integer path segments (the herd's composite tags below) pass through unchanged;
+    they are labels, not indices. Pinning the rendering in the spec is proposed in
+    trustoverip/kswg-acdc-specification#204.
+    """
+    return f"{index:x}" if isinstance(index, int) else index
 
 
 class _BulkNonces:
@@ -148,7 +182,8 @@ class _BulkNonces:
 
     Every nonce for every copy is derived from ONE shared secret salt by argon2id
     (Salter.stretch) at a hierarchical path keyed on the copy index k, then wrapped as a
-    salty nonce (Noncer):
+    salty nonce (Noncer). Every index in a path is lowercase hex, no leading zeros
+    (see _hx):
 
         path "k"    -> copy k's top-level ACDC uuid  u_k       (spec)
         path "k/j"  -> copy k's nested block j uuid            (spec)
@@ -187,11 +222,11 @@ class _BulkNonces:
 
     def u(self, k, j=None):
         """Copy k's uuid: the top-level ACDC uuid (j is None) or nested block j's uuid."""
-        return self._nonce(f"{k}" if j is None else f"{k}/{j}")
+        return self._nonce(_hx(k) if j is None else f"{_hx(k)}/{_hx(j)}")
 
     def r(self, k):
         """Copy k's own registry inception uuid, derived at the path "k.r"."""
-        return self._nonce(f"{k}.r")
+        return self._nonce(f"{_hx(k)}.r")
 
     def b(self, k):
         """Copy k's own registry blinding salt, derived at the path "k.b".
@@ -199,7 +234,8 @@ class _BulkNonces:
         A 128-bit qb64 salt, which is what Blinder.makeUUID consumes; the other nonces
         here are 256-bit uuids. Only this copy's salt is ever disclosed to a verifier.
         """
-        return Noncer(raw=self._salter.stretch(size=16, path=f"{k}.b", temp=True)).qb64
+        return Noncer(raw=self._salter.stretch(size=16, path=f"{_hx(k)}.b",
+                                              temp=True)).qb64
 
 
 # ===========================================================================
@@ -211,15 +247,16 @@ class _BatchTree:
 
     The Issuer periodically anchors a single seal in its KEL whose value is this tree's
     root, committing every transaction event from every registry updated since the last
-    anchor -- across all bulk-issued sets and ALL Issuees (spec L2918-2922). A Validator
+    anchor -- across all bulk-issued sets and ALL Issuees (spec L2920-2922). A Validator
     that receives one event plus its inclusion proof learns that the Issuer committed to
     that event and learns nothing about any other leaf. The batch is the anonymity set:
     the more registries and Issuees it mixes, the less a co-anchored pair of events says
-    about a common holder. Spec L2924 goes further and suggests the Issuer inject
+    about a common holder. Spec L2926 goes further and suggests the Issuer inject
     state-preserving no-op updates to pad thin batches.
 
-    SPEC GAP / PINNED HERE. Spec L2920 says the leaves are "the SAIDs of each transaction
-    event" and L2930 requires second-pre-image protection of interior nodes, but pins
+    SPEC GAP / PINNED HERE. Spec L2922 describes the leaves as "all the event
+    SAIDs from all transaction events" and L2932 requires second-pre-image protection
+    of interior nodes, but pins
     neither the domain separation nor the digest. This implementation uses RFC 6962
     domain separation -- a leaf is H(0x00 + leafSAID), an interior node is
     H(0x01 + left + right) -- over qb64 TEXT concatenation with Blake3-256, matching the
@@ -329,6 +366,23 @@ def test_indreg_derivation_and_batch_JSON():
     assert [fresh.u(k) for k in range(M)] == us
     assert [fresh.r(k) for k in range(M)] == rs
     assert [fresh.b(k) for k in range(M)] == bs
+
+    # The path index rendering is LOWERCASE HEX, no leading zeros -- pinned by assertion
+    # rather than left to the coincidence that indices 0-9 render identically in both
+    # bases. Copy 10's uuid MUST derive at path "a", never at path "10". Every SAID in
+    # this module depends on this; get it wrong and nothing cross-verifies from the tenth
+    # copy onward (and, via the nested slots 20/21 below, from the first).
+    salter = Salter(raw=BULK_SALT)
+
+    def _at(path):
+        return Noncer(raw=salter.stretch(size=32, path=path, temp=True),
+                      code=NonceDex.Salt_256).qb64
+
+    assert nonces.u(10) == _at("a")
+    assert nonces.u(10) != _at("10")
+    assert nonces.u(1, 20) == _at("1/14")            # the age edge slots, already >9
+    assert nonces.r(255) == _at("ff.r")
+    assert _hx(0) == "0" and _hx(15) == "f" and _hx(16) == "10"   # no padding, lowercase
 
     # Four disjoint derivation spaces, each internally unique.
     spaces = [set(us), set(nested), set(rs), set(bs)]
@@ -479,7 +533,7 @@ SEDI_SCHEMA_MAD = {
 
 
 # --- Per-copy holder AIDs. ---
-# Independent registries ASSUME independent AIDs (spec L2903): a per-copy registry that
+# Independent registries ASSUME independent AIDs (spec L2905): a per-copy registry that
 # every copy's shared holder AID points back at would decorrelate nothing. So each copy
 # k is issued to its OWN holder AID ALICE_k, derived from a HOLDER-ONLY secret salt the
 # issuer never sees -- the holder supplies the public AIDs and the issuer commits to
@@ -629,7 +683,7 @@ def test_indreg_sedi_id_set_JSON():
 HERD_SALT = b'indregherdsalt00'
 HERD_RESIDENTS = 4
 HERD_STAMP = "2026-01-05T12:05:00.000000+00:00"
-# Spec L2924: an Issuer SHOULD pad thin batches with state-PRESERVING updates so that
+# Spec L2926: an Issuer SHOULD pad thin batches with state-PRESERVING updates so that
 # every anchor captures enough events to meet a stated herd-privacy level. Two such
 # no-ops are included below; they change nothing and exist only to be leaves.
 DECOY_UPDATES = 2
@@ -648,7 +702,7 @@ def _herd_events(kind, nonces=None):
     saids = []
     for r in range(HERD_RESIDENTS):
         for k in range(BULK_SIZE):
-            tag = f"{r}/{k}"
+            tag = f"{_hx(r)}/{_hx(k)}"
             reg = regcept(israid=STATE, uuid=nonces.r(tag), stamp=HERD_STAMP, kind=kind)
             acdc = Diger(ser=f"resident{r}-copy{k}".encode()).qb64
             blinder = Blinder.blind(acdc=acdc, state='issued', salt=nonces.b(tag), sn=1)
@@ -961,7 +1015,7 @@ def test_indreg_sedi_age_set_JSON():
 
     # Pinned reproducible values (derived, not pasted).
     assert ageRegs[0].said == "EGUtUfYkaKyF3jq45ew8FOB4f0izb7rLPXgLiaZkcDzn"
-    assert ageCopies[0].said == "EPG_IIaPosaRqZ6OnG1gFCcqu9HxDC00Gpz4t2Ic9dVO"
+    assert ageCopies[0].said == "EAExbHDFN80m_9OPguIOpyzAsExodDs-pNJY-f4Nzr6v"
     assert ageAggors[0].agid == "EBimirc3NBSuQQZLBPyuF6LP8W6ywStAQZm34DFNQdUj"
 
     # Selective disclosure over copy 0's aggregate: reveal over-21 + issuee, hide the rest.
@@ -973,7 +1027,7 @@ def test_indreg_sedi_age_set_JSON():
 
     # The two bulk sets meet only at the per-index holder AID (same subject). Everything
     # else is disjoint -- and there are now 2*M registries for one resident's two
-    # credentials, which is the storage cost spec L2908 warns about, stated plainly.
+    # credentials, which is the storage cost spec L2911 warns about, stated plainly.
     assert ageCopies[0].iseaid == idCopies[0].iseaid          # same subject ALICE_0
     assert {a.said for a in ageCopies}.isdisjoint({c.said for c in idCopies})
     assert {r.said for r in ageRegs}.isdisjoint({r.said for r in idRegs})
@@ -1126,8 +1180,8 @@ def test_indreg_partition_across_verifiers_JSON():
     assert k1 != k2                                       # per-verifier spend is injective
     pres1 = _presentation(kind, v1, idCopies, ageCopies, presNonces)
     pres2 = _presentation(kind, v2, idCopies, ageCopies, presNonces)
-    assert pres1.said == "EBKb256HM-wotZcbz7wll32IyzR15AiBNBOm2F6qLaeh"   # Alcove context
-    assert pres2.said == "EKQ5ROrq5_ijH49Rt1Yi_GU5K_AXBYPbUSoxI5ZLe9cN"   # dispensary
+    assert pres1.said == "EN4G8PuyrKW-eIfkZXGLrtzoKZx-B8jQEn5Y1vDaDYql"   # Alcove context
+    assert pres2.said == "EDC1XX7NqH4YOBnNG-txVw5z3XNsFZGH61FDvlHZPo82"   # dispensary
 
     # Each presentation verifies (I2I same-holder to copy-k sources) and rides the
     # over-21 selective disclosure.
@@ -1214,7 +1268,7 @@ def _offer(kind, *, sender, receiver, prior, presentationSaid, governance):
     SET-WIDE correlator: it no longer ties copy k to copies 0..M-1. It remains a perfectly
     good PER-CONTEXT correlator -- disclose rd_k pre-agree to a verifier who then spurns
     the exchange, and that verifier keeps a durable handle on this context forever. Spec
-    L2842-2848's three graduated-disclosure methods for `rd` therefore still apply.
+    L2844-2850's three graduated-disclosure methods for `rd` therefore still apply.
 
     Its query block carries an EMPTY disclosure-paths list, `dp: []`. Because this offer
     is SOLICITED -- `prior` binds the apply it answers -- an empty `dp` means "the same
@@ -1229,7 +1283,7 @@ def _offer(kind, *, sender, receiver, prior, presentationSaid, governance):
 def _verify_issuance(copy, *, reg, event, salt, proof, sealer, sn=1):
     """The Disclosee's proof-of-issuance check for an independent-registry ACDC.
 
-    Spec L2869 lists five steps for the shared-registry variant: recompute the SAID,
+    Spec L2871 lists five steps for the shared-registry variant: recompute the SAID,
     recompute b_k, find it in the disclosed [b_k] list, recompute B from the list, and
     confirm the Issuer sealed B. With one ACDC per registry there is no list and no
     aggregate, and the middle three collapse into two different ones -- unblind this
@@ -1237,7 +1291,7 @@ def _verify_issuance(copy, *, reg, event, salt, proof, sealer, sn=1):
 
       1. the credential's `rd` names this registry, this registry was incepted by the
          credential's OWN issuer, and the event belongs to it. The middle clause is the
-         one it would be easy to skip: `rd` is a secure DISCOVERY mechanism (spec L2840),
+         one it would be easy to skip: `rd` is a secure DISCOVERY mechanism (spec L2842),
          so following it must end at a registry the credential's issuer controls. Skip
          it and a holder can point the verifier at a registry SHE incepted and keeps
          'issued' forever;
