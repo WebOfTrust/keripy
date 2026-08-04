@@ -1137,8 +1137,19 @@ def test_represented_presentation_JSON():
     # with ACDC-relative paths -- the construct settled in WebOfTrust/keripy discussion
     # #1549, shared with tests/acdc/test_clc_disclosure.py and test_bulk_issuance.py.
     # A dict keyed by schema SAID cannot express a DAG holding two credentials of the
-    # same schema; a leading '/' would root the path at the DAG ORIGIN rather than at
-    # the credential the tuple names.
+    # same schema.
+    #
+    # A leading '/' would make the path DAG-ABSOLUTE, rooted at the origin node, and an
+    # absolute path reaching a non-origin ACDC must cross the edge that links it -- the
+    # virtual '_' component, standing for the jump from the near-side edge block to the
+    # top level of the far-side ACDC (@SmithSamuelM, #1549). The same request in
+    # absolute form reads:
+    #     origin:   /i, /a/i
+    #     guardian: /e/authority/_/a/i, /e/authority/_/a/powers
+    #     ward age: /e/wardAge/_/A/i, /e/wardAge/_/A/over13
+    # Relative form is used because this DAG has no optional edges, so the breadth-first
+    # ordering of `dp` is gapless and each entry's ACDC is unambiguous without restating
+    # the route to it.
     #
     # A represented presentation is the case that makes the joining paths load-bearing:
     # the service asks for the issuee from BOTH the guardian credential (a/i -- who is
@@ -1146,11 +1157,17 @@ def test_represented_presentation_JSON():
     # those two issuees are deliberately DIFFERENT AIDs. It is the guardianship edge,
     # not issuee equality, that licenses Bob to speak for Cara.
     #
-    # As in the sibling examples, the zeroth origin tuple is omitted: this is a
-    # first-contact apply and the service cannot yet name Bob's bespoke presentation
-    # schema (#1512, open on #1542).
+    # The zeroth entry is the DAG's origin node (#1549): Bob's presentation. Its schema
+    # is governance even though Bob issues it -- "in all of these applications the
+    # Applicant would know the schema of the origin node despite it being a presenter
+    # issued ACDC" (@SmithSamuelM, #1542) -- so the service can name it in a
+    # first-contact apply. It asks the origin only for issuer and issuee, which in a
+    # represented presentation is the first place the holder != subject split shows:
+    # the origin's issuer is Bob, and the ward never appears in it at all.
+    presentSchemaSaid, _ = _saidify_schema(dict(PRESENTATION_SCHEMA_MAD), kind=kind)
     apply = exchange(sender=SERVICE, receiver=BOB, route="/ipex/apply",
-                     modifiers=dict(dp=[[guardian.sad['s']['$id'], ["a/i", "a/powers"]],
+                     modifiers=dict(dp=[[presentSchemaSaid, ["i", "a/i"]],
+                                        [guardian.sad['s']['$id'], ["a/i", "a/powers"]],
                                         [age.sad['s']['$id'], ["A/i", "A/over13"]]]),
                      attributes=dict(m="Prove an authorized guardian and that the ward "
                                        "is over 13.",
@@ -1158,13 +1175,15 @@ def test_represented_presentation_JSON():
                      stamp=APPLY_STAMP, kind=kind)
     assert apply.sad['r'] == "/ipex/apply" and apply.sad['i'] == SERVICE
     dp = apply.sad['q']['dp']
-    assert [entry[0] for entry in dp] == [guardian.sad['s']['$id'], age.sad['s']['$id']]
-    assert dp[0][1] == ["a/i", "a/powers"]      # attributive guardian cred: who acts, and how far
-    assert dp[1][1] == ["A/i", "A/over13"]      # aggregative ward age cred: whose, and the flag
+    assert [entry[0] for entry in dp] == [presentSchemaSaid,
+                                          guardian.sad['s']['$id'], age.sad['s']['$id']]
+    assert dp[0][1] == ["i", "a/i"]             # origin: who presents, and to whom
+    assert dp[1][1] == ["a/i", "a/powers"]      # attributive guardian cred: who acts, and how far
+    assert dp[2][1] == ["A/i", "A/over13"]      # aggregative ward age cred: whose, and the flag
     assert all(not p.startswith("/") and not p.endswith("/")
                for _, paths in dp for p in paths)
     assert 'disclose' not in apply.sad['a'] and set(apply.sad['a']) == {'m', 'g'}
-    assert apply.said == "EBfVQhtHlKjFictwHJA2dqyUYT7FPRnXYFg6Fhd5E4k1"
+    assert apply.said == "EG8lmgnhklNHn98lt3Dv7Bdrs_632QQstRIJQlklTWY5"
 
     # 2. offer (Bob -> service): commits ONLY to the Discloser's own presentation SAID
     # and the governance ref, and binds the apply. It deliberately does NOT enumerate the
@@ -1183,7 +1202,7 @@ def test_represented_presentation_JSON():
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said
     assert offer.sad['q']['dp'] == []                         # solicited: "as per the apply"
-    assert offer.said == "EC4StOYxE8I5K7cUQL0zAT84x9MRPfkdf5M-r2uD4LjH"
+    assert offer.said == "EJv3_3he8eyxn0zr-bJd-Y7bWbSOaYLhr_B4kDpX0hQ1"
     assert presentation.said.encode() in offer.raw            # Discloser's own commitment
     assert b"Cara Carver" not in offer.raw and b"2012-04-10" not in offer.raw   # no PII
     # Issuer commitments withheld until after the service agrees (PRV-F2):
@@ -1196,7 +1215,7 @@ def test_represented_presentation_JSON():
     agree = exchange(sender=SERVICE, receiver=BOB, route="/ipex/agree", prior=offer.said,
                      stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said
-    assert agree.said == "EM7EOB97-FRe-v5VnsA8NUem0TFZwRMc8D3GfiexiMmK"
+    assert agree.said == "EE7XyBY9Iev_9FE3up77zNRYb4Twtp1G7Q3tuTB0D3Mt"
     svcSigner = _SIGNERS[4]                             # the service's establishing key
     svcSig = svcSigner.sign(ser=agree.raw, index=0)
     signedAgree = messagize(agree, sigers=[svcSig])
@@ -1228,7 +1247,7 @@ def test_represented_presentation_JSON():
     # the birthdate and every other threshold stay off the wire.
     grant = disclose(agree, svcSig, capturedKeyState)
     assert grant is not None and grant.sad['p'] == agree.said
-    assert grant.said == "EB279Zzbb24Ge00yrIyEt5j0j29Wi2nfJFfUm3x0p3PY"
+    assert grant.said == "ENum0KUfAoysZ3zUxJmFv7HtG5McMbobvsllQQkAMavA"
     assert grant.sad['a']['wardAge'][AGE_OVER13]['over13'] is True     # over-13 disclosed
     assert grant.sad['a']['wardId']['i'] == CARA                       # ward bound (issuee)
     assert b"2012-04-10" not in grant.raw                             # birthdate withheld
@@ -1238,7 +1257,7 @@ def test_represented_presentation_JSON():
     admit = exchange(sender=SERVICE, receiver=BOB, route="/ipex/admit", prior=grant.said,
                      stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "EE1Tl3Igf6EtbcJ8n7h-X632o9RS3JGn4DUq0aGAUIds"
+    assert admit.said == "EKHksoCxMXyAIZmI8FVfWrN97_7cOeyQX32ZM9oDYiHL"
 
 
 # ---------------------------------------------------------------------------
