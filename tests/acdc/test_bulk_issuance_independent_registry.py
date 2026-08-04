@@ -746,7 +746,242 @@ def test_indreg_batch_anchor_JSON():
     assert tree.root == "EOdrbhMmEtYQXYMy9TZso2k6FtHL7K4Q8Ic9S3FcJggz"
 
 
+# ===========================================================================
+# Phase 4: the bulk sedi-age set, index-aligned to sedi-id via an E1E edge.
+# ===========================================================================
+def _edge_schema(op_const, desc):
+    """One edge schema whose operator is PINNED to a single value (const op_const)."""
+    return {
+        "oneOf": [
+            {"type": "string"},
+            {"type": "object", "required": ["d", "n", "o"],
+             "properties": {"d": {"type": "string"}, "u": {"type": "string"},
+                            "n": {"description": f"{desc}: far node SAID",
+                                  "type": "string"},
+                            "s": {"description": "Far node schema SAID",
+                                  "type": "string"},
+                            "o": {"description": f"Edge operator ({desc})",
+                                  "const": op_const}}}]}
+
+
+# sedi-age: the holder's AGGREGATIVE ('acg') derived age credential -- a homogeneous
+# boolean vector where hiding WHICH thresholds are asserted is the point. It REQUIRES an
+# E1E identity edge back to the SAME-index sedi-id copy (same subject, issuer != issuee),
+# so the identity relation is schema-enforced.
+AGE_THRESHOLDS = (13, 16, 18, 21, 55, 65)
+AGE_SCHEMA_MAD = {
+    "$id": "",
+    "$schema": "https://json-schema.org/draft/2020-12/schema",
+    "title": "Age Threshold Credential",
+    "description": "Derived age credential: a selectively disclosable aggregate of "
+                   "boolean flags, one per age threshold, chained to the core identity "
+                   "credential by an E1E identity edge.",
+    "credentialType": "AgeThresholds",
+    "version": "1.0.0",
+    "type": "object",
+    "required": ["v", "d", "i", "rd", "s", "A", "e"],
+    "properties": {
+        "v": {"description": "ACDC version string", "type": "string"},
+        "t": {"description": "Message type", "const": "acg"},
+        "d": {"description": "Message SAID", "type": "string"},
+        "u": {"description": "Message UUID", "type": "string"},
+        "i": {"description": "Issuer (State/DGO) AID", "type": "string"},
+        "rd": {"description": "This copy's own registry SAID", "type": "string"},
+        "s": {"description": "Schema Section",
+              "oneOf": [{"type": "string"}, {"type": "object"}]},
+        "A": {
+            "description": "Selectively disclosable age-threshold aggregate section",
+            "oneOf": [
+                {"description": "Aggregate Section AGID", "type": "string"},
+                {"description": "Selectively disclosable flag details",
+                 "type": "array", "uniqueItems": True,
+                 "items": {"anyOf": [
+                     _disclosable_block("i", {"description": "Issuee (holder) AID",
+                                              "type": "string"}, "Issuee"),
+                     *[_disclosable_block(f"over{n}",
+                         {"description": f"Over-{n} flag", "type": "boolean"},
+                         f"Over{n}") for n in AGE_THRESHOLDS],
+                 ]}},
+            ],
+        },
+        "e": {
+            "description": "Edge section: one E1E identity edge to the sedi-id core cred",
+            "oneOf": [
+                {"type": "string"},
+                {"type": "object", "required": ["d", "identity"],
+                 "properties": {"d": {"type": "string"}, "u": {"type": "string"},
+                                "identity": _edge_schema(
+                                    "E1E", "identity relation, issuer unconstrained")},
+                 "additionalProperties": False}],
+        },
+        "r": _EMPTY_OR_SECTION,
+    },
+    "additionalProperties": False,
+}
+
+# The sedi-age bulk set derives its per-copy nonces from a DISTINCT salt so its uuids,
+# registry uuids and blinding salts never collide with the sedi-id set's.
+BULK_AGE_SALT = b'indregageexsalt0'
+REG_AGE_STAMP = "2026-01-06T12:00:00.000000+00:00"
+ISSUE_AGE_STAMP = "2026-01-06T12:05:00.000000+00:00"
+
+# Aggregate ARRAY positions (A[0]=AGID; A[1]=issuee; A[2..]=flags) and Alice's age.
+AGE_ISSUEE = 1
+AGE_FLAG0 = 2
+AGE_OVER21 = AGE_FLAG0 + AGE_THRESHOLDS.index(21)
+ALICE_AGE = 26                                   # DOB 2000-03-15 at the 2026 presentation
+
+# Per-copy nonce slots for a sedi-age copy: aggregate elements at "k/1".."k/(1+len)",
+# the edge section at "k/20" and the E1E edge at "k/21" (high slots avoid collision).
+_AGE_EDGE_SEC, _AGE_EDGE_ID = 20, 21
+
+
+def _age_ael(nonces, k):
+    """Copy k's age-threshold aggregate element list, issued to holder ALICE_k.
+
+    Element 0 is the AGID placeholder; element 1 is the issuee block (i = ALICE_k), where
+    SerderACDC.iseaid resolves the aggregate issuee; elements 2.. are one blinded boolean
+    block per threshold (over<n> = ALICE_AGE >= n). All thresholds present, so disclosing
+    one flag reveals nothing about the others. Per-copy blinding nonces at paths "k/j".
+    """
+    els = ['', dict(d='', u=nonces.u(k, 1), i=ALICES[k])]
+    for offset, n in enumerate(AGE_THRESHOLDS):
+        els.append(dict(d='', u=nonces.u(k, 2 + offset),
+                        **{f"over{n}": ALICE_AGE >= n}))
+    return els
+
+
+def _verify_identity_edge(near, far):
+    """The example's verifier branch for an E1E identity edge (near -> far).
+
+    E1E binds two credentials to the SAME subject: near's issuee AID MUST equal far's
+    issuee AID (both via SerderACDC.iseaid), with NO constraint on the issuer -- so it
+    holds for two credentials whose issuee is ALICE_k though the issuer is the State
+    (issuer != issuee), the case a coerce-to-I2I verifier would reject. Returns True or
+    raises.
+    """
+    edge = near.sad['e']['identity']
+    assert edge['o'] == 'E1E'                          # identity operator
+    assert edge['n'] == far.said                       # points at this far node
+    assert near.iseaid is not None                     # near is targeted (has an issuee)
+    assert near.iseaid == far.iseaid                   # same subject: the identity relation
+    return True
+
+
+def _sedi_age_set(kind, idCopies, nonces=None):
+    """Build the bulk sedi-age set: M copies, M more independent registries, E1E-aligned.
+
+    Returns (regs, copies, aggors, issues). Copy k is issued by STATE to holder ALICE_k,
+    bound to ITS OWN registry, and carries an E1E edge to sedi-id copy k -- the SAME
+    subject (ALICE_k) reached through a different section (the aggregate far node,
+    A[1].i). The Aggor per copy is returned so callers can selectively disclose over the
+    aggregate.
+    """
+    if nonces is None:
+        nonces = _BulkNonces(BULK_AGE_SALT)
+    _, schema = _saidify_schema(dict(AGE_SCHEMA_MAD), kind=kind)
+    regs = [regcept(israid=STATE, uuid=nonces.r(k), stamp=REG_AGE_STAMP, kind=kind)
+            for k in range(BULK_SIZE)]
+    copies, aggors = [], []
+    for k in range(BULK_SIZE):
+        edge = dict(d='', u=nonces.u(k, _AGE_EDGE_SEC),
+                    identity=dict(d='', u=nonces.u(k, _AGE_EDGE_ID),
+                                  n=idCopies[k].said,
+                                  s=idCopies[k].sad['s']['$id'], o='E1E'))
+        aggor = Aggor(ael=_age_ael(nonces, k), makify=True, kind=kind)
+        age = acdcagg(israid=STATE, uuid=nonces.u(k), regid=regs[k].said, schema=schema,
+                      aggregate=aggor.ael, edge=edge, kind=kind)
+        copies.append(age)
+        aggors.append(aggor)
+    issues = [_issue(copies[k], nonces, k, regid=regs[k].said, prior=regs[k].said,
+                     stamp=ISSUE_AGE_STAMP, kind=kind)
+              for k in range(BULK_SIZE)]
+    return regs, copies, aggors, issues
+
+
+def test_indreg_sedi_age_set_JSON():
+    """Phase 4: the bulk sedi-age set, index-aligned to sedi-id by an E1E edge.
+
+    The State bulk-issues Alice's sedi-age as M copies, each to the SAME per-context
+    holder AID ALICE_k as the matching sedi-id copy, each in its OWN registry, and each
+    carrying an E1E identity edge to sedi-id copy k. The standing edge is safe for the
+    same reason it is safe in the sibling variant -- it points at a fresh, per-context
+    far node -- and now the registry behind that far node is per-context too, so a
+    verifier who walks the edge and then looks up the far node's registry state still
+    learns nothing that another verifier could join on.
+
+    Asserted: every copy is a schema-valid aggregative sedi-age issued to ALICE_k in its
+    own registry, over-21 true / over-65 false; the E1E edge is index-aligned and
+    verifies as the same subject; the schema rejects a swapped operator and a non-boolean
+    flag; selective disclosure reveals over-21 while withholding the other thresholds;
+    and the two bulk sets meet ONLY at the per-index holder AID -- disjoint SAIDs,
+    disjoint registries, 2*M registries in total.
+    """
+    kind = Kinds.json
+    idNonces = _BulkNonces(BULK_SALT)
+    idRegs, idCopies, _ = _sedi_id_set(kind, idNonces)
+    ageNonces = _BulkNonces(BULK_AGE_SALT)
+    ageRegs, ageCopies, ageAggors, ageIssues = _sedi_age_set(kind, idCopies, ageNonces)
+
+    over65Pos = AGE_FLAG0 + AGE_THRESHOLDS.index(65)
+    assert len(ageCopies) == BULK_SIZE
+    for k, age in enumerate(ageCopies):
+        assert age.ilk == Ilks.acg
+        assert age.sad['i'] == STATE                          # issued by the State/DGO
+        assert age.sad['rd'] == ageRegs[k].said               # ...into ITS OWN registry
+        assert age.sad['A'][AGE_ISSUEE]['i'] == ALICES[k]     # per-copy holder AID
+        assert age.iseaid == ALICES[k]
+        assert age.sad['A'][AGE_OVER21]['over21'] is True     # over 21...
+        assert age.sad['A'][over65Pos]['over65'] is False     # ...not over 65
+        ageSchema = assert_acdc_schema_valid(age)
+        # Index-aligned E1E edge -> the SAME-index sedi-id copy.
+        assert age.sad['e']['identity']['o'] == 'E1E'
+        assert age.sad['e']['identity']['n'] == idCopies[k].said
+        assert _verify_identity_edge(age, idCopies[k])
+        assert age.iseaid == idCopies[k].iseaid == ALICES[k]  # same subject per context
+
+    # Schema teeth: the identity operator is const-pinned to E1E -- a swapped operator
+    # and a non-boolean flag are both rejected at validation.
+    badOp = json.loads(json.dumps(ageCopies[0].sad))
+    badOp['e']['identity']['o'] = 'I2I'
+    with pytest.raises(ValidationError):
+        Draft202012Validator(ageSchema).validate(badOp)
+    badFlag = json.loads(json.dumps(ageCopies[0].sad))
+    badFlag['A'][AGE_OVER21] = dict(badFlag['A'][AGE_OVER21], over21="yes")
+    with pytest.raises(ValidationError):
+        Draft202012Validator(ageSchema).validate(badFlag)
+
+    # Distinct across copies, registries included; each registry commits its own copy.
+    assert len({a.said for a in ageCopies}) == BULK_SIZE
+    assert len({r.said for r in ageRegs}) == BULK_SIZE
+    for k, issued in enumerate(ageIssues):
+        assert Blinder.unblind(said=issued.sad['b'], acdc=ageCopies[k].said,
+                               states=SET_STATES, salt=ageNonces.b(k),
+                               sn=1).state == 'issued'
+
+    # Pinned reproducible values (derived, not pasted).
+    assert ageRegs[0].said == "EGUtUfYkaKyF3jq45ew8FOB4f0izb7rLPXgLiaZkcDzn"
+    assert ageCopies[0].said == "EPG_IIaPosaRqZ6OnG1gFCcqu9HxDC00Gpz4t2Ic9dVO"
+    assert ageAggors[0].agid == "EBimirc3NBSuQQZLBPyuF6LP8W6ywStAQZm34DFNQdUj"
+
+    # Selective disclosure over copy 0's aggregate: reveal over-21 + issuee, hide the rest.
+    disclosed, _ = ageAggors[0].disclose(indices=[AGE_ISSUEE, AGE_OVER21])
+    assert disclosed[AGE_ISSUEE]['i'] == ALICES[0]
+    assert disclosed[AGE_OVER21]['over21'] is True
+    assert Aggor.verifyDisclosure(disclosed, kind=kind)
+    assert "over55" not in json.dumps(disclosed) and "over65" not in json.dumps(disclosed)
+
+    # The two bulk sets meet only at the per-index holder AID (same subject). Everything
+    # else is disjoint -- and there are now 2*M registries for one resident's two
+    # credentials, which is the storage cost spec L2908 warns about, stated plainly.
+    assert ageCopies[0].iseaid == idCopies[0].iseaid          # same subject ALICE_0
+    assert {a.said for a in ageCopies}.isdisjoint({c.said for c in idCopies})
+    assert {r.said for r in ageRegs}.isdisjoint({r.said for r in idRegs})
+    assert len({r.said for r in ageRegs} | {r.said for r in idRegs}) == 2 * BULK_SIZE
+
+
 if __name__ == "__main__":
     test_indreg_derivation_and_batch_JSON()
     test_indreg_sedi_id_set_JSON()
     test_indreg_batch_anchor_JSON()
+    test_indreg_sedi_age_set_JSON()
