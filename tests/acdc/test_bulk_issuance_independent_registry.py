@@ -1410,6 +1410,75 @@ def test_indreg_disclosure_gating_and_revocation_JSON():
                             sealer=laterSealer, sn=2) != 'issued'  # ...yet status forbids
 
 
+# ===========================================================================
+# Phase 7: the invariants hold across every serialization kind.
+# ===========================================================================
+@pytest.mark.parametrize("kind", [Kinds.json, Kinds.cesr, Kinds.cbor, Kinds.mgpk])
+def test_indreg_serialization_kinds(kind):
+    """Phases 2-6 invariants hold across every serialization kind, not just JSON.
+
+    Exercises the same flows -- both bulk sets issued to per-context holder AIDs in
+    per-copy registries, the index-aligned E1E edge, the batch root seal and its
+    inclusion proofs, the per-verifier partition, and the per-copy blindable state --
+    over CESR (the native KERI wire format) and CBOR/MGPK, asserting the behavioral
+    invariants without pinning per-kind SAIDs. (The no-correlator-on-the-wire substring
+    checks are JSON-specific: the CESR wire form base64-encodes the payload.)
+    """
+    idNonces = _BulkNonces(BULK_SALT)
+    idRegs, idCopies, idIssues = _sedi_id_set(kind, idNonces)
+    ageNonces = _BulkNonces(BULK_AGE_SALT)
+    ageRegs, ageCopies, ageAggors, ageIssues = _sedi_age_set(kind, idCopies, ageNonces)
+    tree, sealer = _anchor([i.said for i in idIssues], [i.said for i in ageIssues],
+                           _herd_events(kind))
+
+    # Per copy: schema-valid; issued to its own holder AID in its own registry;
+    # index-aligned E1E; its registry state provable under the one sealed batch root.
+    for k in range(BULK_SIZE):
+        assert idCopies[k].ilk == Ilks.acm and idCopies[k].kind == kind
+        assert ageCopies[k].ilk == Ilks.acg
+        assert idCopies[k].iseaid == ageCopies[k].iseaid == ALICES[k]
+        assert idCopies[k].sad['rd'] == idRegs[k].said
+        assert ageCopies[k].sad['rd'] == ageRegs[k].said
+        assert_acdc_schema_valid(idCopies[k])
+        assert_acdc_schema_valid(ageCopies[k])
+        assert _verify_identity_edge(ageCopies[k], idCopies[k])       # E1E on every kind
+        for copy, regs, issues, nonces in ((idCopies[k], idRegs, idIssues, idNonces),
+                                           (ageCopies[k], ageRegs, ageIssues, ageNonces)):
+            assert _verify_issuance(copy, regid=regs[k].said, event=issues[k],
+                                    salt=nonces.b(k),
+                                    proof=tree.prove(issues[k].said),
+                                    sealer=sealer) == 'issued'
+
+    # 2*M independent registries under exactly ONE anchoring seal, on every kind.
+    assert len({r.said for r in idRegs} | {r.said for r in ageRegs}) == 2 * BULK_SIZE
+    assert sealer.crew.rd == tree.root
+
+    # Partition across two contexts holds on every kind, registries and events included.
+    presNonces = _BulkNonces(PRESENT_SALT)
+    k1, k2 = _copy_index_for(ALCOVE), _copy_index_for(DISPENSARY)
+    pres1 = _presentation(kind, ALCOVE, idCopies, ageCopies, presNonces)
+    pres2 = _presentation(kind, DISPENSARY, idCopies, ageCopies, presNonces)
+    assert _verify_presentation(pres1, idCopies[k1], ageCopies[k1])
+    assert _verify_presentation(pres2, idCopies[k2], ageCopies[k2])
+    assert_acdc_schema_valid(pres1)                  # presentation schema-valid every kind
+    assert _context_correlators(k1, idCopies, idIssues, ageCopies, ageAggors, ageIssues,
+                                pres1).isdisjoint(
+           _context_correlators(k2, idCopies, idIssues, ageCopies, ageAggors, ageIssues,
+                                pres2))
+
+    # Private presentation: compact and expanded forms share one SAID.
+    presCompact = _presentation(kind, ALCOVE, idCopies, ageCopies, presNonces,
+                                compactify=True)
+    assert presCompact.said == pres1.said
+    assert isinstance(pres1.sad['e'], dict)          # sections inline...
+    assert isinstance(presCompact.sad['e'], str)     # ...vs. collapsed to a SAID
+
+    # Selective over-21 disclosure verifies via the AGID on every kind.
+    disclosed, _ = ageAggors[k1].disclose(indices=[AGE_ISSUEE, AGE_OVER21])
+    assert disclosed[AGE_OVER21]['over21'] is True
+    assert Aggor.verifyDisclosure(disclosed, kind=kind)
+
+
 if __name__ == "__main__":
     test_indreg_derivation_and_batch_JSON()
     test_indreg_sedi_id_set_JSON()
@@ -1417,3 +1486,5 @@ if __name__ == "__main__":
     test_indreg_sedi_age_set_JSON()
     test_indreg_partition_across_verifiers_JSON()
     test_indreg_disclosure_gating_and_revocation_JSON()
+    for _kind in (Kinds.json, Kinds.cesr, Kinds.cbor, Kinds.mgpk):
+        test_indreg_serialization_kinds(_kind)
