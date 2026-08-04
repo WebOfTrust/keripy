@@ -168,6 +168,42 @@ class Verifier:
                     raise MissingChainError("Failure to verify credential {} chain {}({})"
                                                    .format(creder.said, label, nodeSaid))
 
+                # Enforce the edge's declared far-node schema ('s'). Per ACDC (S.
+                # Smith, issue #1534) the edge 's' is a schema the far node must
+                # *satisfy*, not a SAID that must equal the far node's own schema
+                # SAID. The far node already validated against its own schema (it is
+                # saved, per verifyChain above), so an edge declaring that same
+                # schema needs no further check. When the edge declares a *different*
+                # schema, the far node must additionally satisfy it: if it does, the
+                # near side is legitimately requiring a backwards-compatible (e.g.
+                # upgraded) schema without the far node being reissued; if it does
+                # not, the edge schema is not backwards compatible and the far node
+                # must be reissued. Handled here rather than in verifyChain so the
+                # missing-schema case can escrow and cue a schema query, exactly as
+                # the near ACDC's own schema does above.
+                nodeSchema = node['s'] if 's' in node else None
+                if nodeSchema is not None:
+                    farCreder = self.reger.creds.get(keys=nodeSaid)
+                    if farCreder.schema != nodeSchema:
+                        scraw = self.resolver.resolve(nodeSchema)
+                        if not scraw:  # edge schema not cached yet -- transient
+                            if self.escrowMSE(creder, prefixer, seqner, saider):
+                                self.cues.append(dict(kin="query",
+                                                      q=dict(r="schema", said=nodeSchema)))
+                            raise MissingSchemaError("edge schema {} for credential {} "
+                                                     "chain {}({}) not in cache"
+                                                     .format(nodeSchema, creder.said,
+                                                             label, nodeSaid))
+                        try:
+                            Schemer(raw=scraw).verify(farCreder.raw)
+                        except ValidationError as ex:  # far node fails the edge schema
+                            self.escrowMCE(creder, prefixer, seqner, saider)
+                            self.cues.append(dict(kin="proof", said=nodeSaid))
+                            raise MissingChainError("Credential {} chain {}({}) far node "
+                                                    "does not satisfy edge schema {}: {}"
+                                                    .format(creder.said, label, nodeSaid,
+                                                            nodeSchema, ex))
+
                 dtnow = helping.nowUTC()
                 dte = helping.fromIso8601(state.dt)
                 if (dtnow - dte) > datetime.timedelta(seconds=self.CredentialExpiry):
