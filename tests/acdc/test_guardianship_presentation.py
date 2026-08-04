@@ -78,18 +78,46 @@ IDENTIFIER-level unlinkability: the disclosure still hands the service the ward'
 AID plus the source-credential SAIDs, which two colluding services could join on to
 track the same minor. Removing that residual is a deployment-layer concern -- per-facet
 ward AIDs or bulk-issued source instances that partition the correlatable identifier
-space across verifiers (a separate worked example) -- not something the
-represented-presentation shape itself provides. The guardianship is registry-bound with
-a BLINDABLE registry, so the service confirms the authority is currently valid and
-cannot READ the state word (issued/revoked) off the wire -- dynamic termination
-(majority, restored capacity, court order) is checked at presentation, not trusted from
-a date. (The bup event's existence, count, and timestamps stay public, so full TEMPORAL
+space across verifiers -- not something the represented-presentation shape itself
+provides. Two sibling examples work that partitioning out, both on branch
+feat-indep-registry-bulk-issuance and not yet merged. Basic bulk issuance is
+tests/acdc/test_bulk_issuance_shared_registry.py -- one shared registry per set, with a
+blinded aggregate B. The variant the State of Utah intends is
+tests/acdc/test_bulk_issuance_independent_registry.py -- independent registries, no
+aggregate B, and one Merkle-root batch seal per anchoring batch. The guardianship is
+registry-bound with a BLINDABLE registry, so the service confirms the authority is
+currently valid and cannot READ the state word (issued/revoked) off the wire -- dynamic
+termination (majority, restored capacity, court order) is checked at presentation, not
+trusted from a date. (The bup event's existence, count, and timestamps stay public, so full TEMPORAL
 decorrelation of a revocation additionally needs placeholder pre-issuance, continued
 blind updates after revocation, and a shared-herd registry rather than the
 one-per-guardianship registry modeled here.) And the verifier can PROVE, after the fact,
 that a guardian acted: a verifiable chain from the guardian's AID through the DGO-issued
 authority credential to the ward's identity -- an accountability chain no
-document-centric mDL/ARF flow can carry.
+document-centric mDL/ARF flow can carry. Under bulk issuance the GUARDIAN's AID must be
+partitioned per context too, not just the ward's: a stable guardian AID is itself a
+correlator, and two verifiers can join on it to re-link the ward through him. The
+accountability claim survives that partitioning because accountability runs to the
+issuing authority, which holds the derivation, not to the verifier.
+
+Self-contained scope, deliberately. An earlier draft of this example admitted an optional
+'scope' edge to a companion delegated-authority credential (a GCD, "Generalized
+Cooperative Delegation", in the bakobo/schema family the credentials here are ported
+from), on the reasoning that this credential should carry only what Utah law makes
+relationship-specific -- the statutory 'basis', the 'powers' scope, the 'recognition'
+block -- and defer the generic act grid, fine-grained constraints, duties, and
+terminating events to that companion. The State of Utah has since said it does not want
+guardianship to depend on a separate credential, so the edge is gone and the edge section
+is CLOSED at subject + authorization: test_guardian_authority_credential_JSON asserts
+that any other edge is now rejected. This is a deployment decision, not a technical
+finding, and it is recorded here because a reader coming from the schema family will
+otherwise wonder where the two-layer factoring went. What follows from it is that
+'powers' is the whole of the scope vocabulary this credential carries, which is coarse:
+it can say that a guardian holds authority over the ward's digital identity, and it
+cannot say which platforms, which hours, or under what conditions. A guardianship needing
+that granularity carries it inline instead -- see @SmithSamuelM's 'AuthZ' field and the
+EVAC resource-capabilities sketch in keripy discussion #1550, and the sibling example
+that works that shape.
 
 Deliberately NOT contractually-protected disclosure. The sibling CLC example
 (test_clc_disclosure.py) negotiates safe-harbor terms in the Rules section; that is
@@ -523,15 +551,14 @@ GUARDIAN_SCHEMA_MAD = {
         },
         "e": {
             "description": "Edge section: subject (-> ward sedi-id) + authorization "
-                           "(-> instrument); optional scope (-> GCD)",
+                           "(-> instrument)",
             "oneOf": [
                 {"type": "string"},
                 {"type": "object", "required": ["d", "subject", "authorization"],
                  "properties": {"d": {"type": "string"}, "u": {"type": "string"},
                                 "subject": _edge_schema_enum("ward's sedi-id"),
                                 "authorization": _edge_schema_enum(
-                                    "authorizing instrument"),
-                                "scope": _edge_schema_enum("GCD scope")},
+                                    "authorizing instrument")},
                  "additionalProperties": False}],
         },
         "r": {"description": "SAID of the SEDI guardianship governance framework",
@@ -935,8 +962,8 @@ def test_guardian_authority_credential_JSON():
     issuee) and points at Cara's sedi-id; the authority is grounded in an authorizing
     instrument (the birth certificate) via the authorization edge; the credential is
     registry-bound (dynamic termination) and disclosed whole; and the schema enforces
-    the statutory shape (a bad basis, an empty powers list, or a bad recognition block
-    are rejected).
+    the statutory shape (a bad basis, an empty powers list, a bad recognition block, or
+    an edge other than subject/authorization are rejected).
     """
     kind = Kinds.json
     sedi, _, _ = _ward_credentials(kind)
@@ -951,7 +978,7 @@ def test_guardian_authority_credential_JSON():
     # holder != subject: the credential's issuee is Bob, and the ward is Cara, named
     # only by edge. This is the load-bearing invariant, asserted structurally.
     assert guardian.iseaid != sedi.iseaid           # Bob is not the ward
-    assert guardian.said == "EKDE_FfO-iXvw-7q-y1-cthaS0qIbLnJDajhF2eDswVd"
+    assert guardian.said == "EEh0osPLf0Lr0SWjoPZkaiw9sTFSBRMooX0zJFHHD26a"
     assert guardian.sad['e']['subject']['n'] == sedi.said       # ward named by edge
     assert guardian.sad['e']['subject']['o'] == 'NI2I'          # reference, not delegation
     assert guardian.sad['e']['authorization']['n'] == birthCert.said   # authority grounded
@@ -980,6 +1007,13 @@ def test_guardian_authority_credential_JSON():
     badAuth['a']['recognition']['authorityType'] = "vibes"
     with pytest.raises(ValidationError):
         Draft202012Validator(schema).validate(badAuth)
+    # The edge section is closed at subject + authorization: any other edge (here the
+    # 'scope' edge an external delegated-authority credential would have hung off) is
+    # rejected, so the guardian credential carries no hook to one.
+    extraEdge = json.loads(json.dumps(guardian.sad))
+    extraEdge['e']['scope'] = dict(d='', n=sedi.said, s=sedi.sad['s']['$id'], o='NI2I')
+    with pytest.raises(ValidationError):
+        Draft202012Validator(schema).validate(extraEdge)
 
 
 PRESENT_STAMP = "2026-07-20T15:18:00.000000+00:00"
@@ -1095,7 +1129,7 @@ def test_represented_presentation_JSON():
     assert presentation.sad['a']['i'] == SERVICE  # the service is the Issuee (Disclosee)
     assert 'rd' not in presentation.sad           # one-time presentation, not logged
     assert presentation.sad['r'] == GUARDIAN_RULES_SAID   # governance by SAID
-    assert presentation.said == "EO-QbZp_ZpRNieLBaBa8UxI_bnUdyVGNFromSSPVeCA2"
+    assert presentation.said == "EAEvUNpLabXbWc5KJY-Ar-eBsOec3eRSDv36Ys2maNxA"
 
     # The full binding holds for the honest presentation.
     assert _verify_representation(presentation, guardian, sedi, age)
@@ -1135,7 +1169,8 @@ def test_represented_presentation_JSON():
     # The field-level ask rides the disclosure-paths `dp` field of the QUERY section
     # `q` (exchange(modifiers=...)), as an ORDERED LIST of (schemaSAID, [paths]) pairs
     # with ACDC-relative paths -- the construct settled in WebOfTrust/keripy discussion
-    # #1549, shared with tests/acdc/test_clc_disclosure.py and test_bulk_issuance.py.
+    # #1549, shared with tests/acdc/test_clc_disclosure.py and
+    # test_bulk_issuance_shared_registry.py.
     # A dict keyed by schema SAID cannot express a DAG holding two credentials of the
     # same schema.
     #
@@ -1183,7 +1218,7 @@ def test_represented_presentation_JSON():
     assert all(not p.startswith("/") and not p.endswith("/")
                for _, paths in dp for p in paths)
     assert 'disclose' not in apply.sad['a'] and set(apply.sad['a']) == {'m', 'g'}
-    assert apply.said == "EG8lmgnhklNHn98lt3Dv7Bdrs_632QQstRIJQlklTWY5"
+    assert apply.said == "EEKQQp1cDZ3n5fhNj-ArYis4lb8zPuls0MuFcNzHsA7J"
 
     # 2. offer (Bob -> service): commits ONLY to the Discloser's own presentation SAID
     # and the governance ref, and binds the apply. It deliberately does NOT enumerate the
@@ -1202,7 +1237,7 @@ def test_represented_presentation_JSON():
                      stamp=OFFER_STAMP, kind=kind)
     assert offer.sad['p'] == apply.said
     assert offer.sad['q']['dp'] == []                         # solicited: "as per the apply"
-    assert offer.said == "EJv3_3he8eyxn0zr-bJd-Y7bWbSOaYLhr_B4kDpX0hQ1"
+    assert offer.said == "EB0BZhRwuXiIY56mZkgkU8ILK6i0JQ5bUmKRPisr9Iiy"
     assert presentation.said.encode() in offer.raw            # Discloser's own commitment
     assert b"Cara Carver" not in offer.raw and b"2012-04-10" not in offer.raw   # no PII
     # Issuer commitments withheld until after the service agrees (PRV-F2):
@@ -1215,7 +1250,7 @@ def test_represented_presentation_JSON():
     agree = exchange(sender=SERVICE, receiver=BOB, route="/ipex/agree", prior=offer.said,
                      stamp=AGREE_STAMP, kind=kind)
     assert agree.sad['p'] == offer.said
-    assert agree.said == "EE7XyBY9Iev_9FE3up77zNRYb4Twtp1G7Q3tuTB0D3Mt"
+    assert agree.said == "EK7vHz3Sfq8LrrsSxT4YxHgcEOOtMfKZypAvAaLRSOty"
     svcSigner = _SIGNERS[4]                             # the service's establishing key
     svcSig = svcSigner.sign(ser=agree.raw, index=0)
     signedAgree = messagize(agree, sigers=[svcSig])
@@ -1247,7 +1282,7 @@ def test_represented_presentation_JSON():
     # the birthdate and every other threshold stay off the wire.
     grant = disclose(agree, svcSig, capturedKeyState)
     assert grant is not None and grant.sad['p'] == agree.said
-    assert grant.said == "ENum0KUfAoysZ3zUxJmFv7HtG5McMbobvsllQQkAMavA"
+    assert grant.said == "EMVbQBcGb3CsaGNkv5u7CYGGtJgRD-NgsgIuP5x_anaw"
     assert grant.sad['a']['wardAge'][AGE_OVER13]['over13'] is True     # over-13 disclosed
     assert grant.sad['a']['wardId']['i'] == CARA                       # ward bound (issuee)
     assert b"2012-04-10" not in grant.raw                             # birthdate withheld
@@ -1257,7 +1292,7 @@ def test_represented_presentation_JSON():
     admit = exchange(sender=SERVICE, receiver=BOB, route="/ipex/admit", prior=grant.said,
                      stamp=ADMIT_STAMP, kind=kind)
     assert admit.sad['p'] == grant.said
-    assert admit.said == "EKHksoCxMXyAIZmI8FVfWrN97_7cOeyQX32ZM9oDYiHL"
+    assert admit.said == "ENn1nw5b4xeutNDQws3dY3hHViHBP3Uw9PYAvyZCGuh8"
 
 
 # ---------------------------------------------------------------------------
@@ -1313,8 +1348,8 @@ def test_revocation_and_accountability_JSON():
     issued = blindate(regid=reg.said, prior=reg.said, blid=issuedBlinder.said,
                       sn=1, stamp="2026-01-07T12:05:00.000000+00:00", kind=kind)
     assert issued.ilk == Ilks.bup
-    assert issuedBlinder.said == "EMXjLjiVaP3FaRUZ2NBvvDUUF545HCFldpw7LeJzesfD"
-    assert issued.said == "EHmJLReDPoXzlj5q91yIkI1RmTfMpQurgDbMA24cNVH2"
+    assert issuedBlinder.said == "EMaPqY8xw3X8dAHk5dYwQU4zEQNsCJReSgYd_lPfQ8Qk"
+    assert issued.said == "EBjBNsaw8x5P_gxZons3fg0syec8g2FXkhyIPUnIHT6S"
     assert issued.sad['b'] == issuedBlinder.said
     # Privacy: the state word and the guardian SAID never appear on the wire; only the
     # blinded SAID rides in the bup event.
@@ -1330,7 +1365,7 @@ def test_revocation_and_accountability_JSON():
                                    salt=GUARDIAN_SALT, sn=2)
     revoked = blindate(regid=reg.said, prior=issued.said, blid=revokedBlinder.said,
                        sn=2, stamp="2026-05-01T09:00:00.000000+00:00", kind=kind)
-    assert revoked.said == "EOry-I6OUZs0wP8zHFpED-emHcWe_t9pW28VxR5_6BHS"
+    assert revoked.said == "EE_hgptMDgqvrXEUWAY9SJEkWzp1qx6NpLifiS6NKsou"
     assert revoked.sad['p'] == issued.said          # chains onto the issuance update
     assert _guardian_status(revoked, guardian.said, sn=2) == 'revoked'
     # The credential graph still binds (edges are immutable), but a verifier that checks
