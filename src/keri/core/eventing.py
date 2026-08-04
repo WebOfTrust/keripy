@@ -159,7 +159,7 @@ def deReceiptCouple(data, strip=False):
     Couple is used for receipts signed by nontransferable prefix keys
 
     Parameters:
-        data is couple of bytes concatenation of pre+sig from receipt
+        data is couple of bytes concatenation of pre+cig from receipt
         strip is Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream
             Raises error if not bytearray
@@ -185,7 +185,7 @@ def deSourceCouple(data, strip=False):
     Couple is used for delegated/issued event attachment of delegator/issuer evt
 
     Parameters:
-        data is couple of bytes concatenation of pre+sig from receipt
+        data is couple of bytes concatenation of snu+dig from receipt
         strip is Boolean True means delete from data each part as parsed
             Only useful if data is bytearray from front of stream
             Raises error if not bytearray
