@@ -1,6 +1,6 @@
 # -*- coding: utf-8 -*-
 """
-tests.acdc.test_clc_disclosure module
+tests.acdc.test_cp_disclosure module
 
 Worked, working example of *contractually-protected disclosure* -- Chain-Link
 Confidentiality (CLC) realized as a credential rather than an out-of-band
@@ -1344,7 +1344,7 @@ def test_accountability_and_terms_follow_data_JSON():
 
 
 @pytest.mark.parametrize("kind", [Kinds.json, Kinds.cesr, Kinds.cbor, Kinds.mgpk])
-def test_clc_serialization_kinds(kind):
+def test_cpd_serialization_kinds(kind):
     """Phases 1-3 invariants hold across every serialization kind, not just JSON.
 
     The detailed phases above pin canonical JSON SAIDs for readability. This check
@@ -1434,12 +1434,12 @@ def test_age_identity_edge_E1E_JSON():
     # not read back from the far node -- that is what gives the s-constraint teeth.
     coreSchemaSaid, _ = _saidify_schema(dict(SEDI_SCHEMA_MAD), kind=kind)
     assert coreSchemaSaid == sedi.sad['s']['$id']
-    assert _verify_identity_edge(age, sedi, coreSchemaSaid)
     assert_acdc_schema_valid(age)
     with pytest.raises(AssertionError):                         # wrong subject (far = bespoke)
         _verify_identity_edge(age, _bespoke_presentation(sedi, age, kind), coreSchemaSaid)
     with pytest.raises(AssertionError):                         # right subject, wrong core schema
         _verify_identity_edge(age, sedi, "E" + "A" * 43)
+    assert _verify_identity_edge(age, sedi, coreSchemaSaid)
 
 
 if __name__ == "__main__":
@@ -1449,4 +1449,4 @@ if __name__ == "__main__":
     test_gated_ipex_exchange_JSON()
     test_accountability_and_terms_follow_data_JSON()
     for _kind in (Kinds.json, Kinds.cesr, Kinds.cbor, Kinds.mgpk):
-        test_clc_serialization_kinds(_kind)
+        test_cpd_serialization_kinds(_kind)

@@ -5,7 +5,7 @@ tests.acdc.test_bulk_issuance module
 Worked, working example of *bulk-issued private ACDCs* (ACDC spec section 15.4,
 "Bulk-Issued Private ACDCs") used to defeat cross-verifier correlation for SEDI
 (Utah's State-Endorsed Digital Identity, Utah Code 63A-20). It is a sibling to
-tests/acdc/test_clc_disclosure.py (contractually-protected disclosure) and
+tests/acdc/test_cp_disclosure.py (contractually-protected disclosure) and
 tests/acdc/test_guardianship_presentation.py (represented presentation), and it
 adds the one axis neither shows: IDENTIFIER-level cross-verifier unlinkability.
 
@@ -286,7 +286,7 @@ def test_bulk_derivation_primitive_JSON():
 # Phase 2: the bulk sedi-id set + its shared blindable registry (keyed on B).
 # ===========================================================================
 # Schema helpers, ported verbatim in intent from the sibling SEDI examples
-# (test_clc_disclosure.py / test_guardianship_presentation.py).
+# (test_cp_disclosure.py / test_guardianship_presentation.py).
 def _saidify_schema(mad, kind=Kinds.json):
     """Compute a JSON Schema's SAID and return (said, schema-with-$id). Mirrors the
     sibling examples: a Mapper self-addresses the '$id' field (which must be first)."""
@@ -1006,7 +1006,7 @@ def test_disclosure_gating_and_revocation_JSON():
     # The field-level ask rides the disclosure-paths `dp` field of the QUERY section
     # `q` (exchange(modifiers=...)), as an ORDERED LIST of (schemaSAID, [paths]) pairs
     # with ACDC-relative paths -- see the same construct in tests/acdc/
-    # test_clc_disclosure.py, and WebOfTrust/keripy discussion #1549 for the rules.
+    # test_cp_disclosure.py, and WebOfTrust/keripy discussion #1549 for the rules.
     #
     # Bulk issuance is exactly why the list form matters here. The verifier names a
     # SCHEMA SAID, which is shared by all M copies in the set and is therefore the one
