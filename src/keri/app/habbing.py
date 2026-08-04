@@ -1571,7 +1571,7 @@ class BaseHab:
         query['i'] = pre
         query["src"] = src
         serder = eventing.query(pre=self.pre, query=query, **kwa)
-        gvrsn = kwa.get("gvrsn", serder.pvrsn)
+        gvrsn = kwa.get("gvrsn") or Version
         return self.endorse(serder, last=True, framed=False, gvrsn=gvrsn)
 
 
@@ -1609,12 +1609,16 @@ class BaseHab:
             attributes (dict): attributes field map (payload body)
             stamp (str):  date-time-stamp RFC-3339 profile of ISO-8601 datetime of
                           creation of message or data, default is now.
-            version (Versionage): KERI protocol default version if psvrsn is None
-            pvrsn (Versionage): KERI protocol version
-            gvrsn (Versionage): CESR Genus version for attachment group codes or
-                            nesting group code (useful when serder.gvrsn < 2)
-                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
-                                if serder.gvrsn else serder.pvrsn
+            version (Versionage): KERI protocol default version if pvrsn is None
+            pvrsn (Versionage): KERI protocol version for the exchange body
+            gvrsn (Versionage): CESR genus version for attachment framing.
+                            Also forwarded into exchange body ``versify`` when
+                            not None. When None: for ``specialExchange`` embeds
+                            (``version`` is ``Vrsn_1_0``) defaults to ``version``
+                            so body and attachments match; otherwise defaults to
+                            ``Version`` after message creation, independent of
+                            body pvrsn. Pass ``Vrsn_1_0`` only when the peer
+                            requires that attachment genus.
             kind (str): serialization for key event message
                         one of Kinds ("json","cbor","mgpk","cesr")
             framed (bool): True means may assume each message plus its attachments
@@ -1628,7 +1632,6 @@ class BaseHab:
                                 in non-native group code
                            False means messagize for top level of stream.
                                 This allows bare non-native serialization of message
-
             genusify (bool): True means prepend genus version code from gvrsn before
                             serder to override default stream genus version
                          False means do nothing
@@ -1656,6 +1659,11 @@ class BaseHab:
 
         if embeds:
             if version is Vrsn_1_0:
+                # specialExchange is the v1 embeds path; match attachment genus
+                # to version when gvrsn was omitted so body and attachments agree.
+                if gvrsn is None:
+                    gvrsn = version
+                    kwa["gvrsn"] = gvrsn
                 serder, end = specialExchange(embeds=embeds, **kwa)
             elif version is Vrsn_2_0:
                 raise ValueError("Embeds not supported for v2 exchanges")
@@ -1664,7 +1672,7 @@ class BaseHab:
             end = bytearray()
 
         if gvrsn is None:
-            gvrsn = serder.pvrsn
+            gvrsn = Version
 
         if self.kever.prefixer.transferable:
             msg = self.endorse(serder=serder, framed=framed, nested=nested,
@@ -1672,7 +1680,6 @@ class BaseHab:
         else:
             cigars = self.sign(ser=serder.raw,
                                indexed=False)
-            gvrsn = gvrsn if gvrsn is not None else version
             msg = eventing.messagize(serder, cigars=cigars, framed=framed,
                                      nested=nested, gvrsn=gvrsn, genusify=genusify)
 
@@ -1908,7 +1915,10 @@ class BaseHab:
             pre (str or None): qb64 str or bytes of identifier prefix.
                 Default is own ``.pre``.
             fn (int): first-seen ordering number to start from.
-            gvrsn (Versionage): CESR genus version for attachments
+            gvrsn (Versionage): CESR genus version for attachments. Default
+                ``Version`` means library-default attachment framing even when
+                replaying bodies with a different pvrsn. Pass ``Vrsn_1_0`` only
+                when the peer requires that attachment genus.
             version (Versionage): legacy alias for gvrsn
 
         Returns:
@@ -2194,9 +2204,9 @@ class BaseHab:
                            False means messagize for top level of stream.
                                 This allows bare non-native serialization of message
             gvrsn (Versionage): CESR Genus version for attachment group codes or
-                            nesting group code (useful when serder.gvrsn < 2)
-                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
-                                if serder.gvrsn else serder.pvrsn
+                            nesting group code. Default ``Version``. Independent
+                            of the reply body pvrsn. Pass ``Vrsn_1_0`` only when
+                            the peer requires that attachment genus.
             genusify (bool): True means prepend genus version code from gvrsn before
                             serder to override default stream genus version
                          False means do nothing
@@ -2219,8 +2229,6 @@ class BaseHab:
             kwa["kind"] = self.kever.serder.kind
 
         kwa["pre"] = self.pre
-        if gvrsn is Version:
-            gvrsn = pvrsn
         return self.endorse(eventing.reply(**kwa), framed=framed, nested=nested,
                             gvrsn=gvrsn, genusify=genusify)
 
@@ -2290,7 +2298,7 @@ class BaseHab:
         if end and (end.enabled or end.allowed):
             said = self.db.eans.get(keys=(cid, role, eid))
             serder = self.db.rpys.get(keys=(said.qb64,))
-            gvrsn = gvrsn if gvrsn is not None else serder.pvrsn
+            gvrsn = gvrsn if gvrsn is not None else Version
             cigars = self.db.scgs.get(keys=(said.qb64,))
             tsgs = fetchTsgs(db=self.db.tsgs, diger=said)
 
@@ -2429,7 +2437,7 @@ class BaseHab:
         keys = (eid, scheme) if scheme else (eid,)
         for (pre, _), said in self.db.lans.getTopItemIter(keys=keys):
             serder = self.db.rpys.get(keys=(said.qb64,))
-            egvrsn = gvrsn if gvrsn is not None else serder.pvrsn
+            egvrsn = gvrsn if gvrsn is not None else Version
             cigars = self.db.scgs.get(keys=(said.qb64,))
             tsgs = fetchTsgs(db=self.db.tsgs, diger=said)
 
@@ -2516,10 +2524,8 @@ class BaseHab:
         if cid not in self.kevers:
             return msgs
 
-        gvrsn = kwa.get("gvrsn")
-        msgs.extend(self.replay(
-            cid, gvrsn=gvrsn if gvrsn is not None else Vrsn_1_0
-        ))
+        gvrsn = kwa.get("gvrsn") or Version
+        msgs.extend(self.replay(cid, gvrsn=gvrsn))
 
         kever = self.kevers[cid]
         witness = self.pre in kever.wits  # see if we are cid's witness
@@ -2636,9 +2642,10 @@ class BaseHab:
                            False means messagize for top level of stream.
                                 This allows bare non-native serialization of message
             gvrsn (Versionage): CESR Genus version for attachment group codes or
-                            nesting group code (useful when serder.gvrsn < 2)
-                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
-                                if serder.gvrsn else serder.pvrsn
+                            nesting group code. Default ``Version`` means
+                            library-default attachment framing, independent of
+                            the event body pvrsn. Pass ``Vrsn_1_0`` only when
+                            the peer requires that attachment genus.
             genusify (bool): True means prepend genus version code from gvrsn before
                             serder to override default stream genus version
                          False means do nothing
@@ -2649,9 +2656,6 @@ class BaseHab:
         """
         serder, sigers, duple = self.getOwnEvent(sn=sn,
                                     allowPartiallySigned=allowPartiallySigned)
-
-        if gvrsn is Version:
-            gvrsn = serder.pvrsn
 
         seal = None
         if duple is not None:
@@ -2682,9 +2686,10 @@ class BaseHab:
                            False means messagize for top level of stream.
                                 This allows bare non-native serialization of message
             gvrsn (Versionage): CESR Genus version for attachment group codes or
-                            nesting group code (useful when serder.gvrsn < 2)
-                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
-                                if serder.gvrsn else serder.pvrsn
+                            nesting group code. Default ``Version`` means
+                            library-default attachment framing, independent of
+                            the event body pvrsn. Pass ``Vrsn_1_0`` only when
+                            the peer requires that attachment genus.
             genusify (bool): True means prepend genus version code from gvrsn before
                             serder to override default stream genus version
                          False means do nothing
@@ -2719,9 +2724,10 @@ class BaseHab:
                            False means messagize for top level of stream.
                                 This allows bare non-native serialization of message
             gvrsn (Versionage): CESR Genus version for attachment group codes or
-                            nesting group code (useful when serder.gvrsn < 2)
-                            gvrsn = max(svrsn, gvrsn) where svrsn = serder.gvrsn
-                                if serder.gvrsn else serder.pvrsn
+                            nesting group code. Default ``Version`` means
+                            library-default attachment framing, independent of
+                            the event body pvrsn. Pass ``Vrsn_1_0`` only when
+                            the peer requires that attachment genus.
             genusify (bool): True means prepend genus version code from gvrsn before
                             serder to override default stream genus version
                          False means do nothing
@@ -2743,8 +2749,6 @@ class BaseHab:
 
         serder = self.db.evts.get(keys=(pre, dig))
         sigers = [siger for siger in self.db.sigs.getIter(keys=(pre, dig))]
-        if gvrsn is Version:
-            gvrsn = serder.pvrsn
         return eventing.messagize(serder, sigers=sigers, framed=framed,
                                    nested=nested, gvrsn=gvrsn, genusify=genusify)
 
@@ -3093,8 +3097,10 @@ class Hab(BaseHab):
             raise ConfigurationError("Improper Habitat inception for "
                                             "pre={} {}".format(self.pre, ex))
 
-        # read in self.cf config file and process any oobis or endpoints
-        self.reconfigure(version=version, kind=kind)  # should we do this for new Habs not loaded from db
+        # read in self.cf config file and process any oobis or endpoints.
+        # Match attachment genus to the protocol version (and thus local
+        # parser) that will consume these locally generated replies.
+        self.reconfigure(version=version, kind=kind, gvrsn=version)
 
         self.inited = True
 
@@ -3583,12 +3589,10 @@ class SignifyHab(BaseHab):
         if eids is None:
             eids = []
 
-        gvrsn = kwa.get("gvrsn")
+        gvrsn = kwa.get("gvrsn") or Version
 
         # introduce yourself, please
-        msgs.extend(self.replay(
-            cid, gvrsn=gvrsn if gvrsn is not None else Vrsn_1_0
-        ))
+        msgs.extend(self.replay(cid, gvrsn=gvrsn))
 
         if role == Roles.witness:
             if kever := self.kevers[cid] if cid in self.kevers else None:
@@ -3602,15 +3606,11 @@ class SignifyHab(BaseHab):
                         if not witness:  # we are not witness, send auth records
                             msgs.extend(self.makeEndRole(eid=eid, role=role, **kwa))
                 if witness:  # we are witness, set KEL as authz
-                    msgs.extend(self.replay(
-                        cid, gvrsn=gvrsn if gvrsn is not None else Vrsn_1_0
-                    ))
+                    msgs.extend(self.replay(cid, gvrsn=gvrsn))
 
         for (_, erole, eid), end in self.db.ends.getTopItemIter(keys=(cid,)):
             if (end.enabled or end.allowed) and (not role or role == erole) and (not eids or eid in eids):
-                msgs.extend(self.replay(
-                    eid, gvrsn=gvrsn if gvrsn is not None else Vrsn_1_0
-                ))
+                msgs.extend(self.replay(eid, gvrsn=gvrsn))
                 msgs.extend(self.loadLocScheme(eid=eid, scheme=scheme,
                                                gvrsn=gvrsn))
                 msgs.extend(self.loadEndRole(cid=cid, eid=eid, role=erole,
@@ -4106,8 +4106,6 @@ class GroupHab(BaseHab):
         if gvrsn is not Version and "gvrsn" not in kwa:
             kwa["gvrsn"] = gvrsn
         serder = eventing.query(pre=self.mhab.pre, query=query, **kwa)
-        if gvrsn is Version:
-            gvrsn = kwa.get("gvrsn", serder.pvrsn)
 
         return self.mhab.endorse(serder, last=True, framed=framed, nested=nested,
                                  gvrsn=gvrsn, genusify=genusify)
