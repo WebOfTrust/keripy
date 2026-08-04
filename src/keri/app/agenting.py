@@ -52,7 +52,7 @@ class Receiptor(doing.DoDoer):
     def receipt(self, pre, sn=None, auths=None):
         """Returns a generator performing witness receipting of KEL events.
 
-        The returns a generator that will submit the designated event to witnesses for receipts using
+        This returns a generator that will submit the designated event to witnesses for receipts using
         the synchronous witness API, then propagate the receipts to each of the other witnesses.
         Delegates to .catchup to catch up any new witnesses to the current state of the KEL.
 
@@ -70,7 +70,9 @@ class Receiptor(doing.DoDoer):
         hab = self.hby.habs[pre]
         sn = sn if sn is not None else hab.kever.sner.num
 
-        msg = hab.msgOwnEvent(sn=sn, framed=True)
+        # Match attachment genus to the event body so v1-only witnesses can parse.
+        serder, _, _ = hab.getOwnEvent(sn=sn)
+        msg = hab.msgOwnEvent(sn=sn, framed=True, gvrsn=serder.pvrsn)
         ser = serdering.SerderKERI(raw=msg)
         wits = [wit.qb64 for wit in hab.kvy.fetchWitnessState(ser.pre, ser.sn)]
 
@@ -341,7 +343,9 @@ class WitnessReceiptor(doing.DoDoer):
                 if len(wits) == 0:
                     continue
 
-                msg = hab.msgOwnEvent(sn=sn, framed=True)
+                # Match attachment genus to the event body so v1-only witnesses can parse.
+                serder, _, _ = hab.getOwnEvent(sn=sn)
+                msg = hab.msgOwnEvent(sn=sn, framed=True, gvrsn=serder.pvrsn)
                 ser = serdering.SerderKERI(raw=msg)
 
                 witers = []
@@ -533,7 +537,7 @@ class WitnessInquisitor(doing.DoDoer):
 
             msg = hab.query(target, src=witer.wit, route=r, query=q, **kwa)  # Query for remote pre Event
 
-            kel = introduce(hab, witer.wit)
+            kel = introduce(hab, witer.wit, gvrsn=self.hby.version)
             if kel:
                 witer.msgs.append(bytearray(kel))
 

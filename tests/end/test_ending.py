@@ -13,7 +13,7 @@ from falcon import testing
 from hio.base import tyming, doing
 from hio.help import Hict, ogler
 
-from keri.kering import Roles, Schemes, Kinds, Ilks
+from keri.kering import Roles, Schemes, Kinds, Ilks, Vrsn_1_0
 
 from keri.help import helping
 from keri.core import Salter, SerderKERI, dumps
@@ -23,7 +23,7 @@ from keri.end import (Signage, Mimes, KeriMimes,
                       desiginput, normalize, setup)
 from keri.end.ending import (siginput as sigInputEnding,
                              loadEnds)
-from tests.common import CUE_KWA, KWA
+
 
 logger = ogler.getLogger()
 
@@ -68,9 +68,9 @@ def test_signature_designature():
 
     # Setup Habery and Hab
     with openHby(name=name, base=base, salt=Salter(raw=b'0123456789abcdef').qb64,
-                 version=KWA["version"]) as hby:
+                 version=Vrsn_1_0) as hby:
         # hby = habbing.Habery(name=name, base=base, temp=temp, free=True)
-        hab = hby.makeHab(name=name, icount=3, **KWA)
+        hab = hby.makeHab(name=name, icount=3, version=Vrsn_1_0, kind=Kinds.json)
         print()
         print([verfer.qb64 for verfer in hab.kever.verfers])
         # setup habitat
@@ -331,8 +331,8 @@ def test_seid_api():
     name = 'zoe'
     base = 'test'
     with openHby(name=name, base=base, salt=Salter(raw=b'0123456789abcdef').qb64,
-                 version=KWA["version"]) as hby:
-        hab = hby.makeHab(name=name, **KWA)
+                 version=Vrsn_1_0) as hby:
+        hab = hby.makeHab(name=name, version=Vrsn_1_0, kind=Kinds.json)
         # hab = setupTestHab(name='zoe')
         # must do it here to inject into Falcon endpoint resource instances
         tymist = tyming.Tymist(tyme=0.0)
@@ -401,8 +401,8 @@ def test_get_admin():
     name = 'zoe'
     base = 'test'
     with openHby(name=name, base=base, salt=Salter(raw=b'0123456789abcdef').qb64,
-                 version=KWA["version"]) as hby:
-        hab = hby.makeHab(name=name, **KWA)
+                 version=Vrsn_1_0) as hby:
+        hab = hby.makeHab(name=name, version=Vrsn_1_0, kind=Kinds.json)
         # hab = setupTestHab(name='zoe')
 
     # must do it here to inject into Falcon endpoint resource instances
@@ -427,18 +427,18 @@ def test_get_oobi():
     name = 'oobi'
     base = 'test'
     salt = Salter(raw=b'0123456789abcdef').qb64
-    with openHby(name=name, base=base, salt=salt, version=KWA["version"]) as hby:
-        hab = hby.makeHab(name=name, **KWA)
+    with openHby(name=name, base=base, salt=salt, version=Vrsn_1_0) as hby:
+        hab = hby.makeHab(name=name, version=Vrsn_1_0, kind=Kinds.json)
         msgs = bytearray()
         msgs.extend(hab.makeEndRole(eid=hab.pre,
                                     role=Roles.controller,
                                     stamp=helping.nowIso8601(),
-                                    **CUE_KWA))
+                                    version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
 
         msgs.extend(hab.makeLocScheme(url='http://127.0.0.1:5555',
                                       scheme=Schemes.http,
                                       stamp=helping.nowIso8601(),
-                                      **CUE_KWA))
+                                      version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
         hab.psr.parse(ims=msgs)
 
         # must do it here to inject into Falcon endpoint resource instances
@@ -456,10 +456,10 @@ def test_get_oobi():
         assert serder.ked['i'] == "EOaICQwhOy3wMwecjAuHQTbv_Cmuu1azTMnHi4QtUmEU"
 
     delname = "delegator"
-    with openHby(name=name, base=base, salt=salt, version=KWA["version"]) as hby, \
-            openHby(name=delname, base=base, salt=salt, version=KWA["version"]) as delhby:
-        delhab = delhby.makeHab(name=delname, **KWA)
-        hab = hby.makeHab(name=name, delpre=delhab.pre, **KWA)
+    with openHby(name=name, base=base, salt=salt, version=Vrsn_1_0) as hby, \
+            openHby(name=delname, base=base, salt=salt, version=Vrsn_1_0) as delhby:
+        delhab = delhby.makeHab(name=delname, version=Vrsn_1_0, kind=Kinds.json)
+        hab = hby.makeHab(name=name, delpre=delhab.pre, version=Vrsn_1_0, kind=Kinds.json)
 
         assert hab.pre == "EPERMS4wKU7ejhCdhI2qQR8snEx1cislR9C9bSEs0kS5"
         assert hab.kever.delpre == delhab.pre
@@ -467,12 +467,12 @@ def test_get_oobi():
         msgs.extend(hab.makeEndRole(eid=hab.pre,
                                     role=Roles.controller,
                                     stamp=helping.nowIso8601(),
-                                    **CUE_KWA))
+                                    version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
 
         msgs.extend(hab.makeLocScheme(url='http://127.0.0.1:5555',
                                       scheme=Schemes.http,
                                       stamp=helping.nowIso8601(),
-                                      **CUE_KWA))
+                                      version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0))
         hab.psr.parse(ims=msgs)
 
         # must do it here to inject into Falcon endpoint resource instances
@@ -488,7 +488,7 @@ def test_get_oobi():
         assert rep.status == falcon.HTTP_NOT_FOUND
 
         # Approve the delegation manually
-        delhab.interact(data=[dict(i=hab.pre, s="0", d=hab.pre)], framed=True, **CUE_KWA)
+        delhab.interact(data=[dict(i=hab.pre, s="0", d=hab.pre)], framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         for msg in delhab.db.clonePreIter(pre=delhab.pre, fn=0,
                                           version=delhab.kever.serder.pvrsn):
             hab.psr.parse(ims=msg)
@@ -506,7 +506,7 @@ def test_get_oobi():
 
 def test_siginput(mockHelpingNowUTC):
     print()
-    with openHab(name="test", base="test", temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab):
+    with openHab(name="test", base="test", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (hby, hab):
         headers = Hict([
             ("Content-Type", "application/json"),
             ("Content-Length", "256"),

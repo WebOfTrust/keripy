@@ -155,74 +155,86 @@ def test_replay_v1():
         assert len(camKevery.cues) == 7
         # get disjoints receipts (vrcs) from Cam of Deb's events by processing Cam's cues
         camMsgs = camHab.processCues(camKevery.cues, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
-        assert camMsgs == (b'{"v":"KERI10JSON0001e7_","t":"icp","d":"EBp-SQb9fTgeoQkIkOd2xegv'
-                        b'Xy3epjOskiPrf6JDIEuj","i":"EBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf'
-                        b'6JDIEuj","s":"0","kt":"2","k":["DCQbRBx58zbRPs8R9cXl-MMbPaxH1EPH'
-                        b'dWp3ICSdQSyp","DDLusjyE46zgaEz37GPq9UXNHmnfBipqAsQPwboCnoYG","DH'
-                        b'4ab2zcmLtX8UwU18vHgoIITHDmJ8ZIKBjwa9GQWT0A"],"nt":"2","n":["EGSF'
-                        b'aY2-o3mAVN1iq23SovuMY34VCNcsot4WhS-JXGgf","EOHL9prk6Um5CxeoofhVV'
-                        b'Nik0DRhrHZQWX3k_whUf49Y","EID2f_sJoa-DJSmOlYvxuofE0Zzp_qningHCJ5'
-                        b'X-gZIG"],"bt":"0","b":[],"c":[],"a":[]}-AADAACLbBvicsgapBJU2I7gJ'
-                        b'iqY_h4X-zTu61aUl-qBMxKoFYPP_YX2Cl94ck580dD0T1uVj8s_qxtCm1LAEa5bG'
-                        b'Z0FABAbmupsT6XzfUNWO3B0jQFbVppgyfvEwLERSnw6XKQZKoH7EqQdIQN3GF7U9'
-                        b'Bk6yWCGjTcsSvpiKXi3Bnw1CiYCACD50cKv4w8L14pJSVCKPrMO5EOqZo3dQan5j'
-                        b'-GY8LfZ_z441iTzf53acNZQXEMXhS4fStYgz0RY3DT9r0rtth4I{"v":"KERI10J'
-                        b'SON000091_","t":"rct","d":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD1'
-                        b'7T-TIpY","i":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIpY","s":'
-                        b'"0"}-FABEBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEujMAAAEBp-SQb9'
-                        b'fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEuj-AADAADLQfvb0b5TiD4Y-4wjaTMJ'
-                        b'GTYW4CyEL2tPhwgvbuWt3JV7e_qsaPszYE17QqR3WiOLlQ1mCCAzsYuIT2CGvYoM'
-                        b'ABCc4h6BKn6u-FODICsn7JhhIv16bdWjPRLZ_wpvlpsGYQE8_hNebpOyKMeeqbkm'
-                        b'NimbQUbyBZAO2-3w9dVFDXUBACCVRnaFk5BTNKXD8HpeIVIEgpnu6BJLZ9C5VYAc'
-                        b'1-kS7HTuSCc5ZMZRRFid8Ugt8SWLTbDYpLSMFVYy0VQqIcYB{"v":"KERI10JSON'
-                        b'000091_","t":"rct","d":"EFECUzlLZ3IKG9Kvkj51a0RYPYXnUeZ5SIpw8x3S'
-                        b'PS1E","i":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIpY","s":"1"'
-                        b'}-FABEBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEujMAAAEBp-SQb9fTg'
-                        b'eoQkIkOd2xegvXy3epjOskiPrf6JDIEuj-AADAABGTRtvtT_fwczryJNP8wVxFog'
-                        b'46GK_aM2PV2BKrx6NnXKcG400u_0RtWmf4HfcbIgShjLciuD8-8prdczzLKoLABB'
-                        b'wRzBuX1yXl7gqGBuw9vmfx2cnLEfnNnuF6KlgvGrGuaaNvMWtMC4jAyPFYdrcGwS'
-                        b'G_Akg3zXW3GSrVgossNAEACA6LncYgxQiJ_HTAQARynrd4H53gf4VvLYVI4XZaEg'
-                        b'iQi_HA3QV-CxTA2uNLTYo-j84CtpUxrmA23NY3JPgmUMJ{"v":"KERI10JSON000'
-                        b'091_","t":"rct","d":"EELHnIwzGaJ-twKTfXtsPMteqsIVmDpiwVO574h6LRX'
-                        b'D","i":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIpY","s":"2"}-F'
-                        b'ABEBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEujMAAAEBp-SQb9fTgeoQ'
-                        b'kIkOd2xegvXy3epjOskiPrf6JDIEuj-AADAAC8ionj_ZwUG9TVkLEtvamimUtttk'
-                        b'yPWJYziFgppcJo0D7NqrI68irp5t1Jx6tHhXnYdp6p_MySoFdHphInUQENABAC9G'
-                        b'bBibt14SbKyzktfn0xurSNHwhV1D61rgKPjoM6HIhJ7J171SZpIyT9ppraWJEMcR'
-                        b'I4cDWkC3FWFLoVXo4HACAvxzyZMpnEVzxt56SZhDwE_aa2jma4ge_Lw3fODzT0Vq'
-                        b'La6WDBn5ChZwExXaTm3DtH0bCai0WdBX4_SLT2qS0O{"v":"KERI10JSON000091'
-                        b'_","t":"rct","d":"ECWvVQFFqxmAW-vpSLwWj4yPO04nGA-6l8cifNBlc3gK",'
-                        b'"i":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIpY","s":"3"}-FABE'
-                        b'Bp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEujMAAAEBp-SQb9fTgeoQkIk'
-                        b'Od2xegvXy3epjOskiPrf6JDIEuj-AADAAATkvw3JirYUej9yP58hEu0mb5klkMAH'
-                        b'XHnVocUInjkJe2dY-TQi0LsmRdA4-Atr0Ys4iT0uqyEsOoHkDch4EMBABCRvib0d'
-                        b'z7KqpOS17MbWixJHxeLt0shgNBuXFXyFP5NrZdXRWuJ-z6jbH4hlO_hXrBdfK4CX'
-                        b'TegUuBxqZiT3g8PACDWPPS-lBg7PvPcfus4ahRYCEWK-kNyaRCJ3BiFDbEb1YTV2'
-                        b'sFJliZ3Rnt7-_YBHUtLIS-ScgBG_HanGwQV9JEM{"v":"KERI10JSON000091_",'
-                        b'"t":"rct","d":"EFcoQIrpd4_NMcnL7SvVqUSLfPZOzkAGbtQcE3JVMn7D","i"'
-                        b':"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIpY","s":"4"}-FABEBp-'
-                        b'SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEujMAAAEBp-SQb9fTgeoQkIkOd2'
-                        b'xegvXy3epjOskiPrf6JDIEuj-AADAAATnbaIYocPQWSwn26FGE9gLLxybf_kYLlM'
-                        b'38itDL_udjJ1tYICFzdfUj_n7rEs_e2gz72NHSpfFCdmSbTafXUDABCMcU34uYKj'
-                        b'h3USDhllvTTTl-QXzbf7o5OITfaUZEMnPXssMi6XbV1Oifu7JS-nZGpkXAPM2HqQ'
-                        b'd3Nzgx9WV8AHACCbzy5FlSMUjWm7mfCK_2Eo-scJNXdcncjeNNcr3I_CbZlOukmY'
-                        b'3vPZzydQyMxEKzgMyUwjKlx5QsChtl_Z6J0N{"v":"KERI10JSON000091_","t"'
-                        b':"rct","d":"ELVXLfglCimN6Y-HkpoLoLiQkR1v65rrg7JRDhcToXVn","i":"E'
-                        b'Lfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIpY","s":"5"}-FABEBp-SQb'
-                        b'9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEujMAAAEBp-SQb9fTgeoQkIkOd2xeg'
-                        b'vXy3epjOskiPrf6JDIEuj-AADAACs4ZBIRuqeLb89OzIA-yVqvYdgwT5d5MZ7T-c'
-                        b'hrjkKKKrG2-93TqJv5DQoQ1H4Co18CvLjy0vj0odggJby5N4NABB6sAy89h4uU9v'
-                        b'iuDSzKBw88SYCy1OiiTPqV6kpucYIVcKkF_yYGfB-QXPuwCrQr-xN572CyRE0Pxe'
-                        b'cMFa-YogIACCKOoOQex0AUWu4YmlLo4RF2-hkaNsuVyP8aviudTV4Io7fYLnpV5h'
-                        b'd3X9_7P46lZJSvDMll30AVq8sAtiLp4sJ{"v":"KERI10JSON000091_","t":"r'
-                        b'ct","d":"ECSAoB-QcY3Vnia2G80NLVMkiGssUV70JoWxwJbqx9gL","i":"ELfp'
-                        b'9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIpY","s":"6"}-FABEBp-SQb9fT'
-                        b'geoQkIkOd2xegvXy3epjOskiPrf6JDIEujMAAAEBp-SQb9fTgeoQkIkOd2xegvXy'
-                        b'3epjOskiPrf6JDIEuj-AADAAANnzuJ_wzxPKRggIpkqC9LFCZ-ARAB_JzKcuFh26'
-                        b'1zS-1uUmyoAEH6tKeG2dWv5xfLhjziVaeip4cMmvwrC5EIABC_5losjcTe4ka6aG'
-                        b'ks_xt1q3qv5hIJzwluyqwBtRDK-oCDnsHfJiZCFi6Fd4OnYkW5tg9F85etul09Es'
-                        b'qbQ60NACA4ZILmT9YYliUbdNivmu8AeXFzSN5T5sDSrOT79J5RcbP6oJidhYCNIh'
-                        b'UB5bKmsuEnWda_NXXwJCsklQbQDGUL')
+        assert camMsgs == (b'{"v":"KERI10JSON0001e7_","t":"icp","d":"EBp-'
+                           b'SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEuj","i":"EBp-SQb9fTgeoQkIk'
+                           b'Od2xegvXy3epjOskiPrf6JDIEuj","s":"0","kt":"2","k":["DCQbRBx58zbR'
+                           b'Ps8R9cXl-MMbPaxH1EPHdWp3ICSdQSyp","DDLusjyE46zgaEz37GPq9UXNHmnfB'
+                           b'ipqAsQPwboCnoYG","DH4ab2zcmLtX8UwU18vHgoIITHDmJ8ZIKBjwa9GQWT0A"]'
+                           b',"nt":"2","n":["EGSFaY2-o3mAVN1iq23SovuMY34VCNcsot4WhS-JXGgf","E'
+                           b'OHL9prk6Um5CxeoofhVVNik0DRhrHZQWX3k_whUf49Y","EID2f_sJoa-DJSmOlY'
+                           b'vxuofE0Zzp_qningHCJ5X-gZIG"],"bt":"0","b":[],"c":[],"a":[]}-'
+                           b'AADAACLbBvicsgapBJU2I7gJiqY_h4X-zTu61aUl-qBMxKoFYPP_YX2Cl94ck580'
+                           b'dD0T1uVj8s_qxtCm1LAEa5bGZ0FABAbmupsT6XzfUNWO3B0jQFbVppgyfvEwLERS'
+                           b'nw6XKQZKoH7EqQdIQN3GF7U9Bk6yWCGjTcsSvpiKXi3Bnw1CiYCACD50cKv4w8L1'
+                           b'4pJSVCKPrMO5EOqZo3dQan5j-'
+                           b'GY8LfZ_z441iTzf53acNZQXEMXhS4fStYgz0RY3DT9r0rtth4I{"v":"KERI10JS'
+                           b'ON000091_","t":"rct","d":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17'
+                           b'T-TIpY","i":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-'
+                           b'TIpY","s":"0"}-FABEBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEuj0A'
+                           b'AAAAAAAAAAAAAAAAAAAAAAEBp-'
+                           b'SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEuj-AADAADLQfvb0b5TiD4Y-'
+                           b'4wjaTMJGTYW4CyEL2tPhwgvbuWt3JV7e_qsaPszYE17QqR3WiOLlQ1mCCAzsYuIT'
+                           b'2CGvYoMABCc4h6BKn6u-'
+                           b'FODICsn7JhhIv16bdWjPRLZ_wpvlpsGYQE8_hNebpOyKMeeqbkmNimbQUbyBZAO2'
+                           b'-3w9dVFDXUBACCVRnaFk5BTNKXD8HpeIVIEgpnu6BJLZ9C5VYAc1-'
+                           b'kS7HTuSCc5ZMZRRFid8Ugt8SWLTbDYpLSMFVYy0VQqIcYB{"v":"KERI10JSON00'
+                           b'0091_","t":"rct","d":"EFECUzlLZ3IKG9Kvkj51a0RYPYXnUeZ5SIpw8x3SPS'
+                           b'1E","i":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIpY","s":"1"}-'
+                           b'FABEBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEuj0AAAAAAAAAAAAAAAA'
+                           b'AAAAAAAEBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEuj-AADAABGTRtvt'
+                           b'T_fwczryJNP8wVxFog46GK_aM2PV2BKrx6NnXKcG400u_0RtWmf4HfcbIgShjLci'
+                           b'uD8-'
+                           b'8prdczzLKoLABBwRzBuX1yXl7gqGBuw9vmfx2cnLEfnNnuF6KlgvGrGuaaNvMWtM'
+                           b'C4jAyPFYdrcGwSG_Akg3zXW3GSrVgossNAEACA6LncYgxQiJ_HTAQARynrd4H53g'
+                           b'f4VvLYVI4XZaEgiQi_HA3QV-CxTA2uNLTYo-'
+                           b'j84CtpUxrmA23NY3JPgmUMJ{"v":"KERI10JSON000091_","t":"rct","d":"E'
+                           b'ELHnIwzGaJ-twKTfXtsPMteqsIVmDpiwVO574h6LRXD","i":"ELfp9ZhqQCGov3'
+                           b'wPRLa6vn5VkIQjug2sb2QD17T-TIpY","s":"2"}-FABEBp-SQb9fTgeoQkIkOd2'
+                           b'xegvXy3epjOskiPrf6JDIEuj0AAAAAAAAAAAAAAAAAAAAAAAEBp-'
+                           b'SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEuj-AADAAC8ionj_ZwUG9TVkLEt'
+                           b'vamimUtttkyPWJYziFgppcJo0D7NqrI68irp5t1Jx6tHhXnYdp6p_MySoFdHphIn'
+                           b'UQENABAC9GbBibt14SbKyzktfn0xurSNHwhV1D61rgKPjoM6HIhJ7J171SZpIyT9'
+                           b'ppraWJEMcRI4cDWkC3FWFLoVXo4HACAvxzyZMpnEVzxt56SZhDwE_aa2jma4ge_L'
+                           b'w3fODzT0VqLa6WDBn5ChZwExXaTm3DtH0bCai0WdBX4_SLT2qS0O{"v":"KERI10'
+                           b'JSON000091_","t":"rct","d":"ECWvVQFFqxmAW-vpSLwWj4yPO04nGA-'
+                           b'6l8cifNBlc3gK","i":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-'
+                           b'TIpY","s":"3"}-FABEBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEuj0A'
+                           b'AAAAAAAAAAAAAAAAAAAAAAEBp-'
+                           b'SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEuj-'
+                           b'AADAAATkvw3JirYUej9yP58hEu0mb5klkMAHXHnVocUInjkJe2dY-TQi0LsmRdA4'
+                           b'-Atr0Ys4iT0uqyEsOoHkDch4EMBABCRvib0dz7KqpOS17MbWixJHxeLt0shgNBuX'
+                           b'FXyFP5NrZdXRWuJ-z6jbH4hlO_hXrBdfK4CXTegUuBxqZiT3g8PACDWPPS-'
+                           b'lBg7PvPcfus4ahRYCEWK-kNyaRCJ3BiFDbEb1YTV2sFJliZ3Rnt7-_YBHUtLIS-S'
+                           b'cgBG_HanGwQV9JEM{"v":"KERI10JSON000091_","t":"rct","d":"EFcoQIrp'
+                           b'd4_NMcnL7SvVqUSLfPZOzkAGbtQcE3JVMn7D","i":"ELfp9ZhqQCGov3wPRLa6v'
+                           b'n5VkIQjug2sb2QD17T-TIpY","s":"4"}-FABEBp-SQb9fTgeoQkIkOd2xegvXy3'
+                           b'epjOskiPrf6JDIEuj0AAAAAAAAAAAAAAAAAAAAAAAEBp-'
+                           b'SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEuj-AADAAATnbaIYocPQWSwn26F'
+                           b'GE9gLLxybf_kYLlM38itDL_udjJ1tYICFzdfUj_n7rEs_e2gz72NHSpfFCdmSbTa'
+                           b'fXUDABCMcU34uYKjh3USDhllvTTTl-'
+                           b'QXzbf7o5OITfaUZEMnPXssMi6XbV1Oifu7JS-'
+                           b'nZGpkXAPM2HqQd3Nzgx9WV8AHACCbzy5FlSMUjWm7mfCK_2Eo-scJNXdcncjeNNc'
+                           b'r3I_CbZlOukmY3vPZzydQyMxEKzgMyUwjKlx5QsChtl_Z6J0N{"v":"KERI10JSO'
+                           b'N000091_","t":"rct","d":"ELVXLfglCimN6Y-'
+                           b'HkpoLoLiQkR1v65rrg7JRDhcToXVn","i":"ELfp9ZhqQCGov3wPRLa6vn5VkIQj'
+                           b'ug2sb2QD17T-TIpY","s":"5"}-FABEBp-SQb9fTgeoQkIkOd2xegvXy3epjOski'
+                           b'Prf6JDIEuj0AAAAAAAAAAAAAAAAAAAAAAAEBp-'
+                           b'SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEuj-'
+                           b'AADAACs4ZBIRuqeLb89OzIA-yVqvYdgwT5d5MZ7T-chrjkKKKrG2-'
+                           b'93TqJv5DQoQ1H4Co18CvLjy0vj0odggJby5N4NABB6sAy89h4uU9viuDSzKBw88S'
+                           b'YCy1OiiTPqV6kpucYIVcKkF_yYGfB-QXPuwCrQr-xN572CyRE0PxecMFa-YogIAC'
+                           b'CKOoOQex0AUWu4YmlLo4RF2-'
+                           b'hkaNsuVyP8aviudTV4Io7fYLnpV5hd3X9_7P46lZJSvDMll30AVq8sAtiLp4sJ{"'
+                           b'v":"KERI10JSON000091_","t":"rct","d":"ECSAoB-QcY3Vnia2G80NLVMkiG'
+                           b'ssUV70JoWxwJbqx9gL","i":"ELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T'
+                           b'-TIpY","s":"6"}-FABEBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEuj0'
+                           b'AAAAAAAAAAAAAAAAAAAAAAAEBp-'
+                           b'SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf6JDIEuj-'
+                           b'AADAAANnzuJ_wzxPKRggIpkqC9LFCZ-ARAB_JzKcuFh261zS-'
+                           b'1uUmyoAEH6tKeG2dWv5xfLhjziVaeip4cMmvwrC5EIABC_5losjcTe4ka6aGks_x'
+                           b't1q3qv5hIJzwluyqwBtRDK-oCDnsHfJiZCFi6Fd4OnYkW5tg9F85etul09EsqbQ6'
+                           b'0NACA4ZILmT9YYliUbdNivmu8AeXFzSN5T5sDSrOT79J5RcbP6oJidhYCNIhUB5b'
+                           b'KmsuEnWda_NXXwJCsklQbQDGUL')
 
         # Play camMsgs to Deb
         # create non-local kevery for Deb to process msgs from Cam
@@ -241,7 +253,7 @@ def test_replay_v1():
         assert debCamVrcs == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EBp-SQb9fTgeoQkIkOd2xegv'
                             b'Xy3epjOskiPrf6JDIEuj","i":"EBp-SQb9fTgeoQkIkOd2xegvXy3epjOskiPrf'
                             b'6JDIEuj","s":"0"}-FABELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIp'
-                            b'YMAACEELHnIwzGaJ-twKTfXtsPMteqsIVmDpiwVO574h6LRXD-AADAAA_RaT3MzW'
+                            b'Y0AAAAAAAAAAAAAAAAAAAAAACEELHnIwzGaJ-twKTfXtsPMteqsIVmDpiwVO574h6LRXD-AADAAA_RaT3MzW'
                             b'-uI6Y7CTpooCRyvVV9LIDCjTGw8Nz1EqRmR_dvjIQwoNQklDujYn1eTxVAc9-fTY'
                             b'Mlpk7ZWWOSDYBABA9QRnuSlET3mU45BtJm9HY655bt8ZsEUUw5Ke8l5KHn4hl5Gf'
                             b'ZH8aHDnVY1SiQnZrKu7W4MeOsazhF8waHZbcHACCFEDA_jO-u0WccqVdffVc_xmr'
@@ -317,7 +329,7 @@ def test_replay_v1():
         assert debBevVrcs == (b'{"v":"KERI10JSON000091_","t":"rct","d":"EBXqe7Xzsw2aolT09Ouh5Zw9'
                         b'kNn2sgoHmo4zCn7Q7ZSC","i":"BAqph4mAWcf7mkIgk1Xrpvr7dWT7YvHIam_hq'
                         b'UAT2rqw","s":"0"}-FABELfp9ZhqQCGov3wPRLa6vn5VkIQjug2sb2QD17T-TIp'
-                        b'YMAACEELHnIwzGaJ-twKTfXtsPMteqsIVmDpiwVO574h6LRXD-AADAABjgf8tiPV'
+                        b'Y0AAAAAAAAAAAAAAAAAAAAAACEELHnIwzGaJ-twKTfXtsPMteqsIVmDpiwVO574h6LRXD-AADAABjgf8tiPV'
                         b'fvviaQ60CY9rJR-Nigj4paeIrFr87mnU-3Z2VKHFo6rpFyQfd5Za_M3gEbcjf3Ot'
                         b'B718M7M6WFf4CABCz83_zL8bZM8wxQB4kQrJ4GatYSOg5UpphulR3lhkbV3imD4Z'
                         b'XJJF_v6D-Zcq0I1PluxUTMYsHYGoaXvLSWpkFACBdhdPiqPfy30Oxt_LshbISGHx'
@@ -336,7 +348,7 @@ def test_replay_v1():
         fn = 0
         cloner = debHab.db.clonePreIter(pre=debHab.pre, fn=fn, version=Vrsn_1_0)  # create iterator
         msg = next(cloner)  # get zeroth event with attachments
-        assert len(msg) == 1335 # 1355 # 1535
+        assert len(msg) == 1375 # 1335 # 1355 # 1535
         debFelMsgs.extend(msg)
 
         # parse msg
@@ -345,59 +357,59 @@ def test_replay_v1():
         assert serder.sn == fn  # no recovery forks so sn == fn
         assert serder.ked["t"] == Ilks.icp
         del msg[:len(serder.raw)]
-        assert len(msg) == 816  # 836 # 1016
+        assert len(msg) == 856  # 816 pre-v1-Seqner-fix # 836 # 1016
 
         counter = Counter(qb64b=msg, version=Vrsn_1_0)  # attachment length quadlets counter
         assert counter.code == CtrDex_1_0.AttachmentGroup
-        assert counter.count == 203 # (len(msg) - len(counter.qb64b)) // 4 == 208 # 253
+        assert counter.count == 213 # (len(msg) - len(counter.qb64b)) // 4 == 208 # 253
         del msg[:len(counter.qb64b)]
-        assert len(msg) == 812 # 832 == 208 * 4
+        assert len(msg) == 852 # 832 == 208 * 4
 
         counter = Counter(qb64b=msg, version=Vrsn_1_0)  # indexed signatures counter
         assert counter.code == CtrDex_1_0.ControllerIdxSigs
         assert counter.count == 3  # multisig deb
         del msg[:len(counter.qb64b)]
-        assert len(msg) == 808  # 828  # 1008
+        assert len(msg) == 848  # 828  # 1008
 
         for i in range(counter.count):  # parse signatures
             siger = Siger(qb64b=msg)
             del msg[:len(siger.qb64b)]
-        assert len(msg) == 544 # 828 - 3 * len(siger.qb64b) == 564 # 744
+        assert len(msg) == 584 # 828 - 3 * len(siger.qb64b) == 564 # 744
 
         counter = Counter(qb64b=msg, version=Vrsn_1_0)  # nontrans receipt (rct) counter
         assert counter.code == CtrDex_1_0.NonTransReceiptCouples
         assert counter.count == 1  # single sig bev
         del msg[:len(counter.qb64b)]
-        assert len(msg) == 540
+        assert len(msg) == 580
 
         for i in range(counter.count):  # parse receipt couples
             prefixer, cigar = deReceiptCouple(msg, strip=True)
-        assert len(msg) == 408 # 196 - 1 * (len(prefixer.qb64b) + len(cigar.qb64b)) == 64
+        assert len(msg) == 448 # 196 - 1 * (len(prefixer.qb64b) + len(cigar.qb64b)) == 64
 
         # extract trans receipt counters (quadlet)
         counter = Counter(qb64b=msg, version=Vrsn_1_0)  # trans receipt (vrc) counter
         assert counter.code == CtrDex_1_0.TransReceiptIdxSigGroups
-        assert counter.count == 90 # now quadlet counter not 3  multisig cam
+        assert counter.count == 95 # now quadlet counter not 3  multisig cam
         del msg[:len(counter.qb64b)]
-        assert len(msg) == 404 # 560
+        assert len(msg) == 444 # 560
 
         # extract receipt triple
         prefixer = Prefixer(qb64b=msg, strip=True)
         number = Number(qb64b=msg, strip=True)
         diger = Diger(qb64b=msg, strip=True)
-        assert len(msg) == 312 # 468 == 560 - (len(prefixer.qb64b) + len(number.qb64b) + len(diger.qb64b))
+        assert len(msg) == 332 # 468 == 560 - (len(prefixer.qb64b) + len(number.qb64b) + len(diger.qb64b))
         #extract sigs
         counter = Counter(qb64b=msg, strip=True, version=Vrsn_1_0)
         sigers = []
         for i in range(counter.count):  # extract idx sig group ctr non-quadlet
             sigers.append(Siger(qb64b=msg, strip=True))
-        assert len(msg) == 44 # 200 == 468 - 4 - 3 * len(sigers[0].qb64b)
+        assert len(msg) == 64 # 200 == 468 - 4 - 3 * len(sigers[0].qb64b)
 
         counter = Counter(qb64b=msg, version=Vrsn_1_0)  # first seen replay couple counter
         assert counter.code == CtrDex_1_0.FirstSeenReplayCouples
         assert counter.count == 1
         del msg[:len(counter.qb64b)]
-        assert len(msg) == 40
+        assert len(msg) == 60
 
         number = Number(qb64b=msg)
         assert number.sn == fn == 0
@@ -421,7 +433,7 @@ def test_replay_v1():
         fn += 1
         cloner = debHab.db.clonePreIter(pre=debHab.pre, fn=fn, version=Vrsn_1_0)  # create iterator not at 0
         msg = next(cloner)  # next event with attachments
-        assert len(msg) == 1019  # 1039  # 1219
+        assert len(msg) == 1059  # 1039  # 1219
         serder = SerderKERI(raw=msg)
         assert serder.sn == fn  # no recovery forks so sn == fn
         assert serder.ked["t"] == Ilks.ixn
@@ -432,7 +444,7 @@ def test_replay_v1():
         serder = SerderKERI(raw=msg)
         assert serder.sn == fn  # no recovery forks so sn == fn
         assert serder.ked["t"] == Ilks.rot
-        assert len(msg) == 1388 # 1408 # 1588
+        assert len(msg) == 1428 # 1408 # 1588
         assert ([verfer.qb64 for verfer in serder.verfers] ==
                 [verfer.qb64 for verfer in debHab.kever.verfers])
         debFelMsgs.extend(msg)
@@ -443,11 +455,11 @@ def test_replay_v1():
             serder = SerderKERI(raw=msg)
             assert serder.sn == fn  # no recovery forks so sn == fn
             assert serder.ked["t"] == Ilks.ixn
-            assert len(msg) == 1019 # 1039 # 1219
+            assert len(msg) == 1059 # 1039 # 1219
             debFelMsgs.extend(msg)
             fn += 1
 
-        assert len(debFelMsgs) == 7818 # 7958  # 9218
+        assert len(debFelMsgs) == 8098 # 7958  # 9218
         cloner.close()  # must close or get lmdb error upon with exit
 
         msgs = debHab.replay(version=Vrsn_1_0)
@@ -470,7 +482,7 @@ def test_replay_v1():
         camDebFelMsgs = camHab.replay(pre=debHab.pre, version=Vrsn_1_0)
         bevDebFelMsgs = bevHab.replay(pre=debHab.pre, version=Vrsn_1_0)
 
-        assert len(bevDebFelMsgs) == len(camDebFelMsgs) == len(debFelMsgs) == 7818 # 7958 # 9218
+        assert len(bevDebFelMsgs) == len(camDebFelMsgs) == len(debFelMsgs) == 8098 # 7958 # 9218
 
         # create non-local kevery for Art to process conjoint replay msgs from Deb
         artKevery = Kevery(db=artHab.db,
@@ -493,7 +505,7 @@ def test_replay_v1():
         # fels.getOn(keys=pre, on=firner.sn) to look up the event digest.
         assert artHab.db.fels.get(keys=debHab.pre, on=0) == debHab.iserder.said
         artDebFelMsgs = artHab.replay(pre=debHab.pre, version=Vrsn_1_0)
-        assert len(artDebFelMsgs) == 7818  # 7958 # 9218
+        assert len(artDebFelMsgs) == 8098  # 7958 # 9218
 
     assert not os.path.exists(artHby.ks.path)
     assert not os.path.exists(artHby.db.path)
@@ -1129,7 +1141,7 @@ def test_replay_all_v1():
         # Explicit receipt+firner path: fels.getOn(keys=pre, on=firner.sn) in clone replay
         assert artHab.db.fels.get(keys=debHab.pre, on=0) == debHab.iserder.said
         artAllFelMsgs = artHab.replayAll(version=Vrsn_1_0)
-        assert len(artAllFelMsgs) == 10557 # 10797 # 12237
+        assert len(artAllFelMsgs) == 10957 # 10557 # 10797 # 12237
 
     assert not os.path.exists(artHby.ks.path)
     assert not os.path.exists(artHby.db.path)

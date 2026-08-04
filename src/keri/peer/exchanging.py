@@ -14,8 +14,8 @@ from ..kering import (Vrsn_1_0, Vrsn_2_0, Ilks,
 from ..core import (Counter, Pather, Dater, Diger,
                     Prefixer, Seqner, Saider,
                     Noncer, Sadder, Serder, SerderKERI,
-                    NonTransDex, Saids, Codens,
-                    verifySigs)
+                    Saids, Codens,
+                    verifySigs, messagize)
 from ..db import fetchTsgs
 from ..help import helping
 
@@ -608,64 +608,47 @@ def serializeMessage(hby, said, framed=False):
         hby (Habery): environment with db
         said (str): of message
         framed (bool): True means may assume each message plus its attachments
-                is isolated as frame when parsing so do not need
-                attachment group when messagizing
-            False means may not assume eash message plus its attachments
-                is isolated as frame when parsing so do need
-                attachment group when messagizing
+            is isolated as frame when parsing so do not need
+            attachment group when messagizing
+        False means may not assume eash message plus its attachments
+            is isolated as frame when parsing so do need
+            attachment group when messagizing
 
     Returns:
-        msg (bytearray):  message by said with attachments"""
-    atc = bytearray()
+        msg (bytearray):  message by said with attachments
 
+    """
     exn = hby.db.exns.get(keys=(said,))
     if exn is None:
         return None, None
 
-    atc.extend(exn.raw)
-
     tsgs, cigars = verify(hby=hby, serder=exn)
 
-    if len(tsgs) > 0:
-        for (prefixer, seqner, saider, sigers) in tsgs:
-            atc.extend(Counter(Codens.TransIdxSigGroups, count=1,
-                                    version=Vrsn_1_0).qb64b)
-            atc.extend(prefixer.qb64b)
-            atc.extend(seqner.qb64b)
-            atc.extend(saider.qb64b)
+    aims = bytearray()
+    if tsgs or cigars:
+        # Authenticator attachments via messagize; framed=True so we can append
+        # pathed embeds after (pathed material is outside messagize support).
+        full = messagize(exn, tsgs=tsgs or None, cigars=cigars or None,
+                         framed=True, gvrsn=Vrsn_1_0)
+        aims.extend(full[exn.size:])
 
-            atc.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                                    version=Vrsn_1_0).qb64b)
-            for siger in sigers:
-                atc.extend(siger.qb64b)
-
-    if len(cigars) > 0:
-        atc.extend(Counter(Codens.NonTransReceiptCouples,
-                                count=len(cigars), version=Vrsn_1_0).qb64b)
-        for cigar in cigars:
-            if cigar.verfer.code not in NonTransDex:
-                raise ValueError("Attempt to use tranferable prefix={} for "
-                                 "receipt.".format(cigar.verfer.qb64))
-            atc.extend(cigar.verfer.qb64b)
-            atc.extend(cigar.qb64b)
-
-    # Smash the pathed components on the end
+    # Pathed embeds are outside current messagize support — deliberate special
+    # case until messagize gains path-material encoding.
     for p in hby.db.epath.get(keys=(exn.said,)):
-        atc.extend(Counter(Codens.PathedMaterialCouples,
-                                  count=(len(p) // 4), version=Vrsn_1_0).qb64b)
-        atc.extend(p.encode("utf-8"))
+        aims.extend(Counter(Codens.PathedMaterialCouples,
+                            count=(len(p) // 4), version=Vrsn_1_0).qb64b)
+        aims.extend(p.encode("utf-8"))
 
-    msg = bytearray()
+    msg = bytearray(exn.raw)
+    if aims:
+        if len(aims) % 4:
+            raise ValueError("Invalid attachments size={}, nonintegral"
+                             " quadlets.".format(len(aims)))
+        if not framed:
+            msg.extend(Counter(Codens.AttachmentGroup,
+                               count=(len(aims) // 4), version=Vrsn_1_0).qb64b)
+        msg.extend(aims)
 
-    if len(atc) % 4:
-        raise ValueError("Invalid attachments size={}, nonintegral"
-                         " quadlets.".format(len(atc)))
-
-    if not framed:
-        msg.extend(Counter(Codens.AttachmentGroup,
-                                  count=(len(atc) // 4), version=Vrsn_1_0).qb64b)
-
-    msg.extend(atc)
     return msg
 
 

@@ -7,6 +7,7 @@ VC TEL  support
 """
 import logging
 from dataclasses import asdict
+from types import SimpleNamespace
 from ordered_set import OrderedSet as oset
 from math import ceil
 from  ordered_set import OrderedSet as oset
@@ -19,25 +20,23 @@ from ..kering import (Kinds, Ilks, versify,
                     ValidationError, OutOfOrderError,
                     LikelyDuplicitousError, MissingEntryError, MissingAnchorError,
                     UntrustedKeyStateSource,UnverifiedReplyError,
-                    OutOfOrderTxnStateError, MissingRegistryError)
+                    OutOfOrderTxnStateError, MissingRegistryError, smell)
 
-from ..core import (SerderKERI, Salter, Prefixer, Verfer,
-                    Number, Saider, Seqner,
-                    Diger, Dater, SealEvent,
+from ..core import (Salter, SealEvent, SealSource,
                     TraitDex, MtrDex, ample, verifySigs,
-                    query as queryCore)
+                    query as queryCore, messagize as coreMessagize)
 
 from ..db import (Baser, Broker, Komer, LMDBer,
                   Suber, OnSuber, CatCesrSuber, IoDupSuber,
                   CesrDupSuber, OnIoDupSuber, SerderSuber,
                   CesrIoSetSuber, CatCesrIoSetSuber, CesrSuber,
-                  openLMDB, dgKey, snKey, dgKey, snKey)
+                  openLMDB, dgKey, snKey)
 
 
 from ..core import (Counter, Number, Diger, Dater,
                     Prefixer, Verfer, Cigar, Saider,
                     Seqner, SerderACDC, SerderKERI,
-                    Siger, CtrDex_1_0, Codens)
+                    Siger, Codens)
 
 from ..help import helping
 
@@ -2379,16 +2378,20 @@ class Reger(LMDBer):
 
         return self.env
 
-    def cloneCreds(self, saids, db):
+    def cloneCreds(self, saids, db, gvrsn=Version, *, version=None):
         """ Returns fully expanded credential with chained credentials attached.
 
         Parameters:
             saids (list): of Saider objects:
             db (Baser): baser object to load schema
+            gvrsn (Versionage): CESR genus version for TEL attachments
+            version (Versionage): legacy alias for gvrsn
 
         Returns:
             list: fully hydrated credentials with full chains provided"""
         from ..app import serialize
+        if version is not None:
+            gvrsn = version
         creds = []
         for saider in saids:
             key = saider.qb64
@@ -2400,12 +2403,12 @@ class Reger(LMDBer):
             status = self.tevers[regk].vcState(saider.qb64)
             schemer = db.schema.get(creder.schema)
 
-            iss = bytearray(self.cloneTvtAt(creder.said, sn=0))
+            iss = bytearray(self.cloneTvtAt(creder.said, sn=0, gvrsn=gvrsn))
             iserder = SerderKERI(raw=iss)
             issatc = bytes(iss[iserder.size:])
             del iss[0:iserder.size]
             if status.et in [Ilks.rev, Ilks.brv]:
-                rev = bytearray(self.cloneTvtAt(creder.said, sn=1))
+                rev = bytearray(self.cloneTvtAt(creder.said, sn=1, gvrsn=gvrsn))
                 rserder = SerderKERI(raw=rev)
                 revatc = bytes(rev[rserder.size:])
                 del rev[0:rserder.size]
@@ -2419,7 +2422,7 @@ class Reger(LMDBer):
                     continue
 
                 chainSaids.append(Saider(qb64=p["n"]))
-            chains = self.cloneCreds(chainSaids, db)
+            chains = self.cloneCreds(chainSaids, db, gvrsn=gvrsn)
 
             cred = dict(
                 sad=creder.sad,
@@ -2439,11 +2442,11 @@ class Reger(LMDBer):
                 )
             )
 
-            ctr = Counter(qb64b=iss, strip=True, version=Vrsn_1_0)
-            if ctr.code == CtrDex_1_0.AttachmentGroup:
-                ctr = Counter(qb64b=iss, strip=True, version=Vrsn_1_0)
+            ctr = Counter(qb64b=iss, strip=True, version=gvrsn)
+            if ctr.name == Codens.AttachmentGroup:
+                ctr = Counter(qb64b=iss, strip=True, version=gvrsn)
 
-            if ctr.code == CtrDex_1_0.SealSourceCouples:
+            if ctr.name == Codens.SealSourceCouples:
                 Number(qb64b=iss, strip=True)
                 saider = Saider(qb64b=iss)
 
@@ -2454,11 +2457,11 @@ class Reger(LMDBer):
                 cred['ancatc'] = ancatc.decode("utf-8"),
 
             if status.et in [Ilks.rev, Ilks.brv]:
-                ctr = Counter(qb64b=rev, strip=True, version=Vrsn_1_0)
-                if ctr.code == CtrDex_1_0.AttachmentGroup:
-                    ctr = Counter(qb64b=rev, strip=True, version=Vrsn_1_0)
+                ctr = Counter(qb64b=rev, strip=True, version=gvrsn)
+                if ctr.name == Codens.AttachmentGroup:
+                    ctr = Counter(qb64b=rev, strip=True, version=gvrsn)
 
-                if ctr.code == CtrDex_1_0.SealSourceCouples:
+                if ctr.name == Codens.SealSourceCouples:
                     Number(qb64b=rev, strip=True)
                     saider = Saider(qb64b=rev)
 
@@ -2501,7 +2504,7 @@ class Reger(LMDBer):
         prefixer, number, saider = self.cancs.get(keys=(said,))
         return creder, prefixer, number, saider
 
-    def clonePreIter(self, pre, fn=0):
+    def clonePreIter(self, pre, fn=0, gvrsn=Version, *, version=None):
         """ Iterator of first seen event messages
 
         Returns iterator of first seen event messages with attachments for the
@@ -2511,56 +2514,57 @@ class Reger(LMDBer):
         Parameters:
             pre (bytes): qb64 identifier prefix of registry state TEL
             fn (int): first seen ordinal
+            gvrsn (Versionage): CESR genus version for attachments
+            version (Versionage): legacy alias for gvrsn
 
         Returns:
             iterator: bytearray per serializeed event msg"""
         if hasattr(pre, 'encode'):
             pre = pre.encode("utf-8")
 
+        if version is not None:
+            gvrsn = version
         for _, fn, dig in self.tels.getAllItemIter(keys=pre, on=fn):
-            msg = self.cloneTvt(pre, dig)
+            msg = self.cloneTvt(pre, dig, gvrsn=gvrsn)
             yield msg
 
-    def cloneTvtAt(self, pre, sn=0):
+    def cloneTvtAt(self, pre, sn=0, gvrsn=Version, *, version=None):
+        if version is not None:
+            gvrsn = version
         snkey = snKey(pre, sn)
         dig = self.tels.get(keys=pre, on=sn)
-        return self.cloneTvt(pre, dig)
+        return self.cloneTvt(pre, dig, gvrsn=gvrsn)
 
-    def cloneTvt(self, pre, dig):
-        msg = bytearray()  # message
-        atc = bytearray()  # attachments
-        dgkey = dgKey(pre, dig)  # get message
-        if not (raw := self.tvts.get(keys=dgkey)):
+    def cloneTvt(self, pre, dig, gvrsn=Version, *, version=None):
+        if version is not None:
+            gvrsn = version
+        if not (raw := self.tvts.get(keys=dgKey(pre, dig))):
             raise MissingEntryError("Missing event for dig={}.".format(dig))
-        msg.extend(raw.encode("utf-8"))
 
-        # add indexed backer signatures to attachments
-        if tibs := self.tibs.get(keys=(pre, dig)):
-            atc.extend(Counter(Codens.WitnessIdxSigs, count=len(tibs),
-                                    version=Vrsn_1_0).qb64b)
-            for tib in tibs:
-                atc.extend(tib.qb64b)
+        # Preserve exact stored body bytes. Do not Serder-parse: the version
+        # size field may not match (clone fixtures / legacy rows), and messagize
+        # only needs .raw / .pvrsn / .gvrsn / .pretty().
+        rawb = raw.encode("utf-8") if hasattr(raw, "encode") else bytes(raw)
+        tibs = self.tibs.get(keys=(pre, dig))
+        couple = self.ancs.get(keys=dgKey(pre, dig))
 
-        # add authorizer (delegator/issure) source seal event couple to attachments
-        couple = self.ancs.get(keys=dgkey)
+        if not tibs and couple is None:
+            return bytearray(rawb)
+
+        _, pvrsn, _, _, body_gvrsn = smell(rawb)
+        serder = SimpleNamespace(raw=rawb,
+                                 pvrsn=pvrsn,
+                                 gvrsn=body_gvrsn if body_gvrsn is not None else pvrsn,
+                                 pretty=lambda: rawb[:80].decode(
+                                     "utf-8", errors="replace"))
+
+        seal = None
         if couple is not None:
             number, diger = couple
-            seqner = Seqner(sn=number.sn)
-            saider = Saider(qb64=diger.qb64)
-            atc.extend(Counter(Codens.SealSourceCouples, count=1,
-                                    version=Vrsn_1_0).qb64b)
-            atc.extend(seqner.qb64b)
-            atc.extend(saider.qb64b)
+            seal = SealSource(s=number, d=diger)
 
-        # prepend pipelining counter to attachments
-        if len(atc) % 4:
-            raise ValueError("Invalid attachments size={}, nonintegral"
-                             " quadlets.".format(len(atc)))
-        pcnt = Counter(Codens.AttachmentGroup, count=(len(atc) // 4),
-                            version=Vrsn_1_0).qb64b
-        msg.extend(pcnt)
-        msg.extend(atc)
-        return msg
+        return coreMessagize(serder, wigers=tibs or None, bonds=seal,
+                             framed=False, gvrsn=gvrsn)
 
     def sources(self, db, creder):
         """ Returns raw bytes of any source ('e') credential that is in our database
@@ -2586,11 +2590,10 @@ class Reger(LMDBer):
         for said in saids:
             screder, prefixer, number, saider = self.cloneCred(said=said)
 
-            atc = bytearray(Counter(Codens.SealSourceTriples, count=1,
-                                         version=Vrsn_1_0).qb64b)
-            atc.extend(prefixer.qb64b)
-            atc.extend(number.qb64b)
-            atc.extend(saider.qb64b)
+            msg = coreMessagize(screder,
+                                bonds=[SealEvent(i=prefixer, s=number, d=saider)],
+                                framed=True, gvrsn=screder.pvrsn)
+            atc = bytearray(msg[screder.size:])
 
             sources.append((screder, atc))
             sources.extend(self.sources(db, screder))
@@ -2598,7 +2601,7 @@ class Reger(LMDBer):
         return sources
 
 
-def buildProof(prefixer, seqner, diger, sigers):
+def buildProof(prefixer, seqner, diger, sigers, creder, framed=True):
     """
     Create CESR proof attachment from the quadlet of seal plus signatures on the credential
 
@@ -2606,39 +2609,30 @@ def buildProof(prefixer, seqner, diger, sigers):
         prefixer (Prefixer) Identifier of the issuer of the credential
         seqner (Seqner) is the sequence number of the event used to sign the credential
         diger (Diger) is the digest of the event used to sign the credential
-        sigers (list) are the cryptographic signatures on the credential"""
+        sigers (list) are the cryptographic signatures on the credential
+        creder (SerderACDC): credential whose protocol version drives attachment encoding
+        framed (bool): True means bare attachments; False wraps AttachmentGroup
 
-    prf = bytearray()
-    prf.extend(Counter(Codens.TransIdxSigGroups, count=1,
-                            version=Vrsn_1_0).qb64b)
-    prf.extend(prefixer.qb64b)
-    prf.extend(seqner.qb64b)
-    prf.extend(diger.qb64b)
-
-    prf.extend(Counter(Codens.ControllerIdxSigs, count=len(sigers),
-                            version=Vrsn_1_0).qb64b)
-    for siger in sigers:
-        prf.extend(siger.qb64b)
-
-    return prf
+    """
+    msg = coreMessagize(creder, tsgs=[(prefixer, seqner, diger, sigers)],
+                        framed=framed, gvrsn=creder.pvrsn)
+    return bytearray(msg[creder.size:])
 
 
-def messagize(creder, proof):
-    """ Create a CESR message format with proof attachment for credential
+def messagize(creder, prefixer, seqner, diger, sigers, framed=False):
+    """Create a CESR message with proof attachment for credential via core messagize.
 
-    Parameters
+    Parameters:
         creder (Creder): instance of credential
-        proof (str): CESR proof attachment
+        prefixer (Prefixer): identifier of the issuer of the credential
+        seqner (Seqner): sequence number of the event used to sign the credential
+        diger (Diger): digest of the event used to sign the credential
+        sigers (list): cryptographic signatures on the credential
+        framed (bool): True means bare attachments; False wraps AttachmentGroup
 
     Returns:
-        bytearray: serialized credential with attached proof"""
+        bytearray: serialized credential with attached proof
 
-    craw = bytearray(creder.raw)
-    if len(proof) % 4:
-        raise ValueError("Invalid attachments size={}, nonintegral"
-                         " quadlets.".format(len(proof)))
-    craw.extend(Counter(Codens.AttachmentGroup, count=(len(proof) // 4),
-                             version=Vrsn_1_0).qb64b)
-    craw.extend(proof)
-
-    return craw
+    """
+    return coreMessagize(creder, tsgs=[(prefixer, seqner, diger, sigers)],
+                         framed=framed, gvrsn=creder.pvrsn)

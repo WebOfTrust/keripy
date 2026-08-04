@@ -48,8 +48,9 @@ class Director(doing.Doer):
 
     def sendOwnEvent(self, sn):
         """
-        Utility to send own event at sequence number sn"""
-        msg = self.hab.msgOwnEvent(sn=sn, framed=True)
+        Utility to send own event at sequence number sn
+        """
+        msg = self.hab.msgOwnEvent(sn=sn, framed=True, gvrsn=self.version)
         # send to connected remote
         self.client.tx(msg)
         logger.info("%s: %s sent event:\n%s\n\n", self.hab.name, self.hab.pre, bytes(msg))
@@ -58,10 +59,6 @@ class Director(doing.Doer):
         """
         Utility to send own inception on client"""
         self.sendOwnEvent(sn=0)
-
-    def _event_kwa(self):
-        """Use explicit framing when configured, otherwise inherit the hab defaults."""
-        return dict(version=self.version, kind=self.kind, gvrsn=self.version)
 
 
 class Reactor(doing.DoDoer):

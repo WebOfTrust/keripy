@@ -12,14 +12,13 @@ from keri.app import (QueryDoer, KeyStateNoticer, LogQuerier,
 from keri.core import SerderKERI, Parser, Kevery, reply
 from keri.db import dgKey
 
-from tests.common import CUE_KWA, KWA
 
 
 def test_querying():
     with openHby(version=Vrsn_1_0) as hby, \
             openHby(version=Vrsn_1_0) as hby1:
-        inqHab = hby.makeHab(name="inquisitor", **KWA)
-        subHab = hby1.makeHab(name="subject", **KWA)
+        inqHab = hby.makeHab(name="inquisitor", version=Vrsn_1_0, kind=Kinds.json)
+        subHab = hby1.makeHab(name="subject", version=Vrsn_1_0, kind=Kinds.json)
         qdoer = QueryDoer(hby=hby, hab=inqHab, kvy=hby.kvy, pre=subHab.pre)
 
         icp = subHab.msgOwnInception(framed=True, gvrsn=Vrsn_1_0)
@@ -50,7 +49,7 @@ def test_querying():
         # Cue up a saved key state equal to the one we have
         hby.kvy.cues.clear()
         ksr = subHab.kever.state()
-        rpy = reply(route="/ksn", data=ksr._asdict(), **KWA)
+        rpy = reply(route="/ksn", data=ksr._asdict(), version=Vrsn_1_0, kind=Kinds.json)
         cue = dict(kin="keyStateSaved", ksn=ksr._asdict())
         hby.kvy.cues.append(cue)
 
@@ -67,9 +66,9 @@ def test_querying():
         doist = doing.Doist(limit=limit, tock=tock, real=True)
 
         # rotate AID and submit as a new keyStateSave
-        rot = subHab.rotate(framed=True, **CUE_KWA)
+        rot = subHab.rotate(framed=True, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         ksr = subHab.kever.state()
-        rpy = reply(route="/ksn", data=ksr._asdict(), **KWA)
+        rpy = reply(route="/ksn", data=ksr._asdict(), version=Vrsn_1_0, kind=Kinds.json)
         cue = dict(kin="keyStateSaved", ksn=ksr._asdict())
         hby.kvy.cues.append(cue)
         deeds = doist.enter(doers=[qdoer])
@@ -338,14 +337,14 @@ def test_querying_v2():
 def test_query_not_found_escrow():
     with openHby(version=Vrsn_1_0) as hby, \
             openHby(version=Vrsn_1_0) as hby1:
-        inqHab = hby.makeHab(name="inquisitor", **KWA)
-        subHab = hby1.makeHab(name="subject", **KWA)
+        inqHab = hby.makeHab(name="inquisitor", version=Vrsn_1_0, kind=Kinds.json)
+        subHab = hby1.makeHab(name="subject", version=Vrsn_1_0, kind=Kinds.json)
 
         icp = inqHab.msgOwnInception(framed=True, gvrsn=Vrsn_1_0)
         subHab.psr.parseOne(ims=icp)
         assert inqHab.pre in subHab.kevers
 
-        qry = inqHab.query(subHab.pre, route="/foo", src=inqHab.pre, **CUE_KWA)
+        qry = inqHab.query(subHab.pre, route="/foo", src=inqHab.pre, version=Vrsn_1_0, kind=Kinds.json, gvrsn=Vrsn_1_0)
         serder = SerderKERI(raw=qry)
         dgkey = dgKey(inqHab.pre, serder.saidb)
 

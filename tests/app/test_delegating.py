@@ -4,7 +4,6 @@ tests.app.delegating module
 
 """
 import time
-from types import SimpleNamespace
 
 from hio.base import doing, tyming
 
@@ -16,7 +15,9 @@ from keri.app import (Anchorer, DelegateRequestHandler, Receiptor,
                       openHab, delegateRequestExn)
 from keri.app import delegating
 
-from tests.common import CUE_KWA, KWA
+# Passed through doify opts into anchorer_test_do (unpacked as **kwa / **cue_kwa).
+KWA = dict(version=Vrsn_1_0, kind=Kinds.json)
+CUE_KWA = dict(**KWA, gvrsn=Vrsn_1_0)
 
 
 def test_anchorer_explicit_version_propagates_to_postman():
@@ -27,7 +28,6 @@ def test_anchorer_explicit_version_propagates_to_postman():
         assert bts.postman.kind == Kinds.json
 
 
-
 def test_anchorer(seeder, witnessPorter):
     with openHby(name="wes", salt=Salter(raw=b'wess-the-witness').qb64, version=Vrsn_1_0) as wesHby, \
             openHby(name="pal", salt=Salter(raw=b'0123456789abcdef').qb64, version=Vrsn_1_0) as palHby, \
@@ -36,16 +36,16 @@ def test_anchorer(seeder, witnessPorter):
         witnessPorts, witnessUrls = witnessPorter("wes")
         wesDoers = setupWitness(alias="wes", hby=wesHby,
                                 tcpPort=witnessPorts["wes"]["tcp"],
-                                httpPort=witnessPorts["wes"]["http"], **KWA)
+                                httpPort=witnessPorts["wes"]["http"], version=Vrsn_1_0, kind=Kinds.json)
         witDoer = Receiptor(hby=palHby)
 
         bts = Anchorer(hby=delHby, version=Vrsn_1_0, kind=Kinds.json)
 
         wesHab = wesHby.habByName(name="wes")
         seeder.seedWitEnds(palHby.db, witHabs=[wesHab],
-                           protocols=[Schemes.http], witnessUrls=witnessUrls, **KWA)
+                           protocols=[Schemes.http], witnessUrls=witnessUrls, version=Vrsn_1_0, kind=Kinds.json)
         seeder.seedWitEnds(delHby.db, witHabs=[wesHab],
-                           protocols=[Schemes.http], witnessUrls=witnessUrls, **KWA)
+                           protocols=[Schemes.http], witnessUrls=witnessUrls, version=Vrsn_1_0, kind=Kinds.json)
 
         opts = dict(
             wesHab=wesHab,
@@ -151,25 +151,27 @@ def anchorer_test_do(tymth=None, tock=0.0, **opts):
 
 
 def test_delegation_request(mockHelpingNowUTC):
-    with openHab(name="test", temp=True, salt=b'0123456789abcdef', **KWA) as (hby, hab):
+    with openHab(name="test", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (hby, hab):
 
         delpre = "EArzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"
         serder = delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=delpre,
                                   ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"],
-                                  **KWA)
+                                  version=Vrsn_1_0, kind=Kinds.json)
         evt = hab.endorse(serder=serder, framed=False, gvrsn=Vrsn_1_0)
         exn, atc = delegateRequestExn(hab=hab, delpre=delpre, evt=evt,
                                       version=Vrsn_1_0, kind=Kinds.json)
 
-        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3MAAAEIaGMMWJFPmt'
-                    b'XznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACzeUyP6__0oDca-Oiv2iGXKghB'
-                    b'w_8sI4ZHyyeMedvz0iZIIQYqJd2Zt7cDHRh7xBGWI85J_oOixLET3mFZUu0A')
+        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAA'
+                       b'AAAAAAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AAB'
+                       b'AACzeUyP6__0oDca-Oiv2iGXKghBw_8sI4ZHyyeMedvz0iZIIQYqJd2Zt7cD'
+                       b'HRh7xBGWI85J_oOixLET3mFZUu0A')
 
         assert exn.ked["r"] == '/delegate/request'
         assert exn.saidb == b'EHPkcmdLGql9_1WD0wl0OalYk8PcF4HMMd7gGi-iqfSe'
-        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3MAAAEIaGMMWJFPmt'
-                    b'XznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AABAACzeUyP6__0oDca-Oiv2iGXKghB'
-                    b'w_8sI4ZHyyeMedvz0iZIIQYqJd2Zt7cDHRh7xBGWI85J_oOixLET3mFZUu0A')
+        assert atc == (b'-FABEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI30AAAAAAAAAAA'
+                       b'AAAAAAAAAAAAEIaGMMWJFPmtXznY1IIiKDIrg-vIyge6mBl2QV8dDjI3-AAB'
+                       b'AACzeUyP6__0oDca-Oiv2iGXKghBw_8sI4ZHyyeMedvz0iZIIQYqJd2Zt7cD'
+                       b'HRh7xBGWI85J_oOixLET3mFZUu0A')
         data = exn.ked["a"]
         assert data["delpre"] == delpre
         embeds = exn.ked['e']
@@ -177,11 +179,11 @@ def test_delegation_request(mockHelpingNowUTC):
 
 
 def test_delegation_request_handler(mockHelpingNowUTC):
-    with openHab(name="test", temp=True, **KWA) as (hby, hab):
+    with openHab(name="test", temp=True, version=Vrsn_1_0, kind=Kinds.json) as (hby, hab):
 
         serder = delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=hab.pre,
                                   ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"],
-                                  **KWA)
+                                  version=Vrsn_1_0, kind=Kinds.json)
 
         evt = hab.endorse(serder=serder, framed=False, gvrsn=Vrsn_1_0)
         notifier = Notifier(hby=hby)
@@ -195,11 +197,11 @@ def test_delegation_request_handler(mockHelpingNowUTC):
 
 
 def test_delegate_request_default_framing_uses_default_version_with_legacy_special_exn(mockHelpingNowUTC, monkeypatch):
-    with openHab(name="test", temp=True, salt=b'0123456789abcdef', **KWA) as (_, hab):
+    with openHab(name="test", temp=True, salt=b'0123456789abcdef', version=Vrsn_1_0, kind=Kinds.json) as (_, hab):
         delpre = "EArzbTSWjccrTdNRsFUUfwaJ2dpYxu9_5jI2PJ-TRri0"
         serder = delcept(keys=["DUEFuPeaDH2TySI-wX7CY_uW5FF41LRu3a59jxg1_pMs"], delpre=delpre,
                          ndigs=["DLONLed3zFEWa0p21fvi1Jf5-x-EoyEPqFvOki3YhP1k"],
-                         **KWA)
+                         version=Vrsn_1_0, kind=Kinds.json)
         evt = hab.endorse(serder=serder, framed=False, gvrsn=Vrsn_1_0)
         special_calls = {}
         endorse_calls = {}
