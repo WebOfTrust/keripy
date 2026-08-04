@@ -618,6 +618,135 @@ def test_indreg_sedi_id_set_JSON():
                            states=SET_STATES, salt=nonces.b(other), sn=1) is None
 
 
+# ===========================================================================
+# Phase 3: ONE batch root seal over M registries -- and over the herd.
+# ===========================================================================
+# Other Utah residents whose registry updates land in the same anchoring batch. They
+# are what makes the batch an anonymity set rather than a list of Alice's registries.
+# Their credentials are out of scope -- only their TRANSACTION EVENTS reach the tree --
+# so each is modeled as a real registry carrying a real blindable update over a stand-in
+# credential SAID.
+HERD_SALT = b'indregherdsalt00'
+HERD_RESIDENTS = 4
+HERD_STAMP = "2026-01-05T12:05:00.000000+00:00"
+# Spec L2924: an Issuer SHOULD pad thin batches with state-PRESERVING updates so that
+# every anchor captures enough events to meet a stated herd-privacy level. Two such
+# no-ops are included below; they change nothing and exist only to be leaves.
+DECOY_UPDATES = 2
+DECOY_STAMP = "2026-01-05T12:06:00.000000+00:00"
+
+
+def _herd_events(kind, nonces=None):
+    """The other residents' transaction events that share Alice's anchoring batch.
+
+    HERD_RESIDENTS residents x BULK_SIZE copies, each an independent registry with its
+    own 'issued' blindable update, plus DECOY_UPDATES state-preserving no-ops. Returns
+    the list of event SAIDs; nothing else about these residents is modeled.
+    """
+    if nonces is None:
+        nonces = _BulkNonces(HERD_SALT)
+    saids = []
+    for r in range(HERD_RESIDENTS):
+        for k in range(BULK_SIZE):
+            tag = f"{r}/{k}"
+            reg = regcept(israid=STATE, uuid=nonces.r(tag), stamp=HERD_STAMP, kind=kind)
+            acdc = Diger(ser=f"resident{r}-copy{k}".encode()).qb64
+            blinder = Blinder.blind(acdc=acdc, state='issued', salt=nonces.b(tag), sn=1)
+            saids.append(blindate(regid=reg.said, prior=reg.said, blid=blinder.said,
+                                  sn=1, stamp=HERD_STAMP, kind=kind).said)
+    for d in range(DECOY_UPDATES):
+        tag = f"decoy{d}"
+        reg = regcept(israid=STATE, uuid=nonces.r(tag), stamp=HERD_STAMP, kind=kind)
+        blinder = Blinder.blind(acdc='', state='', salt=nonces.b(tag), sn=1)
+        saids.append(blindate(regid=reg.said, prior=reg.said, blid=blinder.said, sn=1,
+                              stamp=DECOY_STAMP, kind=kind).said)
+    return saids
+
+
+def _anchor(*eventSaidGroups):
+    """Anchor one batch: build the tree and return (tree, sealer).
+
+    The Sealer is the real KERI seal the Issuer would place in its KEL -- a SealRoot,
+    whose CESR count code is MerkleRootSealSingles ('-R'). ONE of these covers every
+    registry in the batch, which is the whole point: M registry inceptions anchored
+    side by side in a KEL event would let any third party reading that KEL reassemble
+    the bulk-issued set, moving the correlator from the ACDC to the KEL rather than
+    removing it.
+    """
+    tree = _BatchTree(_batch(*eventSaidGroups))
+    return tree, Sealer(crew=SealRoot(rd=tree.root))
+
+
+def _verify_anchored(said, tree, sealer):
+    """A Validator's check that the Issuer committed to transaction event `said`:
+    the proof reconstructs the sealed root. Returns True or False."""
+    return _BatchTree.verify(said, tree.prove(said), sealer.crew.rd)
+
+
+def test_indreg_batch_anchor_JSON():
+    """Phase 3: M registries, ONE seal, and a herd that makes the batch mean nothing.
+
+    The State anchors a single Merkle-root seal covering every transaction event it
+    updated in this batch: Alice's M sedi-id registries alongside four other residents'
+    twenty registries and two state-preserving decoys. A Validator given one event and
+    its inclusion proof verifies the State's commitment to that event and learns nothing
+    about any other leaf -- not which other events exist, not whose they are, not that
+    any two belong to one holder.
+
+    Asserted: the seal is a real SealRoot carrying the tree root; every one of Alice's
+    events and every herd event proves under it; an event from a different batch does
+    not; a proof discloses no other event SAID and the seal itself discloses no registry
+    SAID; Alice's M registries are covered by exactly ONE anchor; and her leaves are
+    interleaved with the herd rather than sitting in a contiguous run, so a proof's
+    disclosed path does not hand two colluding verifiers an adjacency.
+    """
+    kind = Kinds.json
+    nonces = _BulkNonces(BULK_SALT)
+    regs, copies, issues = _sedi_id_set(kind, nonces)
+    aliceEvents = [issued.said for issued in issues]
+    herdEvents = _herd_events(kind)
+
+    tree, sealer = _anchor(aliceEvents, herdEvents)
+
+    # The anchor is one real KERI Merkle-root seal over the whole batch.
+    assert sealer.clan is SealRoot
+    assert sealer.crew.rd == tree.root
+    assert len(tree.leaves) == BULK_SIZE + HERD_RESIDENTS * BULK_SIZE + DECOY_UPDATES
+
+    # M independent registries; ONE anchoring seal covering all of them.
+    assert len({issued.sad['rd'] for issued in issues}) == BULK_SIZE
+    assert len({r.said for r in regs}) == BULK_SIZE
+
+    # Every event in the batch proves; an event from another batch does not.
+    for said in aliceEvents + herdEvents:
+        assert _verify_anchored(said, tree, sealer)
+    otherBatch = _BatchTree(_batch([Diger(ser=b'some other batch').qb64]))
+    assert not _BatchTree.verify(otherBatch.leaves[0],
+                                 otherBatch.prove(otherBatch.leaves[0]), sealer.crew.rd)
+
+    # The proof for Alice's copy-0 event discloses interior digests only: no other
+    # event's SAID, and nothing that names a registry.
+    proof = tree.prove(aliceEvents[0])
+    material = "".join(sibling for sibling, _ in proof)
+    assert all(said not in material for said in tree.leaves if said != aliceEvents[0])
+    assert all(reg.said not in material for reg in regs)
+    # Nor does the seal itself: it is one digest, and it names nothing.
+    assert all(reg.said not in sealer.qb64 for reg in regs)
+    assert all(said not in sealer.qb64 for said in tree.leaves)
+
+    # The herd dominates the batch, and Alice's events are interleaved with it rather
+    # than occupying a contiguous run -- an inclusion proof discloses the leaf's path,
+    # so contiguity would let two colluding verifiers notice their events are adjacent.
+    positions = sorted(tree.leaves.index(said) for said in aliceEvents)
+    assert len(aliceEvents) * 4 <= len(tree.leaves)          # she is a small minority
+    assert positions != list(range(positions[0], positions[0] + len(positions)))
+    assert any(right - left > 1 for left, right in zip(positions, positions[1:]))
+
+    # Pinned reproducible value: the batch root the State would seal.
+    assert tree.root == "EOdrbhMmEtYQXYMy9TZso2k6FtHL7K4Q8Ic9S3FcJggz"
+
+
 if __name__ == "__main__":
     test_indreg_derivation_and_batch_JSON()
     test_indreg_sedi_id_set_JSON()
+    test_indreg_batch_anchor_JSON()
