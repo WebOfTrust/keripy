@@ -1238,8 +1238,9 @@ def _verify_issuance(copy, *, reg, event, salt, proof, sealer, sn=1):
       1. the credential's `rd` names this registry, this registry was incepted by the
          credential's OWN issuer, and the event belongs to it. The middle clause is the
          one it would be easy to skip: `rd` is a secure DISCOVERY mechanism (spec L2840),
-         so following it must end at a registry the credential's issuer controls, or a
-         holder could point a verifier at a registry someone else keeps 'issued';
+         so following it must end at a registry the credential's issuer controls. Skip
+         it and a holder can point the verifier at a registry SHE incepted and keeps
+         'issued' forever;
       2. the event's blinded state unblinds, with THIS COPY's salt, to a state bound to
          THIS COPY's SAID (a wrong salt or a wrong SAID yields None);
       3. the event is a leaf under the root the Issuer sealed in its KEL.
