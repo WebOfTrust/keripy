@@ -1014,15 +1014,32 @@ def test_disclosure_gating_and_revocation_JSON():
     # `dp` stayed a dict keyed by schema SAID, a DAG carrying two copies drawn from the
     # same bulk-issued set would collapse onto a single key -- the ordered list keeps
     # each copy addressable while the copy SAIDs themselves stay per-context.
+    #
+    # The zeroth entry is the DAG's origin node (#1549): the self-presentation ALICE_k
+    # issues to this verifier. Its schema is the one part of the presentation the
+    # verifier knows in advance, because the EGF fixes the shape of the presentation it
+    # will accept (@SmithSamuelM, #1542) -- and, unlike the copy SAIDs, a schema SAID is
+    # shared across contexts, so naming it costs nothing in correlation. The verifier
+    # asks it only for issuer and issuee: who is presenting, and that the presentation
+    # is addressed to this verifier rather than replayed from another context.
+    #
+    # The identity copy is a node in this DAG but carries no entry, because nothing is
+    # requested from it -- the over-21 flag alone answers the challenge. Entries are
+    # therefore a breadth-first-ordered SUBSET of the DAG, and each one still names its
+    # own schema SAID, so a skipped node cannot shift the meaning of the entries below.
+    presSchemaSaid, _ = _saidify_schema(dict(PRESENT_SCHEMA_MAD), kind=kind)
     apply = exchange(sender=verifier, receiver=ALICES[k], route="/ipex/apply",
-                     modifiers=dict(dp=[[ageCopies[k].sad['s']['$id'],
+                     modifiers=dict(dp=[[presSchemaSaid, ["i", "a/i"]],
+                                        [ageCopies[k].sad['s']['$id'],
                                          ["A/i", "A/over21"]]]),
                      attributes=dict(m="Prove over-21.",
                                      g=GOVERNANCE_SAID),
                      stamp=APPLY_STAMP, kind=kind)
     assert apply.sad['r'] == "/ipex/apply"
     dp = apply.sad['q']['dp']
-    assert dp == [[ageCopies[k].sad['s']['$id'], ["A/i", "A/over21"]]]
+    assert dp == [[presSchemaSaid, ["i", "a/i"]],
+                  [ageCopies[k].sad['s']['$id'], ["A/i", "A/over21"]]]
+    assert presSchemaSaid == pres.sad['s']['$id']   # the origin the holder actually issues
     # The schema SAID is shared across the whole bulk set by design; the request names
     # it, never a copy SAID, so the apply itself introduces no cross-context correlator.
     assert ageCopies[k].said.encode() not in apply.raw
